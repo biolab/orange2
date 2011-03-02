@@ -29,14 +29,17 @@ and the tree-building process.
 .. autoclass:: TreeClassifier
     :members:
 
+========
+Examples
+========
 
-For a bit more complex example, here's how to write your own stop
-function. The example itself is more funny than useful. It constructs
+For example, here's how to write your own stop
+function. The example constructs
 and prints two trees. For the first one we define the *defStop*
 function, which is used by default, and combine it with a random function
-so that the stop criteria will also be met in additional 20% of the cases
-when *defStop* is false. The second tree is build such that it
-considers only the random function as the stopping criteria. Note that in
+so that the stop criteria will also be met in 20% of the cases
+when *defStop* is false. For the second tree the stopping criteria
+is random. Note that in
 the second case lambda function still has three parameters, since this is
 a necessary number of parameters for the stop function (:obj:`StopCriteria`).
 Part of `tree3.py`_ (uses  `iris.tab`_):
@@ -48,6 +51,211 @@ Part of `tree3.py`_ (uses  `iris.tab`_):
 
 The output is not shown here since the resulting trees are rather
 big.
+
+Tree Structure
+==============
+
+To have something to work on, we'll take the data from lenses dataset 
+and build a tree using the default components (part of `treestructure.py`_, uses `lenses.tab`_):
+
+.. literalinclude:: code/treestructure.py
+   :lines: 7-10
+
+How big is our tree (part of `treestructure.py`_, uses `lenses.tab`_)?
+
+.. _lenses.tab: code/lenses.tab
+.. _treestructure.py: code/treestructure.py
+
+.. literalinclude:: code/treestructure.py
+   :lines: 12-21
+
+If node is None, we have a null-node; null nodes don't count, 
+so we return 0. Otherwise, the size is 1 (this node) plus the
+sizes of all subtrees. The node is an internal node if it has a 
+:obj:`branchSelector`; it there's no selector, it's a leaf. Don't
+attempt to skip the if statement: leaves don't have an empty list 
+of branches, they don't have a list of branches at all.
+
+    >>> treeSize(treeClassifier.tree)
+    10
+
+Don't forget that this was only an excercise - :obj:`Node` has a 
+built-in method :obj:`Node.treeSize` that does exactly the same.
+
+Let us now write a script that prints out a tree. The recursive
+part of the function will get a node and its level 
+(part of `treestructure.py`_, uses `lenses.tab`_).
+
+.. literalinclude:: code/treestructure.py
+   :lines: 26-41
+
+Don't waste time on studying formatting tricks (\n's etc.), this is just
+for nicer output. What matters is everything but the print statements.
+As first, we check whether the node is a null-node (a node to which no
+learning examples were classified). If this is so, we just print out
+"<null node>" and return.
+
+After handling null nodes, remaining nodes are internal nodes and leaves.
+For internal nodes, we print a node description consisting of the
+attribute's name and distribution of classes. :obj:`Node`'s branch
+description is, for all currently defined splits, an instance of a
+class derived from :obj:`orange.Classifier` (in fact, it is a
+:obj:`orange.ClassifierFromVarFD`, but a :obj:`orange.Classifier` would 
+suffice), and its :obj:`classVar` points to the attribute we seek. 
+So we print its name. We will also assume that storing class distributions 
+has not been disabled and print them as well.  
+Then we iterate 
+through branches; for each we print a branch description and iteratively 
+call the :obj:`printTree0` with a level increased by 1 (to increase 
+the indent).
+
+Finally, if the node is a leaf, we print out the distribution of 
+learning examples in the node and the class to which the examples in 
+the node would be classified. We again assume that the :obj:`nodeClassifier` 
+is the default one - a :obj:`DefaultClassifier`. A better print 
+function should be aware of possible alternatives.
+
+Now, we just need to write a simple function to call our printTree0. 
+We could write something like...
+
+::
+
+    def printTree(x):
+        printTree0(x.tree, 0)
+
+... but we won't. Let us learn how to handle arguments of different
+types. Let's write a function that will accept either a 
+:obj:`TreeClassifier` or a :obj:`Node`.
+Part of `treestructure.py`_, uses `lenses.tab`_.
+
+.. literalinclude:: code/treestructure.py
+   :lines: 43-49
+
+It's fairly straightforward: if :obj:`x` is of type derived from 
+:obj:`TreeClassifier`, we print :obj:`x.tree`; if it's 
+:obj:`Node` we just call :obj:`printTree0` with :obj:`x`. If it's 
+of some other type, we don't know how to handle it and thus raise 
+an exception. The output::
+
+    >>> printTree(treeClassifier)
+    tear_rate (<15.000, 5.000, 4.000>)
+    : reduced --> none (<12.000, 0.000, 0.000>)
+    : normal
+       astigmatic (<3.000, 5.000, 4.000>)
+       : no
+          age (<1.000, 5.000, 0.000>)
+          : young --> soft (<0.000, 2.000, 0.000>)
+          : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)
+          : presbyopic --> none (<1.000, 1.000, 0.000>)
+       : yes
+          prescription (<2.000, 0.000, 4.000>)
+          : myope --> hard (<0.000, 0.000, 3.000>)
+          : hypermetrope --> none (<2.000, 0.000, 1.000>)
+
+For a final exercise, let us write a simple pruning function. It will 
+be written entirely in Python, unrelated to any :obj:`Pruner`. It
+will limit the maximal tree depth (the number of internal nodes on any
+path down the tree) given as an argument.
+For example, to get a two-level tree, we would
+call cutTree(root, 2). The function will be recursive, with the second 
+argument (level) decreasing at each call; when zero, the current node 
+will be made a leaf (part of `treestructure.py`_, uses `lenses.tab`_):
+
+.. literalinclude:: code/treestructure.py
+   :lines: 54-62
+
+There's nothing to prune at null-nodes or leaves, so we act only when 
+:obj:`node` and :obj:`node.branchSelector` are defined. If level is 
+not zero, we call the function for each branch. Otherwise, we clear 
+the selector, branches and branch descriptions.
+
+    >>> cutTree(tree.tree, 2)
+    >>> printTree(tree)
+    tear_rate (<15.000, 5.000, 4.000>)
+    : reduced --> none (<12.000, 0.000, 0.000>)
+    : normal
+       astigmatic (<3.000, 5.000, 4.000>)
+       : no --> soft (<1.000, 5.000, 0.000>)
+       : yes --> hard (<2.000, 0.000, 4.000>)
+
+Learning
+========
+
+You could just call :class:`TreeLearner` and let it fill the empty
+slots with the default
+components. This section will teach you three things: what are the
+missing components (and how to set the same components yourself),
+how to use alternative components to get a different tree and,
+finally, how to write a skeleton for tree induction in Python.
+
+.. _treelearner.py: code/treelearner.py
+
+Let us construct a :obj:`TreeLearner` to play with (treelearner.py`_, uses `lenses.tab`_):
+
+.. literalinclude:: code/treelearner.py
+   :lines: 7-10
+
+There are three crucial components in learning: the split and stop
+criteria, and the :obj:`exampleSplitter` YY (there are some others,
+which become important during classification; we'll talk about them
+later). They are not defined; if you use the learner, the slots are
+filled temporarily but later cleared again.
+
+FIXME: the following example is not true anymore.
+
+::
+
+    >>> print learner.split
+    None
+    >>> learner(data)
+    <TreeClassifier instance at 0x01F08760>
+    >>> print learner.split
+    None
+
+Stopping criteria
+-----------------
+
+The stop is trivial. The default is set by
+
+::
+
+    >>> learner.stop = Orange.classification.tree.StopCriteria_common()
+
+Well, this is actually done in C++ and it uses a global component
+that is constructed once for all, but apart from that we did
+effectively the same thing.
+
+We can now examine the default stopping parameters.
+
+    >>> print learner.stop.maxMajority, learner.stop.minExamples
+    1.0 0.0
+
+Not very restrictive. This keeps splitting the examples until
+there's nothing left to split or all the examples are in the same
+class. Let us set the minimal subset that we allow to be split to
+five examples and see what comes out.
+
+    >>> learner.stop.minExamples = 5.0
+    >>> tree = learner(data)
+    >>> print tree.dump()
+    tear_rate=reduced: none (100.00%)
+    tear_rate=normal
+    |    astigmatic=no
+    |    |    age=pre-presbyopic: soft (100.00%)
+    |    |    age=presbyopic: none (50.00%)
+    |    |    age=young: soft (100.00%)
+    |    astigmatic=yes
+    |    |    prescription=hypermetrope: none (66.67%)
+    |    |    prescription=myope: hard (100.00%)
+
+OK, that's better. If we want an even smaller tree, we can also limit
+the maximal proportion of majority class.
+
+    >>> learner.stop.maxMajority = 0.5
+    >>> tree = learner(data)
+    >>> print tree.dump()
+    none (62.50%)
+
 
 =================
 Printing the Tree
@@ -1501,227 +1709,6 @@ to understand what the pruners will do to your trees.
 
         Parameter m for m-estimation.
 
-========
-Examples
-========
-
-This page does not provide examples for programming your own components, 
-such as, for instance, a :obj:`SplitConstructor`. Those examples
-can be found on a page dedicated to callbacks to Python XXXXXXXX.
-
-Tree Structure
-==============
-
-To have something to work on, we'll take the data from lenses dataset 
-and build a tree using the default components (part of `treestructure.py`_, uses `lenses.tab`_):
-
-.. literalinclude:: code/treestructure.py
-   :lines: 7-10
-
-How big is our tree (part of `treestructure.py`_, uses `lenses.tab`_)?
-
-.. _lenses.tab: code/lenses.tab
-.. _treestructure.py: code/treestructure.py
-
-.. literalinclude:: code/treestructure.py
-   :lines: 12-21
-
-If node is None, we have a null-node; null nodes don't count, 
-so we return 0. Otherwise, the size is 1 (this node) plus the
-sizes of all subtrees. The node is an internal node if it has a 
-:obj:`branchSelector`; it there's no selector, it's a leaf. Don't
-attempt to skip the if statement: leaves don't have an empty list 
-of branches, they don't have a list of branches at all.
-
-    >>> treeSize(treeClassifier.tree)
-    10
-
-Don't forget that this was only an excercise - :obj:`Node` has a 
-built-in method :obj:`Node.treeSize` that does exactly the same.
-
-Let us now write a simple script that prints out a tree. The recursive
-part of the function will get a node and its level (part of `treestructure.py`_, uses `lenses.tab`_).
-
-.. literalinclude:: code/treestructure.py
-   :lines: 26-41
-
-Don't waste time on studying formatting tricks (\n's etc.), this is just
-for nicer output. What matters is everything but the print statements.
-As first, we check whether the node is a null-node (a node to which no
-learning examples were classified). If this is so, we just print out
-"<null node>" and return.
-
-After handling null nodes, remaining nodes are internal nodes and leaves.
-For internal nodes, we print a node description consisting of the
-attribute's name and distribution of classes. :obj:`Node`'s branch
-description is, for all currently defined splits, an instance of a
-class derived from :obj:`orange.Classifier` (in fact, it is a
-:obj:`orange.ClassifierFromVarFD`, but a :obj:`orange.Classifier` would 
-suffice), and its :obj:`classVar` XXXXX points to the attribute we seek. 
-So we print its name. We will also assume that storing class distributions 
-has not been disabled and print them as well. A more able function for 
-printing trees (:meth:`TreeClassifier.dump`) has an alternative 
-means to get the distribution, when this fails. Then we iterate 
-through branches; for each we print a branch description and iteratively 
-call the :obj:`printTree0` with a level increased by 1 (to increase 
-the indent).
-
-Finally, if the node is a leaf, we print out the distribution of 
-learning examples in the node and the class to which the examples in 
-the node would be classified. We again assume that the :obj:`nodeClassifier` 
-is the default one - a :obj:`DefaultClassifier`. A better print 
-function should be aware of possible alternatives.
-
-Now, we just need to write a simple function to call our printTree0. 
-We could write something like...
-
-::
-
-    def printTree(x):
-        printTree0(x.tree, 0)
-
-... but we won't. Let us learn how to handle arguments of different
-types. Let's write a function that will accept either a :obj:`TreeClassifier`
-or a :obj:`Node`; just like :obj:`Pruner`, remember? Part of `treestructure.py`_, uses `lenses.tab`_.
-
-.. literalinclude:: code/treestructure.py
-   :lines: 43-49
-
-It's fairly straightforward: if :obj:`x` is of type derived from 
-:obj:`TreeClassifier`, we print :obj:`x.tree`; if it's 
-:obj:`Node` we just call :obj:`printTree0` with :obj:`x`. If it's 
-of some other type, we don't know how to handle it and thus raise 
-an exception. (Note that we could also use 
-
-::
-
-    if isinstance(x, Orange.classification.tree.TreeClassifier)
-
-but this would only work if :obj:`x` would be of type 
-:obj:`TreeClassifier` and not of any derived types. The latter, 
-however, do not exist yet...)
-
-    >>> printTree(treeClassifier)
-    tear_rate (<15.000, 5.000, 4.000>)
-    : reduced --> none (<12.000, 0.000, 0.000>)
-    : normal
-       astigmatic (<3.000, 5.000, 4.000>)
-       : no
-          age (<1.000, 5.000, 0.000>)
-          : young --> soft (<0.000, 2.000, 0.000>)
-          : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)
-          : presbyopic --> none (<1.000, 1.000, 0.000>)
-       : yes
-          prescription (<2.000, 0.000, 4.000>)
-          : myope --> hard (<0.000, 0.000, 3.000>)
-          : hypermetrope --> none (<2.000, 0.000, 1.000>)
-
-For a final exercise, let us write a simple pruning procedure. It will 
-be written entirely in Python, unrelated to any :obj:`Pruner`. Our
-procedure will limit the tree depth - the maximal depth (here defined
-as the number of internal nodes on any path down the tree) shall be
-given as an argument. For example, to get a two-level tree, we would
-call cutTree(root, 2). The function will be recursive, with the second 
-argument (level) decreasing at each call; when zero, the current node 
-will be made a leaf (part of `treestructure.py`_, uses `lenses.tab`_):
-
-.. literalinclude:: code/treestructure.py
-   :lines: 54-62
-
-There's nothing to prune at null-nodes or leaves, so we act only when 
-:obj:`node` and :obj:`node.branchSelector` are defined. If level is 
-not zero, we call the function for each branch. Otherwise, we clear 
-the selector, branches and branch descriptions.
-
-    >>> cutTree(tree.tree, 2)
-    >>> printTree(tree)
-    tear_rate (<15.000, 5.000, 4.000>)
-    : reduced --> none (<12.000, 0.000, 0.000>)
-    : normal
-       astigmatic (<3.000, 5.000, 4.000>)
-       : no --> soft (<1.000, 5.000, 0.000>)
-       : yes --> hard (<2.000, 0.000, 4.000>)
-
-Learning
-========
-
-You've already seen a simple example of using a :obj:`TreeLearnerBase`.
-You can just call it and let it fill the empty slots with the default
-components. This section will teach you three things: what are the
-missing components (and how to set the same components yourself),
-how to use alternative components to get a different tree and,
-finally, how to write a skeleton for tree induction in Python.
-
-Default components for TreeLearnerBase
-======================================
-
-Let us construct a :obj:`TreeLearnerBase` to play with.
-
-.. _treelearner.py: code/treelearner.py
-
-`treelearner.py`_, uses `lenses.tab`_:
-
-.. literalinclude:: code/treelearner.py
-   :lines: 7-10
-
-There are three crucial components in learning: the split and stop
-criteria, and the :obj:`exampleSplitter` (there are some others,
-which become important during classification; we'll talk about them
-later). They are not defined; if you use the learner, the slots are
-filled temporarily but later cleared again.
-
-::
-
-    >>> print learner.split
-    None
-    >>> learner(data)
-    <TreeClassifier instance at 0x01F08760>
-    >>> print learner.split
-    None
-
-Stopping criteria
-=================
-
-The stop is trivial. The default is set by
-
-::
-    >>> learner.stop = Orange.classification.tree.StopCriteria_common()
-
-Well, this is actually done in C++ and it uses a global component
-that is constructed once for all, but apart from that we did
-effectively the same thing.
-
-We can now examine the default stopping parameters.
-
-    >>> print learner.stop.maxMajority, learner.stop.minExamples
-    1.0 0.0
-
-Not very restrictive. This keeps splitting the examples until
-there's nothing left to split or all the examples are in the same
-class. Let us set the minimal subset that we allow to be split to
-five examples and see what comes out.
-
-    >>> learner.stop.minExamples = 5.0
-    >>> tree = learner(data)
-    >>> print tree.dump()
-    tear_rate=reduced: none (100.00%)
-    tear_rate=normal
-    |    astigmatic=no
-    |    |    age=pre-presbyopic: soft (100.00%)
-    |    |    age=presbyopic: none (50.00%)
-    |    |    age=young: soft (100.00%)
-    |    astigmatic=yes
-    |    |    prescription=hypermetrope: none (66.67%)
-    |    |    prescription=myope: hard (100.00%)
-
-OK, that's better. If we want an even smaller tree, we can also limit
-the maximal proportion of majority class.
-
-    >>> learner.stop.maxMajority = 0.5
-    >>> tree = learner(data)
-    >>> print tree.dump()
-    none (62.50%)
-
 Undocumented
 ============
 
@@ -1984,6 +1971,13 @@ Printing out C45 Tree
 
 .. autofunction:: printTreeC45
 
+TODO
+====
+
+This page does not provide examples for programming your own components, 
+such as, for instance, a :obj:`SplitConstructor`. Those examples
+can be found on a page dedicated to callbacks to Python.
+
 References
 ==========
 
@@ -2196,8 +2190,7 @@ class TreeLearner(Orange.core.Learner):
         tree at that node is not grown further (default: 0).
 
         So, to allow splitting only when gainRatio (the default measure)
-        is greater than 0.6, one should run the learner like this:
-        :samp:`l = Orange.classification.tree.TreeLearner(data, worstAcceptable=0.6)`
+        is greater than 0.6, set :samp:`worstAcceptable=0.6`.
 
     .. attribute:: minSubset
 
@@ -2219,10 +2212,8 @@ class TreeLearner(Orange.core.Learner):
         Induction stops when the proportion of majority class in the
         node exceeds the value set by this parameter(default: 1.0). 
         To stop the induction as soon as the majority class reaches 70%,
-        you should user :samp:`maxMajority = 0.7`.
-
-        This is an example of the tree on iris data set, with 
-        :samp:`maxMajority = 0.7`. The numbers show the majority class 
+        you should use :samp:`maxMajority=0.7`, as in the following
+        example. The numbers show the majority class 
         proportion at each node. The script `tree2.py`_ induces and 
         prints this tree.
 
@@ -2282,7 +2273,6 @@ class TreeLearner(Orange.core.Learner):
             return self
       
     def __init__(self, **kw):
-        self.learner = None
         self.__dict__.update(kw)
       
     def __call__(self, examples, weight=0):
@@ -2958,7 +2948,7 @@ class TreeClassifier(Orange.classification.Classifier):
     def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
         """ Prints the tree to a file in a format used by 
         `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
-        Uses the same parameters as :func:`printTxt` defined above
+        Uses the same parameters as :meth:`dump` defined above
         plus two parameters which define the shape used for internal
         nodes and laves of the tree:
 
