@@ -37,8 +37,8 @@ class SchemaDoc(QWidget):
         font.setPixelSize(36)
         self.guide_text.setFont(font)
 
-        oneItem = self.canvas.addRect(QRectF(0.0, 0.0, 300.0, 300.0)) # inital item so sceneRect always contains QPoint(0, 0)
-        self.canvas.sceneRect() # call scene rect so int calculates the rect 
+        oneItem = self.canvas.addRect(QRectF(0.0, 0.0, 300.0, 300.0)) # initial item so sceneRect always contains QPoint(0, 0)
+        self.canvas.sceneRect() # call sceneRect so it updates the rect 
         self.canvas.removeItem(oneItem)
         
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
@@ -56,7 +56,7 @@ class SchemaDoc(QWidget):
             self.canvasView.ensureVisible(self.guide_text)
 
     def isSchemaChanged(self):
-        return self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
+        return self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
         
     # we are about to close document
     # ask the user if he is sure
