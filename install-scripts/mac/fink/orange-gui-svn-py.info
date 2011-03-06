@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.4 2.5 2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 20
+Revision: 21
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -90,6 +90,7 @@ CompileScript: <<
 		#!/bin/bash
 		. %p/bin/init.sh
 		CANVAS_FILE="%p/lib/python%type_raw[python]/site-packages/orange/OrangeCanvas/orngCanvas.pyw"
+		export PYTHONPATH="%p/lib/qt4-mac/lib/python%type_raw[python]/site-packages${PYTHONPATH:+:$PYTHONPATH}"
 		# LaunchServices passes the Carbon process identifier to the application with -psn parameter - we do not want it
 		if [[ "\$1" == -psn* ]] ; then
 			shift
