@@ -28,6 +28,8 @@ def default_small_learner(measure=Orange.feature.scoring.Gini(), attributes=None
     smallTreeLearner.split.discreteSplitConstructor.measure = measure
     smallTreeLearner.split.continuousSplitConstructor.measure = measure
     
+    smallTreeLearner.stop = smallTreeLearner.build_stop()
+    
     smallTreeLearner.split = SplitConstructor_AttributeSubset(\
             smallTreeLearner.split, attributes, rand)
     return smallTreeLearner
