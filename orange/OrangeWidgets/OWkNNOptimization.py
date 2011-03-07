@@ -21,8 +21,8 @@ class OWVizRank(VizRank, OWWidget):
     moreArgumentsNums = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95]
 
     def __init__(self, parentWidget = None, signalManager = None, graph = None, visualizationMethod = SCATTERPLOT, parentName = "Visualization widget"):
-        VizRank.__init__(self, visualizationMethod, graph)
         OWWidget.__init__(self, None, signalManager, "VizRank Dialog", savePosition = True, wantMainArea = 0, wantStatusBar = 1)
+        VizRank.__init__(self, visualizationMethod, graph)
 
         self.parentWidget = parentWidget
         self.parentName = parentName

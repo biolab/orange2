@@ -49,7 +49,7 @@ def unisetattr(self, name, value, grandparent):
             setattr(obj, lastname, value)
 #            obj.__dict__[lastname] = value
 
-    controlledAttributes = getattr(self, "controlledAttributes", None)
+    controlledAttributes = hasattr(self, "controlledAttributes") and getattr(self, "controlledAttributes", None)
     controlCallback = controlledAttributes and controlledAttributes.get(name, None)
     if controlCallback:
         for callback in controlCallback:
@@ -135,13 +135,15 @@ class OWBaseWidget(QDialog):
 
 
     def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1, **args):
+        if resizingEnabled:
+            QDialog.__init__(self, parent, Qt.Window)
+        else:
+            QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint)# | Qt.WindowMinimizeButtonHint)
+            
         # do we want to save widget position and restore it on next load
         self.savePosition = savePosition
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown", "savedWidgetGeometry"]
-
-        if resizingEnabled: QDialog.__init__(self, parent, Qt.Window)
-        else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint)# | Qt.WindowMinimizeButtonHint)
 
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(orngEnviron.directoryNames)
