@@ -173,8 +173,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.resize(width, height)
         
         self.addToolBarBreak()
-        orngTabs.constructCategoriesPopup(self)
         self.createWidgetsToolbar()
+        orngTabs.constructCategoriesPopup(self)
         self.readShortcuts()
         
         def addOnRefreshCallback():
