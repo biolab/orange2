@@ -34,7 +34,7 @@ def clustering(data,
             matrix[i, j] = distance(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
     if order:
-        orderLeaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
+        order_leaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
     return root
 
 def clustering_features(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
@@ -45,7 +45,7 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
             matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
     root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
     if order:
-        orderLeaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
+        order_leaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
     return root
 
 def cluster_to_list(node, prune=None):
@@ -115,19 +115,21 @@ def order_leaves(tree, matrix, progressCallback=None):
                         orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
                         k0 = orderedKs[0]
                         curMin = 1e30000 
-                        curMK = ()
+                        curM = curK = None
                         for m in orderedMs:
                             if M[tree_left, u, m] + M[tree_right, w, k0] + C >= curMin:
                                 break
                             for k in  orderedKs:
                                 if M[tree_left, u, m] + M[tree_right, w, k] + C >= curMin:
                                     break
-                                if curMin > M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]:
-                                    curMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
-                                    curMK = (m, k)
+                                testMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
+                                if curMin > testMin:
+                                    curMin = testMin
+                                    curM = m
+                                    curK = k
                         M[tree, u, w] = M[tree, w, u] = curMin
-                        ordering[tree, u, w] = (tree_left, u, curMK[0], tree_right, w, curMK[1])
-                        ordering[tree, w, u] = (tree_right, w, curMK[1], tree_left, u, curMK[0])
+                        ordering[tree, u, w] = (tree_left, u, curM, tree_right, w, curK)
+                        ordering[tree, w, u] = (tree_right, w, curK, tree_left, u, curM)
                     else:
                         def MFunc((m, k)):
                             return M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
