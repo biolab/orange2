@@ -1,11 +1,9 @@
 c:
 cd \Python25\Lib\site-packages
 
-net use o: \\www.ailab.si\download 
-
 rem svn co --force http://www.ailab.si/svn/orange/trunk/orange/ orange
 rem svn co --force http://www.ailab.si/svn/orange/trunk/add-ons/Bioinformatics/ orange/add-ons/Bioinformatics
-rem svn co --force http://www.ailab.si/svn/orange/trunk/add-ons/Bioinformatics/ orange/add-ons/Text
+rem svn co --force http://www.ailab.si/svn/orange/trunk/add-ons/Text/ orange/add-ons/Text
 rem svn co --force http://www.ailab.si/svn/orange/trunk/testing/regressionTests/ regressionTests
 
 svn cleanup orange
@@ -36,10 +34,10 @@ python xtest.py test --module=text > regression_tests_text_log.txt
 python xtest.py report --module=text > regression_tests_text_report.txt
 python xtest.py report-html --module=text > regression_tests_text_report.html
 
-rm -rf o:\regressionLogs\winxp\*
+rm -rf Z:\Volumes\download\regressionLogs\winxp\*
 
-cp -rf results o:\regressionLogs\winxp
-cp -f regression*.txt o:\regressionLogs\winxp\
-cp -f regression*.html o:\regressionLogs\winxp\
+cp -rf results Z:\Volumes\download\regressionLogs\winxp
+cp -f regression*.txt Z:\Volumes\download\regressionLogs\winxp\
+cp -f regression*.html Z:\Volumes\download\regressionLogs\winxp\
 
 shutdown -s
