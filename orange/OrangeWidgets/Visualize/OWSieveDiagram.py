@@ -229,7 +229,7 @@ class OWSieveDiagram(OWWidget):
 
         # get text width of Y attribute name
         text = OWCanvasText(self.canvas, data.domain[self.attrY].name, x  = 0, y = 0, bold = 1, show = 0)
-        xOff = text.boundingRect().width() + 40
+        xOff = int(text.boundingRect().width() + 40)
         yOff = 50
         sqareSize = min(self.canvasView.width() - xOff - 35, self.canvasView.height() - yOff - 30)
         if sqareSize < 0: return    # canvas is too small to draw rectangles
