@@ -64,18 +64,12 @@ class OrangeCanvasDlg(QMainWindow):
 #        self.widgetActiveColor = QColor(*self.settings["widgetActiveColor"])
 #        self.lineColor = QColor(*self.settings["lineColor"])
 
-        if not self.settings.has_key("WidgetTabs") or self.settings["WidgetTabs"] == []:
-            f = open(os.path.join(self.canvasDir, "WidgetTabs.txt"), "r")
-            defaultTabs = [c for c in [line.split("#")[0].strip() for line in f.readlines()] if c!=""]
-            for i in xrange(len(defaultTabs)-1,0,-1):
-                if defaultTabs[i] in defaultTabs[0:i]:
-                    del defaultTabs[i]
-            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Prototypes", Qt.Unchecked)] 
-        
         # output window
         self.output = orngOutput.OutputWindow(self)
         self.output.catchException(1)
         self.output.catchOutput(1)
+        
+        self.updateWidgetRegistry()
 
         # create error and warning icons
         informationIconName = os.path.join(canvasPicsDir, "information.png")
@@ -94,8 +88,7 @@ class OrangeCanvasDlg(QMainWindow):
             print "Unable to load all necessary icons. Please reinstall Orange."
 
         self.setStatusBar(MyStatusBar(self))
-                
-        self.widgetRegistry = orngRegistry.readCategories()
+        
         self.updateStyle()
         
         # create toolbar
@@ -175,11 +168,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.addToolBarBreak()
         orngTabs.constructCategoriesPopup(self)
         self.createWidgetsToolbar()
-        orngTabs.constructCategoriesPopup(self)
         self.readShortcuts()
         
         def addOnRefreshCallback():
-            self.widgetRegistry = orngRegistry.readCategories()
+            self.updateWidgetRegistry()
             orngTabs.constructCategoriesPopup(self)
             self.createWidgetsToolbar()
         orngAddOns.addOnRefreshCallback.append(addOnRefreshCallback)
@@ -224,6 +216,32 @@ class OrangeCanvasDlg(QMainWindow):
                 import webbrowser
                 webbrowser.open("http://sourceforge.net/projects/numpy/")
 
+    def updateWidgetRegistry(self):
+        """ Update the widget registry and add new category tabs to the
+        settings dict.  
+        """
+        # The default Widget tabs order
+        if not self.settings.has_key("WidgetTabs") or self.settings["WidgetTabs"] == []:
+            f = open(os.path.join(self.canvasDir, "WidgetTabs.txt"), "r")
+            defaultTabs = [c for c in [line.split("#")[0].strip() for line in f.readlines()] if c!=""]
+            for i in xrange(len(defaultTabs)-1,0,-1):
+                if defaultTabs[i] in defaultTabs[0:i]:
+                    del defaultTabs[i]
+            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Prototypes", Qt.Unchecked)]
+            
+        widgetTabList = self.settings["WidgetTabs"]
+        self.widgetRegistry = orngRegistry.readCategories()
+        
+        extraTabs = [(name, 1) for name in self.widgetRegistry.keys() if name not in [tab for (tab, s) in widgetTabList]]
+        extraTabs = sorted(extraTabs)
+        
+        # Keep Prototypes as last in list
+        if widgetTabList[-1][0] == "Prototypes":
+            widgetTabList = widgetTabList[: -1] + extraTabs + widgetTabList[-1 :]
+        else:
+            widgetTabList = widgetTabList + extraTabs
+        self.settings["WidgetTabs"] = widgetTabList
+            
     def createWidgetsToolbar(self):
         if self.widgetsToolBar:
             self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
@@ -254,10 +272,9 @@ class OrangeCanvasDlg(QMainWindow):
             self.setUnifiedTitleAndToolBarOnMac(self.settings["widgetListType"] in [0, 1, 2] and self.settings["style"].lower() == "macintosh (aqua)")
 
         # find widgets and create tab with buttons
-        self.settings["WidgetTabs"] = self.tabs.createWidgetTabs(self.settings["WidgetTabs"], self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
+        self.tabs.createWidgetTabs(self.settings["WidgetTabs"], self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
         if not self.settings.get("showWidgetToolbar", True): 
             self.widgetsToolBar.hide()
-
 
     def readShortcuts(self):
         self.widgetShortcuts = {}
