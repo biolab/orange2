@@ -1742,75 +1742,11 @@ library yourself. See the compile and link steps in buildC45.py,
 if it helps. Anyway, after doing this check that the built C4.5
 gives the same results as the original.
 
-.. class:: C45Learner
+.. autoclass:: C45Learner
+    :members:
 
-    :class:`C45Learner`'s attributes have double names - those that
-    you know from C4.5 command lines and the corresponding names of C4.5's
-    internal variables. All defaults are set as in C4.5; if you change
-    nothing, you are running C4.5.
-
-    .. attribute:: gainRatio (g)
-        
-        Determines whether to use information gain (false>, default)
-        or gain ratio for selection of attributes (true).
-
-    .. attribute:: batch (b)
-
-        Turn on batch mode (no windows, no iterations); this option is
-        not documented in C4.5 manuals. It conflicts with "window",
-        "increment" and "trials".
-
-    .. attribute:: subset (s)
-        
-        Enables subsetting (default: false, no subsetting),
- 
-    .. attribute:: probThresh (p)
-
-        Probabilistic threshold for continuous attributes (default: false).
-
-    .. attribute:: minObjs (m)
-        
-        Minimal number of objects (examples) in leaves (default: 2).
-
-    .. attribute:: window (w)
-
-        Initial windows size (default: maximum of 20% and twice the
-        square root of the number of data objects).
-
-    .. attribute:: increment (i)
-
-        The maximum number of objects that can be added to the window
-        at each iteration (default: 20% of the initial window size).
-
-    .. attribute:: cf (c)
-
-        Prunning confidence level (default: 25%).
-
-    .. attribute:: trials (t)
-
-        Set the number of trials in iterative (i.e. non-batch) mode (default: 10).
-
-    .. attribute:: prune
-        
-        Return pruned tree (not an original C4.5 option) (default: true)
-
-
-:class:`C45Learner` also offers another way for setting
-the arguments: it provides a function :obj:`C45Learner.commandLine`
-which is given a string and parses it the same way as C4.5 would
-parse its command line. 
-
-.. class:: C45Classifier
-
-    A faithful reimplementation of Quinlan's function from C4.5. The only
-    difference (and the only reason it's been rewritten) is that it uses
-    a tree composed of :class:`C45Node` instead of C4.5's
-    original tree structure.
-
-    .. attribute:: tree
-
-        C4.5 tree stored as a tree of :obj:`C45Node`.
-
+.. autoclass:: C45Classifier
+    :members:
 
 .. class:: C45Node
 
@@ -1890,7 +1826,7 @@ method `:obj:C45Learner.commandline`.
 
 ::
 
-    lrn = Orange.classification.tree..C45Learner()
+    lrn = Orange.classification.tree.C45Learner()
     lrn.commandline("-m 1 -s")
     tree = lrn(data)
 
@@ -1916,11 +1852,6 @@ the corresponding values that go into each branch to inset, turn
 the values into strings and print them out, separately treating the
 case when only a single value goes into the branch.
 
-Printing out C45 Tree
-=====================
-
-.. autofunction:: printTreeC45
-
 References
 ==========
 
@@ -1938,8 +1869,8 @@ A home page of AT&T's dot and similar software packages.
 from Orange.core import \
      TreeLearner as _TreeLearner, \
          TreeClassifier as _TreeClassifier, \
-         C45Learner, \
-         C45Classifier, \
+         C45Learner as _C45Learner, \
+         C45Classifier as _C45Classifier, \
          C45TreeNode as C45Node, \
          C45TreeNodeList as C45NodeList, \
          TreeDescender as Descender, \
@@ -1978,89 +1909,222 @@ import base64
 import re
 import Orange.data
 import Orange.feature.scoring
-import Orange.classification.tree
+
+class C45Learner(Orange.classification.Learner):
+    """
+    :class:`C45Learner`'s attributes have double names - those that
+    you know from C4.5 command lines and the corresponding names of C4.5's
+    internal variables. All defaults are set as in C4.5; if you change
+    nothing, you are running C4.5.
+
+    .. attribute:: gainRatio (g)
+        
+        Determines whether to use information gain (false, default)
+        or gain ratio for selection of attributes (true).
+
+    .. attribute:: batch (b)
+
+        Turn on batch mode (no windows, no iterations); this option is
+        not documented in C4.5 manuals. It conflicts with "window",
+        "increment" and "trials".
+
+    .. attribute:: subset (s)
+        
+        Enables subsetting (default: false, no subsetting),
+ 
+    .. attribute:: probThresh (p)
+
+        Probabilistic threshold for continuous attributes (default: false).
+
+    .. attribute:: minObjs (m)
+        
+        Minimal number of objects (examples) in leaves (default: 2).
+
+    .. attribute:: window (w)
+
+        Initial windows size (default: maximum of 20% and twice the
+        square root of the number of data objects).
+
+    .. attribute:: increment (i)
+
+        The maximum number of objects that can be added to the window
+        at each iteration (default: 20% of the initial window size).
+
+    .. attribute:: cf (c)
+
+        Prunning confidence level (default: 25%).
+
+    .. attribute:: trials (t)
+
+        Set the number of trials in iterative (i.e. non-batch) mode (default: 10).
+
+    .. attribute:: prune
+        
+        Return pruned tree (not an original C4.5 option) (default: true)
+    """
+
+    def __new__(cls, instances = None, weightID = 0, **argkw):
+        self = Orange.classification.Learner.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances, weightID)
+        else:
+            return self
+        
+    def __init__(self, **kwargs):
+        self.base = _C45Learner(**kwargs)
+
+    def __setattr__(self, name, value):
+        if name != "base" and name in self.base.__dict__:
+            self.base.__dict__[name] = value
+        else:
+            self.__dict__["base"] = value
+
+    def __getattr(self, name):
+        if name != "base":
+            return self.base.__dict__[name]
+        else:
+            return self.base
+
+    def __call__(self, *args, **kwargs):
+        return C45Classifier(self.base(*args, **kwargs))
+
+    def commandline(self, ln):
+        """
+        Set the arguments with a C4.5 command line.
+        """
+        self.base.commandline(ln)
+    
+ 
+class C45Classifier(Orange.classification.Classifier):
+    """
+    A faithful reimplementation of Quinlan's function from C4.5. The only
+    difference (and the only reason it's been rewritten) is that it uses
+    a tree composed of :class:`C45Node` instead of C4.5's
+    original tree structure.
+
+    .. attribute:: tree
+
+        C4.5 tree stored as a tree of :obj:`C45Node`.
+    """
+
+    def __init__(self, baseClassifier):
+        self.nativeClassifier = baseClassifier
+        for k, v in self.nativeClassifier.__dict__.items():
+            self.__dict__[k] = v
+  
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
+                 *args, **kwdargs):
+        """Classify a new instance.
+        
+        :param instance: instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+        :param result_type: 
+              :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
+        return self.nativeClassifier(instance, result_type, *args, **kwdargs)
+
+    def __setattr__(self, name, value):
+        if name == "nativeClassifier":
+            self.__dict__[name] = value
+            return
+        if name in self.nativeClassifier.__dict__:
+            self.nativeClassifier.__dict__[name] = value
+        self.__dict__[name] = value
+    
+    def dump(self):  
+        """
+        Prints the tree given as an argument in the same form as Ross Quinlan's 
+        C4.5 program.
+
+        ::
+
+            import Orange
+
+            data = Orange.data.Table("voting")
+            c45 = Orange.classification.tree.C45Learner(data)
+            Orange.classification.tree.printTreeC45(c45)
+
+        will print out
+
+        ::
+
+            physician-fee-freeze = n: democrat (253.4)
+            physician-fee-freeze = y:
+            |   synfuels-corporation-cutback = n: republican (145.7)
+            |   synfuels-corporation-cutback = y:
+            |   |   mx-missile = y: democrat (6.0)
+            |   |   mx-missile = n:
+            |   |   |   adoption-of-the-budget-resolution = n: republican (22.6)
+            |   |   |   adoption-of-the-budget-resolution = y:
+            |   |   |   |   anti-satellite-test-ban = n: democrat (5.0)
+            |   |   |   |   anti-satellite-test-ban = y: republican (2.2)
+
+
+        If you run the original C4.5 (that is, the standalone C4.5 - Orange does use the original C4.5) on the same data, it will print out
+
+        ::
+
+            physician-fee-freeze = n: democrat (253.4/5.9)
+            physician-fee-freeze = y:
+            |   synfuels-corporation-cutback = n: republican (145.7/6.2)
+            |   synfuels-corporation-cutback = y:
+            |   |   mx-missile = y: democrat (6.0/2.4)
+            |   |   mx-missile = n:
+            |   |   |   adoption-of-the-budget-resolution = n: republican (22.6/5.2)
+            |   |   |   adoption-of-the-budget-resolution = y:
+            |   |   |   |   anti-satellite-test-ban = n: democrat (5.0/1.2)
+            |   |   |   |   anti-satellite-test-ban = y: republican (2.2/1.0)
+
+        which is adoringly similar, except that C4.5 tested the tree on 
+        the learning data and has also printed out the number of errors 
+        in each node - something which :obj:`c45_printTree` obviously can't do
+        (nor is there any need it should).
+
+        """
+        return  _c45_printTree0(self.tree, self.classVar, 0)
 
 def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
+    str_ = ""
     if node.nodeType == 1:
-        print ("\n"+"|   "*lev + "%s = %s:") % (var.name, var.values[i]),
-        _c45_printTree0(node.branch[i], classvar, lev+1)
+        str_ += "\n"+"|   "*lev + "%s = %s:" % (var.name, var.values[i])
+        str_ += _c45_printTree0(node.branch[i], classvar, lev+1)
     elif node.nodeType == 2:
-        print ("\n"+"|   "*lev + "%s %s %.1f:") % (var.name, ["<=", ">"][i], node.cut),
-        _c45_printTree0(node.branch[i], classvar, lev+1)
+        str_ += "\n"+"|   "*lev + "%s %s %.1f:" % (var.name, ["<=", ">"][i], node.cut)
+        str_ += _c45_printTree0(node.branch[i], classvar, lev+1)
     else:
         inset = filter(lambda a:a[1]==i, enumerate(node.mapping))
         inset = [var.values[j[0]] for j in inset]
         if len(inset)==1:
-            print ("\n"+"|   "*lev + "%s = %s:") % (var.name, inset[0]),
+            str_ += "\n"+"|   "*lev + "%s = %s:" % (var.name, inset[0])
         else:
-            print ("\n"+"|   "*lev + "%s in {%s}:") % (var.name, ", ".join(inset)),
-        _c45_printTree0(node.branch[i], classvar, lev+1)
+            str_ +=  "\n"+"|   "*lev + "%s in {%s}:" % (var.name, ", ".join(inset))
+        str_ += _c45_printTree0(node.branch[i], classvar, lev+1)
+    return str_
         
         
 def _c45_printTree0(node, classvar, lev):
     var = node.tested
+    str_ = ""
     if node.nodeType == 0:
-        print "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items),
+        str_ += "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items) 
     else:
         for i, branch in enumerate(node.branch):
             if not branch.nodeType:
-                _c45_showBranch(node, classvar, lev, i)
+                str_ += _c45_showBranch(node, classvar, lev, i)
         for i, branch in enumerate(node.branch):
             if branch.nodeType:
-                _c45_showBranch(node, classvar, lev, i)
+                str_ += _c45_showBranch(node, classvar, lev, i)
+    return str_
 
-def printTreeC45(tree):
-    """
-    Prints the tree given as an argument in the same form as Ross Quinlan's 
-    C4.5 program.
-
-    ::
-
-        import Orange
-
-        data = Orange.data.Table("voting")
-        c45 = Orange.classification.tree.C45Learner(data)
-        Orange.classification.tree.printTreeC45(c45)
-
-    will print out
-
-    ::
-
-        physician-fee-freeze = n: democrat (253.4)
-        physician-fee-freeze = y:
-        |   synfuels-corporation-cutback = n: republican (145.7)
-        |   synfuels-corporation-cutback = y:
-        |   |   mx-missile = y: democrat (6.0)
-        |   |   mx-missile = n:
-        |   |   |   adoption-of-the-budget-resolution = n: republican (22.6)
-        |   |   |   adoption-of-the-budget-resolution = y:
-        |   |   |   |   anti-satellite-test-ban = n: democrat (5.0)
-        |   |   |   |   anti-satellite-test-ban = y: republican (2.2)
-
-
-    If you run the original C4.5 (that is, the standalone C4.5 - Orange does use the original C4.5) on the same data, it will print out
-
-    ::
-
-        physician-fee-freeze = n: democrat (253.4/5.9)
-        physician-fee-freeze = y:
-        |   synfuels-corporation-cutback = n: republican (145.7/6.2)
-        |   synfuels-corporation-cutback = y:
-        |   |   mx-missile = y: democrat (6.0/2.4)
-        |   |   mx-missile = n:
-        |   |   |   adoption-of-the-budget-resolution = n: republican (22.6/5.2)
-        |   |   |   adoption-of-the-budget-resolution = y:
-        |   |   |   |   anti-satellite-test-ban = n: democrat (5.0/1.2)
-        |   |   |   |   anti-satellite-test-ban = y: republican (2.2/1.0)
-
-    which is adoringly similar, except that C4.5 tested the tree on 
-    the learning data and has also printed out the number of errors 
-    in each node - something which :obj:`c45_printTree` obviously can't do
-    (nor is there any need it should).
-
-    """
-    _c45_printTree0(tree.tree, tree.classVar, 0)
+def _printTreeC45(tree):
+    print _c45_printTree0(tree.tree, tree.classVar, 0)
 
 
 import Orange.feature.scoring as fscoring
@@ -2354,8 +2418,9 @@ class TreeLearner(Orange.core.Learner):
 
         return learner
 
+#
 # the following is for the output
-
+#
 
 fs = r"(?P<m100>\^?)(?P<fs>(\d*\.?\d*)?)"
 """ Defines the multiplier by 100 (:samp:`^`) and the format
