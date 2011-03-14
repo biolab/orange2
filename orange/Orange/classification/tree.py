@@ -201,8 +201,6 @@ which become important during classification; we'll talk about them
 later). They are not defined; if you use the learner, the slots are
 filled temporarily but later cleared again.
 
-FIXME: the following example is not true anymore.
-
 ::
 
     >>> print learner.split
@@ -217,13 +215,7 @@ Stopping criteria
 
 The stop is trivial. The default is set by
 
-::
-
     >>> learner.stop = Orange.classification.tree.StopCriteria_common()
-
-Well, this is actually done in C++ and it uses a global component
-that is constructed once for all, but apart from that we did
-effectively the same thing.
 
 We can now examine the default stopping parameters.
 
@@ -257,7 +249,6 @@ the maximal proportion of majority class.
     none (62.50%)
 
 
-=================
 Printing the Tree
 =================
 
@@ -887,13 +878,15 @@ Classification trees are represented as a tree-like hierarchy of
         Return the number of nodes in the subtrees (including the
         node, excluding null-nodes).
 
-==============
-Classification
-==============
+============
+Base classes
+============
 
 .. class:: _TreeClassifier
 
     Classifies examples according to a tree stored in :obj:`tree`.
+    Not meant to be used directly. The :class:`TreeLearner` class
+    constructs :class:`TreeClassifier`.
 
     .. attribute:: tree
 
@@ -951,57 +944,47 @@ Classification
 
     .. method:: classDistribution()
 
+    If you'd like to understand how the classification works in C++, 
+    start reading at :obj:`TTreeClassifier::vote`. It gets a 
+    :obj:`Node`, an :obj:`Orange.data.Instance`> and a distribution of 
+    vote weights. For each node, it calls the 
+    :obj:`TTreeClassifier::classDistribution` and then multiplies 
+    and sums the distribution. :obj:`vote` returns a normalized 
+    distribution of predictions.
 
-The rest of this section is only for those interested in the C++ code.
-======================================================================
+    A new overload of :obj:`TTreeClassifier::classDistribution` gets
+    an additional parameter, a :obj:`Node`. This is done 
+    for the sake of recursion. The normal version of 
+    :obj:`classDistribution` simply calls the overloaded with a 
+    tree root as an additional parameter. :obj:`classDistribution` 
+    uses :obj:`descender`. If descender reaches a leaf, it calls 
+    :obj:`nodeClassifier`, otherwise it calls :obj:`vote`.
 
-If you'd like to understand how the classification works in C++, 
-start reading at :obj:`TTreeClassifier::vote`. It gets a 
-:obj:`Node`, an :obj:`Orange.data.Instance`> and a distribution of 
-vote weights. For each node, it calls the 
-:obj:`TTreeClassifier::classDistribution` and then multiplies 
-and sums the distribution. :obj:`vote` returns a normalized 
-distribution of predictions.
+    Thus, the :obj:`TreeClassifier`'s :obj:`vote` and 
+    :obj:`classDistribution` are written in a form of double 
+    recursion. The recursive calls do not happen at each node of the 
+    tree but only at nodes where a vote is needed (that is, at nodes 
+    where the descender halts).
 
-A new overload of :obj:`TTreeClassifier::classDistribution` gets
-an additional parameter, a :obj:`Node`. This is done 
-for the sake of recursion. The normal version of 
-:obj:`classDistribution` simply calls the overloaded with a 
-tree root as an additional parameter. :obj:`classDistribution` 
-uses :obj:`descender`. If descender reaches a leaf, it calls 
-:obj:`nodeClassifier`, otherwise it calls :obj:`vote`.
-
-Thus, the :obj:`TreeClassifier`'s :obj:`vote` and 
-:obj:`classDistribution` are written in a form of double 
-recursion. The recursive calls do not happen at each node of the 
-tree but only at nodes where a vote is needed (that is, at nodes 
-where the descender halts).
-
-For predicting a class, :obj:`operator()`, calls the
-descender. If it reaches a leaf, the class is predicted by the 
-leaf's :obj:`nodeClassifier`. Otherwise, it calls 
-:obj:`vote`>. From now on, :obj:`vote` and 
-:obj:`classDistribution` interweave down the tree and return 
-a distribution of predictions. :obj:`operator()` then simply 
-chooses the most probable class.
-
-========
-Learning
-========
-
-The main learning object is :obj:`TreeLearnerBase`. It is basically 
-a skeleton into which the user must plug the components for particular 
-functions. For easier use, defaults are provided.
-
-Components that govern the structure of the tree are :obj:`split`
-(of type :obj:`SplitConstructor`), :obj:`stop` (of 
-type :obj:`StopCriteria` and :obj:`exampleSplitter`
-(of type :obj:`ExampleSplitter`).
-
+    For predicting a class, :obj:`operator()`, calls the
+    descender. If it reaches a leaf, the class is predicted by the 
+    leaf's :obj:`nodeClassifier`. Otherwise, it calls 
+    :obj:`vote`>. From now on, :obj:`vote` and 
+    :obj:`classDistribution` interweave down the tree and return 
+    a distribution of predictions. :obj:`operator()` then simply 
+    chooses the most probable class.
 
 .. class:: TreeLearnerBase
 
-    TreeLearnerBase has a number of components.
+    The main learning object is :obj:`TreeLearnerBase`. It is basically 
+    a skeleton into which the user must plug the components for particular 
+    functions. This class is not meant to be used directly. You should
+    rather use :class:`TreeLearner`.
+
+    Components that govern the structure of the tree are :obj:`split`
+    (of type :obj:`SplitConstructor`), :obj:`stop` (of 
+    type :obj:`StopCriteria` and :obj:`exampleSplitter`
+    (of type :obj:`ExampleSplitter`).
 
     .. attribute:: split
 
@@ -1138,33 +1121,6 @@ type :obj:`StopCriteria` and :obj:`exampleSplitter`
     A subset of examples is stored in its corresponding tree node, 
     if so requested. If not, the new weight attributes are removed (if 
     any were created).
-
-Pruning
-=======
-
-Tree pruners derived from :obj:`Pruner` can be given either a
-:obj:`Node` (presumably, but not necessarily a root) or a
-:obj:`TreeClassifier`. The result is a new, pruned :obj:`Node`
-or a new :obj:`TreeClassifier` with a pruned tree. The original
-tree remains intact.
-
-Note however that pruners construct only a shallow copy of a tree.
-The pruned tree's :obj:`Node` contain references to the same
-contingency matrices, node classifiers, branch selectors, ...
-as the original tree. Thus, you may modify a pruned tree structure
-(manually cut it, add new nodes, replace components) but modifying,
-for instance, some node's :obj:`nodeClassifier` (a
-:obj:`nodeClassifier` itself, not a reference to it!) would modify
-the node's :obj:`nodeClassifier` in the corresponding node of
-the original tree.
-
-Talking about node classifiers - pruners cannot construct a
-:obj:`nodeClassifier` nor merge :obj:`nodeClassifier` of the pruned
-subtrees into classifiers for new leaves. Thus, if you want to build
-a prunable tree, internal nodes must have their :obj:`nodeClassifier`
-defined. Fortunately, all you need to do is nothing; if you leave
-the :obj:`TreeLearnerBase`'s flags as they are by default, the
-:obj:`nodeClassifier` are created.
 
 =======
 Classes
@@ -1657,15 +1613,33 @@ is given in description of classification with trees. XXXXXX
     Makes the subtrees vote for the example's class; the vote is 
     weighted according to the selectors proposal.
 
-Pruner and derived classes
-==============================
+Pruning
+=======
 
 .. index::
     pair: classification trees; pruning
 
-Classes derived from :obj:`Pruner` prune the trees as a
-described in the section pruning XXXXXXXX - make sure you read it 
-to understand what the pruners will do to your trees.
+Tree pruners derived from :obj:`Pruner` can be given either a
+:obj:`Node` (presumably, but not necessarily a root) or a
+:obj:`_TreeClassifier`. The result is a new :obj:`Node`
+or a :obj:`_TreeClassifier` with a pruned tree. The original
+tree remains intact.
+
+The pruners construct only a shallow copy of a tree.
+The pruned tree's :obj:`Node` contain references to the same
+contingency matrices, node classifiers, branch selectors, ...
+as the original tree. Thus, you may modify a pruned tree structure
+(manually cut it, add new nodes, replace components) but modifying,
+for instance, some node's :obj:`nodeClassifier` (a
+:obj:`nodeClassifier` itself, not a reference to it!) would modify
+the node's :obj:`nodeClassifier` in the corresponding node of
+the original tree.
+
+Pruners cannot construct a
+:obj:`nodeClassifier` nor merge :obj:`nodeClassifier` of the pruned
+subtrees into classifiers for new leaves. Thus, if you want to build
+a prunable tree, internal nodes must have their :obj:`nodeClassifier`
+defined. Fortunately, this is the default.
 
 .. class:: Pruner
 
