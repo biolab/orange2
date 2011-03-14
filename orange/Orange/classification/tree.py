@@ -190,13 +190,14 @@ finally, how to write a skeleton for tree induction in Python.
 
 .. _treelearner.py: code/treelearner.py
 
-Let us construct a :obj:`TreeLearner` to play with (treelearner.py`_, uses `lenses.tab`_):
+Let us construct a :obj:`TreeLearner` to play with (`treelearner.py`_, uses `lenses.tab`_):
 
 .. literalinclude:: code/treelearner.py
    :lines: 7-10
 
-There are three crucial components in learning: the split and stop
-criteria, and the :obj:`exampleSplitter` YY (there are some others,
+There are three crucial components in learning: the :obj:`~TreeLearner.split` and
+:obj:`~TreeLearner.stop`
+criteria, and the example :obj:`~TreeLearner.splitter` (there are some others,
 which become important during classification; we'll talk about them
 later). They are not defined; if you use the learner, the slots are
 filled temporarily but later cleared again.
@@ -211,7 +212,7 @@ filled temporarily but later cleared again.
     None
 
 Stopping criteria
------------------
+=================
 
 The stop is trivial. The default is set by
 
@@ -249,540 +250,22 @@ the maximal proportion of majority class.
     none (62.50%)
 
 
-Printing the Tree
-=================
-
-The included printing functions can
-print out practically anything you'd like to
-know, from the number of examples, proportion of examples of majority
-class in nodes and similar, to more complex statistics like the
-proportion of examples in a particular class divided by the proportion
-of examples of this class in a parent node. And even more, you can
-define your own callback functions to be used for printing.
-
-Before we go on: you can read all about the function and use it to its
-full extent, or you can just call it, giving it the tree as the sole
-argument and it will print out the usual textual representation of the
-tree. If you're satisfied with that, you can stop here.
-
-The magic is in the format string. It is a string which is printed
-out at every leaf or internal node with the certain format specifiers
-replaced by data from the tree node. Specifiers are generally of form
-**%[^]<precision><quantity><divisor>**.
-
-**^** at the start tells that the number should be multiplied by 100.
-It's useful for printing proportions like percentages.
-
-**<precision>** is in the same format as in Python (or C) string
-formatting. For instance, :samp:`%N` denotes the number of examples in the node,
-hence :samp:`%6.2N` would mean output to two decimal digits and six places
-altogether. If left out, a default format :samp:`5.3` is used, unless you 
-multiply the numbers by 100, in which case the default is :samp:`.0`
-(no decimals, the number is rounded to the nearest integer).
-
-**<divisor>** tells what to divide the quantity in that node with.
-:samp:`bP` means division by the same quantity in the parent node; for instance,
-:samp:`%NbP` will tell give the number of examples in the node divided by the
-number of examples in parent node. You can add use precision formatting,
-e.g. :samp:`%6.2NbP.` bA is division by the same quantity over the entire data 
-set, so :samp:`%NbA` will tell you the proportion of examples (out of the entire
-training data set) that fell into that node. If division is impossible
-since the parent node does not exist or some data is missing, a dot is
-printed out instead of the quantity.
-
-**<quantity>** is the only required element. It defines what to print.
-For instance, :samp:`%N` would print out the number of examples in the node.
-Possible quantities are
-
-:samp:`V`
-    The value predicted at that node. You cannot define the precision 
-    or divisor here.
-
-:samp:`N`
-    The number of examples in the node.
-
-:samp:`M`
-    The number of examples in the majority class (that is, the class 
-    predicted by the node).
-
-:samp:`m`
-    The proportion of examples in the majority class.
-
-:samp:`A`
-    The average class for examples the node; this is available only for 
-    regression trees.
-
-:samp:`E`
-    Standard error for class of examples in the node; available for
-    regression trees.
-
-:samp:`I`
-    Print out the confidence interval. The modifier is used as 
-    :samp:`%I(95)` of (more complicated) :samp:`%5.3I(95)bP`.
-
-:samp:`C`
-    The number of examples in the given class. For classification trees, 
-    this modifier is used as, for instance in, :samp:`%5.3C="Iris-virginica"bP` 
-    - this will tell the number of examples of Iris-virginica by the 
-    number of examples this class in the parent node. If you are 
-    interested in examples that are *not* Iris-virginica, say 
-    :samp:`%5.3CbP!="Iris-virginica"`
-
-    For regression trees, you can use operators =, !=, <, <=, >, and >=, 
-    as in :samp:`%C<22` - add the precision and divisor if you will. You can also
-    check the number of examples in a certain interval: :samp:`%C[20, 22]`
-    will give you the number of examples between 20 and 22 (inclusive)
-    and :samp:`%C(20, 22)` will give the number of such examples excluding the
-    boundaries. You can of course mix the parentheses, e.g. :samp:`%C(20, 22]`.
-    If you would like the examples outside the interval, add a :samp:`!`,
-    like :samp:`%C!(20, 22]`.
- 
-:samp:`c`
-    Same as above, except that it computes the proportion of the class
-    instead of the number of examples.
-
-:samp:`D`
-    Prints out the number of examples in each class. You can use both,
-    precision (it is applied to each number in the distribution) or the
-    divisor. This quantity cannot be computed for regression trees.
-
-:samp:`d`
-    Same as above, except that it shows proportions of examples. This
-    again doesn't work with regression trees.
-
-<user defined formats>
-    You can add more, if you will. Instructions and examples are given at
-    the end of this section.
-
-
-Examples
-========
-
-We shall build a small tree from the iris data set - we shall limit the
-depth to three levels (part of `orngTree1.py`_, uses `iris.tab`_):
-
-.. literalinclude:: code/orngTree1.py
-   :lines: 1-4
-
-.. _orngTree1.py: code/orngTree1.py
-
-The easiest way to call the function is to pass the tree as the only 
-argument::
-
-    >>> print tree.dump()
-    petal width<0.800: Iris-setosa (100.00%)
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: Iris-versicolor (94.23%)
-    |    |    petal length>=5.350: Iris-virginica (100.00%)
-    |    petal width>=1.750
-    |    |    petal length<4.850: Iris-virginica (66.67%)
-    |    |    petal length>=4.850: Iris-virginica (100.00%)
-
-Let's now print out the predicted class at each node, the number
-of examples in the majority class with the total number of examples
-in the node::
-
-    >>> print tree.dump(leafStr="%V (%M out of %N)")
-    petal width<0.800: Iris-setosa (50.000 out of 50.000)
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: Iris-versicolor (49.000 out of 52.000)
-    |    |    petal length>=5.350: Iris-virginica (2.000 out of 2.000)
-    |    petal width>=1.750
-    |    |    petal length<4.850: Iris-virginica (2.000 out of 3.000)
-    |    |    petal length>=4.850: Iris-virginica (43.000 out of 43.000)
-
-Would you like to know how the number of examples declines as
-compared to the entire data set and to the parent node? We find
-it with this::
-
-    >>> print tree.dump(leafStr="%V (%^MbA%, %^MbP%)")
-    petal width<0.800: Iris-setosa (100%, 100%)
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: Iris-versicolor (98%, 100%)
-    |    |    petal length>=5.350: Iris-virginica (4%, 40%)
-    |    petal width>=1.750
-    |    |    petal length<4.850: Iris-virginica (4%, 4%)
-    |    |    petal length>=4.850: Iris-virginica (86%, 96%)
-
-Let us first read the format string. :samp:`%M` is the number of 
-examples in the majority class. We want it divided by the number of
-all examples from this class on the entire data set, hence :samp:`%MbA`.
-To have it multipied by 100, we say :samp:`%^MbA`. The percent sign *after*
-that is just printed out literally, just as the comma and parentheses
-(see the output). The string for showing the proportion of this class
-in the parent is the same except that we have :samp:`bP` instead 
-of :samp:`bA`.
-
-And now for the output: all examples of setosa for into the first node.
-For versicolor, we have 98% in one node; the rest is certainly
-not in the neighbouring node (petal length>=5.350) since all
-versicolors from the node petal width<1.750 went to petal length<5.350
-(we know this from the 100% in that line). Virginica is the 
-majority class in the three nodes that together contain 94% of this
-class (4+4+86). The rest must had gone to the same node as versicolor.
-
-If you find this guesswork annoying - so do I. Let us print out the
-number of versicolors in each node, together with the proportion of
-versicolors among the examples in this particular node and among all
-versicolors. So,
-
-::
-
-    '%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)
-
-gives the following output::
-
-    petal width<0.800: 0.000 (0% of node, 0% of versicolors)
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: 49.000 (94% of node, 98% of versicolors)
-    |    |    petal length>=5.350: 0.000 (0% of node, 0% of versicolors)
-    |    petal width>=1.750
-    |    |    petal length<4.850: 1.000 (33% of node, 2% of versicolors)
-    |    |    petal length>=4.850: 0.000 (0% of node, 0% of versicolors)
-
-Finally, we may want to print out the distributions, using a simple 
-string :samp:`%D`::
-
-    petal width<0.800: [50.000, 0.000, 0.000]
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: [0.000, 49.000, 3.000]
-    |    |    petal length>=5.350: [0.000, 0.000, 2.000]
-    |    petal width>=1.750
-    |    |    petal length<4.850: [0.000, 1.000, 2.000]
-    |    |    petal length>=4.850: [0.000, 0.000, 43.000]
-
-What is the order of numbers here? If you check 
-:samp:`data.domain.classVar.values` , you'll learn that the order is setosa, 
-versicolor, virginica; so in the node at peta length<5.350 we have 49
-versicolors and 3 virginicae. To print out the proportions, we can 
-:samp:`%.2d` - this gives us proportions within node, rounded on 
-two decimals::
-
-    petal width<0.800: [1.00, 0.00, 0.00]
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: [0.00, 0.94, 0.06]
-    |    |    petal length>=5.350: [0.00, 0.00, 1.00]
-    |    petal width>=1.750
-    |    |    petal length<4.850: [0.00, 0.33, 0.67]
-    |    |    petal length>=4.850: [0.00, 0.00, 1.00]
-
-We haven't tried printing out any information for internal nodes.
-To start with the most trivial case, we shall print the prediction
-at each node.
-
-::
-
-    tree.dump(leafStr="%V", nodeStr=".")
-    
-says that the nodeStr should be the same as leafStr (not very useful 
-here, since leafStr is trivial anyway).
-
-:: 
-
-    root: Iris-setosa
-    |    petal width<0.800: Iris-setosa
-    |    petal width>=0.800: Iris-versicolor
-    |    |    petal width<1.750: Iris-versicolor
-    |    |    |    petal length<5.350: Iris-versicolor
-    |    |    |    petal length>=5.350: Iris-virginica
-    |    |    petal width>=1.750: Iris-virginica
-    |    |    |    petal length<4.850: Iris-virginica
-    |    |    |    petal length>=4.850: Iris-virginica
-
-Note that the output is somewhat different now: there appeared another
-node called *root* and the tree looks one level deeper. This is
-needed to print out the data for that node to.
-
-Now for something more complicated: let us observe how the number
-of virginicas decreases down the tree::
-
-    print tree.dump(leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')
-
-Let's first interpret the format string: :samp:`CbA="Iris-virginica"` is 
-the number of examples from class virginica, divided by the total number
-of examples in this class. Add :samp:`^.1` and the result will be
-multiplied and printed with one decimal. The trailing :samp:`%` is printed
-out. In parentheses we print the same thing except that we divide by the
-examples in the parent node. Note the use of single quotes, so we can
-use the double quotes inside the string, when we specify the class.
-
-::
-
-    root: 100.0% (.%)
-    |    petal width<0.800: 0.0% (0.0%)
-    |    petal width>=0.800: 100.0% (100.0%)
-    |    |    petal width<1.750: 10.0% (10.0%)
-    |    |    |    petal length<5.350: 6.0% (60.0%)
-    |    |    |    petal length>=5.350: 4.0% (40.0%)
-    |    |    petal width>=1.750: 90.0% (90.0%)
-    |    |    |    petal length<4.850: 4.0% (4.4%)
-    |    |    |    petal length>=4.850: 86.0% (95.6%)
-
-See what's in the parentheses in the root node? If :meth:`TreeClassifier.dump`
-cannot compute something (in this case it's because the root has no parent),
-it prints out a dot. You can also eplace :samp:`=` by :samp:`!=` and it 
-will count all classes *except* virginica.
-
-For one final example with classification trees, we shall print the
-distributions in that nodes, the distribution compared to the parent
-and the proportions compared to the parent (the latter things are not
-the same - think why). In the leaves we shall also add the predicted
-class. So now we'll have to call the function like this.
-
-::
-
-    >>> print tree.dump(leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')
-    root: [50.000, 50.000, 50.000] . .
-    |    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
-    |        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
-    |    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
-    |    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
-    |    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]:
-    |    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
-    |    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]:
-    |    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
-    |    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
-    |    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]:
-    |    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
-    |    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]:
-    |    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
-
-To explore the possibilities when printing regression trees, we are going 
-to induce a tree from the housing data set. Called with the tree as the
-only argument, :meth:`TreeClassifier.dump` prints the tree like this::
-
-    RM<6.941
-    |    LSTAT<14.400
-    |    |    DIS<1.385: 45.6
-    |    |    DIS>=1.385: 22.9
-    |    LSTAT>=14.400
-    |    |    CRIM<6.992: 17.1
-    |    |    CRIM>=6.992: 12.0
-    RM>=6.941
-    |    RM<7.437
-    |    |    CRIM<7.393: 33.3
-    |    |    CRIM>=7.393: 14.4
-    |    RM>=7.437
-    |    |    TAX<534.500: 45.9
-    |    |    TAX>=534.500: 21.9
-
-Let us add the standard error in both internal nodes and leaves, and the
-90% confidence intervals in the leaves::
-
-    >>> print tree.dump(leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")
-    root: [SE: 0.409]
-    |    RM<6.941: [SE: 0.306]
-    |    |    LSTAT<14.400: [SE: 0.320]
-    |    |    |    DIS<1.385: [SE: 4.420]:
-    |    |    |        [SE: 4.420]   45.6 [38.331-52.829]
-    |    |    |    DIS>=1.385: [SE: 0.244]:
-    |    |    |        [SE: 0.244]   22.9 [22.504-23.306]
-    |    |    LSTAT>=14.400: [SE: 0.333]
-    |    |    |    CRIM<6.992: [SE: 0.338]:
-    |    |    |        [SE: 0.338]   17.1 [16.584-17.691]
-    |    |    |    CRIM>=6.992: [SE: 0.448]:
-    |    |    |        [SE: 0.448]   12.0 [11.243-12.714]
-    |    RM>=6.941: [SE: 1.031]
-    |    |    RM<7.437: [SE: 0.958]
-    |    |    |    CRIM<7.393: [SE: 0.692]:
-    |    |    |        [SE: 0.692]   33.3 [32.214-34.484]
-    |    |    |    CRIM>=7.393: [SE: 2.157]:
-    |    |    |        [SE: 2.157]   14.4 [10.862-17.938]
-    |    |    RM>=7.437: [SE: 1.124]
-    |    |    |    TAX<534.500: [SE: 0.817]:
-    |    |    |        [SE: 0.817]   45.9 [44.556-47.237]
-    |    |    |    TAX>=534.500: [SE: 0.000]:
-    |    |    |        [SE: 0.000]   21.9 [21.900-21.900]
-
-What's the difference between :samp:`%V`, the predicted value and 
-:samp:`%A` the average? Doesn't a regression tree always predict the
-leaf average anyway? Not necessarily, the tree predict whatever the
-:attr:`TreeClassifier.nodeClassifier` in a leaf returns. 
-As :samp:`%V` uses the 
-:obj:`Orange.data.variable.Continuous`' function for printing out the value, 
-therefore the printed number has the same number of decimals 
-as in the data file.
-
-Regression trees cannot print the distributions in the same way
-as classification trees. They instead offer a set of operators for
-observing the number of examples within a certain range. For instance,
-let us check the number of examples with values below 22, and compare
-this number with values in the parent nodes::
-
-    >>> print tree.dump(leafStr="%C<22 (%cbP<22)", nodeStr=".")
-    root: 277.000 (.)
-    |    RM<6.941: 273.000 (1.160)
-    |    |    LSTAT<14.400: 107.000 (0.661)
-    |    |    |    DIS<1.385: 0.000 (0.000)
-    |    |    |    DIS>=1.385: 107.000 (1.020)
-    |    |    LSTAT>=14.400: 166.000 (1.494)
-    |    |    |    CRIM<6.992: 93.000 (0.971)
-    |    |    |    CRIM>=6.992: 73.000 (1.040)
-    |    RM>=6.941: 4.000 (0.096)
-    |    |    RM<7.437: 3.000 (1.239)
-    |    |    |    CRIM<7.393: 0.000 (0.000)
-    |    |    |    CRIM>=7.393: 3.000 (15.333)
-    |    |    RM>=7.437: 1.000 (0.633)
-    |    |    |    TAX<534.500: 0.000 (0.000)
-    |    |    |    TAX>=534.500: 1.000 (30.000)</xmp>
-
-The last line, for instance, says the the number of examples with the
-class below 22 is among those with tax above 534 is 30 times higher
-than the number of such examples in its parent node.
-
-For another exercise, let's count the same for all examples *outside*
-interval [20, 22] (given like this, the interval includes the bounds).
-And let us print out the proportions as percents.
-
-::
-
-    >>> print tree.dump(leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")
-
-OK, let's observe the format string for one last time. :samp:`%c![20, 22]`
-would be the proportion of examples (within the node) whose values are
-below 20 or above 22. By :samp:`%cbP![20, 22]` we derive this by the same
-statistics computed on the parent. Add a :samp:`^` and you have the percentages.
-
-::
-
-    root: 439.000 (.%)
-    |    RM<6.941: 364.000 (98%)
-    |    |    LSTAT<14.400: 200.000 (93%)
-    |    |    |    DIS<1.385: 5.000 (127%)
-    |    |    |    DIS>=1.385: 195.000 (99%)
-    |    |    LSTAT>=14.400: 164.000 (111%)
-    |    |    |    CRIM<6.992: 91.000 (96%)
-    |    |    |    CRIM>=6.992: 73.000 (105%)
-    |    RM>=6.941: 75.000 (114%)
-    |    |    RM<7.437: 46.000 (101%)
-    |    |    |    CRIM<7.393: 43.000 (100%)
-    |    |    |    CRIM>=7.393: 3.000 (100%)
-    |    |    RM>=7.437: 29.000 (98%)
-    |    |    |    TAX<534.500: 29.000 (103%)
-    |    |    |    TAX>=534.500: 0.000 (0%)
-
-
-Defining Your Own Printout functions
-====================================
-
-:meth:`TreeClassifier.dump`'s argument :obj:`userFormats` can be used to print out
-some other information in the leaves or nodes. If provided,
-:obj:`userFormats` should contain a list of tuples with a regular expression
-and a callback function to be called when that expression is found in the
-format string. Expressions from :obj:`userFormats` are checked before
-the built-in expressions discussed above, so you can override the built-ins
-if you want to.
-
-The regular expression should describe a string like those we used above,
-for instance the string :samp:`%.2DbP`. When a leaf or internal node
-is printed out, the format string (:obj:`leafStr` or :obj:`nodeStr`) 
-is checked for these regular expressions and when the match is found, 
-the corresponding callback function is called.
-
-The callback function will get five arguments: the format string 
-(:obj:`leafStr` or :obj:`nodeStr`), the match object, the node which is
-being printed, its parent (can be None) and the tree classifier.
-The function should return the format string in which the part described
-by the match object (that is, the part that is matched by the regular
-expression) is replaced by whatever information your callback function
-is supposed to give.
-
-The function can use several utility function provided in the module.
-
-.. autofunction:: insertStr
-
-.. autofunction:: insertDot
-
-.. autofunction:: insertNum
-
-.. autofunction:: byWhom
-
-
-There are also a few pieces of regular expression that you may want to reuse. 
-The two you are likely to use are:
-
-.. autodata:: fs
-
-.. autodata:: by
-
-For a trivial example, :samp:`%V` is implemented like this. There is the
-following tuple in the list of built-in formats::
-
-    (re.compile("%V"), replaceV)
-
-:obj:`replaceV` is a function defined by::
-
-    def replaceV(strg, mo, node, parent, tree):
-        return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))
-
-It therefore takes the value predicted at the node 
-(:samp:`node.nodeClassifier.defaultValue` ), converts it to a string
-and passes it to *insertStr* to do the replacement.
-
-A more complex regular expression is the one for the proportion of
-majority class, defined as :samp:`"%"+fs+"M"+by`. It uses the
-two partial expressions defined above.
-
-Let's say with like to print the classification margin for each node,
-that is, the difference between the proportion of the largest and the
-second largest class in the node (part of `orngTree2.py`_):
-
-.. _orngTree2.py: code/orngTree2.py
-
-.. literalinclude:: code/orngTree2.py
-   :lines: 7-31
-
-We first defined getMargin which gets the distribution and computes the
-margin. The callback replaces, replaceB, computes the margin for the node.
-If we need to divided the quantity by something (that is, if the :data:`by`
-group is present), we call :func:`byWhom` to get the node with whose margin
-this node's margin is to be divided. If this node (usually the parent)
-does not exist of if its margin is zero, we call :func:`insertDot`
-to insert a dot, otherwise we call :func:`insertNum` which will insert 
-the number, obeying the format specified by the user. myFormat is a list 
-containing the regular expression and the callback function.
-
-
-We can now print out the iris tree:
-
-.. literalinclude:: code/orngTree2.py
-    :lines: 33
-
-And we get::
-
-    petal width<0.800: Iris-setosa 100% (100.00%)
-    petal width>=0.800
-    |    petal width<1.750
-    |    |    petal length<5.350: Iris-versicolor 88% (108.57%)
-    |    |    petal length>=5.350: Iris-virginica 100% (122.73%)
-    |    petal width>=1.750
-    |    |    petal length<4.850: Iris-virginica 33% (34.85%)
-    |    |    petal length>=4.850: Iris-virginica 100% (104.55%)
-
-
-Plotting the Tree using Dot
-===========================
-
-Suppose you saved the tree in a file "tree5.dot". You can then
-print it out as a gif if you execute the following command line
-
-::
-    
-    dot -Tgif tree5.dot -otree5.gif
-
-GraphViz's dot has quite a few other output formats, check 
-its documentation to learn which.
-
-
+=================================
+Learner and Classifier Components
+=================================
 
 Classification trees are represented as a tree-like hierarchy of
 :obj:`Node` classes.
+
+Several classes described above are already functional and can
+(and mostly will) be used as they are: :obj:`Node`,
+:obj:`_TreeLearner` and :obj:`TreeClassifier`. 
+Classes :obj:`SplitConstructor`, :obj:`StopCriteria`, 
+:obj:`ExampleSplitter`, :obj:`Descender` 
+are among the Orange (C++ implemented) 
+classes that can be subtyped 
+in Python. You can thus program your own components based on
+these classes.
 
 .. class:: Node
 
@@ -794,18 +277,18 @@ Classification trees are represented as a tree-like hierarchy of
     
         Stores a distribution for learning examples belonging to the node.
         Storing distributions can be disabled by setting the 
-        :obj:`TreeLearnerBase`'s storeDistributions flag to false.
+        :obj:`_TreeLearner`'s storeDistributions flag to false.
 
     .. attribute:: contingency
 
         Stores complete contingency matrices for the learning examples 
         belonging to the node. Storing contingencies can be enabled by 
-        setting :obj:`TreeLearnerBase`'s :obj:`storeContingencies` 
+        setting :obj:`_TreeLearner`'s :obj:`storeContingencies` 
         flag to true. Note that even when the flag is not 
         set, the contingencies get computed and stored to 
         :obj:`Node`, but are removed shortly afterwards. 
         The details are given in the 
-        description of the :obj:`TreeLearnerBase` object.
+        description of the :obj:`_TreeLearner` object.
 
     .. attribute:: examples, weightID
 
@@ -878,9 +361,6 @@ Classification trees are represented as a tree-like hierarchy of
         Return the number of nodes in the subtrees (including the
         node, excluding null-nodes).
 
-============
-Base classes
-============
 
 .. class:: _TreeClassifier
 
@@ -941,42 +421,41 @@ Base classes
     the most probable class is returned.
 
     .. method:: vote()
+    
+        It gets a 
+        :obj:`Node`, an :obj:`Orange.data.Instance` and a distribution of 
+        vote weights. For each node, it calls the 
+        :obj:`classDistribution` and then multiplies 
+        and sums the distribution. :obj:`vote` returns a normalized 
+        distribution of predictions.
 
     .. method:: classDistribution()
 
-    If you'd like to understand how the classification works in C++, 
-    start reading at :obj:`TTreeClassifier::vote`. It gets a 
-    :obj:`Node`, an :obj:`Orange.data.Instance`> and a distribution of 
-    vote weights. For each node, it calls the 
-    :obj:`TTreeClassifier::classDistribution` and then multiplies 
-    and sums the distribution. :obj:`vote` returns a normalized 
-    distribution of predictions.
+        Gets
+        an additional parameter, a :obj:`Node` (default tree root).
+        :obj:`classDistribution` uses :obj:`descender`. If descender 
+        reaches a leaf, it calls 
+        :obj:`nodeClassifier`, otherwise it calls :obj:`vote`.
 
-    A new overload of :obj:`TTreeClassifier::classDistribution` gets
-    an additional parameter, a :obj:`Node`. This is done 
-    for the sake of recursion. The normal version of 
-    :obj:`classDistribution` simply calls the overloaded with a 
-    tree root as an additional parameter. :obj:`classDistribution` 
-    uses :obj:`descender`. If descender reaches a leaf, it calls 
-    :obj:`nodeClassifier`, otherwise it calls :obj:`vote`.
+        Thus, the :obj:`vote` and 
+        :obj:`classDistribution` are written in a form of double 
+        recursion. The recursive calls do not happen at each node of the 
+        tree but only at nodes where a vote is needed (that is, at nodes 
+        where the descender halts).
 
-    Thus, the :obj:`TreeClassifier`'s :obj:`vote` and 
-    :obj:`classDistribution` are written in a form of double 
-    recursion. The recursive calls do not happen at each node of the 
-    tree but only at nodes where a vote is needed (that is, at nodes 
-    where the descender halts).
+    .. method:: __call__
 
-    For predicting a class, :obj:`operator()`, calls the
-    descender. If it reaches a leaf, the class is predicted by the 
-    leaf's :obj:`nodeClassifier`. Otherwise, it calls 
-    :obj:`vote`>. From now on, :obj:`vote` and 
-    :obj:`classDistribution` interweave down the tree and return 
-    a distribution of predictions. :obj:`operator()` then simply 
-    chooses the most probable class.
+        Calls the
+        descender. If it reaches a leaf, the class is predicted by the 
+        leaf's :obj:`nodeClassifier`. Otherwise, it calls 
+        :obj:`vote`. From now on, :obj:`vote` and 
+        :obj:`classDistribution` interweave down the tree and return 
+        a distribution of predictions. This method simply 
+        chooses the most probable class.
 
-.. class:: TreeLearnerBase
+.. class:: _TreeLearner
 
-    The main learning object is :obj:`TreeLearnerBase`. It is basically 
+    The main learning object is :obj:`_TreeLearner`. It is basically 
     a skeleton into which the user must plug the components for particular 
     functions. This class is not meant to be used directly. You should
     rather use :class:`TreeLearner`.
@@ -989,7 +468,7 @@ Base classes
     .. attribute:: split
 
         Object of type :obj:`SplitConstructor`. Default value, 
-        provided by :obj:`TreeLearnerBase`, is :obj:`SplitConstructor_Combined`
+        provided by :obj:`_TreeLearner`, is :obj:`SplitConstructor_Combined`
         with separate constructors for discrete and continuous attributes. 
         Discrete attributes are used as are, while continuous attributes
         are binarized. Gain ratio is used to select attributes.
@@ -1052,8 +531,8 @@ Base classes
         since distributions actually points to the same distribution
         that is stored in :obj:`contingency.classes`.
 
-    The :obj:`TreeLearnerBase` first sets the defaults for missing
-    components. Although stored in the actual :obj:`TreeLearnerBase`'s
+    The :obj:`_TreeLearner` first sets the defaults for missing
+    components. Although stored in the actual :obj:`_TreeLearner`'s
     fields, they are removed when the induction is finished.
 
     Then it ensures that examples are stored in a table. This is needed
@@ -1072,7 +551,7 @@ Base classes
     we cannot proceed. A list of candidate attributes is set; in the
     beginning, all attributes are candidates for the split criterion.
 
-    Now comes the recursive part of the :obj:`TreeLearnerBase`. Its arguments 
+    Now comes the recursive part of the :obj:`_TreeLearner`. Its arguments 
     are a set of examples, a weight meta-attribute ID (a tricky thing,
     it can be always the same as the original or can change to 
     accomodate splitting of examples among branches), apriori class
@@ -1105,14 +584,14 @@ Base classes
     If it fails to return a branch selector, induction stops and the 
     :obj:`Node` is returned.
 
-    :obj:`TreeLearnerBase` than uses :obj:`ExampleSplitter` to divide 
+    :obj:`_TreeLearner` than uses :obj:`ExampleSplitter` to divide 
     the examples as described above.
 
     The contingency gets removed at this point if it is not to be 
     stored. Thus, the :obj:`split`, :obj:`stop` and 
     :obj:`exampleSplitter` can use the contingency matrices if they will.
 
-    The :obj:`TreeLearnerBase` then recursively calls itself for each of 
+    The :obj:`_TreeLearner` then recursively calls itself for each of 
     the non-empty subsets. If the splitter returnes a list of weights, 
     a corresponding weight is used for each branch. Besides, the 
     attribute spent by the splitter (if any) is removed from the 
@@ -1122,36 +601,19 @@ Base classes
     if so requested. If not, the new weight attributes are removed (if 
     any were created).
 
-=======
-Classes
-=======
 
-Several classes described above are already functional and can
-(and mostly will) be used as they are. Those classes are :obj:`Node`,
-:obj:`TreeLearnerBase` and :obj:`TreeClassifier`. This section describe 
-the other classes.
-
-Classes :obj:`SplitConstructor`, :obj:`StopCriteria`, 
-:obj:`ExampleSplitter`, :obj:`Descender`, :obj:`orange.Learner`
-and :obj:`Classifier` are among the Orange classes that can be subtyped 
-in Python and have the call operator overloadedd in such a way that it
-is callbacked from C++ code. You can thus program your own components
-for :obj:`TreeLearnerBase` and :obj:`TreeClassifier`. The detailed 
-information on how this is done and what can go wrong, is given in a 
-separate page, dedicated to callbacks to Python XXXXXXXXXX.
-
-SplitConstructors
+Split constructors
 =====================
 
 Split construction is almost as exciting as waiting for a delayed flight.
-Boring, that is. Split constructors are programmed as spaghetti code
-that juggles with contingency matrices, with separate cases for discrete
+Boring, that is. Split constructors juggle 
+with contingency matrices, with separate cases for discrete
 and continuous classes... Most split constructors work either for
-discrete or for continuous attributes. The suggested practice is
-to use a :obj:`SplitConstructor_Combined` that can handle
-both by simply delegating attributes to specialized split constructors.
+discrete or for continuous attributes. We suggest to use 
+a :obj:`SplitConstructor_Combined` that delegates 
+attributes to specialized split constructors.
 
-Note: split constructors that cannot handle attributes of particular
+Split constructors that cannot handle attributes of particular
 type (discrete, continuous) do not report an error or a warning but
 simply skip the attribute. It is your responsibility to use a correct
 split constructor for your dataset. (May we again suggest
@@ -1181,17 +643,13 @@ class (and derived classes).
     of quality of attributes. In this case, there's no other way but
     to use the examples and ignore the precomputed contingencies.
 
-    The split constructor should consider only the attributes in the
-    candidate list (the list is a vector of booleans, one for each
-    attribute).
-
     :obj:`SplitConstructor` returns most of the data we talked
     about when describing the :obj:`Node`. It returns a classifier
     to be used as :obj:`Node`'s :obj:`branchSelector`, a list of
     branch descriptions and a list with the number of examples that
     go into each branch. Just what we need for the :obj:`Node`.
     It can return an empty list for the number of examples in branches;
-    in this case, the :obj:`TreeLearnerBase` will find the number itself
+    in this case, the :obj:`_TreeLearner` will find the number itself
     after splitting the example set into subsets. However, if a split
     constructors can provide the numbers at no extra computational
     cost, it should do so.
@@ -1226,7 +684,7 @@ class (and derived classes).
 
         Construct a split. Returns a tuple (:obj:`branchSelector`,
         :obj:`branchDescriptions`, :obj:`subsetSizes`, :obj:`quality`,
-        :obj:`spentAttribute`). :obj:`SpentAttribute` is -1 if no
+        :obj:`spentAttribute`). :obj:`spentAttribute` is -1 if no
         attribute is completely spent by the split criterion. If no
         split is constructed, the :obj:`selector`, :obj:`branchDescriptions`
         and :obj:`subsetSizes` are None, while :obj:`quality` is 0.0 and
@@ -1240,7 +698,9 @@ class (and derived classes).
         :param apriori-distribution: Should be of type 
             :obj:`orange.Distribution` and candidates should be a Python 
             list of objects which are interpreted as booleans.
-
+        :param candidates: The split constructor should consider only 
+            the attributes in the candidate list (one boolean for each
+            attribute).
 
 
 .. class:: SplitConstructor_Measure
@@ -1248,19 +708,18 @@ class (and derived classes).
     Bases: :class:`SplitConstructor`
 
     An abstract base class for split constructors that employ 
-    a :obj:`Orange.feature.scoring.Measure` to assess a quality of a split. 
-    At present,
-    all split constructors except for :obj:`SplitConstructor_Combined`
+    a :class:`Orange.feature.scoring.Measure` to assess a quality of a split. 
+    All split constructors except for :obj:`SplitConstructor_Combined`
     are derived from this class.
 
     .. attribute:: measure
 
-        A component of type :obj:`Orange.feature.scoring.Measure` used for
-        evaluation of a split. Note that you must select the subclass 
-        :obj:`Orange.feature.scoring.Measure` capable of handling your 
+        A component of type :class:`Orange.feature.scoring.Measure` used for
+        split evaluation. You must select a 
+        :class:`Orange.feature.scoring.Measure` capable of handling your 
         class type 
-        - you cannot use :obj:`Orange.feature.scoring.GainRatio`
-        for building regression trees or :obj:`Orange.feature.scoring.MSE`
+        - for example, you cannot use :class:`Orange.feature.scoring.GainRatio`
+        for building regression trees or :class:`Orange.feature.scoring.MSE`
         for classification trees.
 
     .. attribute:: worstAcceptable
@@ -1435,50 +894,49 @@ obj:`StopCriteria` determines when to stop the induction of subtrees.
 
     Undocumented.
 
-Classes derived from ExampleSplitters
-========================================
+Example Splitters
+=================
 
-The :obj:`ExampleSplitter` sorts the learning examples into branches.
+Just like the :obj:`Descender` decides the branch for an
+example during classification, the :obj:`ExampleSplitter`
+sorts the learning examples into branches.
+
+:obj:`ExampleSplitter` is given a :obj:`Node` (from which 
+it can use different stuff, but most of splitters only use the 
+:obj:`branchSelector`), a set of examples to be divided, and 
+the weight ID. The result is a list of subsets of examples
+and, optionally, a list of new weight ID's.
+
+Most 
+:obj:`ExampleSplitter` classes simply call the node's 
+:obj:`branchSelector` and assign examples to corresponding 
+branches. When the value is unknown they choose a particular 
+branch or simply skip the example.
+
+Some enhanced splitters can split examples. An example (actually, 
+a pointer to it) is copied to more than one subset. To facilitate
+real splitting, weights are needed. Each branch is assigned a
+weight ID (each would usually have its own ID) and all examples
+that are in that branch (either completely or partially) should
+have this meta attribute. If an example hasn't been split, it
+has only one additional attribute - with weight ID corresponding
+to the subset to which it went. Example that is split between,
+say, three subsets, has three new meta attributes, one for each
+subset. ID's of weight meta attributes are returned by the
+:obj:`ExampleSplitter` to be used at induction of the
+corresponding subtrees.
+
+Note that weights are used only when needed. When no splitting
+occured - because the splitter is not able to do it or becauser
+there was no need for splitting - no weight ID's are returned.
+
 
 .. class:: ExampleSplitter
 
-    Just like the :obj:`Descender` decides the branch for an
-    example during classification, the :obj:`ExampleSplitter`
-    sorts the learning examples into branches.
-
-    :obj:`ExampleSplitter` is given a :obj:`Node` (from which 
-    it can use different stuff, but most of splitters only use the 
-    :obj:`branchSelector`), a set of examples to be divided, and 
-    the weight ID. The result is a list of subsets of examples
-    and, optionally, a list of new weight ID's.
-
-    Subsets are usually stored as :obj:`ExamplePointerTable`'s. Most 
-    of :obj:`ExampleSplitters` simply call the node's 
-    :obj:`branchSelector` and assign examples to corresponding 
-    branches. When the value is unknown they choose a particular 
-    branch or simply skip the example.
-
-    Some enhanced splitters can split examples. An example (actually, 
-    a pointer to it) is copied to more than one subset. To facilitate
-    real splitting, weights are needed. Each branch is assigned a
-    weight ID (each would usually have its own ID) and all examples
-    that are in that branch (either completely or partially) should
-    have this meta attribute. If an example hasn't been split, it
-    has only one additional attribute - with weight ID corresponding
-    to the subset to which it went. Example that is split between,
-    say, three subsets, has three new meta attributes, one for each
-    subset. ID's of weight meta attributes are returned by the
-    :obj:`ExampleSplitter` to be used at induction of the
-    corresponding subtrees.
-
-    Note that weights are used only when needed. When no splitting
-    occured - because the splitter is not able to do it or becauser
-    there was no need for splitting - no weight ID's are returned.
-
     An abstract base class for objects that split sets of examples into 
-    subsets. The derived classes differ in treatment of examples which
+    subsets. The derived classes treat examples which
     cannot be unambiguously placed into a single branch (usually due
-    to unknown value of the crucial attribute).
+    to unknown value of the crucial attribute) differently.
 
     .. method:: __call__(node, examples[, weightID])
         
@@ -1538,13 +996,12 @@ The :obj:`ExampleSplitter` sorts the learning examples into branches.
     distribution proposed by selector (which is in most cases the same 
     as proportions of examples in branches).
 
-Descender and derived classes
-=================================
+Descenders
+=============================
 
-This is a classifier's counterpart for :obj:`ExampleSplitter`. It 
+This is a classifier's counterpart for :class:`ExampleSplitter`. It 
 decides the destiny of examples that need to be classified and cannot
-be unambiguously put in a branch. The detailed function of this class
-is given in description of classification with trees. XXXXXX
+be unambiguously put in a branch.
 
 .. class:: Descender
 
@@ -1683,16 +1140,535 @@ defined. Fortunately, this is the default.
 
         Parameter m for m-estimation.
 
-Undocumented
-============
+Printing the tree
+=================
 
-.. class:: NodeList
+The included printing functions can
+print out practically anything you'd like to
+know, from the number of examples, proportion of examples of majority
+class in nodes and similar, to more complex statistics like the
+proportion of examples in a particular class divided by the proportion
+of examples of this class in a parent node. And even more, you can
+define your own callback functions to be used for printing.
 
-    Undocumented.
+Before we go on: you can read all about the function and use it to its
+full extent, or you can just call it, giving it the tree as the sole
+argument and it will print out the usual textual representation of the
+tree. If you're satisfied with that, you can stop here.
 
-.. class:: C45NodeList
+The magic is in the format string. It is a string which is printed
+out at every leaf or internal node with the certain format specifiers
+replaced by data from the tree node. Specifiers are generally of form
+**%[^]<precision><quantity><divisor>**.
 
-    Undocumented.
+**^** at the start tells that the number should be multiplied by 100.
+It's useful for printing proportions like percentages.
+
+**<precision>** is in the same format as in Python (or C) string
+formatting. For instance, :samp:`%N` denotes the number of examples in the node,
+hence :samp:`%6.2N` would mean output to two decimal digits and six places
+altogether. If left out, a default format :samp:`5.3` is used, unless you 
+multiply the numbers by 100, in which case the default is :samp:`.0`
+(no decimals, the number is rounded to the nearest integer).
+
+**<divisor>** tells what to divide the quantity in that node with.
+:samp:`bP` means division by the same quantity in the parent node; for instance,
+:samp:`%NbP` will tell give the number of examples in the node divided by the
+number of examples in parent node. You can add use precision formatting,
+e.g. :samp:`%6.2NbP.` bA is division by the same quantity over the entire data 
+set, so :samp:`%NbA` will tell you the proportion of examples (out of the entire
+training data set) that fell into that node. If division is impossible
+since the parent node does not exist or some data is missing, a dot is
+printed out instead of the quantity.
+
+**<quantity>** is the only required element. It defines what to print.
+For instance, :samp:`%N` would print out the number of examples in the node.
+Possible quantities are
+
+:samp:`V`
+    The value predicted at that node. You cannot define the precision 
+    or divisor here.
+
+:samp:`N`
+    The number of examples in the node.
+
+:samp:`M`
+    The number of examples in the majority class (that is, the class 
+    predicted by the node).
+
+:samp:`m`
+    The proportion of examples in the majority class.
+
+:samp:`A`
+    The average class for examples the node; this is available only for 
+    regression trees.
+
+:samp:`E`
+    Standard error for class of examples in the node; available for
+    regression trees.
+
+:samp:`I`
+    Print out the confidence interval. The modifier is used as 
+    :samp:`%I(95)` of (more complicated) :samp:`%5.3I(95)bP`.
+
+:samp:`C`
+    The number of examples in the given class. For classification trees, 
+    this modifier is used as, for instance in, :samp:`%5.3C="Iris-virginica"bP` 
+    - this will tell the number of examples of Iris-virginica by the 
+    number of examples this class in the parent node. If you are 
+    interested in examples that are *not* Iris-virginica, say 
+    :samp:`%5.3CbP!="Iris-virginica"`
+
+    For regression trees, you can use operators =, !=, <, <=, >, and >=, 
+    as in :samp:`%C<22` - add the precision and divisor if you will. You can also
+    check the number of examples in a certain interval: :samp:`%C[20, 22]`
+    will give you the number of examples between 20 and 22 (inclusive)
+    and :samp:`%C(20, 22)` will give the number of such examples excluding the
+    boundaries. You can of course mix the parentheses, e.g. :samp:`%C(20, 22]`.
+    If you would like the examples outside the interval, add a :samp:`!`,
+    like :samp:`%C!(20, 22]`.
+ 
+:samp:`c`
+    Same as above, except that it computes the proportion of the class
+    instead of the number of examples.
+
+:samp:`D`
+    Prints out the number of examples in each class. You can use both,
+    precision (it is applied to each number in the distribution) or the
+    divisor. This quantity cannot be computed for regression trees.
+
+:samp:`d`
+    Same as above, except that it shows proportions of examples. This
+    again doesn't work with regression trees.
+
+<user defined formats>
+    You can add more, if you will. Instructions and examples are given at
+    the end of this section.
+
+
+Examples
+--------
+
+We shall build a small tree from the iris data set - we shall limit the
+depth to three levels (part of `orngTree1.py`_, uses `iris.tab`_):
+
+.. literalinclude:: code/orngTree1.py
+   :lines: 1-4
+
+.. _orngTree1.py: code/orngTree1.py
+
+The easiest way to call the function is to pass the tree as the only 
+argument::
+
+    >>> print tree.dump()
+    petal width<0.800: Iris-setosa (100.00%)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor (94.23%)
+    |    |    petal length>=5.350: Iris-virginica (100.00%)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica (66.67%)
+    |    |    petal length>=4.850: Iris-virginica (100.00%)
+
+Let's now print out the predicted class at each node, the number
+of examples in the majority class with the total number of examples
+in the node::
+
+    >>> print tree.dump(leafStr="%V (%M out of %N)")
+    petal width<0.800: Iris-setosa (50.000 out of 50.000)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor (49.000 out of 52.000)
+    |    |    petal length>=5.350: Iris-virginica (2.000 out of 2.000)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica (2.000 out of 3.000)
+    |    |    petal length>=4.850: Iris-virginica (43.000 out of 43.000)
+
+Would you like to know how the number of examples declines as
+compared to the entire data set and to the parent node? We find
+it with this::
+
+    >>> print tree.dump(leafStr="%V (%^MbA%, %^MbP%)")
+    petal width<0.800: Iris-setosa (100%, 100%)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor (98%, 100%)
+    |    |    petal length>=5.350: Iris-virginica (4%, 40%)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica (4%, 4%)
+    |    |    petal length>=4.850: Iris-virginica (86%, 96%)
+
+Let us first read the format string. :samp:`%M` is the number of 
+examples in the majority class. We want it divided by the number of
+all examples from this class on the entire data set, hence :samp:`%MbA`.
+To have it multipied by 100, we say :samp:`%^MbA`. The percent sign *after*
+that is just printed out literally, just as the comma and parentheses
+(see the output). The string for showing the proportion of this class
+in the parent is the same except that we have :samp:`bP` instead 
+of :samp:`bA`.
+
+And now for the output: all examples of setosa for into the first node.
+For versicolor, we have 98% in one node; the rest is certainly
+not in the neighbouring node (petal length>=5.350) since all
+versicolors from the node petal width<1.750 went to petal length<5.350
+(we know this from the 100% in that line). Virginica is the 
+majority class in the three nodes that together contain 94% of this
+class (4+4+86). The rest must had gone to the same node as versicolor.
+
+If you find this guesswork annoying - so do I. Let us print out the
+number of versicolors in each node, together with the proportion of
+versicolors among the examples in this particular node and among all
+versicolors. So,
+
+::
+
+    '%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)
+
+gives the following output::
+
+    petal width<0.800: 0.000 (0% of node, 0% of versicolors)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: 49.000 (94% of node, 98% of versicolors)
+    |    |    petal length>=5.350: 0.000 (0% of node, 0% of versicolors)
+    |    petal width>=1.750
+    |    |    petal length<4.850: 1.000 (33% of node, 2% of versicolors)
+    |    |    petal length>=4.850: 0.000 (0% of node, 0% of versicolors)
+
+Finally, we may want to print out the distributions, using a simple 
+string :samp:`%D`::
+
+    petal width<0.800: [50.000, 0.000, 0.000]
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: [0.000, 49.000, 3.000]
+    |    |    petal length>=5.350: [0.000, 0.000, 2.000]
+    |    petal width>=1.750
+    |    |    petal length<4.850: [0.000, 1.000, 2.000]
+    |    |    petal length>=4.850: [0.000, 0.000, 43.000]
+
+What is the order of numbers here? If you check 
+:samp:`data.domain.classVar.values` , you'll learn that the order is setosa, 
+versicolor, virginica; so in the node at peta length<5.350 we have 49
+versicolors and 3 virginicae. To print out the proportions, we can 
+:samp:`%.2d` - this gives us proportions within node, rounded on 
+two decimals::
+
+    petal width<0.800: [1.00, 0.00, 0.00]
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: [0.00, 0.94, 0.06]
+    |    |    petal length>=5.350: [0.00, 0.00, 1.00]
+    |    petal width>=1.750
+    |    |    petal length<4.850: [0.00, 0.33, 0.67]
+    |    |    petal length>=4.850: [0.00, 0.00, 1.00]
+
+We haven't tried printing out any information for internal nodes.
+To start with the most trivial case, we shall print the prediction
+at each node.
+
+::
+
+    tree.dump(leafStr="%V", nodeStr=".")
+    
+says that the nodeStr should be the same as leafStr (not very useful 
+here, since leafStr is trivial anyway).
+
+:: 
+
+    root: Iris-setosa
+    |    petal width<0.800: Iris-setosa
+    |    petal width>=0.800: Iris-versicolor
+    |    |    petal width<1.750: Iris-versicolor
+    |    |    |    petal length<5.350: Iris-versicolor
+    |    |    |    petal length>=5.350: Iris-virginica
+    |    |    petal width>=1.750: Iris-virginica
+    |    |    |    petal length<4.850: Iris-virginica
+    |    |    |    petal length>=4.850: Iris-virginica
+
+Note that the output is somewhat different now: there appeared another
+node called *root* and the tree looks one level deeper. This is
+needed to print out the data for that node to.
+
+Now for something more complicated: let us observe how the number
+of virginicas decreases down the tree::
+
+    print tree.dump(leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')
+
+Let's first interpret the format string: :samp:`CbA="Iris-virginica"` is 
+the number of examples from class virginica, divided by the total number
+of examples in this class. Add :samp:`^.1` and the result will be
+multiplied and printed with one decimal. The trailing :samp:`%` is printed
+out. In parentheses we print the same thing except that we divide by the
+examples in the parent node. Note the use of single quotes, so we can
+use the double quotes inside the string, when we specify the class.
+
+::
+
+    root: 100.0% (.%)
+    |    petal width<0.800: 0.0% (0.0%)
+    |    petal width>=0.800: 100.0% (100.0%)
+    |    |    petal width<1.750: 10.0% (10.0%)
+    |    |    |    petal length<5.350: 6.0% (60.0%)
+    |    |    |    petal length>=5.350: 4.0% (40.0%)
+    |    |    petal width>=1.750: 90.0% (90.0%)
+    |    |    |    petal length<4.850: 4.0% (4.4%)
+    |    |    |    petal length>=4.850: 86.0% (95.6%)
+
+See what's in the parentheses in the root node? If :meth:`~TreeClassifier.dump`
+cannot compute something (in this case it's because the root has no parent),
+it prints out a dot. You can also eplace :samp:`=` by :samp:`!=` and it 
+will count all classes *except* virginica.
+
+For one final example with classification trees, we shall print the
+distributions in that nodes, the distribution compared to the parent
+and the proportions compared to the parent (the latter things are not
+the same - think why). In the leaves we shall also add the predicted
+class. So now we'll have to call the function like this.
+
+::
+
+    >>> print tree.dump(leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')
+    root: [50.000, 50.000, 50.000] . .
+    |    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
+    |        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
+    |    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
+    |    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
+    |    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]:
+    |    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
+    |    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]:
+    |    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
+    |    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
+    |    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]:
+    |    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
+    |    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]:
+    |    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
+
+To explore the possibilities when printing regression trees, we are going 
+to induce a tree from the housing data set. Called with the tree as the
+only argument, :meth:`TreeClassifier.dump` prints the tree like this::
+
+    RM<6.941
+    |    LSTAT<14.400
+    |    |    DIS<1.385: 45.6
+    |    |    DIS>=1.385: 22.9
+    |    LSTAT>=14.400
+    |    |    CRIM<6.992: 17.1
+    |    |    CRIM>=6.992: 12.0
+    RM>=6.941
+    |    RM<7.437
+    |    |    CRIM<7.393: 33.3
+    |    |    CRIM>=7.393: 14.4
+    |    RM>=7.437
+    |    |    TAX<534.500: 45.9
+    |    |    TAX>=534.500: 21.9
+
+Let us add the standard error in both internal nodes and leaves, and the
+90% confidence intervals in the leaves::
+
+    >>> print tree.dump(leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")
+    root: [SE: 0.409]
+    |    RM<6.941: [SE: 0.306]
+    |    |    LSTAT<14.400: [SE: 0.320]
+    |    |    |    DIS<1.385: [SE: 4.420]:
+    |    |    |        [SE: 4.420]   45.6 [38.331-52.829]
+    |    |    |    DIS>=1.385: [SE: 0.244]:
+    |    |    |        [SE: 0.244]   22.9 [22.504-23.306]
+    |    |    LSTAT>=14.400: [SE: 0.333]
+    |    |    |    CRIM<6.992: [SE: 0.338]:
+    |    |    |        [SE: 0.338]   17.1 [16.584-17.691]
+    |    |    |    CRIM>=6.992: [SE: 0.448]:
+    |    |    |        [SE: 0.448]   12.0 [11.243-12.714]
+    |    RM>=6.941: [SE: 1.031]
+    |    |    RM<7.437: [SE: 0.958]
+    |    |    |    CRIM<7.393: [SE: 0.692]:
+    |    |    |        [SE: 0.692]   33.3 [32.214-34.484]
+    |    |    |    CRIM>=7.393: [SE: 2.157]:
+    |    |    |        [SE: 2.157]   14.4 [10.862-17.938]
+    |    |    RM>=7.437: [SE: 1.124]
+    |    |    |    TAX<534.500: [SE: 0.817]:
+    |    |    |        [SE: 0.817]   45.9 [44.556-47.237]
+    |    |    |    TAX>=534.500: [SE: 0.000]:
+    |    |    |        [SE: 0.000]   21.9 [21.900-21.900]
+
+What's the difference between :samp:`%V`, the predicted value and 
+:samp:`%A` the average? Doesn't a regression tree always predict the
+leaf average anyway? Not necessarily, the tree predict whatever the
+:attr:`TreeClassifier.nodeClassifier` in a leaf returns. 
+As :samp:`%V` uses the 
+:obj:`Orange.data.variable.Continuous`' function for printing out the value, 
+therefore the printed number has the same number of decimals 
+as in the data file.
+
+Regression trees cannot print the distributions in the same way
+as classification trees. They instead offer a set of operators for
+observing the number of examples within a certain range. For instance,
+let us check the number of examples with values below 22, and compare
+this number with values in the parent nodes::
+
+    >>> print tree.dump(leafStr="%C<22 (%cbP<22)", nodeStr=".")
+    root: 277.000 (.)
+    |    RM<6.941: 273.000 (1.160)
+    |    |    LSTAT<14.400: 107.000 (0.661)
+    |    |    |    DIS<1.385: 0.000 (0.000)
+    |    |    |    DIS>=1.385: 107.000 (1.020)
+    |    |    LSTAT>=14.400: 166.000 (1.494)
+    |    |    |    CRIM<6.992: 93.000 (0.971)
+    |    |    |    CRIM>=6.992: 73.000 (1.040)
+    |    RM>=6.941: 4.000 (0.096)
+    |    |    RM<7.437: 3.000 (1.239)
+    |    |    |    CRIM<7.393: 0.000 (0.000)
+    |    |    |    CRIM>=7.393: 3.000 (15.333)
+    |    |    RM>=7.437: 1.000 (0.633)
+    |    |    |    TAX<534.500: 0.000 (0.000)
+    |    |    |    TAX>=534.500: 1.000 (30.000)</xmp>
+
+The last line, for instance, says the the number of examples with the
+class below 22 is among those with tax above 534 is 30 times higher
+than the number of such examples in its parent node.
+
+For another exercise, let's count the same for all examples *outside*
+interval [20, 22] (given like this, the interval includes the bounds).
+And let us print out the proportions as percents.
+
+::
+
+    >>> print tree.dump(leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")
+
+OK, let's observe the format string for one last time. :samp:`%c![20, 22]`
+would be the proportion of examples (within the node) whose values are
+below 20 or above 22. By :samp:`%cbP![20, 22]` we derive this by the same
+statistics computed on the parent. Add a :samp:`^` and you have the percentages.
+
+::
+
+    root: 439.000 (.%)
+    |    RM<6.941: 364.000 (98%)
+    |    |    LSTAT<14.400: 200.000 (93%)
+    |    |    |    DIS<1.385: 5.000 (127%)
+    |    |    |    DIS>=1.385: 195.000 (99%)
+    |    |    LSTAT>=14.400: 164.000 (111%)
+    |    |    |    CRIM<6.992: 91.000 (96%)
+    |    |    |    CRIM>=6.992: 73.000 (105%)
+    |    RM>=6.941: 75.000 (114%)
+    |    |    RM<7.437: 46.000 (101%)
+    |    |    |    CRIM<7.393: 43.000 (100%)
+    |    |    |    CRIM>=7.393: 3.000 (100%)
+    |    |    RM>=7.437: 29.000 (98%)
+    |    |    |    TAX<534.500: 29.000 (103%)
+    |    |    |    TAX>=534.500: 0.000 (0%)
+
+
+Defining Your Own Printout functions
+------------------------------------
+
+:meth:`TreeClassifier.dump`'s argument :obj:`userFormats` can be used to print out
+some other information in the leaves or nodes. If provided,
+:obj:`userFormats` should contain a list of tuples with a regular expression
+and a callback function to be called when that expression is found in the
+format string. Expressions from :obj:`userFormats` are checked before
+the built-in expressions discussed above, so you can override the built-ins
+if you want to.
+
+The regular expression should describe a string like those we used above,
+for instance the string :samp:`%.2DbP`. When a leaf or internal node
+is printed out, the format string (:obj:`leafStr` or :obj:`nodeStr`) 
+is checked for these regular expressions and when the match is found, 
+the corresponding callback function is called.
+
+The callback function will get five arguments: the format string 
+(:obj:`leafStr` or :obj:`nodeStr`), the match object, the node which is
+being printed, its parent (can be None) and the tree classifier.
+The function should return the format string in which the part described
+by the match object (that is, the part that is matched by the regular
+expression) is replaced by whatever information your callback function
+is supposed to give.
+
+The function can use several utility function provided in the module.
+
+.. autofunction:: insertStr
+
+.. autofunction:: insertDot
+
+.. autofunction:: insertNum
+
+.. autofunction:: byWhom
+
+
+There are also a few pieces of regular expression that you may want to reuse. 
+The two you are likely to use are:
+
+.. autodata:: fs
+
+.. autodata:: by
+
+For a trivial example, :samp:`%V` is implemented like this. There is the
+following tuple in the list of built-in formats::
+
+    (re.compile("%V"), replaceV)
+
+:obj:`replaceV` is a function defined by::
+
+    def replaceV(strg, mo, node, parent, tree):
+        return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))
+
+It therefore takes the value predicted at the node 
+(:samp:`node.nodeClassifier.defaultValue` ), converts it to a string
+and passes it to *insertStr* to do the replacement.
+
+A more complex regular expression is the one for the proportion of
+majority class, defined as :samp:`"%"+fs+"M"+by`. It uses the
+two partial expressions defined above.
+
+Let's say with like to print the classification margin for each node,
+that is, the difference between the proportion of the largest and the
+second largest class in the node (part of `orngTree2.py`_):
+
+.. _orngTree2.py: code/orngTree2.py
+
+.. literalinclude:: code/orngTree2.py
+   :lines: 7-31
+
+We first defined getMargin which gets the distribution and computes the
+margin. The callback replaces, replaceB, computes the margin for the node.
+If we need to divided the quantity by something (that is, if the :data:`by`
+group is present), we call :func:`byWhom` to get the node with whose margin
+this node's margin is to be divided. If this node (usually the parent)
+does not exist of if its margin is zero, we call :func:`insertDot`
+to insert a dot, otherwise we call :func:`insertNum` which will insert 
+the number, obeying the format specified by the user. myFormat is a list 
+containing the regular expression and the callback function.
+
+We can now print out the iris tree:
+
+.. literalinclude:: code/orngTree2.py
+    :lines: 33
+
+And we get::
+
+    petal width<0.800: Iris-setosa 100% (100.00%)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor 88% (108.57%)
+    |    |    petal length>=5.350: Iris-virginica 100% (122.73%)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica 33% (34.85%)
+    |    |    petal length>=4.850: Iris-virginica 100% (104.55%)
+
+Plotting the Tree using Dot
+---------------------------
+
+Suppose you saved the tree in a file "tree5.dot". You can then
+print it out as a gif if you execute the following command line
+
+::
+    
+    dot -Tgif tree5.dot -otree5.gif
+
+GraphViz's dot has quite a few other output formats, check 
+its documentation to learn which.
+
+
 
 ===========================
 C4.5 Classifier and Learner
@@ -1822,7 +1798,7 @@ gives the same results as the original.
 :class:`C45Learner` also offers another way for setting
 the arguments: it provides a function :obj:`C45Learner.commandLine`
 which is given a string and parses it the same way as C4.5 would
-parse its command line. XXXXXXXXXXX
+parse its command line. 
 
 .. class:: C45Classifier
 
@@ -1945,13 +1921,6 @@ Printing out C45 Tree
 
 .. autofunction:: printTreeC45
 
-TODO
-====
-
-This page does not provide examples for programming your own components, 
-such as, for instance, a :obj:`SplitConstructor`. Those examples
-can be found on a page dedicated to callbacks to Python.
-
 References
 ==========
 
@@ -1967,7 +1936,7 @@ A home page of AT&T's dot and similar software packages.
 """
 
 from Orange.core import \
-     TreeLearner as TreeLearnerBase, \
+     TreeLearner as _TreeLearner, \
          TreeClassifier as _TreeClassifier, \
          C45Learner, \
          C45Classifier, \
@@ -2101,7 +2070,7 @@ class TreeLearner(Orange.core.Learner):
     Assembles the generic classification or regression tree learner 
     (from Orange's objects for induction of decision trees). 
     :class:`TreeLearner` is essentially a wrapper
-    around :class:`TreeLearnerBase`, provided for easier use of the latter.
+    around :class:`_TreeLearner`, provided for easier use of the latter.
     It sets a number of parameters used in induction that
     can also be set after the creation of the object, most often through
     the object's attributes. If upon initialization
@@ -2156,6 +2125,13 @@ class TreeLearner(Orange.core.Learner):
     .. attribute:: reliefM, reliefK
 
         Sem `m` and `k` to given values if the :obj:`measure` is relief.
+
+    .. attribute:: splitter
+
+        Object of type :class:`ExampleSplitter`. The default splitter
+        is :class:`ExampleSplitter_UnknownsAsSelector` that splits
+        the learning examples according to distributions given by the
+        selector.
 
     **Pruning**
 
@@ -2252,6 +2228,7 @@ class TreeLearner(Orange.core.Learner):
         self.split = None
         self.stop = None
         self.measure = None
+        self.splitter = None
         self.__dict__.update(kw)
       
     def __call__(self, examples, weight=0):
@@ -2269,6 +2246,10 @@ class TreeLearner(Orange.core.Learner):
             bl.split.continuousSplitConstructor.measure = measure
             bl.split.discreteSplitConstructor.measure = measure
          
+        if self.splitter != None:
+            bl.splitter = self.splitter
+
+
         #post pruning
         tree = bl(examples, weight)
         if getattr(self, "sameMajorityPruning", 0):
@@ -2281,7 +2262,7 @@ class TreeLearner(Orange.core.Learner):
     def instance(self):
         """
         DEPRECATED. Return a base learner - an object 
-        of :class:`TreeLearnerBase`. 
+        of :class:`_TreeLearner`. 
         This method is left for backwards compatibility.
         """
         return self._base_learner()
@@ -2361,7 +2342,7 @@ class TreeLearner(Orange.core.Learner):
         return stop
 
     def _base_learner(self):
-        learner = TreeLearnerBase()
+        learner = _TreeLearner()
 
         learner.split = self.build_split()
         learner.stop = self.build_stop()

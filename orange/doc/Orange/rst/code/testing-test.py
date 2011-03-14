@@ -4,7 +4,7 @@ import random
 table = Orange.data.Table("voting")
 
 bayes = Orange.classification.bayes.NaiveLearner(name="bayes")
-tree = Orange.classification.tree.TreeLearnerBase(name="tree")
+tree = Orange.classification.tree.TreeLearner(name="tree")
 majority = Orange.classification.majority.MajorityLearner(name="default")
 learners = [bayes, tree, majority]
 

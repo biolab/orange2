@@ -158,8 +158,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            
            "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
            
-           "orange.TreeLearner": "Orange.classification.tree.TreeLearnerBase",
-           "orange.TreeClassifier": "Orange.classification.tree._TreeClassifier",
+           "orange.TreeLearner": "Orange.classification.tree.TreeLearner",
+           "orange.TreeClassifier": "Orange.classification.tree.TreeClassifier",
            "orange.C45Learner": "Orange.classification.tree.C45Learner",
            "orange.C45Classifier": "Orange.classification.tree.C45Classifier",
            "orange.C45TreeNode": "Orange.classification.tree.C45Node",
