@@ -372,7 +372,7 @@ from Orange.core import \
               ClassifierByExampleTable as ClassifierByDataTable
 
 
-def lookupFromBound(attribute, bound):
+def lookup_from_bound(attribute, bound):
     if not len(bound):
         raise TypeError, "no bound attributes"
     elif len(bound) <= 3:
@@ -383,12 +383,12 @@ def lookupFromBound(attribute, bound):
         return None
 
     
-def lookupFromFunction(attribute, bound, function):
+def lookup_from_function(attribute, bound, function):
     """Constructs ClassifierByExampleTable or ClassifierByLookupTable
     mirroring the given function
     
     """
-    lookup = lookupFromBound(attribute, bound)
+    lookup = lookup_from_bound(attribute, bound)
     if lookup:
         lookup.lookupTable = [Orange.data.Value(attribute, function(attributes))
                               for attributes in Orange.misc.counters.LimitedCounter(
@@ -403,9 +403,9 @@ def lookupFromFunction(attribute, bound, function):
         return LookupLearner(examples)
       
 
-def lookupFromData(examples, weight = 0, learnerForUnknown = None):
+def lookup_from_data(examples, weight = 0, learnerForUnknown = None):
     if len(examples.domain.attributes) <= 3:
-        lookup = lookupFromBound(examples.domain.classVar,
+        lookup = lookup_from_bound(examples.domain.classVar,
                                  examples.domain.attributes)
         lookupTable = lookup.lookupTable
         for example in examples:
@@ -427,7 +427,7 @@ def lookupFromData(examples, weight = 0, learnerForUnknown = None):
                              learnerForUnknown=learnerForUnknown)
         
         
-def printLookupFunction(func):
+def dump_lookup_function(func):
     if isinstance(func, Orange.data.variable.Variable):
         if not func.getValueFrom:
             raise TypeError, "attribute '%s' does not have an associated function" % func.name
