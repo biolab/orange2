@@ -558,31 +558,28 @@ def allinfo(domain):
         dic[filename] = info(domain, target)
     return dic
 
-def needs_update(domain, filename, access_code=None):
+def needs_update(domain, filename, serverfiles=None):
     """True if a file does not exist in the local repository
     or if there is a newer version on the server."""
+    if serverfiles == None: serverfiles = ServerFiles()
     if filename not in listfiles(domain):
         return True
     dt_fmt = "%Y-%m-%d %H:%M:%S"
     dt_local = datetime.datetime.strptime(
         info(domain, filename)["datetime"][:19], dt_fmt)
-    server = ServerFiles(access_code=access_code)
     dt_server = datetime.datetime.strptime(
-        server.info(domain, filename)["datetime"][:19], dt_fmt)
+        serverfiles.info(domain, filename)["datetime"][:19], dt_fmt)
     return dt_server > dt_local
 
-def update(domain, filename, access_code=None, verbose=True):
+def update(domain, filename, serverfiles=None, **kwargs):
     """Downloads the corresponding file from the server and places it in 
     the local repository, but only if the server copy of the file is newer 
-    or the local copy does not exist. An optional access_code can be given 
-    to allow server access if the file is protected.
+    or the local copy does not exist. An optional  :class:`ServerFiles` object
+    can be passed for authenticated access.
     """
-    if needs_update(domain, filename, access_code=access_code):
-        if not access_code:
-            download(domain, filename, verbose=verbose)
-        else:
-            server = orngServerFiles.ServerFiles(access_code=access_code)
-            download(domain, filename, serverfiles=server)
+    if serverfiles == None: serverfiles = ServerFiles()
+    if needs_update(domain, filename, serverfiles=serverfiles):
+        download(domain, filename, serverfiles=serverfiles, **kwargs)
         
 def _searchinfo():
     domains = listdomains()
