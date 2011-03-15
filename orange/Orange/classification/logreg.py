@@ -7,20 +7,18 @@
 Logistic regression
 *******************
 
-Implements `logistic regression <http://en.wikipedia.org/wiki/Logistic_regression>`_
-with an extension for proper treatment of discrete features.
-The algorithm can handle various anomalies in features, such as constant variables
-and singularities, that could make fitting of logistic regression almost
-impossible. Stepwise logistic regression, which iteratively selects the most informative features,
-is also supported.
+Implements `logistic regression
+<http://en.wikipedia.org/wiki/Logistic_regression>`_ with an extension for
+proper treatment of discrete features.  The algorithm can handle various
+anomalies in features, such as constant variables and singularities, that
+could make fitting of logistic regression almost impossible. Stepwise
+logistic regression, which iteratively selects the most informative
+features, is also supported.
 
 
-.. autofunction:: LogRegLearner
-.. autofunction:: StepWiseFSS
+.. autoclass:: LogRegLearner
+.. autoclass:: StepWiseFSS
 .. autofunction:: dump
-
-.. autoclass:: StepWiseFSS_class
-   :members:
 
 Examples
 ========
@@ -143,7 +141,7 @@ The output of this script is::
 
 """
 
-from Orange.core import LogRegLearner, LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
+#from Orange.core import LogRegLearner, LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
 
 import Orange
 import math, os
@@ -156,17 +154,17 @@ from numpy.linalg import *
 ## Print out methods
 
 def dump(classifier):
-    """ Formatted print to console of all major features in logistic
+    """ Formatted string of all major features in logistic
     regression classifier. 
 
     :param classifier: logistic regression classifier
     """
 
     # print out class values
-    print
-    print "class attribute = " + classifier.domain.classVar.name
-    print "class values = " + str(classifier.domain.classVar.values)
-    print
+    out = ['']
+    out.append("class attribute = " + classifier.domain.classVar.name)
+    out.append("class values = " + str(classifier.domain.classVar.values))
+    out.append('')
     
     # get the longest attribute name
     longest=0
@@ -176,22 +174,24 @@ def dump(classifier):
 
     # print out the head
     formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
-    print formatstr % ("Feature", "beta", "st. error", "wald Z", "P", "OR=exp(beta)")
-    print
+    out.append(formatstr % ("Feature", "beta", "st. error", "wald Z", "P", "OR=exp(beta)"))
+    out.append('')
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
-    print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
+    out.append(formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0]))
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
     for i in range(len(classifier.continuizedDomain.attributes)):
-        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1]))
+        out.append(formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1])))
+
+    return '\n'.join(out)
         
 
-def hasDiscreteValues(domain):
+def has_discrete_values(domain):
     for at in domain.attributes:
         if at.varType == Orange.core.VarTypes.Discrete:
             return 1
     return 0
 
-def LogRegLearner(table=None, weightID=0, **kwds):
+class LogRegLearner(Orange.classification.Learner):
     """ Logistic regression learner.
 
     Implements logistic regression. If data instances are provided to
@@ -205,7 +205,6 @@ def LogRegLearner(table=None, weightID=0, **kwds):
     :param removeSingular: set to 1 if you want automatic removal of disturbing features, such as constants and singularities
     :type removeSingular: bool
     :param fitter: the fitting algorithm (by default the Newton-Raphson fitting algorithm is used)
-    :type fitter: type???
     :param stepwiseLR: set to 1 if you wish to use stepwise logistic regression
     :type stepwiseLR: bool
     :param addCrit: parameter for stepwise feature selection
@@ -214,16 +213,17 @@ def LogRegLearner(table=None, weightID=0, **kwds):
     :type deleteCrit: float
     :param numFeatures: parameter for stepwise feature selection
     :type numFeatures: int
-    :rtype: :obj:`LogRegLearnerClass` or :obj:`LogRegClassifier`
+    :rtype: :obj:`LogRegLearner` or :obj:`LogRegClassifier`
 
     """
-    lr = LogRegLearnerClass(**kwds)
-    if table:
-        return lr(table, weightID)
-    else:
-        return lr
+    def __new__(cls, instances=None, weightID=0, **argkw):
+        self = Orange.classification.Learner.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances, weightID)
+        else:
+            return self
 
-class LogRegLearnerClass(Orange.core.Learner):
     def __init__(self, removeSingular=0, fitter = None, **kwds):
         self.__dict__.update(kwds)
         self.removeSingular = removeSingular
@@ -272,14 +272,15 @@ class LogRegLearnerClass(Orange.core.Learner):
 
 
 
-def Univariate_LogRegLearner(examples=None, **kwds):
-    learner = apply(Univariate_LogRegLearner_Class, (), kwds)
-    if examples:
-        return learner(examples)
-    else:
-        return learner
+class UnivariateLogRegLearner(Orange.classification.Learner):
+    def __new__(cls, instances=None, **argkw):
+        self = Orange.classification.Learner.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances)
+        else:
+            return self
 
-class Univariate_LogRegLearner_Class(Orange.core.Learner):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
@@ -295,7 +296,7 @@ class Univariate_LogRegLearner_Class(Orange.core.Learner):
 
         return Univariate_LogRegClassifier(beta = beta, beta_se = beta_se, P = P, wald_Z = wald_Z, domain = domain)
 
-class Univariate_LogRegClassifier(Orange.core.Classifier):
+class UnivariateLogRegClassifier(Orange.core.Classifier):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
@@ -304,14 +305,15 @@ class Univariate_LogRegClassifier(Orange.core.Classifier):
         pass
     
 
-def LogRegLearner_getPriors(examples = None, weightID=0, **kwds):
-    lr = LogRegLearnerClass_getPriors(**kwds)
-    if examples:
-        return lr(examples, weightID)
-    else:
-        return lr
+class LogRegLearnerGetPriors(object):
+    def __new__(cls, instances=None, weightID=0, **argkw):
+        self = object.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances, weightID)
+        else:
+            return self
 
-class LogRegLearnerClass_getPriors(object):
     def __init__(self, removeSingular=0, **kwds):
         self.__dict__.update(kwds)
         self.removeSingular = removeSingular
@@ -422,7 +424,7 @@ class LogRegLearnerClass_getPriors(object):
         return (orig_model, betas_ap)
         #return (bayes_prior,orig_model.beta[examples.domain.classVar],logistic_prior)
 
-class LogRegLearnerClass_getPriors_OneTable:
+class LogRegLearnerGetPriorsOneTable:
     def __init__(self, removeSingular=0, **kwds):
         self.__dict__.update(kwds)
         self.removeSingular = removeSingular
@@ -523,14 +525,14 @@ class LogRegLearnerClass_getPriors_OneTable:
 #### Fitters for logistic regression (logreg) learner ####
 ######################################
 
-def Pr(x, betas):
+def pr(x, betas):
     k = math.exp(dot(x, betas))
     return k / (1+k)
 
 def lh(x,y,betas):
     llh = 0.0
     for i,x_i in enumerate(x):
-        pr = Pr(x_i,betas)
+        pr = pr(x_i,betas)
         llh += y[i]*log(max(pr,1e-6)) + (1-y[i])*log(max(1-pr,1e-6))
     return llh
 
@@ -541,7 +543,7 @@ def diag(vector):
         mat[i][i] = v
     return mat
     
-class simpleFitter(Orange.core.LogRegFitter):
+class SimpleFitter(Orange.core.LogRegFitter):
     def __init__(self, penalty=0, se_penalty = False):
         self.penalty = penalty
         self.se_penalty = se_penalty
@@ -565,7 +567,7 @@ class simpleFitter(Orange.core.LogRegFitter):
 
         pen_matrix = array([self.penalty] * (len(data.domain.attributes)+1))
         if self.se_penalty:
-            p = array([Pr(X[i], betas) for i in range(len(data))])
+            p = array([pr(X[i], betas) for i in range(len(data))])
             W = identity(len(data), Float)
             pp = p * (1.0-p)
             for i in range(N):
@@ -580,7 +582,7 @@ class simpleFitter(Orange.core.LogRegFitter):
         while abs(likelihood - likelihood_new)>1e-5:
             likelihood = likelihood_new
             oldBetas = betas
-            p = array([Pr(X[i], betas) for i in range(len(data))])
+            p = array([pr(X[i], betas) for i in range(len(data))])
 
             W = identity(len(data), Float)
             pp = p * (1.0-p)
@@ -603,10 +605,10 @@ class simpleFitter(Orange.core.LogRegFitter):
             
             
 ##        XX = sqrt(diagonal(inverse(matrixmultiply(transpose(X),X))))
-##        yhat = array([Pr(X[i], betas) for i in range(len(data))])
+##        yhat = array([pr(X[i], betas) for i in range(len(data))])
 ##        ss = sum((y - yhat) ** 2) / (N - len(data.domain.attributes) - 1)
 ##        sigma = math.sqrt(ss)
-        p = array([Pr(X[i], betas) for i in range(len(data))])
+        p = array([pr(X[i], betas) for i in range(len(data))])
         W = identity(len(data), Float)
         pp = p * (1.0-p)
         for i in range(N):
@@ -621,20 +623,20 @@ class simpleFitter(Orange.core.LogRegFitter):
             beta_se.append(diXWX[i])
         return (self.OK, beta, beta_se, 0)
 
-def Pr_bx(bx):
+def pr_bx(bx):
     if bx > 35:
         return 1
     if bx < -35:
         return 0
     return exp(bx)/(1+exp(bx))
 
-class bayesianFitter(Orange.core.LogRegFitter):
+class BayesianFitter(Orange.core.LogRegFitter):
     def __init__(self, penalty=0, anch_examples=[], tau = 0):
         self.penalty = penalty
         self.anch_examples = anch_examples
         self.tau = tau
 
-    def createArrayData(self,data):
+    def create_array_data(self,data):
         if not len(data):
             return (array([]),array([]))
         # convert data to numeric
@@ -652,16 +654,16 @@ class bayesianFitter(Orange.core.LogRegFitter):
         return (X,y)
     
     def __call__(self, data, weight=0):
-        (X,y)=self.createArrayData(data)
+        (X,y)=self.create_array_data(data)
 
         exTable = Orange.core.ExampleTable(data.domain)
         for id,ex in self.anch_examples:
             exTable.extend(Orange.core.ExampleTable(ex,data.domain))
-        (X_anch,y_anch)=self.createArrayData(exTable)
+        (X_anch,y_anch)=self.create_array_data(exTable)
 
         betas = array([0.0] * (len(data.domain.attributes)+1))
 
-        likelihood,betas = self.estimateBeta(X,y,betas,[0]*(len(betas)),X_anch,y_anch)
+        likelihood,betas = self.estimate_beta(X,y,betas,[0]*(len(betas)),X_anch,y_anch)
 
         # get attribute groups atGroup = [(startIndex, number of values), ...)
         ats = data.domain.attributes
@@ -680,7 +682,7 @@ class bayesianFitter(Orange.core.LogRegFitter):
             else: X_anch_temp = X_anch
 ##            print "1", concatenate((betas[:i+1],betas[i+2:]))
 ##            print "2", betas
-            likelihood_temp,betas_temp=self.estimateBeta(X_temp,y,concatenate((betas[:ag[0]+1],betas[ag[0]+ag[1]+1:])),[0]+[1]*(len(betas)-1-ag[1]),X_anch_temp,y_anch)
+            likelihood_temp,betas_temp=self.estimate_beta(X_temp,y,concatenate((betas[:ag[0]+1],betas[ag[0]+ag[1]+1:])),[0]+[1]*(len(betas)-1-ag[1]),X_anch_temp,y_anch)
             print "finBetas", betas, betas_temp
             print "betas", betas[0], betas_temp[0]
             sumB += betas[0]-betas_temp[0]
@@ -699,11 +701,11 @@ class bayesianFitter(Orange.core.LogRegFitter):
 
      
         
-    def estimateBeta(self,X,y,betas,const_betas,X_anch,y_anch):
+    def estimate_beta(self,X,y,betas,const_betas,X_anch,y_anch):
         N,N_anch = len(y),len(y_anch)
         r,r_anch = array([dot(X[i], betas) for i in range(N)]),\
                    array([dot(X_anch[i], betas) for i in range(N_anch)])
-        p    = array([Pr_bx(ri) for ri in r])
+        p    = array([pr_bx(ri) for ri in r])
         X_sq = X*X
 
         max_delta      = [1.]*len(const_betas)
@@ -717,11 +719,11 @@ class bayesianFitter(Orange.core.LogRegFitter):
                 if const_betas[j]: continue
                 dl = matrixmultiply(X[:,j],transpose(y-p))
                 for xi,x in enumerate(X_anch):
-                    dl += self.penalty*x[j]*(y_anch[xi] - Pr_bx(r_anch[xi]*self.penalty))
+                    dl += self.penalty*x[j]*(y_anch[xi] - pr_bx(r_anch[xi]*self.penalty))
 
                 ddl = matrixmultiply(X_sq[:,j],transpose(p*(1-p)))
                 for xi,x in enumerate(X_anch):
-                    ddl += self.penalty*x[j]*Pr_bx(r[xi]*self.penalty)*(1-Pr_bx(r[xi]*self.penalty))
+                    ddl += self.penalty*x[j]*pr_bx(r[xi]*self.penalty)*(1-pr_bx(r[xi]*self.penalty))
 
                 if j==0:
                     dv = dl/max(ddl,1e-6)
@@ -738,7 +740,7 @@ class bayesianFitter(Orange.core.LogRegFitter):
                         dv = -betas[j]
                 dv = min(max(dv,-max_delta[j]),max_delta[j])
                 r+= X[:,j]*dv
-                p = array([Pr_bx(ri) for ri in r])
+                p = array([pr_bx(ri) for ri in r])
                 if N_anch:
                     r_anch+=X_anch[:,j]*dv
                 betas[j] += dv
@@ -763,49 +765,7 @@ class bayesianFitter(Orange.core.LogRegFitter):
 ############################################################
 #  Feature subset selection for logistic regression
 
-
-def StepWiseFSS(table=None, **kwds):
-    """Implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000].
-
-    If :obj:`table` is specified, stepwise logistic regression implemented
-    in :obj:`StepWiseFSS_class` is performed and a list of chosen features
-    is returned. If :obj:`table` is not specified an instance of
-    :obj:`StepWiseFSS_class` with all parameters set is returned.
-
-    :param table: data set
-    :type table: Orange.data.Table
-
-    :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then features is added if its P is lower than 0.2)
-    :type addCrit: float
-
-    :param deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
-    :type deleteCrit: float
-
-    :param numFeatures: maximum number of selected features, use -1 for infinity.
-    :type numFeatures: int
-    :rtype: :obj:`StepWiseFSS_class` or list of features
-
-    """
-
-    """
-      Constructs and returns a new set of table that includes a
-      class and features selected by stepwise logistic regression. This is an
-      implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000]
-
-      table: data set (ExampleTable)     
-      addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then attribute is added if its P is lower than 0.2)
-      deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
-      numFeatures: maximum number of selected features, use -1 for infinity
-
-    """
-
-    fss = apply(StepWiseFSS_class, (), kwds)
-    if table is not None:
-        return fss(table)
-    else:
-        return fss
-
-def getLikelihood(fitter, examples):
+def get_likelihood(fitter, examples):
     res = fitter(examples)
     if res[0] in [fitter.OK]: #, fitter.Infinity, fitter.Divergence]:
        status, beta, beta_se, likelihood = res
@@ -817,8 +777,10 @@ def getLikelihood(fitter, examples):
         
 
 
-class StepWiseFSS_class(Orange.core.Learner):
-  """ Perform stepwise logistic regression and return a list of the
+class StepWiseFSS(Orange.classification.Learner):
+  """Implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000].
+
+  Perform stepwise logistic regression and return a list of the
   most "informative" features. Each step of the algorithm is composed
   of two parts. The first is backward elimination, where each already
   chosen feature is tested for a significant contribution to the overall
@@ -837,10 +799,36 @@ class StepWiseFSS_class(Orange.core.Learner):
   test. Normal F test is not appropriate, because errors are assumed to
   follow a binomial distribution.
 
+  If :obj:`table` is specified, stepwise logistic regression implemented
+  in :obj:`StepWiseFSS` is performed and a list of chosen features
+  is returned. If :obj:`table` is not specified an instance of
+  :obj:`StepWiseFSS` with all parameters set is returned.
+
+  :param table: data set
+  :type table: Orange.data.Table
+
+  :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then features is added if its P is lower than 0.2)
+  :type addCrit: float
+
+  :param deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
+  :type deleteCrit: float
+
+  :param numFeatures: maximum number of selected features, use -1 for infinity.
+  :type numFeatures: int
+  :rtype: :obj:`StepWiseFSS` or list of features
+
   """
 
-  def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1, **kwds):
+  def __new__(cls, instances=None, **argkw):
+      self = Orange.classification.Learner.__new__(cls, **argkw)
+      if instances:
+          self.__init__(**argkw)
+          return self.__call__(instances)
+      else:
+          return self
 
+
+  def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1, **kwds):
     self.__dict__.update(kwds)
     self.addCrit = addCrit
     self.deleteCrit = deleteCrit
@@ -861,7 +849,7 @@ class StepWiseFSS_class(Orange.core.Learner):
     #tempData  = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
     tempData  = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
 
-    ll_Old = getLikelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
+    ll_Old = get_likelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
     ll_Best = -1000000
     length_Old = float(len(tempData))
 
@@ -885,7 +873,7 @@ class StepWiseFSS_class(Orange.core.Learner):
                 tempDomain  = continuizer(Orange.core.Preprocessor_dropMissing(examples.select(tempDomain)))
                 tempData = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
 
-                ll_Delete = getLikelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
+                ll_Delete = get_likelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
                 length_Delete = float(len(tempData))
                 length_Avg = (length_Delete + length_Old)/2.0
 
@@ -931,7 +919,7 @@ class StepWiseFSS_class(Orange.core.Learner):
             # domain, calculate P for LL improvement.
             tempDomain  = continuizer(Orange.core.Preprocessor_dropMissing(examples.select(tempDomain)))
             tempData = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
-            ll_New = getLikelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
+            ll_New = get_likelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
 
             length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood
 
@@ -964,23 +952,20 @@ class StepWiseFSS_class(Orange.core.Learner):
     return attr
 
 
-def StepWiseFSS_Filter(examples = None, **kwds):
-    """
-        check function StepWiseFSS()
-    """
-
-    filter = apply(StepWiseFSS_Filter_class, (), kwds)
-    if examples is not None:
-        return filter(examples)
-    else:
-        return filter
-
-
-class StepWiseFSS_Filter_class(object):
+class StepWiseFSSFilter(object):
+    def __new__(cls, instances=None, **argkw):
+        self = object.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances)
+        else:
+            return self
+    
     def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1):
         self.addCrit = addCrit
         self.deleteCrit = deleteCrit
         self.numFeatures = numFeatures
+
     def __call__(self, examples):
         attr = StepWiseFSS(examples, addCrit=self.addCrit, deleteCrit = self.deleteCrit, numFeatures = self.numFeatures)
         return examples.select(Orange.core.Domain(attr, examples.domain.classVar))
