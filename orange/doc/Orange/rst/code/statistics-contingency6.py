@@ -15,5 +15,5 @@ print
 
 
 midkey = (cont.keys()[0] + cont.keys()[1])/2.0
-print "cont[%5.3f] =" % (midkey, cont[midkey])
+print "cont[%5.3f] =" % midkey, cont[midkey]
 
