@@ -11,6 +11,7 @@ import ftplib
 import time
 from datetime import datetime
 import obiGEO
+import os
 
 DOMAIN = "GEO"
 GDS_INFO = "gds_info.pickled"
@@ -33,6 +34,12 @@ if DOMAIN not in server.listdomains():
 
 localfile = orngServerFiles.localpath(DOMAIN, GDS_INFO)
 
+def _create_path_for_file(target): #KEGG uses this!
+    try:
+        os.makedirs(os.path.dirname(target))
+    except OSError:
+        pass
+
 path = orngServerFiles.localpath(DOMAIN)
 if GDS_INFO in server.listfiles(DOMAIN):
     print "Updating info file from server ..."
@@ -42,7 +49,7 @@ if GDS_INFO in server.listfiles(DOMAIN):
     
 else:
     print "Creating a local path..."
-    orngServerFiles.createPathForFile(localfile)
+    _create_path_for_file(localfile)
     f = file(localfile, "wb")
     cPickle.dump(({}, {}), f, True)
     f.close()
