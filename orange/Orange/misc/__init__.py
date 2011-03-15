@@ -89,10 +89,22 @@ Here we only give gain ratios to :obj:`bestOnTheFly`, so we don't have to specif
 special compare operator. After checking all features we get the index of the 
 optimal one by calling :obj:`winnerIndex`.
 
+==================
+Server files
+==================
+
+.. index:: server files
+
+.. automodule:: Orange.misc.serverfiles
+
 """
 
+import counters
+import selection
+import render
+import serverfiles
 
-__all__ = ["counters", "selection", "render"]
+__all__ = ["counters", "selection", "render", "serverfiles"]
 
 import random, types, sys
 
