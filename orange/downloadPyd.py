@@ -17,7 +17,7 @@ def rep(blk_cnt, blk_size, tot_size):
 repository_stamps = dict([tuple(x.split()) for x in urllib.urlopen(baseurl + "stamps_pyd.txt") if x.strip()])
 
 for fle in files:
-    if os.path.exists(fle+".pyd") and repository_stamps[fle+".pyd"] == md5.md5(file(fle+".pyd", "rb").read()).hexdigest().upper():
+    if os.path.exists(fle+".pyd") and repository_stamps.get(fle+".pyd", "") == md5.md5(file(fle+".pyd", "rb").read()).hexdigest().upper():
         print "\nSkipping %s" % fle,
     else:
         print "\nDownloading %s" % fle,
