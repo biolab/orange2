@@ -85,7 +85,7 @@ Many function in this module use a set of common arguments, which we define here
       output will therefore depend upon what you did after Orange was
       first imported in the current Python session. ::
 
-          res = orngTest.proportionTest(learners, data, 0.7,
+          res = Orange.evaluation.testing.proportion_test(learners, data, 0.7,
               randomGenerator=orange.globalRandom) 
 
     * 
@@ -131,7 +131,7 @@ Many function in this module use a set of common arguments, which we define here
     noise on learning. ::
 
         classnoise = orange.Preprocessor_addClassNoise(proportion=1.0) 
-        res = orngTest.proportionTest(learners, data, 0.7, 100, pps = [("L", classnoise)]) 
+        res = Orange.evaluation.testing.proportion_test(learners, data, 0.7, 100, pps = [("L", classnoise)]) 
 
 *proportions*
     Gives the proportions of learning examples at which the tests are
@@ -147,7 +147,7 @@ Many function in this module use a set of common arguments, which we define here
     The script below makes 100 repetitions of 70:30 test and store the
     classifiers it induces. ::
 
-        res = orngTest.proportionTest(learners, data, 0.7, 100, storeClassifier=1)
+        res = Orange.evaluation.testing.proportion_test(learners, data, 0.7, 100, storeClassifier=1)
 
 *verbose (keyword argument)*
     Several functions can report their progress if you add a keyword
@@ -156,16 +156,16 @@ Many function in this module use a set of common arguments, which we define here
 Sampling and Testing Functions
 ==============================
 
-.. autofunction:: proportionTest
-.. autofunction:: leaveOneOut
-.. autofunction:: crossValidation
-.. autofunction:: testWithIndices
-.. autofunction:: learningCurve
-.. autofunction:: learningCurveN
-.. autofunction:: learningCurveWithTestData
-.. autofunction:: learnAndTestOnTestData
-.. autofunction:: learnAndTestOnLearnData
-.. autofunction:: testOnData
+.. autofunction:: proportion_test
+.. autofunction:: leave_one_out
+.. autofunction:: cross_validation
+.. autofunction:: test_with_indices
+.. autofunction:: learning_curve
+.. autofunction:: learning_curve_n
+.. autofunction:: learning_curve_with_test_data
+.. autofunction:: learn_and_test_on_test_data
+.. autofunction:: learn_and_test_on_learn_data
+.. autofunction:: test_on_data
 
 Classes
 =======
@@ -198,7 +198,7 @@ import exceptions, cPickle, os, os.path
 
 #### Some private stuff
 
-def encodePP(pps):
+def encode_PP(pps):
     pps=""
     for pp in pps:
         objname = getobjectname(pp[1], "")
@@ -253,7 +253,7 @@ class TestedExample:
         self.actualClass= actualClass
         self.weight = weight
     
-    def addResult(self, aclass, aprob):
+    def add_result(self, aclass, aprob):
         """Appends a new result (class and probability prediction by a single classifier) to the classes and probabilities field."""
     
         if type(aclass.value)==float:
@@ -263,7 +263,7 @@ class TestedExample:
             self.classes.append(int(aclass))
             self.probabilities.append(list(aprob))
 
-    def setResult(self, i, aclass, aprob):
+    def set_result(self, i, aclass, aprob):
         """Sets the result of the i-th classifier to the given values."""
         if type(aclass.value)==float:
             self.classes[i] = float(aclass)
@@ -331,7 +331,7 @@ class ExperimentResults(object):
         self.weights = weights
         self.__dict__.update(argkw)
 
-    def loadFromFiles(self, learners, filename):
+    def load_from_files(self, learners, filename):
         self.loaded = []
       
         for i in range(len(learners)):
@@ -343,7 +343,7 @@ class ExperimentResults(object):
                     tre = self.results[ex]
                     if (tre.actualClass, tre.iterationNumber) != d[ex][0]:
                         raise SystemError, "mismatching example tables or sampling"
-                    self.results[ex].setResult(i, d[ex][1][0], d[ex][1][1])
+                    self.results[ex].set_result(i, d[ex][1][0], d[ex][1][1])
                 self.loaded.append(1)
             except exceptions.Exception:
                 self.loaded.append(0)
@@ -352,7 +352,7 @@ class ExperimentResults(object):
                 
         return not 0 in self.loaded                
                 
-    def saveToFiles(self, learners, filename):
+    def save_to_files(self, learners, filename):
         """
         Saves and load testing results. ``learners`` is a list of learners and
         ``filename`` is a template for the filename. The attribute loaded is
@@ -376,8 +376,8 @@ class ExperimentResults(object):
 
         Filename should include enough data to make sure that it
         indeed contains the right experimental results. The function
-        :obj:`learningCurve`, for example, forms the name of the file
-        from a string ``"{learningCurve}"``, the proportion of learning
+        :obj:`learning_curve`, for example, forms the name of the file
+        from a string ``"{learning_curve}"``, the proportion of learning
         examples, random seeds for cross-validation and learning set
         selection, a list of preprocessors' names and a checksum for
         examples. Of course you can outsmart this, but it should suffice
@@ -436,7 +436,7 @@ class ExperimentResults(object):
 
 #### Experimental procedures
 
-def leaveOneOut(learners, examples, pps=[], indicesrandseed="*", **argkw):
+def leave_one_out(learners, examples, pps=[], indicesrandseed="*", **argkw):
 
     """leave-one-out evaluation of learners on a data set
 
@@ -448,13 +448,13 @@ def leaveOneOut(learners, examples, pps=[], indicesrandseed="*", **argkw):
     """
 
     (examples, weight) = demangleExamples(examples)
-    return testWithIndices(learners, examples, range(len(examples)), indicesrandseed, pps, **argkw)
-    # return testWithIndices(learners, examples, range(len(examples)), pps=pps, argkw)
+    return test_with_indices(learners, examples, range(len(examples)), indicesrandseed, pps, **argkw)
+    # return test_with_indices(learners, examples, range(len(examples)), pps=pps, argkw)
 
-# apply(testWithIndices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
+# apply(test_with_indices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
 
 
-def proportionTest(learners, examples, learnProp, times=10,
+def proportion_test(learners, examples, learnProp, times=10,
                    strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
                    pps=[], callback=None, **argkw):
     """train-and-test evaluation (train on a subset, test on remaing examples)
@@ -468,7 +468,7 @@ def proportionTest(learners, examples, learnProp, times=10,
     100 repetitions of the so-called 70:30 test in which 70% of examples
     are used for training and 30% for testing is done by::
 
-        res = orngTest.proportionTest(learners, data, 0.7, 100) 
+        res = Orange.evaluation.testing.proportion_test(learners, data, 0.7, 100) 
 
     Note that Python allows naming the arguments; instead of "100" you
     can use "times=100" to increase the clarity (not so with keyword
@@ -495,11 +495,11 @@ def proportionTest(learners, examples, learnProp, times=10,
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
         testset = examples.selectref(indices, 1)
-        learnAndTestOnTestData(learners, (learnset, weight), (testset, weight), testResults, time, pps, **argkw)
+        learn_and_test_on_test_data(learners, (learnset, weight), (testset, weight), testResults, time, pps, **argkw)
         if callback: callback()
     return testResults
 
-def crossValidation(learners, examples, folds=10,
+def cross_validation(learners, examples, folds=10,
                     strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
                     pps=[], indicesrandseed="*", **argkw):
     """cross-validation evaluation of learners
@@ -513,28 +513,28 @@ def crossValidation(learners, examples, folds=10,
     else:
         randomGenerator = argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
         indices = Orange.core.MakeRandomIndicesCV(examples, folds, stratified = strat, randomGenerator = randomGenerator)
-    return testWithIndices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
+    return test_with_indices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
 
 
-def learningCurveN(learners, examples, folds=10,
+def learning_curve_n(learners, examples, folds=10,
                    strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
                    proportions=Orange.core.frange(0.1), pps=[], **argkw):
     """Construct a learning curve for learners.
 
-    A simpler interface for the function :obj:`learningCurve`. Instead
+    A simpler interface for the function :obj:`learning_curve`. Instead
     of methods for preparing indices, it simply takes the number of folds
     and a flag telling whether we want a stratified cross-validation or
     not. This function does not return a single :obj:`ExperimentResults` but
     a list of them, one for each proportion. ::
 
         prop = [0.2, 0.4, 0.6, 0.8, 1.0]
-        res = orngTest.learningCurveN(learners, data, folds = 5, proportions = prop)
+        res = Orange.evaluation.testing.learning_curve_n(learners, data, folds = 5, proportions = prop)
         for i, p in enumerate(prop):
             print "%5.3f:" % p,
             printResults(res[i])
 
     This function basically prepares a random generator and example selectors
-    (``cv`` and ``pick``) and calls :obj:`learningCurve`.
+    (``cv`` and ``pick``) and calls :obj:`learning_curve`.
 
     """
 
@@ -550,10 +550,10 @@ def learningCurveN(learners, examples, folds=10,
     else:
         cv=Orange.core.RandomIndicesCV(folds = folds, stratified = strat, randomGenerator = randomGenerator)
         pick=Orange.core.RandomIndices2(stratified = strat, randomGenerator = randomGenerator)
-    return apply(learningCurve, (learners, examples, cv, pick, proportions, pps), argkw)
+    return apply(learning_curve, (learners, examples, cv, pick, proportions, pps), argkw)
 
 
-def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.core.frange(0.1), pps=[], **argkw):
+def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.core.frange(0.1), pps=[], **argkw):
     """
     Computes learning curves using a procedure recommended by Salzberg
     (1997). It first prepares data subsets (folds). For each proportion,
@@ -597,7 +597,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
     examples, weight = demangleExamples(examples)
     folds = cv(examples)
     ccsum = hex(examples.checksum())[2:]
-    ppsp = encodePP(pps)
+    ppsp = encode_PP(pps)
     nLrn = len(learners)
 
     allResults=[]
@@ -607,7 +607,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
         if (cv.randseed<0) or (pick.randseed<0):
             cache = 0
         else:
-            fnstr = "{learningCurve}_%s_%s_%s_%s%s-%s" % ("%s", p, cv.randseed, pick.randseed, ppsp, ccsum)
+            fnstr = "{learning_curve}_%s_%s_%s_%s%s-%s" % ("%s", p, cv.randseed, pick.randseed, ppsp, ccsum)
             if "*" in fnstr:
                 cache = 0
 
@@ -616,7 +616,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
         testResults.results = [TestedExample(folds[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                                for i in range(len(examples))]
 
-        if cache and testResults.loadFromFiles(learners, fnstr):
+        if cache and testResults.load_from_files(learners, fnstr):
             printVerbose("  loaded from cache", verb)
         else:
             for fold in range(cv.folds):
@@ -645,17 +645,17 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
                         for cl in range(nLrn):
                             if not cache or not testResults.loaded[cl]:
                                 cls, pro = classifiers[cl](ex, Orange.core.GetBoth)
-                                testResults.results[i].setResult(cl, cls, pro)
+                                testResults.results[i].set_result(cl, cls, pro)
                 if callback: callback()
             if cache:
-                testResults.saveToFiles(learners, fnstr)
+                testResults.save_to_files(learners, fnstr)
 
         allResults.append(testResults)
         
     return allResults
 
 
-def learningCurveWithTestData(learners, learnset, testset, times=10,
+def learning_curve_with_test_data(learners, learnset, testset, times=10,
                               proportions=Orange.core.frange(0.1),
                               strat=Orange.core.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
     """
@@ -696,7 +696,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10,
         
         for t in range(times):
             printVerbose("  repetition %d" % t, verb)
-            learnAndTestOnTestData(learners, (learnset.selectref(pick(learnset, p), 0), learnweight),
+            learn_and_test_on_test_data(learners, (learnset.selectref(pick(learnset, p), 0), learnweight),
                                    testset, testResults, t)
 
         allResults.append(testResults)
@@ -704,15 +704,15 @@ def learningCurveWithTestData(learners, learnset, testset, times=10,
     return allResults
 
    
-def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
+def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
     """
     Performs a cross-validation-like test. The difference is that the
     caller provides indices (each index gives a fold of an example) which
     do not necessarily divide the examples into folds of (approximately)
-    same sizes. In fact, the function :obj:`crossValidation` is actually written
-    as a single call to ``testWithIndices``.
+    same sizes. In fact, the function :obj:`cross_validation` is actually written
+    as a single call to ``test_with_indices``.
 
-    ``testWithIndices`` takes care the ``TestedExamples`` are in the same order
+    ``test_with_indices`` takes care the ``TestedExamples`` are in the same order
     as the corresponding examples in the original set. Preprocessing of
     testing examples is thus not allowed. The computed results can be
     saved in files or loaded therefrom if you add a keyword argument
@@ -755,12 +755,12 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
         testResults.examples = examples
         
     ccsum = hex(examples.checksum())[2:]
-    ppsp = encodePP(pps)
+    ppsp = encode_PP(pps)
     fnstr = "{TestWithIndices}_%s_%s%s-%s" % ("%s", indicesrandseed, ppsp, ccsum)
     if "*" in fnstr:
         cache = 0
 
-    if cache and testResults.loadFromFiles(learners, fnstr):
+    if cache and testResults.load_from_files(learners, fnstr):
         printVerbose("  loaded from cache", verb)
     else:
         for fold in range(nIterations):
@@ -811,16 +811,16 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
                             cr = classifiers[cl](ex, Orange.core.GetBoth)                                      
                             if cr[0].isSpecial():
                                 raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
-                            testResults.results[i].setResult(cl, cr[0], cr[1])
+                            testResults.results[i].set_result(cl, cr[0], cr[1])
             if callback:
                 callback()
         if cache:
-            testResults.saveToFiles(learners, fnstr)
+            testResults.save_to_files(learners, fnstr)
         
     return testResults
 
 
-def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
+def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
     """
     This function performs no sampling on its own: two separate datasets
     need to be passed, one for training and the other for testing. The
@@ -834,8 +834,8 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
     ``results``) and an iteration number (``iterationNumber``). Results
     of the test will be appended with the given iteration
     number. This is because :obj:`learnAndTestWithTestData`
-    gets called by other functions, like :obj:`proportionTest` and
-    :obj:`learningCurveWithTestData`. If you omit the parameters, a new
+    gets called by other functions, like :obj:`proportion_test` and
+    :obj:`learning_curve_with_test_data`. If you omit the parameters, a new
     :obj:`ExperimentResults` will be created.
 
     """
@@ -866,13 +866,13 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
             callback()
     classifiers = [learner(learnset, learnweight) for learner in learners]
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], 'name', 'noname')
-    testResults = testOnData(classifiers, (testset, testweight), testResults, iterationNumber, storeExamples)
+    testResults = test_on_data(classifiers, (testset, testweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testResults
 
 
-def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
+def learn_and_test_on_learn_data(learners, learnset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
     """
     This function is similar to the above, except that it learns and
     tests on the same data. If first preprocesses the data with ``"B"``
@@ -880,7 +880,7 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
     preprocessors on separate datasets. Then it induces the model from
     the learning set and tests it on the testing set.
 
-    As with :obj:`learnAndTestOnTestData`, you can pass an already initialized
+    As with :obj:`learn_and_test_on_test_data`, you can pass an already initialized
     :obj:`ExperimentResults` (argument ``results``) and an iteration number to the
     function. In this case, results of the test will be appended with
     the given iteration number.
@@ -917,13 +917,13 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
         if callback:
             callback()
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
-    testResults = testOnData(classifiers, (testset, learnweight), testResults, iterationNumber, storeExamples)
+    testResults = test_on_data(classifiers, (testset, learnweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testResults
 
 
-def testOnData(classifiers, testset, testResults=None, iterationNumber=0, storeExamples = False, **argkw):
+def test_on_data(classifiers, testset, testResults=None, iterationNumber=0, storeExamples = False, **argkw):
     """
     This function gets a list of classifiers, not learners like the other
     functions in this module. It classifies each testing example with
@@ -967,7 +967,7 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, storeE
             ex2 = Orange.data.Instance(ex)
             ex2.setclass("?")
             cr = classifier(ex2, Orange.core.GetBoth)
-            te.addResult(cr[0], cr[1])
+            te.add_result(cr[0], cr[1])
         testResults.results.append(te)
         
     return testResults
