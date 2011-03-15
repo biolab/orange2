@@ -1,12 +1,12 @@
-import orange
-import Orange.cluster
+import Orange
 
-data = orange.ExampleTable("voting")
-# data = orange.ExampleTable("iris")
-for k in range(2,5):
-    km = Orange.cluster.KMeans(data, k, initialization=Orange.cluster.kmeans_init_diversity)
-    score = Orange.cluster.score_silhouette(km)
+table = Orange.data.Table("voting")
+# table = Orange.data.Table("iris")
+
+for k in range(2, 8):
+    km = Orange.clustering.kmeans.Clustering(table, k, initialization=Orange.clustering.kmeans.init_diversity)
+    score = Orange.clustering.kmeans.score_silhouette(km)
     print k, score
 
-km = Orange.cluster.KMeans(data, 3, initialization=Orange.cluster.kmeans_init_diversity)
-Orange.cluster.plot_silhouette(km, "kmeans-silhouette.png")
+km = Orange.clustering.kmeans.Clustering(table, 3, initialization=Orange.clustering.kmeans.init_diversity)
+Orange.clustering.kmeans.plot_silhouette(km, "kmeans-silhouette.png")

@@ -1,8 +1,7 @@
-import orange
-import Orange.cluster
+import Orange
 
 def callback(km):
     print "Iteration: %d, changes: %d, score: %.4f" % (km.iteration, km.nchanges, km.score)
     
-data = orange.ExampleTable("iris")
-km = Orange.cluster.KMeans(data, 3, minscorechange=0, inner_callback=callback)
+table = Orange.data.Table("iris")
+km = Orange.clustering.kmeans.Clustering(table, 3, minscorechange=0, inner_callback=callback)

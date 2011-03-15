@@ -1,6 +1,5 @@
-import orange
-import Orange.cluster
+import Orange
     
-data = orange.ExampleTable("iris")
-km = Orange.cluster.KMeans(data, 3)
+table = Orange.data.Table("iris")
+km = Orange.clustering.kmeans.Clustering(table, 3)
 print km.clusters[-10:]
