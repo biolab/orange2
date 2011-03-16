@@ -32,7 +32,7 @@ for i in data:
         print i, tree(i)
 
 tree = Orange.classification.tree.C45Learner(data)
-Orange.classification.tree.printTreeC45(tree)
+print tree.dump()
 print
 
 import orngStat, orngTest

@@ -2048,7 +2048,7 @@ class C45Classifier(Orange.classification.Classifier):
 
             data = Orange.data.Table("voting")
             c45 = Orange.classification.tree.C45Learner(data)
-            Orange.classification.tree.printTreeC45(c45)
+            print c45.dump()
 
         will print out
 
