@@ -85,7 +85,7 @@ features are read-only and can only be set when the object is
 constructed.
 
 
-.. py:class:: Orange.classification.lookup.ClassifierByLookupTable(classVar, variable1[, variable2[, variable3]] [, lookupTable[, distributions]])
+.. py:class:: ClassifierByLookupTable(classVar, variable1[, variable2[, variable3]] [, lookupTable[, distributions]])
     
     A general constructor that, based on the number of attribute
     descriptors, constructs one of the three classes discussed.
@@ -171,17 +171,17 @@ constructed.
 
 
 
-.. py:class:: Orange.classification.lookup.ClassifierByLookupTable1(classVar, variable1 [, lookupTable, distributions])
+.. py:class:: ClassifierByLookupTable1(classVar, variable1 [, lookupTable, distributions])
     
     Uses a single feature for lookup. See
     :obj:`ClassifierByLookupTable` for more details.
 
-.. py:class:: Orange.classification.lookup.ClassifierByLookupTable2(classVar, variable1, variable2, [, lookupTable[, distributions]])
+.. py:class:: ClassifierByLookupTable2(classVar, variable1, variable2, [, lookupTable[, distributions]])
     
     Uses two features for lookup. See
     :obj:`ClassifierByLookupTable` for more details.
         
-.. py:class:: Orange.classification.lookup.ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTable[, distributions]])
+.. py:class:: ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTable[, distributions]])
     
     Uses three features for lookup. See
     :obj:`ClassifierByLookupTable` for more details.
@@ -200,7 +200,7 @@ of the new feature are computed either by one of classifiers by lookup
 table or by ClassifierByExampleTable, depending on the number of bound
 features.
 
-.. py:class:: Orange.classification.lookup.ClassifierByExampleTable()
+.. py:class:: ClassifierByExampleTable
 
     :obj:`ClassifierByExampleTable` is the alternative to
     :obj:`ClassifierByLookupTable`. It is to be used when the
@@ -240,7 +240,7 @@ features.
 
 
 
-.. py:class:: Orange.classification.lookup.LookupLearner()
+.. py:class:: LookupLearner
     
     Although :obj:`ClassifierByExampleTable` is not really a classifier in
     the sense that you will use it to classify instances, but is rather a
