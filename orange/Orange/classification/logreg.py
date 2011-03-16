@@ -15,13 +15,142 @@ could make fitting of logistic regression almost impossible. Stepwise
 logistic regression, which iteratively selects the most informative
 features, is also supported.
 
+Logistic regression is a popular classification method that comes
+from statistics. The model is described by a linear combination of
+coefficients,
+
+.. math::
+    
+    F = \\beta_0 + \\beta_1*X_1 + \\beta_2*X_2 + ... + \\beta_k*X_k
+
+and the probability (p) of a class value is  computed as:
+
+.. math::
+
+    p = \\frac{\exp(F)}{1 + \exp(F)}
+
+
+.. class :: LogRegClassifier
+
+    :obj:`LogRegClassifier` stores estimated values of regression
+    coefficients and their significances, and uses them to predict
+    classes and class probabilities using the equations described above.
+
+    .. attribute :: beta
+
+        Estimated regression coefficients.
+
+    .. attribute :: beta_se
+
+        Estimated standard errors for regression coefficients.
+
+    .. attribute :: wald_Z
+
+        Wald Z statistics for beta coefficients. Wald Z is computed
+        as beta/beta_se.
+
+    .. attribute :: P
+
+        List of P-values for beta coefficients, that is, the probability
+        that beta coefficients differ from 0.0. The probability is
+        computed from squared Wald Z statistics that is distributed with
+        Chi-Square distribution.
+
+    .. attribute :: likelihood
+
+        The probability of the sample (ie. learning examples) observed on
+        the basis of the derived model, as a function of the regression
+        parameters.
+
+    .. attribute :: fitStatus
+
+        Tells how the model fitting ended - either regularly
+        (:obj:`LogRegFitter.OK`), or it was interrupted due to one of beta
+        coefficients escaping towards infinity (:obj:`LogRegFitter.Infinity`)
+        or since the values didn't converge (:obj:`LogRegFitter.Divergence`). The
+        value tells about the classifier's "reliability"; the classifier
+        itself is useful in either case.
 
 .. autoclass:: LogRegLearner
+
+.. class:: LogRegFitter
+
+    :obj:`LogRegFitter` is the abstract base class for logistic fitters. It
+    defines the form of call operator and the constants denoting its
+    (un)success:
+
+    .. attribute:: OK
+
+        Fitter succeeded to converge to the optimal fit.
+
+    .. attribute:: Infinity
+
+        Fitter failed due to one or more beta coefficients escaping towards infinity.
+
+    .. attribute:: Divergence
+
+        Beta coefficients failed to converge, but none of beta coefficients escaped.
+
+    .. attribute:: Constant
+
+        There is a constant attribute that causes the matrix to be singular.
+
+    .. attribute:: Singularity
+
+        The matrix is singular.
+
+
+    .. method:: __call__(examples, weightID)
+
+        Performs the fitting. There can be two different cases: either
+        the fitting succeeded to find a set of beta coefficients (although
+        possibly with difficulties) or the fitting failed altogether. The
+        two cases return different results.
+
+        `(status, beta, beta_se, likelihood)`
+            The fitter managed to fit the model. The first element of
+            the tuple, result, tells about the problems occurred; it can
+            be either :obj:`OK`, :obj:`Infinity` or :obj:`Divergence`. In
+            the latter cases, returned values may still be useful for
+            making predictions, but it's recommended that you inspect
+            the coefficients and their errors and make your decision
+            whether to use the model or not.
+
+        `(status, attribute)`
+            The fitter failed and the returned attribute is responsible
+            for it. The type of failure is reported in status, which
+            can be either :obj:`Constant` or :obj:`Singularity`.
+
+        The proper way of calling the fitter is to expect and handle all
+        the situations described. For instance, if fitter is an instance
+        of some fitter and examples contain a set of suitable examples,
+        a script should look like this::
+
+            res = fitter(examples)
+            if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
+               status, beta, beta_se, likelihood = res
+               < proceed by doing something with what you got >
+            else:
+               status, attr = res
+               < remove the attribute or complain to the user or ... >
+
+
+.. class :: LogRegFitter_Cholesky
+
+    :obj:`LogRegFitter_Cholesky` is the sole fitter available at the
+    moment. It is a C++ translation of `Alan Miller's logistic regression
+    code <http://users.bigpond.net.au/amiller/>`_. It uses Newton-Raphson
+    algorithm to iteratively minimize least squares error computed from
+    learning examples.
+
+
 .. autoclass:: StepWiseFSS
 .. autofunction:: dump
 
+
+
 Examples
-========
+--------
 
 The first example shows a very simple induction of a logistic regression
 classifier (`logreg-run.py`_, uses `titanic.tab`_).
@@ -141,7 +270,7 @@ The output of this script is::
 
 """
 
-#from Orange.core import LogRegLearner, LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
+from Orange.core import LogRegLearner, LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
 
 import Orange
 import math, os
