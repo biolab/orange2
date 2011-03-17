@@ -16,3 +16,15 @@ def needs_update(domain, filename, access_code=None):
 def update(domain, filename, access_code=None, verbose=True):
     sf = _sf_with_code(access_code=access_code)
     return Orange.misc.serverfiles.update(domain, filename, serverfiles=sf, verbose=verbose)
+
+def createPathForFile(target):
+    try:
+        os.makedirs(os.path.dirname(target))
+    except OSError:
+        pass
+ 
+def createPath(target):
+    try:
+        os.makedirs(target)
+    except OSError:
+        pass
