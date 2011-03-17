@@ -164,29 +164,26 @@ class LinearRegression(Orange.classification.Classifier):
         if resultType == Orange.classification.Classifier.GetProbabilities:
             return Orange.statistics.distribution.Continuous({1.0: yhat})
         return (yhat, Orange.statistics.distribution.Continuous({1.0: yhat}))
-
-
-def printLinearRegression(lr):
-    """pretty-prints linear regression model"""
-    beta = lr.beta
-    err = lr.statistics['model']['stdErrorEstimation']
-    t = lr.statistics['model summary']['t']
-    sig = lr.statistics['model summary']['sig'] 
-    beta0 = lr.beta0
     
-    labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
-    print join(['%10s' % l for l in labels], ' ')
+    def __str__(self):
+        err = self.statistics['model']['stdErrorEstimation']
+        t = self.statistics['model summary']['t']
+        sig = self.statistics['model summary']['sig']
+        
+        s = ' '.join(['%10s' % l for l in
+                      ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')])
 
-    fmt = "%10s " + join(["%10.3f"] * 4, " ")
-    if beta0 == True:
-        print fmt % ('Constant', beta[0], err[0], t[0], sig[0])
-        for i in range(len(lr.domain.attributes) - 1):
-            print fmt % (lr.domain.attributes[i].name,
-                         beta[i + 1], err[i + 1], t[i + 1], sig[i + 1])
-    else:
-        for i in range(len(lr.domain.attributes) - 1):
-            print fmt % (lr.domain.attributes[i].name,
-                         beta[i], err[i], t[i], sig[i])       
+        fmt = '\n%10s ' + ' '.join(["%10.3f"] * 4)
+        if self.beta0 == True:
+            s += fmt % ('Constant', self.beta[0], err[0], t[0], sig[0])
+            for i in range(len(self.domain.attributes) - 1):
+                s +=  fmt % (self.domain.attributes[i].name,
+                             self.beta[i + 1], err[i + 1], t[i + 1], sig[i + 1])
+        else:
+            for i in range(len(self.domain.attributes) - 1):
+                s +=  fmt % (self.domain.attributes[i].name,
+                             self.beta[i], err[i], t[i], sig[i])
+        return s
 
 def get_sig(m1, m2, n):
     if m1 == None or m2 == None:
