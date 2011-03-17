@@ -48,6 +48,7 @@ MAPPING = {"orange": "Orange.core",
            "orngStat": "Orange.evaluation.scoring",
            "orngWrap": "Orange.optimization",
            "orngClustering": "Orange.clustering",
+           "orngLookup": "Orange.classification.lookup",
            }
 
 
