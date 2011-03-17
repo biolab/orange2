@@ -1,4 +1,7 @@
 """
+==========================================
+Basic Statistics for Continuous Features
+==========================================
 
 The are two simple classes for computing basic statistics
 for continuous features, such as their minimal and maximal value

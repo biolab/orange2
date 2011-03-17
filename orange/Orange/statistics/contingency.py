@@ -1,4 +1,8 @@
 """
+=================
+Contingency table
+=================
+
 Contingency table contains conditional distributions. Unless explicitly
 'normalized', they contain absolute frequencies, that is, the number of
 instances with a particular combination of two variables' values. If they are

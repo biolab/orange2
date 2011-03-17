@@ -1,4 +1,7 @@
 """
+=============
+Distributions
+=============
 
 Class :obj:`Distribution` and derived classes are used for storing empirical
 distributions of discrete and continuous variables.

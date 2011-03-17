@@ -1,3 +1,9 @@
+"""
+======================
+Probability estimation
+======================
+"""
+
 from orange import \
      ProbabilityEstimator, \
                ProbabilityEstimator_FromDistribution, \
