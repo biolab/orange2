@@ -7,11 +7,11 @@
 import Orange
 
 ba = Orange.classification.bayes.NaiveLearner()
-imba = Orange.feature.imputation.ImputeLearner(baseLearner=ba, 
-       imputerConstructor=Orange.feature.imputation.ImputerConstructor_minimal)
+imba = Orange.feature.imputation.ImputeLearner(base_learner=ba, 
+       imputer_constructor=Orange.feature.imputation.ImputerConstructor_minimal)
 
 table = Orange.data.Table("voting")
-res = Orange.evaluation.testing.crossValidation([ba, imba], table)
+res = Orange.evaluation.testing.cross_validation([ba, imba], table)
 CAs = Orange.evaluation.scoring.CA(res)
 
 print "Without imputation: %5.3f" % CAs[0]

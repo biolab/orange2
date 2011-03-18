@@ -70,9 +70,9 @@ for i in range(20, 25):
 
 
 print "*** TREE-BASED IMPUTATION ***"
-import orngTree
+
 imputer = Orange.feature.imputation.ImputerConstructor_model()
-imputer.learnerContinuous = imputer.learnerDiscrete = orngTree.TreeLearner(minSubset = 20)
+imputer.learner_continuous = imputer.learner_discrete = Orange.classification.tree.TreeLearner(minSubset=20)
 imputer = imputer(table)
 print "Example w/ missing values"
 print table[19]
@@ -89,8 +89,8 @@ for i in range(20, 25):
 
 print "*** BAYES and AVERAGE IMPUTATION ***"
 imputer = Orange.feature.imputation.ImputerConstructor_model()
-imputer.learnerContinuous = Orange.classification.majority.MajorityLearner()
-imputer.learnerDiscrete = Orange.classification.bayes.NaiveLearner()
+imputer.learner_continuous = Orange.regression.mean.MeanLearner()
+imputer.learner_discrete = Orange.classification.bayes.NaiveLearner()
 imputer = imputer(table)
 print "Example w/ missing values"
 print table[19]
@@ -111,21 +111,21 @@ imputer.models[table.domain.index("LANES")] = Orange.classification.ConstantClas
 tord = Orange.classification.ConstantClassifier(Orange.data.Value(table.domain["T-OR-D"], "THROUGH"))
 imputer.models[table.domain.index("T-OR-D")] = tord
 
-import orngTree
+
 len_domain = Orange.data.Domain(["MATERIAL", "SPAN", "ERECTED", "LENGTH"], table.domain)
 len_data = Orange.data.Table(len_domain, table)
 len_tree = Orange.classification.tree.TreeLearner(len_data, minSubset=20)
 imputer.models[table.domain.index("LENGTH")] = len_tree
-orngTree.printTxt(len_tree)
+print len_tree
 
-spanVar = table.domain["SPAN"]
-def computeSpan(ex, rw):
+span_var = table.domain["SPAN"]
+def compute_span(ex, rw):
     if ex["TYPE"] == "WOOD" or ex["PURPOSE"] == "WALK":
-        return orange.Value(spanVar, "SHORT")
+        return orange.Value(span_var, "SHORT")
     else:
-        return orange.Value(spanVar, "MEDIUM")
+        return orange.Value(span_var, "MEDIUM")
 
-imputer.models[table.domain.index("SPAN")] = computeSpan
+imputer.models[table.domain.index("SPAN")] = compute_span
 
 for i in range(20, 25):
     print table[i]

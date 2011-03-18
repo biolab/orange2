@@ -2036,7 +2036,10 @@ class C45Classifier(Orange.classification.Classifier):
         if name in self.nativeClassifier.__dict__:
             self.nativeClassifier.__dict__[name] = value
         self.__dict__[name] = value
-    
+
+    def __str__(self):
+        return self.dump()
+   
     def dump(self):  
         """
         Prints the tree given as an argument in the same form as Ross Quinlan's 
@@ -2948,6 +2951,9 @@ class TreeClassifier(Orange.classification.Classifier):
             self.nativeClassifier.__dict__[name] = value
         self.__dict__[name] = value
     
+    def __str__(self):
+        return self.dump()
+
     def dump(self, leafStr = "", nodeStr = "", **argkw):  
         """
         Return a string representation of a tree.

@@ -87,16 +87,16 @@ if you don't set it, it will do some imputation by default.
     instance of :obj:`ImputerLearner` or, if called with examples, an instance
     of some classifier. There are a few attributes that need to be set, though.
 
-    .. attribute:: baseLearner 
+    .. attribute:: base_learner 
     
     A wrapped learner.
 
-    .. attribute:: imputerConstructor
+    .. attribute:: imputer_constructor
     
     An instance of a class derived from :obj:`ImputerConstructor` (or a class
     with the same call operator).
 
-    .. attribute:: dontImputeClassifier
+    .. attribute:: dont_impute_classifier
 
     If given and set (this attribute is optional), the classifier will not be
     wrapped into an imputer. Do this if the classifier doesn't mind if the
@@ -106,21 +106,21 @@ if you don't set it, it will do some imputation by default.
     :obj:`__call__` method::
 
         def __call__(self, data, weight=0):
-            trained_imputer = self.imputerConstructor(data, weight)
+            trained_imputer = self.imputer_constructor(data, weight)
             imputed_data = trained_imputer(data, weight)
-            baseClassifier = self.baseLearner(imputed_data, weight)
-            if self.dontImputeClassifier:
-                return baseClassifier
+            base_classifier = self.base_learner(imputed_data, weight)
+            if self.dont_impute_classifier:
+                return base_classifier
             else:
-                return ImputeClassifier(baseClassifier, trained_imputer)
+                return ImputeClassifier(base_classifier, trained_imputer)
 
     So "learning" goes like this. :obj:`ImputeLearner` will first construct
-    the imputer (that is, call :obj:`self.imputerConstructor` to get a (trained)
+    the imputer (that is, call :obj:`self.imputer_constructor` to get a (trained)
     imputer. Than it will use the imputer to impute the data, and call the
     given :obj:`baseLearner` to construct a classifier. For instance,
     :obj:`baseLearner` could be a learner for logistic regression and the
     result would be a logistic regression model. If the classifier can handle
-    unknown values (that is, if :obj:`dontImputeClassifier`, we return it as 
+    unknown values (that is, if :obj:`dont_impute_classifier`, we return it as 
     it is, otherwise we wrap it into :obj:`ImputeClassifier`, which is given
     the base classifier and the imputer which it can use to impute the missing
     values in (testing) examples.
@@ -145,7 +145,7 @@ if you don't set it, it will do some imputation by default.
     then looks like this::
 
         def __call__(self, ex, what=orange.GetValue):
-            return self.baseClassifier(self.imputer(ex), what)
+            return self.base_classifier(self.imputer(ex), what)
 
     It imputes the missing values by calling the :obj:`imputer` and passes the
     class to the base classifier.
@@ -160,11 +160,11 @@ if you don't set it, it will do some imputation by default.
 
 :obj:`Orange.feature.imputation.ImputeLearner` puts the keyword arguments into
 the instance's  dictionary. You are expected to call it like
-:obj:`ImputeLearner(baseLearner=<someLearner>,
+:obj:`ImputeLearner(base_learner=<someLearner>,
 imputer=<someImputerConstructor>)`. When the learner is called with examples, it
-trains the imputer, imputes the data, induces a :obj:`baseClassifier` by the
-:obj:`baseLearner` and constructs :obj:`ImputeClassifier` that stores the
-:obj:`baseClassifier` and the :obj:`imputer`. For classification, the missing
+trains the imputer, imputes the data, induces a :obj:`base_classifier` by the
+:obj:`base_cearner` and constructs :obj:`ImputeClassifier` that stores the
+:obj:`base_classifier` and the :obj:`imputer`. For classification, the missing
 values are imputed and the classifier's prediction is returned.
 
 Note that this code is slightly simplified, although the omitted details handle
@@ -180,18 +180,18 @@ non-essential technical issues that are unrelated to imputation::
                 return self
     
         def __call__(self, data, weight=0):
-            trained_imputer = self.imputerConstructor(data, weight)
+            trained_imputer = self.imputer_constructor(data, weight)
             imputed_data = trained_imputer(data, weight)
-            baseClassifier = self.baseLearner(imputed_data, weight)
-            return ImputeClassifier(baseClassifier, trained_imputer)
+            base_classifier = self.base_learner(imputed_data, weight)
+            return ImputeClassifier(base_classifier, trained_imputer)
     
     class ImputeClassifier(orange.Classifier):
-        def __init__(self, baseClassifier, imputer):
-            self.baseClassifier = baseClassifier
+        def __init__(self, base_classifier, imputer):
+            self.base_classifier = base_classifier
             self.imputer = imputer
     
         def __call__(self, ex, what=orange.GetValue):
-            return self.baseClassifier(self.imputer(ex), what)
+            return self.base_classifier(self.imputer(ex), what)
 
 .. rubric:: Example
 
@@ -317,13 +317,13 @@ Random imputation
     Imputes random values. The corresponding constructor is
     :obj:`ImputerConstructor_Random`.
 
-    .. attribute:: imputeClass
+    .. attribute:: impute_class
     
-    Tells whether to impute the class values or not. Defaults to :obj:`True`.
+    Tells whether to impute the class values or not. Defaults to True.
 
     .. attribute:: deterministic
 
-    If true (default is :obj:`False`), random generator is initialized for each
+    If true (default is False), random generator is initialized for each
     example using the example's hash value as a seed. This results in same
     examples being always imputed the same values.
     
@@ -339,21 +339,21 @@ Model-based imputation
     constructed imputer :obj:`Imputer_model` stores a list of classifiers which
     are used when needed.
 
-    .. attribute:: learnerDiscrete, learnerContinuous
+    .. attribute:: learner_discrete, learner_continuous
     
     Learner for discrete and for continuous attributes. If any of them is
     missing, the attributes of the corresponding type won't get imputed.
 
-    .. attribute:: useClass
+    .. attribute:: use_class
     
     Tells whether the imputer is allowed to use the class value. As this is
-    most often undesired, this option is by default set to :obj:`False`. It can
+    most often undesired, this option is by default set to False. It can
     however be useful for a more complex design in which we would use one
     imputer for learning examples (this one would use the class value) and
     another for testing examples (which would not use the class value as this
     is unavailable at that moment).
 
-..class:: Imputer_model
+.. class:: Imputer_model
 
     .. attribute: models
 
@@ -366,207 +366,180 @@ Model-based imputation
 .. rubric:: Examples
 
 The following imputer predicts the missing attribute values using
-classification and regression trees with the minimum of 20 examples in a leaf.
+classification and regression trees with the minimum of 20 examples in a leaf. 
+Part of `imputation-complex.py`_ (uses `bridges.tab`_):
 
-<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a
-href="bridges.tab">bridges.tab</a>)</P> <XMP class=code>import orngTree imputer
-= orange.ImputerConstructor_model() imputer.learnerContinuous =
-imputer.learnerDiscrete = orngTree.TreeLearner(minSubset = 20) imputer =
-imputer(data) </XMP>
+.. literalinclude:: code/imputation-complex.py
+    :lines: 74-76
 
-<P>We could even use the same learner for discrete and continuous attributes!
-(The way this functions is rather tricky. If you desire to know:
-<CODE>orngTree.TreeLearner</CODE> is a learning algorithm written in Python -
-Orange doesn't mind, it will wrap it into a C++ wrapper for a Python-written
-learners which then call-backs the Python code. When given the examples to
-learn from, <CODE>orngTree.TreeLearner</CODE> checks the class type. If it's
-continuous, it will set the <CODE>orange.TreeLearner</CODE> to construct
-regression trees, and if it's discrete, it will set the components for
-classification trees. The common parameters, such as the minimal number of
-examples in leaves, are used in both cases.)</P>
+We could even use the same learner for discrete and continuous attributes,
+as :class:`Orange.classification.tree.TreeLearner` checks the class type
+and constructs regression or classification trees accordingly. The 
+common parameters, such as the minimal number of
+examples in leaves, are used in both cases.
 
-<P>You can of course use different learning algorithms for discrete and
+You can also use different learning algorithms for discrete and
 continuous attributes. Probably a common setup will be to use
-<CODE>BayesLearner</CODE> for discrete and <CODE>MajorityLearner</CODE> (which
-just remembers the average) for continuous attributes, as follows.</P>
+:class:`Orange.classification.bayes.BayesLearner` for discrete and 
+:class:`Orange.regression.mean.MeanLearner` (which
+just remembers the average) for continuous attributes. Part of 
+`imputation-complex.py`_ (uses `bridges.tab`_):
 
-<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a
-href="bridges.tab">bridges.tab</a>)</P> <XMP class=code>imputer =
-orange.ImputerConstructor_model() imputer.learnerContinuous =
-orange.MajorityLearner() imputer.learnerDiscrete = orange.BayesLearner()
-imputer = imputer(data) </XMP>
+.. literalinclude:: code/imputation-complex.py
+    :lines: 91-94
 
-<P>You can also construct an <CODE>Imputer_model</CODE> yourself. You will do this if different attributes need different treatment. Brace for an example that will be a bit more complex. First we shall construct an <CODE>Imputer_model</CODE> and initialize an empty list of models.</P>
+You can also construct an :class:`Imputer_model` yourself. You will do 
+this if different attributes need different treatment. Brace for an 
+example that will be a bit more complex. First we shall construct an 
+:class:`Imputer_model` and initialize an empty list of models. 
+The following code snippets are from
+`imputation-complex.py`_ (uses `bridges.tab`_):
 
-<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>imputer = orange.Imputer_model()
-imputer.models = [None] * len(data.domain)
-</XMP>
+.. literalinclude:: code/imputation-complex.py
+    :lines: 108-109
 
-<P>Attributes "LANES" and "T-OR-D" will always be imputed values 2 and
+Attributes "LANES" and "T-OR-D" will always be imputed values 2 and
 "THROUGH". Since "LANES" is continuous, it suffices to construct a
-<CODE>DefaultClassifier</CODE> with the default value 2.0 (don't forget the
+:obj:`DefaultClassifier` with the default value 2.0 (don't forget the
 decimal part, or else Orange will think you talk about an index of a discrete
 value - how could it tell?). For the discrete attribute "T-OR-D", we could
-construct a <CODE>DefaultClassifier</CODE> and give the index of value
+construct a :class:`Orange.classification.ConstantClassifier` and give the index of value
 "THROUGH" as an argument. But we shall do it nicer, by constructing a
-<CODE>Value</CODE>. Both classifiers will be stored at the appropriate places
-in <CODE>imputer.models</CODE>.</P>
+:class:`Orange.data.Value`. Both classifiers will be stored at the appropriate places
+in :obj:`imputer.models`.
 
-<XMP class=code>imputer.models[data.domain.index("LANES")] = orange.DefaultClassifier(2.0)
-
-tord = orange.DefaultClassifier(orange.Value(data.domain["T-OR-D"], "THROUGH"))
-imputer.models[data.domain.index("T-OR-D")] = tord
-</XMP>
-
-<P>"LENGTH" will be computed with a regression tree induced from "MATERIAL", "SPAN" and "ERECTED" (together with "LENGTH" as the class attribute, of course). Note that we initialized the domain by simply giving a list with the names of the attributes, with the domain as an additional argument in which Orange will look for the named attributes.</P>
-
-<XMP class=code>import orngTree
-len_domain = orange.Domain(["MATERIAL", "SPAN", "ERECTED", "LENGTH"], data.domain)
-len_data = orange.ExampleTable(len_domain, data)
-len_tree = orngTree.TreeLearner(len_data, minSubset=20)
-imputer.models[data.domain.index("LENGTH")] = len_tree
-orngTree.printTxt(len_tree)
-</XMP>
-
-<P>We printed the tree just to see what it looks like.</P>
-
-<XMP class=code>SPAN=SHORT: 1158
-SPAN=LONG: 1907
-SPAN=MEDIUM
-|    ERECTED<1908.500: 1325
-|    ERECTED>=1908.500: 1528
-</XMP>
-
-<P>Small and nice. Now for the "SPAN". Wooden bridges and walkways are short, while the others are mostly medium. This could be done by <a href="lookup.htm"><CODE>ClassifierByLookupTable</CODE></A> - this would be faster than what we plan here. See the corresponding documentation on lookup classifier. Here we are gonna do it with a Python function.</P>
-
-<XMP class=code>spanVar = data.domain["SPAN"]
-
-def computeSpan(ex, returnWhat):
-    if ex["TYPE"] == "WOOD" or ex["PURPOSE"] == "WALK":
-        span = "SHORT"
-    else:
-        span = "MEDIUM"
-    return orange.Value(spanVar, span)
-
-imputer.models[data.domain.index("SPAN")] = computeSpan
-</XMP>
+.. literalinclude:: code/imputation-complex.py
+    :lines: 110-112
 
 
-<P><CODE>computeSpan</CODE> could also be written as a class, if you'd prefer
+"LENGTH" will be computed with a regression tree induced from "MATERIAL", 
+"SPAN" and "ERECTED" (together with "LENGTH" as the class attribute, of
+course). Note that we initialized the domain by simply giving a list with
+the names of the attributes, with the domain as an additional argument
+in which Orange will look for the named attributes.
+
+.. literalinclude:: code/imputation-complex.py
+    :lines: 114-119
+
+We printed the tree just to see what it looks like.
+
+::
+
+    <XMP class=code>SPAN=SHORT: 1158
+    SPAN=LONG: 1907
+    SPAN=MEDIUM
+    |    ERECTED<1908.500: 1325
+    |    ERECTED>=1908.500: 1528
+    </XMP>
+
+Small and nice. Now for the "SPAN". Wooden bridges and walkways are short,
+while the others are mostly medium. This could be done by
+:class:`Orange.classifier.ClassifierByLookupTable` - this would be faster
+than what we plan here. See the corresponding documentation on lookup
+classifier. Here we are going to do it with a Python function.
+
+.. literalinclude:: code/imputation-complex.py
+    :lines: 121-128
+
+:obj:`compute_span` could also be written as a class, if you'd prefer
 it. It's important that it behaves like a classifier, that is, gets an example
 and returns a value. The second element tells, as usual, what the caller expect
 the classifier to return - a value, a distribution or both. Since the caller,
-<CODE>Imputer_model</CODE>, always wants values, we shall ignore the argument
+:obj:`Imputer_model`, always wants values, we shall ignore the argument
 (at risk of having problems in the future when imputers might handle
-distribution as well).</P>
+distribution as well).
 
+Missing values as special values
+================================
 
-Treating the missing values as special values
-=============================================
-
-<P>Missing values sometimes have a special meaning. The fact that something was
+Missing values sometimes have a special meaning. The fact that something was
 not measured can sometimes tell a lot. Be, however, cautious when using such
 values in decision models; it the decision not to measure something (for
 instance performing a laboratory test on a patient) is based on the expert's
-knowledge of the class value, such unknown values clearly should not be used in
-models.</P>
+knowledge of the class value, such unknown values clearly should not be used 
+in models.
 
-<P><CODE><INDEX name="classes/ImputerConstructor_asValue">ImputerConstructor_asValue</INDEX></CODE> constructs a new domain in which each discrete attribute is replaced with a new attribute that has one value more: "NA". The new attribute will compute its values on the fly from the old one, copying the normal values and replacing the unknowns with "NA".</P>
+.. class:: ImputerConstructor_asValue
 
-<P>For continuous attributes, <CODE>ImputerConstructor_asValue</CODE> will
-construct a two-valued discrete attribute with values "def" and "undef",
-telling whether the continuous attribute was defined or not. The attribute's
-name will equal the original's with "_def" appended. The original continuous
-attribute will remain in the domain and its unknowns will be replaced by
-averages.</P>
+    Constructs a new domain in which each
+    discrete attribute is replaced with a new attribute that has one value more:
+    "NA". The new attribute will compute its values on the fly from the old one,
+    copying the normal values and replacing the unknowns with "NA".
 
-<P><CODE>ImputerConstructor_asValue</CODE> has no specific attributes.</P>
+    For continuous attributes, it will
+    construct a two-valued discrete attribute with values "def" and "undef",
+    telling whether the continuous attribute was defined or not. The attribute's
+    name will equal the original's with "_def" appended. The original continuous
+    attribute will remain in the domain and its unknowns will be replaced by
+    averages.
 
-<P>The constructed imputer is named <CODE>Imputer_asValue</CODE> (I bet you
-wouldn't guess). It converts the example into the new domain, which imputes the
-values for discrete attributes. If continuous attributes are present, it will
-also replace their values by the averages.</P>
+    :class:`ImputerConstructor_asValue` has no specific attributes.
 
-<P class=section>Attributes of <CODE>Imputer_asValue</CODE></P>
-<DL class=attributes>
-<DT>domain</DT>
-<DD>The domain with the new attributes constructed by <CODE>ImputerConstructor_asValue</CODE>.</DD>
+    It constructs :class:`Imputer_asValue` (I bet you
+    wouldn't guess). It converts the example into the new domain, which imputes 
+    the values for discrete attributes. If continuous attributes are present, it 
+    will also replace their values by the averages.
 
-<DT>defaults</DT>
-<DD>Default values for continuous attributes. Present only if there are any.</DD>
-</DL>
+.. class:: Imputer_asValue
 
-<P>Here's a script that shows what this imputer actually does to the domain.</P>
+    .. attribute:: domain
 
-<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>imputer = orange.ImputerConstructor_asValue(data)
+        The domain with the new attributes constructed by 
+        :class:`ImputerConstructor_asValue`.
 
-original = data[19]
-imputed = imputer(data[19])
+    .. attribute:: defaults
 
-print original.domain
-print
-print imputed.domain
-print
+        Default values for continuous attributes. Present only if there are any.
 
-for i in original.domain:
-    print "%s: %s -> %s" % (original.domain[i].name, original[i], imputed[i.name]),
-    if original.domain[i].varType == orange.VarTypes.Continuous:
-        print "(%s)" % imputed[i.name+"_def"]
-    else:
-        print
-print
-</XMP>
+The following code shows what this imputer actually does to the domain.
+Part of `imputation-complex.py`_ (uses `bridges.tab`_):
 
-<P>The script's output looks like this.</P>
-
-<XMP class=code>[RIVER, ERECTED, PURPOSE, LENGTH, LANES, CLEAR-G, T-OR-D,
-MATERIAL, SPAN, REL-L, TYPE]
-
-[RIVER, ERECTED_def, ERECTED, PURPOSE, LENGTH_def, LENGTH,
-LANES_def, LANES, CLEAR-G, T-OR-D,
-MATERIAL, SPAN, REL-L, TYPE]
+.. literalinclude:: code/imputation-complex.py
+    :lines: 137-151
 
 
-RIVER: M -> M
-ERECTED: 1874 -> 1874 (def)
-PURPOSE: RR -> RR
-LENGTH: ? -> 1567 (undef)
-LANES: 2 -> 2 (def)
-CLEAR-G: ? -> NA
-T-OR-D: THROUGH -> THROUGH
-MATERIAL: IRON -> IRON
-SPAN: ? -> NA
-REL-L: ? -> NA
-TYPE: SIMPLE-T -> SIMPLE-T
-</XMP>
+The script's output looks like this::
 
-<P>Seemingly, the two examples have the same attributes (with
-<CODE>imputed</CODE> having a few additional ones). If you check this by
-<CODE>original.domain[0] == imputed.domain[0]</CODE>, you shall see that this
-first glance is <CODE>False</CODE>. The attributes only have the same names,
+    [RIVER, ERECTED, PURPOSE, LENGTH, LANES, CLEAR-G, T-OR-D, MATERIAL, SPAN, REL-L, TYPE]
+
+    [RIVER, ERECTED_def, ERECTED, PURPOSE, LENGTH_def, LENGTH, LANES_def, LANES, CLEAR-G, T-OR-D, MATERIAL, SPAN, REL-L, TYPE]
+
+    RIVER: M -> M
+    ERECTED: 1874 -> 1874 (def)
+    PURPOSE: RR -> RR
+    LENGTH: ? -> 1567 (undef)
+    LANES: 2 -> 2 (def)
+    CLEAR-G: ? -> NA
+    T-OR-D: THROUGH -> THROUGH
+    MATERIAL: IRON -> IRON
+    SPAN: ? -> NA
+    REL-L: ? -> NA
+    TYPE: SIMPLE-T -> SIMPLE-T
+
+Seemingly, the two examples have the same attributes (with
+:samp:`imputed` having a few additional ones). If you check this by
+:samp:`original.domain[0] == imputed.domain[0]`, you shall see that this
+first glance is False. The attributes only have the same names,
 but they are different attributes. If you read this page (which is already a
 bit advanced), you know that Orange does not really care about the attribute
-names).</P>
+names).
 
-<P>Therefore, if we wrote "<CODE>imputed[i]</CODE>" the program would fail
-since <CODE>imputed</CODE> has no attribute <CODE>i</CODE>. But it has an
+Therefore, if we wrote :samp:`imputed[i]` the program would fail
+since :samp:`imputed` has no attribute :samp:`i`. But it has an
 attribute with the same name (which even usually has the same value). We
-therefore use <CODE>i.name</CODE> to index the attributes of
-<CODE>imputed</CODE>. (Using names for indexing is not fast, though; if you do
+therefore use :samp:`i.name` to index the attributes of
+:samp:`imputed`. (Using names for indexing is not fast, though; if you do
 it a lot, compute the integer index with
-<CODE>imputed.domain.index(i.name)</CODE>.)</P>
+:samp:`imputed.domain.index(i.name)`.)</P>
 
-<P>For continuous attributes, there is an additional attribute with "_def"
-appended; we get it by <CODE>i.name+"_def"</CODE>. Not really nice, but it
-works.</P>
+For continuous attributes, there is an additional attribute with "_def"
+appended; we get it by :samp:`i.name+"_def"`.
 
-<P>The first continuous attribute, "ERECTED" is defined. Its value remains 1874
+The first continuous attribute, "ERECTED" is defined. Its value remains 1874
 and the additional attribute "ERECTED_def" has value "def". Not so for
 "LENGTH". Its undefined value is replaced by the average (1567) and the new
 attribute has value "undef". The undefined discrete attribute "CLEAR-G" (and
-all other undefined discrete attributes) is assigned the value "NA".</P>
+all other undefined discrete attributes) is assigned the value "NA".
 
 Using imputers
 ==============
@@ -643,7 +616,7 @@ from orange import ImputerConstructor_asValue
 class ImputeLearner(orange.Learner):
     def __new__(cls, examples = None, weightID = 0, **keyw):
         self = orange.Learner.__new__(cls, **keyw)
-        self.dontImputeClassifier = False
+        self.dont_impute_classifier = False
         self.__dict__.update(keyw)
         if examples:
             return self.__call__(examples, weightID)
@@ -651,19 +624,19 @@ class ImputeLearner(orange.Learner):
             return self
         
     def __call__(self, data, weight=0):
-        trained_imputer = self.imputerConstructor(data, weight)
+        trained_imputer = self.imputer_constructor(data, weight)
         imputed_data = trained_imputer(data, weight)
-        baseClassifier = self.baseLearner(imputed_data, weight)
-        if self.dontImputeClassifier:
-            return baseClassifier
+        base_classifier = self.base_learner(imputed_data, weight)
+        if self.dont_impute_classifier:
+            return base_classifier
         else:
-            return ImputeClassifier(baseClassifier, trained_imputer)
+            return ImputeClassifier(base_classifier, trained_imputer)
 
 class ImputeClassifier(orange.Classifier):
-    def __init__(self, baseClassifier, imputer, **argkw):
-        self.baseClassifier = baseClassifier
+    def __init__(self, base_classifier, imputer, **argkw):
+        self.base_classifier = base_classifier
         self.imputer = imputer
         self.__dict__.update(argkw)
 
     def __call__(self, ex, what=orange.GetValue):
-        return self.baseClassifier(self.imputer(ex), what)
+        return self.base_classifier(self.imputer(ex), what)
