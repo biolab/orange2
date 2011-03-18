@@ -1,8 +1,6 @@
-from string import join
-
 import numpy
-from numpy.linalg import inv
 from numpy import dot, sqrt
+from numpy.linalg import inv
 
 import Orange
 import statc
@@ -35,40 +33,40 @@ class LinearRegressionLearner(object):
     def __call__(self, data, weight=None):
         if not self.use_attributes == None:
             new_domain = Orange.data.Domain(self.use_attributes,
-                                            data.domain.classVar)
+                                            data.domain.class_var)
             new_domain.addmetas(data.domain.getmetas())
             data = Orange.data.Table(new_domain, data)
             
         if self.stepwise and self.stepwise_before:
             use_attributes=stepwise(data, add_sig=self.add_sig,
                                     remove_sig=self.remove_sig)
-            new_domain = Orange.data.Domain(use_attributes, data.domain.classVar)
+            new_domain = Orange.data.Domain(use_attributes, data.domain.class_var)
             new_domain.addmetas(data.domain.getmetas())
             data = Orange.data.Table(new_domain, data)
 
         # continuization (replaces discrete with continuous attributes)
         continuizer = Orange.feature.continuization.DomainContinuizer()
-        continuizer.multinomialTreatment = continuizer.FrequentIsBase
-        continuizer.zeroBased = True
+        continuizer.multinomial_treatment = continuizer.FrequentIsBase
+        continuizer.zero_based = True
         domain0 = continuizer(data)
         data = data.translate(domain0)
 
         if self.stepwise and not self.stepwise_before:
             use_attributes = stepwise(data, weight, add_sig=self.add_sig,
                                       remove_sig=self.remove_sig)
-            new_domain = Orange.data.Domain(use_attributes, data.domain.classVar)
+            new_domain = Orange.data.Domain(use_attributes, data.domain.class_var)
             new_domain.addmetas(data.domain.getmetas())
             data = Orange.data.Table(new_domain, data)        
         
         # missing values handling (impute missing)
         imputer = Orange.feature.imputation.ImputerConstructor_model()
-        imputer.learnerContinuous = Orange.regression.mean.MeanLearner()
-        imputer.learnerDiscrete = Orange.classification.majority.MajorityLearner()
+        imputer.learner_continuous = Orange.regression.mean.MeanLearner()
+        imputer.learner_discrete = Orange.classification.majority.MajorityLearner()
         imputer = imputer(data)
         data = imputer(data)
 
         # convertion to numpy
-        A, y, w = data.toNumpy()        # weights ??
+        A, y, w = data.to_numpy()        # weights ??
         if A == None:
             n = len(data)
             m = 0
