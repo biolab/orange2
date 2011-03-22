@@ -13,7 +13,7 @@ graph["Age", "Gender"] = "a string"
 # commented out: causes differences in regression tests between machines
 #graph["Age", "Height"] = orange
 graph["Gender", "Height"] = [1, 2, 3]
-print graph.getEdges()
+print graph.get_edges()
 
 print graph[1, 2]
 print graph["Gender", "Height"]
@@ -31,9 +31,9 @@ try:
 except:
     print 'graph["Gender", "Height"] failed'
 
-print graph.getNeighbours("Age")
+print graph.get_neighbours("Age")
 graph.returnIndices = 1
-print graph.getNeighbours("Age")
+print graph.get_neighbours("Age")
 
 
 graph = Orange.network.GraphAsMatrix(5, 0, 3)
@@ -42,18 +42,18 @@ graph[4, 1, 1]=12
 print graph[4, 1, 1]
 print graph[4, 1]
 
-print graph.edgeExists(4, 1)
-print graph.edgeExists(4, 2)
-print graph.edgeExists(4, 1, 1)
-print graph.edgeExists(4, 1, 2)
+print graph.edge_exists(4, 1)
+print graph.edge_exists(4, 2)
+print graph.edge_exists(4, 1, 1)
+print graph.edge_exists(4, 1, 2)
 
 e = graph[4, 1]
 e[1]
 e[2]
 e[1] = None
 e[2] = 3
-print graph.edgeExists(4, 1, 1)
-print graph.edgeExists(4, 1, 2)
+print graph.edge_exists(4, 1, 1)
+print graph.edge_exists(4, 1, 2)
 print e
 graph[4, 1]=None
 print e

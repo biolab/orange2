@@ -11,7 +11,7 @@ for i in range(4):
         net[i,j] = 1
 
 # read all edges and plot a line
-for u, v in net.getEdges():
+for u, v in net.get_edges():
     x1, y1 = net.coors[0][u], net.coors[1][u]
     x2, y2 = net.coors[0][v], net.coors[1][v]
     plt.plot([x1, x2], [y1, y2], 'b-')

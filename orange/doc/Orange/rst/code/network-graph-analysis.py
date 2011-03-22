@@ -8,44 +8,44 @@ network = Orange.network.NetworkOptimization()
 # read network from file
 net = Orange.network.Network.read("combination.net")
 
-components = net.getConnectedComponents()
+components = net.get_connected_components()
 print "Connected components"
 print components
 print
 
-distribution = net.getDegreeDistribution()
+distribution = net.get_degree_distribution()
 print "Degree distribution"
 print distribution
 print
 
-degrees = net.getDegrees()
+degrees = net.get_degrees()
 print "Degrees"
 print degrees
 print
 
-hubs = net.getHubs(3)
+hubs = net.get_hubs(3)
 print "Hubs"
 print hubs
 print
 
-path = net.getShortestPaths(0, 2)
+path = net.get_shortest_paths(0, 2)
 print "Shortest path"
 print path
 print
 
-distance = net.getDistance(0, 2)
+distance = net.get_distance(0, 2)
 print "Distance"
 print distance
 print
 
-diameter = net.getDiameter()
+diameter = net.get_diameter()
 print "Diameter"
 print diameter
 print
 
-subnet = Orange.network.Network(net.getSubGraph([0, 1, 2, 3]))
+subnet = Orange.network.Network(net.get_sub_graph([0, 1, 2, 3]))
 subNetOptimization = Orange.network.NetworkOptimization(subnet)
-subNetOptimization.fruchtermanReingold(100, 1000)
+subNetOptimization.fruchterman_reingold(100, 1000)
 
 # read all edges in subnetwork and plot a line
 for u, v in subnet.getEdges():
