@@ -7,3 +7,5 @@ Data description (``data``)
     orange.data.feature
     Orange.data.domain
     Orange.data.value
+
+.. automodule:: Orange.data

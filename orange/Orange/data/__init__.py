@@ -1,5 +1,7 @@
 """
 .. autoclass:: Table
+
+.. autoclass:: Instance
 """
 
 from orange import ExampleTable as Table
