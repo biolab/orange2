@@ -1,7 +1,7 @@
 """
-******************
-K-means clustering
-******************
+*******************************
+K-means clustering (``kmeans``)
+*******************************
 
 .. index::
    single: clustering, kmeans
