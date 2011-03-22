@@ -32,7 +32,7 @@ class StepwiseLearner(Orange.core.Learner):
     indices = Orange.core.MakeRandomIndicesCV(examples, folds = getattr(self, "folds", 10))
     domain = Orange.data.Domain([], classVar)
 
-    res = Orange.evaluation.testing.testWithIndices([self.learner], Orange.data.Table(domain, examples), indices)
+    res = Orange.evaluation.testing.test_with_indices([self.learner], Orange.data.Table(domain, examples), indices)
     
     oldStat = self.stat(res)[0]
     oldStats = [self.stat(x)[0] for x in Orange.evaluation.scoring.splitByIterations(res)]
@@ -44,7 +44,7 @@ class StepwiseLearner(Orange.core.Learner):
             bestStat = None
             for attr in domain.attributes:
                 newdomain = Orange.data.Domain(filter(lambda x: x!=attr, domain.attributes), classVar)
-                res = Orange.evaluation.testing.testWithIndices([self.learner], (Orange.data.Table(newdomain, examples), weightID), indices)
+                res = Orange.evaluation.testing.test_with_indices([self.learner], (Orange.data.Table(newdomain, examples), weightID), indices)
                 
                 newStat = self.stat(res)[0]
                 newStats = [self.stat(x)[0] for x in Orange.evaluation.scoring.splitByIterations(res)] 
@@ -65,7 +65,7 @@ class StepwiseLearner(Orange.core.Learner):
         for attr in examples.domain.attributes:
             if not attr in domain.attributes:
                 newdomain = Orange.data.Domain(domain.attributes + [attr], classVar)
-                res = Orange.evaluation.testing.testWithIndices([self.learner], (Orange.data.Table(newdomain, examples), weightID), indices)
+                res = Orange.evaluation.testing.test_with_indices([self.learner], (Orange.data.Table(newdomain, examples), weightID), indices)
                 
                 newStat = self.stat(res)[0]
                 newStats = [self.stat(x)[0] for x in Orange.evaluation.scoring.splitByIterations(res)] 

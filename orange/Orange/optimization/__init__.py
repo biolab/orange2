@@ -272,7 +272,7 @@ class Tune1Parameter(TuneParameters):
         for par in self.values:
             for i in to_set:
                 setattr(i[0], i[1], par)
-            res = evaluate(Orange.evaluation.testing.testWithIndices(
+            res = evaluate(Orange.evaluation.testing.test_with_indices(
                                         [self.object], tableAndWeight, cvind))
             findBest.candidate((res, par))
             if verbose==2:
@@ -357,7 +357,7 @@ class TuneMParameters(TuneParameters):
                     if verbose==2:
                         print "%s: %s" % (parnames[pi][i], value)
                         
-            res = evaluate(Orange.evaluation.testing.testWithIndices(
+            res = evaluate(Orange.evaluation.testing.test_with_indices(
                                         [self.object], tableAndWeight, cvind))
             if itercount in milestones:
                 progressCallback(100.0 * itercount / numOfTests)
