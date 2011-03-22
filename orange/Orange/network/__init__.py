@@ -79,11 +79,11 @@ part of `network-optimization.py`_
 The following optimization algorithms are supported:
 
 * .random()
-* .fruchtermanReingold(steps, temperature, coolingFactor=Default, hiddenNodes=[], weighted=False)
-* .radialFruchtermanReingold(center, steps, temperature)
-* .circularOriginal()
-* .circularRandom()
-* .circularCrossingReduction()
+* .fruchterman_reingold(steps, temperature, coolingFactor=Default, hiddenNodes=[], weighted=False)
+* .radial_fruchterman_reingold(center, steps, temperature)
+* .circular_original()
+* .circular_random()
+* .circular_crossing_reduction()
 
 Spring forces layout optimization is the result of the above script:
 
@@ -235,7 +235,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     type. In the latter case, a mapping should be provided by assigning the
     'objects' attribute. For instance, if you set graph.objects to ["Age",
     "Gender", "Height", "Weight"] then graph["Age", "Height"] would be equivalent
-    to graph[0, 2] and graph.getNeighbours("Weight") to graph.getNeighbours(3).
+    to graph[0, 2] and graph.get_neighbours("Weight") to graph.get_neighbours(3).
     Vertex identifier doesn't need to be a string, it can be any Python
     object.
     
@@ -256,11 +256,11 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     
     Searching through the list is, of course, rather slow, so it is recommended
     to use integer indices for larger graphs. So, if you request
-    graph.getNeighbours(0), the method will return the neighbours of the first
+    graph.get_neighbours(0), the method will return the neighbours of the first
     vertex, even if objects is given. But - what if you want to map all
     indices, even integers, through objects? In this case, you need to set
     graph.forceMapping to 1. If graph.forceMapping is set and graph.objects is
-    given, even getNeighbours(0) will search the graph.objects for 0 and return
+    given, even get_neighbours(0) will search the graph.objects for 0 and return
     the neighbours of the corresponding (not necessarily the first) node.
 
     **Getting and Setting Edges**
@@ -303,7 +303,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
         (e.g. graph[2, 5, 2] = -2.0) or remove it by assigning it a None
         (graph[2, 5, 2] = None).
         
-    .. method:: edgeExists(v1, v2[, type]) 
+    .. method:: edge_exists(v1, v2[, type]) 
         
         Returns true if the edge between v1 and v2 exists. For multiple edge
         type graphs you can also specify the type of the edge you check for. If
@@ -316,7 +316,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
         edges, this will be a list of Nones, but Python still treats it as
         "true". 
         
-    .. method:: addCluster(list_of_vertices) 
+    .. method:: add_cluster(list_of_vertices) 
         
         Creates a cluster - adds edges between all listed vertices.
     
@@ -325,26 +325,26 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     Graph provides a set of functions that return nodes connected to a certain
     node.
     
-    .. method:: getNeighbours(v1[, type])
+    .. method:: get_neighbours(v1[, type])
     
         Returns all the nodes that are connected to v1. In directed graphs,
         this includes vertices with edges toward or from v1. In graphs with
         multiple edge types you can also specify the edge type you are
-        interested in: getNeighbours will the return only the vertices that are
+        interested in: get_neighbours will the return only the vertices that are
         connected to v1 by edges of that type.
     
-    .. method:: getEdgesFrom(v1[, type])
+    .. method:: get_edges_from(v1[, type])
     
         Return all the vertices which are connected to v1 by the edges leading
         from v1. In edges with multiple edge types, you can specify the edge
         type. In undirected graph, this function is equivalent to
-        getNeighbours.
+        get_neighbours.
     
-    .. method:: getEdgesTo(v1[, type])
+    .. method:: get_edges_to(v1[, type])
     
         Returns all the vertices with edges leading to v1. Again, you can
         decide for a single edge type to observe, and, again again, in
-        undirected graphs this function is equivalent to getNeighbours.
+        undirected graphs this function is equivalent to get_neighbours.
         
     If objects is set, functions return a list of objects (names of
     vertices or whatever objects you stored in objects). Otherwise, a list
@@ -355,7 +355,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     Of the three operations, the expensive one is to look for the vertices with
     edges pointing to the given edge. There is no problem when graph is
     represented as a matrix (:obj:`Orange.network.GraphAsMatrix`); these are
-    always fast. On directed graph, getEdgeFrom is always fast as well.
+    always fast. On directed graph, get_edges_from is always fast as well.
     
     In undirected graphs represented as lists or trees, the edge between
     vertices with indices v1 and v2 is stored at the list/tree in the
@@ -370,7 +370,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     not on the list). If v2 is great, there it is more toward the end of
     the list, but there is smaller number of lists to be checked.
     Generally, the average number of traversed list elements for
-    getNeighbours/getEdgesFrom/getEdgesTo on undirected graphs with
+    get_neighbours/get_edges_from/get_edges_to on undirected graphs with
     p*nVertices2 edges is p(nVertices-v1)v1.
     
     To sum up, if you have a large undirected graph and intend to query for
@@ -378,10 +378,10 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     :obj:`Orange.network.GraphAsList`. If the graph is small or you won't use
     these functions, it doesn't matter.
     
-    For directed graphs, getEdgesFrom is trivial. The other two functions are
+    For directed graphs, get_edges_from is trivial. The other two functions are
     even slower than for undirected graphs, since to find the edges leading
     from any vertex to a given one, all lists/trees need to be searched. So, if
-    your algorithm will extensively use getEdgesTo or getNeighbours and your
+    your algorithm will extensively use get_edges_to or get_neighbours and your
     graph is large but the number of edges is less than nEdges2/2, you should
     use :obj:`Orange.network.GraphAsTree` or, to be faster but consume more
     memory store the graph as :obj:`Orange.network.GraphAsMatrix`. If the
@@ -396,45 +396,45 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
 
     **Graph analysis**
     
-    .. method:: getSubGraph(vertices)
+    .. method:: get_sub_graph(vertices)
     
         Return a new graph of type :obj:`Orange.network.Graph` that is a
         subgraph of the original graph and consists of given vertices.
     
-    .. method:: getClusteringCoefficient()
+    .. method:: get_clustering_coefficient()
     
         Return the graph average local clustering coefficient, described in
         Watts DJ, Strogatz SH: Collective dynamics of 'small-world' networks.
         Nature 1998, 393(6684):440-442.
     
-    .. method:: getConnectedComponents()
+    .. method:: get_connected_components()
     
         Return a list of all connected components sorted descending by
         component size.
     
-    .. method:: getDegreeDistribution()
+    .. method:: get_degree_distribution()
     
         Return degree distribution as dictionary of type
         {degree:number_of_vertices}.
     
-    .. method:: getDegrees()
+    .. method:: get_degrees()
     
         Return a list of degrees. List size matches number of vertices. Index
         of given degree matches index of corresponding vertex.
     
-    .. method:: getHubs(n)
+    .. method:: get_hubs(n)
     
         Return a list of n largest hubs.
     
-    .. method:: getShortestPaths(u, v)
+    .. method:: get_shortest_paths(u, v)
     
         Return a list of vertices in the shortest path between u and v.
     
-    .. method:: getDistance(u, v)
+    .. method:: get_distance(u, v)
     
         Return a distance between vertices u and v.
     
-    .. method:: getDiameter()
+    .. method:: get_diameter()
     
         Return a diameter of the graph.
         
@@ -609,7 +609,7 @@ class Network(Orange.core.Network):
         optimization methods can be applied to the network through this 
         attribute. 
         
-    .. method:: fromDistanceMatrix(matrix, lower, upper, kNN=0):
+    .. method:: from_distance_matrix(matrix, lower, upper, kNN=0):
         
         Creates edges between vertices with the distance within given 
         threshold. The DistanceMatrix dimension should equal the number of 
@@ -626,19 +626,19 @@ class Network(Orange.core.Network):
             connected.
         :type kNN: int
         
-    .. method:: hideVertices(vertices)
+    .. method:: hide_vertices(vertices)
         
         Remove vertices from optimize list
         
-    .. method:: showVertices(vertices)
+    .. method:: show_vertices(vertices)
     
         Add vertices to optimize list
         
-    .. method:: showAll()
+    .. method:: show_all()
     
         Add all vertices to optimize list
         
-    .. method:: getVisible()
+    .. method:: get_visible()
     
         Return optimize list
     
@@ -654,7 +654,7 @@ class Network(Orange.core.Network):
         self.optimization = NetworkOptimization(self)
         self.clustering = NetworkClustering(self)
         
-    def getDistanceMatrixThreshold(self, matrix, ratio):
+    def get_distance_matrix_threshold(self, matrix, ratio):
         """Return lower and upper distance threshold values for the given 
         ratio of edges
         
@@ -676,9 +676,6 @@ class Network(Orange.core.Network):
         :type fileName: string
         
         """
-        self.saveNetwork(fileName)
-        
-    def saveNetwork(self, fileName):        
         try:
             root, ext = os.path.splitext(fileName)
             if ext == '':
@@ -691,9 +688,9 @@ class Network(Orange.core.Network):
         if ext.lower() == ".gml":
             self.saveGML(graphFile)
         else:
-            self.savePajek(graphFile)
+            self.save_pajek(graphFile)
 
-    def saveGML(self, fp):
+    def save_gml(self, fp):
         """Save network to GML (.gml) file format.
         
         :param fp: file pointer
@@ -727,7 +724,7 @@ class Network(Orange.core.Network):
             (name, ext) = os.path.splitext(fp.name)
             self.links.save(name + "_links.tab")
         
-    def savePajek(self, fp):
+    def save_pajek(self, fp):
         """Save network to Pajek (.net) file format.
         
         :param fp: file pointer
@@ -837,6 +834,38 @@ class Network(Orange.core.Network):
                 net.optimization = NetworkOptimization(net)
             return net 
 
+    ##########################################################################
+    ### BEGIN: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                ###
+    ##########################################################################
+    
+    def getDistanceMatrixThreshold(self, matrix, ratio):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "get_distance_matrix_threshold", DeprecationWarning)
+        return self.get_distance_matrix_threshold(matrix, ratio)
+    
+    def saveNetwork(self, fileName):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "save", DeprecationWarning)
+        return self.save(fileName)
+        
+    def savePajek(fp):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "save_pajek", DeprecationWarning)
+        return self.save_pajek(fp)
+        
+    def saveGML(self, fp):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "save_gml", DeprecationWarning)
+        return self.save_gml(fp)
+
+    ##########################################################################
+    ### END: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                  ###
+    ##########################################################################
+    
 class NetworkOptimization(Orange.core.NetworkOptimization):
     
     """Perform network layout optimization. Network structure is defined in 
@@ -853,41 +882,41 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
     
     Random layout optimization.
     
-    .. method:: fruchtermanReingold(steps=100, temperature=1000, coolFactor=default, hiddenNodes=[], weighted=False) 
+    .. method:: fruchterman_reingold(steps=100, temperature=1000, coolFactor=default, hiddenNodes=[], weighted=False) 
         
     Fruchterman-Reingold spring layout optimization. Set number of iterations 
     with argument steps, start temperature with temperature (for example: 1000) 
     and set list of hidden nodes with argument hidden_nodes.    
         
-    .. method:: radialFruchtermanReingold(center, steps=100, temperature=1000)
+    .. method:: radial_fruchterman_reingold(center, steps=100, temperature=1000)
     
     Radial Fruchterman-Reingold spring layout optimization. Set center node 
     with attribute center, number of iterations with argument steps and start 
     temperature with temperature (for example: 1000).
     
-    .. method:: circularOriginal()
+    .. method:: circular_original()
     
     Circular layout optimization based on original order.
     
-    .. method:: circularRandom()
+    .. method:: circular_random()
     
     Circular layout optimization based on random order.
     
-    .. method:: circularCrossingReduction()
+    .. method:: circular_crossing_reduction()
     
     Circular layout optimization (Michael Baur, Ulrik Brandes) with crossing 
     reduction.
     
-    .. method:: closestVertex(x, y)
+    .. method:: closest_vertex(x, y)
     
     Return the closest vertex to (x, y) coordinate.  
     
-    .. method:: vertexDistances(x, y)
+    .. method:: vertex_distances(x, y)
     
     Return distances (list of (distance, vertex) tuples) of all vertices to 
     the given coordinate.
     
-    .. method:: getVerticesInRect(x1, y1, x2, y2)
+    .. method:: get_vertices_in_rect(x1, y1, x2, y2)
     
     Return a list of all vertices in given rectangle.
     
@@ -908,7 +937,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         self.vertexDistance = None
         self.mds = None
         
-    def setNetwork(network):
+    def set_network(self, network):
         """Set the network object for layout optimization.
     
         :param network: network object for layout optimization
@@ -917,7 +946,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         """
         self.setGraph(network)
         
-    def _computeForces(self):
+    def _compute_forces(self):
         """Compute forces for each vertex for force vector visualization."""
         n = self.graph.nVertices
         vertices = set(range(n))
@@ -1018,7 +1047,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
                 self.coors[0][len(nodescomp)] = x
                 self.coors[1][len(nodescomp)] = y
             
-    def getVars(self):
+    def get_vars(self):
         """Return a list of features in network items."""
         vars = []
         if (self.graph != None):
@@ -1031,7 +1060,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
                         vars.append(var)
         return vars
     
-    def getEdgeVars(self):
+    def get_edge_vars(self):
         """Return a list of features in network links."""
         vars = []
         if (self.graph != None):
@@ -1044,22 +1073,8 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
                         vars.append(var)
                         
         return [x for x in vars if str(x.name) != 'u' and str(x.name) != 'v']
-    
-    def getData(self, i, j):
-        import warnings
-        warnings.warn("Deprecated.", DeprecationWarning)
-        if self.graph.items is Orange.data.Table:
-            return self.data[i][j]
-        elif self.graph.data is type([]):
-            return self.data[i][j]
         
-    def nVertices(self):
-        import warnings
-        warnings.warn("Deprecated.", DeprecationWarning)
-        if self.graph:
-            return self.graph.nVertices
-        
-    def rotateVertices(self, components, phi): 
+    def rotate_vertices(self, components, phi): 
         """Rotate network components for a given angle.
         
         :param components: list of network components
@@ -1094,8 +1109,8 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center
             
-    def rotateComponents(self, maxSteps=100, minMoment=0.000000001, 
-                         callbackProgress=None, callbackUpdateCanvas=None):
+    def rotate_components(self, maxSteps=100, minMoment=0.000000001, 
+                          callbackProgress=None, callbackUpdateCanvas=None):
         """Rotate the network components using a spring model."""
         if self.vertexDistance == None:
             return 1
@@ -1174,13 +1189,13 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
                 #print "breaking"
                 break
             
-            self.rotateVertices(components, phi)
+            self.rotate_vertices(components, phi)
             if callbackUpdateCanvas: callbackUpdateCanvas()
             if callbackProgress : callbackProgress(min([dirChange[i] for i \
                                     in range(len(dirChange)) if M[i] != 0]), 9)
             step += 1
     
-    def mdsUpdateData(self, components, mds, callbackUpdateCanvas):
+    def mds_update_data(self, components, mds, callbackUpdateCanvas):
         """Translate and rotate the network components to computed positions."""
         component_props = []
         x_mds = []
@@ -1393,10 +1408,10 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         if callbackUpdateCanvas:
             callbackUpdateCanvas()
     
-    def mdsCallback(self, a,b=None):
+    def mds_callback(self, a, b=None):
         """Refresh the UI when running  MDS on network components."""
         if not self.mdsStep % self.mdsRefresh:
-            self.mdsUpdateData(self.mdsComponents, 
+            self.mds_update_data(self.mdsComponentList, 
                                self.mds, 
                                self.callbackUpdateCanvas)
             
@@ -1416,11 +1431,11 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         else:
             return 1
             
-    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, \
-                      callbackUpdateCanvas=None, torgerson=0, \
-                      minStressDelta=0, avgLinkage=False, rotationOnly=False, \
-                      mdsType=MdsType.componentMDS, scalingRatio=0, \
-                      mdsFromCurrentPos=0):
+    def mds_components(self, mdsSteps, mdsRefresh, callbackProgress=None, \
+                       callbackUpdateCanvas=None, torgerson=0, \
+                       minStressDelta=0, avgLinkage=False, rotationOnly=False,\
+                       mdsType=MdsType.componentMDS, scalingRatio=0, \
+                       mdsFromCurrentPos=0):
         """Position the network components according to similarities among 
         them.
         
@@ -1436,7 +1451,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         if self.vertexDistance.dim != self.graph.nVertices:
             return 1
         
-        self.mdsComponents = self.graph.getConnectedComponents()
+        self.mdsComponentList = self.graph.getConnectedComponents()
         self.mdsRefresh = mdsRefresh
         self.mdsStep = 0
         self.stopMDS = 0
@@ -1460,7 +1475,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         #print d / sum(e) * float(len(e))
         
         if avgLinkage:
-            matrix = self.vertexDistance.avgLinkage(self.mdsComponents)
+            matrix = self.vertexDistance.avgLinkage(self.mdsComponentList)
         else:
             matrix = self.vertexDistance
         
@@ -1469,7 +1484,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         
         if mdsFromCurrentPos:
             if avgLinkage:
-                for u, c in enumerate(self.mdsComponents):
+                for u, c in enumerate(self.mdsComponentList):
                     x = sum(self.graph.coors[0][c]) / len(c)
                     y = sum(self.graph.coors[1][c]) / len(c)
                     self.mds.points[u][0] = x
@@ -1489,7 +1504,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
 
         self.mds.optimize(mdsSteps, Orange.projection.mds.SgnRelStress, self.minStressDelta,\
                           progressCallback=self.mdsCallback)
-        self.mdsUpdateData(self.mdsComponents, self.mds, callbackUpdateCanvas)
+        self.mds_update_data(self.mdsComponentList, self.mds, callbackUpdateCanvas)
         
         if callbackProgress != None:
             callbackProgress(self.mds.avgStress, self.mdsStep)
@@ -1499,7 +1514,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         del self.mdsRefresh
         del self.mdsStep
         #del self.mds
-        del self.mdsComponents
+        del self.mdsComponentList
         del self.minStressDelta
         del self.callbackUpdateCanvas
         del self.callbackProgress
@@ -1508,21 +1523,117 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         del self.scalingRatio
         return 0
 
+    def mds_components_avg_linkage(self, mdsSteps, mdsRefresh, \
+                                   callbackProgress=None, \
+                                   callbackUpdateCanvas=None, torgerson=0, \
+                                   minStressDelta = 0, scalingRatio=0,\
+                                   mdsFromCurrentPos=0):
+        return self.mds_components(mdsSteps, mdsRefresh, callbackProgress, \
+                                   callbackUpdateCanvas, torgerson, \
+                                   minStressDelta, True, \
+                                   scalingRatio=scalingRatio, \
+                                   mdsFromCurrentPos=mdsFromCurrentPos)
+    
+    ##########################################################################
+    ### BEGIN: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                ###
+    ##########################################################################
+    
+    def setNetwork(self, network):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "set_network", DeprecationWarning)
+        return self.set_network(network)
+    
+    def _computeForces(self):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "_compute_forces", DeprecationWarning)
+        return self._compute_forces()
+    
+    def getVars(self):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "get_vars", DeprecationWarning)
+        return self.get_vars()
+        
+    def getEdgeVars(self):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "get_edge_vars", DeprecationWarning)
+        return self.get_edge_vars()
+    
+    def rotateVertices(self, components, phi):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "rotate_vertices", DeprecationWarning)
+        return self.rotate_vertices(components, phi)
+        
+    def rotateComponents(self, maxSteps=100, minMoment=0.000000001, 
+                         callbackProgress=None, callbackUpdateCanvas=None):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "rotate_components", DeprecationWarning)
+        return self.rotate_components(maxSteps, minMoment, 
+                                        callbackProgress, callbackUpdateCanvas)
+    
+    def mdsUpdateData(self, components, mds, callbackUpdateCanvas):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "mds_update_data", DeprecationWarning)
+        return self.mds_update_data(components, mds, 
+                                                  callbackUpdateCanvas)
+    
+    def mdsCallback(self, a, b=None):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "mds_callback", DeprecationWarning)
+        return self.mds_callback(a, b)
+        
+    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, \
+                      callbackUpdateCanvas=None, torgerson=0, \
+                      minStressDelta=0, avgLinkage=False, rotationOnly=False, \
+                      mdsType=MdsType.componentMDS, scalingRatio=0, \
+                      mdsFromCurrentPos=0):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "mds_components", DeprecationWarning)
+        return self.mds_components(mdsSteps, mdsRefresh, \
+                          callbackProgress, callbackUpdateCanvas, torgerson, \
+                          minStressDelta, avgLinkage, rotationOnly, \
+                          mdsType, scalingRatio, mdsFromCurrentPos)
+        
     def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, \
                                 callbackProgress=None, \
                                 callbackUpdateCanvas=None, torgerson=0, \
                                 minStressDelta = 0, scalingRatio=0,\
                                 mdsFromCurrentPos=0):
-        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, \
-                                  callbackUpdateCanvas, torgerson, \
-                                  minStressDelta, True, \
-                                  scalingRatio=scalingRatio, \
-                                  mdsFromCurrentPos=mdsFromCurrentPos)
-
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "mds_components_avg_linkage", DeprecationWarning)
+        return self.mds_components_avg_linkage(mdsSteps, \
+                    mdsRefresh, callbackProgress, callbackUpdateCanvas, \
+                    torgerson, minStressDelta, scalingRatio, mdsFromCurrentPos)
+    
+    def getData(self, i, j):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0.", 
+                      DeprecationWarning)
+        if self.graph.items is Orange.data.Table:
+            return self.data[i][j]
+        elif self.graph.data is type([]):
+            return self.data[i][j]
+        
+    def nVertices(self):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0.", 
+                      DeprecationWarning)
+        if self.graph:
+            return self.graph.nVertices
+        
     def saveNetwork(self, fn):
         import warnings
-        warnings.warn("Deprecated. Use Orange.network.Network.save", 
-                      DeprecationWarning)
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "Orange.Network.save", DeprecationWarning)
         name = ''
         try:
             root, ext = os.path.splitext(fn)
@@ -1597,13 +1708,17 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
     
     def readNetwork(self, fn, directed=0):
         import warnings
-        warnings.warn("Deprecated. Use Orange.network.Network.read", 
-                      DeprecationWarning)
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "Orange.Network.read", DeprecationWarning)
         network = Network(1,directed)
         net = network.readPajek(fn, directed)
         self.setGraph(net)
         self.graph = net
         return net
+    
+    ##########################################################################
+    ### END: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                  ###
+    ##########################################################################
     
 class NetworkClustering():
     
@@ -1619,7 +1734,7 @@ class NetworkClustering():
         self.net = network
         
         
-    def labelPropagation(self, results2items=0, resultHistory2items=0):
+    def label_propagation(self, results2items=0, resultHistory2items=0):
         """Label propagation method from Raghavan et al., 2007
         
         :param results2items: append a new feature result to items 
@@ -1638,7 +1753,7 @@ class NetworkClustering():
             random.shuffle(vertices)
             stop = 1
             for v in vertices:
-                nbh = self.net.getNeighbours(v)
+                nbh = self.net.get_neighbours(v)
                 if len(nbh) == 0:
                     continue
                 
@@ -1655,7 +1770,7 @@ class NetworkClustering():
             # if stopping condition might be satisfied, check it
             if stop:
                 for v in vertices:
-                    nbh = self.net.getNeighbours(v)
+                    nbh = self.net.get_neighbours(v)
                     if len(nbh) == 0: continue
                     lbls = [labels[u] for u in nbh]
                     lbls = [(len(list(c)), l) for l, c \
@@ -1693,4 +1808,16 @@ class NetworkClustering():
 
         return labels
     
+    ##########################################################################
+    ### BEGIN: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                ###
+    ##########################################################################
     
+    def labelPropagation(self, results2items=0, resultHistory2items=0):
+        import warnings
+        warnings.warn("Deprecated, will be deleted in Orange 3.0. Use %s" % \
+        "label_propagation", DeprecationWarning)
+        return self.label_propagation(results2items=0, resultHistory2items=0)
+        
+    ##########################################################################
+    ### END: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                  ###
+    ##########################################################################
