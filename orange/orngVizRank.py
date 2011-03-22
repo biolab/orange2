@@ -411,6 +411,10 @@ class VizRank:
             else:
                 results = apply(testingMethods[self.testingMethod], [[learner], testTable])
 
+            if self.saveEvaluationResults:
+                self.evaluationResults = results
+                #self.classifier = 
+
             # compute classification success using selected measure
             if testTable.domain.classVar.varType == orange.VarTypes.Discrete:
                 return self.computeAccuracyFromResults(testTable, results)
@@ -500,9 +504,6 @@ class VizRank:
         s = sum([currentClassDistribution[index] for index in classes])
 
         prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
-        
-        if self.saveEvaluationResults:
-            self.evaluationResults = results
         
         return val/max(1, float(s)), (acc, prediction, list(currentClassDistribution))
 
