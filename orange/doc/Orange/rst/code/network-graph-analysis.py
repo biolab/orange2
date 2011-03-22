@@ -1,8 +1,7 @@
 import Orange.network
 
-from pylab import *
+from matplotlib import pyplot as plt
 
-        
 # vertices are placed randomly in NetworkOptimization constructor
 network = Orange.network.NetworkOptimization()
 
@@ -52,12 +51,12 @@ subNetOptimization.fruchtermanReingold(100, 1000)
 for u, v in subnet.getEdges():
     x1, y1 = subnet.coors[0][u], subnet.coors[1][u]
     x2, y2 = subnet.coors[0][v], subnet.coors[1][v]
-    plot([x1, x2], [y1, y2], 'b-')        
+    plt.plot([x1, x2], [y1, y2], 'b-')        
         
 # read x and y coordinates to Python list
 x = [coordinate for coordinate in subnet.coors[0]]
 y = [coordinate for coordinate in subnet.coors[1]]
 
 # plot vertices of subnetwork
-plot(x, y, 'ro')
-show()
+plt.plot(x, y, 'ro')
+plt.savefig("network-graph-analysis.py.png")

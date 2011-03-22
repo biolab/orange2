@@ -1,5 +1,6 @@
 import Orange.network
-from pylab import *
+
+from matplotlib import pyplot as plt
 
 # vertices are placed randomly in Network constructor
 net = Orange.network.Network(5, 0)
@@ -13,12 +14,12 @@ for i in range(4):
 for u, v in net.getEdges():
     x1, y1 = net.coors[0][u], net.coors[1][u]
     x2, y2 = net.coors[0][v], net.coors[1][v]
-    plot([x1, x2], [y1, y2], 'b-')
+    plt.plot([x1, x2], [y1, y2], 'b-')
 
 # read x and y coordinates to Python list
 x = net.coors[0]
 y = net.coors[1]
 
 # plot vertices
-plot(x, y, 'ro')
-show()
+plt.plot(x, y, 'ro')
+plt.savefig("network-constructor.py.png")
