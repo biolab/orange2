@@ -1,5 +1,5 @@
-###########
-Orange.misc
-###########
+########################
+Miscellaneous (``misc``)
+########################
 
 .. automodule:: Orange.misc

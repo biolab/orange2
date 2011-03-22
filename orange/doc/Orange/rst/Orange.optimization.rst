@@ -1,5 +1,5 @@
-############
-Optimization
-############
+###############################
+Optimization (``optimization``)
+###############################
 
 .. automodule:: Orange.optimization

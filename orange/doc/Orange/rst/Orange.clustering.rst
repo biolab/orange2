@@ -1,6 +1,6 @@
-##########
-Clustering
-##########
+###########################
+Clustering (``clustering``)
+###########################
 
 .. automodule:: Orange.clustering
 

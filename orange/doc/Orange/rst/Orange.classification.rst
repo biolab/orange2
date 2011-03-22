@@ -1,6 +1,6 @@
-##############
-Classification
-##############
+###################################
+Classification (``classification``)
+###################################
 
 .. toctree::
    :maxdepth: 1

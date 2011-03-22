@@ -1,5 +1,5 @@
-================
-Orange.associate
-================
+====================================
+Association rules (``associate``)
+====================================
 
 .. automodule:: Orange.associate

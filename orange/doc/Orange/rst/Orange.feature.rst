@@ -1,5 +1,5 @@
-*******
-Feature
-*******
+*********************
+Feature (``feature``)
+*********************
 
 .. automodule:: Orange.feature
