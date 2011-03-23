@@ -244,13 +244,29 @@ def lru_cache(maxsize=100):
     return decorating_function
 
 
-"""\
-Deprecation utility functions.
+__doc__ += """\
+=============================
+Deprecation utility functions
+=============================
+
+.. autofunction:: Orange.misc.deprecation_warning
+
+.. autofunction:: Orange.misc.deprecated_members
+
+.. autofunction:: Orange.misc.deprecated_keywords
+
+.. autofunction:: Orange.misc.deprecated_attribute
 
 """
 
 import warnings
 def deprecation_warning(old, new, stacklevel=-2):
+    """ Raise a deprecation warning of an obsolete attribute access.
+    
+    :param old: Old attribute name (used in warning message).
+    :param new: New attribute name (used in warning message).
+    
+    """
     warnings.warn("'%s' is deprecated. Use '%s' instead!" % (old, new), DeprecationWarning, stacklevel=stacklevel)
    
 # We need to get the instancemethod type 
@@ -282,6 +298,10 @@ def deprecated_members(name_map, wrap_methods="all", in_place=True):
         be called with mapped keyword arguments (by default all methods will
         be wrapped).
     :type wrap_methods: list
+    
+    :param in_place: If True the class will be modified in place, otherwise
+        it will be subclassed (default True).
+    :type in_place: bool
     
     Example ::
             
