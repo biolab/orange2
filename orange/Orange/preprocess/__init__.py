@@ -1,3 +1,7 @@
+"""
+.. automodule:: Orange.preprocess.outliers
+"""
+
 from orange import \
      DomainContinuizer, \
     VariableFilterMap, \
@@ -75,3 +79,5 @@ from orange import \
          RemoveRedundantByQuality, \
          RemoveRedundantOneValue, \
     RemoveUnusedValues
+
+import outliers
