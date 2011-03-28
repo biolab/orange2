@@ -613,13 +613,15 @@ from orange import ImputerConstructor_model
 from orange import Imputer_model
 from orange import ImputerConstructor_asValue 
 
+import Orange.misc
+
 class ImputeLearner(orange.Learner):
-    def __new__(cls, examples = None, weightID = 0, **keyw):
+    def __new__(cls, examples = None, weight_id = 0, **keyw):
         self = orange.Learner.__new__(cls, **keyw)
         self.dont_impute_classifier = False
         self.__dict__.update(keyw)
         if examples:
-            return self.__call__(examples, weightID)
+            return self.__call__(examples, weight_id)
         else:
             return self
         
@@ -632,6 +634,15 @@ class ImputeLearner(orange.Learner):
         else:
             return ImputeClassifier(base_classifier, trained_imputer)
 
+ImputeLearner = Orange.misc.deprecated_members(
+  {
+      "dontImputeClassifier": "dont_impute_classifier",
+      "imputerConstructor": "imputer_constructor",
+      "baseLearner": "base_learner",
+      "weightID": "weight_id"
+  })(ImputeLearner)
+
+
 class ImputeClassifier(orange.Classifier):
     def __init__(self, base_classifier, imputer, **argkw):
         self.base_classifier = base_classifier
@@ -640,3 +651,8 @@ class ImputeClassifier(orange.Classifier):
 
     def __call__(self, ex, what=orange.GetValue):
         return self.base_classifier(self.imputer(ex), what)
+
+ImputeClassifier = Orange.misc.deprecated_members(
+  {
+      "baseClassifier": "base_classifier"
+  })(ImputeClassifier)
