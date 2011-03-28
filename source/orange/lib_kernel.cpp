@@ -513,7 +513,11 @@ PyObject *replaceVarWithEquivalent(PyObject *pyvar)
 PyObject *Variable__reduce__(PyObject *self)
 {
 	PyTRY
-		return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderVariable"), self->ob_type, packOrangeDictionary(self));
+		PyObject *name = PyObject_GetAttrString(self, "name");
+		PyObject *dict = packOrangeDictionary(self);
+		PyMapping_SetItemString(dict, "name", name);
+		Py_DECREF(name);
+	return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderVariable"), self->ob_type, dict); //packOrangeDictionary(self));
 	PyCATCH
 }
 
@@ -536,7 +540,11 @@ PyObject *__pickleLoaderVariable(PyObject *, PyObject *args) PYARGS(METH_VARARGS
 PyObject *EnumVariable__reduce__(PyObject *self)
 {
 	PyTRY
-		return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderEnumVariable"), self->ob_type, packOrangeDictionary(self));
+		PyObject *name = PyObject_GetAttrString(self, "name");
+		PyObject *dict = packOrangeDictionary(self);
+		PyMapping_SetItemString(dict, "name", name);
+		Py_DECREF(name);
+		return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderEnumVariable"), self->ob_type, dict); //packOrangeDictionary(self));
 	PyCATCH
 }
 
@@ -559,7 +567,9 @@ PyObject *__pickleLoaderEnumVariable(PyObject *, PyObject *args) PYARGS(METH_VAR
     PyObject *pyvalues = PyDict_GetItemString(dict, "values");
     if (pyvalues)
       values = PyOrange_AsStringList((TPyOrange *)pyvalues).getUnwrappedPtr();
-
+	
+	if (!(values and name))
+		 PYERROR(PyExc_ValueError, "cannot construct the variable from the pickle", PYNULL)
     TVariable *var = TVariable::getExisting(name, TValue::INTVAR, values, NULL);
     PVariable pvar = var;
     if (!var) {
