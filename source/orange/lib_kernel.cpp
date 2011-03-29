@@ -568,8 +568,8 @@ PyObject *__pickleLoaderEnumVariable(PyObject *, PyObject *args) PYARGS(METH_VAR
     if (pyvalues)
       values = PyOrange_AsStringList((TPyOrange *)pyvalues).getUnwrappedPtr();
 	
-	if (!(values and name))
-		 PYERROR(PyExc_ValueError, "cannot construct the variable from the pickle", PYNULL)
+	if (!(values && name))
+		PYERROR(PyExc_ValueError, "cannot construct the variable from the pickle", PYNULL);
     TVariable *var = TVariable::getExisting(name, TValue::INTVAR, values, NULL);
     PVariable pvar = var;
     if (!var) {
