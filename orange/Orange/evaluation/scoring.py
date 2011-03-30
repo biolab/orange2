@@ -1627,9 +1627,6 @@ def computeLiftCurve(res, classIndex=-1):
         for (f, (thisNeg, thisPos)) in plist:
             TP += thisPos
             FP += thisNeg
-            if FP > N:
-                import warnings
-                warnings.warn("The sky is falling!!")
             curve.append( ((TP+FP)/(P + N), TP, (f, FP/(N or 1))) )
         results.append(curve)
 
