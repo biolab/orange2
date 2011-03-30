@@ -1,4 +1,5 @@
 import orange, orngFSS, statc, random
+from orngMisc import progressBarMilestones
 import copy
 from math import ceil
 ##import numpy
@@ -553,7 +554,8 @@ def optimizeAttributeOrder(attrInfo, numberOfAttributes, optimizationDlg, app):
                 if not success: canAddAttribute = 0 # there are no more attributes that can be added to this projection
 
         if len(proj) == numberOfAttributes:
-            proj, projVal = fixIntersectingPairs(proj, projVal, attrInfo)
+            # I (Ales) commented this out because fixItersectingPairs can enter an endless cycle 
+            #proj, projVal = fixIntersectingPairs(proj, projVal, attrInfo)
             for i in range(len(proj)-1):
                 removeAttributePair(proj[i], proj[i+1], attrInfo)
             optimizationDlg.addProjection(sum(projVal)/len(projVal), proj)
@@ -565,6 +567,7 @@ def optimizeAttributeOrder(attrInfo, numberOfAttributes, optimizationDlg, app):
 # try rotating subsequences of proj to increase value of attribute order
 def fixIntersectingPairs(proj, projVal, attrInfo):
     changed = 1
+    allprojections = set()
     while changed:
         changed = 0
         for i in range(len(projVal)-1):
@@ -581,6 +584,11 @@ def fixIntersectingPairs(proj, projVal, attrInfo):
                     tempProj = proj[:i+1] + rev + proj[j+1:]
                     proj = tempProj
                     changed = 1     # we rotated the projection. start checking from the begining
+        
+        tproj = tuple(proj) 
+        assert(tproj not in allprojections)
+        allprojections.add(tproj)
+                
     return proj, projVal
 
 # return value for attribute pair (val, attr1, attr2) if exists. if not, return 0
@@ -632,33 +640,50 @@ def addBestToCurrentProj(proj, projVal, attrInfo):
     """
     return proj, projVal, 0
 
-def computeCorrelationBetweenAttributes(data, attrList, minCorrelation = 0.0):
+def computeCorrelationBetweenAttributes(data, attrList, minCorrelation = 0.0, progressCallback=None):
     correlations = []
+    attrListLen = len(attrList)
+    iterCount = attrListLen * (attrListLen - 1) / 2
+    iter = 0
+    milestones = progressBarMilestones(iterCount)
     for i in range(len(attrList)):
-        if data.domain.attributes[i].varType != orange.VarTypes.Continuous: continue
+        if data.domain.attributes[i].varType != orange.VarTypes.Continuous:
+            continue
         for j in range(i+1, len(attrList)):
-            if data.domain.attributes[j].varType != orange.VarTypes.Continuous: continue
+            if data.domain.attributes[j].varType != orange.VarTypes.Continuous:
+                continue
             val = abs(computeCorrelation(data, attrList[i], attrList[j]))
-            if val >= minCorrelation: correlations.append((val, attrList[i], attrList[j]))
+            if val >= minCorrelation:
+                correlations.append((val, attrList[i], attrList[j]))
+            iter += 1
+            if progressCallback and iter in milestones:
+                progressCallback(100.0 * iter / iterCount)
+                
+    return sorted(correlations, reverse=True)
 
-    correlations.sort()
-    correlations.reverse()
-    return correlations
 
-
-def computeCorrelationInsideClassesBetweenAttributes(data, attrList, minCorrelation = 0.0):
-    if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous: return []
+def computeCorrelationInsideClassesBetweenAttributes(data, attrList, minCorrelation = 0.0, progressCallback=None):
+    if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous:
+        return []
     correlations = []
+    attrListLen = len(attrList)
+    iterCount = attrListLen * (attrListLen - 1) / 2
+    iter = 0
+    milestones = progressBarMilestones(iterCount)
     for i in range(len(attrList)):
-        if data.domain.attributes[i].varType != orange.VarTypes.Continuous: continue
+        if data.domain.attributes[i].varType != orange.VarTypes.Continuous:
+            continue
         for j in range(i+1, len(attrList)):
-            if data.domain.attributes[j].varType != orange.VarTypes.Continuous: continue
+            if data.domain.attributes[j].varType != orange.VarTypes.Continuous:
+                continue
             corr, corrs, lengths = computeCorrelationInsideClasses(data, attrList[i], attrList[j])
-            if corr >= minCorrelation: correlations.append((corr, attrList[i], attrList[j]))
-
-    correlations.sort()
-    correlations.reverse()
-    return correlations
+            if corr >= minCorrelation:
+                correlations.append((corr, attrList[i], attrList[j]))
+            iter += 1
+            if progressCallback and iter in milestones:
+                progressCallback(100.0 * iter / iterCount)
+                
+    return sorted(correlations, reverse=True)
 
 
 def computeCorrelationInsideClasses(data, attr1, attr2):
