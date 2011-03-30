@@ -96,14 +96,18 @@ class OWTestLearners(OWWidget):
 
         self.controlArea.layout().setSpacing(8)
         # GUI
-        self.sBtns = OWGUI.radioButtonsInBox(self.controlArea, self, "resampling", box="Sampling",
+        self.sBtns = OWGUI.radioButtonsInBox(self.controlArea, self, "resampling", 
+                                             box="Sampling",
                                              btnLabels=self.resamplingMethods[:1],
                                              callback=self.newsampling)
         indent = OWGUI.checkButtonOffsetHint(self.sBtns.buttons[-1])
         
         ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns, sep=indent))
-        OWGUI.spin(ibox, self, 'nFolds', 2, 100, step=1, label='Number of folds:',
-                   callback=lambda p=0: self.conditionalRecompute(p))
+        OWGUI.spin(ibox, self, 'nFolds', 2, 100, step=1,
+                   label='Number of folds:',
+                   callback=lambda p=0: self.conditionalRecompute(p),
+                   keyboardTracking=False)
+        
         OWGUI.separator(self.sBtns, height = 3)
         
         OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[1])      # leave one out
@@ -113,7 +117,8 @@ class OWTestLearners(OWWidget):
         ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns, sep=indent))
         OWGUI.spin(ibox, self, 'pRepeat', 1, 100, step=1,
                    label='Repeat train/test:',
-                   callback=lambda p=2: self.conditionalRecompute(p))
+                   callback=lambda p=2: self.conditionalRecompute(p),
+                   keyboardTracking=False)
         
         OWGUI.widgetLabel(ibox, "Relative training set size:")
         

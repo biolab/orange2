@@ -166,7 +166,8 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
 def spin(widget, master, value, min, max, step=1,
          box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
          callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
-         checked = "", checkCallback = None, posttext = None, alignment = Qt.AlignLeft):
+         checked = "", checkCallback = None, posttext = None, alignment = Qt.AlignLeft,
+         keyboardTracking=True):
     if box or label and not checked:
         b = widgetBox(widget, box, orientation)
         hasHBox = orientation == 'horizontal' or not orientation
@@ -187,7 +188,9 @@ def spin(widget, master, value, min, max, step=1,
 
     wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
     wa.setAlignment(alignment)
-    if bi.layout() is not None: bi.layout().addWidget(wa)
+    wa.setKeyboardTracking(keyboardTracking) # If false it wont emit valueChanged signals while editing the text
+    if bi.layout() is not None:
+        bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -260,7 +263,8 @@ class DoubleSpinBoxWFocusOut(QDoubleSpinBox):
 def doubleSpin(widget, master, value, min, max, step=1,
          box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
          callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
-         checked = "", checkCallback = None, posttext = None, addToLayout=True, alignment = Qt.AlignLeft): #widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
+         checked = "", checkCallback = None, posttext = None, addToLayout=True, alignment = Qt.AlignLeft,
+         keyboardTracking=True): #widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
     if box or label and not checked:
         b = widgetBox(widget, box, orientation)
         hasHBox = orientation == 'horizontal' or not orientation
@@ -281,7 +285,9 @@ def doubleSpin(widget, master, value, min, max, step=1,
 
     wa = bi.control = DoubleSpinBoxWFocusOut(min, max, step, bi)
     wa.setAlignment(alignment)
-    if addToLayout and bi.layout() is not None: bi.layout().addWidget(wa)
+    wa.setKeyboardTracking(keyboardTracking) # If false it wont emit valueChanged signals while editing the text
+    if addToLayout and bi.layout() is not None:
+        bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
