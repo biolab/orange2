@@ -526,7 +526,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.setItemChecked(self.menuSaveSettingsID, self.menuSaveSettings)
 
     def menuItemNewScheme(self):
-        self.schema.clear()
+        if self.schema.saveBeforeClose():
+            self.schema.clear()
+            self.schema.removeTempDoc()
 
     def dumpVariables(self):
         self.schema.dumpWidgetVariables()

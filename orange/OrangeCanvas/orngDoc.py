@@ -56,45 +56,32 @@ class SchemaDoc(QWidget):
             self.canvasView.ensureVisible(self.guide_text)
 
     def isSchemaChanged(self):
+        """ Is this schema document modified.
+        """
         return self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
+    
+    def setSchemaModified(self, state):
+        """ Set the modified document state flag.
+        """
+        # Update the loaded settings dict so we know if the widget
+        # settings have changed from the last save when we quit 
+        # the application (see closeEvent handler)
+        if not state:
+            self.loadedSettingsDict = dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
+        else:
+            self.loadedSettingsDict = {}
         
-    # we are about to close document
-    # ask the user if he is sure
-    def closeEvent(self,ce):
-        newSettings = self.isSchemaChanged()
-
-        self.synchronizeContexts()
-        #if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
-        if self.widgets != []:
-            self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "lastSchema.tmp"))
-
-        if self.canvasDlg.settings["dontAskBeforeClose"]:
-            if newSettings and self.schemaName != "":
-                self.save()
+    def closeEvent(self, ce):
+        if self.saveBeforeClose():
             self.clear()
             self.removeTempDoc()
             ce.accept()
-        elif newSettings:
-            res = QMessageBox.question(self, 'Orange Canvas','Do you wish to save the schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
-            if res == QMessageBox.Yes:
-                self.saveDocument()
-                self.clear()
-                self.removeTempDoc()
-                ce.accept()
-                
-            elif res == QMessageBox.No:
-                self.clear()
-                self.removeTempDoc()
-                ce.accept()
-            else:
-                ce.ignore()     # we pressed cancel - we don't want to close the document
-                return
         else:
-            self.clear()
-            self.removeTempDoc()
-        
+            ce.ignore()
+            
         QWidget.closeEvent(self, ce)
         orngHistory.logCloseSchema(self.schemaID)
+        
         
     # save a temp document whenever anything changes. this doc is deleted on closeEvent
     # in case that Orange crashes, Canvas on the next start offers an option to reload the crashed schema with links frozen
@@ -444,21 +431,21 @@ class SchemaDoc(QWidget):
             self.saveDocumentAs()
         else:
             self.save()
+            self.setSchemaModified(False)
 
     def saveDocumentAs(self):
-        name = str(QFileDialog.getSaveFileName(self, "Save Orange Schema", os.path.join(self.schemaPath, self.schemaName), "Orange Widget Schema (*.ows)"))
-        if os.path.splitext(name)[0] == "": return
-        if os.path.splitext(name)[1].lower() != ".ows": name = os.path.splitext(name)[0] + ".ows"
+        name = str(QFileDialog.getSaveFileName(self, "Save Orange Schema", os.path.join(self.schemaPath, self.schemaName or "Untitled.ows"), "Orange Widget Schema (*.ows)"))
+        if os.path.splitext(name)[0] == "":
+            return
+        if os.path.splitext(name)[1].lower() != ".ows":
+            name = os.path.splitext(name)[0] + ".ows"
         self.save(name)
-
+        self.setSchemaModified(False)
+        
     # save the file
-    def save(self, filename = None):
-        if filename == None:
+    def save(self, filename=None):
+        if filename is None:
             filename = os.path.join(self.schemaPath, self.schemaName)
-            # Update the loaded settings dict so we now if the widget
-            # settings have chenged from the last save when we quit 
-            # the application (see closeEvent handler)
-            self.loadedSettingsDict = dict((widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets)
             
         # create xml document
         doc = Document()
@@ -506,6 +493,35 @@ class SchemaDoc(QWidget):
             self.canvasDlg.addToRecentMenu(filename)
             self.canvasDlg.setCaption(self.schemaName)
 
+    def saveBeforeClose(self):
+        """ Call to ask the user to save the schema before it is closed.
+        Return True if save was successful or user did not want to save,
+        else return False (user canceled the operation).
+          
+        """
+        newSettings = self.isSchemaChanged()
+
+        self.synchronizeContexts()
+        if self.widgets != []:
+            self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "lastSchema.tmp"))
+
+        if self.canvasDlg.settings["dontAskBeforeClose"]:
+            if newSettings and self.schemaName != "":
+                self.save()
+            return True
+                
+        elif newSettings:
+            res = QMessageBox.question(self, 'Orange Canvas', 'Do you wish to save the schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
+            if res == QMessageBox.Yes:
+                self.saveDocument()
+                return True
+            elif res == QMessageBox.No:
+                return True
+            else:     
+                # User pressed cancel - we don't want to close the document
+                return False
+        else:
+            return True
 
     # load a scheme with name "filename"
     def loadDocument(self, filename, caption = None, freeze = 0):
