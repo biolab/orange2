@@ -320,7 +320,7 @@ class ParallelOptimization(OWWidget):
 
         self.resultList = OWGUI.listBox(self.resultsBox, self)
         self.resultList.setMinimumSize(200,200)
-        self.connect(self.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
+        self.connect(self.resultList, SIGNAL("itemSelectionChanged()"), self.showSelectedAttributes)
 
         # remove non-existing files
         names = []
@@ -348,11 +348,13 @@ class ParallelOptimization(OWWidget):
         self.optimizeBox.layout().addWidget(self.allAttributesRadio)
         self.connect(self.allAttributesRadio, SIGNAL("clicked()"), self.setAllAttributeRadio)
         box = OWGUI.widgetBox(self.optimizeBox, orientation = "horizontal")
-        self.subsetAttributeRadio = QRadioButton("find subsets of      ", box)
-        self.optimizeBox.layout().addWidget(self.subsetAttributeRadio)
+        self.subsetAttributeRadio = QRadioButton("Find subsets of", box)
+#        self.optimizeBox.layout().addWidget(self.subsetAttributeRadio)
+        box.layout().addWidget(self.subsetAttributeRadio)
         self.connect(self.subsetAttributeRadio, SIGNAL("clicked()"), self.setSubsetAttributeRadio)
         self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
-        label  = OWGUI.widgetLabel(box, "   attributes")
+        self.subsetAttributeEdit.setMaximumWidth(30)
+        label  = OWGUI.widgetLabel(box, "attributes")
 
         self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, "Start Optimization", callback = self.startOptimization)
         f = self.startOptimizationButton.font()
@@ -402,8 +404,9 @@ class ParallelOptimization(OWWidget):
 
     # return list of selected attributes
     def getSelectedAttributes(self):
-        if self.resultList.count() == 0: return None
-        return self.allResults[self.resultList.currentItem()][1]
+        if self.resultList.count() == 0 or self.allResults == []:
+            return None
+        return self.allResults[self.resultList.currentRow()][1]
 
     # called when optimization is in progress
     def canContinueOptimization(self):
@@ -529,9 +532,27 @@ class ParallelOptimization(OWWidget):
             return
 
         attrInfo = []
+        self.progressBarInit()
         if self.optimizationMeasure == CORRELATION:
             attrList = [attr.name for attr in self.parallelWidget.data.domain.attributes]
-            attrInfo = orngVisFuncts.computeCorrelationBetweenAttributes(self.parallelWidget.data, attrList)
+            self.startOptimizationButton.hide()
+            self.stopOptimizationButton.show()
+            self.canOptimize = 1
+            class StopOptimizationException(Exception):
+                pass
+            def progressSetWithStop(value):
+                if not self.canContinueOptimization():
+                    raise StopOptimizationException()
+                else:
+                    self.progressBarSet(value * 0.9)
+            try: 
+                attrInfo = orngVisFuncts.computeCorrelationBetweenAttributes(self.parallelWidget.data, attrList, progressCallback=progressSetWithStop)
+            except StopOptimizationException:
+                attrInfo = []
+                self.startOptimizationButton.show()
+                self.stopOptimizationButton.hide()
+                
+#            self.progressBarFinished()
             #attrInfo = orngVisFuncts.computeCorrelationInsideClassesBetweenAttributes(self.parallelWidget.data, attrList)
         elif self.optimizationMeasure == VIZRANK:
             for (val, [a1, a2]) in self.projections:
@@ -563,6 +584,8 @@ class ParallelOptimization(OWWidget):
 
         self.stopOptimizationButton.hide()
         self.startOptimizationButton.show()
+        
+        self.progressBarFinished()
 
 
     # ################################
