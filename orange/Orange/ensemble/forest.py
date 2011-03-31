@@ -134,7 +134,7 @@ class RandomForestLearner(orange.Learner):
                 selection.append(self.rand.randrange(n))
             data = instances.getitems(selection)
             # build the model from the bootstrap sample
-            classifiers.append(learner(data))
+            classifiers.append(learner(data, weight))
             if self.callback:
                 self.callback()
             # if self.callback: self.callback((i+1.)/self.trees)
