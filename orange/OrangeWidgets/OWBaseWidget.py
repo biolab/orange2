@@ -64,7 +64,7 @@ def unisetattr(self, name, value, grandparent):
                     del self.__attributeControllers[(controller, myself)]
                     continue
 
-                controlledAttributes = getattr(controller, "controlledAttributes", None)
+                controlledAttributes = hasattr(controller, "controlledAttributes") and getattr(controller, "controlledAttributes", None)
                 if controlledAttributes:
                     fullName = myself + "." + name
 
