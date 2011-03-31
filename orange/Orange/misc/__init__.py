@@ -423,10 +423,47 @@ def deprecated_attribute(old_name, new_name):
     prop = property(fget, fset, fdel,
                     doc="A deprecated member '%s'. Use '%s' instead." % (old_name, new_name))
     return prop
+
+
+"""
+Some utility functions common to Orange classes.
+ 
+"""
+
+def _orange__new__(base=None):
+    """ Return an orange 'schizofrenic' __new__ class method.
     
-def _test():
-    import doctest
-    doctest.testmod()
+    :param base: base orange class (default orange.Learner)
+    :type base: type
+         
+    Example::
+        class NewOrangeLearner(orange.Learner):
+            __new__ = _orange__new(orange.Learner)
+        
+    """
+    if base is None:
+        import Orange
+        base = Orange.core.Learner
+        
+    @wraps(base.__new__)
+    def _orange__new_wrapped(cls, data=None, **kwargs):
+        self = base.__new__(cls, **kwargs)
+        if data:
+            self.__init__(**kwargs)
+            return self.__call__(data)
+        else:
+            return self
+    return _orange__new_wrapped
+
+
+def _orange__reduce__(self):
+    """ A default __reduce__ method for orange types. Assumes the object
+    can be reconstructed with the call `constructor(__dict__)` where __dict__
+    if the stored (pickled) __dict__ attribute.
     
-if __name__ == "__main__":
-    _test()
+    Example::
+        class NewOrangeType(orange.Learner):
+            __reduce__ = _orange__reduce()
+    """ 
+    return type(self), (), dict(self.__dict__)
+    
