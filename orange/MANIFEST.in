@@ -7,3 +7,4 @@ recursive-include doc *
 recursive-include source *
 prune source/*/px
 prune source/*/ppp
+prune source/*/obj
