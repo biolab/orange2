@@ -414,29 +414,34 @@ class ThresholdLearner(Orange.classification.Learner):
     
     .. attribute:: storeCurve
     
-        If set, the resulting classifier will contain an attribute curve, with
+        If `True`, the resulting classifier will contain an attribute curve, with
         a list of tuples containing thresholds and classification accuracies at
-        that threshold.
+        that threshold (default `False`).
     
     """
     
     def __new__(cls, examples = None, weightID = 0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
-        self.__dict__.update(kwds)
         if examples:
+            self.__init__(**kwargs)
             return self.__call__(examples, weightID)
         else:
             return self
+        
+    def __init__(self, learner=None, storeCurve=False, **kwds):
+        self.learner = learner
+        self.storeCurve = storeCurve
+        self.__dict__.update(kwds)
 
     def __call__(self, examples, weightID = 0):
-        if not hasattr(self, "learner"):
-            raise AttributeError("learner not set")
+        if self.learner is None:
+            raise AttributeError("Learner not set.")
         
         classifier = self.learner(examples, weightID)
         threshold, optCA, curve = Orange.wrappers.ThresholdCA(classifier, 
                                                           examples, 
                                                           weightID)
-        if getattr(self, "storeCurve", 0):
+        if self.storeCurve:
             return ThresholdClassifier(classifier, threshold, curve = curve)
         else:
             return ThresholdClassifier(classifier, threshold)
@@ -481,22 +486,21 @@ class ThresholdClassifier(Orange.classification.Classifier):
             return value
         else:
             return (value, probs)
-
-def ThresholdLearner_fixed(learner, threshold, 
-                           examples=None, weightId=0, **kwds):
+        
     
-    """There's also a dumb variant of 
+class ThresholdLearner_fixed(Orange.classification.Learner):
+    """ There's also a dumb variant of 
     :obj:`Orange.optimization.ThresholdLearner`, a class called
     :obj:`Orange.optimization.ThreshholdLearner_fixed`. Instead of finding the
     optimal threshold it uses a prescribed one. So, it has the following two
     attributes.
     
-    .. attriute:: learner
+    .. attribute:: learner
     
     The wrapped learner, for example an instance of
     :obj:`Orange.classification.bayes.NaiveLearner`.
     
-    .. attriute:: threshold
+    .. attribute:: threshold
     
     Threshold to use in classification.
     
@@ -505,29 +509,26 @@ def ThresholdLearner_fixed(learner, threshold,
     of ThresholdClassifier.
     
     """
-    
-    lr = apply(ThresholdLearner_fixed_Class, (learner, threshold), kwds)
-    if examples:
-        return lr(examples, weightId)
-    else:
-        return lr
-    
-class ThresholdLearner_fixed(Orange.classification.Learner):
     def __new__(cls, examples = None, weightID = 0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
-        self.__dict__.update(kwds)
         if examples:
+            self.__init__(**kwds)
             return self.__call__(examples, weightID)
         else:
             return self
+        
+    def __init__(self, learner=None, threshold=None, **kwds):
+        self.learner = learner
+        self.threshold = threshold
+        self.__dict__.update(kwds)
 
     def __call__(self, examples, weightID = 0):
-        if not hasattr(self, "learner"):
-            raise AttributeError("learner not set")
-        if not hasattr(self, "threshold"):
-            raise AttributeError("threshold not set")
-        if len(examples.domain.classVar.values)!=2:
-            raise ValueError("ThresholdLearner handles binary classes only")
+        if self.learner is None:
+            raise AttributeError("Learner not set.")
+        if self.threshold is None:
+            raise AttributeError("Threshold not set.")
+        if len(examples.domain.classVar.values) != 2:
+            raise ValueError("ThresholdLearner handles binary classes only.")
         
         return ThresholdClassifier(self.learner(examples, weightID), 
                                    self.threshold)
