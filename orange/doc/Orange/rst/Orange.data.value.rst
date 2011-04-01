@@ -101,10 +101,10 @@ Values
         Return :obj:`True` if value is either "don't know" or "don't
         care".
 
-    Discrete and continuous values can be cast to Python types
-    :obj:`int`, :obj:`float`, :obj:`long`, to strings and to boolean
-    values. A value is true if it is not undefined. Continuous values
-    support arithmetic operations.
+    Discrete and continuous values can be cast to Python types :obj:`int`,
+    :obj:`float`, :obj:`long`, to strings and to boolean values. A value is
+    considered true if it is not undefined. Continuous values support arithmetic
+    operations.
 
     Values can be compared between themselves or with ordinary
     numbers. All discrete variables are treated as ordinal; values are
