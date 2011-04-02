@@ -1,4 +1,4 @@
-from Orange.classification.rules import ruleToString
+from Orange.classification.rules import rule_to_string as ruleToString
 from Orange.classification.rules import LaplaceEvaluator
 from Orange.classification.rules import WRACCEvaluator
 from Orange.classification.rules import MEstimateEvaluator as mEstimate
@@ -22,7 +22,7 @@ from Orange.classification.rules import var
 from Orange.classification.rules import median
 from Orange.classification.rules import perc
 from Orange.classification.rules import createRandomDataSet
-from Orange.classification.rules import compParameters                    
+from Orange.classification.rules import compParameters
 from Orange.classification.rules import computeDists
 from Orange.classification.rules import createEVDistList
 from Orange.classification.rules import CovererAndRemover_Prob

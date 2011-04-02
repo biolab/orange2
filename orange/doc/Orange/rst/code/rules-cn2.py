@@ -17,4 +17,4 @@ cn2_classifier = Orange.classification.rules.CN2Learner(table)
 
 # All rule-base classifiers can have their rules printed out like this:
 for r in cn2_classifier.rules:
-    print Orange.classification.rules.ruleToString(r)
+    print Orange.classification.rules.rule_to_string(r)
