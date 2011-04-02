@@ -178,7 +178,6 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
 .. literalinclude:: code/rules-customized.py
     :lines: 19-23
 
-
 .. py:class:: Orange.classification.rules.Rule(filter, classifier, lr, dist, ce, w = 0, qu = -1)
    
    Base class for presentation of a single induced rule.
@@ -229,7 +228,7 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
       number of selectors in rule (actually to number of conditions in filter),
       but, obviously, any other measure can be applied.
    
-   .. method:: filterAndStore(instances, weight_id=0, target_class=-1)
+   .. method:: filter_and_store(instances, weight_id=0, target_class=-1)
    
       Filter passed data instances and store them in the attribute 'examples'.
       Also, compute class_distribution, set weight of stored examples and create
@@ -915,7 +914,8 @@ class CN2UnorderedClassifier(RuleClassifier):
             self.prior = Orange.statistics.distribution.Distribution(
                                 instances.domain.class_var, instances)
 
-    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue, retRules = False):
+    @deprecated_keywords({"retRules": "ret_rules"})
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue, ret_rules = False):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -954,7 +954,7 @@ class CN2UnorderedClassifier(RuleClassifier):
         else:
             retDist.normalize()
         
-        if retRules:
+        if ret_rules:
             if result_type == Orange.classification.Classifier.GetValue:
               return (retDist.modus(), covRules)
             if result_type == Orange.classification.Classifier.GetProbabilities:
@@ -2585,7 +2585,8 @@ class RuleClassifier_bestRule(Orange.core.RuleClassifier):
         self.__dict__.update(argkw)
         self.default_class_index = -1
 
-    def __call__(self, example, result_type=Orange.classification.Classifier.GetValue, retRules = False):
+    @deprecated_keywords({"retRules": "ret_rules"})
+    def __call__(self, example, result_type=Orange.classification.Classifier.GetValue, ret_rules = False):
         example = Orange.core.Example(self.examples.domain,example)
         tempDist = Orange.core.Distribution(example.domain.class_var)
         best_rules = [None]*len(example.domain.class_var.values)
@@ -2622,7 +2623,7 @@ class RuleClassifier_bestRule(Orange.core.RuleClassifier):
                 final_dist[cl] = probs[cl_i]
             final_dist.normalize()
                 
-        if retRules: # Do you want to return rules with classification?
+        if ret_rules: # Do you want to return rules with classification?
             if result_type == Orange.classification.Classifier.GetValue:
               return (final_dist.modus(),best_rules)
             if result_type == Orange.core.GetProbabilities:
