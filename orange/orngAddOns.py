@@ -695,7 +695,7 @@ class OrangeAddOnRepository:
             raise Exception("Unable to load add-on descriptor: %s" % e)
     
     def refreshData(self, force=False, firstLoad=False, interval=3600*24):
-        if force or (self.lastRefreshUTC < time.time() - interval):            
+        if force or (self.lastRefreshUTC < time.time() - interval):
             self.lastRefreshUTC = time.time()
             self.hasWebScript = False
             try:
@@ -717,7 +717,7 @@ class OrangeAddOnRepository:
                                 except Exception, e:
                                     print "Ignoring node nr. %d in repository '%s' because of an error: %s" % (i+1, self.name, e)
                         self.hasWebScript = True
-                        return
+                        return True
                     except Exception, e:
                         print "Warning: a problem occurred using server-side script on repository '%s': %s.\nAll add-ons need to be downloaded for their metadata to be extracted!" % (self.name, e)
 
@@ -790,7 +790,7 @@ class OrangeAddOnRepository:
         
 class OrangeDefaultAddOnRepository(OrangeAddOnRepository):
     def __init__(self, **args):
-        OrangeAddOnRepository.__init__(self, "Default Orange Repository (www.ailab.si)", "http://www.ailab.si/orange/add-ons", force=True, **args)
+        OrangeAddOnRepository.__init__(self, "Default Orange Repository (orange.biolab.si)", "http://orange.biolab.si/add-ons/", force=True, **args)
         
     def clone(self, new=None):
         if not new:
@@ -822,7 +822,7 @@ def repositoryListFileName():
 
 availableRepositories = None
             
-def loadRepositories():
+def loadRepositories(refresh=True):
     listFileName = repositoryListFileName()
     global availableRepositories
     availableRepositories = []
@@ -835,15 +835,17 @@ def loadRepositories():
         except Exception, e:
             print "Unable to load repository list! Error: %s" % e
     try:
-        updateDefaultRepositories()
+        updateDefaultRepositories(loadList=refresh)
     except Exception, e:
         print "Unable to refresh default repositories: %s" % (e)
-    for r in availableRepositories:
-        #TODO: # Should show some progress (and enable cancellation)
-        try:
-            r.refreshData(force=False)
-        except Exception, e:
-            print "Unable to refresh repository %s! Error: %s" % (r.name, e)
+
+    if refresh:
+        for r in availableRepositories:
+            #TODO: # Should show some progress (and enable cancellation)
+            try:
+                r.refreshData(force=False)
+            except Exception, e:
+                print "Unable to refresh repository %s! Error: %s" % (r.name, e)
     saveRepositories()
 
 def saveRepositories():
@@ -856,19 +858,25 @@ def saveRepositories():
         print "Unable to save repository list! Error: %s" % e
     
 
-def updateDefaultRepositories():
+def updateDefaultRepositories(loadList=True):
     global availableRepositories
     default = [OrangeDefaultAddOnRepository(load=False)]
+    defaultKeys = [(repo.url, repo.name) for repo in default]
+    existingKeys = [(repo.url, repo.name) for repo in availableRepositories]
     
-    for drepo in default:
-        exists = False
-        for repo in availableRepositories:
-            if drepo.url == repo.url and drepo.name == repo.name:
-                exists = True
-                break
-        if not exists:
-            availableRepositories.append(drepo)
-            drepo.refreshData(firstLoad=True)
+    for i, key in enumerate(defaultKeys):
+        if key not in existingKeys:
+            availableRepositories.append(default[i])
+            if loadList:
+                default[i].refreshData(firstLoad=True)
+    
+    to_remove = []
+    for i, key in enumerate(existingKeys):
+        if isinstance(availableRepositories[i], OrangeDefaultAddOnRepository) and \
+           key not in defaultKeys:
+            to_remove.append(availableRepositories[i])
+    for tr in to_remove:
+        availableRepositories.remove(tr)
     
     
     
@@ -1046,4 +1054,4 @@ globals().update({'addOnRefreshCallback': addOnRefreshCallback})
 
 addAddOnDirectoriesToPath()
 
-loadRepositories()
+loadRepositories(refresh=False)

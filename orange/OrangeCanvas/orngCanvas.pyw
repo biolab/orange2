@@ -700,7 +700,7 @@ class OrangeCanvasDlg(QMainWindow):
                 for r in orngAddOns.availableRepositories:
                     #TODO: # Should show some progress (and enable cancellation)
                     try:
-                        if r.refreshData(force=False):
+                        if r.refreshData(force=True):
                             anyDone = True
                         else:
                             anyFailed = True
