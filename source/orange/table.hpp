@@ -35,8 +35,8 @@ public:
   TExample **examples;
   TExample **_Last, **_EndSpace;
   PRandomGenerator randomGenerator; //P random generator used by randomExample
-  PExampleGenerator lock; //PR the real owner of examples
-  bool ownsExamples; //PR if false, examples in this table are references to examples in another table
+  PExampleGenerator lock; //PR (+owner) the real owner of examples
+  bool ownsExamples; //PR (+owns_instances) if false, examples in this table are references to examples in another table
 
   // Iterates through examples of basevector
   #define baseITERATE(x) ITERATE(vector<TExample>, x, examples)
