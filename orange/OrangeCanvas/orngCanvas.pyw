@@ -684,6 +684,35 @@ class OrangeCanvasDlg(QMainWindow):
                 orngTabs.constructCategoriesPopup(self)
 
     def menuItemAddOns(self):
+        import time
+        t = time.time()
+        lastRefresh = self.settings["lastAddonsRefresh"]
+        if t - lastRefresh > 7*24*3600:
+            if QMessageBox.question(self, "Refresh",
+                                    "List of add-ons in repositories has %s. Do you want to %s the lists now?" %
+                                    (("not yet been loaded" if lastRefresh==0 else "not been refreshed for more than a week"),
+                                     ("download" if lastRefresh==0 else "reload")),
+                                     QMessageBox.Yes | QMessageBox.Default,
+                                     QMessageBox.No | QMessageBox.Escape) == QMessageBox.Yes:
+                
+                anyFailed = False
+                anyDone = False
+                for r in orngAddOns.availableRepositories:
+                    #TODO: # Should show some progress (and enable cancellation)
+                    try:
+                        if r.refreshData(force=False):
+                            anyDone = True
+                        else:
+                            anyFailed = True
+                    except Exception, e:
+                        anyFailed = True
+                        print "Unable to refresh repository %s! Error: %s" % (r.name, e)
+                
+                if anyDone:
+                    self.settings["lastAddonsRefresh"] = t
+                if anyFailed:
+                    QMessageBox.warning(self,'Download Failed', "Download of add-on list has failed for at least one repostitory.")
+        
         dlg = orngDlgs.AddOnManagerDialog(self, self)
         if dlg.exec_() == QDialog.Accepted:
             for (id, addOn) in dlg.addOnsToRemove.items():
@@ -742,7 +771,7 @@ class OrangeCanvasDlg(QMainWindow):
                        "focusOnCatchException": 1, "focusOnCatchOutput": 0, "printOutputInStatusBar": 1, "printExceptionInStatusBar": 1,
                        "outputVerbosity": 0, "synchronizeHelp": 1,
                        "ocShow": 1, "owShow": 0, "ocInfo": 1, "owInfo": 1, "ocWarning": 1, "owWarning": 1, "ocError": 1, "owError": 1,
-                       }
+                       "lastAddonsRefresh": 0}
         if RedR:
             self.setting.update({"svnSettings": None, "versionNumber": "Version0"})
         try:
