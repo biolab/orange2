@@ -58,10 +58,13 @@ This is the resulting printout::
 .. autoclass:: Orange.classification.rules.CN2Learner
    :members:
    :show-inheritance:
+   :exclude-members: baseRules, beamWidth, coverAndRemove, dataStopping,
+      ruleFinder, ruleStopping, storeInstances, targetClass, weightID
    
 .. autoclass:: Orange.classification.rules.CN2Classifier
    :members:
    :show-inheritance:
+   :exclude-members: beamWidth, resultType
    
 .. index:: unordered CN2
 
@@ -71,6 +74,8 @@ This is the resulting printout::
 .. autoclass:: Orange.classification.rules.CN2UnorderedLearner
    :members:
    :show-inheritance:
+   :exclude-members: baseRules, beamWidth, coverAndRemove, dataStopping,
+      ruleFinder, ruleStopping, storeInstances, targetClass, weightID
    
 .. autoclass:: Orange.classification.rules.CN2UnorderedClassifier
    :members:
@@ -85,6 +90,8 @@ This is the resulting printout::
 .. autoclass:: Orange.classification.rules.CN2SDUnorderedLearner
    :members:
    :show-inheritance:
+   :exclude-members: baseRules, beamWidth, coverAndRemove, dataStopping,
+      ruleFinder, ruleStopping, storeInstances, targetClass, weightID
    
 .. autoclass:: Orange.classification.rules.CN2EVCUnorderedLearner
    :members:
@@ -113,6 +120,9 @@ Orange also supports argument-based CN2 learning.
 .. autoclass:: Orange.classification.rules.ABCN2
    :members:
    :show-inheritance:
+   :exclude-members: baseRules, beamWidth, coverAndRemove, dataStopping,
+      ruleFinder, ruleStopping, storeInstances, targetClass, weightID,
+      argumentID
    
    This class has many more undocumented methods; see the source code for
    reference.
@@ -124,6 +134,8 @@ Orange also supports argument-based CN2 learning.
 .. autoclass:: Orange.classification.rules.ABCN2M
    :members:
    :show-inheritance:
+   :exclude-members: baseRules, beamWidth, coverAndRemove, dataStopping,
+      ruleFinder, ruleStopping, storeInstances, targetClass, weightID
 
 Thismodule has many more undocumented argument-based learning related classed;
 see the source code for reference.
@@ -492,10 +504,12 @@ Rule evaluators
 .. autoclass:: Orange.classification.rules.LaplaceEvaluator
    :members:
    :show-inheritance:
+   :exclude-members: targetClass, weightID
 
 .. autoclass:: Orange.classification.rules.WRACCEvaluator
    :members:
    :show-inheritance:
+   :exclude-members: targetClass, weightID
    
 .. class:: Orange.classification.rules.RuleEvaluator_Entropy
 
