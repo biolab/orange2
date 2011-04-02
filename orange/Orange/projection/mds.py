@@ -16,7 +16,7 @@ The main class to perform multidimensional scaling is
 
 .. autoclass:: Orange.projection.mds.MDS
    :members:
-   :exclude-members: Torgerson, getDistance, getStress
+   :exclude-members: Torgerson, get_distance, get_stress
 
 Stress functions
 ================
@@ -28,7 +28,7 @@ or callable classes:
        
        Compute the stress using the correct and the current distance value (the
        :obj:`Orange.projection.mds.MDS.distances` and
-       :obj:`Orange.projection.mds.MDS.projectedDistances` elements).
+       :obj:`Orange.projection.mds.MDS.projected_distances` elements).
        
        :param correct: correct (actual) distance between elements, represented by
            the two points.
@@ -103,11 +103,14 @@ A few representative lines of the output are::
 """
 
 
-import Orange.core
-import orangeom as orangemds
 from math import *
 from numpy import *
 from numpy.linalg import svd
+
+import Orange.core
+import orangeom as orangemds
+from Orange.misc import deprecated_keywords
+from Orange.misc import deprecated_members
 
 KruskalStress = orangemds.KruskalStress()
 SammonStress = orangemds.SammonStress()
@@ -175,6 +178,19 @@ class PivotMDS(object):
         return x, y
         
         
+@deprecated_members({"projectedDistances": "projected_distances",
+                     "originalDistances": "original_distances",
+                     "avgStress": "avg_stress",
+                     "progressCallback": "progress_callback",
+                     "getStress": "calc_stress",
+                     "get_stress": "calc_stress",
+                     "calcStress": "calc_stress",
+                     "getDistance": "calc_distance",
+                     "get_distance": "calc_distance",
+                     "calcDistance": "calc_distance",
+                     "Torgerson": "torgerson",
+                     "SMACOFstep": "smacof_step",
+                     "LSMT": "lsmt"})
 class MDS(object):
     """
     Main class for performing multidimensional scaling.
@@ -198,14 +214,14 @@ class MDS(object):
     .. attribute:: distances
     
        An :class:`Orange.core.SymMatrix` containing the distances that we
-       want to achieve (LSMT changes these).
+       want to achieve (lsmt changes these).
        
-    .. attribute:: projectedDistances
+    .. attribute:: projected_distances
 
        An :class:`Orange.core.SymMatrix` containing the distances between
        projected points.
        
-    .. attribute:: originalDistances
+    .. attribute:: original_distances
 
        An :class:`Orange.core.SymMatrix` containing the original distances
        between points.
@@ -222,11 +238,11 @@ class MDS(object):
 
        An integer holding the number of elements (points).
        
-    .. attribute:: avgStress
+    .. attribute:: avg_stress
 
        A float holding the average stress in the :obj:`stress` matrix.
        
-    .. attribute:: progressCallback
+    .. attribute:: progress_callback
 
        A function that gets called after each optimization step in the
        :func:`run` method.
@@ -235,11 +251,11 @@ class MDS(object):
     
     def __init__(self, distances=None, dim=2, **kwargs):
         self.mds=orangemds.MDS(distances, dim, **kwargs)
-        self.originalDistances=Orange.core.SymMatrix([m for m in self.distances])
+        self.original_distances=Orange.core.SymMatrix([m for m in self.distances])
 
     def __getattr__(self, name):
-        if name in ["points", "projectedDistances", "distances" ,"stress",
-                    "progressCallback", "n", "dim", "avgStress"]:
+        if name in ["points", "projected_distances", "distances" ,"stress",
+                    "progress_callback", "n", "dim", "avg_stress"]:
             #print "rec:",name            
             return self.__dict__["mds"].__dict__[name]
         else:
@@ -253,8 +269,8 @@ class MDS(object):
                     self.mds.points[i][j]=value[i][j]
             return
             
-        if name in ["projectedDistances", "distances" ,"stress",
-                    "progressCallback"]:
+        if name in ["projected_distances", "distances" ,"stress",
+                    "progress_callback"]:
             self.mds.__setattr__(name, value)
         else:
             self.__dict__[name]=value
@@ -262,55 +278,55 @@ class MDS(object):
     def __nonzero__(self):
         return True
             
-    def SMACOFstep(self):
+    def smacof_step(self):
         """
         Perform a single iteration of a Smacof algorithm that optimizes
         :obj:`stress` and updates the :obj:`points`.
         """
         self.mds.SMACOFstep()
 
-    def calcDistance(self):
+    def calc_distance(self):
         """
         Compute the distances between points and update the
-        :obj:`projectedDistances` matrix.
+        :obj:`projected_distances` matrix.
         
         """
-        self.mds.getDistance()
+        self.mds.get_distance()
         
-    getDistance = calcDistance
 
-    def calcStress(self, stressFunc=SgnRelStress):
+    @deprecated_keywords({"stressFunc": "stress_func"})
+    def calc_stress(self, stress_func=SgnRelStress):
         """
-        Compute the stress between the current :obj:`projectedDistances` and
-        :obj:`distances` matrix using *stressFunc* and update the
+        Compute the stress between the current :obj:`projected_distances` and
+        :obj:`distances` matrix using *stress_func* and update the
         :obj:`stress` matrix and :obj:`avgStress` accordingly.
         
         """
-        self.mds.getStress(stressFunc)
-        
-    getStress = calcStress
+        self.mds.getStress(stress_func)
 
-    def optimize(self, iter, stressFunc=SgnRelStress, eps=1e-3,
-                 progressCallback=None):
-        self.mds.progressCallback=progressCallback
-        self.mds.optimize(iter, stressFunc, eps)
+    @deprecated_keywords({"stressFunc": "stress_func"})
+    def optimize(self, iter, stress_func=SgnRelStress, eps=1e-3,
+                 progress_callback=None):
+        self.mds.progress_callback=progress_callback
+        self.mds.optimize(iter, stress_func, eps)
 
-    def run(self, iter, stressFunc=SgnRelStress, eps=1e-3,
-            progressCallback=None):
+    @deprecated_keywords({"stressFunc": "stress_func"})
+    def run(self, iter, stress_func=SgnRelStress, eps=1e-3,
+            progress_callback=None):
         """
         Perform optimization until stopping conditions are met.
         Stopping conditions are:
            
-           * optimization runs for *iter* iterations of SMACOFstep function, or
+           * optimization runs for *iter* iterations of smacof_step function, or
            * stress improvement (old stress minus new stress) is smaller than
              eps * old stress.
         
         :param iter: maximum number of optimization iterations.
         :type iter: int
         
-        :param stressFunc: stress function.
+        :param stress_func: stress function.
         """
-        self.optimize(iter, stressFunc, eps, progressCallback)
+        self.optimize(iter, stress_func, eps, progress_callback)
 
     def torgerson(self):
         """
@@ -356,9 +372,9 @@ class MDS(object):
 #        D = identity(self.n)*sqrt(L)  # make a diagonal matrix, with squarooted values
 #        X = matrixmultiply(U,D)
 #        self.X = take(X,idx,1)
-    Torgerson = torgerson
+    
     # Kruskal's monotone transformation
-    def LSMT(self):
+    def lsmt(self):
         """
         Execute Kruskal monotone transformation.
         
@@ -370,21 +386,21 @@ class MDS(object):
         o = []
         for i in xrange(1,self.n):
             for j in xrange(i):
-                o.append((self.originalDistances[i,j],(i,j)))
+                o.append((self.original_distances[i,j],(i,j)))
         o.sort(_mycompare)
         # find the ties in o, and construct the d vector sorting in order within ties
         d = []
         td = []
         uv = [] # numbers of consecutively tied o values
         (i,j) = o[0][1]
-        distnorm = self.projectedDistances[i,j]*self.projectedDistances[i,j]
-        td = [self.projectedDistances[i,j]] # fetch distance
+        distnorm = self.projected_distances[i,j]*self.projected_distances[i,j]
+        td = [self.projected_distances[i,j]] # fetch distance
         for l in xrange(1,len(o)):
             # copy now sorted distances in an array
             # but sort distances within a tied o
             (i,j) = o[l][1]
-            cd = self.projectedDistances[i,j]
-            distnorm += self.projectedDistances[i,j]*self.projectedDistances[i,j]
+            cd = self.projected_distances[i,j]
+            distnorm += self.projected_distances[i,j]*self.projected_distances[i,j]
             if o[l][0] != o[l-1][0]:
                 # differing value, flush
                 sum = reduce(lambda x,y:x+y,td)+0.0

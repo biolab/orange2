@@ -20,16 +20,16 @@ for i in range(len(table)):
 # Run the Torgerson approximation and calculate stress
 mds = Orange.projection.mds.MDS(matrix)
 mds.Torgerson()
-mds.calcStress(Orange.projection.mds.KruskalStress)
+mds.calc_stress(Orange.projection.mds.KruskalStress)
 
 # Optimization loop; calculate the stress only after each 10 optimization steps:
 for i in range(100):
-    oldStress = mds.avgStress
+    old_stress = mds.avg_stress
     for j in range(10):
         mds.SMACOFstep()
 
-    mds.calcStress(Orange.projection.mds.KruskalStress)
-    if oldStress * 1e-3 > math.fabs(oldStress - mds.avgStress):
+    mds.calc_stress(Orange.projection.mds.KruskalStress)
+    if old_stress * 1e-3 > math.fabs(old_stress - mds.avg_stress):
         break
 
 # Print the points out

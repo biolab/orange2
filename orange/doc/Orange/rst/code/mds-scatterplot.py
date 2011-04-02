@@ -30,7 +30,7 @@ for (i, d) in enumerate(table):
    points.append((mds.points[i][0], mds.points[i][1], d.getclass()))
 
 # Paint each class separately
-for c in range(len(table.domain.classVar.values)):
+for c in range(len(table.domain.class_var.values)):
     sel = filter(lambda x: x[-1] == c, points)
     x = [s[0] for s in sel]
     y = [s[1] for s in sel]
