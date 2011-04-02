@@ -216,8 +216,8 @@ keys in dictionaries or collected to Python data sets.
         :param instances: data instances
         :type value: list of Orange.data.Instance
 
-	..literalinclude:: code/instance_merge.py
-        :lines: 3-
+	.. literalinclude:: code/instance_merge.py
+            :lines: 3-
 
         The new domain consists of variables from `data1` and `data2`:
         `a1`, `a2` and `m1` are ordinary features, and `m2` and `a2`

@@ -8,5 +8,4 @@ Data description (``data``)
     Orange.data.domain
     Orange.data.value
     Orange.data.instance
-
-.. automodule:: Orange.data
+    Orange.data.table.rst
