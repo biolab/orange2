@@ -455,7 +455,7 @@ clustering
 
 ------------
 orng2Array.py -> /dev/null
-orngABCN2.py -> naknadno prosimo Martina (Janez)
+orngABCN2.py -> classify/rules (Matija)
 orngABML.py -> naknadno prosimo Martina (Janez)
 orngAddOns.py -> /core/addons.py
 orngAssoc.py -> associate
@@ -471,7 +471,7 @@ orngContingency.py -> ???CONT??? (Lan)
 orngDataCaching.py -> /core/???
 orngDebugging.py -> /core/???
 orngDendrogram.py -> /dev/null
-orngDimRed.py -> /dev/null (preveri, èe lahko popolnoma odstranimo)
+orngDimRed.py -> /dev/null (preveri, ï¿½e lahko popolnoma odstranimo)
 orngDimReduction.py -> projection, preprocess (centering, ...) ?
 orngDisc.py -> feature/discretize
 orngEnsemble.py -> classify/ensemble
