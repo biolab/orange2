@@ -501,7 +501,8 @@ class DendrogramPlot(object):
     def plot(self, filename="graph.eps"):
         width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size = self.layout()
         heatmap_cell_height = heatmap_height / len(self.labels)
-        heatmap_cell_width = heatmap_width / len(self.data.domain.attributes)
+
+        heatmap_cell_width = 0.0 if not self.data else heatmap_width / len(self.data.domain.attributes)
         
         self.renderer = self.renderer(width, height)
         
