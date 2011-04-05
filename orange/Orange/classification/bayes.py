@@ -55,9 +55,26 @@ bayesian classifier, and one with an adjusted threshold::
 
     [0.7901746265516516, 0.8280138859667578]
 
+Probabilities for continuous features are estimated with \
+:class:`ProbabilityEstimatorConstructor_loess`.
+(`bayes-plot-iris.py`_, uses `iris.tab`_):
+
+.. literalinclude:: code/bayes-plot-iris.py
+    :lines: 4-
+    
+.. image:: code/bayes-iris.png
+   :scale: 50 %
+
+If petal lengths are shorter, the most probable class is "setosa". Irises with
+middle petal lengths belong to "versicolor", while longer petal lengths indicate
+for "virginica". Critical values where the decision would change are at about
+5.4 and 6.3.
+
+
 .. _bayes-run.py: code/bayes-run.py
 .. _bayes-thresholdAdjustment.py: code/bayes-thresholdAdjustment.py
 .. _bayes-mestimate.py: code/bayes-mestimate.py
+.. _bayes-plot-iris.py: code/bayes-plot-iris.py
 .. _adult-sample.tab: code/adult-sample.tab
 .. _iris.tab: code/iris.tab
 .. _lenses.tab: code/lenses.tab
@@ -344,21 +361,24 @@ class NaiveClassifier(Orange.classification.Classifier):
         """
         return self.nativeBayesClassifier.p(class_, instance)
     
-    def printModel(self):
-        """Print classifier in human friendly format."""
+    def __str__(self):
+        """return classifier in human friendly format."""
         nValues=len(self.classVar.values)
         frmtStr=' %10.3f'*nValues
         classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in self.classVar.values]))
-        print classes
-        print "class probabilities "+(frmtStr % tuple(self.distribution))
-        print
-    
-        for i in self.conditionalDistributions:
-            print "Attribute", i.variable.name
-            print classes
-            for v in range(len(i.variable.values)):
-                print ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
-            print
+        
+        return "\n".join(
+            classes,
+            "class probabilities "+(frmtStr % tuple(self.distribution)),
+            "",
+            "\n".join(["\n".join(
+                "Attribute " + i.variable.name,
+                classes,
+                "\n".join(
+                    ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
+                    for v in xrange(len(i.variable.values)))
+                ) for i in self.conditionalDistributions]))
             
 
-printModel = NaiveClassifier.printModel
+def printModel(model):
+    print NaiveClassifier(model)
