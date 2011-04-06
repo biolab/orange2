@@ -1,4 +1,6 @@
 from orange import \
-     MakeRandomIndices, MakeRandomIndicesN, \
-     MakeRandomIndicesCV, MakeRandomIndicesMultiple, \
-     MakeRandomIndices2
+     MakeRandomIndices as SubsetIndices, \
+     MakeRandomIndicesN as SubsetIndicesN, \
+     MakeRandomIndicesCV as SubsetIndicesCV, \
+     MakeRandomIndicesMultiple as SubsetIndicesMultiple, \
+     MakeRandomIndices2 as SubsetIndices2
