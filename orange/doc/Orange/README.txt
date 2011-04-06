@@ -1,8 +1,9 @@
 Building
 ========
 
-The documentation can be built with Sphinx 1.0 or newer. Download
-it at http://sphinx.pocoo.org/. To build the documentation, run
+The documentation can be built with Sphinx 1.0 or newer. Download it at
+http://sphinx.pocoo.org/. Also, Orange needs to be installed to build
+the documentation. To build the documentation, run
 
     make html
 
