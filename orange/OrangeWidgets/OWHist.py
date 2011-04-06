@@ -39,12 +39,12 @@ class OWHist(OWGraph):
         if len(values) < 100:
             nBins = len(values)
 
-        (self.yData, self.xData) = numpy.histogram(values, bins=100)
+        self.yData, self.xData = numpy.histogram(values, bins=100)
         #if numpy version greater than 1.3
         if len(self.xData) == len(self.yData) + 1:
             self.xData = [(self.xData[i] + self.xData[i+1]) / 2. for i in range(len(self.xData) - 1)]
         
-        self.minx = min(self.xData)
+        self.minx = min(self.xData) 
         self.maxx = max(self.xData)
         self.miny = min(self.yData)
         self.maxy = max(self.yData)
@@ -56,6 +56,9 @@ class OWHist(OWGraph):
         self.replot()
         
     def setBoundary(self, lower, upper):
+        if not self.xData and not self.yData:
+            return
+        
         self.lowerBoundary = lower
         self.upperBoundary = upper
         maxy = max(self.yData)
@@ -97,6 +100,9 @@ class OWInteractiveHist(OWHist):
 ##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
 
     def shadeTails(self):
+        if not self.xData and not self.yData:
+            return
+        
         if self.type in ["hiTail", "twoTail"]:
             index = max(min(int(math.ceil(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx))), 100), 0)
             x = [self.upperBoundary] + list(self.xData[index:])
