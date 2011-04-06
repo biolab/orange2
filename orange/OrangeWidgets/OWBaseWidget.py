@@ -371,6 +371,14 @@ class OWBaseWidget(QDialog):
             self.widgetYPosition = self.frameGeometry().y()
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.closeEvent(self, ev)
+        
+    def wheelEvent(self, event):
+        """ Silently accept the wheel event. This is to ensure combo boxes
+        and other controls that have focus don't receive this event unless
+        the cursor is over them.
+        
+        """
+        event.accept()
 
     def setCaption(self, caption):
         if self.parent != None and isinstance(self.parent, QTabWidget):
