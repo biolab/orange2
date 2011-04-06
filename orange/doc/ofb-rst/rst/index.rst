@@ -6,7 +6,7 @@
 Beginning with Orange
 =====================
 
-If you are new to Orange, than this is probably the best place to
+If you are new to Orange, then this is probably the best place to
 start. “Beginning with Orange” was written with a purpose to provide a
 gentle tutorial over basic functionality of Orange. The tutorial
 includes:
