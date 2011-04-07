@@ -64,6 +64,12 @@ or constructs a new one.
         format instead of assigning an arbitrary new value, or by
         :obj:`Orange.core.newmetaid` if the variable is passed as an argument. 
         
+    .. attribute:: attributes
+        
+        A dictionary which allows the user to store additional information
+        about the variable. All values should be strings. See the section 
+        about :ref:`storing additional information <attributes>`.
+
     .. method:: __call__(obj)
     
            Convert a string, number or other suitable object into a variable
@@ -259,6 +265,17 @@ transformed variables.
 .. literalinclude:: code/variable-getValueFrom.py
     :lines: 24-
 
+.. _attributes:
+
+Storing additional variables
+-----------------------------
+
+All variables have a field :obj:`~Variable.attributes`. It is a dictionary
+which can contain strings. Although the current implementation allows all
+types of value we strongly advise to use only strings. An exmaple:
+
+.. literalinclude:: code/attributes.py
+
 Reuse of descriptors
 --------------------
 
@@ -446,6 +463,8 @@ the same as before::
 
 Finally, this is a perfect match, but any reuse is prohibited, so a new 
 variable is created.
+
+
 
 """
 from orange import Variable
