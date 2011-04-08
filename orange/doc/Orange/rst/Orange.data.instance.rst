@@ -220,7 +220,7 @@ keys in dictionaries or collected to Python data sets.
             :lines: 3-
 
         The new domain consists of variables from `data1` and `data2`:
-        `a1`, `a2` and `m1` are ordinary features, and `m2` and `a2`
+        `a1`, `a3` and `m1` are ordinary features, and `m2` and `a2`
         are meta attributes in the new domain. `m2` has the
         same meta attribute id as it has in `data1`, while `a2` gets a
         new meta id. In addition, the new domain has two new
