@@ -33,11 +33,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /*
-Copy from linear.cpp of LIBLINEAR
-Changes:
-	-#include "linear.h" -> #include "linear.ppp"
-	- removed #include "tron.h", instead the contents of tron.h are in linear.h
-	-#ifndef block around swap, min and max definition
+Changes to original linear.cpp v1.7:
+	- changed '#include "linear.h"' -> '#include "linear.ppp"'
+	- removed '#include "tron.h"', instead the contents of tron.h are in linear.hpp
+	- added '#ifndef' block around swap, min and max definition
+	- changed function to function1
 */
 
 #include <math.h>
@@ -93,7 +93,7 @@ static void info(const char *fmt,...)
 static void info(const char *fmt,...) {}
 #endif
 
-class l2r_lr_fun : public function
+class l2r_lr_fun : public function1
 {
 public:
 	l2r_lr_fun(const problem *prob, double Cp, double Cn);
@@ -248,7 +248,7 @@ void l2r_lr_fun::XTv(double *v, double *XTv)
 	}
 }
 
-class l2r_l2_svc_fun : public function
+class l2r_l2_svc_fun : public function1
 {
 public:
 	l2r_l2_svc_fun(const problem *prob, double Cp, double Cn);
@@ -1798,7 +1798,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			pos++;
 	neg = prob->l - pos;
 	
-	function *fun_obj=NULL;
+	function1 *fun_obj=NULL;
 	switch(param->solver_type)
 	{
 		case L2R_LR:
@@ -2399,9 +2399,9 @@ void TRON::info(const char *fmt,...)
 	(*tron_print_string)(buf);
 }
 
-TRON::TRON(const function *fun_obj, double eps, int max_iter)
+TRON::TRON(const function1 *fun_obj, double eps, int max_iter)
 {
-	this->fun_obj=const_cast<function *>(fun_obj);
+	this->fun_obj=const_cast<function1 *>(fun_obj);
 	this->eps=eps;
 	this->max_iter=max_iter;
 	tron_print_string = default_print;

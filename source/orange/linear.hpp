@@ -33,6 +33,10 @@
  
 */
 
+/*
+Changes to the original linear.h version 1.7:
+	- changed the class function to class function1 (name conflict with C++ 0x)
+*/
 
 
 #ifndef _LIBLINEAR_H
@@ -111,7 +115,7 @@ extern "C" {
 #ifndef _TRON_H
 #define _TRON_H
 
-class function
+class function1
 {
 public:
 	virtual double fun(double *w) = 0 ;
@@ -119,13 +123,13 @@ public:
 	virtual void Hv(double *s, double *Hs) = 0 ;
 	
 	virtual int get_nr_variable(void) = 0 ;
-	virtual ~function(void){}
+	virtual ~function1(void){}
 };
 
 class TRON
 {
 public:
-	TRON(const function *fun_obj, double eps = 0.1, int max_iter = 1000);
+	TRON(const function1 *fun_obj, double eps = 0.1, int max_iter = 1000);
 	~TRON();
 	
 	void tron(double *w);
@@ -137,7 +141,7 @@ private:
 	
 	double eps;
 	int max_iter;
-	function *fun_obj;
+	function1 *fun_obj;
 	void info(const char *fmt,...);
 	void (*tron_print_string)(const char *buf);
 };
