@@ -105,9 +105,9 @@ class OWSelectData(OWWidget):
         boxVal = OWGUI.widgetBox(self, "Values", addToLayout = 0)
         self.boxIndices[orange.VarTypes.Continuous] = boxVal
         self.valuesStack.addWidget(boxVal)
-        self.leNum1 = OWGUI.lineEdit(boxVal, self, "Num1")
+        self.leNum1 = OWGUI.lineEdit(boxVal, self, "Num1", validator=QDoubleValidator(self))
         self.lblAndCon = OWGUI.widgetLabel(boxVal, "and")
-        self.leNum2 = OWGUI.lineEdit(boxVal, self, "Num2")
+        self.leNum2 = OWGUI.lineEdit(boxVal, self, "Num2", validator=QDoubleValidator(self))
         boxAttrStat = OWGUI.widgetBox(boxVal, "Statistics")
         self.lblMin = OWGUI.widgetLabel(boxAttrStat, "Min: ")
         self.lblAvg = OWGUI.widgetLabel(boxAttrStat, "Avg: ")
@@ -601,8 +601,11 @@ class OWSelectData(OWWidget):
         """
         if self.currentVar:
             if self.currentVar.varType == orange.VarTypes.Continuous:
-                val1 = float(self.Num1)
-                val2 = float(self.Num2)
+                try:
+                    val1 = float(self.Num1)
+                    val2 = float(self.Num2)
+                except ValueError:
+                    return
             elif self.currentVar.varType == orange.VarTypes.String:
                 val1 = self.Str1
                 val2 = self.Str2
