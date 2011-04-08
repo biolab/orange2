@@ -107,7 +107,7 @@ print "Second example: ", data2[0]
 print "Merge: ", merge
 </XMP>
 
-<P>The <CODE>newdomain</CODE> consists of several attributes from <CODE>data1</CODE> and <CODE>data2</CODE>: <CODE>a1</CODE>, <CODE>a2</CODE> and <CODE>m1</CODE> are ordinary, and <CODE>m2</CODE> and <CODE>a2</CODE> are meta-attributes. Variables <CODE>m1</CODE> and <CODE>m2</CODE> are really tuples of meta-id and a descriptor (<A href="Variable.htm">Variable</A>). For this reason, <CODE>orange.Domain</CODE> is initialized with <CODE>m1[1]</CODE>, descriptor, while when adding meta attributes, we use <CODE>m2[0]</CODE> and <CODE>m2[1]</CODE>, so that <CODE>m2</CODE> has the same id in both domains. For meta-attribute <CODE>a2</CODE> which was original ordinary, we obtain a new id.</P>
+<P>The <CODE>newdomain</CODE> consists of several attributes from <CODE>data1</CODE> and <CODE>data2</CODE>: <CODE>a1</CODE>, <CODE>a3</CODE> and <CODE>m1</CODE> are ordinary, and <CODE>m2</CODE> and <CODE>a2</CODE> are meta-attributes. Variables <CODE>m1</CODE> and <CODE>m2</CODE> are really tuples of meta-id and a descriptor (<A href="Variable.htm">Variable</A>). For this reason, <CODE>orange.Domain</CODE> is initialized with <CODE>m1[1]</CODE>, descriptor, while when adding meta attributes, we use <CODE>m2[0]</CODE> and <CODE>m2[1]</CODE>, so that <CODE>m2</CODE> has the same id in both domains. For meta-attribute <CODE>a2</CODE> which was original ordinary, we obtain a new id.</P>
 
 <P>In addition, <CODE>newdomain</CODE> has two new attributes, <CODE>n1</CODE> and <CODE>n2</CODE>, the first as ordinary and the second as meta-attribute.</P>
 
