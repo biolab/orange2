@@ -13,6 +13,10 @@ platform = sys.platform
 pyversion = sys.version[:3]
 states = ["OK", "changed", "random", "error", "crash"]
 
+#ignore deprecation warnings
+import warnings
+warnings.simplefilter("ignore", DeprecationWarning)
+
 def file_name_match(name, patterns):
     """Is any of the string in patterns a substring of name?"""
     for p in patterns:
