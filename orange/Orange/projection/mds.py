@@ -178,19 +178,6 @@ class PivotMDS(object):
         return x, y
         
         
-@deprecated_members({"projectedDistances": "projected_distances",
-                     "originalDistances": "original_distances",
-                     "avgStress": "avg_stress",
-                     "progressCallback": "progress_callback",
-                     "getStress": "calc_stress",
-                     "get_stress": "calc_stress",
-                     "calcStress": "calc_stress",
-                     "getDistance": "calc_distance",
-                     "get_distance": "calc_distance",
-                     "calcDistance": "calc_distance",
-                     "Torgerson": "torgerson",
-                     "SMACOFstep": "smacof_step",
-                     "LSMT": "lsmt"})
 class MDS(object):
     """
     Main class for performing multidimensional scaling.
@@ -447,3 +434,17 @@ class MDS(object):
         assert(len(o) == k)
         self.freshD = 0
         return effect
+    
+MDS = deprecated_members({"projectedDistances": "projected_distances",
+                     "originalDistances": "original_distances",
+                     "avgStress": "avg_stress",
+                     "progressCallback": "progress_callback",
+                     "getStress": "calc_stress",
+                     "get_stress": "calc_stress",
+                     "calcStress": "calc_stress",
+                     "getDistance": "calc_distance",
+                     "get_distance": "calc_distance",
+                     "calcDistance": "calc_distance",
+                     "Torgerson": "torgerson",
+                     "SMACOFstep": "smacof_step",
+                     "LSMT": "lsmt"})(MDS)
