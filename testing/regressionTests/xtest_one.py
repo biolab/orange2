@@ -3,6 +3,10 @@ import traceback as t__traceback
 import string as t__string
 import os as t__os
 
+#ignore deprection warnings
+import warnings as t__warnings
+t__warnings.simplefilter("ignore", DeprecationWarning)
+
 NO_RANDOMNESS = 1 # prevent random parts of scripts to run
 
 def t__isdigit(c):
