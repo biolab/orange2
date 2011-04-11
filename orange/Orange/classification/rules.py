@@ -617,7 +617,6 @@ from Orange.misc import deprecated_members
 from orngABML import *
 
 
-@deprecated_members({"weightID": "weight_id", "targetClass": "target_class"})
 class LaplaceEvaluator(RuleEvaluator):
     """
     Laplace's rule of succession.
@@ -634,8 +633,10 @@ class LaplaceEvaluator(RuleEvaluator):
         else:
             return (max(rule.class_distribution)+1)/(sumDist+len(data.domain.class_var.values))
 
+LaplaceEvaluator = deprecated_members({"weightID": "weight_id",
+                                       "targetClass": "target_class"})(LaplaceEvaluator)
 
-@deprecated_members({"weightID": "weight_id", "targetClass": "target_class"})
+
 class WRACCEvaluator(RuleEvaluator):
     """
     Weighted relative accuracy.
@@ -659,8 +660,10 @@ class WRACCEvaluator(RuleEvaluator):
             return pRule*(pTruePositive-pClass)
         else: return (pTruePositive-pClass)/max(pRule,1e-6)
 
+WRACCEvaluator = deprecated_members({"weightID": "weight_id",
+                                     "targetClass": "target_class"})(WRACCEvaluator)
 
-@deprecated_members({"weightID": "weight_id", "targetClass": "target_class"})
+
 class MEstimateEvaluator(RuleEvaluator):
     """
     Rule evaluator using m-estimate of probability rule evaluation function.
@@ -687,17 +690,10 @@ class MEstimateEvaluator(RuleEvaluator):
             p = p / (rule.class_distribution.abs + self.m)      
         return p
 
+MEstimateEvaluator = deprecated_members({"weightID": "weight_id",
+                                         "targetClass": "target_class"})(MEstimateEvaluator)
 
-@deprecated_members({"beamWidth": "beam_width",
-                     "ruleFinder": "rule_finder",
-                     "ruleStopping": "rule_stopping",
-                     "dataStopping": "data_stopping",
-                     "coverAndRemove": "cover_and_remove",
-                     "ruleFinder": "rule_finder",
-                     "storeInstances": "store_instances",
-                     "targetClass": "target_class",
-                     "baseRules": "base_rules",
-                     "weightID": "weight_id"})
+
 class CN2Learner(RuleLearner):
     """
     Classical CN2 (see Clark and Niblett; 1988) induces a set of ordered
@@ -745,8 +741,17 @@ class CN2Learner(RuleLearner):
         rules = cl.rules
         return CN2Classifier(rules, instances, weight)
 
+CN2Learner = deprecated_members({"beamWidth": "beam_width",
+                     "ruleFinder": "rule_finder",
+                     "ruleStopping": "rule_stopping",
+                     "dataStopping": "data_stopping",
+                     "coverAndRemove": "cover_and_remove",
+                     "storeInstances": "store_instances",
+                     "targetClass": "target_class",
+                     "baseRules": "base_rules",
+                     "weightID": "weight_id"})(CN2Learner)
 
-@deprecated_members({"resultType": "result_type", "beamWidth": "beam_width"})
+
 class CN2Classifier(RuleClassifier):
     """
     Classical CN2 (see Clark and Niblett; 1988) classifies a new instance
@@ -815,17 +820,10 @@ class CN2Classifier(RuleClassifier):
             ret_str += "ELSE "+rule_to_string(r)+" "+str(r.class_distribution)+"\n"
         return ret_str
 
+CN2Classifier = deprecated_members({"resultType": "result_type",
+                                    "beamWidth": "beam_width"})(CN2Classifier)
 
-@deprecated_members({"beamWidth": "beam_width",
-                     "ruleFinder": "rule_finder",
-                     "ruleStopping": "rule_stopping",
-                     "dataStopping": "data_stopping",
-                     "coverAndRemove": "cover_and_remove",
-                     "ruleFinder": "rule_finder",
-                     "storeInstances": "store_instances",
-                     "targetClass": "target_class",
-                     "baseRules": "base_rules",
-                     "weightID": "weight_id"})
+
 class CN2UnorderedLearner(RuleLearner):
     """
     CN2 unordered (see Clark and Boswell; 1991) induces a set of unordered
@@ -894,6 +892,16 @@ class CN2UnorderedLearner(RuleLearner):
         if progress:
             progress(1.0,None)
         return CN2UnorderedClassifier(rules, instances, weight_id)
+
+CN2UnorderedLearner = deprecated_members({"beamWidth": "beam_width",
+                     "ruleFinder": "rule_finder",
+                     "ruleStopping": "rule_stopping",
+                     "dataStopping": "data_stopping",
+                     "coverAndRemove": "cover_and_remove",
+                     "storeInstances": "store_instances",
+                     "targetClass": "target_class",
+                     "baseRules": "base_rules",
+                     "weightID": "weight_id"})(CN2UnorderedLearner)
 
 
 class CN2UnorderedClassifier(RuleClassifier):
@@ -1041,17 +1049,6 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         return classifier
 
 
-@deprecated_members({"beamWidth": "beam_width",
-                     "ruleFinder": "rule_finder",
-                     "ruleStopping": "rule_stopping",
-                     "dataStopping": "data_stopping",
-                     "coverAndRemove": "cover_and_remove",
-                     "ruleFinder": "rule_finder",
-                     "storeInstances": "store_instances",
-                     "targetClass": "target_class",
-                     "baseRules": "base_rules",
-                     "weightID": "weight_id",
-                     "argumentID": "argument_id"})
 class ABCN2(RuleLearner):
     """
     This is an implementation of argument-based CN2 using EVC as evaluation
@@ -1523,6 +1520,16 @@ class ABCN2(RuleLearner):
         rule = cn2_learner.rule_finder(examples,weight_id,0,RuleList())
         return rule.filter.conditions
 
+ABCN2 = deprecated_members({"beamWidth": "beam_width",
+                     "ruleFinder": "rule_finder",
+                     "ruleStopping": "rule_stopping",
+                     "dataStopping": "data_stopping",
+                     "coverAndRemove": "cover_and_remove",
+                     "storeInstances": "store_instances",
+                     "targetClass": "target_class",
+                     "baseRules": "base_rules",
+                     "weightID": "weight_id",
+                     "argumentID": "argument_id"})(ABCN2)
 
 class CN2EVCUnorderedLearner(ABCN2):
     """
@@ -2131,8 +2138,6 @@ class ruleCoversArguments:
     oneSelectorToCover = staticmethod(oneSelectorToCover)
 
 
-@deprecated_members({"notAllowedSelectors": "not_allowed_selectors",
-                     "argumentID": "argument_id"})
 class SelectorAdder(Orange.core.RuleBeamRefiner):
     """
     Selector adder, this function is a refiner function:
@@ -2228,10 +2233,11 @@ class SelectorAdder(Orange.core.RuleBeamRefiner):
         tempRule.filterAndStore(oldRule.examples,oldRule.weight_id,target_class)
         return tempRule
 
+SelectorAdder = deprecated_members({"notAllowedSelectors": "not_allowed_selectors",
+                     "argumentID": "argument_id"})(SelectorAdder)
 
 # This filter is the ugliest code ever! Problem is with Orange, I had some problems with inheriting deepCopy
 # I should take another look at it.
-@deprecated_members({"argumentID": "argument_id"})
 class ArgFilter(Orange.core.Filter):
     """
     This class implements AB-covering principle.
@@ -2297,6 +2303,7 @@ class ArgFilter(Orange.core.Filter):
             newFilter.candidateValues = self.candidateValues[:]
         return newFilter
 
+ArgFilter = deprecated_members({"argumentID": "argument_id"})(ArgFilter)
 
 class SelectorArgConditions(Orange.core.RuleBeamRefiner):
     """
@@ -2510,7 +2517,7 @@ class CrossValidation:
             prob_dist.append(d)
         return prob_dist
 
-@deprecated_members({"sortRules": "sort_rules"})
+
 class PILAR:
     """
     PILAR (Probabilistic improvement of learning algorithms with rules).
@@ -2583,8 +2590,9 @@ class PILAR:
                 new_rules.append(bestRule)
         return new_rules
 
+PILAR = deprecated_members({"sortRules": "sort_rules"})(PILAR)
 
-@deprecated_members({"defaultClassIndex": "default_class_index"})
+
 class RuleClassifier_bestRule(Orange.core.RuleClassifier):
     """
     A very simple classifier, it takes the best rule of each class and
@@ -2648,3 +2656,5 @@ class RuleClassifier_bestRule(Orange.core.RuleClassifier):
         if result_type == Orange.core.GetProbabilities:
           return final_dist
         return (final_dist.modus(),final_dist)
+    
+RuleClassifier_bestRule = deprecated_members({"defaultClassIndex": "default_class_index"})(RuleClassifier_bestRule)
