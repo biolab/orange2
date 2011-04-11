@@ -272,9 +272,13 @@ Storing additional variables
 
 All variables have a field :obj:`~Variable.attributes`. It is a dictionary
 which can contain strings. Although the current implementation allows all
-types of value we strongly advise to use only strings. An exmaple:
+types of value we strongly advise to use only strings. An example:
 
 .. literalinclude:: code/attributes.py
+
+The attributes can only be saved to a .tab file. They are listed in the
+third line in <name>=<value> format, after other attribute specifications
+(such as "meta" or "class"), and are separated by spaces. 
 
 Reuse of descriptors
 --------------------
