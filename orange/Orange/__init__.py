@@ -79,7 +79,7 @@ _import("clustering")
 _import("clustering.kmeans")
 _import("clustering.hierarchical")
 
-import misc
-import misc.counters
-import misc.render
-import misc.selection
+_import("misc")
+_import("misc.counters")
+_import("misc.render")
+_import("misc.selection")
