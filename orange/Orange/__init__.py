@@ -7,67 +7,77 @@ import orange
 import sys
 sys.modules["orange"] = orange
 
-import data
-import data.io
-import data.sample
-import data.variable
+import warnings
 
-import network
+def _import(name):
+    try:
+        __import__(name, globals(), locals(), [], -1)
+    except:
+        warnings.warn("Could not import: " + name, UserWarning, 2)
 
-import stat
+_import("data")
+_import("data.io")
+_import("data.sample")
+_import("data.variable")
 
-import statistics
-import statistics.estimate
-import statistics.contingency
-import statistics.distribution
-import statistics.basic
-import statistics.evd
+_import("network")
 
-import classification
-import classification.tree
-import classification.rules
-import classification.lookup
-import classification.bayes
-import classification.svm
-import classification.logreg
-import classification.knn
-import classification.majority
+_import("stat")
 
-import optimization
+_import("statistics")
+_import("statistics.estimate")
+_import("statistics.contingency")
+_import("statistics.distribution")
+_import("statistics.basic")
+_import("statistics.evd")
 
-import projection
-import projection.mds
-import projection.som
+_import("classification")
+_import("classification.tree")
 
-import ensemble
-import ensemble.bagging
-import ensemble.boosting
-import ensemble.forest
+_import("classification.rules")
 
-import regression
-import regression.mean
+_import("classification.lookup")
+_import("classification.bayes")
+_import("classification.svm")
+_import("classification.logreg")
+_import("classification.knn")
+_import("classification.majority")
 
-import associate
+_import("optimization")
 
-import preprocess
+_import("projection")
+_import("projection.mds")
+_import("projection.som")
+
+_import("ensemble")
+_import("ensemble.bagging")
+_import("ensemble.boosting")
+_import("ensemble.forest")
+
+_import("regression")
+_import("regression.mean")
+
+_import("associate")
+
+_import("preprocess")
 #import preprocess.value
 #import preprocess.data
 
-import distances
+_import("distances")
 
-import wrappers
+_import("wrappers")
 
-import featureConstruction
-import featureConstruction.univariate
-import featureConstruction.functionDecomposition
+_import("featureConstruction")
+_import("featureConstruction.univariate")
+_import("featureConstruction.functionDecomposition")
 
-import evaluation
-import evaluation.scoring
-import evaluation.testing
+_import("evaluation")
+_import("evaluation.scoring")
+_import("evaluation.testing")
 
-import clustering
-import clustering.kmeans
-import clustering.hierarchical
+_import("clustering")
+_import("clustering.kmeans")
+_import("clustering.hierarchical")
 
 import misc
 import misc.counters
