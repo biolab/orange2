@@ -1,6 +1,8 @@
 import xml.dom.minidom
 import re, os
-from fileutil import xmlTextOf, createTextElement, _zipOpen
+from fileutil import xml_text_of
+from fileutil import create_text_element
+from fileutil import _zip_open
 
 re_inputs = re.compile(r'[ \t]+self.inputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
 re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
@@ -30,7 +32,7 @@ class WidgetMetaData:
             for attr in self.xmlAttrs:
                 nodes = data.getElementsByTagName(attr)
                 if nodes:
-                    setattr(self, attr, xmlTextOf(nodes[0]))
+                    setattr(self, attr, xml_text_of(nodes[0]))
             if data.hasAttribute("filename"):
                 self.filename = data.getAttribute("filename")
         else:   # python module
@@ -53,7 +55,7 @@ class WidgetMetaData:
         widgetTag = xml.dom.minidom.Element("widget")
         for attr in self.xmlAttrs:
             if hasattr(self, attr):
-                widgetTag.appendChild(createTextElement(attr, getattr(self, attr)))
+                widgetTag.appendChild(create_text_element(attr, getattr(self, attr)))
         if "filename" in self.__dict__ and self.filename:
             widgetTag.setAttribute("filename", self.filename)
         return widgetTag
@@ -66,7 +68,7 @@ def widgetsXml(oaoZip):
         if re.match(_widgetModuleName, file):
             try:
                 filename = file[8:]
-                meta = WidgetMetaData(_zipOpen(oaoZip, file).read(), "None", filename=filename, hasDoc="1" if ("doc/widgets/%s.htm" % (os.path.splitext(filename)[0][2:]) in files) else "0")
+                meta = WidgetMetaData(_zip_open(oaoZip, file).read(), "None", filename=filename, hasDoc="1" if ("doc/widgets/%s.htm" % (os.path.splitext(filename)[0][2:]) in files) else "0")
             except:
                 continue   # Probably not an Orange widget module
             widgetsTag.appendChild(meta.toXml())

@@ -4,7 +4,7 @@
 
 # This module has to be imported first because it takes care of the system PATH variable
 # Namely, it throws out the MikTeX directories which contain an incompatible Qt .dll's
-import orngEnviron, orngAddOns
+import orngEnviron, Orange.misc.addons
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -174,7 +174,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.updateWidgetRegistry()
             orngTabs.constructCategoriesPopup(self)
             self.createWidgetsToolbar()
-        orngAddOns.addOnRefreshCallback.append(addOnRefreshCallback)
+        Orange.misc.addons.addon_refresh_callback.append(addOnRefreshCallback)
 
         # create menu
         self.initMenu()
@@ -697,10 +697,10 @@ class OrangeCanvasDlg(QMainWindow):
                 
                 anyFailed = False
                 anyDone = False
-                for r in orngAddOns.availableRepositories:
+                for r in Orange.misc.addons.available_repositories:
                     #TODO: # Should show some progress (and enable cancellation)
                     try:
-                        if r.refreshData(force=True):
+                        if r.refreshdata(force=True):
                             anyDone = True
                         else:
                             anyFailed = True
@@ -719,23 +719,23 @@ class OrangeCanvasDlg(QMainWindow):
                 try:
                     addOn.uninstall(refresh=False)
                     if id in dlg.addOnsToAdd.items():
-                        orngAddOns.installAddOnFromRepo(dlg.addOnsToAdd[id], globalInstall=False, refresh=False)
+                        Orange.misc.addons.install_addon_from_repo(dlg.addOnsToAdd[id], global_install=False, refresh=False)
                         del dlg.addOnsToAdd[id]
                 except Exception, e:
                     print "Problem %s add-on %s: %s" % ("upgrading" if id in dlg.addOnsToAdd else "removing", addOn.name, e)
             for (id, addOn) in dlg.addOnsToAdd.items():
                 if id.startswith("registered:"):
                     try:
-                        orngAddOns.registerAddOn(addOn.name, addOn.directory, refresh=False, systemWide=False)
+                        Orange.misc.addons.register_addon(addOn.name, addOn.directory, refresh=False, systemwide=False)
                     except Exception, e:
                         print "Problem registering add-on %s: %s" % (addOn.name, e)
                 else:
                     try:
-                        orngAddOns.installAddOnFromRepo(dlg.addOnsToAdd[id], globalInstall=False, refresh=False)
+                        Orange.misc.addons.install_addon_from_repo(dlg.addOnsToAdd[id], global_install=False, refresh=False)
                     except Exception, e:
                         print "Problem installing add-on %s: %s" % (addOn.name, e)
             if len(dlg.addOnsToAdd)+len(dlg.addOnsToRemove)>0:
-                orngAddOns.refreshAddOns(reloadPath=True)
+                Orange.misc.addons.refresh_addons(reload_path=True)
                 
                     
 

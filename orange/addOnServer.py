@@ -152,9 +152,9 @@ def _updateXml(repositoryDir, returnCachedDoc=False):
             try:
                 pack = ZipFile(addOn, 'r')
                 try:
-                    manifest = fileutil._zipOpen(pack, 'addon.xml')
+                    manifest = fileutil._zip_open(pack, 'addon.xml')
                     addOnXmlDoc = xml.dom.minidom.parse(manifest)
-                    addOnXml = addOnXmlDoc.documentElement                    
+                    addOnXml = addOnXmlDoc.documentElement
                     addOnXml.setAttribute("filename", os.path.split(addOn)[1])
                     addOnXml.appendChild(widgetParser.widgetsXml(pack))   # Temporary: this should be done at upload.
                     addOnXml.normalize()

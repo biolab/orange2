@@ -5,7 +5,7 @@ import os, sys, uuid
 
 import OWGUI
 
-import orngAddOns
+import Orange.misc.addons
 
 
 class AddOnPackDlg(QWizard):
@@ -16,60 +16,60 @@ class AddOnPackDlg(QWizard):
         self.resize(width, height)
 
         desktop = app.desktop()
-        deskH = desktop.screenGeometry(desktop.primaryScreen()).height()
-        deskW = desktop.screenGeometry(desktop.primaryScreen()).width()
-        h = max(0, deskH / 2 - height / 2)  # if the window is too small, resize the window to desktop size
-        w = max(0, deskW / 2 - width / 2)
+        deskh = desktop.screenGeometry(desktop.primaryScreen()).height()
+        deskw = desktop.screenGeometry(desktop.primaryScreen()).width()
+        h = max(0, deskh / 2 - height / 2)  # if the window is too small, resize the window to desktop size
+        w = max(0, deskw / 2 - width / 2)
         self.move(w, h)
         
         self.setWindowTitle("Orange Add-on Packaging Wizard")
  
-        self.initAddOnSelectionPage()
-        self.initMetaDataPage()
-        self.initOptionalMetaDataPage()
+        self.init_addon_selection_page()
+        self.init_metadata_page()
+        self.init_optional_metadata_page()
         self.initDestinationPage()
 
-    def initAddOnSelectionPage(self):
-        self.addOnSelectionPage = page = QWizardPage()
+    def init_addon_selection_page(self):
+        self.addon_selection_page = page = QWizardPage()
         page.setTitle("Add-on Selection")
         page.setLayout(QVBoxLayout())
         self.addPage( page )
         import os
 
         p = OWGUI.widgetBox(page, "Select a registered add-on to pack", orientation="horizontal")
-        self.aoList = OWGUI.listBox(p, self, callback=self.listSelectionCallback)
-        self.registeredAddOns = orngAddOns.registeredAddOns
-        for ao in self.registeredAddOns:
-            self.aoList.addItem(ao.name)
-        pBtn = OWGUI.widgetBox(p, orientation="vertical")
-        btnCustomLocation = OWGUI.button(pBtn, self, "Custom Location...", callback=self.selectCustomLocation)
-        pBtn.layout().addStretch(1)
+        self.aolist = OWGUI.listBox(p, self, callback=self.list_selection_callback)
+        self.registered_addons = Orange.misc.addons.registered_addons
+        for ao in self.registered_addons:
+            self.aolist.addItem(ao.name)
+        pbtn = OWGUI.widgetBox(p, orientation="vertical")
+        btn_custom_location = OWGUI.button(pbtn, self, "Custom Location...", callback=self.select_custom_location)
+        pbtn.layout().addStretch(1)
         
         self.directory = ""
-        self.eDirectory = OWGUI.lineEdit(page, self, "directory", label="Add-on directory: ", callback=self.directoryChangeCallback, callbackOnType=True)
+        self.e_directory = OWGUI.lineEdit(page, self, "directory", label="Add-on directory: ", callback=self.directory_change_callback, callbackOnType=True)
         page.isComplete = lambda page: os.path.isdir(os.path.join(self.directory, "widgets"))
     
-    def listSelectionCallback(self):
-        index = self.aoList.currentIndex()
-        item = self.registeredAddOns[index.row()] if index else None
+    def list_selection_callback(self):
+        index = self.aolist.currentIndex()
+        item = self.registered_addons[index.row()] if index else None
         if item:
-            self.eDirectory.setText(item.directory)
+            self.e_directory.setText(item.directory)
         else:
-            self.eDirectory.setText("")
+            self.e_directory.setText("")
     
-    def selectCustomLocation(self):
+    def select_custom_location(self):
         import os
-        dir = str(QFileDialog.getExistingDirectory(self, "Select the folder that contains the add-on:", self.eDirectory.text()))
+        dir = str(QFileDialog.getExistingDirectory(self, "Select the folder that contains the add-on:", self.e_directory.text()))
         if dir != "":
             if os.path.split(dir)[1] == "widgets":     # register a dir above the dir that contains the widget folder
                 dir = os.path.split(dir)[0]
-            self.eDirectory.setText(dir)
-            self.aoList.setCurrentItem(None)
+            self.e_directory.setText(dir)
+            self.aolist.setCurrentItem(None)
                 
-    def directoryChangeCallback(self):
-        self.addOnSelectionPage.emit(SIGNAL("completeChanged()"))
+    def directory_change_callback(self):
+        self.addon_selection_page.emit(SIGNAL("completeChanged()"))
         
-    def newTextEdit(self, label, parent):
+    def new_textedit(self, label, parent):
         vpanel = OWGUI.widgetBox(parent, orientation="vertical")
         l = QLabel(label)
         e = QTextEdit()
@@ -78,46 +78,46 @@ class AddOnPackDlg(QWizard):
         vpanel.layout().addWidget(e)
         return e
 
-    def initMetaDataPage(self):
+    def init_metadata_page(self):
         self.metaDataPage = page = QWizardPage()
         page.setTitle("Add-on Information")
         page.setLayout(QVBoxLayout())
         self.addPage( page )
-        page.initializePage = self.loadMetaData
+        page.initializePage = self.load_metadata
 
         p = OWGUI.widgetBox(page, "Enter the following information about your add-on", orientation="vertical")
         import os
-        self.eId = eId = OWGUI.lineEdit(p, self, None, "Globally unique ID:")
+        self.e_id = eId = OWGUI.lineEdit(p, self, None, "Globally unique ID:")
         eId.setReadOnly(True)
         eId.setFocusPolicy(Qt.NoFocus)
 
         h = OWGUI.widgetBox(p, orientation="horizontal")
         self.name = ""
-        self.preferredDirTouched = True
-        self.eName = eName = OWGUI.lineEdit(h, self, "name", "Name:", callback=self.nameChangeCallback, callbackOnType=True)
-        self.eVersion = eVersion = OWGUI.lineEdit(h, self, None, "Version:")
+        self.preferred_dir_touched = True
+        self.e_name = e_name = OWGUI.lineEdit(h, self, "name", "Name:", callback=self.name_change_callback, callbackOnType=True)
+        self.e_version = eVersion = OWGUI.lineEdit(h, self, None, "Version:")
         def nonEmpty(editor):
             return bool(str(editor.text() if hasattr(editor, "text") else editor.toPlainText()).strip()) 
-        eName.isComplete = lambda: nonEmpty(eName) 
+        e_name.isComplete = lambda: nonEmpty(e_name) 
         def versionIsComplete():
             try:
-                map(int, str(eVersion.text()).strip().split("."))
-                return bool(str(eVersion.text()).strip())
+                map(int, str(e_version.text()).strip().split("."))
+                return bool(str(e_version.text()).strip())
             except:
                 return False
         eVersion.isComplete = versionIsComplete 
 
-        self.eDescription = eDescription = self.newTextEdit("Description:", p)
+        self.e_description = eDescription = self.new_textedit("Description:", p)
         eDescription.isComplete = lambda: nonEmpty(eDescription)
         
         def evalPage():
             page.emit(SIGNAL("completeChanged()"))
-        for nonOptional in [eName, eVersion, eDescription]:
+        for nonOptional in [e_name, eVersion, eDescription]:
             QObject.connect(nonOptional, SIGNAL("textChanged(const QString &)"), evalPage)
             QObject.connect(nonOptional, SIGNAL("textChanged()"), evalPage)
-        page.isComplete = lambda page: eName.isComplete() and eVersion.isComplete() and eDescription.isComplete()        
+        page.isComplete = lambda page: e_name.isComplete() and eVersion.isComplete() and eDescription.isComplete()        
 
-    def initOptionalMetaDataPage(self):
+    def init_optional_metadata_page(self):
         self.optionalMetaDataPage = page = QWizardPage()
         page.setTitle("Optional Add-on Information")
         page.setLayout(QVBoxLayout())
@@ -125,58 +125,58 @@ class AddOnPackDlg(QWizard):
 
         p = OWGUI.widgetBox(page, "Optionally, enter the following information about your add-on", orientation="vertical")
         self.preferredDir = ""
-        self.ePreferredDir = ePreferredDir = OWGUI.lineEdit(p, self, "preferredDir", "Preferred directory name (within add-ons directory; optional):", callback=self.preferredDirChangeCallback, callbackOnType=True)
-        self.eHomePage = eHomePage = OWGUI.lineEdit(p, self, None, "Add-on webpage (optional):")
-        self.preferredDirTouched = False
+        self.e_preferreddir = ePreferredDir = OWGUI.lineEdit(p, self, "preferredDir", "Preferred directory name (within add-ons directory; optional):", callback=self.preferred_dir_change_callback, callbackOnType=True)
+        self.e_homepage = eHomePage = OWGUI.lineEdit(p, self, None, "Add-on webpage (optional):")
+        self.preferred_dir_touched = False
         
         h = OWGUI.widgetBox(p, orientation="horizontal")
-        self.eTags = self.newTextEdit("Tags (one per line, optional):", h)
-        self.eAOrganizations = self.newTextEdit("Contributing organizations (one per line, optional):", h)
+        self.e_tags = self.new_textedit("Tags (one per line, optional):", h)
+        self.e_aorganizations = self.new_textedit("Contributing organizations (one per line, optional):", h)
         h = OWGUI.widgetBox(p, orientation="horizontal")
-        self.eAAuthors = self.newTextEdit("Authors (one per line, optional):", h)
-        self.eAContributors = self.newTextEdit("Contributors (one per line, optional):", h)
-        for noWrapEdit in [self.eTags, self.eAAuthors, self.eAContributors, self.eAOrganizations]:
+        self.e_aauthors = self.new_textedit("Authors (one per line, optional):", h)
+        self.e_acontributors = self.new_textedit("Contributors (one per line, optional):", h)
+        for noWrapEdit in [self.e_tags, self.e_aauthors, self.e_acontributors, self.e_aorganizations]:
             noWrapEdit.setLineWrapMode(QTextEdit.NoWrap)
         
         def formatList(control, ev):
             entries = control.parseEntries()
             control.setPlainText("\n".join(entries))
             QTextEdit.focusOutEvent(control, ev)
-        for listEdit in [self.eTags, self.eAAuthors, self.eAContributors, self.eAOrganizations]:
+        for listEdit in [self.e_tags, self.e_aauthors, self.e_acontributors, self.e_aorganizations]:
             listEdit.parseEntries = lambda control=listEdit: [entry for entry in map(lambda x: x.strip(), unicode(control.toPlainText()).split("\n")) if entry]
             listEdit.focusOutEvent = formatList
     
     
-    def nameChangeCallback(self):
-        if not self.preferredDirTouched:
-            name = unicode(self.eName.text()).strip()
+    def name_change_callback(self):
+        if not self.preferred_dir_touched:
+            name = unicode(self.e_name.text()).strip()
             pd = name.replace(" ", "_").replace("/", "-").replace("\\", "_")
-            if str(self.ePreferredDir.text()) or (name != pd):
-                self.ePreferredDir.setText(pd)
-                self.preferredDirTouched = False
+            if str(self.e_preferreddir.text()) or (name != pd):
+                self.e_preferreddir.setText(pd)
+                self.preferred_dir_touched = False
     
-    def preferredDirChangeCallback(self):
-        self.preferredDirTouched = bool(str(self.ePreferredDir.text()))
+    def preferred_dir_change_callback(self):
+        self.preferred_dir_touched = bool(str(self.e_preferreddir.text()))
     
-    def loadMetaData(self):
+    def load_metadata(self):
         import os
         xml = os.path.join(self.directory, "addon.xml")
         if os.path.isfile(xml):
-            self.ao = orngAddOns.OrangeAddOn(xmlFile=open(xml, 'r'))
+            self.ao = Orange.misc.addons.OrangeAddOn(xmlfile=open(xml, 'r'))
         else:
-            self.ao = orngAddOns.OrangeAddOn()
-        deNone = lambda x: x if x else "" 
-        self.eId.setText(self.ao.id if self.ao.id else str(uuid.uuid1()))
-        self.eName.setText(self.ao.name or os.path.split(self.directory)[1])
-        self.eVersion.setText(orngAddOns.suggestVersion(self.ao.versionStr))
-        self.eDescription.setPlainText(deNone(self.ao.description))
-        self.ePreferredDir.setText(deNone(self.ao.preferredDirectory))
-        self.preferredDirTouched = bool(deNone(self.ao.preferredDirectory))
-        self.eHomePage.setText(deNone(self.ao.homePage))
-        self.eTags.setPlainText("\n".join(self.ao.tags))
-        self.eAOrganizations.setPlainText("\n".join(self.ao.authorOrganizations))
-        self.eAAuthors.setPlainText("\n".join(self.ao.authorCreators))
-        self.eAContributors.setPlainText("\n".join(self.ao.authorContributors))
+            self.ao = Orange.misc.addons.OrangeAddOn()
+        denone = lambda x: x if x else "" 
+        self.e_id.setText(self.ao.id if self.ao.id else str(uuid.uuid1()))
+        self.e_name.setText(self.ao.name or os.path.split(self.directory)[1])
+        self.e_version.setText(Orange.misc.addons.suggest_version(self.ao.version_str))
+        self.e_description.setPlainText(denone(self.ao.description))
+        self.e_preferreddir.setText(denone(self.ao.preferred_directory))
+        self.preferred_dir_touched = bool(denone(self.ao.preferred_directory))
+        self.e_homepage.setText(denone(self.ao.homepage))
+        self.e_tags.setPlainText("\n".join(self.ao.tags))
+        self.e_aorganizations.setPlainText("\n".join(self.ao.author_organizations))
+        self.e_aauthors.setPlainText("\n".join(self.ao.author_creators))
+        self.e_acontributors.setPlainText("\n".join(self.ao.author_contributors))
         
     def initDestinationPage(self):
         self.optionalMetaDataPage = page = QWizardPage()
@@ -184,42 +184,42 @@ class AddOnPackDlg(QWizard):
         page.setLayout(QVBoxLayout())
         self.addPage( page )
 
-        self.prepareOnly = False
-        chkPrepareOnly = OWGUI.checkBox(page, self, "prepareOnly", "Do not pack, only prepare addon.xml and arrange documentation", callback = self.callbackPrepareOnlyChange)
+        self.prepare_only = False
+        chk_prepare_only = OWGUI.checkBox(page, self, "prepare_only", "Do not pack, only prepare addon.xml and arrange documentation", callback = self.callbackPrepareOnlyChange)
             
         p = OWGUI.widgetBox(page, "Filesystem", orientation="horizontal")
-        self.oaoFileName = ""
-        self.eOaoFileName = OWGUI.lineEdit(p, self, "oaoFileName")
+        self.oaofilename = ""
+        self.e_oaofilename = OWGUI.lineEdit(p, self, "oaofilename")
         button = OWGUI.button(p, self, '...', callback = self.browseDestinationFile, disabled=0)
         button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
         button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
 
         def initOao(page):
-            if not self.oaoFileName:
-                self.eOaoFileName.setText(self.directory+".oao")
+            if not self.oaofilename:
+                self.e_oaofilename.setText(self.directory+".oao")
         page.initializePage = initOao
         
         p = OWGUI.widgetBox(page, "Repository", orientation="vertical")
         OWGUI.label(p, self, "Uploading into repositories is not yet implemented, sorry.")
     
     def callbackPrepareOnlyChange(self):
-        self.eOaoFileName.setEnabled(not self.prepareOnly)
+        self.e_oaofilename.setEnabled(not self.prepare_only)
     
     def browseDestinationFile(self):
-        filename = str(QFileDialog.getSaveFileName(self, 'Save Packed Orange Add-on', self.oaoFileName, "*.oao"))
+        filename = str(QFileDialog.getSaveFileName(self, 'Save Packed Orange Add-on', self.oaofilename, "*.oao"))
 
         if filename:
-            self.eOaoFileName.setText(filename)
+            self.e_oaofilename.setText(filename)
         
     def accept(self):
-        rao = orngAddOns.OrangeRegisteredAddOn(self.ao.name, self.directory)
-        rao.prepare(self.ao.id, self.ao.name, str(self.eVersion.text()), unicode(self.eDescription.toPlainText()), self.eTags.parseEntries(),
-                    self.eAOrganizations.parseEntries(), self.eAAuthors.parseEntries(), self.eAContributors.parseEntries(), self.preferredDir,
-                    str(self.eHomePage.text()))
+        rao = Orange.misc.addons.OrangeRegisteredAddOn(self.ao.name, self.directory)
+        rao.prepare(self.ao.id, self.ao.name, str(self.e_version.text()), unicode(self.e_description.toPlainText()), self.e_tags.parseEntries(),
+                    self.e_aorganizations.parseEntries(), self.e_aauthors.parseEntries(), self.e_acontributors.parseEntries(), self.preferredDir,
+                    str(self.e_homepage.text()))
         
-        if not self.prepareOnly:
+        if not self.prepare_only:
             import zipfile
-            oao = zipfile.ZipFile(self.oaoFileName, 'w')
+            oao = zipfile.ZipFile(self.oaofilename, 'w')
             dirs = os.walk(self.directory)
             for (dir, subdirs, files) in dirs:
                 relDir = os.path.relpath(dir, self.directory) if hasattr(os.path, "relpath") else dir.replace(self.directory, "")

@@ -90,6 +90,14 @@ special compare operator. After checking all features we get the index of the
 optimal one by calling :obj:`winnerIndex`.
 
 ==================
+Add-on Management
+==================
+
+.. index:: add-ons
+
+.. automodule:: Orange.misc.addons
+
+==================
 Server files
 ==================
 
@@ -103,6 +111,8 @@ import counters
 import selection
 import render
 import serverfiles
+# addons is intentionally not imported; if it were, add-ons' directories would
+# be added to the python path. If that sounds OK, this can be changed ...
 
 __all__ = ["counters", "selection", "render", "serverfiles",
            "deprecated_members", "deprecated_keywords",

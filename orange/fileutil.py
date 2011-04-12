@@ -1,24 +1,24 @@
 import xml.dom.minidom, re
 
-def _zipOpen(zipFile, file, mode='r'):
-    if hasattr(zipFile, "open"):
-        return zipFile.open(file, mode)
+def _zip_open(zipfile, file, mode='r'):
+    if hasattr(zipfile, "open"):
+        return zipfile.open(file, mode)
     else:
         from cStringIO import StringIO
-        return StringIO(zipFile.read(file))
+        return StringIO(zipfile.read(file))
 
-def createTextElement(tagName, value):
-    result = xml.dom.minidom.Element(tagName)
+def create_text_element(tag_name, value):
+    result = xml.dom.minidom.Element(tag_name)
     textNode = xml.dom.minidom.Text()
     textNode.data = value
     result.appendChild(textNode)
     return result
 
-def xmlSet(parent, nodeName, value):
-    child = getElementNonRecursive(parent, nodeName)
+def xml_set(parent, node_name, value):
+    child = getElementNonRecursive(parent, node_name)
     if not child:
         if value:
-            parent.appendChild(createTextElement(nodeName, value))
+            parent.appendChild(create_text_element(node_name, value))
     else:
         if not value:
             parent.removeChild(child)
@@ -28,11 +28,8 @@ def xmlSet(parent, nodeName, value):
             textNode = xml.dom.minidom.Text()
             textNode.data = value
             child.appendChild(textNode)
-        
-    
-        
 
-def xmlTextOf(node, parent=None, multiLine=False):
+def xml_text_of(node, parent=None, multiline=False):
     if node.__class__ is str:
         node = getElementNonRecursive(parent, node)
     t = ""
@@ -44,13 +41,13 @@ def xmlTextOf(node, parent=None, multiLine=False):
         if n.nodeType != n.TEXT_NODE:
             break
         t += n.data
-    if multiLine:
+    if multiline:
         t = "\n\n".join( map(lambda x: x.strip(), re.split("\n[ \t]*\n", t.strip())) )
     else:
         t = re.sub("\s+", " ", t.strip())
     return t
 
-def getElementNonRecursive(parent, elementName, create=False):
+def get_element_nonrecursive(parent, elementname, create=False):
     for node in [n for n in parent.childNodes if n.nodeType==n.ELEMENT_NODE]:
         if node.tagName == elementName:
             return node
