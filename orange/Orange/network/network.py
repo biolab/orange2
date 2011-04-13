@@ -49,7 +49,7 @@ class Graph(BaseGraph, nx.Graph):
         nx.Graph.__init__(self, data=None, name='', **attr)
         BaseGraph.__init__(self)
         
-    a__init__.__doc__ = nx.Graph.__init__.__doc__
+    __init__.__doc__ = nx.Graph.__init__.__doc__
      
 class DiGraph(BaseGraph, nx.DiGraph):
     

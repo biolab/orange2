@@ -557,7 +557,6 @@ Community Detection in Graphs
 import math
 import random
 import os
-import sys
 
 import Orange.core
 import Orange.data
