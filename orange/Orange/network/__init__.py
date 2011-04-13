@@ -562,7 +562,8 @@ import Orange.core
 import Orange.data
 import Orange.projection
 
-from Orange.core import Graph, GraphAsList, GraphAsMatrix, GraphAsTree
+from Orange.core import GraphAsList, GraphAsMatrix, GraphAsTree
+from network import *
 
 class MdsTypeClass():
     def __init__(self):
