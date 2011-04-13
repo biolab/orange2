@@ -81,5 +81,6 @@ _import("clustering.hierarchical")
 
 _import("misc")
 _import("misc.counters")
+_import("misc.addons")
 _import("misc.render")
 _import("misc.selection")
