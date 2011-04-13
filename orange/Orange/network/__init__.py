@@ -567,9 +567,9 @@ from Orange.core import GraphAsList, GraphAsMatrix, GraphAsTree
 
 try:
     from network import *
-except:
-    pass
-    raise
+except ImportError:
+    import warnings
+    warnings.warn("Warning: install networkx to use the 'Orange.network' module.") 
 
 class MdsTypeClass():
     def __init__(self):
