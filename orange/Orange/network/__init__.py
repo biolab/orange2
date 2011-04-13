@@ -563,7 +563,11 @@ import Orange.data
 import Orange.projection
 
 from Orange.core import GraphAsList, GraphAsMatrix, GraphAsTree
-from network import *
+
+try:
+    from network import *
+except:
+    pass
 
 class MdsTypeClass():
     def __init__(self):
