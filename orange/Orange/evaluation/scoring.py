@@ -42,7 +42,7 @@ General Measures of Quality
 
 .. autofunction:: AP
 
-.. autofunction:: BrierScore
+.. autofunction:: Brier_score
 
 .. autofunction:: IS
 
@@ -71,7 +71,7 @@ the standard errors.
 Confusion Matrix
 ================
 
-.. autofunction:: confusionMatrices
+.. autofunction:: confusion_matrices
 
    **A positive-negative confusion matrix** is computed (a) if the class is
    binary unless :obj:`classIndex` argument is -2, (b) if the class is
@@ -87,7 +87,7 @@ Confusion Matrix
    negatives (FN), false positives (FP) and true negatives (TN).
    
    We can also add the keyword argument :obj:`cutoff`
-   (e.g. confusionMatrices(results, cutoff=0.3); if we do, :obj:`confusionMatrices`
+   (e.g. confusion_matrices(results, cutoff=0.3); if we do, :obj:`confusion_matrices`
    will disregard the classifiers' class predictions and observe the predicted
    probabilities, and consider the prediction "positive" if the predicted
    probability of the positive class is higher than the :obj:`cutoff`.
@@ -96,11 +96,11 @@ Confusion Matrix
    cut off threshold from the default 0.5 to 0.2 affects the confusion matrics 
    for naive Bayesian classifier::
    
-       cm = Orange.evaluation.scoring.confusionMatrices(res)[0]
+       cm = Orange.evaluation.scoring.confusion_matrices(res)[0]
        print "Confusion matrix for naive Bayes:"
        print "TP: %i, FP: %i, FN: %s, TN: %i" % (cm.TP, cm.FP, cm.FN, cm.TN)
        
-       cm = Orange.evaluation.scoring.confusionMatrices(res, cutoff=0.2)[0]
+       cm = Orange.evaluation.scoring.confusion_matrices(res, cutoff=0.2)[0]
        print "Confusion matrix for naive Bayes:"
        print "TP: %i, FP: %i, FN: %s, TN: %i" % (cm.TP, cm.FP, cm.FN, cm.TN)
 
@@ -121,7 +121,7 @@ Confusion Matrix
    To observe how good are the classifiers in detecting vans in the vehicle
    data set, we would compute the matrix like this::
    
-      cm = Orange.evaluation.scoring.confusionMatrices(resVeh, \
+      cm = Orange.evaluation.scoring.confusion_matrices(resVeh, \
 vehicle.domain.classVar.values.index("van"))
    
    and get the results like these::
@@ -151,7 +151,7 @@ vehicle.domain.classVar.values.index("van"))
    
    Here we see another example from `statExamples.py`_::
    
-       cm = Orange.evaluation.scoring.confusionMatrices(resVeh)[0]
+       cm = Orange.evaluation.scoring.confusion_matrices(resVeh)[0]
        classes = vehicle.domain.classVar.values
        print "\t"+"\t".join(classes)
        for className, classConfusions in zip(classes, cm):
@@ -221,7 +221,7 @@ vehicle.domain.classVar.values.index("van"))
    Let us print out sensitivities and specificities of our classifiers in
    part of `statExamples.py`_::
    
-       cm = Orange.evaluation.scoring.confusionMatrices(res)
+       cm = Orange.evaluation.scoring.confusion_matrices(res)
        print
        print "method\tsens\tspec"
        for l in range(len(learners)):
@@ -298,7 +298,7 @@ problems as specifically described below.
    for all pairs of classes and return the average weighted by probabilities
    of pairs. Or, you can specify the averaging method yourself, like this::
    
-       AUCs = Orange.evaluation.scoring.AUC(resVeh, orngStat.AUC.WeightedOneAgainstAll)
+       AUCs = Orange.evaluation.scoring.AUC(resVeh, Orange.evaluation.scoring.AUC.WeightedOneAgainstAll)
    
    The following snippet tries out all four. (We don't claim that this is
    how the function needs to be used; it's better to stay with the default.)::
@@ -326,12 +326,12 @@ problems as specifically described below.
 The remaining functions, which plot the curves and statistically compare
 them, require that the results come from a test with a single iteration,
 and they always compare one chosen class against all others. If you have
-cross validation results, you can either use splitByIterations to split the
+cross validation results, you can either use split_by_iterations to split the
 results by folds, call the function for each fold separately and then sum
 the results up however you see fit, or you can set the ExperimentResults'
 attribute numberOfIterations to 1, to cheat the function - at your own
 responsibility for the statistical correctness. Regarding the multi-class
-problems, if you don't chose a specific class, orngStat will use the class
+problems, if you don't chose a specific class, Orange.evaluation.scoring will use the class
 attribute's baseValue at the time when results were computed. If baseValue
 was not given at that time, 1 (that is, the second class) is used as default.
 
@@ -345,14 +345,14 @@ We shall use the following code to prepare suitable experimental results::
 
 .. autofunction:: AUCWilcoxon
 
-.. autofunction:: computeROC
+.. autofunction:: compute_ROC
 
 Comparison of Algorithms
 ------------------------
 
 .. autofunction:: McNemar
 
-.. autofunction:: McNemarOfTwo
+.. autofunction:: McNemar_of_two
 
 ==========
 Regression
@@ -419,7 +419,7 @@ Code produces the following graph:
 Utility Functions
 =================
 
-.. autofunction:: splitByIterations
+.. autofunction:: split_by_iterations
 
 """
 
@@ -436,7 +436,7 @@ def log2(x):
     """Calculate logarithm in base 2."""
     return math.log(x)/math.log(2)
 
-def checkNonZero(x):
+def check_non_zero(x):
     """Throw Value Error when x = 0.0."""
     if x==0.0:
         raise ValueError, "Cannot compute the score: no examples or sum of weights is 0.0."
@@ -456,7 +456,7 @@ def gettotsize(res):
         raise ValueError, "Cannot compute the score: no examples."
 
 
-def splitByIterations(res):
+def split_by_iterations(res):
     """ Splits ExperimentResults of multiple iteratation test into a list
     of ExperimentResults, one for each iteration.
     """
@@ -470,7 +470,7 @@ def splitByIterations(res):
     return ress    
 
 
-def classProbabilitiesFromRes(res, **argkw):
+def class_probabilities_from_res(res, **argkw):
     """Calculate class probabilities"""
     probs = [0.0] * len(res.classValues)
     if argkw.get("unweighted", 0) or not res.weights:
@@ -482,11 +482,11 @@ def classProbabilitiesFromRes(res, **argkw):
         for tex in res.results:
             probs[tex.actualClass] += tex.weight
             totweight += tex.weight
-        checkNonZero(totweight)
+        check_non_zero(totweight)
     return [prob/totweight for prob in probs]
 
 
-def statisticsByFolds(stats, foldN, reportSE, iterationIsOuter):
+def statistics_by_folds(stats, foldN, reportSE, iterationIsOuter):
     # remove empty folds, turn the matrix so that learner is outer
     if iterationIsOuter:
         if not stats:
@@ -529,12 +529,12 @@ MAE = ME
 # PERFORMANCE MEASURES:
 # Scores for evaluation of numeric predictions
 
-def checkArgkw(dct, lst):
-    """checkArgkw(dct, lst) -> returns true if any items have non-zero value in dct"""
+def check_argkw(dct, lst):
+    """check_argkw(dct, lst) -> returns true if any items have non-zero value in dct"""
     return reduce(lambda x,y: x or y, [dct.get(k, 0) for k in lst])
 
-def regressionError(res, **argkw):
-    """regressionError(res) -> regression error (default: MSE)"""
+def regression_error(res, **argkw):
+    """regression_error(res) -> regression error (default: MSE)"""
     if argkw.get("SE", 0) and res.numberOfIterations > 1:
         # computes the scores for each iteration, then averages
         scores = [[0.0] * res.numberOfIterations for i in range(res.numberOfLearners)]
@@ -625,40 +625,40 @@ def regressionError(res, **argkw):
 
 def MSE(res, **argkw):
     """ Computes mean-squared error. """
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
     
 def RMSE(res, **argkw):
     """ Computes root mean-squared error. """
     argkw.setdefault("sqrt", True)
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
 
 def MAE(res, **argkw):
     """ Computes mean absolute error. """
     argkw.setdefault("abs", True)
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
 
 def RSE(res, **argkw):
     """ Computes relative squared error. """
     argkw.setdefault("norm-sqr", True)
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
 
 def RRSE(res, **argkw):
     """ Computes relative squared error. """
     argkw.setdefault("norm-sqr", True)
     argkw.setdefault("sqrt", True)
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
 
 def RAE(res, **argkw):
     """ Computes relative absolute error. """
     argkw.setdefault("abs", True)
     argkw.setdefault("norm-abs", True)
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
 
 def R2(res, **argkw):
     """ Computes the coefficient of determination, R-squared. """
     argkw.setdefault("norm-sqr", True)
     argkw.setdefault("R2", True)
-    return regressionError(res, **argkw)
+    return regression_error(res, **argkw)
 
 def MSE_old(res, **argkw):
     """MSE(res) -> mean-squared error"""
@@ -730,7 +730,7 @@ def CA(res, reportSE = False, **argkw):
     if res.numberOfIterations==1:
         if type(res)==ConfusionMatrix:
             div = nm.TP+nm.FN+nm.FP+nm.TN
-            checkNonZero(div)
+            check_non_zero(div)
             ca = [(nm.TP+nm.TN)/div]
         else:
             CAs = [0.0]*res.numberOfLearners
@@ -743,7 +743,7 @@ def CA(res, reportSE = False, **argkw):
                 for tex in res.results:
                     CAs = map(lambda res, cls: res+(cls==tex.actualClass and tex.weight), CAs, tex.classes)
                     totweight += tex.weight
-            checkNonZero(totweight)
+            check_non_zero(totweight)
             ca = [x/totweight for x in CAs]
             
         if reportSE:
@@ -766,7 +766,7 @@ def CA(res, reportSE = False, **argkw):
                     CAsByFold[lrn][tex.iterationNumber] += (tex.classes[lrn]==tex.actualClass) and tex.weight
                 foldN[tex.iterationNumber] += tex.weight
 
-        return statisticsByFolds(CAsByFold, foldN, reportSE, False)
+        return statistics_by_folds(CAsByFold, foldN, reportSE, False)
 
 
 # Obsolete, but kept for compatibility
@@ -787,7 +787,7 @@ def AP(res, reportSE = False, **argkw):
             for tex in res.results:
                 APs = map(lambda res, probs: res + probs[tex.actualClass]*tex.weight, APs, tex.probabilities)
                 totweight += tex.weight
-        checkNonZero(totweight)
+        check_non_zero(totweight)
         return [AP/totweight for AP in APs]
 
     APsByFold = [[0.0]*res.numberOfLearners for i in range(res.numberOfIterations)]
@@ -801,10 +801,10 @@ def AP(res, reportSE = False, **argkw):
             APsByFold[tex.iterationNumber] = map(lambda res, probs: res + probs[tex.actualClass] * tex.weight, APsByFold[tex.iterationNumber], tex.probabilities)
             foldN[tex.iterationNumber] += tex.weight
 
-    return statisticsByFolds(APsByFold, foldN, reportSE, True)
+    return statistics_by_folds(APsByFold, foldN, reportSE, True)
 
 
-def BrierScore(res, reportSE = False, **argkw):
+def Brier_score(res, reportSE = False, **argkw):
     """ Computes the Brier's score, defined as the average (over test examples)
     of sumx(t(x)-p(x))2, where x is a class, t(x) is 1 for the correct class
     and 0 for the others, and p(x) is the probability that the classifier
@@ -833,7 +833,7 @@ def BrierScore(res, reportSE = False, **argkw):
                 MSEs = map(lambda res, probs:
                            res + tex.weight*reduce(lambda s, pi: s+pi**2, probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
             totweight = gettotweight(res)
-        checkNonZero(totweight)
+        check_non_zero(totweight)
         if reportSE:
             return [(max(x/totweight+1.0, 0), 0) for x in MSEs]  ## change this, not zero!!!
         else:
@@ -853,14 +853,14 @@ def BrierScore(res, reportSE = False, **argkw):
                        res + tex.weight*reduce(lambda s, pi: s+pi**2, probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
             foldN[tex.iterationNumber] += tex.weight
 
-    stats = statisticsByFolds(BSs, foldN, reportSE, True)
+    stats = statistics_by_folds(BSs, foldN, reportSE, True)
     if reportSE:
         return [(x+1.0, y) for x, y in stats]
     else:
         return [x+1.0 for x in stats]
 
 def BSS(res, **argkw):
-    return [1-x/2 for x in apply(BrierScore, (res, ), argkw)]
+    return [1-x/2 for x in apply(Brier_score, (res, ), argkw)]
 
 def IS_ex(Pc, P):
     "Pc aposterior probability, P aprior"
@@ -878,7 +878,7 @@ def IS(res, apriori=None, reportSE = False, **argkw):
     the actual classes of examples in :obj:`res`.
     """
     if not apriori:
-        apriori = classProbabilitiesFromRes(res)
+        apriori = class_probabilities_from_res(res)
 
     if res.numberOfIterations==1:
         ISs = [0.0]*res.numberOfLearners
@@ -917,12 +917,12 @@ def IS(res, apriori=None, reportSE = False, **argkw):
                 ISs[i][tex.iterationNumber] += IS_ex(tex.probabilities[i][cls], apriori[cls]) * tex.weight
             foldN[tex.iterationNumber] += tex.weight
 
-    return statisticsByFolds(ISs, foldN, reportSE, False)
+    return statistics_by_folds(ISs, foldN, reportSE, False)
 
 
 def Friedman(res, statistics, **argkw):
     sums = None
-    for ri in splitByIterations(res):
+    for ri in split_by_iterations(res):
         ranks = statc.rankdata(apply(statistics, (ri,), argkw))
         if sums:
             sums = sums and [ranks[i]+sums[i] for i in range(k)]
@@ -938,7 +938,7 @@ def Friedman(res, statistics, **argkw):
 
 def Wilcoxon(res, statistics, **argkw):
     res1, res2 = [], []
-    for ri in splitByIterations(res):
+    for ri in split_by_iterations(res):
         stats = apply(statistics, (ri,), argkw)
         if (len(stats) != 2):
             raise TypeError, "Wilcoxon compares two classifiers, no more, no less"
@@ -946,7 +946,7 @@ def Wilcoxon(res, statistics, **argkw):
         res2.append(stats[1])
     return statc.wilcoxont(res1, res2)
 
-def rankDifference(res, statistics, **argkw):
+def rank_difference(res, statistics, **argkw):
     if not res.results:
         raise TypeError, "no experiments"
 
@@ -959,6 +959,10 @@ def rankDifference(res, statistics, **argkw):
         return apply(Friedman, (res, statistics), argkw)
     
 class ConfusionMatrix:
+    """ Class ConfusionMatrix stores data about false and true
+    predictions compared to real class. It stores the number of
+    True Negatives, False Positive, False Negatives and True Positives.
+    """
     def __init__(self):
         self.TP = self.FN = self.FP = self.TN = 0.0
 
@@ -975,7 +979,7 @@ class ConfusionMatrix:
                 self.TN += weight
 
 
-def confusionMatrices(res, classIndex=-1, **argkw):
+def confusion_matrices(res, classIndex=-1, **argkw):
     """ This function can compute two different forms of confusion matrix:
     one in which a certain class is marked as positive and the other(s)
     negative, and another in which no class is singled out. The way to
@@ -1036,10 +1040,10 @@ def confusionMatrices(res, classIndex=-1, **argkw):
 
 
 # obsolete (renamed)
-computeConfusionMatrices = confusionMatrices
+compute_confusion_matrices = confusion_matrices
 
 
-def confusionChiSquare(confusionMatrix):
+def confusion_chi_square(confusionMatrix):
     dim = len(confusionMatrix)
     rowPriors = [sum(r) for r in confusionMatrix]
     colPriors = [sum([r[i] for r in confusionMatrix]) for i in range(dim)]
@@ -1178,7 +1182,7 @@ def MCC(confm):
 
     return r
 
-def scottsPi(confm, bIsListOfMatrices=True):
+def scotts_pi(confm, bIsListOfMatrices=True):
    """Compute Scott's Pi for measuring inter-rater agreement for nominal data
 
    http://en.wikipedia.org/wiki/Scott%27s_Pi
@@ -1187,7 +1191,7 @@ def scottsPi(confm, bIsListOfMatrices=True):
 
    @param confm: confusion matrix, or list of confusion matrices. To obtain
                            non-binary confusion matrix, call
-                           orngStat.computeConfusionMatrices and set the
+                           Orange.evaluation.scoring.compute_confusion_matrices and set the
                            classIndex parameter to -2.
    @param bIsListOfMatrices: specifies whether confm is list of matrices.
                            This function needs to operate on non-binary
@@ -1198,7 +1202,7 @@ def scottsPi(confm, bIsListOfMatrices=True):
 
    if bIsListOfMatrices:
        try:
-           return [scottsPi(cm, bIsListOfMatrices=False) for cm in confm]
+           return [scotts_pi(cm, bIsListOfMatrices=False) for cm in confm]
        except TypeError:
            # Nevermind the parameter, maybe this is a "conventional" binary
            # confusion matrix and bIsListOfMatrices was specified by mistake
@@ -1262,14 +1266,14 @@ def AUCWilcoxon(res, classIndex=-1, **argkw):
 
 AROC = AUCWilcoxon # for backward compatibility, AROC is obsolote
 
-def compare2AUCs(res, lrn1, lrn2, classIndex=-1, **argkw):
+def compare_2_AUCs(res, lrn1, lrn2, classIndex=-1, **argkw):
     import corn
     return corn.compare2ROCs(res, lrn1, lrn2, classIndex, res.weights and not argkw.get("unweighted"))
 
-compare2AROCs = compare2AUCs # for backward compatibility, compare2AROCs is obsolote
+compare_2_AROCs = compare_2_AUCs # for backward compatibility, compare_2_AROCs is obsolote
 
     
-def computeROC(res, classIndex=-1):
+def compute_ROC(res, classIndex=-1):
     """ Computes a ROC curve as a list of (x, y) tuples, where x is 
     1-specificity and y is sensitivity.
     """
@@ -1301,12 +1305,12 @@ def computeROC(res, classIndex=-1):
 
 ## TC's implementation of algorithms, taken from:
 ## T Fawcett: ROC Graphs: Notes and Practical Considerations for Data Mining Researchers, submitted to KDD Journal. 
-def ROCslope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
+def ROC_slope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
     if (P1x == P2x):
         return 1e300
     return (P1y - P2y) / (P1x - P2x)
 
-def ROCaddPoint(P, R, keepConcavities=1):
+def ROC_add_point(P, R, keepConcavities=1):
     if keepConcavities:
         R.append(P)
     else:
@@ -1317,13 +1321,13 @@ def ROCaddPoint(P, R, keepConcavities=1):
             else:
                 T = R.pop()
                 T2 = R[-1]
-                if ROCslope(T2, T) > ROCslope(T, P):
+                if ROC_slope(T2, T) > ROC_slope(T, P):
                     R.append(T)
                     R.append(P)
                     return R
     return R
 
-def TCcomputeROC(res, classIndex=-1, keepConcavities=1):
+def TC_compute_ROC(res, classIndex=-1, keepConcavities=1):
     import corn
     problists, tots = corn.computeROCCumulative(res, classIndex)
 
@@ -1348,7 +1352,7 @@ def TCcomputeROC(res, classIndex=-1, keepConcavities=1):
                     fpr = FP/N
                 else:
                     fpr = 0.0
-                curve = ROCaddPoint((fpr, tpr, fPrev), curve, keepConcavities)
+                curve = ROC_add_point((fpr, tpr, fPrev), curve, keepConcavities)
                 fPrev = f
             thisPos, thisNeg = prob[1][1], prob[1][0]
             TP += thisPos
@@ -1361,14 +1365,14 @@ def TCcomputeROC(res, classIndex=-1, keepConcavities=1):
             fpr = FP/N
         else:
             fpr = 0.0
-        curve = ROCaddPoint((fpr, tpr, f), curve, keepConcavities) ## ugly
+        curve = ROC_add_point((fpr, tpr, f), curve, keepConcavities) ## ugly
         results.append(curve)
 
     return results
 
 ## returns a list of points at the intersection of the tangential iso-performance line and the given ROC curve
 ## for given values of FPcost, FNcost and pval
-def TCbestThresholdsOnROCcurve(FPcost, FNcost, pval, curve):
+def TC_best_thresholds_on_ROC_curve(FPcost, FNcost, pval, curve):
     m = (FPcost*(1.0 - pval)) / (FNcost*pval)
 
     ## put the iso-performance line in point (0.0, 1.0)
@@ -1421,7 +1425,7 @@ def frange(start, end=None, inc=None):
 ##
 ## for each (sub)set of input ROC curves
 ## returns the average ROC curve and an array of (vertical) standard deviations
-def TCverticalAverageROC(ROCcurves, samples = 10):
+def TC_vertical_average_ROC(ROCcurves, samples = 10):
     def INTERPOLATE((P1x, P1y, P1fscore), (P2x, P2y, P2fscore), X):
         if (P1x == P2x) or ((X > P1x) and (X > P2x)) or ((X < P1x) and (X < P2x)):
             raise ValueError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
@@ -1445,7 +1449,7 @@ def TCverticalAverageROC(ROCcurves, samples = 10):
             return INTERPOLATE(ROC[i], ROC[i+1], FPsample)
         elif fp < FPsample and i + 1 == len(ROC): # return the last
             return ROC[i][1]
-        raise ValueError, "cannot compute: TP_FOR_FP in TCverticalAverageROC"
+        raise ValueError, "cannot compute: TP_FOR_FP in TC_vertical_average_ROC"
         #return 0.0
 
     average = []
@@ -1480,7 +1484,7 @@ def TCverticalAverageROC(ROCcurves, samples = 10):
 ##
 ## for each (sub)set of input ROC curves
 ## returns the average ROC curve, an array of vertical standard deviations and an array of horizontal standard deviations
-def TCthresholdlAverageROC(ROCcurves, samples = 10):
+def TC_threshold_average_ROC(ROCcurves, samples = 10):
     def POINT_AT_THRESH(ROC, npts, thresh):
         i = 0
         while i < npts - 1:
@@ -1545,7 +1549,7 @@ def TCthresholdlAverageROC(ROCcurves, samples = 10):
 ##  - curve is an array of points (x, y) on the calibration curve
 ##  - yesClassRugPoints is an array of (x, 1) points
 ##  - noClassRugPoints is an array of (x, 0) points
-def computeCalibrationCurve(res, classIndex=-1):
+def compute_calibration_curve(res, classIndex=-1):
     import corn
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
@@ -1607,7 +1611,7 @@ def computeCalibrationCurve(res, classIndex=-1):
 ## Lift Curve
 ## returns an array of curve elements, where:
 ##  - curve is an array of points ((TP+FP)/(P + N), TP/P, (th, FP/N)) on the Lift Curve
-def computeLiftCurve(res, classIndex=-1):
+def compute_lift_curve(res, classIndex=-1):
     import corn
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
@@ -1638,11 +1642,11 @@ class CDT:
   def __init__(self, C=0.0, D=0.0, T=0.0):
     self.C, self.D, self.T = C, D, T
    
-def isCDTEmpty(cdt):
+def is_CDT_empty(cdt):
     return cdt.C + cdt.D + cdt.T < 1e-20
 
 
-def computeCDT(res, classIndex=-1, **argkw):
+def compute_CDT(res, classIndex=-1, **argkw):
     """Obsolete, don't use"""
     import corn
     if classIndex<0:
@@ -1656,7 +1660,7 @@ def computeCDT(res, classIndex=-1, **argkw):
 
     if (res.numberOfIterations>1):
         CDTs = [CDT() for i in range(res.numberOfLearners)]
-        iterationExperiments = splitByIterations(res)
+        iterationExperiments = split_by_iterations(res)
         for exp in iterationExperiments:
             expCDTs = corn.computeCDT(exp, classIndex, useweights)
             for i in range(len(CDTs)):
@@ -1664,7 +1668,7 @@ def computeCDT(res, classIndex=-1, **argkw):
                 CDTs[i].D += expCDTs[i].D
                 CDTs[i].T += expCDTs[i].T
         for i in range(res.numberOfLearners):
-            if isCDTEmpty(CDTs[0]):
+            if is_CDT_empty(CDTs[0]):
                 return corn.computeCDT(res, classIndex, useweights)
         
         return CDTs
@@ -1673,10 +1677,10 @@ def computeCDT(res, classIndex=-1, **argkw):
 
 ## THIS FUNCTION IS OBSOLETE AND ITS AVERAGING OVER FOLDS IS QUESTIONABLE
 ## DON'T USE IT
-def ROCsFromCDT(cdt, **argkw):
+def ROCs_from_CDT(cdt, **argkw):
     """Obsolete, don't use"""
     if type(cdt) == list:
-        return [ROCsFromCDT(c) for c in cdt]
+        return [ROCs_from_CDT(c) for c in cdt]
 
     C, D, T = cdt.C, cdt.D, cdt.T
     N = C+D+T
@@ -1704,7 +1708,7 @@ def ROCsFromCDT(cdt, **argkw):
 
     return res
 
-AROCFromCDT = ROCsFromCDT  # for backward compatibility, AROCFromCDT is obsolote
+AROC_from_CDT = ROCs_from_CDT  # for backward compatibility, AROC_from_CDT is obsolote
 
 
 
@@ -1715,12 +1719,12 @@ AROCFromCDT = ROCsFromCDT  # for backward compatibility, AROCFromCDT is obsolote
 # the former case, or False in the latter.
 def AUC_x(cdtComputer, ite, all_ite, divideByIfIte, computerArgs):
     cdts = cdtComputer(*(ite, ) + computerArgs)
-    if not isCDTEmpty(cdts[0]):
+    if not is_CDT_empty(cdts[0]):
         return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T)/divideByIfIte for cdt in cdts], True
         
     if all_ite:
          cdts = cdtComputer(*(all_ite, ) + computerArgs)
-         if not isCDTEmpty(cdts[0]):
+         if not is_CDT_empty(cdts[0]):
              return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
 
     return False, False
@@ -1757,7 +1761,7 @@ def AUC_iterations(AUCcomputer, iterations, computerArgs):
 # AUC for binary classification problems
 def AUC_binary(res, useWeights = True):
     if res.numberOfIterations > 1:
-        return AUC_iterations(AUC_i, splitByIterations(res), (-1, useWeights, res, res.numberOfIterations))
+        return AUC_iterations(AUC_i, split_by_iterations(res), (-1, useWeights, res, res.numberOfIterations))
     else:
         return AUC_i(res, -1, useWeights)[0]
 
@@ -1766,7 +1770,7 @@ def AUC_multi(res, useWeights = True, method = 0):
     numberOfClasses = len(res.classValues)
     
     if res.numberOfIterations > 1:
-        iterations = splitByIterations(res)
+        iterations = split_by_iterations(res)
         all_ite = res
     else:
         iterations = [res]
@@ -1777,7 +1781,7 @@ def AUC_multi(res, useWeights = True, method = 0):
     usefulClassPairs = 0.
 
     if method in [0, 2]:
-        prob = classProbabilitiesFromRes(res)
+        prob = class_probabilities_from_res(res)
         
     if method <= 1:
         for classIndex1 in range(numberOfClasses):
@@ -1851,7 +1855,7 @@ classIndex = vehicle.domain.classVar.values.index("van"))
             classIndex = 1
 
     if res.numberOfIterations > 1:
-        return AUC_iterations(AUC_i, splitByIterations(res), (classIndex, useWeights, res, res.numberOfIterations))
+        return AUC_iterations(AUC_i, split_by_iterations(res), (classIndex, useWeights, res, res.numberOfIterations))
     else:
         return AUC_i( res, classIndex, useWeights)[0]
 
@@ -1862,7 +1866,7 @@ def AUC_pair(res, classIndex1, classIndex2, useWeights = True):
     other classes.
     """
     if res.numberOfIterations > 1:
-        return AUC_iterations(AUC_ij, splitByIterations(res), (classIndex1, classIndex2, useWeights, res, res.numberOfIterations))
+        return AUC_iterations(AUC_ij, split_by_iterations(res), (classIndex1, classIndex2, useWeights, res, res.numberOfIterations))
     else:
         return AUC_ij(res, classIndex1, classIndex2, useWeights)
   
@@ -1875,7 +1879,7 @@ def AUC_matrix(res, useWeights = True):
     matrix? Here it strikes again::
     
         classes = vehicle.domain.classVar.values
-        AUCmatrix = orngStat.AUC_matrix(resVeh)[0]
+        AUCmatrix = Orange.evaluation.scoring.AUC_matrix(resVeh)[0]
         print "\t"+"\t".join(classes[:-1])
         for className, AUCrow in zip(classes[1:], AUCmatrix[1:]):
             print ("%s" + ("\t%5.3f" * len(AUCrow))) % ((className, ) + tuple(AUCrow))
@@ -1884,12 +1888,12 @@ def AUC_matrix(res, useWeights = True):
     numberOfLearners = res.numberOfLearners
     
     if res.numberOfIterations > 1:
-        iterations, all_ite = splitByIterations(res), res
+        iterations, all_ite = split_by_iterations(res), res
     else:
         iterations, all_ite = [res], None
     
     aucs = [[[] for i in range(numberOfClasses)] for i in range(numberOfLearners)]
-    prob = classProbabilitiesFromRes(res)
+    prob = class_probabilities_from_res(res)
         
     for classIndex1 in range(numberOfClasses):
         for classIndex2 in range(classIndex1):
@@ -1950,8 +1954,8 @@ def McNemar(res, **argkw):
     return mcm
 
 
-def McNemarOfTwo(res, lrn1, lrn2):
-    """ McNemarOfTwo computes a McNemar statistics for a pair of classifier,
+def McNemar_of_two(res, lrn1, lrn2):
+    """ McNemar_of_two computes a McNemar statistics for a pair of classifier,
     specified by indices learner1 and learner2.
     """
     tf = ft = 0.0
@@ -1983,7 +1987,7 @@ def Friedman(res, stat=CA):
     """ Compares classifiers by Friedman test, treating folds as different examles.
         Returns F, p and average ranks
     """
-    res_split = splitByIterations(res)
+    res_split = split_by_iterations(res)
     res = [stat(r) for r in res_split]
     
     N = len(res)
@@ -1991,7 +1995,7 @@ def Friedman(res, stat=CA):
     sums = [0.0]*k
     for r in res:
         ranks = [k-x+1 for x in statc.rankdata(r)]
-        if stat==BrierScore: # reverse ranks for BrierScore (lower better)
+        if stat==Brier_score: # reverse ranks for Brier_score (lower better)
             ranks = [k+1-x for x in ranks]
         sums = [ranks[i]+sums[i] for i in range(k)]
 
@@ -2003,14 +2007,14 @@ def Friedman(res, stat=CA):
     return F, statc.chisqprob(F, k-1), sums
 
 
-def WilcoxonPairs(res, avgranks, stat=CA):
+def Wilcoxon_pairs(res, avgranks, stat=CA):
     """ Returns a triangular matrix, where element[i][j] stores significance of difference
         between i-th and j-th classifier, as computed by Wilcoxon test. The element is positive
         if i-th is better than j-th, negative if it is worse, and 1 if they are equal.
         Arguments to function are ExperimentResults, average ranks (as returned by Friedman)
         and, optionally, a statistics; greater values should mean better results.append
     """
-    res_split = splitByIterations(res)
+    res_split = split_by_iterations(res)
     res = [stat(r) for r in res_split]
 
     k = len(res[0])
@@ -2029,10 +2033,10 @@ def WilcoxonPairs(res, avgranks, stat=CA):
     return bt
 
 
-def plotLearningCurveLearners(file, allResults, proportions, learners, noConfidence=0):
-    plotLearningCurve(file, allResults, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], noConfidence)
+def plot_learning_curve_learners(file, allResults, proportions, learners, noConfidence=0):
+    plot_learning_curve(file, allResults, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], noConfidence)
     
-def plotLearningCurve(file, allResults, proportions, legend, noConfidence=0):
+def plot_learning_curve(file, allResults, proportions, legend, noConfidence=0):
     import types
     fopened=0
     if (type(file)==types.StringType):
@@ -2067,7 +2071,7 @@ def plotLearningCurve(file, allResults, proportions, legend, noConfidence=0):
         file.close()
 
 
-def printSingleROCCurveCoordinates(file, curve):
+def print_single_ROC_curve_coordinates(file, curve):
     import types
     fopened=0
     if (type(file)==types.StringType):
@@ -2081,10 +2085,10 @@ def printSingleROCCurveCoordinates(file, curve):
         file.close()
 
 
-def plotROCLearners(file, curves, learners):
-    plotROC(file, curves, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))])
+def plot_ROC_learners(file, curves, learners):
+    plot_ROC(file, curves, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))])
     
-def plotROC(file, curves, legend):
+def plot_ROC(file, curves, legend):
     import types
     fopened=0
     if (type(file)==types.StringType):
@@ -2112,10 +2116,10 @@ def plotROC(file, curves, legend):
 
 
 
-def plotMcNemarCurveLearners(file, allResults, proportions, learners, reference=-1):
-    plotMcNemarCurve(file, allResults, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], reference)
+def plot_McNemar_curve_learners(file, allResults, proportions, learners, reference=-1):
+    plot_McNemar_curve(file, allResults, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], reference)
 
-def plotMcNemarCurve(file, allResults, proportions, legend, reference=-1):
+def plot_McNemar_curve(file, allResults, proportions, legend, reference=-1):
     if reference<0:
         reference=len(legend)-1
         
@@ -2137,19 +2141,19 @@ def plotMcNemarCurve(file, allResults, proportions, legend, reference=-1):
 
     for i in tmap:
         for p in range(len(proportions)):
-            file.write("%f\t%f\n" % (proportions[p], McNemarOfTwo(allResults[p], i, reference)))
+            file.write("%f\t%f\n" % (proportions[p], McNemar_of_two(allResults[p], i, reference)))
         file.write("e\n\n")
 
     if fopened:
         file.close()
 
-defaultPointTypes=("{$\\circ$}", "{$\\diamond$}", "{$+$}", "{$\\times$}", "{$|$}")+tuple([chr(x) for x in range(97, 122)])
-defaultLineTypes=("\\setsolid", "\\setdashpattern <4pt, 2pt>", "\\setdashpattern <8pt, 2pt>", "\\setdashes", "\\setdots")
+default_point_types=("{$\\circ$}", "{$\\diamond$}", "{$+$}", "{$\\times$}", "{$|$}")+tuple([chr(x) for x in range(97, 122)])
+default_line_types=("\\setsolid", "\\setdashpattern <4pt, 2pt>", "\\setdashpattern <8pt, 2pt>", "\\setdashes", "\\setdots")
 
-def learningCurveLearners2PiCTeX(file, allResults, proportions, **options):
-    return apply(learningCurve2PiCTeX, (file, allResults, proportions), options)
+def learning_curve_learners_to_PiCTeX(file, allResults, proportions, **options):
+    return apply(learning_curve_to_PiCTeX, (file, allResults, proportions), options)
     
-def learningCurve2PiCTeX(file, allResults, proportions, **options):
+def learning_curve_to_PiCTeX(file, allResults, proportions, **options):
     import types
     fopened=0
     if (type(file)==types.StringType):
@@ -2166,8 +2170,8 @@ def learningCurve2PiCTeX(file, allResults, proportions, **options):
 
     yshift=float(options.get("yshift", -ntestexamples/20.))
     
-    pointtypes=options.get("pointtypes", defaultPointTypes)
-    linetypes=options.get("linetypes", defaultLineTypes)
+    pointtypes=options.get("pointtypes", default_point_types)
+    linetypes=options.get("linetypes", default_line_types)
 
     if options.has_key("numberedx"):
         numberedx=options["numberedx"]
@@ -2226,18 +2230,18 @@ def learningCurve2PiCTeX(file, allResults, proportions, **options):
     file.close()
     del file
 
-def legendLearners2PiCTeX(file, learners, **options):
-  return apply(legend2PiCTeX, (file, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
+def legend_learners_to_PiCTeX(file, learners, **options):
+  return apply(legend_to_PiCTeX, (file, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
     
-def legend2PiCTeX(file, legend, **options):
+def legend_to_PiCTeX(file, legend, **options):
     import types
     fopened=0
     if (type(file)==types.StringType):
         file=open(file, "wt")
         fopened=1
 
-    pointtypes=options.get("pointtypes", defaultPointTypes)
-    linetypes=options.get("linetypes", defaultLineTypes)
+    pointtypes=options.get("pointtypes", default_point_types)
+    linetypes=options.get("linetypes", default_line_types)
 
     file.write("\\mbox{\n")
     file.write("  \\beginpicture\n")
@@ -2384,7 +2388,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         print >> sys.stderr, "Function requires matplotlib. Please install it."
         return
 
-    def printFigure(fig, *args, **kwargs):
+    def print_figure(fig, *args, **kwargs):
         canvas = FigureCanvasAgg(fig)
         canvas.print_figure(*args, **kwargs)
 
@@ -2423,7 +2427,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     
         #get pairs of non significant methods
 
-        def getLines(sums, hsd):
+        def get_lines(sums, hsd):
 
             #get all pairs
             lsums = len(sums)
@@ -2432,17 +2436,17 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
             notSig = [ (i,j) for i,j in allpairs if abs(sums[i]-sums[j]) <= hsd ]
             #keep only longest
             
-            def noLonger((i,j), notSig):
+            def no_longer((i,j), notSig):
                 for i1,j1 in notSig:
                     if (i1 <= i and j1 > j) or (i1 < i and j1 >= j):
                         return False
                 return True
 
-            longest = [ (i,j) for i,j in notSig if noLonger((i,j),notSig) ]
+            longest = [ (i,j) for i,j in notSig if no_longer((i,j),notSig) ]
             
             return longest
 
-        lines = getLines(ssums, cd)
+        lines = get_lines(ssums, cd)
         linesblank = 0.2 + 0.2 + (len(lines)-1)*0.1
 
         #add scale
@@ -2525,13 +2529,13 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         text((begin+end)/2, distanceh - 0.05, "CD", ha="center", va="bottom")
 
         #non significance lines    
-        def drawLines(lines, side=0.05, height=0.1):
+        def draw_lines(lines, side=0.05, height=0.1):
             start = cline + 0.2
             for l,r in lines:  
                 line([(rankpos(ssums[l])-side, start), (rankpos(ssums[r])+side, start)], linewidth=2.5) 
                 start += height
 
-        drawLines(lines)
+        draw_lines(lines)
 
     elif cd:
         begin = rankpos(avranks[cdmethod]-cd)
@@ -2540,7 +2544,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         line([(begin, cline + bigtick/2), (begin, cline - bigtick/2)], linewidth=2.5)
         line([(end, cline + bigtick/2), (end, cline - bigtick/2)], linewidth=2.5)
  
-    printFigure(fig, filename, **kwargs)
+    print_figure(fig, filename, **kwargs)
 
 if __name__ == "__main__":
     avranks =  [3.143, 2.000, 2.893, 1.964]
