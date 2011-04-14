@@ -35,7 +35,7 @@ from Orange.evaluation.scoring import \
     plot_ROC as plotROC, \
     plot_McNemar_curve_learners as plotMcNemarCurveLearners, \
     plot_McNemar_curve as plotMcNemarCurve, \
-    learning_curve_lerners_to_PiCTeX as learningCurveLearners2PiCTeX, \
+    learning_curve_learners_to_PiCTeX as learningCurveLearners2PiCTeX, \
     learning_curve_to_PiCTeX as learningCurve2PiCTeX, \
     legend_learners_to_PiCTeX as legendLearners2PiCTeX, \
     legend_to_PiCTeX as legend2PiCTeX
