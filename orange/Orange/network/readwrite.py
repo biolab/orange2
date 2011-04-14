@@ -1,9 +1,16 @@
 import network
 import networkx.readwrite as rw
+import warnings
 
 __all__ = ['generate_pajek', 'write_pajek', 'read_pajek', 'parse_pajek']
 
-generate_pajek = rw.generate_pajek
+try:
+    generate_pajek = rw.generate_pajek
+except:
+    warnings.warn("Warning: your version of networkx does not contain the "+
+                  "generate_pajek method; you may encounter problems when "+
+                  "using the Orange.network module.")
+    
 write_pajek = rw.write_pajek
 
 def read_pajek(path,encoding='UTF-8'):
