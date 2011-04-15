@@ -98,60 +98,59 @@ def order_leaves(tree, matrix, progressCallback=None):
     ordering = {}
     visitedClusters = set()
     
-    def _optOrderingRecursive(tree):
-        if len(tree)==1:
-            for leaf in tree:
-                M[tree, leaf, leaf] = 0
-        else:
-            _optOrderingRecursive(tree.left)
-            _optOrderingRecursive(tree.right)
-            
-            Vl = set(tree.left)
-            Vr = set(tree.right)
-            Vlr = set(tree.left.right or tree.left)
-            Vll = set(tree.left.left or tree.left)
-            Vrr = set(tree.right.right or tree.right)
-            Vrl = set(tree.right.left or tree.right)
-            other = lambda e, V1, V2: V2 if e in V1 else V1
-            tree_left, tree_right = tree.left, tree.right
-            for u in Vl:
-                for w in Vr:
-#                    if True: #Improved search
-                    C = min([matrix[m, k] for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)])
-                    orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
-                    orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
-                    k0 = orderedKs[0]
-                    curMin = 1e30000 
-                    curM = curK = None
-                    for m in orderedMs:
-                        if M[tree_left, u, m] + M[tree_right, w, k0] + C >= curMin:
-                            break
-                        for k in  orderedKs:
-                            if M[tree_left, u, m] + M[tree_right, w, k] + C >= curMin:
-                                break
-                            testMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
-                            if curMin > testMin:
-                                curMin = testMin
-                                curM = m
-                                curK = k
-                    M[tree, u, w] = M[tree, w, u] = curMin
-                    ordering[tree, u, w] = (tree_left, u, curM, tree_right, w, curK)
-                    ordering[tree, w, u] = (tree_right, w, curK, tree_left, u, curM)
-#                    else:
-#                    def MFunc((m, k)):
-#                        return M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
-#                    m, k = min([(m, k) for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)], key=MFunc)
-#                    M[tree, u, w] = M[tree, w, u] = MFunc((m, k))
-#                    ordering[tree, u, w] = (tree_left, u, m, tree_right, w, k)
-#                    ordering[tree, w, u] = (tree_right, w, k, tree_left, u, m)
-
-            if progressCallback:
-                progressCallback(100.0 * len(visitedClusters) / len(tree.mapping))
-                visitedClusters.add(tree)
-    
-    if False:
-        with recursion_limit(sys.getrecursionlimit() + len(tree)):
-            _optOrderingRecursive(tree)
+#    def _optOrderingRecursive(tree):
+#        if len(tree)==1:
+#            for leaf in tree:
+#                M[tree, leaf, leaf] = 0
+#        else:
+#            _optOrderingRecursive(tree.left)
+#            _optOrderingRecursive(tree.right)
+#            
+#            Vl = set(tree.left)
+#            Vr = set(tree.right)
+#            Vlr = set(tree.left.right or tree.left)
+#            Vll = set(tree.left.left or tree.left)
+#            Vrr = set(tree.right.right or tree.right)
+#            Vrl = set(tree.right.left or tree.right)
+#            other = lambda e, V1, V2: V2 if e in V1 else V1
+#            tree_left, tree_right = tree.left, tree.right
+#            for u in Vl:
+#                for w in Vr:
+##                    if True: #Improved search
+#                    C = min([matrix[m, k] for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)])
+#                    orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
+#                    orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
+#                    k0 = orderedKs[0]
+#                    curMin = 1e30000 
+#                    curM = curK = None
+#                    for m in orderedMs:
+#                        if M[tree_left, u, m] + M[tree_right, w, k0] + C >= curMin:
+#                            break
+#                        for k in  orderedKs:
+#                            if M[tree_left, u, m] + M[tree_right, w, k] + C >= curMin:
+#                                break
+#                            testMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
+#                            if curMin > testMin:
+#                                curMin = testMin
+#                                curM = m
+#                                curK = k
+#                    M[tree, u, w] = M[tree, w, u] = curMin
+#                    ordering[tree, u, w] = (tree_left, u, curM, tree_right, w, curK)
+#                    ordering[tree, w, u] = (tree_right, w, curK, tree_left, u, curM)
+##                    else:
+##                    def MFunc((m, k)):
+##                        return M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
+##                    m, k = min([(m, k) for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)], key=MFunc)
+##                    M[tree, u, w] = M[tree, w, u] = MFunc((m, k))
+##                    ordering[tree, u, w] = (tree_left, u, m, tree_right, w, k)
+##                    ordering[tree, w, u] = (tree_right, w, k, tree_left, u, m)
+#
+#            if progressCallback:
+#                progressCallback(100.0 * len(visitedClusters) / len(tree.mapping))
+#                visitedClusters.add(tree)
+#    
+#    with recursion_limit(sys.getrecursionlimit() + len(tree)):
+#        _optOrderingRecursive(tree)
         
     def _optOrderingIterative(tree):
         if len(tree)==1:
@@ -243,25 +242,13 @@ def order_leaves(tree, matrix, progressCallback=None):
                 
                 if right.branches and k not in right.left:
                     right.swap()
-            
-#        if len(tree) == 1:
-#            return
-#        left, u, m, right, w, k = ordering[tree, u, w]
-#        if len(left) > 1 and m not in left.right:
-#            left.swap()
-#        _orderIterative(left, u, m)
-#        
-#        if len(right) > 1 and k not in right.left:
-#            right.swap()
-#        _orderIterative(right, k, w)
     
     u, w = min([(u, w) for u in tree.left for w in tree.right], key=lambda (u, w): M[tree, u, w])
     
 ##    print "M(v) =", M[tree, u, w]
     
-    if False:
-        with recursion_limit(sys.getrecursionlimit() + len(tree)):
-            _orderRecursive(tree, u, w)
+#    with recursion_limit(sys.getrecursionlimit() + len(tree)):
+#        _orderRecursive(tree, u, w)
             
     _orderIterative(tree, u, w)
             
