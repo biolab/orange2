@@ -237,7 +237,22 @@ class OWKMeans(OWWidget):
         try:
             self.progressBarInit()
             Ks = range(self.optimizationFrom, self.optimizationTo + 1)
-            self.optimizationRun =[(k, orngClustering.KMeans(
+            outer_callback_count = len(Ks) * self.restarts
+            outer_callback_state = {"restart": 0}
+            optimizationRun = []
+            for k in Ks:
+                def outer_progress(km):
+                    outer_callback_state["restart"] += 1
+                    self.progressBarSet(100.0 * outer_callback_state["restart"] / outer_callback_count)
+                    
+                def inner_progress(km):
+                    estimate = self.progressEstimate(km)
+                    self.progressBarSet(min(estimate / outer_callback_count + \
+                                            outer_callback_state["restart"] * \
+                                            100.0 / outer_callback_count,
+                                            100.0))
+                     
+                kmeans = orngClustering.KMeans(
                     self.data,
                     centroids = k,
                     minscorechange=0,
@@ -245,8 +260,15 @@ class OWKMeans(OWWidget):
                     initialization = self.initializations[self.initializationType][1],
                     distance = self.distanceMeasures[self.distanceMeasure][1],
                     scoring = self.scoringMethods[self.scoring][1],
-                    inner_callback = lambda val: self.progressBarSet(min(self.progressEstimate(val)/len(Ks) + k * 100.0 / len(Ks), 100.0))
-                    )) for k in Ks]
+                    outer_callback = outer_progress,
+                    inner_callback = inner_progress
+                    )
+                optimizationRun.append((k, kmeans))
+                
+                if self.restarts == 1:
+                    outer_progress(None)
+                    
+            self.optimizationRun = optimizationRun 
             self.progressBarFinished()
             self.bestRun = (min if getattr(self.scoringMethods[self.scoring][1], "minimize", False) else max)(self.optimizationRun, key=lambda (k, run): run.score)
             self.showResults()
@@ -284,7 +306,7 @@ class OWKMeans(OWWidget):
             self.progressBarSet(80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration)))
             
     def progressEstimate(self, km):
-        norm = math.log(len(self.data), 10)
+        norm = math.log(len(km.data), 10)
         if km.iteration < norm:
             return min(80.0 * km.iteration / norm, 90.0)
         else:
