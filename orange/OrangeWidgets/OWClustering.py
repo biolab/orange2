@@ -18,24 +18,41 @@ class HierarchicalClusterItem(QGraphicsRectItem):
         self.standardPen.setCosmetic(True)
         self.cluster = cluster
         self.branches = []
-        if cluster.branches:
-            for branch in cluster.branches:
-                item = type(self)(branch, self)
-                item.setZValue(self.zValue()-1)
-                self.branches.append(item)
-            self.setRect(self.branches[0].rect().center().x(),
-                         0.0, #self.cluster.height,
-                         self.branches[-1].rect().center().x() - self.branches[0].rect().center().x(),
-                         self.cluster.height)
-        else:
-            self.setRect(cluster.first, 0, 0, 0)
+#        if cluster.branches:
+#            for branch in cluster.branches:
+#                item = type(self)(branch, self)
+#                item.setZValue(self.zValue()-1)
+#                self.branches.append(item)
+#            self.setRect(self.branches[0].rect().center().x(),
+#                         0.0, #self.cluster.height,
+#                         self.branches[-1].rect().center().x() - self.branches[0].rect().center().x(),
+#                         self.cluster.height)
+#        else:
+#            self.setRect(cluster.first, 0, 0, 0)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         self.setPen(self.standardPen)
         self.setBrush(QBrush(Qt.white, Qt.SolidPattern))
 #        self.setAcceptHoverEvents(True)
         
-        if self.isTopLevel(): ## top level cluster
-            self.clusterGeometryReset()
+#        if self.isTopLevel(): ## top level cluster
+#            self.clusterGeometryReset()
+            
+    @classmethod
+    def create(cls, cluster, *args, **kwargs):
+        """ Construct a hierarchy of HierarchicalClusterItem's statring with
+        `cluster`.
+        
+        """
+        items = {cluster: cls(cluster, *args, **kwargs)}
+        for node in hierarchical.preorder(cluster):
+            for branch in node.branches or []:
+                hci = cls(branch, items[node])
+                hci.setZValue(items[node].zValue() - 1)
+                items[branch] = hci
+                items[node].branches.append(hci)
+        items[cluster].clusterGeometryReset()
+        return items[cluster]
+        
 
     def isTopLevel(self):
         """ Is this the top level cluster
