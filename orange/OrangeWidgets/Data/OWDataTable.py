@@ -134,7 +134,7 @@ class OWDataTable(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
 
         self.inputs = [("Examples", ExampleTable, self.dataset, Multiple + Default)]
-        self.outputs = [("Selected Examples", ExampleTable)]
+        self.outputs = [("Selected Examples", ExampleTable, Default), ("Unselected Examples", ExampleTable)]
 
         self.data = {}          # key: id, value: ExampleTable
         self.showMetas = {}     # key: id, value: (True/False, columnList)
@@ -558,10 +558,14 @@ class OWDataTable(OWWidget):
         if table and table.model():
             model = table.model()
             selected = self.getCurrentSelection()
-            data = model.examples.select([1 if i in selected else 0 for i in range(len(model.examples))])
+            selection = [1 if i in selected else 0 for i in range(len(model.examples))]
+            data = model.examples.select(selection)
             self.send("Selected Examples", data if len(data) > 0 else None)
+            data = model.examples.select(selection, 0)
+            self.send("Unselected Examples", data if len(data) > 0 else None)
         else:
             self.send("Selected Examples", None)
+            self.send("Unselected Examples", None)
             
         self.selectionChangedFlag = False
             
