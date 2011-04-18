@@ -53,7 +53,7 @@ class TypedDict(object):
             raise KeyError(key)
         
     def __setitem__(self, key, value):
-        i = bisect.bisect_left(self._value_array, key)
+        i = bisect.bisect_left(self._key_array, key)
         if i == len(self._key_array):
             self._key_array.insert(i, key)
             self._value_array.insert(i, value)
@@ -82,9 +82,12 @@ class TypedDict(object):
         return izip(self.iterkeys(), self.itervalues())
     
     def get(self, key, default=None):
-        try:
-            return self.__getitem__(key)
-        except KeyError:
+        i = bisect.bisect_left(self._key_array, key)
+        if i == len(self._key_array):
+            return default
+        elif self._key_array[i] == key:
+            return self._value_array[i]
+        else:
             return default
         
     def has_key(self, key):
@@ -96,8 +99,15 @@ class TypedDict(object):
     def __len__(self):
         return len(self._key_array)
     
+    def __iter__(self):
+        return self.iterkeys()
+    
     def __contains__(self, key):
-        return key in self.keys()
+        i = bisect.bisect_left(self._key_array, key)
+        if i == len(self._key_array) or self._key_array[i] != key:
+            return False
+        else:
+            return True
     
     def __delitem__(self, key):
         raise NotImplementedError
@@ -109,6 +119,7 @@ class TypedDict(object):
         """ Return a regular dict object initialized from this TypedDict.
         """
         return dict(self.iteritems())
+    
     def __repr__(self):
         return "TypedDict({0!r})".format(self.todict())
     
