@@ -4,7 +4,7 @@
 #
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
-VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Mac OS X Server 10.6 64-bit.vmwarevm/Mac OS X Server 10.6 64-bit.vmx'
+VMIMAGE='/Volumes/Data/vmware/Mac OS X Server 10.6 64-bit.vmwarevm/Mac OS X Server 10.6 64-bit.vmx'
 WAIT_START_TIME=300
 WAIT_STOP_TIME=600
 WAIT_RESTART_TIME=120

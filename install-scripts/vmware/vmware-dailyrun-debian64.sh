@@ -4,7 +4,7 @@
 #
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
-VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Debian 5 64-bit.vmwarevm/Debian 5 64-bit.vmx'
+VMIMAGE='/Volumes/Data/vmware/Debian 5 64-bit.vmwarevm/Debian 5 64-bit.vmx'
 WAIT_START_TIME=300
 WAIT_STOP_TIME=600
 IP_ADDRESS='172.16.213.103'

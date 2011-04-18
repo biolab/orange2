@@ -3,13 +3,10 @@
 # Should be run as: ./wmvare-dailyrun-winxp.sh
 #
 
-# First mount the download@biolab.si share
-./mount-download.sh
-
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
-VMIMAGE='/Volumes/Data/vmware/winXP.dailyBuild/winXP.dailyBuild.vmx'
+VMIMAGE='/Volumes/Data/vmware/Orange\ Add-on\ Packaging/Orange\ Add-on\ Packaging.vmx'
 WAIT_TIME=3600
-NAME='Windows XP'
+NAME='Orange Add-on Packaging'
 
 # Sets error handler
 trap "echo \"Script failed\"" ERR
