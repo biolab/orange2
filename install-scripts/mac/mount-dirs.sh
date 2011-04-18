@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 if [ -e /Library/Filesystems/fusefs.fs/Support/fusefs.kext ]; then
-	kextload -quiet /Library/Filesystems/fusefs.fs/Support/fusefs.kext
+	kextload -q /Library/Filesystems/fusefs.fs/Support/fusefs.kext
 fi
 
 umount /Volumes/fink/ 2> /dev/null || true
