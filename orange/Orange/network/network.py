@@ -46,7 +46,7 @@ class BaseGraph():
 class Graph(BaseGraph, nx.Graph):
     
     def __init__(self, data=None, name='', **attr):  
-        nx.Graph.__init__(self, data=None, name='', **attr)
+        nx.Graph.__init__(self, data=data, name=name, **attr)
         BaseGraph.__init__(self)
         
     __init__.__doc__ = nx.Graph.__init__.__doc__
@@ -54,7 +54,7 @@ class Graph(BaseGraph, nx.Graph):
 class DiGraph(BaseGraph, nx.DiGraph):
     
     def __init__(self, data=None, name='', **attr):
-        nx.DiGraph.__init__(self, data=None, name='', **attr)
+        nx.DiGraph.__init__(self, data=data, name=name, **attr)
         BaseGraph.__init__(self)
         
     __init__.__doc__ = nx.DiGraph.__init__.__doc__
@@ -62,7 +62,7 @@ class DiGraph(BaseGraph, nx.DiGraph):
 class MultiGraph(BaseGraph, nx.MultiGraph):
     
     def __init__(self, data=None, name='', **attr):
-        nx.MultiGraph.__init__(self, data=None, name='', **attr)
+        nx.MultiGraph.__init__(self, data=data, name=name, **attr)
         BaseGraph.__init__(self)
         
     __init__.__doc__ = nx.MultiGraph.__init__.__doc__
@@ -70,7 +70,7 @@ class MultiGraph(BaseGraph, nx.MultiGraph):
 class MultiDiGraph(BaseGraph, nx.MultiDiGraph):
     
     def __init__(self, data=None, name='', **attr):
-        nx.MultiDiGraph.__init__(self, data=None, name='', **attr)
+        nx.MultiDiGraph.__init__(self, data=data, name=name, **attr)
         BaseGraph.__init__(self)
         
     __init__.__doc__ = nx.MultiDiGraph.__init__.__doc__
