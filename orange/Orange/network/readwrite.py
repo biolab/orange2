@@ -1,13 +1,13 @@
+import Orange
 import networkx as nx
 import networkx.readwrite as rw
-from networkx.utils import _get_fh
 import warnings
 import itertools
 import Orange.network
 
-__all__ = ['generate_pajek', 'write_pajek', 'read_pajek', 'parse_pajek']
+from networkx.utils import _get_fh
 
-write_pajek = rw.write_pajek
+__all__ = ['generate_pajek', 'write_pajek', 'read_pajek', 'parse_pajek']
 
 def _wrap(g):
     for base, new in [(nx.DiGraph, Orange.network.DiGraph),
@@ -176,5 +176,5 @@ def read_pajek_project(path, encoding='UTF-8'):
     lines = (line.decode(encoding) for line in fh)
     return parse_pajek_project(lines)
 
-read_pajek.__doc__ = rw.read_pajek.__doc__
-parse_pajek.__doc__ = rw.parse_pajek.__doc__
+#read_pajek.__doc__ = rw.read_pajek.__doc__
+#parse_pajek.__doc__ = rw.parse_pajek.__doc__
