@@ -313,7 +313,7 @@ class GraphicsRectLayoutItem(QGraphicsLayoutItem):
     def __init__(self, item, parent=None):
         QGraphicsLayoutItem.__init__(self, parent)
         self.item = item
-        self.setGraphicsItem(item)
+#        self.setGraphicsItem(item)
         
     def setGeometry(self, rect):
         self.item.setRect(rect)
