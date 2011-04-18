@@ -56,7 +56,7 @@ class OWHist(OWGraph):
         self.replot()
         
     def setBoundary(self, lower, upper):
-        if not self.xData and not self.yData:
+        if len(self.xData) == 0 and len(self.yData) == 0:
             return
         
         self.lowerBoundary = lower
