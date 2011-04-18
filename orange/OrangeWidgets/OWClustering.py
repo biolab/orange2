@@ -692,10 +692,10 @@ class DendrogramWidget(QGraphicsWidget):
         for item, (i, selection_item) in self.selected_items.items():
             selection_item.setPolygon(selection_polygon_from_item(item))
         
-    def paint(self, painter, options, widget=0):
-        rect =  self.geometry()
-        rect.translate(-self.pos())
-        painter.drawRect(rect)
+#    def paint(self, painter, options, widget=0):
+#        rect =  self.geometry()
+#        rect.translate(-self.pos())
+#        painter.drawRect(rect)
     
     
 class CutoffLine(QGraphicsLineItem):

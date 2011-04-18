@@ -14,7 +14,7 @@ from ColorPalette import *
 from OWDlgs import OWChooseImageSizeDlg
 import OWColorPalette
 import OWToolbars
-from OWHierarchicalClustering import recursion_limit
+#from OWHierarchicalClustering import recursion_limit
 
 #####################################################################
 # parameters that determine the canvas layout
@@ -203,8 +203,8 @@ class OWDistanceMap(OWWidget):
         OWGUI.checkBox(box, self, 'ShowLabels', 'Show labels',
                        callback=self.drawDistanceMap)
 
-        box = OWGUI.widgetBox(tab, "Balloon")
-        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon")
+        box = OWGUI.widgetBox(tab, "Tool Tips")
+        OWGUI.checkBox(box, self, 'ShowBalloon', "Show tool tips")
         OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names")
 
         box = OWGUI.widgetBox(tab, "Select")
@@ -484,16 +484,31 @@ class OWDistanceMap(OWWidget):
             self.scene.removeItem(cluster)
 
         if self.rootCluster and self.order:
-            from OWClustering import HierarchicalClusterItem
-            with recursion_limit(len(self.rootCluster) * 3 + 20 + sys.getrecursionlimit()): #extend the recursion limit
-                clusterTop = HierarchicalClusterItem(self.rootCluster, None, None)
-                clusterLeft = HierarchicalClusterItem(self.rootCluster, None, None)
-                self.scene.addItem(clusterTop)
-                self.scene.addItem(clusterLeft)
-            clusterHeight = 100.0
+#            from OWClustering import HierarchicalClusterItem
+#            with recursion_limit(len(self.rootCluster) * 3 + 20 + sys.getrecursionlimit()): #extend the recursion limit
+#                clusterTop = HierarchicalClusterItem(self.rootCluster, None, None)
+#                clusterLeft = HierarchicalClusterItem(self.rootCluster, None, None)
+#                self.scene.addItem(clusterTop)
+#                self.scene.addItem(clusterLeft)
+            from OWClustering import DendrogramWidget
+            clusterTop = DendrogramWidget(self.rootCluster, orientation=Qt.Horizontal, scene=self.scene)
+            clusterLeft = DendrogramWidget(self.rootCluster, orientation=Qt.Horizontal, scene=self.scene)
             
-            clusterTop.setSize(width, -clusterHeight)
-            clusterLeft.setSize(height, clusterHeight)
+            margin = self.CellWidth / 2.0 / self.Merge
+            
+            clusterLeft.layout().setContentsMargins(margin, 0, margin, 10)
+            clusterTop.layout().setContentsMargins(margin, 0, margin, 10)
+            
+            clusterHeight = 100.0
+#            clusterTop.resize(width, clusterHeight)
+            clusterTop.setMinimumSize(QSizeF(width, clusterHeight))
+            clusterTop.setMaximumSize(QSizeF(width, clusterHeight))
+            clusterTop.scale(1.0, -1.0)
+#            clusterTop.setSize(width, -clusterHeight)
+#            clusterLeft.setSize(height, clusterHeight)
+#            clusterLeft.resize(height, clusterHeight)
+            clusterLeft.setMinimumSize(QSizeF(height, clusterHeight))
+            clusterLeft.setMaximumSize(QSizeF(height, clusterHeight))
             
             clusterTop.setPos(0 + self.CellWidth / 2.0, self.offsetY + clusterHeight)
 
@@ -505,8 +520,13 @@ class OWDistanceMap(OWWidget):
 
             self.clusterItems += [clusterTop, clusterLeft]
 
-            clusterTop.show()            
+            clusterTop.show()
             clusterLeft.show()
+            
+#            anchors = list(clusterLeft.leaf_anchors())
+#            minx = min([a.x() for a in anchors])
+#            maxx = max([a.x() for a in anchors])
+#            print maxx - minx, width
             
 
         # determine the font size to fit the cell width
@@ -594,8 +614,10 @@ class OWDistanceMap(OWWidget):
 
         if self.rootCluster and self.order:
             ## We now know the location of bitmap
-            clusterTop.setPos(self.offsetX + self.CellWidth/2.0/self.Merge, clusterTop.y())
-            clusterLeft.setPos(clusterLeft.x(), self.offsetY + self.CellHeight/2.0/self.Merge)
+#            clusterTop.setPos(self.offsetX + self.CellWidth/2.0/self.Merge, clusterTop.y())
+#            clusterLeft.setPos(clusterLeft.x(), self.offsetY + self.CellHeight/2.0/self.Merge)
+            clusterTop.setPos(self.offsetX , clusterTop.y())
+            clusterLeft.setPos(clusterLeft.x(), self.offsetY)
             
         self.distanceImage = ImageItem(bitmap, self.scene, width, height,
                                        palette, x=self.offsetX, y=self.offsetY, z=0)
