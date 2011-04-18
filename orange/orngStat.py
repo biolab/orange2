@@ -25,7 +25,7 @@ from Orange.evaluation.scoring import \
     is_CDT_empty as isCDTempty, \
     compute_CDT as computeCDT, \
     ROCs_from_CDT as ROCsFromCDT, \
-    AROC_from_CDT as AROCfromCDT, \
+    AROC_from_CDT as AROCFromCDT, \
     McNemar_of_two as McNemarOfTwo, \
     Wilcoxon_pairs as WilcoxonPairs, \
     plot_learning_curve_learners as plotLearningCurveLearners, \
