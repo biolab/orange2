@@ -351,7 +351,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
 
 
 def enterButton(parent, height, placeholder = True):
-    button = QPushButton(parent)
+    button = QToolButton(parent)
     button.setFixedSize(height, height)
     button.setIcon(getEnterIcon())
     if parent.layout() is not None:
