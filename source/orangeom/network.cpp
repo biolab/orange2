@@ -1772,7 +1772,6 @@ PyObject *Network_parseNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 								if (!directed) {
 									*(graph->getOrCreateEdge(i2 - 1, i1 - 1) + i) = i3;
 								}
-								
 							}
 						}
 					}
