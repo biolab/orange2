@@ -35,7 +35,7 @@ class OWConcatenate(OWWidget):
         OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict between input classes.")
 
         OWGUI.separator(self.controlArea)
-        box = OWGUI.widgetBox(self.controlArea, "Data source IDs")
+        box = OWGUI.widgetBox(self.controlArea, "Data source IDs", addSpace=True)
         cb = OWGUI.checkBox(box, self, "dataSourceSelected", "Append data source IDs")
         self.classificationBox = ib = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(cb))
         le = OWGUI.lineEdit(ib, self, "dataSourceName", "Name" + "  ", orientation='horizontal', valueType = str)
@@ -43,8 +43,8 @@ class OWConcatenate(OWWidget):
         aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 'horizontal', items = ["Class attribute", "Attribute", "Meta attribute"])
         cb.disables.append(ib)
         cb.makeConsistent()
-        OWGUI.separator(box)
-        OWGUI.button(box, self, "Apply Changes", callback = self.apply)
+        
+        OWGUI.button(self.controlArea, self, "Apply Changes", callback = self.apply, default=True)
         
         OWGUI.rubber(self.controlArea)
 

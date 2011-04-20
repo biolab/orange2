@@ -171,7 +171,7 @@ class OWSelectData(OWWidget):
         cb = OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
         self.purgeClassesCB = OWGUI.checkBox(OWGUI.indentedBox(boxSettings, sep=OWGUI.checkButtonOffsetHint(cb)), self, "purgeClasses", "Remove unused classes", callback=self.OnPurgeChange)
         OWGUI.checkBox(boxSettings, self, "updateOnChange", "Commit on change", box=None)
-        btnUpdate = OWGUI.button(boxSettings, self, "Commit", self.setOutput)
+        btnUpdate = OWGUI.button(boxSettings, self, "Commit", self.setOutput, default=True)
 
         self.icons = self.createAttributeIconDict()
         self.setData(None)

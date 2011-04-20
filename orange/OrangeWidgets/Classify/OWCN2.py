@@ -121,7 +121,7 @@ class OWCN2(OWWidget):
             self.connect(button, SIGNAL("clicked()"), lambda v=i: self.coveringAlgButtonPressed(v))
 
         OWGUI.separator(self.controlArea)
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applySettings)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applySettings, default=True)
 
         self.Alpha=float(self.Alpha)
         self.stepAlpha=float(self.stepAlpha)

@@ -70,7 +70,7 @@ class OWC45Tree(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
-        OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
+        OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0, default=True)
 
         OWGUI.rubber(self.controlArea)
         self.setLearner()

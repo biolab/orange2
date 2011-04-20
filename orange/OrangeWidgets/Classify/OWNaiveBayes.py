@@ -92,8 +92,8 @@ class OWNaiveBayes(OWWidget):
         OWGUI.checkBox(self.controlArea, self, "adjustThreshold", "Adjust threshold (for binary classes)", box = "Threshold")
 
         OWGUI.separator(self.controlArea)
-        box = OWGUI.widgetBox(self.controlArea, "Apply", orientation=1)
-        applyButton = OWGUI.button(box, self, "&Apply", callback=self.applyLearner)
+#        box = OWGUI.widgetBox(self.controlArea, "Apply", orientation=1)
+        applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applyLearner, default=True)
 
         OWGUI.rubber(self.controlArea)
         self.refreshControls()

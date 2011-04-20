@@ -73,10 +73,10 @@ class OWSVM(OWWidget):
         OWGUI.checkBox(b, self, "normalization", label="Normalize data", tooltip="Use data normalization")
 
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
-                                      tooltip="Automaticaly searches for parameters that optimize classifier acuracy", debuggingEnabled=0)
+                                      tooltip="Automatically searches for parameters that optimize classifier accuracy", debuggingEnabled=0)
         self.paramButton.setDisabled(True)
 
-        OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
+        OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings, default=True)
         
         OWGUI.rubber(self.controlArea)
         #self.adjustSize()

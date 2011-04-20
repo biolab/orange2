@@ -79,7 +79,7 @@ class OWRank(OWWidget):
         box = OWGUI.widgetBox(box, orientation="horizontal")
         wl = OWGUI.widgetLabel(box, "Color: ")
         OWGUI.separator(box)
-        self.colButton = OWGUI.toolButton(box, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
+        self.colButton = OWGUI.toolButton(box, self, callback=self.changeColor, width=20, height=20, debuggingEnabled = 0)
         self.cbShowDistributions.disables.extend([wl, self.colButton])
         self.cbShowDistributions.makeConsistent()
 #        OWGUI.rubber(box)
@@ -104,7 +104,7 @@ class OWRank(OWWidget):
         selMethRadio.layout().addLayout(buttonGrid)
         OWGUI.separator(selMethBox)
 
-        applyButton = OWGUI.button(selMethBox, self, "Commit", callback = self.apply)
+        applyButton = OWGUI.button(selMethBox, self, "Commit", callback = self.apply, default=True)
         autoApplyCB = OWGUI.checkBox(selMethBox, self, "autoApply", "Commit automatically")
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.apply)
 

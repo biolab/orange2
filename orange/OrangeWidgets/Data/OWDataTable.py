@@ -169,20 +169,20 @@ class OWDataTable(OWWidget):
         self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
         colBox = OWGUI.indentedBox(boxSettings, sep=OWGUI.checkButtonOffsetHint(self.cbShowDistributions), orientation = "horizontal")
         OWGUI.widgetLabel(colBox, "Color: ")
-        self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
+        self.colButton = OWGUI.toolButton(colBox, self, callback=self.changeColor, width=20, height=20, debuggingEnabled = 0)
         OWGUI.rubber(colBox)
 
         resizeColsBox = OWGUI.widgetBox(boxSettings, 0, "horizontal", 0)
         OWGUI.label(resizeColsBox, self, "Resize columns: ")
-        OWGUI.toolButton(resizeColsBox, self, self.increaseColWidth, tooltip = "Increase the width of the columns", width=20, height=20).setText("+")
-        OWGUI.toolButton(resizeColsBox, self, self.decreaseColWidth, tooltip = "Decrease the width of the columns", width=20, height=20).setText("-")
+        OWGUI.toolButton(resizeColsBox, self, "+", self.increaseColWidth, tooltip = "Increase the width of the columns", width=20, height=20)
+        OWGUI.toolButton(resizeColsBox, self, "-", self.decreaseColWidth, tooltip = "Decrease the width of the columns", width=20, height=20)
         OWGUI.rubber(resizeColsBox)
 
         self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Order of Examples", callback = self.btnResetSortClicked, tooltip = "Show examples in the same order as they appear in the file")
         
         OWGUI.separator(self.controlArea)
         selectionBox = OWGUI.widgetBox(self.controlArea, "Selection")
-        self.sendButton = OWGUI.button(selectionBox, self, "Send selections", self.commit)
+        self.sendButton = OWGUI.button(selectionBox, self, "Send selections", self.commit, default=True)
         cb = OWGUI.checkBox(selectionBox, self, "autoCommit", "Commit on any change", callback=self.commitIf)
         OWGUI.setStopper(self, self.sendButton, cb, "selectionChangedFlag", self.commit)
 

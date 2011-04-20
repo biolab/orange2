@@ -16,7 +16,7 @@ class OWRandomForest(OWWidget):
     settingsList = ["name", "trees", "attributes", "attributesP", "preNodeInst", "preNodeInstP", "limitDepth", "limitDepthP", "rseed", "outtree" ]
 
     def __init__(self, parent=None, signalManager = None, name='Random Forest'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False, resizingEnabled=False)
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Random Forest Classifier", orange.Classifier),("Choosen Tree", orange.TreeClassifier) ]
@@ -67,7 +67,7 @@ class OWRandomForest(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.doBoth, disabled=0)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.doBoth, disabled=0, default=True)
 
         self.resize(100,200)
 

@@ -60,7 +60,7 @@ class OWLogisticRegression(OWWidget):
         self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", box="Imputation of unknown values", items=self.imputationMethodsStr)
         OWGUI.separator(self.controlArea)
 
-        applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback = self.applyLearner)
+        applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applyLearner, default=True)
 
         OWGUI.rubber(self.controlArea)
         #self.adjustSize()

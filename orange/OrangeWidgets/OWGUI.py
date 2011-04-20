@@ -327,9 +327,13 @@ def doubleSpin(widget, master, value, min, max, step=1,
             return b
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
-    b = widgetBox(widget, box, orientation=None)
+    if box:
+        b = widgetBox(widget, box, orientation=None)
+    else:
+        b = widget
     wa = QCheckBox(label, b)
-    if addToLayout and b.layout() is not None: b.layout().addWidget(wa)
+    if addToLayout and b.layout() is not None:
+        b.layout().addWidget(wa)
 
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
@@ -462,7 +466,9 @@ def lineEdit(widget, master, value,
     return wa
 
 
-def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, height = None, toggleButton = False, value = "", addToLayout = 1):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None,
+           debuggingEnabled = 1, width = None, height = None, toggleButton = False,
+           value = "", addToLayout = 1, default=False, autoDefault=False):
     btn = QPushButton(label, widget)
     if addToLayout and widget.layout() is not None:
         widget.layout().addWidget(btn)
@@ -478,6 +484,9 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None, deb
     if toggleButton or value:
         btn.setCheckable(True)
         
+    btn.setDefault(default)
+    btn.setAutoDefault(autoDefault)
+        
     if value:
         btn.setChecked(getdeepattr(master, value))
         cfront, cback, cfunc = connectControl(btn, master, value, None, "toggled(bool)", CallFrontButton(btn),
@@ -489,13 +498,23 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None, deb
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
 
-def toolButton(widget, master, callback = None, width = None, height = None, tooltip = None, addToLayout = 1, debuggingEnabled = 1):
+def toolButton(widget, master, label="", callback = None, width = None, height = None, tooltip = None, addToLayout = 1, debuggingEnabled = 1):
+    if not isinstance(label, basestring) and hasattr(label, "__call__"):
+        import warnings
+        warnings.warn("Third positional argument to 'OWGUI.toolButton' must be a string.", DeprecationWarning)
+        label, callback = "", label
+        
     btn = QToolButton(widget)
     if addToLayout and widget.layout() is not None:
         widget.layout().addWidget(btn)
-    if width != None: btn.setFixedWidth(width)
-    if height!= None: btn.setFixedHeight(height)
-    if tooltip != None: btn.setToolTip(tooltip)
+    if label:
+        btn.setText(label)
+    if width != None:
+        btn.setFixedWidth(width)
+    if height!= None:
+        btn.setFixedHeight(height)
+    if tooltip != None:
+        btn.setToolTip(tooltip)
     if callback:
         QObject.connect(btn, SIGNAL("clicked()"), callback)
     if debuggingEnabled and hasattr(master, "_guiElements"):

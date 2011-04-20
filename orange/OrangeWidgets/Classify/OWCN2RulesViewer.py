@@ -131,6 +131,7 @@ class OWCN2RulesViewer(OWWidget):
         #####
         
         box = OWGUI.widgetBox(self.controlArea, "Show Info", addSpace=True)
+        box.layout().setSpacing(3)
         self.headers = ["Rule length",
                         "Rule quality",
                         "Coverage",
@@ -144,6 +145,7 @@ class OWCN2RulesViewer(OWWidget):
                            callback=self.updateVisibleColumns)
             
         box = OWGUI.widgetBox(self.controlArea, "Output")
+        box.layout().setSpacing(3)
         cb = OWGUI.checkBox(box, self, "autoCommit", "Commit on any change",
                             callback=self.commitIf)
         
@@ -151,7 +153,7 @@ class OWCN2RulesViewer(OWWidget):
                        tooltip="Send selected attributes only",
                        callback=self.commitIf)
         
-        b = OWGUI.button(box, self, "Commit", callback=self.commit)
+        b = OWGUI.button(box, self, "Commit", callback=self.commit, default=True)
         OWGUI.setStopper(self, b, cb, "changedFlag", callback=self.commit)
         
         OWGUI.rubber(self.controlArea)

@@ -101,7 +101,7 @@ class OWImpute(OWWidget):
 
         OWGUI.separator(self.controlArea)
         snbox = OWGUI.widgetBox(self.controlArea, "Send data and imputer")
-        self.btApply = OWGUI.button(snbox, self, "Apply", callback=self.sendDataAndImputer)
+        self.btApply = OWGUI.button(snbox, self, "Apply", callback=self.sendDataAndImputer, default=True)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto, disables = [(-1, self.btApply)])
 
         self.individualSelected(self.selectedAttr)

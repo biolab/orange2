@@ -492,7 +492,7 @@ class OWDiscretize(OWWidget):
         #OWGUI.rubber(vbox)
 
         box = OWGUI.widgetBox(vbox, "Commit")
-        applyButton = OWGUI.button(box, self, "Commit", callback = self.commit)
+        applyButton = OWGUI.button(box, self, "Commit", callback = self.commit, default=True)
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically", callback=[self.clearLineEditFocus])
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.commit)
         OWGUI.rubber(vbox)
@@ -560,7 +560,7 @@ class OWDiscretize(OWWidget):
             le = OWGUI.lineEdit(hbox, self, "", callback = lambda w=i: self.customChanged(w), focusInCallback = lambda w=i: self.customSelected(w))
             le.setFixedWidth(110)
             self.customLineEdits.append(le)
-            OWGUI.button(hbox, self, "CC", width=30, callback = lambda w=i: self.copyToCustom(w))
+            OWGUI.toolButton(hbox, self, "CC", width=30, callback = lambda w=i: self.copyToCustom(w))
             OWGUI.rubber(hbox)
         OWGUI.rubber(box)
 

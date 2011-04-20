@@ -567,7 +567,7 @@ class OWPreprocess(OWWidget):
             
         box = OWGUI.widgetBox(self.controlArea, "Output")
         cb = OWGUI.checkBox(box, self, "autoCommit", "Commit on any change", callback=self.commitIf)
-        b = OWGUI.button(box, self, "Commit", callback=self.commit)
+        b = OWGUI.button(box, self, "Commit", callback=self.commit, default=True)
         OWGUI.setStopper(self, b, cb, "changedFlag", callback=self.commitIf)
         
         self.mainAreaStack = QStackedLayout()

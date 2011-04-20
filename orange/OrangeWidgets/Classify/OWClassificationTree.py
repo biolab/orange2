@@ -80,7 +80,7 @@ class OWClassificationTree(OWWidget):
         self.postMPruningBox, self.postMPruningPBox = OWGUI.checkWithSpin(self.mBox, self, "Pruning with m-estimate, m=", 0, 1000, 'postMPruning', 'postM')
 
         OWGUI.separator(self.controlArea)
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0, default=True)
         
         OWGUI.rubber(self.controlArea)
         self.resize(200,200)

@@ -69,7 +69,7 @@ class OWFile(OWWidget):
         button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
         button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
-        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload)
+        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload, default=True)
         self.reloadBtn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.reloadBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         

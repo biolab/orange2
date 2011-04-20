@@ -92,7 +92,7 @@ class OWDataDomain(OWWidget):
 
         boxApply = OWGUI.widgetBox(self, addToLayout = 0, orientation = "horizontal", addSpace = 1)
         grid.addWidget(boxApply, 3, 0, 3, 3)
-        self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
+        self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput, default=True)
         self.applyButton.setEnabled(False)
         self.applyButton.setMaximumWidth(applyButtonWidth)
         self.resetButton = OWGUI.button(boxApply, self, "Reset", callback = self.reset)

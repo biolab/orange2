@@ -105,7 +105,7 @@ class OWDataSampler(OWWidget):
 
         # Select Data Button
         OWGUI.rubber(self.controlArea)
-        self.sampleButton = OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process, addToLayout=False)
+        self.sampleButton = OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process, addToLayout=False, default=True)
         self.buttonBackground.layout().setDirection(QBoxLayout.TopToBottom)
         self.buttonBackground.layout().insertWidget(0, self.sampleButton)
         self.buttonBackground.show()

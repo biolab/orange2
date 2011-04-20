@@ -58,7 +58,7 @@ class OWPurgeDomain(OWWidget):
         OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
         
         box2 = OWGUI.widgetBox(self.controlArea, "Send")
-        btSend = OWGUI.button(box2, self, "Send data", callback = self.process)
+        btSend = OWGUI.button(box2, self, "Send data", callback = self.process, default=True)
         cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically")
 
         OWGUI.setStopper(self, btSend, cbAutoSend, "dataChanged", self.process)

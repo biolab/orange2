@@ -81,7 +81,7 @@ class OWContinuize(OWWidget):
         self.controlArea.layout().addSpacing(4)
 
         snbox = OWGUI.widgetBox(self.controlArea, "Send data")
-        OWGUI.button(snbox, self, "Send data", callback=self.sendData)
+        OWGUI.button(snbox, self, "Send data", callback=self.sendData, default=True)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto)
         self.data = None
         self.sendPreprocessor()
