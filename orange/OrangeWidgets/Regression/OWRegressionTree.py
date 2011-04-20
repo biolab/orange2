@@ -66,7 +66,7 @@ class OWRegressionTree(OWWidget):
         self.postPBox=OWGUI.widgetBox(self.controlArea, "Post-Pruning")
         OWGUI.checkWithSpin(self.postPBox, self, "Pruning with m-estimate, m:", 0, 1000, 'PostMPCheck', 'PostMPVal')
 
-        OWGUI.button(self.controlArea, self, "&Apply settings",callback=self.setLearner)
+        OWGUI.button(self.controlArea, self, "&Apply settings", callback=self.setLearner, default=True)
         
         OWGUI.rubber(self.controlArea)
         self.setLearner()

@@ -35,7 +35,7 @@ class OWSaveDistanceFile(OWWidget):
         button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
         fbox = OWGUI.widgetBox(self.controlArea, "Save")
-        self.save = OWGUI.button(fbox, self, "Save current data", callback = self.saveFile)
+        self.save = OWGUI.button(fbox, self, "Save current data", callback = self.saveFile, default=True)
         self.save.setDisabled(1)
         
         self.setFilelist()

@@ -79,7 +79,7 @@ class OWPade(OWWidget):
         OWGUI.checkBox(box, self, "correlationsAsMeta", label="Absolute values of derivatives")
         OWGUI.checkBox(box, self, "originalAsMeta", label="Original class attribute")
 
-        self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
+        self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply, disabled=True, default=True)
         
         self.contAttributes = []
         self.dimensions = []

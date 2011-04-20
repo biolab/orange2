@@ -76,7 +76,7 @@ class OWSOM(OWWidget):
 ##        OWGUI.doubleSpin(b2, self, "alpha2", 0.0, 1.0, 0.01, orientation="horizontal", label="Alpha")
 ##        self.alpha1=self.alpha1
 ##        self.alpha2=self.alpha2
-        OWGUI.button(self.controlArea, self,  "&Apply", callback=self.ApplySettings)
+        OWGUI.button(self.controlArea, self,  "&Apply", callback=self.ApplySettings, default=True)
 
         OWGUI.rubber(self.controlArea)
         

@@ -59,7 +59,7 @@ class OWItemsetsExplorer(OWWidget):
             self.oldPurgeClasses = False
 
         cbSendAuto = OWGUI.checkBox(boxSettings, self, "autoSend", "Send immediately", box=None)
-        btnUpdate = OWGUI.button(boxSettings, self, "Send", self.sendData)
+        btnUpdate = OWGUI.button(boxSettings, self, "Send", self.sendData, default=True)
         OWGUI.setStopper(self, btnUpdate, cbSendAuto, "dataChanged", self.sendData)
 
         self.itemsets= None

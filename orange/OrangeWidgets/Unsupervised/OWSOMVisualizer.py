@@ -1078,7 +1078,7 @@ class OWSOMVisualizer(OWWidget):
  
         b = OWGUI.widgetBox(self.controlArea, "Selection")
         OWGUI.button(b, self, "&Invert selection", callback=self.invertSelection)
-        button = OWGUI.button(b, self, "&Commit", callback=self.commit)
+        button = OWGUI.button(b, self, "&Commit", callback=self.commit, default=True)
         check = OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
         OWGUI.setStopper(self, button, check, "selectionChanged", self.commit)
 

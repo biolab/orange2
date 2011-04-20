@@ -247,7 +247,7 @@ class OWAssociationRulesViewer(OWWidget):
 
         self.reportButton = OWGUI.button(bottom, self, "&Report", self.reportAndFinish, addToLayout=0, debuggingEnabled=0)
 #        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules, addToLayout=0)
-        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules, addToLayout=0)
+        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules, addToLayout=0, default=True)
         autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)], addToLayout=0)
         autoSend.makeConsistent()
 

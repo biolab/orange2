@@ -42,7 +42,7 @@ class OWAssociationRules(OWWidget):
         OWGUI.widgetLabel(box, 'Maximal number of rules')
         OWGUI.hSlider(box, self, 'maxRules', minValue=10000, maxValue=100000, step=10000, ticks=10000, debuggingEnabled = 0)
 
-        OWGUI.button(self.space, self, "&Build rules", self.generateRules)
+        OWGUI.button(self.space, self, "&Build rules", self.generateRules, default=True)
 
         OWGUI.rubber(self.controlArea)
         
