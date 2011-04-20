@@ -76,5 +76,6 @@ def addClassDef(cds, typename, parsedFile, str="", val=1, warn=1, displayname=No
     setattr(cds[typename], str, val)
     if parsedFile and cds[typename].infile!=parsedFile:
       print ("Warning: %s appears in different files (%s, %s)" % (typename, cds[typename].infile, parsedFile))
-  if displayname:
-      cds[typename].displayname = displayname
+    #Disable the name mapping
+#  if displayname:
+#      cds[typename].displayname = displayname
