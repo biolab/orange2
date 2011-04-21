@@ -198,7 +198,7 @@ class OWPredictions(OWWidget):
         OWGUI.separator(self.controlArea)
         self.outbox = OWGUI.widgetBox(self.controlArea, "Output")
         
-        b = self.commitBtn = OWGUI.button(self.outbox, self, "Send Predictions", callback=self.sendpredictions)
+        b = self.commitBtn = OWGUI.button(self.outbox, self, "Send Predictions", callback=self.sendpredictions, default=True)
         cb = OWGUI.checkBox(self.outbox, self, 'sendOnChange', 'Send automatically')
         OWGUI.setStopper(self, b, cb, "changedFlag", callback=self.sendpredictions)
 

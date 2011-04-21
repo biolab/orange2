@@ -76,7 +76,7 @@ class OWConfusionMatrix(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Output")
         OWGUI.checkBox(box, self, "appendPredictions", "Append class predictions", callback = self.sendIf)
         OWGUI.checkBox(box, self, "appendProbabilities", "Append predicted class probabilities", callback = self.sendIf)
-        applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData)
+        applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData, default=True)
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically")
         OWGUI.setStopper(self, applyButton, autoApplyCB, "selectionDirty", self.sendData)
 
