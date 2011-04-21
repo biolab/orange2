@@ -460,12 +460,12 @@ class OWPredictions(OWWidget):
         if classification:
             if len(self.selectedClasses):
                 for c in self.predictors.values():
-                    m = [orange.FloatVariable(name="%s(%s)" % (c.name, str(self.outvar.values[i])),
+                    m = [orange.FloatVariable(name=str("%s(%s)" % (c.name, str(self.outvar.values[i]))),
                                               getValueFrom = lambda ex, rw, cindx=i, c=c: orange.Value(c(ex, c.GetProbabilities)[cindx])) \
                          for i in self.selectedClasses]
                     metas.extend(m)
             if self.showClass:
-                mc = [orange.EnumVariable(name="%s" % c.name, values = self.outvar.values,
+                mc = [orange.EnumVariable(name=str(c.name), values = self.outvar.values,
                                          getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
                       for c in self.predictors.values()]
                 metas.extend(mc)
