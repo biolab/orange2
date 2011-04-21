@@ -138,10 +138,11 @@ def generate_pajek(G):
         value=d.pop('weight',1.0) # use 1 as default edge value
         s = ' '.join(map(make_str,(nodenumber[u],nodenumber[v],value)))
         for k,v in d.items():
-            if is_string_like(v):
-                # add quotes to any values with a blank space
-                if " " in v: 
-                    v="\"%s\""%v
+            if not is_string_like(v):
+                v = repr(v)
+            # add quotes to any values with a blank space
+            if " " in v: 
+                v="\"%s\"" % v.replace('"', r'\"')
             s += ' %s %s'%(k,v)
         yield s
         
