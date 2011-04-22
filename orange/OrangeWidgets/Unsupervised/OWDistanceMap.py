@@ -577,7 +577,7 @@ class OWDistanceMap(OWWidget):
                         maxWidth = tmpText.boundingRect().width()
                     self.annotationText += [tmpText]
             
-            fix = 1.0 if qVersion() >= "4.6" else 0.0 # on Qt 4.6 the graphics simple text item seems to have a diffrent alignment 
+            fix = 0.0 
                         
             for i in range(0, len(self.annotationText)/2):
 ##                self.annotationText[i*2].setX(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth)
@@ -654,7 +654,7 @@ class OWDistanceMap(OWWidget):
         self.selectionLines += [selLine]
 
     def getfont(self, height):
-        return QFont("", max(min(height, 8), 2))
+        return QFont("", max(min(height, 16), 2))
         
     def updateSelectionRect(self):
         selections = self.selection.getSelection()
