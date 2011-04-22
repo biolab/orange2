@@ -259,6 +259,8 @@ class SignalManager(object):
 #        if self.verbosity >= 2:
         self.addEvent("Remove widget " + widget.captionTitle, eventVerbosity = 2)
         self.widgets.remove(widget)
+        if widget in self.links:
+            del self.links[widget]
 
     def getLinks(self, widgetFrom=None, widgetTo=None, signalNameFrom=None, signalNameTo=None):
         """ Return a list of matching SignalLinks

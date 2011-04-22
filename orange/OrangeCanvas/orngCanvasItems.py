@@ -86,6 +86,9 @@ class TempCanvasLine(QGraphicsPathItem):
         
     def remove(self):
         self.hide()
+        self.startWidget = None
+        self.endWidget = None 
+        self.scene().removeItem(self)
 
 # #######################################
 # # CANVAS LINE
@@ -128,9 +131,12 @@ class CanvasLine(QGraphicsPathItem):
             
         QObject.connect(self.outWidget.instance, SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"), self.updateDynamicEnableState)
 
-    def remove(self):        
+    def remove(self):
         self.hide()
         self.setToolTip("")
+        self.outWidget = None
+        self.inWidget = None
+        self.scene().removeItem(self)
         
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
@@ -347,12 +353,23 @@ class CanvasWidget(QGraphicsRectItem):
             self.instance.close()
             self.instance.linksOut.clear()      # this helps python to more quickly delete the unused objects
             self.instance.linksIn.clear()
+            self.instance.setProgressBarHandler(None)   # set progress bar event handler
+            self.instance.setProcessingHandler(None)
+            self.instance.setWidgetStateHandler(None)
+            self.instance.setEventHandler(None)
             self.instance.onDeleteWidget()      # this is a cleanup function that can take care of deleting some unused objects
             try:
                 import sip
                 sip.delete(self.instance)
-            except:
-                pass
+            except Exception, ex:
+                print >> sys.stderr, "Error deleting the widget: \n%s" % str(ex)
+            self.instance = None
+            
+            import gc
+            gc.collect()
+            
+            self.scene().removeItem(self)
+                
 
     def savePosition(self):
         self.oldPos = self.pos()

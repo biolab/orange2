@@ -126,6 +126,8 @@ class SchemaDoc(QWidget):
         if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
             if dialog.exec_() == QDialog.Rejected:
                 return None
+        else:
+            dialog.deleteLater() # Dialog must be deleted
 
 #        self.signalManager.setFreeze(1)
         with self.signalManager.freeze(outWidget.instance):
@@ -181,7 +183,7 @@ class SchemaDoc(QWidget):
         inWidget.updateTooltip()
         
         if saveTempDoc:
-            self.saveTempDoc() 
+            self.saveTempDoc()
 
 
 

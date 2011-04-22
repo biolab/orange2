@@ -325,7 +325,8 @@ class SchemaView(QGraphicsView):
             
             start = self.tempLine.startWidget or self.tempLine.widget
             end = self.tempLine.endWidget or self.tempLine.widget
-            self.tempLine.hide()
+#            self.tempLine.hide()
+            self.tempLine.remove()
             self.tempLine = None
 
             # we must check if we have really connected some output to input
