@@ -278,10 +278,10 @@ class OWHierarchicalClustering(OWWidget):
             self.numMeta=len(items.domain.getmetas())
             self.metaLabels=items.domain.getmetas().values()
             self.matrixSource="Example Distance"
-        elif isinstance(items, list):   #Structured data files from Data Distance
-            self.labels=["None", "Default", "Name", "Strain"]
+        elif isinstance(items, list):
+            self.labels=["None", "Default", "Label"]
             self.Annotation=0
-            self.matrixSource="Data Distance"
+            self.matrixSource="List"
         else:   #From Attribute Distance
             self.labels=["None", "Attribute Name"]
             self.Annotation=1
@@ -307,9 +307,6 @@ class OWHierarchicalClustering(OWWidget):
             
 
     def updateLabel(self):
-#        self.rootCluster.mapping.setattr("objects", self.matrix.items)
-#        self.dendrogram.updateLabel()
-#        return
     
         if self.matrix is None:
             return
@@ -319,10 +316,10 @@ class OWHierarchicalClustering(OWWidget):
                 [" " for i in range(len(items))])
 
         elif self.Annotation==1:
-            if self.matrixSource=="Example Distance" or self.matrixSource=="Data Distance":
+            if self.matrixSource=="Example Distance" or self.matrixSource=="List":
                 self.rootCluster.mapping.setattr("objects", range(len(items)))
             elif self.matrixSource=="Attribute Distance":
-                self.rootCluster.mapping.setattr("objects", [a.name for a in items])
+                self.rootCluster.mapping.setattr("objects", [getattr(a, "name", " ") for a in items])
         elif self.matrixSource=="Example Distance":
             try:
                 self.rootCluster.mapping.setattr("objects",
@@ -330,11 +327,11 @@ class OWHierarchicalClustering(OWWidget):
             except IndexError:
                 self.Annotation=0
                 self.rootCluster.mapping.setattr("objects", [str(e[0]) for e in items])
-        elif self.matrixSource=="Data Distance":
+        elif self.matrixSource=="List":
             if self.Annotation==2:
-                self.rootCluster.mapping.setattr("objects", [getattr(a, "name", "") for a in items])
+                self.rootCluster.mapping.setattr("objects", [getattr(a, "name", str(a)) for a in items])
             else:
-                self.rootCluster.mapping.setattr("objects", [getattr(a, "strain", "") for a in items])
+                self.rootCluster.mapping.setattr("objects", [getattr(a, "strain", str(a)) for a in items])
         self.dendrogram.updateLabel()
 
     def constructTree(self):
@@ -466,7 +463,7 @@ class OWHierarchicalClustering(OWWidget):
                 self.centroids.append(ex)
             self.send("Centroids", self.centroids)    
             
-        elif self.matrixSource=="Data Distance":
+        elif self.matrixSource=="List":
             names=list(set([d.strain for d in self.selection]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, self.selection)]) for name in names]
             self.send("Structured Data Files",data)
