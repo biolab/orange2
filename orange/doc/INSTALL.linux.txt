@@ -1,5 +1,5 @@
 This document explains how to compile and install Orange on a Linux system. 
-The following commands were tested on Ubuntu 9.04 and Ubuntu 9.10 and should
+The following commands were tested on Ubuntu 9.04 and Ubuntu 11.04 and should
 be modified accordingly for other distributions. 
 
 1. OBTAINING SOURCES
@@ -24,14 +24,17 @@ If you only need the scripting interface, accessible through python,
 the dependencies are easier to fulfil. Only the common building tools and 
 python extensions for imaging, graphs and computation with matrices are needed.
 
-sudo apt-get install make g++ python-dev python-numpy-ext python-matplotlib python-imaging
+sudo apt-get install make g++ python-dev python-numpy python-matplotlib python-imaging
+
+(For some older Ubuntu releases, it might be necesarry to replace the
+python-numpy with python-numpy-ext.)
 
 This suffices for Orange scripting version to work.
 
 2.2 Orange Canvas (widgets)
 
 If you would like to use Orange Canvas, you will need to install PyQWT 5.1.
-On Ubuntu 9.10 use:
+On Ubuntu 9.10 and newer use:
 
 sudo apt-get install python-qwt5-qt4
 
