@@ -40,14 +40,14 @@ class RegressionTreeNode(GraphicsNode):
         if self.isSelected():
             painter.save()
             painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
-            painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), self.borderRadius, self.borderRadius)
+            painter.drawRoundedRect(self.boundingRect().adjusted(-2, 1, -1, -1), 10, 10)#self.borderRadius, self.borderRadius)
             painter.restore()
         painter.setFont(self.document().defaultFont())
         painter.drawText(QPointF(0, -self.line_descent), str(self.attr) if self.attr else "")
         painter.save()
         painter.setBrush(self.backgroundBrush)
         rect = self.rect()
-        painter.drawRoundedRect(rect, self.borderRadius, self.borderRadius)
+        painter.drawRoundedRect(rect.adjusted(-3, 0, 0, 0), 10, 10)#, self.borderRadius, self.borderRadius)
         painter.restore()
         painter.setClipRect(rect | QRectF(QPointF(0, 0), self.document().size()))
         return QGraphicsTextItem.paint(self, painter, option, widget)
@@ -149,6 +149,9 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.navWidget.setWindowTitle("Navigator")
         self.setMouseTracking(True)
 
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
+                                callback=self.toggleNodeColor, addSpace=True)
+        
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info On")
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'error', 'inst']
         self.NodeInfoW = []; self.dummy = 0
@@ -158,9 +161,6 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
                                self.nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
-                                callback=self.toggleNodeColor)
-        
         OWGUI.rubber(self.NodeTab)
         
 #        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)

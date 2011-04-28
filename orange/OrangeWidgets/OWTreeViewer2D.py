@@ -361,13 +361,12 @@ class OWTreeViewer2D(OWWidget):
         self.AutoArrange = 0
         self.ToolTipsEnabled = 1
         self.MaxTreeDepth = 5; self.MaxTreeDepthB = 0
-        self.LineWidth = 5; self.LineWidthMethod = 0
+        self.LineWidth = 5; self.LineWidthMethod = 2
         self.NodeSize = 5
         self.MaxNodeWidth = 150
         self.LimitNodeWidth = True
         self.NodeInfo = [0, 1]
 
-        self.NodeColorMethod = 0
         self.Zoom = 5
         self.VSpacing = 5; self.HSpacing = 5
         self.TruncateText = 1
@@ -375,66 +374,49 @@ class OWTreeViewer2D(OWWidget):
         self.loadSettings()
         self.NodeInfo.sort()
 
+# Changed when the GUI was simplified - added here to override any saved settings
+        self.VSpacing = 1; self.HSpacing = 1
+        self.ToolTipsEnabled = 1
+        self.LineWidth = 15  # Also reset when the LineWidthMethod is changed!
+        
         # GUI definition
-        self.tabs = OWGUI.tabWidget(self.controlArea)
+#        self.tabs = OWGUI.tabWidget(self.controlArea)
 
         # GENERAL TAB
-        GeneralTab = OWGUI.createTabPage(self.tabs, "General")
-        TreeTab = OWGUI.createTabPage(self.tabs, "Tree")
-        NodeTab = OWGUI.createTabPage(self.tabs, "Node")
+        # GeneralTab = OWGUI.createTabPage(self.tabs, "General")
+#        GeneralTab = TreeTab = OWGUI.createTabPage(self.tabs, "Tree")
+#        NodeTab = OWGUI.createTabPage(self.tabs, "Node")
 
-        OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1,
-                      callback=self.toggleZoomSlider, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical spacing', minValue=1, maxValue=10, step=1,
-                      callback=self.toggleVSpacing, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal spacing', minValue=1, maxValue=10, step=1,
-                      callback=self.toggleHSpacing, ticks=1)
-
-        OWGUI.checkBox(GeneralTab, self, 'ToolTipsEnabled', 'Show node tool tips',
-                       tooltip='When mouse over the node show tool tip', callback=self.updateNodeToolTips)
-#        OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate text to fit margins',
-#                       tooltip='Truncate any text to fit the node width',
-#                       callback=self.toggleTruncateText)
-
-        self.infBox = OWGUI.widgetBox(GeneralTab, 'Tree Size', sizePolicy = QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        GeneralTab = NodeTab = TreeTab = self.controlArea
+        
+        self.infBox = OWGUI.widgetBox(GeneralTab, 'Info', sizePolicy = QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ), addSpace=True)
         self.infoa = OWGUI.widgetLabel(self.infBox, 'No tree.')
         self.infob = OWGUI.widgetLabel(self.infBox, " ")
 
-        # TREE TAB
-        OWGUI.checkWithSpin(TreeTab, self, 'Max tree depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth",
-                            tooltip='Defines the depth of the tree displayed',
-                            checkCallback=self.toggleTreeDepth,
-                            spinCallback=self.toggleTreeDepth)
-        OWGUI.spin(TreeTab, self, 'LineWidth', min=1, max=10, step=1, label='Max line width:',
-                   tooltip='Defines max width of the edges that connect tree nodes',
-                   callback=self.toggleLineWidth)
-        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod',
-                                ['No dependency', 'Root node', 'Parent node'],
-                                box='Reference for Line Width',
-                                tooltips=['All edges are of the same width',
-                                          'Line width is relative to number of cases in root node',
-                                          'Line width is relative to number of cases in parent node'],
-                                callback=self.toggleLineWidth)
-
-        # NODE TAB
-#        # Node size options
-
-        cb, sb = OWGUI.checkWithSpin(NodeTab, self, "Max node width:", 50, 200, "LimitNodeWidth", "MaxNodeWidth",
+        self.sizebox = OWGUI.widgetBox(GeneralTab, "Size", addSpace=True)
+        OWGUI.hSlider(self.sizebox, self, 'Zoom', label='Zoom', minValue=1, maxValue=10, step=1,
+                      callback=self.toggleZoomSlider, ticks=1)
+        OWGUI.separator(self.sizebox)
+        
+        cb, sb = OWGUI.checkWithSpin(self.sizebox, self, "Max node width:", 50, 200, "LimitNodeWidth", "MaxNodeWidth",
                                      tooltip="Limit the width of tree nodes",
                                      checkCallback=self.toggleNodeSize,
                                      spinCallback=self.toggleNodeSize,
                                      step=10)
-        b = OWGUI.checkBox(OWGUI.indentedBox(NodeTab, sep=OWGUI.checkButtonOffsetHint(cb)), self, "TruncateText", "Truncate text", callback=self.toggleTruncateText)
+        b = OWGUI.checkBox(OWGUI.indentedBox(self.sizebox, sep=OWGUI.checkButtonOffsetHint(cb)), self, "TruncateText", "Truncate text", callback=self.toggleTruncateText)
         cb.disables.append(b)
         cb.makeConsistent() 
-#        w = OWGUI.widgetBox(NodeTab, orientation="horizontal")
-#        cb = OWGUI.checkBox(w, self, "LimitNodeWidth", "Max node width", callback=self.toggleNodeSize)
-#        sl = OWGUI.hSlider(w, self, 'MaxNodeWidth', #box='Max node width',
-#                      minValue=50, maxValue=200, step=10,
-#                      callback=self.toggleNodeSize, ticks=50)
-#        cb.disables.append(sl)
-#        cb.makeConsistent()
 
+        OWGUI.checkWithSpin(self.sizebox, self, 'Max tree depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth",
+                            tooltip='Defines the depth of the tree displayed',
+                            checkCallback=self.toggleTreeDepth,
+                            spinCallback=self.toggleTreeDepth)
+        
+        
+        self.edgebox = OWGUI.widgetBox(GeneralTab, "Edge Widths", addSpace=True)
+        OWGUI.comboBox(self.edgebox, self,  'LineWidthMethod',
+                                items=['Equal width', 'Root node', 'Parent node'],
+                                callback=self.toggleLineWidth)
         # Node information
         grid = QGridLayout()
         grid.setContentsMargins(*self.controlArea.layout().getContentsMargins())
@@ -455,8 +437,6 @@ class OWTreeViewer2D(OWWidget):
         self.NodeTab=NodeTab
         self.TreeTab=TreeTab
         self.GeneralTab=GeneralTab
-        OWGUI.rubber(GeneralTab)
-        OWGUI.rubber(TreeTab)
 #        OWGUI.rubber(NodeTab)
         self.rootNode=None
         self.tree=None
@@ -513,11 +493,11 @@ class OWTreeViewer2D(OWWidget):
     def toggleLineWidth(self):
         for edge in self.scene.edges():
             if self.LineWidthMethod==0:
-                width=self.LineWidth
+                width=5 # self.LineWidth
             elif self.LineWidthMethod == 1:
-                width = (edge.node2.tree.distribution.cases/self.tree.distribution.cases) * self.LineWidth
+                width = (edge.node2.tree.distribution.cases/self.tree.distribution.cases) * 20 # self.LineWidth
             elif self.LineWidthMethod == 2:
-                width = (edge.node2.tree.distribution.cases/edge.node1.tree.distribution.cases) * self.LineWidth
+                width = (edge.node2.tree.distribution.cases/edge.node1.tree.distribution.cases) * 10 # self.LineWidth
 
             edge.setPen(QPen(Qt.gray, width, Qt.SolidLine, Qt.RoundCap))
         self.scene.update()
@@ -572,6 +552,7 @@ class OWTreeViewer2D(OWWidget):
 
     def walkcreate(self, tree, parent=None, level=0):
         node = GraphicsNode(tree, parent, None, self.scene)
+        node.borderRadius = 10
         if parent:
             parent.graph_add_edge(GraphicsEdge(None, self.scene, node1=parent, node2=node))
         if tree.branches:

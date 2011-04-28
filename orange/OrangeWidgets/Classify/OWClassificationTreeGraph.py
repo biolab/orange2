@@ -99,14 +99,14 @@ class ClassificationTreeNode(GraphicsNode):
         if self.isSelected():
             painter.save()
             painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
-            painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), self.borderRadius, self.borderRadius)
+            painter.drawRoundedRect(self.boundingRect().adjusted(-2, 1, -1, -1), 10, 10)#self.borderRadius, self.borderRadius)
             painter.restore()
         painter.setFont(self.document().defaultFont())
         painter.drawText(QPointF(0, -self.line_descent), str(self.attr) if self.attr else "")
         painter.save()
         painter.setBrush(self.backgroundBrush)
         rect = self.rect()
-        painter.drawRoundedRect(rect, self.borderRadius, self.borderRadius)
+        painter.drawRoundedRect(rect.adjusted(-3, 0, 0, 0), 10, 10)#self.borderRadius, self.borderRadius)
         painter.restore()
         if self.truncateText:
 #            self.setTextWidth(-1)`
@@ -196,6 +196,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.colorSettings = None
         self.selectedColorSettingsIndex = 0
         self.showNodeInfoText = False
+        self.NodeColorMethod = 2
         
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
@@ -221,7 +222,15 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.navWidget.setWindowTitle("Navigator")
         self.setMouseTracking(True)
         
-        OWGUI.button(self.NodeTab, self, "Set Colors", callback=self.setColors, debuggingEnabled = 0)
+        colorbox = OWGUI.widgetBox(self.NodeTab, "Node Color", addSpace=True)
+        
+        OWGUI.comboBox(colorbox, self, 'NodeColorMethod', items=self.nodeColorOpts,
+                                callback=self.toggleNodeColor)
+        self.targetCombo=OWGUI.comboBox(colorbox,self, "TargetClassIndex", orientation=0, items=[],label="Target class",callback=self.toggleTargetClass)
+
+        OWGUI.checkBox(colorbox, self, 'ShowPies', 'Show distribution pie charts', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
+        OWGUI.separator(colorbox)
+        OWGUI.button(colorbox, self, "Set Colors", callback=self.setColors, debuggingEnabled = 0)
 
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info")
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'inst']
@@ -231,16 +240,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
                                self.nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
-#        OWGUI.checkBox(nodeInfoBox, self, "showNodeInfoText", "Show info text", callback=self.setNodeInfo)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
-                                callback=self.toggleNodeColor)
-
-        OWGUI.checkBox(self.NodeTab, self, 'ShowPies', 'Show pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
-        self.targetCombo=OWGUI.comboBox(self.NodeTab,self, "TargetClassIndex",items=[],box="Target Class",callback=self.toggleTargetClass)
-        
-        OWGUI.rubber(self.NodeTab)
-        
 #        OWGUI.button(self.controlArea, self, "Save as", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
@@ -248,6 +248,8 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         dlg = self.createColorDialog()
         self.scene.colorPalette = dlg.getDiscretePalette("colorPalette")
 
+        OWGUI.rubber(self.NodeTab)
+        
 
     def sendReport(self):
         self.reportSettings("Information",
