@@ -245,8 +245,11 @@ class LineEditHint(QLineEdit):
             except:
                 tuples = zip(self.itemsAsStrings, self.itemsAsItems)        # in case we make regular expressions crash we show all items
         else:
-            if self.matchAnywhere:  tuples = [(text, item) for (text, item) in tuples if last in text]
-            else:                   tuples = [(text, item) for (text, item) in tuples if text.startswith(last)]
+            if self.matchAnywhere:
+                tuples = [(text, item) for (text, item) in tuples if last in text]
+                tuples = sorted(tuples, key=lambda t: 0 if t[0].startswith(last) else 1) 
+            else:
+                tuples = [(text, item) for (text, item) in tuples if text.startswith(last)]
         
         items = [tup[1] for tup in tuples]
         if items:
