@@ -11,29 +11,27 @@
 #
 
 SCRIPT_DIR=`dirname $0 | xargs readlink -e`
-ADDONS_DIR=$SCRIPT_DIR/../add-ons
-ORANGE_DIR=$SCRIPT_DIR/../orange
+ADDONS_DIR="$SCRIPT_DIR/../add-ons"
+ORANGE_DIR="$SCRIPT_DIR/../orange"
 
 # Update the core orange (we need the orngAddOns.py to make a package).
-cd $ORANGE_DIR
+cd "$ORANGE_DIR"
 svn up
 
 # For each addon ...
-cd $ADDONS_DIR
+cd "$ADDONS_DIR"
 for ADDON in * ; do
-  if [[ -d $ADDONS_DIR/$ADDON ]] ; then
+  if [[ -d "$ADDONS_DIR/$ADDON" ]] ; then
       echo " ### Processing $ADDON ..."
-      cd $ADDONS_DIR/$ADDON
-      cp addon.xml ../${ADDON}_addon.xml
+      cd "$ADDONS_DIR/$ADDON"
+      cp addon.xml "../${ADDON}_addon.xml"
       svn revert . -R
       svn up
-      if diff addon.xml ../${ADDON}_addon.xml ; then
+      if diff addon.xml "../${ADDON}_addon.xml" ; then
         echo "Not changed - not packing!"
       else
-        $SCRIPT_DIR/prepare-and-pack.py $ADDONS_DIR/$ADDON ../${ADDON}.oao
-        mount /mnt/ailab/add-ons
-        cp ../${ADDON}.oao /mnt/ailab/add-ons
-        umount /mnt/ailab/add-ons
+        "$SCRIPT_DIR/prepare-and-pack.py" "$ADDONS_DIR/$ADDON" "../${ADDON}.oao"
+		scp "../${ADDON}.oao" addons@biolab.si:/files/
       fi
   fi
 done
