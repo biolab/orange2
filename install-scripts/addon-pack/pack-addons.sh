@@ -31,7 +31,7 @@ for ADDON in * ; do
         echo "Not changed - not packing!"
       else
         "$SCRIPT_DIR/prepare-and-pack.py" "$ADDONS_DIR/$ADDON" "../${ADDON}.oao"
-		scp "../${ADDON}.oao" addons@biolab.si:/files/
+        echo "put '../${ADDON}.oao'" | sftp addons@biolab.si:/files/
       fi
   fi
 done
