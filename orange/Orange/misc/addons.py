@@ -465,7 +465,7 @@ class OrangeRegisteredAddOn():
         
         inputscode = """<DT>(None)</DT>"""
         outputscode = """<DT>(None)</DT>"""
-        il, ol = eval(widget.inputlist), eval(widget.outputlist)
+        il, ol = eval(widget.inputList), eval(widget.outputList)
         if il:
             inputscode = "\n".join(["<dt>%s (%s)</dt>\n<dd>Describe here, what this input does.</dd>\n" % (p[0], p[1]) for p in il])
         if ol:
