@@ -15,7 +15,7 @@ def create_text_element(tag_name, value):
     return result
 
 def xml_set(parent, node_name, value):
-    child = getElementNonRecursive(parent, node_name)
+    child = get_element_nonrecursive(parent, node_name)
     if not child:
         if value:
             parent.appendChild(create_text_element(node_name, value))
@@ -31,7 +31,7 @@ def xml_set(parent, node_name, value):
 
 def xml_text_of(node, parent=None, multiline=False):
     if node.__class__ is str:
-        node = getElementNonRecursive(parent, node)
+        node = get_element_nonrecursive(parent, node)
     t = ""
     if node==None:
         return t
@@ -49,10 +49,10 @@ def xml_text_of(node, parent=None, multiline=False):
 
 def get_element_nonrecursive(parent, elementname, create=False):
     for node in [n for n in parent.childNodes if n.nodeType==n.ELEMENT_NODE]:
-        if node.tagName == elementName:
+        if node.tagName == elementname:
             return node
     if create:
-        node = xml.dom.minidom.Element(elementName)
+        node = xml.dom.minidom.Element(elementname)
         parent.appendChild(node)
         return node
     return None
