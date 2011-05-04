@@ -2746,6 +2746,9 @@ class _TreeDumper:
          (re_D, replaceD), (re_d, replaced), (re_AE, replaceAE), 
          (re_I, replaceI) ]
 
+    def node(self):
+        return self.tree.tree if "tree" in self.tree.__dict__ else self.tree
+
     def __init__(self, leafStr, nodeStr, stringFormats, minExamples, 
         maxDepth, simpleFirst, tree, **kw):
         self.stringFormats = stringFormats
@@ -2758,7 +2761,8 @@ class _TreeDumper:
         if leafStr:
             self.leafStr = leafStr
         else:
-            if tree.classVar.varType == Orange.data.Type.Discrete:
+            if self.node().node_classifier.classVar.varType == \
+                    Orange.data.Type.Discrete:
                 self.leafStr = "%V (%^.2m%)"
             else:
                 self.leafStr = "%V"
@@ -2843,13 +2847,14 @@ class _TreeDumper:
 
 
     def dumpTree(self):
+        node = self.node()
         if self.nodeStr:
             lev, res = 1, "root: %s\n" % \
-                self.formatString(self.nodeStr, self.tree.tree, None)
+                self.formatString(self.nodeStr, node, None)
             self.maxDepth += 1
         else:
             lev, res = 0, ""
-        return res + self.dumpTree0(self.tree.tree, None, lev)
+        return res + self.dumpTree0(node, None, lev)
         
 
     def dotTree0(self, node, parent, internalName):
@@ -2883,7 +2888,7 @@ class _TreeDumper:
 
     def dotTree(self, internalName="n"):
         self.fle.write("digraph G {\n")
-        self.dotTree0(self.tree.tree, None, internalName)
+        self.dotTree0(self.node(), None, internalName)
         self.fle.write("}\n")
 
 def _quoteName(x):
