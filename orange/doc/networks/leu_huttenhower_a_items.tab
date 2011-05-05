@@ -1,0 +1,243 @@
+gene	t-test	component name
+string	<=0.00 >0.00	string
+        
+ACTA2	<=0.00	muscle contraction
+ACTN1	<=0.00	protein binding
+ADA	>0.00	protein binding
+ADAM15	<=0.00	protein binding
+AHR	<=0.00	protein binding
+AKT1	<=0.00	negative regulation of cellular process
+ANXA1	<=0.00	regulation of cell proliferation
+ANXA2	<=0.00	protein binding
+APC	>0.00	Wnt receptor signaling pathway
+AREG	<=0.00	protein binding
+ARPC1B	<=0.00	regulation of actin filament polymerization
+ARPC2	<=0.00	regulation of actin filament polymerization
+ATRX	>0.00	protein binding
+BARD1	>0.00	protein binding
+BCL2	>0.00	multicellular organism growth
+BCL3	<=0.00	protein binding
+BLK	>0.00	protein binding
+BRF1	>0.00	protein binding
+CALR	<=0.00	antigen processing and presentation
+CAPN2	<=0.00	protein binding
+CAPNS1	<=0.00	protein binding
+CAST	<=0.00	protein binding
+CBX1	>0.00	protein binding
+CBX3	>0.00	protein binding
+CBX5	>0.00	protein binding
+CCL5	<=0.00	cellular calcium ion homeostasis
+CCND3	>0.00	protein binding
+CCNG2	>0.00	post-translational protein modification
+CCR1	<=0.00	cellular calcium ion homeostasis
+CCT3	>0.00	unfolded protein binding
+CCT4	>0.00	unfolded protein binding
+CCT5	>0.00	unfolded protein binding
+CCT7	>0.00	unfolded protein binding
+CD14	<=0.00	protein binding
+CD19	>0.00	protein binding
+CD1D	<=0.00	antigen processing and presentation
+CD22	>0.00	protein binding
+CD44	<=0.00	collagen binding
+CD79A	>0.00	protein binding
+CD79B	>0.00	protein binding
+CD81	>0.00	reproductive process
+CD9	>0.00	reproductive process
+CDC6	>0.00	protein binding
+CDC7	>0.00	protein binding
+CES1	<=0.00	hydrolase activity
+CFLAR	<=0.00	positive regulation of I-kappaB kinase/NF-kappaB cascade
+CLCNKA	<=0.00	voltage-gated chloride channel activity
+CLCNKB	<=0.00	voltage-gated chloride channel activity
+CLU	<=0.00	protein binding
+CNN1	>0.00	actomyosin structure organization
+CNN3	>0.00	actomyosin structure organization
+COL14A1	<=0.00	collagen binding
+COL1A1	<=0.00	collagen binding
+COPS5	>0.00	protein binding
+CSF3R	<=0.00	protein binding
+CSNK1D	<=0.00	protein binding
+CSTA	<=0.00	protein metabolic process
+CTBP1	>0.00	protein binding
+CTNNB1	<=0.00	Wnt receptor signaling pathway
+CTSD	<=0.00	autophagic vacuole formation
+CTSG	<=0.00	defense response to bacterium
+CTSH	<=0.00	protein metabolic process
+CXCL1	<=0.00	chemokine activity
+CXCL2	<=0.00	chemokine activity
+CXCL3	<=0.00	chemokine activity
+CYBA	<=0.00	superoxide-generating NADPH oxidase activity
+DNTT	>0.00	protein binding
+E2F5	>0.00	DNA binding
+EED	>0.00	protein binding
+ELL	<=0.00	protein binding
+ERG	>0.00	sequence-specific DNA binding
+ETF1	<=0.00	post-translational protein modification
+EZH2	>0.00	protein binding
+FADD	>0.00	positive regulation of I-kappaB kinase/NF-kappaB cascade
+FBP1	<=0.00	protein binding
+FCER2	<=0.00	protein binding
+FCGR1A	<=0.00	protein binding
+FDPS	>0.00	protein kinase cascade
+FES	<=0.00	protein binding
+FGFR1	>0.00	protein kinase cascade
+FGG	<=0.00	protein binding
+FKBP8	<=0.00	multicellular organism growth
+FLI1	>0.00	sequence-specific DNA binding
+FLNA	<=0.00	maintenance of protein location in cell
+FLNB	>0.00	maintenance of protein location in cell
+FOSB	<=0.00	protein binding
+FOSL2	<=0.00	protein binding
+FTH1	<=0.00	ferric iron binding
+FTL	<=0.00	ferric iron binding
+GATA1	<=0.00	sequence-specific DNA binding
+GATA2	<=0.00	protein binding
+GJB1	>0.00	gap junction channel activity
+GJB2	>0.00	gap junction channel activity
+GM2A	<=0.00	ganglioside catabolic process
+GNAI2	<=0.00	protein binding
+GPX1	<=0.00	glutathione binding
+GPX4	<=0.00	glutathione binding
+GRN	<=0.00	hatching
+GUSB	<=0.00	hydrolase activity
+HARS	>0.00	tRNA aminoacylation for protein translation
+HCK	<=0.00	protein binding
+HDAC2	>0.00	protein binding
+HEXA	<=0.00	ganglioside catabolic process
+HFE	<=0.00	cellular iron ion homeostasis
+HK3	<=0.00	hatching
+HMGB1	>0.00	protein binding
+HOXA9	<=0.00	protein binding
+HSPA5	<=0.00	intracellular signaling cascade
+ICAM1	<=0.00	protein binding
+ICAM2	>0.00	protein binding
+ICAM3	<=0.00	protein binding
+ID3	>0.00	cellular biopolymer metabolic process
+IFI16	>0.00	protein binding
+IGBP1	>0.00	post-translational protein modification
+IL13RA1	<=0.00	signal transducer activity
+ILF2	>0.00	protein binding
+IRS1	>0.00	negative regulation of cellular process
+ITGA4	>0.00	protein binding
+ITGAM	<=0.00	protein binding
+ITGAX	<=0.00	protein binding
+ITGB2	<=0.00	protein binding
+JUNB	<=0.00	protein binding
+JUP	>0.00	Wnt receptor signaling pathway
+LBR	>0.00	protein binding
+LMNA	<=0.00	protein binding
+LMNB1	>0.00	protein binding
+MAPKAPK3	<=0.00	cellular biopolymer metabolic process
+MAX	>0.00	protein binding
+MCL1	<=0.00	protein binding
+MCM2	>0.00	protein binding
+MCM3	>0.00	protein binding
+MCM6	>0.00	protein binding
+MCM7	>0.00	protein binding
+MEF2A	>0.00	protein binding
+MEF2C	>0.00	protein binding
+MITF	<=0.00	protein binding
+MKI67	>0.00	protein binding
+MMP2	<=0.00	collagen binding
+MSH2	>0.00	protein binding
+MSH6	>0.00	protein binding
+MT1A	<=0.00	zinc ion binding
+MT1B	<=0.00	zinc ion binding
+MT2A	<=0.00	zinc ion binding
+MYL1	>0.00	muscle contraction
+NCF2	<=0.00	superoxide-generating NADPH oxidase activity
+NCL	>0.00	protein binding
+NEUROD2	<=0.00	protein binding
+NFE2L1	>0.00	protein binding
+NFKB1	<=0.00	protein binding
+NFKB2	<=0.00	protein binding
+NFKBIA	<=0.00	protein binding
+NPM1	>0.00	protein binding
+NR3C1	>0.00	protein binding
+NRIP1	>0.00	protein binding
+NUCB1	<=0.00	protein binding
+P4HB	<=0.00	collagen binding
+PAFAH1B1	>0.00	lipid catabolic process
+PAFAH1B3	>0.00	lipid catabolic process
+PARP1	>0.00	protein binding
+PAX6	<=0.00	protein binding
+PCNA	>0.00	protein binding
+PHB	>0.00	protein binding
+PIK3R2	<=0.00	negative regulation of cellular process
+PIM1	<=0.00	protein binding
+PKN1	<=0.00	protein binding
+PLAUR	<=0.00	protein binding
+PLEC1	<=0.00	actin binding
+POLD2	>0.00	protein binding
+PPBP	<=0.00	defense response to bacterium
+PPP1CC	>0.00	post-translational protein modification
+PPP2CA	>0.00	post-translational protein modification
+PRKCI	>0.00	anti-apoptosis
+PRKDC	>0.00	protein binding
+PSAP	<=0.00	autophagic vacuole formation
+PSMA2	>0.00	threonine-type peptidase activity
+PSMA6	>0.00	threonine-type peptidase activity
+PSME1	>0.00	proteasome activator activity
+PSME2	>0.00	proteasome activator activity
+PTGS2	<=0.00	protein binding
+PTMA	>0.00	protein binding
+PTPN1	<=0.00	negative regulation of cellular process
+RAG1	>0.00	V(D)J recombination
+RAG2	>0.00	V(D)J recombination
+RARA	<=0.00	protein binding
+RB1	>0.00	protein binding
+RBBP4	>0.00	protein binding
+RBL2	>0.00	DNA binding
+REL	<=0.00	protein binding
+RELB	<=0.00	protein binding
+RIPK1	<=0.00	positive regulation of I-kappaB kinase/NF-kappaB cascade
+RPA1	>0.00	protein binding
+RPSA	>0.00	protein binding
+S100A10	<=0.00	protein binding
+S100A11	<=0.00	regulation of cell proliferation
+S100A8	<=0.00	inflammatory response
+S100A9	<=0.00	inflammatory response
+SDCBP	<=0.00	signal transduction
+SHC1	<=0.00	protein kinase cascade
+SMAD4	>0.00	protein binding
+SMARCA4	>0.00	protein binding
+SNRPE	>0.00	spliceosomal snRNP assembly
+SNRPF	>0.00	spliceosomal snRNP assembly
+SOX4	>0.00	signal transduction
+SP3	>0.00	protein binding
+SPARC	<=0.00	collagen binding
+SPI1	<=0.00	protein binding
+SPIB	>0.00	protein binding
+SPTAN1	>0.00	actin binding
+SQSTM1	<=0.00	anti-apoptosis
+STAT3	<=0.00	protein binding
+STMN1	>0.00	intracellular signaling cascade
+STXBP2	<=0.00	vesicle-mediated transport
+SUMO1	>0.00	protein binding
+TARS	>0.00	tRNA aminoacylation for protein translation
+TAX1BP3	>0.00	Wnt receptor signaling pathway
+TCF12	>0.00	cellular biopolymer metabolic process
+TCF3	>0.00	cellular biopolymer metabolic process
+TCF4	>0.00	cellular biopolymer metabolic process
+TCL1A	>0.00	negative regulation of cellular process
+TDG	>0.00	protein binding
+TERF2	>0.00	protein binding
+TFRC	<=0.00	cellular iron ion homeostasis
+TGFB1	<=0.00	collagen binding
+TGFBI	<=0.00	collagen binding
+THBS1	<=0.00	collagen binding
+TIMP2	<=0.00	collagen binding
+TLE1	>0.00	protein binding
+TMPO	>0.00	protein binding
+TOP2B	>0.00	protein binding
+TP53	>0.00	protein binding
+TSN	>0.00	sequence-specific DNA binding
+TSNAX	>0.00	sequence-specific DNA binding
+TYK2	<=0.00	signal transducer activity
+UBTF	>0.00	protein binding
+VAMP2	>0.00	vesicle-mediated transport
+VASP	<=0.00	protein binding
+VIM	<=0.00	protein binding
+XRCC6	>0.00	protein binding
+ZAP70	>0.00	protein kinase cascade
+ZYX	<=0.00	protein binding

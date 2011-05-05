@@ -1,0 +1,343 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+<h1>orngFSS: Orange Feature Subset Selection Module</h1>
+
+<index name="modules+feature subset selection">
+
+<p>Module orngFSS implements several functions that support or may
+help design feature subset selection for classification problems. The
+guiding idea is that some machine learning methods may perform better
+if they learn only from a selected subset of "best" features. orngFSS
+mostly implements filter approaches, i.e., approaches were attributes
+scores are estimated prior to the modelling, that is, without
+knowing of which machine learning method will be used to construct a
+predictive model.</p>
+
+<h2>Functions</h2>
+
+<dl>
+<dt><b>attMeasure</b>(<i>data</i>[<i>, measure</i>])</dt>
+<dd class="ddfun">Assesses the quality (score) of attributes using the
+given scoring function (measure) on a data set <i>data</i> which
+should contain a discrete class. Returns a sorted list of tuples
+(attribute name, score). <i>measure</i> is an attribute quality
+measure, which should be derived from
+<code>orange.MeasureAttribute</code> and defaults to
+<code>orange.MeasureAttribute_relief(k=20, m=50)</code>.</dd>
+
+<dt><b>bestNAtts</b>(<i>scores</i>, <i>N</i>)</dt>
+<dd class="ddfun">Returns the list of names of the <i>N</i>
+highest ranked attributes from the <i>scores</i> list. List of
+attribute measures (<i>scores</i>) is of the type as returned by
+the function <code>attMeasure</code>.</dd>
+
+<dt><b>attsAboveThreshold</b>(<i>scores</i>[<i>, threshold</i>])</dt>
+<dd class="ddfun">Returns the list of names of attributes that are
+listed in the list <i>scores</i> and have their score above
+<i>threshold</i>. The default value for <i>threshold</i> is 0.0.</dd>
+
+<dt><b>selectBestNAtts</b>(<i>data</i>, <i>scores</i>, <i>N</i>)</dt>
+<dd class="ddfun">Constructs and returns a new data set that includes
+a class and only <i>N</i> best attributes from a list
+<i>scores</i>. <i>data</i> is used to pass an original data set.</dd>
+
+<dt><b>selectAttsAboveThresh</b>(<i>data</i>, <i>scores</i>[<i>, threshold</i>])</dt>
+<dd class="ddfun">Constructs and returns a new data set that
+includes a class and attributes from the list returned by function
+<code>attMeasure</code> that have the score above or equal to a
+specified <i>threshold</i>. <i>data</i> is used to pass an original data
+set. Parameter <i>threshold</i> is optional and defaults to 0.0.</dd>
+
+
+<dt><b>filterRelieff</b>(<i>data</i>[<i>, measure</i>[<em>, margin</em>]])</dt>
+
+<dd class="ddfun">Takes the data set <i>data</i> and a measure for
+score of attributes <i>measure</i>. Repeats the process of estimating
+attributes and removing the worst attribute if its measure is lower
+than <i>margin</i>. Stops when no attribute score is below this
+margin. The default for <i>measure</i> is
+<code>range.MeasureAttribute_relief(k=20, m=50)</code>, and
+<i>margin</i> defaults to 0.0 Notice that this filter procedure was
+originally designed for measures such as Relief, which are context
+dependent, i.e. removal of attributes may change the scores of other
+remaining attributes. Hence the need to re-estimate score every time an
+attribute is removed. </dd> </dl>
+
+
+
+<h2>Classes</h2>
+
+
+<dl>
+<dt><b><INDEX name="classes/FilterAttsAboveThresh (in orngFSS)">FilterAttsAboveThresh</b>([<em>measure</em>[<em>, threshold</em>]])</dt>
+<dd class="ddfun">This is simply a wrapper around the function
+<code>selectAttsAboveThresh</code>. It allows to create an object
+which stores filter's parameters and can be later called with the data
+to return the data set that includes only the selected
+attributes. <em>measure</em> is a function that returns a list of
+couples (attribute name, score), and it defaults to
+<code>orange.MeasureAttribute_relief(k=20, m=50)</code>. The default
+threshold is 0.0. Some examples of how to use this class are:
+
+<xmp class=code>filter = orngFSS.FilterAttsAboveThresh(threshold=.15)
+new_data = filter(data)
+new_data = orngFSS.FilterAttsAboveThresh(data)
+new_data = orngFSS.FilterAttsAboveThresh(data, threshold=.1)
+new_data = orngFSS.FilterAttsAboveThresh(data, threshold=.1,
+             measure=orange.MeasureAttribute_gini())
+</xmp>
+</dd>
+
+<dt><b><INDEX name="classes/FilterBestNAtts (in orngFSS)">FilterBestNAtts</b>([<em>measure</em>[<em>, n</em>]])</dt>
+<dd class="ddfun">Similarly to <code>FilterAttsAboveThresh</code>,
+this is a wrapper around the function
+<code>selectBestNAtts</code>. Measure and the number of attributes to
+retain are optional (the latter defaults to 5).</dd>
+
+<dt><b><INDEX name="classes/FilterRelieff (in orngFSS)"><index name="ReliefF">FilterRelieff</b>([<em>measure</em>[<em>, margin</em>]])</dt>
+<dd class="ddfun">Similarly to <code>FilterBestNAtts</code>, this is a
+wrapper around the function
+<code>filterRelieff</code>. <em>measure</em> and <em>margin</em> are
+optional attributes, where <em>measure</em> defaults to
+<code>orange.MeasureAttribute_relief(k=20, m=50)</code> and
+<em>margin</em> to 0.0.</dd>
+
+<dt><b><INDEX name="classes/FilteredLearner (in orngFSS)"><index name="classifiers/with attribute selection">FilteredLearner</b>([<em>baseLearner</em>[<em>,
+examples</em>[<em>, filter</em>[<em>, name</em>]]]])</dt> <dd>Wraps a
+<em>baseLearner</em> using a data <em>filter</em>, and returns the
+corresponding learner. When such learner is presented a data set, data
+is first filtered and then passed to
+<em>baseLearner</em>. <em>FilteredLearner</em> comes handy when one
+wants to test the schema of feature-subset-selection-and-learning by
+some repetitive evaluation method, e.g., cross validation. Filter
+defaults to orngFSS.FilterAttsAboveThresh with default
+attributes. Here is an example of how to set such learner (build a
+wrapper around naive Bayesian learner) and use it on a data set:</p>
+
+<xmp class=code>nb = orange.BayesLearner()
+learner = orngFSS.FilteredLearner(nb, filter=orngFSS.FilterBestNAtts(n=5), name='filtered')
+classifier = learner(data)
+</xmp>
+</dd>
+
+</dl>
+
+
+<h2>Examples</h2>
+
+<h3>Score Estimation</h3>
+
+<p>Let us start with a simple script that reads the data, uses
+orngFSS.attMeasure to derive attribute scores and prints out these for
+the first three best scored attributes. Same scoring function is then
+used to report (only) on three best score attributes.</p>
+
+<p class="header"><a href="fss1.py">fss1.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+<xmp class=code>import orange, import orngFSS
+data = orange.ExampleTable("voting")
+
+print 'Score estimate for first three attributes:'
+ma = orngFSS.attMeasure(data)
+for m in ma[:3]:
+  print "%5.3f %s" % (m[1], m[0])
+
+n = 3
+best = orngFSS.bestNAtts(ma, n)
+print '\nBest %d attributes:' % n
+for s in best:
+  print s
+</xmp>
+
+<p>The script should output something like:</p>
+
+<xmp class=printout>Attribute scores for best three attributes:
+Attribute scores for best three attributes:
+0.728 physician-fee-freeze
+0.329 adoption-of-the-budget-resolution
+0.321 synfuels-corporation-cutback
+
+Best 3 attributes:
+physician-fee-freeze
+adoption-of-the-budget-resolution
+synfuels-corporation-cutback</xmp>
+
+<h3>Different Score Measures</h3>
+
+<p>The following script reports on gain ratio and relief attribute
+scores. Notice that for our data set the ranks of the attributes
+rather match well!</p>
+
+<p class="header"><a href="fss2.py">fss2.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+<xmp class=code>import orange, orngFSS
+data = orange.ExampleTable("voting")
+
+print 'Relief GainRt Attribute'
+ma_def = orngFSS.attMeasure(data)
+gainRatio = orange.MeasureAttribute_gainRatio()
+ma_gr  = orngFSS.attMeasure(data, gainRatio)
+for i in range(5):
+  print "%5.3f  %5.3f  %s" % (ma_def[i][1], ma_gr[i][1], ma_def[i][0])
+</xmp>
+
+<h3>Filter Approach for Machine Learning</h3>
+
+<p>Attribute scoring has at least two potential uses. One is
+informative (or descriptive): the data analyst can use attribute
+scoring to find "good" attributes and those that are irrelevant for
+given classification task. The other use is in improving the
+performance of machine learning by learning only from the data set
+that includes the most informative features. This so-called filter
+approach can boost the performance of learner both in terms of
+predictive accuracy, speed-up of induction, and simplicity of
+resulting models.</p>
+
+<p>Following is a script that defines a new classifier that is based
+on naive Bayes and prior to learning selects five best attributes from
+the data set. The new classifier is wrapped-up in a special class (see
+<a href="../ofb/c_pythonlearner.htm">Building your own learner</a>
+lesson in <a href="../ofb/default.htm">Orange for Beginners</a>). The
+script compares this filtered learner naive Bayes that uses a complete
+set of attributes.</p>
+
+<p class="header"><a href="fss3.py">fss3.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+
+<xmp class=code>import orange, orngFSS
+
+class BayesFSS(object):
+  def __new__(cls, examples=None, **kwds):
+    learner = object.__new__(cls, **kwds)
+    if examples:
+      return learner(examples)
+    else:
+      return learner
+
+  def __init__(self, name='Naive Bayes with FSS', N=5):
+    self.name = name
+    self.N = 5
+
+  def __call__(self, data, weight=None):
+    ma = orngFSS.attMeasure(data)
+    filtered = orngFSS.selectBestNAtts(data, ma, self.N)
+    model = orange.BayesLearner(filtered)
+    return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)
+
+class BayesFSS_Classifier:
+  def __init__(self, **kwds):
+    self.__dict__.update(kwds)
+
+  def __call__(self, example, resultType = orange.GetValue):
+    return self.classifier(example, resultType)
+
+# test above wraper on a data set
+import orngStat, orngTest
+data = orange.ExampleTable("voting")
+learners = (orange.BayesLearner(name='Naive Bayes'), BayesFSS(name="with FSS"))
+results = orngTest.crossValidation(learners, data)
+
+# output the results
+print "Learner      CA"
+for i in range(len(learners)):
+  print "%-12s %5.3f" % (learners[i].name, orngStat.CA(results)[i])
+</xmp>
+
+<p>Interestingly, and somehow expected, feature subset selection
+helps. This is the output that we get:</p>
+
+<xmp class=printout>Learner      CA
+Naive Bayes  0.903
+with FSS     0.940
+</xmp>
+
+<h3>... And a Much Simpler One</h3>
+
+<p>Although perhaps educational, we can do all of the above by
+wrapping the learner using <code>FilteredLearner</code>, thus creating
+an object that is assembled from data filter and a base learner. When
+given the data, this learner uses attribute filter to construct a new
+data set and base learner to construct a corresponding
+classifier. Attribute filters should be of the type like
+<code>orngFSS.FilterAttsAboveThresh</code> or
+<code>orngFSS.FilterBestNAtts</code> that can be initialized with the
+arguments and later presented with a data, returning new reduced data
+set.</p>
+
+<p>The following code fragment essentially replaces the bulk of code
+from previous example, and compares naive Bayesian classifier to the
+same classifier when only a single most important attribute is
+used:</p>
+
+<p class="header">from <a href="fss4.py">fss4.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+
+<xmp class=code>nb = orange.BayesLearner()
+learners = (orange.BayesLearner(name='bayes'),
+            FilteredLearner(nb, filter=FilterBestNAtts(n=1), name='filtered'))
+results = orngEval.CrossValidation(learners, data)
+</xmp>
+
+<p>Now, let's decide to retain three attributes (change the code in <a
+href="fss4.py">fss4.py</a> accordingly!), but observe how many times
+an attribute was used. Remember, 10-fold cross validation constructs
+ten instances for each classifier, and each time we run
+FilteredLearner a different set of attributes may be
+selected. <code>orngEval.CrossValidation</code> stores classifiers in
+<code>results</code> variable, and <code>FilteredLearner</code>
+returns a classifier that can tell which attributes it used (how
+convenient!), so the code to do all this is quite short:</p>
+
+<p class="header">from <a href="fss4.py">fss4.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+
+<xmp class=code>print "\nNumber of times attributes were used in cross-validation:\n"
+attsUsed = {}
+for i in range(10):
+  for a in results.classifiers[i][1].atts():
+    if a.name in attsUsed.keys(): attsUsed[a.name] += 1
+    else: attsUsed[a.name] = 1
+for k in attsUsed.keys():
+  print "%2d x %s" % (attsUsed[k], k)
+</xmp>
+
+<p>Running <a href="fss4.py">fss4.py</a> with three attributes
+selected each time a learner is run gives the following result:</p>
+
+<xmp class=printout>Learner      CA
+bayes        0.903
+filtered     0.956
+
+Number of times attributes were used in cross-validation:
+ 3 x el-salvador-aid
+ 6 x synfuels-corporation-cutback
+ 7 x adoption-of-the-budget-resolution
+10 x physician-fee-freeze
+ 4 x crime
+</xmp>
+
+<p>Experiment yourself to see, if only one attribute is retained for
+classifier, which attribute was the one most frequently selected over
+all the ten cross-validation tests!</p>
+
+<hr>
+
+<h2>References</h2>
+
+<p>K. Kira and L. Rendell. A practical approach to feature
+selection. In D. Sleeman and P. Edwards, editors, <em>Proc. 9th Int'l
+Conf. on Machine Learning</em>, pages 249{256, Aberdeen, 1992. Morgan
+Kaufmann Publishers.</p>
+
+<p>I. Kononenko. Estimating attributes: Analysis and extensions of
+RELIEF. In F. Bergadano and L. De Raedt, editors, <em>Proc. European
+Conf. on Machine Learning (ECML-94)</em>, pages
+171{182. Springer-Verlag, 1994.</p>
+
+<p>R. Kohavi, G. John: Wrappers for Feature Subset Selection,
+<em>Artificial Intelligence</em>, 97 (1-2), pages 273-324, 1997</p>
+
+</body>
+</html>

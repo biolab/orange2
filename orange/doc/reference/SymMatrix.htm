@@ -1,0 +1,104 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<h1>Symmetric Matrices</h1>
+<index name="symmetric matrices">
+<index name="distance matrix">
+
+<P>Symmetric matrix, <CODE><INDEX name="classes/SymMatrix">SymMatrix</CODE> is a symmetric (square) matrix of size fixed at construction time (and stored to the attribute <CODE>dim</CODE>). The constructor expects a sequence of sequences (eg. a list of lists, a list of tuples...) or the matrix dimension. An optional additional argument gives the default value; the default is 0.</P>
+
+<P>For instance, a nice list to initialize the matrix with looks like this</P>
+<P class="header"><A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>m = [[],
+     [ 3],
+     [ 2,  4],
+     [17,  5,  4],
+     [ 2,  8,  3,  8],
+     [ 7,  5, 10, 11, 2],
+     [ 8,  4,  1,  5, 11, 13],
+     [ 4,  7, 12,  8, 10,  1,  5],
+     [13,  9, 14, 15,  7,  8,  4,  6],
+     [12, 10, 11, 15,  2,  5,  7,  3,  1]]
+matrix = orange.SymMatrix(m)
+</XMP>
+
+<P>This matrix, meant as a distance matrix, is used in example from the description of <a href="clustering.htm">hierarchical clustering</a>. <CODE>SymMatrix</CODE> also stores the diagonal elements; here they are not specified, so they are set to 0. The matrix needn't by so nice. If any line was shorter, the missing elements would be set to 0 as well. Any line could also be longer, spreading across the diagonal, in which case the constructor would check for asymmetries. For instance, if the matrix started by</P>
+<XMP class=CODE>m = [[],
+     [ 3,  0, f],
+     [ 2,  4],
+</XMP>
+<P>this would only be OK if <CODE>f</CODE> equals 2; otherwise, the matrix would be asymmetric.</P>
+
+<P>Finally, no line can be longer than the total number of lines. Here we have 10 rows, so no row may have more than 10 columns.</P>
+
+<P>So much for construction. Indexing is implemented so that order of indices is unimportant (unless set otherwise, see below), eg, if <CODE>m</CODE> is an instance of <CODE>SymMatrix</CODE>, then <CODE>m[2, 4]</CODE> addresses the same element as <CODE>m[4, 2]</CODE>.</P>
+
+<p class="header"><A href="random_classifier.py">symmatrix.py</a></p>
+<XMP class=code>import orange
+
+m = orange.SymMatrix(4)
+for i in range(4):
+    for j in range(i+1):
+        m[i, j] = (i+1)*(j+1)
+</XMP>
+
+<P>Although we set only the lower left half of the matrix (if we interpret the first index, i, as the row index), we have actually constructed a whole symmetric matrix.
+
+<XMP class=code>>>> print m
+(( 1.000,  2.000,  3.000,  4.000),
+ ( 2.000,  4.000,  6.000,  8.000),
+ ( 3.000,  6.000,  9.000, 12.000),
+ ( 4.000,  8.000, 12.000, 16.000))
+</XMP>
+
+<P>Other manipulations also respect the symmetricity, for instance, increasing an element <CODE>m[3, 2] += 15</CODE> will also increase <CODE>m[2, 3]</CODE> (since this is, in fact, one and the same element).</P>
+
+<P>The matrix has an attribute <CODE>matrixType</CODE> whose value can be set to <CODE>SymMatrix.Lower</CODE> (0), <CODE>SymMatrix.Upper</CODE> (1), <CODE>SymMatrix.Symmetric</CODE> (2, default), <CODE>SymMatrix.Lower_Filled</CODE> (3), <CODE>SymMatrix.Upper_Filled</CODE> (4). By setting it to <CODE>Lower</CODE> or <CODE>Upper</CODE>, we limit the matrix to the lower or upper half; attempts to index anything above or below the diagonal, respectively, will yield an error. With <CODE>Lower_Filled</CODE> and <CODE>Upper_Field</CODE>, the elements of the other half (upper or lower, respectively) still exist, but are set to zero and can be read, but cannot be modified. The matrix type is by default initially set to symmetric, but can be changed at any time. If it is, for instance, changed from lower to upper, the matrix gets transposed (actually, nothing really happens, the change only affects indexing (and printing) while the internal matrix representation stays the same, so changing the matrix type takes no time).</P>
+
+<P>If we, for instance, change the matrix type of the above matrix to <CODE>SymMatrix.Upper</CODE>, it gets printed as</P>
+<XMP class=code>>>> m.matrixType = m.Upper
+>>> print m
+(( 1.000,  2.000,  3.000,  4.000),
+ (         4.000,  6.000,  8.000),
+ (                 9.000, 12.000),
+ (                        16.000))
+</XMP>
+
+<P>Changing the type to <CODE>SymMatrix.Lower_Filled</CODE> will change the printout to</P>
+<XMP CLASS=code>>>> m.matrixType = m.Lower_Filled
+>>> print m
+(( 1.000,  0.000,  0.000,  0.000),
+ ( 2.000,  4.000,  0.000,  0.000),
+ ( 3.000,  6.000,  9.000,  0.000),
+ ( 4.000,  8.000, 12.000, 16.000))
+</XMP>
+
+<P>It is also possible to index entire rows by using a single index instead of two.</P>
+<XMP class=code>>>> print m[1]
+(3.0, 6.0, 9.0, 0.0)
+</XMP>
+
+<P>In the similar manner, you can iterate over the matrix using a for loop.</P>
+<XMP class=CODE>>>> m.matrixType = m.Lower
+>>> for row in m:
+...     print row
+(1.0,)
+(2.0, 4.0)
+(3.0, 6.0, 9.0)
+(4.0, 8.0, 12.0, 16.0)
+</XMP>
+
+<P>Slicing also works, but what you get by taking, for instance, <CODE>m[:3]</CODE> is a tuple containing the first three lines of the matrix (again represented as tuples).</P>
+
+<P>Started to wonder why always those annoying tuples and not lists that you can change as you will? To give you a clear message about one thing you cannot do with the matrix: you cannot change its contents by manipulating the rows you get by row indexing or slicing. Also, you cannot assign whole rows to matrices:</P>
+<XMP class=code>>>> m[1] = (0, 0, 0, 0)
+Traceback (most recent call last):
+  File "<interactive input>", line 1, in ?
+IndexError: two integer indices expected
+</XMP>
+
+<P>If you want to manipulate the row contents for your purposes, knowing that it doesn't change the matrix, convert it to list by calling <CODE>list(m[i])</CODE>.</P>
+
+</BODY></HTML>

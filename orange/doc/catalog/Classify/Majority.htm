@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>Majority</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Majority Learner</h1>
+
+<img class="screenshot" src="../icons/majority.png">
+<p>A Learner that returns the majority class, disregarding the example's attributes</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>A table with training examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Learner</DT>
+<DD>The "learning" algorithm.</DD>
+
+<DT>Classifier</DT>
+<DD>The classifier</DD>
+</dl>
+
+<P>Signal <code>Classifier</code> sends data only if the learning data (signal <code>Examples</code>) is present.</P>
+
+<h2>Description</h2>
+
+<p>This widget provides a graphical interface to a learner which produces a classifier that always predicts the majority class. When asked for probabilities, it will return the relative frequencies of the classes in the training set. When there are two or more majority classes, the classifier chooses the predicted class randomly, but always returns the same class for a particular example.</p>
+
+<P>The widget is typically used to compare other learning algorithms with the default classification accuracy.</P>
+
+<p>As all other widgets for classification, this one provides a learner and classifier, the former can be fed into widgets for testing learners, while the classifier itself is, well, not very useful.</p>
+
+<div>
+<img class="leftscreenshot" src="Majority.png" alt="Majority" border=0 />
+
+<P>The only option is the name under which it will appear in, say, <code>Test Learners</code>. The default name is "Majority". When you change it, you need to click <span class="option">Apply</span>.</P>
+</div>
+
+<h2>Examples</h2>
+
+<P>In a typical use of this widget, it would be connected to <a href="../Evaluate/TestLearners.htm">Test Learners</a> to compare the scores of other learning algorithms (such as kNN, in this schema) with the default scores.</P>
+
+<img class="screenshot"
+src="Majority-Knn-SchemaLearner.png" alt="A Schema with Majority Classifier" border=0>
+
+</body>
+</html>

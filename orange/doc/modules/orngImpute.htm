@@ -1,0 +1,76 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<h1>orngImpute: An Imputation Wrapper for Learning Algorithms</h1>
+<index name="modules+imputation">
+<index name="classifiers/with imputation">
+
+<P>This module used to be larger, but most of its code went into the Orange's core for various reasons. So now it only contains a wrapper to be used with learning algorithms that cannot handle missing values: it will impute the missing examples using the imputer, call the learning and, if the imputation is also needed by the classifier, wrap the resulting classifier into another wrapper that will impute the missing values in examples to be classified.</P>
+
+<P>Even so, the module is somewhat redundant, as all learners that cannot handle missing values should, in principle, provide the slots for imputer constructor. For instance, <code>orange.LogRegLearner</code> has an attribute <code>imputerConstructor</code>, and even if you don't set it, it will do some imputation by default.</P>
+
+<P>The module consists of two classes. First is <code><INDEX name="classes/ImputeLearner (in orngImpute)">ImputeLearner</code>. It is basically a learner, so the constructor will construct either an instance of <code>ImputerLearner</code> or, if called with examples, an instance of some classifier. There are a few attributes that need to be set, though.</P>
+
+<p class="section">Attributes</p>
+<dl class="attributes">
+<dt>baseLearner</dt>
+<dd>The wrapped learner.</dd>
+
+<dt>imputerConstructor</dt>
+<dd>An instance of a class derived from <a href="../reference/imputation.htm"><code>ImputerConstructor</code></a> (or a class with the same call operator).</dd>
+
+<dt>dontImputeClassifier</dt>
+<dd>If given and set (this attribute is optional), the classifier will not be wrapped into an imputer. Do this if the classifier doesn't mind if the examples it is given have missing values.</dd>
+</dl>
+
+<P>The learner is best illustrated by its code - here's its complete <code>__call__</code> operator.</P>
+<xmp class="code">    def __call__(self, data, weight=0):
+        trained_imputer = self.imputerConstructor(data, weight)
+        imputed_data = trained_imputer(data, weight)
+        baseClassifier = self.baseLearner(imputed_data, weight)
+        if self.dontImputeClassifier:
+            return baseClassifier
+        else:
+            return ImputeClassifier(baseClassifier, trained_imputer)
+</xmp>
+
+<P>So "learning" goes like this. <code>ImputeLearner</code> will first construct the imputer (that is, call <code>self.imputerConstructor</code> to get a (trained) imputer. Than it will use the imputer to impute the data, and call the given <code>baseLearner</code> to construct a classifier. For instance, <code>baseLearner</code> could be a learner for logistic regression and the result would be a logistic regression model. If the classifier can handle unknown values (that is, if <code>dontImputeClassifier</code>, we return it as it is, otherwise we wrap it into <code><INDEX name="classes/ImputeClassifier (in orngImpute)">ImputeClassifier</code>, which is given the base classifier and the imputer which it can use to impute the missing values in (testing) examples.</P>
+
+<P>The other class in the module is, of course, the classifier with imputation, <code>ImputeClassifier</code>.</P>
+
+<p class="section">Attributes</p>
+<dl class="attributes">
+<dt>baseClassifier</dt>
+<dd>The wrapped classifier</dd>
+
+<dt>imputer</dt>
+<dd>The imputer for imputation of unknown values</dd>
+</dl>
+
+<P>This class is even more trivial than the learner. Its constructor accepts two arguments, the classifier and the imputer, which are stored into the corresponding attributes. The call operator which does the classification then looks like this:</P>
+<xmp class="code">    def __call__(self, ex, what=orange.GetValue):
+        return self.baseClassifier(self.imputer(ex), what)
+</xmp>
+<P>It imputes the missing values by calling the imputer and passes the class to the base classifier.</P>
+
+<P>Note that in this setup the imputer is trained on the training data - even if you do cross validation, the imputer will be trained on the right data. In the classification phase we again use the imputer which was classified on the training data only.</P>
+
+<P>Now for an example. Although most Orange's learning algorithms will take care of imputation internally, if needed, it can sometime happen that an expert will be able to tell you exactly what to put in the data instead of the missing values. The <a href="../reference/imputation.htm">documentation on imputers</a> in the Reference Guide presents various classes for imputation, but for this example we shall suppose that we want to impute the minimal value of each attribute. We will try to determine whether the naive Bayesian classifier with its implicit internal imputation works better than one that uses imputation by minimal values.</P>
+
+<p class="header">part of <a href="imputation.py">imputation.py</a></p>
+<xmp class="code">import orange, orngImpute, orngTest, orngStat
+
+ba = orange.BayesLearner()
+imba = orngImpute.ImputeLearner(baseLearner = ba, imputerConstructor=orange.ImputerConstructor_minimal)
+
+data = orange.ExampleTable("voting")
+res = orngTest.crossValidation([ba, imba], data)
+CAs = orngStat.CA(res)
+
+print "Without imputation: %5.3f" % CAs[0]
+print "With imputation: %5.3f" % CAs[1]
+</xmp>
+
+<P>Note that we constructed just one instance of <code>orange.BayesLearner</code>, but this same instance is used twice in each fold, once it is given the examples as they are (and returns an instance of <code>orange.BayesClassifier</code>). The second time it is called by <code>imba</code> and the <code>orange.BayesClassifier</code> it returns is wrapped into <code>orngImputer.ImputeClassifier</code>. We thus have only one learner, but which produces two different classifiers in each round of testing.</P>

@@ -1,0 +1,43 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+<h1>orngC45: Printing out C45 Tree</h1>
+<index name="modules+c4.5">
+<index name="c45, printing out">
+
+<p>This module contains a single trivial function <code>printTree(tree)</code> which prints the tree given as an argument in the same form as Ross Quinlan's C4.5 program.</p>
+
+<xmp class="code">import orange, orngC45
+
+data = orange.ExampleTable("voting")
+c45 = orange.C45Learner(data)
+orngC45.printTree(c45)
+</xmp>
+will print out
+<xmp class="printout">physician-fee-freeze = n: democrat (253.4)
+physician-fee-freeze = y:
+|   synfuels-corporation-cutback = n: republican (145.7)
+|   synfuels-corporation-cutback = y:
+|   |   mx-missile = y: democrat (6.0)
+|   |   mx-missile = n:
+|   |   |   adoption-of-the-budget-resolution = n: republican (22.6)
+|   |   |   adoption-of-the-budget-resolution = y:
+|   |   |   |   anti-satellite-test-ban = n: democrat (5.0)
+|   |   |   |   anti-satellite-test-ban = y: republican (2.2)
+</xmp>
+
+<P>If you run the original C4.5 (that is, the standalone C4.5 - Orange does use the original C4.5) on the same data, it will print out
+<xmp class="printout">physician-fee-freeze = n: democrat (253.4/5.9)
+physician-fee-freeze = y:
+|   synfuels-corporation-cutback = n: republican (145.7/6.2)
+|   synfuels-corporation-cutback = y:
+|   |   mx-missile = y: democrat (6.0/2.4)
+|   |   mx-missile = n:
+|   |   |   adoption-of-the-budget-resolution = n: republican (22.6/5.2)
+|   |   |   adoption-of-the-budget-resolution = y:
+|   |   |   |   anti-satellite-test-ban = n: democrat (5.0/1.2)
+|   |   |   |   anti-satellite-test-ban = y: republican (2.2/1.0)</xmp>
+which is adoringly similar, except that C4.5 tested the tree on the learning data and has also printed out the number of errors in each node - something which <code>orngC45.printTree</code> obviously can't do (nor is there any need it should).</P>
+
+</body> </html>

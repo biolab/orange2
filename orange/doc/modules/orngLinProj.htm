@@ -1,0 +1,60 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+<h1>orngLinProj: Orange LinProj module</h1>
+<index name="modules/linear projections">
+<index name="freeviz algorithm">
+
+<p>Module orngLinProj implements interface to FreeViz algorithm (<a href="http://www.ailab.si/idamap/idamap2005/papers/12%20Demsar%20CR.pdf">Demsar et al, 2005</a>) which finds a good two-dimensional projection of the given data, where the quality is defined by a separation of the data from different classes and the proximity of the examples from the same class. FreeViz would normally be used through a widget since it is primarily a method for graphical exploration of the data. About the only case where one would like to use this module directly is to tests the classification aspects of the method, that is, to verify the accuracy of the resulting kNN-like classifiers on a set of benchmark data sets.</p>
+
+<P>Description of the method itself is far beyond the scope of this page. See the above paper for the original version of the method; at the moment of writing the method has been largely extended and not published yet, though the basic principles are the same.</P>
+
+<H2>Optimizer: FreeViz class</H2>
+
+<P>Class <CODE><INDEX name="classes/FreeViz (in orngLinProj)">FreeViz</CODE> contains an easy-to-use interface to the core of the method which is written in C++.</P>
+
+<p class=section>Attributes</P>
+<DL class=attributes>
+<dt>attractG, repelG</dt>
+<dd>Coefficients for the attractive and repulsive forces; by increasing or decreasing the ratio between them you can make one kind of the forces stronger. Default is 1:1.</dd>
+
+<dt>forceBalancing</dt>
+<dd>If set (default is <tt>False</tt>), the forces are balanced so that the total sum of the attractive equals the total of repulsive, before they are multiplied by the above factors. (By our experience, this gives bad results so you may want to leave this alone.)</dd>
+
+<dt>law</dt>
+<dd>Can be <tt>LAW_LINEAR</tt>, <tt>LAW_SQUARE</tt>, <tt>LAW_GAUSSIAN</tt>, <tt>LAW_KNN</tt> or <tt>LAW_LINEAR_PLUS</tt>. Default is <tt>LAW_LINEAR</tt>, which means that the attractive forces increase linearly by the distance and the repulsive forces are inversely proportional to the distance. <tt>LAW_SQUARE</tt> would make them rise or fall with the square of the distance, <tt>LAW_GAUSSIAN</tt> is based on a kind of log-likelihood estimation, <tt>LAW_KNN</tt> tries to directly optimize the classification accuracy of the kNN classifier in the projection space, and in <tt>LAW_LINEAR_PLUS</tt> both forces rise with the square of the distance, yielding a method that is somewhat similar to PCA. We found the first law perform the best, with the second to not far behind.</dd>
+
+<dt>forceSigma</dt>
+<dd>The sigma to be used in <tt>LAW_GAUSSIAN</tt> and <tt>LAW_KNN</tt></dd>
+
+<dt>mirrorSymmetry</dt>
+<dd>If enabled, it keeps the projection of the second attribute on the upper side of the graph (the first is always on the right-hand x-axis). This is useful when comparing whether two projections are the same, but has no effect on the projection's clarity or its classification accuracy.</dd>
+</DL>
+
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>radialAnchors()</dt>
+<dd>Resets the projection so that the anchors (projections of attributes) are placed evenly around the circle.</dd>
+
+<dt>randomAnchors()</dt>
+<dd>Set the projection to a random.</dd>
+
+<dt>optimizeSeparation(steps=10, singleStep=False)</dt>
+<dd>Optimizes the separation. If you didn't change any the settings which are not documented above, it will call a fast C++ routine which will make <tt>steps</tt> optimization steps at a time, after which the graph (if one is given) is updated. If <tt>singleStep</tt> is <tt>True</tt>, it will do that only once, otherwise it calls it on and on, and compares the current positions of the anchors with those 50 calls ago. If no anchor moved for more than 1e-3, it stops. In Orange Canvas the optimization is also stop is someone outside (namely, the stop button) manages to set the FreeViz's flag <tt>cancelOptimization</tt>.</dd>
+<dt>
+</dl>
+
+<P>In the above list we skipped several methods of more internal nature.</P>
+
+
+<H2>Learner and Classifier</H2>
+
+<p><tt><INDEX name="classes/FreeVizLearner (in orngLinProj)">FreeVizLearner</tt> is an ordinary learner: when given the data, it creates an instance of <tt><INDEX name="classes/FreeVizClassifier (in orngLinProj)">FreeVizClassifier</tt> with the optimal separation for the learning data. The classifier then uses kNN to classify new examples projected into the optimized two-dimensional projection.
+
+<h2>References</h2>
+
+<p>Janez Demsar, Gregor Leban, Blaz Zupan: FreeViz - An Intelligent Visualization Approach for Class-Labeled Multidimensional Data Sets, Proceedings of IDAMAP 2005, Edinburgh.
+</p>
+
+</body> </html>

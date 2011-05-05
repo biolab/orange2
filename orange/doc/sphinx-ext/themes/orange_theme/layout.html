@@ -1,0 +1,26 @@
+{% extends "basic/layout.html" %}
+
+{% block header %}
+	{% include 'header.html' %}
+{% endblock %}
+	
+{% block footer %}
+	{{ super() }}
+	{% include 'footer.html' %}
+{% endblock %}
+
+{% block extrahead %}
+<!--orange style--><link rel="stylesheet" href= "{{ pathto('_static/' + style, 1) }}" type="text/css">
+<!--orange style--><link rel="stylesheet" href= "{{ pathto('_static/pygments.css', 1) }}" type="text/css">
+{% endblock %}
+
+
+{% set rellinks = () %}
+{% set show_copyright = 0 %}
+{% set show_sphinx = 0 %}
+ 
+{% block relbar1 %}{% endblock %}
+{% block relbar2 %}  {% endblock %}
+
+{% block sidebar1 %} {% endblock %}
+{% block sidebar2 %} {% endblock %}

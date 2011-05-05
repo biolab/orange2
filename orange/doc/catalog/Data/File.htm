@@ -1,0 +1,80 @@
+<html>
+<head>
+<title>File</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<h1>File</h1>
+
+<p><img class="screenshot" src="../icons/File.png"/></p>
+<p>Reads the data from the input file.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>(None)</DT>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set read from the input file.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<img class="leftscreenshot" src="File.png" align="left">
+
+<p>This is the widget you will probably use in every schema. It reads the
+input data file (data table with examples) and sends the data set to the
+output channel. It maintains a history of most recently used data files.
+For convenience, the history also includes a directory with the sample data
+sets that come with Orange.</p>
+
+<p>To browse for a data file press <span class="option">...</span>. <span class="option">Reload</span> button reloads the file.</p>
+
+<p>The widget can read data from simple tab-delimited or comma-separated files,
+as well as files in C4.5 format and Weka's .arrf files.</p>
+
+<p>The info box at the bottom of the widget displays information on the number of
+examples, attributes and meta attributes, and information on class
+variable (if defined in a file).</p>
+
+<p>The controls in between are for more advanced users.</p>
+
+<p>Tab-delimited file
+can have user defined symbols for undefined values. The symbols for "don't care"
+and "don't know" values can be specified in the corresponding edit lines. The default
+values for "don't know" and "don't care" depend upon format. Most users will use
+tab-delimited files: keep the field empty or put a question mark in there and that's
+it. Most algorithms do not differ between <em>don't know</em> and <em>don't care</em>
+values, so consider them both to mean <em>undefined</em>.</p>
+
+<p>The part which most will probably neither understand nor need is related to
+construction of new attributes. It becomes important when multiple data sets are
+loaded, usually with multiple File widgets. A typical example is loading separate
+training and testing data from two files. In this case Orange will usually treat
+the attributes with the same name but appearing in different files as the same
+attribute, so a classifier which uses the attribute "petal length" from the first
+will use the attribute of the same name from the second. In cases when attributes
+from different files just accidentally bear different names, one can instruct Orange
+to either always construct new attribute or construct them when they differ in
+their domains. Use this option with great care (if at all).</p>
+
+<h2>Examples</h2>
+
+<p>Any of your schemas should probably start with the File widget. In
+the schema below, the widget is used to read the data that is then
+sent to both <a href="DataTable.htm">Data Table</a> widget and to
+widget that displays <a
+href="../Visualize/AttributeStatistics">AttributeStatistics.htm</a>.</p>
+
+<img class="schema"
+src="File-Example.png" alt="Schema with File widget">
+
+</body>
+</html>

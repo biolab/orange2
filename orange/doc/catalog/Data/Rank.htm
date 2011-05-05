@@ -1,0 +1,82 @@
+<html>
+<head>
+<title>Rank</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Rank</h1>
+
+<img class="snapshot" src="../icons/Rank.png">
+<p>A widget for ranking the attributes and selecting attribute subsets.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Input data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Reduced Example Table (ExampleTable)</DT>
+<DD>Data set which include described by selected attributes.</DD>
+
+<DT>ExampleTable Attributes (ExampleTable)</DT>
+<DD>Data set in where each example corresponds to an attribute from the original set, and the attributes correspond one of the selected attribute evaluation measures.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>This widget computes a set of measures for evaluating the quality/usefulness of attributes: ReliefF, information gain, gain ratio and gini index. Besides providing this information, it also allows user to select a subset of attributes or it can automatically select the specified number of best-ranked attributes.</p>
+
+<img class="screenshot" src="Rank.png">
+
+<P>The right-hand side of the widget presents the computed quality of the attributes. The first line shows the attribute name and the second the number of its values (or a "C", if the attribute is continuous. Remaining columns show different measures of quality.</P>
+
+<p>The user is able to select the measures (s)he wants computed and presented. <span class="option">ReliefF</span> requires setting two arguments: the number of <span class="option">Neighbours</span> taken into account and the number of randomly chosen reference <span class="option">Examples</span>. The former should be higher if there is a lot of noise; the latter generally makes the computation less reliable if set too low, while higher values make it slow.</p>
+
+<P>The order in which the attributes are presented can be set either in the list below the measures or by clicking the table's column headers. Attributes can also be sorted by a measure not printed in the table.</P>
+
+<P>Measures that cannot handle continuous attributes (impurity measures - information gain, gain ratio and gini index) are run on discretized attributes. For sake of simplicity we always split the continuous attributes in intervals with (approximately) equal number of examples, but the user can set the number of <span class="option">Intervals</span>.</P>
+
+<P>It is also possible to set the number of decimals (<span class="option">No. of decimals</span>) in the print out. Using a number to high may exaggerate the accuracy of the computation; many decimals may only be useful when the computed numbers are really small.</P>
+
+<P>The widget outputs two example tables. The one, whose corresponding signal is named <code>ExampleTable Attributes</code> looks pretty much like the one shown in the Rank widget, except that the second column is split into two columns, one giving the attribute type (D for discrete and C for continuous), and the other giving the number of distinct values if the attribute is discrete and undefined if it's continuous.</P>
+
+<P>The second, more interesting table has the same examples as the original, but with a subset of the attributes. To select/unselect attributes, click the corresponding rows in the table. This way, the widget can be used for manual selection of attributes. Something similar can also be done with a <a href="SelectAttributes.htm">Select Attributes</a> widget, except that the Rank widget can be used for selecting the attributes according to their quality, while Select Attributes offers more in terms of changing the order of attributes, picking another class attribute and similar.</P>
+
+<P>The widget can also be used to automatically select a feature subset. If <span class="option">Best ranked</span> is selected in box <span class="option">Select attributes</span>, the widget will output a data set where examples are described by the specified number of best ranked attributes. The data set is changed whenever the order of attributes is changed for any reason (different measure is selected for sorting, ReliefF or discretization settings are changed...)</P>
+
+<P>The first two options in <span class="option">Select Attributes</span> box can be used to clear the selection (<span class="option">None</span>) or to select all attributes (<span class="option">All</span>).</P>
+
+<P>Button <span class="option">Commit</span> sends the data set with the selected attributes. If <span class="option">Send automatically</span> is set, the data set is committed on any change.</P>
+
+
+<h2>Examples</h2>
+
+<P>On typical use of the widget is to put it immediately after the <a href="File.htm">File widget</a> to reduce the attribute set. The snapshot below shows this as a part of a bit more complicated schema.</P>
+
+<P><img src="Rank-after-file-Schema.png"></P>
+
+<P>The examples in the file are put through <a href="DataSampler.htm">Data Sampler</a> which split the data set into two subsets: one, containing 70% of examples (signal <code>Classified Examples</code>) will be used for training a <a href="../Classify/NaiveBayes.htm">naive Bayesian classifier</a>, and the other 30% (signal <code>Remaining Classified Examples</code>) for testing. Attribute subset selection based on information gain was performed on the training set only, and five most informative attributes were selected for learning. A data set with all other attributes removed (signal <code>Reduced Example Table</code>) is fed into <code>Test Learners</code>. Test Learners widgets also gets the <code>Remaining Classified Examples</code> to use them as test examples (don't forget to set <code>Test on Test Data</code> in that widget!).</P>
+
+<P>To verify how the subset selection affects the classifier's performance, we added another <code>Test Learners</code>, but connected it to the <code>Data Sampler</code> so that the two subsets emitted by the latter are used for training and testing without any feature subset selection.</P>
+
+<P>Running this schema on the heart disease data set shows quite a considerable improvements in all respects on the reduced attribute subset.</P>
+
+<P>In another, way simpler example, we connected a <a href="../Classify/ClassificationTreeGraph.htm">Tree Viewer</a> to the Rank widget to observe different attribute quality measures at different nodes. This can give us some picture about how important is the selection of measure in tree construction: the more the measures agree about attribute ranking, the less crucial is the measure selection.</P>
+
+<img src="Rank-Tree.png">
+
+<P>A variation of the above is using the Rank widget after the <a href="../Classify/InteractiveTreeBuilder.htm">Interactive tree builder</a>: the sorted attributes may help us in deciding the attribute to use at a certain node.</P>
+
+<img src="Rank-ITree.png">
+
+</body>
+</html>

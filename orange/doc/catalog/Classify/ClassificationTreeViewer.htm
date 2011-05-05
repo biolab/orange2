@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>Classification Tree Viewer</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Classification Tree Viewer</h1>
+
+<img class="screenshot" src="../icons/ClassificationTreeViewer.png">
+<p>A hierarchical browser for classification trees</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Classification Tree (orange.TreeClassifier)</DT>
+<DD>A classification tree</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Examples (orange.ExampleTable)</DT>
+<DD>Examples from the selected tree node.</DD>
+</dl>
+
+<P>Signal <code>Classified Examples</code> sends data only if some tree node is selected and contains some examples.</P>
+
+<h2>Description</h2>
+
+<p>The widget shows the tree as a hierarchy in a textual form. Although less fancy than the graphical viewer, much more information fits in a Tree Viewer's window than in the graphical viewer's one.</p>
+
+<table>
+<tr><td valign="top"><img class="screenshot" src="ClassificationTreeViewer.png" alt="Classification Tree Viewer widget" border=0></td>
+</tr></table>
+
+<P>The widget's options allow choosing the columns to be displayed, setting the general depth of the display (individual nodes can, of course, be opened and closed manually).</P>
+
+On the right hand side there is the tree, where it is possible to select a single node. The rule describing the particular node is shown at the bottom, and the training examples belonging to the node are put on the output.</body>
+
+
+<h2>Examples</h2>
+
+<P>The obvious use for the widget browsing the induced tree. Orange Canvas, however, offers something more exciting: the widget can be used for exploring the examples belonging to a certain node through using any other widget. If you are a beginner: this widget's output behaves exactly like the output of the file widget, with the exception that instead of reading the examples from a file, it gets them from the tree.</P>
+
+<img class="screenshot"
+src="ClassificationTreeViewer-Schema.png" alt="A schema with Classification Tree Viewer" border=0>
+
+<P>In the above example we constructed a tree from the Wisconsin breast cancer data. We explore the tree nodes by feeding the examples in the Data Table (boring!), by checking the attribute value distributions for each node and seeing where the examples lie in the Scatter plot. To make the latter more informative, the Scatter plot shows the entire data set (examples from the File Widget), but marking - by plotting solid symbols instead of hollow ones - the examples belonging to the particular tree node, as shown in the snapshot below.</P>
+
+<a href="ClassificationTreeViewer-Example.png">Click to enlarge<br/><img class="screenshot"
+src="ClassificationTreeViewer-Example-S.png" alt="Scatter plot showing the examples from a particular tree node" border=0>
+
+</body>
+</html>

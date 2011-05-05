@@ -1,0 +1,119 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<p class="Path">
+Prev: <a href="classification.htm">Classification</a>
+Next: <a href="c_otherclass.htm">Selected Classification Methods</a>,
+Up: <a href="classification.htm">Classification</a>
+</p>
+
+<H1>My First Orange Classifier</H1>
+<index name="classifiers+naive Bayesian classifier">
+
+<p>There are two types of objects that will be introduced in this
+lesson: learners and classifiers. Orange has a number of build-in
+learners. For instance, <code>orange.BayesLearner</code> is a naive Bayesian
+learner. When data is passed to a learner (e.g.,
+<code>orange.BayesLearner(data))</code>, it returns a classifier. When data
+instance is presented to a classifier, it returns a class, vector
+of class probabilities, or both.</p>
+
+<h2>A Simple Classifier</h2>
+
+<p>Let us see how this works in practice. For a start, we will
+construct a naive Bayesian classifier from voting data set, and
+will use it to classify the first five instances from this data set
+(don't worry about overfitting for now).</p>
+
+<p class="header" ><a href="classifier.py">classifier.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+<xmp class="code">import orange
+data = orange.ExampleTable("voting")
+classifier = orange.BayesLearner(data)
+for i in range(5):
+    c = classifier(data[i])
+    print "original", data[i].getclass(), "classified as", c
+</xmp>
+
+<p>The script loads the data, uses it to constructs a classifier
+using naive Bayesian method, and then classifies first five
+instances of the data set. Note that both original class and the
+class assigned by a classifier is printed out.</p>
+
+<p>The data set that we use includes votes for each of the U.S.
+House of Representatives Congressmen on the 16 key votes; a class
+is a representative's party. There are 435 data instances -
+267 democrats and 168 republicans - in the data set (see UCI ML
+Repository and voting-records data set for further description).
+This is how our classifier performs on the first five
+instances:</p>
+
+<xmp class="code">1: republican (originally republican)
+2: republican (originally republican)
+3: republican (originally democrat)
+4: democrat (originally democrat)
+5: democrat (originally democrat)
+</xmp>
+
+<p>You can see that naive Bayes makes a mistake at a third
+instance, but otherwise predicts correctly.</p>
+
+<h2>Obtaining Class Probabilities</h2>
+
+<p>To find out what is the probability that the classifier assigns
+to, say, democrat class, we need to call the classifier with
+additional parameter <code>orange.GetProbabilities</code>. Also, note that the
+democrats have a class index 1 (we find this out with print
+<code>data.domain.classVar.values</code>; notice that indices in Python start
+with 0; also notice that we have indicated the order of classes in
+the <a href="voting.tab">voting.tab</a> already: instead of
+writing discrete for the class variable, we listed its set of
+possible values in the desired order).</p>
+
+<p class="header"><a href="classifier2.py">classifier2.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+<xmp class="code">import orange
+data = orange.ExampleTable("voting")
+classifier = orange.BayesLearner(data)
+print "Possible classes:", data.domain.classVar.values
+print "Probabilities for democrats:"
+for i in range(5):
+    p = classifier(data[i], orange.GetProbabilities)
+    print "%d: %5.3f (originally %s)" % (i+1, p[1], data[i].getclass())
+</xmp>
+
+
+<p>The output of this script is:</p>
+<xmp class="code">Possible classes: <republican, democrat>
+Probabilities for democrats:
+1: 0.000 (originally republican)
+2: 0.000 (originally republican)
+3: 0.005 (originally democrat)
+4: 0.998 (originally democrat)
+5: 0.957 (originally democrat)
+</xmp>
+
+<p>The printout, for example, shows that with the third instance
+naive Bayes has not only misclassified, but the classifier missed
+quite substantially; it has assigned only a 0.005 probability to
+the correct class.</p>
+
+<h2>Where Next?</h2>
+
+<p>In Orange, most of the classifiers support the prediction of
+both class and/or probabilities, so what you have learned here on
+this topic is rather general. If you want to get a taste of some
+other Orange's classifiers, check the <a href=
+"c_otherclass.htm">next lesson</a>. Alternatively, you may go
+directly to see how the classifiers are tested and <a href=
+"c_performance.htm">evaluated</a>.</p>
+
+<hr><br><p class="Path">
+Prev: <a href="classification.htm">Classification</a>
+Next: <a href="c_otherclass.htm">Selected Classification Methods</a>,
+Up: <a href="classification.htm">Classification</a>
+</p>
+
+</body></html>

@@ -1,0 +1,178 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+<h1>Generators for Subsets of Attributes</h1>
+<index name="subsets of attributes">
+
+<P>Subsets generators are classes that generate subsets of a given set of attributes. Their primary mission was to generate bound sets for function decomposition, although they can also be used for other purposes.</P>
+
+<hr>
+
+<H2>SubsetsGenerator</H2>
+
+<P><CODE><INDEX name="classes/SubsetsGenerator">SubsetsGenerator</CODE> is an abstract class that defines the behaviour of derived classes.</P>
+
+<H3>Using Subsets Generators</H3>
+
+<P>Let <CODE>sgen</CODE> be a generator that constructs pair of attributes from domain Monk 1 (the section below describes how to create such generator). You can use it in for sentences</P>
+
+<xmp class="code">>>> for attrs in sgen:
+...     print attrs
+...
+(EnumVariable 'a', EnumVariable 'b')
+(EnumVariable 'a', EnumVariable 'c')
+(EnumVariable 'a', EnumVariable 'd')
+     ...
+</xmp>
+
+<P>or in list comprehensions</P>
+
+<XMP class="code">subsets = [attrs for attrs in sgen]
+</XMP>
+
+<P><SMALL>There is another way of using subset generators. You can reset generator by calling <CODE>reset</CODE> and get a sequence of attribute subsets by calling <CODE>next</CODE> until it returns <CODE>None</CODE>. This is provided for compatibility with older versions of Orange and describe here for easier understanding of old code. Don't use it.</SMALL></P>
+
+<H3>Initializing the Generator</H3>
+
+<P>Before iterating through subsets, the generator needs to be given a set of attributes. You can specify the set at construction time, set it through <CODE>varList</CODE> attribute, or specify it at for-clause. So, to construct the above generator, one can write</P>
+
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize(data.domain.attributes)
+</XMP>
+
+<P>or</P>
+
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize()
+sgen.varList = data.domain.attributes
+</XMP>
+
+<P>The third, somewhat ugly alternative, is providing the attribute set at call time.</P>
+
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize()
+for attrs in sgen(data.domain.attributes):
+  print attrs
+</XMP>
+
+<small>Why is it ugly? It's syntactically a call, and it's also implemented as one, but the code is equivalent to <code>def __call__(self, v): self.varList = v; return self</code>. Why is this dirt here at all? For compatibility with some stuff originating from before Python had the iterator protocol. And because it can come handy.</small>
+
+<H2>SubsetsGenerator_constSize</H2>
+
+<P><CODE><INDEX name="classes/SubsetsGenerator_constSize">SubsetsGenerator_constSize</CODE> returns subsets of predefined size.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>B</DT>
+<DD>Subsets size. Default size is 2.</DD>
+</DL>
+
+<P>Here is an example</P>
+
+<p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">gen1 = orange.SubsetsGenerator_constSize(data.domain.attributes, B=3)
+for attrs in gen1:
+  print attrs
+</XMP>
+
+<P>Output begins by</P>
+
+<XMP class="code">(EnumVariable 'a', EnumVariable 'b', EnumVariable 'c')
+(EnumVariable 'a', EnumVariable 'b', EnumVariable 'd')
+(EnumVariable 'a', EnumVariable 'b', EnumVariable 'e')
+(EnumVariable 'a', EnumVariable 'b', EnumVariable 'f')
+(EnumVariable 'a', EnumVariable 'c', EnumVariable 'd')
+(EnumVariable 'a', EnumVariable 'c', EnumVariable 'e')
+(EnumVariable 'a', EnumVariable 'c', EnumVariable 'f')
+(EnumVariable 'a', EnumVariable 'd', EnumVariable 'e')
+(EnumVariable 'a', EnumVariable 'd', EnumVariable 'f')
+(EnumVariable 'a', EnumVariable 'e', EnumVariable 'f')
+(EnumVariable 'b', EnumVariable 'c', EnumVariable 'd')
+...
+</XMP>
+
+<P>More often, however, the generator will be constructed in advance and then used to construct subsets of some given attribute set.</P>
+
+<p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">def f(gen, data):
+  for attrs in gen(data.domain.attributes):
+    print attrs
+
+gen = orange.SubsetsGenerator_constSize(B=3)
+f(gen, data)
+</XMP>
+
+<H2>SubsetsGenerator_minMaxSize</H2>
+
+<P><CODE><INDEX name="classes/SubsetsGenerator_minMaxSize">SubsetsGenerator_minMaxSize</CODE> returns subsets of sizes within given limits. Subsets are sorted by increasing cardinality.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>min, max</DT>
+<DD>Minimal and maximal subset size. Defaults are 2 and 3.</DD>
+</DL>
+
+
+<p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">gen4 = orange.SubsetsGenerator_minMaxSize(min=1, max=3)
+for attrs in gen4(data.domain.attributes):
+  print attrs
+</xmp>
+
+<P>The output begins by:</P>
+<XMP class=code>(EnumVariable 'a',)
+(EnumVariable 'b',)
+(EnumVariable 'c',)
+(EnumVariable 'd',)
+(EnumVariable 'e',)
+(EnumVariable 'f',)
+(EnumVariable 'a', EnumVariable 'b')
+(EnumVariable 'a', EnumVariable 'c')
+(EnumVariable 'a', EnumVariable 'd')
+</XMP>
+
+<H3>SubsetsGenerator_constant</H3>
+
+<p><code><INDEX name="classes/SubsetsGenerator_constant">SubsetsGenerator_constant</code> "generates" a single subset, prescribed by the user.
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>constant</DT>
+<DD>The one and only subset returned by the generator.</DD>
+</DL>
+
+<P>The code below will always return a subset containing the first three attributes.</p>
+
+<p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<xmp class="code">gen5 = orange.SubsetsGenerator_constant()
+gen5.constant = data.domain[:3]
+for attrs in gen5(data.domain.attributes):
+  print attrs
+</xmp>
+
+<p>Why the hell would you need such a generator? There are object that require a subsets generator as a component. In function decomposition, for instance, subsets generators are used to construct a list of candidate subsets. This is a way to force them into observing a single prescribed subset.</p>
+
+<H3>SubsetsGenerator_withRestrictions</H3>
+<index name="classes/SubsetsGenerator_withRestrictions">
+
+<p>This is the most complex subsets generator. It uses a generator - one of the above generators - stored in a field <code>subGenerator</code> to generate subsets, but it filters out all the subsets that do not comply to restrictions.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>subGenerator</DT>
+<DD>A generator that "proposes" subsets.</DD>
+
+<DT>required</DT>
+<DD>A list of attributes which need (all of them!) to be included in a subset.</DD>
+
+<DT>forbidden</DT>
+<DD>A list of forbidden attributes that must not appear in a subset.</DD>
+
+<DT>forbiddenSubSubsets</DT>
+<DD>Combinations of attribute that must not appear in a subset (that is, a subset is invalid if it contains one of the subsubsets in this list).
+</DL>

@@ -1,0 +1,277 @@
+<HTML>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<index name="distributions">
+<H1>Distributions</H1>
+
+<P>Objects derived from <CODE>Distribution</CODE> are used throughout Orange to store various distributions. These often - but not necessarily - apply to distribution of values of certain attribute on some dataset. You will most often encounter two classes derived from <CODE>Distribution</CODE>: <CODE>DiscDistribution</CODE> stores discrete and <CODE>ContDistribution</CODE> stores continuous distributions. To some extent, they both resemble dictionaries, with attribute values as keys and number of examples with particular value as elements.</P>
+
+<H2>General Distributions</H2>
+
+<P>Class <CODE><index name="classes/Distribution">Distribution</CODE> contains the common methods for different types of distributions. Even more, its constructor can be used to construct objects of type <CODE>DiscDistribution</CODE> and <CODE>ContDistribution</CODE> (class <CODE>Distribution</CODE> itself is abstract, so no instances of that class can actually exist).</P>
+
+<p class="header"><a href="distributions.py">part of distributions.py</a>
+(uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
+<XMP class="code">>>> import orange
+>>> data = orange.ExampleTable("adult_sample")
+>>> disc = orange.Distribution("workclass", data)
+>>> print disc
+<685.000, 72.000, 28.000, 29.000, 59.000, 43.000, 2.000>
+>>> print type(disc)
+<type 'DiscDistribution'>
+</XMP>
+
+<P>This simple script prints out distribution of attribute "workclass" on dataset "adult_sample". The resulting distribution is of type <CODE>DiscDistribution</CODE> since the attribute is discrete. The printed numbers are counts of examples that have particular attribute value.</P>
+
+<p class="header"><a href="distributions.py">part of distributions.py</a>
+(uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
+<XMP class="code">>>> workclass = data.domain["workclass"]
+>>> for i in range(len(workclass.values)):
+...   print "%20s: %5.3f" % (workclass.values[i], disc[i])
+             Private: 685.000
+    Self-emp-not-inc: 72.000
+        Self-emp-inc: 28.000
+         Federal-gov: 29.000
+           Local-gov: 59.000
+           State-gov: 43.000
+         Without-pay: 2.000
+        Never-worked: 0.000
+</XMP>
+
+<P>Enough introduction. Here are <CODE>Distribution</CODE>'s attributes and methods.</P>
+
+<p class=section>Attributes</p>
+
+<DL class=attributes>
+<DT>variable</DT>
+<DD>Descriptor of the attribute to which the distribution applies. Can be left empty, when not applicable.</DD>
+
+
+<DT>unknowns</DT>
+<DD>Number of examples for which the attribute value was unknown. This field is not changed at normalization (see below).</DD>
+
+
+<DT>abs</DT>
+<DD>Sum of all elements in the distribution.</DD>
+
+
+<DT>cases</DT>
+<DD>(Weighted) number of examples, on which the distribution is computed, not including the examples on which the observed attribute had unknown value. This equals <CODE>abs</CODE> as long as the distribution is not normalized.</DD>
+
+
+<DT>normalized</DT>
+<DD>If true, the distribution is normalized, ie the distribution sums to 1.</DD>
+
+
+<DT>supportsDiscrete, supportsContinuous</DT>
+<DD>Tells whether distribution supports the protocol for working with discrete/continuous values (this is rather internal thing; still, you can use those flags to check whether the distribution is discrete or continuous).</DD>
+
+<DT>randomGenerator</DT>
+<DD>A random generator needed for method <CODE>random()</CODE>.</DD>
+</DL>
+
+<p class=section>Methods</p>
+
+<DL class=attributes>
+<DT>orange.Distribution(attribute[, examples[, weightID]])</DT>
+<DD>Constructs either <CODE>DiscDistribution</CODE> or <CODE>ContDistribution</CODE>, depending on the attribute type. If <CODE>attribute</CODE> is the only argument, it must be an attribute descriptor (see <A href="Variable.htm"><CODE>Variable</CODE></A>). In that case, an empty distribution is constructed. If <CODE>examples</CODE> are given as well, the attribute's distribution is computed, as seen in the above example. In that case, <CODE>attribute</CODE> can also be given by name or its position in the domain. If examples are weighted, the id of meta-attribute with weights is passed as the third argument (default is 0, no weights).</P>
+
+<P>If attribute is given by descriptor, it doesn't need to exist in the domain, but it must be computable from given examples. This way, it is possible to obtain distributions for attributes constructed by constructive induction or for discretized attributes, without translating the entire dataset. There's an example for this in documentation on <A href="Variable.htm#getValueFrom">attribute descriptors</A>.</P>
+</DD>
+
+
+<DT>&lt;standard dictionary operations&gt;</DT>
+<DD>For getting elements of discrete distributions, indices of type <CODE>Value</CODE>, integers and symbolic names (if <CODE>variable</CODE> is defined) can be used. For continuous elements, use <CODE>Value</CODE> or continuous number (eg <CODE>cont[3.14]</CODE>).</P>
+
+<P>To get the number of examples with <CODE>workclass</CODE>="private", you can use either of the three forms below:</P>
+
+<XMP class="code">print "Private: ", disc["Private"]
+print "Private: ", disc[0]
+print "Private: ", disc[orange.Value(workclass, "Private")]
+</XMP>
+
+<P>Elements cannot be removed from distributions.</P>
+
+<P>Length of distribution equals the number of possible values for discrete distributions (if <CODE>variable</CODE> is set), the value with the highest index encountered (if distribution is discrete and <CODE>variable</CODE> is not set) or the number of different values encountered (for continuous distributions).</P>
+</DD>
+
+
+<DT>keys(), values(), items()</DT>
+<DD>Return a list of values, a list of example counts and a list of (value, frequency) pairs, respectively. For instance, distribution in the last example of section "General Distributions" could be printed out by
+
+<XMP class="code">for val, num in disc.items():
+    print "%20s: %5.3f" % (val, num)
+</xmp
+</dd>
+
+
+<DT>native()</DT>
+<DD>Converts the distribution into a list (for discrete distrbutions) or a dictionary (for continuous distributions).</dd>
+
+
+<DT>add(value[, weight])</DT>
+<DD>Adds a value to the distribution - as if an example with weight <CODE>weight</CODE> (default is 1.0) was added. <CODE>value</CODE> can be <CODE>orange.Value</CODE>, an index (for discrete distributions), continuous number (for continuous distributions) or symbolic value, if <CODE>variable</CODE> is set.</DD>
+
+
+<DT>normalize()</DT>
+<DD>Divides all elements of the distribution by their sum (<CODE>abs</CODE>), sets <CODE>normalized</CODE> to <CODE>true</CODE> and <CODE>abs</CODE> to 1.0. Fields <CODE>cases</CODE> and <CODE>unknowns</CODE> are unchanged.</DD>
+
+
+<DT>modus()</DT>
+<DD>Returns the most common value of the attribute. If there is more than one such value, one is chosen at random (but always the same for particular distribution). More explanation on that is available on page about <A href="random.htm">randomness in Orange</A>.</DD>
+
+<DT>random()</DT>
+<DD>Returns a random value, where probabilities of values are as given by the distribution. For continuous distributions, returned value will always be one of the values that occur in the distribution (ie one of values returned by <CODE>keys()</CODE>), not any continuous value from the distribution's range.</P>
+
+<P>This method uses distribution's <CODE>randomGenerator</CODE>. If none has been constructed and/or assigned yet, one is constructed and stored for further use.</P>
+</DD>
+
+</DL>
+
+<H2>Discrete distributions</H2>
+<index name="classes/DiscDistribution">
+<index name="distributions/discrete">
+
+<P>Discrete distributions can be constructed directly.</P>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>DiscDistribution(attribute)</DT>
+<DD>Constructor stores the attribute descriptor (which must be of a discrete attribute) to <CODE>variable</CODE> and allocates a list of appropriate size for the distribution.</DD>
+
+<DT>DiscDistribution(list)</DT>
+<DD>This form of constructor initializes a list, but leaves the variable at <CODE>None</CODE>. You can use such distribution for random number generation.
+
+<XMP class="code">disc = orange.DiscDistribution([0.5, 0.3, 0.2])
+for i in range(20):
+    print disc.random(),
+</XMP>
+
+<P>This will print out approximately ten 0's, six 1's and four 2's. To name the values, you can assign an attribute descriptor.</P>
+
+<XMP class=code>v = orange.EnumVariable(values = ["red", "green", "blue"])
+disc.variable = v
+</XMP>
+</DD>
+
+<DT>DiscDistribution(distribution)</DT>
+<DD>A copy-constructor, which initializes a new distribution as a copy of an existing.</DD>
+
+<DT>DiscDistribution()</DT>
+<DD>A constructor that creates a distribution and leaves all fields blank, 0 and <CODE>None</CODE>.</DD>
+</DL>
+
+<P>Besides those constructors, there are no other specific operations for discrete distributions.</P>
+
+
+<H2>Continuous distributions</H2>
+<index name="distributions/continuous">
+<index name="classes/ContDistribution">
+
+<P>Continuous distribution (<CODE><INDEX>ContDistribution</INDEX></CODE>) offers similar constructors as discrete distributions, except that instead of a list, it expects a dictionary, such as one returned by <CODE>native</CODE>. There are some specific methods.</P>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+
+<DT>ContDistribution(attribute)</DT>
+<DD>Constructor that stores the attribute descriptor (which must be of a continuous attribute) to <CODE>variable</CODE>.</dd>
+
+<DT>ContDistribution(dictionary)</DT>
+<DD>Initializes the distribution with the values from the dictionary. All keys and values must be numbers.</DD>
+
+<DT>ContDistribution(distribution)</DT>
+<DD>A copy constructor that initializes the distribution as a copy of the existing distribution.</DD>
+
+<DT>ContDistribution</DT>
+<DD>Constructor that leaves everything blank, 0 and <CODE>None</CODE>.</DD>
+
+<DT>average()</DT>
+<DD>Returns the average value.</DD>
+
+<DT>var(), dev(), error()</DT>
+<DD>Return variance, deviation and standard error of the distribution, respectively.</DD>
+
+<DT>percentile(p)</DT>
+<DD>Returns p-th percentile of distribution, ie such value x that <CODE>p</CODE> percents of attribute's values are smaller than x. <CODE>p</CODE> must be a value between 0 and 100. For instance, if <CODE>dage</CODE> is a continuous distribution, quartiles can be printed by
+
+<XMP class=code>print "Quartiles: %5.3f - %5.3f - %5.3f" % \
+  (dage.percentile(25), dage.percentile(50), dage.percentile(75))
+</XMP>
+</DD>
+
+<DT>density(x)</DT>
+<DD>Returns probability density at <CODE>x</CODE>. If value is not present, it is interpolated.</dd>
+</DL>
+
+<H2>Gaussian distribution</H2>
+<index name="distribution/Gaussian">
+<index name="classes/GaussianDistribution">
+
+<P>Represents Gaussian distribution.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>mean, sigma</DT>
+<DD>Parameters of the distribution.</DD>
+<DT>abs</DT>
+<DD>This field represents the number of "examples" for discrete and continuous distributions. In case of Gaussian distribution, this is the integral under density function; in effect, the normal Gaussian density function is multiplied by <CODE>abs</CODE>.
+</DL>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>GaussianDistribution([mean, sigma])</DT>
+<DD>Constructs Gaussian distribution. Default <CODE>mean</CODE> and <CODE>sigma</CODE> are 0.0 and 1.0 (normalized distribution), and <CODE>abs</CODE> is set to 1.0.</DD>
+
+<DT>GaussianDistribution(distribution)</DT>
+<DD>Construct Gaussian distribution by approximating another distribution. The given distribution must support continuous protocol (ie, must be able to provide average and deviation). In other words, <CODE>distribution</CODE> must be either <CODE>ContDistribution</CODE> and its <CODE>average</CODE> and <CODE>deviation</CODE> will become <CODE>mean</CODE> and <CODE>sigma</CODE> for the new distribution, or <CODE>GaussianDistribution</CODE>, which will be simply copied. <CODE>abs</CODE> is set to <CODE>distribution.abs</CODE>.</DD>
+
+<DT>average()<DT>
+<DD>Returns <CODE>mean</CODE>.</DD>
+
+<DT>dev(), error()</DT>
+<DD>Returns <CODE>sigma</CODE></DD>
+
+<DT>var()</DT>
+<DD>Returns <CODE>sigma</CODE><SUP>2</SUP>.</DD>
+
+<DT>density(x)<DT>
+<DD>Returns density at point <CODE>x</CODE> (Gaussian function multiplied by <CODE>abs</CODE>).</DD>
+</DL>
+
+
+<H2>Computing class distributions</H2>
+<index name="distribution/computation from examples">
+
+<P>Class distributions can be computed by calling <CODE>orange.Distribution(data.domain.classVar, weightID)</CODE> (<CODE>weightID</CODE> can be left out if examples are not weighted). Since this is a frequent operation a shortcut is provided.</p>
+
+<P><B><CODE>orange.getClassDistribution(examples[, weightID])</CODE></B> computes distribution of class values for the given data set. Result is of type <CODE>DiscDistribution</CODE> or <CODE>ContDistribution</CODE>.</P>
+
+
+<H2>Computing distributions for all attributes</H2>
+
+<P>Orange can compute distributions for all objects in a single iteration over examples and store them in an object of type <CODE><B>DomainDistributions</B></CODE>. Its constructor accepts examples and, optionally, an ID of meta attribute with weights. Resulting object is list-like, with the exception that not only integers but also attribute descriptors and names can be used for indexing.</P>
+
+<P>The script below computes distributions for all attributes in the data and prints out distributions for discrete and averages for continuous attributes.</P>
+
+<p class="header"><a href="distributions.py">part of distributions.py</a>
+(uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
+<XMP class="code">dist = orange.DomainDistributions(data)
+
+for d in dist:
+    if d.variable.varType == orange.VarTypes.Discrete:
+        print "%30s: %s" % (d.variable.name, d)
+    else:
+        print "%30s: avg. %5.3f" % (d.variable.name, d.average())
+</XMP>
+
+<P>To get the distribution for, say, attribute "age", you can either use its index in the domain or its name or descriptor.</P>
+
+<XMP class="code">dist_age = dist["age"]
+</XMP>
+
+</BODY> 

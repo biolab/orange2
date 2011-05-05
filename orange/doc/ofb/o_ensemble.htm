@@ -1,0 +1,202 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<p class="Path">
+Prev: <a href="o_fss.htm">Feature subset selection</a>,
+Next: <a href="domain.htm">Basic data manipulation</a>,
+Up: <a href="other.htm">Other Techniques for Orange Scripting</a>
+</p>
+
+<H1>Ensemble Techniques</H1>
+<index name="ensemble learning">
+
+<p>Building ensemble classifiers in Orange is simple and
+easy. Starting from learners/classifiers that can predict
+probabilities and, if needed, use example weights, ensembles are
+actually wrappers that can aggregate predictions from a list of constructed 
+classifiers. These wrappers behave exactly like other Orange learners/classifiers. We will here first
+show how to use a module for bagging and boosting that is
+included in Orange distribution (<a
+href="../modules/orngEnsemble.htm">orngEnsemble</a> module), and then,
+for a somehow more advanced example build our own ensemble
+learner.</p>
+
+<h2>Ensemble learning using orngEnsemble</h2>
+<index name="modules+bagging">
+<index name="modules+boosting">
+<index name="bagging">
+<index name="boosting">
+
+<p>First, there is a module for <a
+href="../modules/orngEnsemble.htm">Bagging and Boosting</a>, and using
+it is very easy: you have to define a learner, give it to bagger or
+booster, which in turn returns a new (boosted or bagged) learner. Here
+goes an example:</p>
+
+<p class="header"><a href="ensemble3.py">ensemble3.py</a> (uses <a href=
+"promoters.tab">promoters.tab</a>)</p>
+<xmp class=code>import orange, orngTest, orngStat, orngEnsemble
+data = orange.ExampleTable("promoters")
+
+majority = orange.MajorityLearner()
+majority.name = "default"
+knn = orange.kNNLearner(k=11)
+knn.name = "k-NN (k=11)"
+
+bagged_knn = orngEnsemble.BaggedLearner(knn, t=10)
+bagged_knn.name = "bagged k-NN"
+boosted_knn = orngEnsemble.BoostedLearner(knn, t=10)
+boosted_knn.name = "boosted k-NN"
+
+learners = [majority, knn, bagged_knn, boosted_knn]
+results = orngTest.crossValidation(learners, data, folds=10)
+print "        Learner   CA     Brier Score"
+for i in range(len(learners)):
+    print ("%15s:  %5.3f  %5.3f") % (learners[i].name,
+        orngStat.CA(results)[i], orngStat.BrierScore(results)[i])
+</xmp>
+
+<p>Most of the code is used for defining and naming objects that
+learn, and the last piece of code is to report evaluation
+results. Notice that to bag or boost a learner, it takes only a single
+line of code (like, <code>bagged_knn = orngEnsemble.BaggedLearner(knn,
+t=10)</code>)! Parameter <code>t</code> in bagging and boosting refers
+to number of classifiers that will be used for voting (or, if you
+like better, number of iterations by boosting/bagging). Depending on
+your random generator, you may get something like:</p>
+
+<XMP class=code>        Learner   CA     Brier Score
+        default:  0.473  0.501
+    k-NN (k=11):  0.859  0.240
+    bagged k-NN:  0.813  0.257
+   boosted k-NN:  0.830  0.244
+</XMP>
+
+
+<h2>Build You Own Ensemble Learner</h2>
+<index name="ensemble learning/in Python">
+<index name="bagging/in Python">
+
+<p>If you have sequentially followed through this tutorial,
+building your own ensemble learner is nothing new: you have
+already build a <a href="c_bagging.htm">module for bagging</a>.
+Here is another similar example: we will build a learner that
+takes a list of learners, obtains classifiers by training them
+on the example set, and when classifying, uses classifiers to
+estimate probabilities and goes with the class that is predicted
+the highest probability. That is, at the end, the prediction of
+a sole classifier counts. If class probabilities are requested,
+they are reported as computed by this very classifier.</p>
+
+<p>Here is the code that implements our learner and classifier:</p>
+
+<p class="header">part of <a href="ensemble2.py">ensemble2.py</a></p>
+<xmp class=code>def WinnerLearner(examples=None, **kwds):
+  learner = apply(WinnerLearner_Class, (), kwds)
+  if examples:
+    return learner(examples)
+  else:
+    return learner
+
+class WinnerLearner_Class:
+  def __init__(self, name='winner classifier', learners=None):
+    self.name = name
+    self.learners = learners
+
+  def __call__(self, data, learners=None, weight=None):
+    if learners:
+      self.learners = learners
+    classifiers = []
+    for l in self.learners:
+      classifiers.append(l(data))
+    return WinnerClassifier(classifiers = classifiers)
+
+class WinnerClassifier:
+  def __init__(self, **kwds):
+    self.__dict__.update(kwds)
+
+  def __call__(self, example, resultType = orange.GetValue):
+    pmatrix = []
+    for c in self.classifiers:
+      pmatrix.append(c(example, orange.GetProbabilities))
+
+    maxp = []  # stores max class probabilities for each classifiers
+    for pv in pmatrix:
+      maxp.append(max(pv))
+      
+    p = max(maxp)  # max class probability
+    classifier_index = maxp.index(p)
+    c = pmatrix[classifier_index].modus()
+    
+    if resultType == orange.GetValue:
+      return c
+    elif resultType == orange.getClassDistribution:
+      return pmatrix[classifier_index]
+    else:
+      return (c, pmatrix[classifier_index])
+</xmp>
+
+<p><code>WinnerLearner_Class</code> store the learners and, when
+called with a data set, constructs the classifiers and passes them to
+<code>WinnerClassifier</code>. When this is called with a data
+instance, it computes class probabilities, finds a maximum probability
+for some class, and accordingly reports on either the class,
+probabilities or both. Notice that we have also took care that this
+learner/classifier confirms to everything that is expected from such
+objects in Orange, so it may be used by other modules, most
+importantly for classifier validation.</p>
+
+<p>An example of how our new learner is used is exemplified by the
+following script:
+
+<p class="header">part of <a href="ensemble2.py">ensemble2.py</a> (uses <a href=
+"promoters.tab">promoters.tab</a>)</p>
+<xmp class=code>tree = orngTree.TreeLearner(mForPruning=5.0)
+tree.name = 'class. tree'
+bayes = orange.BayesLearner()
+bayes.name = 'naive bayes'
+winner = WinnerLearner(learners=[tree, bayes])
+winner.name = 'winner'
+
+majority = orange.MajorityLearner()
+majority.name = 'default'
+learners = [majority, tree, bayes, winner]
+
+data = orange.ExampleTable("promoters")
+
+results = orngTest.crossValidation(learners, data)
+print "Classification Accuracy:"
+for i in range(len(learners)):
+    print ("%15s: %5.3f") % (learners[i].name, orngStat.CA(results)[i])
+</xmp>
+
+<p>Notice again that invoking our new objects and using them for
+machine learning is just as easy as using any other learner. When
+running this script, it may report something like:</p>
+
+<XMP class=code>Classification Accuracy:
+        default: 0.472
+    class. tree: 0.830
+    naive bayes: 0.868
+         winner: 0.877
+</XMP>
+
+<p>The example script above that implements WinnerLearner and
+WinnerClassifiers may easily be adapted to something that you need for
+ensemble learner. For an exercise, change the learner such that it
+uses cross-validation to estimate the probability that the classifier
+will predict correctly, and when classifying use this probability to
+weight the classifiers and change winner-schema to voting.
+</P>
+
+<hr><br><p class="Path">
+Prev: <a href="o_fss.htm">Feature subset selection</a>,
+Next: <a href="domain.htm">Basic data manipulation</a>,
+Up: <a href="other.htm">Other Techniques for Orange Scripting</a>
+</p>
+
+
+</body></html>
+

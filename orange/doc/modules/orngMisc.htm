@@ -1,0 +1,243 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<h1>orngMisc: Miscellaneous Utility Functions</h1>
+
+<P>This module contains miscellaneous useful functions for counting, criteria-based selections and similar.</P>
+
+<h2>Counters</h2>
+<index name="modules+counters">
+<index name="subsets generators">
+
+<P><code>orngMisc</code> contains a bunch of classes that generate sequences of various kinds.</P>
+
+<H3>BooleanCounter</H3>
+<index name="classes/BooleanCounter (in orngMisc)">
+
+<P>A class which represents a boolean counter. The constructor is given the number of bits and during the iteration the counter returns a list of that length with 0 and 1's in it.</P>
+
+<P>One way to use the counter is within a for-loop:</P>
+
+<xmp class="code">>>> for t in orngMisc.BooleanCounter(3):
+...     print t
+...
+[0, 0, 0]
+[0, 0, 1]
+[0, 1, 0]
+[0, 1, 1]
+[1, 0, 0]
+[1, 0, 1]
+[1, 1, 0]
+[1, 1, 1]
+</xmp>
+
+<P>You can also call it manually.</P>
+
+<xmp class="code">>>> o = orngMisc.BooleanCounter(3)
+>>> o.next()
+[0, 0, 0]
+>>> o.next()
+[0, 0, 1]
+>>> o.next()
+[0, 1, 0]
+</xmp>
+
+<P>The current state (the last result of a call to <code>next</code>) is also stored in the attribute <code>state</code>.</P>
+
+
+<h3>LimitedCounter</h3>
+<index name="classes/LimitedCounter (in orngMisc)">
+
+<P>This class is similar to <code>BooleanCounter</code> except that the digits do not count from 0 to 1, but to the limits that are specified individually for each digit.</P>
+
+<xmp class="code">>>> for t in orngMisc.LimitedCounter([3, 5, 2]):
+...     print t
+...
+[0, 0, 0]
+[0, 0, 1]
+[0, 1, 0]
+[0, 1, 1]
+[0, 2, 0]
+[0, 2, 1]
+[0, 3, 0]
+[0, 3, 1]
+[0, 4, 0]
+[0, 4, 1]
+[1, 0, 0]
+[1, 0, 1]
+[1, 1, 0]
+[1, 1, 1]
+   (etc.)
+</xmp>
+
+<P>The class can be used in a for-loop or by manually calling <code>next</code>, just as <code>BooleanCounter</code> above.</P>
+
+<h3>NondecreasingCounter</h3>
+<index name="classes/NondecreasingCounter (in orngMisc)">
+
+<P>Nondecreasing counter generates all non-decreasing integer sequences in which no numbers are skipped, that is, if <em>n</em> is in the sequence, the sequence also includes all numbers between 0 and <em>n</em>. For instance, [0, 0, 1, 0] is illegal since it decreases, and [0, 0, 2, 2] is illegal since it has 2 without having 1 first. Or, with an example</P>
+
+<xmp class="code">>>> for t in orngMisc.NondecreasingCounter(4):
+...     print t
+...
+[0, 0, 0, 0]
+[0, 0, 0, 1]
+[0, 0, 1, 1]
+[0, 0, 1, 2]
+[0, 1, 1, 1]
+[0, 1, 1, 2]
+[0, 1, 2, 2]
+[0, 1, 2, 3]
+</xmp>
+
+
+<h3>CannonicFuncCounter</h3>
+<index name="classes/CannonicFuncCounter (in orngMisc)">
+
+<P>Returns all sequences of a given length where no numbers are skipped (see above) and none of the generated sequence is equal to another if only the labels are changed. For instance, [0, 2, 2, 1] and [1, 0, 0, 2] are considered equivalent: if we take the former and replace 0 by 1, 2 by 0 and 1 by 2 we get the second list.</P>
+
+<P>The sequences generated are equivalent to all possible functions from a set of cardinality of the sequences length.</P>
+
+<xmp class="code">>>> for t in orngMisc.CanonicFuncCounter(4):
+...     print t
+...
+[0, 0, 0, 0]
+[0, 0, 0, 1]
+[0, 0, 1, 0]
+[0, 0, 1, 1]
+[0, 0, 1, 2]
+[0, 1, 0, 0]
+[0, 1, 0, 1]
+[0, 1, 0, 2]
+[0, 1, 1, 0]
+[0, 1, 1, 1]
+[0, 1, 1, 2]
+[0, 1, 2, 0]
+[0, 1, 2, 1]
+[0, 1, 2, 2]
+[0, 1, 2, 3]
+</xmp>
+
+<h2>Selection of the "optimal" object</h2>
+
+<P>Many machine learning techniques generate a set different solutions or have to choose, as for instance in classification tree induction, between different attributes. The most trivial solution is to iterate through the candidates, compare them and remember the optimal one. The problem occurs, however, when there are multiple candidates that are equally good, and the naive approaches would select the first or the last one, depending upon the formulation of the if-statement.</P>
+
+<P><code>orngMisc</code> provides a class that makes a random choice in such cases. Each new candidate is compared with the currently optimal one; it replaces the optimal if it is better, while if they are equal, one is chosen by random. The number of competing optimal candidates is stored, so in this random choice the probability to select the new candidate (over the current one) is <em>1/w</em>, where <code>w</code> is the current number of equal candidates, including the present one. One can easily verify that this gives equal chances to all candidates, independent of the order in which they are presented.</P>
+
+<h3>BestOnTheFly</h3>
+<index name="classes/BestOnTheFly (in orngMisc)">
+
+<p>A class which finds the optimal object in a sequence of objects. The class is fed the candidates one by one, and remembers the "winner". It can thus be used by methods that generate different "solutions" to a problem and need to select the optimal one, but do not want to store them all.</p>
+
+<p class=section>Methods</P>
+<DL class=attributes>
+<dt>__init__(compare = cmp, seed = 0, callCompareOn1st = False)</dt>
+<dd>Constructor can be given a compare function and a random seed; both arguments are optional. The default function for comparison supposes that the objects can be compared by the usual comparison operators. If the seed is not given, a seed of 0 is used to ensure that the same experiment always gives the same results, despite pseudo-randomness. If <code>callCompareOn1st</code> is set, <code>BestOnTheFly</code> will suppose that the candidates are lists are tuples, and it will call <code>compare</code> with the first element of the tuple.</dd>
+
+<dt>candidate(x)</dt>
+<dd>Candidates are fed to a function <code>candidate</code>, which accepts a single argument (the candidate).</dd>
+
+<dt>winner()</dt>
+<dd>Returns the (currently) optimal object. This function can be called any number of times, even when the candidates are still coming - it doesn't "collapse" anything.</dd>
+
+<dt>winnerIndex()</dt>
+<dd>Returns the index of the optimal object within the sequence of the candidates.</dd>
+</DL>
+
+<h3>selectBest(l, compare = cmp, seed = 0, callCompareOn1st = False)</h3>
+
+<P>Function <code>selectBest</code> (it is a separate function, not a method of <code>BestOnTheFly</code>) returns the optimal object from list <code>l</code>. The function can be used if the candidates are already in the list, so using the more complicated <code>BestOnTheFly</code> directly is not needed.</P>
+
+<P>To demonstrate the use of <code>BestOnTheFly</code> and present <code>selectBest</code>: here's how <code>selectBest</code> is implemented.</P>
+
+<xmp class="code">def selectBest(x, compare=cmp, seed = 0, callCompareOn1st = False):
+    bs=BestOnTheFly(compare, seed, callCompareOn1st)
+    for i in x:
+        bs.candidate(i)
+    return bs.winner()
+</xmp>
+
+<h3>selectBestIndex(l, compare=cmp, seed=0, callCompareOn1st = False)</h3>
+
+<P>Similar to <code>selectBest</code> except that it doesn't return the best object but its index in the list <code>l</code>.</P>
+
+<h3>compare2_bigger, compare2_smaller</h3>
+
+<P>Those two functions can be used as compare operators for the above class and functions. The first returns the largest and the second the smallest objects (the function are equal to <code>cmp</code> and <code>-cmp</code>, respectively).</P>
+
+<h3>compare2_firstBigger, compare2_firstSmaller, compare2_lastBigger, compare2_lastSmaller</h3>
+
+<P>These function assume that the objects being compared are lists (or tuples). To compare objects <code>x</code> and <code>y</code> they compare <code>x[0]</code> with <code>y[0]</code> (the first two functions) or <code>x[-1]</code> with <code>y[-1]</code> (the other two).</P>
+
+<h3>Example</h3>
+
+<P>The following snippet loads the data set lymphography and prints out the attribute with the highest information gain.</P>
+
+<p class="header">part of <a href="misc_bestOnTheFly.py">misc_bestOnTheFly.py</a></p>
+<xmp class="code">import orange, orngMisc
+
+data = orange.ExampleTable("lymphography")
+
+findBest = orngMisc.BestOnTheFly(callCompareOn1st = True)
+
+for attr in data.domain.attributes:
+    findBest.candidate((orange.MeasureAttribute_gainRatio(attr, data), attr))
+
+print findBest.winner()
+</xmp>
+
+<P>Our candidates are tuples gain ratios and attributes, so we set <code>callCompareOn1st</code> to make the compare function compare the first element (gain ratios). We could achieve the same by initializing the object like this:</P>
+<xmp class="code">findBest = orngMisc.BestOnTheFly(orngMisc.compare2_firstBigger)</xmp>
+
+<P>The other way to do it is through indices.</P>
+
+<p class="header">part of <a href="misc_bestOnTheFly.py">misc_bestOnTheFly.py</a></p>
+<xmp class="code">findBest = orngMisc.BestOnTheFly()
+
+for attr in data.domain.attributes:
+    findBest.candidate(orange.MeasureAttribute_gainRatio(attr, data))
+
+bestIndex = findBest.winnerIndex()
+print data.domain[bestIndex],", ", findBest.winner()
+</xmp>
+
+<P>Here we only give gain ratios to <code>bestOnTheFly</code>, so we don't have to specify a special compare operator. After checking all attributes we get the index of the optimal one by calling <code>winnerIndex</code>.</P>
+
+
+<h2>Other functions</h2>
+
+<h3>frange(start, stop, step)</h3>
+
+<P>This function is equivalent to the built-in <code>range</code>, except that <code>start</code>, <code>stop</code> and <code>step</code> can be continuous (<code>float</code>) and that it returns the values between <code>start</code> and <code>stop</code>, <em>including <code>stop</code></em> (e.g., <code>frange(0, 1, 0.5)</code> returns <code>[0.0, 0.5, 1.0]</code>.</P>
+
+<P>Default arguments are somewhat peculiar.
+<ul>
+<li><code>frange()</code> is equivalent to <code>frange(0, 1, 0.1)</code></li>
+<li><code>frange(x)</code> is equivalent to <code>frange(x, 1, x)</code>, for instance, <code>frange(0.25)</code> gives <code>[0.25, 0.5, 0.75, 1.0]</code></li>
+<li><code>frange(x, y)</code> is equivalent to <code>frange(0, x, y)</code>, therefore <code>frange(3, .5)</code> returns <code>[0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]</code></li>
+</ul>
+</P>
+
+<h3>printVerbose(text[, verb])</h3>
+
+<p>Prints out the text <code>text</code> if <code>verb</code> is <code>True</code>. The second argument can be omitted - this is generally recommnded; in this case, the text is printed if <code>orngMisc.verbose</code> is <code>True</code>.</p>
+
+<p>This function supports a general "verbose mode" for the application. Functions have some verbose info to print out, should do so through <code>orngMisc.printVerbose</code>.</p>
+
+<P>Most modules sadly ignore this function and have their individual "verbose" arguments.</P>
+
+<H3>getObjectName(x, default="")</H3>
+
+<P>Returns a suitable name of object <code>x</code> by first checking whether it has attribute <code>name</code>, <code>shortDescription</code>, <code>description</code>, <code>func_doc</code> or <code>func_name</code>, in that order. If it has none of this, but is a class instance, it returns the class name. If none of these succeeds, it returns the value of argument <code>default</code>.</P>
+
+<P>The function is used primarily for getting the name of a learner or classifier.</P>
+
+<H3>demangleExamples(x)</H3>
+
+<P>A function used by several functions (mostly in <code>orngTest</code>) that can accept either an examples generator or a tuple (example generator, weight) as an argument. <code>demangleExamples</code> accepts any of these two as an argument and returns a tuple (with the weight meta id set to 0 if non was given).
+</P>
+
+</body>
+</html>

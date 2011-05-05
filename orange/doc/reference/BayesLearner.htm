@@ -1,0 +1,214 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+<body>
+<index name="classifiers+naive Bayesian classifier">
+<h1>Naive Bayesian Classifier and Learner</h1>
+
+<p>Orange includes a component based naive Bayesian classifier that can handle both, discrete and continuous attributes, while the class needs to be discrete (or, at least discretized). It need several components for estimation of conditional and unconditional probabilities that are described <a href="ProbabilityEstimation.htm">on a separate page</a>.</p>
+
+<hr>
+
+<H2>BayesClassifier</H2>
+<index name="classes/BayesClassifier">
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>distribution</DT>
+<DD>Stores probabilities of classes, i.e. p(C) for each class C.</DD>
+
+<DT>estimator</DT>
+<DD>An object that returns a probability of class p(C) for a given class C.</DD>
+
+<DT>conditionalDistributions</DT>
+<DD>A list of conditional probabilities.</DD>
+
+<DT>conditionalEstimators</DT>
+<DD>A list of estimators for conditional probabilities</DD>
+
+<DT>normalize</DT>
+<DD>Tells whether the returned probabilities should be normalized (default: <CODE>True</CODE>)</DD>
+
+<DT>adjustThreshold</DT>
+
+<DD> For binary classes, this tells the learner to determine the
+optimal threshold probability according to 0-1 loss on the training
+set. For multiple class problems, it has no effect (default:
+<code>False</code>).  </DD>
+
+</DL>
+
+<P>Class <CODE>BayesClassifier</CODE> represents a naive Bayesian classifier. Probability of class C, knowing that values of attributes A1, A2, ..., An are v1, v2, ..., vn, is computed as
+p(C|v1, v2, ..., vn) = p(C) * [p(C|v1)/p(C)] * [p(C|v2)/p(C)] * ... * [p(C|vn)/p(C)].</P>
+
+<P>Note that when relative frequencies are used to estimate probabilities, the more usual formula (with factors of form p(vi|C)/p(vi)) and the above formula are exactly equivalent (without any additional assumptions of independency, as one could think at a first glance). The difference becomes important when using other ways to estimate probabilities, like, for instance, m-estimate. In this case, the above formula is much more appropriate.</P>
+
+<P>When computing the formula, probabilities p(C) are read from <CODE>distribution</CODE> which is of type <CODE>Distribution</CODE> and stores a (normalized) probability of each class. When <CODE>distribution</CODE> is <CODE>None</CODE>, <CODE>BayesClassifier</CODE> calls <CODE>estimator</CODE> to assess the probability. The former method is faster and is actually used by all existing methods of probability estimation. The latter is more flexible.</P>
+
+<P>Conditional probabilities are computed similarly. Field <CODE>conditionalDistribution</CODE> is of type <CODE>DomainContingency</CODE> which is basically a list of instances of <CODE>Contingency</CODE>, one for each attribute; the outer variable of the contingency is the attribute and the inner is the class. Contingency can be seen as a list of normalized probability distributions. For attributes for which there is no contingency in <CODE>conditionalDistribution</CODE> a corresponding estimator in <CODE>conditionalEstimators</CODE> is used. The estimator is given the attribute value and returns distributions of classes.</P>
+
+<P>If neither, nor pre-computed contingency nor conditional estimator exist, the attribute is ignored without issuing any warning. The attribute is also ignored if its value is undefined; this cannot be overriden by estimators.</P>
+
+<P>Any field (<CODE>distribution</CODE>, <CODE>estimator</CODE>, <CODE>conditionalDistributions</CODE>, <CODE>conditionalEstimators</CODE>) can be <CODE>None</CODE>. For instance, <CODE>BayesLearner</CODE> normally constructs a classifier which has either <CODE>distribution</CODE> or <CODE>estimator</CODE> defined. While it is not an error, to have both, only <CODE>distribution</CODE> will be used in that case. As for the other two fields, they can be both defined and used complementarily; the elements which are missing in one are defined in the other. However, if there is no need for estimators, <CODE>BayesLearner</CODE> will not construct an empty list; it will not construct a list at all, but leave the field <CODE>conditionalEstimators</CODE> empty.</P>
+
+<P>If you only need probabilities of individual class call <CODE>BayesClassifier</CODE>'s method <CODE>p(class, example)</CODE> to compute the probability of this class only. Note that this probability will not be normalized and will thus, in general, not equal the probability returned by the call operator.</P>
+
+<hr>
+
+<H2>BayesLearner</H2>
+<index name="classes/BayesLearner">
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>estimatorConstructor</DT>
+<DD>Constructs probability estimator for p(C).</DD>
+
+<DT>conditionalEstimatorConstructor</DT>
+<DD>Constructs probability estimators for p(C|vi).</DD>
+
+<DT>conditionalEstimatorConstructorContinuous</DT>
+<DD>Constructs probability estimators for p(C|vi) for continuous attributes.</DD>
+
+<DT>normalizePredictions</DT>
+<DD>Tells the classifier whether to normalize predictions (default: <CODE>True</CODE>).</DD>
+
+<DT>adjustThreshold</DT>
+<DD>If set and the class is binary, the classifier's threshold will be
+set as to optimize the classification accuracy. The threshold is tuned
+by observing the probabilities predicted on learning data. Default is
+<code>False</code> (to conform with the usual naive bayesian
+classifiers), but setting it to <code>True</code> can increase the
+accuracy considerably.</DD>
+</DL>
+
+<P>As first, you do not need to understand anything of above (or below) to use the classifier. You can simply leave everything as is, call the classifier and it will work as you expect. And better, it will even handle continuous attributes as continuous.</P>
+
+<P>The first three fields are empty (<CODE>None</CODE>) by default.
+
+<UL>
+<LI>If <CODE>estimatorConstructor</CODE> is left undefined, p(C) will be estimated by relative frequencies of examples (see <A href="ProbabilityEstimation.htm#ProbabilityEstimatorConstructor_relative">ProbabilityEstimatorConstructor_relative</A>).</LI>
+
+<LI>When <CODE>conditionalEstimatorConstructor</CODE> is left undefined, it will use the same constructor as for estimating unconditional probabilities (<CODE>estimatorConstructor</CODE> is used as an estimator in (<A href="ProbabilityEstimation.htm#ConditionalProbabilityEstimatorConstructor_ByRows">ConditionalProbabilityEstimatorConstructor_ByRows</A>).
+That is, by default, both will use relative frequencies. But when <CODE>estimatorConstructor</CODE> is set to, for instance, estimate probabilities by m-estimate with m=2.0, m-estimates with m=2.0 will be used for estimation of conditional probabilities, too.</LI>
+
+<LI>P(c|vi) for continuous attributes are, by default estimated with loess (a variant of locally weighted linear regression), using <A href="ProbabilityEstimation.htm#ConditionalProbabilityEstimatorConstructor_loess">ConditionalProbabilityEstimatorConstructor_loess</A>.</LI>
+</UL>
+
+<P>The learner first constructs an estimator for p(C). It tries to get a precomputed distribution of probabilities; if the estimator is capable of returning it, the distribution is stored in the classifier's field <CODE>distribution</CODE> and the just constructed estimator is disposed. Otherwise, the estimator is stored in the classifier's field <CODE>estimator</CODE>, while the <CODE>distribution</CODE> is left empty.</P>
+
+<P>The same is then done for conditional probabilities. Different constructors are used for discrete and continuous attributes. If the constructed estimator can return all conditional probabilities in form of <CODE>Contingency</CODE>, the contingency is stored and the estimator disposed. If not, the estimator is stored. If there are no contingencies when the learning is finished, the resulting classifier's <CODE>conditionalDistributions</CODE> is <CODE>None</CODE>. Alternatively, if all probabilities are stored as contingencies, the <CODE>conditionalEstimators</CODE> fields is <CODE>None</CODE>.</P>
+
+<P>Field <CODE>normalizePredictions</CODE> is copied to the resulting classifier.</P>
+
+<hr>
+
+<H2>Examples</H2>
+
+<p>Let us load the data, induce a classifier and see how it performs on the first five examples.</p>
+
+<xmp class="code">>>> data = orange.ExampleTable("lenses")
+>>> bayes = orange.BayesLearner(data)
+>>>
+>>> for ex in data[:5]:
+...    print ex.getclass(), bayes(ex)
+no no
+no no
+soft soft
+no no
+hard hard
+</xmp>
+
+<P>The classifier is correct in all five cases. Interested in probabilities, maybe?</P>
+
+<xmp class="code">>>> for ex in data[:5]:
+...     print ex.getclass(), bayes(ex, orange.Classifier.GetProbabilities)
+no <0.423, 0.000, 0.577>
+no <0.000, 0.000, 1.000>
+soft <0.000, 0.668, 0.332>
+no <0.000, 0.000, 1.000>
+hard <0.715, 0.000, 0.285>
+</xmp>
+
+<P>While very confident about the second and the fourth example, the classifier guessed the correct class of the first one only by a small margin of 42 vs. 58 percents.</P>
+
+<P>Now, let us peek into the classifier.</P>
+
+<xmp class="code">>>> print bayes.estimator
+None
+>>> print bayes.distribution
+<0.167, 0.208, 0.625>
+>>> print bayes.conditionalEstimators
+None
+>>> print bayes.conditionalDistributions[0]
+<'young': <0.250, 0.250, 0.500>, 'p_psby': <0.125, 0.250, 0.625>, (...)
+>>> bayes.conditionalDistributions[0]["young"]
+<0.250, 0.250, 0.500>
+</xmp>
+
+<P>The classifier has no <CODE>estimator</CODE> since probabilities are stored in <CODE>distribution</CODE>. The probability of the first class is 0.167, of the second 0.208 and the probability of the third class is 0.625. Nor does it have <CODE>conditionalEstimators</CODE>, probabilities are stored in <CODE>conditionalDistributions</CODE>. We printed the contingency matrix for the first attribute and, in the last line, conditional probabilities of the three classes when the value of the first attribute is "young".</P>
+
+<P>Let us now use m-estimate instead of relative frequencies.</P>
+
+<xmp class="code">>>> bayesl = orange.BayesLearner()
+>>> bayesl.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=2.0)
+>>> bayes = bayesl(data)
+</xmp>
+
+<P>The classifier is still correct for all examples.</P>
+
+<xmp class="code">>>> for ex in data[:5]:
+...     print ex.getclass(), bayes(ex, no &lt;0.375, 0.063, 0.562&gt;
+no <0.016, 0.003, 0.981>
+soft <0.021, 0.607, 0.372>
+no <0.001, 0.039, 0.960>
+hard <0.632, 0.030, 0.338>
+</xmp>
+
+<P>Observing probabilities shows a shift towards the third, more frequent class - as compared to probabilities above, where relative frequencies were used.</P>
+
+<xmp class="code">>>> print bayes.conditionalDistributions[0]
+<'young': <0.233, 0.242, 0.525>, 'p_psby': <0.133, 0.242, 0.625>, (...)
+</xmp>
+
+<P>Note that the change in error estimation did not have any effect on apriori probabilities:</P>
+
+<xmp class="code">>>> print bayes.distribution
+<0.167, 0.208, 0.625>
+</xmp>
+
+<P>The reason for this is that this same distribution was used as apriori distribution for m-estimation. (How to enforce another apriori distribution? While the orange C++ core supports of it, this feature has not been exported to  Python yet.)</P>
+
+<P>Finally, let us show an example with continuous attributes. We will take iris dataset that contains four continuous and no discrete attributes.</P>
+
+<xmp class="code">>>> data = orange.ExampleTable("iris")
+>>> bayes = orange.BayesLearner(data)
+>>> for exi in range(0, len(data), 20):
+...     print data[exi].getclass(), bayes(data[exi], orange.Classifier.GetBoth)
+</xmp>
+
+<P>The classifier works well. To see a glimpse of how it works, let us observe conditional distributions for the first attribute. It is stored in <CODE>conditionalDistributions</CODE>, as before, except that it now behaves as a dictionary, not as a list like before (see information on <A href="distributions.htm">distributions</A>.</P>
+
+<xmp class="code">>>> print bayes.conditionalDistributions[0]
+<4.300: <0.837, 0.137, 0.026>;, 4.333: <0.834, 0.140, 0.026>, 4.367: <0.830, (...)
+</xmp>
+
+<P>For a nicer picture, we can print out the probabilities, copy and paste it to some graph drawing program ... and get something like the figure below.</P>
+
+<xmp class="code">>>> for x, probs in bayes.conditionalDistributions[0].items():
+...     print "%5.3f\t%5.3f\t%5.3f\t%5.3f" % (x, probs[0], probs[1], probs[2])
+4.300   0.837   0.137   0.026
+4.333   0.834   0.140   0.026
+4.367   0.830   0.144   0.026
+4.400   0.826   0.147   0.027
+4.433   0.823   0.150   0.027
+(...)
+</xmp>
+
+<CENTER><IMG src="bayes-iris.gif"></CENTER>
+
+<P>If petal lengths are shorter, the most probable class is "setosa". Irises with middle petal lengths belong to "versicolor", while longer petal lengths indicate for "virginica". Critical values where the decision would change are at about 5.4 and 6.3.</P>
+
+<P>It is important to stress that the curves are relatively smooth although no fitting (either manual or automatic) of parameters took place.</P>
+</BODY>

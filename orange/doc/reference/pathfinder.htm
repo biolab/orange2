@@ -1,0 +1,130 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<index name="graphs">
+<h1>Simplifying networks</h1>
+
+<p>Orange provides an implementation of a procedure called the Pathfinder for simplifying (large) networks.</p>
+<p>Assuming that a weight of an edge represents a distance (interpreted as a dissimilarity measure), the pruning idea of 
+the Pathfinder algorithm is based on the triangle inequality, which states that the direct distance between two points must 
+be less than or equal to the distance between those two points going through an intermediate point. The triangle inequality can be easily 
+extended to all paths: the direct distance between two nodes must be less than or equal to the dist-length (sum of all weights) 
+of every path between these two nodes; therefore also less than or equal to the length of the geodesic path (i.e. the shortest path). 
+The algorithm eliminates the links which violate the extended triangle inequality and thus simplifying the network and clarifying it for the subsequent analysis.</p>
+
+<p>For further information regarding the implemented procedure (with some experiments) consult the following document <a href="pathfinder.pdf">[Vavpetic 2010]</a>.</p>
+
+<h2>Pathfinder</h2>
+<p><INDEX name="classes/Pathfinder (in orangeom)">
+The Pathfinder class offers a way to simplify a given network with the specified parameters.
+</p>
+
+<p class=section>Methods</p>
+<dl class=attributes>
+<dt>Pathfinder()</dt>
+<dd>Constructs a Pathfinder object.</dd>
+<dt>simplify(r, q, graph)</dt>
+<dd>
+Simplifies the given graph by removing the edges which violate the extended triangle inequality. See the parameter meanings bellow. The speed of the procedure depends heavily on the
+parameter <code>q</code> and the graph's properties (it works best with sparse graphs). The most commonly used values are <code>r = sys.maxint</code> and <code>q = n-1</code>, where <code>n</code> equals the number of nodes
+in the graph. 
+<dt>r</dt>
+<dd>
+This parameter affects the way in which the cost of a path is calculated - it is actually the parameter to the Minkowski formula (consult the paper mentioned above for further information).</br>
+For example, if we have two edges with weights a and b, then for <code>r = 1</code> the calculated cost <code>c</code> would be <code>c = a + b</code>, 
+for <code>r = 2</code>, <code>c = sqrt(a**2 + b**2)</code> and for <code>r = sys.maxint</code> (which is used to represent infinity) it converges to <code>c = max(a, b)</code>.
+</dd>
+<dt>q</dt>
+<dd>
+This parameter represents the maximum length (i.e. the number of edges) of all alternative paths checked between two nodes when calculating the lowest cost between them.
+</dd>
+</dd>
+<dt>setProgressCallback(fun)</dt>
+<dd>Sets a progress callback function, which is called for every node when it's complete. The function is expected to accept one argument - 
+a double value between 0 and 1 is passed to it.</dd>
+</dl>
+
+<h2>Examples</h2>
+
+<h3>Simplifying a small network</h3>
+
+<p>This example shows how to simplify a weighted network using the Pathfinder procedure. As the procedure interprets the weights of a given network as dissimilarities, it only makes sense to apply the procedure to undirected graphs.</p>
+
+<p class="header">Part of <a href="pathfinder.py">pathfinder.py</a> (uses <a href="demo.net">demo.net</a>)</p>
+<xmp class=code>
+import orngNetwork
+from orangeom import Pathfinder
+from pylab import *
+
+...
+
+# Read a demo network from a file
+net = orngNetwork.Network.read('demo.net')
+
+# Compute a layout for plotting
+netOp = orngNetwork.NetworkOptimization(net)
+netOp.fruchtermanReingold(100, 1000)
+
+# Plot the original
+myPlot(net, 'Original network')
+
+# Choose some parameters
+r, q = 1, 6
+
+# Create a pathfinder instance
+pf = Pathfinder()
+
+# Simplify the network
+pf.simplify(r, q, net)
+
+# Plot the simplified network
+myPlot(net, 'Simplified network')
+show()
+</xmp>
+<p>Executing the script above pops-up two pylab windows with the
+following two networks:</p>
+<img src="orig_graph.png">
+<img src="simplified_graph.png">
+
+<h3>Progress callback functionality</h3>
+
+<p>This example shows how to use a progress callback function.</p>
+<p class="header">Part of <a href="pf_progress.py">pf_progress.py</a> (uses <a href="demo.net">demo.net</a>)</p>
+<xmp class=code>
+import orngNetwork
+from orangeom import Pathfinder
+
+def myCb(complete):
+    """
+    The callback function.
+    """
+    print 'The procedure is %d%% complete.' % int(complete * 100)
+
+# Read a demo network from a file
+net = orngNetwork.Network.read('demo.net')
+
+# Choose some parameters
+r, q = 1, 6
+
+# Create a pathfinder instance
+pf = Pathfinder()
+
+# Pass the reference to the desired function
+pf.setProgressCallback(myCb)
+
+# Simplify the network
+pf.simplify(r, q, net)
+</xmp>
+<p>Executing the script above should print something like this:</p>
+<xmp class=code>
+The procedure is 14% complete.
+The procedure is 28% complete.
+The procedure is 42% complete.
+The procedure is 57% complete.
+The procedure is 71% complete.
+The procedure is 85% complete.
+The procedure is 100% complete.
+</xmp>
+</BODY></HTML>

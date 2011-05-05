@@ -1,0 +1,68 @@
+<html>
+<head>
+<link rel=stylesheet href="../style.css" type="text/css">
+</head>
+<body>
+
+
+<h1>orngCN2: Orange CN2 Rule Learning Module</h1>
+<index name="modules+classification rules">
+
+<P>Module orngCN2 implements several variations of well-known CN2 rule learning algorithm and some additional functions to ease the work with rules described in the last section. </p>
+<p>
+All variations of CN2 are implemented by by wrapping <code>orange.RuleLearner</code> class. Note that <code>orange.RuleLearner</code> class contains many replacable components. Each CN2 learner class in this module changes some of these components to reflect the required behaviour. Thus, in the description of each class, we mention only components that differ from default values (see <a href="../reference/RuleLearner.htm">Rule Learning</a>).</p>
+
+<h2>Original CN2 Learner</h2>
+<index name="classifiers/CN2">
+
+<p><code>CN2Learner</code> is a class that implements classical CN2 (see Clark and Niblett; 1988). It learns a set of ordered rules, which means that classificator must try these rules in the same order as they were learned. </p>
+
+<p class=section>Specific components</p>
+<dl class=attributes>
+All components are the same as default values of class <code>orange.RuleLearner</code>. </d1>
+
+<h2>Unordered CN2</h2>
+<p><code>CN2UnorderedLearner</code> class implements CN2 unordered (see Clark and Boswell; 1991). It learns a set of unordered rules - classification from rules does not assume ordering of rules - and returns a <code>CN2UnorderedClassifier</code>. In fact, learning rules is quite similar to learning in classical CN2, where the process of learning of rules is separated to learning rules for each class, which is implemented in class' <code>__call__</code> function. Learning of rules for each class uses a slightly changed version of classical CN2 algorithm.</p>
+
+<p class=section>Specific components</p>
+<dl class=attributes>
+  <dt>evaluator</dt>
+  <dd>Rules are evaluated with Laplace's rule of successin implemented in <code>orange.RuleEvaluator_Laplace</code></dd></dl>
+
+<h2>CN2-SD (Subgroup discovery)</h2>
+<index name="modules/subgroup discovery">
+
+<p> <code>CN2SDUnorderedLearner</code> class implements CN2-SD (see Lavrac et al.; 2004). It learns a set of unordered rules, which is the same as <code>CN2UnorderedLearner</code>. The difference between classical CN2 unordered and CN2-SD is selection of specific evaluation function and covering function, as it is mentioned in Specific components section. </p>
+
+<p class=section>Specific components</p>
+<dl class=attributes>
+  <dt>evaluator</dt>
+  <dd>Rules are evaluated with <code>WRACCEvaluator</code> class that implements weighted relative accuracy.</code></dd>
+  <dt>coverAndRemove</dt>
+  <dd>Removing of examples in CN2-SD is not exclusive but it lowers the weight of covered examples. By default, this class uses <code>CovererAndRemover_multWeights</code> with multiplication factor set to 0.7. Alternative class for "weighted" covering is <code>CovererAndRemover_addWeights</code> that follows the principle of additive correction of weights.</dd></dl>
+
+<h2>Miscellaneous functions</h2>
+
+<p class=section><code> ruleToString </code></p>
+This function writes a string presentation of rule in human readable format. It has two parameters; the first is <code>rule</code> which is obvious and the second is <code>showDistribution</code> for selecting whether presentation should also contain the distribution of covered examples. </p>
+
+<p class=section><code> WRACCEvaluator </code></p>
+This class implements WRACC (weighted relative accuracy) evaluation function.
+
+<p class=section><code> mEstimate </code></p>
+This class implements m-estimate of probability rule evaluation function. It has one parameter <code>m</code>.
+
+<p class=section><code> CovererAndRemover_multWeights </code></p>
+This class implements "weighted" covering and removing of examples. The weights of examples are multiplied by parameter <code>mult</code>.
+
+<p class=section><code> CovererAndRemover_addWeights </code></p>
+This class also implements "weighted" covering and removing of examples following additive weights principle.
+
+<H2>References</H2>
+<p>Clark, Niblett. <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.53.9180">The CN2 Induction Algorithm</a>. Machine Learning 3(4):261--284, 1989. </p>
+<p>Clark, Boswell. <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.24.1700">Rule Induction with CN2: Some Recent Improvements</a>. In Machine Learning - EWSL-91. Proceedings of the European Working Session on Learning., pages 151--163, Porto, Portugal, March 1991.</p>
+<p>
+<p>Lavrac, Kavsek, Flach, Todorovski: <a href="http://jmlr.csail.mit.edu/papers/volume5/lavrac04a/lavrac04a.pdf">Subgroup Discovery with CN2-SD</a>. Journal of Machine Learning Research 5: 153-188, 2004.
+
+</body>
+</html> 

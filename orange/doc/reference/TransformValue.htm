@@ -1,0 +1,670 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<h1>Value Transformers</h1>
+
+<P>Class <CODE><INDEX name="classes/TransformValue">TransformValue</CODE> is a base class for a hierarchy of classes used throughout Orange for simple transformation of values. Discretization, for instances, creates
+a transformer that converts continuous values into discrete,
+while continuizers do the opposite. Classification trees use transformers for binarization where values of discrete attributes are converted into binary.</P>
+
+<P>Transformers are most commonly used in conjunction with <a href="classifierFromVar.htm">Classifiers from Attribute</a>. It is also possible to subtype this class in Python.</P>
+
+<P>Although this classes can occasionally come very handy, you will mostly encounter them when created by other methods, such as discretization.</P>
+
+
+<H2>Transforming Individual Attributes</H2>
+
+<H3>TransformValue</H3>
+
+<P><CODE>TransformValue</CODE> is the abstract root of the hierarchy, itself derived from <CODE>Orange</CODE>. When called with a <A href="Value.htm"><CODE>Value</CODE></A> as an argument, it returns the transformed value.</P>
+
+<P>See <a href="classifierFromVar.htm">Classifiers from Attribute</a> for an example of how to derive new Python classes from <CODE>TransformValue</CODE>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>subTransformer</DT>
+<DD>Specifies the transformation that takes place prior to this. This way, transformations can be chained, although this will seldom be needed.</DD>
+</DL>
+
+
+<H3>Ordinal2Continuous</H3>
+<index name="converting discrete to continuous">
+
+<P><CODE><INDEX name="classes/Ordinal2Continuous">Ordinal2Continuous</CODE> converts ordinal values to equidistant continuous.
+Four-valued attribute with, say, values 'small', 'medium', 'large', 'extra large' would be converted to 0.0, 1.0, 2.0 and 3.0. You can also specify a factor by which the values are multiplied. If the factor for above attribute is set to 1/3 (or, in general, to 1 by number of values), the new continuous attribute will have values from 0.0 to 1.0.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>factor</DT>
+<DD>The factor by which the values are multiplied.</DD>
+</DL>
+
+<p class="header">part of <a href="transformvalue-o2c.py">transformvalues-o2c.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<xmp class="code">import orange
+
+data = orange.ExampleTable("lenses")
+
+age = data.domain["age"]
+
+age_c = orange.FloatVariable("age_c")
+age_c.getValueFrom = orange.ClassifierFromVar(whichVar = age)
+age_c.getValueFrom.transformer = orange.Ordinal2Continuous()
+
+newDomain = orange.Domain([age, age_c], data.domain.classVar)
+newData = orange.ExampleTable(newDomain, data)
+</XMP>
+
+<P>The values of attribute 'age' ('young', 'pre-presbyopic' and 'presbyopic') are in the new domain transformed to 0.0, 1.0 and 2.0. If we additionally set <CODE>age_c.getValueFrom.transformer.factor</CODE> to 0.5, the new values will be 0.0, 0.5 and 1.0.</P>
+
+
+
+<H3>Discrete2Continuous</H3>
+
+<P><code><INDEX name="classes/Discrete2Continuous">Discrete2Continuous</code> converts a discrete value to a continuous so that some designated value is converted to 1.0 and all others to 0.0 or -1.0, depending on the settings.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>value</DT>
+<DD>The value that in converted to 1.0; others are converted to 0.0 or -1.0. Value needs to be specified by an integer index, not a <CODE>Value</CODE>.</DD>
+
+<DT>zeroBased</DT>
+<DD>Decides whether the other values will be transformed to 0.0 (<CODE>True</CODE>, default) or -1.0 (<CODE>False</CODE>). When <CODE>False</CODE> undefined values are transformed to 0.0. Otherwise, undefined values yield an error.</DD>
+
+<DT>invert</DT>
+<DD>If <CODE>True</CODE> (default is <CODE>False</CODE>), the transformations are reversed - the selected <CODE>value</CODE> becomes 0.0 (or -1.0) and others 1.0.</DD>
+</DL>
+
+<P>The following examples load the Monk 1 dataset and prepares various transformations for attribute "e".</P>
+
+<p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<xmp class="code">import orange
+
+data = orange.ExampleTable("monk1")
+
+e = data.domain["e"]
+
+e1 = orange.FloatVariable("e=1")
+e1.getValueFrom = orange.ClassifierFromVar(whichVar = e)
+e1.getValueFrom.transformer = orange.Discrete2Continuous()
+e1.getValueFrom.transformer.value = int(orange.Value(e, "1"))
+</XMP>
+
+<P>We first construct a new continuous attribute <CODE>e1</CODE>, and set its <CODE>getValueFrom</CODE> to a newly constructed classifier that will extract the value of <CODE>e</CODE> from any example it's given. Then we tell the classifier to transform the gotten value using a <CODE>Discrete2Continuous</CODE> transformation. The tranformations <CODE>value</CODE> is set to the index of <CODE>e</CODE>'s value "1"; one way to do it is to construct a <CODE>Value</CODE> of attribute <CODE>e</CODE> and cast it to integer (if you don't understand this, use it without understanding it).</P>
+
+<P>To demonstrate the use of various flags, we constructed two more attributes in a similar manner. Both are based on <CODE>e</CODE>, all check whether <CODE>e</CODE>'s value is "1", except that the new attribute's <CODE>e10</CODE> tranformation will not be zero based and the <CODE>e01</CODE>'s transformation will also be inverted:
+
+<p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a></p>
+<xmp class="code">(...)
+e10.getValueFrom.transformer.zeroBased = False
+(...)
+e01.getValueFrom.transformer.zeroBased = False
+e01.getValueFrom.transformer.invert = True
+</XMP>
+
+<P>Finally, we shall construct a new domain that will only have the original <CODE>e</CODE> and its transformations, and the class. We shall convert the entire table to that domain and print out the first ten examples.</P>
+
+<p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a></p>
+<xmp class="code">newDomain = orange.Domain([e, e1, e10, e01], data.domain.classVar)
+newData = orange.ExampleTable(newDomain, data)
+for ex in newData[:10]:
+    print ex
+</xmp>
+
+<P>Here's the script's output.</P>
+
+<XMP class=code>['1', 1.000, 1.000, -1.000, '1']
+['1', 1.000, 1.000, -1.000, '1']
+['2', 0.000, -1.000, 1.000, '1']
+['2', 0.000, -1.000, 1.000, '1']
+['3', 0.000, -1.000, 1.000, '1']
+['3', 0.000, -1.000, 1.000, '1']
+['4', 0.000, -1.000, 1.000, '1']
+['4', 0.000, -1.000, 1.000, '1']
+['1', 1.000, 1.000, -1.000, '1']
+['1', 1.000, 1.000, -1.000, '1']
+</XMP>
+
+<P>The difference between the second and the third attribute is in that where the second has zero's, the third has -1's. The last attribute (before the class) is reversed version of the third.</P>
+
+<P>You can, of course, "divide" a single attribute into a number of continuous attributes. Original attribute <CODE>e</CODE> has four possible values; let's create for new attributes, each corresponding to one of <CODE>e</CODE>'s values.</P>
+
+<p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">attributes = [e]
+for v in e.values:
+    newattr = orange.FloatVariable("e=%s" % v)
+    newattr.getValueFrom = orange.ClassifierFromVar(whichVar = e)
+    newattr.getValueFrom.transformer = orange.Discrete2Continuous()
+    newattr.getValueFrom.transformer.value = int(orange.Value(e, v))
+    attributes.append(newattr)
+</XMP>
+
+<P>The output of this script is</P>
+<XMP class="code">['1', 1.000, 0.000, 0.000, 0.000, '1']
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+['2', 0.000, 1.000, 0.000, 0.000, '1']
+['2', 0.000, 1.000, 0.000, 0.000, '1']
+['3', 0.000, 0.000, 1.000, 0.000, '1']
+['3', 0.000, 0.000, 1.000, 0.000, '1']
+['4', 0.000, 0.000, 0.000, 1.000, '1']
+['4', 0.000, 0.000, 0.000, 1.000, '1']
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+</XMP>
+
+
+<H3>NormalizeContinuous</H3>
+<index name="normalization of values">
+
+<P>Transformer <CODE><INDEX name="classes/NormalizeContinuous">NormalizeContinuous</CODE> takes a continuous values and keeps it continuous, but subtracts the <CODE>average</CODE> and divides the difference by half of the <CODE>span</CODE>; <CODE>v' = (v-average) / span</CODE></P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>average</DT>
+<DD>The value that is subtracted from the original.</DD>
+
+<DT>span</DT>
+<DD>The divisor</DD>
+</DL>
+
+<P>The following script "normalizes" all attribute in the Iris dataset by subtracting the average value and dividing by the half of deviation.</P>
+
+<p class="header">part of <a href="transformvalue-nc.py">transformvalues-nc.py</a>
+(uses <a href="iris.tab">iris.tab</a>)</p>
+<XMP class="code">import orange
+
+data = orange.ExampleTable("iris")
+
+domstat = orange.DomainBasicAttrStat(data)
+newattrs = []
+for attr in data.domain.attributes:
+    attr_c = orange.FloatVariable(attr.name+"_n")
+    attr_c.getValueFrom = orange.ClassifierFromVar(whichVar = attr)
+    transformer = orange.NormalizeContinuous()
+    attr_c.getValueFrom.transformer = transformer
+    transformer.average = domstat[attr].avg
+    transformer.span = domstat[attr].dev/2
+    newattrs.append(attr_c)
+
+newDomain = orange.Domain(data.domain.attributes + newattrs, data.domain.classVar)
+newData = orange.ExampleTable(newDomain, data)
+</XMP>
+
+
+<H3>MapIntValue</H3>
+
+<P><CODE><INDEX name="classes/MapIntValue">MapIntValue</CODE> is a discrete-to-discrete transformer that changes values according to the given mapping. MapIntValue is used for binarization in decision trees.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>mapping</DT>
+<DD>Mapping that determines the new value: <CODE>v' = mapping[v]</CODE>. Undefined values remain undefined. Mapping is indexed by integer indices and contains integer indices of values.</DD>
+</DL>
+
+<P>The following script transforms the value of 'age' in dataset lenses from 'young' to 'young', and from 'pre-presbyopic' and 'presbyopic' to 'old'.</P>
+
+
+<p class="header">part of <a href="transformvalue-miv.py">transformvalues-miv.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">age = data.domain["age"]
+
+age_b = orange.EnumVariable("age_c", values = ['young', 'old'])
+age_b.getValueFrom = orange.ClassifierFromVar(whichVar = age)
+age_b.getValueFrom.transformer = orange.MapIntValue()
+age_b.getValueFrom.transformer.mapping = [0, 1, 1]
+</XMP>
+
+<P>The mapping tells that 0th value of <CODE>age</CODE> goes to 0th, while 1st and 2nd go to the 1st value of <CODE>age_b</CODE>.
+
+
+<H2>Transforming Domains and Datasets</H2>
+
+<P>In the example on use of <CODE>NormalizeContinuous</CODE> we have already seen how to transform all attributes of some dataset and prepare the corresponding new dataset. This operation is rather common, so it makes sense to have a few classes for accomplishing this task. Such a class is inevitably less flexible than per-attribute transformations, since no specific options can be set for individual attributes. For instance, <CODE>DomainContinuizer</CODE> which will be introduced below, can be told how to treat multinominal attributes, but the same treatment then applies to all such attributes. In case that some of your attributes need specific treatment, you will have to program individual treatments yourself, in the manner similar to what we showed while introducing <CODE>NormalizeContinuous</CODE>.</P>
+
+<H3>DomainContinuizer</H3>
+<P><code><INDEX name="classes/DomainContinuizer">DomainContinuizer</code> is a class that, given a domain or a set of examples returns a new domain containing only continuous attributes. If examples are given, the original continuous attribute can be normalized, while for discrete attributes it is possible to use the most frequent value as the base. The attributes are treated according to their type:
+<UL>
+<LI>continuous attributes are normalized if requested, and copied if not;</LI>
+<LI>discrete attribute with less than two possible values are omitted;</LI>
+<LI>binary (ie two-valued discrete) attributes are transformed via <CODE>Discrete2Continuous</CODE> into 0.0/1.0 or -1.0/1.0 continuous attribute;</LI>
+<LI>multinomial discrete attributes are treated according to the flag <CODE>multinomialTreatment</CODE>.</LI>
+</UL>
+</P>
+
+<P>The fate of the class attribute is determined specifically.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>zeroBased</DT>
+<DD>This flag corresponds to <CODE>zeroBased</CODE> flag of class <CODE>Discrete2Continuous</CODE> and determines the value used as the "low" value of the attribute. When binary attribute are transformed into continuous or when multivalued attribute is transformed into multiple attributes, the transformed attribute can either have values 0.0 and 1.0 (default, <CODE>zeroBased=True</CODE>) or -1.0 and 1.0. In the following text, we will assume that <CODE>zeroBased</CODE> is <CODE>True</CODE> and use 0.0.</DD>
+
+<DT>multinomialTreatment</DT> <DD>decides the treatment of multinomial attributes. Let <CODE>N</CODE> be the number of the attribute's values.
+  <DL class=attributes>
+  <DT>DomainContinuizer.LowestIsBase</DT>
+  <DD>The attribute is replaced by N-1 attributes. If the attribute has the lowest
+      value (0), all N-1 attributes are zero. If not, the attribute corresponding to
+      the actual attributes value (the first of the attributes corresponding to
+      value 1, the second to 2...) will be 1.0 and the other will be 0.0. For attributes
+      that have <CODE>baseValue</CODE> set, the specified value is used as base instead
+      of the lowest one.</DD>
+
+  <DT>DomainContinuizer.FrequentIsBase</DT>
+  <DD>The attribute is treated in the same fashion as above, except that not the lowest
+      but the most frequent value is used as a base. If there are more attributes that
+      share the first place, the lowest value is used. For this option to work, the
+      continuized domain needs to be constructed from a dataset, not a domain (which
+      doesn't give information on value frequencies). Again, if attribute has
+      <CODE>baseValue</CODE> set, the specified value is used instead of the most
+      frequent.</DD>
+
+  <DT>DomainContinuizer.NValues</DT>
+  <DD>The attribute is replaced by N attributes. If you plan to use the newly
+      constructed domain in statistical modelling, make sure that the method is
+      immune to dependent attributes. An exception to that are binary attributes
+      which are still replaced by a single attribute.</DD>
+
+  <DT>DomainContinuizer.Ignore</DT>
+  <DD>Multivalued attributes are omitted.</DD>
+
+  <DT>DomainContinuizer.ReportError</DT>
+  <DD>If multivalued attribute is encountered, an error is raised.</DD>
+
+  <DT>DomainContinuizer.AsOrdinal</DT>
+  <DD>Multivalued attributes are treated as ordinal, <I>ie</I> replaced by a continuous
+      attribute with the values' index (see <CODE>Ordinal2Continuous</CODE>).</DD>
+
+  <DT>DomainContinuizer.AsNormalizedOrdinal</DT>
+  <DD>As above, except that the resulting continuous value will be from range 0 to
+      1.</DD>
+  </DL>
+</DD>
+
+<DT>normalizeContinuous</DT>
+<DD>If <CODE>True</CODE> (not by default) continuous attributes are "normalized": they are subtracted the average value and divided by the deviation. This is only possible when the continuizer is given the data, not only the domain.</DD>
+
+<DT>classTreatment</DT>
+<DD>Determines what happens with the class attribute if it is discrete.
+  <DL class=attributes>
+  <DT>DomainContinuizer.Ignore</DT>
+  <DD>Class attribute is copied as is. Note that this is different from the meaning of
+      this value at <CODE>multinomialTreatment</CODE> where it denotes omitting the
+      attribute.</DD>
+
+  <DT>DomainContinuizer.AsOrdinal, DomainContinuizer.AsNormalizedOrdinal</DT>
+  <DD>If class is multinomial, it is treated as ordinal, in the same manner as
+      described above. Binary classes are transformed to 0.0/1.0 attributes.</DD>
+  </DL>
+  It is not possible to normalize the continuous class with
+  <CODE>DomainContinuizer</CODE>.
+</DD>
+</DL>
+
+<P>Let us first examine the effect of <CODE>multinomialTreatment</CODE> on attributes from dataset "bridges". To be able to follow the transformations, we shall first print out a description of domain and the 15th example in the dataset.</P>
+
+<p class="header">part of <a href="transformvalue-domain.py">transformvalues-domain.py</a>
+(uses <a href="bridges.tab">bridges.tab</a>)</p>
+<XMP class="code">def printExample(ex):
+    for val in ex:
+        print "%20s: %s" % (val.variable.name, val)
+
+data = orange.ExampleTable("bridges")
+
+for attr in data.domain:
+    if attr.varType == orange.VarTypes.Continuous:
+        print "%20s: continuous" % attr.name
+    else:
+        print "%20s: %s" % (attr.name, attr.values)
+
+print
+print "Original 15th example:"
+printExample(data[15])
+</xmp>
+
+<P>We'll show the output in a moment. Let us now use the lowest values as the bases and continuize the attributes.</P>
+
+<p class="header">part of <a href="transformvalue-domain.py">transformvalues-domain.py</a></p>
+<XMP class="code">continuizer = orange.DomainContinuizer()
+
+continuizer.multinomialTreatment = continuizer.LowestIsBase
+domain0 = continuizer(data)
+data0 = data.translate(domain0)
+printExample(data0[15])
+</XMP>
+
+<P>Here's what we get; to the left, we've added the original example and the domain description, so that we can see what happens.</P>
+
+<TABLE>
+<TR><TD>
+<XMP CLASS=CODE>         RIVER=A: 0.000
+         RIVER=O: 0.000
+         RIVER=Y: 0.000
+         ERECTED: 1863
+PURPOSE=AQUEDUCT: 0.000
+      PURPOSE=RR: 1.000
+    PURPOSE=WALK: 0.000
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=G: 0.000
+     T-OR-D=DECK: 0.000
+   MATERIAL=IRON: 1.000
+  MATERIAL=STEEL: 0.000
+     SPAN=MEDIUM: 1.000
+       SPAN=LONG: 0.000
+       REL-L=S-F: ?
+         REL-L=F: ?
+     TYPE=SUSPEN: 0.000
+   TYPE=SIMPLE-T: 1.000
+       TYPE=ARCH: 0.000
+   TYPE=CANTILEV: 0.000
+        TYPE=NIL: 0.000
+     TYPE=CONT-T: 0.000
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: M
+ ERECTED: 1863
+ PURPOSE: RR
+  LENGTH: 1000
+   LANES: 2
+ CLEAR-G: N
+  T-OR-D: THROUGH
+MATERIAL: IRON
+    SPAN: MEDIUM
+   REL-L: ?
+   TYPE: SIMPLE-T
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
+ ERECTED: continuous
+ PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+  LENGTH: continuous
+   LANES: continuous
+ CLEAR-G: <N, G>
+  T-OR-D: <THROUGH, DECK>
+MATERIAL: <WOOD, IRON, STEEL>
+    SPAN: <SHORT, MEDIUM, LONG>
+   REL-L: <S, S-F, F>
+    TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+</XMP>
+</TD>
+</TR>
+</TABLE>
+
+<P>The first, four-valued attribute River is replaced by three attributes corresponding to values "A", "O" and "Y". For the 15th example, River is "M" so all three attributes are 0.0. The continuous year is left intact. Of the three attributes that describe the purpose of the bridge, "PURPOSE=RR" is 1.0 since this is the rail-road bridge. Value of the three-valued "REL-L" is undefined in the original example, so the corresponding two attributes in the new domain are undefined as well...</P>
+
+<P>In the next test, we replaced <CODE>continuizer.LowestIsBase</CODE> by <CODE>continuizer.FrequentIsBase</CODE>, instructing Orange to use the most frequent values for base values.</P>
+
+<TABLE>
+<TR><TD>
+<XMP CLASS=CODE>         RIVER=M: 1.000
+         RIVER=O: 0.000
+         RIVER=Y: 0.000
+         ERECTED: 1863
+PURPOSE=AQUEDUCT: 0.000
+      PURPOSE=RR: 1.000
+    PURPOSE=WALK: 0.000
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=N: 1.000
+     T-OR-D=DECK: 0.000
+   MATERIAL=WOOD: 0.000
+   MATERIAL=IRON: 1.000
+      SPAN=SHORT: 0.000
+       SPAN=LONG: 0.000
+         REL-L=S: ?
+       REL-L=S-F: ?
+       TYPE=WOOD: 0.000
+     TYPE=SUSPEN: 0.000
+       TYPE=ARCH: 0.000
+   TYPE=CANTILEV: 0.000
+        TYPE=NIL: 0.000
+     TYPE=CONT-T: 0.000
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: M
+ ERECTED: 1863
+ PURPOSE: RR
+  LENGTH: 1000
+   LANES: 2
+ CLEAR-G: N
+  T-OR-D: THROUGH
+MATERIAL: IRON
+    SPAN: MEDIUM
+   REL-L: ?
+   TYPE: SIMPLE-T
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
+ ERECTED: continuous
+ PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+  LENGTH: continuous
+   LANES: continuous
+ CLEAR-G: <N, G>
+  T-OR-D: <THROUGH, DECK>
+MATERIAL: <WOOD, IRON, STEEL>
+    SPAN: <SHORT, MEDIUM, LONG>
+   REL-L: <S, S-F, F>
+    TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+</XMP>
+</TD>
+</TR>
+</TABLE>
+
+<P>Comparing the outputs, we notice that for the first attribute, "A" is chosen as the base value instead of "M", so the three new attributes tell whether the bridge is over "M", "O" or "Y". As for Purpose, nothing changes since highway bridges are the most often. The base value also changes for the binary Clear-G, since G is more frequent than N...</P>
+
+<P>Next alternative is <CODE>continuizer.NValues</CODE>, which turns N-valued attributes into N attributes, except for N==2, where we still get the binary attribute, using the lowest value for the base.</P>
+
+<TABLE>
+<TR><TD>
+<XMP CLASS=CODE>         RIVER=M: 1.000
+         RIVER=A: 0.000
+         RIVER=O: 0.000
+         RIVER=Y: 0.000
+         ERECTED: 1863
+ PURPOSE=HIGHWAY: 0.000
+PURPOSE=AQUEDUCT: 0.000
+      PURPOSE=RR: 1.000
+    PURPOSE=WALK: 0.000
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=G: 0.000
+     T-OR-D=DECK: 0.000
+   MATERIAL=WOOD: 0.000
+   MATERIAL=IRON: 1.000
+  MATERIAL=STEEL: 0.000
+      SPAN=SHORT: 0.000
+     SPAN=MEDIUM: 1.000
+       SPAN=LONG: 0.000
+         REL-L=S: ?
+       REL-L=S-F: ?
+         REL-L=F: ?
+       TYPE=WOOD: 0.000
+     TYPE=SUSPEN: 0.000
+   TYPE=SIMPLE-T: 1.000
+       TYPE=ARCH: 0.000
+   TYPE=CANTILEV: 0.000
+        TYPE=NIL: 0.000
+     TYPE=CONT-T: 0.000
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: M
+ ERECTED: 1863
+ PURPOSE: RR
+  LENGTH: 1000
+   LANES: 2
+ CLEAR-G: N
+  T-OR-D: THROUGH
+MATERIAL: IRON
+    SPAN: MEDIUM
+   REL-L: ?
+   TYPE: SIMPLE-T
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
+ ERECTED: continuous
+ PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+  LENGTH: continuous
+   LANES: continuous
+ CLEAR-G: <N, G>
+  T-OR-D: <THROUGH, DECK>
+MATERIAL: <WOOD, IRON, STEEL>
+    SPAN: <SHORT, MEDIUM, LONG>
+   REL-L: <S, S-F, F>
+    TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+</XMP>
+</TD>
+</TR>
+</TABLE>
+
+<P>The least exciting case is <CODE>continuizer.Ignore</CODE>, which reduces the attribute set to continuous attributes.</P>
+
+<TABLE>
+<TR><TD>
+<XMP CLASS=CODE>         ERECTED: 1863
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=G: 0.000
+     T-OR-D=DECK: 0.000
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: M
+ ERECTED: 1863
+ PURPOSE: RR
+  LENGTH: 1000
+   LANES: 2
+ CLEAR-G: N
+  T-OR-D: THROUGH
+MATERIAL: IRON
+    SPAN: MEDIUM
+   REL-L: ?
+   TYPE: SIMPLE-T
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
+ ERECTED: continuous
+ PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+  LENGTH: continuous
+   LANES: continuous
+ CLEAR-G: <N, G>
+  T-OR-D: <THROUGH, DECK>
+MATERIAL: <WOOD, IRON, STEEL>
+    SPAN: <SHORT, MEDIUM, LONG>
+   REL-L: <S, S-F, F>
+    TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+</XMP>
+</TD>
+</TR>
+</TABLE>
+
+<P>The last two variations retain the number of attributes, but turn them into continuous. <CODE>continuizer.AsOrdinal</CODE> looks like this.</P>
+
+<TABLE>
+<TR><TD>
+<XMP CLASS=CODE>   C_RIVER: 0.000
+   ERECTED: 1863
+ C_PURPOSE: 2.000
+    LENGTH: 1000
+     LANES: 2
+ C_CLEAR-G: 0.000
+  C_T-OR-D: 0.000
+C_MATERIAL: 1.000
+    C_SPAN: 1.000
+   C_REL-L: ?
+    C_TYPE: 2.000
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: M
+ ERECTED: 1863
+ PURPOSE: RR
+  LENGTH: 1000
+   LANES: 2
+ CLEAR-G: N
+  T-OR-D: THROUGH
+MATERIAL: IRON
+    SPAN: MEDIUM
+   REL-L: ?
+   TYPE: SIMPLE-T
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
+ ERECTED: continuous
+ PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+  LENGTH: continuous
+   LANES: continuous
+ CLEAR-G: <N, G>
+  T-OR-D: <THROUGH, DECK>
+MATERIAL: <WOOD, IRON, STEEL>
+    SPAN: <SHORT, MEDIUM, LONG>
+   REL-L: <S, S-F, F>
+    TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+</XMP>
+</TD>
+</TR>
+</TABLE>
+
+<P>For instance, the value of C_Purpose is 2.000 since the Purpose has the 2nd possible value of purpose (if we start counting by 0). Finally, <CODE>continuizer.AsNormalizedOrdinal</CODE> normalizes the new continuous attributes to range 0.0 - 1.0.</P>
+
+<TABLE>
+<TR><TD>
+<XMP CLASS=CODE>   C_RIVER: 0.000
+   ERECTED: 1863
+ C_PURPOSE: 0.667
+    LENGTH: 1000
+     LANES: 2
+ C_CLEAR-G: 0.000
+  C_T-OR-D: 0.000
+C_MATERIAL: 0.500
+    C_SPAN: 0.500
+   C_REL-L: ?
+    C_TYPE: 0.333
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: M
+ ERECTED: 1863
+ PURPOSE: RR
+  LENGTH: 1000
+   LANES: 2
+ CLEAR-G: N
+  T-OR-D: THROUGH
+MATERIAL: IRON
+    SPAN: MEDIUM
+   REL-L: ?
+   TYPE: SIMPLE-T
+</XMP>
+</TD>
+<TD>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
+ ERECTED: continuous
+ PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+  LENGTH: continuous
+   LANES: continuous
+ CLEAR-G: <N, G>
+  T-OR-D: <THROUGH, DECK>
+MATERIAL: <WOOD, IRON, STEEL>
+    SPAN: <SHORT, MEDIUM, LONG>
+   REL-L: <S, S-F, F>
+    TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+</XMP>
+</TD>
+</TR>
+</TABLE>
+
+<P>Values of Purpose now transform to 0.000, 0.333, 0.667 and 1.000; for railroad bridges, the corresponding value is 0.667.</P>
+
+
+</BODY>
+</HTML> 

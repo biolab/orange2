@@ -1,0 +1,152 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+<h1>orngVizRank: Orange VizRank module</h1>
+<index name="modules+vizualization ranking">
+
+<p>Module orngVizRank implements VizRank algorithm (Leban et al, 2004; Leban et al, 2005) which is able to rank possible data projections generated using two different visualization methods - scatterplot and radviz method. For a given class labeled data set, VizRank creates different possible data projections and assigns a score of interestingness to each of the projections. VizRank scores the projections based on how well are different classes separated in the projection. If different classes are well separated the projection gets a high score, otherwise the score it is correspondingly lower. After evaluation it is sensible to focus on top-ranked projections that provide the greatest insight on how to separate between different classes.</P>
+
+<p>In the rest of this document we will talk about two different visualization methods - scatterplot and radviz. While scatterplot is a well known method, not many people know radviz. For those readers who are interested in this method, please see (Hoffman, 1997).</P>
+
+<hr>
+
+<H2>VizRank in Orange</H2>
+<index name="classes/VizRank (in orngVizRank)">
+
+<P>The easiest way to use VizRank in Orange is through Orange widgets. Widgets like Scatterplot, Radviz and Polyviz (which can be found in Visualize tab in Orange Canvas) contain a button "VizRank" which opens VizRank's dialog where you can change all possible settings and find interesting data projections. </P>
+
+<P>A more advanced user, however, will perhaps also want to use VizRank in scripts. These users will use the orngVizRank module.</P>
+
+<P>In the rest of this document we will give information only about using VizRank in scripts. For those of you who will use VizRank in Orange widgets we provided extensive tooltips that should clarify the meaning of different settings.</P>
+
+<P><b>Creating a VizRank instance</b></P>
+
+<p>First lets show a very simple example of how we can use VizRank in scripts:</p>
+
+<xmp class="code">>>> import orange
+>>> data = orange.ExampleTable("wine.tab")
+>>> from orngVizRank import *
+>>> vizrank = VizRank(SCATTERPLOT)     # options are: SCATTERPLOT, RADVIZ or LINEAR_PROJECTION
+>>> vizrank.setData(data)     # set the data set
+>>> vizrank.evaluateProjections()      # evaluate possible projections
+>>> print vizrank.results[0]
+(86.88861657813024, (86.88861657813024, [87.603105074268271, 82.08174408531525, 93.120556697249413],
+    [59, 71, 48]), 178, ['A7', 'A10'], 5, {})
+</xmp>
+
+
+<p>In this example we created a VizRank instance, evaluated scatterplot projections of the UCI wine data set and printed the information about the best ranked projection. The best projection scored a value of 86.88 (in a range between 0 and 100) and is showing attributes 'A7' and 'A10'. There is also lots of other information for each projections in the result list, but it is not relevant for a casual user.</p>
+
+<p>Below is a list of functions and settings, that can be used in order to modify VizRank's behaviour.</p>
+
+<DL>
+<DT><B>kValue</b>
+<DD class=ddfun>the number of examples used in predicting the class value. By default it is set to <i>N/c</i>, where <i>N</i> is number of examples in the data set and <i>c</i> is the number of class values</DD>
+
+<DT><B>percentDataUsed</b>
+<DD class=ddfun>when handling large data sets, the kNN method might take a lot of time to evaluate each projection. We can still get a good estimate of projection interestingness if we consider only a subset of examples. You can
+specify a value between 0 and 100. Default: 100</DD>
+
+<DT><B>qualityMeasure</b>
+<DD class=ddfun>there are different measures of prediction success that one can use to evaluate a classifier. You can use classification accuracy (<CODE>CLASS_ACCURACY</CODE>), average probability of correct classification (<CODE>AVERAGE_CORRECT</CODE>) or Brier score (<CODE>BRIER_SCORE</CODE>). Default: <CODE>AVERAGE_CORRECT</CODE></DD>
+
+<DT><B>testingMethod</b>
+<DD class=ddfun>the way how the accuracy of the classifier is computed. You can use leave one out (<CODE>LEAVE_ONE_OUT</CODE>), 10 fold cross validation (<CODE>TEN_FOLD_CROSS_VALIDATION</CODE>) or testing on the learning set (<CODE>TEST_ON_LEARNING_SET</CODE>). Default: <CODE>TEN_FOLD_CROSS_VALIDATION</CODE></DD>
+
+<DT><B>attrCont</b>
+<DD class=ddfun>which method for evaluating continuous attributes do we want to use. Attributes are ranked and projections with top ranked attributes are evaluated first. Possible options are ReliefF (<CODE>CONT_MEAS_RELIEFF</CODE>), Signal to Noise (<CODE>CONT_MEAS_S2N</CODE>), a modification of Signal to Noise measure (<CODE>CONT_MEAS_S2NMIX</CODE>) or no measure (<CODE>CONT_MEAS_NONE</CODE>). Default: <CODE>CONT_MEAS_RELIEFF</CODE></DD>
+
+<DT><B>attrDisc</b>
+<DD class=ddfun>which method for evaluating discrete attributes do we want to use. Attributes are ranked and projections with top ranked attributes are evaluated first. Possible options are ReliefF (<CODE>DISC_MEAS_RELIEFF</CODE>), Gain ratio(<CODE>DISC_MEAS_GAIN</CODE>), Gini index (<CODE>DISC_MEAS_GINI</CODE>) or no measure (<CODE>DISC_MEAS_NONE</CODE>). Default: <CODE>DISC_MEAS_RELIEFF</CODE></DD>
+
+<DT><B>useGammaDistribution</b>
+<DD class=ddfun>this parameter determines the order in which the heuristic will select attributes that will be then evaluated using VizRank. If value is set to 0, heuristic will start with selecting top ranked attributes (as ranked by measures specified by <CODE>attrCont</CODE> and <CODE>attrDist</CODE> variables) and when tested all possible combinations progress to worse ranked attributes. If value set to 1, heuristic will also first rank attributes but will then randomly select attributes according to gamma distribution - this way the better ranked attributes will still be selected more often, but sometimes they will be tested in a combination with attributes that are poorly ranked but can in the end produce high-ranked projection. In domains with a larger set of attributes (&gt;20) it is advisable to use gamma distribution, otherwise we never come to evaluate projections with proorly ranked attributes. Default: 0</DD>
+
+
+<DT><B>useExampleWeighting</b>
+<DD class=ddfun> if class distribution is very uneven example weighting can be used. Default: 0</DD>
+
+<DT><B>evaluationTime</b>
+<DD class=ddfun> time in minutes that we want to spend in evaluating projections. Since there might be a large number of possible projections we can this way stop evaluation before it evaluates all projetions. Because of the seach heuristic (<CODE>attrCont</CODE> and <CODE>attrDisc</CODE>) we will most likely find projections with the highest scores at the beginning of the evaluation. Default: 2</DD>
+
+</DL>
+
+<p><b>Radviz specific settings:</b><br>
+<index name="RadViz">
+
+<DL>
+<DT><B>optimizationType</b>
+<DD class=ddfun> for description see <CODE>attributeCount</CODE> below. Possible values are <CODE>EXACT_NUMBER_OF_ATTRS</CODE> and <CODE>MAXIMUM_NUMBER_OF_ATTRS</CODE>. Default: <CODE>MAXIMUM_NUMBER_OF_ATTRS</CODE></DD>
+
+<DT><B>attributeCount</b>
+<DD class=ddfun> maximum number of attributes in a projection that we will consider. If <CODE>optimizationType == MAXIMUM_NUMBER_OF_ATTRS</CODE> then we will consider projections that have between 3 and <CODE>attributeCount</CODE> attributes. If <CODE>optimizationType == EXACT_NUMBER_OF_ATTRS</CODE> then we will consider only projections that have exactly <CODE>attributeCount</CODE> attributes. Default: 4</DD>
+</DL>
+
+<p><b>Methods:</b><br>
+<DL>
+<DT><B>setData</b>(data)
+<DD class=ddfun> set the example table to evaluate</DD>
+
+<DT><B>evaluateProjections()</b>
+<DD class=ddfun> start projection evaluation. If not all projections are yet evaluated, it will automatically stop after <CODE>evaluationTime</CODE> minutes.</DD>
+
+<DT><B>save</b>(filename)
+<DD class=ddfun> save the list of evaluated projections</DD>
+
+<DT><B>load</b>(filename)
+<DD class=ddfun> load a file with evaluated projections</DD>
+</DL>
+
+<hr>
+<h3>VizRank as a learner</h3>
+
+<p>VizRank can also be used as a learning method. You can construct a learner by creating an instance of the VizRankLearner class.</p>
+
+<xmp class = "code">learner = VizRankLearner(SCATTERPLOT)</xmp>
+
+<p>VizRankLearner can actually accept three parameters. First is the type of the visualization method to use (<CODE>SCATTERPLOT</CODE> or
+<CODE>RADVIZ</CODE>). The second parameter is an instance of VizRank class. If it is not given, a new instance is created. The third parameter is a graph instance - <CODE>orngScaleScatterPlotData</CODE> or <CODE>orngScaleRadvizData</CODE> instance. If it is not specified, a new instance is created.</p>
+
+<p>To change the VizRank's settings we simply access them through the learner.VizRank instance (e.g. <CODE>learner.VizRank.kValue = 10</CODE>).</p>
+
+<p>The learner instance can be used as any other learners. If you provide it the examples it returns a classifier of type <CODE>VizRankClassifier</CODE> which can be used as any other classifier:<br>
+
+<xmp class = "code">classifier = learner(data)</xmp>
+
+<p>When classifying VizRank classifier will use the evaluated projections to make class prediction for the new example. Evaluated projection will serve as arguments for each class value. Arguments have different values (weights) and the example is classified to the class which has the highest sum of argument values.</p>
+
+<p>VizRank's settings that are relevant when using VizRank as a classifier:</p>
+
+<DL>
+<DT><B>argumentCount</b>
+<DD class=ddfun> number of arguments (projections) used when predicting the class value<br>
+
+</DL>
+
+<p>A simple example:</p>
+<p>
+
+<xmp class="code">>>> import orange
+>>> from orngVizRank import *
+>>> data = orange.ExampleTable("iris.tab")
+>>> learner = VizRankLearner(SCATTERPLOT)
+>>> learner.VizRank.argumentCount = 3
+>>> classifier = learner(data)
+>>> for i in range(5):
+        print classifier(data[i]), data[i].getclass()
+(<orange.Value 'iris'='Iris-setosa'>, <1.000, 0.000, 0.000>) Iris-setosa
+(<orange.Value 'iris'='Iris-setosa'>, <1.000, 0.000, 0.000>) Iris-setosa
+(<orange.Value 'iris'='Iris-setosa'>, <1.000, 0.000, 0.000>) Iris-setosa
+(<orange.Value 'iris'='Iris-setosa'>, <1.000, 0.000, 0.000>) Iris-setosa
+(<orange.Value 'iris'='Iris-setosa'>, <1.000, 0.000, 0.000>) Iris-setosa
+</xmp>
+
+<h2>References</h2>
+
+<p>Leban, G., Bratko, I., Petrovic, U., Curk, T., Zupan, B. VizRank: finding informative data projections in functional genomics
+by machine learning. <i>Bioinformatics</i> <b>21</b>, 413-414 (2005).</p>
+<p>Leban, G., Mramor, M., Bratko, I., Zupan, B.: Simple and Effective Visual Models for Gene Expression Cancer Diagnostics, <i>KDD-2005</i>
+167--177 (Chicago, 2005).</p>
+<p>Hoffman, P. E., Grinstein, G. G., Marx, K., Grosse, I. & Stanley, E.: DNA Visual and Analytic Data Mining. <i>IEEE Visualization 1997</i> 1, 437-441 (1997).</p>
+</body> </html>

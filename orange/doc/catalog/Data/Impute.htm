@@ -1,0 +1,73 @@
+<html>
+<head>
+<title>Impute</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Impute</h1>
+
+<img class="screenshot" src="../icons/Impute.png">
+<p>Replaces unknown values in the data.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Data set.</DD>
+
+<dt>Learner for Imputation</dt>
+<dd>A learning algorithm to be used when values are imputed using a predictive model. This algorithm, if given, substitutes the default (1-NNLearner).</dd>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>The same data set as on the input, but with the missing values imputed.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Some Orange's algorithms and visualization cannot handle unknown values in the data. This widget does what statistician call <em>imputation</em>: it substitutes them by values computed from the data or set by the user.</p>
+
+<img class="schema" src="Impute.png" alt="Impute widget">
+
+<P>In the top-most box, <span class="option">Default imputation method</span>, the user can specify a general imputation technique for all attributes.
+<ul>
+<li><span class="option">Don't Impute</span> does nothing with the missing values.</li>
+
+<li><span class="option">Average/Most-frequent</span> uses the average value (for continuous attributes) or the most common value (for discrete attributes).</li>
+
+<li><span class="option">Model-based imputer</span> constructs a model for predicting the missing value based on values of other attributes; a separate model is constructed for each attribute. The default model is 1-NN learner, which takes the value from the most similar example (this is sometimes referred to as <em>hot deck imputation</em>). This algorithm can be substituted by one that the user connects to the input signal <span class="option">Learner for Imputation</span>. Note, however, that if there are discrete and continuous attributes in the data, the algorithm needs to be capable of handling them both; at the moment only kNN learner can do that. (In the future, when Orange has more regressors, Impute widget may have separate input signals for discrete and continuous models.)</li>
+
+<li><span class="option">Random values</span> computes the distributions of values for each attribute and then imputes by picking random values from them.</li>
+
+<li><span class="option">Remove examples with missing values</span> removes the example containing missing values, except for the attributes for which specific actions are defined as described below. This check also applies to the class attribute if <span class="option">Impute class values</span> is checked.</li>
+</ul>
+</P>
+
+<P>It is also possible to specify individual treatment for each attribute which override the default treatment set above. One can also specify a manually defined value used for imputation. In the snapshot on the left, we decided not to impute the values of "normalized-losses" and "make", the missing values of "aspiration" will be replaced by random values, while the missing values of "body-style" and "drive-wheels" are replaced by "hatchback" and "fwd", respectively. If the values of "length", "width" or "height" is missing, the example is discarded. Values of all other attributes use the default method set above (model-based imputer, in our case).</P>
+
+<P>Button <span class="option">Set All to Default</span> resets the individual attribute treatments to the default.</P>
+
+<P>Imputing class values is typically not a good practice, so it is off by default. It can be enabled by checking <span class="option">Impute class values</span>. If checked and the default method is to remove the examples with missing values, then also examples with unknown classes are removed; otherwise they are not.</P>
+
+<P>All changes are committed immediately is <span class="option">Send automatically</span> is checked. Otherwise, <span class="option">Apply</span> needs to be pushed to apply any new settings.
+
+
+<!-- <h2>Examples</h2>
+
+<p>In the schema below we show Iris data set with continuous
+attributes (as in original data file) and with discretized attributes.</p>
+
+<a href="Discretize-Example.gif"><img src="Discretize-Example-S.gif"
+alt="Schema with Discretize widget" class="screenshot" border=0></a>
+-->
+
+</body>
+</html>

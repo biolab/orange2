@@ -1,0 +1,112 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="../style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+<index name="outlier detection">
+<h1>orngReinforcement: reinforcement learning</h1>
+
+<p>This page describes a class for reinforcement learning. Reinforcement
+learning is machine learning method where an agent (learner and actor) tries
+to act with a goal of maximising reward.</p>
+<hr>
+
+<H2>RLSarsa</H2>
+
+<index name="classes/RLSarsa">
+
+<p>Class RLSarsa is an implementation of linear, gradient-descendant
+Sarsa(lambda) with tile coding. The implementation closely follows the boxed
+algorithm in Figure 8.8 on page 212 in Sutton, 1998. It is a descendant of
+mountain car example from the book.</p>
+
+<p>This implementation tries to maximise reward, therefore user should devise a
+way to reward desired behaviour. Actions are integers starting whith zero.</p>
+
+<p>User also has to properly encode state. State is defined as a list of 
+real numbers - state variables. Technique used for
+discretization/generalization is tile coding.</p>
+
+<p>We can visualise each 2D
+tiling as mesh of cells. For each tiling the state is transformed to an index of a cell in a mesh: we have
+achieved discretization. Because location of our meshes (tilings) is not the
+same, the state is transformed to (possibly) different cell indexes in each
+tiling. This is the basis for generalization of states. Greater the number of tilings, greater the precision and power of
+generalization.
+
+<p>When calculating cell indexes in the mesh the width of a cell is always
+1. The number of cells in any direction of the mesh isn't explicitly specified anywhere in the state.</p>
+
+<p> Let us try to explain transformation of a given property to state variable on a
+simple example. Say we want to divide a state variable describing speed of a
+trolley to 10 subintervals. Let's say we are only interested in speeds between -0.5 and 0.5. Before
+conversion we have to limit our property to that interval. Then we can
+divide limited property value with the width of a subinterval. In our case the width is
+(0.5-(-0.5))/10 = 0.1. Thus, we describe speed with a state variable between -5 and 5. </p>
+
+<p>More subintervals for a variable greatly enhances precision. Keep in mind 
+that doubling the number of subintervals also
+doubles memory requirements and increases learning time because it makes
+generalization harder. Doubling the number of subintervals for
+four variables means 16-times greater memory consumption.</p>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>__init__(numActions, numTilings, memorySize=1000, maxtraces=100,
+mintracevalue=0.01, rand=random.Random(0))</DT>
+<DD>Constructor. Before using <CODE>decide</CODE>, run <CODE>init</CODE>.</DD>
+<DT>init(state)</DT>
+<DD>Initializes new episode. Returns first action.</DD>
+<DT>decide(reward, state)</DT>
+<DD>Returns state dependant action. Also, modifies "knowledge" with respect
+to given reward.</DD>
+</DL>
+
+<p class=section>Attributes</P>
+<DL class=attributes>
+<DT>epsilon</DT>
+<DD>Probability of taking random action (exploring). Default 0.05.</DD>
+<DT>alpha</DT>
+<DD>Step-size parameter for learning, default 0.5</DD>
+<DT>lambda1</DT>
+<DD>Trace weakening factor, default 0.9.</DD>
+<DT>gamma</DT>
+<DD>"Devaluation" factor of expected future rewards, because immediate rewards are worth
+more. Default 0.97.</DD>
+</DL>
+
+<H2>Examples</H2>
+
+<p>In the following example an agent tries to learn that taking 
+action 0 in state (0,0) and action 1 in state (1,1) maximises 
+reward.</p>
+<p class="header"><a href="reinforcement1.py">reinforcement1.py</a></p>
+<XMP class=code>import orngReinforcement
+
+r = orngReinforcement.RLSarsa(2,1)
+
+ans = r.init([0,0]) #initialize episode
+
+#if state is (0,0), act 0
+for i in range(10):
+  if ans == 0: reward = 1
+  else: reward = 0
+  ans = r.decide(reward,[0,0])
+      
+#if state is (1,1), act 1
+for i in range(10):
+  if ans == 1: reward = 1
+  else: reward = 0
+  ans = r.decide(reward,[1,1])
+            
+r.epsilon = 0.0 #no random action
+r.alpha = 0.0 #stop learning
+            
+print "in (0,0) do", r.decide(0,[0,0]) #should output 0
+print "in (1,1) do", r.decide(0,[1,1]) #should output 1
+</XMP>
+
+</BODY>
+</html>

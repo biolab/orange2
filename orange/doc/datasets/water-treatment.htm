@@ -1,0 +1,306 @@
+<html>
+<head>
+<title>Water Treatment Data Base</title>
+</head>
+<body>
+<h1>Info on Water Treatment Data Base</h1>
+<pre>
+1. Title: Faults in a urban waste water treatment plant
+
+2. Source Information:
+   -- Creators: Manel Poch (igte2@cc.uab.es)
+         Unitat d'Enginyeria Quimica
+         Universitat Autonoma de Barcelona. Bellaterra. Barcelona; Spain
+   -- Donor: Javier Bejar and Ulises Cortes (bejar@lsi.upc.es)
+         Dept. Llenguatges i Sistemes Informatics;
+         Universitat Politecnica de Catalunya. Barcelona; Spain
+   -- Date: June, 1993
+
+3. Past Usage:
+   1. J. De Gracia.
+      ``Avaluacio de tecniques de classificacio per a la gestio de 
+        Bioprocessos: Aplicacio a un reactor de fangs activats''
+         Master Thesis. Dept. de Quimica. Unitat d'Enginyeria Quimica.
+       Universitat Autonoma de Barcelona. Bellaterra (Barcelona). 1993.
+         -- Results:
+              Comparison between the classification of plant situations using 
+             cluster analysis and conceptual clustering. The induced classes
+             are exposed and contrasted. 
+
+
+   2. J. Bejar, U. Cort\'es and M. Poch.
+       ``LINNEO+: A Classification Methodology for Ill-structured Domains''. 
+        Research report RT-93-10-R. Dept. Llenguatges i Sistemes Informatics. 
+        Barcelona. 1993.
+         -- Results:
+	      The conceptual clustering algorithm used in the first reference
+             is exposed. Some results are given about the use of a priori
+             expert knowledge to bias the classification process in the plant
+             domain.
+
+   3.  Ll. Belanche, U. Cortes and M. S\`anchez. 
+      ``A knowledge-based system for the diagnosis of waste-water treatment
+       plant''. Proceedings of the 5th international conference of industrial
+       and engineering applications of AI and Expert Systems IEA/AIE-92. Ed
+       Springer-Verlag. Paderborn, Germany, June 92.
+         -- Results:
+             Explanation of the waste water treatment plant diagnosis problems
+             Not directly related to the dataset.
+
+
+
+4. Relevant Information:
+
+    This dataset comes from the daily measures of sensors in a urban waste 
+  water treatment plant. The objective is to classify the operational
+  state of the plant in order to predict faults through the state 
+  variables of the plant at each of the stages of the treatment process. 
+  This domain has been stated as an ill-structured domain. 
+   
+  
+5. Number of instances: 527
+
+6. Number of Attributes: 38
+
+    There are some missing values, all are unknown information.
+
+7. Attribute Information:
+
+ All atrributes are numeric and continuous
+
+N.  Attrib.    
+ 1  Q-E        (input flow to plant)  
+ 2  ZN-E       (input Zinc to plant)
+ 3  PH-E       (input pH to plant) 
+ 4  DBO-E      (input Biological demand of oxygen to plant) 
+ 5  DQO-E      (input chemical demand of oxygen to plant)
+ 6  SS-E       (input suspended solids to plant)  
+ 7  SSV-E      (input volatile supended solids to plant)
+ 8  SED-E      (input sediments to plant) 
+ 9  COND-E     (input conductivity to plant) 
+10  PH-P       (input pH to primary settler)
+11  DBO-P      (input Biological demand of oxygen to primary settler)
+12  SS-P       (input suspended solids to primary settler)
+13  SSV-P      (input volatile supended solids to primary settler)
+14  SED-P      (input sediments to primary settler) 
+15  COND-P     (input conductivity to primary settler)
+16  PH-D       (input pH to secondary settler) 
+17  DBO-D      (input Biological demand of oxygen to secondary settler)
+18  DQO-D      (input chemical demand of oxygen to secondary settler)
+19  SS-D       (input suspended solids to secondary settler)
+20  SSV-D      (input volatile supended solids to secondary settler)
+21  SED-D      (input sediments to secondary settler)  
+22  COND-D     (input conductivity to secondary settler) 
+23  PH-S       (output pH)   
+24  DBO-S      (output Biological demand of oxygen)
+25  DQO-S      (output chemical demand of oxygen)
+26  SS-S       (output suspended solids)
+27  SSV-S      (output volatile supended solids) 
+28  SED-S      (output sediments) 
+29  COND-S     (output conductivity)
+30  RD-DBO-P   (performance input Biological demand of oxygen in primary settler)
+31  RD-SS-P    (performance input suspended solids to primary settler)
+32  RD-SED-P   (performance input sediments to primary settler)
+33  RD-DBO-S   (performance input Biological demand of oxygen to secondary settler)
+34  RD-DQO-S   (performance input chemical demand of oxygen to secondary settler)
+35  RD-DBO-G   (global performance input Biological demand of oxygen)
+36  RD-DQO-G   (global performance input chemical demand of oxygen)
+37  RD-SS-G    (global performance input suspended solids) 
+38  RD-SED-G   (global performance input sediments)
+
+
+-- Statistics:
+ 
+ N.  Attrib.     min      max       mean      st-dev
+ 1  Q-E        10000    60081     37226.56  6571.46   
+ 2  ZN-E           0.1     33.5       2.36     2.74   
+ 3  PH-E           6.9      8.7       7.81     0.24   
+ 4  DBO-E         31      438       188.71    60.69   
+ 5  DQO-E         81      941       406.89   119.67   
+ 6  SS-E          98     2008       227.44   135.81   
+ 7  SSV-E         13.2     85.0      61.39    12.28   
+ 8  SED-E          0.4     36         4.59     2.67   
+ 9  COND-E       651     3230      1478.62   394.89   
+10  PH-P           7.3      8.5       7.83     0.22   
+11  DBO-P         32      517       206.20    71.92   
+12  SS-P         104     1692       253.95   147.45   
+13  SSV-P          7.1     93.5      60.37    12.26   
+14  SED-P          1.0     46.0       5.03     3.27   
+15  COND-P       646     3170      1496.03   402.58   
+16  PH-D           7.1      8.4       7.81     0.19   
+17  DBO-D         26      285       122.34    36.02   
+18  DQO-D         80      511       274.04    73.48   
+19  SS-D          49      244        94.22    23.94   
+20  SSV-D         20.2    100        72.96    10.34   
+21  SED-D          0.0      3.5       0.41     0.37   
+22  COND-D        85     3690      1490.56   399.99   
+23  PH-S           7.0      9.7       7.70     0.18   
+24  DBO-S          3      320        19.98    17.20   
+25  DQO-S          9      350        87.29    38.35   
+26  SS-S           6      238        22.23    16.25   
+27  SSV-S         29.2    100        80.15     9.00   
+28  SED-S          0.0      3.5       0.03     0.19   
+29  COND-S       683     3950      1494.81   387.53   
+30  RD-DBO-P       0.6     79.1      39.08    13.89   
+31  RD-SS-P        5.3     96.1      58.51    12.75   
+32  RD-SED-P       7.7    100        90.55     8.71   
+33  RD-DBO-S       8.2     94.7      83.44     8.4    
+34  RD-DQO-S       1.4     96.8      67.67    11.61   
+35  RD-DBO-G      19.6     97        89.01     6.78   
+36  RD-DQO-G      19.2     98.1      77.85     8.67   
+37  RD-SS-G       10.3     99.4      88.96     8.15   
+38  RD-SED-G      36.4    100        99.08     4.32   
+
+
+8. Missing Attribute Values: 
+
+ N. Attrib.   N. of Missings
+ 1  Q-E:	18  
+ 2  ZN-E:	 3
+ 3  PH-E:	 0
+ 4  DBO-E:	23
+ 5  DQO-E:	 6
+ 6  SS-E:	 1
+ 7  SSV-E:	11
+ 8  SED-E:	25
+ 9  COND-E:	 0
+10  PH-P:	 0
+11  DBO-P:	40
+12  SS-P:	 0
+13  SSV-P:	11
+14  SED-P:	24
+15  COND-P:	 0
+16  PH-D:	 0
+17  DBO-D:	28
+18  DQO-D:	 9
+19  SS-D:	 2
+20  SSV-D:	13
+21  SED-D:	25
+22  COND-D:	 0
+23  PH-S:	 1
+24  DBO-S:	23
+25  DQO-S:	18
+26  SS-S:	 5
+27  SSV-S:      17
+28  SED-S:      28
+29  COND-S:	 1
+30  RD-DBO-P:   62
+31  RD-SS-P:     4
+32  RD-SED-P:   27
+33  RD-DBO-S:   40
+34  RD-DQO-S:   26
+35  RD-DBO-G:   36
+36  RD-DQO-G:   25
+37  RD-SS-G:     8
+38  RD-SSED-G:  31
+
+
+9. Class Distribution  
+
+  These are the classes induced by out conceptual clustering algorithm:
+
+ -- Class 1: Normal situation
+     
+   - Objects (275 days):  
+
+    D-1/3/90 to  D-12/3/90, D-16/3/90 to D-30/3/90, D-1/2/90 to D-19/2/90, D-21/2/90 to D-28/2/90,
+    D-1/1/90 to D-26/1/90, D-29/1/90 to D-31/1/90, D-1/6/90 to D-4/6/90, D-6/6/90 to D-8/6/90,
+    D-24/6/90, D-25/6/90, D-28/6/90, D-29/6/90, D-1/5/90 to D-6/5/90, D-8/5/90 to D-20/5/90,
+    D-24/5/90, D-25/5/90, D-29/5/90, D-1/4/90, D-4/4/90 to D-8/4/90, D-10/4/90 to D-20/4/90,
+    D-27/4/90, D-2/7/90, D-4/7/90 to D-8/7/90, D-12/7/90 to D-15/7/90, D-19/7/90, D-23/7/90,
+    D-26/7/90, D-4/9/90, D-5/9/90, D-23/9/90, D-28/9/90, D-30/9/90, D-17/8/90, D-21/8/90 to D-25/8/90,
+    D-29/8/90, D-30/8/90, D-3/12/90, D-9/12/90, D-16/12/90 to D-20/12/90, D-23/12/90, D-24/12/90,
+    D-27/12/90 to D-30/12/90,  D-6/11/90 to D-8/11/90, D-14/11/90, D-16/11/90, D-18/11/90,
+    D-20/11/90, D-21/11/90, D-27/11/90, D-10/10/90, D-18/10/90, D-29/10/90, D-30/10/90,
+    D-3/3/91 to D-6/3/91, D-10/3/91 to D-12/3/91, D-18/3/91, D-20/3/91, D-27/3/91, D-29/3/91,
+    D-3/2/91, D-5/2/91, D-8/2/91, D-14/2/91, D-17/2/91, D-18/2/91, D-21/2/91 to D-24/2/91, 
+    D-1/1/91, D-2/1/91, D-6/1/91, D-8/1/91, D-10/1/91 to D-20/1/91, D-25/1/91, D-2/5/91, D-3/5/91,
+    D-7/5/91, D-14/5/91, D-15/5/91, D-17/5/91, D-19/5/91, D-21/5/91 to D-23/5/91, D-1/4/91 to D-3/4/91,
+    D-5/4/91 to D-12/4/91, D-15/4/91 to D-21/4/91, D-23/4/91, D-1/7/91, D-3/7/91, D-4/7/91, D-7/7/91,
+    D-10/7/91 to D-12/7/91, D-15/7/91, D-16/7/91, D-22/7/91 to D-25/7/91, D-28/7/91, D-30/7/91, D-31/7/91,
+    D-2/6/91 to D-4/6/91, D-6/6/91, D-7/6/91, D-13/6/91, D-16/6/91 to D-21/6/91, D-25/6/91 to D-30/6/91,
+    D-4/10/91, D-6/10/91, D-17/10/91 to D-30/10/91, D-1/8/91, D-2/8/91, D-27/8/91, D-29/8/91.   
+
+
+ -- Class 2: Secondary settler problems-1
+      
+   - Objects (1 day): D-13/3/90
+
+ -- Class 3: Secondary settler problems-2
+
+   - Objects (1 day): D-14/3/90
+
+ -- Class 4: Secondary settler problems-3
+
+   - Objects (1 day): D-15/3/90, D-17/7/91 to D-19/7/91
+
+ -- Class 5: Normal situation with performance over the mean
+
+   - Objects (116 days):
+
+    D-28/1/90, D-10/6/90 to D-22/6/90, D-26/6/90, D-27/6/90, D-7/5/90, D-21/5/90 to D-23/5/90,
+    D-27/5/90, D-28/5/90, D-30/5/90, D-2/4/90, D-3/4/90, D-9/4/90, D-22/4/90 to D-26/4/90, D-1/7/90,
+    D-3/7/90, D-9/7/90 to D-11/7/90, D-16/7/90 to D-18/7/90, D-20/7/90, D-22/7/90, D-24/7/90, D-25/7/90,
+    D-27/7/90 to D-31/7/90, D-2/9/90, D-3/9/90, D-6/9/90 to D-13/9/90, D-16/9/90 to D-21/9/90,
+    D-24/9/90 to D-27/9/90, D-1/8/90 to D-7/8/90, D-16/8/90, D-28/8/90, D-31/8/90, D-7/12/90,
+    D-2/11/90, D-5/11/90, D-9/11/90, D-12/11/90, D-13/11/90, D-1/10/90 to D-5/10/90, D-24/10/90,
+    D-25/10/90, D-1/3/91, D-8/3/91, D-17/3/91, D-26/3/91, D-31/3/91, D-9/1/91, D-10/5/91, D-16/5/91,
+    D-20/5/91, D-29/5/91, D-30/5/91, D-14/4/91, D-22/4/91, D-24/4/91, D-25/4/91, D-5/7/91, D-8/7/91,
+    D-9/7/91, D-21/7/91, D-26/7/91, D-5/6/91, D-10/6/91, D-12/6/91, D-14/6/91, D-2/10/91, D-8/10/91,
+    D-9/10/91, D-11/10/91,D-13/10/91, D-16/10/91.
+ 
+ -- Class 6: Solids overload-1
+
+  - Objects (3 days):   D-5/6/90 D-28/5/91 D-31/5/91 
+ 
+ -- Class 7: Secondary settler problems-4
+
+  - Objects (1 day): D-29/4/90
+
+ -- Class 8: Storm-1
+ 
+  - Objects (1 day): D-14/9/90
+
+ -- Class 9: Normal situation with low influent
+
+  - Objects (69 days): 
+
+    D-8/8/90 to D-10/8/90, D-13/8/90, D-15/8/90, D-19/8/90, D-20/8/90, D-27/8/90, D-1/11/90, 
+    D-4/11/90, D-11/11/90, D-19/11/90, D-7/10/90 to D-9/10/90, D-12/10/90 to D-17/10/90,
+    D-21/10/90, D-23/10/90, D-26/10/90, D-28/10/90, D-7/3/91, D-24/3/91, D-25/3/91,
+    D-1/5/91, D-5/5/91, D-8/5/91, D-9/5/91, D-12/5/91, D-13/5/91, D-26/5/91, D-27/5/91,
+    D-26/4/91, D-28/4/91, D-29/4/91, D-2/7/91, D-14/7/91, D-29/7/91, D-9/6/91, D-24/6/91,
+    D-1/10/91, D-3/10/91, D-5/10/91, D-12/10/91, D-15/10/91, D-4/8/91  D-9/8/91 to D-26/8/91,
+    D-28/8/91, D-30/8/91.
+ 
+ -- Class 10: Storm-2
+
+  - Objects (1 day): D-12/8/90
+
+ -- Class 11: Normal situation 
+
+  - Objects (53 days):
+
+    D-2/12/90, D-4/12/90, D-6/12/90, D-10/12/90 to D-14/12/90 D-21/12/90, D-26/12/90,
+    D-15/11/90, D-22/11/90 to D-26/11/90, D-28/11/90 to D-30/11/90, D-19/10/90,
+    D-13/3/91 to D-15/3/91, D-19/3/91, D-21/3/91, D-22/3/91, D-1/2/91, D-4/2/91,
+    D-6/2/91, D-7/2/91, D-10/2/91 to  D-13/2/91, D-15/2/91, D-19/2/91,
+    D-25/2/91 to D-28/2/91, D-3/1/91, D-4/1/91, D-7/1/91, D-21/1/91 to D-24/1/91,
+    D-27/1/91 to D-31/1/91, D-6/5/91, D-4/4/91.
+
+ -- Class 12: Storm-3
+
+  - Objects (1 day): D-22/10/90
+
+ -- Class 13: Solids overload-2
+
+  - Objects (1 day): D-24/5/91
+
+
+-- Comments to the data file:
+   
+   The first element of each line is the day of the data,
+   the rest are the attribute values
+</pre>
+</body>
+</html>

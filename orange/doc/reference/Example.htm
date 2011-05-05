@@ -1,0 +1,331 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print></LINK>
+</HEAD>
+
+<BODY>
+<h1>Example</h1>
+<index name="classes/Example">
+
+<P><CODE>orange.Example</CODE> holds examples - a list of attribute values, together with some auxiliary data. That is how you see them in Python: as a list, resembling ordinary Python's list to extent possible. There are, however, differences; each example corresponds to some domain and therefore the number of attributes ("list elements") and their types are always as prescribed.</P>
+
+<p class=section>Attributes</P>
+
+<DL class=attributes>
+<DT>domain <span class=normalfont>(read-only)</SPAN></DT><DD>Each example corresponds to a <A href="Domain.htm">domain</A>. This field is set at construction time and cannot be modified.</DD>
+
+<DT>name</DT>
+<DD>Example can be assigned a name. It is not used by Orange methods but is provided to be used in user interfaces.</DD>
+</DL>
+
+<P>Examples cannot be assigned arbitrary attributes like other Python and Orange objects ("attribute" is here meant in the sense "class attribute"). For instance, if <CODE>ex</CODE> is an example, <CODE>ex.xxx=12</CODE> will yield an error.</P>
+
+
+<H2>Construction</H2>
+
+<P>To construct a new example, you first have to have a <A href="Domain.htm">domain description</A>. You can construct one yourself or load it from a file (which otherwise also contains some examples). For sake of simplicity, we shall load a domain from "lenses" dataset.</P>
+
+<p class="header">part of <a href="example.py">example.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">>>> import orange
+>>> data = orange.ExampleTable("lenses")
+>>> domain = data.domain
+>>> for attr in domain:
+...    print attr.name, attr.values
+...
+age <young, pre-presbyopic, presbyopic>
+prescription <myope, hypermetrope>
+astigmatic <no, yes>
+tear_rate <reduced, normal>
+lenses <none, soft, hard>
+</XMP>
+
+<DL class=attributes>
+<DT>orange.Example(domain)</DT>
+<DD>This is a basic constructor that creates an example with all values unknown. Setting them is one of subjects of this page.</DD>
+
+<DT>orange.Example(domain, list-of-values)</DT>
+<DD>This construct an initialized example. The list can contain anything that can be converted to a value (see documentation on <A href="Value.htm"><CODE>orange.Value</CODE></A>) and must be of appropriate length, one value for each corresponding attribute.
+
+<XMP class="code">>>> ex = orange.Example(domain, ["young", "myope", "yes", "reduced", "soft"])
+>>> print ex
+['young', 'myope', 'yes', 'reduced', 'soft']
+>>> ex = orange.Example(domain, ["young", 0, 1, orange.Value(domain[3],\
+                                 "reduced"), "soft"])
+>>> print ex
+['young', 'myope', 'yes', 'reduced', 'soft']
+</XMP>
+
+<P>The first example was constructed by giving values as strings. That's what you'll usually do; continuous values can, naturally, be given as numbers (or as strings, if you desire so). In the second example, we've shown alternatives: the second and the third values are given by indices and for the fourth we have constructed an <CODE>orange.Value</CODE> (something that <CODE>orange</CODE> would do for us automatically anyway if we just passed a string).
+</DD>
+
+<DT>orange.Example(example)</DT>
+<DD>This is cloning: a new example is created which is exactly the same as the original.</DD>
+
+<DT>orange.Example(domain, example)</DT>
+<DD>This form of constructor can be used for converting examples from other domains.
+
+<XMP class="code">>>> reduced_dom = orange.Domain(["age", "lenses"], domain)
+>>> reduced_ex = orange.Example(reduced_dom, ex)
+>>> print reduced_ex
+['young', 'soft']
+</XMP>
+
+<P>If <CODE>domain</CODE> is the same as original example's domain, this constructor is equivalent to the previous one.</p>
+</DD>
+
+<DT>orange.Example(domain, list-of-examples)</DT>
+<DD>Essentially similar to the converting constructor, <CODE>orange.Example(domain, example)</CODE>, which fills the example with values obtained from another example, this constructor fills the example with values obtained from multiple examples. The needed values are sought for in ordinary and meta-attributes registered with the corresponding domains. Meta-attributes that appear in the given examples and don't appear in the new example either as ordinary or meta attributes, are copied as well.</P>
+
+<P>We shall demonstrate the function on the datasets <a href="merge1.tab">merge1.tab</a> and <A href="merge2.tab">merge2.tab</A>; the first has attributes <CODE>a1</CODE> and <CODE>a2</CODE>, and meta-attributes <CODE>m1</CODE> and <CODE>m2</CODE>, while the second has attributes <CODE>a1</CODE> and <CODE>a3</CODE> and meta-attributes <CODE>m1</CODE> and <CODE>m3</CODE>.
+
+<p class="header"><a href="example_merge.py">example_merge.py</a>  (uses <a href="merge1.tab">merge1.tab</a>, <A href="merge2.tab">merge2.tab</A>)</p>
+<XMP class="code">import orange
+
+data1 = orange.ExampleTable("merge1")
+data2 = orange.ExampleTable("merge2", use = data1.domain)
+
+a1, a2 = data1.domain.attributes
+m1, m2 = data1.domain.getmetas().items()
+a1, a3 = data2.domain.attributes
+
+m1i, m2i = data1.domain.metaid(m1), data1.domain.metaid(m2)
+
+a1, a3 = data2.domain.attributes
+n1 = orange.FloatVariable("n1")
+n2 = orange.FloatVariable("n2")
+
+newdomain = orange.Domain([a1, a3, m1, n1])
+newdomain.addmeta(m2i, m2)
+newdomain.addmeta(orange.newmetaid(), a2)
+newdomain.addmeta(orange.newmetaid(), n2)
+
+merge = orange.Example(newdomain, [data1[0], data2[0]])
+print "First example: ", data1[0]
+print "Second example: ", data2[0]
+print "Merge: ", merge
+</XMP>
+
+<P>The <CODE>newdomain</CODE> consists of several attributes from <CODE>data1</CODE> and <CODE>data2</CODE>: <CODE>a1</CODE>, <CODE>a3</CODE> and <CODE>m1</CODE> are ordinary, and <CODE>m2</CODE> and <CODE>a2</CODE> are meta-attributes. Variables <CODE>m1</CODE> and <CODE>m2</CODE> are really tuples of meta-id and a descriptor (<A href="Variable.htm">Variable</A>). For this reason, <CODE>orange.Domain</CODE> is initialized with <CODE>m1[1]</CODE>, descriptor, while when adding meta attributes, we use <CODE>m2[0]</CODE> and <CODE>m2[1]</CODE>, so that <CODE>m2</CODE> has the same id in both domains. For meta-attribute <CODE>a2</CODE> which was original ordinary, we obtain a new id.</P>
+
+<P>In addition, <CODE>newdomain</CODE> has two new attributes, <CODE>n1</CODE> and <CODE>n2</CODE>, the first as ordinary and the second as meta-attribute.</P>
+
+<XMP class=code>First example:  [1, 2], {"m1":3, "m2":4}
+Second example:  [1, 2.5], {"m1":3, "m3":4.5}
+Merge:  [1, 2.5, 3, ?], {"a2":2, "m2":4, -5:4.50, "n2":?}
+</XMP>
+
+<P>Since attributes <CODE>a1</CODE> and <CODE>m1</CODE> appear in domains of both original examples, the new examples can only be constructed if these values match. They indeed do, and the merged example has all the values defined in the domain (<CODE>a1</CODE>, <CODE>a3</CODE> and <CODE>m2</CODE>, and meta-attributes <CODE>a2</CODE> and <CODE>m1</CODE>). In addition, it got the value of the meta-attribute <CODE>m3</CODE> from the second example, which is only identified by id <CODE>-4</CODE> since it is not registered with the domain. Values of the two new attributes are left undefined.</P>
+</DL>
+
+
+<H2>Basic methods</H2>
+
+<P>Examples have certain list-like behaviour. You can address their values. You can use <CODE>for</CODE> loops to iterate through example's values (<CODE>for value in example:...</CODE>. You can query example's length; it equals the number of attributes, including class attribute. You however cannot change the "length" of example, by inserting or removing attributes. Number and types of attributes are defined by <CODE>domain</CODE>, and the <CODE>domain</CODE> cannot be changed once example is constructed. Finally, you can convert an example to an ordinary Python's list.</P>
+
+<P>Examples can be indexed by integer indices, attribute descriptors or attribute names. Since "age" is the the first attribute in dataset lenses, the below statements are equivalent.</P>
+
+<XMP class="code">>>> age = data.domain["age"]
+>>> example = data[0]
+>>> print example[0]
+young
+>>> print example[age]
+young
+>>> print example["age"]
+young
+</XMP>
+
+<P>Example's values can be modified. We shall increase the age (and if it becomes larger than 2, reset it to 0).</P>
+
+<XMP class="code">>>> example = data[0]
+>>> print data[0]
+['young', 'myope', 'no', 'reduced', 'nono']
+>>> example[age] = (int(example[age])+1) % 3
+>>> print data[0]
+['pre-presbyopic', 'hyper', 'y', 'normal', 'no']
+</XMP>
+
+<P>The lesson which we've learned by the way is that by <CODE>example = data[0]</CODE> we don't get a fresh copy of example but a reference to the first example in the <CODE>data</CODE>. If you need a fresh copy, you need to clone the example, as explained above.</P>
+
+<P>The last value in the example is class value. Do not access it by <CODE>example[-1]</CODE> since this is reserved for future use (with meta values); use <CODE>getclass</CODE> and <CODE>setclass</CODE> instead.</P>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>getclass()</DT>
+<DD>Returns the example's class as <CODE>Value</CODE>.</DD>
+
+<DT>setclass(value)</DT>
+<DD>Sets the example's class. The argument can be a <CODE>Value</CODE>, number or string.</DD>
+
+<DT>setvalue(value)</DT>
+<DD>Argument <CODE>value</CODE> should be a qualified <CODE>orange.Value</CODE>, that is, it should have field <CODE>variable</CODE> defined. <CODE>value.variable</CODE> should be one of the attributes in example's domain (either ordinary or a registered meta-attribute). Functions sets the value of the attribute to the given value. This function is equivalent to calling <CODE>self[value.variable] = value</CODE>.</P>
+
+<P>This function makes it easy to assign prescribed values to examples; see an example in the section about meta values.</P>
+</DD>
+
+<DT>native([nativity])</DT>
+<DD>Converts the example into an ordinary Python list. If the optional argument is 1 (default), the list will contain objects of type <CODE>Value</CODE>; if it is 0, the list will contain native Python objects - string for discrete and numbers for continuous attribute values).</DD>
+
+<DT>compatible(other_example, ignoreClass = 0)</DT>
+<DD>Return true if the two examples are compatible, that is, if they are the same in all attributes which are known for both examples. If the optional second argument is true, class values are ignored, so two examples are compatible even though they differ in their class values.</DD>
+</DL>
+
+<H2>Hashing</H2>
+
+<P>Hash function for example (accessible via Python's built-in function <CODE>hash</CODE>, see Python documentation) is computed using CRC32. To some extent, you can also use it as random number (this is done, for instance, by <a href="RandomClassifier.htm"><CODE>RandomClassifier</CODE></A>.</P>
+
+<index name="meta attributes">
+<H2>Meta Values</H2>
+
+<P>Data examples in Orange are described by a fixed number and types of values, defined by domain descriptor. There is, however a way to attach additional attributes to examples. Such attributes (we call them meta-attributes) are not used for learning, but can carry additional information, such as, for instance, patient's name or the number of times the example was missclassified during some test procedure. The most common additional information is example's weight. To make things even more complex, we have already encountered problems for which examples had to have more than one weight each.</P>
+
+<P>For contrast from ordinary attributes, examples from the same domain (or even the same <CODE>ExampleTable</CODE>) can have varying number of meta values. Ordinary attributes are addressed by positions (eg <CODE>example[0]</CODE> is the first and <CODE>example[4]</CODE> is the fifth value in the example). Meta-attributes are addressed by id's; id's are really negative integers, but you should see them as "keys". An example can have any number of meta values with distinct id's. Domain descriptor can, but doesn't need to know about them.</P>
+
+<P>Id's are "created" by function <CODE>orange.newmetaid()</CODE>. (The function uses a very elaborate procedure for generating unique negative integers; the procedure might reveal itself only to the brightest if they make a few calls to the function and carefully observe the returned values.) So, if you want to assign meta values to examples, you need to obtain an id from <CODE>orange.newmetaid()</CODE>; afterwards, you can use it on any examples you want.</P>
+
+<P>If there is a particular <a href="Variable.htm">attributes</a> associated with the meta value, you can also pass the attribute as an argument to <code>orange.newmetaid</code>. If the attribute has been already registered with some id, the id can be reused. Doing so is recommended, but not the necessary.</P>
+
+<P>Meta values can also be loaded from files in tab-delimited or Excel format. In this case, you only need to know the names of corresponding meta-attributes; id's and stuff will be taken care of while loading the data. See documentation on <a href="fileformats.htm">file format</A>.</P>
+
+<P>Most often, you will use id for assigning weights; to each example you would assign a number (can be greater or smaller than one, most algorithms will even tolerate negative weights) and pass the id to the learning algorithm. Let's do this with random weights.</P>
+
+<p class="header"><a href="example2.py">example2.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">>>> import orange, random
+>>> random.seed(0)
+>>> data = orange.ExampleTable("lenses")
+>>> id = orange.newmetaid()
+>>> for example in data:
+>>>     example[id] = random.random()
+>>> print data[0]
+['young', 'myope', 'no', 'reduced', 'none'], {-2:0.84}
+</XMP>
+
+<P>Example now consists of two parts, ordinary attributes that resemble a list since they are addressed by positions (eg. the first value is "psby"), and meta values that are more like dictionaries, where the id (-2) is a key and 0.34 is a value (of type <CODE>orange.Value</CODE>, as all values in <CODE>Example</CODE>).
+
+<P>To make learner aware of weights, one only needs to pass the id as an additional argument. Therefore, to train a Bayesian classifier on our randomly weighted examples, you would call it by.</P>
+
+<XMP class="code">>>> bayes = orange.BayesLearner(data, id)
+</XMP>
+
+<P>Many other functions accept weights in similar fashion.</P>
+
+<XMP class="code">>>> print orange.getClassDistribution(data)
+<15.000, 5.000, 4.000>
+>>> print orange.getClassDistribution(data, id)
+<9.691, 3.232, 1.969>
+</XMP>
+
+<P>It is easy to see how this system also accommodates examples having different weights to be used for different procedures in the same experimental setup.</P>
+
+<P>As mentioned in documentation on <A href="Domain.htm"><CODE>orange.Domain</CODE></A>, you can enhance the output by registering an attribute descriptor for meta-attribute with id -2 in the example's domain.</P>
+
+<XMP class="code">>>> w = orange.FloatVariable("w")
+>>> data.domain.addmeta(id, w)
+</XMP>
+
+<P>Meta-attribute can now be indexed just as any other attribute:</P>
+
+<XMP class="code">>>> print data[0][id]
+0.844422
+>>> print data[0][w]
+0.844422
+>>> print data[0]["w"]
+0.844422
+</XMP>
+
+<P>More important consequence of registering attribute with the domain is that it enables automatic value conversion.</P>
+
+<P>Let us add a nominal meta-attribute, which will tell whether the example has been double-checked by the domain expert. The attributes values will be "yes" and "no".</P>
+
+<p class="header">part of <a href="example3.py">example3.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">>>> ok = orange.EnumVariable("ok?", values=["no", "yes"])
+>>> ok_id = orange.newmetaid()
+>>> data[0].setmeta(ok_id, "yes")
+Traceback (most recent call last):
+  File "C:\PROGRA~1\python22\lib\site-packages\Pythonwin\pywin\framework\scriptutils.py", line 301, in RunScript
+    exec codeObject in __main__.__dict__
+  File "D:\ai\OrangeTest\reference-misc\example3.py", line 23, in ?
+    data[0].setmeta(ok_id, "yes")
+TypeError: cannot convert 'yes' to a value of an unknown attribute
+</XMP>
+
+<P>This can't work since we haven't told Orange that <CODE>ok_id</CODE> corresponds to attribute <CODE>ok</CODE> and thus it cannot convert string "yes" to a <CODE>orange.Value</CODE>. You should perform the conversion manually.</P>
+
+<XMP class="code">>>> data[0][ok_id] = orange.Value(ok, "yes"))
+</XMP>
+
+<P>However, if you register the meta-attribute with the <A href="Domain.htm">domain descriptor</A>, Orange can find a descriptor and perform the conversion itself.</P>
+
+<XMP class="code">>>> data.domain.addmeta(ok_id, ok)
+>>> data[0][ok_id] = "yes"
+</XMP>
+
+<P>As before, you can use either id <CODE>ok_id</CODE>, attribute descriptor <CODE>ok</CODE> or attribute's name <CODE>"ok?"</CODE> to index the example.</P>
+
+<XMP class="code">>>> data[0][ok_id] = "yes"
+>>> data[0][ok] = "yes"
+>>> data[0]["ok?"] = "yes"
+</XMP>
+
+<P>It is even possible to use the meta-attribute with the <CODE>setvalue</CODE> function.</P>
+
+<XMP class="code">>>> no_yes = [orange.Value(ok, "no"), orange.Value(ok, "yes")]
+>>> for example in data:
+...     example.setvalue(no_yes[whrandom.randint(0, 1)])
+</XMP>
+
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>setmeta(value), getmeta()</DT>
+<DD>Obsolete functions for setting and getting meta values.</DD>
+
+<dt>getmetas([key-type]), getmetas(optional, [key-type])</dt>
+<dd>Returns example's meta values as a dictionary. Key type can be <code>int</code> (default), <code>str</code> or <code>orange.Variable</code>, and determines whether the keys in the dictionary will be meta-id's, attribute names or attribute descriptors. In the latter two cases, the function will only return the meta values that are registered in the domain (there are no descriptors/names associated with other values). In either case, the dictionary contains only a copy of the values: changing the dictionary won't affect the example's meta values.</p>
+
+<p>Argument 'optional' tells the method to return only the optional or the non-optional meta attributes. For the optional, the attributes with the same value of the flag are returned. If the argument is absent, both types of attributes are returned.</p>
+
+<P>The below code will print out the dictionary with all four possible key-types.</P>
+
+<p class="header">part of <a href="example.py">basket.py</a>
+(uses <a href="inquisition2.basket">inquisition2.basket</a>)</p>
+<XMP class="code">data = orange.ExampleTable("inquisition2")
+
+example = data[4]
+print example.getmetas()
+print example.getmetas(int)
+print example.getmetas(str)
+print example.getmetas(orange.Variable)
+</XMP>
+</dd>
+
+<DT>hasmeta(id | attribute-descriptor | name)</DT>
+<DD>Returns True if the example has the meta attribute.</DD>
+
+<DT>removemeta(id | attribute-descriptor | name)</DT>
+<DD>Removes a meta value. To use an attribute-descriptor or name, the corresponding attribute must be registered.</DD>
+
+<index name="example weights">
+
+<DT>getweight(id | attribute-descriptor | name | None)</DT>
+<DD>Returns a value of specified meta attribute. Value must be continuous; an exception is raised otherwise. If the argument is zero or <CODE>None</CODE>, function returns 1.0 (since weight id of 0 normally means that examples are not weighted).</P>
+
+<P>If you are writing your own learner, you should always use this function to retrieve example's weight. It is practical: most functions in Orange that can optionally accept weights, understand a weight id of 0 as "no weights"; this function takes care of that. In particular, never attempt to do this:
+<XMP class=code>>>> weight = example[id]
+</XMP>
+<P>If examples are not weighted, <CODE>id</CODE> will be zero and you'll get the value of the first attribute...</P>
+</DD>
+
+<DT>setweight((id | attribute-descriptor | name) [, weight])
+<DD>Sets a weight. If <CODE>id</CODE> is zero or <CODE>None</CODE>, nothing happens. <CODE>weight</CODE> must be a number; if omitted, the weight is set to 1.0.</DD>
+
+
+<DT>removeweight(id | attribute-descriptor | name)</DT>
+<DD>A simplified equivalent for <CODE>removemeta</CODE>. It does exactly the same thing except that it doesn't accept anything but integer for <CODE>id</CODE>. If <CODE>id</CODE> is zero or <CODE>None</CODE>, this function does nothing.</DD>
+</DT>
+</DL>
+
+</BODY> 

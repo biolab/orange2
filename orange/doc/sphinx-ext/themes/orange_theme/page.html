@@ -1,0 +1,12 @@
+{% extends "basic/page.html" %}
+
+{% block body %}
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+           <p><a class="uplink" href="{{ pathto(master_doc) }}">Orange Documentation</a>
+           </p>
+           {{ toc }}
+        </div>
+      </div>
+  {{ super() }}
+{% endblock %} 

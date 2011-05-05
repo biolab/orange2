@@ -1,0 +1,135 @@
+gene	component name
+string	string
+	class
+ACTN1	cell adhesion
+AR	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+ARF1	signal transduction
+ARNT	positive regulation of nitrogen compound metabolic process
+ARNTL	positive regulation of nitrogen compound metabolic process
+ATP6V0C	interspecies interaction between organisms
+AXIN1	Wnt receptor signaling pathway
+BAD	positive regulation of apoptosis
+BCL2L1	positive regulation of apoptosis
+BMPR2	""
+CANX	multicellular organismal process
+CAP1	regulation of cellular process
+CBL	signal transducer activity
+CBX3	negative regulation of cellular process
+CD38	positive regulation of lymphocyte activation
+CDC25B	developmental process
+CDC6	cellular biopolymer biosynthetic process
+CDC7	cellular biopolymer biosynthetic process
+CDH1	cell adhesion
+CDK4	G1/S transition of mitotic cell cycle
+CDKN2A	G1/S transition of mitotic cell cycle
+CFLAR	positive regulation of apoptosis
+CSNK2A1	ATP binding
+CTNNA1	cell adhesion
+DAG1	""
+DAXX	transcription factor binding
+DDB2	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+DLG4	transport
+DMD	""
+DRD2	inhibition of adenylate cyclase activity by dopamine receptor signaling pathway
+DVL3	Wnt receptor signaling pathway
+E2F1	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+E2F3	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+EIF2B1	oligodendrocyte development
+EIF2B2	oligodendrocyte development
+EIF2B5	oligodendrocyte development
+EP300	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+EPOR	signal transducer activity
+ERBB2	phosphoinositide 3-kinase cascade
+ERBB3	phosphoinositide 3-kinase cascade
+ESR2	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+ETS1	transcription factor binding
+FGF7	positive regulation of epithelial cell proliferation
+FHL2	cellular biopolymer biosynthetic process
+FLNA	inhibition of adenylate cyclase activity by dopamine receptor signaling pathway
+FSHR	multicellular organismal process
+GNA11	regulation of catalytic activity
+GNAI3	regulation of catalytic activity
+GRIA1	multicellular organismal process
+GRIA2	multicellular organismal process
+GRIN2B	transport
+GSK3B	Wnt receptor signaling pathway
+GTF2B	RNA polymerase II transcription factor activity
+HDAC1	transcription factor binding
+HDAC2	transcription factor binding
+HIF1A	positive regulation of nitrogen compound metabolic process
+HNF4A	""
+HSPCA	positive regulation of nitrogen compound metabolic process
+HSPG2	positive regulation of epithelial cell proliferation
+HTATIP	response to stimulus
+IFNAR1	signal transduction
+IL4R	response to stimulus
+INSR	signal transduction
+IRS1	signal transduction
+ITGA2	interspecies interaction between organisms
+ITGA2B	integrin-mediated signaling pathway
+ITGB1	interspecies interaction between organisms
+ITGB3	integrin-mediated signaling pathway
+JAK1	signal transduction
+KARS	transport
+LCK	positive regulation of lymphocyte activation
+MAPK1	positive regulation of apoptosis
+MCM2	cellular biopolymer biosynthetic process
+MCM3	cellular biopolymer biosynthetic process
+MCM4	cellular biopolymer biosynthetic process
+MCM5	cellular biopolymer biosynthetic process
+MCM6	cellular biopolymer biosynthetic process
+MCM7	cellular biopolymer biosynthetic process
+MDM2	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+MITF	negative regulation of cellular process
+MVP	interspecies interaction between organisms
+NCOA4	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+NFYA	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+NOLC1	ATP binding
+NR2F6	thyroid hormone receptor activity
+ORC1L	cellular biopolymer biosynthetic process
+ORC2L	cellular biopolymer biosynthetic process
+ORC3L	cellular biopolymer biosynthetic process
+PAPOLA	cellular biopolymer metabolic process
+PFKM	kinase binding
+PIAS1	signal transduction
+PIK3CA	signal transduction
+PIK3R3	signal transduction
+PIM1	negative regulation of cellular process
+PLAUR	signal transduction
+PPARG	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+PPM1A	Wnt receptor signaling pathway
+PPP1CC	kinase binding
+PRKCI	protein transport
+PSEN1	""
+RAB4A	protein transport
+RARA	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+RGS3	regulation of catalytic activity
+RPA1	cellular biopolymer biosynthetic process
+RPA2	cellular biopolymer biosynthetic process
+RXRA	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+RXRB	RNA polymerase II transcription factor activity
+SERPINA1	multicellular organismal process
+SF3B2	interspecies interaction between organisms
+SLC2A1	negative regulation of cellular process
+SMAD3	interspecies interaction between organisms
+SP1	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+SSR4	transport
+STAT1	signal transduction
+SYK	signal transducer activity
+TAF12	transcription initiation factor activity
+TAF4	transcription initiation factor activity
+THRB	thyroid hormone receptor activity
+TNFRSF1A	cytokine-mediated signaling pathway
+TNFRSF4	regulation of cellular process
+TNFRSF9	regulation of cellular process
+TOP2A	positive regulation of apoptosis
+TP53	nucleobase, nucleoside, nucleotide and nucleic acid metabolic process
+TRADD	cytokine-mediated signaling pathway
+TRAF1	regulation of cellular process
+TRAF3	regulation of cellular process
+TYK2	signal transduction
+UBE2I	negative regulation of cellular process
+YWHAB	developmental process
+YWHAE	cellular biopolymer metabolic process
+YWHAH	developmental process
+YWHAZ	developmental process

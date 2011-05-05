@@ -1,0 +1,309 @@
+<html>
+<head>
+<link rel=stylesheet href="../style.css" type="text/css">
+</head>
+<body>
+
+<h1>orngMySQL: Orange's Interface to MySQL</h1>
+<index name="modules+database access"/>
+<index name="SQL"/>
+
+<p>Module orngMySQL is Orange's gateway to <a
+href="http://www.mysql.com/">MySQL DBMS</a>. It sits on a top of a <a
+href="http://sourceforge.net/projects/mysql-python">MySQL for
+Python</a> that provides for a package called MySQLpy for interface
+between MySQL and Python. While MySQLpy enables you to manipulate data
+in MySQL DBMS from Python, orngMySQL takes care that the Orange's data
+tables can be transferred to and from MySQL data bases. orngMySQL
+implements a single class called Connect, which establishes a link
+with the data base and provides means for communication.</p>
+
+<h2>Connect</h2>
+
+<p><code><index name="classes/Connect (in orngMySQL)"/>Connect</code> establishes a connection with a data base and
+provides for a number of methods that are used for interchange of the
+data between Orange and MySQL.</p>
+
+<p class=section>Attributes</p>
+
+<dl class=attributes>
+<dt>host</span></dt>
+<dd>Computer hosting the MySQL DBMS.</dd>
+
+<dt>user</span></dt>
+<dd>User name for MySQL account.</dd>
+
+<dt>passwd</span></dt>
+<dd>Password that provides access to the account.</dd>
+
+<dt>db</dt>
+<dd>Name of the data base to establish a connection with.</dd>
+</dl>
+
+
+<p class=section>Methods</p>
+<dl class=attributes>
+<dt>query(statement [,use=None])</dt>
+<dd>Executes SQL select statement <code>statement</code> and returns
+     the data in the form of Orange's example table
+     (<code>ExampleTable</code>). If the return data has to conform to
+     some existing data domain, this has to be passed using
+     <code>use</code> argument.</dd>
+
+<dt>load(table [use])</dt>
+<dd>Returns a complete data set from the MySQL table <code>table</code>
+     in the form of Orange's example table. The same can be obtained
+     by calling <code>query</code> with SELECT * FROM statement, which
+     is in fact exactly what this method does. Like in
+     <code>query</code>, the domain of Orange's table to be used with
+     returned data set can be passed using the argument <code>use</code>.</dd>
+
+<dt>showTables()</dt>
+<dd>Lists the tables in the data base.</dd>
+
+<dt>write(table, data [, overwrite])</dt>
+<dd>Stores Orange data set <code>data</code> to the MySQL table
+     <code>table</code>. If the table already exists, throws
+     exception. To overwrite, use <code>overwrite=0</code>.</dd>
+<dt></dt>
+<dd></dd>
+
+</dl>
+
+<h2>Attribute Names and Types</h2>
+
+<p>While there are few (or almost no) restrictions for attribute names
+in Orange, names of the fields in SQL tables have to comply to quite a
+few restrictions. When writing data to MySQL, orngMySQL replaces any
+special characters (like blanks, slashes, ...) with underscores, and
+if an attribute name in Orange data set is an SQL keyword, it will
+appear in the tables with a "$" prefix.</p>
+
+<p>Following type conversion between SQL field types and Orange's
+attribute types is used when reading from mySQL:</p>
+<ul>
+  <li>ENUM, BIT, BOOLEAN, BINARY fields are converted to
+  discrete attributes,</li>
+  <li>FLOAT, REAL, DOUBLE are converted to continuous attributes,</li>
+  <li>CHAR, TEXT, STRING, DATE, TIME, VARCHAR, TIMESTAMP, LONGVARCHAR
+       are converted to string attributes,</li>
+  <li>INT, INTEGER, BIGINT, SMALLINT, DECIMAL, TINYINT are converted
+       to continuous atribute if there are more than 10 different field
+       values used in the table, otherwise, a corresponding Orange's
+       attribute is discrete.</li>
+</ul>
+
+<p>When writing to mySQL, ENUM will be used for discrete attributes,
+FLOAT for continuous attributes and CHAR(200) for string attributes.</p>
+
+<p>There are two special kinds of attributes in Orange: class
+attributes and meta attributes. In each data set, there can be only one
+class attribute but any number of meta attributes. When reading the
+data from MySQL, orngMySQL parses the field names: those preceded
+with "m$" will be stored as meta attribute in Orange's data table, and
+"c$" will be treated as an Orange's class attribute.</p>
+
+<p>When orngMySQL writes to mySQL, the prefix notation as described
+above will be used if there are any class or meta attributes in
+Orange's data table.</p>
+
+<h2>Examples</h2>
+
+<p>The example below will only work if you have installations of <a
+href="http://www.mysql.com/">MySQL</a> and <a
+href="http://sourceforge.net/projects/mysql-python">MySQLpy</a> on
+your computer; neither are included in Orange distribution.</p>
+
+<p>We start with setting-up a small data table in MySQL to be used in
+our examples:</p>
+
+<p class="header"><a href="bus.sql">bus.sql</a> (uses <a href=
+"bus.txt">bus.txt</a>)</p>
+<xmp class=code>SELECT VERSION();
+USE test;
+-- DROP TABLE bus;
+CREATE TABLE bus
+  (id varchar(5),
+   line enum('9','10','11'),
+   daytime enum('morning','evening', 'midday'),
+   temp float,
+   weather enum('rainy','sunny'),
+   arrival enum('late','on-time'));
+LOAD DATA LOCAL INFILE 'bus.txt' INTO TABLE bus;
+
+SELECT * FROM bus;
+</xmp>
+
+<p>If you already have a table called bus in the data base test and
+want to replace it with the data above, uncomment the line "-- DROP
+TABLE bus;" (remove leading "--").</p>
+
+<p>If everything goes well, running the script from shell by something like</p>
+
+<xmp class=code>mysql -u root < bus.sql</xmp>
+
+<p>should have the following output:</p>
+
+<xmp class=printout>VERSION()
+5.0.20-nt
+id      line    daytime temp    weather arrival
+1       10      morning 10      sunny   late
+2       11      morning 13      rainy   late
+3       9       morning 15      rainy   late
+4       10      evening 25      sunny   on-time
+5       9       evening 29      sunny   on-time
+6       11      morning 26      sunny   late
+7       9       evening 9       rainy   on-time
+8       9       midday  20      rainy   late
+9       11      midday  21      sunny   late
+10      10      evening 5       rainy   on-time
+11      10      midday  8       rainy   late
+12      9       morning 5       rainy   on-time
+</xmp>
+
+<p>Let us now write the script that reads this table from mySQL and
+in Orange data table stores, say, only the rows that concern bus line
+10:</p>
+
+<p class="header"><a href="sql1.py">sql1.py</a></p>
+<xmp class=code>import orange, orngMySQL
+
+t = orngMySQL.Connect('localhost','root','','test')
+data = t.query ("SELECT * FROM bus WHERE line='10'")
+for x in data:
+    print x
+
+print
+for a in data.domain.attributes:
+    print a
+</xmp>
+
+<p>Running this script reports on four data instances and lists the
+attributes (with types) in new Orange data table:</p>
+
+<xmp class=printout>['1', '10', 'morning', 10.000, 'sunny', 'late']
+['4', '10', 'evening', 25.000, 'sunny', 'on-time']
+['10', '10', 'evening', 5.000, 'rainy', 'on-time']
+['11', '10', 'midday', 8.000, 'rainy', 'late']
+
+StringVariable 'id'
+EnumVariable 'line'
+EnumVariable 'daytime'
+FloatVariable 'temp'
+EnumVariable 'weather'
+EnumVariable 'arrival'
+</xmp>
+
+<p>Say that our script that stores the data set in MySQL would be a
+little different and would
+
+<p class="header"><a href="busclass.sql">busclass.sql</a> (uses <a href=
+"bus.txt">bus.txt</a>)</p>
+<xmp class=code>USE test;
+-- DROP TABLE busclass;
+CREATE TABLE busclass
+  (m$id varchar(5),
+   line enum('9','10','11'),
+   daytime enum('morning','evening', 'midday'),
+   temp float, weather enum('rainy','sunny'),
+   c$arrival enum('late','on-time'));
+LOAD DATA LOCAL INFILE 'bus.txt' INTO TABLE busclass;
+
+SELECT * FROM busclass;
+</xmp>
+
+<p>Notice that now we have prefixed the id field of the table letting
+orngMySQL know this will be used as meta attribute. We did similar to
+arrival field, this time dedicating this field to a class
+attribute. The script below should reveal the effects of these
+subtle changes:</p>
+
+<p class="header"><a href="sql2.py">sql2.py</a></p>
+<xmp class=code>import orange, orngMySQL
+
+t = orngMySQL.Connect('localhost','root','','test')
+data = t.query("SELECT * FROM busclass WHERE line='10'")
+for x in data:
+    print x
+
+print
+for a in data.domain.attributes:
+    print a
+print 'Class:', data.domain.classVar
+</xmp>
+
+<p>By running it, we get:</p>
+
+<xmp class=printout>['10', 'morning', 10.000, 'sunny', 'late'], {"id":'1'}
+['10', 'evening', 25.000, 'sunny', 'on-time'], {"id":'4'}
+['10', 'evening', 5.000, 'rainy', 'on-time'], {"id":'10'}
+['10', 'midday', 8.000, 'rainy', 'late'], {"id":'11'}
+
+EnumVariable 'line'
+EnumVariable 'daytime'
+FloatVariable 'temp'
+EnumVariable 'weather'
+Class: EnumVariable 'arrival'
+</xmp>
+
+<p>Once we have a class attribute, we can run some learner on our data
+set. Let us read the complete data on buses from MySQL, and construct
+a classification tree to predict when the busses will be late:</p>
+
+<p class="header"><a href="sql3.py">sql3.py</a></p>
+<xmp class=code>import orange, orngMySQL, orngTree
+
+t = orngMySQL.Connect('localhost','root','','test')
+data = t.query("SELECT * FROM busclass")
+tree = orngTree.TreeLearner(data)
+orngTree.printTxt(tree, nodeStr="%V (%1.0N)", leafStr="%V (%1.0N)")
+</xmp>
+
+<p>Here's our newly induced model (numbers in brackets are number of
+instances that reached a specific node in the tree):</p>
+<xmp class=printout>root: late (12)
+|    daytime=evening: on-time (4)
+|    daytime=midday: late (3)
+|    daytime=morning: late (5)
+|    |    temp<7.500: on-time (1)
+|    |    temp>=7.500: late (4)
+</xmp>
+
+<p>For our final example, we load Iris data set in Orange, write it to
+MySQL data base, and read from it only those data records whose sepal
+length is below 5 mm.</p>
+
+<p class="header"><a href="sql4.py">sql4.py</a>  (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<xmp class=code>import orange, orngMySQL, orngTree
+
+data = orange.ExampleTable("iris")
+print "Input data domain:"
+for a in data.domain.variables:
+    print a
+
+t = orngMySQL.Connect('localhost','root','','test')
+t.write('iris', data, overwrite=True)
+
+sel = t.query("SELECT petal_width, petal_length FROM iris WHERE sepal_length<5.0")
+print "\n%d instances returned" % len(sel)
+print "Output data domain:"
+for a in sel.domain.variables:
+    print a
+</xmp>
+
+<p>The output of the script above is:</p>
+<xmp class=printout>Input data domain:
+FloatVariable 'sepal length'
+FloatVariable 'sepal width'
+FloatVariable 'petal length'
+FloatVariable 'petal width'
+EnumVariable 'iris'
+
+22 instances returned
+Output data domain:
+FloatVariable 'petal_width'
+FloatVariable 'petal_length'
+</xmp>
+</body>
+</html> 

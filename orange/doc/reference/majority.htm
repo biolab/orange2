@@ -1,0 +1,66 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<h1>Default Classifier</h1>
+<index name="classifiers+majority classifier">
+<index name="default classifier">
+
+<P>Accuracy of classifiers is often compared to the "default accuracy", that is, the accuracy of a classifier which classifies all examples to the majority class. To fit into the standard schema, even this algorithm is provided in form of the usual learner-classifier pair. Learning is done by <CODE>orange.<INDEX name="classes/MajorityLearner">MajorityLearner</CODE> and the classifier it construct is an instance of <CODE>orange.<INDEX name="classes/DefaultClassifier">DefaultClassifier</CODE>.</P>
+
+<H2>Learning</H2>
+
+<P><CODE>MajorityLearner</CODE> will most often be used as is, without setting any features. Nevertheless, it has two.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>estimatorConstructor</DT>
+<DD>An estimator constructor that can be used for estimation of class probabilities. If left <CODE>None</CODE>, probability of each class is estimated as the relative frequency of examples belonging to this class.</DD>
+
+<DT>aprioriDistribution</DT>
+<DD>Apriori class distribution that is passed to estimator constructor if one is given.</DD>
+</DL>
+
+
+<H2>Classification</H2>
+
+<P><CODE>DefaultClassifier</CODE> always classifies to the same class and reports same class probabilities.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>defaultVal</DT>
+<DD>Value that is returned by the classifier.</DD>
+
+<DT>defaultDistribution</DT>
+<DD>Class probabilities returned by the classifier.</DD>
+</DL>
+
+<P>The <CODE>DefaultClassifier</CODE>'s constructor can be called without arguments, with value (for <CODE>defaultVal</CODE>), variable (for <CODE>classVar</CODE>). If the value is given and is of type <CODE>orange.Value</CODE> (alternatives are an integer index of a discrete value or a continuous value), its field <CODE>variable</CODE> is will either be used for initializing <CODE>classVar</CODE> if variable is not given as an argument, or checked against the variable argument, if it is given.
+
+<HR>
+
+<H2>Example</H2>
+
+<P>This "learning algorithm" will most often be used to establish whether some other learning algorithm is better than "nothing". Here's a simple example.</P>
+
+<p class="header"><a href="majority.py">majority.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class=code>import orange, orngTest, orngStat
+
+data = orange.ExampleTable("monk1")
+
+treeLearner = orange.TreeLearner()
+bayesLearner = orange.BayesLearner()
+majorityLearner = orange.MajorityLearner()
+learners = [treeLearner, bayesLearner, majorityLearner]
+
+res = orngTest.crossValidation(learners, data)
+CAs = orngStat.CA(res, reportSE = 1)
+
+print "Tree:    %5.3f+-%5.3f" % CAs[0]
+print "Bayes:   %5.3f+-%5.3f" % CAs[1]
+print "Default: %5.3f+-%5.3f" % CAs[2]
+</XMP>
+
+</BODY></HTML>

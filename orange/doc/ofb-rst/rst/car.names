@@ -1,0 +1,8 @@
+| Names file for y
+unacc, acc, v-good, good.
+buying: discrete 20.
+maint: discrete 20.
+doors: discrete 20.
+persons: discrete 20.
+lugboot: discrete 20.
+safety: discrete 20.

@@ -1,0 +1,141 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<p class="Path">
+Prev: <a href="c_nb.htm">Naive Bayes in Python</a>,
+Next: <a href="regression.htm">Regression</a>,
+Up: <a href="c_pythonlearner.htm">Build Your Own Learner</a>,
+</p>
+
+<H1>Build Your Own Bagger</H1>
+
+<p>Here we show how to use the schema that allows us to build our own
+learners/classifiers for bagging. While you can find bagging,
+boosting, and other ensemble-related stuff in <a
+href="../modules/orngEnsemble.htm">orngEnsemble</a> module, we thought
+explaining how to code bagging in Python may provide for a nice
+example. The following pseudo-code (from
+Whitten &amp; Frank: Data Mining) illustrates the main idea of bagging:</p>
+
+<xmp class="code">MODEL GENERATION
+Let n be the number of instances in the training data.
+For each of t iterations:
+   Sample n instances with replacement from training data.
+   Apply the learning algorithm to the sample.
+   Store the resulting model.
+
+CLASSIFICATION
+For each of the t models:
+   Predict class of instance using model.
+Return class that has been predicted most often.
+</xmp>
+
+
+<p>Using the above idea, this means that our <code>Learner_Class</code> will
+need to develop t classifiers and will have to pass them to
+<code>Classifier</code>, which, once seeing a data instance, will use them for
+classification. We will allow parameter t to be specified by the
+user, 10 being the default.</p>
+
+<p>The code for the <code>Learner_Class</code> is therefore:</p>
+
+<p class="header">class <code>Learner_Class</code> from <a href=
+"bagging.py">bagging.py</a></p>
+<xmp class="code">class Learner_Class:
+    def __init__(self, learner, t=10, name='bagged classifier'):
+        self.t = t
+        self.name = name
+        self.learner = learner
+
+    def __call__(self, examples, weight=None):
+        n = len(examples)
+        classifiers = []
+        for i in range(self.t):
+            selection = []
+            for i in range(n):
+                selection.append(random.randrange(n))
+            data = examples.getitems(selection)
+            classifiers.append(self.learner(data))
+            
+        return Classifier(classifiers = classifiers, \
+            name=self.name, domain=examples.domain)
+</xmp>
+
+<p>Upon invocation, <code>__init__</code> stores the base learning (the one that
+will be bagged), the value of the parameter t, and the name of the
+classifier. Note that while the learner requires the base learner
+to be specified, parameters t and name are optional.</p>
+
+<p>When the learner is called with examples, a list of t
+classifiers is build and stored in variable <code>classifier</code>. Notice that
+for data sampling with replacement, a list of data instance indices
+is build (<code>selection</code>) and then used to sample the data from training
+examples (<code>example.getitems</code>). Finally, a <code>Classifier</code> is called
+with a list of classifiers, name and domain information.</p>
+
+<p class="header">class <code>Classifier</code> from <a href=
+"bagging.py">bagging.py</a></p>
+<xmp class="code">class Classifier:
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+    def __call__(self, example, resultType = orange.GetValue):
+        freq = [0.] * len(self.domain.classVar.values)
+        for c in self.classifiers:
+            freq[int(c(example))] += 1
+        index = freq.index(max(freq))
+        value = orange.Value(self.domain.classVar, index)
+        for i in range(len(freq)):
+            freq[i] = freq[i]/len(self.classifiers)
+        if resultType == orange.GetValue: return value
+        elif resultType == orange.GetProbabilities: return freq
+        else: return (value, freq)
+</xmp>
+
+
+<p>For initialization, <code>Classifier</code> stores all parameters it was
+invoked with. When called with a data instance, a list freq is
+initialized which is of length equal to the number of classes and
+records the number of models that classify an instance to a
+specific class. The class that majority of models voted for is
+returned. While it may be possible to return classes index, or even
+a name, by convention classifiers in Orange return an object <code>Value</code>
+instead.</p>
+
+<p>Notice that while, originally, bagging was not intended to
+compute probabilities of classes, we compute these as the
+proportion of models that voted for a certain class (this is
+probably incorrect, but suffice for our example, and does not hurt
+if only classes values and not probabilities are used).</p>
+
+<p>Here is the code that tests our bagging we have just
+implemented. It compares a decision tree and its bagged variant.
+Run it yourself to see which one is better!</p>
+
+<p class="header"><a href="bagging_test.py">bagging_test.py</a> (uses <a
+href="bagging.py">bagging.py</a> and <a href=
+"../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
+<xmp class="code">import orange, orngTree, orngEval, bagging
+data = orange.ExampleTable("adult_sample")
+
+tree = orngTree.TreeLearner(mForPrunning=10, minExamples=30)
+tree.name = "tree"
+baggedTree = bagging.Learner(learner=tree, t=5)
+
+learners = [tree, baggedTree]
+
+results = orngEval.crossValidation(learners, data, folds=5)
+for i in range(len(learners)):
+    print learners[i].name, orngEval.CA(results)[i]
+</xmp>
+
+<hr><br><p class="Path">
+Prev: <a href="c_nb.htm">Naive Bayes in Python</a>,
+Next: <a href="regression.htm">Regression</a>,
+Up: <a href="c_pythonlearner.htm">Build Your Own Learner</a>
+</p>
+
+</body>
+</html>

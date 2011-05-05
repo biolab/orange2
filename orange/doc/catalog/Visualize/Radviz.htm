@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>Radviz</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Radviz</h1>
+
+<img class="screenshot" src="../icons/Radviz.png">
+<p>Radviz vizualization with explorative data analysis and intelligent data visualization enhancements.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Input data set.</DD>
+<DT>Example Subset (ExampleTable)</DT>
+<DD>A subset of data instances from Examples.</DD>
+<DT>Attribute Selection List</DT>
+<DD>List of attributes to be shown in the visualization.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<dl class=attributes>
+<DT>Selected Examples (ExampleTable)</DT>
+<DD>A subset of examples that user has manually selected from the scatterplot.</DD>
+<DT>Unselected Examples (ExampleTable)</DT>
+<DD>All other examples (examples not included in the user's selection).</DD>
+<DT>Attribute Selection List</DT>
+<DD>List of attributes used in the visualization.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Radviz (Hoffman et al., 1997) is a neat non-linear multi-dimensional visualization technique that can display data on three or more attributes in a 2-dimensional projection.
+The visualized attributes are presented as anchor points equally spaced around the perimeter of a unit circle. Data instances are shown as points inside the circle, with their positions determined by a
+metaphor from physics: each point is held in place with springs that are attached at the other end to the attribute anchors. The stiffness of each spring is proportional to the value of the corresponding attribute and the point ends up at the position where the spring forces are in equilibrium. Prior to visualization, attribute values are scaled to lie between 0 and 1. Data instances that are close to a set of feature anchors have higher values for these features than for the others.</p>
+
+<p>The snapshot shown below shows a Radviz widget with a visualization of the data set from functional genomics (<a href="#Brown2000">Brown et al., 2000</a>). In this particular visualization the data instances are colored according to the corresponding class, and the visualization space is colored according to the computed class probability. Notice that the particular visualization very nicely separates the data instances of the different class, making the   visualization interesting and potentially informative.</p>
+
+<p><img class="screenshot" src="Radviz-Brown.png" alt="Radviz widget"></p>
+
+<p>To gain further understanding about the placement of the data points in two-dimensional space, it helps to set on the <span class="option">Show value lines</span> and use <span class="option">Tooltips show spring values</span>. We also switched-off the <span class="option">Show probabilities</span> to see the markings associated with data points better. The resulting display is shown below. From it, it should be clear that high values of "spo5 11" attribute (and for some data instances high values of "spo mid") is quite characteristic for instance of class Ribo, which at the same time have comparable lower value of other attributes. High values of heat 20 and diau f are characteristic fir Resp class. See <a href="#Leban2006">Leban et al. (2006)</a> and <a href="#Mramor2007">Mramor et al. (2007)</a> for further illustrations of utility of Radviz in analysis of this and similar data set from functional genomics. Other options in the <span class="option">Settings</span> tab are quite standard. The <span class="option">Point size</span> controls the size of the points that mark the data instnace. <span class="option">Jittering Options</span> are especially interesting when displaying data with discrete attributes, where many of the data instances would overlap. Same could happen also with continuous attributes if many data instances use the same value of the attributes. <span class="option">Scaling Options</span> can shrink or blow-up the visualization from its central point. From <span class="option">General Graph Settings</span>, which mainly includes standard point-visualization options, let us bring to your attention <span class="option">Show value lines</span> which we used in the visualization below and which tells the widget to annotate each data point with a set of lines, each corresponding with each of the attributes displayed. The length of these lines are proportional to the attribute values (no line if the value is minimal). A slider accompanying this option sets the scale in which the lines are drawn. <span class="option">Tooltip Settings</span> determine which information is being displayed when the pointer gets over the data instance.</p>
+
+<p><img class="screenshot" src="Radviz-Brown-Springs.png" alt="Radviz anchors and springs"></p>
+
+<p>Just like all point-based visualizations, this widget includes tools for intelligent data visualization (VizRank and FreeViz, see   <a href="Leban2006">Leban et al. (2006)</a> and <a href="">Demsar et al. (2007)</a>) and interface for explorative data analysis - selection of data points in visualization. Just like in <a href="Scatterplot.htm">Scatterplot widget</a>, intelligent visualization can be used to find a set of attributes that would result in an interesting visualization. For now, this works only with class-labeled data set, where interesting visualizations are those that well separate data instances of different class. Radviz graph above is according to this definition an example of a very good visualization, while the one below - where we show an VizRank's interface (<span class="option">VizRank</span> button in <span class="option">Optimization dialogs</span>) with a list of 5-attribute visualizations and their scores - is not. See documentation of <a href="Scatterplot.htm">Scatterplot widget</a> for further details on VizRank, and for description of explorative analysis functions (selection of data instances and zooming).</p>
+
+<h2>References</h2>
+
+<p id="Hoffman1997">Hoffman,P.E. et al. (1997) DNA visual and analytic data mining. In the Proceedings of the IEEE Visualization. Phoenix, AZ, pp. 437-441.</p>
+
+<p id="Brown2000">Brown, M. P., W. N. Grundy, et al. (2000). "Knowledge-based analysis of microarray gene expression data by using support vector machines." Proc Natl Acad Sci U S A 97(1): 262-7.</p>
+
+<p id="Leban2006">Leban, G., B. Zupan, et al. (2006). "VizRank: Data Visualization Guided by Machine Learning." Data Mining and Knowledge Discovery 13(2): 119-136. <a href="http://www.ailab.si/blaz/papers/2006-DMKD.pdf">[PDF]</a> </p>
+
+<p id="Demsar2007">Demsar J, Leban G, Zupan B. FreeViz-An intelligent multivariate visualization approach to explorative analysis of biomedical data. J Biomed Inform 40(6):661-71, 2007. <a href="http://www.ailab.si/blaz/papers/2007-Demsar-JBI.pdf">[PDF]</a></p>
+
+<p id="Mramor2007">Mramor M, Leban G, Demsar J, Zupan B. Visualization-based cancer microarray data classification analysis. Bioinformatics 23(16): 2147-2154, 2007. <a href="http://www.ailab.si/blaz/papers/2007-Mramor-Bioinformatics.pdf">[PDF]</a></p>
+
+</body>
+</html>

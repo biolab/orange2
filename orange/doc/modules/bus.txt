@@ -1,0 +1,12 @@
+1	10	morning	10	sunny	late
+2	11	morning	13	rainy	late
+3	9	morning	15	rainy	late
+4	10	evening	25	sunny	on-time
+5	9	evening	29	sunny	on-time
+6	11	morning	26	sunny	late
+7	9	evening	9	rainy	on-time
+8	9	midday	20	rainy	late
+9	11	midday	21	sunny	late
+10	10	evening	5	rainy	on-time
+11	10	midday	8	rainy	late
+12	9	morning	5	rainy	on-time
