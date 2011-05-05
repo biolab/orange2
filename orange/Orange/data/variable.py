@@ -27,13 +27,13 @@ or constructs a new one.
         This should however be avoided since it may result in unpredictable
         behaviour.
     
-    .. attribute:: varType
+    .. attribute:: var_type
        
         Variable type; it can be Orange.data.Type.Discrete,
         Orange.data.Type.Continuous, Orange.data.Type.String or
         Orange.data.Type.Other.  
 
-    .. attribute:: getValueFrom
+    .. attribute:: get_value_from
 
         A function (an instance of :obj:`Orange.core.Clasifier`) which computes
         a value of the variable from values of one or more other variables. This
@@ -52,12 +52,12 @@ or constructs a new one.
         As for flag ordered, no methods treat such variables in any special
         manner.
     
-    .. attribute:: randomGenerator
+    .. attribute:: random_generator
     
         A local random number generator used by method
         :obj:`Variable.random_value`.
     
-    .. attribute:: defaultMetaId
+    .. attribute:: default_meta_id
     
         A proposed (but not guaranteed) meta id to be used for that variable.
         This is used, for instance, by the data loader for tab-delimited file
@@ -85,10 +85,10 @@ or constructs a new one.
        
            :rtype: :class:`Orange.data.Value`
        
-    .. method:: computeValue(inst)
+    .. method:: compute_value(inst)
 
            Compute the value of the variable given the instance by calling
-           `getValueFrom` through a mechanism that prevents deadlocks by
+           `get_value_from` through a mechanism that prevents deadlocks by
            circular calls.
 
            :rtype: :class:`Orange.data.Value`
@@ -113,13 +113,13 @@ or constructs a new one.
             possible values for this variable. Changing the size, especially
             shrinking the list can have disastrous effects and is therefore not
             really recommendable. Also, do not add values to the list by
-            calling its append or extend method: call the :obj:`addValue`
+            calling its append or extend method: call the :obj:`add_value`
             method instead.
 
             It is also assumed that this attribute is always defined (but can
             be empty), so never set it to None.
     
-    .. attribute:: baseValue
+    .. attribute:: base_value
 
             Stores the base value for the variable as an index into `values`.
             This can be, for instance, a "normal" value, such as "no
@@ -128,7 +128,7 @@ or constructs a new one.
             potentially, learning algorithms. Default is -1 and means that
             there is no base value.
     
-    .. method:: addValue
+    .. method:: add_value
     
             Add a value to values. Always call this function instead of
             appending to values.
@@ -140,18 +140,18 @@ or constructs a new one.
 
     Descriptor for continuous variables.
     
-    .. attribute:: numberOfDecimals
+    .. attribute:: number_of_decimals
     
         The number of decimals used when the value is printed out, converted to
         a string or saved to a file.
     
-    .. attribute:: scientificFormat
+    .. attribute:: scientific_format
     
         If ``True``, the value is printed in scientific format whenever it
-        would have more than 5 digits. In this case, `numberOfDecimals` is
+        would have more than 5 digits. In this case, `number_of_decimals` is
         ignored.
 
-    .. attribute:: adjustDecimals
+    .. attribute:: adjust_decimals
     
         Tells Orange to monitor the number of decimals when the value is
         converted from a string (when the values are read from a file or
@@ -165,15 +165,15 @@ or constructs a new one.
         If the variable was constructed when data was read from a file, it will 
         be printed with the same number of decimals as the largest number of 
         decimals encountered in the file. If scientific notation occurs in the 
-        file, `scientificFormat` will be set to ``True`` and scientific format 
+        file, `scientific_format` will be set to ``True`` and scientific format 
         will be used for values too large or too small. 
     
         If the variable is created in a script, it will have, by default, three
         decimals places. This can be changed either by setting the value
         from a string (e.g. ``inst[0]="3.14"``, but not ``inst[0]=3.14``) or by
-        manually setting the `numberOfDecimals`.
+        manually setting the `number_of_decimals`.
 
-    .. attribute:: startValue, endValue, stepValue
+    .. attribute:: start_value, end_value, step_value
     
         The range used for :obj:`randomvalue`.
 
@@ -222,7 +222,7 @@ It can help the learning algorithm if the four-valued attribute ``e`` is
 replaced with a binary attribute having values `"1"` and `"not 1"`. The
 new variable will be computed from the old one on the fly. 
 
-.. literalinclude:: code/variable-getValueFrom.py
+.. literalinclude:: code/variable-get_value_from.py
     :lines: 7-17
     
 The new variable is named ``e2``; we define it by descriptor of type 
@@ -230,7 +230,7 @@ The new variable is named ``e2``; we define it by descriptor of type
 chose this order so that the ``not 1``'s index is ``0``, which can be, if 
 needed, interpreted as ``False``). Finally, we tell e2 to use 
 ``checkE`` to compute its value when needed, by assigning ``checkE`` to 
-``e2.getValueFrom``. 
+``e2.get_value_from``. 
 
 ``checkE`` is a function that is passed an instance and another argument we 
 don't care about here. If the instance's ``e`` equals ``1``, the function 
@@ -243,15 +243,15 @@ can be computed from it). For instance, we can compute the information gain of
 variable ``e2`` or its distribution without actually constructing data containing
 the new variable.
 
-.. literalinclude:: code/variable-getValueFrom.py
+.. literalinclude:: code/variable-get_value_from.py
     :lines: 19-22
 
 There are methods which cannot compute values on the fly because it would be
 too complex or time consuming. In such cases, the data need to be converted
 to a new :obj:`Orange.data.Table`::
 
-    newDomain = Orange.data.Domain([data.domain["a"], data.domain["b"], e2, data.domain.classVar])
-    newData = Orange.data.Table(newDomain, data) 
+    new_domain = Orange.data.Domain([data.domain["a"], data.domain["b"], e2, data.domain.class_var])
+    new_data = Orange.data.Table(new_domain, data) 
 
 Automatic computation is useful when the data is split onto training and 
 testing examples. Training instanced can be modified by adding, removing 
@@ -262,7 +262,7 @@ are. When they are classified, the classifier automatically converts the
 testing instances into the new domain, which includes recomputation of 
 transformed variables. 
 
-.. literalinclude:: code/variable-getValueFrom.py
+.. literalinclude:: code/variable-get_value_from.py
     :lines: 24-
 
 .. _attributes:
@@ -346,12 +346,12 @@ in the page on `loading data`. !!TODO!!
 
 There are two functions for reusing the attributes instead of creating new ones.
 
-.. function:: Orange.data.variable.make(name, type, ordered_values, unordered_values[, createNewOn])
+.. function:: Orange.data.variable.make(name, type, ordered_values, unordered_values[, create_new_on])
 
     Find and return an existing variable or create a new one if none existing
     variables matches the given name, type and values.
     
-    The optional `createOnNew` specifies the status at which a new variable is
+    The optional `create_new_on` specifies the status at which a new variable is
     created. The status must be at most ``Incompatible`` since incompatible (or
     non-existing) variables cannot be reused. If it is set lower, for instance 
     to ``MissingValues``, a new variable is created even if there exists
@@ -359,7 +359,7 @@ There are two functions for reusing the attributes instead of creating new ones.
     always creates a new variable.
     
     The function returns a tuple containing a variable descriptor and the
-    status of the best matching variable. So, if ``createOnNew`` is set to
+    status of the best matching variable. So, if ``create_new_on`` is set to
     ``MissingValues``, and there exists a variable whose status is, say,
     ``UnrecognizedValues``, a variable would be created, while the second 
     element of the tuple would contain ``UnrecognizedValues``. If, on the other
@@ -367,9 +367,9 @@ There are two functions for reusing the attributes instead of creating new ones.
     returned and the returned status is ``OK``. The function returns no 
     indicator whether the returned variable is reused or not. This can be,
     however, read from the status code: if it is smaller than the specified
-    ``createNewOn``, the variable is reused, otherwise we got a new descriptor.
+    ``create_new_on``, the variable is reused, otherwise we got a new descriptor.
 
-    The exception to the rule is when ``createNewOn`` is OK. In this case, the 
+    The exception to the rule is when ``create_new_on`` is OK. In this case, the 
     function does not search through the existing attributes and cannot know the 
     status, so the returned status in this case is always ``OK``.
 
@@ -379,12 +379,12 @@ There are two functions for reusing the attributes instead of creating new ones.
     :param ordered_values: a list of ordered values
     :param unordered_values: a list of values, for which the order does not
         matter
-    :param createNewOn: gives condition for constructing a new variable instead
+    :param create_new_on: gives condition for constructing a new variable instead
         of using the new one
     
     :return_type: a tuple (:class:`Orange.data.variable.Variable`, int)
     
-.. function:: Orange.data.variable.retrieve(name, type, ordered_values, onordered_values[, createNewOn])
+.. function:: Orange.data.variable.retrieve(name, type, ordered_values, onordered_values[, create_new_on])
 
     Find and return an existing variable, or :obj:`None` if no match is found.
     
@@ -394,7 +394,7 @@ There are two functions for reusing the attributes instead of creating new ones.
     :param ordered_values: a list of ordered values
     :param unordered_values: a list of values, for which the order does not
         matter
-    :param createNewOn: gives condition for constructing a new variable instead
+    :param create_new_on: gives condition for constructing a new variable instead
         of using the new one
 
     :return_type: :class:`Orange.data.variable.Variable`
