@@ -1,0 +1,76 @@
+To compile Orange, you need Python 2.2 or later. You don't
+need Python sources, except for the header and library files
+that come with the basic distribution anyway.
+
+This file does not cover building the C4.5 plugin.
+See doc/reference/C45Learner.htm for instructions.
+
+You don't need C4.5 sources to build Orange on Linux and
+Mac OS X (as was the case with previous versions of Orange).
+
+Please report any problems to janez.demsar@fri.uni-lj.si.
+
+
+Compiling instructions for MSVC 6.0
+-----------------------------------
+
+Although the provided project files are for MS VC 6.0, Orange
+can (in principle; we are not regularly checking it) also be
+compiled by MS VC .Net - just let it import and convert the files.
+
+1.  Set the environment variable PYTHON to Python's root (e.g.
+    c:\python23). This is used for finding include files and libraries.
+
+2.  The workspace file is in subdirectory source. Open it and
+    compile. Note that if you want to compile a debug version of
+    Orange, you'll need to have the debug version of Python as
+    well (python23_d.lib, python23_d.dll etc). See file
+    debugging_orange.txt if you need a hint on that.
+
+3.  Make sure that Python will find the compiled modules. You can set
+    the PYTHONPATH, create an appropriate orange.pth file in Python's
+    directory site-packages, create a corresponding registry key or
+    simply copy the files to Python's lib directory.
+
+
+Compiling instructions for Linux
+--------------------------------
+
+To compile orange, you'll need a newer gcc (version 3.2 works;
+we are not sure about older compilers).
+
+1.  Run make (Makefile is in subdirectory source).
+
+    If gcc complains that it cannot find Python.h, find it
+    yourself and manually correct the PYTHONDIR in Makefile.
+    
+    Warnings are disabled to avoid thousands of warnings
+    about invalid offsetof from non-POD type. (These didn't
+    occur in earlier versions of gcc; we might try to do something
+    about it.) If you like warnings, edit the Makefile to
+    enable them.
+
+2.  To let Python know where to find Orange, you should either
+    add the path to PYTHONPATH or create a file orange.pth in
+    Python's directory site-packages. Running 'make install'
+    will tell you the paths you need.
+    
+
+Compiling instructions for Mac OS X
+-----------------------------------
+
+Mac OS X comes without gcc but you get it with Xcode. You can
+install Xcode from your Mac OS X installation disk or from:
+
+  http://developer.apple.com/technology/xcode.html
+
+After having it installed and Orange source code downloaded:
+
+1. Uncompress the archive.
+2. Go to the uncompressed directory and run 'make' after which
+   you will get compiled modules in a parent directory.
+3. You can move those modules where Python will find them
+   (for example where PYTHONPATH is pointing to).
+4. Make sure with 'otool -L' that paths to dynamic libraries
+   modules are using are correct. If not, use 'install_name_tool'
+   to correct them.

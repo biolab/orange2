@@ -1,0 +1,78 @@
+# Line below determines the directory with Python.h.
+# If this does not work, find Python.h yourself and enter
+# the directory below.
+PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
+PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
+PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
+PYTHONVER = $(shell python -c "import sys; print sys.version[:3]")
+
+
+DESTDIR = $(PYTHONSITEPKGS)/orange
+DOCDIR = /usr/local/doc/orange
+SCRIPTDIR = /usr/local/bin
+INSTALL = install
+INSTALL_DATA = $(INSTALL) -m 644
+INSTALL_SCRIPT = $(INSTALL)
+INSTALL_SHARED = $(INSTALL) -m 555
+INSTALL_DIR = $(INSTALL) -d -m 755
+
+OS = $(shell uname)
+MAKE = make
+#COMPILER = /opt/intel/cc/10.1.015/bin/icc
+#CCOMPILER = /opt/intel/cc/10.1.015/bin/icc
+COMPILER = g++
+CCOMPILER = gcc
+#LINKER = /opt/intel/cc/10.1.015/bin/icc
+LINKER = gcc
+LIBRARY_FILE = liborange.so
+
+NUMPY_INCLUDE = $(shell python -c "import numpy; print numpy.get_include();")
+
+ifeq ($(OS), Darwin)
+  ifeq ($(PYTHONVER), 2.7)
+    export MACOSX_DEPLOYMENT_TARGET = $(shell python -c "import sysconfig; print sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')")
+  else
+  	export MACOSX_DEPLOYMENT_TARGET = 10.4
+  endif
+  COMPILEOPTIONS = -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -O3 -I$(NUMPY_INCLUDE) $(CXXFLAGS)
+  LINKOPTIONS = -dynamiclib -headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
+  LINKER = g++
+else
+ifeq ($(OS), FreeBSD)
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DFREEBSD -O3 $(CXXFLAGS)
+  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
+  LINKOPTIONS += `gsl-config --libs`
+  MAKE = gmake
+else
+  # for icc, also add -D"__sync_fetch_and_add(ptr,addend)=_InterlockedExchangeAdd(const_cast<void*>(reinterpret_cast<volatile void*>(ptr)), addend)"
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS -O3 $(CXXFLAGS)
+  LINKOPTIONS = -Wl,-R'$$ORIGIN' -shared -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
+endif
+endif
+
+ifneq ($(MODULENAME), ORANGE)
+  LINKOPTIONS += -lorange
+endif
+
+vpath %.cpp ../include
+vpath %.hpp ../include
+vpath %.px px
+vpath %.ppp ppp
+vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl:/usr/include/gsl
+
+obj/%.o : %.cpp
+	$(COMPILER) $(COMPILEOPTIONS) -c $< -o $@
+
+
+export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include:$(PYTHONSITEPKGS)/numpy/core/include
+
+makefile.deps:
+	python ../pyxtract/makedep.py -n $(MODULENAME)
+	rm -f ppp/stamp
+	rm -f px/stamp
+
+objdir:
+	-@mkdir -p obj > /dev/null
+
+cleantemp:
+	rm -rf obj ppp px makefile.deps ../pyxtract/*.pyc ./pyxtract/*.pyc
