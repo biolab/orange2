@@ -1,3 +1,0 @@
-Classification Accuracy:
-          bayes: 0.920
-     disc-bayes: 0.900

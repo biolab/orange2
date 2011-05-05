@@ -1,1 +1,0 @@
-.. automodule:: Orange.statistics.estimate

@@ -1,5 +1,0 @@
-for i in `find -name *.cpp -o -name *.py`
-do
-	tr -d '\15\32' < $i > "$i".tmp
-	mv "$i".tmp $i
-done

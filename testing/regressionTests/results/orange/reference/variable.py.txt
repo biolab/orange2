@@ -1,3 +1,0 @@
-<324.000, 108.000>
-Class distribution when e=1: <0.000, 108.000>
-Class distribution when e<>1: <216.000, 108.000>
