@@ -1,0 +1,7 @@
+Possible classes: <republican, democrat>
+Probabilities for democrats:
+1: 0.000 (originally republican)
+2: 0.000 (originally republican)
+3: 0.005 (originally democrat)
+4: 0.998 (originally democrat)
+5: 0.957 (originally democrat)

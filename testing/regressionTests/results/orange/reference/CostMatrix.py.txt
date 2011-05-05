@@ -1,0 +1,31 @@
+
+Default matrix of size 3
+classVar = None
+0.0 1.0 1.0
+1.0 0.0 1.0
+1.0 1.0 0.0
+
+Matrix for Iris, with default element 2 and several modified elements
+classVar = iris, values = <Iris-setosa, Iris-versicolor, Iris-virginica>
+0.0 2.0 1.0
+2.0 0.0 1.0
+2.0 2.0 0.0
+
+Manually initialized matrix
+0.0 2.0 1.0
+2.0 0.0 1.0
+2.0 2.0 0.0
+
+Cost-sensitive attribute quality
+age: 0.000
+prescription: 0.000
+astigmatic: 0.000
+tear_rate: 0.167
+
+
+Cost-sensitive attribute quality
+age: 0.000
+prescription: 0.000
+astigmatic: 0.000
+tear_rate: 0.083
+

@@ -1,0 +1,47 @@
+<=50K <=50K
+<=50K <=50K
+<=50K <=50K
+>50K >50K
+<=50K >50K
+
+class attribute = y
+class values = <>50K, <=50K>
+
+                             Feature       beta  st. error     wald Z          P OR=exp(beta)
+
+                           Intercept       6.62       0.00        inf       0.00
+                                 age      -0.04       0.00       -inf       0.00       0.96
+                              fnlwgt      -0.00       0.00       -inf       0.00       1.00
+                       education-num      -0.28       0.00       -inf       0.00       0.76
+             marital-status=Divorced       4.29       0.00        inf       0.00      72.62
+        marital-status=Never-married       3.79       0.00        inf       0.00      44.45
+            marital-status=Separated       3.46       0.00        inf       0.00      31.95
+              marital-status=Widowed       3.85       0.00        inf       0.00      46.96
+marital-status=Married-spouse-absent       3.98       0.00        inf       0.00      53.63
+    marital-status=Married-AF-spouse       4.01       0.00        inf       0.00      55.19
+             occupation=Tech-support      -0.32       0.00       -inf       0.00       0.72
+             occupation=Craft-repair       0.37       0.00        inf       0.00       1.45
+            occupation=Other-service       2.68       0.00        inf       0.00      14.61
+                    occupation=Sales       0.22       0.00        inf       0.00       1.24
+           occupation=Prof-specialty       0.18       0.00        inf       0.00       1.19
+        occupation=Handlers-cleaners       1.29       0.00        inf       0.00       3.64
+        occupation=Machine-op-inspct       0.86       0.00        inf       0.00       2.37
+             occupation=Adm-clerical       0.30       0.00        inf       0.00       1.35
+          occupation=Farming-fishing       1.12       0.00        inf       0.00       3.06
+         occupation=Transport-moving       0.62       0.00        inf       0.00       1.85
+          occupation=Priv-house-serv       3.46       0.00        inf       0.00      31.87
+          occupation=Protective-serv       0.11       0.00        inf       0.00       1.12
+             occupation=Armed-Forces       0.59       0.00        inf       0.00       1.81
+                   relationship=Wife      -1.06       0.00       -inf       0.00       0.35
+              relationship=Own-child      -1.04       0.00       -inf       0.00       0.35
+          relationship=Not-in-family      -1.94       0.00       -inf       0.00       0.14
+         relationship=Other-relative      -2.42       0.00       -inf       0.00       0.09
+              relationship=Unmarried      -1.92       0.00       -inf       0.00       0.15
+             race=Asian-Pac-Islander      -0.19       0.00       -inf       0.00       0.83
+             race=Amer-Indian-Eskimo       2.88       0.00        inf       0.00      17.78
+                          race=Other       3.93       0.00        inf       0.00      51.07
+                          race=Black       0.11       0.00        inf       0.00       1.12
+                          sex=Female       0.30       0.00        inf       0.00       1.36
+                        capital-gain      -0.00       0.00       -inf       0.00       1.00
+                        capital-loss      -0.00       0.00       -inf       0.00       1.00
+                      hours-per-week      -0.04       0.00       -inf       0.00       0.96

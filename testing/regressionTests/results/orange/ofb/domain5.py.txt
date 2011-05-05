@@ -1,0 +1,4 @@
+Size of data: 977 instances;  p(>50K)=0.242
+Size of data1 (conjunction): 38 instances;  p(>50K)=0.632
+Size of data1 (disjunction): 643 instances;  p(>50K)=0.302
+Size of data2 (select, conjuction): 38 instances;  p(>50K)=0.632

@@ -1,0 +1,13 @@
+
+Association rules
+0.333  0.533  lenses=none -> prescription=hypermetrope
+0.333  0.667  prescription=hypermetrope -> lenses=none
+0.333  0.533  lenses=none -> astigmatic=yes
+0.333  0.667  astigmatic=yes -> lenses=none
+0.500  0.800  lenses=none -> tear_rate=reduced
+0.500  1.000  tear_rate=reduced -> lenses=none
+
+Classification rules
+0.333  0.667  prescription=hypermetrope -> lenses=none
+0.333  0.667  astigmatic=yes -> lenses=none
+0.500  1.000  tear_rate=reduced -> lenses=none
