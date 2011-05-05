@@ -230,7 +230,6 @@ class OWNetworkCanvas(OWGraph):
       self.freezeNeighbours = False
       self.labelsOnMarkedOnly = 0
       self.enableWheelZoom = 1
-      self.smoothOptimization = 0
       self.optimizing = 0
       self.stopOptimizing = 0
       self.insideview = 0
@@ -494,33 +493,6 @@ class OWNetworkCanvas(OWGraph):
                       
                   self.showTip(event.pos().x(), event.pos().y(), str(dst))
                   self.replot()
-                 
-      if self.smoothOptimization:
-          px = self.invTransform(2, event.x())
-          py = self.invTransform(0, event.y())   
-          ndx, mind = self.visualizer.closestVertex(px, py)
-          dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - event.x()
-          dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - event.y()
-          # transform to pixel distance
-          distance = math.sqrt(dX**2 + dY**2)               
-          if ndx != -1 and distance <= self.vertices[ndx].size / 2:
-              if not self.optimizing:
-                  self.optimizing = 1
-                  initTemp = 1000
-                  coolFactor = exp(log(10.0 / 10000.0) / 500)
-                  
-                  for i in range(10):
-                      if self.stopOptimizing:
-                          self.stopOptimizing = 0
-                          break
-                      initTemp = self.visualizer.smoothFruchtermanReingold(ndx, 50, initTemp, coolFactor)
-                      qApp.processEvents()
-                      self.updateData()
-                      self.replot()
-                  
-                  self.optimizing = 0
-          else:
-              self.stopOptimizing = 1
 
   def mousePressEvent(self, event):
     if not self.visualizer:
