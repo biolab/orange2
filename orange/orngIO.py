@@ -20,14 +20,17 @@
 #       * initial version
 #       * registration in orange (Janez)
 
-import orange,string
+import orange, string
+import os
 
-def loadARFF(filename):
-    try:
-        f = open(filename,'r')
-    except:
-        f = open(filename+'.arff','r')
+def loadARFF(filename, createOnNew=orange.Variable.MakeStatus.Incompatible, **kwargs):
+    if not os.path.exists(filename) and os.path.exists(filename + ".arff"):
+        filename = filename + ".arff" 
+    f = open(filename,'r')
+    
     attributes = []
+    attributeLoadStatus = []
+    
     name = ''
     state = 0 # header
     data = []
@@ -84,11 +87,15 @@ def loadARFF(filename):
                         if len(sy)>0:
                             vals.append(sy)
                     #print atn,vals
-                    a = orange.EnumVariable(name=atn,values=vals)
+                    a, s = orange.Variable.make(atn, orange.VarTypes.Discrete, vals, [], createOnNew)
+#                    a = orange.EnumVariable(name=atn,values=vals)
                 else:
                     # real...
-                    a = orange.FloatVariable(name=atn)
+                    a, s = orange.Variable.make(atn, orange.VarTypes.Continuous, [], [], createOnNew)
+#                    a = orange.FloatVariable(name=atn)
+                    
                 attributes.append(a)
+                attributeLoadStatus.append(s)
     # generate the domain
     d = orange.Domain(attributes)
     lex = []
@@ -97,6 +104,7 @@ def loadARFF(filename):
         lex.append(e)
     t = orange.ExampleTable(d,lex)
     t.name = name
+    t.attributeLoadStatus = attributeLoadStatus
     return t
 
 def toARFF(filename,table,try_numericize=0):
@@ -256,18 +264,32 @@ def toLibSVM(filename, example):
     import orngSVM
     orngSVM.exampleTableToSVMFormat(example, open(filename, "wb"))
     
-def loadLibSVM(filename):
+def loadLibSVM(filename, createOnNew=orange.Variable.MakeStatus.Incompatible, **kwargs):
+    attributeLoadStatus = {}
+    def make_float(name):
+        attr, s = orange.Variable.make(name, orange.VarTypes.Continuous, [], [], createOnNew)
+        attributeLoadStatus[attr] = s
+        return attr
+    
+    def make_disc(name, unordered):
+        attr, s = orange.Variable.make(name, orange.VarTypes.Discrete, [], unordered, createOnNew)
+        attributeLoadStatus[attr] = s
+        return attr
+    
     data = [line.split() for line in open(filename, "rb").read().splitlines() if line.strip()]
-    vars = type("attr", (dict,), {"__missing__": lambda self, key: self.setdefault(key, orange.FloatVariable(key))})()
+    vars = type("attr", (dict,), {"__missing__": lambda self, key: self.setdefault(key, make_float(key))})()
     item = lambda i, v: (vars[i], vars[i](v))
     values = [dict([item(*val.split(":"))  for val in ex[1:]]) for ex in data]
     classes = [ex[0] for ex in data]
     disc = all(["." not in c for c in classes])
     attributes = sorted(vars.values(), key=lambda var: int(var.name))
-    classVar = orange.EnumVariable("class", values=sorted(set(classes))) if disc else orange.FloatVariable("target")
+    classVar = make_disc("class", sorted(set(classes))) if disc else make_float("target")
+    attributeLoadStatus = [attributeLoadStatus[attr] for attr in attributes] + \
+                          [attributeLoadStatus[classVar]]
     domain = orange.Domain(attributes, classVar)
-    return orange.ExampleTable([orange.Example(domain, [ex.get(attr, attr("?")) for attr in attributes] + [c]) for ex, c in zip(values, classes)])
-
+    table = orange.ExampleTable([orange.Example(domain, [ex.get(attr, attr("?")) for attr in attributes] + [c]) for ex, c in zip(values, classes)])
+    table.attributeLoadStatus = attributeLoadStatus
+    return table
 
 orange.registerFileType("R", None, toR, ".R")
 orange.registerFileType("Weka", loadARFF, toARFF, ".arff")
