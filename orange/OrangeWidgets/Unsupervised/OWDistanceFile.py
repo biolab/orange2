@@ -23,7 +23,11 @@ def readMatrix(fn, progress=None):
         data = None
         #print self.matrix
         if hasattr(matrix, 'items'):
-            data = matrix.items
+            items = matrix.items
+            if isinstance(items, orange.ExampleTable):
+                data = items
+            elif isinstance(items, list) or hasattr(item, "__iter__"):
+                labels = items
         pkl_file.close()
         
     else:    
@@ -39,9 +43,9 @@ def readMatrix(fn, progress=None):
         spl = lne.split()
         try:
             dim = int(spl[0])
-        except:
-            msg = "Matrix dimension expected in the first line"
-            raise exceptions.Exception
+        except IndexError:
+            raise ValueError("Matrix dimension expected in the first line.")
+        
         #print dim
         labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
         matrix = orange.SymMatrix(dim)
@@ -56,29 +60,27 @@ def readMatrix(fn, progress=None):
             if li > dim:
                 if not li.strip():
                     continue
-                msg = "File too long"
-                raise exceptions.IndexError
+                raise ValueError("File to long")
+            
             spl = lne.split("\t")
             if labeled:
                 labels.append(spl[0].strip())
                 spl = spl[1:]
             if len(spl) > dim:
-                msg = "Line %i too long" % li+2
-                raise exceptions.IndexError
+                raise ValueError("Line %i too long" % li+2)
+            
             for lj, s in enumerate(spl):
                 if s:
                     try:
                         matrix[li, lj] = float(s)
-                    except:
-                        msg = "Invalid number in line %i, column %i" % (li+2, lj)
+                    except ValueError:
+                        raise ValueError("Invalid number in line %i, column %i" % (li+2, lj))
+                    
             if li in milestones:
                 if progress:
                     progress.advance()
         if progress:
             progress.finish()
-        
-    if msg:
-        raise exceptions.Exception(msg)
 
     return matrix, labels, data
 
@@ -177,17 +179,18 @@ class OWDistanceFile(OWWidget):
             self.filecombo.addItem(os.path.split(file)[1])
         #self.filecombo.updateGeometry()
 
-        self.error()
+        self.matrix = None
+        self.labels = None
+        self.data = None
+        pb = OWGUI.ProgressBar(self, 100)
         
+        self.error()
         try:
-            self.matrix = None
-            self.labels = None
-            self.data = None
-            pb = OWGUI.ProgressBar(self, 100)
             self.matrix, self.labels, self.data = readMatrix(fn, pb)
-            self.relabel()
-        except:
-            self.error("Error while reading the file")
+        except Exception, ex:
+            self.error("Error while reading the file: '%s'" % str(ex))
+            return
+        self.relabel()
             
     def relabel(self):
         #print 'relabel'
@@ -208,7 +211,7 @@ class OWDistanceFile(OWWidget):
                     matrix.setattr("items", self.data)
                 else:
                     self.error("The number of examples doesn't match the matrix dimension")
-        else:
+        elif matrix and self.labels:
             lbl = orange.StringVariable('label')
             self.data = orange.ExampleTable(orange.Domain([lbl]), 
                                             [[str(l)] for l in self.labels])
@@ -217,7 +220,7 @@ class OWDistanceFile(OWWidget):
             matrix.setattr("items", self.data)
         
         if self.data == None and self.labels == None:
-            matrix.setattr("items", range(matrix.dim))
+            matrix.setattr("items", [str(i) for i in range(matrix.dim)])
         
         self.matrix.matrixType = orange.SymMatrix.Symmetric
         self.send("Distance Matrix", self.matrix)
