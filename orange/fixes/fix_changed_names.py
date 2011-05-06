@@ -450,11 +450,11 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            
            "orange.DomainContinuizer": "Orange.feature.continuization.DomainContinuizer",
            
-           "orange.MakeRandomIndices": "Orange.data.sample.MakeRandomIndices",
-           "orange.MakeRandomIndicesN": "Orange.data.sample.MakeRandomIndicesN",
-           "orange.MakeRandomIndicesCV": "Orange.data.sample.MakeRandomIndicesCV",
-           "orange.MakeRandomIndicesMultiple": "Orange.data.sample.MakeRandomIndicesMultiple",
-           "orange.MakeRandomIndices2": "Orange.data.sample.MakeRandomIndices2",
+           "orange.MakeRandomIndices": "Orange.data.sample.SubsetIndices",
+           "orange.MakeRandomIndicesN": "Orange.data.sample.SubsetIndicesN",
+           "orange.MakeRandomIndicesCV": "Orange.data.sample.SubsetIndicesCV",
+           "orange.MakeRandomIndicesMultiple": "Orange.data.sample.SubsetIndicesMultiple",
+           "orange.MakeRandomIndices2": "Orange.data.sample.SubsetIndices2",
 
            }
 
