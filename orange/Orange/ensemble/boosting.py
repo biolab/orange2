@@ -146,34 +146,3 @@ class BoostedClassifier(orange.Classifier):
         else:
             return (value, votes)
     
-from Orange.misc import _orange__new__    
-class StohasticGradientBoostingLearner(Orange.core.Learner):
-    """ An implementation of the Stochastic Gradient Boosting.
-    """
-    def __new__(cls, learner, data=None, weightId=None, **kwargs):
-        self = Orange.core.Learner.__new__(cls)
-        if data is not None:
-            self.__init__(learner, **kwargs)
-            return self.__call__(data, weightId)
-        else:
-            return self
-        
-    def __init__(self, learner, iterations=100, p=0.5, alpha=0.1, **kwargs):
-        self.learner = learner
-        self.iterations = iterations
-        self.p = p 
-        self.alpha = alpha
-        self.__dict__.update(kwargs)
-        
-    def __call__(self, data, weightId=None):
-        original_targets = [ex.getclass() for ex in data]
-        subset_generator = Orange.sample.SubsetIndices2(p0=self.p)
-        subset_generator.randomGenerator = orange.RandomGenerator(42)
-        
-        for i in range(self.iterations):
-            indices = subset(data)
-            data_subset = data.select(indices)
-            model = self.learner(data, weightId)
-            
-            
-        
