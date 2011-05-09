@@ -864,8 +864,8 @@ def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, i
         classifiers.append(learner(learnset, learnweight))
         if callback:
             callback()
-    classifiers = [learner(learnset, learnweight) for learner in learners]
-    for i in range(len(learners)): classifiers[i].name = getattr(learners[i], 'name', 'noname')
+    for i in range(len(learners)):
+        classifiers[i].name = getattr(learners[i], 'name', 'noname')
     testResults = test_on_data(classifiers, (testset, testweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
@@ -916,7 +916,8 @@ def learn_and_test_on_learn_data(learners, learnset, testResults=None, iteration
         classifiers.append(learner(learnset, learnweight))
         if callback:
             callback()
-    for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
+    for i in range(len(learners)):
+        classifiers[i].name = getattr(learners[i], "name", "noname")
     testResults = test_on_data(classifiers, (testset, learnweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
