@@ -217,7 +217,8 @@ def writeFile(hppfile, exportf):
     off = open(newfile, "wt")
     off.write(notice)
 
-    off.write('#include "../%s"\n\n' % hppfile)
+    off.write('#include "../%s"\n' % hppfile)
+    off.write('#include <cstddef>\n\n')
 
 # - add parent fields
 # - correct property types (P* -> T*)
