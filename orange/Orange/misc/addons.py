@@ -121,6 +121,8 @@ from fileutil import *
 from fileutil import _zip_open
 from zipfile import ZipFile
 
+import warnings
+
 socket.setdefaulttimeout(120)  # In seconds.
 
 class PackingException(Exception):
@@ -1439,10 +1441,10 @@ def load_installed_addons_from_dir(dir):
             try:
                 addOn = OrangeAddOnInstalled(addOnDir)
             except Exception, e:
-                print "Add-on in directory '%s' has no valid descriptor (addon.xml): %s" % (addOnDir, e)
+                warnings.warn("Add-on in directory '%s' has no valid descriptor (addon.xml): %s" % (addOnDir, e), Warning, 0)
                 continue
             if addOn.id in installed_addons:
-                print "Add-on in directory '%s' has the same ID as the addon in '%s'!" % (addOnDir, installed_addons[addOn.id].directory)
+                warnings.warn("Add-on in directory '%s' has the same ID as the addon in '%s'!" % (addOnDir, installed_addons[addOn.id].directory), Warning, 0)
                 continue
             installed_addons[addOn.id] = addOn
 
@@ -1479,11 +1481,11 @@ def load_repositories(refresh=True):
                                       in cPickle.load(file)]
             file.close()
         except Exception, e:
-            print "Unable to load repository list! Error: %s" % e
+            warnings.warn("Unable to load repository list! Error: %s" % e, Warning, 0)
     try:
         update_default_repositories(refresh=refresh)
     except Exception, e:
-        print "Unable to refresh default repositories: %s" % (e)
+        warnings.warn("Unable to refresh default repositories: %s" % (e), Warning, 0)
 
     if refresh:
         for r in available_repositories:
@@ -1491,7 +1493,7 @@ def load_repositories(refresh=True):
             try:
                 r.refreshdata(force=False)
             except Exception, e:
-                print "Unable to refresh repository %s! Error: %s" % (r.name, e)
+                warnings.warn("Unable to refresh repository %s! Error: %s" % (r.name, e), Warning, 0)
     save_repositories()
 
 def save_repositories():
@@ -1505,7 +1507,7 @@ def save_repositories():
         global available_repositories
         cPickle.dump(available_repositories, open(listFileName, 'wb'))
     except Exception, e:
-        print "Unable to save repository list! Error: %s" % e
+        warnings.warn("Unable to save repository list! Error: %s" % e, Warning, 0)
     
 
 def update_default_repositories(refresh=True):
