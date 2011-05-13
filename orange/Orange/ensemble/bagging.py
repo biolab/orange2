@@ -131,7 +131,7 @@ class BaggedClassifier(orange.Classifier):
                 from collections import defaultdict
                 prob = defaultdict(float)
                 for c, p in votes:
-                    try:
+                    try: 
                         prob[float(c)] += p[c] / wsum
                     except IndexError: # p[c] sometimes fails with index error
                         prob[float(c)] += 1.0 / wsum
@@ -141,3 +141,7 @@ class BaggedClassifier(orange.Classifier):
             elif resultType == orange.GetValue:
                 pred = sum([float(c) for c in votes]) / wsum
                 return self.classVar(pred)
+            
+    def __reduce__(self):
+        return type(self), (self.classifiers, self.name, self.classVar), dict(self.__dict__)
+    

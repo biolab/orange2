@@ -145,4 +145,7 @@ class BoostedClassifier(orange.Classifier):
             return votes
         else:
             return (value, votes)
+        
+    def __reduce__(self):
+        return type(self), (self.classifiers, self.name, self.classVar), dict(self.__dict__)
     
