@@ -32,7 +32,7 @@ class TValue;
 using namespace std;
 
 #ifndef offsetof
-  #define offsetof(_TYPE, _MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+  #define offsetof(_TYPE, _MEMBER) ((size_t) &((_TYPE *)0)->_MEMBER)
 #endif
 
 #define __REGISTER_ABSTRACT_CLASS \
