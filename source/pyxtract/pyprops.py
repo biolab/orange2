@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import re, os, os.path, sys, pickle
 
 propbegindef=re.compile(r'\s*class\s+(?P<orange_api>(.+_API)?)\s*(?P<name>\w+)(\s*:\s*public\s+(?P<parent>\w+))?')
@@ -328,6 +328,7 @@ if __name__ == "__main__":
     
 
   args = sys.argv
+  print args
 
   modulename = ""
   i = quiet = 0

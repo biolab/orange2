@@ -1,10 +1,13 @@
 # Line below determines the directory with Python.h.
 # If this does not work, find Python.h yourself and enter
 # the directory below.
-PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
-PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
+
+PYTHON = python2
+
+PYTHONINCLUDE = $(shell $(PYTHON) -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
+PYTHONLIB = $(shell $(PYTHON) -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
-PYTHONVER = $(shell python -c "import sys; print sys.version[:3]")
+PYTHONVER = $(shell $(PYTHON) -c "import sys; print sys.version[:3]")
 
 
 DESTDIR = $(PYTHONSITEPKGS)/orange
@@ -26,11 +29,13 @@ CCOMPILER = gcc
 LINKER = gcc
 LIBRARY_FILE = liborange.so
 
-NUMPY_INCLUDE = $(shell python -c "import numpy; print numpy.get_include();")
+PYTHON = python2
+
+NUMPY_INCLUDE = $(shell $(PYTHON) -c "import numpy; print numpy.get_include();")
 
 ifeq ($(OS), Darwin)
   ifeq ($(PYTHONVER), 2.7)
-    export MACOSX_DEPLOYMENT_TARGET = $(shell python -c "import sysconfig; print sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')")
+    export MACOSX_DEPLOYMENT_TARGET = $(shell $(PYTHON) -c "import sysconfig; print sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')")
   else
   	export MACOSX_DEPLOYMENT_TARGET = 10.4
   endif
@@ -67,7 +72,7 @@ obj/%.o : %.cpp
 export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include:$(PYTHONSITEPKGS)/numpy/core/include
 
 makefile.deps:
-	python ../pyxtract/makedep.py -n $(MODULENAME)
+	$(PYTHON) ../pyxtract/makedep.py -n $(MODULENAME)
 	rm -f ppp/stamp
 	rm -f px/stamp
 
