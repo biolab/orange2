@@ -107,6 +107,7 @@ Exception classes
 import xml.dom.minidom
 import re
 import os
+import sys
 import glob
 import time
 import socket
@@ -301,8 +302,8 @@ class OrangeRegisteredAddOn():
         try:
             xmldoc = xml.dom.minidom.parse(addon_xml_path)
         except Exception, e:
-            print "Could not load addon.xml because \"%s\"; a new one will be"+\
-                " created." % e
+            warnings.warn("Could not load addon.xml because \"%s\"; a new one "+
+                          "will be created." % e, Warning, 0)
             impl = xml.dom.minidom.getDOMImplementation()
             xmldoc = impl.createDocument(None, "OrangeAddOn", None)
         xmldoc_root = xmldoc.documentElement
@@ -370,7 +371,7 @@ class OrangeRegisteredAddOn():
         import codecs
         xmldoc.writexml(codecs.open(addon_xml_path, 'w', "utf-8"),
                         encoding="UTF-8")
-        print "Updated addon.xml written."
+        sys.stderr.write("Updated addon.xml written.\n")
 
         ##########################
         # style.css creation     #
@@ -381,7 +382,7 @@ class OrangeRegisteredAddOn():
             if os.path.isfile(orangecss):
                 import shutil
                 shutil.copy(orangecss, localcss)
-                print "doc/style.css created."
+                sys.stderr.write("doc/style.css created.\n")
             else:
                 raise PackingException("Could not find style.css in orange"+\
                                        " documentation directory.")
@@ -408,7 +409,7 @@ class OrangeRegisteredAddOn():
                             "documentation is. Well, at least it <i>should</i>"+\
                             " be."))
             indexFile.close()
-            print "doc/index.html written."
+            sys.stderr.write("doc/index.html written.\n")
             
         ##########################
         # iconlist.html creation #
@@ -416,7 +417,7 @@ class OrangeRegisteredAddOn():
         wdocdir = os.path.join(self.directory_documentation(), "widgets")
         if not os.path.isdir(wdocdir): os.mkdir(wdocdir)
         open(os.path.join(wdocdir, "index.html"), 'w').write(self.iconlist_html())
-        print "Widget list (doc/widgets/index.html) written."
+        sys.stderr.write("Widget list (doc/widgets/index.html) written.\n")
 
         ##########################
         # copying the icons      #
@@ -443,7 +444,7 @@ class OrangeRegisteredAddOn():
                 os.mkdir(os.path.join(wdocdir, "prototypes"))
             if not os.path.isdir(proticondocdir): os.mkdir(proticondocdir)
             distutils.dir_util.copy_tree(proticondir, proticondocdir)
-        print "Widget icons copied to doc/widgets/."
+        sys.stderr.write("Widget icons copied to doc/widgets/.\n")
 
 
     #####################################################
@@ -1179,7 +1180,8 @@ class OrangeAddOnRepository:
                 self.refreshdata(True, True)
             except Exception, e:
                 if force:
-                    print "Couldn't load data from repository '%s': %s" % (self.name, e)
+                    warnings.warn("Couldn't load data from repository '%s': %s"
+                                  % (self.name, e), Warning, 0)
                     return
                 raise e
         
@@ -1229,7 +1231,10 @@ class OrangeAddOnRepository:
             versions = self.addons[addon.id]
             for version in versions:
                 if version.version == addon.version:
-                    print "Ignoring the second occurence of addon '%s', version '%s'." % (addon.name, addon.version_str)
+                    warnings.warn("Ignoring the second occurence of addon '%s'"+
+                                  ", version '%s'." % (addon.name,
+                                                       addon.version_str),
+                                  Warning, 0)
                     return
             versions.append(addon)
         else:
@@ -1303,11 +1308,17 @@ class OrangeAddOnRepository:
                                     addon = OrangeAddOnInRepo(self, xmlfile=node)
                                     self._add_addon(addon)
                                 except Exception, e:
-                                    print "Ignoring node nr. %d in repository '%s' because of an error: %s" % (i+1, self.name, e)
+                                    warnings.warn("Ignoring node nr. %d in "+
+                                                  "repository '%s' because of"+
+                                                  " an error: %s" % (i+1,
+                                                                     self.name,
+                                                                     e),
+                                                  Warning, 0)
                         self.has_web_script = True
                         return True
                     except Exception, e:
-                        print "Warning: a problem occurred using server-side script on repository '%s': %s.\nAll add-ons need to be downloaded for their metadata to be extracted!" % (self.name, e)
+                        warnings.warn("A problem occurred using server-side script on repository '%s': %s.\nAll add-ons need to be downloaded for their metadata to be extracted!"
+                                      % (self.name, str(e)), Warning, 0)
 
                     # Invoking script failed - trying to get and parse a directory listing
                     try:
@@ -1320,16 +1331,23 @@ class OrangeAddOnRepository:
                                                 response))
                     if len(addOnFiles)==0:
                         if firstload:
-                            raise RepositoryException("Unable to load repository data: this is not an Orange add-on repository!")
+                            raise RepositoryException("Unable to load reposito"+
+                                                      "ry data: this is not an"+
+                                                      " Orange add-on "+
+                                                      "repository!")
                         else:
-                            print "Repository '%s' is empty ..." % self.name
+                            warnings.warn("Repository '%s' is empty ..." %
+                                          self.name, Warning, 0)
                     self.addons = {}
                     for addOnFile in addOnFiles:
                         try:
                             addOnTmpFile = urllib.urlretrieve(self.url+"/"+addOnFile)[0]
                             self._add_packed_addon(addOnTmpFile, addOnFile)
                         except Exception, e:
-                            print "Ignoring '%s' in repository '%s' because of an error: %s" % (addOnFile, self.name, e)
+                            warnings.warn("Ignoring '%s' in repository '%s' "+
+                                          "because of an error: %s" %
+                                          (addOnFile, self.name, e),
+                                          Warning, 0)
                 elif protocol == "file": # A local repository: open each and every archive to obtain data
                     dir = self.url.replace("file://","")
                     if not os.path.isdir(dir):
@@ -1340,7 +1358,10 @@ class OrangeAddOnRepository:
                             self._add_packed_addon(addOnFile,
                                                   os.path.split(addOnFile)[1])
                         except Exception, e:
-                            print "Ignoring '%s' in repository '%s' because of an error: %s" % (addOnFile, self.name, e)
+                            warnings.warn("Ignoring '%s' in repository '%s' "+
+                                          "because of an error: %s" %
+                                          (addOnFile, self.name, e),
+                                          Warning, 0)
                 return True
             finally:
                 self._refresh_index()
