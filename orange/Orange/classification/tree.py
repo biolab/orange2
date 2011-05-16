@@ -2873,7 +2873,7 @@ class _TreeDumper:
             
             for i, branch in enumerate(node.branches):
                 if branch:
-                    internalBranchName = internalName+chr(i+65)
+                    internalBranchName = "%s-%d" % (internalName,i)
                     self.fle.write('%s -> %s [ label="%s" ]\n' % \
                         (_quoteName(internalName), 
                          _quoteName(internalBranchName), 
@@ -2882,7 +2882,7 @@ class _TreeDumper:
                     
         else:
             self.fle.write('%s [ shape=%s label="%s"]\n' % \
-                (internalName, self.leafShape, 
+                (_quoteName(internalName), self.leafShape, 
                 self.formatString(self.leafStr, node, parent)))
 
 
@@ -2966,13 +2966,13 @@ class TreeClassifier(Orange.classification.Classifier):
             self).dumpTree()
 
     def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
-        """ Prints the tree to a file in a format used by 
+        """ Print the tree to a file in a format used by 
         `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
         Uses the same parameters as :meth:`dump` defined above
         plus two parameters which define the shape used for internal
-        nodes and laves of the tree:
+        nodes and leaves of the tree:
 
-        :param leafShape: Shape of the outline around leves of the tree. 
+        :param leafShape: Shape of the outline around leaves of the tree. 
             If "plaintext", no outline is used (default: "plaintext").
         :type leafShape: string
         :param internalNodeShape: Shape of the outline around internal nodes 
@@ -2982,7 +2982,7 @@ class TreeClassifier(Orange.classification.Classifier):
         Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
         for various outlines supported by GraphViz.
         """
-        fle = type(fileName) == str and file(fileName, "wt") or fileName
+        fle = type(fileName) == str and open(fileName, "wt") or fileName
 
         _TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
             _TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
