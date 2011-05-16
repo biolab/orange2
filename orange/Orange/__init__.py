@@ -46,6 +46,7 @@ _import("classification.majority")
 _import("optimization")
 
 _import("projection")
+_import("projection.linear")
 _import("projection.mds")
 _import("projection.som")
 
