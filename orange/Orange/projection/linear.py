@@ -53,6 +53,10 @@ Learner and Classifier
    :members:
    :show-inheritance:
 
+.. autoclass:: Orange.projection.linear.S2NHeuristicLearner
+   :members:
+   :show-inheritance:
+
 '''
 
 
@@ -865,6 +869,26 @@ createPCAProjection = create_pca_projection
 # #############################################################################
 # class that represents freeviz classifier
 class FreeVizClassifier(Orange.core.Classifier):
+    """
+    A kNN classifier on the 2D projection of the data, optimized by FreeViz.
+    
+    Usually the learner
+    (:class:`Orange.projection.linear.FreeVizLearner`) is used to construct the
+    classifier.
+    
+    When constructing the classifier manually, the following parameters can
+    be passed:
+    
+    :param data: table of data instances to project to a 2D plane and use for
+        classification.
+    :type data: :class:`Orange.data.Table`
+    
+    :param freeviz: the FreeViz algorithm instance to use to optimize the 2D
+        projection.
+    :type freeviz: :class:`Orange.projection.linear.FreeViz`
+    
+    """
+    
     def __init__(self, data, freeviz):
         self.freeviz = freeviz
 
@@ -918,7 +942,24 @@ class FreeVizClassifier(Orange.core.Classifier):
 
 FreeVizClassifier = deprecated_members({"FreeViz":"freeviz"})(FreeVizClassifier)
 
-class FreeVizLearner(Orange.core.Learner):
+class FreeVizLearner(Orange.classification.Learner):
+    """
+    A learner that builds a :class:`FreeVizClassifier` on given data. An
+    instance of :class:`FreeViz` can be passed to the constructor as a
+    keyword argument :obj:`freeviz`.    
+
+    If data instances are provided to the constructor, the learning algorithm
+    is called and the resulting classifier is returned instead of the learner.
+    
+    """
+    def __new__(cls, instances = None, weight_id = 0, **argkw):
+        self = Orange.classification.Learner.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances, weight_id)
+        else:
+            return self
+
     def __init__(self, freeviz = None):
         if not freeviz:
             freeviz = FreeViz()
@@ -932,7 +973,19 @@ class FreeVizLearner(Orange.core.Learner):
 FreeVizLearner = deprecated_members({"FreeViz":"freeviz"})(FreeVizLearner)
 
 
-class S2NHeuristicLearner(Orange.core.Learner):
+class S2NHeuristicLearner(Orange.classification.Learner):
+    """
+    This class is not documented yet.
+    
+    """
+    def __new__(cls, instances = None, weight_id = 0, **argkw):
+        self = Orange.classification.Learner.__new__(cls, **argkw)
+        if instances:
+            self.__init__(**argkw)
+            return self.__call__(instances, weight_id)
+        else:
+            return self
+
     def __init__(self, freeviz = None):
         if not freeviz:
             freeviz = FreeViz()
