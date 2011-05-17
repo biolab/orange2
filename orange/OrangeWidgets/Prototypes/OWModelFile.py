@@ -1,9 +1,9 @@
 """
-<name>Models File</name>
-<description>Loads decision models</description>
+<name>Model File</name>
+<description>Load prediction models</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
-<priority>0</priority>
+<priority>1100</priority>
 """
 
 from OWWidget import *
@@ -15,7 +15,7 @@ import exceptions
 import os.path
 import pickle
 
-class OWModelsFile(OWDistanceFile):
+class OWModelFile(OWDistanceFile):
     settingsList = ["recentFiles", "origRecentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
     def __init__(self, parent=None, signalManager = None):
@@ -131,7 +131,7 @@ class OWModelsFile(OWDistanceFile):
         
 if __name__=="__main__":
     a = QApplication(sys.argv)
-    ow = OWDistanceFile()
+    ow = OWModelFile()
     ow.show()
     a.exec_()
     ow.saveSettings()
