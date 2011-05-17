@@ -675,7 +675,7 @@ class FreeViz:
                                          self.graph.noJitteringScaledData[self.graph.dataClassIndex])
 
         if percent_data_used != 100:
-            indices = Orange.core.MakeRandomIndices2(self.graph.rawData,
+            indices = Orange.data.sample.SubsetIndices2(self.graph.rawData,
                                                 1.0-(float(percent_data_used)/100.0))
             try:
                 data_matrix = numpy.compress(indices, data_matrix, axis = 1)
@@ -868,7 +868,7 @@ createPCAProjection = create_pca_projection
 
 # #############################################################################
 # class that represents freeviz classifier
-class FreeVizClassifier(Orange.core.Classifier):
+class FreeVizClassifier(Orange.classification.Classifier):
     """
     A kNN classifier on the 2D projection of the data, optimized by FreeViz.
     
@@ -909,7 +909,7 @@ class FreeVizClassifier(Orange.core.Classifier):
         indices = [ai[label] for label in labels]
 
         valid_data = graph.getValidList(indices)
-        domain = Orange.core.Domain([graph.dataDomain[i].name for i in indices]+
+        domain = Orange.data.Domain([graph.dataDomain[i].name for i in indices]+
                                [graph.dataDomain.classVar.name],
                                graph.dataDomain)
         offsets = [graph.attrValues[graph.attributeNames[i]][0]
@@ -925,7 +925,7 @@ class FreeVizClassifier(Orange.core.Classifier):
                                              removeMissingData = 0,
                                              valid_data = valid_data,
                                              jitterSize = -1)
-        self.classifier = Orange.core.P2NN(domain,
+        self.classifier = Orange.classification.knn.P2NN(domain,
                                       numpy.transpose(numpy.array([numpy.compress(valid_data,
                                                                                   graph.unscaled_x_positions),
                                                                    numpy.compress(valid_data,
@@ -936,7 +936,7 @@ class FreeVizClassifier(Orange.core.Classifier):
 
     # for a given instance run argumentation and find out to which class it most often fall
     @deprecated_keywords({"example": "instance", "returnType": "return_type"})
-    def __call__(self, instance, return_type=Orange.core.Classifier.GetValue):
+    def __call__(self, instance, return_type=Orange.classification.Classifier.GetValue):
         #instance.setclass(0)
         return self.classifier(instance, returntype)
 
@@ -952,10 +952,10 @@ class FreeVizLearner(Orange.classification.Learner):
     is called and the resulting classifier is returned instead of the learner.
     
     """
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
+    def __new__(cls, freeviz = None, instances = None, weight_id = 0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
         if instances:
-            self.__init__(**argkw)
+            self.__init__(freeviz, **argkw)
             return self.__call__(instances, weight_id)
         else:
             return self
@@ -978,10 +978,10 @@ class S2NHeuristicLearner(Orange.classification.Learner):
     This class is not documented yet.
     
     """
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
+    def __new__(cls, freeviz = None, instances = None, weight_id = 0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
         if instances:
-            self.__init__(**argkw)
+            self.__init__(freeviz, **argkw)
             return self.__call__(instances, weight_id)
         else:
             return self
