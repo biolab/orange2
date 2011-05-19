@@ -9,7 +9,7 @@ import orngStat
 table = Orange.data.Table("adult_sample.tab")
 
 bayes = Orange.classification.bayes.NaiveLearner(name="Naive Bayes")
-adjustedBayes = Orange.classification.bayes.NaiveLearner(adjustThreshold=True, name="Adjusted Naive Bayes")
+adjusted_bayes = Orange.classification.bayes.NaiveLearner(adjust_threshold=True, name="Adjusted Naive Bayes")
 
-results = Orange.evaluation.testing.crossValidation([bayes, adjustedBayes], table)
+results = Orange.evaluation.testing.cross_validation([bayes, adjusted_bayes], table)
 print orngStat.CA(results)
