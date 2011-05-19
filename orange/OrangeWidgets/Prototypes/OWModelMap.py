@@ -8,6 +8,7 @@
 
 import scipy.stats
 
+import Orange
 import orange
 import orngVizRank
 import orngNetwork
@@ -236,8 +237,10 @@ class OWModelMapCanvas(OWNetworkCanvas):
     def loadIcons(self):
         items = self.visualizer.graph.items
         maxsize = str(max(map(int, ICON_SIZES)))
+        minsize = min(map(int, ICON_SIZES))
         for v in self.vertices:
-            size = maxsize
+            size = str(minsize) if v.size <= minsize else maxsize
+            
             for i in range(len(ICON_SIZES) - 1):
                 if int(ICON_SIZES[i]) < v.size <= int(ICON_SIZES[i+1]):
                     size = ICON_SIZES[i]
@@ -266,7 +269,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
                     "toolbarSelection", "minComponentEdgeWidth", 
                     "maxComponentEdgeWidth", "mdsFromCurrentPos"]
     
-    def __init__(self, parent=None, signalManager=None, name="Meta Miner"):
+    def __init__(self, parent=None, signalManager=None, name="Model Map"):
         OWNetExplorer.__init__(self, parent, signalManager, name, 
                                NetworkCanvas=OWModelMapCanvas)
         
@@ -280,8 +283,6 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.autoSendSelection = False
         self.minVertexSize = 16
         self.maxVertexSize = 16
-        self.tabIndex = 0
-        self.vertexSizeAttribute = 0
         self.lastColorAttribute = ""
         self.lastSizeAttribute = ""
         self.vizAccurancy = False
@@ -311,17 +312,6 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.histogram = OWHist(self, boxHistogram)
         boxHistogram.layout().addWidget(self.histogram)
         
-        # NETWORK CONTROLS
-        # remove stretch that was added to the tab in OWNetExplorer
-        vtl = self.verticesTab.layout()
-        vtl.removeItem(vtl.takeAt(vtl.count() - 1))
-        self.sizeAttributeCombo = OWGUI.comboBox(self.verticesTab, self, 
-                          "vertexSizeAttribute", box = "Vertex size attribute", 
-                          callback=self.setMaxVertexSize)
-        self.sizeAttributeCombo.addItem("(none)")
-        OWGUI.spin(self.sizeAttributeCombo.box, self, "minVertexSize", 16, 80, 2, label="Min vertex size:", callback = self.setMaxVertexSize)
-        OWGUI.spin(self.sizeAttributeCombo.box, self, "maxVertexSize", 16, 80, 2, label="Max vertex size:", callback = self.setMaxVertexSize)
-        
         # VISUALIZATION CONTROLS
         vizPredAcc = OWGUI.widgetBox(self.modelTab, "Prediction Accuracy", orientation = "vertical")
         OWGUI.checkBox(vizPredAcc, self, "vizAccurancy", "Visualize prediction accurancy", callback = self.visualizeInfo)
@@ -332,8 +322,6 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.predGraph.setAxisScale(QwtPlot.xBottom, 0.0, 1.0, 0.1)
         self.predGraph.numberOfBars = 2
         self.predGraph.barSize = 200 / (self.predGraph.numberOfBars + 1)
-        #self.infoCA = OWGUI.widgetLabel(vizPredAcc, 'CA: ')
-        #self.infoAUC = OWGUI.widgetLabel(vizPredAcc, 'AUC: ')
         vizPredAcc.layout().addWidget(self.predGraph)
         
         vizPredAcc = OWGUI.widgetBox(self.modelTab, "Attribute lists", orientation = "vertical")
@@ -341,11 +329,12 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.attrIntersectionBox = OWGUI.listBox(vizPredAcc, self, "attrIntersection", "attrIntersectionList", "Attribute intersection", selectionMode=QListWidget.NoSelection)
         self.attrDifferenceBox = OWGUI.listBox(vizPredAcc, self, "attrDifference", "attrDifferenceList", "Attribute difference", selectionMode=QListWidget.NoSelection)
         
-        self.verticesTab.layout().addStretch(1)
+        self.attBox.setVisible(0)
+        
         self.matrixTab.layout().addStretch(1)
         self.modelTab.layout().addStretch(1)
-        self.setMinimumWidth(600)
-        self.resize(800, self.height())
+        self.setMinimumWidth(900)
+        self.controlArea.setMinimumWidth(378)
         
     def plotAccuracy(self, vertices=None):
         self.predGraph.tips.removeAll()
@@ -380,7 +369,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.attrIntersectionList = []
         self.attrDifferenceList = []
         
-        if vertices == None or len(vertices) == 0:
+        if vertices is None or len(vertices) == 0:
             return
         
         attrList = [self.matrix.items[v]["attributes"].value.split(", ") for v in vertices]
@@ -408,9 +397,6 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         else:
             self.networkCanvas.vizAttributes = None
             self.displayAttributeInfo(None)
-
-    def currentTabChanged(self, index): 
-        self.tabIndex = index
             
     def setSubsetModels(self, subsetData):
         self.info()
@@ -449,31 +435,16 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         for i, ex in enumerate(matrix.items):
             ex["attributes"] = ", ".join(sorted(ex["attributes"].value.split(", ")))
             self.networkCanvas.vertices[i].uuid = ex["uuid"].value
-            
-    def setMaxVertexSize(self):
-        if self.networkCanvas == None:
-            return
-        
-        if self.minVertexSize > self.maxVertexSize:
-            self.maxVertexSize = self.minVertexSize
-        
-        self.networkCanvas.minVertexSize = self.minVertexSize
-        self.networkCanvas.maxVertexSize = self.maxVertexSize
-        
-        print self.vertexSizeAttribute
-        if self.vertexSizeAttribute > 0:
-            self.lastSizeAttribute = self.sizeAttributeCombo.currentText()
-            self.networkCanvas.setVerticesSize(self.lastSizeAttribute)
-        else:
-            self.networkCanvas.setVerticesSize()
-        
+
+    def setVertexSize(self):
+        OWNetExplorer.setVertexSize(self)
         self.networkCanvas.loadIcons()
         self.networkCanvas.replot()
         
     def setVertexStyle(self):
         for v in self.networkCanvas.vertices:
             auc = self.matrix.items[v.index]["AUC"].value
-            v.style = 1#auc            
+            v.style = 1 #auc            
         
     def sendNetworkSignals(self):
         if self.graph != None and self.graph.items != None:
@@ -518,7 +489,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             self.setVertexColor()
             
     def setVertexColor(self):
-        if self.optimization == None:
+        if self.optimization is None or self.networkCanvas is None:
             return
         
         self.networkCanvas.setVertexColor(self.colorCombo.currentText())
@@ -528,33 +499,11 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             
     def sendSignals(self):
         if self.graph != None:
-            self.optimization = orngNetwork.NetworkOptimization(self.graph)
-            self.optimization.vertexDistance = self.matrix
-            self.networkCanvas.addVisualizer(self.optimization)
-            self.networkCanvas.setLabelText(["attributes"])    
-            self.sizeAttributeCombo.clear()
-            self.colorCombo.clear()
-            self.sizeAttributeCombo.addItem("(same size)")
-            self.colorCombo.addItem("(same color)")
-            vars = self.optimization.getVars()
-            for var in vars:
-                if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
-                    self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+            self.setGraph(self.graph)
+            self.setVertexDistance(self.matrix)
+            # TODO clickedAttLstBox -> setLabelText(["attributes"]
             
-                if var.varType in [orange.VarTypes.Continuous]:
-                    self.sizeAttributeCombo.addItem(self.icons[var.varType], unicode(var.name))
-            
-            index = self.sizeAttributeCombo.findText(self.lastSizeAttribute)
-            if index > -1:
-                self.sizeAttributeCombo.setCurrentIndex(index)
-                self.vertexSizeAttribute = index
-                
-            index = self.colorCombo.findText(self.lastColorAttribute)
-            if index > -1:
-                self.colorCombo.setCurrentIndex(index)
-                self.colorAttribute = index
-                
-            self.setMaxVertexSize()
+            self.setVertexSize()
             self.setVertexStyle()
             self.setVertexColor()
             
@@ -573,6 +522,31 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             self.predGraph.setXaxisTitle("CA")
             self.predGraph.setShowXaxisTitle(True)
             self.predGraph.replot()
-            
-            self.optLayout() 
-        
+
+if __name__=="__main__":    
+    import OWModelFile
+    import pickle
+    modelName = 'zoo-168'
+    root = 'c:\\Users\\miha\\Projects\\res\\metamining\\'
+    
+    appl = QApplication(sys.argv)
+    ow = OWModelMap()
+    ow.show()
+    mroot = '%snew\\' % root
+    matrix,labels,data = OWModelFile.readMatrix('%s%s.npy' % (mroot,modelName))
+    if os.path.exists('%s%s.tab' % (mroot, modelName)):
+        matrix.items = orange.ExampleTable('%s%s.tab' % (mroot, modelName))
+    else:
+        print 'ExampleTable %s not found!\n' % ('%s%s.tab' % (mroot,modelName))
+    if os.path.exists('%s%s.res' % (mroot, modelName)):
+        matrix.results = pickle.load(open('%s%s.res' % \
+                                               (mroot, modelName), 'rb'))
+    else:
+        print 'Results pickle %s not found!\n' % \
+              ('%s%s.res' % (mroot, modelName))
+    
+    matrix.originalData = Orange.data.Table('%stab\\zoo.tab' % root)
+    ow.setMatrix(matrix)
+    appl.exec_()
+    
+    
