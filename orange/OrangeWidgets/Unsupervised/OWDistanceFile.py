@@ -21,7 +21,6 @@ def readMatrix(fn, progress=None):
         pkl_file = open(fn, 'rb')
         matrix = pickle.load(pkl_file)
         data = None
-        #print self.matrix
         if hasattr(matrix, 'items'):
             items = matrix.items
             if isinstance(items, orange.ExampleTable):
@@ -29,9 +28,19 @@ def readMatrix(fn, progress=None):
             elif isinstance(items, list) or hasattr(item, "__iter__"):
                 labels = items
         pkl_file.close()
-        
+    elif type(fn) != file and os.path.splitext(fn)[1] == '.npy':
+        import numpy
+        nmatrix = numpy.load(fn)
+        matrix = orange.SymMatrix(len(nmatrix))
+        milestones = orngMisc.progressBarMilestones(matrix.dim, 100)
+        for i in range(len(nmatrix)):
+            for j in range(i+1):
+                matrix[j,i] = nmatrix[i,j]
+                
+            if progress and i in milestones:
+                progress.advance()
+        #labels = [""] * len(nmatrix)
     else:    
-        #print fn
         if type(fn) == file:
             fle = fn
         else:
@@ -79,8 +88,8 @@ def readMatrix(fn, progress=None):
             if li in milestones:
                 if progress:
                     progress.advance()
-        if progress:
-            progress.finish()
+    if progress:
+        progress.finish()
 
     return matrix, labels, data
 
@@ -196,7 +205,7 @@ class OWDistanceFile(OWWidget):
         #print 'relabel'
         self.error()
         matrix = self.matrix
-        if matrix and self.data:
+        if matrix is not None and self.data is not None:
             if self.takeAttributeNames:
                 domain = self.data.domain
                 if matrix.dim == len(domain.attributes):
