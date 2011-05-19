@@ -36,7 +36,8 @@ class OWModelEmbedder(OWWidget):
         self.data = None
         self.model = None
         
-        self.resize(800, 600)
+        self.loadSettings()
+        
         self.widgets = {}
         
     def setData(self, data):

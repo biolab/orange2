@@ -304,6 +304,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.networkCanvas.minVertexSize = self.minVertexSize
         self.networkCanvas.maxVertexSize = self.maxVertexSize
         self.networkCanvas.invertEdgeSize = 1
+        self.networkCanvas.callbackSelectVertex = self.sendNetworkSignals
         
         # MARTIX CONTROLS
         self.addHistogramControls(self.matrixTab)
@@ -443,37 +444,49 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         
     def setVertexStyle(self):
         for v in self.networkCanvas.vertices:
-            auc = self.matrix.items[v.index]["AUC"].value
+            auc = self.matrix.items[v.index]
             v.style = 1 #auc            
         
     def sendNetworkSignals(self):
-        if self.graph != None and self.graph.items != None:
-            selection = self.networkCanvas.getSelectedVertices()
+        self.warning()
+        
+        if self.graph is None or self.graph.items is None or self.matrix is None:
+            self.send("Model", None)
+            self.send("Selected Models", None)
+            return
+        
+        if len(self.graph.items) != self.matrix.dim:
+            self.warning('Network items and matrix results not of equal length.')
+            self.send("Model", None)
+            self.send("Selected Models", None)
+            return
+                    
+        selection = self.networkCanvas.getSelectedVertices()
+        
+        if len(selection) == 1:
+            modelInstance = self.graph.items[selection[0]]
+            # modelInfo - Python Dict; keys: method, classifier, probabilities,
+            # results, XAnchors, YAnchors, attributes
+            modelInfo = self.matrix.results[selection[0]]
+            uuid = modelInstance["uuid"].value
+            #method, vizr_result, projection_points, classifier, attrs = self.matrix.results[uuid]
             
-            if len(selection) == 1:
-                model = self.graph.items[selection[0]]
-                uuid = model["uuid"].value
-                method, vizr_result, projection_points, classifier, attrs = self.matrix.results[uuid]
+            if "YAnchors" in modelInfo and "XAnchors" in modelInfo:
+                if not modelInstance.domain.hasmeta("anchors"):
+                    modelInstance.domain.addmeta(orange.newmetaid(), orange.PythonVariable("anchors"))
+                modelInstance["anchors"] = (modelInfo["XAnchors"], modelInfo["YAnchors"])
                 
-                if len(vizr_result) > 5 and type(vizr_result[5]) == type({}) and "YAnchors" in vizr_result[5] and "XAnchors" in vizr_result[5]:
-                    if not model.domain.hasmeta("anchors"):
-                        model.domain.addmeta(orange.newmetaid(), orange.PythonVariable("anchors"))
-                    model["anchors"] = (vizr_result[5]["XAnchors"], vizr_result[5]["YAnchors"])
-                    
-                if classifier:
-                    if not model.domain.hasmeta("classifier"):
-                        model.domain.addmeta(orange.newmetaid(), orange.PythonVariable("classifier"))
-                    model["classifier"] = classifier
-                    self.send("Classifier", classifier)
-                    
-                self.send("Model", model)
-                self.send("Selected Models", self.graph.items.getitems(selection))
-            elif len(selection) > 1: 
-                self.send("Model", None)
-                self.send("Selected Models", self.graph.items.getitems(selection))
-            else:
-                self.send("Model", None)
-                self.send("Selected Models", None)
+            if 'classifier' in modelInfo and modelInfo['classifier'] is not None:
+                if not modelInstance.domain.hasmeta("classifier"):
+                    modelInstance.domain.addmeta(orange.newmetaid(), orange.PythonVariable("classifier"))
+                modelInstance["classifier"] = modelInfo['classifier']
+                self.send("Classifier", modelInfo['classifier'])
+                
+            self.send("Model", modelInstance)
+            self.send("Selected Models", self.graph.items.getitems(selection))
+        elif len(selection) > 1: 
+            self.send("Model", None)
+            self.send("Selected Models", self.graph.items.getitems(selection))
         else:
             self.send("Model", None)
             self.send("Selected Models", None)
