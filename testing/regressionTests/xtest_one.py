@@ -6,6 +6,7 @@ import os as t__os
 #ignore deprection warnings
 import warnings as t__warnings
 t__warnings.simplefilter("ignore", DeprecationWarning)
+t__warnings.simplefilter("ignore", UserWarning)
 
 NO_RANDOMNESS = 1 # prevent random parts of scripts to run
 
