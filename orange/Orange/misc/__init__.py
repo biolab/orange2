@@ -315,15 +315,18 @@ def deprecated_members(name_map, wrap_methods="all", in_place=True):
     
     Example ::
             
-        >>> @deprecated_members({"fooBar": "foo_bar", "setFooBar":"set_foo_bar"},
-        ...                    wrap_methods=["set_foo_bar", "__init__"])
-        ... class A(object):
+        >>> class A(object):
         ...     def __init__(self, foo_bar="bar"):
         ...         self.set_foo_bar(foo_bar)
         ...     
         ...     def set_foo_bar(self, foo_bar="bar"):
         ...         self.foo_bar = foo_bar
-        ...         
+        ...
+        ... A = deprecated_members(
+        ... {"fooBar": "foo_bar", 
+        ...  "setFooBar":"set_foo_bar"},
+        ... wrap_methods=["set_foo_bar", "__init__"])(A)
+        ... 
         ...
         >>> a = A(fooBar="foo")
         __main__:1: DeprecationWarning: 'fooBar' is deprecated. Use 'foo_bar' instead!
