@@ -1,5 +1,5 @@
-Iris-setosa Iris-setosa
-Iris-setosa Iris-setosa
-Iris-setosa Iris-setosa
-Iris-setosa Iris-setosa
-Iris-setosa Iris-setosa
+yes no
+yes no
+yes no
+yes no
+yes no
