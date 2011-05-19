@@ -6,4 +6,5 @@ Regression (``regression``)
    :maxdepth: 4
 
    Orange.regression.mean
+   Orange.regression.tree
 
