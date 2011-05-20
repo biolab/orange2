@@ -7,4 +7,5 @@ Evaluation (``evaluation``)
 
    Orange.evaluation.scoring
    Orange.evaluation.testing
+   Orange.evaluation.reliability
 
