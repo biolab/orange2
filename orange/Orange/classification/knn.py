@@ -7,17 +7,17 @@
 k-nearest neighbors
 *******************
 
-The module includes implementation of `nearest neighbors 
+The module includes implementation of the `nearest neighbors 
 algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ and classes
-for finding nearest instances according to chosen distance metrics.
+for finding the nearest instances according to chosen distance metrics.
 
 k-nearest neighbor algorithm
 ============================
 
-Nearest neighbors algorithm is one of most basic, 
+The nearest neighbors algorithm is one of the most basic, 
 `lazy <http://en.wikipedia.org/wiki/Lazy_learning>`_ machine learning algorithms.
-The learner only needs to store the training data instances, while the classifier
-does all the work by searching this list for the most similar instances for 
+The learner only needs to store the instances of training data, while the classifier
+does all the work by searching this list for the instances most similar to 
 the data instance being classified:
 
 .. literalinclude:: code/knnExample0.py
@@ -27,7 +27,7 @@ the data instance being classified:
     :param instances: table of instances
     :type instances: Orange.data.Table
     
-    :param k: number of nearest neighbours used in classification
+    :param k: number of nearest neighbors used in classification
     :type k: int
     
     :param weightID: id of meta attribute with instance weights
@@ -63,7 +63,7 @@ the data instance being classified:
 kNNLearner first constructs an object for measuring distances between 
 instances. distance_constructor is used if given; otherwise, Euclidean 
 metrics will be used. :class:`kNNLearner` then constructs an instance of 
-:class:`FindNearest_BruteForce`. Together with ID of meta feature with 
+:class:`FindNearest_BruteForce`. Together with the ID of the meta feature with 
 weights of instances, :attr:`kNNLearner.k` and :attr:`kNNLearner.rank_weight`,
 it is passed to a :class:`kNNClassifier`.
 
@@ -86,7 +86,7 @@ nExamples)
         
     .. method:: find_nearest(instance)
     
-    A component that finds nearest neighbors of a given instance.
+    A component which finds the nearest neighbors of a given instance.
         
     :param instance: given instance
     :type instance: Orange.data.Instance
@@ -101,7 +101,7 @@ nExamples)
     
     .. attribute:: rank_weight
     
-        Enables weighting by ranks (default: :obj:`true`).
+        Enables weighting by rank (default: :obj:`true`).
     
     .. attribute:: weight_ID
     
@@ -110,7 +110,7 @@ nExamples)
     .. attribute:: n_examples
     
         The number of learning instances. It is used to compute the number of 
-        neighbours if :attr:`kNNClassifier.k` is zero.
+        neighbors if the value of :attr:`kNNClassifier.k` is zero.
 
 When called to classify an instance, the classifier first calls 
 :meth:`kNNClassifier.find_nearest` 
@@ -122,16 +122,16 @@ together with their weights. If instances are weighted (non-zero
 
 If :meth:`kNNClassifier.find_nearest` returns only one neighbor 
 (this is the case if :obj:`k=1`), :class:`kNNClassifier` returns the
-neighbour's class.
+neighbor's class.
 
-Otherwise, the retrieved neighbours vote about the class prediction
+Otherwise, the retrieved neighbors vote about the class prediction
 (or probability of classes). Voting has double weights. As first, if
 instances are weighted, their weights are respected. Secondly, nearer
-neighbours have greater impact on the prediction; weight of instance
+neighbors have a greater impact on the prediction; the weight of instance
 is computed as exp(-t:sup:`2`/s:sup:`2`), where the meaning of t depends
 on the setting of :obj:`rank_weight`.
 
-* if :obj:`rank_weight` is :obj:`false`, :obj:`t` is a distance from the
+* if :obj:`rank_weight` is :obj:`false`, :obj:`t` is the distance from the
   instance being classified
 * if :obj:`rank_weight` is :obj:`true`, neighbors are ordered and :obj:`t`
   is the position of the neighbor on the list (a rank)
@@ -140,7 +140,7 @@ on the setting of :obj:`rank_weight`.
 In both cases, :obj:`s` is chosen so that the impact of the farthest instance
 is 0.001.
 
-Weighting gives the classifier certain insensitivity to the number of
+Weighting gives the classifier a certain insensitivity to the number of
 neighbors used, making it possible to use large :obj:`k`'s.
 
 The classifier can treat continuous and discrete features, and can even
@@ -150,10 +150,10 @@ distance measuring for details.
 Examples
 --------
 
-We will test the learner on 'iris' data set. We shall split it onto train
-(80%) and test (20%) sets, learn on training instances and test on five
-randomly selected test instances, in part of 
-(`knnlearner.py`_, uses `iris.tab`_):
+The learner will be tested on an 'iris' data set. The data will be split 
+into training (80%) and testing (20%) instances. We will use the former 
+for "training" the classifier and test it on five testing instances 
+randomly selected from a part of (`knnlearner.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/knnExample1.py
 
@@ -165,14 +165,14 @@ The output of this code is::
     Iris-setosa Iris-setosa
     Iris-setosa Iris-setosa
 
-The secret of kNN's success is that the instances in iris data set appear in
+The secret to kNN's success is that the instances in the iris data set appear in
 three well separated clusters. The classifier's accuracy will remain
-excellent even with very large or small number of neighbors.
+excellent even with a very large or very small number of neighbors.
 
-As many experiments have shown, a selection of instances distance measure
-does not have a greater and predictable effect on the performance of kNN
-classifiers. So there is not much point in changing the default. If you
-decide to do so, you need to set the distance_constructor to an instance
+As many experiments have shown, a selection of instances of distance measures
+has neither a greater nor more predictable effect on the performance of kNN
+classifiers. Therefore there is not much point in changing the default. If you
+decide to do so, the distance_constructor must be set to an instance
 of one of the classes for distance measuring. This can be seen in the following
 part of (`knnlearner.py`_, uses `iris.tab`_):
 
@@ -197,28 +197,28 @@ The result is still perfect.
 Finding nearest neighbors
 =========================
 
-Orange provides classes for finding the nearest neighbors of the given
-reference instance. While we might add some smarter classes in future, we
-now have only two - abstract classes that defines the general behavior of
+Orange provides classes for finding the nearest neighbors of a given
+reference instance. While we might add some smarter classes in the future, we
+now have only two - abstract classes that define the general behavior of
 neighbor searching classes, and classes that implement brute force search.
 
-As usually in Orange, there is a pair of classes: a class that does the work
+As is the norm in Orange, there are a pair of classes: a class that does the work
 (:class:`FindNearest`) and a class that constructs it ("learning" - getting the
 instances and arranging them in an appropriate data structure that allows for
 searching) (:class:`FindNearestConstructor`).
 
 .. class:: FindNearest
 
-    A class for brute force search for nearest neighbours. It stores a table 
+    A class for a brute force search for nearest neighbors. It stores a table 
     of instances (it's its own copy of instances, not only Orange.data.Table
-    with references to another Orange.data.Table). When asked for neighbours,
+    with references to another Orange.data.Table). When asked for neighbors,
     it measures distances to all instances, stores them in a heap and returns 
     the first k as an Orange.data.Table with references to instances stored in
     FindNearest's field instances).
     
     .. attribute:: distance
     
-        a component that measures distance between examples
+        a component that measures the distance between examples
     
     .. attribute:: examples
     
@@ -233,31 +233,33 @@ searching) (:class:`FindNearestConstructor`).
     :param instance: given instance
     :type instance: Orange.data.Instance
     
-    :param n: number of neighbours
+    :param n: number of neighbors
     :type n: int
     
     :rtype: list of :obj:`Orange.data.Instance`
     
 .. class:: FindNearestConstructor()
 
-    A class that constructs FindNearest. It calls the inherited 
-    distance_constructor and then passes the constructed distance measure,
-    among with instances, weight_ID and distance_ID, to the just constructed
-    instance of FindNearest_BruteForce.
     
+    A class that constructs FindNearest. It calls the inherited
+    distance_constructor, which constructs a distance measure.
+    The distance measure, along with the instances weight_ID and
+    distance_ID, is then passed to the just constructed instance
+    of FindNearest_BruteForce.
+
     If there are more instances with the same distance fighting for the last
     places, the tie is resolved by randomly picking the appropriate number of
     instances. A local random generator is constructed and initiated by a
     constant computed from the reference instance. The effect of this is that
-    same random neighbours will be chosen for the instance each time
+    the same random neighbors will be chosen for the instance each time
     FindNearest_BruteForce
     is called.
     
     .. attribute:: distance_constructor
     
         A component of class ExamplesDistanceConstructor that "learns" to
-        measure distances between instances. Learning can be, for instances,
-        storing the ranges of continuous features or the number of value of
+        measure distances between instances. Learning can mean, for instances,
+        storing the ranges of continuous features or the number of values of
         a discrete feature (see the page about measuring distances for more
         information). The result of learning is an instance of 
         ExamplesDistance that should be used for measuring distances
@@ -265,14 +267,14 @@ searching) (:class:`FindNearestConstructor`).
     
     .. attribute:: include_same
     
-        Tells whether to include the examples that are same as the reference;
-        default is true.
+        Tells whether or not to include the examples that are same as the reference;
+        the default is true.
     
     .. method:: __call__(table, weightID, distanceID)
     
-        Constructs an instance of FindNearest that would return neighbours of
+        Constructs an instance of FindNearest that would return neighbors of
         a given instance, obeying weight_ID when counting them (also, some 
-        measures of distance might consider weights as well) and store the 
+        measures of distance might consider weights as well) and storing the 
         distances in a meta attribute with ID distance_ID.
     
         :param table: table of instances
@@ -290,7 +292,7 @@ Examples
 --------
 
 The following script (`knnInstanceDistance.py`_, uses `lenses.tab`_) 
-shows how to find the five nearest neighbours of the first instance
+shows how to find the five nearest neighbors of the first instance
 in the lenses dataset.
 
 .. literalinclude:: code/knnInstanceDistance.py
