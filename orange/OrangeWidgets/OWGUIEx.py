@@ -162,6 +162,8 @@ class LineEditHint(QLineEdit):
         self.listWidget.setFocusPolicy(Qt.NoFocus)
         QObject.connect(self.listWidget, SIGNAL("itemClicked (QListWidgetItem *)"), self.doneCompletion)
         
+        QObject.connect(self, SIGNAL("editingFinished()"), lambda : self.callbackOnComplete() if self.callbackOnComplete else None)
+        
     def setItems(self, items):
         if items:
             self.itemsAsItems = items
