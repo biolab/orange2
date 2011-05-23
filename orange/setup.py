@@ -331,7 +331,7 @@ class my_install_lib(install_lib):
         # because copy_tree fails to overwrite it
         # 
         liborange = os.path.join(self.install_dir, "liborange.so")
-        if self.force and os.exists(liborange) and os.islink(liborange):
+        if self.force and os.path.exists(liborange) and os.path.islink(liborange):
             log.info("unlinking %s -> %s", liborange, os.path.join(self.install_dir, "orange.so"))
             os.unlink(liborange)
             
