@@ -73,7 +73,7 @@ class Palette:
         self.grid_style = LineStyle(Qt.gray,  1,  Qt.SolidLine)
         self.line_styles = []
         self.point_styles = []
-        self.axis_style = LineStyle(Qt.Black, 1, Qt.SolidLine)
+        self.axis_style = LineStyle(Qt.black, 1, Qt.SolidLine)
 
 def shared_palette():
     global _shared_palette

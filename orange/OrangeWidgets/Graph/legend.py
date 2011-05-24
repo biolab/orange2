@@ -8,5 +8,5 @@ class LegendItem:
 
 class Legend(QGraphicsItemGroup):
     def __init__(self, scene):
-        QGraphicsItemGroup.__init__(self, scene)
+        QGraphicsItemGroup.__init__(self, None, scene)
         self.items = []

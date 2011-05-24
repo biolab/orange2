@@ -159,7 +159,8 @@ class OWScatterPlot(OWWidget):
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-        self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
+        # self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
+        self.graph.palette.grid_style.color = dlg.getColor("Grid")
 
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
