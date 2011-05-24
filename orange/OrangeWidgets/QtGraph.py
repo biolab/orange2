@@ -1,5 +1,5 @@
 
-from Visualize.Graph import *
+from Graph import *
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene
 
 class OWGraph(QGraphicsView):

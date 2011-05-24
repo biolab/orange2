@@ -38,6 +38,9 @@
         
 """
 
+from PyQt4.QtGui import QColor, QPen
+from PyQt4.QtCore import Qt
+
 class LineStyle:
     def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine):
         self.color = color

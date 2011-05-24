@@ -1,1 +1,1 @@
-__all__ = ["OWGraph" "palette"]
+__all__ = ["curve", "legend", "palette"]

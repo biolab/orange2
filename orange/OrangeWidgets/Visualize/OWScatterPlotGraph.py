@@ -1,7 +1,7 @@
 #
 # OWScatterPlotGraph.py
 #
-from OWGraph import *
+from QtGraph import *
 import time
 from orngCI import FeatureByCartesianProduct
 ##import OWClusterOptimization

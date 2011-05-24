@@ -2,7 +2,7 @@
 from OWBaseWidget import *
 
 from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsEllipseItem
-from PyQt4.QtCore import QBrush, QPen
+from PyQt4.QtGui import QBrush, QPen
 
 """
     This class represents a curve on a graph.
