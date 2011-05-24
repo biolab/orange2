@@ -59,6 +59,7 @@ CircleShape = 1
 SquareShape = 2
 CrossShape = 3
 PlusShape = 4
+EllipseShape = 5
 
 class PointStyle:
     def __init__(self,  color=Qt.black, size=5, shape=CircleShape):
@@ -74,6 +75,7 @@ class Palette:
         self.line_styles = []
         self.point_styles = []
         self.axis_style = LineStyle(Qt.black, 1, Qt.SolidLine)
+        self.curve_symbols = [ EllipseShape, CrossShape, SquareShape ]
 
 def shared_palette():
     global _shared_palette

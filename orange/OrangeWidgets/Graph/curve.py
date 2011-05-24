@@ -21,17 +21,8 @@ from PyQt4.QtGui import QBrush, QPen
 """
 
 class Curve(QGraphicsItemGroup):
-    def __init__(self, parent, **attrs):
-        QGraphicsItemGroup.__init__(self,  parent)
-        for k, v in attrs.iteritems():
-            setattr(self,  key,  val)
-        if not self.continuous:
-            for (i_x, d_y) in data:
-                (x, y) = self.graph.mapToGraph(d_x, d_y)
-                item = QGraphicsEllipseItem( x, y, point_size, point_size, self )
-                item.setBrush(QBrush(brush_color))
-                item.setPen(QPen(pen_color))
-                item.show()
+    def __init__(self, parent=None, scene=None):
+        QGraphicsItemGroup.__init__(self,  parent, scene)
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsItemGroup)

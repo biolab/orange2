@@ -60,18 +60,18 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 #            self.clear()
 #            self.oldLegendKeys = {}
 #            return
-        self.removeDrawingCurves(removeLegendItems = 0)      # my function, that doesn't delete selection curves
-        self.detachItems(QwtPlotItem.Rtti_PlotMarker)
-        self.tips.removeAll()
+        # self.removeDrawingCurves(removeLegendItems = 0)      # my function, that doesn't delete selection curves
+        # self.detachItems(QwtPlotItem.Rtti_PlotMarker)
+        # self.tips.removeAll()
         self.tooltipData = []
         self.potentialsClassifier = None
         self.potentialsImage = None
-        self.canvas().invalidatePaintCache()
+        # self.canvas().invalidatePaintCache()
         self.shownXAttribute = xAttr
         self.shownYAttribute = yAttr
 
         if self.scaledData == None or len(self.scaledData) == 0:
-            self.setAxisScale(QwtPlot.xBottom, 0, 1, 1); self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+           # self.setAxisScale(xBottom, 0, 1, 1); self.setAxisScale(yLeft, 0, 1, 1)
             self.setXaxisTitle(""); self.setYLaxisTitle("")
             self.oldLegendKeys = {}
             return
@@ -118,7 +118,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             xmax = xVarMax + off
             labels = None
         self.setXlabels(labels)
-        self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showContinuousColorLegend * xVar * 0.07, discreteX)
+       # self.setAxisScale(xBottom, xmin, xmax + showContinuousColorLegend * xVar * 0.07, discreteX)
 
         # set axis for y attribute
         discreteY = self.dataDomain[yAttrIndex].varType == orange.VarTypes.Discrete
@@ -133,7 +133,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             ymax = yVarMax + off
             labels = None
         self.setYLlabels(labels)
-        self.setAxisScale(QwtPlot.yLeft, ymin, ymax, discreteY)
+        self.setAxisScale(yLeft, ymin, ymax, discreteY)
 
         self.setXaxisTitle(xAttr)
         self.setYLaxisTitle(yAttr)
@@ -472,13 +472,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
     def computePotentials(self):
         import orangeom
-        rx = self.transform(QwtPlot.xBottom, self.xmax) - self.transform(QwtPlot.xBottom, self.xmin)
-        ry = self.transform(QwtPlot.yLeft, self.ymin) - self.transform(QwtPlot.yLeft, self.ymax)
+        rx = self.transform(xBottom, self.xmax) - self.transform(xBottom, self.xmin)
+        ry = self.transform(yLeft, self.ymin) - self.transform(yLeft, self.ymax)
         rx -= rx % self.squareGranularity
         ry -= ry % self.squareGranularity
 
-        ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, self.xmin)
-        oy = self.transform(QwtPlot.yLeft, self.ymin) - self.transform(QwtPlot.yLeft, 0)
+        ox = self.transform(xBottom, 0) - self.transform(xBottom, self.xmin)
+        oy = self.transform(yLeft, self.ymin) - self.transform(yLeft, 0)
 
         if not getattr(self, "potentialsImage", None) or getattr(self, "potentialContext", None) != (rx, ry, self.shownXAttribute, self.shownYAttribute, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
@@ -507,12 +507,12 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         if self.showProbabilities and getattr(self, "potentialsClassifier", None):
             if not (self.potentialsClassifier is getattr(self,"potentialsImageFromClassifier", None)):
                 self.computePotentials()
-            target = QRectF(self.transform(QwtPlot.xBottom, self.xmin), self.transform(QwtPlot.yLeft, self.ymax),
-                            self.transform(QwtPlot.xBottom, self.xmax) - self.transform(QwtPlot.xBottom,self.xmin),
-                            self.transform(QwtPlot.yLeft, self.ymin) - self.transform(QwtPlot.yLeft, self.ymax))
+            target = QRectF(self.transform(xBottom, self.xmin), self.transform(yLeft, self.ymax),
+                            self.transform(xBottom, self.xmax) - self.transform(xBottom,self.xmin),
+                            self.transform(yLeft, self.ymin) - self.transform(yLeft, self.ymax))
             source = QRectF(0, 0, self.potentialsImage.size().width(), self.potentialsImage.size().height())
             painter.drawImage(target, self.potentialsImage, source)
-#            painter.drawImage(self.transform(QwtPlot.xBottom, self.xmin), self.transform(QwtPlot.yLeft, self.ymax), self.potentialsImage)
+#            painter.drawImage(self.transform(xBottom, self.xmin), self.transform(yLeft, self.ymax), self.potentialsImage)
         OWGraph.drawCanvas(self, painter)
 
 
