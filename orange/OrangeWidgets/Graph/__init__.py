@@ -1,1 +1,1 @@
-__all__ = ["curve", "legend", "palette"]
+__all__ = ["curve", "legend", "palette", "axis" ]
