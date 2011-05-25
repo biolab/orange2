@@ -2,11 +2,11 @@ from orange import \
      BasketFeeder, FileExampleGenerator, BasketExampleGenerator, \
      C45ExampleGenerator, TabDelimExampleGenerator, registerFileType
 
-import Orange.data.variable
+import Orange.data
 import os
 
 def loadARFF(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
-    """Return class:`Orange.data.Table` containing data from file filename"""
+    """Return class:`Orange.data.Table` containing data from file in Weka ARFF format"""
     if not os.path.exists(filename) and os.path.exists(filename + ".arff"):
         filename = filename + ".arff" 
     f = open(filename,'r')
@@ -86,9 +86,13 @@ def loadARFF(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.
     t.name = name
     t.attribute_load_status = attributeLoadStatus
     return t
+loadARFF = Orange.misc.deprecated_keywords(
+{"createOnNew": "create_on_new"}
+)(loadARFF)
+
 
 def toARFF(filename,table,try_numericize=0):
-    """Save class:`Orange.data.Table` to file filename in ARFF format"""
+    """Save class:`Orange.data.Table` to file in Weka's ARFF format"""
     t = table
     if filename[-5:] == ".arff":
         filename = filename[:-5]
@@ -144,6 +148,7 @@ def toARFF(filename,table,try_numericize=0):
         f.write('%s\n'%x[-1])
 
 def toC50(filename,table):
+    """Save class:`Orange.data.Table` to file in C50 format"""
     t = table
     # export names
     f = open('%s.names' % filename,'w')
@@ -185,6 +190,7 @@ def toC50(filename,table):
         f.write('%s\n'%x[-1])
 
 def toR(filename,t):
+    """Save class:`Orange.data.Table` to file in R format"""
     if str.upper(filename[-2:]) == ".R":
         filename = filename[:-2]
     f = open(filename+'.R','w')
@@ -242,10 +248,12 @@ def toR(filename,t):
     f.write(')\n')
     
 def toLibSVM(filename, example):
+    """Save class:`Orange.data.Table` to file in LibSVM format"""
     import Orange.classification.svm
     Orange.classification.svm.tableToSVMFormat(example, open(filename, "wb"))
     
 def loadLibSVM(filename, create_on_new=Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
+    """Return class:`Orange.data.Table` containing data from file in LibSVM format"""
     attributeLoadStatus = {}
     def make_float(name):
         attr, s = orange.Variable.make(name, orange.VarTypes.Continuous, [], [], createOnNew)
@@ -271,6 +279,9 @@ def loadLibSVM(filename, create_on_new=Orange.data.variable.Variable.MakeStatus.
     table = orange.ExampleTable([orange.Example(domain, [ex.get(attr, attr("?")) for attr in attributes] + [c]) for ex, c in zip(values, classes)])
     table.attribute_load_status = attributeLoadStatus
     return table
+loadLibSVM = Orange.misc.deprecated_keywords(
+{"createOnNew": "create_on_new"}
+)(loadLibSVM)
 
 registerFileType("R", None, toR, ".R")
 registerFileType("Weka", loadARFF, toARFF, ".arff")
