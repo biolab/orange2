@@ -2230,7 +2230,7 @@ class TreeLearner(Orange.core.Learner):
         The default stopping criterion stops induction when all examples 
         in a node belong to the same class.
 
-    .. attribute:: mForPruning
+    .. attribute:: m_pruning
 
         If non-zero, invokes an error-based bottom-up post-pruning,
         where m-estimate is used to estimate class probabilities 
@@ -2294,8 +2294,8 @@ class TreeLearner(Orange.core.Learner):
         tree = bl(examples, weight)
         if getattr(self, "sameMajorityPruning", 0):
             tree = Pruner_SameMajority(tree)
-        if getattr(self, "mForPruning", 0):
-            tree = Pruner_m(tree, m=self.mForPruning)
+        if getattr(self, "m_pruning", 0):
+            tree = Pruner_m(tree, m=self.m_pruning)
 
         return TreeClassifier(baseClassifier=tree) 
 
@@ -2393,6 +2393,11 @@ class TreeLearner(Orange.core.Learner):
                 setattr(learner, a, getattr(self, a))
 
         return learner
+
+
+TreeLearner = Orange.misc.deprecated_members({
+          "mForPruning": "m_pruning",
+}, wrap_methods=[])(TreeLearner)
 
 #
 # the following is for the output
