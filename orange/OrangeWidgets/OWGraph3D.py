@@ -41,6 +41,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.b_box = [0, 0, 0], [0, 0, 0]
         self.camera = numpy.array([0, 0, 0])
         self.center = numpy.array([2, 0, 0])
+        self.updateAxes()
         
     def initializeGL(self):
         gl.glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -102,7 +103,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             
         
     def paintAxes(self):
-        
         gl.glDisable(gl.GL_CULL_FACE)
         gl.glColor4f(1,1,1,1)
         for start, end in [self.x_axis, self.y_axis, self.z_axis]:
