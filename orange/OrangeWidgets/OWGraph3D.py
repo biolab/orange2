@@ -88,10 +88,10 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gluQuadric  = glu.gluNewQuadric()
         for cmd, (array, colors, sizes) in self.commands:
-            for (x,y,z), (r, g, b), size in zip(array, colors, sizes):
+            for (x,y,z), (r, g, b, a), size in zip(array, colors, sizes):
                 gl.glPushMatrix()
                 gl.glTranslatef(x, y, z)
-                gl.glColor4f(r, g, b, 0.3)
+                gl.glColor4f(r, g, b, a)
                 glu.gluSphere(gluQuadric, normalSize * size, 10, 10)
                 gl.glPopMatrix()
         glu.gluDeleteQuadric(gluQuadric)
@@ -214,10 +214,10 @@ class OWGraph3D(QtOpenGL.QGLWidget):
     def scatter(self, X, Y, Z=0, c="b", s=20, **kwargs):
         array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
         if isinstance(c, str):
-            colorDict ={"r": [1.0, 0.0, 0.0],
-                        "g": [0.0, 1.0, 0.0],
-                        "b": [0.0, 0.0, 1.0]}
-            default = [0.0, 0.0, 1.0]
+            colorDict ={"r": [1.0, 0.0, 0.0, 1.0],
+                        "g": [0.0, 1.0, 0.0, 1.0],
+                        "b": [0.0, 0.0, 1.0, 1.0]}
+            default = [0.0, 0.0, 1.0, 1.0]
             colors = [colorDict.get(c, default) for i in array]
         else:
             colors = c

@@ -62,11 +62,11 @@ class OWScatterPlot3D(OWWidget):
                       tooltip="Maximum point size",
                       callback=self.onAxisChange
                       )
-        
-#        self.alphaSlizer = OWGUI.hSlider(self.controlArea, self, "alphaValue", box="Transparency",
-#                                         minValue=10, maxValue=255,
-#                                         tooltip="Point transparency value",
-#                                         callback=self.onAxisChange)
+ 
+        self.alphaSlider = OWGUI.hSlider(self.controlArea, self, "alphaValue", box="Transparency",
+                                         minValue=10, maxValue=255,
+                                         tooltip="Point transparency value",
+                                         callback=self.onAxisChange)
         
         #TODO: jittering options
         
@@ -140,13 +140,13 @@ class OWScatterPlot3D(OWWidget):
             if colorAttr.varType == orange.VarTypes.Discrete:
                 palette = OWColorPalette.ColorPaletteHSV(len(colorAttr.values))
                 colors = [palette[int(value)] for value in C.ravel()]
-                colors = [[c.red()/255., c.green()/255., c.blue()/255.] for c in colors]
+                colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alphaValue/255.] for c in colors]
             else:
                 palette = OWColorPalette.ColorPaletteBW()
                 maxC, minC = numpy.max(C), numpy.min(C)
                 C = (C - minC) / (maxC - minC)
                 colors = [palette[value] for value in C.ravel()]
-                colors = [[c.red()/255., c.green()/255., c.blue()/255.] for c in colors]
+                colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alphaValue/255.] for c in colors]
         else:
             colors = "b"
             
