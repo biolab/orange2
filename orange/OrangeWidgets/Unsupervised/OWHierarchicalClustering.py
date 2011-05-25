@@ -425,9 +425,12 @@ class OWHierarchicalClustering(OWWidget):
             
     def on_selection_change(self):
         if self.matrix:
-            items = self.dendrogram.selectedItems()
-            self.selected_clusters = [item.cluster for item in items]
-            self.commit_data_if()
+            try:
+                items = self.dendrogram.selectedItems()
+                self.selected_clusters = [item.cluster for item in items]
+                self.commit_data_if()
+            except RuntimeError: # underlying C/C++ object has been deleted
+                pass
         
     def commit_data_if(self):
         if self.CommitOnChange:
