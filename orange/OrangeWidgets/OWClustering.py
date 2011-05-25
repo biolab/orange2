@@ -4,6 +4,8 @@ from functools import partial
 
 class HierarchicalClusterItem(QGraphicsRectItem):
     """ An object used to draw orange.HierarchicalCluster on a QGraphicsScene
+    
+    ..note:: deprecated use DendrogramWidget instead
     """
     def __init__(self, cluster, *args, **kwargs):
         QGraphicsRectItem.__init__(self, *args)
@@ -18,24 +20,10 @@ class HierarchicalClusterItem(QGraphicsRectItem):
         self.standardPen.setCosmetic(True)
         self.cluster = cluster
         self.branches = []
-#        if cluster.branches:
-#            for branch in cluster.branches:
-#                item = type(self)(branch, self)
-#                item.setZValue(self.zValue()-1)
-#                self.branches.append(item)
-#            self.setRect(self.branches[0].rect().center().x(),
-#                         0.0, #self.cluster.height,
-#                         self.branches[-1].rect().center().x() - self.branches[0].rect().center().x(),
-#                         self.cluster.height)
-#        else:
-#            self.setRect(cluster.first, 0, 0, 0)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         self.setPen(self.standardPen)
         self.setBrush(QBrush(Qt.white, Qt.SolidPattern))
 #        self.setAcceptHoverEvents(True)
-        
-#        if self.isTopLevel(): ## top level cluster
-#            self.clusterGeometryReset()
             
     @classmethod
     def create(cls, cluster, *args, **kwargs):
@@ -152,8 +140,9 @@ class HierarchicalClusterItem(QGraphicsRectItem):
     def hoverLeaveEvent(self, event):
         self.setHighlight(False)
         
-from Orange.clustering import hierarchical
+DEBUG = False # Set to true to see widget geometries
 
+from Orange.clustering import hierarchical
 class DendrogramItem(QGraphicsRectItem):
     """ A Graphics item representing a cluster in a DendrogramWidget.
     """
@@ -290,10 +279,7 @@ class DendrogramItem(QGraphicsRectItem):
                 path.lineTo(rect.bottomLeft())
                 path.lineTo(rect.bottomRight())
                 path.lineTo(rect.topRight())
-#        stroke = QPainterPathStroker()
-#        path = stroke.createStroke(path)
         self._path = path
-#        self.setPath(path)
     
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged: 
@@ -329,6 +315,7 @@ class GraphicsRectLayoutItem(QGraphicsLayoutItem):
             return getattr(self.item, name)
         else:
             raise AttributeError(name)
+    
     
 class DendrogramLayout(QGraphicsLayout):
     """ A graphics layout managing the DendrogramItem's in a DendrogramWidget.
@@ -380,15 +367,16 @@ class DendrogramLayout(QGraphicsLayout):
                 
             for item, cluster in zip(self._items, self._clusters):
                 start, center, end = self._layout_dict[cluster]
+                cluster_height = cluster.height
                 if self.orientation == Qt.Vertical:
                     # Should this be translated so all items have positive x coordinates
-                    rect = QRectF(-cluster.height * height_scale, start * width_scale,
-                                  cluster.height * height_scale, (end - start) * width_scale)
-                    rect.translate(c_rect.width() + x_offset, 0 + y_offset)
+                    rect = QRectF(-cluster_height * height_scale, start * width_scale,
+                                  cluster_height * height_scale, (end - start) * width_scale)
+                    rect.translate(c_rect.width() + x_offset, y_offset)
                 else:
                     rect = QRectF(start * width_scale, 0.0,
-                                  (end - start) * width_scale, cluster.height * height_scale)
-                    rect.translate(0 + x_offset,  y_offset)
+                                  (end - start) * width_scale, cluster_height * height_scale)
+                    rect.translate(x_offset,  y_offset)
                     
                 if rect.isEmpty():
                     rect.setSize(QSizeF(max(rect.width(), 0.001), max(rect.height(), 0.001)))
@@ -399,8 +387,10 @@ class DendrogramLayout(QGraphicsLayout):
             self.widget._update_selection_items()
     
     def setGeometry(self, geometry):
+        old = self.geometry()
         QGraphicsLayout.setGeometry(self, geometry)
-        self.do_layout()
+        if self.geometry() != old:
+            self.do_layout()
         
     def sizeHint(self, which, constraint=QSizeF()):
         if self._root and which == Qt.PreferredSize:
@@ -414,6 +404,9 @@ class DendrogramLayout(QGraphicsLayout):
                 height = 100
                 width = sum([hint.width() for hint in hints] + [0])
             return QSizeF(width, height)
+        elif which == Qt.MinimumSize:
+            left, top, right, bottom = self.getContentsMargins()
+            return QSizeF(left + right, top + bottom)
         else:
             return QSizeF()
     
@@ -444,14 +437,29 @@ def selection_polygon_from_item(item, adjust=3):
     """ Construct a polygon covering the dendrogram rooted at item.
     """
     polygon = QPolygonF()
-    for item in hierarchical.preorder(item):
-        adjusted = item.rect().adjusted(-adjust, -adjust, adjust, adjust)
+    # Selection spaning item itself
+    adjusted = item.rect().adjusted(-adjust, -adjust, adjust, adjust)
+    polygon = polygon.united(QPolygonF(adjusted))
+    
+    # Collect all left most tree branches
+    current = item
+    while current.branches:
+        current = current.branches[0]
+        adjusted = current.rect().adjusted(-adjust, -adjust, adjust, adjust)
         polygon = polygon.united(QPolygonF(adjusted))
+    
+    # Collect all right most tree branches
+    current = item
+    while current.branches:
+        current = current.branches[-1]
+        adjusted = current.rect().adjusted(-adjust, -adjust, adjust, adjust)
+        polygon = polygon.united(QPolygonF(adjusted))
+    
     return polygon
 
     
 class DendrogramWidget(QGraphicsWidget):
-    """ A Graphics Widget displaying a dendrogram. 
+    """ A Graphics Widget displaying a dendrogram.
     """
     def __init__(self, root=None, parent=None, orientation=Qt.Vertical, scene=None):
         QGraphicsWidget.__init__(self, parent)
@@ -484,16 +492,15 @@ class DendrogramWidget(QGraphicsWidget):
                  
                 for branch in cluster.branches or []:
                     branch_item = self.dendrogram_items[branch] 
-#                    branch_item.setParentItem(item)
                     self.cluster_parent[branch] = cluster
                 items.append(GraphicsRectLayoutItem(item))
                 self.dendrogram_items[cluster] = item
                 
             self.layout().setDendrogram(root, items)
-#            self.dendrogram_items[root].setParentItem(self)
             
             self.resize(self.layout().sizeHint(Qt.PreferredSize))
             self.layout().activate()
+            self.emit(SIGNAL("dendrogramLayoutChanged()"))
             
     def item(self, cluster):
         """ Return the DendrogramItem instance representing the cluster.
@@ -510,9 +517,25 @@ class DendrogramWidget(QGraphicsWidget):
         rect = root_item.rect()
         root_height = self.root_cluster.height
         if self.orientation == Qt.Vertical:
-            return  (root_height - 0) / (rect.left() - rect.right()) * point.x() + root_height
+            return  (root_height - 0) / (rect.left() - rect.right()) * (point.x() - rect.left()) + root_height
         else:
-            return (root_height - 0) / (rect.bottom() - rect.top()) * point.y() + root_height
+            return (root_height - 0) / (rect.bottom() - rect.top()) * (point.y() - rect.top()) + root_height
+        
+    def pos_at_height(self, height):
+        """ Return a point in local coordinates for `height` (in cluster
+        height scale).
+        """
+        root_item = self.item(self.root_cluster)
+        rect = root_item.rect()
+        root_height = self.root_cluster.height
+        if self.orientation == Qt.Vertical:
+            x = (rect.right() - rect.left()) / root_height * (root_height - height) + rect.left()
+            y = 0.0
+        else:
+            x = 0.0
+            y = (rect.bottom() - rect.top()) / root_height * height + rect.top()
+            
+        return QPointF(x, y)
             
     def set_labels(self, labels):
         """ Set the cluster leaf labels.
@@ -575,13 +598,17 @@ class DendrogramWidget(QGraphicsWidget):
         :param items: List of `DendrogramItem`s to select .
          
         """
-        for sel in list(self.selected_items):
-            self._remove_selection(sel)
-            
-        for item in items:
-            self._add_selection(item, reenumerate=False)
-            
-        self._re_enumerate_selections()
+        to_remove = set(self.selected_items) - set(items)
+        to_add = set(items) - set(self.selected_items)
+        
+        for sel in to_remove:
+            self._remove_selection(sel, emit_changed=False)
+        for sel in to_add:
+            self._add_selection(sel, reenumerate=False, emit_changed=False)
+        
+        if to_add or to_remove:
+            self._re_enumerate_selections()
+            self.emit(SIGNAL("selectionChanged()"))
         
     def set_selected_clusters(self, clusters):
         """ Force cluster selection.
@@ -592,21 +619,14 @@ class DendrogramWidget(QGraphicsWidget):
         self.set_selected_items(map(self.item, clusters))
         
     def item_selection(self, item, select_state):
-        """ Update item selection.
+        """ Set the `item`s selection state to `select_state`
         
         :param item: DendrogramItem.
         :param select_state: New selection state for item.
         """
-        modifiers = QApplication.instance().keyboardModifiers()
-        extended_selection = modifiers & Qt.ControlModifier
-        
-        if select_state == False and item not in self.selected_items:
-            # Already removed
-            return select_state
-        if not extended_selection:
-            selected_items = list(self.selected_items)
-            for selected in selected_items:
-                self._remove_selection(selected)
+        if select_state == False and item not in self.selected_items or \
+           select_state == True and item in self.selected_items:
+            return select_state # State unchanged
             
         if item in self.selected_items:
             if select_state == False:
@@ -628,11 +648,11 @@ class DendrogramWidget(QGraphicsWidget):
                 self._remove_selection(item)
             
         return select_state
-                
+        
     def _re_enumerate_selections(self):
         """ Re enumerate the selection items and update the colors.
         """ 
-        items = sorted(self.selected_items.items(), key=lambda item: item[1][0])
+        items = sorted(self.selected_items.items(), key=lambda item: item[0].cluster.first) # Order the clusters
         palette = ColorPaletteHSV(len(items))
         for new_i, (item, (i, selection_item)) in enumerate(items):
             self.selected_items[item] = new_i, selection_item
@@ -640,7 +660,7 @@ class DendrogramWidget(QGraphicsWidget):
             color.setAlpha(150)
             selection_item.setBrush(QColor(color))
             
-    def _remove_selection(self, item):
+    def _remove_selection(self, item, emit_changed=True):
         """ Remove selection rooted at item.
         """
         i, selection_poly = self.selected_items[item]
@@ -651,16 +671,19 @@ class DendrogramWidget(QGraphicsWidget):
         del self.selected_items[item]
         item.setSelected(False)
         self._re_enumerate_selections()
-        self.emit(SIGNAL("selectionChanged()"))
+        if emit_changed:
+            self.emit(SIGNAL("selectionChanged()"))
         
-    def _add_selection(self, item, reenumerate=True):
+    def _add_selection(self, item, reenumerate=True, emit_changed=True):
         """ Add selection rooted at item
         """
         selection_item = self.selection_item_constructor(item)
         self.selected_items[item] = len(self.selected_items), selection_item
+        item.setSelected(True)
         if reenumerate:
             self._re_enumerate_selections()
-        self.emit(SIGNAL("selectionChanged()"))
+        if emit_changed:
+            self.emit(SIGNAL("selectionChanged()"))
         
     def _selected_sub_items(self, item):
         """ Return all selected subclusters under item.
@@ -691,22 +714,37 @@ class DendrogramWidget(QGraphicsWidget):
         """
         for item, (i, selection_item) in self.selected_items.items():
             selection_item.setPolygon(selection_polygon_from_item(item))
+    
+    def setGeometry(self, geometry):
+        QGraphicsWidget.setGeometry(self, geometry)
+        self.emit(SIGNAL("dendrogramGeometryChanged(QRectF)"), geometry)
         
-#    def paint(self, painter, options, widget=0):
-#        rect =  self.geometry()
-#        rect.translate(-self.pos())
-#        painter.drawRect(rect)
+    def event(self, event):
+        ret = QGraphicsWidget.event(self, event)
+        if event.type() == QEvent.LayoutRequest:
+            self.emit(SIGNAL("dendrogramLayoutChanged()"))
+        return ret
     
-    
+    if DEBUG:
+        def paint(self, painter, options, widget=0):
+            rect =  self.geometry()
+            rect.translate(-self.pos())
+            painter.drawRect(rect)
+            
+            
 class CutoffLine(QGraphicsLineItem):
-    """ A dragable cutoff line for selection of clusters in a DendrogramWidget
-    based in their height.
-    
+    """ A dragable cutoff line for selection of clusters in a DendrogramWidget.
     """
+    class emiter(QObject):
+        """ an empty QObject used by CuttofLine to emit signals
+        """
+        pass
+    
     def __init__(self, widget, scene=None):
         assert(isinstance(widget, DendrogramWidget))
         QGraphicsLineItem.__init__(self, widget)
         self.setAcceptedMouseButtons(Qt.LeftButton)
+        self.emiter = self.emiter()
         pen = QPen(Qt.black, 2)
         pen.setCosmetic(True)
         self.setPen(pen)
@@ -717,8 +755,41 @@ class CutoffLine(QGraphicsLineItem):
         else:
             self.setLine(0, geom.height(), geom.width(), geom.height())
             self.setCursor(Qt.SizeVerCursor)
+        self.cutoff_height = widget.root_cluster.height
         self.setZValue(widget.item(widget.root_cluster).zValue() + 10)
+        widget.connect(widget, SIGNAL("dendrogramGeometryChanged(QRectF)"), self.on_geometry_changed)
         
+    def set_cutoff_at_height(self, height):
+        widget = self.parentWidget()
+        pos = widget.pos_at_height(height)
+        geom = widget.geometry()
+        if widget.orientation == Qt.Vertical:
+            self.setLine(pos.x(), 0, pos.x(), geom.height())
+        else:
+            self.setLine(0, pos.y(), geom.width(), pos.y())
+        self.cutoff_selection(height)
+            
+    def cutoff_selection(self, height):
+        self.cutoff_height = height
+        widget = self.parentWidget()
+        clusters = clusters_at_height(widget.root_cluster, height)
+        items = [widget.item(cl) for cl in clusters]
+        self.emiter.emit(SIGNAL("cutoffValueChanged(float)"), height)
+        widget.set_selected_items(items)
+        
+    def on_geometry_changed(self, geom):
+        widget = self.parentWidget()
+        height = self.cutoff_height
+        pos = widget.pos_at_height(height)
+                
+        if widget.orientation == Qt.Vertical:
+            self.setLine(pos.x(), 0, pos.x(), geom.height())
+            self.setCursor(Qt.SizeHorCursor)
+        else:
+            self.setLine(0, pos.y(), geom.width(), pos.y())
+            self.setCursor(Qt.SizeVerCursor)
+        self.setZValue(widget.item(widget.root_cluster).zValue() + 10)
+            
     def mousePressEvent(self, event):
         pass 
     
@@ -737,12 +808,8 @@ class CutoffLine(QGraphicsLineItem):
     def mouseReleaseEvent(self, event):
         pass
     
-    def cutoff_selection(self, height):
-        widget = self.parentWidget()
-        clusters = clusters_at_height(widget.root_cluster, height)
-        items = [widget.item(cl) for cl in clusters]
-        widget.set_selected_items(items)
-        
+    def mouseDoubleClickEvent(self, event):
+        pass
         
 def clusters_at_height(root_cluster, height):
     """ Return a list of clusters by cutting the clustering at height.
