@@ -57,7 +57,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", labelAttr = None, **args):
 #        if not self.haveData:
-#            self.clear()
+        self.clear()
 #            self.oldLegendKeys = {}
 #            return
         # self.removeDrawingCurves(removeLegendItems = 0)      # my function, that doesn't delete selection curves

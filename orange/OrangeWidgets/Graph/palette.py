@@ -11,13 +11,9 @@
         .. method:: pen
             Returns a QPen matching this line style
         
-    .. class:: PointStyle
+        .. attribute:: point_size
         
-        .. attribute:: color
-        
-        .. attribute:: size
-        
-        .. attribute:: shape
+        .. attribute:: point_shape
 
     .. class:: Palette
     
@@ -41,11 +37,22 @@
 from PyQt4.QtGui import QColor, QPen
 from PyQt4.QtCore import Qt
 
+NoShape = 0
+CircleShape = 1
+SquareShape = 2
+CrossShape = 3
+PlusShape = 4
+EllipseShape = 5
+
+_shared_palette = None
+
 class LineStyle:
-    def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine):
+    def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine,  point_shape=CircleShape, point_size=5):
         self.color = color
         self.width = width
         self.type = type
+        self.point_shape = point_shape
+        self.point_size = point_size
         
     def pen(self):
         p = QPen()
@@ -54,25 +61,10 @@ class LineStyle:
         p.setWidth(self.width)
         return p
 
-NoShape = 0
-CircleShape = 1
-SquareShape = 2
-CrossShape = 3
-PlusShape = 4
-EllipseShape = 5
-
-class PointStyle:
-    def __init__(self,  color=Qt.black, size=5, shape=CircleShape):
-        self.color = color
-        self.size = size
-        self.shape = shape
-
-_shared_palette = None
-
 class Palette:
     def __init__(self):
         self.grid_style = LineStyle(Qt.gray,  1,  Qt.SolidLine)
-        self.line_styles = []
+        self.line_styles = [ LineStyle(Qt.blue, 1, Qt.SolidLine) ]
         self.point_styles = []
         self.axis_style = LineStyle(Qt.black, 1, Qt.SolidLine)
         self.curve_symbols = [ EllipseShape, CrossShape, SquareShape ]

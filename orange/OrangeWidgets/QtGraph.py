@@ -12,14 +12,19 @@
     .. atribute:: palette
         Chooses which palette is used by this graph. By default, this is `shared_palette`. 
         
-    .. method mapToGraph(point)
-        Maps the ``point`` in scene coordinates to graph (data) coordinates
+    .. method map_to_graph(axis_ids, point)
+        Maps the ``point`` in data coordinates to graph (scene) coordinates
+        This method has to be reimplemented in graphs with special axes (RadViz, PolyViz)
         
-    .. method mapFromGraph(point)
-        Maps the ``point`` from data coordinates to graph coordinates
+    .. method map_from_graph(axis_ids, point)
+        Maps the ``point`` from scene coordinates to data coordinates
+        This method has to be reimplemented in graphs with special axes (RadViz, PolyViz)
         
     .. method activateZooming()
         Activates zoom
+        
+    .. method clear()
+        Removes all curves from the graph
 """
 
 NOTHING = 0
@@ -72,6 +77,11 @@ class OWGraph(QGraphicsView):
         self.tips = TooltipManager(self)
         
         self.selectionCurveList = []
+        self.curves = []
+        self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
+        
+        self.map_to_graph = self.map_to_graph_cart
+        self.map_from_graph = self.map_from_graph_cart
 
         self.update()
         
@@ -80,8 +90,6 @@ class OWGraph(QGraphicsView):
         unisetattr(self, name, value, QGraphicsView)
         
     def update(self):
-        size = self.childrenRect().size()
-        
         if self.show_legend and not self.legend:
             self.legend = legend.Legend(self.canvas)
             self.legend.show()
@@ -89,13 +97,28 @@ class OWGraph(QGraphicsView):
             self.legend.hide()
             self.legend = None
         
-    def mapToGraph(self, point):
-        # TODO
-        return point
+    def map_to_graph_cart(self, point, axes=None):
+        px, py = point
+        if not axes:
+            axes = [xBottom, yLeft]
+        min_x, max_x = self.data_range[axes[0]]
+        min_y, max_y = self.data_range[axes[1]]
+        # TODO: Adjust the childrenRect for axis, labels and legends
+        rx = (px - min_x) * self.childrenRect().width() / (max_x - min_x)
+        ry = -(py - min_y) * self.childrenRect().height() / (max_y - min_y)
+        return (rx, ry)
         
-    def mapFromGraph(self, point):
-        # TODO
-        return point
+    def map_from_graph_cart(self, point, axes = None):
+        px, py = point
+        if not axes:
+            axes = [xBottom, yLeft]
+        min_x, max_x = self.data_range[axes[0]]
+        min_y, max_y = self.data_range[axes[1]]
+        # TODO: Adjust the childrenRect for axis, labels and legends
+        rect = self.childrenRect()
+        rx = (px - rect.left()) / rect().width() * (max_x - min_x)
+        ry = -(py - rect.bottom()) / rect.height() * (max_y - min_y)
+        return (rx, ry)
         
     def saveToFile(self, extraButtons = []):
         sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
@@ -230,6 +253,24 @@ class OWGraph(QGraphicsView):
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.SolidLine, 
                  symbol = palette.EllipseShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
-        # TODO: Should return the Curve object
-        c = curve.Curve()
+        self.data_range[xBottom] = ( min(xData), max(xData) )
+        self.data_range[yLeft] = ( min(yData), max(yData) )
+        data = []
+        for i in range(len(xData)):
+            data.append( (xData[i], yData[i]) )
+            c = curve.Curve(data, self.palette.line_styles[0], self)
+            self.canvas.addItem(c)
+            self.curves.append(c)
         return c
+        
+    def addAxis(self, axis_id, line, text):
+        a = axis.Axis()
+        self.axis[id] = a
+        
+    def removeAllSelections(self):
+        pass
+        
+    def clear(self):
+        for c in self.curves:
+            self.canvas.removeItem(c)
+        del self.curves[:]

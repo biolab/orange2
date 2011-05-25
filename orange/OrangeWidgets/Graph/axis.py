@@ -17,7 +17,7 @@ from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem
 from PyQt4.QtCore import QLineF
 
 class Axis(QGraphicsItemGroup):
-    def __init__(self, line_style, size, label, line = None, parent=None):
+    def __init__(self, size, label, line = None, style=None, parent=None):
         QGraphicsItemGroup.__init__(self, parent)
         self.size = size
         if line:
@@ -31,6 +31,10 @@ class Axis(QGraphicsItemGroup):
         self.line_item = QGraphicsLineItem(self)
         self.label_item = QGraphicsTextItem(self)
         self.label = label
+        if style:
+            self.style = style
+        else:
+            self.style = palette.shared_palette().axis_style
         self.update()
 
     def update(self):
