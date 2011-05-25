@@ -62,7 +62,7 @@ class OWHierarchicalClustering(OWWidget):
         
         self.inputMatrix = None
         self.matrixSource = "Unknown"
-        self.rootCluster = None
+        self.root_cluster = None
         self.selectedExamples = None
         
         self.selectionChanged = False
@@ -236,11 +236,19 @@ class OWHierarchicalClustering(OWWidget):
         painter.end()
         self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
         
+    def clear(self):
+        self.matrix = None
+        self.root_cluster = None
+        self.selected_clusters = None
+        self.dendrogram.clear()
+        self.labelCombo.clear()
+        
     def set_matrix(self, data):
+        self.clear()
         self.matrix = data
         self.closeContext()
         if not self.matrix:
-            self.rootCluster = None
+            self.root_cluster = None
             self.selectedExamples = None
             self.dendrogram.clear()
             self.labelCombo.clear()
@@ -294,7 +302,6 @@ class OWHierarchicalClustering(OWWidget):
     def update_labels(self):
         """ Change the labels in the scene.
         """
-        
         if self.matrix is None:
             return
         
@@ -311,7 +318,7 @@ class OWHierarchicalClustering(OWWidget):
                 except AttributeError:
                     labels = [str(item) for item in items]
         elif self.Annotation > 1 and isinstance(items, ExampleTable):
-            attr = self.labelInd[self.Annotation-2]
+            attr = self.labelInd[min(self.Annotation - 2, len(self.labelInd) - 1)]
             labels = [str(ex[attr]) for ex in items]
         else:
             labels = [str(item) for item in items]
@@ -322,15 +329,14 @@ class OWHierarchicalClustering(OWWidget):
     def run_clustering(self):
         if self.matrix:
             self.progressBarInit()
-            self.rootCluster = orange.HierarchicalClustering(self.matrix,
+            self.root_cluster = orange.HierarchicalClustering(self.matrix,
                 linkage=self.linkage[self.Linkage][1],
-#                overwriteMatrix=self.OverwriteMatrix,
                 progressCallback=lambda value, a: self.progressBarSet(value*100))
             self.progressBarFinished()
             self.display_tree()
 
     def display_tree(self):
-        root = self.rootCluster
+        root = self.root_cluster
         if self.PrintDepthCheck:
             root = hierarchical.pruned(root, level=self.PrintDepth)
         self.display_tree1(root)
@@ -370,20 +376,20 @@ class OWHierarchicalClustering(OWWidget):
             self.update_labels()
             
     def on_dendrogram_geometry_change(self, geometry):
-        if self.rootCluster and self.dendrogram.widget:
+        if self.root_cluster and self.dendrogram.widget:
             widget = self.dendrogram.widget
             left, top, right, bottom = widget.layout().getContentsMargins()
             geometry = geometry.adjusted(left, top, -right, -bottom)
             self.scale_scene.set_scale_bounds(geometry.left(), geometry.right())
-            self.scale_scene.set_scale(self.rootCluster.height, 0.0)
+            self.scale_scene.set_scale(self.root_cluster.height, 0.0)
             pos = widget.pos_at_height(self.cutoff_height)
             self.scale_scene.set_marker(pos)
             
     def on_depth_change(self):
-        if self.rootCluster and self.dendrogram.widget:
+        if self.root_cluster and self.dendrogram.widget:
             selected = self.dendrogram.widget.selected_clusters()
             selected = set([(c.first, c.last) for c in selected])
-            root = self.rootCluster
+            root = self.root_cluster
             if self.PrintDepthCheck:
                 root = hierarchical.pruned(root, level=self.PrintDepth)
             self.display_tree1(root)
@@ -394,7 +400,7 @@ class OWHierarchicalClustering(OWWidget):
     def set_cuttof_position_from_scale(self, pos):
         """ Cuttof position changed due to a mouse event in the scale scene.
         """
-        if self.rootCluster and self.dendrogram.cutoff_line:
+        if self.root_cluster and self.dendrogram.cutoff_line:
             height = self.dendrogram.widget.height_at(pos)
             self.cutoff_height = height
             line = self.dendrogram.cutoff_line.set_cutoff_at_height(height)
@@ -402,31 +408,26 @@ class OWHierarchicalClustering(OWWidget):
     def on_cuttof_value_changed(self, height):
         """ Cuttof value changed due to line drag in the dendrogram.
         """
-        if self.rootCluster and self.dendrogram.widget:
+        if self.root_cluster and self.dendrogram.widget:
             self.cutoff_height = height
             widget = self.dendrogram.widget
             pos = widget.pos_at_height(height)
             self.scale_scene.set_marker(pos)
             
     def update_cutoff_line(self):
-        try:
+        if self.matrix:
             if self.SelectionMode:
                 self.dendrogram.cutoff_line.show()
                 self.scale_scene.marker.show()
             else:
                 self.dendrogram.cutoff_line.hide()
                 self.scale_scene.marker.hide()
-        except RuntimeError: # underlying C/C++ object has been deleted
-            pass
             
     def on_selection_change(self):
-        try:
-            if self.matrix:
-                items = self.dendrogram.selectedItems()
-                self.selected_clusters = [item.cluster for item in items]
-                self.commit_data_if()
-        except RuntimeError:
-            pass
+        if self.matrix:
+            items = self.dendrogram.selectedItems()
+            self.selected_clusters = [item.cluster for item in items]
+            self.commit_data_if()
         
     def commit_data_if(self):
         if self.CommitOnChange:
@@ -435,18 +436,18 @@ class OWHierarchicalClustering(OWWidget):
             self.selectionChanged = True
 
     def commit_data(self):
-        items = getattr(self.matrix, "items")
+        items = getattr(self.matrix, "items", None)
         if not items:
             return # nothing to commit
         
         self.selectionChanged = False
         self.selectedExamples = None
         selection = self.selected_clusters
-        maps = [list(self.rootCluster.mapping[c.first: c.last]) for c in selection]
+        maps = [list(self.root_cluster.mapping[c.first: c.last]) for c in selection]
         
         from operator import add
         selected_indices = sorted(reduce(add, maps, []))
-        unselected_indices = sorted(set(self.rootCluster.mapping) - set(selected_indices))
+        unselected_indices = sorted(set(self.root_cluster.mapping) - set(selected_indices))
         
         self.selection = selected = [items[k] for k in selected_indices]
         unselected = [items[k] for k in unselected_indices]
@@ -521,13 +522,7 @@ class OWHierarchicalClustering(OWWidget):
     def saveGraph(self):
        sizeDlg = OWChooseImageSizeDlg(self.dendrogram, parent=self)
        sizeDlg.exec_()
-
-leftMargin=10
-rightMargin=10
-topMargin=10
-bottomMargin=10
-polyOffset=5
-scaleHeight=20
+       
 
 class DendrogramView(QGraphicsView):
     def __init__(self, *args):
