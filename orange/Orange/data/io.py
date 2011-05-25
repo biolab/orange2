@@ -1,9 +1,12 @@
-from orange import \
+import os
+
+import Orange
+import Orange.data.variable
+import Orange.misc
+from Orange.core import \
      BasketFeeder, FileExampleGenerator, BasketExampleGenerator, \
      C45ExampleGenerator, TabDelimExampleGenerator, registerFileType
 
-import Orange.data
-import os
 
 def loadARFF(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
     """Return class:`Orange.data.Table` containing data from file in Weka ARFF format"""
