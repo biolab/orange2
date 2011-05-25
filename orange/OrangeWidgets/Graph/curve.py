@@ -1,8 +1,8 @@
 
 from OWBaseWidget import *
 
-from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsLineItem
-from PyQt4.QtGui import QBrush, QPen
+from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem
+from PyQt4.QtGui import QBrush, QPen, QPainterPath
 
 """
     This class represents a curve on a graph.
@@ -25,12 +25,16 @@ class Curve(QGraphicsItemGroup):
         QGraphicsItemGroup.__init__(self,  parent)
         self.graph = graph
         self.items = []
-        for i in range(len(data)-1):
-            (x, y) = self.graph.map_to_graph(data[i])
-            (x1, y1) = self.graph.map_to_graph(data[i+1])
-            item = QGraphicsLineItem( x, y, x1, y1, self )
-            item.setPen(style.pen())
-            self.items.append(item)
+        self.path = QPainterPath()
+        if data:
+            (start_x, start_y) = self.graph.map_to_graph(data[0])
+            self.path.moveTo(start_x, start_y)
+            for data_point in data:
+                (x, y) = self.graph.map_to_graph(data_point)
+                self.path.lineTo(x, y)
+            self.path_item = QGraphicsPathItem(self.path, self)
+            self.path_item.setPen(style.pen())
+            self.path_item.show()
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsItemGroup)
