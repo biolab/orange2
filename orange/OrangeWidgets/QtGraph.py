@@ -25,6 +25,9 @@
         
     .. method clear()
         Removes all curves from the graph
+        
+    .. method graph_area_rect()
+        Return the QRectF of the area where data is plotted (without axes)
 """
 
 NOTHING = 0
@@ -63,6 +66,8 @@ class OWGraph(QGraphicsView):
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
         
+        self.axes = [xBottom, yLeft]
+        self.axis_margin = 150
         self.XaxisTitle = None
         self.YLaxisTitle = None
         self.YRaxisTitle = None
@@ -96,6 +101,14 @@ class OWGraph(QGraphicsView):
         if not self.show_legend and self.legend:
             self.legend.hide()
             self.legend = None
+            
+    def graph_area_rect(self):
+        rect = self.childrenRect()
+        if xBottom in self.axes:
+            rect.setBottom(rect.bottom() - self.axis_margin)
+        if yLeft in self.axes:
+            rect.setLeft(rect.left() + self.axis_margin)
+        return rect
         
     def map_to_graph_cart(self, point, axes=None):
         px, py = point
@@ -103,9 +116,9 @@ class OWGraph(QGraphicsView):
             axes = [xBottom, yLeft]
         min_x, max_x = self.data_range[axes[0]]
         min_y, max_y = self.data_range[axes[1]]
-        # TODO: Adjust the childrenRect for axis, labels and legends
-        rx = (px - min_x) * self.childrenRect().width() / (max_x - min_x)
-        ry = -(py - min_y) * self.childrenRect().height() / (max_y - min_y)
+        rect = self.graph_area_rect()
+        rx = (px - min_x) * rect.width() / (max_x - min_x)
+        ry = -(py - min_y) * rect.height() / (max_y - min_y)
         return (rx, ry)
         
     def map_from_graph_cart(self, point, axes = None):
@@ -114,8 +127,7 @@ class OWGraph(QGraphicsView):
             axes = [xBottom, yLeft]
         min_x, max_x = self.data_range[axes[0]]
         min_y, max_y = self.data_range[axes[1]]
-        # TODO: Adjust the childrenRect for axis, labels and legends
-        rect = self.childrenRect()
+        rect = self.graph_area_rect()
         rx = (px - rect.left()) / rect().width() * (max_x - min_x)
         ry = -(py - rect.bottom()) / rect.height() * (max_y - min_y)
         return (rx, ry)
