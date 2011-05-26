@@ -28,19 +28,29 @@ Sensitivity Analysis (SAvar and SAbias)
 ---------------------------------------
 
 To estimate the reliabilty for given example we extend the learning set 
-with given example and labeling it with K + e(l\ :sub:`max` \ - l\ :sub:`min` \),
-where K denotes the initial prediction, e is sensitivity parameter and
-l\ :sub:`min` \ and l\ :sub:`max` \ denote lower and the upper bound of
+with given example and labeling it with :math:`K + \epsilon (l_{max} - l_{min})`,
+where K denotes the initial prediction, :math:`\epsilon` is sensitivity parameter and
+:math:`l_{min}` and :math:`l_{max}` denote lower and the upper bound of
 the learning examples. After computing different sensitivity predictions
 using different values of e, the prediction are combined into SAvar and SAbias.
 SAbias can be used as signed estimate or as absolute value of SAbias. 
+
+:math:`SAvar = \\frac{\sum_{\epsilon \in E}(K_{\epsilon} - K_{-\epsilon})}{|E|}`
+
+:math:`SAbias = \\frac{\sum_{\epsilon \in E} (K_{\epsilon} - K ) + (K_{-\epsilon} - K)}{2 |E|}`
 
 Variance of bagged models (BAGV)
 --------------------------------
 
 We construct m different bagging models of the original chosen learner and use
-those predictions of given example to calculate the variance, which we use as
+those predictions (:math:`K_i, i = 1, ..., m`) of given example to calculate the variance, which we use as
 reliability estimator.
+
+:math:`BAGV = \\frac{1}{m} \sum_{i=1}^{m} (K_i - K)^2`
+
+where
+
+:math:`K = \\frac{\sum_{i=1}^{m} K_i}{m}`
 
 Local cross validation reliability estimate (LCV)
 -------------------------------------------------
@@ -50,12 +60,28 @@ seperate dataset. On this dataset we do leave one out
 validation using given model. Reliability estimate is then distance
 weighted absolute prediction error.
 
+1. define the set of k nearest neighours :math:`N = { (x_1, x_1),..., (x_k, c_k)}`
+2. FOR EACH :math:`(x_i, c_i) \in N`
+
+  2.1. generare model M on :math:`N \\backslash (x_i, c_i)`
+  
+  2.2. for :math:`(x_i, c_i)` compute LOO prediction :math:`K_i`
+  
+  2.3. for :math:`(x_i, c_i)` compute LOO error :math:`E_i = | C_i - K_i |`
+  
+3. :math:`LCV(x) = \\frac{ \sum_{(x_i, c_i) \in N} d(x_i, x) * E_i }{ \sum_{(x_i, c_i) \in N} d(x_i, x) }`
+
 Local modeling of prediction error (CNK)
 ----------------------------------------
 
 Estimate CNK is defined for unlabeled example as difference between
 average label of the nearest neighbours and the examples prediction. CNK can
 be used as a signed estimate or only as absolute value. 
+
+:math:`CNK = \\frac{\sum_{i=1}^{k}C_i}{k} - K`
+
+Where k denotes number of neighbors, C :sub:`i` denotes neighbours' labels and
+K denotes the example's prediction.
 
 Bagging variance c-neighbours (BVCK)
 ------------------------------------
@@ -277,7 +303,7 @@ class Learner:
         :type instances: Orange.data.Table
         :param weight: Id of meta attribute with weights of instances
         :type weight: integer
-        :rtype: :class:`estimator.Classifier`
+        :rtype: :class:`Orange.evaluation.reliability.Classifier`
         """
         return Classifier(examples, self.learner, self.e, self.m, self.cnk_k,
                           self.lcv_k, self.icv, self.use, self.use_with_icv)
@@ -439,9 +465,9 @@ class Classifier:
             
             SAvar /= len(self.e)
             SAbias /= 2*len(self.e)
-            probabilities.reliability_estimate.append( (SAvar, ABSOLUTE, SAVAR_ABSOLUTE) )
-            probabilities.reliability_estimate.append( (SAbias, SIGNED, SABIAS_SIGNED) )
-            probabilities.reliability_estimate.append( (SAbias, ABSOLUTE, SABIAS_ABSOLUTE) )
+            probabilities.reliability_estimate.append( Estimate(SAvar, ABSOLUTE, SAVAR_ABSOLUTE) )
+            probabilities.reliability_estimate.append( Estimate(SAbias, SIGNED, SABIAS_SIGNED) )
+            probabilities.reliability_estimate.append( Estimate(SAbias, ABSOLUTE, SABIAS_ABSOLUTE) )
         
         
         #print SAvar
@@ -461,7 +487,7 @@ class Classifier:
             BAGV = sum( (bagged_value - k)**2 for bagged_value in bagged_values) / len(bagged_values)
             
             if self.use[DO_BAGV]:
-                probabilities.reliability_estimate.append( (BAGV, ABSOLUTE, BAGV_ABSOLUTE) )
+                probabilities.reliability_estimate.append( Estimate(BAGV, ABSOLUTE, BAGV_ABSOLUTE) )
         
         # For each of the classifiers
         #for c in self.classifiers:
@@ -490,8 +516,8 @@ class Classifier:
             CNK -= predicted.value
             
             if self.use[DO_CNK]:
-                probabilities.reliability_estimate.append( (CNK, SIGNED, CNK_SIGNED) )
-                probabilities.reliability_estimate.append( (CNK, ABSOLUTE, CNK_ABSOLUTE) )
+                probabilities.reliability_estimate.append( Estimate(CNK, SIGNED, CNK_SIGNED) )
+                probabilities.reliability_estimate.append( Estimate(CNK, ABSOLUTE, CNK_ABSOLUTE) )
         
         # Calculate local cross-validation reliability estimate
         LCV = 0
@@ -523,7 +549,7 @@ class Classifier:
             
             LCV = LCVer / LCVdi if LCVdi != 0 else 0
             
-            probabilities.reliability_estimate.append( (LCV, ABSOLUTE, LCV_ABSOLUTE) )
+            probabilities.reliability_estimate.append( Estimate(LCV, ABSOLUTE, LCV_ABSOLUTE) )
         
         # BVCK
         
@@ -533,7 +559,7 @@ class Classifier:
             
             BVCK = (BAGV + abs(CNK)) / 2
             
-            probabilities.reliability_estimate.append( (BVCK, ABSOLUTE, BVCK_ABSOLUTE) )
+            probabilities.reliability_estimate.append( Estimate(BVCK, ABSOLUTE, BVCK_ABSOLUTE) )
         
         # Mahalanobis distance to 3 closest neighbours
         
@@ -543,14 +569,14 @@ class Classifier:
         
             mahalanobis_distance = sum(ex[self.mid].value for ex in self.nnm(example, 3))
             
-            probabilities.reliability_estimate.append( (mahalanobis_distance, ABSOLUTE, MAHAL_ABSOLUTE) )
+            probabilities.reliability_estimate.append( Estimate(mahalanobis_distance, ABSOLUTE, MAHAL_ABSOLUTE) )
             
         #probabilities.reliability_estimate = [SAvar, SAbias, BAGV, CNK, LCV, BVCK, mahalanobis_distance]
         
         if self.icv:
             method = [SAvar, SAbias, SAbias, BAGV, CNK, CNK, LCV, BVCK, mahalanobis_distance]
             ICV = method[self.icv_method]
-            probabilities.reliability_estimate.append( (ICV, self.icv_signed_or_absolute, 10, self.icv_method))
+            probabilities.reliability_estimate.append( Estimate(ICV, self.icv_signed_or_absolute, 10, self.icv_method))
         
         if result_type == Orange.core.GetValue:
             return predicted
@@ -560,7 +586,7 @@ class Classifier:
             return predicted, probabilities
 
 def get_reliability_estimation_list(res, i):
-    return [result.probabilities[0].reliability_estimate[i][0] for result in res.results], res.results[0].probabilities[0].reliability_estimate[i][1], res.results[0].probabilities[0].reliability_estimate[i][2]
+    return [result.probabilities[0].reliability_estimate[i].estimate for result in res.results], res.results[0].probabilities[0].reliability_estimate[i].signed_or_absolute, res.results[0].probabilities[0].reliability_estimate[i].method
 
 def get_prediction_error_list(res):
     return [result.actualClass - result.classes[0] for result in res.results]
@@ -627,3 +653,11 @@ def p_value_from_r(r, n):
     t = r * (df /((-r + 1.0 + 1e-30) * (r + 1.0 + 1e-30)) )**0.5
     return statc.betai (df * 0.5, 0.5, df/(df + t*t))
 
+class Estimate:
+    def __init__(self, estimate, signed_or_absolute, method, icv_method = -1):
+        self.estimate = estimate
+        self.signed_or_absolute = signed_or_absolute
+        self.method = method
+        self.method_name = METHOD_NAME[method]
+        self.icv_method = icv_method
+        self.icv_method_name = METHOD_NAME[icv_method] if icv_method != -1 else ""
