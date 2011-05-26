@@ -196,6 +196,24 @@ extract the estimates and id's, sort them and output them.
 .. _reliability-long.py: code/reliability-long.py
 .. _prostate.tab: code/prostate.tab
 
+
+References
+==========
+
+Bosnic, Z. 2007. `Estimation of individual prediction reliability using local
+sensitivity analysis. <http://www.springerlink.com/content/e27p2584387532g8/>`_
+*Applied Intelligence* 29(3), 187-203.
+
+Bosnic, Z. 2008. `Comparison of approaches for estimating reliability of 
+individual regression predictions.
+<http://www.sciencedirect.com/science/article/pii/S0169023X08001080>`_
+*Data & Knowledge Engineering* 67(3), 504-516.
+
+Bosnic, Z. 2010. `Automatic selection of reliability estimates for individual 
+regression predictions.
+<http://journals.cambridge.org/abstract_S0269888909990154>`_
+*The Knowledge Engineering Review* 25(1), 27-47.
+
 """
 import Orange
 
@@ -467,7 +485,7 @@ class Classifier:
             SAbias /= 2*len(self.e)
             probabilities.reliability_estimate.append( Estimate(SAvar, ABSOLUTE, SAVAR_ABSOLUTE) )
             probabilities.reliability_estimate.append( Estimate(SAbias, SIGNED, SABIAS_SIGNED) )
-            probabilities.reliability_estimate.append( Estimate(SAbias, ABSOLUTE, SABIAS_ABSOLUTE) )
+            probabilities.reliability_estimate.append( Estimate(abs(SAbias), ABSOLUTE, SABIAS_ABSOLUTE) )
         
         
         #print SAvar
@@ -517,7 +535,7 @@ class Classifier:
             
             if self.use[DO_CNK]:
                 probabilities.reliability_estimate.append( Estimate(CNK, SIGNED, CNK_SIGNED) )
-                probabilities.reliability_estimate.append( Estimate(CNK, ABSOLUTE, CNK_ABSOLUTE) )
+                probabilities.reliability_estimate.append( Estimate(abs(CNK), ABSOLUTE, CNK_ABSOLUTE) )
         
         # Calculate local cross-validation reliability estimate
         LCV = 0
