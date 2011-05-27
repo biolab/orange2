@@ -570,6 +570,8 @@ except ImportError:
     import warnings
     warnings.warn("Warning: install networkx to use the 'Orange.network' module.") 
 
+import community
+
 class MdsTypeClass():
     def __init__(self):
         self.componentMDS = 0
