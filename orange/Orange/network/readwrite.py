@@ -1,13 +1,16 @@
-import Orange
-import networkx as nx
-import networkx.readwrite as rw
+import os.path
 import warnings
 import itertools
-import Orange.network
 
+import networkx as nx
+import networkx.readwrite as rw
 from networkx.utils import _get_fh
 
-__all__ = ['generate_pajek', 'write_pajek', 'read_pajek', 'parse_pajek']
+import orangeom
+import Orange
+import Orange.network
+
+__all__ = ['read', 'generate_pajek', 'write_pajek', 'read_pajek', 'parse_pajek']
 
 def _wrap(g):
     for base, new in [(nx.DiGraph, Orange.network.DiGraph),
@@ -18,84 +21,48 @@ def _wrap(g):
             return g if isinstance(g, new) else new(g, name=g.name)
     return g
 
-def read_pajek(path,encoding='UTF-8'):
+def read(path, encoding='UTF-8'):
+    #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
+    supported = ['.net']
+    
+    if not os.path.isfile(path):
+        return None
+    
+    root, ext = os.path.splitext(path)
+    if not ext in supported:
+        return None
+    
+    if ext == '.net':
+        return read_pajek(path, encoding)
+        
+
+def read_pajek(path, encoding='UTF-8'):
+    """ 
+    Read Pajek file.
     """
-    A copy&paste of networkx's function. Calls the local parse_pajek().
-    """
-    fh=_get_fh(path, 'rb')
-    lines = (line.decode(encoding) for line in fh)
-    return parse_pajek(lines)
+    edges, arcs, items = orangeom.GraphLayout().readPajek(path)
+    if len(arcs) > 0:
+        # directed graph
+        G = Orange.network.DiGraph()
+        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
+        G.add_edges_from(((v,u,{'weight':d}) for u,v,d in edges))
+        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in arcs))
+        G.set_items(items)
+    else:
+        G = Orange.network.Graph()
+        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
+        G.set_items(items)
+        
+    return G
+    #fh=_get_fh(path, 'rb')
+    #lines = (line.decode(encoding) for line in fh)
+    #return parse_pajek(lines)
 
 def parse_pajek(lines):
     """
-    A copy&paste of networkx's function with some bugs fixed:
-      - make it a Graph or DiGraph if there is no reason to have a Multi*,
-      - do not lose graph's name during its conversion.
+    Parse string in Pajek file format.
     """
-    import shlex
-    from networkx.utils import is_string_like
-    multigraph=False
-    if is_string_like(lines): lines=iter(lines.split('\n'))
-    lines = iter([line.rstrip('\n') for line in lines])
-    G=nx.MultiDiGraph() # are multiedges allowed in Pajek? assume yes
-    directed=True # assume this is a directed network for now
-    while lines:
-        try:
-            l=next(lines)
-        except: #EOF
-            break
-        if l.lower().startswith("*network"):
-            label,name=l.split(None, 1)
-            G.name=name
-        if l.lower().startswith("*vertices"):
-            nodelabels={}
-            l,nnodes=l.split()
-            for i in range(int(nnodes)):
-                splitline=shlex.split(str(next(lines)))
-                id,label=splitline[0:2]
-                G.add_node(label)
-                nodelabels[id]=label
-                G.node[label]={'id':id}
-                try: 
-                    x,y,shape=splitline[2:5]
-                    G.node[label].update({'x':float(x),
-                                          'y':float(y),
-                                          'shape':shape})
-                except:
-                    pass
-                extra_attr=zip(splitline[5::2],splitline[6::2])
-                G.node[label].update(extra_attr)
-        if l.lower().startswith("*edges") or l.lower().startswith("*arcs"):
-            if l.lower().startswith("*edge"):
-               # switch from multi digraph to multi graph
-                G=nx.MultiGraph(G, name=G.name)
-            for l in lines:
-                splitline=shlex.split(str(l))
-                ui,vi=splitline[0:2]
-                u=nodelabels.get(ui,ui)
-                v=nodelabels.get(vi,vi)
-                # parse the data attached to this edge and put in a dictionary 
-                edge_data={}
-                try:
-                    # there should always be a single value on the edge?
-                    w=splitline[2:3]
-                    edge_data.update({'weight':float(w[0])})
-                except:
-                    pass
-                    # if there isn't, just assign a 1
-#                    edge_data.update({'value':1})
-                extra_attr=zip(splitline[3::2],splitline[4::2])
-                edge_data.update(extra_attr)
-                if G.has_edge(u,v):
-                    multigraph=True
-                G.add_edge(u,v,**edge_data)
-
-    if not multigraph: # use Graph/DiGraph if no parallel edges
-        if G.is_directed():
-            G=nx.DiGraph(G, name=G.name)
-        else:
-            G=nx.Graph(G, name=G.name)
-    return _wrap(G)
+    return read_pajek(lines)
 
 def generate_pajek(G):
     """
