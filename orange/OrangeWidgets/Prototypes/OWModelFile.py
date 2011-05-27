@@ -19,7 +19,7 @@ class OWModelFile(OWDistanceFile):
     settingsList = ["recentFiles", "origRecentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWDistanceFile.__init__(self, parent, signalManager, inputItems=0)
+        OWDistanceFile.__init__(self, parent, signalManager, name='Model File', inputItems=0)
         #self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
         
         

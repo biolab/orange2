@@ -349,7 +349,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         
         self.predGraph.setAxisScale(QwtPlot.yLeft, -0.5, len(self.matrix.originalData.domain.classVar.values) - 0.5, 1)
         
-        scores = [[float(ca) for ca in ex["CA by class"].value.split(", ")] for ex in self.matrix.items.getitems(vertices)]
+        scores = [[float(ca) for ca in ex["CA by class"].value.split(", ")] for ex in self.graph.items.getitems(vertices)]
         scores = [sum(score) / len(score) for score in zip(*scores)]
         
         currentBarsHeight = [0] * len(scores)
@@ -373,7 +373,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         if vertices is None or len(vertices) == 0:
             return
         
-        attrList = [self.matrix.items[v]["attributes"].value.split(", ") for v in vertices]
+        attrList = [self.graph.items[v]["attributes"].value.split(", ") for v in vertices]
         
         attrIntersection = set(attrList[0])
         attrUnion = set()
@@ -407,12 +407,8 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             return
         
         uuids = set([ex["uuid"].value for ex in subsetData])
-
         for v in self.vertices:
-            if v.uuid in uuids:
-                v.highlight = 1
-            else:
-                v.highlight = 0
+            v.highlight = 1 if v.uuid in uuids else 0
                 
     def setMatrix(self, matrix):
         self.warning()
@@ -431,12 +427,11 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             self.warning("Items ExampleTable does not contain required attributes: %s." % ", ".join(requiredAttrs))
             return
             
+        for ex in matrix.items:
+            ex["attributes"] = ", ".join(sorted(ex["attributes"].value.split(", ")))
+            
         OWNetworkHist.setMatrix(self, matrix)
         
-        for i, ex in enumerate(matrix.items):
-            ex["attributes"] = ", ".join(sorted(ex["attributes"].value.split(", ")))
-            self.networkCanvas.vertices[i].uuid = ex["uuid"].value
-
     def setVertexSize(self):
         OWNetExplorer.setVertexSize(self)
         self.networkCanvas.loadIcons()
@@ -444,18 +439,18 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         
     def setVertexStyle(self):
         for v in self.networkCanvas.vertices:
-            auc = self.matrix.items[v.index]
+            auc = self.graph.items[v.index]
             v.style = 1 #auc            
         
     def sendNetworkSignals(self):
         self.warning()
         
-        if self.graph is None or self.graph.items is None or self.matrix is None:
+        if self.graph is None or self.graph.items is None or self.graph_matrix is None:
             self.send("Model", None)
             self.send("Selected Models", None)
             return
         
-        if len(self.graph.items) != self.matrix.dim:
+        if self.graph.nVertices != self.graph_matrix.dim:
             self.warning('Network items and matrix results not of equal length.')
             self.send("Model", None)
             self.send("Selected Models", None)
@@ -467,7 +462,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             modelInstance = self.graph.items[selection[0]]
             # modelInfo - Python Dict; keys: method, classifier, probabilities,
             # results, XAnchors, YAnchors, attributes
-            modelInfo = self.matrix.results[selection[0]]
+            modelInfo = self.graph_matrix.results[selection[0]]
             uuid = modelInstance["uuid"].value
             #method, vizr_result, projection_points, classifier, attrs = self.matrix.results[uuid]
             
@@ -511,30 +506,35 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         self.networkCanvas.replot()
             
     def sendSignals(self):
-        if self.graph != None:
-            self.setGraph(self.graph)
-            self.setVertexDistance(self.matrix)
-            # TODO clickedAttLstBox -> setLabelText(["attributes"]
-            
-            self.setVertexSize()
-            self.setVertexStyle()
-            self.setVertexColor()
-            
-            labels = self.matrix.originalData.domain.classVar.values.native()
-            self.predGraph.numberOfBars = len(labels)
-            self.predGraph.barSize = 200 / (self.predGraph.numberOfBars + 1)
-            self.predGraph.setYLlabels(labels)
-            #self.predGraph.setShowMainTitle(self.showMainTitle)
-            #self.predGraph.setYLaxisTitle(self.matrix.originalData.domain.classVar.name)
-            #self.predGraph.setShowYLaxisTitle(True)
-            self.predGraph.setAxisScale(QwtPlot.xBottom,  0.0, 1.0, 0.2)
-            self.predGraph.setAxisScale(QwtPlot.yLeft, -0.5, len(self.matrix.originalData.domain.classVar.values) - 0.5, 1)
+        if self.graph is None or self.graph_matrix is None:
+            return
         
-            self.predGraph.enableYRaxis(0)
-            self.predGraph.setYRaxisTitle("")
-            self.predGraph.setXaxisTitle("CA")
-            self.predGraph.setShowXaxisTitle(True)
-            self.predGraph.replot()
+        self.setGraph(self.graph)
+        self.setVertexDistance(self.graph_matrix)
+        # TODO clickedAttLstBox -> setLabelText(["attributes"]
+        
+        for i, ex in enumerate(self.graph.items):
+            self.networkCanvas.vertices[i].uuid = ex["uuid"].value
+        
+        self.setVertexSize()
+        self.setVertexStyle()
+        self.setVertexColor()
+        
+        labels = self.matrix.originalData.domain.classVar.values.native()
+        self.predGraph.numberOfBars = len(labels)
+        self.predGraph.barSize = 200 / (self.predGraph.numberOfBars + 1)
+        self.predGraph.setYLlabels(labels)
+        #self.predGraph.setShowMainTitle(self.showMainTitle)
+        #self.predGraph.setYLaxisTitle(self.matrix.originalData.domain.classVar.name)
+        #self.predGraph.setShowYLaxisTitle(True)
+        self.predGraph.setAxisScale(QwtPlot.xBottom,  0.0, 1.0, 0.2)
+        self.predGraph.setAxisScale(QwtPlot.yLeft, -0.5, len(self.matrix.originalData.domain.classVar.values) - 0.5, 1)
+    
+        self.predGraph.enableYRaxis(0)
+        self.predGraph.setYRaxisTitle("")
+        self.predGraph.setXaxisTitle("CA")
+        self.predGraph.setShowXaxisTitle(True)
+        self.predGraph.replot()
 
 if __name__=="__main__":    
     import OWModelFile
