@@ -1,5 +1,6 @@
 
 from OWBaseWidget import *
+from palette import *
 
 from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem
 from PyQt4.QtGui import QBrush, QPen, QPainterPath
@@ -26,6 +27,7 @@ class Curve(QGraphicsItemGroup):
         self.data = data
         self.style = style
         self.graph = graph
+        self.continuous = False
         self.update()
     
     def __setattr__(self, name, value):
@@ -34,7 +36,9 @@ class Curve(QGraphicsItemGroup):
     def update(self):
         self.items = []
         self.path = QPainterPath()
-        if self.data:
+        if not self.data:
+            return
+        if self.continuous:
             (start_x, start_y) = self.graph.map_to_graph(self.data[0])
             self.path.moveTo(start_x, start_y)
             for data_point in self.data:
@@ -43,5 +47,15 @@ class Curve(QGraphicsItemGroup):
             self.path_item = QGraphicsPathItem(self.path, self)
             self.path_item.setPen(self.style.pen())
             self.path_item.show()
+        else:
+            s = self.style.point_size
+            shape = self.style.point_shape
+            for p in self.data:
+                (x, y) = self.graph.map_to_graph(p)
+                if shape is CircleShape:
+                    i = QGraphicsEllipseItem(x-s/2, y-s/2, s, s, self)
+                elif shape is SquareShape:
+                    i = QGraphicsRectItem(x-s/2, y-s/2, s, s, self)
+                i.setPen(self.style.pen())
+                i.setBrush(self.style.brush())
         
-    

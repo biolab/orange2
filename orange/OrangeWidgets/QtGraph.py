@@ -91,6 +91,9 @@ class OWGraph(QGraphicsView):
         
         self.map_to_graph = self.map_to_graph_cart
         self.map_from_graph = self.map_from_graph_cart
+        
+        ## Performance optimization
+        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
 
         self.update()
         
@@ -278,7 +281,7 @@ class OWGraph(QGraphicsView):
     def setYRlabels(self, labels):
         pass
         
-    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.SolidLine, 
+    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = palette.EllipseShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         self.data_range[xBottom] = ( min(xData), max(xData) )

@@ -34,7 +34,7 @@
         
 """
 
-from PyQt4.QtGui import QColor, QPen
+from PyQt4.QtGui import QColor, QPen, QBrush
 from PyQt4.QtCore import Qt
 
 NoShape = 0
@@ -60,6 +60,9 @@ class LineStyle:
         p.setStyle(self.type)
         p.setWidth(self.width)
         return p
+        
+    def brush(self):
+        return QBrush(self.color)
 
 class Palette:
     def __init__(self):
