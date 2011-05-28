@@ -38,7 +38,7 @@ PANNING = 4
 SELECT = 5
 
 yLeft = 0
-yRights = 1
+yRight = 1
 xBottom = 2
 xTop = 3
 axisCnt = 4
@@ -66,14 +66,17 @@ class OWGraph(QGraphicsView):
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
         
-        self.axes = [xBottom, yLeft]
+        self.shown_axes = [xBottom, yLeft]
+        self.axes = dict()
         self.axis_margin = 150
+        self.title_margin = 100
+        self.showMainTitle = True
+        self.mainTitle = "Qt Graph"
         self.XaxisTitle = None
         self.YLaxisTitle = None
         self.YRaxisTitle = None
         
         # Method aliases, because there are some methods with different names but same functions
-        self.replot = self.update
         self.repaint = self.update
         self.setCanvasBackground = self.setCanvasColor
         
@@ -156,7 +159,7 @@ class OWGraph(QGraphicsView):
         if self.showMainTitle and self.mainTitle:
             self.setTitle(self.mainTitle)
         else:
-            self.setTitle(QwtText())
+            self.setTitle('')
         self.repaint()
 
     def setShowXaxisTitle(self, b = -1):
@@ -244,17 +247,24 @@ class OWGraph(QGraphicsView):
         self.zoomStack = []
         
     def setXlabels(self, labels):
-        # TODO
-        pass
+        if xBottom in self.axes:
+            self.setAxisLabels(xBottom, labels)
+        elif xTop in self.axes:
+            self.setAxisLabels(xTop, labels)
         
+    def setAxisLabels(self, axis_id, labels):
+        self.axes[axis_id].set_labels(labels)
+    
     def setAxisScale(self, axis_id, min, max, step_size=0):
-        # TODO
+        self.axes[axis_id].set_scale(min, max, step_size)
         pass
         
     def setAxisTitle(self, axis_id, title):
+        self.axes[axis_id].set_title(title)
         pass
         
-    def setTickLength(self, axis, minor, medium, major):
+    def setTickLength(self, axis_id, minor, medium, major):
+        self.axes[axis_id].set_tick_legth(minor, medium, major)
         pass
 
     def setYLlabels(self, labels):
@@ -277,7 +287,7 @@ class OWGraph(QGraphicsView):
         
     def addAxis(self, axis_id, line, text):
         a = axis.Axis()
-        self.axis[id] = a
+        self.axes[id] = a
         
     def removeAllSelections(self):
         pass
@@ -286,3 +296,65 @@ class OWGraph(QGraphicsView):
         for c in self.curves:
             self.canvas.removeItem(c)
         del self.curves[:]
+        
+    def replot(self):
+        graph_rect = QRectF(self.childrenRect())
+        
+        if self.showMainTitle and self.mainTitle:
+            self.title_item = QGraphicsTextItem(self.mainTitle)
+            title_size = self.title_item.boundingRect().size()
+            ## TODO: Check if the title is too big
+            self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
+            self.canvas.addItem(self.title_item)
+            graph_rect.setTop(graph_rect.top() + self.title_margin)
+            
+        axis_rects = dict()
+        margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
+        if xBottom in self.shown_axes:
+            bottom_rect = graph_rect
+            bottom_rect.setTop( bottom_rect.top() - margin)
+            axis_rects[xBottom] = bottom_rect
+            graph_rect.setBottom( graph_rect.bottom() - margin)
+        if xTop in self.shown_axes:
+            top_rect = graph_rect
+            top_rect.setBottom(top_rect.bottom() + margin)
+            axis_rects[xTop] = top_rect
+            graph_rect.setTop(graph_rect.top() + margin)
+        if yLeft in self.shown_axes:
+            left_rect = graph_rect
+            left = graph_rect.left() + margin
+            left_rect.setRight(left)
+            graph_rect.setLeft(left)
+            axis_rects[yLeft] = left_rect
+            if xBottom in axis_rects:
+                axis_rects[xBottom].setLeft(left)
+            if xTop in axis_rects:
+                axis_rects[xTop].setLeft(left)
+        if yRight in self.shown_axes:
+            right_rect = graph_rect
+            right = graph_rect.right() - margin
+            right_rect.setLeft(right)
+            graph_rect.setRight(right)
+            axis_rects[yRight] = right_rect
+            if xBottom in axis_rects:
+                axis_rects[xBottom].setRight(right)
+            if xTop in axis_rects:
+                axis_rects[xTop].setRight(right)
+        
+        self.axes = dict()
+            
+        for id, rect in axis_rects.iteritems():
+            if id is xBottom:
+                line = QLineF(rect.topLeft(),  rect.topRight())
+            elif id is xTop:
+                line = QLineF(rect.bottomLeft(), rect.bottomRight())
+            elif id is yLeft:
+                line = QLineF(rect.bottomLeft(), rect.topLeft())
+            elif id is yRight:
+                line = QLineF(rect.bottomRight(), rect.topRight())
+            self.axes[id] = axis.Axis(rect.size, 'Test', line )
+            self.axes[id].setPos(rect.topLeft())
+            self.canvas.addItem(self.axes[id])
+            r = QGraphicsRectItem(rect)
+            r.setPen(QPen(Qt.red))
+            self.canvas.addItem(r)
