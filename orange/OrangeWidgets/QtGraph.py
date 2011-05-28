@@ -127,7 +127,7 @@ class OWGraph(QGraphicsView):
             axes = [xBottom, yLeft]
         min_x, max_x = self.data_range[axes[0]]
         min_y, max_y = self.data_range[axes[1]]
-        rect = self.graph_area_rect()
+        rect = self.graph_area
         rx = (px - min_x) * rect.width() / (max_x - min_x)
         ry = -(py - min_y) * rect.height() / (max_y - min_y)
         return (rx, ry)

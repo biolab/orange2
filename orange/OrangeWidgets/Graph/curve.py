@@ -50,12 +50,16 @@ class Curve(QGraphicsItemGroup):
         else:
             s = self.style.point_size
             shape = self.style.point_shape
+            self.point_items = []
             for p in self.data:
                 (x, y) = self.graph.map_to_graph(p)
                 if shape is CircleShape:
                     i = QGraphicsEllipseItem(x-s/2, y-s/2, s, s, self)
                 elif shape is SquareShape:
                     i = QGraphicsRectItem(x-s/2, y-s/2, s, s, self)
-                i.setPen(self.style.pen())
-                i.setBrush(self.style.brush())
+                self.point_items.append(i)
+            p = self.style.pen()
+            map((lambda i: i.setPen(p)), self.point_items)
+            b = self.style.brush()
+            map((lambda i: i.setBrush(b)), self.point_items)
         
