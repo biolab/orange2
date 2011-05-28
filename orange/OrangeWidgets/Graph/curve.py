@@ -23,20 +23,25 @@ from PyQt4.QtGui import QBrush, QPen, QPainterPath
 class Curve(QGraphicsItemGroup):
     def __init__(self, data, style, graph, parent=None):
         QGraphicsItemGroup.__init__(self,  parent)
+        self.data = data
+        self.style = style
         self.graph = graph
-        self.items = []
-        self.path = QPainterPath()
-        if data:
-            (start_x, start_y) = self.graph.map_to_graph(data[0])
-            self.path.moveTo(start_x, start_y)
-            for data_point in data:
-                (x, y) = self.graph.map_to_graph(data_point)
-                self.path.lineTo(x, y)
-            self.path_item = QGraphicsPathItem(self.path, self)
-            self.path_item.setPen(style.pen())
-            self.path_item.show()
+        self.update()
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsItemGroup)
+        
+    def update(self):
+        self.items = []
+        self.path = QPainterPath()
+        if self.data:
+            (start_x, start_y) = self.graph.map_to_graph(self.data[0])
+            self.path.moveTo(start_x, start_y)
+            for data_point in self.data:
+                (x, y) = self.graph.map_to_graph(data_point)
+                self.path.lineTo(x, y)
+            self.path_item = QGraphicsPathItem(self.path, self)
+            self.path_item.setPen(self.style.pen())
+            self.path_item.show()
         
     

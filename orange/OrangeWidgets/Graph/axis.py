@@ -34,6 +34,7 @@ class Axis(QGraphicsItemGroup):
 
     def update(self):
         self.line_item.setLine(self.line)
+        self.line_item.setPen(self.style.pen())
         self.title_item.setHtml(self.title)
         
     @staticmethod
@@ -62,3 +63,5 @@ class Axis(QGraphicsItemGroup):
     def set_tick_length(self, minor, medium, major):
         # TODO
         pass
+        
+    

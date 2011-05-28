@@ -62,6 +62,7 @@ class OWGraph(QGraphicsView):
         self.parent_name = name
         self.show_legend = show_legend
         self.legend = None
+        self.title_item = None
         
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
@@ -104,14 +105,18 @@ class OWGraph(QGraphicsView):
         if not self.show_legend and self.legend:
             self.legend.hide()
             self.legend = None
+        self.replot()
             
     def graph_area_rect(self):
+        """
         rect = self.childrenRect()
         if xBottom in self.axes:
             rect.setBottom(rect.bottom() - self.axis_margin)
         if yLeft in self.axes:
             rect.setLeft(rect.left() + self.axis_margin)
         return rect
+        """
+        return self.graph_area
         
     def map_to_graph_cart(self, point, axes=None):
         px, py = point
@@ -151,7 +156,7 @@ class OWGraph(QGraphicsView):
         if self.showMainTitle and self.mainTitle:
             self.setTitle(self.mainTitle)
         else:
-            self.setTitle(QwtText())
+            self.setTitle('')
         self.repaint()
 
     def setMainTitle(self, t):
@@ -245,6 +250,7 @@ class OWGraph(QGraphicsView):
         # self.removeAllSelections(0)  # clear all selections
         # self.tips.removeAll()
         self.zoomStack = []
+        self.replot()
         
     def setXlabels(self, labels):
         if xBottom in self.axes:
@@ -281,14 +287,14 @@ class OWGraph(QGraphicsView):
         for i in range(len(xData)):
             data.append( (xData[i], yData[i]) )
             c = curve.Curve(data, self.palette.line_styles[0], self)
+            c.setPos(self.graph_area.bottomLeft())
             self.canvas.addItem(c)
             self.curves.append(c)
         return c
         
     def addAxis(self, axis_id, line, text):
-        a = axis.Axis()
-        self.axes[id] = a
-        
+        pass        
+    
     def removeAllSelections(self):
         pass
         
@@ -301,27 +307,31 @@ class OWGraph(QGraphicsView):
         graph_rect = QRectF(self.childrenRect())
         
         if self.showMainTitle and self.mainTitle:
+            if self.title_item:
+                self.canvas.removeItem(self.title_item)
+                del self.title_item
             self.title_item = QGraphicsTextItem(self.mainTitle)
             title_size = self.title_item.boundingRect().size()
             ## TODO: Check if the title is too big
             self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
             self.canvas.addItem(self.title_item)
             graph_rect.setTop(graph_rect.top() + self.title_margin)
-            
+        
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
+        margin = 40
         if xBottom in self.shown_axes:
-            bottom_rect = graph_rect
-            bottom_rect.setTop( bottom_rect.top() - margin)
+            bottom_rect = QRectF(graph_rect)
+            bottom_rect.setTop( bottom_rect.bottom() - margin)
             axis_rects[xBottom] = bottom_rect
             graph_rect.setBottom( graph_rect.bottom() - margin)
         if xTop in self.shown_axes:
-            top_rect = graph_rect
-            top_rect.setBottom(top_rect.bottom() + margin)
+            top_rect = QRectF(graph_rect)
+            top_rect.setBottom(top_rect.top() + margin)
             axis_rects[xTop] = top_rect
             graph_rect.setTop(graph_rect.top() + margin)
         if yLeft in self.shown_axes:
-            left_rect = graph_rect
+            left_rect = QRectF(graph_rect)
             left = graph_rect.left() + margin
             left_rect.setRight(left)
             graph_rect.setLeft(left)
@@ -331,7 +341,7 @@ class OWGraph(QGraphicsView):
             if xTop in axis_rects:
                 axis_rects[xTop].setLeft(left)
         if yRight in self.shown_axes:
-            right_rect = graph_rect
+            right_rect = QRectF(graph_rect)
             right = graph_rect.right() - margin
             right_rect.setLeft(right)
             graph_rect.setRight(right)
@@ -340,7 +350,12 @@ class OWGraph(QGraphicsView):
                 axis_rects[xBottom].setRight(right)
             if xTop in axis_rects:
                 axis_rects[xTop].setRight(right)
-        
+                
+        self.graph_area = graph_rect
+            
+        for id, item in self.axes.iteritems():
+            self.canvas.removeItem(item)
+            
         self.axes = dict()
             
         for id, rect in axis_rects.iteritems():
@@ -349,12 +364,14 @@ class OWGraph(QGraphicsView):
             elif id is xTop:
                 line = QLineF(rect.bottomLeft(), rect.bottomRight())
             elif id is yLeft:
-                line = QLineF(rect.bottomLeft(), rect.topLeft())
+                line = QLineF(rect.bottomRight(), rect.topRight())
             elif id is yRight:
                 line = QLineF(rect.bottomRight(), rect.topRight())
-            self.axes[id] = axis.Axis(rect.size, 'Test', line )
+            line.translate(-rect.topLeft())
+            self.axes[id] = axis.Axis(rect.size(), 'Test', line )
             self.axes[id].setPos(rect.topLeft())
             self.canvas.addItem(self.axes[id])
-            r = QGraphicsRectItem(rect)
-            r.setPen(QPen(Qt.red))
-            self.canvas.addItem(r)
+            
+        for c in self.curves:
+            c.update()
+        self.setSceneRect(self.canvas.itemsBoundingRect())
