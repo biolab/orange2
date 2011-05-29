@@ -369,9 +369,9 @@ class OWGraph(QGraphicsView):
             elif id is xTop:
                 line = QLineF(rect.bottomLeft(), rect.bottomRight())
             elif id is yLeft:
-                line = QLineF(rect.bottomRight(), rect.topRight())
+                line = QLineF(rect.topRight(), rect.bottomRight())
             elif id is yRight:
-                line = QLineF(rect.bottomRight(), rect.topRight())
+                line = QLineF(rect.topLeft(), rect.bottomLeft())
             line.translate(-rect.topLeft())
             self.axes[id] = axis.Axis(rect.size(), 'Test', line )
             self.axes[id].setPos(rect.topLeft())
