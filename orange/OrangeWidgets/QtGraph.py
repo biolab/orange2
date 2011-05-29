@@ -289,10 +289,12 @@ class OWGraph(QGraphicsView):
         data = []
         for i in range(len(xData)):
             data.append( (xData[i], yData[i]) )
-            c = curve.Curve(data, self.palette.line_styles[0], self)
-            c.setPos(self.graph_area.bottomLeft())
-            self.canvas.addItem(c)
-            self.curves.append(c)
+        c = curve.Curve(data, self.palette.line_styles[0], self)
+        c.setPos(self.graph_area.bottomLeft())
+        c.continuous = (style is not Qt.NoPen)
+        c.update()
+        self.canvas.addItem(c)
+        self.curves.append(c)
         return c
         
     def addAxis(self, axis_id, line, text):

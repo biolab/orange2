@@ -18,7 +18,8 @@ from PyQt4.QtGui import QBrush, QPen, QPainterPath
     .. attribute:: point_size
         
     .. attribute:: continuous
-        A boolean value that determines whether the curve is continuous or discrete
+        If true, the curve is drawn as a continuous line. Otherwise, it's drawn as a series of points
+        
 """
 
 class Curve(QGraphicsItemGroup):
@@ -28,17 +29,20 @@ class Curve(QGraphicsItemGroup):
         self.style = style
         self.graph = graph
         self.continuous = False
-        self.update()
+        self.path_item = None
+        self.point_items = []
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsItemGroup)
         
     def update(self):
-        self.items = []
-        self.path = QPainterPath()
+        del self.point_items[:]
+        if self.path_item:
+            del self.path_item
         if not self.data:
             return
         if self.continuous:
+            self.path = QPainterPath()
             (start_x, start_y) = self.graph.map_to_graph(self.data[0])
             self.path.moveTo(start_x, start_y)
             for data_point in self.data:
