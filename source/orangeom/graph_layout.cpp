@@ -1239,7 +1239,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	string line;
 	
 	istream *stream;
-	ifstream file = ifstream(fn);
+	ifstream file(fn);
 	istringstream text(fn, istringstream::in);
 
 	if (file.is_open()) {
