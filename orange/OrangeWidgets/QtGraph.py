@@ -61,13 +61,12 @@ class OWGraph(QGraphicsView):
         QGraphicsView.__init__(self, parent)
         self.parent_name = name
         self.show_legend = show_legend
-        self.legend = None
+        self._legend = None
         self.title_item = None
         
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
         
-        self.shown_axes = [xBottom, yLeft]
         self.axes = dict()
         self.axis_margin = 150
         self.title_margin = 100
@@ -81,6 +80,10 @@ class OWGraph(QGraphicsView):
         self.repaint = self.update
         self.setCanvasBackground = self.setCanvasColor
         
+        # OWScatterPlot needs these:
+        self.alphaValue = 1
+        self.useAntialiasing = False
+        
         self.palette = palette.shared_palette()
         self.curveSymbols = self.palette.curve_symbols
         self.tips = TooltipManager(self)
@@ -88,6 +91,8 @@ class OWGraph(QGraphicsView):
         self.selectionCurveList = []
         self.curves = []
         self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
+        self.addAxis(xBottom, False)
+        self.addAxis(yLeft, True)
         
         self.map_to_graph = self.map_to_graph_cart
         self.map_from_graph = self.map_from_graph_cart
@@ -102,12 +107,12 @@ class OWGraph(QGraphicsView):
         unisetattr(self, name, value, QGraphicsView)
         
     def update(self):
-        if self.show_legend and not self.legend:
-            self.legend = legend.Legend(self.canvas)
-            self.legend.show()
-        if not self.show_legend and self.legend:
-            self.legend.hide()
-            self.legend = None
+        if self.show_legend and not self._legend:
+            self._legend = legend.Legend(self.canvas)
+            self._legend.show()
+        if not self.show_legend and self._legend:
+            self._legend.hide()
+            self._legend = None
         self.replot()
             
     def graph_area_rect(self):
@@ -125,8 +130,8 @@ class OWGraph(QGraphicsView):
         px, py = point
         if not axes:
             axes = [xBottom, yLeft]
-        min_x, max_x = self.data_range[axes[0]]
-        min_y, max_y = self.data_range[axes[1]]
+        min_x, max_x, t = self.axes[axes[0]].scale
+        min_y, max_y, t = self.axes[axes[1]].scale
         rect = self.graph_area
         rx = (px - min_x) * rect.width() / (max_x - min_x)
         ry = -(py - min_y) * rect.height() / (max_y - min_y)
@@ -174,7 +179,7 @@ class OWGraph(QGraphicsView):
         self.setShowAxisTitle(xBottom, b)
         
     def setXaxisTitle(self, title):
-        self.setAxisTitle(xBottom, b)
+        self.setAxisTitle(xBottom, title)
 
     def setShowYLaxisTitle(self, b = -1):
         self.setShowAxisTitle(yLeft, b)
@@ -222,7 +227,6 @@ class OWGraph(QGraphicsView):
     
     def setAxisScale(self, axis_id, min, max, step_size=0):
         self.axes[axis_id].set_scale(min, max, step_size)
-        pass
         
     def setAxisTitle(self, axis_id, title):
         if axis_id in self.axes:
@@ -245,8 +249,6 @@ class OWGraph(QGraphicsView):
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = palette.EllipseShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
-        self.data_range[xBottom] = ( min(xData), max(xData) )
-        self.data_range[yLeft] = ( min(yData), max(yData) )
         data = []
         for i in range(len(xData)):
             data.append( (xData[i], yData[i]) )
@@ -258,9 +260,8 @@ class OWGraph(QGraphicsView):
         self.curves.append(c)
         return c
         
-    def addAxis(self, axis_id):
-        self.axes[id] = Axis()
-        pass        
+    def addAxis(self, axis_id, title_above = False):
+        self.axes[axis_id] = axis.Axis(title_above)
     
     def removeAllSelections(self):
         pass
@@ -297,7 +298,7 @@ class OWGraph(QGraphicsView):
             top_rect.setBottom(top_rect.top() + margin)
             axis_rects[xTop] = top_rect
             graph_rect.setTop(graph_rect.top() + margin)
-        if yLeft in self.shown_axes and self.axes[yLeft].isVisible():
+        if yLeft in self.axes and self.axes[yLeft].isVisible():
             left_rect = QRectF(graph_rect)
             left = graph_rect.left() + margin
             left_rect.setRight(left)
@@ -307,7 +308,7 @@ class OWGraph(QGraphicsView):
                 axis_rects[xBottom].setLeft(left)
             if xTop in axis_rects:
                 axis_rects[xTop].setLeft(left)
-        if yRight in self.shown_axes and self.axes[yRight].isVisible():
+        if yRight in self.axes and self.axes[yRight].isVisible():
             right_rect = QRectF(graph_rect)
             right = graph_rect.right() - margin
             right_rect.setLeft(right)
@@ -329,17 +330,21 @@ class OWGraph(QGraphicsView):
             elif id is xTop:
                 line = QLineF(rect.bottomLeft(), rect.bottomRight())
             elif id is yLeft:
-                line = QLineF(rect.topRight(), rect.bottomRight())
+                line = QLineF(rect.bottomRight(), rect.topRight())
             elif id is yRight:
-                line = QLineF(rect.topLeft(), rect.bottomLeft())
+                line = QLineF(rect.bottomLeft(), rect.topLeft())
             line.translate(-rect.topLeft())
             a = self.axes[id]
-            a.setSize(rect.size())
-            a.setLine(line)
+            a.set_size(rect.size())
+            a.set_line(line)
             a.setPos(rect.topLeft())
             self.canvas.addItem(a)
+            a.update()
             a.show()
             
         for c in self.curves:
             c.update()
         self.setSceneRect(self.canvas.itemsBoundingRect())
+        
+    def legend(self):
+        return self._legend

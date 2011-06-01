@@ -9,59 +9,93 @@
     .. attribute:: title
         The string to be displayed alongside the axis
         
+    .. attribute:: title_above
+        A boolean which specifies whether the title should be placed above or below the axis
+        Normally the title would be above for top and left axes. 
+        
+    .. attribute:: arrows
+        A bitfield containing ArrowEnd if an arrow should be drawn at the line's end (line.p2()) 
+        and ArrowStart if there should be an arrows at the first point. 
+        
+        By default, there's an arrow at the end of the line
+        
     .. method:: make_title
         Makes a pretty title, with the quantity title in italics and the unit in normal text
-        
+                
     .. method:: label_pos
         Controls where the axis title and tick marks are placed relative to the axis
 """
 
-from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem
+from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene
 from PyQt4.QtCore import QLineF
 
 from palette import *
 
-LabelBelow = 0
-LabelAbove = 1
-LabelLeft = 2
-LabelRight = 3
+TitleBelow = 0
+TitleAbove = 1
+
+ArrowEnd = 1
+ArrowStart = 2
 
 class Axis(QGraphicsItemGroup):
-    def __init__(self, parent=None):
+    def __init__(self, title_above, arrows = ArrowEnd, parent=None):
         QGraphicsItemGroup.__init__(self, parent)
         self.title = None
         self.line = None
         self.size = None
+        self.scale = None
+        self.arrows = arrows
+        self.title_above = title_above
         self.style = shared_palette().axis_style
         self.line_item = QGraphicsLineItem(self)
         self.title_item = QGraphicsTextItem(self)
-    
-    def __init__(self, size, title, line, style=None, parent=None):
-        QGraphicsItemGroup.__init__(self, parent)
-        self.size = size
-        self.line = line
-        self.title = title
-        if style:
-            self.style = style
-        else:
-            self.style = shared_palette().axis_style
-        self.line_item = QGraphicsLineItem(self)
-        self.title_item = QGraphicsTextItem(self)
-        self.update()
+        self.end_arrow_item = None
+        self.start_arrow_item = None
+        self.show_title = True
+        self.scale = (0, 100, 1)
+        path = QPainterPath()
+        path.setFillRule(Qt.WindingFill)
+        path.lineTo(-20, 10)
+        path.lineTo(-10, 0)
+        path.lineTo(-20, -10)
+        path.lineTo(0, 0)
+        self.arrow_path = path
 
     def update(self):
-        if not self.line or not self.title:
-            return;
+        if not self.line or not self.title or not self.scene():
+            return
         if not self.style:
             self.style = shared_palette().axis_style
         self.line_item.setLine(self.line)
         self.line_item.setPen(self.style.pen())
         self.title_item.setHtml(self.title)
         title_pos = (self.line.p1() + self.line.p2())/2
+        if self.title_above:
+            v = self.line.normalVector().unitVector()
+            title_pos = title_pos + (v.p2() - v.p1())*30
         ## TODO: Move it according to self.label_pos
         self.title_item.setVisible(self.show_title)
         self.title_item.setPos(title_pos)
-        self.title_item.setRotation(self.line.angle())
+        self.title_item.setRotation(-self.line.angle())
+        
+        ## Arrows
+        if self.start_arrow_item:
+            self.scene().removeItem(self.start_arrow_item)
+            self.start_arrow_item = None
+        if self.end_arrow_item:
+            self.scene().removeItem(self.end_arrow_item)
+            self.end_arrow_item = None
+            
+        if self.arrows & ArrowStart:
+            self.start_arrow_item = QGraphicsPathItem(self.arrow_path, self)
+            self.start_arrow_item.setPos(self.line.p1())
+            self.start_arrow_item.setRotation(self.line.angle())
+            self.start_arrow_item.setBrush(self.style.brush())
+        if self.arrows & ArrowEnd:
+            self.end_arrow_item = QGraphicsPathItem(self.arrow_path, self)
+            self.end_arrow_item.setPos(self.line.p2())
+            self.end_arrow_item.setRotation(-self.line.angle())
+            self.end_arrow_item.setBrush(self.style.brush())
         
     @staticmethod
     def make_title(label, unit = None):

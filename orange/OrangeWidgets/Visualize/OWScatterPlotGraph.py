@@ -118,7 +118,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             xmax = xVarMax + off
             labels = None
         self.setXlabels(labels)
-       # self.setAxisScale(xBottom, xmin, xmax + showContinuousColorLegend * xVar * 0.07, discreteX)
+        self.setAxisScale(xBottom, xmin, xmax,  discreteX)
 
         # set axis for y attribute
         discreteY = self.dataDomain[yAttrIndex].varType == orange.VarTypes.Discrete
