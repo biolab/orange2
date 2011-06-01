@@ -27,7 +27,7 @@
 """
 
 from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene
-from PyQt4.QtCore import QLineF, qDebug
+from PyQt4.QtCore import QLineF, QPointF, qDebug
 
 from palette import *
 
@@ -44,6 +44,7 @@ class Axis(QGraphicsItemGroup):
         self.line = None
         self.size = None
         self.scale = None
+        self.tick_length = (10, 5, 0)
         self.arrows = arrows
         self.title_above = title_above
         self.style = shared_palette().axis_style
@@ -61,6 +62,7 @@ class Axis(QGraphicsItemGroup):
         path.lineTo(0, 0)
         self.arrow_path = path
         self.label_items = []
+        self.tick_items = []
 
     def update(self):
         if not self.line or not self.title or not self.scene():
@@ -104,8 +106,11 @@ class Axis(QGraphicsItemGroup):
         for i in self.label_items:
             self.scene().removeItem(i)
         del self.label_items[:]
+        for i in self.tick_items:
+            self.scene().removeItem(i)
+        del self.tick_items[:]
+        min, max, step = self.scale
         if self.labels:
-            min, max, step = self.scale
             for i in range(len(self.labels)):
                 item = QGraphicsTextItem(self)
                 item.setHtml( '<center>' + self.labels[i] + '</center>')
@@ -117,6 +122,27 @@ class Axis(QGraphicsItemGroup):
                 item.setPos(label_pos)
                 item.setRotation(-self.line.angle())
                 self.label_items.append(item)
+        elif self.scale and self.tick_length:
+            t = min
+            while t <= max:
+                p1 = self.map_to_graph(t)
+                label_pos = self.map_to_graph( t - step/2 )
+                (major, med, minor) = self.tick_length
+                v = self.line.normalVector().unitVector()
+                d = (v.p2() - v.p1())*major
+                if self.title_above:
+                    p2 = p1 - d
+                    label_pos = label_pos + d/major * 30
+                else:
+                    p2 = p1 + d
+                self.tick_items.append(QGraphicsLineItem(QLineF(p1, p2), self))
+                text_item = QGraphicsTextItem(self)
+                text_item.setHtml('<center>' + str(t) + '</center>')
+                text_item.setTextWidth(self.line.length() * step / (max-min))
+                text_item.setPos(label_pos)
+                text_item.setRotation(-self.line.angle())
+                self.label_items.append(text_item)
+                t = t + step            
        
     @staticmethod
     def make_title(label, unit = None):
@@ -142,6 +168,8 @@ class Axis(QGraphicsItemGroup):
         self.update()
         
     def set_scale(self, min, max, step_size):
+        if not step_size:
+            step_size = (max-min)/10
         self.scale = (min, max, step_size)
         self.update()
     
