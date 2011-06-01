@@ -70,8 +70,9 @@ class OWGraph(QGraphicsView):
         self.axes = dict()
         self.axis_margin = 150
         self.title_margin = 100
-        self.showMainTitle = True
-        self.mainTitle = "Qt Graph"
+        self.graph_margin = 50
+        self.mainTitle = None
+        self.showMainTitle = False
         self.XaxisTitle = None
         self.YLaxisTitle = None
         self.YRaxisTitle = None
@@ -168,6 +169,7 @@ class OWGraph(QGraphicsView):
         self.repaint()
 
     def setMainTitle(self, t):
+        qDebug(t)
         self.mainTitle = t
         if self.showMainTitle and self.mainTitle:
             self.setTitle(self.mainTitle)
@@ -273,6 +275,8 @@ class OWGraph(QGraphicsView):
         
     def replot(self):
         graph_rect = QRectF(self.childrenRect())
+        m = self.graph_margin
+        graph_rect.adjust(m, m, -m, -m)
         
         if self.showMainTitle and self.mainTitle:
             if self.title_item:

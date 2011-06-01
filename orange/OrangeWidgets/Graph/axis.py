@@ -27,7 +27,7 @@
 """
 
 from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene
-from PyQt4.QtCore import QLineF
+from PyQt4.QtCore import QLineF, qDebug
 
 from palette import *
 
@@ -60,6 +60,7 @@ class Axis(QGraphicsItemGroup):
         path.lineTo(-20, -10)
         path.lineTo(0, 0)
         self.arrow_path = path
+        self.label_items = []
 
     def update(self):
         if not self.line or not self.title or not self.scene():
@@ -70,9 +71,11 @@ class Axis(QGraphicsItemGroup):
         self.line_item.setPen(self.style.pen())
         self.title_item.setHtml(self.title)
         title_pos = (self.line.p1() + self.line.p2())/2
+        v = self.line.normalVector().unitVector()
         if self.title_above:
-            v = self.line.normalVector().unitVector()
-            title_pos = title_pos + (v.p2() - v.p1())*30
+            title_pos = title_pos + (v.p2() - v.p1())*60
+        else:
+            title_pos = title_pos - (v.p2() - v.p1())*40
         ## TODO: Move it according to self.label_pos
         self.title_item.setVisible(self.show_title)
         self.title_item.setPos(title_pos)
@@ -95,8 +98,26 @@ class Axis(QGraphicsItemGroup):
             self.end_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.end_arrow_item.setPos(self.line.p2())
             self.end_arrow_item.setRotation(-self.line.angle())
-            self.end_arrow_item.setBrush(self.style.brush())
-        
+            self.end_arrow_item.setBrush(self.style.brush())\
+            
+        ## Labels
+        for i in self.label_items:
+            self.scene().removeItem(i)
+        del self.label_items[:]
+        if self.labels:
+            min, max, step = self.scale
+            for i in range(len(self.labels)):
+                item = QGraphicsTextItem(self)
+                item.setHtml( '<center>' + self.labels[i] + '</center>')
+                item.setTextWidth(self.line.length()/len(self.labels))
+                label_pos = self.map_to_graph( (i-0.5) * step)
+                v = self.line.normalVector().unitVector()
+                if self.title_above:
+                    label_pos = label_pos + (v.p2() - v.p1())*40
+                item.setPos(label_pos)
+                item.setRotation(-self.line.angle())
+                self.label_items.append(item)
+       
     @staticmethod
     def make_title(label, unit = None):
         lab = '<i>' + label + '</i>'
@@ -132,4 +153,6 @@ class Axis(QGraphicsItemGroup):
         self.size = size
         self.update()
         
-    
+    def map_to_graph(self, x):
+        min, max, step = self.scale
+        return self.line.pointAt( (x-min)/(max-min) )
