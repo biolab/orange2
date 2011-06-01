@@ -152,23 +152,25 @@ class NetworkCurve(QwtPlotCurve):
         #painter.setPen(QPen(Qt.lightGray, 1))
         painter.setBrush(Qt.lightGray)
         if edge.arrowu:
-            x = px1 - px2
-            y = py1 - py2
+            x = px2 - px1
+            y = py2 - py1
             
             fi = math.atan2(y, x) * 180 * 16 / math.pi 
 
             if not fi is None:
                 # (180*16) - fi - (20*16), (40*16)
-                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, 2560 - fi, 640)
+                rect = QRectF(px2 - d, py2 - d, 2 * d, 2 * d)
+                painter.drawPie(rect, 2560 - fi, 640)
                 
         if edge.arrowv:
-            x = px1 - px2
-            y = py1 - py2
+            x = px2 - px1
+            y = py2 - py1
             
             fi = math.atan2(y, x) * 180 * 16 / math.pi 
             if not fi is None:
                 # (180*16) - fi - (20*16), (40*16)
-                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, 2560 - fi, 640)
+                rect = QRectF(px2 - d, py2 - d, 2 * d, 2 * d)
+                painter.drawPie(rect, 2560 - fi, 640)
                 
         if self.showEdgeLabels and len(edge.label) > 0:
             lbl = ', '.join(edge.label)
@@ -188,16 +190,18 @@ class NetworkCurve(QwtPlotCurve):
         if vertex.selected:    
           painter.setPen(QPen(Qt.yellow, 3))
           painter.setBrush(vertex.color)
-          painter.drawEllipse(pX - (vertex.size + 4) / 2, pY - (vertex.size + 4) / 2, vertex.size + 4, vertex.size + 4)
+          rect = QRectF(pX - (vertex.size + 4) / 2, pY - (vertex.size + 4) / 2, vertex.size + 4, vertex.size + 4)
+          painter.drawEllipse(rect)
         elif vertex.marked:
           painter.setPen(vertex.pen)
           painter.setBrush(vertex.color)
-          painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
+          rect = QRectF(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
+          painter.drawEllipse(rect)
         else:
           painter.setPen(vertex.pen)
           painter.setBrush(vertex.nocolor)
-          #print pX - vertex.size / 2, pY - vertex.size / 2, vertex.size
-          painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
+          rect = QRectF(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
+          painter.drawEllipse(rect)
         
 class OWNxCanvas(OWGraph):
     def __init__(self, master, parent=None, name="None"):
