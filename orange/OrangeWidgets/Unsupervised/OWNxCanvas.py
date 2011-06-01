@@ -8,9 +8,10 @@ SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
 MOVE_SELECTION = 100
 
-from OWGraph import *
+import Orange
+
 from numpy import *
-from orngNetwork import Network
+from OWGraph import *
 from orngScaleScatterPlotData import *
 
 class NetworkVertex():
@@ -269,7 +270,7 @@ class OWNxCanvas(OWGraph):
         self.callbackSelectVertex = None
         self.minComponentEdgeWidth = 0
         self.maxComponentEdgeWidth = 0
-        self.vertexDistance = None
+        self.items_matrix = None
         self.controlPressed = False
         self.altPressed = False
         
@@ -487,12 +488,12 @@ class OWNxCanvas(OWGraph):
                 # transform to pixel distance
                 distance = math.sqrt(dX**2 + dY**2)               
                 if v != -1 and distance <= self.vertices[v].size / 2:
-                    if self.graph.vertexDistance == None:
+                    if self.items_matrix == None:
                         dst = 'vertex distance signal not set'
                     else:
                         dst = 0
                         for u in selection:
-                            dst += self.graph.vertexDistance[u, v]
+                            dst += self.items_matrix[u, v]
                         dst = dst / len(selection)
                         
                     self.showTip(event.pos().x(), event.pos().y(), str(dst))
@@ -690,9 +691,9 @@ class OWNxCanvas(OWGraph):
         self.removeDrawingCurves(removeLegendItems=0)
         self.tips.removeAll()
         
-        if self.vertexDistance and self.minComponentEdgeWidth > 0 and self.maxComponentEdgeWidth > 0:          
+        if self.items_matrix and self.minComponentEdgeWidth > 0 and self.maxComponentEdgeWidth > 0:          
             components = Orange.network.nx.algorithms.components.connected_components(self.graph)
-            matrix = self.vertexDistance.avgLinkage(components)
+            matrix = self.items_matrix.avgLinkage(components)
             
             edges = set()
             for u in range(matrix.dim):

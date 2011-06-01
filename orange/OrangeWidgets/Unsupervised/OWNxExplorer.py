@@ -48,13 +48,13 @@ class OWNxExplorer(OWWidget):
                        ("Items", Orange.data.Table, self.setItems),
                        ("Items to Mark", Orange.data.Table, self.markItems), 
                        ("Items Subset", Orange.data.Table, self.setExampleSubset), 
-                       ("Vertex Distance", Orange.core.SymMatrix, self.setVertexDistance)]
+                       ("Items Distance Matrix", Orange.core.SymMatrix, self.setItemsDistanceMatrix)]
         
         self.outputs = [("Selected Network", Orange.network.Graph),
-                        ("Selected Distance Matrix", Orange.core.SymMatrix),
-                        ("Selected Examples", Orange.data.Table), 
-                        ("Unselected Examples", Orange.data.Table), 
-                        ("Marked Examples", Orange.data.Table),
+                        ("Selected Items Distance Matrix", Orange.core.SymMatrix),
+                        ("Selected Items", Orange.data.Table), 
+                        ("Unselected Items", Orange.data.Table), 
+                        ("Marked Items", Orange.data.Table),
                         ("Attribute Selection List", AttributeList)]
         
         self.markerAttributes = []
@@ -97,20 +97,20 @@ class OWNxExplorer(OWWidget):
         self.selectedSchemaIndex = 0
         self.edgeColorSettings = [('net_edges', [[], [('contPalette', (4294967295L, 4278190080L, 0))], [('discPalette', [(204, 204, 204), (179, 226, 205), (253, 205, 172), (203, 213, 232), (244, 202, 228), (230, 245, 201), (255, 242, 174), (241, 226, 204)])]]), ('Default', [[], [('contPalette', (4294967295L, 4278190080L, 0))], [('discPalette', [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 0, 255), (0, 128, 255), (255, 223, 128), (127, 111, 64), (92, 46, 0), (0, 84, 0), (192, 192, 0), (0, 127, 127), (128, 0, 0), (127, 0, 127)])]])]
         self.selectedEdgeSchemaIndex = 0
-        self.vertexDistance = None
+        self.items_matrix = None
         self.showDistances = 0
         self.showMissingValues = 0
         self.fontSize = 12
         self.mdsTorgerson = 0
-        self.mdsAvgLinkage = 0
-        self.mdsSteps = 120
-        self.mdsRefresh = 30
-        self.mdsStressDelta = 0.00001
+        self.mdsAvgLinkage = 1
+        self.mdsSteps = 10000
+        self.mdsRefresh = 50
+        self.mdsStressDelta = 0.0000001
         self.organism = 'goa_human'
         self.showTextMiningInfo = 0
         self.toolbarSelection = 0
-        self.minComponentEdgeWidth = 0
-        self.maxComponentEdgeWidth = 0
+        self.minComponentEdgeWidth = 10
+        self.maxComponentEdgeWidth = 70
         self.mdsFromCurrentPos = 0
         self.tabIndex = 0
         self.number_of_nodes_label = -1
@@ -297,9 +297,9 @@ class OWNxExplorer(OWWidget):
         
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mdsComponents, toggleButton=1)
-        self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=(lambda: self.mdsComponents(Orange.network.MdsType.exactSimulation)), toggleButton=1)
-        self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=(lambda: self.mdsComponents(Orange.network.MdsType.MDS)), toggleButton=1)
+        self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mds_components, toggleButton=1)
+        self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=(lambda: self.mds_components(Orange.network.MdsType.exactSimulation)), toggleButton=1)
+        self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=(lambda: self.mds_components(Orange.network.MdsType.MDS)), toggleButton=1)
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
         self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
@@ -432,7 +432,7 @@ class OWNxExplorer(OWWidget):
         
     def rotateComponentsMDS(self):
         print "rotate"
-        if self.vertexDistance is None:
+        if self.items_matrix is None:
             self.information('Set distance matrix to input signal')
             self.btnRotateMDS.setChecked(False)
             return
@@ -441,7 +441,7 @@ class OWNxExplorer(OWWidget):
             self.information('No network found')
             self.btnRotateMDS.setChecked(False)
             return
-        if self.vertexDistance.dim != self.graph.number_of_nodes():
+        if self.items_matrix.dim != self.graph.number_of_nodes():
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.btnRotateMDS.setChecked(False)
             return
@@ -455,17 +455,17 @@ class OWNxExplorer(OWWidget):
         self.btnRotateMDS.setText("Stop")
         qApp.processEvents()
         
-        self.layout.vertexDistance = self.vertexDistance
+        self.layout.items_matrix = self.items_matrix
         self.progressBarInit()
         
-        self.layout.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True, mdsFromCurrentPos=self.mdsFromCurrentPos)            
+        self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True, mdsFromCurrentPos=self.mdsFromCurrentPos)            
             
         self.btnRotateMDS.setChecked(False)
         self.btnRotateMDS.setText("Rotate graph components (MDS)")
         self.progressBarFinished()
     
     def rotateComponents(self):
-        if self.vertexDistance is None:
+        if self.items_matrix is None:
             self.information('Set distance matrix to input signal')
             self.btnRotate.setChecked(False)
             return
@@ -475,7 +475,7 @@ class OWNxExplorer(OWWidget):
             self.btnRotate.setChecked(False)
             return
         
-        if self.vertexDistance.dim != self.graph.number_of_nodes():
+        if self.items_matrix.dim != self.graph.number_of_nodes():
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.btnRotate.setChecked(False)
             return
@@ -487,7 +487,7 @@ class OWNxExplorer(OWWidget):
         self.btnRotate.setText("Stop")
         qApp.processEvents()
         
-        self.layout.vertexDistance = self.vertexDistance
+        self.layout.items_matrix = self.items_matrix
         self.progressBarInit()
         self.layout.rotateComponents(self.rotateSteps, 0.0001, self.rotateProgress, self.updateCanvas)
         self.btnRotate.setChecked(False)
@@ -502,7 +502,7 @@ class OWNxExplorer(OWWidget):
         self.progressBarSet(int(stepCount * 100 / self.mdsSteps))
         qApp.processEvents()
         
-    def mdsComponents(self, mdsType=Orange.network.MdsType.componentMDS):
+    def mds_components(self, mdsType=Orange.network.MdsType.componentMDS):
         if mdsType == Orange.network.MdsType.componentMDS:
             btn = self.btnMDS
         elif mdsType == Orange.network.MdsType.exactSimulation:
@@ -512,7 +512,7 @@ class OWNxExplorer(OWWidget):
         
         btnCaption = btn.text()
         
-        if self.vertexDistance is None:
+        if self.items_matrix is None:
             self.information('Set distance matrix to input signal')
             btn.setChecked(False)
             return
@@ -522,7 +522,7 @@ class OWNxExplorer(OWWidget):
             btn.setChecked(False)
             return
         
-        if self.vertexDistance.dim != self.graph.number_of_nodes():
+        if self.items_matrix.dim != self.graph.number_of_nodes():
             self.error('Distance matrix dimensionality must equal number of vertices')
             btn.setChecked(False)
             return
@@ -536,39 +536,39 @@ class OWNxExplorer(OWWidget):
         btn.setText("Stop")
         qApp.processEvents()
         
-        self.layout.vertexDistance = self.vertexDistance
+        self.layout.items_matrix = self.items_matrix
         self.progressBarInit()
         
         if self.mdsAvgLinkage:
-            self.layout.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)
+            self.layout.mds_components_avg_linkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)
         else:
-            self.layout.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)            
+            self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)            
         
         btn.setChecked(False)
         btn.setText(btnCaption)
         self.progressBarFinished()
         
-    def setVertexDistance(self, matrix):
+    def setItemsDistanceMatrix(self, matrix):
         self.error('')
         self.information('')
         self.showDistancesCheckBox.setEnabled(0)
         
         if matrix is None or self.graph is None:
-            self.vertexDistance = None
-            self.layout.vertexDistance = None
-            if self.networkCanvas: self.networkCanvas.vertexDistance = None
+            self.items_matrix = None
+            self.layout.items_matrix = None
+            if self.networkCanvas: self.networkCanvas.items_matrix = None
             return
 
         if matrix.dim != self.graph.number_of_nodes():
             self.error('Distance matrix dimensionality must equal number of vertices')
-            self.vertexDistance = None
-            self.layout.vertexDistance = None
-            if self.networkCanvas: self.networkCanvas.vertexDistance = None
+            self.items_matrix = None
+            self.layout.items_matrix = None
+            if self.networkCanvas: self.networkCanvas.items_matrix = None
             return
         
-        self.vertexDistance = matrix
-        self.layout.vertexDistance = matrix
-        if self.networkCanvas: self.networkCanvas.vertexDistance = matrix
+        self.items_matrix = matrix
+        self.layout.items_matrix = matrix
+        if self.networkCanvas: self.networkCanvas.items_matrix = matrix
         self.showDistancesCheckBox.setEnabled(1)
         
         self.networkCanvas.updateCanvas()
@@ -578,20 +578,20 @@ class OWNxExplorer(OWWidget):
             self.networkCanvas.sendMarkedNodes = self.sendMarkedNodes
             self.sendMarkedNodes(self.networkCanvas.getMarkedVertices())
         else:
-            self.send("Marked Examples", None)
+            self.send("Marked Items", None)
             self.networkCanvas.sendMarkedNodes = None
         
     def sendMarkedNodes(self, markedNodes):        
         if len(markedNodes) == 0:
-            self.send("Marked Examples", None)
+            self.send("Marked Items", None)
             return
         
         if self.graph is not None and self.graph.items() is not None:
             items = self.graph.items().getitems(markedNodes)
-            self.send("Marked Examples", items)
+            self.send("Marked Items", items)
             return
         
-        self.send("Marked Examples", None)
+        self.send("Marked Items", None)
         
     def insideviewneighbours(self):
         if self.networkCanvas.insideview == 1:
@@ -1096,25 +1096,25 @@ class OWNxExplorer(OWWidget):
         
         if graph is not None:
             if graph.items() is not None:
-                self.send("Selected Examples", graph.items())
+                self.send("Selected Items", graph.items())
             else:
-                self.send("Selected Examples", self.networkCanvas.getSelectedExamples())
+                self.send("Selected Items", self.networkCanvas.getSelectedExamples())
             
             #print "sendData:", self.visualize.graph.items().domain
-            self.send("Unselected Examples", self.networkCanvas.getUnselectedExamples())    
+            self.send("Unselected Items", self.networkCanvas.getUnselectedExamples())    
             self.send("Selected Network", graph)
         else:
             items = self.networkCanvas.getSelectedExamples()
-            self.send("Selected Examples", items)
+            self.send("Selected Items", items)
                 
             items = self.networkCanvas.getUnselectedExamples()
-            self.send("Unselected Examples", items)
+            self.send("Unselected Items", items)
         
         matrix = None
-        if self.vertexDistance is not None:
-            matrix = self.vertexDistance.getitems(vertices)
+        if self.items_matrix is not None:
+            matrix = self.items_matrix.getitems(vertices)
 
-        self.send("Selected Distance Matrix", matrix)
+        self.send("Selected Items Distance Matrix", matrix)
                 
     def setCombos(self):
         vars = self.graph.items_vars()
@@ -1440,9 +1440,11 @@ class OWNxExplorer(OWWidget):
         c.createContinuousPalette("contPalette", "Continuous Palette")
         c.setColorSchemas(colorSettings, selectedSchemaIndex)
         return c
+    
     """
     Layout Optimization
     """
+    
     def graph_layout(self):
         if self.graph is None:   #grafa se ni
             self.optButton.setChecked(False)
@@ -1476,6 +1478,7 @@ class OWNxExplorer(OWWidget):
         qApp.processEvents()
         
     def graph_layout_method(self, method=None):
+        self.information()
         self.stepsSpin.label.setText('Iterations: ')
         
         if method is not None:
@@ -1491,6 +1494,16 @@ class OWNxExplorer(OWWidget):
         elif str(self.optMethod) == '8':
             self.stepsSpin.label.setText('Pivots: ')
             self.stepsSpin.setEnabled(True)
+            
+            if self.items_matrix is None:
+                self.information('Set distance matrix to input signal')
+                return
+            if self.graph is None:
+                self.information('No network found')
+                return
+            if self.items_matrix.dim != self.graph.number_of_nodes():
+                self.error('Distance matrix dimensionality must equal number of vertices')
+                return
         else:
             self.stepsSpin.setEnabled(False)
             self.optButton.setChecked(True)
@@ -1590,7 +1603,9 @@ class OWNxExplorer(OWWidget):
         self.networkCanvas.circles = []
             
     def graph_layout_pivot_mds(self):
-        if self.vertexDistance is None:
+        self.information()
+        
+        if self.items_matrix is None:
             self.information('Set distance matrix to input signal')
             return
         
@@ -1598,16 +1613,16 @@ class OWNxExplorer(OWWidget):
             self.information('No network found')
             return
         
-        if self.vertexDistance.dim != self.graph.number_of_nodes():
+        if self.items_matrix.dim != self.graph.number_of_nodes():
             self.error('Distance matrix dimensionality must equal number of vertices')
             return
         
-        self.frSteps = min(self.frSteps, self.vertexDistance.dim)
+        self.frSteps = min(self.frSteps, self.items_matrix.dim)
         qApp.processEvents()
-        mds = orngMDS.PivotMDS(self.vertexDistance, self.frSteps)
+        mds = orngMDS.PivotMDS(self.items_matrix, self.frSteps)
         x,y = mds.optimize()
-        self.graph.coors[0] = x
-        self.graph.coors[1] = y
+        self.layout.coors[0] = x
+        self.layout.coors[1] = y
         self.networkCanvas.updateCanvas()
     
       
