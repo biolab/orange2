@@ -135,7 +135,6 @@ class OWNxExplorer(OWWidget):
         self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
         
         self.tabs = OWGUI.tabWidget(self.hcontroArea)
-        self.connect(self.tabs, SIGNAL("currentChanged(int)"), self.currentTabChanged)
         
         self.verticesTab = OWGUI.createTabPage(self.tabs, "Vertices")
         self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
@@ -143,10 +142,12 @@ class OWNxExplorer(OWWidget):
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
         #self.editTab = OWGUI.createTabPage(self.tabs, "Edit")
         
-
+        self.tabs.setCurrentIndex(self.tabIndex)
+        self.connect(self.tabs, SIGNAL("currentChanged(int)"), lambda index: setattr(self, 'tabIndex', index))
+        
         self.optimizeBox = OWGUI.radioButtonsInBox(self.verticesTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
         
-        self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", label='Method:     ', orientation='horizontal', callback=self.setOptMethod)
+        self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", label='Method:     ', orientation='horizontal', callback=self.graph_layout_method)
         self.optCombo.addItem("No optimization")
         self.optCombo.addItem("Random")
         self.optCombo.addItem("Fruchterman Reingold")
@@ -160,7 +161,7 @@ class OWNxExplorer(OWWidget):
         self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 100000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
         
-        self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
+        self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.graph_layout, toggleButton=1)
         
         colorBox = OWGUI.widgetBox(self.verticesTab, "Vertex color attribute", orientation="horizontal", addSpace = False)
         self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.setVertexColor)
@@ -191,19 +192,19 @@ class OWNxExplorer(OWWidget):
         self.edgeLabelBox.setEnabled(False)
         
         ib = OWGUI.widgetBox(self.edgesTab, "General", orientation="vertical")
-        OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
-        OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
+        OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback=(lambda: self._set_canvas_attr('showWeights', self.showWeights)))
+        OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback=(lambda: self._set_canvas_attr('showEdgeLabels', self.showEdgeLabels)))
         OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.setMaxLinkSize)
-        OWGUI.checkBox(ib, self, 'showDistances', 'Explore vertex distances', callback = self.showDistancesClick)
+        self.showDistancesCheckBox = OWGUI.checkBox(ib, self, 'showDistances', 'Explore vertex distances', callback=(lambda: self._set_canvas_attr('showDistances', self.showDistances)), disabled=1)
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
-        OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
-        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback = self.labelsOnMarked)
-        OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
+        OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback=(lambda: self._set_canvas_attr('showIndexes', self.showIndexes)))
+        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback=(lambda: self._set_canvas_attr('labelsOnMarkedOnly', self.labelsOnMarkedOnly)))
+        OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback=(lambda: self._set_canvas_attr('renderAntialiased', self.renderAntialiased)))
         self.insideView = 0
         self.insideViewNeighbours = 2
         OWGUI.spin(ib, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
-        OWGUI.checkBox(ib, self, 'showMissingValues', 'Show missing values', callback = self.setShowMissingValues)
+        OWGUI.checkBox(ib, self, 'showMissingValues', 'Show missing values', callback=(lambda: self._set_canvas_attr('showMissingValues', self.showMissingValues)))
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
@@ -297,8 +298,8 @@ class OWNxExplorer(OWWidget):
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mdsComponents, toggleButton=1)
-        self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=self.exactSimulation, toggleButton=1)
-        self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=self.mdsVertices, toggleButton=1)
+        self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=(lambda: self.mdsComponents(Orange.network.MdsType.exactSimulation)), toggleButton=1)
+        self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=(lambda: self.mdsComponents(Orange.network.MdsType.MDS)), toggleButton=1)
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
         self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
@@ -317,8 +318,8 @@ class OWNxExplorer(OWWidget):
         self.rotateSteps = 100
         
         OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
-        OWGUI.spin(ib, self, "minComponentEdgeWidth", 0, 100, 1, label="Min component edge width: ", callback=self.setComponentEdgeWidth)
-        OWGUI.spin(ib, self, "maxComponentEdgeWidth", 0, 200, 1, label="Max component edge width: ", callback=self.setComponentEdgeWidth)
+        OWGUI.spin(ib, self, "minComponentEdgeWidth", 0, 100, 1, label="Min component edge width: ", callback=(lambda changedMin=1: self.setComponentEdgeWidth(changedMin)))
+        OWGUI.spin(ib, self, "maxComponentEdgeWidth", 0, 200, 1, label="Max component edge width: ", callback=(lambda changedMin=0: self.setComponentEdgeWidth(changedMin)))
         
         self.attSelectionAttribute = 0
         self.comboAttSelection = OWGUI.comboBox(ib, self, "attSelectionAttribute", label='Send attribute selection list:', orientation='horizontal', callback=self.sendAttSelectionList)
@@ -349,22 +350,29 @@ class OWNxExplorer(OWWidget):
         self.networkCanvas.contEdgePalette = dlg.getContinuousPalette("contPalette")
         self.networkCanvas.discEdgePalette = dlg.getDiscretePalette("discPalette")
         
-        self.setOptMethod()
+        self.graph_layout_method()
         self.setFontSize()
-        self.tabs.setCurrentIndex(self.tabIndex)
         self.set_graph(None)
         self.setMinimumWidth(900)
         
         #self.resize(1000, 600)
         #self.controlArea.setEnabled(False)
         
-    def currentTabChanged(self, index): 
-        self.tabIndex = index
+    def setComponentEdgeWidth(self, changedMin=True):
+        if self.networkCanvas is None:
+            return
         
-    def setComponentEdgeWidth(self):
-        self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
-        self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
-        self.updateCanvas()
+        canvas = self.networkCanvas
+        if changedMin:
+            if self.maxComponentEdgeWidth < self.minComponentEdgeWidth:
+                self.maxComponentEdgeWidth = self.minComponentEdgeWidth
+        else:
+            if self.minComponentEdgeWidth > self.maxComponentEdgeWidth:
+                self.minComponentEdgeWidth = self.maxComponentEdgeWidth
+        
+        canvas.minComponentEdgeWidth = self.minComponentEdgeWidth
+        canvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        self.networkCanvas.updateCanvas()
     
     def setAutoSendAttributes(self):
         if self.autoSendAttributes:
@@ -416,7 +424,7 @@ class OWNxExplorer(OWWidget):
         else:
             self.networkCanvas.forceVectors = None
             
-        self.updateCanvas()
+        self.networkCanvas.updateCanvas()
         
     def rotateProgress(self, curr, max):
         self.progressBarSet(int(curr * 100 / max))
@@ -540,15 +548,10 @@ class OWNxExplorer(OWWidget):
         btn.setText(btnCaption)
         self.progressBarFinished()
         
-    def exactSimulation(self):
-        self.mdsComponents(Orange.network.MdsType.exactSimulation)
-        
-    def mdsVertices(self):
-        self.mdsComponents(Orange.network.MdsType.MDS)
-        
     def setVertexDistance(self, matrix):
         self.error('')
         self.information('')
+        self.showDistancesCheckBox.setEnabled(0)
         
         if matrix is None or self.graph is None:
             self.vertexDistance = None
@@ -566,8 +569,9 @@ class OWNxExplorer(OWWidget):
         self.vertexDistance = matrix
         self.layout.vertexDistance = matrix
         if self.networkCanvas: self.networkCanvas.vertexDistance = matrix
+        self.showDistancesCheckBox.setEnabled(1)
         
-        self.updateCanvas()
+        self.networkCanvas.updateCanvas()
             
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
@@ -593,7 +597,7 @@ class OWNxExplorer(OWWidget):
         if self.networkCanvas.insideview == 1:
             self.networkCanvas.insideviewNeighbours = self.insideViewNeighbours
             self.optButton.setChecked(True)
-            self.fr(False)
+            self.graph_layout_fr(False)
         
     def insideview(self):
         print self.networkCanvas.getSelectedVertices()
@@ -602,13 +606,13 @@ class OWNxExplorer(OWWidget):
                 print "insideview: 1"
                 self.networkCanvas.insideview = 0
                 self.networkCanvas.showAllVertices()
-                self.updateCanvas()
+                self.networkCanvas.updateCanvas()
             else:
                 print "insideview: 0"
                 self.networkCanvas.insideview = 1
                 self.networkCanvas.insideviewNeighbors = self.insideViewNeighbours
                 self.optButton.setChecked(True)
-                self.fr(False)
+                self.graph_layout_fr(False)
     
         else:
             print "One node must be selected!"
@@ -978,31 +982,10 @@ class OWNxExplorer(OWWidget):
         #for item in items:
         #    print item
                         
-    def showIndexLabels(self):
-        self.networkCanvas.showIndexes = self.showIndexes
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
-        
-    def showWeightLabels(self):
-        self.networkCanvas.showWeights = self.showWeights
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
-        
-    def showDistancesClick(self):
-        if self.visualize and self.visualize.vertexDistance is None:
-            self.warning("Vertex distance signal is not set. Distances are not known.")
-        self.networkCanvas.showDistances = self.showDistances
-        
-    def showEdgeLabelsClick(self):
-        self.networkCanvas.showEdgeLabels = self.showEdgeLabels
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
-        
-    def labelsOnMarked(self):
-        self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
-    
+    def _set_canvas_attr(self, attr, value):
+        setattr(self.networkCanvas, attr, value)
+        self.networkCanvas.updateCanvas()
+                
     def setSearchStringTimer(self):
         self.hubs = 1
         self.searchStringTimer.stop()
@@ -1230,7 +1213,7 @@ class OWNxExplorer(OWWidget):
         self.graph = graph
         
         if graph.items() is not None and 'x' in graph.items().domain and 'y' in graph.items().domain:
-            positions = [(ex['x'].value, ex['y'].value) for ex in graph.items()]
+            positions = [(ex['x'].value, ex['y'].value) for ex in graph.items() if ex['x'].value != '?' and ex['y'].value != '?']
             self.layout.set_graph(graph, positions)
         else:
             self.layout.set_graph(graph)
@@ -1265,16 +1248,17 @@ class OWNxExplorer(OWWidget):
             self.edgesPerVertex = float(self.graph.number_of_edges()) / float(self.graph.number_of_nodes())
         else:
             self.edgesPerVertex = 0
-            
-        components = Orange.network.nx.algorithms.components.connected_components(graph)
+        
+        undirected_graph = graph.to_undirected() if graph.is_directed() else graph
+        components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
         if len(components) > 1:
             self.diameter = -1
         else:
             self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(graph)
-        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(graph) * 100
+        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
         
         self.setCombos()
-        
+            
         lastNameComponentAttributeFound = False
         for i in range(self.nameComponentCombo.count()):
             if self.lastNameComponentAttribute == self.nameComponentCombo.itemText(i):
@@ -1295,7 +1279,7 @@ class OWNxExplorer(OWWidget):
         t = k * nodes * nodes
         self.frSteps = int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 1500: self.frSteps = 1500;
+        if self.frSteps > 3000: self.frSteps = 3000;
         
         self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.networkCanvas.showWeights = self.showWeights
@@ -1307,7 +1291,7 @@ class OWNxExplorer(OWWidget):
             self.maxVertexSize = 5
             self.maxLinkSize = 1
             self.optMethod = 0
-            self.setOptMethod()            
+            self.graph_layout_method()            
             
         if self.vertexSize > 0:
             self.networkCanvas.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
@@ -1323,10 +1307,10 @@ class OWNxExplorer(OWWidget):
         self.clickedEdgeLabelListBox()
         
         self.optButton.setChecked(1)
-        self.optLayout()        
+        self.graph_layout()        
         self.information(0)
         #self.controlArea.setEnabled(True)
-        self.updateCanvas()
+        self.networkCanvas.updateCanvas()
         
     def setItems(self, items=None):
         self.error('')
@@ -1341,10 +1325,9 @@ class OWNxExplorer(OWWidget):
         self.graph.set_items(items)
         
         self.setVertexSize()
-        self.showIndexLabels()
-        self.showWeightLabels()
-        self.showEdgeLabelsClick()
-        
+        self.networkCanvas.showIndexes = self.showIndexes
+        self.networkCanvas.showWeights = self.showWeights
+        self.networkCanvas.showEdgeLabels = self.showEdgeLabels 
         self.setCombos()
         self.networkCanvas.updateData()
         
@@ -1409,12 +1392,7 @@ class OWNxExplorer(OWWidget):
                 self.networkCanvas.setHiddenNodes(hiddenNodes)
             except:
                 self.warning('"index" attribute does not exist in "items" table.')
-                            
-    def updateCanvas(self):
-        # if network exists
-        if self.graph is not None:
-            self.networkCanvas.updateCanvas()
-
+                    
     def showDegreeDistribution(self):
         if self.graph is None:
             return
@@ -1465,7 +1443,7 @@ class OWNxExplorer(OWWidget):
     """
     Layout Optimization
     """
-    def optLayout(self):
+    def graph_layout(self):
         if self.graph is None:   #grafa se ni
             self.optButton.setChecked(False)
             return
@@ -1477,26 +1455,27 @@ class OWNxExplorer(OWWidget):
         qApp.processEvents()
             
         if self.optMethod == 1:
-            self.random()
+            self.layout.random()
         elif self.optMethod == 2:
-            self.fr(False)
+            self.graph_layout_fr(False)
         elif self.optMethod == 3:
-            self.fr(True)
+            self.graph_layout_fr(True)
         elif self.optMethod == 4:
-            self.frRadial()
+            self.graph_layout_fr_radial()
         elif self.optMethod == 5:
-            self.circularCrossingReduction()
+            self.layout.circular_crossing_reduction()
         elif self.optMethod == 6:
-            self.circularOriginal()
+            self.layout.circular_original()
         elif self.optMethod == 7:
-            self.circularRandom()
+            self.layout.circular_random()
         elif self.optMethod == 8:
-            self.pivotMDS()
+            self.graph_layout_pivot_mds()
             
         self.optButton.setChecked(False)
+        self.networkCanvas.updateCanvas()
         qApp.processEvents()
         
-    def setOptMethod(self, method=None):
+    def graph_layout_method(self, method=None):
         self.stepsSpin.label.setText('Iterations: ')
         
         if method is not None:
@@ -1515,15 +1494,9 @@ class OWNxExplorer(OWWidget):
         else:
             self.stepsSpin.setEnabled(False)
             self.optButton.setChecked(True)
-            self.optLayout()
-
-    def random(self):
-        if self.graph is None:   #grafa se ni
-            return    
-        self.layout.random()
-        self.updateCanvas();
+            self.graph_layout()
         
-    def fr(self, weighted):
+    def graph_layout_fr(self, weighted):
         if self.graph is None:   #grafa se ni
             return
               
@@ -1553,14 +1526,14 @@ class OWNxExplorer(OWWidget):
                 initTemp = self.layout.fr(k, initTemp, coolFactor, weighted)
                 iteration += 1
                 qApp.processEvents()
-                self.updateCanvas()
+                self.networkCanvas.updateCanvas()
             
             #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
             if self.stopOptimization:
                     return
             initTemp = self.layout.fr(o, initTemp, coolFactor, weighted)
             qApp.processEvents()
-            self.updateCanvas()
+            self.networkCanvas.updateCanvas()
         else:
             while iteration < o:
                 #print "iteration ostanek, initTemp: " + str(initTemp)
@@ -1569,12 +1542,12 @@ class OWNxExplorer(OWWidget):
                 initTemp = self.layout.fr(1, initTemp, coolFactor, weighted)
                 iteration += 1
                 qApp.processEvents()
-                self.updateCanvas()
+                self.networkCanvas.updateCanvas()
                 
         self.optButton.setChecked(False)
         self.optButton.setText("Optimize layout")
         
-    def frSpecial(self):
+    def graph_layout_fr_special(self):
         if self.graph is None:   #grafa se ni
             return
         
@@ -1588,7 +1561,7 @@ class OWNxExplorer(OWWidget):
         self.networkCanvas.updateDataSpecial(oldXY)
         self.networkCanvas.replot()
                 
-    def frRadial(self):
+    def graph_layout_fr_radial(self):
         if self.graph is None:   #grafa se ni
             return
         
@@ -1613,28 +1586,10 @@ class OWNxExplorer(OWWidget):
         initTemp = self.layout.fr_radial(centerNdx, refreshRate, initTemp)
         self.networkCanvas.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
         #self.networkCanvas.circles = [100, 200, 300]
-        self.updateCanvas()
+        self.networkCanvas.updateCanvas()
         self.networkCanvas.circles = []
-        
-    def circularOriginal(self):
-        #print "Circular Original"
-        if self.graph is not None:
-            self.layout.circular_original()
-            self.updateCanvas()
-           
-    def circularRandom(self):
-        #print "Circular Random"
-        if self.graph is not None:
-            self.layout.circular_random()
-            self.updateCanvas()
-
-    def circularCrossingReduction(self):
-        #print "Circular Crossing Reduction"
-        if self.graph is not None:
-            self.layout.circular_crossing_reduction()
-            self.updateCanvas()
             
-    def pivotMDS(self):
+    def graph_layout_pivot_mds(self):
         if self.vertexDistance is None:
             self.information('Set distance matrix to input signal')
             return
@@ -1653,7 +1608,7 @@ class OWNxExplorer(OWWidget):
         x,y = mds.optimize()
         self.graph.coors[0] = x
         self.graph.coors[1] = y
-        self.updateCanvas()
+        self.networkCanvas.updateCanvas()
     
       
     """
@@ -1711,12 +1666,7 @@ class OWNxExplorer(OWWidget):
     
     def selectAllConnectedNodes(self):
         self.networkCanvas.selectConnectedNodes(1000000)
-        
-    def setShowMissingValues(self):
-        self.networkCanvas.showMissingValues = self.showMissingValues
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
-        
+                
     def setMaxLinkSize(self):
         if self.graph is None:
             return
@@ -1749,12 +1699,7 @@ class OWNxExplorer(OWWidget):
         
         self.networkCanvas.fontSize = self.fontSize
         self.networkCanvas.drawPlotItems()
-        
-    def setRenderAntialiased(self):
-        self.networkCanvas.renderAntialiased = self.renderAntialiased
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
-        
+                
     def sendReport(self):
         self.reportSettings("Graph data",
                             [("Number of vertices", self.graph.number_of_nodes()),

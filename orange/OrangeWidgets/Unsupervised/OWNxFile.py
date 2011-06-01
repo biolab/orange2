@@ -218,10 +218,14 @@ class OWNxFile(OWWidget):
         items_candidate = os.path.splitext(fn)[0] + ".tab"
         if os.path.exists(items_candidate):
             self.readDataFile(items_candidate)
+            if items_candidate in self.recentDataFiles:
+                self.recentDataFiles.remove(items_candidate)
             self.recentDataFiles.insert(0, items_candidate)
         elif os.path.exists(os.path.splitext(fn)[0] + "_items.tab"):
             items_candidate = os.path.splitext(fn)[0] + "_items.tab"
             self.readDataFile(items_candidate)
+            if items_candidate in self.recentDataFiles:
+                self.recentDataFiles.remove(items_candidate)
             self.recentDataFiles.insert(0, items_candidate)
         else:
             if '(none)' in self.recentDataFiles: 
@@ -249,7 +253,8 @@ class OWNxFile(OWWidget):
     def addDataFile(self, fn):
         if fn == "(none)" or self.graph == None:
             self.infoc.setText("No vertices data file specified")
-            self.send("Network", None)
+            self.graph.set_items(None)
+            self.send("Network", self.graph)
             self.send("Items", None)
             return
          
@@ -271,6 +276,17 @@ class OWNxFile(OWWidget):
             self.setFileLists()
             return
         
+        items = self.graph.items()
+        if items is not None and \
+                'x' in items.domain and \
+                'y' in items.domain and \
+                len(self.graph.items()) == len(table) and \
+                'x' not in table.domain and 'y' not in table.domain:
+            xvar = items.domain['x']
+            yvar = items.domain['y']
+            tmp = Orange.data.Table(Orange.data.Domain([xvar, yvar], False), items)
+            table = Orange.data.Table([table, tmp])
+            
         self.graph.set_items(table)
         self.infoc.setText("Vertices data file added")
         
