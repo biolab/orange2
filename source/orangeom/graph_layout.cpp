@@ -701,7 +701,7 @@ PyObject *GraphLayout_set_graph(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	} else {
 		graph_layout->set_graph(graph);
 
-		if (positions != Py_None) {
+		if (positions != Py_None && PyList_Size(positions) == graph_layout->nVertices) {
 			int i;
 			for (i = 0; i < graph_layout->nVertices; i++) {
 				double x,y;
