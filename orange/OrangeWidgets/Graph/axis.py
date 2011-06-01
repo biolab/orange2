@@ -27,7 +27,16 @@ LabelLeft = 2
 LabelRight = 3
 
 class Axis(QGraphicsItemGroup):
-    def __init__(self, size, title, line = None, style=None, parent=None):
+    def __init__(self, parent=None):
+        QGraphicsItemGroup.__init__(self, parent)
+        self.title = None
+        self.line = None
+        self.size = None
+        self.style = shared_palette().axis_style
+        self.line_item = QGraphicsLineItem(self)
+        self.title_item = QGraphicsTextItem(self)
+    
+    def __init__(self, size, title, line, style=None, parent=None):
         QGraphicsItemGroup.__init__(self, parent)
         self.size = size
         self.line = line
@@ -74,8 +83,8 @@ class Axis(QGraphicsItemGroup):
         self.update()
         
     def set_labels(self, labels):
-        #TODO
-        pass
+        self.labels = labels
+        self.update()
         
     def set_scale(self, min, max, step_size):
         self.scale = (min, max, step_size)
@@ -83,6 +92,10 @@ class Axis(QGraphicsItemGroup):
     
     def set_tick_length(self, minor, medium, major):
         self.tick_length = (minor, medium, major)
+        self.update()
+        
+    def set_size(self, size):
+        self.size = size
         self.update()
         
     
