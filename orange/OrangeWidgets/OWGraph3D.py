@@ -33,6 +33,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
           gluDeleteQuadric(gluQuadric)
 
         # TODO: other shapes
+        # TODO: move to center shortcut (maybe a GUI element?)
 
         self.yaw = self.pitch = 0
         self.rotation_factor = 100.
@@ -136,11 +137,11 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glColor4f(0,0,0,1)
 
         ac = (self.x_axis[0] + self.x_axis[1]) / 2.
-        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.XaxisTitle)
+        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.XaxisTitle, font=self.axisTitleFont)
         ac = (self.y_axis[0] + self.y_axis[1]) / 2.
-        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.YaxisTitle)
+        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.YaxisTitle, font=self.axisTitleFont)
         ac = (self.z_axis[0] + self.z_axis[1]) / 2.
-        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.ZaxisTitle)
+        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.ZaxisTitle, font=self.axisTitleFont)
 
         outwards = normalize(self.x_axis[0] - bb_center)
         pos = self.x_axis[0] + outwards * 0.2
@@ -278,8 +279,10 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         dx = pos.x() - self.mouse_pos.x()
         dy = pos.y() - self.mouse_pos.y()
         if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-          off = numpy.cross(self.center - self.camera, [0,1,0]) * (dx / self.move_factor)
-          self.center -= off
+          off_x = numpy.cross(self.camera, [0,1,0]) * (dx / self.move_factor)
+          #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
+          # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
+          self.center += off_x
         else:
           self.yaw += dx /  self.rotation_factor
           self.pitch += dy / self.rotation_factor
