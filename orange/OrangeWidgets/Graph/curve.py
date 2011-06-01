@@ -36,9 +36,14 @@ class Curve(QGraphicsItemGroup):
         unisetattr(self, name, value, QGraphicsItemGroup)
         
     def update(self):
-        del self.point_items[:]
-        if self.path_item:
-            del self.path_item
+        s = self.scene()
+        if s:
+            for i in self.point_items:
+                s.removeItem(i)
+            del self.point_items[:]
+        if self.path_item and s:
+            s. removeItem(self.path_item)
+            self.path_item = None
         if not self.data:
             return
         if self.continuous:
@@ -54,7 +59,6 @@ class Curve(QGraphicsItemGroup):
         else:
             s = self.style.point_size
             shape = self.style.point_shape
-            self.point_items = []
             for p in self.data:
                 (x, y) = self.graph.map_to_graph(p)
                 if shape is CircleShape:

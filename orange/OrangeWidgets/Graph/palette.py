@@ -67,10 +67,17 @@ class LineStyle:
 class Palette:
     def __init__(self):
         self.grid_style = LineStyle(Qt.gray,  1,  Qt.SolidLine)
-        self.line_styles = [ LineStyle(Qt.blue, 1, Qt.SolidLine) ]
+        self.line_styles = [ LineStyle(QColor(255, 127, 0), 1, Qt.SolidLine), ## Orange, of course
+                             LineStyle(Qt.green, 1, Qt.DashLine), 
+                            LineStyle(Qt.red, 1, Qt.DotLine), 
+                            LineStyle(Qt.blue, 1,  Qt.SolidLine)]
         self.point_styles = []
         self.axis_style = LineStyle(Qt.black, 1, Qt.SolidLine)
         self.curve_symbols = [ EllipseShape, CrossShape, SquareShape ]
+        
+    def line_style(self, id):
+        id = id % len(self.line_styles)
+        return self.line_styles[id]
 
 def shared_palette():
     global _shared_palette

@@ -252,7 +252,7 @@ class OWGraph(QGraphicsView):
         data = []
         for i in range(len(xData)):
             data.append( (xData[i], yData[i]) )
-        c = curve.Curve(data, self.palette.line_styles[0], self)
+        c = curve.Curve(data, self.palette.line_style(len(self.curves)), self)
         c.setPos(self.graph_area.bottomLeft())
         c.continuous = (style is not Qt.NoPen)
         c.update()
@@ -343,8 +343,13 @@ class OWGraph(QGraphicsView):
             a.show()
             
         for c in self.curves:
+            c.setPos(self.graph_area.bottomLeft())
             c.update()
         self.setSceneRect(self.canvas.itemsBoundingRect())
         
     def legend(self):
         return self._legend
+        
+    ## Event handling
+    def resizeEvent(self, event):
+        self.replot()
