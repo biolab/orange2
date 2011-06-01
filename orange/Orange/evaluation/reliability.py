@@ -200,16 +200,16 @@ extract the estimates and id's, sort them and output them.
 References
 ==========
 
-Bosnic, Z. 2007. `Estimation of individual prediction reliability using local
+Bosnic Z, Kononenko I (2007) `Estimation of individual prediction reliability using local
 sensitivity analysis. <http://www.springerlink.com/content/e27p2584387532g8/>`_
 *Applied Intelligence* 29(3), 187-203.
 
-Bosnic, Z. 2008. `Comparison of approaches for estimating reliability of 
+Bosnic Z, Kononenko I (2008) `Comparison of approaches for estimating reliability of 
 individual regression predictions.
 <http://www.sciencedirect.com/science/article/pii/S0169023X08001080>`_
 *Data & Knowledge Engineering* 67(3), 504-516.
 
-Bosnic, Z. 2010. `Automatic selection of reliability estimates for individual 
+Bosnic Z, Kononenko I (2010) `Automatic selection of reliability estimates for individual 
 regression predictions.
 <http://journals.cambridge.org/abstract_S0269888909990154>`_
 *The Knowledge Engineering Review* 25(1), 27-47.
