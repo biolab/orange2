@@ -171,66 +171,22 @@ class OWGraph(QGraphicsView):
         self.repaint()
 
     def setShowXaxisTitle(self, b = -1):
-        if b == self.showXaxisTitle: return
-        if b != -1:
-            self.showXaxisTitle = b
-        if self.showXaxisTitle and self.XaxisTitle:
-            self.setAxisTitle(xBottom, self.XaxisTitle)
-        else:
-            self.setAxisTitle(xBottom, QwtText())
-        self.repaint()
-
+        self.setShowAxisTitle(xBottom, b)
+        
     def setXaxisTitle(self, title):
-        if title == self.YLaxisTitle: return
-        self.XaxisTitle = title
-        if self.showXaxisTitle and self.XaxisTitle:
-            self.setAxisTitle(xBottom, self.XaxisTitle)
-        else:
-            self.setAxisTitle(xBottom, QwtText())
-        #self.updateLayout()
-        self.repaint()
+        self.setAxisTitle(xBottom, b)
 
     def setShowYLaxisTitle(self, b = -1):
-        if b == self.showYLaxisTitle: return
-        if b != -1:
-            self.showYLaxisTitle = b
-        if self.showYLaxisTitle and self.YLaxisTitle:
-            self.setAxisTitle(yLeft, self.YLaxisTitle)
-        else:
-            self.setAxisTitle(yLeft, QwtText())
-        #self.updateLayout()
-        self.repaint()
+        self.setShowAxisTitle(yLeft, b)
 
     def setYLaxisTitle(self, title):
-        if title == self.YLaxisTitle: return
-        self.YLaxisTitle = title
-        if self.showYLaxisTitle and self.YLaxisTitle:
-            self.setAxisTitle(yLeft, self.YLaxisTitle)
-        else:
-            self.setAxisTitle(yLeft, QwtText())
-        #self.updateLayout()
-        self.repaint()
+        self.setAxisTitle(yLeft, title)
 
     def setShowYRaxisTitle(self, b = -1):
-        if b == self.showYRaxisTitle: return
-        if b != -1:
-            self.showYRaxisTitle = b
-        if self.showYRaxisTitle and self.YRaxisTitle:
-            self.setAxisTitle(yRight, self.YRaxisTitle)
-        else:
-            self.setAxisTitle(yRight, QwtText())
-        #self.updateLayout()
-        self.repaint()
+        self.setShowAxisTitle(yRight, b)
 
     def setYRaxisTitle(self, title):
-        if title == self.YRaxisTitle: return
-        self.YRaxisTitle = title
-        if self.showYRaxisTitle and self.YRaxisTitle:
-            self.setAxisTitle(yRight, self.YRaxisTitle)
-        else:
-            self.setAxisTitle(yRight, QwtText())
-        #self.updateLayout()
-        self.repaint()
+        self.setAxisTitle(yRight, title)
 
     def enableGridXB(self, b):
       #  self.gridCurve.enableX(b)
@@ -269,17 +225,22 @@ class OWGraph(QGraphicsView):
         pass
         
     def setAxisTitle(self, axis_id, title):
-        self.axes[axis_id].set_title(title)
-        pass
+        if axis_id in self.axes:
+            self.axes[axis_id].set_title(title)
+            
+    def setShowAxisTitle(self, axis_id, b):
+        if axis_id in self.axes:
+            self.axes[axis_id].set_show_title(b)
         
     def setTickLength(self, axis_id, minor, medium, major):
-        self.axes[axis_id].set_tick_legth(minor, medium, major)
-        pass
+        if axis_id in self.axes:
+            self.axes[axis_id].set_tick_legth(minor, medium, major)
 
     def setYLlabels(self, labels):
-        pass
+        self.setAxisLabels(yLeft, labels)
+
     def setYRlabels(self, labels):
-        pass
+        self.setAxisLabels(yRight, labels)
         
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = palette.EllipseShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
@@ -297,7 +258,8 @@ class OWGraph(QGraphicsView):
         self.curves.append(c)
         return c
         
-    def addAxis(self, axis_id, line, text):
+    def addAxis(self, axis_id):
+        self.axes[id] = Axis()
         pass        
     
     def removeAllSelections(self):
@@ -325,17 +287,17 @@ class OWGraph(QGraphicsView):
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
         margin = 40
-        if xBottom in self.shown_axes:
+        if xBottom in self.axes and self.axes[xBottom].isVisible():
             bottom_rect = QRectF(graph_rect)
             bottom_rect.setTop( bottom_rect.bottom() - margin)
             axis_rects[xBottom] = bottom_rect
             graph_rect.setBottom( graph_rect.bottom() - margin)
-        if xTop in self.shown_axes:
+        if xTop in self.axes and self.axes[xTop].isVisible():
             top_rect = QRectF(graph_rect)
             top_rect.setBottom(top_rect.top() + margin)
             axis_rects[xTop] = top_rect
             graph_rect.setTop(graph_rect.top() + margin)
-        if yLeft in self.shown_axes:
+        if yLeft in self.shown_axes and self.axes[yLeft].isVisible():
             left_rect = QRectF(graph_rect)
             left = graph_rect.left() + margin
             left_rect.setRight(left)
@@ -345,7 +307,7 @@ class OWGraph(QGraphicsView):
                 axis_rects[xBottom].setLeft(left)
             if xTop in axis_rects:
                 axis_rects[xTop].setLeft(left)
-        if yRight in self.shown_axes:
+        if yRight in self.shown_axes and self.axes[yRight].isVisible():
             right_rect = QRectF(graph_rect)
             right = graph_rect.right() - margin
             right_rect.setLeft(right)
@@ -357,11 +319,9 @@ class OWGraph(QGraphicsView):
                 axis_rects[xTop].setRight(right)
                 
         self.graph_area = graph_rect
-            
+        
         for id, item in self.axes.iteritems():
             self.canvas.removeItem(item)
-            
-        self.axes = dict()
             
         for id, rect in axis_rects.iteritems():
             if id is xBottom:
@@ -373,9 +333,12 @@ class OWGraph(QGraphicsView):
             elif id is yRight:
                 line = QLineF(rect.topLeft(), rect.bottomLeft())
             line.translate(-rect.topLeft())
-            self.axes[id] = axis.Axis(rect.size(), 'Test', line )
-            self.axes[id].setPos(rect.topLeft())
-            self.canvas.addItem(self.axes[id])
+            a = self.axes[id]
+            a.setSize(rect.size())
+            a.setLine(line)
+            a.setPos(rect.topLeft())
+            self.canvas.addItem(a)
+            a.show()
             
         for c in self.curves:
             c.update()

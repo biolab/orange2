@@ -41,11 +41,16 @@ class Axis(QGraphicsItemGroup):
         self.update()
 
     def update(self):
+        if not self.line or not self.title:
+            return;
+        if not self.style:
+            self.style = shared_palette().axis_style
         self.line_item.setLine(self.line)
         self.line_item.setPen(self.style.pen())
         self.title_item.setHtml(self.title)
         title_pos = (self.line.p1() + self.line.p2())/2
         ## TODO: Move it according to self.label_pos
+        self.title_item.setVisible(self.show_title)
         self.title_item.setPos(title_pos)
         self.title_item.setRotation(self.line.angle())
         
@@ -62,6 +67,10 @@ class Axis(QGraphicsItemGroup):
     
     def set_title(self, title):
         self.title = title
+        self.update()
+        
+    def set_show_title(self, b):
+        self.show_title = b
         self.update()
         
     def set_labels(self, labels):
