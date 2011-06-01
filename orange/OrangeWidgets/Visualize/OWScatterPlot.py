@@ -15,8 +15,6 @@ from OWkNNOptimization import *
 import orngVizRank
 import OWGUI, OWToolbars, OWColorPalette
 from orngScaleData import *
-from OWGraph import OWGraph
-
 
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
