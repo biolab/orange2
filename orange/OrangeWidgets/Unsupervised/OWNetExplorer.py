@@ -3,7 +3,7 @@
 <description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>3200</priority>
+<priority>7420</priority>
 """
 import orange
 import OWGUI
