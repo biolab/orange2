@@ -61,12 +61,12 @@ class OWGraph(QGraphicsView):
         QGraphicsView.__init__(self, parent)
         self.parent_name = name
         self.show_legend = show_legend
-        self._legend = None
         self.title_item = None
         
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
         
+        self._legend = legend.Legend(self.canvas)
         self.axes = dict()
         self.axis_margin = 150
         self.title_margin = 100
@@ -106,15 +106,6 @@ class OWGraph(QGraphicsView):
         
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
-        
-    def update(self):
-        if self.show_legend and not self._legend:
-            self._legend = legend.Legend(self.canvas)
-            self._legend.show()
-        if not self.show_legend and self._legend:
-            self._legend.hide()
-            self._legend = None
-        self.replot()
             
     def graph_area_rect(self):
         """
@@ -252,14 +243,17 @@ class OWGraph(QGraphicsView):
                  symbol = palette.EllipseShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         data = []
+        qDebug('Adding curve ' + name + ' with ' + str(len(xData)) + ' points' + (' to legend' if enableLegend else ''))
         for i in range(len(xData)):
             data.append( (xData[i], yData[i]) )
-        c = curve.Curve(data, self.palette.line_style(len(self.curves)), self)
+        c = curve.Curve(name, data, self.palette.line_style(len(self.curves)), self)
         c.setPos(self.graph_area.bottomLeft())
         c.continuous = (style is not Qt.NoPen)
         c.update()
         self.canvas.addItem(c)
         self.curves.append(c)
+        if enableLegend:
+            self.legend().add_curve(c)
         return c
         
     def addAxis(self, axis_id, title_above = False):
@@ -288,6 +282,12 @@ class OWGraph(QGraphicsView):
             self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
             self.canvas.addItem(self.title_item)
             graph_rect.setTop(graph_rect.top() + self.title_margin)
+        
+        if self.show_legend:
+            self._legend.setPos(graph_rect.topRight() - QPointF(100, 0))
+            self._legend.show()
+        else:
+            self._legend.hide()
         
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
