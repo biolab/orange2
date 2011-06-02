@@ -23,7 +23,7 @@ def _wrap(g):
 
 def read(path, encoding='UTF-8'):
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
-    supported = ['.net', '.gml']
+    supported = ['.net', '.gml', '.gpickle']
     
     if not os.path.isfile(path):
         return None
@@ -37,10 +37,13 @@ def read(path, encoding='UTF-8'):
     
     if ext == '.gml':
         return read_gml(path, encoding)
+    
+    if ext == '.gpickle':
+        return read_gpickle(path)
 
 def write(G, path, encoding='UTF-8'):
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
-    supported = ['.net', '.gml']
+    supported = ['.net', '.gml', '.gpickle']
     
     root, ext = os.path.splitext(path)
     if not ext in supported:
@@ -52,11 +55,20 @@ def write(G, path, encoding='UTF-8'):
     if ext == '.gml':
         write_gml(G, path)
         
+    if ext == '.gpickle':
+        write_gpickle(G, path)
+        
     if G.items() is not None:
         G.items().save(root + '_items.tab')
         
     if G.links() is not None:
         G.links().save(root + '_links.tab')
+
+def read_gpickle(path):
+    return _wrap(rw.read_gpickle(path))
+
+def write_gpickle(G, path):
+    rw.write_gpickle(G, path)
 
 def read_pajek(path, encoding='UTF-8'):
     """ 
@@ -66,12 +78,14 @@ def read_pajek(path, encoding='UTF-8'):
     if len(arcs) > 0:
         # directed graph
         G = Orange.network.DiGraph()
+        G.add_nodes_from(range(len(items)))
         G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
         G.add_edges_from(((v,u,{'weight':d}) for u,v,d in edges))
         G.add_edges_from(((u,v,{'weight':d}) for u,v,d in arcs))
         G.set_items(items)
     else:
         G = Orange.network.Graph()
+        G.add_nodes_from(range(len(items)))
         G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
         G.set_items(items)
         
@@ -79,6 +93,16 @@ def read_pajek(path, encoding='UTF-8'):
     #fh=_get_fh(path, 'rb')
     #lines = (line.decode(encoding) for line in fh)
     #return parse_pajek(lines)
+
+def write_pajek(G, path, encoding='UTF-8'):
+    """
+    A copy&paste of networkx's function with some bugs fixed:
+     - call the new generate_pajek.
+    """
+    fh=_get_fh(path, 'wb')
+    for line in generate_pajek(G):
+        line+='\n'
+        fh.write(line.encode(encoding))
 
 def parse_pajek(lines):
     """
@@ -136,44 +160,11 @@ def generate_pajek(G):
             s += ' %s %s'%(k,v)
         yield s
         
-def write_pajek(G, path, encoding='UTF-8'):
-    """
-    A copy&paste of networkx's function with some bugs fixed:
-     - call the new generate_pajek.
-    """
-    fh=_get_fh(path, 'wb')
-    for line in generate_pajek(G):
-        line+='\n'
-        fh.write(line.encode(encoding))
-
-def parse_pajek_project(lines):
-    network_lines = []
-    result = []
-    for i, line in enumerate(itertools.chain(lines, ["*"])):
-        line_low = line.strip().lower()
-        if not line_low:
-            continue
-        if line_low[0] == "*" and not any(line_low.startswith(x)
-                                          for x in ["*vertices", "*arcs", "*edges"]):
-            if network_lines != []:
-                result.append(parse_pajek(network_lines))
-                network_lines = []
-        if line_low.startswith("*network") or network_lines != []:
-            network_lines.append(line)
-    return result
-
-def read_pajek_project(path, encoding='UTF-8'):
-    fh = _get_fh(path, 'rb')
-    lines = (line.decode(encoding) for line in fh)
-    return parse_pajek_project(lines)
-
 def read_gml(path, encoding='latin-1', relabel=False):
-    G = _wrap(rw.read_gml(path, encoding, relabel))
-    return G
+    return _wrap(rw.read_gml(path, encoding, relabel))
 
 def write_gml(G, path):
     rw.write_gml(G, path)
-
 
 #read_pajek.__doc__ = rw.read_pajek.__doc__
 #parse_pajek.__doc__ = rw.parse_pajek.__doc__
