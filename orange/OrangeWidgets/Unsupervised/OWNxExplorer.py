@@ -276,7 +276,7 @@ class OWNxExplorer(OWWidget):
         ib = OWGUI.widgetBox(self.infoTab, orientation="horizontal")
         
         OWGUI.button(ib, self, "Degree distribution", callback=self.showDegreeDistribution, debuggingEnabled=False)
-        OWGUI.button(ib, self, "Save network", callback=self.saveNetwork, debuggingEnabled=False)
+        OWGUI.button(ib, self, "Save network", callback=self.save_network, debuggingEnabled=False)
         OWGUI.button(ib, self, "Save image", callback=self.networkCanvas.saveToFile, debuggingEnabled=False)
         
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
@@ -1075,11 +1075,11 @@ class OWNxExplorer(OWWidget):
         stop = time.time()    
         print "replot in " + str(stop - start)
         
-    def saveNetwork(self):
+    def save_network(self):
         if self.networkCanvas is None or self.graph is None:
             return
         
-        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK network (*.net)\nGML network (*.gml)')
+        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'NetworkX graph as Python pickle (*.gpickle)\nPajek network (*.net)\nGML network (*.gml)')
         if filename:
             fn = ""
             head, tail = os.path.splitext(str(filename))

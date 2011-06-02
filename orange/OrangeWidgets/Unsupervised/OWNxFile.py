@@ -187,7 +187,7 @@ class OWNxFile(OWWidget):
             return 
         
         fileExt = lower(os.path.splitext(fn)[1])
-        if not fileExt in (".net", ".gml"):
+        if not fileExt in (".net", ".gml", ".gpickle"):
             self.readingFailed(infob='Network file type not supported')
             return
         
@@ -379,7 +379,7 @@ class OWNxFile(OWWidget):
             else:
                 startfile = self.recentFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "NetworkX graph as Python pickle (*.gpickle)\nPajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
         
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
