@@ -48,7 +48,7 @@ class OWNxExplorer(OWWidget):
                        ("Items", Orange.data.Table, self.setItems),
                        ("Items to Mark", Orange.data.Table, self.markItems), 
                        ("Items Subset", Orange.data.Table, self.setExampleSubset), 
-                       ("Items Distance Matrix", Orange.core.SymMatrix, self.setItemsDistanceMatrix)]
+                       ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
         
         self.outputs = [("Selected Network", Orange.network.Graph),
                         ("Selected Items Distance Matrix", Orange.core.SymMatrix),
@@ -548,7 +548,7 @@ class OWNxExplorer(OWWidget):
         btn.setText(btnCaption)
         self.progressBarFinished()
         
-    def setItemsDistanceMatrix(self, matrix):
+    def set_items_distance_matrix(self, matrix):
         self.error('')
         self.information('')
         self.showDistancesCheckBox.setEnabled(0)
@@ -1088,8 +1088,13 @@ class OWNxExplorer(OWWidget):
             else:
                 fn = str(filename)
             
-            self.graph.save(fn)
-                    
+            for i in range(self.graph.number_of_nodes()):
+                node = self.graph.node[i]
+                node['x'] = self.layout.coors[0][i]
+                node['y'] = self.layout.coors[1][i]
+
+            Orange.network.readwrite.write(self.graph, fn)
+            
     def sendData(self):
         graph = self.networkCanvas.getSelectedGraph()
         vertices = self.networkCanvas.getSelectedVertices()
@@ -1199,7 +1204,9 @@ class OWNxExplorer(OWWidget):
         self.editCombo.addItem("Select attribute")
         self.comboAttSelection.addItem("Select attribute")
       
-    def set_graph(self, graph):      
+    def set_graph(self, graph):
+        self.set_items_distance_matrix(None)
+             
         if graph is None:
             self.graph = None
             self.layout.set_graph(None)

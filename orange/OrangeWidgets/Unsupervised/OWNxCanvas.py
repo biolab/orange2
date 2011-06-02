@@ -1118,20 +1118,20 @@ class OWNxCanvas(OWGraph):
             
             if self.graph.is_directed():
                 self.edges = [NetworkEdge(self.vertices[i], self.vertices[j],
-                    graph[i][j]['weight'], 0, 1, links_index, label) for \
+                    graph[i][j].get('weight', 1), 0, 1, links_index, label) for \
                     ((i, j), links_index, label) in zip(self.graph.edges(), \
                                                         links_indices, labels)]
             else:
                 self.edges = [NetworkEdge(self.vertices[i], self.vertices[j],
-                    graph[i][j]['weight'], links_index, label) for \
+                    graph[i][j].get('weight', 1), links_index, label) for \
                     ((i, j), links_index, label) in zip(self.graph.edges(), \
                                                         links_indices, labels)]
         elif self.graph.is_directed():
             self.edges = [NetworkEdge(self.vertices[i], self.vertices[j],
-                                      graph[i][j]['weight'], 0, 1) for (i, j) in self.graph.edges()]
+                                      graph[i][j].get('weight', 1), 0, 1) for (i, j) in self.graph.edges()]
         else:
             self.edges = [NetworkEdge(self.vertices[i], self.vertices[j], 
-                                      graph[i][j]['weight']) for (i, j) in self.graph.edges()]
+                                      graph[i][j].get('weight', 1)) for (i, j) in self.graph.edges()]
         
         self.minEdgeWeight = min(edge.weight for edge in self.edges) if len(self.edges) > 0 else 0
         self.maxEdgeWeight = max(edge.weight for edge in self.edges) if len(self.edges) > 0 else 0

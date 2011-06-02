@@ -123,10 +123,16 @@ class OWNxFile(OWWidget):
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.selectNetFile(0)
 
-        if len(self.recentDataFiles) > 1 and os.path.exists(self.recentDataFiles[1]):
+        # if items not loaded with the network, load previous items
+        if len(self.recentDataFiles) > 1 and \
+            self.recentDataFiles[0] == 'none' and \
+                os.path.exists(self.recentDataFiles[1]):
             self.selectDataFile(1)
             
-        if len(self.recentEdgesFiles) > 1 and os.path.exists(self.recentEdgesFiles[1]):
+        # if links not loaded with the network, load previous links    
+        if len(self.recentEdgesFiles) > 1 and \
+            self.recentEdgesFiles[0] == 'none' and \
+                os.path.exists(self.recentEdgesFiles[1]):
             self.selectEdgesFile(1)
         
     # user selected a graph file from the combo box
@@ -187,7 +193,8 @@ class OWNxFile(OWWidget):
         
         #try:
         net = Orange.network.readwrite.read(fn)
-        self.infoc.setText("Vertices data generated and added automatically")
+        if fileExt == ".net":
+            self.infoc.setText("Vertices data generated and added automatically")
         #except:
         #    self.readingFailed(infob='Could not read file')
         #    return
