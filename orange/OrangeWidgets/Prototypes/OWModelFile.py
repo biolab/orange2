@@ -91,7 +91,10 @@ class OWModelFile(OWDistanceFile):
             self.recentFiles.insert(0, fn)
             self.fileIndex = 0
         else:
-            fn = self.recentFiles[0]
+            if len(self.recentFiles) > 0:
+                fn = self.recentFiles[0]
+            else:
+                return
 
         self.filecombo.clear()
         for file in self.recentFiles:
