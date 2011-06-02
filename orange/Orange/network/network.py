@@ -1,3 +1,4 @@
+import copy
 import math
 import numpy
 import networkx as nx
@@ -57,6 +58,37 @@ class BaseGraph():
                 print "Warning: links length must match the number of edges."
         
         self._links = links
+        
+    def to_orange_network(self):
+        """Convert the network to Orange NetworkX standard. All node IDs are transformed to range [0, no_of_nodes - 1].""" 
+        if isinstance(self, Orange.network.Graph):
+            G = Orange.network.Graph()
+        elif isinstance(self, Orange.network.DiGraph):
+            G = Orange.network.DiGraph()
+        elif isinstance(self, Orange.network.MultiGraph):
+            G = Orange.network.MultiGraph()
+        elif isinstance(self, Orange.network.MultiDiGraph):
+            G = Orange.network.DiGraph()
+        else:
+            raise TypeError('WTF!?')
+        
+        node_list = sorted(self.nodes())
+        node_to_index = dict(zip(node_list, range(self.number_of_nodes())))
+        index_to_node = dict(zip(range(self.number_of_nodes()), node_list))
+        
+        G.add_nodes_from(zip(range(self.number_of_nodes()), [copy.deepcopy(self.node[nid]) for nid in node_list]))
+        G.add_edges_from(((node_to_index[u], node_to_index[v], copy.deepcopy(self.edge[u][v])) for u,v in self.edges()))
+        
+        for id in G.node.keys():
+            G.node[id]['old_id'] = index_to_node[id]
+        
+        if self.items():
+            G.set_items(self.items())
+
+        if self.links():
+            G.set_links(self.links())
+        
+        return G
         
     ### TODO: OVERRIDE METHODS THAT CHANGE GRAPH STRUCTURE, add warning prints
     
