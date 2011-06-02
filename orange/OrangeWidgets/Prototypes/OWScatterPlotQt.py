@@ -1,27 +1,25 @@
 """
-<name>Scatterplot</name>
+<name>Scatterplot Qt</name>
 <description>Scatterplot visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ScatterPlot.png</icon>
 <priority>1000</priority>
 """
-# ScatterPlot.py
+# ScatterPlotQt.py
 #
 # Show data using scatterplot
 #
 from OWWidget import *
-from OWScatterPlotGraph import *
+from OWScatterPlotGraphQt import *
 from OWkNNOptimization import *
 import orngVizRank
 import OWGUI, OWToolbars, OWColorPalette
 from orngScaleData import *
-from OWGraph import OWGraph
-
 
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
-class OWScatterPlot(OWWidget):
+class OWScatterPlotQt(OWWidget):
     settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale", "graph.useAntialiasing",
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
                     "graph.alphaValue", "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
@@ -38,8 +36,8 @@ class OWScatterPlot(OWWidget):
         self.inputs =  [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute selection", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
 
-        self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
-        self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
+        self.graph = OWScatterPlotGraphQt(self, self.mainArea, "ScatterPlotQt")
+        self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlotQt")
         self.optimizationDlg = self.vizrank
 
         # local variables
@@ -159,7 +157,8 @@ class OWScatterPlot(OWWidget):
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-        self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
+        # self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
+        self.graph.palette.grid_style.color = dlg.getColor("Grid")
 
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
@@ -440,7 +439,7 @@ class OWScatterPlot(OWWidget):
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWScatterPlot()
+    ow=OWScatterPlotQt()
     ow.show()
     data = orange.ExampleTable(r"../../doc/datasets/brown-selected.tab")
     ow.setData(data)
