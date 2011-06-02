@@ -11,17 +11,16 @@ import scipy.stats
 import Orange
 import orange
 import orngVizRank
-import orngNetwork
 import orngStat
 
 import OWToolbars
 import OWColorPalette
 
 from orngScaleLinProjData import *
-from OWNetExplorer import *
-from OWNetworkCanvas import *
+from OWNxExplorer import *
+from OWNxCanvas import *
 from OWkNNOptimization import OWVizRank
-from OWNetworkHist import *
+from OWNxHist import *
 from OWDistributions import OWDistributionGraph
 
 dir = os.path.dirname(__file__) + "/../"
@@ -154,10 +153,10 @@ class ModelCurve(NetworkCurve):
                     size = vertex.image.size().width()
                     painter.drawImage(QRect(pX - size/2, pY - size/2, size, size), vertex.image)
                     
-class OWModelMapCanvas(OWNetworkCanvas):
+class OWModelMapCanvas(OWNxCanvas):
     
     def __init__(self, master, parent=None, name="None"):
-        OWNetworkCanvas.__init__(self, master, parent, name)
+        OWNxCanvas.__init__(self, master, parent, name)
         self.networkCurve = ModelCurve(self)
         self.selectionNeighbours = 1
         self.tooltipNeighbours = 1
@@ -166,8 +165,8 @@ class OWModelMapCanvas(OWNetworkCanvas):
         self.radius = 100
         
     def mouseMoveEvent(self, event):
-        if not self.visualizer:
-            return
+        if not self.graph:
+          return
         
         if self.plotAccuracy or self.vizAttributes:
             px = self.invTransform(QwtPlot.xBottom, event.x())
@@ -199,7 +198,7 @@ class OWModelMapCanvas(OWNetworkCanvas):
                     self.vizAttributes(vd)
                 self.drawPlotItems()
         else:
-            OWNetworkCanvas.mouseMoveEvent(self, event)
+            OWNxCanvas.mouseMoveEvent(self, event)
         
     def drawToolTips(self):
         # add ToolTips
@@ -211,17 +210,17 @@ class OWModelMapCanvas(OWNetworkCanvas):
             if not vertex.show:
                 continue
             
-            clusterCA = self.visualizer.graph.items[vertex.index]["cluster CA"].value
+            clusterCA = self.graph.items()[vertex.index]["cluster CA"].value
             if type(clusterCA) == type(1.): clusterCA = "%.4g" % clusterCA 
             
-            x1 = self.visualizer.network.coors[0][vertex.index]
-            y1 = self.visualizer.network.coors[1][vertex.index]
-            lbl  = "%s\n" % self.visualizer.graph.items[vertex.index]["label"].value
-            lbl += "CA: %.4g\n" % self.visualizer.graph.items[vertex.index]["CA"].value
-            #lbl += "AUC: %.4g\n" % self.visualizer.graph.items[vertex.index]["AUC"].value
+            x1 = self.layout.coors[0][vertex.index]
+            y1 = self.layout.coors[1][vertex.index]
+            lbl  = "%s\n" % self.graph.items()[vertex.index]["label"].value
+            lbl += "CA: %.4g\n" % self.graph.items()[vertex.index]["CA"].value
+            #lbl += "AUC: %.4g\n" % self.graph.items()[vertex.index]["AUC"].value
             #lbl += "CA best: %s\n" % clusterCA 
-            lbl += "Attributes: %d\n" % len(self.visualizer.graph.items[vertex.index]["attributes"].value.split(", "))
-            lbl += ", ".join(sorted(self.visualizer.graph.items[vertex.index]["attributes"].value.split(", ")))
+            lbl += "Attributes: %d\n" % len(self.graph.items()[vertex.index]["attributes"].value.split(", "))
+            lbl += ", ".join(sorted(self.graph.items()[vertex.index]["attributes"].value.split(", ")))
             self.tips.addToolTip(x1, y1, lbl)
             self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
         
@@ -235,7 +234,7 @@ class OWModelMapCanvas(OWNetworkCanvas):
         pass
     
     def loadIcons(self):
-        items = self.visualizer.graph.items
+        items = self.graph.items()
         maxsize = str(max(map(int, ICON_SIZES)))
         minsize = min(map(int, ICON_SIZES))
         for v in self.vertices:
@@ -249,10 +248,10 @@ class OWModelMapCanvas(OWNetworkCanvas):
                 imageKey = "MISSING"
             v.image = QImage(MODEL_IMAGES[imageKey])
 
-    def addVisualizer(self, networkOptimization):
-        OWNetworkCanvas.addVisualizer(self, networkOptimization, ModelCurve(self))
+    def set_graph_layout(self, graph, layout):
+        OWNxCanvas.set_graph_layout(self, graph, layout, ModelCurve(self))
 
-class OWModelMap(OWNetExplorer, OWNetworkHist):
+class OWModelMap(OWNxExplorer, OWNxHist):
     settingsList = ["vertexSize", "lastSizeAttribute", "lastColorAttribute", 
                     "maxVertexSize", "minVertexSize", "tabIndex", 
                     "colorSettings", "selectedSchemaIndex", "iterations", 
@@ -270,7 +269,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
                     "maxComponentEdgeWidth", "mdsFromCurrentPos"]
     
     def __init__(self, parent=None, signalManager=None, name="Model Map"):
-        OWNetExplorer.__init__(self, parent, signalManager, name, 
+        OWNxExplorer.__init__(self, parent, signalManager, name, 
                                NetworkCanvas=OWModelMapCanvas)
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, Default),
@@ -349,7 +348,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         
         self.predGraph.setAxisScale(QwtPlot.yLeft, -0.5, len(self.matrix.originalData.domain.classVar.values) - 0.5, 1)
         
-        scores = [[float(ca) for ca in ex["CA by class"].value.split(", ")] for ex in self.graph.items.getitems(vertices)]
+        scores = [[float(ca) for ca in ex["CA by class"].value.split(", ")] for ex in self.graph.items().getitems(vertices)]
         scores = [sum(score) / len(score) for score in zip(*scores)]
         
         currentBarsHeight = [0] * len(scores)
@@ -373,7 +372,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         if vertices is None or len(vertices) == 0:
             return
         
-        attrList = [self.graph.items[v]["attributes"].value.split(", ") for v in vertices]
+        attrList = [self.graph.items()[v]["attributes"].value.split(", ") for v in vertices]
         
         attrIntersection = set(attrList[0])
         attrUnion = set()
@@ -430,27 +429,27 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         for ex in matrix.items:
             ex["attributes"] = ", ".join(sorted(ex["attributes"].value.split(", ")))
             
-        OWNetworkHist.setMatrix(self, matrix)
+        OWNxHist.setMatrix(self, matrix)
         
     def setVertexSize(self):
-        OWNetExplorer.setVertexSize(self)
+        OWNxExplorer.setVertexSize(self)
         self.networkCanvas.loadIcons()
         self.networkCanvas.replot()
         
     def setVertexStyle(self):
         for v in self.networkCanvas.vertices:
-            auc = self.graph.items[v.index]
+            auc = self.graph.items()[v.index]
             v.style = 1 #auc            
         
     def sendNetworkSignals(self):
         self.warning()
         
-        if self.graph is None or self.graph.items is None or self.graph_matrix is None:
+        if self.graph is None or self.graph.items() is None or self.graph_matrix is None:
             self.send("Model", None)
             self.send("Selected Models", None)
             return
         
-        if self.graph.nVertices != self.graph_matrix.dim:
+        if self.graph.number_of_nodes() != self.graph_matrix.dim:
             self.warning('Network items and matrix results not of equal length.')
             self.send("Model", None)
             self.send("Selected Models", None)
@@ -459,10 +458,10 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         selection = self.networkCanvas.getSelectedVertices()
         
         if len(selection) == 1:
-            modelInstance = self.graph.items[selection[0]]
+            modelInstance = self.graph.items()[selection[0]]
             # modelInfo - Python Dict; keys: method, classifier, probabilities,
             # results, XAnchors, YAnchors, attributes
-            modelInfo = self.graph_matrix.results[selection[0]]
+            modelInfo = self.graph_matrix.results[modelInstance['uuid'].value]
             uuid = modelInstance["uuid"].value
             #method, vizr_result, projection_points, classifier, attrs = self.matrix.results[uuid]
             
@@ -478,10 +477,10 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
                 self.send("Classifier", modelInfo['classifier'])
                 
             self.send("Model", modelInstance)
-            self.send("Selected Models", self.graph.items.getitems(selection))
+            self.send("Selected Models", self.graph.items().getitems(selection))
         elif len(selection) > 1: 
             self.send("Model", None)
-            self.send("Selected Models", self.graph.items.getitems(selection))
+            self.send("Selected Models", self.graph.items().getitems(selection))
         else:
             self.send("Model", None)
             self.send("Selected Models", None)
@@ -497,7 +496,7 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
             self.setVertexColor()
             
     def setVertexColor(self):
-        if self.optimization is None or self.networkCanvas is None:
+        if self.graph is None:
             return
         
         self.networkCanvas.setVertexColor(self.colorCombo.currentText())
@@ -509,11 +508,11 @@ class OWModelMap(OWNetExplorer, OWNetworkHist):
         if self.graph is None or self.graph_matrix is None:
             return
         
-        self.setGraph(self.graph)
-        self.setVertexDistance(self.graph_matrix)
+        self.set_graph(self.graph)
+        self.set_items_distance_matrix(self.graph_matrix)
         # TODO clickedAttLstBox -> setLabelText(["attributes"]
         
-        for i, ex in enumerate(self.graph.items):
+        for i, ex in enumerate(self.graph.items()):
             self.networkCanvas.vertices[i].uuid = ex["uuid"].value
         
         self.setVertexSize()
