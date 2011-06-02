@@ -26,11 +26,11 @@ def read(path, encoding='UTF-8'):
     supported = ['.net', '.gml', '.gpickle']
     
     if not os.path.isfile(path):
-        return None
+        raise OSError('File %s does not exist.' % path)
     
     root, ext = os.path.splitext(path)
     if not ext in supported:
-        return None
+        raise ValueError('Extension %s is not supported.' % ext)
     
     if ext == '.net':
         return read_pajek(path, encoding)
