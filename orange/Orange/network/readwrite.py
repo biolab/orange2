@@ -23,7 +23,7 @@ def _wrap(g):
 
 def read(path, encoding='UTF-8'):
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
-    supported = ['.net']
+    supported = ['.net', '.gml']
     
     if not os.path.isfile(path):
         return None
@@ -34,7 +34,29 @@ def read(path, encoding='UTF-8'):
     
     if ext == '.net':
         return read_pajek(path, encoding)
+    
+    if ext == '.gml':
+        return read_gml(path, encoding)
+
+def write(G, path, encoding='UTF-8'):
+    #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
+    supported = ['.net', '.gml']
+    
+    root, ext = os.path.splitext(path)
+    if not ext in supported:
+        raise ValueError('Extension %s is not supported. Use %s.' % (ext, ', '.join(supported)))
+    
+    if ext == '.net':
+        write_pajek(G, path, encoding)
         
+    if ext == '.gml':
+        write_gml(G, path)
+        
+    if G.items() is not None:
+        G.items().save(root + '_items.tab')
+        
+    if G.links() is not None:
+        G.links().save(root + '_links.tab')
 
 def read_pajek(path, encoding='UTF-8'):
     """ 
@@ -92,7 +114,8 @@ def generate_pajek(G):
         shape=na.get('shape','ellipse')
         s = ' '.join(map(make_str,(id,n,x,y,shape)))
         for k,v in na.items():
-            s += ' %s %s'%(k,v)
+            if k != 'x' and k != 'y':
+                s += ' %s %s'%(k,v)
         yield s
 
     # write edges with attributes         
@@ -143,6 +166,14 @@ def read_pajek_project(path, encoding='UTF-8'):
     fh = _get_fh(path, 'rb')
     lines = (line.decode(encoding) for line in fh)
     return parse_pajek_project(lines)
+
+def read_gml(path, encoding='latin-1', relabel=False):
+    G = _wrap(rw.read_gml(path, encoding, relabel))
+    return G
+
+def write_gml(G, path):
+    rw.write_gml(G, path)
+
 
 #read_pajek.__doc__ = rw.read_pajek.__doc__
 #parse_pajek.__doc__ = rw.parse_pajek.__doc__
