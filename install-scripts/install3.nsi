@@ -175,7 +175,7 @@ Section ""
 
 	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
 	SetOutPath $INSTDIR
-	File /r /x .svn /x Prototypes ${ORANGEDIR}\*
+	File /r /x .svn ${ORANGEDIR}\*
 
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
