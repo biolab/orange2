@@ -12,6 +12,7 @@ Example ::
 
 import sys, os
 import numpy
+import random
 import Orange.data
 
 class GMModel(object):
@@ -24,25 +25,33 @@ class GMModel(object):
         self.inverse_covariances = [numpy.linalg.pinv(cov) for cov in covariances]
         
     def __call__(self, instance):
-        """ Return the conditional probability of instance.
+        """ Return the probability of instance.
         """
         return numpy.sum(prob_est([instance], self.weights, self.means, self.covariances))
         
     def __getitem__(self, index):
-        """ Return the index-th gaussian
+        """ Return the index-th gaussian.
         """ 
         return GMModel([1.0], self.means[index: index + 1], self.covariances[index: index + 1])
-    
-#    def __getslice__(self, slice):
-#        pass
 
     def __len__(self):
         return len(self.weights)
     
     
-def init_random(array, n_centers, *args, **kwargs):
-    """ Init random means
+def init_random(data, n_centers, *args, **kwargs):
+    """ Init random means and correlations from a data table.
+    
+    :param data: data table
+    :type data: :class:`Orange.data.Table`
+    :param n_centers: Number of centers and correlations to return.
+    :type n_centers: int
+    
     """
+    if isinstance(data, Orange.data.Table):
+        array, w, c = data.toNumpyMA()
+    else:
+        array = numpy.asarray(data)
+        
     min, max = array.max(0), array.min(0)
     dim = array.shape[1]
     means = numpy.zeros((n_centers, dim))
@@ -51,17 +60,35 @@ def init_random(array, n_centers, *args, **kwargs):
         
     correlations = [numpy.asmatrix(numpy.eye(dim)) for i in range(n_centers)]
     return means, correlations
+
+def init_kmeans(data, n_centers, *args, **kwargs):
+    """ Init with k-means algorithm.
     
+    :param data: data table
+    :type data: :class:`Orange.data.Table`
+    :param n_centers: Number of centers and correlations to return.
+    :type n_centers: int
+    
+    """
+    if not isinstance(data, Orange.data.Table):
+        raise TypeError("Orange.data.Table instance expected!")
+    from Orange.clustering.kmeans import Clustering
+    km = Clustering(data, centroids=n_centers, maxiters=20, nstart=3)
+    centers = Orange.data.Table(km.centroids)
+    centers, w, c = centers.toNumpyMA()
+    dim = len(data.domain.attributes)
+    correlations = [numpy.asmatrix(numpy.eye(dim)) for i in range(n_centers)]
+    return centers, correlations
     
 def prob_est1(data, mean, covariance, inv_covariance=None):
-    """ Return the probability of data given mean and covariance matrix 
+    """ Return the probability of data given mean and covariance matrix
     """
     data = numpy.asmatrix(data)
      
     if inv_covariance is None:
         inv_covariance = numpy.linalg.pinv(covariance)
         
-    inv_covariance = numpy.asmatrix(inv_covariance)    
+    inv_covariance = numpy.asmatrix(inv_covariance)
     
     diff = data - mean
     p = numpy.zeros(data.shape[0])
@@ -75,15 +102,11 @@ def prob_est1(data, mean, covariance, inv_covariance=None):
     det = numpy.linalg.det(covariance)
     assert(det != 0.0)
     p /= det
-#    if det != 0.0:
-#        p /= det
-#    else:
-#        p = numpy.ones(p.shape) / p.shape[0]
     return p
 
 
 def prob_est(data, weights, means, covariances, inv_covariances=None):
-    """ Return the probability estimation of data given weighted, means and
+    """ Return the probability estimation of data given weights, means and
     covariances.
       
     """
@@ -102,6 +125,7 @@ def prob_est(data, weights, means, covariances, inv_covariances=None):
 class EMSolver(object):
     """ An EM solver for gaussian mixture model
     """
+    _TRACE_MEAN = False
     def __init__(self, data, weights, means, covariances):
         self.data = data
         self.weights = weights 
@@ -181,49 +205,53 @@ class EMSolver(object):
     def run(self, max_iter=sys.maxint, eps=1e-5):
         """ Run the EM algorithm.
         """
+        if self._TRACE_MEAN:
+            from pylab import plot, show, draw, ion
+            ion()
+            plot(self.data[:, 0], self.data[:, 1], "ro")
+            vec_plot = plot(self.means[:, 0], self.means[:, 1], "bo")[0]
         
-#        from pylab import plot, show, draw, ion
-#        ion()
-#        plot(self.data[:, 0], self.data[:, 1], "ro")
-#        vec_plot = plot(self.means[:, 0], self.means[:, 1], "bo")[0]
         curr_iter = 0
         
         while True:
             old_objective = self.log_likelihood
             self.one_step()
             
-#            vec_plot.set_xdata(self.means[:, 0])
-#            vec_plot.set_ydata(self.means[:, 1])
-#            draw()
+            if self._TRACE_MEAN:
+                vec_plot.set_xdata(self.means[:, 0])
+                vec_plot.set_ydata(self.means[:, 1])
+                draw()
             
             curr_iter += 1
-            print curr_iter
-            print abs(old_objective - self.log_likelihood)
+#            print curr_iter
+#            print abs(old_objective - self.log_likelihood)
             if abs(old_objective - self.log_likelihood) < eps or curr_iter > max_iter:
                 break
         
         
-class GASolver(object):
-    """ A toy genetic algorithm solver 
-    """
-    def __init__(self, data, weights, means, covariances):
-        raise NotImplementedError
-
-
-class PSSolver(object):
-    """ A toy particle swarm solver
-    """
-    def __init__(self, data, weights, means, covariances):
-        raise NotImplementedError
-
-class HybridSolver(object):
-    """ A hybrid solver
-    """
-    def __init__(self, data, weights, means, covariances):
-        raise NotImplementedError
+#class GASolver(object):
+#    """ A toy genetic algorithm solver 
+#    """
+#    def __init__(self, data, weights, means, covariances):
+#        raise NotImplementedError
+#
+#
+#class PSSolver(object):
+#    """ A toy particle swarm solver
+#    """
+#    def __init__(self, data, weights, means, covariances):
+#        raise NotImplementedError
+#
+#class HybridSolver(object):
+#    """ A hybrid solver
+#    """
+#    def __init__(self, data, weights, means, covariances):
+#        raise NotImplementedError
     
     
 class GaussianMixture(object):
+    """ Computes the gaussian mixture model from an Orange data-set.
+    """
     def __new__(cls, data=None, weightId=None, **kwargs):
         self = object.__new__(cls)
         if data is not None:
@@ -232,20 +260,25 @@ class GaussianMixture(object):
         else:
             return self
         
-    def __init__(self, n_centers=3, init_function=init_random):
+    def __init__(self, n_centers=3, init_function=init_kmeans):
         self.n_centers = n_centers
         self.init_function = init_function
         
     def __call__(self, data, weightId=None):
+        means, correlations = self.init_function(data, self.n_centers)
+        means = numpy.asmatrix(means)
         array, _, _ = data.to_numpy_MA()
         solver = EMSolver(array, numpy.ones((self.n_centers)) / self.n_centers,
-                          *self.init_function(array, self.n_centers))
+                          means, correlations)
         solver.run()
         return GMModel(solver.weights, solver.means, solver.covariances)
         
         
 def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
-    
+    """ Plot the scaterplot of data_array and the contour lines of the
+    probability for the mixture.
+     
+    """
     import matplotlib
     import matplotlib.pylab as plt
     import matplotlib.cm as cm
@@ -256,7 +289,7 @@ def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
     array = data_array[:, axis]
     
     weights = mixture.weights
-    means = [m[axis] for m in mixture.means]
+    means = mixture.means[:, axis]
     
     covariances = [cov[axis,:][:, axis] for cov in mixture.covariances] 
     
@@ -282,16 +315,19 @@ def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
     im = plt.imshow(Z.T, interpolation='bilinear', origin='lower',
                 cmap=cm.gray, extent=extent)
     
+    plt.plot(means[:, 0], means[:, 1], "b+")
     plt.show()
     
-def test():
+def test(seed=0):
 #    data = Orange.data.Table(os.path.expanduser("../../doc/datasets/brown-selected.tab"))
-    data = Orange.data.Table(os.path.expanduser("~/Documents/brown-selected-fss.tab"))
-#    data = Orange.data.Table("../../doc/datasets/iris.tab")
+#    data = Orange.data.Table(os.path.expanduser("~/Documents/brown-selected-fss.tab"))
+    data = Orange.data.Table(os.path.expanduser("~/Documents/brown-selected-fss-1.tab"))
+    data = Orange.data.Table("../../doc/datasets/iris.tab")
 #    data = Orange.data.Table(Orange.data.Domain(data.domain[:2], None), data)
-    numpy.random.seed(0)
-    gmm = GaussianMixture(data, n_centers=3)
-    plot_model(data, gmm, axis=(0,1), samples=40, contour_lines=20)
+    numpy.random.seed(seed)
+    random.seed(seed)
+    gmm = GaussianMixture(data, n_centers=3, init_function=init_kmeans)
+    plot_model(data, gmm, axis=(0, 1), samples=40, contour_lines=100)
 
     
     
