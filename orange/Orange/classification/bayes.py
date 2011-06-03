@@ -377,17 +377,17 @@ class NaiveClassifier(Orange.classification.Classifier):
         frmtStr=' %10.3f'*nValues
         classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in self.classVar.values]))
         
-        return "\n".join(
+        return "\n".join([
             classes,
             "class probabilities "+(frmtStr % tuple(self.distribution)),
             "",
-            "\n".join(["\n".join(
+            "\n".join(["\n".join([
                 "Attribute " + i.variable.name,
                 classes,
                 "\n".join(
                     ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
-                    for v in xrange(len(i.variable.values)))
-                ) for i in self.conditionalDistributions]))
+                    for v in xrange(len(i.variable.values)))]
+                ) for i in self.conditionalDistributions])])
             
 
 def printModel(model):
