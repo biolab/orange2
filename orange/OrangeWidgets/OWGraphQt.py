@@ -50,7 +50,7 @@ TopLegend = 3
 ExternalLegend = 4
 
 from Graph import *
-from PyQt4.QtGui import QGraphicsView,  QGraphicsScene
+from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
@@ -65,6 +65,7 @@ class OWGraph(QGraphicsView):
         
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
+        self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
         
         self._legend = legend.Legend(self.canvas)
         self.axes = dict()
@@ -100,6 +101,13 @@ class OWGraph(QGraphicsView):
         
         ## Performance optimization
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        
+        ## Mouse event handlers
+        self.mousePressEventHandler = None
+        self.mouseMoveEventHandler = None
+        self.mouseReleaseEventHandler = None
+        self.mouseStaticClickHandler = None
+        
 
         self.update()
         
@@ -349,6 +357,7 @@ class OWGraph(QGraphicsView):
         for c in self.curves:
             c.setPos(self.graph_area.bottomLeft())
             c.update()
+            qDebug(repr(c.transform()))
         self.setSceneRect(self.canvas.itemsBoundingRect())
         
     def legend(self):
@@ -357,3 +366,21 @@ class OWGraph(QGraphicsView):
     ## Event handling
     def resizeEvent(self, event):
         self.replot()
+        
+    def mousePressEvent(self, event):
+        if self.mousePressEventHandler and self.mousePressEventHandler(event):
+            return
+        self.static_click = True
+            
+    def mouseMoveEvent(self, event):
+        if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
+            return
+        if event.buttons():
+            self.static_click = False
+            
+    def mouseReleaseEvent(self, event):
+        if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
+            return
+        if self.static_click and self.mouseStaticClickHandler and self.mouseStaticClickHandler(event):
+            return
+        

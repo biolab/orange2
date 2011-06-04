@@ -127,9 +127,9 @@ class Axis(QGraphicsItemGroup):
             while t <= max:
                 p1 = self.map_to_graph(t)
                 label_pos = self.map_to_graph( t - step/2 )
-                (major, med, minor) = self.tick_length
+                (major, medium, minor) = self.tick_length
                 v = self.line.normalVector().unitVector()
-                d = (v.p2() - v.p1())*major
+                d = (v.p2() - v.p1())*medium
                 if self.title_above:
                     p2 = p1 - d
                     label_pos = label_pos + d/major * 30
