@@ -65,10 +65,12 @@ class Curve(QGraphicsItemGroup):
             self.path_item.setPen(self.style.pen())
             self.path_item.show()
         else:
+            a = self.graph.graph_area.translated(-self.graph.graph_area.bottomLeft())
             for p in self.data:
                 (x, y) = self.graph.map_to_graph(p)
-                i = self.symbol(x, y)
-                self.point_items.append(i)
+                if a.contains(QPointF(x, y)):
+                    i = self.symbol(x, y)
+                    self.point_items.append(i)
         
     def symbol(self, x, y, s=None, parent=None):
         if not s:

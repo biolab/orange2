@@ -67,15 +67,14 @@ Hexagon = 14
 UserStyle = 1000 
 
 from Graph import *
-from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter
+from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform
+from PyQt4.QtCore import QPointF
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
 from OWGraphTools import *      # user defined curves, ...
 
 class OWGraph(QGraphicsView):
-    
-    
     def __init__(self, parent=None,  name="None",  show_legend=1 ):
         QGraphicsView.__init__(self, parent)
         self.parent_name = name
@@ -125,9 +124,14 @@ class OWGraph(QGraphicsView):
         self.mousePressEventHandler = None
         self.mouseMoveEventHandler = None
         self.mouseReleaseEventHandler = None
-        self.mouseStaticClickHandler = None
+        self.mouseStaticClickHandler = self.mouseStaticClick
         
-
+        self.zoom_factor = 1
+        self.zoom_point = None
+        self.zoom_transform = QTransform()
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
         self.update()
         
         
@@ -151,9 +155,9 @@ class OWGraph(QGraphicsView):
             axes = [xBottom, yLeft]
         min_x, max_x, t = self.axes[axes[0]].scale
         min_y, max_y, t = self.axes[axes[1]].scale
-        rect = self.graph_area
-        rx = (px - min_x) * rect.width() / (max_x - min_x)
-        ry = -(py - min_y) * rect.height() / (max_y - min_y)
+        rect = self.zoom_rect
+        rx = rect.left() - self.graph_area.left() + (px - min_x) * rect.width() / (max_x - min_x)
+        ry = rect.bottom() - self.graph_area.bottom() -(py - min_y) * rect.height() / (max_y - min_y)
         return (rx, ry)
         
     def map_from_graph_cart(self, point, axes = None):
@@ -354,8 +358,11 @@ class OWGraph(QGraphicsView):
             if xTop in axis_rects:
                 axis_rects[xTop].setRight(right)
                 
-        self.graph_area = graph_rect
+        self.graph_area = QRectF(graph_rect)
         
+        self.zoom_transform = self.transform_for_zoom(self.zoom_factor, self.zoom_point, self.graph_area)
+        self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
+            
         for id, item in self.axes.iteritems():
             self.canvas.removeItem(item)
             
@@ -391,18 +398,53 @@ class OWGraph(QGraphicsView):
         
     def mousePressEvent(self, event):
         if self.mousePressEventHandler and self.mousePressEventHandler(event):
+            event.accept()
             return
         self.static_click = True
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
+            event.accept()
             return
         if event.buttons():
             self.static_click = False
             
     def mouseReleaseEvent(self, event):
         if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
+            event.accept()
             return
         if self.static_click and self.mouseStaticClickHandler and self.mouseStaticClickHandler(event):
+            event.accept()
             return
+    
+    def mouseStaticClick(self, event):
+        if self.state == ZOOMING:
+            if event.button() == Qt.LeftButton:
+                self.zoom_factor = self.zoom_factor * 2
+            elif event.button() == Qt.RightButton:
+                self.zoom_factor = max(self.zoom_factor/2, 1)
+            self.zoom_point = (QPointF(event.pos()))
+            qDebug(str(self.zoom_factor) + ' ' + str(self.zoom_point))
+            self.replot()
+            return True
+        else:
+            return False
+            
+    @staticmethod
+    def transform_from_rects(r1, r2):
+        tr1 = QTransform().translate(-r1.left(), -r1.top())
+        ts = QTransform().scale(r2.width()/r1.width(), r2.height()/r1.height())
+        tr2 = QTransform().translate(r2.left(), r2.top())
+        return tr2 * ts * tr1
         
+    def transform_for_zoom(self, factor, point, rect):
+        if factor == 1:
+            return QTransform()
+        rect = rect.normalized()
+        s = (1.0-1.0/factor)/2.0
+        qDebug('factor=%d, s=%f' % (factor, s))
+        t = QTransform()
+        t.translate(point.x(), point.y())
+        t.scale(factor, factor)
+        t.translate(-point.x(), -point.y())
+        return t
