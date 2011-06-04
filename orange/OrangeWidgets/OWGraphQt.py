@@ -357,7 +357,6 @@ class OWGraph(QGraphicsView):
         for c in self.curves:
             c.setPos(self.graph_area.bottomLeft())
             c.update()
-            qDebug(repr(c.transform()))
         self.setSceneRect(self.canvas.itemsBoundingRect())
         
     def legend(self):
