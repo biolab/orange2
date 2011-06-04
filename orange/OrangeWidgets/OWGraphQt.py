@@ -248,13 +248,17 @@ class OWGraph(QGraphicsView):
         self.setAxisLabels(yRight, labels)
         
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
-                 symbol = palette.EllipseShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
+                 symbol = palette.CircleShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         data = []
         qDebug('Adding curve ' + name + ' with ' + str(len(xData)) + ' points' + (' to legend' if enableLegend else ''))
+        qDebug('Its shape is ' +str(symbol) )
         for i in range(len(xData)):
             data.append( (xData[i], yData[i]) )
-        c = curve.Curve(name, data, self.palette.line_style(len(self.curves)), self)
+        
+        line_style = palette.LineStyle(brushColor, lineWidth, style, symbol, size)
+        
+        c = curve.Curve(name, data, line_style, self)
         c.setPos(self.graph_area.bottomLeft())
         c.continuous = (style is not Qt.NoPen)
         c.update()

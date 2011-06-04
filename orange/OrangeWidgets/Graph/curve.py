@@ -78,6 +78,10 @@ class Curve(QGraphicsItemGroup):
             i = QGraphicsEllipseItem(x-s/2, y-s/2, s, s, parent)
         elif self.style.point_shape is SquareShape:
             i = QGraphicsRectItem(x-s/2, y-s/2, s, s, parent)
+        elif self.style.point_shape is EllipseShape:
+            i = QGraphicsEllipseItem(x-s/2, y-s/2, 1.5*s, 0.8*s, parent)
+        else:
+            i = QGraphicsRectItem(x-s/2, y-s/2, 1.5*s, 0.8*s, parent)
         i.setPen(QPen(Qt.NoPen))
         i.setBrush(self.brush)
         return i
