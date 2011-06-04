@@ -34,20 +34,15 @@
         
 """
 
+from OWGraphQt import *
+
 from PyQt4.QtGui import QColor, QPen, QBrush
 from PyQt4.QtCore import Qt
-
-NoShape = 0
-CircleShape = 1
-SquareShape = 2
-CrossShape = 3
-PlusShape = 4
-EllipseShape = 5
 
 _shared_palette = None
 
 class LineStyle:
-    def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine,  point_shape=CircleShape, point_size=5):
+    def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine,  point_shape=Ellipse, point_size=5):
         self.color = color
         self.width = width
         self.type = type
@@ -73,7 +68,7 @@ class Palette:
                             LineStyle(Qt.blue, 1,  Qt.SolidLine)]
         self.point_styles = []
         self.axis_style = LineStyle(Qt.black, 1, Qt.SolidLine)
-        self.curve_symbols = [ EllipseShape, CrossShape, SquareShape ]
+        self.curve_symbols = range(13)
         
     def line_style(self, id):
         id = id % len(self.line_styles)

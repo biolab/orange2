@@ -49,6 +49,23 @@ BottomLegend = 2
 TopLegend = 3
 ExternalLegend = 4
 
+Ellipse = 0
+Rect = 1
+Diamond = 2
+Triangle = 3
+DTriangle = 4
+UTriangle = 5
+LTriangle = 6
+RTriangle = 7
+Cross = 8
+XCross = 9
+HLine = 10
+VLine = 11
+Star1 = 12
+Star2 = 13
+Hexagon = 14
+UserStyle = 1000 
+
 from Graph import *
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter
 
@@ -57,6 +74,8 @@ from OWBaseWidget import unisetattr
 from OWGraphTools import *      # user defined curves, ...
 
 class OWGraph(QGraphicsView):
+    
+    
     def __init__(self, parent=None,  name="None",  show_legend=1 ):
         QGraphicsView.__init__(self, parent)
         self.parent_name = name
@@ -84,7 +103,7 @@ class OWGraph(QGraphicsView):
         
         # OWScatterPlot needs these:
         self.alphaValue = 1
-        self.useAntialiasing = False
+        self.useAntialiasing = True
         
         self.palette = palette.shared_palette()
         self.curveSymbols = self.palette.curve_symbols
@@ -248,7 +267,7 @@ class OWGraph(QGraphicsView):
         self.setAxisLabels(yRight, labels)
         
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
-                 symbol = palette.CircleShape, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
+                 symbol = Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         data = []
         qDebug('Adding curve ' + name + ' with ' + str(len(xData)) + ' points' + (' to legend' if enableLegend else ''))

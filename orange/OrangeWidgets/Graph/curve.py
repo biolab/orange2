@@ -1,6 +1,7 @@
 
 from OWBaseWidget import *
 from palette import *
+from OWGraphQt import *
 
 from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem
 from PyQt4.QtGui import QBrush, QPen, QPainterPath
@@ -74,13 +75,12 @@ class Curve(QGraphicsItemGroup):
             s = self.style.point_size
         if not parent:
             parent = self
-        if self.style.point_shape is CircleShape:
+        if self.style.point_shape is Ellipse:
             i = QGraphicsEllipseItem(x-s/2, y-s/2, s, s, parent)
-        elif self.style.point_shape is SquareShape:
+        elif self.style.point_shape is Rect:
             i = QGraphicsRectItem(x-s/2, y-s/2, s, s, parent)
-        elif self.style.point_shape is EllipseShape:
-            i = QGraphicsEllipseItem(x-s/2, y-s/2, 1.5*s, 0.8*s, parent)
         else:
+            ## TODO: Implement all the other shapes
             i = QGraphicsRectItem(x-s/2, y-s/2, 1.5*s, 0.8*s, parent)
         i.setPen(QPen(Qt.NoPen))
         i.setBrush(self.brush)
