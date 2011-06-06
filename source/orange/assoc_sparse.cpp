@@ -500,7 +500,14 @@ long TSparseItemsetTree::getItemsetRules(long itemset[], int iLength, float minC
 
 				  //add rules
 				  rule = mlnew TAssociationRule(mlnew TExample(exLeft), mlnew TExample(exRight), nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples, currDepth, iLength-currDepth);
+
+				  if (storeExamples) {
+					rule->matchLeft = new TIntList(currNode->exampleIds);
+					rule->matchBoth = new TIntList(bothNode->exampleIds);
+				  }
+
 				  rules->push_back(rule);
+
 				  count ++;
 
 				  for (i=0; i<iLength;i++) {					//deleting left and right example
