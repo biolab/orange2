@@ -70,7 +70,6 @@ class OWDistanceMap(OWWidget):
                     "ShowItemsInBalloon", "SendOnRelease", "colorSettings", "selectedSchemaIndex", "palette"]
 
     def __init__(self, parent=None, signalManager = None):
-#        self.callbackDeposit = [] # deposit for OWGUI callback function
         OWWidget.__init__(self, parent, signalManager, 'Distance Map', wantGraph=True)
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
@@ -91,18 +90,21 @@ class OWDistanceMap(OWWidget):
         self.shiftPressed = False
 
         #set default settings
-        self.CellWidth = 15; self.CellHeight = 15
-        self.Merge = 1;
+        self.CellWidth = 15
+        self.CellHeight = 15
+        self.Merge = 1
         self.savedMerge = self.Merge
         self.Gamma = 1
         self.Grid = 1
         self.savedGrid = 1
-        self.CutLow = 0; self.CutHigh = 0; self.CutEnabled = 0
+        self.CutLow = 0
+        self.CutHigh = 0
+        self.CutEnabled = 0
         self.Sort = 0
         self.SquareCells = 0
-        self.ShowLegend = 1;
-        self.ShowLabels = 1;
-        self.ShowBalloon = 1;
+        self.ShowLegend = 1
+        self.ShowLabels = 1
+        self.ShowBalloon = 1
         self.ShowItemsInBalloon = 1
         self.SendOnRelease = 1
 
@@ -127,14 +129,20 @@ class OWDistanceMap(OWWidget):
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ',
                          labelWidth=38, minValue=1, maxValue=self.maxHSize,
                          step=1, precision=0,
-                         callback=[lambda f="CellWidth", t="CellHeight": self.adjustCellSize(f,t), self.drawDistanceMap, self.manageGrid])
+                         callback=[lambda f="CellWidth", t="CellHeight": self.adjustCellSize(f,t),
+                                   self.drawDistanceMap,
+                                   self.manageGrid])
         OWGUI.qwtHSlider(box, self, "CellHeight", label='Height: ',
                          labelWidth=38, minValue=1, maxValue=self.maxVSize,
                          step=1, precision=0,
-                         callback=[lambda f="CellHeight", t="CellWidth": self.adjustCellSize(f,t), self.drawDistanceMap,self.manageGrid])
+                         callback=[lambda f="CellHeight", t="CellWidth": self.adjustCellSize(f,t),
+                                   self.drawDistanceMap,
+                                   self.manageGrid])
         OWGUI.checkBox(box, self, "SquareCells", "Cells as squares",
                          callback = [self.setSquares, self.drawDistanceMap])
-        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=lambda: min(self.CellWidth, self.CellHeight) <= c_smallcell)
+        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid",
+                                         callback = self.createDistanceMap,
+                                         disabled=lambda: min(self.CellWidth, self.CellHeight) <= c_smallcell)
 
         OWGUI.separator(tab)
         OWGUI.qwtHSlider(tab, self, "Merge", box="Merge" ,label='Elements:', labelWidth=50,
@@ -147,8 +155,6 @@ class OWDistanceMap(OWWidget):
                          tooltip="Sorting method for items in distance matrix.",
                          callback=self.sortItems)
         OWGUI.rubber(tab)
-
-##        self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
         tab = OWGUI.createTabPage(self.tabs, "Colors")
@@ -171,12 +177,7 @@ class OWDistanceMap(OWWidget):
         if not self.CutEnabled:
             self.sliderCutLow.box.setDisabled(1)
             self.sliderCutHigh.box.setDisabled(1)
-
-
-##        self.colorPalette = ColorPalette(box, self, "",
-##                         additionalColors =["Cell outline", "Selected cells"],
-##                         callback = self.setColor)
-##        box.layout().addWidget(self.colorPalette)
+            
         box = OWGUI.widgetBox(box, "Colors", orientation="horizontal")
         self.colorCombo = OWColorPalette.PaletteSelectorComboBox(self)
         try:
@@ -191,9 +192,7 @@ class OWDistanceMap(OWWidget):
         OWGUI.button(box, self, "Edit colors", callback=self.openColorDialog, debuggingEnabled = 0)
         OWGUI.rubber(tab)
 
-        self.setColor(self.selectedSchemaIndex)        
-
-##        self.tabs.insertTab(tab, "Colors")
+        self.setColor(self.selectedSchemaIndex)
 
         # INFO TAB
         tab = OWGUI.createTabPage(self.tabs, "Info")
@@ -220,7 +219,6 @@ class OWDistanceMap(OWWidget):
                               self.sendOutput, QIcon(OWToolbars.dlg_send), toggle = 0)
         OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release")
         OWGUI.rubber(tab)
-##        self.tabs.insertTab(tab, "Info")
 
         self.resize(700,400)
 
@@ -230,12 +228,10 @@ class OWDistanceMap(OWWidget):
 
         #construct selector
         self.selector = QGraphicsRectItem(0, 0, self.CellWidth, self.CellHeight, None, self.scene)
-##        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         color = self.cellOutlineColor
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZValue(20)
 
-##        self.bubble = BubbleInfo(self.scene)
         self.selection = SelectionManager()
 
         self.selectionLines = []
@@ -249,13 +245,9 @@ class OWDistanceMap(OWWidget):
         self.errorText = QGraphicsSimpleTextItem("Bitmap is too large.", None, self.scene)
         self.errorText.setPos(10,10)
         
-#        OWGUI.button(self.controlArea, self, "&Save Graph", lambda:OWChooseImageSizeDlg(self.scene).exec_(), debuggingEnabled = 0)
         self.connect(self.graphButton, SIGNAL("clicked()"), lambda:OWChooseImageSizeDlg(self.scene, parent=self).exec_())
 
-
-        #restore color schemas from settings
-##        if self.ColorSchemas:
-##            self.colorPalette.setColorSchemas(self.ColorSchemas)
+        self._clustering_cache = {}
 
     def sendReport(self):
         self.reportSettings("Data",
@@ -806,19 +798,28 @@ class OWDistanceMap(OWWidget):
         self.rootCluster = None
 
     def sortClustering(self):
-        self.rootCluster=orange.HierarchicalClustering(self.matrix,
+        cluster = self._clustering_cache.get("sort clustering", None)
+        if cluster is None:
+            cluster = orange.HierarchicalClustering(self.matrix,
                 linkage=orange.HierarchicalClustering.Average)
-        self.order = list(self.rootCluster.mapping)
-
-    def sortClusteringOrdered(self):
-        self.rootCluster=orange.HierarchicalClustering(self.matrix,
-                linkage=orange.HierarchicalClustering.Average)
-        import orngClustering
-        self.progressBarInit()
-        orngClustering.orderLeaves(self.rootCluster, self.matrix, self.progressBarSet)
-        self.progressBarFinished()
+            # Cache the cluster
+            self._clustering_cache["sort clustering"] = cluster
+        self.rootCluster = cluster
         self.order = list(self.rootCluster.mapping)
         
+    def sortClusteringOrdered(self):
+        cluster = self._clustering_cache.get("sort ordered clustering", None)
+        if cluster is None:
+            cluster = orange.HierarchicalClustering(self.matrix,
+                linkage=orange.HierarchicalClustering.Average)
+            import orngClustering
+            self.progressBarInit()
+            orngClustering.orderLeaves(cluster, self.matrix, self.progressBarSet)
+            self.progressBarFinished()
+            # Cache the cluster
+            self._clustering_cache["sort ordered clustering"] = cluster
+        self.rootCluster = cluster
+        self.order = list(self.rootCluster.mapping)
 
     def sortItems(self):
         if not self.matrix:
@@ -829,6 +830,7 @@ class OWDistanceMap(OWWidget):
     def setMatrix(self, matrix):
         self.send("Examples", None)
         self.send("Attribute List", None)
+        self._clustering_cache.clear()
 
         if not matrix:
             self.matrix = None
