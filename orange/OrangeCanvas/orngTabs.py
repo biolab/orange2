@@ -547,16 +547,22 @@ class CanvasWidgetAction(QWidgetAction):
         self.widgetSuggestEdit.listWidget.setStyleSheet(""" QListView { background: #fffff0; } QListView::item {padding: 3px 0px 3px 0px} QListView::item:selected { color: white; background: blue;} """)
         self.widgetSuggestEdit.listWidget.setIconSize(QSize(16,16)) 
         self.setDefaultWidget(self.widgetSuggestEdit)
+        self._in_callback = False
         
     def callback(self):
-        text = str(self.widgetSuggestEdit.text())
-        for action in self.actions:
-            if action.widgetInfo.name == text:
-                self.widgetInfo = action.widgetInfo
-                self.parent.setActiveAction(self)
-                self.activate(QAction.Trigger)
-                QApplication.sendEvent(self.widgetSuggestEdit, QKeyEvent(QEvent.KeyPress, Qt.Key_Enter, Qt.NoModifier))
-                return
+        if not self._in_callback:
+            try:
+                self._in_callback = True
+                text = str(self.widgetSuggestEdit.text())
+                for action in self.actions:
+                    if action.widgetInfo.name == text:
+                        self.widgetInfo = action.widgetInfo
+                        self.parent.setActiveAction(self)
+                        self.activate(QAction.Trigger)
+                        QApplication.sendEvent(self.widgetSuggestEdit, QKeyEvent(QEvent.KeyPress, Qt.Key_Enter, Qt.NoModifier))
+                        return
+            finally:
+                self._in_callback = False
         
 
 class CanvasPopup(QMenu):
