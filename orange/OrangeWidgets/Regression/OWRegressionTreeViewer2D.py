@@ -128,6 +128,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
         
+        self.NodeColorMethod = 1
         self.showNodeInfoText = False
         
         self.scene = TreeGraphicsScene(self)
