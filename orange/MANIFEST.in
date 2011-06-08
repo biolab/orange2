@@ -1,4 +1,4 @@
-include *.py *.txt *.c
+include *.py *.txt *.c *.cfg
 
 recursive-include Orange *
 recursive-include OrangeWidgets *
