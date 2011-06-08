@@ -433,7 +433,8 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                       "OrangeWidgets.Regression": ["icons/*.png"],
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
                       "OrangeWidgets.Visualize": ["icons/*.png"],
-                      "doc": ["datasets/*.tab", ]
+                      "doc": ["datasets/*.tab", ],
+                      ".": ["orangerc.cfg"] 
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),

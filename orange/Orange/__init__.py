@@ -12,7 +12,7 @@ import warnings
 def _import(name):
     try:
         __import__(name, globals(), locals(), [], -1)
-    except:
+    except Exception:
         warnings.warn("Could not import: " + name, UserWarning, 2)
 
 _import("data")
@@ -81,6 +81,7 @@ _import("clustering.kmeans")
 _import("clustering.hierarchical")
 
 _import("misc")
+_import("misc.environ")
 _import("misc.counters")
 _import("misc.addons")
 _import("misc.render")
