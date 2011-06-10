@@ -708,12 +708,15 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
   PVariable wdummyVar = dummyVar;
 
   switch (nodeType) {
-    case Branch:
-      newNode->branchSelector = mlnew TClassifierFromVar(tested, branchSizes);
+	case Branch: {
+	  TClassifierFromVar *cfv = mlnew TClassifierFromVar(tested, branchSizes);
+	  cfv->transformUnknowns = false;
+      newNode->branchSelector = cfv;
       newNode->branchDescriptions = mlnew TStringList(tested.AS(TEnumVariable)->values.getReference());
       break;
+	}
 
-    case Cut:
+	case Cut: {
       newNode->branchDescriptions = mlnew TStringList;
 
       char str[128];
@@ -724,10 +727,14 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
       newNode->branchDescriptions->push_back(str);
       dummyVar->values->push_back(str);
 
-      newNode->branchSelector = mlnew TClassifierFromVar(wdummyVar, tested, branchSizes, mlnew TThresholdDiscretizer(cut));
+	  
+	  TClassifierFromVar *cfv = mlnew TClassifierFromVar(wdummyVar, tested, branchSizes, mlnew TThresholdDiscretizer(cut));
+	  cfv->transformUnknowns = false;
+      newNode->branchSelector = cfv;
       break;
+    }
 
-    case Subset:
+	case Subset: {
       int noval = 1 + *max_element(mapping->begin(), mapping->end());
       dummyVar->values = mlnew TStringList(noval, "");
       TStringList::const_iterator tvi(tested.AS(TEnumVariable)->values->begin());
@@ -744,9 +751,12 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
         if ((*vi).find(",") != string::npos)
           *vi = "in [" + *vi + "]";
 
-      newNode->branchSelector = mlnew TClassifierFromVar(wdummyVar, tested, branchSizes,mlnew TMapIntValue(mapping));
+	  TClassifierFromVar *cfv = mlnew TClassifierFromVar(wdummyVar, tested, branchSizes,mlnew TMapIntValue(mapping));
+	  cfv->transformUnknowns = false;
+      newNode->branchSelector = cfv;
       newNode->branchDescriptions = dummyVar->values;
       break;
+	}
   }
 
   vector<int> newWeights;

@@ -276,7 +276,9 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
 
   spentAttribute = bestAttr;
 
-  return mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+  TClassifierFromVarFD *cfv = mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+  cfv->transformUnknowns = false;
+  return cfv;
 }
 
 
@@ -516,7 +518,9 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
   if (attribute->noOfValues() == 2) {
     spentAttribute = bestAttr;
     descriptions = mlnew TStringList(attribute.AS(TEnumVariable)->values.getReference());
-    return mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+    TClassifierFromVarFD *cfv = mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+    cfv->transformUnknowns = false;
+    return cfv;
   }
 
   string s0, s1;
@@ -544,7 +548,9 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
   bvar->set_name(gen->domain->attributes->at(bestAttr)->get_name());
   spentAttribute = (ns0==1) && (ns1==1) ? bestAttr : -1;
-  return mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TMapIntValue(bestMapping));
+  TClassifierFromVarFD *cfv = mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TMapIntValue(bestMapping));
+  cfv->transformUnknowns = false;
+  return cfv;
 }
 
 
@@ -741,7 +747,9 @@ PClassifier TTreeSplitConstructor_OneAgainstOthers::operator()(
   if (attribute->noOfValues() == 2) {
     spentAttribute = bestAttr;
     descriptions = mlnew TStringList(attribute.AS(TEnumVariable)->values.getReference());
-    return mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+    TClassifierFromVarFD *cfv = mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+    cfv->transformUnknowns = false;
+    return cfv;
   }
 
   const string &bestValueS = attribute.AS(TEnumVariable)->values->at(bestValue);
@@ -755,7 +763,9 @@ PClassifier TTreeSplitConstructor_OneAgainstOthers::operator()(
   PIntList wb = bestMapping;
   bestMapping->at(bestValue) = 1;
   spentAttribute = -1;
-  return mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TMapIntValue(bestMapping));
+  TClassifierFromVarFD *cfv = mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TMapIntValue(bestMapping));
+  cfv->transformUnknowns = false;
+  return cfv;
 }
 
 
@@ -863,7 +873,9 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 
   bvar->set_name(gen->domain->attributes->at(bestAttr)->get_name());
   spentAttribute = -1;
-  return mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TThresholdDiscretizer(bestThreshold));
+  TClassifierFromVarFD *cfv = mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TThresholdDiscretizer(bestThreshold));
+  cfv->transformUnknowns = false;
+  return cfv;
 }
 
 
