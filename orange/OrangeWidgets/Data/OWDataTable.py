@@ -286,7 +286,6 @@ class OWDataTable(OWWidget):
             self.progressBarFinished()
             self.tabs.setCurrentIndex(self.tabs.indexOf(table))
             self.setInfo(data)
-            self.cbShowMeta.setEnabled(len(table.model().metas)>0)        # enable showMetas checkbox only if metas exist
             self.sendButton.setEnabled(not self.autoCommit)
 
         elif self.data.has_key(id):
@@ -298,11 +297,19 @@ class OWDataTable(OWWidget):
             self.table2id.pop(self.id2table.pop(id))
             self.setInfo(self.data.get(self.table2id.get(self.tabs.currentWidget(),None),None))
 
-        # disable showMetas checkbox if there is no data on input
         if len(self.data) == 0:
-            self.cbShowMeta.setEnabled(False)
             self.sendButton.setEnabled(False)
 
+        self.setCbShowMeta()
+
+    def setCbShowMeta(self):
+        for ti in range(self.tabs.count()):
+            if len(self.tabs.widget(ti).model().metas)>0:
+                self.cbShowMeta.setEnabled(True)
+                break
+        else:
+            self.cbShowMeta.setEnabled(False)
+            
     def sendReport(self):
         qTableInstance = self.tabs.currentWidget()
         id = self.table2id.get(qTableInstance, None)
@@ -492,11 +499,12 @@ class OWDataTable(OWWidget):
             self.drawAttributeLabels(table)
 
     def cbShowDistributions(self):
-        table = self.tabs.currentWidget()
-        if table:
-            table.setItemDelegate(OWGUI.TableBarItem(self, color=self.distColor) if self.showDistributions else \
-                                  QStyledItemDelegate(self))
-            table.reset()
+        delegate = OWGUI.TableBarItem(self, color=self.distColor) if self.showDistributions else QStyledItemDelegate(self)
+        for ti in range(self.tabs.count()):
+            self.tabs.widget(ti).setItemDelegate(delegate)
+        tab = self.tabs.currentWidget()
+        if tab:
+            tab.reset()
 
     # show data in the default order
     def btnResetSortClicked(self):
