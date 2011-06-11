@@ -9,6 +9,39 @@ import orange
 from OWWidget import *
 import OWGUI
 
+
+def table_sparsness(table):
+    """ Return the table sparseness (the ratio of unknown values in the table)
+    for both the regular part (attributes) and meta attributes (basket format).
+    
+    :param table: Data table.
+    :type table: :class:`Orange.data.Table`
+    
+    """
+    unknown_count = 0
+    all_count = 0
+    
+    for ex in table:
+        for val in ex:
+            if val.isSpecial():
+                unknown_count += 1
+            all_count += 1
+    regular_sparseness = float(unknown_count) / (all_count or 1)
+    
+    metas = table.domain.getmetas().values()
+    unknown_count = 0
+    all_count = 0
+    
+    for ex in table:
+        for meta in metas:
+            val = ex[meta]
+            if val.isSpecial():
+                unknown_count += 1
+            all_count += 1
+    meta_sparseness = float(unknown_count) / (all_count or 1)
+    return regular_sparseness, meta_sparseness
+
+    
 class OWAssociationRules(OWWidget):
     settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
     
@@ -28,8 +61,14 @@ class OWAssociationRules(OWWidget):
         self.dataset = None
 
         box = OWGUI.widgetBox(self.space, "Algorithm", addSpace = True)
-        self.cbSparseAlgorithm = OWGUI.checkBox(box, self, 'useSparseAlgorithm', 'Use algorithm for sparse data', tooltip="Use original Agrawal's algorithm", callback = self.checkSparse)
-        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classification rules")
+        self.cbSparseAlgorithm = OWGUI.checkBox(box, self, 'useSparseAlgorithm',
+                                        'Use algorithm for sparse data',
+                                        tooltip="Use original Agrawal's algorithm",
+                                        callback=self.checkSparse)
+        
+        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules',
+                                        'Induce classification rules',
+                                        tooltip="Induce classification rules")
         self.checkSparse()
 
         box = OWGUI.widgetBox(self.space, "Pruning", addSpace = True)
@@ -58,7 +97,10 @@ class OWAssociationRules(OWWidget):
 
     def generateRules(self):
         self.error()
+        self.warning(0)
         if self.dataset:
+            if self.dataset and self.useSparseAlgorithm and not self.datasetIsSparse:
+                self.warning(0, "Using algorithm for sparse data, but data does not appear to be sparse!")
             try:
                 num_steps = 20
                 for i in range(num_steps):
@@ -76,16 +118,19 @@ class OWAssociationRules(OWWidget):
         else:
             self.send("Association Rules", None)
 
-
     def checkSparse(self):
         self.cbClassificationRules.setEnabled(not self.useSparseAlgorithm)
         if self.useSparseAlgorithm:
             self.cbClassificationRules.setChecked(0)
 
-
-    def setData(self,dataset):
+    def setData(self, dataset):
         self.dataset = dataset
+        if dataset is not None:
+            regular, meta = table_sparsness(dataset)
+            self.datasetIsSparse = regular > 0.4 or meta > 0.4
+            
         self.generateRules()
+        
 
 if __name__=="__main__":
     a=QApplication(sys.argv)

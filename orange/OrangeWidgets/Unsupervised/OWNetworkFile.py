@@ -3,7 +3,7 @@
 <description>Reads data from a graf file (Pajek networks (.net) files and GML network files).</description>
 <icon>icons/NetworkFile.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>3100</priority>
+<priority>7410</priority>
 """
 
 #

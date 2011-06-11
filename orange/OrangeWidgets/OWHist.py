@@ -100,7 +100,7 @@ class OWInteractiveHist(OWHist):
 ##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
 
     def shadeTails(self):
-        if not self.xData and not self.yData:
+        if len(self.xData) == 0 and len(self.yData) == 0:
             return
         
         if self.type in ["hiTail", "twoTail"]:

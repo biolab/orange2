@@ -31,10 +31,6 @@ class TValue;
 #include <string>
 using namespace std;
 
-#ifndef offsetof
-  #define offsetof(_TYPE, _MEMBER) ((size_t) &((_TYPE *)0)->_MEMBER)
-#endif
-
 #define __REGISTER_ABSTRACT_CLASS \
   static TClassDescription st_classDescription; \
   virtual TClassDescription const *classDescription() const;

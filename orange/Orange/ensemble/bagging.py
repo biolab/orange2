@@ -116,10 +116,14 @@ class BaggedClassifier(orange.Classifier):
                 return value
             for i in range(len(freq)):
                 freq[i] = freq[i]/len(self.classifiers)
+            freq = Orange.statistics.distribution.Discrete(freq)
             if resultType == orange.GetProbabilities:
                 return freq
-            else:
+            elif resultType == orange.GetBoth:
                 return (value, freq)
+            else:
+                return value
+            
         elif self.classVar.varType ==Orange.data.Type.Continuous:
             votes = [c(instance, orange.GetBoth if resultType==\
                 orange.GetProbabilities else resultType) \
@@ -131,13 +135,17 @@ class BaggedClassifier(orange.Classifier):
                 from collections import defaultdict
                 prob = defaultdict(float)
                 for c, p in votes:
-                    try:
+                    try: 
                         prob[float(c)] += p[c] / wsum
                     except IndexError: # p[c] sometimes fails with index error
                         prob[float(c)] += 1.0 / wsum
                 prob = orange.ContDistribution(prob)
-                return self.classVar(pred), prob if resultType == orange.GetBoth\
+                return (self.classVar(pred), prob) if resultType == orange.GetBoth\
                     else prob
             elif resultType == orange.GetValue:
                 pred = sum([float(c) for c in votes]) / wsum
                 return self.classVar(pred)
+            
+    def __reduce__(self):
+        return type(self), (self.classifiers, self.name, self.classVar), dict(self.__dict__)
+    

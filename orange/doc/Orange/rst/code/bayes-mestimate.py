@@ -13,9 +13,9 @@ bayesWithM_L = Orange.classification.bayes.NaiveLearner(m=2, name="Naive Bayes w
 bayes = bayes_L(table)
 bayesWithM = bayesWithM_L(table)
 
-print bayes.conditionalDistributions
+print bayes.conditional_distributions
 # prints: <<'pre-presbyopic': <0.625, 0.125, 0.250>, 'presbyopic': <0.750, 0.125, 0.125>, ...>>
-print bayesWithM.conditionalDistributions
+print bayesWithM.conditional_distributions
 # prints: <<'pre-presbyopic': <0.625, 0.133, 0.242>, 'presbyopic': <0.725, 0.133, 0.142>, ...>>
 
 print bayes.distribution

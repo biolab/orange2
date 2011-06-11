@@ -314,5 +314,6 @@ if __name__=="__main__":
 
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.setClassificationTree(tree)
+    ow.show()
     a.exec_()
     ow.saveSettings()

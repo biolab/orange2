@@ -301,7 +301,7 @@ As usual in Python, the data table is considered False, when empty.
         instead of its own copies.
 
         In most cases, this function is preferred over the former
-        since it consumes mush less memory.
+        since it consumes much less memory.
 
         :param filt: filter list
         :type filt: list of integers

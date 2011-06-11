@@ -3,7 +3,7 @@
 <description>Embeds a model widget</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
-<priority>1100</priority>
+<priority>1120</priority>
 """
 
 import sip
@@ -36,7 +36,8 @@ class OWModelEmbedder(OWWidget):
         self.data = None
         self.model = None
         
-        self.resize(800, 600)
+        self.loadSettings()
+        
         self.widgets = {}
         
     def setData(self, data):

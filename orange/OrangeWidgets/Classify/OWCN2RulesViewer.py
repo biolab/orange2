@@ -33,45 +33,53 @@ class DistributionItemDelegate(QStyledItemDelegate):
     def __init__(self, parent):
         QStyledItemDelegate.__init__(self, parent)
 
-
     def displayText(self, value, locale):
         dist = value.toPyObject()
         if isinstance(dist, orange.Distribution):
             return QString("<" + ",".join(["%.1f" % c for c in dist]) + ">")
-#            return QString("")
         else:
             return QStyledItemDelegate.displayText(value, locale)
         
-    
     def sizeHint(self, option, index):
         metrics = QFontMetrics(option.font)
-        height = metrics.lineSpacing() * 2 + 8
-        width = metrics.width(self.displayText(index.data(Qt.DisplayRole), QLocale()))
+        height = metrics.lineSpacing() * 2 + 8 # 4 pixel margin
+        width = metrics.width(self.displayText(index.data(Qt.DisplayRole), QLocale())) + 8
         return QSize(width, height)
-    
     
     def paint(self, painter, option, index):
         dist = index.data(Qt.DisplayRole).toPyObject()
-        rect = option.rect
-        rect_w = rect.width() - len([c for c in dist if c]) - 2
-        rect_h = rect.height() - 2
+        rect = option.rect.adjusted(4, 4, -4, -4)
+        rect_w = rect.width() - len([c for c in dist if c]) # This is for the separators in the distribution bar
+        rect_h = rect.height()
         colors = OWColorPalette.ColorPaletteHSV(len(dist))
         abs = dist.abs
         dist_sum = 0
         
         painter.save()
+        painter.setFont(option.font)
         qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
         
         showText = getattr(self, "showDistText", True)
         metrics = QFontMetrics(option.font)
         drect_h = metrics.height()
         lineSpacing = metrics.lineSpacing()
+        leading = metrics.leading()
         distText = self.displayText(index.data(Qt.DisplayRole), QLocale())
-        if showText:
-            textPos = QPoint(rect.topLeft().x(), rect.center().y() - lineSpacing)
-            painter.drawText(QRect(textPos, QSize(rect.width(), lineSpacing)), Qt.AlignCenter, distText)
         
-        painter.translate(QPoint(rect.topLeft().x(), rect.center().y() - (drect_h/2 if not showText else  - 2)))
+        if option.state & QStyle.State_Selected:
+            color = option.palette.highlightedText().color()
+        else:
+            color = option.palette.text().color()
+#        painter.setBrush(QBrush(color))
+        painter.setPen(QPen(color))
+            
+        if showText:
+            textPos = rect.topLeft()
+            textRect = QRect(textPos, QSize(rect.width(), rect.height() / 2 - leading))
+            painter.drawText(textRect, Qt.AlignHCenter | Qt.AlignBottom, distText)
+            
+        painter.setPen(QPen(Qt.black))
+        painter.translate(QPoint(rect.topLeft().x(), rect.center().y() - (drect_h/2 if not showText else  0)))
         for i, count in enumerate(dist):
             if count:
                 color = colors[i]
@@ -79,22 +87,30 @@ class DistributionItemDelegate(QStyledItemDelegate):
                 width = round(rect_w * float(count) / abs)
                 painter.drawRect(QRect(1, 1, width, drect_h))
                 painter.translate(width, 0)
-        
         painter.restore()
-        
         
 class MultiLineStringItemDelegate(QStyledItemDelegate):
     def sizeHint(self, option, index):
         metrics = QFontMetrics(option.font)
         text = index.data(Qt.DisplayRole).toString()
-        return metrics.size(0, text)
-    
+        size = metrics.size(0, text)
+        return QSize(size.width() + 8, size.height() + 8) # 4 pixel margin
     
     def paint(self, painter, option, index):
         text = self.displayText(index.data(Qt.DisplayRole), QLocale())
         painter.save()
         qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
-        painter.drawText(option.rect, Qt.AlignLeft | Qt.AlignVCenter, text)
+        rect = option.rect.adjusted(4, 4, -4, -4)
+            
+        if option.state & QStyle.State_Selected:
+            color = option.palette.highlightedText().color()
+        else:
+            color = option.palette.text().color()
+#        painter.setBrush(QBrush(color))
+        painter.setPen(QPen(color))
+        
+            
+        painter.drawText(rect, option.displayAlignment, text)
         painter.restore()
         
         
@@ -102,8 +118,78 @@ class PyObjectItemDelegate(QStyledItemDelegate):
     def displayText(self, value, locale):
         obj = _toPyObject(value) #value.toPyObject()
         return QString(str(obj))
-            
+    
+    
+class PyFloatItemDelegate(QStyledItemDelegate):
+    def displayText(self, value, locale):
+        obj = _toPyObject(value)
+        if isinstance(obj, float):
+            return QString("%.2f" % obj)
+        else:
+            return QString(str(obj))
+        
+def rule_to_string(rule, show_distribution = True):
+    """
+    Write a string presentation of rule in human readable format.
+    
+    :param rule: rule to pretty-print.
+    :type rule: :class:`Orange.classification.rules.Rule`
+    
+    :param show_distribution: determines whether presentation should also
+        contain the distribution of covered instances
+    :type show_distribution: bool
+    
+    """
+    import Orange
+    def selectSign(oper):
+        if oper == Orange.core.ValueFilter_continuous.Less:
+            return "<"
+        elif oper == Orange.core.ValueFilter_continuous.LessEqual:
+            return "<="
+        elif oper == Orange.core.ValueFilter_continuous.Greater:
+            return ">"
+        elif oper == Orange.core.ValueFilter_continuous.GreaterEqual:
+            return ">="
+        else: return "="
 
+    if not rule:
+        return "None"
+    conds = rule.filter.conditions
+    domain = rule.filter.domain
+    
+    def pprint_values(values):
+        if len(values) > 1:
+            return "[" + ",".join(values) + "]"
+        else:
+            return str(values[0])
+        
+    ret = "IF "
+    if len(conds)==0:
+        ret = ret + "TRUE"
+
+    for i,c in enumerate(conds):
+        if i > 0:
+            ret += " AND "
+        if type(c) == Orange.core.ValueFilter_discrete:
+            ret += domain[c.position].name + "=" + pprint_values( \
+                   [domain[c.position].values[int(v)] for v in c.values])
+        elif type(c) == Orange.core.ValueFilter_continuous:
+            ret += domain[c.position].name + selectSign(c.oper) + str(c.ref)
+    if rule.classifier and type(rule.classifier) == Orange.classification.ConstantClassifier\
+            and rule.classifier.default_val:
+        ret = ret + " THEN "+domain.class_var.name+"="+\
+        str(rule.classifier.default_value)
+        if show_distribution:
+            ret += str(rule.class_distribution)
+    elif rule.classifier and type(rule.classifier) == Orange.classification.ConstantClassifier\
+            and type(domain.class_var) == Orange.core.EnumVariable:
+        ret = ret + " THEN "+domain.class_var.name+"="+\
+        str(rule.class_distribution.modus())
+        if show_distribution:
+            ret += str(rule.class_distribution)
+    return ret        
+
+        
 class OWCN2RulesViewer(OWWidget):
     settingsList = ["show_Rule_length", "show_Rule_quality", "show_Coverage",
                     "show_Predicted_class", "show_Distribution", "show_Rule"]
@@ -160,6 +246,8 @@ class OWCN2RulesViewer(OWWidget):
         
         self.tableView = QTableView()
         self.tableView.setItemDelegate(PyObjectItemDelegate(self))
+        self.tableView.setItemDelegateForColumn(1, PyFloatItemDelegate(self))
+        self.tableView.setItemDelegateForColumn(2, PyFloatItemDelegate(self))
         self.tableView.setItemDelegateForColumn(4, DistributionItemDelegate(self))
         self.tableView.setItemDelegateForColumn(5, MultiLineStringItemDelegate(self))
         self.tableView.setSortingEnabled(True)
@@ -182,19 +270,16 @@ class OWCN2RulesViewer(OWWidget):
         self.rules = []
         self.resize(800, 600)
         
-        
     def setRuleClassifier(self, classifier=None):
         self.classifier = classifier
         if classifier is not None:
             self.rules = classifier.rules
         else:
             self.rules = []
-            
         
     def handleNewSignals(self):
         self.updateRulesModel()
         self.commit()
-        
     
     def updateRulesModel(self):
         if self.classifier is not None:
@@ -212,28 +297,24 @@ class OWCN2RulesViewer(OWWidget):
             
             self.tableView.resizeColumnsToContents()
             self.tableView.resizeRowsToContents()
-            
     
     def ruleText(self, rule):
-        text = orngCN2.ruleToString(rule, showDistribution=False)
+        text = rule_to_string(rule, show_distribution=False)
         p = re.compile(r"[0-9]\.[0-9]+")
         text = p.sub(lambda match: "%.2f" % float(match.group()[0]), text)
         text = text.replace("AND", "AND\n   ")
         text = text.replace("THEN", "\nTHEN")
         return text
-        
     
     def updateVisibleColumns(self):
         for i, header in enumerate(self.headers):
             self.tableView.horizontalHeader().setSectionHidden(i, not getattr(self, "show_%s" % header.replace(" ", "_")))
-    
     
     def commitIf(self):
         if self.autoCommit:
             self.commit()
         else:
             self.changedFlag = True
-    
             
     def selectedAttrsFromRules(self, rules):
         selected = []
@@ -241,7 +322,6 @@ class OWCN2RulesViewer(OWWidget):
             for c in rule.filter.conditions:
                 selected.append(rule.filter.domain[c.position])
         return set(selected)
-    
     
     def selectedExamplesFromRules(self, rules, examples):
         selected = []

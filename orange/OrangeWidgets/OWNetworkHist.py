@@ -169,7 +169,7 @@ class OWNetworkHist():
             matrix = self.matrix
             
             if hasattr(self.matrix, "items"):               
-                if type(self.matrix.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
+                if type(self.matrix.items) == orange.ExampleTable:
                     #graph.setattr("items", self.data.items)
                     graph.items = self.matrix.items
                 else:
@@ -261,7 +261,8 @@ class OWNetworkHist():
                 self.graph = graph
         
         if matrix != None:
-            self.matrix = matrix
+            matrix.items  = self.graph.items
+            self.graph_matrix = matrix
             
         self.pconnected = nedges
         self.nedges = n

@@ -49,6 +49,7 @@ MAPPING = {"orange": "Orange.core",
            "orngWrap": "Orange.optimization",
            "orngClustering": "Orange.clustering",
            "orngLookup": "Orange.classification.lookup",
+           "orngLinProj": "Orange.projection.linear",
            }
 
 

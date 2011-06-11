@@ -21,13 +21,26 @@ def readMatrix(fn, progress=None):
         pkl_file = open(fn, 'rb')
         matrix = pickle.load(pkl_file)
         data = None
-        #print self.matrix
         if hasattr(matrix, 'items'):
-            data = matrix.items
+            items = matrix.items
+            if isinstance(items, orange.ExampleTable):
+                data = items
+            elif isinstance(items, list) or hasattr(item, "__iter__"):
+                labels = items
         pkl_file.close()
-        
+    elif type(fn) != file and os.path.splitext(fn)[1] == '.npy':
+        import numpy
+        nmatrix = numpy.load(fn)
+        matrix = orange.SymMatrix(len(nmatrix))
+        milestones = orngMisc.progressBarMilestones(matrix.dim, 100)
+        for i in range(len(nmatrix)):
+            for j in range(i+1):
+                matrix[j,i] = nmatrix[i,j]
+                
+            if progress and i in milestones:
+                progress.advance()
+        #labels = [""] * len(nmatrix)
     else:    
-        #print fn
         if type(fn) == file:
             fle = fn
         else:
@@ -39,9 +52,9 @@ def readMatrix(fn, progress=None):
         spl = lne.split()
         try:
             dim = int(spl[0])
-        except:
-            msg = "Matrix dimension expected in the first line"
-            raise exceptions.Exception
+        except IndexError:
+            raise ValueError("Matrix dimension expected in the first line.")
+        
         #print dim
         labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
         matrix = orange.SymMatrix(dim)
@@ -56,38 +69,36 @@ def readMatrix(fn, progress=None):
             if li > dim:
                 if not li.strip():
                     continue
-                msg = "File too long"
-                raise exceptions.IndexError
+                raise ValueError("File to long")
+            
             spl = lne.split("\t")
             if labeled:
                 labels.append(spl[0].strip())
                 spl = spl[1:]
             if len(spl) > dim:
-                msg = "Line %i too long" % li+2
-                raise exceptions.IndexError
+                raise ValueError("Line %i too long" % li+2)
+            
             for lj, s in enumerate(spl):
                 if s:
                     try:
                         matrix[li, lj] = float(s)
-                    except:
-                        msg = "Invalid number in line %i, column %i" % (li+2, lj)
+                    except ValueError:
+                        raise ValueError("Invalid number in line %i, column %i" % (li+2, lj))
+                    
             if li in milestones:
                 if progress:
                     progress.advance()
-        if progress:
-            progress.finish()
-        
-    if msg:
-        raise exceptions.Exception(msg)
+    if progress:
+        progress.finish()
 
     return matrix, labels, data
 
 class OWDistanceFile(OWWidget):
     settingsList = ["recentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
-    def __init__(self, parent=None, signalManager=None, inputItems=True):
+    def __init__(self, parent=None, signalManager=None, name="Distance File", inputItems=True):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, "Distance File", wantMainArea = 0, resizingEnabled = 0)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         
         if inputItems: 
             self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
@@ -177,23 +188,24 @@ class OWDistanceFile(OWWidget):
             self.filecombo.addItem(os.path.split(file)[1])
         #self.filecombo.updateGeometry()
 
-        self.error()
+        self.matrix = None
+        self.labels = None
+        self.data = None
+        pb = OWGUI.ProgressBar(self, 100)
         
+        self.error()
         try:
-            self.matrix = None
-            self.labels = None
-            self.data = None
-            pb = OWGUI.ProgressBar(self, 100)
             self.matrix, self.labels, self.data = readMatrix(fn, pb)
-            self.relabel()
-        except:
-            self.error("Error while reading the file")
+        except Exception, ex:
+            self.error("Error while reading the file: '%s'" % str(ex))
+            return
+        self.relabel()
             
     def relabel(self):
         #print 'relabel'
         self.error()
         matrix = self.matrix
-        if matrix and self.data:
+        if matrix is not None and self.data is not None:
             if self.takeAttributeNames:
                 domain = self.data.domain
                 if matrix.dim == len(domain.attributes):
@@ -208,7 +220,7 @@ class OWDistanceFile(OWWidget):
                     matrix.setattr("items", self.data)
                 else:
                     self.error("The number of examples doesn't match the matrix dimension")
-        else:
+        elif matrix and self.labels:
             lbl = orange.StringVariable('label')
             self.data = orange.ExampleTable(orange.Domain([lbl]), 
                                             [[str(l)] for l in self.labels])
@@ -217,7 +229,7 @@ class OWDistanceFile(OWWidget):
             matrix.setattr("items", self.data)
         
         if self.data == None and self.labels == None:
-            matrix.setattr("items", range(matrix.dim))
+            matrix.setattr("items", [str(i) for i in range(matrix.dim)])
         
         self.matrix.matrixType = orange.SymMatrix.Symmetric
         self.send("Distance Matrix", self.matrix)

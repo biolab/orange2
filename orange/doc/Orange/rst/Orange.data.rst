@@ -8,4 +8,5 @@ Data description (``data``)
     Orange.data.domain
     Orange.data.value
     Orange.data.instance
-    Orange.data.table.rst
+    Orange.data.table
+    Orange.data.sample

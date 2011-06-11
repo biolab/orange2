@@ -12,9 +12,31 @@ Examples
 
 An example.
 
-.. automethod:: Orange.clustering.hierarchical.clustering
+Utility Functions
+=================
+
+.. autofunction:: clustering
+.. autofunction:: clustering_features
+.. autofunction:: cluster_to_list
+.. autofunction:: top_clusters
+.. autofunction:: top_cluster_membership
+.. autofunction:: order_leaves
+
+.. autofunction:: postorder
+.. autofunction:: preorder
+.. autofunction:: dendrogram_layout
+.. autofunction:: dendrogram_draw
+.. autofunction:: prune
+.. autofunction:: pruned
+.. autofunction:: cluster_depths
+.. autofunction:: instance_distance_matrix
+.. autofunction:: feature_distance_matrix
+.. autofunction:: joining_cluster
+.. autofunction:: cophenetic_distances
+.. autofunction:: cophenetic_correlation
 
 """
+
 import orange
 import Orange
 from Orange.core import HierarchicalClustering, \
@@ -25,25 +47,69 @@ from Orange.misc import progressBarMilestones
                         
 import sys
 
+SINGLE = HierarchicalClustering.Single
+AVERAGE = HierarchicalClustering.Average
+COMPLETE = HierarchicalClustering.Complete
+WARD = HierarchicalClustering.Ward
 
 def clustering(data,
                distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
-               linkage=orange.HierarchicalClustering.Average,
+               linkage=AVERAGE,
                order=False,
                progressCallback=None):
-    """Return a hierarhical clustering of the data set."""
+    """ Return a hierarchical clustering of the instances in a data set.
+    
+    :param data: Input data table for clustering.
+    :type data: :class:`Orange.data.Table`
+    :param distance_constructor: Instance distance constructor
+    :type distance_constructor: :class:`Orange.distances.ExamplesDistanceConstructor`
+    :param linkage: Linkage flag. Must be one of global module level flags:
+    
+        - SINGLE
+        - AVERAGE
+        - COMPLETE
+        - WARD
+        
+    :type linkage: int
+    :param order: If `True` run `order_leaves` on the resulting clustering.
+    :type order: bool
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    """
     distance = distanceConstructor(data)
     matrix = orange.SymMatrix(len(data))
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
+    root = HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
     if order:
         order_leaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
     return root
 
 def clustering_features(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
-    """Return hierarhical clustering of attributes in the data set."""
+    """ Return hierarchical clustering of attributes in a data set.
+    
+    :param data: Input data table for clustering.
+    :type data: :class:`Orange.data.Table`
+    :param distance: Attribute distance constructor 
+        .. note:: currently not used.
+    :param linkage: Linkage flag. Must be one of global module level flags:
+    
+        - SINGLE
+        - AVERAGE
+        - COMPLETE
+        - WARD
+        
+    :type linkage: int
+    :param order: If `True` run `order_leaves` on the resulting clustering.
+    :type order: bool
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    """
     matrix = orange.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
@@ -54,7 +120,15 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
     return root
 
 def cluster_to_list(node, prune=None):
-    """Return a list of clusters down from the node of hierarchical clustering."""
+    """ Return a list of clusters down from the node of hierarchical clustering.
+    
+    :param node: Cluster node.
+    :type node: :class:`HierarchicalCluster`
+    :param prune: If not `None` it must be a positive integer. Any cluster
+        with less then `prune` items will be left out of the list.
+    :type node: int or `NoneType`
+    
+    """
     if prune:
         if len(node) <= prune:
             return [] 
@@ -63,7 +137,14 @@ def cluster_to_list(node, prune=None):
     return [node]
 
 def top_clusters(root, k):
-    """Return k topmost clusters from hierarchical clustering."""
+    """ Return k topmost clusters from hierarchical clustering.
+    
+    :param root: Root cluster.
+    :type root: :class:`HierarchicalCluster`
+    :param k: Number of top clusters.
+    :type k: int
+    
+    """
     candidates = set([root])
     while len(candidates) < k:
         repl = max([(max(c.left.height, c.right.height), c) for c in candidates if c.branches])[1]
@@ -73,7 +154,14 @@ def top_clusters(root, k):
     return candidates
 
 def top_cluster_membership(root, k):
-    """Return data instances' cluster membership (list of indices) to k topmost clusters."""
+    """ Return data instances' cluster membership (list of indices) to k topmost clusters.
+    
+    :param root: Root cluster.
+    :type root: :class:`HierarchicalCluster`
+    :param k: Number of top clusters.
+    :type k: int
+    
+    """
     clist = top_clusters(root, k)
     cmap = [None] * len(root)
     for i, c in enumerate(clist):
@@ -83,14 +171,19 @@ def top_cluster_membership(root, k):
 
 def order_leaves(tree, matrix, progressCallback=None):
     """Order the leaves in the clustering tree.
-
+    
     (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering')
-    Arguments:
-        tree   --binary hierarchical clustering tree of type orange.HierarchicalCluster
-        matrix --orange.SymMatrix that was used to compute the clustering
-        progressCallback --function used to report progress
+    
+    :param tree: Binary hierarchical clustering tree.
+    :type tree: :class:`HierarchicalCluster`
+    :param matrix: SymMatrix that was used to compute the clustering.
+    :type matrix: :class:`Orange.core.SymMatrix`
+    :param progress_callback: Function used to report on progress.
+    :type progress_callback: function
+    
+    .. note:: The ordering is done inplace. 
+    
     """
-#    from Orange.misc import recursion_limit
     
     objects = getattr(tree.mapping, "objects", None)
     tree.mapping.setattr("objects", range(len(tree)))
@@ -269,6 +362,8 @@ def order_leaves(tree, matrix, progressCallback=None):
     if objects:
         tree.mapping.setattr("objects", objects)
 
+""" Matplotlib dendrogram ploting.
+"""
 try:
     import numpy
 except ImportError:
@@ -504,6 +599,9 @@ class DendrogramPlotPylab(object):
             self.plt.show()
         
         
+""" Dendrogram ploting using Orange.misc.reander
+"""
+
 from orngMisc import ColorPalette, EPSRenderer
 class DendrogramPlot(object):
     """ A class for drawing dendrograms
@@ -642,6 +740,10 @@ class DendrogramPlot(object):
         self.renderer.save(filename)
         
 def dendrogram_draw(filename, *args, **kwargs):
+    """ Plot the dendrogram to `filename`.
+    
+    .. todo:: Finish documentation.
+    """
     import os
     from orngMisc import PILRenderer, EPSRenderer, SVGRenderer
     name, ext = os.path.splitext(filename)
@@ -649,13 +751,6 @@ def dendrogram_draw(filename, *args, **kwargs):
 #    print kwargs["renderer"], ext
     d = DendrogramPlot(*args, **kwargs)
     d.plot(filename)
-    
-    
-"""
-Utility functions
-=================
-
-"""
     
 def postorder(cluster):
     """ Return a post order list of clusters.
@@ -738,11 +833,28 @@ def dendrogram_layout(root_cluster, expand_leaves=False):
             
     return result
     
+def clone(cluster):
+    """ Clone a cluster, including it's subclusters.
+    
+    :param cluster: Cluster to clone
+    :type cluster: :class:`HierarchialCluster`
+    """
+    import copy
+    clones = {}
+    mapping = copy.copy(cluster.mapping)
+    for node in postorder(cluster):
+        node_clone = copy.copy(node)
+        if node.branches:
+            node_clone.branches = [clones[b] for b in node.branches]
+        node_clone.mapping = mapping
+        clones[node] = node_clone
+        
+    return clones[cluster]
     
 def pruned(root_cluster, level=None, height=None, condition=None):
     """ Return a new pruned clustering instance.
     
-    .. note:: This uses `copy.deepcopy` to create a copy of the root_cluster
+    .. note:: This uses `clone` to create a copy of the root_cluster
         instance.
     
     :param cluster: Cluster to prune.
@@ -761,23 +873,8 @@ def pruned(root_cluster, level=None, height=None, condition=None):
     :type condition: function 
     
     """
-    import copy
-    
-    # XXX This is unsafe HierarchicalCluster should take care of copying
-    if hasattr(root_cluster.mapping, "objects"):
-        objects = root_cluster.mapping.objects
-        root_cluster.mapping.objects = None
-        has_objects = True
-    else:
-        has_objects = False
-        
-    root_cluster = copy.deepcopy(root_cluster)
-    
+    root_cluster = clone(root_cluster)
     prune(root_cluster, level, height, condition)
-    
-    if has_objects:
-        root_cluster.mapping.objects = objects
-        
     return root_cluster
     
     

@@ -105,12 +105,21 @@ Server files
 
 .. automodule:: Orange.misc.serverfiles
 
-"""
+=========
+`environ`
+=========
 
+.. index:: environment
+
+.. automodule:: Orange.misc.environ
+
+"""
+import environ
 import counters
 import selection
 import render
 import serverfiles
+
 # addons is intentionally not imported; if it were, add-ons' directories would
 # be added to the python path. If that sounds OK, this can be changed ...
 
@@ -230,7 +239,7 @@ def lru_cache(maxsize=100):
         import functools
         cache = {}
         
-        functools.wraps(func)
+        @functools.wraps(func)
         def wrapped(*args, **kwargs):
             key = args + tuple(sorted(kwargs.items()))
             if key not in cache:
@@ -249,9 +258,25 @@ def lru_cache(maxsize=100):
             cache.clear()
         
         wrapped.clear = clear
+        wrapped._cache = cache
         
         return wrapped
     return decorating_function
+
+
+class recursion_limit(object):
+    """ A context manager that sets a new recursion limit. 
+    
+    """
+    def __init__(self, limit=1000):
+        self.limit = limit
+        
+    def __enter__(self):
+        self.old_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(self.limit)
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.setrecursionlimit(self.old_limit)
 
 
 __doc__ += """\
@@ -315,15 +340,18 @@ def deprecated_members(name_map, wrap_methods="all", in_place=True):
     
     Example ::
             
-        >>> @deprecated_members({"fooBar": "foo_bar", "setFooBar":"set_foo_bar"},
-        ...                    wrap_methods=["set_foo_bar", "__init__"])
-        ... class A(object):
+        >>> class A(object):
         ...     def __init__(self, foo_bar="bar"):
         ...         self.set_foo_bar(foo_bar)
         ...     
         ...     def set_foo_bar(self, foo_bar="bar"):
         ...         self.foo_bar = foo_bar
-        ...         
+        ...
+        ... A = deprecated_members(
+        ... {"fooBar": "foo_bar", 
+        ...  "setFooBar":"set_foo_bar"},
+        ... wrap_methods=["set_foo_bar", "__init__"])(A)
+        ... 
         ...
         >>> a = A(fooBar="foo")
         __main__:1: DeprecationWarning: 'fooBar' is deprecated. Use 'foo_bar' instead!
@@ -332,7 +360,14 @@ def deprecated_members(name_map, wrap_methods="all", in_place=True):
         >>> a.setFooBar("FooBar!")
         __main__:1: DeprecationWarning: 'setFooBar' is deprecated. Use 'set_foo_bar' instead!
         
+    .. note:: This decorator does nothing if
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment
+        variable is set to `True`.
+        
     """
+    if environ.orange_no_deprecated_members:
+        return lambda cls: cls
+    
     def is_wrapped(method):
         """ Is member method already wrapped.
         """
@@ -386,7 +421,14 @@ def deprecated_keywords(name_map):
         __main__:1: DeprecationWarning: 'myArg' is deprecated. Use 'my_arg' instead!
         Arg
         
+    .. note:: This decorator does nothing if
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment
+        variable is set to `True`.
+        
     """
+    if environ.orange_no_deprecated_members:
+        return lambda func: func
+    
     def decorator(func):
         @wraps(func)
         def wrap_call(*args, **kwargs):
@@ -417,7 +459,14 @@ def deprecated_attribute(old_name, new_name):
         __main__:1: DeprecationWarning: 'myAttr' is deprecated. Use 'my_attr' instead!
         123
         
+    .. note:: This decorator does nothing and returns None if
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment
+        variable is set to `True`.
+        
     """
+    if environ.orange_no_deprecated_members:
+        return None
+    
     def fget(self):
         deprecation_warning(old_name, new_name, stacklevel=3)
         return getattr(self, new_name)
@@ -432,8 +481,7 @@ def deprecated_attribute(old_name, new_name):
     
     prop = property(fget, fset, fdel,
                     doc="A deprecated member '%s'. Use '%s' instead." % (old_name, new_name))
-    return prop
-
+    return prop 
 
 """
 Some utility functions common to Orange classes.
@@ -476,4 +524,6 @@ def _orange__reduce__(self):
             __reduce__ = _orange__reduce()
     """ 
     return type(self), (), dict(self.__dict__)
+
+
     

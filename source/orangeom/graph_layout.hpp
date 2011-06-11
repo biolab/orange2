@@ -40,6 +40,7 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 #include <time.h>
 #include <queue>
 
@@ -50,6 +51,8 @@
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
 #include "stringvars.hpp"
+#include "table.hpp"
+#include "symmatrix.hpp"
 
 using namespace std;
 
@@ -62,11 +65,12 @@ public:
 	~TGraphLayout();
 	int set_graph(PyObject *graph);
 	void dump_coordinates();
+	void dump_disp();
 	void clear_disp();
 	// graph layout optimization
 	int random();
 	void fr_repulsive_force(double kk2, int type);
-	void fr_attractive_force(int type);
+	void fr_attractive_force(int type, bool weighted);
 	void fr_limit_displacement();
 	int fr(int steps, bool weighted);
 	int fr_radial(int steps, int nCircles);

@@ -239,6 +239,9 @@ class RandomForestClassifier(orange.Classifier):
             if resultType == orange.GetValue: return cvalue
             elif resultType == orange.GetProbabilities: return cprob
             else: return (cvalue, cprob)
+            
+    def __reduce__(self):
+        return type(self), (self.classifiers, self.name, self.domain, self.classVar), dict(self.__dict__)
 
 ### MeasureAttribute_randomForests
 

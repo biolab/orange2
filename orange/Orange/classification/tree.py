@@ -2230,7 +2230,7 @@ class TreeLearner(Orange.core.Learner):
         The default stopping criterion stops induction when all examples 
         in a node belong to the same class.
 
-    .. attribute:: mForPruning
+    .. attribute:: m_pruning
 
         If non-zero, invokes an error-based bottom-up post-pruning,
         where m-estimate is used to estimate class probabilities 
@@ -2294,8 +2294,8 @@ class TreeLearner(Orange.core.Learner):
         tree = bl(examples, weight)
         if getattr(self, "sameMajorityPruning", 0):
             tree = Pruner_SameMajority(tree)
-        if getattr(self, "mForPruning", 0):
-            tree = Pruner_m(tree, m=self.mForPruning)
+        if getattr(self, "m_pruning", 0):
+            tree = Pruner_m(tree, m=self.m_pruning)
 
         return TreeClassifier(baseClassifier=tree) 
 
@@ -2393,6 +2393,11 @@ class TreeLearner(Orange.core.Learner):
                 setattr(learner, a, getattr(self, a))
 
         return learner
+
+
+TreeLearner = Orange.misc.deprecated_members({
+          "mForPruning": "m_pruning",
+}, wrap_methods=[])(TreeLearner)
 
 #
 # the following is for the output
@@ -2873,7 +2878,7 @@ class _TreeDumper:
             
             for i, branch in enumerate(node.branches):
                 if branch:
-                    internalBranchName = internalName+chr(i+65)
+                    internalBranchName = "%s-%d" % (internalName,i)
                     self.fle.write('%s -> %s [ label="%s" ]\n' % \
                         (_quoteName(internalName), 
                          _quoteName(internalBranchName), 
@@ -2882,7 +2887,7 @@ class _TreeDumper:
                     
         else:
             self.fle.write('%s [ shape=%s label="%s"]\n' % \
-                (internalName, self.leafShape, 
+                (_quoteName(internalName), self.leafShape, 
                 self.formatString(self.leafStr, node, parent)))
 
 
@@ -2966,13 +2971,13 @@ class TreeClassifier(Orange.classification.Classifier):
             self).dumpTree()
 
     def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
-        """ Prints the tree to a file in a format used by 
+        """ Print the tree to a file in a format used by 
         `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
         Uses the same parameters as :meth:`dump` defined above
         plus two parameters which define the shape used for internal
-        nodes and laves of the tree:
+        nodes and leaves of the tree:
 
-        :param leafShape: Shape of the outline around leves of the tree. 
+        :param leafShape: Shape of the outline around leaves of the tree. 
             If "plaintext", no outline is used (default: "plaintext").
         :type leafShape: string
         :param internalNodeShape: Shape of the outline around internal nodes 
@@ -2982,7 +2987,7 @@ class TreeClassifier(Orange.classification.Classifier):
         Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
         for various outlines supported by GraphViz.
         """
-        fle = type(fileName) == str and file(fileName, "wt") or fileName
+        fle = type(fileName) == str and open(fileName, "wt") or fileName
 
         _TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
             _TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 

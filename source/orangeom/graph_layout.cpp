@@ -67,6 +67,15 @@ void TGraphLayout::dump_coordinates()
 	}
 }
 
+void TGraphLayout::dump_disp()
+{
+	for (int i = 0; i < nVertices; i++)
+	{
+		cout << disp[0][i] << "  " << disp[1][i] << endl;
+	}
+}
+
+
 int TGraphLayout::random()
 {
 	srand(time(NULL));
@@ -289,8 +298,8 @@ void TGraphLayout::fr_repulsive_force(double kk2, int type)
 	// type = 1 - radial fr
 	// type = 2 - smooth fr
 	int u, v;
-	for (v = 0; v < nVertices - 1; v++) {
-		for (u = v + 1; u < nVertices; u++) {
+	for (v = 0; v < nVertices; v++) {
+		for (u = 0; u < v; u++) {
 			if (type == 1) {
 				if (level[u] == level[v]) {
 					k = kVector[level[u]];
@@ -319,9 +328,9 @@ void TGraphLayout::fr_repulsive_force(double kk2, int type)
 			double dif2 = difX * difX + difY * difY;
 
 			if (dif2 < kk2) {
-				if (dif2 == 0)
+				if (dif2 == 0) {
 					dif2 = 1;
-
+				}
 				double dX = difX * k2 / dif2;
 				double dY = difY * k2 / dif2;
 
@@ -335,7 +344,7 @@ void TGraphLayout::fr_repulsive_force(double kk2, int type)
 	}
 }
 
-void TGraphLayout::fr_attractive_force(int type)
+void TGraphLayout::fr_attractive_force(int type, bool weighted)
 {
 	// type = 0 - classic fr
 	// type = 1 - radial fr
@@ -367,9 +376,16 @@ void TGraphLayout::fr_attractive_force(int type)
 		double difY = pos[1][v] - pos[1][u];
 
 		double dif = sqrt(difX * difX + difY * difY);
-				
-		double dX = difX * dif / k * weights[j];
-		double dY = difY * dif / k * weights[j];
+		
+		double dX, dY;
+
+		if (weighted) {
+			dX = difX * dif / k * weights[j];
+			dY = difY * dif / k * weights[j];
+		} else {
+			dX = difX * dif / k;
+			dY = difY * dif / k;
+		}
 
 		disp[0][v] -= dX;
 		disp[1][v] -= dY;
@@ -387,11 +403,11 @@ void TGraphLayout::fr_limit_displacement()
 	for (v = 0; v < nVertices; v++) {
 		double dif = sqrt(pow(disp[0][v], 2) + pow(disp[1][v], 2));
 
-		if (dif == 0)
+		if (dif == 0) {
 			dif = 1;
-
-		pos[0][v] = pos[0][v] + (disp[0][v] * min(fabs(disp[0][v]), temperature) / dif);
-		pos[1][v] = pos[1][v] + (disp[1][v] * min(fabs(disp[1][v]), temperature) / dif);
+		}
+		pos[0][v] += (disp[0][v] * min(fabs(disp[0][v]), temperature) / dif);
+		pos[1][v] += (disp[1][v] * min(fabs(disp[1][v]), temperature) / dif);
 
 		//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 		//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
@@ -410,12 +426,12 @@ int TGraphLayout::fr(int steps, bool weighted)
 	k = sqrt(k2);
 	kk = 2 * k;
 	double kk2 = kk * kk;
-
+	
 	// iterations
 	for (i = 0; i < steps; i++) {
 		clear_disp();
 		fr_repulsive_force(kk2, 0);
-		fr_attractive_force(0);
+		fr_attractive_force(0, weighted);
 		fr_limit_displacement();
 		temperature = temperature * coolFactor;
 	}
@@ -440,7 +456,7 @@ int TGraphLayout::fr_radial(int steps, int nCircles)
 	for (i = 0; i < steps; i++) {
 		clear_disp();
 		fr_repulsive_force(kk2, 1);
-		fr_attractive_force(1);
+		fr_attractive_force(1, false);
 		fr_limit_displacement();
 		// limit the maximum displacement to the temperature t
 		// and then prevent from being displaced outside frame
@@ -576,6 +592,22 @@ bool *TGraphLayout::pyvector_to_Carrayptrs(PyArrayObject *arrayin)  {
 
 int TGraphLayout::set_graph(PyObject *graph)
 {
+	if (graph == NULL) {
+		nVertices = 0;
+		nLinks = 0;
+		npy_intp dims[2];
+		dims[0] = 2;
+		dims[1] = nVertices;
+		free_Carrayptrs(pos);
+		coors = NULL;
+		pos = NULL;
+		links[0].clear();
+		links[1].clear();
+		weights.clear();
+		disp[0].clear();
+		disp[1].clear();
+		return 0;
+	}
 	PyObject* nodes = PyObject_GetAttrString(graph, "node");
 	PyObject* adj = PyObject_GetAttrString(graph, "adj");
 
@@ -606,13 +638,14 @@ int TGraphLayout::set_graph(PyObject *graph)
 	disp[1].resize(nVertices, 0);
 
 	PyObject *key_u, *value_u, *key_v, *value_v;
-	Py_ssize_t pos_u = 0, pos_v = 0;
+	Py_ssize_t pos_u = 0;
 
 	while (PyDict_Next(adj, &pos_u, &key_u, &value_u)) {
-		int u = PyInt_AS_LONG(key_u) - 1;
+		int u = PyInt_AS_LONG(key_u);
 
+		Py_ssize_t pos_v = 0;
 		while (PyDict_Next(value_u, &pos_v, &key_v, &value_v)) {
-			int v = PyInt_AS_LONG(key_v) - 1;
+			int v = PyInt_AS_LONG(key_v);
 			links[0].push_back(u);
 			links[1].push_back(v);
 			weights.push_back(1); // TODO: compute weight
@@ -654,14 +687,30 @@ PyObject *GraphLayout_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BA
 PyObject *GraphLayout_set_graph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Orange.network.Graph) -> None")
 {
   PyTRY
-	PyObject* graph;
+	PyObject* graph = Py_None;
+	PyObject* positions = Py_None;
 
-	if (!PyArg_ParseTuple(args, "O:GraphLayout.set_graph", &graph))
+	if (!PyArg_ParseTuple(args, "|OO:GraphLayout.set_graph", &graph, &positions)) {
 		  return PYNULL;
+	}
 
 	CAST_TO(TGraphLayout, graph_layout);
-	
-	graph_layout->set_graph(graph);
+
+	if (graph == Py_None) {
+		graph_layout->set_graph(NULL);
+	} else {
+		graph_layout->set_graph(graph);
+
+		if (positions != Py_None && PyList_Size(positions) == graph_layout->nVertices) {
+			int i;
+			for (i = 0; i < graph_layout->nVertices; i++) {
+				double x,y;
+				PyArg_ParseTuple(PyList_GetItem(positions, i), "dd", &x, &y);
+				graph_layout->pos[0][i] = x;
+				graph_layout->pos[1][i] = y;
+			}
+		}
+	}
 	
 	RETURN_NONE;
   PyCATCH
@@ -721,7 +770,7 @@ PyObject *GraphLayout_fr(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(
 	}
 
 	if (graph_layout->fr(steps, weighted) > 0) {
-		PYERROR(PyExc_SystemError, "fr failed", NULL);
+		PYERROR(PyExc_SystemError, "fr failed", PYNULL);
 	}
 
 	return Py_BuildValue("d", graph_layout->temperature);
@@ -1040,6 +1089,375 @@ PyObject *GraphLayout_get_vertices_in_rect(PyObject *self, PyObject *args) PYARG
 	}
 
 	return vertices;
+  PyCATCH
+}
+
+PyObject *GraphLayout_edges_from_distance_matrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper, kNN) -> list of edges")
+{
+  PyTRY
+	PyObject *pyMatrix;
+	double lower;
+	double upper;
+	int kNN = 0;
+	int andor = 0;
+
+	if (!PyArg_ParseTuple(args, "Odd|ii:GraphLayout.edges_from_distance_matrix", &pyMatrix, &lower, &upper, &kNN))
+		return PYNULL;
+
+	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
+	//cout << "kNN: " << kNN << endl;
+	//cout << "andor: " << andor << endl;
+
+	int i,j;
+	//vector<coord_t> edges_interval;
+	PyObject* edges = PyList_New(0);
+
+	if (matrix->matrixType == 0) {
+		// lower
+		for (i = 0; i < matrix->dim; i++) {
+			bool connected = false;
+			for (j = i+1; j < matrix->dim; j++) {
+				//cout << "i " << i << " j " << j;
+				double value = matrix->getitem(j,i);
+				//cout << " value " << value << endl;
+				if (lower <=  value && value <= upper) {
+					connected = true;
+					//edges_interval.push_back(coord_t(j, i));
+					PyObject *nel = Py_BuildValue("iid", j, i, value);
+					PyList_Append(edges, nel);
+					Py_DECREF(nel);
+				}
+			}
+		}
+	} else {
+		// upper
+		for (i = 0; i < matrix->dim; i++) {
+			bool connected = false;
+			for (j = i+1; j < matrix->dim; j++) {
+				double value = matrix->getitem(i,j);
+				if (lower <=  value && value <= upper) {
+					connected = true;
+					//edges_interval.push_back(coord_t(i, j));
+					PyObject *nel = Py_BuildValue("iid", i, j, value);
+					PyList_Append(edges, nel);
+					Py_DECREF(nel);
+				}
+			}
+		}
+	}
+	
+	//PyObject* edges_knn = PyList_New(0);
+	if (kNN > 0) {
+		for (i = 0; i < matrix->dim; i++) {
+			vector<int> closest;
+			matrix->getknn(i, kNN, closest);
+
+			for (j = 0; j < closest.size(); j++) {
+				//edges_knn.push_back(coord_t(i, closest[j]));
+				double value = matrix->getitem(i, closest[j]);
+				PyObject *nel = Py_BuildValue("iid", i, closest[j], value);
+				PyList_Append(edges, nel);
+				Py_DECREF(nel);
+			}
+		}
+	}
+
+	if (andor == 0) {
+		
+	}
+
+	return edges;
+  PyCATCH;
+}
+
+
+WRAPPER(ExampleTable)
+
+int getWords1(string const& s, vector<string> &container)
+{
+    int n = 0;
+	bool quotation = false;
+	container.clear();
+    string::const_iterator it = s.begin(), end = s.end(), first;
+    for (first = it; it != end; ++it) {
+        // Examine each character and if it matches the delimiter
+        if ((!quotation && (' ' == *it || '\t' == *it || '\r' == *it || '\f' == *it || '\v' == *it || ',' == *it)) || ('\n' == *it)) {
+            if (first != it) {
+                // extract the current field from the string and
+                // append the current field to the given container
+                container.push_back(string(first, it));
+                ++n;
+
+                // skip the delimiter
+                first = it + 1;
+            } else {
+                ++first;
+            }
+        }
+		else if (('\"' == *it) || ('\'' == *it) || ('(' == *it) || (')' == *it)) {
+			if (quotation) {
+				quotation = false;
+
+				// extract the current field from the string and
+                // append the current field to the given container
+                container.push_back(string(first, it));
+                ++n;
+
+                // skip the delimiter
+                first = it + 1;
+			} else {
+				quotation = true;
+
+				// skip the quotation
+				first = it + 1;
+			}
+		}
+    }
+    if (first != it) {
+        // extract the last field from the string and
+        // append the last field to the given container
+        container.push_back(string(first, it));
+        ++n;
+    }
+    return n;
+}
+
+PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Edge List")
+{
+  PyTRY
+	TDomain *domain = new TDomain();
+	PDomain wdomain = domain;
+	TExampleTable *table;
+	PExampleTable wtable;
+	PyObject *edgeList = PyList_New(0);
+	PyObject *arcList = PyList_New(0);
+	char *fn;
+
+	if (!PyArg_ParseTuple(args, "s:GraphLayout.readPajek", &fn))
+		PYERROR(PyExc_TypeError, "invalid arguments (string expected)", PYNULL);
+
+	string line;
+	
+	istream *stream;
+	ifstream file(fn);
+	istringstream text(fn, istringstream::in);
+
+	if (file.is_open()) {
+		stream = &file;
+	} else {
+		if (text.good()) {
+			stream = &text;	
+		} else {
+			PyErr_Format(PyExc_SystemError, "Unable to read network.", fn);
+			return PYNULL;
+		}
+	}
+	
+	string graphName = "";
+	string description = "";
+	int nVertices = 0;
+	int nEdges = 0;
+
+	TFloatVariable *indexVar = new TFloatVariable("index");
+	indexVar->numberOfDecimals = 0;
+	domain->addVariable(indexVar);
+	domain->addVariable(new TStringVariable("label"));
+	domain->addVariable(new TFloatVariable("x"));
+	domain->addVariable(new TFloatVariable("y"));
+	domain->addVariable(new TFloatVariable("z"));
+	domain->addVariable(new TStringVariable("shape"));
+	domain->addVariable(new TFloatVariable("size"));
+	domain->addVariable(new TStringVariable("vertex color"));
+	domain->addVariable(new TStringVariable("boundary color"));
+	domain->addVariable(new TFloatVariable("boundary width"));
+	table = new TExampleTable(domain);
+	wtable = table;
+	vector<string> words;
+
+	// read head
+	while (!stream->eof()) {
+		getline(*stream, line);
+		int n = getWords1(line, words);
+		if (n > 0) 	{
+			std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
+			if (words[0].compare("*network") == 0) {
+				if (n > 1) {
+					graphName = words[1];
+				}
+			} else if (words[0].compare("*description") == 0) {
+				if (n > 1) {
+					description = words[1];
+				}
+			} else if (words[0].compare("*vertices") == 0) {
+				if (n > 1) {
+					nVertices = atoi(words[1].c_str());
+					if (nVertices < 1) {
+						file.close();
+						PYERROR(PyExc_SystemError, "Invalid number of vertices.", PYNULL);
+					}
+				} else {
+					file.close();
+					PYERROR(PyExc_SystemError, "Invalid file format. Number of vertices not given.", PYNULL);
+				}
+				if (n > 2) {
+					nEdges = atoi(words[2].c_str());
+				}
+
+				// read vertices
+				int row = 0;
+				while (!stream->eof()) {
+					getline(*stream, line);
+					int n = getWords1(line, words);
+					if (n > 0) {
+						std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
+						if (words[0].compare("*arcs") == 0 || words[0].compare("*edges") == 0)
+							break;
+
+						TExample *example = new TExample(domain);
+						float index = -1; istringstream strIndex(words[0]); strIndex >> index;
+							
+						if ((index <= 0) || (index > nVertices)) {
+							file.close();
+							PYERROR(PyExc_SystemError, "Invalid file format. Invalid vertex index.", PYNULL);
+						}
+
+						(*example)[0] = TValue(index);
+						if (n > 1) {
+							string label = words[1];
+							(*example)[1] = TValue(new TStringValue(label), STRINGVAR);
+
+							int i = 2;
+							char *xyz = "  xyz";
+							// read coordinates
+							while ((i <= 4) && (i < n)) {
+								double coor = -1; istringstream strCoor(words[i]); strCoor >> coor;
+								(*example)[i] = TValue((float)coor);
+
+								// if only 2 coordinates are given, shape follows
+								if ((i == 4) && (coor == -1)) {
+									(*example)[i+1] = TValue(new TStringValue(words[i]), STRINGVAR);
+								} else if ((i == 4) && (n > i + 1)) {
+									(*example)[i+1] = TValue(new TStringValue(words[i+1]), STRINGVAR);
+								}
+								i++;
+							}
+							// read attributes
+							while (i < n) {
+								if (stricmp(words[i].c_str(), "s_size") == 0) {
+									if (i + 1 < n) {
+										i++;
+									} else {
+										file.close();
+										PYERROR(PyExc_SystemError, "invalid file format. Error reading vertex size.", PYNULL);
+									}
+									float size = -1; istringstream strSize(words[i]); strSize >> size;
+									(*example)[6] = TValue(size);
+
+								} else if (stricmp(words[i].c_str(), "ic") == 0) {
+									if (i + 1 < n) {
+										i++;
+									} else {
+										file.close();
+										PYERROR(PyExc_SystemError, "invalid file format. Error reading vertex color.", PYNULL);
+									}
+									(*example)[7] = TValue(new TStringValue(words[i]), STRINGVAR);
+
+								} else if (stricmp(words[i].c_str(), "bc") == 0) {
+									if (i + 1 < n) {
+										i++;
+									} else {
+										file.close();
+										PYERROR(PyExc_SystemError, "invalid file format. Error reading boundary color.", PYNULL);
+									}
+									(*example)[8] = TValue(new TStringValue(words[i]), STRINGVAR);
+								} else if (stricmp(words[i].c_str(), "bw") == 0) {
+									if (i + 1 < n) {
+										i++;
+									} else {
+										file.close();
+										PYERROR(PyExc_SystemError, "invalid file format. Error reading boundary width.", PYNULL);
+									}
+									float bwidth = -1; istringstream strBWidth(words[i]); strBWidth >> bwidth;
+									(*example)[9] = TValue(bwidth);
+								}
+								i++;
+							}
+						}
+						example->id = getExampleId();
+						table->push_back(example);
+					}
+					row++;
+				}
+			}
+			if (words[0].compare("*arcs") == 0) {
+				// read arcs
+				while (!stream->eof()) {
+					getline(*stream, line);
+					//vector<string> words;
+					int n = getWords1(line, words);
+					if (n > 0) {
+						std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
+						if (words[0].compare("*edges") == 0) {
+							break;
+						}
+						if (n > 1) {
+							int i1 = -1; istringstream strI1(words[0]); strI1 >> i1;
+							int i2 = -1; istringstream strI2(words[1]); strI2 >> i2;
+								
+							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) {
+								file.close();
+								PYERROR(PyExc_SystemError, "Invalid file format. Adding arcs: vertex index out of range.", PYNULL);
+							}
+
+							if (i1 == i2) continue;
+							if (n > 2) {
+								vector<string> weights;
+								int m = getWords1(words[2], weights);
+								int i;
+								for (i=0; i < m; i++) {
+									double i3 = 0; istringstream strI3(weights[i]); strI3 >> i3;
+									PyObject *nel = Py_BuildValue("iid", i1 - 1, i2 - 1, i3);
+									PyList_Append(arcList, nel);
+									Py_DECREF(nel);
+								}
+							}
+						}
+					}
+				}
+			}
+			if (words[0].compare("*edges") == 0) {
+				// read edges
+				while (!stream->eof()) {
+					getline(*stream, line);
+					int n = getWords1(line, words);
+					if (n > 1) {
+						int i1 = -1; istringstream strI1(words[0]); strI1 >> i1;
+						int i2 = -1; istringstream strI2(words[1]); strI2 >> i2;
+							
+						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) {
+							file.close();
+							PYERROR(PyExc_SystemError, "Invalid file format. Adding edges: vertex index out of range.", PYNULL);
+						}
+
+						if (i1 == i2) continue;
+						if (n > 2) {
+							vector<string> weights;
+							int m = getWords1(words[2], weights);
+							int i;
+							for (i=0; i < m; i++) {
+								double i3 = 0; istringstream strI3(weights[i]); strI3 >> i3;
+								PyObject *nel = Py_BuildValue("iid", i1 - 1, i2 - 1, i3);
+								PyList_Append(edgeList, nel);
+								Py_DECREF(nel);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	file.close();
+	return Py_BuildValue("NNN", edgeList, arcList, WrapOrange(wtable));
   PyCATCH
 }
 
