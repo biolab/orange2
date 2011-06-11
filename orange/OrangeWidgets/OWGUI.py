@@ -1717,6 +1717,7 @@ class tableItem(QTableWidgetItem):
 
 class TableBarItem(QItemDelegate):
     BarRole = OrangeUserRole.next() #Qt.UserRole + 1
+    ColorRole = OrangeUserRole.next()
     def __init__(self, widget, table = None, color = QColor(255, 170, 127)):
         QItemDelegate.__init__(self, widget)
         self.color = color
@@ -1738,8 +1739,15 @@ class TableBarItem(QItemDelegate):
                 if col < len(self.table.normalizers):
                     max, span = self.table.normalizers[col]
                     ratio = (max - value) / span
+
+        color = self.color
+        newcolor = index.data(TableBarItem.ColorRole).toString()
+        if newcolor:
+            color = QColor()
+            color.setNamedColor(newcolor)
+
         if ratio is not None:
-            painter.fillRect(option.rect.adjusted(1, 1, -option.rect.width() * ratio, -1), self.color)
+            painter.fillRect(option.rect.adjusted(0, 3, -option.rect.width() * ratio, -3), color)
         text = index.data(Qt.DisplayRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)

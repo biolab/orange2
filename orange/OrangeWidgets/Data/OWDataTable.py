@@ -18,6 +18,7 @@ import OWGUI
 import math
 from orngDataCaching import *
 from PyQt4 import *
+import OWColorPalette
 
 ##############################################################################
 
@@ -33,8 +34,9 @@ def safe_call(func):
     return wrapper
             
 class ExampleTableModel(QAbstractItemModel):
-    def __init__(self, examples, dist, *args):
-        QAbstractItemModel.__init__(self, *args)
+    def __init__(self, examples, dist, parent, *args):
+        QAbstractItemModel.__init__(self, parent, *args)
+        self.myParent = parent  # parent() is overloaded
         self.examples = examples
         self.dist = dist
         self.attributes = list(self.examples.domain.attributes)
@@ -76,6 +78,11 @@ class ExampleTableModel(QAbstractItemModel):
                     and not val.isSpecial() and attr not in self.metas:
             dist = self.dist[col]
             return QVariant((dist.max - float(val)) / (dist.max - dist.min or 1))
+        elif role == OWGUI.TableBarItem.ColorRole and self.myParent.colorByClass \
+               and domain.classVar and domain.classVar.varType==orange.VarTypes.Discrete:
+                cls = example.get_class()
+                if not cls.isSpecial():
+                    return QVariant(self.myParent.discPalette[int(cls)].name())
         
         return self._other_data.get((index.row(), index.column(), role), QVariant())
         
@@ -128,7 +135,7 @@ class ExampleTableModel(QAbstractItemModel):
             
 
 class OWDataTable(OWWidget):
-    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit"]
+    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit", "selectedSchemaIndex", "colorByClass"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
@@ -145,7 +152,10 @@ class OWDataTable(OWWidget):
         self.distColor = QColor(*self.distColorRgb)
         self.locale = QLocale()
         self.autoCommit = False
-
+        self.colorSettings = None
+        self.selectedSchemaIndex = 0
+        self.colorByClass = True
+        
         self.loadSettings()
 
         # info box
@@ -161,16 +171,16 @@ class OWDataTable(OWWidget):
         OWGUI.separator(self.controlArea)
 
         # settings box
-        boxSettings = OWGUI.widgetBox(self.controlArea, "Settings")
+        boxSettings = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
         self.cbShowMeta = OWGUI.checkBox(boxSettings, self, "showMeta", 'Show meta attributes', callback = self.cbShowMetaClicked)
         self.cbShowMeta.setEnabled(False)
         self.cbShowAttLbls = OWGUI.checkBox(boxSettings, self, "showAttributeLabels", 'Show attribute labels (if any)', callback = self.cbShowAttLabelsClicked)
         self.cbShowAttLbls.setEnabled(True)
-        self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
-        colBox = OWGUI.indentedBox(boxSettings, sep=OWGUI.checkButtonOffsetHint(self.cbShowDistributions), orientation = "horizontal")
-        OWGUI.widgetLabel(colBox, "Color: ")
-        self.colButton = OWGUI.toolButton(colBox, self, callback=self.changeColor, width=20, height=20, debuggingEnabled = 0)
-        OWGUI.rubber(colBox)
+
+        box = OWGUI.widgetBox(self.controlArea, "Colors")
+        OWGUI.checkBox(box, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
+        OWGUI.checkBox(box, self, "colorByClass", 'Color by class value', callback = self.cbShowDistributions)
+        OWGUI.button(box, self, "Set colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         resizeColsBox = OWGUI.widgetBox(boxSettings, 0, "horizontal", 0)
         OWGUI.label(resizeColsBox, self, "Resize columns: ")
@@ -188,6 +198,9 @@ class OWDataTable(OWWidget):
 
         OWGUI.rubber(self.controlArea)
 
+        dlg = self.createColorDialog()
+        self.discPalette = dlg.getDiscretePalette("discPalette")
+
         # GUI with tabs
         self.tabs = OWGUI.tabWidget(self.mainArea)
         self.id2table = {}  # key: widget id, value: table
@@ -197,24 +210,21 @@ class OWDataTable(OWWidget):
         self.selectionChangedFlag = False
         
 
-        self.updateColor()
+    def createColorDialog(self):
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Default", "Default color", QColor(Qt.white))
+        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
+        return c
 
-    def changeColor(self):
-        color = QColorDialog.getColor(self.distColor, self)
-        if color.isValid():
-            self.distColorRgb = color.getRgb()
-            self.updateColor()
-
-    def updateColor(self):
-        self.distColor = QColor(*self.distColorRgb)
-        w = self.colButton.width()-8
-        h = self.colButton.height()-8
-        pixmap = QPixmap(w, h)
-        painter = QPainter()
-        painter.begin(pixmap)
-        painter.fillRect(0,0,w,h, QBrush(self.distColor))
-        painter.end()
-        self.colButton.setIcon(QIcon(pixmap))
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_():
+            self.colorSettings = dlg.getColorSchemas()
+            self.selectedSchemaIndex = dlg.selectedSchemaIndex
+            self.discPalette = dlg.getDiscretePalette("discPalette")
+            self.distColorRgb = dlg.getColor("Default")
 
     def increaseColWidth(self):
         table = self.tabs.currentWidget()
