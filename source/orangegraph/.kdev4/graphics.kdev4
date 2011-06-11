@@ -1,0 +1,17 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x10\x00g\x00r\x00a\x00p\x00h\x00i\x00c\x00s)
+
+[CMake]
+BuildDirs=/home/miha/Orange/Orange/branches/qtgraph/source/graphics/build
+CMakeDir=/usr/share/cmake-2.8/Modules
+Current CMake Binary=file:///usr/bin/cmake
+CurrentBuildDir=file:///home/miha/Orange/Orange/branches/qtgraph/source/graphics/build
+CurrentInstallDir=file:///home/miha/Build
+Extra Arguments=
+ProjectRootRelative=./
+
+[MakeBuilder]
+Number Of Jobs=1
+
+[Project]
+VersionControlSupport=kdevgit
