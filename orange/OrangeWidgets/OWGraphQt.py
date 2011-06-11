@@ -113,8 +113,6 @@ class OWGraph(QGraphicsView):
         self.addAxis(xBottom, False)
         self.addAxis(yLeft, True)
         
-        self.map_to_graph = self.map_to_graph_cart
-        self.map_from_graph = self.map_from_graph_cart
         self.map_transform = QTransform()
         
         ## Performance optimization
@@ -142,6 +140,13 @@ class OWGraph(QGraphicsView):
         
     def map_to_graph(self, point, axes = None):
         (x, y) = point
+        ret = QPointF(x, y) * self.map_transform
+        return (ret.x(), ret.y())
+        
+    def map_from_graph(self, point, axes = None):
+        (x, y) = point
+        ret = QPointF(x, y) * self.map_transform.inverted()
+        return (ret.x(), ret.y())
         
     def saveToFile(self, extraButtons = []):
         sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
@@ -342,8 +347,7 @@ class OWGraph(QGraphicsView):
             axes = [xBottom, yLeft]
         min_x, max_x, t = self.axes[axes[0]].scale
         min_y, max_y, t = self.axes[axes[1]].scale
-        data_rect = QRectF(min_x, max_y, max_x-min_y, min_y-max_y)
-        qDebug(repr(data_rect))
+        data_rect = QRectF(min_x, max_y, max_x-min_x, min_y-max_y)
         self.map_transform = self.transform_from_rects(data_rect,  self.zoom_rect)
         
         for c in self.curves:
@@ -414,11 +418,13 @@ class OWGraph(QGraphicsView):
                 end_zoom_factor = self._zoom_factor * 2
             elif event.button() == Qt.RightButton:
                 end_zoom_factor = max(self._zoom_factor/2, 1)
-            self.zoom_point = (QPointF(event.pos()))
+            t, ok = self.zoom_transform.inverted()
+            if not ok:
+                return False
+            self.zoom_point = t.map(QPointF(event.pos()))
             self.zoom_animation = QPropertyAnimation(self, 'zoom_factor')
             self.zoom_animation.setStartValue(float(self._zoom_factor))
             self.zoom_animation.setEndValue(float(end_zoom_factor))
-          #  self.zoom_animation.setEasingCurve(QEasingCurve.Linear)
             self.zoom_animation.start(QAbstractAnimation.DeleteWhenStopped)
             return True
         else:
