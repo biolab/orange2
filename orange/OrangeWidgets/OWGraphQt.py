@@ -1,4 +1,3 @@
-
 """
     .. class:: QtGraph
         The base class for all graphs in Orange. It is written in Qt with QGraphicsItems
@@ -116,6 +115,7 @@ class OWGraph(QGraphicsView):
         
         self.map_to_graph = self.map_to_graph_cart
         self.map_from_graph = self.map_from_graph_cart
+        self.map_transform = QTransform()
         
         ## Performance optimization
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
@@ -134,42 +134,14 @@ class OWGraph(QGraphicsView):
         
         self.update()
         
-        
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
             
     def graph_area_rect(self):
-        """
-        rect = self.childrenRect()
-        if xBottom in self.axes:
-            rect.setBottom(rect.bottom() - self.axis_margin)
-        if yLeft in self.axes:
-            rect.setLeft(rect.left() + self.axis_margin)
-        return rect
-        """
         return self.graph_area
         
-    def map_to_graph_cart(self, point, axes=None):
-        px, py = point
-        if not axes:
-            axes = [xBottom, yLeft]
-        min_x, max_x, t = self.axes[axes[0]].scale
-        min_y, max_y, t = self.axes[axes[1]].scale
-        rect = self.zoom_rect
-        rx = rect.left() - self.graph_area.left() + (px - min_x) * rect.width() / (max_x - min_x)
-        ry = rect.bottom() - self.graph_area.bottom() -(py - min_y) * rect.height() / (max_y - min_y)
-        return (rx, ry)
-        
-    def map_from_graph_cart(self, point, axes = None):
-        px, py = point
-        if not axes:
-            axes = [xBottom, yLeft]
-        min_x, max_x = self.data_range[axes[0]]
-        min_y, max_y = self.data_range[axes[1]]
-        rect = self.graph_area_rect()
-        rx = (px - rect.left()) / rect().width() * (max_x - min_x)
-        ry = -(py - rect.bottom()) / rect.height() * (max_y - min_y)
-        return (rx, ry)
+    def map_to_graph(self, point, axes = None):
+        (x, y) = point
         
     def saveToFile(self, extraButtons = []):
         sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
@@ -273,18 +245,18 @@ class OWGraph(QGraphicsView):
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
-        data = []
-        qDebug('Adding curve ' + name + ' with ' + str(len(xData)) + ' points' + (' to legend' if enableLegend else ''))
-        qDebug('Its shape is ' +str(symbol) )
-        for i in range(len(xData)):
-            data.append( (xData[i], yData[i]) )
         
-        line_style = palette.LineStyle(brushColor, lineWidth, style, symbol, size)
-        
-        c = curve.Curve(name, data, line_style, self)
-        c.setPos(self.graph_area.bottomLeft())
-        c.continuous = (style is not Qt.NoPen)
+        c = curve.Curve()
+        c.name = name
+        c.setAutoUpdate(False)
+        c.setContinuous(style is not Qt.NoPen)
+        c.setColor(brushColor)
+        c.setSymbol(symbol)
+        c.setPointSize(size)
+        c.setData(xData,  yData)
+        c.setGraphTransform(self.map_transform * self.zoom_transform)
         c.update()
+
         self.canvas.addItem(c)
         self.curves.append(c)
         if enableLegend:
@@ -301,8 +273,8 @@ class OWGraph(QGraphicsView):
         for c in self.curves:
             self.canvas.removeItem(c)
         del self.curves[:]
-        
-    def replot(self):
+    
+    def update_layout(self):
         graph_rect = QRectF(self.childrenRect())
         m = self.graph_margin
         graph_rect.adjust(m, m, -m, -m)
@@ -359,10 +331,29 @@ class OWGraph(QGraphicsView):
                 axis_rects[xTop].setRight(right)
                 
         self.graph_area = QRectF(graph_rect)
+        self.update_axes(axis_rects)
         
+    def update_zoom(self):
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self.zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
-            
+        
+        axes = self.axes.keys()
+        if not axes:
+            axes = [xBottom, yLeft]
+        min_x, max_x, t = self.axes[axes[0]].scale
+        min_y, max_y, t = self.axes[axes[1]].scale
+        data_rect = QRectF(min_x, max_y, max_x-min_y, min_y-max_y)
+        qDebug(repr(data_rect))
+        self.map_transform = self.transform_from_rects(data_rect,  self.zoom_rect)
+        
+        for c in self.curves:
+            c.setGraphArea(self.graph_area)
+            c.setGraphTransform(self.map_transform * self.zoom_transform)
+            c.update()
+        self.setSceneRect(self.canvas.itemsBoundingRect())
+        
+        
+    def update_axes(self, axis_rects):
         for id, item in self.axes.iteritems():
             self.canvas.removeItem(item)
             
@@ -383,12 +374,12 @@ class OWGraph(QGraphicsView):
             self.canvas.addItem(a)
             a.update()
             a.show()
-            
-        for c in self.curves:
-            c.setPos(self.graph_area.bottomLeft())
-            c.update()
-        self.setSceneRect(self.canvas.itemsBoundingRect())
         
+        
+    def replot(self):
+        self.update_layout()
+        self.update_zoom()
+            
     def legend(self):
         return self._legend
         
@@ -438,18 +429,17 @@ class OWGraph(QGraphicsView):
         tr1 = QTransform().translate(-r1.left(), -r1.top())
         ts = QTransform().scale(r2.width()/r1.width(), r2.height()/r1.height())
         tr2 = QTransform().translate(r2.left(), r2.top())
-        return tr2 * ts * tr1
+        return tr1 * ts * tr2
         
     def transform_for_zoom(self, factor, point, rect):
         if factor == 1:
             return QTransform()
-        rect = rect.normalized()
-        s = (1.0-1.0/factor)/2.0
-        qDebug('factor=%d, s=%f' % (factor, s))
+
         t = QTransform()
-        t.translate(point.x(), point.y())
+        t.translate(+point.x(), +point.y())
         t.scale(factor, factor)
         t.translate(-point.x(), -point.y())
+        qDebug(repr(point) + ' ===> ' + repr(t.map(point)))
         return t
 
     @pyqtProperty(QRectF)
@@ -471,4 +461,4 @@ class OWGraph(QGraphicsView):
     def zoom_factor(self, value):
         qDebug(str(value))
         self._zoom_factor = value
-        self.replot()
+        self.update_zoom()

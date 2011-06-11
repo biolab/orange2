@@ -25,7 +25,7 @@ class Legend(QGraphicsItemGroup):
         y = 10
         length = 0
         for curve in self.curves:
-            self.items.append(curve.symbol(10, y, parent=self))
+            self.items.append(curve.pointItem(10, y, curve.pointSize(), self))
             text = QGraphicsTextItem(curve.name, self)
             length = max(length, text.boundingRect().width())
             text.setPos(QPointF(20, y-10))
