@@ -36,12 +36,6 @@ SELECT_POLYGON = 3
 PANNING = 4
 SELECT = 5
 
-yLeft = 0
-yRight = 1
-xBottom = 2
-xTop = 3
-axisCnt = 4
-
 LeftLegend = 0
 RightLegend = 1
 BottomLegend = 2
@@ -66,12 +60,14 @@ Hexagon = 14
 UserStyle = 1000 
 
 from Graph import *
+from Graph.axis import *
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform
 from PyQt4.QtCore import QPointF, QPropertyAnimation
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
 from OWGraphTools import *      # user defined curves, ...
+from Orange.misc import deprecated_members
 
 class OWGraph(QGraphicsView):
     def __init__(self, parent=None,  name="None",  show_legend=1 ):
@@ -148,11 +144,11 @@ class OWGraph(QGraphicsView):
         ret = QPointF(x, y) * self.map_transform.inverted()
         return (ret.x(), ret.y())
         
-    def saveToFile(self, extraButtons = []):
+    def save_to_file(self, extraButtons = []):
         sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
         sizeDlg.exec_()
-
-    def saveToFileDirect(self, fileName, size = None):
+        
+    def save_to_file_direct(self, fileName, size = None):
         sizeDlg = OWChooseImageSizeDlg(self)
         sizeDlg.saveImage(fileName, size)
         
@@ -269,7 +265,7 @@ class OWGraph(QGraphicsView):
         return c
         
     def addAxis(self, axis_id, title_above = False):
-        self.axes[axis_id] = axis.Axis(title_above)
+        self.axes[axis_id] = axis.Axis(axis_id, title_above)
     
     def removeAllSelections(self):
         pass
@@ -348,12 +344,16 @@ class OWGraph(QGraphicsView):
         min_x, max_x, t = self.axes[axes[0]].scale
         min_y, max_y, t = self.axes[axes[1]].scale
         data_rect = QRectF(min_x, max_y, max_x-min_x, min_y-max_y)
-        self.map_transform = self.transform_from_rects(data_rect,  self.zoom_rect)
+        self.map_transform = self.transform_from_rects(data_rect,  self.graph_area)
         
         for c in self.curves:
             c.setGraphArea(self.graph_area)
             c.setGraphTransform(self.map_transform * self.zoom_transform)
             c.update()
+        
+        for a in self.axes.values():
+            a.zoom_transform = self.zoom_transform
+            a.update()
         self.setSceneRect(self.canvas.itemsBoundingRect())
         
         
@@ -370,11 +370,9 @@ class OWGraph(QGraphicsView):
                 line = QLineF(rect.bottomRight(), rect.topRight())
             elif id is yRight:
                 line = QLineF(rect.bottomLeft(), rect.topLeft())
-            line.translate(-rect.topLeft())
             a = self.axes[id]
             a.set_size(rect.size())
             a.set_line(line)
-            a.setPos(rect.topLeft())
             self.canvas.addItem(a)
             a.update()
             a.show()
@@ -476,3 +474,6 @@ class OWGraph(QGraphicsView):
     def zoom_point(self, value):
         self._zoom_point = value
         self.update_zoom()
+        
+QWGraph = deprecated_members({"saveToFileDirect": "save_to_file_direct",  
+                              "saveToFile" : "save_to_file"})(OWGraph)

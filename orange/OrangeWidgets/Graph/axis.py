@@ -26,8 +26,8 @@
         Controls where the axis title and tick marks are placed relative to the axis
 """
 
-from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene
-from PyQt4.QtCore import QLineF, QPointF, qDebug
+from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform
+from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF
 
 from palette import *
 
@@ -37,9 +37,16 @@ TitleAbove = 1
 ArrowEnd = 1
 ArrowStart = 2
 
+yLeft = 0
+yRight = 1
+xBottom = 2
+xTop = 3
+UserAxis = 100
+
 class Axis(QGraphicsItemGroup):
-    def __init__(self, title_above, arrows = ArrowEnd, parent=None):
+    def __init__(self, id, title_above, arrows = ArrowEnd, parent=None):
         QGraphicsItemGroup.__init__(self, parent)
+        self.id = id
         self.title = None
         self.line = None
         self.size = None
@@ -63,6 +70,7 @@ class Axis(QGraphicsItemGroup):
         self.arrow_path = path
         self.label_items = []
         self.tick_items = []
+        self.zoom_transform = QTransform()
 
     def update(self):
         if not self.line or not self.title or not self.scene():
@@ -110,12 +118,22 @@ class Axis(QGraphicsItemGroup):
             self.scene().removeItem(i)
         del self.tick_items[:]
         min, max, step = self.scale
+        qDebug(str(step))
         if self.labels:
+            self.transform = QTransform().translate(-self.x(), -self.y()) * self.zoom_transform * QTransform().translate(self.x(), self.y())
+            ratio = self.transform.map(self.line).length() / self.line.length()
+            qDebug('Axis zoom ratio = ' + str(ratio))
             for i in range(len(self.labels)):
+                label_pos = self.map_to_graph( i * step)
+                test_rect = QRectF(self.line.p1(),  self.line.p2()).normalized()
+                test_rect.adjust(-1, -1, 1, 1)
+                if not test_rect.contains(label_pos):
+                    qDebug('Skipping label ' + self.labels[i])
+                    continue
+                label_pos = self.map_to_graph((i-0.5) * step)
                 item = QGraphicsTextItem(self)
                 item.setHtml( '<center>' + self.labels[i] + '</center>')
-                item.setTextWidth(self.line.length()/len(self.labels))
-                label_pos = self.map_to_graph( (i-0.5) * step)
+                item.setTextWidth(self.line.length() / len(self.labels) * ratio)
                 v = self.line.normalVector().unitVector()
                 if self.title_above:
                     label_pos = label_pos + (v.p2() - v.p1())*40
@@ -183,4 +201,14 @@ class Axis(QGraphicsItemGroup):
         
     def map_to_graph(self, x):
         min, max, step = self.scale
-        return self.line.pointAt( (x-min)/(max-min) )
+        line_point = self.line.pointAt( (x-min)/(max-min) )
+        end_point = line_point * self.transform
+        return self.projection(end_point, self.line)
+        
+    @staticmethod
+    def projection(point, line):
+        norm = line.normalVector()
+        norm.translate(point - norm.p1())
+        p = QPointF()
+        type = line.intersect(norm, p)
+        return p
