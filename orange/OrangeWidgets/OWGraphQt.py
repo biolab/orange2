@@ -125,7 +125,7 @@ class OWGraph(QGraphicsView):
         self.mouseStaticClickHandler = self.mouseStaticClick
         
         self._zoom_factor = 1
-        self.zoom_point = None
+        self._zoom_point = None
         self.zoom_transform = QTransform()
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -339,7 +339,7 @@ class OWGraph(QGraphicsView):
         self.update_axes(axis_rects)
         
     def update_zoom(self):
-        self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self.zoom_point, self.graph_area)
+        self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
         
         axes = self.axes.keys()
@@ -414,18 +414,19 @@ class OWGraph(QGraphicsView):
     
     def mouseStaticClick(self, event):
         if self.state == ZOOMING:
+            t, ok = self.zoom_transform.inverted()
+            p = QPointF(event.pos()) * t
             if event.button() == Qt.LeftButton:
                 end_zoom_factor = self._zoom_factor * 2
+                self._zoom_point = p
             elif event.button() == Qt.RightButton:
                 end_zoom_factor = max(self._zoom_factor/2, 1)
-            t, ok = self.zoom_transform.inverted()
             if not ok:
                 return False
-            self.zoom_point = t.map(QPointF(event.pos()))
-            self.zoom_animation = QPropertyAnimation(self, 'zoom_factor')
-            self.zoom_animation.setStartValue(float(self._zoom_factor))
-            self.zoom_animation.setEndValue(float(end_zoom_factor))
-            self.zoom_animation.start(QAbstractAnimation.DeleteWhenStopped)
+            self.zoom_factor_animation = QPropertyAnimation(self, 'zoom_factor')
+            self.zoom_factor_animation.setStartValue(float(self._zoom_factor))
+            self.zoom_factor_animation.setEndValue(float(end_zoom_factor))
+            self.zoom_factor_animation.start(QAbstractAnimation.DeleteWhenStopped)
             return True
         else:
             return False
@@ -445,7 +446,6 @@ class OWGraph(QGraphicsView):
         t.translate(+point.x(), +point.y())
         t.scale(factor, factor)
         t.translate(-point.x(), -point.y())
-        qDebug(repr(point) + ' ===> ' + repr(t.map(point)))
         return t
 
     @pyqtProperty(QRectF)
@@ -465,6 +465,14 @@ class OWGraph(QGraphicsView):
         
     @zoom_factor.setter
     def zoom_factor(self, value):
-        qDebug(str(value))
         self._zoom_factor = value
+        self.update_zoom()
+        
+    @pyqtProperty(QPointF)
+    def zoom_point(self):
+        return self._zoom_point
+        
+    @zoom_point.setter
+    def zoom_point(self, value):
+        self._zoom_point = value
         self.update_zoom()

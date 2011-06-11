@@ -20,7 +20,7 @@ Curve::Curve(QGraphicsItem* parent): QGraphicsObject(parent)
   
 Curve::Curve(const Data& data, QGraphicsItem* parent) : QGraphicsObject(parent), m_data(data)
 {
-  qDebug() << "Constructing Curve from C++";
+  
 }
 
 Curve::~Curve()
@@ -76,13 +76,15 @@ void Curve::update()
   // Move, resize, reshape and/or recolor the items
   if (m_needsUpdate & UpdatePosition)
   {
+    QPointF p;
+    QRectF dataRect = m_graphTransform.inverted().mapRect(m_graphArea);
     for (int i = 0; i < n; ++i)
     {
-      QPointF p = m_graphTransform.map(QPointF(m_data[i].x, m_data[i].y));
-      if (m_graphArea.contains(p))
+      p = QPointF(m_data[i].x, m_data[i].y);
+      if (dataRect.contains(p))
       {
 	m_pointItems[i]->show();
-	m_pointItems[i]->setPos(p);
+	m_pointItems[i]->setPos(m_graphTransform.map(p));
       }
       else
       {
@@ -106,15 +108,24 @@ void Curve::updateAll()
   int n = m_data.size();
   QBrush brush(m_color);
   m_path = pathForSymbol(m_symbol, m_pointSize);
+  QRectF dataRect = m_graphTransform.inverted().mapRect(m_graphArea);
+  QPointF p;
   for (int i = 0; i < n; ++i)
   {
     QGraphicsPathItem* item = m_pointItems[i];
     DataPoint& point = m_data[i];
     item->setPath(m_path);
-    QPointF p = m_graphTransform.map(QPointF(point.x, point.y));
-    item->setPos(p);
+    p = QPointF(point.x, point.x);
+    if (dataRect.contains(p))
+    {
+      item->setPos(p * m_graphTransform);
+      item->show();
+    }
+    else
+    {
+      item->hide();
+    }
     item->setBrush(brush);
-    item->setVisible(m_graphArea.contains(p));
   }
   m_needsUpdate = 0;
 }
@@ -175,7 +186,6 @@ void Curve::setData(const Data& data)
 
 void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
 {
-  qDebug() << xData.size() << yData.size();
   Q_ASSERT(xData.size() == yData.size());
   int n = qMin(xData.size(), yData.size());
   if (n != m_data.size())
@@ -233,7 +243,6 @@ QColor Curve::color() const
 
 void Curve::setColor(const QColor& color)
 {
-  qDebug() << "Setting color to" << color;
   if (color == m_color)
   {
     return;
