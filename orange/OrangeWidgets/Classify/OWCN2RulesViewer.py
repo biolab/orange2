@@ -264,11 +264,38 @@ class OWCN2RulesViewer(OWWidget):
                      lambda is1, is2: self.commitIf())
         self.connect(self.tableView.horizontalHeader(), SIGNAL("sectionClicked(int)"), lambda section: self.tableView.resizeRowsToContents())
         self.mainArea.layout().addWidget(self.tableView)
+
+        self.updateVisibleColumns()
         
         self.changedFlag = False
         self.classifier = None
         self.rules = []
         self.resize(800, 600)
+
+    def sendReport(self):
+        nrules = self.rulesTableModel.rowCount()
+        print nrules
+        if not nrules:
+            self.reportRaw("<p>No rules.</p>")
+            return
+        
+        shown = [i for i, header in enumerate(self.headers) if getattr(self, "show_%s" % header.replace(" ", "_"))]
+        rep = '<table>\n<tr style="height: 2px"><th colspan="11"  style="border-bottom: thin solid black; height: 2px;">\n'
+        rep += "<tr>"+"".join("<th>%s</th>" % self.headers[i] for i in shown)+"</tr>\n"
+        for row in range(nrules):
+            rep += "<tr>"
+            for col in shown:
+                data = _toPyObject(self.rulesTableModel.data(self.rulesTableModel.createIndex(row, col)))
+                if col==4:
+                    rep += "<td>%s</td>" % ":".join(map(str, data))
+                elif col in (0, 3):
+                    rep += '<td align="center">%s</td>' % data
+                elif col in (1, 2):
+                    rep += '<td align="right">%.3f&nbsp;</td>' % data
+                else:
+                    rep += '<td>%s</td>' % data
+        rep += '<tr style="height: 2px"><th colspan="11"  style="border-bottom: thin solid black; height: 2px;">\n</table>\n'
+        self.reportRaw(rep)
         
     def setRuleClassifier(self, classifier=None):
         self.classifier = classifier
@@ -282,8 +309,8 @@ class OWCN2RulesViewer(OWWidget):
         self.commit()
     
     def updateRulesModel(self):
+        table = []
         if self.classifier is not None:
-            table = []
             for i, r in enumerate(self.classifier.rules):
                 table.append((int(r.complexity),
                               r.quality,
@@ -291,12 +318,13 @@ class OWCN2RulesViewer(OWWidget):
                               str(r.classifier.defaultValue),
                               r.classDistribution,
                               self.ruleText(r)))
+
+        self.rulesTableModel = PyTableModel(table, self.headers)
+        self.proxyModel.setSourceModel(self.rulesTableModel)
+        self.tableView.resizeColumnsToContents()
+        self.tableView.resizeRowsToContents()
+        self.updateVisibleColumns() # if the widget got data for the first time
             
-            self.rulesTableModel = PyTableModel(table, self.headers)
-            self.proxyModel.setSourceModel(self.rulesTableModel)
-            
-            self.tableView.resizeColumnsToContents()
-            self.tableView.resizeRowsToContents()
     
     def ruleText(self, rule):
         text = rule_to_string(rule, show_distribution=False)
@@ -307,8 +335,13 @@ class OWCN2RulesViewer(OWWidget):
         return text
     
     def updateVisibleColumns(self):
+        anyVisible = False
         for i, header in enumerate(self.headers):
-            self.tableView.horizontalHeader().setSectionHidden(i, not getattr(self, "show_%s" % header.replace(" ", "_")))
+            visible = getattr(self, "show_%s" % header.replace(" ", "_"))
+            self.tableView.horizontalHeader().setSectionHidden(i, not visible)
+            anyVisible = anyVisible or visible
+        self.reportButton.setEnabled(anyVisible)
+
     
     def commitIf(self):
         if self.autoCommit:
