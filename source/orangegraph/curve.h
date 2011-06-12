@@ -156,6 +156,7 @@ private:
   Q_DECLARE_FLAGS(UpdateFlags, UpdateFlag)
   static QPainterPath pathForSymbol(int symbol, int size);
   void updateNumberOfItems();
+  inline void checkForUpdate();
   
   QColor m_color;
   int m_pointSize;

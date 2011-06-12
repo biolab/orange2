@@ -4,15 +4,6 @@
 #include <QtGui/QBrush>
 #include <QtGui/QPen>
 
-#define UPDATE_ITEMS(cond, n, function) \
-if (m_needsUpdate & (cond)) \
-  for (int i = 0; i < n; ++i) \
-    m_pointItems[i]->function;
-  
-
-#define CHECK_UPDATE \
-if (m_autoUpdate) update();
-  
 Curve::Curve(QGraphicsItem* parent): QGraphicsObject(parent)
 {
   
@@ -92,9 +83,14 @@ void Curve::update()
       }
     }
   }
-  QBrush brush(m_color);
-  UPDATE_ITEMS(UpdateColor, n, setBrush(brush))
-  
+  if (m_needsUpdate & UpdateColor)
+  {
+    QBrush brush(m_color);
+    for (int i = 0; i < n; ++i)
+    {
+      m_pointItems[i]->setBrush(brush);
+    }
+  }
   m_needsUpdate = 0;
 }
 
@@ -181,7 +177,7 @@ void Curve::setData(const Data& data)
   }
   m_data = data;
   m_needsUpdate |= UpdatePosition;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
@@ -201,7 +197,7 @@ void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
     m_data.append(p);
   }
   m_needsUpdate |= UpdatePosition;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 QTransform Curve::graphTransform() const
@@ -217,7 +213,7 @@ void Curve::setGraphTransform(const QTransform& transform)
   }
   m_needsUpdate |= UpdatePosition;
   m_graphTransform = transform;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 bool Curve::isContinuous() const
@@ -233,7 +229,7 @@ void Curve::setContinuous(bool continuous)
   }
   m_continuous = continuous;
   m_needsUpdate |= UpdateContinuous;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 QColor Curve::color() const
@@ -249,7 +245,7 @@ void Curve::setColor(const QColor& color)
   }
   m_color = color;
   m_needsUpdate |= UpdateColor;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 int Curve::pointSize() const
@@ -266,7 +262,7 @@ void Curve::setPointSize(int size)
   
   m_pointSize = size;
   m_needsUpdate |= UpdateSize;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 int Curve::symbol() const
@@ -282,7 +278,7 @@ void Curve::setSymbol(int symbol)
   }
   m_symbol = symbol;
   m_needsUpdate |= UpdateSymbol;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 bool Curve::autoUpdate() const
@@ -293,7 +289,7 @@ bool Curve::autoUpdate() const
 void Curve::setAutoUpdate(bool autoUpdate)
 {
   m_autoUpdate = autoUpdate;
-  CHECK_UPDATE
+  checkForUpdate();
 }
 
 QRectF Curve::graphArea() const
@@ -305,7 +301,15 @@ void Curve::setGraphArea(const QRectF& area)
 {
   m_graphArea = area;
   m_needsUpdate |= UpdatePosition;
-  CHECK_UPDATE
+  checkForUpdate();
+}
+
+void Curve::checkForUpdate()
+{
+  if ( m_autoUpdate && m_needsUpdate )
+  {
+    update();
+  }
 }
 
 #include "curve.moc"
