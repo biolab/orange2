@@ -69,6 +69,14 @@ from OWBaseWidget import unisetattr
 from OWGraphTools import *      # user defined curves, ...
 from Orange.misc import deprecated_members
 
+@deprecated_members({
+                                "saveToFileDirect": "save_to_file_direct",  
+                                "saveToFile" : "save_to_file", 
+                                "addCurve" : "add_curve", 
+                                "activateZooming" : "activate_zooming", 
+                                "activateRectangleSelection" : "activate_rectangle_selection", 
+                                "activatePolygonSelection" : "activate_polygon_selection"
+                                })
 class OWGraph(QGraphicsView):
     def __init__(self, parent=None,  name="None",  show_legend=1 ):
         QGraphicsView.__init__(self, parent)
@@ -103,6 +111,7 @@ class OWGraph(QGraphicsView):
         self.curveSymbols = self.palette.curve_symbols
         self.tips = TooltipManager(self)
         
+        self.selection_items = []
         self.selectionCurveList = []
         self.curves = []
         self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
@@ -152,8 +161,14 @@ class OWGraph(QGraphicsView):
         sizeDlg = OWChooseImageSizeDlg(self)
         sizeDlg.saveImage(fileName, size)
         
-    def activateZooming(self):
+    def activate_zooming(self):
         self.state = ZOOMING
+        
+    def activate_rectangle_selection(self):
+        self.state = SELECT_RECTANGLE
+        
+    def activate_polygon_selection(self):
+        self.state = SELECT_POLYGON
         
     def setShowMainTitle(self, b):
         self.showMainTitle = b
@@ -243,7 +258,7 @@ class OWGraph(QGraphicsView):
     def setYRlabels(self, labels):
         self.setAxisLabels(yRight, labels)
         
-    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
+    def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         
@@ -338,11 +353,11 @@ class OWGraph(QGraphicsView):
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
         
-        axes = self.axes.keys()
-        if not axes:
-            axes = [xBottom, yLeft]
-        min_x, max_x, t = self.axes[axes[0]].scale
-        min_y, max_y, t = self.axes[axes[1]].scale
+        ## TODO: We shouldn't rely on there always being these two axes
+        ## However, visualizations will probably reimplement this method anyway
+        min_x, max_x, t = self.axes[xBottom].scale
+        min_y, max_y, t = self.axes[yLeft].scale
+        
         data_rect = QRectF(min_x, max_y, max_x-min_x, min_y-max_y)
         self.map_transform = self.transform_from_rects(data_rect,  self.graph_area)
         
@@ -426,6 +441,9 @@ class OWGraph(QGraphicsView):
             self.zoom_factor_animation.setEndValue(float(end_zoom_factor))
             self.zoom_factor_animation.start(QAbstractAnimation.DeleteWhenStopped)
             return True
+        elif self.state == SELECT_POLYGON:
+            self._current_ps_polygon.addPoint(QPointF(event.pos()))
+            self._current_ps_item.setPolygon(self._current_ps_polygon)
         else:
             return False
             
@@ -474,6 +492,3 @@ class OWGraph(QGraphicsView):
     def zoom_point(self, value):
         self._zoom_point = value
         self.update_zoom()
-        
-QWGraph = deprecated_members({"saveToFileDirect": "save_to_file_direct",  
-                              "saveToFile" : "save_to_file"})(OWGraph)
