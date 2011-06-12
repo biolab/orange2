@@ -111,8 +111,10 @@ class OWGraph(QGraphicsView):
         self.curveSymbols = self.palette.curve_symbols
         self.tips = TooltipManager(self)
         
+        self._pressed_mouse_button = Qt.NoButton
         self.selection_items = []
         self.selectionCurveList = []
+        self._current_ps_item = None
         self.curves = []
         self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
         self.addAxis(xBottom, False)
@@ -409,6 +411,12 @@ class OWGraph(QGraphicsView):
             event.accept()
             return
         self.static_click = True
+        self._pressed_mouse_button = event.button()
+        if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
+            qDebug('Press: ' + repr(event.button()))
+            self._selection_start_point = QPointF(event.pos())
+            self._current_ps_item = QGraphicsRectItem()
+            self.canvas.addItem(self._current_ps_item)
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -416,6 +424,11 @@ class OWGraph(QGraphicsView):
             return
         if event.buttons():
             self.static_click = False
+        qDebug('Move: ' + repr(event.button()))
+        if self._pressed_mouse_button == Qt.LeftButton:
+            if self.state == SELECT_RECTANGLE:
+                qDebug('Move move event')
+                self._current_ps_item.setRect(QRectF(self._selection_start_point, QPointF(event.pos())))
             
     def mouseReleaseEvent(self, event):
         if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
@@ -424,6 +437,11 @@ class OWGraph(QGraphicsView):
         if self.static_click and self.mouseStaticClickHandler and self.mouseStaticClickHandler(event):
             event.accept()
             return
+        self._pressed_mouse_button = Qt.NoButton
+        if event.button() == Qt.LeftButton and self._current_ps_item:
+            qDebug('Mouse release event')
+            self.selection_items.append(self._current_ps_item)
+            self._current_ps_item = None
     
     def mouseStaticClick(self, event):
         if self.state == ZOOMING:
@@ -441,9 +459,17 @@ class OWGraph(QGraphicsView):
             self.zoom_factor_animation.setEndValue(float(end_zoom_factor))
             self.zoom_factor_animation.start(QAbstractAnimation.DeleteWhenStopped)
             return True
-        elif self.state == SELECT_POLYGON:
+        elif self.state == SELECT_POLYGON and event.button() == Qt.LeftButton:
             self._current_ps_polygon.addPoint(QPointF(event.pos()))
             self._current_ps_item.setPolygon(self._current_ps_polygon)
+        elif (self.state == SELECT_RECTANGLE or self.state == SELECT_POLYGON) and event.button() == Qt.RightButton:
+            self.selection_items.reverse()
+            for i in self.selection_items:
+                if i.shape().contains(QPointF(event.pos())):
+                    self.canvas.removeItem(i)
+                    self.selection_items.remove(i)
+                    break
+            self.selection_items.reverse()
         else:
             return False
             
@@ -492,3 +518,6 @@ class OWGraph(QGraphicsView):
     def zoom_point(self, value):
         self._zoom_point = value
         self.update_zoom()
+        
+    def set_state(self, state):
+        self.state = state
