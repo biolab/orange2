@@ -1,3 +1,15 @@
+""" 
+.. index:: community detection in graphs
+
+.. index::
+   single: network; community detection in graphs
+
+*****************************
+Community detection in graphs
+*****************************
+
+"""
+
 import random
 import itertools
 

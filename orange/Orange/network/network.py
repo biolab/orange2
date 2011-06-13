@@ -20,14 +20,22 @@ class MdsTypeClass():
 
 MdsType = MdsTypeClass()
 
-
 class BaseGraph():
+    """A collection of methods inherited by all graph types (:obj:`Graph`, 
+    :obj:`DiGraph`, :obj:`MultiGraph` and :obj:`MultiDiGraph`).
+    
+    """
     
     def __init__(self):
         self._items = None
         self._links = None
         
     def items(self):
+        """Return the :obj:`Orange.data.Table` items with data about network 
+        nodes.
+        
+        """
+         
         if self._items is not None and \
                         len(self._items) != self.number_of_nodes():
             print "Warning: items length does not match the number of nodes."
@@ -35,6 +43,11 @@ class BaseGraph():
         return self._items
     
     def set_items(self, items=None):
+        """Set the :obj:`Orange.data.Table` items to the given data. Notice 
+        that the number of instances must match the number of nodes.
+        
+        """
+        
         if items is not None:
             if not isinstance(items, Orange.data.Table):
                 raise TypeError('items must be of type \'Orange.data.Table\'')
@@ -44,6 +57,11 @@ class BaseGraph():
         self._items = items
         
     def links(self):
+        """Return the :obj:`Orange.data.Table` links with data about network 
+        edges.
+        
+        """
+        
         if self._links is not None \
                     and len(self._links) != self.number_of_edges():
             print "Warning: links length does not match the number of edges."
@@ -51,6 +69,11 @@ class BaseGraph():
         return self._links
     
     def set_links(self, links=None):
+        """Set the :obj:`Orange.data.Table` links to the given data. Notice 
+        that the number of instances must match the number of edges.
+        
+        """
+        
         if links is not None:
             if not isinstance(links, Orange.data.Table):
                 raise TypeError('links must be of type \'Orange.data.Table\'')
@@ -60,18 +83,13 @@ class BaseGraph():
         self._links = links
         
     def to_orange_network(self):
-        """Convert the network to Orange NetworkX standard. All node IDs are transformed to range [0, no_of_nodes - 1].""" 
-        if isinstance(self, Orange.network.Graph):
-            G = Orange.network.Graph()
-        elif isinstance(self, Orange.network.DiGraph):
-            G = Orange.network.DiGraph()
-        elif isinstance(self, Orange.network.MultiGraph):
-            G = Orange.network.MultiGraph()
-        elif isinstance(self, Orange.network.MultiDiGraph):
-            G = Orange.network.DiGraph()
-        else:
-            raise TypeError('WTF!?')
+        """Convert the current network to >>Orange<< NetworkX standard. To use
+        :obj:`Orange.network` in Orange widgets, set node IDs to be range 
+        [0, no_of_nodes - 1].
         
+        """ 
+        
+        G = self.__class__()
         node_list = sorted(self.nodes())
         node_to_index = dict(zip(node_list, range(self.number_of_nodes())))
         index_to_node = dict(zip(range(self.number_of_nodes()), node_list))
@@ -93,7 +111,8 @@ class BaseGraph():
     ### TODO: OVERRIDE METHODS THAT CHANGE GRAPH STRUCTURE, add warning prints
     
     def items_vars(self):
-        """Return a list of features in network items."""
+        """Return a list of features in the :obj:`Orange.data.Table` items."""
+        
         vars = []
         if (self._items is not None):
             if isinstance(self._items, Orange.data.Table):
@@ -104,7 +123,8 @@ class BaseGraph():
         return vars
     
     def links_vars(self):
-        """Return a list of features in network links."""
+        """Return a list of features in the :obj:`Orange.data.Table` links."""
+        
         vars = []
         if (self._links is not None):
             if isinstance(self._links, Orange.data.Table):
@@ -115,40 +135,64 @@ class BaseGraph():
         return [x for x in vars if str(x.name) != 'u' and str(x.name) != 'v']    
     
 class Graph(BaseGraph, nx.Graph):
+    """Bases: `NetworkX.Graph <http://networkx.lanl.gov/reference/classes.graph.html>`_, 
+    :obj:`Orange.network.BaseGraph` 
+    
+    """
     
     def __init__(self, data=None, name='', **attr):  
         nx.Graph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
-        
+    
+    __doc__ += nx.Graph.__doc__
     __init__.__doc__ = nx.Graph.__init__.__doc__
      
 class DiGraph(BaseGraph, nx.DiGraph):
+    """Bases: `NetworkX.DiGraph <http://networkx.lanl.gov/reference/classes.digraph.html>`_, 
+    :obj:`Orange.network.BaseGraph` 
+    
+    """
+    
     
     def __init__(self, data=None, name='', **attr):
         nx.DiGraph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
-        
+    
+    __doc__ += nx.Graph.__doc__
     __init__.__doc__ = nx.DiGraph.__init__.__doc__
      
 class MultiGraph(BaseGraph, nx.MultiGraph):
+    """Bases: `NetworkX.MultiGraph <http://networkx.lanl.gov/reference/classes.multigraph.html>`_, 
+    :obj:`Orange.network.BaseGraph` 
+    
+    """
+    
     
     def __init__(self, data=None, name='', **attr):
         nx.MultiGraph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
         
+    __doc__ += nx.Graph.__doc__
     __init__.__doc__ = nx.MultiGraph.__init__.__doc__
      
 class MultiDiGraph(BaseGraph, nx.MultiDiGraph):
+    """Bases: `NetworkX.MultiDiGraph <http://networkx.lanl.gov/reference/classes.multidigraph.html>`_, 
+    :obj:`Orange.network.BaseGraph` 
+    
+    """
+    
     
     def __init__(self, data=None, name='', **attr):
         nx.MultiDiGraph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
-        
+    
+    __doc__ += nx.Graph.__doc__    
     __init__.__doc__ = nx.MultiDiGraph.__init__.__doc__
 
 class GraphLayout(orangeom.GraphLayout):
+    """A graph layout optimization class.
     
-    """A graph layout optimization class."""
+    """
     
     def __init__(self):
         self.graph = None

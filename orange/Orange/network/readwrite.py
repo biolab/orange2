@@ -1,3 +1,17 @@
+""" 
+.. index:: reading and writing networks
+
+.. index::
+   single: network; reading and writing networks
+
+****************************
+Reading and writing networks
+****************************
+
+
+
+"""
+
 import os.path
 import warnings
 import itertools
@@ -10,7 +24,8 @@ import orangeom
 import Orange
 import Orange.network
 
-__all__ = ['read', 'generate_pajek', 'write_pajek', 'read_pajek', 'parse_pajek']
+__all__ = ['read', 'write', 'read_gpickle', 'write_gpickle', 'read_pajek', 
+           'write_pajek', 'parse_pajek', 'read_gml', 'write_gml']
 
 def _wrap(g):
     for base, new in [(nx.DiGraph, Orange.network.DiGraph),
