@@ -87,6 +87,9 @@ class OWGraph(QGraphicsView):
         self.canvas = QGraphicsScene(self)
         self.setScene(self.canvas)
         self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
+        self.graph_item = QGraphicsRectItem(scene=self.canvas)
+        self.graph_item.setPen(QPen(Qt.NoPen))
+        self.graph_item.setFlag(QGraphicsItem.ItemClipsChildrenToShape, True)
         
         self._legend = legend.Legend(self.canvas)
         self.axes = dict()
@@ -264,7 +267,7 @@ class OWGraph(QGraphicsView):
                  symbol = Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         
-        c = curve.Curve()
+        c = curve.Curve(parent=self.graph_item)
         c.name = name
         c.setAutoUpdate(False)
         c.setContinuous(style is not Qt.NoPen)
@@ -293,7 +296,7 @@ class OWGraph(QGraphicsView):
         del self.curves[:]
     
     def update_layout(self):
-        graph_rect = QRectF(self.childrenRect())
+        graph_rect = QRectF(self.contentsRect())
         m = self.graph_margin
         graph_rect.adjust(m, m, -m, -m)
         
@@ -309,6 +312,7 @@ class OWGraph(QGraphicsView):
             graph_rect.setTop(graph_rect.top() + self.title_margin)
         
         if self.show_legend:
+            ## TODO: Figure out a good placement for the legend, possibly outside the graph area
             self._legend.setPos(graph_rect.topRight() - QPointF(100, 0))
             self._legend.show()
         else:
@@ -349,6 +353,11 @@ class OWGraph(QGraphicsView):
                 axis_rects[xTop].setRight(right)
                 
         self.graph_area = QRectF(graph_rect)
+        p = self.graph_area.topLeft()
+        self.graph_area.translate(-p.x(), -p.y())
+        self.graph_item.setRect(self.graph_area)
+        self.graph_item.setPos(p)
+        
         self.update_axes(axis_rects)
         
     def update_zoom(self):
@@ -371,6 +380,9 @@ class OWGraph(QGraphicsView):
         for a in self.axes.values():
             a.zoom_transform = self.zoom_transform
             a.update()
+            
+        for i in self.selection_items:
+            i.setTransform(self.zoom_transform)
         self.setSceneRect(self.canvas.itemsBoundingRect())
         
         
@@ -412,11 +424,11 @@ class OWGraph(QGraphicsView):
             return
         self.static_click = True
         self._pressed_mouse_button = event.button()
-        if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
+        point = self.map_from_widget(event.pos())
+        if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
             qDebug('Press: ' + repr(event.button()))
-            self._selection_start_point = QPointF(event.pos())
-            self._current_ps_item = QGraphicsRectItem()
-            self.canvas.addItem(self._current_ps_item)
+            self._selection_start_point = self.map_from_widget(event.pos())
+            self._current_ps_item = QGraphicsRectItem(parent=self.graph_item, scene=self.canvas)
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -426,9 +438,10 @@ class OWGraph(QGraphicsView):
             self.static_click = False
         qDebug('Move: ' + repr(event.button()))
         if self._pressed_mouse_button == Qt.LeftButton:
-            if self.state == SELECT_RECTANGLE:
+            point = self.map_from_widget(event.pos())
+            if self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
                 qDebug('Move move event')
-                self._current_ps_item.setRect(QRectF(self._selection_start_point, QPointF(event.pos())))
+                self._current_ps_item.setRect(QRectF(self._selection_start_point, point))
             
     def mouseReleaseEvent(self, event):
         if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
@@ -444,9 +457,10 @@ class OWGraph(QGraphicsView):
             self._current_ps_item = None
     
     def mouseStaticClick(self, event):
+        point = self.map_from_widget(event.pos())
         if self.state == ZOOMING:
             t, ok = self.zoom_transform.inverted()
-            p = QPointF(event.pos()) * t
+            p = point * t
             if event.button() == Qt.LeftButton:
                 end_zoom_factor = self._zoom_factor * 2
                 self._zoom_point = p
@@ -460,12 +474,12 @@ class OWGraph(QGraphicsView):
             self.zoom_factor_animation.start(QAbstractAnimation.DeleteWhenStopped)
             return True
         elif self.state == SELECT_POLYGON and event.button() == Qt.LeftButton:
-            self._current_ps_polygon.addPoint(QPointF(event.pos()))
+            self._current_ps_polygon.addPoint(point)
             self._current_ps_item.setPolygon(self._current_ps_polygon)
         elif (self.state == SELECT_RECTANGLE or self.state == SELECT_POLYGON) and event.button() == Qt.RightButton:
             self.selection_items.reverse()
             for i in self.selection_items:
-                if i.shape().contains(QPointF(event.pos())):
+                if i.shape().contains(point):
                     self.canvas.removeItem(i)
                     self.selection_items.remove(i)
                     break
@@ -521,3 +535,6 @@ class OWGraph(QGraphicsView):
         
     def set_state(self, state):
         self.state = state
+        
+    def map_from_widget(self, point):
+        return QPointF(point) - QPointF(self.contentsRect().topLeft()) - self.graph_item.pos()

@@ -72,15 +72,7 @@ void Curve::update()
     for (int i = 0; i < n; ++i)
     {
       p = QPointF(m_data[i].x, m_data[i].y);
-      if (dataRect.contains(p))
-      {
-	m_pointItems[i]->show();
-	m_pointItems[i]->setPos(m_graphTransform.map(p));
-      }
-      else
-      {
-	m_pointItems[i]->hide();
-      }
+      m_pointItems[i]->setPos(m_graphTransform.map(p));
     }
   }
   if (m_needsUpdate & UpdateColor)
@@ -104,7 +96,6 @@ void Curve::updateAll()
   int n = m_data.size();
   QBrush brush(m_color);
   m_path = pathForSymbol(m_symbol, m_pointSize);
-  QRectF dataRect = m_graphTransform.inverted().mapRect(m_graphArea);
   QPointF p;
   for (int i = 0; i < n; ++i)
   {
@@ -112,15 +103,7 @@ void Curve::updateAll()
     DataPoint& point = m_data[i];
     item->setPath(m_path);
     p = QPointF(point.x, point.x);
-    if (dataRect.contains(p))
-    {
-      item->setPos(p * m_graphTransform);
-      item->show();
-    }
-    else
-    {
-      item->hide();
-    }
+    item->setPos(p * m_graphTransform);
     item->setBrush(brush);
   }
   m_needsUpdate = 0;

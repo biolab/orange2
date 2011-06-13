@@ -147,7 +147,9 @@ class Axis(QGraphicsItemGroup):
             self.scene().removeItem(i)
         del self.tick_items[:]
         min, max, step = self.scale
-        self.transform = QTransform().translate(-self.x(), -self.y()) * self.zoom_transform * QTransform().translate(self.x(), self.y())
+        ## Warning: The following line make a separation between X and Y axes.
+        ## TODO: Figure out the general case, and determine what to do for non-cartesian axes.
+        self.transform = QTransform().translate(-self.line.x1(), -self.line.y2()) * self.zoom_transform * QTransform().translate(self.line.x1(), self.line.y2())
         ratio = self.transform.map(self.line).length() / self.line.length()
         qDebug('Axis zoom ratio = ' + str(ratio))
         for pos, text, size in self._ticks:
@@ -221,7 +223,7 @@ class Axis(QGraphicsItemGroup):
     def map_to_graph(self, x):
         min, max, step = self.scale
         line_point = self.line.pointAt( (x-min)/(max-min) )
-        end_point = line_point * self.zoom_transform
+        end_point = line_point * self.transform
         return self.projection(end_point, self.line)
         
     @staticmethod
