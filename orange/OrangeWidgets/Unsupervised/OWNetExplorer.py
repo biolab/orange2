@@ -217,7 +217,7 @@ class OWNetExplorer(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertices", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
-        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
+        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(3 if self.hubs==3 else h)))
         #self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
         OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.setMarkMode)
