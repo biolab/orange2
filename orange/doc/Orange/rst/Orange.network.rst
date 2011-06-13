@@ -17,5 +17,6 @@ structure of the graph you want to represent.
 
    Orange.network.graphtypes
    Orange.network.readwrite
+   Orange.network.layout
    Orange.network.community
    Orange.network.deprecated
