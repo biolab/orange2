@@ -55,7 +55,7 @@ class ZoomSelectToolbar(QGroupBox):
                  ("Polygon selection", "buttonSelectPoly", "activatePolygonSelection", QIcon(dlg_poly), Qt.CrossCursor, 1),
                  ("Remove last selection", "buttonRemoveLastSelection", "removeLastSelection", QIcon(dlg_undo), None, 0),
                  ("Remove all selections", "buttonRemoveAllSelections", "removeAllSelections", QIcon(dlg_clear), None, 0),
-                 ("Send selections", "buttonSendSelections", "sendData", QIcon(dlg_send), None, 0),
+                 ("Send selections", "buttonSendSelections", "sendSelections", QIcon(dlg_send), None, 0),
                  ("Zoom to extent", "buttonZoomExtent", "zoomExtent", QIcon(dlg_zoom_extent), None, 0),
                  ("Zoom selection", "buttonZoomSelection", "zoomSelection", QIcon(dlg_zoom_selection), None, 0)
                 )
@@ -102,7 +102,11 @@ class ZoomSelectToolbar(QGroupBox):
                 for fi, ff in enumerate(tbar.functions):
                     if ff and ff[5]:
                         getattr(tbar, ff[1]).setChecked(self == tbar and fi == b)
-        getattr(self.graph, f[2])()
+        
+        if hasattr(self.graph, f[2]):
+            getattr(self.graph, f[2])()
+        elif hasattr(self.widget, f[2]):
+            getattr(self.widget, f[2])()
 
         cursor = f[4]
         if not cursor is None:
@@ -130,7 +134,7 @@ class NavigateSelectToolbar(QWidget):
                  ("Polygon selection", "buttonSelectPoly", "activatePolygonSelection", QIcon(dlg_poly), Qt.ArrowCursor, 1, "select"),
                  ("Remove last selection", "buttonRemoveLastSelection", "removeLastSelection", QIcon(dlg_undo), None, 0, "select"),
                  ("Remove all selections", "buttonRemoveAllSelections", "removeAllSelections", QIcon(dlg_clear), None, 0, "select"),
-                 ("Send selections", "buttonSendSelections", "sendData", QIcon(dlg_send), None, 0, "select"),
+                 ("Send selections", "buttonSendSelections", "sendSelections", QIcon(dlg_send), None, 0, "select"),
                  ("Zoom to extent", "buttonZoomExtent", "zoomExtent", QIcon(dlg_zoom_extent), None, 0, "navigate"),
                  ("Zoom selection", "buttonZoomSelection", "zoomSelection", QIcon(dlg_zoom_selection), None, 0, "navigate")
                 )
@@ -182,9 +186,9 @@ class NavigateSelectToolbar(QWidget):
                     #if ff[6] == "select":
                     #    getattr(self.select, ff[1]).setChecked(fi == b)
                 
-        try:
+        if hasattr(self.graph, f[2]):
             getattr(self.graph, f[2])()
-        except:
+        elif hasattr(self.widget, f[2]):
             getattr(self.widget, f[2])()
 
         cursor = f[4]

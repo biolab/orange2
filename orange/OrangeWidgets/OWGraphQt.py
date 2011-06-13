@@ -27,6 +27,10 @@
         
     .. method graph_area_rect()
         Return the QRectF of the area where data is plotted (without axes)
+        
+    .. method send_data():
+        This method is not defined here, it is up to subclasses to implement it. 
+        It should send selected examples to the next widget
 """
 
 NOTHING = 0
@@ -75,7 +79,8 @@ from Orange.misc import deprecated_members, deprecated_attribute
                                 "addCurve" : "add_curve", 
                                 "activateZooming" : "activate_zooming", 
                                 "activateRectangleSelection" : "activate_rectangle_selection", 
-                                "activatePolygonSelection" : "activate_polygon_selection"
+                                "activatePolygonSelection" : "activate_polygon_selection", 
+                                "getSelectedPoints" : "get_selected_points"
                                 })
 class OWGraph(QGraphicsView):
     def __init__(self, parent=None,  name="None",  show_legend=1 ):
@@ -117,6 +122,8 @@ class OWGraph(QGraphicsView):
         self._pressed_mouse_button = Qt.NoButton
         self.selection_items = []
         self._current_ps_item = None
+        self.auto_send_selection_callback = None
+        
         self.curves = []
         self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
         self.addAxis(xBottom, False)
@@ -142,6 +149,7 @@ class OWGraph(QGraphicsView):
         self.update()
         
     selectionCurveList = deprecated_attribute("selectionCurveList", "selection_items")
+    autoSendSelectionCallback = deprecated_attribute("autoSendSelectionCallback", "auto_send_selection_callback")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -429,7 +437,7 @@ class OWGraph(QGraphicsView):
             self.static_click = False
         if self._pressed_mouse_button == Qt.LeftButton:
             point = self.map_from_widget(event.pos())
-            if self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
+            if self.state == SELECT_RECTANGLE and self._current_ps_item and self.graph_area.contains(point):
                 self._current_ps_item.setRect(QRectF(self._selection_start_point, point))
             
     def mouseReleaseEvent(self, event):
@@ -443,6 +451,9 @@ class OWGraph(QGraphicsView):
         if event.button() == Qt.LeftButton and self._current_ps_item:
             self.selection_items.append(self._current_ps_item)
             self._current_ps_item = None
+            if self.auto_send_selection_callback: 
+                self.auto_send_selection_callback()
+           
     
     def mouseStaticClick(self, event):
         point = self.map_from_widget(event.pos())
@@ -470,6 +481,8 @@ class OWGraph(QGraphicsView):
                 if i.shape().contains(point):
                     self.canvas.removeItem(i)
                     self.selection_items.remove(i)
+                    if self.auto_send_selection_callback: 
+                        self.auto_send_selection_callback()
                     break
             self.selection_items.reverse()
         else:
@@ -526,3 +539,17 @@ class OWGraph(QGraphicsView):
         
     def map_from_widget(self, point):
         return QPointF(point) - QPointF(self.contentsRect().topLeft()) - self.graph_item.pos()
+        
+    def get_selected_points(self, xData, yData, validData):
+        reg = QRegion()
+        selected = []
+        unselected = []
+        for i in self.selection_items:
+            reg = reg.united(i.rect().toRect())
+        for j in range(len(xData)):
+            (x, y) = self.map_to_graph( (xData[j], yData[j]) )
+            p = QPointF(x, y).toPoint()
+            sel = reg.contains(p)
+            selected.append(sel)
+            unselected.append(not sel)
+        return selected, unselected
