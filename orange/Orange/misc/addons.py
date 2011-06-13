@@ -1586,8 +1586,9 @@ def add_addon_directories_to_path():
     sys.path = [dir for dir in sys.path if dir not in addon_directories]
     for addOn in installed_addons.values() + registered_addons:
         path = addOn.directory
-        for p in [path, os.path.join(path, "widgets"),
-                  os.path.join(path, "widgets", "prototypes"),
+        for p in [os.path.join(path, "widgets", "prototypes"),
+                  os.path.join(path, "widgets"),
+                  path,
                   os.path.join(path, "lib-%s" % "-".join(( sys.platform, "x86"
                                                            if (platform.machine()=="")
                                                            else platform.machine(),
