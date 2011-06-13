@@ -8,7 +8,11 @@
 Reading and writing networks
 ****************************
 
-
+When using networks in Orange data mining suite, I advise you not to use 
+NetworkX reading and writing methods.  Instead, use new methods provided in
+the :obj:`Orange.network.readwrite` module. If, for some reason, you have to 
+use the original read / write methods, do not forget to cast the network (see 
+Orange.network.readwrite._wrap method).  
 
 """
 
@@ -18,11 +22,12 @@ import itertools
 
 import networkx as nx
 import networkx.readwrite as rw
-from networkx.utils import _get_fh
 
-import orangeom
+from networkx.utils import _get_fh, make_str, is_string_like
+
 import Orange
 import Orange.network
+import orangeom
 
 __all__ = ['read', 'write', 'read_gpickle', 'write_gpickle', 'read_pajek', 
            'write_pajek', 'parse_pajek', 'read_gml', 'write_gml']
@@ -36,7 +41,27 @@ def _wrap(g):
             return g if isinstance(g, new) else new(g, name=g.name)
     return g
 
+def _add_doc(myclass, nxclass):
+    tmp = nxclass.__doc__.replace('----------', '').replace('--------', '')
+    tmp = tmp.replace('-------', '').replace('-----', '')
+    tmp = tmp.replace('nx.write', 'Orange.network.readwrite.write')
+    tmp = tmp.replace('nx.read', 'Orange.network.readwrite.read')
+    tmp = tmp.replace('nx', 'Orange.network.nx')
+    myclass.__doc__ += tmp 
+
 def read(path, encoding='UTF-8'):
+    """Read graph in any of the supported file formats (.gpickle, .net, .gml).
+    The parser is chosen based on the file extension.
+    
+    :param path: File or filename to write.
+    :type path: string
+
+    Return the network of type :obj:`Orange.network.Graph`, 
+    :obj:`Orange.network.DiGraph`, :obj:`Orange.network.Graph` or 
+    :obj:`Orange.network.DiGraph`.
+    
+    """
+    
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
     supported = ['.net', '.gml', '.gpickle']
     
@@ -57,6 +82,17 @@ def read(path, encoding='UTF-8'):
         return read_gpickle(path)
 
 def write(G, path, encoding='UTF-8'):
+    """Write graph in any of the supported file formats (.gpickle, .net, .gml).
+    The file format is chosen based on the file extension.
+    
+    :param G: A Orange graph.
+    :type G: Orange.network.Graph
+         
+    :param path: File or filename to write.
+    :type path: string
+     
+    """
+    
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
     supported = ['.net', '.gml', '.gpickle']
     
@@ -80,15 +116,51 @@ def write(G, path, encoding='UTF-8'):
         G.links().save(root + '_links.tab')
 
 def read_gpickle(path):
+    """NetworkX read_gpickle method and wrap graph to Orange network.
+    
+    """
+    
     return _wrap(rw.read_gpickle(path))
 
+_add_doc(read_gpickle, rw.read_gpickle)
+
 def write_gpickle(G, path):
+    """NetworkX write_gpickle method.
+    
+    """
+    
     rw.write_gpickle(G, path)
 
+_add_doc(write_gpickle, rw.write_gpickle)
+
 def read_pajek(path, encoding='UTF-8'):
-    """ 
-    Read Pajek file.
+    """A completely reimplemented method for reading Pajek files. Written in 
+    C++ for maximum performance.  
+    
+    :param path: File or filename to write.
+    :type path: string
+        
+    Return the network of type :obj:`Orange.network.Graph` or 
+    :obj:`Orange.network.DiGraph`.
+
+
+    Examples
+
+    >>> G=Orange.network.nx.path_graph(4)
+    >>> Orange.network.readwrite.write_pajek(G, "test.net")
+    >>> G=Orange.network.readwrite.read_pajek("test.net")
+
+    To create a Graph instead of a MultiGraph use
+
+    >>> G1=Orange.network.Graph(G)
+
+    References
+
+    See http://vlado.fmf.uni-lj.si/pub/networks/pajek/doc/draweps.htm
+    for format information.
+    
     """
+    
     edges, arcs, items = orangeom.GraphLayout().readPajek(path)
     if len(arcs) > 0:
         # directed graph
@@ -110,29 +182,39 @@ def read_pajek(path, encoding='UTF-8'):
     #return parse_pajek(lines)
 
 def write_pajek(G, path, encoding='UTF-8'):
+    """A copy & paste of NetworkX's function with some bugs fixed (call the new 
+    generate_pajek).
+    
     """
-    A copy&paste of networkx's function with some bugs fixed:
-     - call the new generate_pajek.
-    """
+    
     fh=_get_fh(path, 'wb')
     for line in generate_pajek(G):
         line+='\n'
         fh.write(line.encode(encoding))
 
+_add_doc(write_pajek, rw.write_pajek)
+
 def parse_pajek(lines):
+    """Parse string in Pajek file format. See read_pajek for usage examples.
+    
+    :param lines: a string of network data in Pajek file format.
+    :type lines: string
+    
     """
-    Parse string in Pajek file format.
-    """
+    
     return read_pajek(lines)
 
-def generate_pajek(G):
-    """
-    A copy&paste of networkx's function with some bugs fixed:
-     - generate one line per object (vertex, edge, arc); do not add one per
-       entry in data dictionary.
-    """
-    from networkx.utils import make_str, is_string_like
 
+def generate_pajek(G):
+    """A copy & paste of NetworkX's function with some bugs fixed (generate 
+    one line per object: vertex, edge, arc. Do not add one per entry in data 
+    dictionary).
+    
+    :param G: A Orange graph.
+    :type G: Orange.network.Graph
+    
+    """
+    
     if G.name=='': 
         name='NetworkX'
     else:
@@ -175,11 +257,23 @@ def generate_pajek(G):
             s += ' %s %s'%(k,v)
         yield s
         
+
+_add_doc(generate_pajek, rw.generate_pajek)
+        
 def read_gml(path, encoding='latin-1', relabel=False):
+    """NetworkX read_gml method and wrap graph to Orange network.
+    
+    """
+    
     return _wrap(rw.read_gml(path, encoding, relabel))
 
+_add_doc(read_gml, rw.read_gml)
+
 def write_gml(G, path):
+    """NetworkX write_gml method.
+    
+    """
+    
     rw.write_gml(G, path)
 
-#read_pajek.__doc__ = rw.read_pajek.__doc__
-#parse_pajek.__doc__ = rw.parse_pajek.__doc__
+_add_doc(write_gml, rw.write_gml)

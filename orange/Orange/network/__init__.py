@@ -6,9 +6,10 @@ BaseGraph
 *********
 
 BaseGraph is primarily used to work with additional data attached to the 
-NetworkX graph. Two types of data can be added to the graph: 
-    * items (:obj:`Orange.data.Table`) - a table containing data about graph nodes. Each row in the table should correspond to a node with ID set to the row index.
-    * links (:obj:`Orange.data.Table`) - a table containing data about graph edges. Each row in the table corresponds to an edge. Two columns titled "u" and "v" must be given in the table, each containing indices of nodes on the given edge.
+NetworkX graph. Two types of data can be added to the graph:
+
+* items (:obj:`Orange.data.Table`) - a table containing data about graph nodes. Each row in the table should correspond to a node with ID set to the row index.
+* links (:obj:`Orange.data.Table`) - a table containing data about graph edges. Each row in the table corresponds to an edge. Two columns titled "u" and "v" must be given in the table, each containing indices of nodes on the given edge.
     
 Some other methods, common to all graph types are also added to BaseGraph class.
     

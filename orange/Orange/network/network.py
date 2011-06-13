@@ -20,6 +20,12 @@ class MdsTypeClass():
 
 MdsType = MdsTypeClass()
 
+
+def _get_doc(doc):
+    tmp = doc.replace('----------', '').replace('--------', '')
+    tmp = tmp.replace('nx.', 'Orange.network.')
+    return tmp
+    
 class BaseGraph():
     """A collection of methods inherited by all graph types (:obj:`Graph`, 
     :obj:`DiGraph`, :obj:`MultiGraph` and :obj:`MultiDiGraph`).
@@ -144,8 +150,8 @@ class Graph(BaseGraph, nx.Graph):
         nx.Graph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
     
-    __doc__ += nx.Graph.__doc__
-    __init__.__doc__ = nx.Graph.__init__.__doc__
+    __doc__ += _get_doc(nx.Graph.__doc__)
+    __init__.__doc__ = _get_doc(nx.Graph.__init__.__doc__)
      
 class DiGraph(BaseGraph, nx.DiGraph):
     """Bases: `NetworkX.DiGraph <http://networkx.lanl.gov/reference/classes.digraph.html>`_, 
@@ -158,8 +164,8 @@ class DiGraph(BaseGraph, nx.DiGraph):
         nx.DiGraph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
     
-    __doc__ += nx.Graph.__doc__
-    __init__.__doc__ = nx.DiGraph.__init__.__doc__
+    __doc__ += _get_doc(nx.DiGraph.__doc__)
+    __init__.__doc__ = _get_doc(nx.DiGraph.__init__.__doc__)
      
 class MultiGraph(BaseGraph, nx.MultiGraph):
     """Bases: `NetworkX.MultiGraph <http://networkx.lanl.gov/reference/classes.multigraph.html>`_, 
@@ -171,9 +177,9 @@ class MultiGraph(BaseGraph, nx.MultiGraph):
     def __init__(self, data=None, name='', **attr):
         nx.MultiGraph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
-        
-    __doc__ += nx.Graph.__doc__
-    __init__.__doc__ = nx.MultiGraph.__init__.__doc__
+    
+    __doc__ += _get_doc(nx.MultiGraph.__doc__)
+    __init__.__doc__ = _get_doc(nx.MultiGraph.__init__.__doc__)
      
 class MultiDiGraph(BaseGraph, nx.MultiDiGraph):
     """Bases: `NetworkX.MultiDiGraph <http://networkx.lanl.gov/reference/classes.multidigraph.html>`_, 
@@ -186,11 +192,53 @@ class MultiDiGraph(BaseGraph, nx.MultiDiGraph):
         nx.MultiDiGraph.__init__(self, data, name, **attr)
         BaseGraph.__init__(self)
     
-    __doc__ += nx.Graph.__doc__    
-    __init__.__doc__ = nx.MultiDiGraph.__init__.__doc__
-
+    __doc__ += _get_doc(nx.MultiDiGraph.__doc__)
+    __init__.__doc__ = _get_doc(nx.MultiDiGraph.__init__.__doc__)
+    
 class GraphLayout(orangeom.GraphLayout):
-    """A graph layout optimization class.
+    """A class for graph layout optimization. Before using any of the layout
+    optimization technique, the class have to be initialized with the :obj:`set_graph`
+    method. Also, do not forget to call :obj:`set_graph` again if the graph
+    structure changes.
+    
+    .. attribute:: coors
+   
+    Coordinates of all vertices. They are initialized to random positions.
+    You can modify them manually or use one of the optimization algorithms.
+    Usage: coors[0][i], coors[1][i]; 0 for x-axis, 1 for y-axis
+    
+    
+    .. automethod:: Orange.network.GraphLayout.set_graph
+    
+    **Network optimization**
+    
+    .. automethod:: Orange.network.GraphLayout.random
+    
+    .. automethod:: Orange.network.GraphLayout.fr
+    
+    .. automethod:: Orange.network.GraphLayout.fr_radial
+    
+    .. automethod:: Orange.network.GraphLayout.circular_original
+    
+    .. automethod:: Orange.network.GraphLayout.circular_random
+    
+    .. automethod:: Orange.network.GraphLayout.circular_crossing_reduction
+    
+    **FragViz**
+    
+    .. automethod:: Orange.network.GraphLayout.mds_components
+    
+    .. automethod:: Orange.network.GraphLayout.rotate_components
+    
+    **Helper methods** 
+    
+    .. automethod:: Orange.network.GraphLayout.get_vertices_in_rect
+    
+    .. automethod:: Orange.network.GraphLayout.closest_vertex
+    
+    .. automethod:: Orange.network.GraphLayout.vertex_distances
+    
+    .. automethod:: Orange.network.GraphLayout.rotate_vertices
     
     """
     
@@ -199,9 +247,13 @@ class GraphLayout(orangeom.GraphLayout):
         self.items_matrix = None
         
     def set_graph(self, graph=None, positions=None):
-        """Initialize graph structure
+        """Init graph structure.
         
-        :param graph: NetworkX graph
+        :param graph: Orange network
+        :type graph: Orange.netowork.Graph
+        
+        :param positions: Initial node positions
+        :type positions: A list of positions (x, y)
         
         """
         self.graph = graph
@@ -212,30 +264,52 @@ class GraphLayout(orangeom.GraphLayout):
             orangeom.GraphLayout.set_graph(self, graph)
             
     def random(self):
+        """Random graph layout."""
+        
         orangeom.GraphLayout.random(self)
         
     def fr(self, steps, temperature, coolFactor=0, weighted=False):
+        """Fruchterman Reingold graph layout.
+        
+        """
+        
         return orangeom.GraphLayout.fr(self, steps, temperature, coolFactor, weighted)
         
     def fr_radial(self, center, steps, temperature):
+        """Radial Fruchterman Reingold graph layout.
+        
+        """
+        
         return orangeom.GraphLayout.fr_radial(self, center, steps, temperature)
     
     def circular_original(self):
+        """Circular graph layout with original node order."""
+        
         orangeom.GraphLayout.circular_original(self)
     
     def circular_random(self):
+        """Circular graph layout with random node order."""
+        
         orangeom.GraphLayout.circular_random(self)
     
     def circular_crossing_reduction(self):
+        """Circular graph layout with edge crossing reduction."""
+        
         orangeom.GraphLayout.circular_crossing_reduction(self)
     
     def get_vertices_in_rect(self, x1, y1, x2, y2):
+        """Return a list of nodes in given rect."""
+        
         return orangeom.GraphLayout.get_vertices_in_rect(self, x1, y1, x2, y2)
     
     def closest_vertex(self, x, y):
+        """Return the closest node to given point."""
+        
         return orangeom.GraphLayout.closest_vertex(self, x, y)
     
     def vertex_distances(self, x, y):
+        """Return a list of distances from all points to the given position."""
+        
         return orangeom.GraphLayout.vertex_distances(self, x, y)
     
     def rotate_vertices(self, components, phi): 
@@ -243,7 +317,10 @@ class GraphLayout(orangeom.GraphLayout):
         
         :param components: list of network components
         :type components: list of lists of vertex indices
+        
         :param phi: list of component rotation angles (unit: radians)
+        :type phi: float
+        
         """  
         #print phi 
         for i in range(len(components)):
@@ -276,6 +353,7 @@ class GraphLayout(orangeom.GraphLayout):
     def rotate_components(self, maxSteps=100, minMoment=0.000000001, 
                           callbackProgress=None, callbackUpdateCanvas=None):
         """Rotate the network components using a spring model."""
+        
         if self.items_matrix == None:
             return 1
         
@@ -361,6 +439,7 @@ class GraphLayout(orangeom.GraphLayout):
     
     def mds_update_data(self, components, mds, callbackUpdateCanvas):
         """Translate and rotate the network components to computed positions."""
+        
         component_props = []
         x_mds = []
         y_mds = []
@@ -574,6 +653,7 @@ class GraphLayout(orangeom.GraphLayout):
     
     def mds_callback(self, a, b=None):
         """Refresh the UI when running  MDS on network components."""
+        
         if not self.mdsStep % self.mdsRefresh:
             self.mds_update_data(self.mdsComponentList, 
                                self.mds, 

@@ -42,12 +42,26 @@ def add_history_to_items(G, lblhistory):
 def label_propagation_hop_attenuation(G, results2items=0, resultHistory2items=0, iterations=1000, delta=0.1, node_degree_preference=0):
     """Label propagation for community detection, Leung et al., 2009
     
-    :param results2items: append a new feature result to items 
-        (Orange.data.Table)
+    :param G: A Orange graph.
+    :type G: Orange.network.Graph
+    
+    :param results2items: Append a new feature result to items 
+        (Orange.data.Table).
     :type results2items: bool
-    :param resultHistory2items: append new features result to items 
-        (Orange.data.Table) after each iteration of the algorithm
+    
+    :param resultHistory2items: Append new features result to items 
+        (Orange.data.Table) after each iteration of the algorithm.
     :type resultHistory2items: bool
+    
+    :param iterations: The maximum number of iterations if there is no convergence. 
+    :type iterations: int
+    
+    :param delta: The hop attenuation factor. 
+    :type delta: float
+    
+    :param node_degree_preference: The power on node degree factor. 
+    :type node_degree_preference: float
+    
     """
     
     if G.is_directed():
@@ -98,12 +112,20 @@ def label_propagation_hop_attenuation(G, results2items=0, resultHistory2items=0,
 def label_propagation(G, results2items=0, resultHistory2items=0, iterations=1000):
     """Label propagation for community detection, Raghavan et al., 2007
     
-    :param results2items: append a new feature result to items 
-        (Orange.data.Table)
+    :param G: A Orange graph.
+    :type G: Orange.network.Graph
+    
+    :param results2items: Append a new feature result to items 
+        (Orange.data.Table).
     :type results2items: bool
-    :param resultHistory2items: append new features result to items 
-        (Orange.data.Table) after each iteration of the algorithm
+    
+    :param resultHistory2items: Append new features result to items 
+        (Orange.data.Table) after each iteration of the algorithm.
     :type resultHistory2items: bool
+    
+    :param iterations: The maximum number of iterations if there is no convergence. 
+    :type iterations: int
+    
     """
     
     def next_label(neighbors):
