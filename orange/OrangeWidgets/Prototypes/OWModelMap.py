@@ -165,16 +165,16 @@ class OWModelMapCanvas(OWNxCanvas):
         self.radius = 100
         
     def mouseMoveEvent(self, event):
-        if not self.graph:
+        if self.graph is None or self.layout is None:
           return
         
         if self.plotAccuracy or self.vizAttributes:
             px = self.invTransform(QwtPlot.xBottom, event.x())
             py = self.invTransform(QwtPlot.yLeft, event.y())
-            ndx, mind = self.visualizer.closestVertex(px, py)
+            ndx, mind = self.layout.closest_vertex(px, py)
             
-            dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - event.x()
-            dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - event.y()
+            dX = self.transform(QwtPlot.xBottom, self.layout.coors[0][ndx]) - event.x()
+            dY = self.transform(QwtPlot.yLeft,   self.layout.coors[1][ndx]) - event.y()
             # transform to pixel distance
             distance = math.sqrt(dX**2 + dY**2) 
             if ndx != -1 and distance <= (self.vertices[ndx].size + 5) / 2:
@@ -187,9 +187,9 @@ class OWModelMapCanvas(OWNxCanvas):
                     self.vizAttributes(toMark)
                 self.drawPlotItems()
             else:
-                vd = sorted(self.visualizer.vertexDistances(px, py))[:10]
-                vd = [(math.sqrt((self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][v]) - event.x())**2 + \
-                                 (self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][v]) - event.y())**2), v) for d,v in vd]
+                vd = sorted(self.layout.vertex_distances(px, py))[:10]
+                vd = [(math.sqrt((self.transform(QwtPlot.xBottom, self.layout.coors[0][v]) - event.x())**2 + \
+                                 (self.transform(QwtPlot.yLeft,   self.layout.coors[1][v]) - event.y())**2), v) for d,v in vd]
                 vd = [v for d,v in vd if d < self.radius]
                 self.networkCurve.setMarkedVertices(vd)
                 if self.plotAccuracy:
@@ -314,7 +314,7 @@ class OWModelMap(OWNxExplorer, OWNxHist):
         
         # VISUALIZATION CONTROLS
         vizPredAcc = OWGUI.widgetBox(self.modelTab, "Prediction Accuracy", orientation = "vertical")
-        OWGUI.checkBox(vizPredAcc, self, "vizAccurancy", "Visualize prediction accurancy", callback = self.visualizeInfo)
+        OWGUI.checkBox(vizPredAcc, self, "vizAccurancy", "Visualize prediction accurancy", callback=self.visualizeInfo)
         OWGUI.spin(vizPredAcc, self, "radius", 10, 300, 1, label="Radius: ", callback = self.visualizeInfo)
         self.predGraph = OWDistributionGraph(self, vizPredAcc)
         self.predGraph.setMaximumSize(QSize(300, 300))
@@ -330,6 +330,7 @@ class OWModelMap(OWNxExplorer, OWNxHist):
         self.attrDifferenceBox = OWGUI.listBox(vizPredAcc, self, "attrDifference", "attrDifferenceList", "Attribute difference", selectionMode=QListWidget.NoSelection)
         
         self.attBox.setVisible(0)
+        self.visualizeInfo()
         
         self.matrixTab.layout().addStretch(1)
         self.modelTab.layout().addStretch(1)
@@ -462,28 +463,29 @@ class OWModelMap(OWNxExplorer, OWNxHist):
             # modelInfo - Python Dict; keys: method, classifier, probabilities,
             # results, XAnchors, YAnchors, attributes
             modelInfo = self.graph_matrix.results[modelInstance['uuid'].value]
-            uuid = modelInstance["uuid"].value
+            
+            #uuid = modelInstance["uuid"].value
             #method, vizr_result, projection_points, classifier, attrs = self.matrix.results[uuid]
             
-            if "YAnchors" in modelInfo and "XAnchors" in modelInfo:
-                if not modelInstance.domain.hasmeta("anchors"):
-                    modelInstance.domain.addmeta(orange.newmetaid(), orange.PythonVariable("anchors"))
-                modelInstance["anchors"] = (modelInfo["XAnchors"], modelInfo["YAnchors"])
+            if 'YAnchors' in modelInfo and 'XAnchors' in modelInfo:
+                if not modelInstance.domain.hasmeta('anchors'):
+                    modelInstance.domain.addmeta(orange.newmetaid(), orange.PythonVariable('anchors'))
+                modelInstance['anchors'] = (modelInfo['XAnchors'], modelInfo['YAnchors'])
                 
             if 'classifier' in modelInfo and modelInfo['classifier'] is not None:
-                if not modelInstance.domain.hasmeta("classifier"):
-                    modelInstance.domain.addmeta(orange.newmetaid(), orange.PythonVariable("classifier"))
-                modelInstance["classifier"] = modelInfo['classifier']
-                self.send("Classifier", modelInfo['classifier'])
+                if not modelInstance.domain.hasmeta('classifier'):
+                    modelInstance.domain.addmeta(orange.newmetaid(), orange.PythonVariable('classifier'))
+                modelInstance['classifier'] = modelInfo['classifier']
+                self.send('Classifier', modelInfo['classifier'])
                 
-            self.send("Model", modelInstance)
-            self.send("Selected Models", self.graph.items().getitems(selection))
+            self.send('Model', modelInstance)
+            self.send('Selected Models', self.graph.items().getitems(selection))
         elif len(selection) > 1: 
-            self.send("Model", None)
-            self.send("Selected Models", self.graph.items().getitems(selection))
+            self.send('Model', None)
+            self.send('Selected Models', self.graph.items().getitems(selection))
         else:
-            self.send("Model", None)
-            self.send("Selected Models", None)
+            self.send('Model', None)
+            self.send('Selected Models', None)
             
     def setColors(self):
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
@@ -534,6 +536,8 @@ class OWModelMap(OWNxExplorer, OWNxHist):
         self.predGraph.setXaxisTitle("CA")
         self.predGraph.setShowXaxisTitle(True)
         self.predGraph.replot()
+        
+        self.visualizeInfo()
 
 if __name__=="__main__":    
     import OWModelFile
