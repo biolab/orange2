@@ -81,11 +81,9 @@ class Axis(QGraphicsItemGroup):
         major, medium, minor = self.tick_length
                 
         if self.labels:
-            qDebug('Labels defined: ' + str(len(self.labels)))
             for i in range(len(self.labels)):
                 self._ticks.append( ( i, self.labels[i], medium ) )
         else:
-            qDebug('Constructing labels: ')
             magnitude = int(3*log10(abs(max-min)) + 1)
             if magnitude % 3 == 0:
                 first_place = 1
@@ -151,13 +149,11 @@ class Axis(QGraphicsItemGroup):
         ## TODO: Figure out the general case, and determine what to do for non-cartesian axes.
         self.transform = QTransform().translate(-self.line.x1(), -self.line.y2()) * self.zoom_transform * QTransform().translate(self.line.x1(), self.line.y2())
         ratio = self.transform.map(self.line).length() / self.line.length()
-        qDebug('Axis zoom ratio = ' + str(ratio))
         for pos, text, size in self._ticks:
             label_pos = self.map_to_graph( pos )
             test_rect = QRectF(self.line.p1(),  self.line.p2()).normalized()
             test_rect.adjust(-1, -1, 1, 1)
             if not test_rect.contains(label_pos):
-                qDebug('Skipping label ' + text)
                 continue
             hs = 0.5*step
             label_pos = self.map_to_graph(pos - hs)
@@ -178,7 +174,6 @@ class Axis(QGraphicsItemGroup):
             if self.title_above:
                 tick_line.setAngle(tick_line.angle() + 180)
             item.setLine( tick_line )
-            qDebug('Adding tick at ' + str(pos))
             item.setPen(self.style.pen())
             item.setPos(self.map_to_graph(pos))
             self.tick_items.append(item)
@@ -236,6 +231,5 @@ class Axis(QGraphicsItemGroup):
         
     def continuous_labels(self):
         min, max, step = self.scale
-        qDebug(' Step = ' + str(step))
         magnitude = log10(abs(max-min))
         

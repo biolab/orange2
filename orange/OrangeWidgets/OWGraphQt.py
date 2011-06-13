@@ -65,7 +65,7 @@ UserStyle = 1000
 
 from Graph import *
 from Graph.axis import *
-from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform
+from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsPolygonItem
 from PyQt4.QtCore import QPointF, QPropertyAnimation
 
 from OWDlgs import OWChooseImageSizeDlg
@@ -121,7 +121,9 @@ class OWGraph(QGraphicsView):
         
         self._pressed_mouse_button = Qt.NoButton
         self.selection_items = []
+        self._current_rs_item = None
         self._current_ps_item = None
+        self.polygon_close_treshold = 10
         self.auto_send_selection_callback = None
         
         self.curves = []
@@ -381,8 +383,8 @@ class OWGraph(QGraphicsView):
             a.zoom_transform = self.zoom_transform
             a.update()
             
-        for i in self.selection_items:
-            i.setTransform(self.zoom_transform)
+        for item, region in self.selection_items:
+            item.setTransform(self.zoom_transform)
         self.setSceneRect(self.canvas.itemsBoundingRect())
         
         
@@ -427,7 +429,7 @@ class OWGraph(QGraphicsView):
         point = self.map_from_widget(event.pos())
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
             self._selection_start_point = self.map_from_widget(event.pos())
-            self._current_ps_item = QGraphicsRectItem(parent=self.graph_item, scene=self.canvas)
+            self._current_rs_item = QGraphicsRectItem(parent=self.graph_item, scene=self.canvas)
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -435,10 +437,20 @@ class OWGraph(QGraphicsView):
             return
         if event.buttons():
             self.static_click = False
+        point = self.map_from_widget(event.pos())
         if self._pressed_mouse_button == Qt.LeftButton:
-            point = self.map_from_widget(event.pos())
-            if self.state == SELECT_RECTANGLE and self._current_ps_item and self.graph_area.contains(point):
-                self._current_ps_item.setRect(QRectF(self._selection_start_point, point))
+            if self.state == SELECT_RECTANGLE and self._current_rs_item and self.graph_area.contains(point):
+                self._current_rs_item.setRect(QRectF(self._selection_start_point, point))
+        if not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
+            self._current_ps_polygon[-1] = point
+            self._current_ps_item.setPolygon(self._current_ps_polygon)
+            if self._current_ps_polygon.size() > 2 and self.points_equal(self._current_ps_polygon.first(), self._current_ps_polygon.last()):
+                highlight_pen = QPen()
+                highlight_pen.setWidth(2)
+                highlight_pen.setStyle(Qt.DashDotLine)
+                self._current_ps_item.setPen(highlight_pen)
+            else:
+                self._current_ps_item.setPen(QPen(Qt.black))
             
     def mouseReleaseEvent(self, event):
         if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
@@ -448,12 +460,9 @@ class OWGraph(QGraphicsView):
             event.accept()
             return
         self._pressed_mouse_button = Qt.NoButton
-        if event.button() == Qt.LeftButton and self._current_ps_item:
-            self.selection_items.append(self._current_ps_item)
-            self._current_ps_item = None
-            if self.auto_send_selection_callback: 
-                self.auto_send_selection_callback()
-           
+        if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self._current_rs_item:
+            self.add_selection_item(self._current_rs_item, self._current_rs_item.rect())
+            self._current_rs_item = None
     
     def mouseStaticClick(self, event):
         point = self.map_from_widget(event.pos())
@@ -472,15 +481,29 @@ class OWGraph(QGraphicsView):
             self.zoom_factor_animation.setEndValue(float(end_zoom_factor))
             self.zoom_factor_animation.start(QAbstractAnimation.DeleteWhenStopped)
             return True
+            
         elif self.state == SELECT_POLYGON and event.button() == Qt.LeftButton:
-            self._current_ps_polygon.addPoint(point)
+            if not self._current_ps_item:
+                self._current_ps_polygon = QPolygonF()
+                self._current_ps_polygon.append(point)
+                self._current_ps_item = QGraphicsPolygonItem(self.graph_item, self.canvas)
+            self._current_ps_polygon.append(point)
             self._current_ps_item.setPolygon(self._current_ps_polygon)
-        elif (self.state == SELECT_RECTANGLE or self.state == SELECT_POLYGON) and event.button() == Qt.RightButton:
+            if self._current_ps_polygon.size() > 2 and self.points_equal(self._current_ps_polygon.first(), self._current_ps_polygon.last()):
+                self._current_ps_item.setPen(QPen(Qt.black))
+                self._current_ps_polygon.append(self._current_ps_polygon.first())
+                self.add_selection_item(self._current_ps_item, self._current_ps_polygon)
+                self._current_ps_item = None
+                
+        elif self.state in [SELECT_RECTANGLE, SELECT_POLYGON] and event.button() == Qt.RightButton:
+            qDebug('Right conditions for removing a selection curve ' + repr(self.selection_items))
             self.selection_items.reverse()
-            for i in self.selection_items:
-                if i.shape().contains(point):
-                    self.canvas.removeItem(i)
-                    self.selection_items.remove(i)
+            for item, region in self.selection_items:
+                qDebug(repr(point) + '   ' + repr(region.rects()))
+                if region.contains(point.toPoint()):
+                    self.canvas.removeItem(item)
+                    qDebug('Removed a selection curve')
+                    self.selection_items.remove((item, region))
                     if self.auto_send_selection_callback: 
                         self.auto_send_selection_callback()
                     break
@@ -536,20 +559,43 @@ class OWGraph(QGraphicsView):
         
     def set_state(self, state):
         self.state = state
+        if state != SELECT_RECTANGLE:
+            self._current_rs_item = None
+        if state != SELECT_POLYGON:
+            self._current_ps_item = None
         
     def map_from_widget(self, point):
         return QPointF(point) - QPointF(self.contentsRect().topLeft()) - self.graph_item.pos()
         
     def get_selected_points(self, xData, yData, validData):
-        reg = QRegion()
+        region = QRegion()
         selected = []
         unselected = []
-        for i in self.selection_items:
-            reg = reg.united(i.rect().toRect())
+        for item, reg in self.selection_items:
+            region |= reg
         for j in range(len(xData)):
             (x, y) = self.map_to_graph( (xData[j], yData[j]) )
-            p = QPointF(x, y).toPoint()
-            sel = reg.contains(p)
+            p = (QPointF(xData[j], yData[j]) * self.map_transform).toPoint()
+            sel = region.contains(p)
             selected.append(sel)
             unselected.append(not sel)
         return selected, unselected
+        
+    def add_selection_item(self, item, reg):
+        if type(reg) == QRectF:
+            reg = reg.toRect()
+        elif type(reg) == QPolygonF:
+            reg = reg.toPolygon()
+        t = (item, QRegion(reg))
+        self.selection_items.append(t)
+        if self.auto_send_selection_callback:
+            self.auto_send_selection_callback()
+        
+    def points_equal(self, p1, p2):
+        if type(p1) == tuple:
+            (x, y) = p1
+            p1 = QPointF(x, y)
+        if type(p2) == tuple:
+            (x, y) = p2
+            p2 = QPointF(x, y)
+        return (QPointF(p1)-QPointF(p2)).manhattanLength() < self.polygon_close_treshold
