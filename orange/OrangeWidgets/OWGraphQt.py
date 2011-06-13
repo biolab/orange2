@@ -67,7 +67,7 @@ from PyQt4.QtCore import QPointF, QPropertyAnimation
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
 from OWGraphTools import *      # user defined curves, ...
-from Orange.misc import deprecated_members
+from Orange.misc import deprecated_members, deprecated_attribute
 
 @deprecated_members({
                                 "saveToFileDirect": "save_to_file_direct",  
@@ -116,7 +116,6 @@ class OWGraph(QGraphicsView):
         
         self._pressed_mouse_button = Qt.NoButton
         self.selection_items = []
-        self.selectionCurveList = []
         self._current_ps_item = None
         self.curves = []
         self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
@@ -142,6 +141,8 @@ class OWGraph(QGraphicsView):
         
         self.update()
         
+    selectionCurveList = deprecated_attribute("selectionCurveList", "selection_items")
+    
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
             
@@ -177,20 +178,11 @@ class OWGraph(QGraphicsView):
         
     def setShowMainTitle(self, b):
         self.showMainTitle = b
-        if self.showMainTitle and self.mainTitle:
-            self.setTitle(self.mainTitle)
-        else:
-            self.setTitle('')
-        self.repaint()
+        self.replot()
 
     def setMainTitle(self, t):
-        qDebug(t)
         self.mainTitle = t
-        if self.showMainTitle and self.mainTitle:
-            self.setTitle(self.mainTitle)
-        else:
-            self.setTitle('')
-        self.repaint()
+        self.replot()
 
     def setShowXaxisTitle(self, b = -1):
         self.setShowAxisTitle(xBottom, b)
@@ -426,7 +418,6 @@ class OWGraph(QGraphicsView):
         self._pressed_mouse_button = event.button()
         point = self.map_from_widget(event.pos())
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
-            qDebug('Press: ' + repr(event.button()))
             self._selection_start_point = self.map_from_widget(event.pos())
             self._current_ps_item = QGraphicsRectItem(parent=self.graph_item, scene=self.canvas)
             
@@ -436,11 +427,9 @@ class OWGraph(QGraphicsView):
             return
         if event.buttons():
             self.static_click = False
-        qDebug('Move: ' + repr(event.button()))
         if self._pressed_mouse_button == Qt.LeftButton:
             point = self.map_from_widget(event.pos())
             if self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
-                qDebug('Move move event')
                 self._current_ps_item.setRect(QRectF(self._selection_start_point, point))
             
     def mouseReleaseEvent(self, event):
@@ -452,7 +441,6 @@ class OWGraph(QGraphicsView):
             return
         self._pressed_mouse_button = Qt.NoButton
         if event.button() == Qt.LeftButton and self._current_ps_item:
-            qDebug('Mouse release event')
             self.selection_items.append(self._current_ps_item)
             self._current_ps_item = None
     
