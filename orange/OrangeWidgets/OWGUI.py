@@ -1747,7 +1747,19 @@ class TableBarItem(QItemDelegate):
             color.setNamedColor(newcolor)
 
         if ratio is not None:
-            painter.fillRect(option.rect.adjusted(0, 3, -option.rect.width() * ratio, -3), color)
+#            painter.save()
+#            pen = QPen(QBrush(color), 3, Qt.SolidLine, Qt.FlatCap, Qt.BevelJoin)
+#            painter.setPen(pen)
+#            painter.drawRect(option.rect.adjusted(0, 3, -option.rect.width() * ratio, -3))
+#            painter.restore()
+
+#            painter.fillRect(option.rect.adjusted(0, 3, -option.rect.width() * ratio, -3), color)
+
+            painter.save()
+            painter.setPen(QPen(QBrush(color), 5, Qt.SolidLine, Qt.RoundCap))
+            x, y = option.rect.x(), option.rect.y()+option.rect.height()
+            painter.drawLine(x+1, y-5, x+option.rect.width() * ratio, y-5)
+            painter.restore()
         text = index.data(Qt.DisplayRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)
