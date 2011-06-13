@@ -84,8 +84,9 @@ class DistributionItemDelegate(QStyledItemDelegate):
             if count:
                 color = colors[i]
                 painter.setBrush(color)
+                painter.setRenderHint(QPainter.Antialiasing)
                 width = round(rect_w * float(count) / abs)
-                painter.drawRect(QRect(1, 1, width, drect_h))
+                painter.drawRoundedRect(QRect(1, 3, width, 5), 1, 2)
                 painter.translate(width, 0)
         painter.restore()
         
