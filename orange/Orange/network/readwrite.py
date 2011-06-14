@@ -21,7 +21,6 @@ import warnings
 import itertools
 
 import networkx as nx
-import networkx.readwrite as rw
 import networkx.readwrite.pajek as rwpajek
 import networkx.readwrite.gml as rwgml
 import networkx.readwrite.gpickle as rwgpickle
@@ -31,7 +30,8 @@ import Orange.network
 import orangeom
 
 __all__ = ['read', 'write', 'read_gpickle', 'write_gpickle', 'read_pajek', 
-           'write_pajek', 'parse_pajek', 'read_gml', 'write_gml']
+           'write_pajek', 'parse_pajek', 'generate_pajek', 'read_gml', 
+           'write_gml']
 
 def _wrap(g):
     for base, new in [(nx.DiGraph, Orange.network.DiGraph),
@@ -247,8 +247,15 @@ def generate_pajek(G):
     one line per object: vertex, edge, arc. Do not add one per entry in data 
     dictionary).
     
+    Generate lines in Pajek graph format.
+    
     :param G: A Orange graph.
     :type G: Orange.network.Graph
+
+    References
+    
+    See http://vlado.fmf.uni-lj.si/pub/networks/pajek/doc/draweps.htm
+    for format information.
     
     """
     
