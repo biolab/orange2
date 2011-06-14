@@ -1,4 +1,10 @@
 """
+===============
+R compatibility
+===============
+
+.. index:: R
+
 Conversion of Orange's structure into R objects (with rpy2 package).
 
 .. autofunction:: dataframe

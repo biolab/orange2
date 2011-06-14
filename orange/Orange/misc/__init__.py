@@ -4,120 +4,20 @@
 
 Module Orange.misc contains common functions and classes which are used in other modules.
 
-==================
-Counters
-==================
-
-.. index:: misc
-.. index::
-   single: misc; counters
-
 .. automodule:: Orange.misc.counters
   :members:
-
-==================
-Render
-==================
-
-.. index:: misc
-.. index::
-   single: misc; render
 
 .. automodule:: Orange.misc.render
   :members:
 
-==================
-Selection
-==================
-
-.. index:: selection
-.. index::
-   single: misc; selection
-
-Many machine learning techniques generate a set different solutions or have to
-choose, as for instance in classification tree induction, between different
-features. The most trivial solution is to iterate through the candidates,
-compare them and remember the optimal one. The problem occurs, however, when
-there are multiple candidates that are equally good, and the naive approaches
-would select the first or the last one, depending upon the formulation of
-the if-statement.
-
-:class:`Orange.misc.selection` provides a class that makes a random choice
-in such cases. Each new candidate is compared with the currently optimal
-one; it replaces the optimal if it is better, while if they are equal,
-one is chosen by random. The number of competing optimal candidates is stored,
-so in this random choice the probability to select the new candidate (over the
-current one) is 1/w, where w is the current number of equal candidates,
-including the present one. One can easily verify that this gives equal
-chances to all candidates, independent of the order in which they are presented.
-
 .. automodule:: Orange.misc.selection
   :members:
 
-Example
---------
-
-The following snippet loads the data set lymphography and prints out the
-feature with the highest information gain.
-
-part of `misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
-
-.. literalinclude:: code/misc-selection-bestonthefly.py
-  :lines: 7-16
-
-Our candidates are tuples gain ratios and features, so we set
-:obj:`callCompareOn1st` to make the compare function compare the first element
-(gain ratios). We could achieve the same by initializing the object like this:
-
-part of `misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
-
-.. literalinclude:: code/misc-selection-bestonthefly.py
-  :lines: 18-18
-
-
-The other way to do it is through indices.
-
-`misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
-
-.. literalinclude:: code/misc-selection-bestonthefly.py
-  :lines: 25-
-
-.. _misc-selection-bestonthefly.py: code/misc-selection-bestonthefly.py.py
-.. _lymphography.tab: code/lymphography.tab
-
-Here we only give gain ratios to :obj:`bestOnTheFly`, so we don't have to specify a
-special compare operator. After checking all features we get the index of the 
-optimal one by calling :obj:`winnerIndex`.
-
-==================
-Add-on Management
-==================
-
-.. index:: add-ons
-
 .. automodule:: Orange.misc.addons
-
-==================
-Server files
-==================
-
-.. index:: server files
 
 .. automodule:: Orange.misc.serverfiles
 
-=========
-`environ`
-=========
-
-.. index:: environment
-
 .. automodule:: Orange.misc.environ
-
-===============
-R compatibility
-===============
-
-.. index:: R
 
 .. automodule:: Orange.misc.r
 

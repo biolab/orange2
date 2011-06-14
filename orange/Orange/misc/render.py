@@ -1,3 +1,13 @@
+"""
+==================
+Render
+==================
+
+.. index:: misc
+.. index::
+   single: misc; render
+"""
+
 from __future__ import with_statement
 
 import numpy

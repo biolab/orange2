@@ -1,4 +1,10 @@
 """
+==================
+Add-on Management
+==================
+
+.. index:: add-ons
+
 Orange.misc.addons module provides a framework for Orange add-on management. As
 soon as it is imported, the following initialization takes place: the list of
 installed add-ons is loaded, their directories are added to python path
