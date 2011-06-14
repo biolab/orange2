@@ -113,6 +113,14 @@ Server files
 
 .. automodule:: Orange.misc.environ
 
+===============
+R compatibility
+===============
+
+.. index:: R
+
+.. automodule:: Orange.misc.r
+
 """
 import environ
 import counters
