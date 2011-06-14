@@ -8,84 +8,13 @@ from OWWidget import *
 from OWPythonScript import OWPythonScript, Script, ScriptItemDelegate, PythonConsole
 from OWItemModels import PyListModel, ModelActionsWidget
 
+import Orange.misc.r as r
+
+globalenv = r.globalenv
+
 import rpy2.robjects as robjects
 import rpy2.rlike.container as rlc
 
-if hasattr(robjects, "DataFrame"): # rpy2 version 2.1
-    DataFrame = robjects.DataFrame
-else: # rpy2 version 2.0
-    DataFrame = robjects.RDataFrame
-    
-if hasattr(robjects, "Matrix"): # rpy2 version 2.1
-    Matrix = robjects.Matrix
-else: # rpy2 version 2.0
-    Matrix = robjects.RMatrix
-    
-if hasattr(robjects, "globalenv"): # rpy2 version 2.1
-    globalenv = robjects.globalenv
-else: # rpy2 version 2.0
-    globalenv = robjects.globalEnv
-    
-if hasattr(robjects, "NA_Real"):
-    NA_Real = robjects.NA_Real
-else:
-    NA_Real = robjects.r("NA")
-    
-if hasattr(robjects, "NA_Integer"):
-    NA_Real = robjects.NA_Integer
-else:
-    NA_Real = robjects.r("NA")
-    
-if hasattr(robjects, "NA_Character"):
-    NA_Real = robjects.NA_Character
-else:
-    NA_Real = robjects.r("NA")
-        
-
-def ExampleTable_to_DataFrame(examples):
-    attrs = [ attr for attr in examples.domain.variables if attr.varType in \
-             [orange.VarTypes.Continuous, orange.VarTypes.Discrete, orange.VarTypes.String]]
-    def float_or_NA(value):
-        if value.isSpecial():
-            return NA_Real
-        else:
-            return float(value)
-        
-    def int_or_NA(value):
-        if value.isSpecial():
-            return NA_Integer
-        else:
-            return int(value)
-    
-    def str_or_NA(value):
-        if value.isSpecial():
-            return NA_Character
-        else:
-            return str(value)
-        
-    data = []
-    for attr in attrs:
-        if attr.varType == orange.VarTypes.Continuous:
-            data.append((attr.name, robjects.FloatVector([float_or_NA(ex[attr]) for ex in examples])))
-        elif attr.varType == orange.VarTypes.Discrete:
-            intvec = robjects.IntVector([int_or_NA(ex[attr]) for ex in examples])
-#            factor.levels = robjects.StrVector(list(attr.values))
-            data.append((attr.name, intvec))
-        elif attr.varType == orange.VarTypes.String:
-            data.append((attr.name, robjects.StrVector([str_or_NA(ex[attr]) for ex in examples])))
-        
-    r_obj = DataFrame(rlc.TaggedList([v for _, v in data], [t for t,_ in data]))
-    return r_obj
-
-
-def SymMatrix_to_Matrix(matrix):
-    
-    v = robjects.FloatVector([e for row in matrix for e in row])
-
-    r_obj = robjects.r['matrix'](v, nrow=matrix.dim)
-    return r_obj
-
-    
 class RPy2Console(PythonConsole):
     
     def interact(self, banner=None):
@@ -114,10 +43,10 @@ class RPy2Console(PythonConsole):
         r_obj = {}
         for key, val in locals.items():
             if isinstance(val, orange.ExampleTable):
-                dataframe = ExampleTable_to_DataFrame(val)
-                globalenv[key] =  dataframe
+                dataframe = r.dataframe(val)
+                globalenv[key] = dataframe
             elif isinstance(val, orange.SymMatrix):
-                matrix = SymMatrix_to_Matrix(val)
+                matrix = r.matrix(val)
                 globalenv[key] = matrix
                 
                 
