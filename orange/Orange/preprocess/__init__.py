@@ -83,6 +83,7 @@ from orange import \
 import outliers
 
 
+import math
 
 import orange
 from Orange.misc import _orange__new__, _orange__reduce__
