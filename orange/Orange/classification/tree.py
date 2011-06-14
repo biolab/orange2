@@ -5,9 +5,9 @@
 .. index::
    single: classification; tree
 
-********************
-Classification trees
-********************
+*******************************
+Classification trees (``tree``)
+*******************************
 
 To build a small tree (:obj:`TreeClassifier`) from the iris data set
 (with the depth limited to three levels), use (part of `orngTree1.py`_,

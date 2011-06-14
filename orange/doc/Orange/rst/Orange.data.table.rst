@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.data
 
-==========
-Data table
-==========
+======================
+Data table (``Table``)
+======================
 
 Class `Orange.data.Table` holds a list of data instances of type
 :obj:`Orange.data.Instance`. All instances belong to the same domain.

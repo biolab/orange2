@@ -1,4 +1,7 @@
 """
+**************************
+Self-organizing maps (``som``)
+**************************
 
 .. index:: self-organizing map (SOM)
 

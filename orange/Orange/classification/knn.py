@@ -3,9 +3,9 @@
 .. index:
    single: classification; k-nearest neighbors (kNN)
    
-*******************
-k-nearest neighbors
-*******************
+*****************************
+k-nearest neighbors (``knn``)
+*****************************
 
 The module includes implementation of the `nearest neighbors 
 algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ and classes

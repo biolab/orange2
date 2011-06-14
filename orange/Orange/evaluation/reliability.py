@@ -1,4 +1,8 @@
 """
+########################################
+Reliability estimation (``reliability``)
+########################################
+
 .. index:: Reliability Estimation
 
 .. index::

@@ -1,7 +1,7 @@
 """
-********
-Majority
-********
+***********************
+Majority (``majority``)
+***********************
 
 .. index:: majority classifier
    pair: classification; majority classifier

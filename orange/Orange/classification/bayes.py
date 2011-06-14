@@ -4,9 +4,9 @@
 .. index:: 
    single: classification; naive Bayes classifier
 
-**********************
-Naive Bayes classifier
-**********************
+**********************************
+Naive Bayes classifier (``bayes``)
+**********************************
 
 The most primitive Bayesian classifier is :obj:`NaiveLearner`. 
 `Naive Bayes classification algorithm <http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_ 

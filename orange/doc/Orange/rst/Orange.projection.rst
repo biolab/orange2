@@ -3,7 +3,7 @@ Projections (``projection``)
 #############################
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    Orange.projection.linear
    Orange.projection.mds

@@ -1,5 +1,4 @@
 """
-
 .. index:: misc
 
 Module Orange.misc contains common functions and classes which are used in other modules.

@@ -1,12 +1,14 @@
 '''
+##############################
+Linear projection (``linear``)
+##############################
+
 .. index:: linear projection
 
 .. index::
    single: projection; linear
 
-The functionality to perform linear projection of the data.
-
-In particular, this module contains the FreeViz algorithm
+This module contains the FreeViz algorithm
 `(Demsar et al, 2005) <http://www.ailab.si/idamap/idamap2005/papers/12%20Demsar%20CR.pdf>`_
 [1], which finds a good two-dimensional projection of the given data, where the
 quality is defined by a separation of the data from different classes and the

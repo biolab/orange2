@@ -1,4 +1,8 @@
 """
+========================
+Variables (``variable``)
+========================
+
 Data instances in Orange can contain several types of variables:
 :ref:`discrete <discrete>`, :ref:`continuous <continuous>`,
 :ref:`strings <string>`, and :ref:`Python <Python>` and types derived from it.

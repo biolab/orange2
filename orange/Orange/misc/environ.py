@@ -1,7 +1,7 @@
 """
-================================
-Orange environment configuration
-================================
+==============================================
+Orange environment configuration (``environ``)
+==============================================
 
 This module contains some basic customization options for Orange
 (for now mostly changing directories where orange settings are saved).

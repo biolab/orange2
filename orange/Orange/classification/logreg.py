@@ -3,9 +3,9 @@
 .. index:
    single: classification; logistic regression
 
-*******************
-Logistic regression
-*******************
+********************************
+Logistic regression (``logreg``)
+********************************
 
 Implements `logistic regression
 <http://en.wikipedia.org/wiki/Logistic_regression>`_ with an extension for

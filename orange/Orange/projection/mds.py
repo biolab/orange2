@@ -4,12 +4,12 @@
 .. index::
    single: projection; multidimensional scaling (mds)
 
+**********************************
+Multidimensional scaling (``mds``)
+**********************************
+
 The functionality to perform multidimensional scaling
 (http://en.wikipedia.org/wiki/Multidimensional_scaling).
-
-************************
-Multidimensional scaling
-************************
 
 The main class to perform multidimensional scaling is
 :class:`Orange.projection.mds.MDS`
@@ -39,21 +39,20 @@ or callable classes:
 
 This module provides the following stress functions:
 
-   * Orange.projection.mds.SgnRelStress
-   * Orange.projection.mds.KruskalStress
-   * Orange.projection.mds.SammonStress
-   * Orange.projection.mds.SgnSammonStress
+   * :obj:`SgnRelStress`
+   * :obj:`KruskalStress`
+   * :obj:`SammonStress`
+   * :obj:`SgnSammonStress`
 
-Usage examples
-==============
+Examples
+========
 
 MDS Scatterplot
 ---------------
 
-The following script computes the Euclidean distance between the data instances
-of the iris dataset and runs MDS on a distance matrix. Coordinates computed
-with MDS are plotted using matplotlib (not included with orange, 
-http://matplotlib.sourceforge.net/).
+The following script computes the Euclidean distance between the data
+instances and runs MDS. Final coordinates are plotted with matplotlib
+(not included with orange, http://matplotlib.sourceforge.net/).
 
 Example (`mds-scatterplot.py`_, uses `iris.tab`_)
 
@@ -63,14 +62,13 @@ Example (`mds-scatterplot.py`_, uses `iris.tab`_)
 .. _mds-scatterplot.py: code/mds-scatterplot.py
 .. _iris.tab: code/iris.tab
 
-The script produces a file named *mds-scatterplot.py.png*. Color denotes
-point's class. Iris is a relatively simple data set with respect to
+The script produces a file *mds-scatterplot.py.png*. Color denotes
+the class. Iris is a relatively simple data set with respect to
 classification; to no surprise we see that MDS finds such instance
 placement in 2D where instances of different classes are well separated.
 Note that MDS has no knowledge of points' classes.
 
 .. image:: files/mds-scatterplot.png
-
 
 
 A more advanced example

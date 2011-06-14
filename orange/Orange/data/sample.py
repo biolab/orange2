@@ -1,4 +1,8 @@
 """
+=================================
+Sampling of examples (``sample``)
+=================================
+
 Example sampling is one of the basic procedures in machine learning. If
 for nothing else, everybody needs to split dataset into training and
 testing examples. 

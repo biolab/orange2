@@ -1,9 +1,9 @@
 """
 .. index:: Testing, Sampling
 
-====================
-Sampling and Testing
-====================
+==================================
+Sampling and Testing (``testing``)
+==================================
 
 This module includes functions for data sampling and splitting, and for
 testing learners. It implements cross-validation, leave-one out, random

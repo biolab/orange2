@@ -1,9 +1,9 @@
 """
 .. index:: classification, support vector machines (SVM)
 
-***********************
-Support vector machines
-***********************
+*********************************
+Support vector machines (``svm``)
+*********************************
 
 A collection of classes that wrap the `LibSVM library
 <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_, a library for `support vector
