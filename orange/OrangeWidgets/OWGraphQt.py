@@ -31,6 +31,10 @@
     .. method send_data():
         This method is not defined here, it is up to subclasses to implement it. 
         It should send selected examples to the next widget
+        
+    .. method add_curve(name, attributes, ...)
+        Attributes is a map of { point_property: ("data_property", value) }, for example 
+            { PointColor : ("building_type", "house"), PointSize : ("age", 20) }
 """
 
 NOTHING = 0
@@ -61,7 +65,11 @@ VLine = 11
 Star1 = 12
 Star2 = 13
 Hexagon = 14
-UserStyle = 1000 
+UserStyle = 1000
+
+PointColor = 1
+PointSize = 2
+PointSymbol = 4
 
 from Graph import *
 from Graph.axis import *
@@ -128,8 +136,8 @@ class OWGraph(QGraphicsView):
         
         self.curves = []
         self.data_range = {xBottom : (0, 1), yLeft : (0, 1)}
-        self.addAxis(xBottom, False)
-        self.addAxis(yLeft, True)
+        self.add_axis(xBottom, False)
+        self.add_axis(yLeft, True)
         
         self.map_transform = QTransform()
         
@@ -286,7 +294,10 @@ class OWGraph(QGraphicsView):
             self.legend().add_curve(c)
         return c
         
-    def addAxis(self, axis_id, title_above = False):
+    def plot_data(self, xData, yData, colors, labels, shapes, sizes):
+        pass
+        
+    def add_axis(self, axis_id, title_above = False):
         self.axes[axis_id] = axis.Axis(axis_id, title_above)
     
     def removeAllSelections(self):
@@ -385,8 +396,6 @@ class OWGraph(QGraphicsView):
             
         for item, region in self.selection_items:
             item.setTransform(self.zoom_transform)
-        self.setSceneRect(self.canvas.itemsBoundingRect())
-        
         
     def update_axes(self, axis_rects):
         for id, item in self.axes.iteritems():
