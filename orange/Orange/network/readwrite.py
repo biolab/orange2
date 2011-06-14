@@ -23,8 +23,6 @@ import itertools
 import networkx as nx
 import networkx.readwrite as rw
 
-from networkx.utils import _get_fh, make_str, is_string_like
-
 import Orange
 import Orange.network
 import orangeom
@@ -48,6 +46,42 @@ def _add_doc(myclass, nxclass):
     tmp = tmp.replace('nx.read', 'Orange.network.readwrite.read')
     tmp = tmp.replace('nx', 'Orange.network.nx')
     myclass.__doc__ += tmp 
+
+def _is_string_like(obj): # from John Hunter, types-free version
+    """Check if obj is string."""
+    try:
+        obj + ''
+    except (TypeError, ValueError):
+        return False
+    return True
+
+def _get_fh(path, mode='r'):
+    """ Return a file handle for given path.
+
+    Path can be a string or a file handle.
+
+    Attempt to uncompress/compress files ending in '.gz' and '.bz2'.
+
+    """
+    if _is_string_like(path):
+        if path.endswith('.gz'):
+            import gzip
+            fh = gzip.open(path,mode=mode)
+        elif path.endswith('.bz2'):
+            import bz2
+            fh = bz2.BZ2File(path,mode=mode)
+        else:
+            fh = open(path,mode = mode)           
+    elif hasattr(path, 'read'):
+        fh = path
+    else:
+        raise ValueError('path must be a string or file handle')
+    return fh
+
+def _make_str(t):
+    """Return the string representation of t."""
+    if _is_string_like(t): return t
+    return str(t)
 
 def read(path, encoding='UTF-8'):
     """Read graph in any of the supported file formats (.gpickle, .net, .gml).
@@ -233,7 +267,7 @@ def generate_pajek(G):
         id=int(na.get('id',nodenumber[n]))
         nodenumber[n]=id
         shape=na.get('shape','ellipse')
-        s = ' '.join(map(make_str,(id,n,x,y,shape)))
+        s = ' '.join(map(_make_str,(id,n,x,y,shape)))
         for k,v in na.items():
             if k != 'x' and k != 'y':
                 s += ' %s %s'%(k,v)
@@ -247,9 +281,9 @@ def generate_pajek(G):
     for u,v,edgedata in G.edges(data=True):
         d=edgedata.copy()
         value=d.pop('weight',1.0) # use 1 as default edge value
-        s = ' '.join(map(make_str,(nodenumber[u],nodenumber[v],value)))
+        s = ' '.join(map(_make_str,(nodenumber[u],nodenumber[v],value)))
         for k,v in d.items():
-            if not is_string_like(v):
+            if not _is_string_like(v):
                 v = repr(v)
             # add quotes to any values with a blank space
             if " " in v: 
