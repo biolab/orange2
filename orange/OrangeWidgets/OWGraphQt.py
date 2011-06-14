@@ -372,6 +372,7 @@ class OWGraph(QGraphicsView):
         self.graph_item.setPos(p)
         
         self.update_axes(axis_rects)
+        self.setSceneRect(self.canvas.itemsBoundingRect())
         
     def update_zoom(self):
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
