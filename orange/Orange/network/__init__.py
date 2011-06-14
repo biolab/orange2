@@ -1,56 +1,50 @@
-""" 
-.. index:: network
+"""
 
-*********
-BaseGraph
-*********
+*************************
+Network classes in Orange
+*************************
 
-BaseGraph is primarily used to work with additional data attached to the 
-NetworkX graph. Two types of data can be added to the graph:
+Orange network classes are derived from `NetworkX basic graph types <http://networkx.lanl.gov/reference/classes.html>`_ 
+and :obj:`Orange.network.BaseGraph`. They provide data structures and methods 
+for storing graphs, network analysis and layout optimization.
 
-* items (:obj:`Orange.data.Table`) - a table containing data about graph nodes. Each row in the table should correspond to a node with ID set to the row index.
-* links (:obj:`Orange.data.Table`) - a table containing data about graph edges. Each row in the table corresponds to an edge. Two columns titled "u" and "v" must be given in the table, each containing indices of nodes on the given edge.
+There are four graph types: :obj:`Orange.network.Graph`, 
+:obj:`Orange.network.DiGraph`, :obj:`Orange.network.MultiGraph` and
+:obj:`Orange.network.MultiDiGraph`. The choice of graph class depends on the 
+structure of the graph you want to represent.
+
+Examples
+========
+
+Reading and writing a network
+-----------------------------
+
+This example demonstrates reading a network. Network class can read or write 
+Pajek (.net) or GML file format.
+
+`network-read-nx.py`_ (uses: `K5.net`_):
+
+.. literalinclude:: code/network-read.py
+    :lines: 5-6
     
-Some other methods, common to all graph types are also added to BaseGraph class.
+.. _network-read-nx.py: code/network-read-nx.py
+.. _K5.net: code/K5.net
+
+Visualize a network in NetExplorer widget
+-----------------------------------------
+
+This example demonstrates how to display a network in NetExplorer.
+
+part of `network-widget.py`_
+
+.. literalinclude:: code/network-widget.py
+    :lines: 10-16
     
-.. autoclass:: Orange.network.BaseGraph
-   :members:
+.. image:: files/network-explorer.png
+    :width: 100%
 
-***********
-Graph types
-***********
+.. _network-widget.py: code/network-widget.py
 
-The reference in this section is complemented with the original NetworkX 
-library reference. For a complete documentation please refer to the 
-`NetworkX docs <http://networkx.lanl.gov/reference/>`_. All methods from the
-NetworkX package can be used for graph analysis and manipulation with exception
-to read and write graph methods. For reading and writing graphs please refer to 
-the Orange.network.readwrite docs. 
-
-Graph
-=====
-
-.. autoclass:: Orange.network.Graph
-   :members:
-
-DiGraph
-=======
-   
-.. autoclass:: Orange.network.DiGraph
-   :members:
-
-MultiGraph
-==========
-   
-.. autoclass:: Orange.network.MultiGraph
-   :members:
-   
-MultiDiGraph
-============
-   
-.. autoclass:: Orange.network.MultiDiGraph
-   :members:
-   
 """
 
 import math

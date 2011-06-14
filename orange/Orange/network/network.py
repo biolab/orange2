@@ -1,3 +1,58 @@
+""" 
+.. index:: network
+
+*********
+BaseGraph
+*********
+
+BaseGraph is primarily used to work with additional data attached to the 
+NetworkX graph. Two types of data can be added to the graph:
+
+* items (:obj:`Orange.data.Table`) - a table containing data about graph nodes. Each row in the table should correspond to a node with ID set to the row index.
+* links (:obj:`Orange.data.Table`) - a table containing data about graph edges. Each row in the table corresponds to an edge. Two columns titled "u" and "v" must be given in the table, each containing indices of nodes on the given edge.
+    
+Some other methods, common to all graph types are also added to BaseGraph class.
+    
+.. autoclass:: Orange.network.BaseGraph
+   :members:
+
+***********
+Graph types
+***********
+
+The reference in this section is complemented with the original NetworkX 
+library reference. For a complete documentation please refer to the 
+`NetworkX docs <http://networkx.lanl.gov/reference/>`_. All methods from the
+NetworkX package can be used for graph analysis and manipulation with exception
+to read and write graph methods. For reading and writing graphs please refer to 
+the Orange.network.readwrite docs. 
+
+Graph
+=====
+
+.. autoclass:: Orange.network.Graph
+   :members:
+
+DiGraph
+=======
+   
+.. autoclass:: Orange.network.DiGraph
+   :members:
+
+MultiGraph
+==========
+   
+.. autoclass:: Orange.network.MultiGraph
+   :members:
+   
+MultiDiGraph
+============
+   
+.. autoclass:: Orange.network.MultiDiGraph
+   :members:
+   
+"""
+
 import copy
 import math
 import numpy
@@ -240,6 +295,40 @@ class GraphLayout(orangeom.GraphLayout):
     
     .. automethod:: Orange.network.GraphLayout.rotate_vertices
     
+    **Examples**
+    
+    *Network constructor and random layout*
+    
+    In our first example we create a Network object with a simple full graph (K5). 
+    Vertices are initially placed randomly. Graph is visualized using pylabs 
+    matplotlib. 
+        
+    `network-constructor-nx.py`_
+    
+    .. literalinclude:: code/network-constructor-nx.py
+    
+    Executing the above saves a pylab window with the following graph drawing:
+    
+    .. image:: files/network-K5-random.png
+    
+    .. _network-constructor-nx.py: code/network-constructor-nx.py
+    
+    *Network layout optimization*
+    
+    This example demonstrates how to optimize network layout using one of the
+    included algorithms.
+    
+    part of `network-optimization-nx.py`_
+    
+    .. literalinclude:: code/network-optimization-nx.py
+        :lines: 14-19
+        
+    The result of the above script is a spring force layout optimization:
+    
+    .. image:: files/network-K5-fr.png
+    
+    .. _network-optimization-nx.py: code/network-optimization-nx.py
+    
     """
     
     def __init__(self):
@@ -269,14 +358,18 @@ class GraphLayout(orangeom.GraphLayout):
         orangeom.GraphLayout.random(self)
         
     def fr(self, steps, temperature, coolFactor=0, weighted=False):
-        """Fruchterman Reingold graph layout.
+        """Fruchterman-Reingold spring layout optimization. Set number of 
+        iterations with argument steps, start temperature with temperature 
+        (for example: 1000).
         
         """
         
         return orangeom.GraphLayout.fr(self, steps, temperature, coolFactor, weighted)
         
     def fr_radial(self, center, steps, temperature):
-        """Radial Fruchterman Reingold graph layout.
+        """Radial Fruchterman-Reingold spring layout optimization. Set center 
+        node with attribute center, number of iterations with argument steps 
+        and start temperature with temperature (for example: 1000).
         
         """
         
@@ -293,12 +386,15 @@ class GraphLayout(orangeom.GraphLayout):
         orangeom.GraphLayout.circular_random(self)
     
     def circular_crossing_reduction(self):
-        """Circular graph layout with edge crossing reduction."""
+        """Circular graph layout with edge crossing reduction (Michael Baur, 
+        Ulrik Brandes).
+        
+        """
         
         orangeom.GraphLayout.circular_crossing_reduction(self)
     
     def get_vertices_in_rect(self, x1, y1, x2, y2):
-        """Return a list of nodes in given rect."""
+        """Return a list of nodes in the given rectangle."""
         
         return orangeom.GraphLayout.get_vertices_in_rect(self, x1, y1, x2, y2)
     
@@ -308,7 +404,10 @@ class GraphLayout(orangeom.GraphLayout):
         return orangeom.GraphLayout.closest_vertex(self, x, y)
     
     def vertex_distances(self, x, y):
-        """Return a list of distances from all points to the given position."""
+        """Return distances (a list of (distance, vertex) tuples) of all nodes 
+        to the given position.
+        
+        """
         
         return orangeom.GraphLayout.vertex_distances(self, x, y)
     
