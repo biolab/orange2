@@ -141,7 +141,7 @@ public:
   
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
-  
+    
 private:
   enum UpdateFlag
   {
