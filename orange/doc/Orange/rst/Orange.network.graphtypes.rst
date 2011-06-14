@@ -1,2 +1,1 @@
-.. automodule:: Orange.network
-   :members:
+.. automodule:: Orange.network.network
