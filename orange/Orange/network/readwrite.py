@@ -43,9 +43,7 @@ def _wrap(g):
     return g
 
 def _add_doc(myclass, nxclass):
-    tmp = nxclass.__doc__.replace('----------', '').replace('--------', '')
-    tmp = tmp.replace('-------', '').replace('-----', '')
-    tmp = tmp.replace('nx.write', 'Orange.network.readwrite.write')
+    tmp = nxclass.__doc__.replace('nx.write', 'Orange.network.readwrite.write')
     tmp = tmp.replace('nx.read', 'Orange.network.readwrite.read')
     tmp = tmp.replace('nx', 'Orange.network.nx')
     myclass.__doc__ += tmp 

@@ -77,8 +77,7 @@ MdsType = MdsTypeClass()
 
 
 def _get_doc(doc):
-    tmp = doc.replace('----------', '').replace('--------', '')
-    tmp = tmp.replace('nx.', 'Orange.network.')
+    tmp = doc.replace('nx.', 'Orange.network.')
     return tmp
     
 class BaseGraph():
@@ -159,7 +158,7 @@ class BaseGraph():
         G.add_edges_from(((node_to_index[u], node_to_index[v], copy.deepcopy(self.edge[u][v])) for u,v in self.edges()))
         
         for id in G.node.keys():
-            G.node[id]['old_id'] = index_to_node[id]
+            G.node[id]['old_id'] = index_to_node[id]  
         
         if self.items():
             G.set_items(self.items())
