@@ -1036,7 +1036,8 @@ class OWNxExplorer(OWWidget):
             return
         
         self.networkCanvas.tooltipNeighbours = self.networkCanvas.selectionNeighbours = 0
-        powers = vgraph.getDegrees()
+        powers = vgraph.degree()
+        powers = [powers[key] for key in sorted(powers.keys())]
         
         if hubs == 4: # at least N connections
             #print "mark at least N connections"
