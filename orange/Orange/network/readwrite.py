@@ -154,18 +154,18 @@ def read_gpickle(path):
     
     """
     
-    return _wrap(rw.read_gpickle(path))
+    return _wrap(rw.gpickle.read_gpickle(path))
 
-_add_doc(read_gpickle, rw.read_gpickle)
+_add_doc(read_gpickle, rw.gpickle.read_gpickle)
 
 def write_gpickle(G, path):
     """NetworkX write_gpickle method.
     
     """
     
-    rw.write_gpickle(G, path)
+    rw.gpickle.write_gpickle(G, path)
 
-_add_doc(write_gpickle, rw.write_gpickle)
+_add_doc(write_gpickle, rw.gpickle.write_gpickle)
 
 def read_pajek(path, encoding='UTF-8'):
     """A completely reimplemented method for reading Pajek files. Written in 
@@ -226,7 +226,7 @@ def write_pajek(G, path, encoding='UTF-8'):
         line+='\n'
         fh.write(line.encode(encoding))
 
-_add_doc(write_pajek, rw.write_pajek)
+_add_doc(write_pajek, rw.pajek.write_pajek)
 
 def parse_pajek(lines):
     """Parse string in Pajek file format. See read_pajek for usage examples.
@@ -292,22 +292,22 @@ def generate_pajek(G):
         yield s
         
 
-_add_doc(generate_pajek, rw.generate_pajek)
+_add_doc(generate_pajek, rw.pajek.generate_pajek)
         
 def read_gml(path, encoding='latin-1', relabel=False):
     """NetworkX read_gml method and wrap graph to Orange network.
     
     """
     
-    return _wrap(rw.read_gml(path, encoding, relabel))
+    return _wrap(rw.gml.read_gml(path, encoding, relabel))
 
-_add_doc(read_gml, rw.read_gml)
+_add_doc(read_gml, rw.gml.read_gml)
 
 def write_gml(G, path):
     """NetworkX write_gml method.
     
     """
     
-    rw.write_gml(G, path)
+    rw.gml.write_gml(G, path)
 
-_add_doc(write_gml, rw.write_gml)
+_add_doc(write_gml, rw.gml.write_gml)
