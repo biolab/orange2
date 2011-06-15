@@ -50,27 +50,6 @@ BottomLegend = 2
 TopLegend = 3
 ExternalLegend = 4
 
-Ellipse = 0
-Rect = 1
-Diamond = 2
-Triangle = 3
-DTriangle = 4
-UTriangle = 5
-LTriangle = 6
-RTriangle = 7
-Cross = 8
-XCross = 9
-HLine = 10
-VLine = 11
-Star1 = 12
-Star2 = 13
-Hexagon = 14
-UserStyle = 1000
-
-PointColor = 1
-PointSize = 2
-PointSymbol = 4
-
 from Graph import *
 from Graph.axis import *
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsPolygonItem
@@ -273,7 +252,7 @@ class OWGraph(QGraphicsView):
     def setYRlabels(self, labels):
         self.setAxisLabels(yRight, labels)
         
-    def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
+    def add_curve(self, name, attributes = [], brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         
@@ -290,8 +269,8 @@ class OWGraph(QGraphicsView):
 
         self.canvas.addItem(c)
         self.curves.append(c)
-        if enableLegend:
-            self.legend().add_curve(c)
+        if attributes or enableLegend:
+            self.legend().add_curve(c, attributes)
         return c
         
     def plot_data(self, xData, yData, colors, labels, shapes, sizes):

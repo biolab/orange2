@@ -34,7 +34,7 @@
         
 """
 
-from OWGraphQt import *
+from point import *
 
 from PyQt4.QtGui import QColor, QPen, QBrush
 from PyQt4.QtCore import Qt
