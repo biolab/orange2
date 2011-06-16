@@ -1,3 +1,0 @@
-Classification accuracies:
-bayes 0.917431192661
-tree 0.93119266055

@@ -1,3 +1,0 @@
-Classes: 2
-Attributes: 14 , 6 continuous, 8 discrete
-Instances:  977 total , 236 with class >50K , 741 with class <=50K

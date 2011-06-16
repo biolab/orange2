@@ -1,6 +1,0 @@
-
- sepal length   sepal width  petal length   petal width    sepal area    petal area             iris
-         5.40          3.70          1.50          0.20         19.98          0.30      Iris-setosa
-         7.00          3.20          4.70          1.40         22.40          6.58  Iris-versicolor
-         6.30          3.30          6.00          2.50         20.79         15.00   Iris-virginica
-         7.40          2.80          6.10          1.90         20.72         11.59   Iris-virginica
