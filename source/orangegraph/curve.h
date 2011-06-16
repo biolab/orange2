@@ -165,6 +165,7 @@ private:
   Q_DECLARE_FLAGS(UpdateFlags, UpdateFlag)
   void updateNumberOfItems();
   inline void checkForUpdate();
+  void changeContinuous();
   
   QColor m_color;
   int m_pointSize;
@@ -177,6 +178,8 @@ private:
   UpdateFlags m_needsUpdate;
   bool m_autoUpdate;
   QRectF m_graphArea;
+    QGraphicsPathItem* m_lineItem;
+    QPainterPath m_line;
 };
 
 #endif // CURVE_H

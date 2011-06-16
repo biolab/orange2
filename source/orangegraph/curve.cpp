@@ -32,6 +32,10 @@ QRectF Curve::boundingRect() const
 
 void Curve::updateNumberOfItems()
 {
+  if (m_continuous)
+  {
+    return;
+  }
   int n = m_data.size();
   if (m_pointItems.size() > n)
   {
@@ -48,6 +52,14 @@ void Curve::updateNumberOfItems()
 
 void Curve::update()
 {
+  
+  if (m_continuous)
+  {
+    // Partial updates only make sense for discrete curves, because they have more properties
+    updateAll();
+    return;
+  }
+  
   int n = m_data.size();  
 
   if (m_needsUpdate & UpdateNumberOfItems)
@@ -88,23 +100,38 @@ void Curve::update()
 
 void Curve::updateAll()
 {
-  if (m_needsUpdate & UpdateNumberOfItems)
+  if (m_needsUpdate & UpdateContinuous)
   {
-    updateNumberOfItems();
+    changeContinuous();
   }
   
-  int n = m_data.size();
-  QBrush brush(m_color);
-  m_path = pathForSymbol(m_symbol, m_pointSize);
-  QPointF p;
-  for (int i = 0; i < n; ++i)
+  if (m_continuous)
   {
-    QGraphicsPathItem* item = m_pointItems[i];
-    DataPoint& point = m_data[i];
-    item->setPath(m_path);
-    p = QPointF(point.x, point.x);
-    item->setPos(p * m_graphTransform);
-    item->setBrush(brush);
+    QPen pen;
+    pen.setColor(m_color);
+    pen.setWidth(m_pointSize);
+    m_lineItem->setPen(pen);
+  } 
+  else 
+  {
+    if (m_needsUpdate & UpdateNumberOfItems)
+    {
+      updateNumberOfItems();
+    }
+    
+    int n = m_data.size();
+    QBrush brush(m_color);
+    m_path = pathForSymbol(m_symbol, m_pointSize);
+    QPointF p;
+    for (int i = 0; i < n; ++i)
+    {
+      QGraphicsPathItem* item = m_pointItems[i];
+      DataPoint& point = m_data[i];
+      item->setPath(m_path);
+      p = QPointF(point.x, point.x);
+      item->setPos(p * m_graphTransform);
+      item->setBrush(brush);
+    }
   }
   m_needsUpdate = 0;
 }
@@ -294,5 +321,34 @@ void Curve::checkForUpdate()
     update();
   }
 }
+
+void Curve::changeContinuous()
+{
+  if (m_continuous)
+  {
+    qDeleteAll(m_pointItems);
+    m_pointItems.clear();
+    
+    if (!m_lineItem)
+    {
+      m_lineItem = new QGraphicsPathItem(this);
+    }
+    m_line = QPainterPath();
+    m_line.moveTo(m_data[0].x, m_data[0].y);
+    int n = m_data.size();
+    QPointF p;
+    for (int i = 1; i < n; ++i)
+    {
+      p = QPointF(m_data[i].x, m_data[i].y);
+      m_line.lineTo(m_graphTransform.map(p));
+    }
+    m_lineItem->setPath(m_line);
+  } else {
+    m_line = QPainterPath();
+    delete m_lineItem;
+    m_lineItem = 0;
+  }
+}
+
 
 #include "curve.moc"
