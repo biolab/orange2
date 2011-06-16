@@ -141,8 +141,17 @@ public:
   
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
-    
-private:
+  
+  /**
+   * Creates a path from a symbol and a size
+   *
+   * @param symbol the point symbol to use
+   * @param size the size of the resulting path
+   * @return a path that can be used in a QGraphicsPathItem
+   **/
+  static QPainterPath pathForSymbol(int symbol, int size);
+private:    
+
   enum UpdateFlag
   {
     UpdateNumberOfItems = 0x01,
@@ -154,7 +163,6 @@ private:
     UpdateAll = 0xFF
   };
   Q_DECLARE_FLAGS(UpdateFlags, UpdateFlag)
-  static QPainterPath pathForSymbol(int symbol, int size);
   void updateNumberOfItems();
   inline void checkForUpdate();
   

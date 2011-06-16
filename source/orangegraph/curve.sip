@@ -80,5 +80,7 @@ public:
   
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
+
+  static QPainterPath pathForSymbol(int symbol, int size);
   
 };
