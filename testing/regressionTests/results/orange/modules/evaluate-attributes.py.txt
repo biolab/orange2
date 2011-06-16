@@ -1,6 +1,0 @@
-Distance(1-D)  MDL    Attribute
-0.445          0.587  legs
-0.408          0.520  milk
-0.347          0.464  toothed
-0.327          0.447  eggs
-0.306          0.417  hair

@@ -1,4 +1,0 @@
-           Rnd Div  HC
-      iris  11   2   3
-   housing  13   5   3
-   vehicle  10   3   2
