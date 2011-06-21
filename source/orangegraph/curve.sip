@@ -35,6 +35,27 @@ static Data dataFromTupleList(PyObject* l)
 %End
 
 public:
+
+enum Symbol {
+    NoSymbol = -1,
+    Ellipse = 0,
+    Rect = 1,
+    Diamond = 2,
+    Triangle = 3,
+    DTriangle = 4,
+    UTriangle = 5,
+    LTriangle = 6,
+    RTriangle = 7,
+    Cross = 8,
+    XCross = 9,
+    HLine = 10,
+    VLine = 11,
+    Star1 = 12,
+    Star2 = 13,
+    Hexagon = 14,
+    UserStyle = 1000
+  };
+
   Curve(QGraphicsItem* parent /TransferThis/ = 0);
   Curve(SIP_PYLIST data, QGraphicsItem* parent /TransferThis/ = 0) [(Data, QGraphicsItem*)];
 %MethodCode

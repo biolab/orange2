@@ -46,6 +46,7 @@ public:
    * The symbols list here matches the one from QwtPlotCurve. 
    **/
   enum Symbol {
+    NoSymbol = -1,
     Ellipse = 0,
     Rect = 1,
     Diamond = 2,

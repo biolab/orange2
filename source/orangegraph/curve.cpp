@@ -6,12 +6,14 @@
 
 Curve::Curve(QGraphicsItem* parent): QGraphicsObject(parent)
 {
-  
+  m_continuous = false;
+  m_lineItem = 0;
 }
   
 Curve::Curve(const Data& data, QGraphicsItem* parent) : QGraphicsObject(parent), m_data(data)
 {
-  
+  m_continuous = false;
+  m_lineItem = 0;
 }
 
 Curve::~Curve()
