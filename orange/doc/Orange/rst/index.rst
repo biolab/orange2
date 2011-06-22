@@ -40,6 +40,8 @@ Orange Scripting Reference
    
    Orange.misc
 
+   Orange.multilabel
+
 ****************
 Index and search
 ****************
