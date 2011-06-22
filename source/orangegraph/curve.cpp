@@ -113,6 +113,17 @@ void Curve::updateAll()
     pen.setColor(m_color);
     pen.setWidth(m_pointSize);
     m_lineItem->setPen(pen);
+    m_line = QPainterPath();
+    m_line.moveTo(QPointF(m_data[0].x, m_data[0].y) * m_graphTransform);
+    int n = m_data.size();
+    QPointF p;
+    qDebug() << "Creating a continuous curve with" << n << "data points";
+    for (int i = 1; i < n; ++i)
+    {
+      p = QPointF(m_data[i].x, m_data[i].y);
+      m_line.lineTo(m_graphTransform.map(p));
+    }
+    m_lineItem->setPath(m_line);
   } 
   else 
   {
@@ -335,16 +346,6 @@ void Curve::changeContinuous()
     {
       m_lineItem = new QGraphicsPathItem(this);
     }
-    m_line = QPainterPath();
-    m_line.moveTo(m_data[0].x, m_data[0].y);
-    int n = m_data.size();
-    QPointF p;
-    for (int i = 1; i < n; ++i)
-    {
-      p = QPointF(m_data[i].x, m_data[i].y);
-      m_line.lineTo(m_graphTransform.map(p));
-    }
-    m_lineItem->setPath(m_line);
   } else {
     m_line = QPainterPath();
     delete m_lineItem;
