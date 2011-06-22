@@ -1,4 +1,4 @@
-%Module(name=OrangeGraph, version=1)
+%Module(name=orangegraph, version=1)
 
 %Import QtGui/QtGuimod.sip
 
