@@ -1,1 +1,1 @@
-.. automodule:: Orange.multilabel.BinaryRelevance
+.. automodule:: Orange.multilabel.br
