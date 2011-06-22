@@ -28,7 +28,7 @@ void Curve::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
 
 QRectF Curve::boundingRect() const
 {
-
+    return QRectF();
 }
 
 

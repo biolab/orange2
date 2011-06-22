@@ -34,12 +34,19 @@
 #
 # SIP_EXTRA_OPTIONS - Extra command line options which should be passed on to
 #     SIP.
+#
+# SIP_EXTRA_SOURCES - Additional source files to compile into the library
+#
+# SIP_EXTRA_LINK_LIBRARIES - Additional libraries to link to
+#
 
 SET(SIP_INCLUDES)
 SET(SIP_TAGS)
 SET(SIP_CONCAT_PARTS 8)
 SET(SIP_DISABLE_FEATURES)
 SET(SIP_EXTRA_OPTIONS)
+SET(SIP_EXTRA_LINK_LIBRARIES)
+SET(SIP_EXTRA_SOURCES)
 
 MACRO(ADD_SIP_PYTHON_MODULE MODULE_NAME MODULE_SIP)
 
@@ -111,12 +118,11 @@ MACRO(ADD_SIP_PYTHON_MODULE MODULE_NAME MODULE_SIP)
     )
     # not sure if type MODULE could be uses anywhere, limit to cygwin for now
     IF (CYGWIN)
-        ADD_LIBRARY(${_logical_name} MODULE ${_sip_output_files} )
+        ADD_LIBRARY(${_logical_name} MODULE ${SIP_EXTRA_SOURCES} ${_sip_output_files} )
     ELSE (CYGWIN)
-        ADD_LIBRARY(${_logical_name} SHARED ${_sip_output_files} )
+        ADD_LIBRARY(${_logical_name} SHARED ${SIP_EXTRA_SOURCES} ${_sip_output_files} )
     ENDIF (CYGWIN)
-    TARGET_LINK_LIBRARIES(${_logical_name} ${PYTHON_LIBRARY})
-    TARGET_LINK_LIBRARIES(${_logical_name} ${EXTRA_LINK_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${_logical_name} ${PYTHON_LIBRARY} ${SIP_EXTRA_LINK_LIBRARIES} ${EXTRA_LINK_LIBRARIES})
     SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES PREFIX "" OUTPUT_NAME ${_child_module_name})
 
     INSTALL(TARGETS ${_logical_name} DESTINATION "${PYTHON_SITE_PACKAGES_INSTALL_DIR}/${_parent_module_path}")
