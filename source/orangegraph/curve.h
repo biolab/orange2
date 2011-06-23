@@ -37,7 +37,6 @@ class Curve : public QGraphicsObject
    * The default is true
    **/
   Q_PROPERTY(bool autoUpdate READ autoUpdate WRITE setAutoUpdate)
-  Q_PROPERTY(QRectF graphArea READ graphArea WRITE setGraphArea)
   
 public:
   /**
@@ -143,6 +142,11 @@ public:
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
   
+  qreal max_x_value() const;
+  qreal min_x_value() const;
+  qreal max_y_value() const;
+  qreal min_y_value() const;
+  
   /**
    * Creates a path from a symbol and a size
    *
@@ -163,10 +167,19 @@ private:
     UpdateContinuous = 0x20,
     UpdateAll = 0xFF
   };
+  
+  struct Bounds
+  {
+      qreal min;
+      qreal max;
+  };
+  
   Q_DECLARE_FLAGS(UpdateFlags, UpdateFlag)
+  
   void updateNumberOfItems();
   inline void checkForUpdate();
   void changeContinuous();
+  void updateBounds();
   
   QColor m_color;
   int m_pointSize;
@@ -181,6 +194,9 @@ private:
   QRectF m_graphArea;
     QGraphicsPathItem* m_lineItem;
     QPainterPath m_line;
+    
+    Bounds m_xBounds;
+    Bounds m_yBounds;
 };
 
 #endif // CURVE_H

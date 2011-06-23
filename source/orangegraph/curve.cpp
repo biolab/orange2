@@ -10,10 +10,11 @@ Curve::Curve(QGraphicsItem* parent): QGraphicsObject(parent)
   m_lineItem = 0;
 }
   
-Curve::Curve(const Data& data, QGraphicsItem* parent) : QGraphicsObject(parent), m_data(data)
+Curve::Curve(const Data& data, QGraphicsItem* parent) : QGraphicsObject(parent)
 {
   m_continuous = false;
   m_lineItem = 0;
+  setData(data);
 }
 
 Curve::~Curve()
@@ -117,7 +118,6 @@ void Curve::updateAll()
     m_line.moveTo(QPointF(m_data[0].x, m_data[0].y) * m_graphTransform);
     int n = m_data.size();
     QPointF p;
-    qDebug() << "Creating a continuous curve with" << n << "data points";
     for (int i = 1; i < n; ++i)
     {
       p = QPointF(m_data[i].x, m_data[i].y);
@@ -200,6 +200,7 @@ void Curve::setData(const Data& data)
   }
   m_data = data;
   m_needsUpdate |= UpdatePosition;
+  updateBounds();
   checkForUpdate();
 }
 
@@ -220,6 +221,7 @@ void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
     m_data.append(p);
   }
   m_needsUpdate |= UpdatePosition;
+  updateBounds();
   checkForUpdate();
 }
 
@@ -353,5 +355,47 @@ void Curve::changeContinuous()
   }
 }
 
+void Curve::updateBounds()
+{
+    int n = m_data.size();
+    if (!n)
+    {
+        m_xBounds.min = 0;
+        m_xBounds.max = 0;
+        m_yBounds.min = 0;
+        m_yBounds.max = 0;
+    }
+
+    m_xBounds.min = m_xBounds.max = m_data[0].x;
+    m_yBounds.min = m_yBounds.max = m_data[0].y;
+    for (int i = 0; i < n; ++i)
+    {
+        m_xBounds.min = qMin(m_xBounds.min, m_data[i].x);
+        m_xBounds.max = qMax(m_xBounds.max, m_data[i].x);
+        m_yBounds.min = qMin(m_yBounds.min, m_data[i].y);
+        m_yBounds.max = qMax(m_yBounds.max, m_data[i].y);
+    }
+}
+
+qreal Curve::max_x_value() const
+{
+    return m_xBounds.max;
+}
+
+qreal Curve::min_x_value() const
+{
+    return m_yBounds.min;
+}
+
+
+qreal Curve::max_y_value() const
+{
+    return m_yBounds.max;
+}
+
+qreal Curve::min_y_value() const
+{
+    return m_yBounds.min;
+}
 
 #include "curve.moc"

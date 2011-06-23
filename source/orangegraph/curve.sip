@@ -96,12 +96,13 @@ enum Symbol {
   QTransform graphTransform() const;
   void setGraphTransform(const QTransform& transform);
   
-  QRectF graphArea() const;
-  void setGraphArea(const QRectF& area);
-  
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
 
   static QPainterPath pathForSymbol(int symbol, int size);
   
+  qreal max_x_value() const;
+  qreal min_x_value() const;
+  qreal max_y_value() const;
+  qreal min_y_value() const;
 };
