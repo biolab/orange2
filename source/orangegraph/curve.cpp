@@ -364,6 +364,7 @@ void Curve::updateBounds()
         m_xBounds.max = 0;
         m_yBounds.min = 0;
         m_yBounds.max = 0;
+        return;
     }
 
     m_xBounds.min = m_xBounds.max = m_data[0].x;
