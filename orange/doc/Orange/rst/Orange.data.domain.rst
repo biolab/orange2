@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.data
 
-==================
-Domain description
-==================
+===============================
+Domain description (``Domain``)
+===============================
 
 In Orange, the term `domain` denotes a set of features, which will be
 used to describe the data instances, the class variables, meta

@@ -47,8 +47,8 @@ using namespace std;
  
 #define PyCATCH_r(r) \
   } \
-catch (pyexception err)   { err.restore(); return r; } \
-catch (exception err) { PYERROR(PyExc_StatcKernel, err.what(), r); }
+catch (pyexception& err)   { err.restore(); return r; } \
+catch (exception& err) { PYERROR(PyExc_StatcKernel, err.what(), r); }
 
 PyObject *PyExc_StatcKernel;
 PyObject *PyExc_StatcWarning;

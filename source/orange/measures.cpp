@@ -1116,6 +1116,12 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
     for(ei = table.begin(), index = 0; ei; ++ei, index++)
       examplesByClasses.at(int((*ei).getClass())).push_back(index);
 
+    /*
+    This code was removed due to examplesByClasses[neighbourClass].size() later on:
+    since no track is kept on which classes were removed, indexing was misaligned and
+    sometimes caused crashes due to overflow. Instead of this code, classes without examples
+    are skipped (continue in the ITERATE loop below)
+
     for(ebcb = examplesByClasses.begin(), ebci = ebcb, ebce = examplesByClasses.end(); ebci != ebce; ) {
       const int sze = (*ebci).size();
       if (sze)
@@ -1124,7 +1130,7 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
         examplesByClasses.erase(ebci);
         ebce = examplesByClasses.end();
       }
-    }
+    }*/
   }
   else {
     ebcb = examplesByClasses.begin(), ebce = examplesByClasses.end();
@@ -1168,6 +1174,8 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
 
     ITERATE(vector<vector<int> >, cli, examplesByClasses) {
       const float inCliClass = (*cli).size();
+      if (inCliClass==0)
+          continue;
       vector<pair<int, float> > distances(inCliClass);
       vector<pair<int, float> >::iterator disti = distances.begin(), diste;
       ITERATE(vector<int> , clii, *cli)

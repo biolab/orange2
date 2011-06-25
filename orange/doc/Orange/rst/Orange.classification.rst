@@ -3,7 +3,7 @@ Classification (``classification``)
 ###################################
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    Orange.classification.bayes
    Orange.classification.majority

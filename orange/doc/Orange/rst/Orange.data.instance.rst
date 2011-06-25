@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.data
 
-==============
-Data instances
-==============
+=============================
+Data instances (``Instance``)
+=============================
 
 Class `Orange.data.Instance` holds data instances. Each data instance
 corresponds to a domain, which defines its length, data types and
