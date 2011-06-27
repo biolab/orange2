@@ -2,7 +2,8 @@
 Preprocessing (``preprocess``)
 ##############################
 
-.. toctree::
-   :maxdepth: 1
-
 .. automodule:: Orange.preprocess
+
+.. automodule:: Orange.preprocess.outliers
+
+.. automodule:: Orange.preprocess.scaling
