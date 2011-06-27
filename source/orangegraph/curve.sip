@@ -10,28 +10,10 @@ struct DataPoint {
 
 typedef QList<DataPoint> Data;
 
-class Curve : QGraphicsObject {
+class Curve : PlotItem {
 
 %TypeHeaderCode
 #include "curve.h"
-%End
-
-%TypeCode
-// Create a Data object from a list of tuples
-static Data dataFromTupleList(PyObject* l)
-{
-  Data data;
-  int n = PyList_GET_SIZE(l);
-  DataPoint p;
-  for (SIP_SSIZE_T i = 0; i < PyList_GET_SIZE(l); ++i)
-  {
-    if (PyArg_ParseTuple(PyList_GET_ITEM(l,i), "dd", &p.x, &p.y))
-    {
-      data.append(p);
-    }
-  }
-  return data;
-}
 %End
 
 public:
@@ -56,14 +38,8 @@ enum Symbol {
     UserStyle = 1000
   };
 
-  Curve(QGraphicsItem* parent /TransferThis/ = 0);
-  Curve(SIP_PYLIST data, QGraphicsItem* parent /TransferThis/ = 0) [(Data, QGraphicsItem*)];
-%MethodCode
-  sipCpp = new sipCurve(dataFromTupleList(a0), a1);
-%End
-
+  Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene = 0);
   virtual ~Curve();
-
 
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
   virtual QRectF boundingRect() const;
@@ -86,11 +62,6 @@ enum Symbol {
   void setContinuous(bool continuous);
   
   Data data() const;
-  void setData(SIP_PYLIST data);
-%MethodCode
-  sipCpp->setData(dataFromTupleList(a0));
-%End
-
   void setData(const QList<qreal>& xData, const QList<qreal>& yData);
 
   QTransform graphTransform() const;

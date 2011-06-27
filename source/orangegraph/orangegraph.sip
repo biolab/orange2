@@ -2,5 +2,6 @@
 
 %Import QtGui/QtGuimod.sip
 
-%Include owgraph.sip
+%Include plotitem.sip
 %Include curve.sip
+%Include graph.sip

@@ -1,10 +1,8 @@
 #ifndef CURVE_H
 #define CURVE_H
 
-#include <QtGui/QGraphicsObject>
+#include "plotitem.h"
 
-
-  
 struct DataPoint
 {
   qreal x;
@@ -13,30 +11,8 @@ struct DataPoint
   
 typedef QList< DataPoint > Data;
 
-class Curve : public QGraphicsObject
+class Curve : public PlotItem
 {
-  Q_OBJECT
-  Q_ENUMS(Symbol)
-  /**
-   * @brief the curve's color
-   * 
-   * Contains this curve's color. 
-   * If the curve is continuous, the line is drawn with this color. Otherwise, the points are drawn and filled with this color.
-   **/
-  Q_PROPERTY(QColor color READ color WRITE setColor)
-  Q_PROPERTY(int pointSize READ pointSize WRITE setPointSize)
-  Q_PROPERTY(int symbol READ symbol WRITE setSymbol)
-  Q_PROPERTY(bool continuous READ isContinuous WRITE setContinuous)
-  Q_PROPERTY(Data data READ data WRITE setData)
-  Q_PROPERTY(QTransform graphTransform READ transform WRITE setTransform)
-  /**
-   * @brief Update the curve immediately after every change
-   * 
-   * If this property is set to true, every change to the curve will result in an immediate update. 
-   * If it is false, you must explicitely call update() or updateAll() before the changes become visible. 
-   * The default is true
-   **/
-  Q_PROPERTY(bool autoUpdate READ autoUpdate WRITE setAutoUpdate)
   
 public:
   /**
@@ -64,26 +40,23 @@ public:
     UserStyle = 1000
   };
   
-  Curve(QGraphicsItem* parent = 0);
-  
   /**
    * @brief Default constructor
    * 
    * Constructs a Curve from a series of data points
    *
-   * @param data A list of data points, i.e. pairs of coordinates (x,y)
-   * @param parent parent QGraphicsItem, passed to QGraphicsObject's constructor
+   * @param xData A list of x coordinates of data points
+   * @param yData A list of y coordinates of data points
+   * @param parent parent item
+   * @param scene if this is not 0, the Curve is automatically added to it
    **/
-  Curve(const Data& data, QGraphicsItem* parent = 0);
-    
+  Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+
   /**
    * Default destructor
    *
    **/
   virtual ~Curve();
-
-  virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
-  virtual QRectF boundingRect() const;
     
   /**
    * @brief Update the curve
@@ -130,7 +103,6 @@ public:
   void setContinuous(bool continuous);
   
   Data data() const;
-  void setData(const Data& data);
   void setData(const QList<qreal> xData, const QList<qreal> yData);
   
   QTransform graphTransform() const;

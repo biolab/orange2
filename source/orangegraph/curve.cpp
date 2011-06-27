@@ -4,34 +4,17 @@
 #include <QtGui/QBrush>
 #include <QtGui/QPen>
 
-Curve::Curve(QGraphicsItem* parent): QGraphicsObject(parent)
+Curve::Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(xData, yData, parent, scene)
 {
-  m_continuous = false;
-  m_lineItem = 0;
-}
-  
-Curve::Curve(const Data& data, QGraphicsItem* parent) : QGraphicsObject(parent)
-{
-  m_continuous = false;
-  m_lineItem = 0;
-  setData(data);
+    m_continuous = false;
+    m_lineItem = 0;
+    setData(xData, yData);
 }
 
 Curve::~Curve()
 {
 
 }
-
-void Curve::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
-{
-
-}
-
-QRectF Curve::boundingRect() const
-{
-    return QRectF();
-}
-
 
 void Curve::updateNumberOfItems()
 {
@@ -190,18 +173,6 @@ QPainterPath Curve::pathForSymbol(int symbol, int size)
 Data Curve::data() const
 {
   return m_data;
-}
-
-void Curve::setData(const Data& data)
-{
-  if (data.size() != m_data.size())
-  {
-    m_needsUpdate |= UpdateNumberOfItems;
-  }
-  m_data = data;
-  m_needsUpdate |= UpdatePosition;
-  updateBounds();
-  checkForUpdate();
 }
 
 void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
