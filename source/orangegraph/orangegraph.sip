@@ -5,3 +5,4 @@
 %Include graph.sip
 %Include plotitem.sip
 %Include curve.sip
+%Include unconnectedlinescurve.sip

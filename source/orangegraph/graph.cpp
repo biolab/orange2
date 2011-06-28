@@ -21,7 +21,6 @@ void Graph::addItem(PlotItem* item)
     item->m_graph = this;
     item->setParentItem(graph_item);
     m_items << item;
-    qDebug() << "Adding item" << item << "with data rect" << item->dataRect() << "to the graph";
 }
 
 void Graph::removeItem(PlotItem* item)
@@ -61,7 +60,6 @@ QRectF Graph::dataRectForAxes(int xAxis, int yAxis)
             r |= item->dataRect();
         }
     }
-    qDebug() << "Data rect for axes" << axes << "is" << r;
     return r;
 }
 

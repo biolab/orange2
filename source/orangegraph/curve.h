@@ -67,7 +67,7 @@ public:
    * If there were multiple changes since the last update, updateAll() is probably faster. 
    *
    **/
-  void update();
+  virtual void update();
   
   /**
    * @brief Updates all curve's properties
@@ -77,7 +77,7 @@ public:
    * @sa update()
    * 
    **/
-  void updateAll();
+  virtual void updateAll();
   
   /**
    * @brief ...
@@ -127,6 +127,8 @@ public:
    * @return a path that can be used in a QGraphicsPathItem
    **/
   static QPainterPath pathForSymbol(int symbol, int size);
+  
+  
 private:    
 
   enum UpdateFlag
@@ -148,8 +150,8 @@ private:
   
   Q_DECLARE_FLAGS(UpdateFlags, UpdateFlag)
   
+  void checkForUpdate();
   void updateNumberOfItems();
-  inline void checkForUpdate();
   void changeContinuous();
   void updateBounds();
   
