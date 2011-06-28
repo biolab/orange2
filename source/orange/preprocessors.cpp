@@ -864,7 +864,7 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
   
   const TDomain &domain = gen->domain.getReference();
   
-  const_PITERATE(TVarList, vi, domain.variables)
+  const_PITERATE(TVarList, vi, domain.attributes)
     if (   ((*vi)->varType == TValue::FLOATVAR)
         && (   !attributes || !attributes->size() 
             || exists(attributes->begin(), attributes->end(), *vi))) {
@@ -878,9 +878,21 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
       newDomain->attributes->push_back(*vi);
     }
 
-  if (gen->domain->classVar) {
-    newDomain->classVar = newDomain->variables->back();
-    newDomain->attributes->erase(newDomain->attributes->end()-1);
+  // classVar discretization
+  if (domain.classVar){
+	  if (domain.classVar->varType == TValue::FLOATVAR
+		  && (   !attributes || !attributes->size()
+		             || exists(attributes->begin(), attributes->end(), *vi))
+		  && discretizeClass) {
+		       PVariable evar = method->operator()(gen, domain.classVar);
+		       newDomain->variables->push_back(evar);
+		       newDomain->classVar = evar;
+		       discretized.push_back(evar);
+		     }
+		     else {
+		       newDomain->variables->push_back(domain.classVar);
+		       newDomain->classVar = domain.classVar;
+		     }
   }
   
   if (attributes)
