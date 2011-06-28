@@ -31,11 +31,12 @@ class Graph : QGraphicsView {
 %End
 
 public:
-    Graph(QWidget* parent = 0);
+    Graph(QWidget* parent /TransferThis/ = 0);
     virtual ~Graph();
     
     void addItem(PlotItem* item);
     void removeItem(PlotItem* item);
+    void removeAllItems();
     
     QRectF dataRectForAxes(int xAxis, int yAxis);
     QPair< double, double > boundsForAxis(int axis);

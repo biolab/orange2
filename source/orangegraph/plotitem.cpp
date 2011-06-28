@@ -1,7 +1,8 @@
 #include "plotitem.h"
 #include "graph.h"
 
-PlotItem::PlotItem(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene)
+PlotItem::PlotItem(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene),
+m_dataRect(boundingRectFromData(xData, yData))
 {
 
 }

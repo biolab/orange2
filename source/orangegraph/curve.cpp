@@ -369,5 +369,3 @@ qreal Curve::min_y_value() const
 {
     return m_yBounds.min;
 }
-
-#include "curve.moc"

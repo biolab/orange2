@@ -21,6 +21,7 @@ void Graph::addItem(PlotItem* item)
     item->m_graph = this;
     item->setParentItem(graph_item);
     m_items << item;
+    qDebug() << "Adding item" << item << "with data rect" << item->dataRect() << "to the graph";
 }
 
 void Graph::removeItem(PlotItem* item)
@@ -33,6 +34,14 @@ void Graph::removeItem(PlotItem* item)
     else
     {
         qWarning() << "Trying to remove an item that doesn't belong to this graph";
+    }
+}
+
+void Graph::removeAllItems()
+{
+    foreach (PlotItem* item, m_items)
+    {
+        removeItem(item);
     }
 }
 
@@ -52,6 +61,7 @@ QRectF Graph::dataRectForAxes(int xAxis, int yAxis)
             r |= item->dataRect();
         }
     }
+    qDebug() << "Data rect for axes" << axes << "is" << r;
     return r;
 }
 
@@ -59,3 +69,5 @@ QPair< double, double > Graph::boundsForAxis(int axis)
 {
     
 }
+
+#include "graph.moc"

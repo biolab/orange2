@@ -14,6 +14,7 @@ public:
     
     void addItem(PlotItem* item);
     void removeItem(PlotItem* item);
+    void removeAllItems();
     
     QRectF dataRectForAxes(int xAxis, int yAxis);
     QPair< double, double > boundsForAxis(int axis);
