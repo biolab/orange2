@@ -155,6 +155,8 @@ private:
   void changeContinuous();
   void updateBounds();
   
+  static QPainterPath trianglePath(double d, double rot);
+  
   QColor m_color;
   int m_pointSize;
   int m_symbol;

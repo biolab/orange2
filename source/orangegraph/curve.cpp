@@ -4,6 +4,8 @@
 #include <QtGui/QBrush>
 #include <QtGui/QPen>
 
+#include <QtCore/qmath.h>
+
 Curve::Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(xData, yData, parent, scene)
 {
     m_continuous = false;
@@ -157,11 +159,48 @@ QPainterPath Curve::pathForSymbol(int symbol, int size)
   switch (symbol)
   {
     case Ellipse:
-      path.addEllipse(-d,-d,d,d);
+      path.addEllipse(-d,-d,2*d,2*d);
       break;
       
     case Rect:
-      path.addRect(-d,-d,d,d);
+      path.addRect(-d,-d,2*d,2*d);
+      break;
+      
+    case Diamond:
+      path.addRect(-d,-d,2*d,2*d);
+      path = QTransform().rotate(45).map(path);
+      break;
+      
+    case Triangle:
+    case UTriangle:
+      path = trianglePath(d, 0);
+      break;
+      
+    case DTriangle:
+      path = trianglePath(d, 180);
+      break;
+      
+    case RTriangle:
+      path = trianglePath(d, -90);
+      break;
+      
+    case LTriangle:
+      path = trianglePath(d, 90);
+      break;
+      
+    case Cross:
+    case XCross:
+      path.lineTo(0,d);
+      path.moveTo(0,0);
+      path.lineTo(0,-d);
+      path.moveTo(0,0); 
+      path.lineTo(d,0);
+      path.moveTo(0,0);
+      path.lineTo(-d,0);
+      if (symbol == XCross)
+      {
+          path = QTransform().rotate(45).map(path);
+      }
       break;
       
     default:
@@ -368,4 +407,12 @@ qreal Curve::max_y_value() const
 qreal Curve::min_y_value() const
 {
     return m_yBounds.min;
+}
+QPainterPath Curve::trianglePath(double d, double rot) {
+    QPainterPath path;
+    path.moveTo(-d, -d*sqrt(3)/3);
+    path.lineTo(d, -d*sqrt(3)/3);
+    path.lineTo(0, 2*d*sqrt(3)/3);
+    path.closeSubpath();
+    return QTransform().rotate(rot).map(path);
 }
