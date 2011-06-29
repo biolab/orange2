@@ -156,6 +156,8 @@ private:
   void updateBounds();
   
   static QPainterPath trianglePath(double d, double rot);
+  static QPainterPath crossPath(double d, double rot);
+  static QPainterPath hexPath(double d, bool star);
   
   QColor m_color;
   int m_pointSize;

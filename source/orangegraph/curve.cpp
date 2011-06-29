@@ -180,27 +180,43 @@ QPainterPath Curve::pathForSymbol(int symbol, int size)
       path = trianglePath(d, 180);
       break;
       
-    case RTriangle:
+    case LTriangle:
       path = trianglePath(d, -90);
       break;
-      
-    case LTriangle:
+    
+    case RTriangle:
       path = trianglePath(d, 90);
       break;
-      
+
     case Cross:
+      path = crossPath(d, 0);
+      break;
+    
     case XCross:
-      path.lineTo(0,d);
-      path.moveTo(0,0);
-      path.lineTo(0,-d);
-      path.moveTo(0,0); 
+      path = crossPath(d, 45);
+      break;
+      
+    case HLine:
+      path.moveTo(-d,0);
       path.lineTo(d,0);
-      path.moveTo(0,0);
-      path.lineTo(-d,0);
-      if (symbol == XCross)
-      {
-          path = QTransform().rotate(45).map(path);
-      }
+      break;
+      
+    case VLine:
+      path.moveTo(0,-d);
+      path.lineTo(0,d);
+      break;
+      
+    case Star1:
+      path.addPath(crossPath(d,0));
+      path.addPath(crossPath(d,45));
+      break;
+      
+    case Star2:
+      path = hexPath(d, true);
+      break;
+      
+    case Hexagon:
+      path = hexPath(d, false);
       break;
       
     default:
@@ -408,11 +424,45 @@ qreal Curve::min_y_value() const
 {
     return m_yBounds.min;
 }
+
 QPainterPath Curve::trianglePath(double d, double rot) {
     QPainterPath path;
-    path.moveTo(-d, -d*sqrt(3)/3);
-    path.lineTo(d, -d*sqrt(3)/3);
-    path.lineTo(0, 2*d*sqrt(3)/3);
+    path.moveTo(-d, d*sqrt(3)/3);
+    path.lineTo(d, d*sqrt(3)/3);
+    path.lineTo(0, -2*d*sqrt(3)/3);
     path.closeSubpath();
     return QTransform().rotate(rot).map(path);
 }
+
+QPainterPath Curve::crossPath(double d, double rot)
+{
+    QPainterPath path;
+    path.lineTo(0,d);
+    path.moveTo(0,0);
+    path.lineTo(0,-d);
+    path.moveTo(0,0); 
+    path.lineTo(d,0);
+    path.moveTo(0,0);
+    path.lineTo(-d,0);
+    return QTransform().rotate(rot).map(path);
+}
+QPainterPath Curve::hexPath(double d, bool star) {
+    QPainterPath path;
+    if (!star)
+    {
+        path.moveTo(d,0);
+    }
+    for (int i = 0; i < 6; ++i)
+    {
+        path.lineTo( d * cos(M_PI/3*i), d*sin(M_PI/3*i) );
+        if (star)
+        {
+            path.lineTo(0,0);
+        }
+    }
+    path.closeSubpath();
+    return path;
+}
+
+
+
