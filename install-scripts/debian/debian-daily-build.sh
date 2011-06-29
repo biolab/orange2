@@ -8,6 +8,7 @@ APTITUDE_ARGS="--assume-yes"
 BUILD_DIR="/tmp/orange-build"
 
 ARCH=`dpkg --print-architecture`
+DISTRIBUTION=`lsb_release -c -s`
 
 # Sets error handler
 trap "echo \"Script failed\"" ERR
@@ -22,13 +23,13 @@ DAILY_REVISION=${2:-`svn info --non-interactive http://orange.biolab.si/svn/oran
 [ "$DAILY_REVISION" ] || exit 3
 
 # Adds our repository to APT configuration
-if ! grep -q "deb http://orange.biolab.si/debian lenny main" /etc/apt/sources.list; then
+if ! grep -q "deb http://orange.biolab.si/debian $DISTRIBUTION main" /etc/apt/sources.list; then
 	echo "Adding biolab packages repository to APT configuration."
-	echo "deb http://orange.biolab.si/debian lenny main" >> /etc/apt/sources.list
-	echo "deb-src http://orange.biolab.si/debian lenny main" >> /etc/apt/sources.list
+	echo "deb http://orange.biolab.si/debian $DISTRIBUTION main" >> /etc/apt/sources.list
+	echo "deb-src http://orange.biolab.si/debian $DISTRIBUTION main" >> /etc/apt/sources.list
 fi
 
-if [ -e "/mnt/debian/dists/lenny/main/binary-$ARCH/python-orange-svn_0.0.$DAILY_REVISION-1_$ARCH.deb" ]; then
+if [ -e "/mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/python-orange-svn_0.0.$DAILY_REVISION-1_$ARCH.deb" ]; then
 	echo "Package for $DAILY_REVISION revision already exists."
 	exit 0
 fi
@@ -74,14 +75,14 @@ cd python-orange-svn-0.0.$DAILY_REVISION/
 dpkg-buildpackage -D -E -sa -us -uc
 
 echo "Preparing public biolab Debian repository."
-mkdir -p /mnt/debian/dists/lenny/main/binary-$ARCH/
-mkdir -p /mnt/debian/dists/lenny/main/source/
+mkdir -p /mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/
+mkdir -p /mnt/debian/dists/$DISTRIBUTION/main/source/
 
 echo "Copying to repository new packages."
 cd ..
 rm -rf python-orange-svn-0.0.$DAILY_REVISION/
-mv *$DAILY_REVISION*.deb /mnt/debian/dists/lenny/main/binary-$ARCH/
-mv *$DAILY_REVISION* /mnt/debian/dists/lenny/main/source/
+mv *$DAILY_REVISION*.deb /mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/
+mv *$DAILY_REVISION* /mnt/debian/dists/$DISTRIBUTION/main/source/
 
 echo "Cleaning temporary build directory."
 cd /mnt/debian/dists/
@@ -90,20 +91,20 @@ rm -rf "$BUILD_DIR"
 echo "Removing old packages."
 # (Versions of packages which have more then 5 versions and those old versions are more than one month old.)
 perl -e "
-for (<lenny/main/binary-$ARCH/*.deb>) {
+for (<$DISTRIBUTION/main/binary-$ARCH/*.deb>) {
 	m!.*/(.*?)_!;
 	\$fs{\$1}++;
 }
 while ((\$f,\$n) = each(%fs)) {
 	next if \$n <= 5;
-	unlink for grep {-M > 30} <lenny/main/binary-$ARCH/\$f_*.deb>;
-	unlink for grep {-M > 30} <lenny/main/source/\$f_*>;
+	unlink for grep {-M > 30} <$DISTRIBUTION/main/binary-$ARCH/\$f_*.deb>;
+	unlink for grep {-M > 30} <$DISTRIBUTION/main/source/\$f_*>;
 }
 "
 
 echo "Making packages list."
-dpkg-scanpackages --multiversion lenny/main/binary-$ARCH /dev/null dists/ | gzip - > lenny/main/binary-$ARCH/Packages.gz
-dpkg-scansources lenny/main/source /dev/null dists/ | gzip - > lenny/main/source/Sources.gz
+dpkg-scanpackages --multiversion $DISTRIBUTION/main/binary-$ARCH /dev/null dists/ | gzip - > $DISTRIBUTION/main/binary-$ARCH/Packages.gz
+dpkg-scansources $DISTRIBUTION/main/source /dev/null dists/ | gzip - > $DISTRIBUTION/main/source/Sources.gz
 
 echo "Setting permissions."
-chmod 644 lenny/main/binary-$ARCH/* lenny/main/source/*
+chmod 644 $DISTRIBUTION/main/binary-$ARCH/* $DISTRIBUTION/main/source/*
