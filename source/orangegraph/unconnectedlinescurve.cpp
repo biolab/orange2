@@ -14,7 +14,6 @@ UnconnectedLinesCurve::~UnconnectedLinesCurve()
 
 void UnconnectedLinesCurve::updateProperties()
 {
-    qDebug() << "updating an ULC with axes" << axes();
     Data d = data();
     int n = d.size()/2;
     int m = m_items.size();
@@ -33,7 +32,6 @@ void UnconnectedLinesCurve::updateProperties()
         }
     }
     Q_ASSERT(m_items.size() == data().size()/2);
-    qDebug() << m_items.size();
     for (int i = 0; i < n; ++i)
     {
         QLineF line;
