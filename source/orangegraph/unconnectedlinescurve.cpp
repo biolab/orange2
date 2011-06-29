@@ -4,7 +4,7 @@
 
 UnconnectedLinesCurve::UnconnectedLinesCurve(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): Curve(xData, yData, parent, scene)
 {
-    qDebug() << "created an UnconnectedLinesCurve";
+
 }
 
 UnconnectedLinesCurve::~UnconnectedLinesCurve()
