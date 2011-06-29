@@ -11,7 +11,7 @@ public:
     UnconnectedLinesCurve(QList< double > xData, QList< double > yData, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~UnconnectedLinesCurve();
     
-    virtual void update();
+    virtual void updateProperties();
     
     void setPen(QPen pen);
     QPen pen() const;

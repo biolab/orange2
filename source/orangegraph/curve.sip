@@ -44,7 +44,7 @@ enum Symbol {
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
   virtual QRectF boundingRect() const;
 
-  virtual void update();
+  virtual void updateProperties();
   void updateAll();
   
   QGraphicsItem* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);

@@ -67,7 +67,7 @@ public:
    * If there were multiple changes since the last update, updateAll() is probably faster. 
    *
    **/
-  virtual void update();
+   virtual void updateProperties();
   
   /**
    * @brief Updates all curve's properties

@@ -36,7 +36,7 @@ void Curve::updateNumberOfItems()
   }
 }
 
-void Curve::update()
+void Curve::updateProperties()
 {
   
   if (m_continuous)
@@ -304,7 +304,7 @@ void Curve::checkForUpdate()
 {
   if ( m_autoUpdate && m_needsUpdate )
   {
-    update();
+    updateProperties();
   }
 }
 

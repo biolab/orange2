@@ -5,7 +5,7 @@ class PlotItem : QGraphicsItem {
 %End
 
 public:
-    PlotItem(QList<double> xData, QList<double> yData, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    PlotItem(QList<double> xData, QList<double> yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene = 0);
     virtual ~PlotItem();
     
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
