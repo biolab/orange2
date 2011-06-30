@@ -1,0 +1,3 @@
+Cut-off points for D_petal length are <1.54999995232, 4.34999990463, 5.15000009537>
+Cut-off points for D_sepal length are <5.15000009537, 5.84999990463, 6.44999980927>
+Cut-off points for D_sepal length are <5.5, 6.09999990463>

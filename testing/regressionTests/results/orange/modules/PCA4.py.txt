@@ -1,0 +1,6 @@
+Projection on first two components:
+[-2.265, -0.506, 'Iris-setosa']
+[-2.086, 0.655, 'Iris-setosa']
+[-2.368, 0.318, 'Iris-setosa']
+[-2.304, 0.575, 'Iris-setosa']
+[-2.389, -0.675, 'Iris-setosa']

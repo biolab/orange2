@@ -1,0 +1,1 @@
+.. automodule:: Orange.multilabel.testing

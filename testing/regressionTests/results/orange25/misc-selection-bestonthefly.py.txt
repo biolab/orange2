@@ -1,0 +1,3 @@
+0.565: EnumVariable 'lym_dimin'
+0.565: EnumVariable 'lym_dimin'
+0.565: EnumVariable 'lym_dimin'

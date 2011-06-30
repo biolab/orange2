@@ -1,0 +1,9 @@
+Iteration: 0, changes: 150, score: 48.626514
+Iteration: 1, changes: 5, score: 36.331586
+Iteration: 2, changes: 8, score: 34.947165
+Iteration: 3, changes: 13, score: 32.285063
+Iteration: 4, changes: 10, score: 30.228681
+Iteration: 5, changes: 5, score: 29.652989
+Iteration: 6, changes: 3, score: 29.482082
+Iteration: 7, changes: 2, score: 29.451477
+Iteration: 8, changes: 2, score: 29.468508

@@ -1,0 +1,35 @@
+NotFound
+<a, b>
+
+MissingValues
+v1.values:  <a, b, c>
+v2 is v1:  True
+
+MissingValues
+v1.values:  <a, b, c, d>
+v3 is v1:  True
+
+Incompatible
+v1.values:  <a, b, c, d>
+v4.values:  <b>
+v4 is v1:  False
+
+OK
+v1.values:  <a, b, c, d>
+v5.values:  <a, b, c, d>
+v5 is v1:  True
+
+NoRecognizedValues
+v1.values:  <a, b, c, d, e>
+v6.values:  <a, b, c, d, e>
+v6 is v1:  True
+
+NoRecognizedValues
+v1.values:  <a, b, c, d, e>
+v7.values:  <f>
+v7 is v1:  False
+
+OK
+v1.values:  <a, b, c, d, e>
+v8.values:  <a, b, c, d, e>
+v8 is v1:  False
