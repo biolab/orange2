@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-text-gui-svn-py%type_pkg[python]
 Type: python (2.4 2.5 2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 12
+Revision: 13
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-text-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_TEXT__
 Maintainer: Mitar <mitar@tnode.com>
@@ -16,7 +16,6 @@ Depends: <<
 <<
 Conflicts: orange-text, orange-text-svn
 Replaces: orange-text-svn
-Architecture: i386, powerpc
 Description: Orange text mining add-on (GUI)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range

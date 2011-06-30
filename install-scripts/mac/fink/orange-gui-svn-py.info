@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.4 2.5 2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 24
+Revision: 25
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -21,7 +21,6 @@ Depends: <<
 # Conflicts other versions because of app bundle
 Conflicts: orange, orange-svn
 Replaces: orange-svn
-Architecture: i386, powerpc
 Description: Data mining framework (GUI)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
