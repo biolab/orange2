@@ -15,6 +15,7 @@ from OWkNNOptimization import *
 import orngVizRank
 import OWGUI, OWToolbars, OWColorPalette
 from orngScaleData import *
+from Graph.curve import Curve
 
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
@@ -353,20 +354,10 @@ class OWScatterPlotQt(OWWidget):
 
     def alphaChange(self):
         for curve in self.graph.itemList():
-            if isinstance(curve, QwtPlotCurve):
-                brushColor = curve.symbol().brush().color()
-                penColor = curve.symbol().pen().color()
-                brushColor.setAlpha(self.graph.alphaValue)
-                brush = QBrush(curve.symbol().brush())
-                brush.setColor(brushColor)
-                penColor.setAlpha(self.graph.alphaValue)
-                symbol = curve.symbol()
-                symbol.setBrush(brush)
-                symbol.setPen(QPen(penColor))
-                if QWT_VERSION_STR >= "5.2" and not curve.testItemAttribute(QwtPlotItem.Legend): # if curve has a legend it is duplicated for all symbols
-                    curve.setSymbol(symbol)
-#                curve.symbol().setBrush(brush)
-#                curve.symbol().setPen(QPen(penColor))
+            if isinstance(curve, Curve):
+                color = curve.color()
+                color.setAlpha(self.graph.alphaValue)
+                curve.setColor(color)
         self.graph.replot()
 
     def pointSizeChange(self):
@@ -374,12 +365,8 @@ class OWScatterPlotQt(OWWidget):
             self.updateGraph()
         else:
             for curve in self.graph.itemList():
-                if isinstance(curve, QwtPlotCurve):
-                    symbol = curve.symbol()
-                    symbol.setSize(self.graph.pointWidth)
-                    if QWT_VERSION_STR >= "5.2" and not curve.testItemAttribute(QwtPlotItem.Legend):
-                        curve.setSymbol(symbol)
-                        
+                if isinstance(curve, Curve):
+                    curve.setPointSize(self.graph.pointWidth)
             self.graph.replot()
 
     def setShowGridlines(self):
