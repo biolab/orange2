@@ -40,6 +40,15 @@ public:
     UserStyle = 1000
   };
   
+  enum Style {
+    NoCurve = Qt::NoPen,
+    Lines = Qt::SolidLine,
+    Sticks,
+    Steps,
+    Dots = Qt::DotLine,
+    UserCurve
+  };
+  
   /**
    * @brief Default constructor
    * 
@@ -111,6 +120,9 @@ public:
   QRectF graphArea() const;
   void setGraphArea(const QRectF& area);
   
+  int style() const;
+  void setStyle(int style);
+  
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
   
@@ -162,6 +174,7 @@ private:
   QColor m_color;
   int m_pointSize;
   int m_symbol;
+  int m_style;
   bool m_continuous;
   Data m_data;
   QTransform m_graphTransform;

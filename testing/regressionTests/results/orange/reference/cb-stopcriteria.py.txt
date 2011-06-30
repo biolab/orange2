@@ -1,0 +1,26 @@
+
+
+Tree build with stop criteria as a function
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no
+|    |    age=pre-presbyopic: soft (100.00%)
+|    |    age=presbyopic: none (50.00%)
+|    |    age=young: soft (100.00%)
+|    astigmatic=yes
+|    |    prescription=hypermetrope: none (66.67%)
+|    |    prescription=myope: hard (100.00%)
+
+
+
+Tree build with stop criteria as a class
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no
+|    |    age=pre-presbyopic: soft (100.00%)
+|    |    age=presbyopic: none (50.00%)
+|    |    age=young: soft (100.00%)
+|    astigmatic=yes
+|    |    prescription=hypermetrope: none (66.67%)
+|    |    prescription=myope: hard (100.00%)
+

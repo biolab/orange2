@@ -1,0 +1,538 @@
+core
+    orange
+	    ProgressCallback
+	    LongList
+	    IntFloatList
+	    IntList
+	    Orange
+	    AttributedBoolList
+	    BoolList
+	    FloatFloatList
+	    FloatList
+	         AttributedFloatList
+	    FloatListList
+	    RandomGenerator
+	    StringList
+	    SymMatrix
+	    VariableFloatMap
+	    TransformValue
+
+ExampleTable -> Data
+Example -> Instance
+
+data
+    io
+         BasketFeeder
+         FileExampleGenerator
+              BasketExampleGenerator
+              C45ExampleGenerator
+              TabDelimExampleGenerator
+
+    example
+         
+         ExampleGenerator
+         ExampleGeneratorList
+         EFMDataDescription
+	     
+    sample
+         MakeRandomIndices
+              MakeRandomIndices2
+              MakeRandomIndicesCV
+              MakeRandomIndicesMultiple
+              MakeRandomIndicesN
+
+    value
+         Value
+         ValueList
+         SomeValue
+              Distribution
+                   ContDistribution
+                   DiscDistribution
+                   GaussianDistribution
+              PythonValue
+              StringValue
+         PythonValueSpecial
+
+    variable
+         VarList
+         VarListList
+         Variable
+              EnumVariable
+              FloatVariable
+              PythonVariable
+              StringVariable
+	               SubsetsGenerator
+              SubsetsGenerator_constSize
+              SubsetsGenerator_constant
+              SubsetsGenerator_minMaxSize
+              SubsetsGenerator_withRestrictions
+         SubsetsGenerator_iterator
+              SubsetsGenerator_constSize_iterator
+              SubsetsGenerator_constant_iterator
+              SubsetsGenerator_minMaxSize_iterator
+              SubsetsGenerator_withRestrictions_iterator
+    domain
+         Domain
+         DomainDepot
+
+network/graph
+    Graph
+         GraphAsList
+         GraphAsMatrix
+         GraphAsTree
+
+stat (import statc)
+
+probability
+     estimate
+          ProbabilityEstimator
+               ProbabilityEstimator_FromDistribution
+          ProbabilityEstimatorConstructor
+               ProbabilityEstimatorConstructor_Laplace
+               ProbabilityEstimatorConstructor_kernel
+               ProbabilityEstimatorConstructor_loess
+               ProbabilityEstimatorConstructor_m
+               ProbabilityEstimatorConstructor_relative
+          ProbabilityEstimatorList
+
+     distributions
+          BasicAttrStat
+          DomainBasicAttrStat
+          DomainContingency
+          DomainDistributions
+          DistributionList
+          ComputeDomainContingency
+          ConditionalProbabilityEstimator
+               ConditionalProbabilityEstimator_ByRows
+               ConditionalProbabilityEstimator_FromDistribution
+          ConditionalProbabilityEstimatorConstructor
+               ConditionalProbabilityEstimatorConstructor_ByRows
+               ConditionalProbabilityEstimatorConstructor_loess
+          ConditionalProbabilityEstimatorList
+          Contingency
+               ContingencyAttrAttr
+               ContingencyClass
+                    ContingencyAttrClass
+                    ContingencyClassAttr
+     evd
+          EVDist
+          EVDistGetter
+               EVDistGetter_Standard
+          EVDistList
+
+classification
+   CostMatrix
+   Classifier
+   ClassifierList
+   Learner
+   ClassifierFD
+   LearnerFD
+   ClassifierFromVarFD
+   CartesianClassifier
+   ClassifierFromVar
+   DefaultClassifier (rename to ConstantClassifier)
+   RandomClassifier
+   RandomLearner
+
+   trees
+         TreeLearner
+         TreeClassifier
+         C45Learner
+         C45Classifier
+         C45TreeNode
+         C45TreeNodeList
+         TreeDescender
+              TreeDescender_UnknownMergeAsBranchSizes
+              TreeDescender_UnknownMergeAsSelector
+              TreeDescender_UnknownToBranch
+              TreeDescender_UnknownToCommonBranch
+              TreeDescender_UnknownToCommonSelector
+         TreeExampleSplitter
+              TreeExampleSplitter_IgnoreUnknowns
+              TreeExampleSplitter_UnknownsAsBranchSizes
+              TreeExampleSplitter_UnknownsAsSelector
+              TreeExampleSplitter_UnknownsToAll
+              TreeExampleSplitter_UnknownsToBranch
+              TreeExampleSplitter_UnknownsToCommon
+              TreeExampleSplitter_UnknownsToRandom
+         TreeNode
+         TreeNodeList
+         TreePruner
+              TreePruner_SameMajority
+              TreePruner_m
+         TreeSplitConstructor
+              TreeSplitConstructor_Combined
+              TreeSplitConstructor_Measure
+                   TreeSplitConstructor_Attribute
+                   TreeSplitConstructor_ExhaustiveBinary
+                   TreeSplitConstructor_OneAgainstOthers
+                   TreeSplitConstructor_Threshold
+         TreeStopCriteria
+              TreeStopCriteria_Python
+              TreeStopCriteria_common
+
+   rules
+         import from orngAssoc
+         AssociationClassifier
+         AssociationLearner
+         RuleClassifier
+             RuleClassifier_firstRule
+             RuleClassifier_logit
+         RuleLearner
+         Rule
+         RuleBeamCandidateSelector
+              RuleBeamCandidateSelector_TakeAll
+         RuleBeamFilter
+              RuleBeamFilter_Width
+         RuleBeamInitializer
+              RuleBeamInitializer_Default
+         RuleBeamRefiner
+              RuleBeamRefiner_Selector
+         RuleClassifierConstructor
+         RuleCovererAndRemover
+              RuleCovererAndRemover_Default
+         RuleDataStoppingCriteria
+              RuleDataStoppingCriteria_NoPositives
+         RuleEvaluator
+              RuleEvaluator_Entropy
+              RuleEvaluator_LRS
+              RuleEvaluator_Laplace
+              RuleEvaluator_mEVC
+         RuleFinder
+              RuleBeamFinder
+         RuleList
+         RuleStoppingCriteria
+              RuleStoppingCriteria_NegativeDistribution
+         RuleValidator
+         RuleValidator_LRS
+   lookup 
+         LookupLearner
+         ClassifierByLookupTable
+              ClassifierByLookupTable1
+              ClassifierByLookupTable2
+              ClassifierByLookupTable3
+              ClassifierByExampleTable
+   bayes
+         import from orngBayes
+         BayesClassifier
+         BayesLearner
+   svm
+         SVMLearner
+              SVMLearnerSparse
+         KernelFunc
+         LinearClassifier
+         LinearLearner
+         SVMClassifier
+              SVMClassifierSparse
+   logreg
+         LogRegLearner
+         LogRegClassifier
+         LogRegFitter
+              LogRegFitter_Cholesky
+   knn
+         kNNLearner
+         FindNearest
+              FindNearest_BruteForce
+         FindNearestConstructor
+              FindNearestConstructor_BruteForce
+         kNNClassifier
+         P2NN
+   majority
+         MajorityLearner
+
+regression
+   majority
+       MajorityLearner
+
+associate
+    AssociationRule
+    AssociationRules
+    AssociationRulesInducer
+    AssociationRulesSparseInducer
+    ItemsetNodeProxy
+    ItemsetsSparseInducer
+
+feature
+    scoring
+    selection
+    discretization
+         Discrete2Continuous
+         Discretizer
+              BiModalDiscretizer
+              EquiDistDiscretizer
+              IntervalDiscretizer
+              ThresholdDiscretizer
+    continuization
+	    DomainContinuizer
+    imputation
+
+
+preprocess (needs work!)
+    outliers
+    filter    
+	    VariableFilterMap
+	    ValueFilter
+	         ValueFilter_continuous
+	         ValueFilter_discrete
+	         ValueFilter_string
+	         ValueFilter_stringList
+	    ValueFilterList
+    scaling
+
+         MapIntValue
+         NormalizeContinuous
+         Ordinal2Continuous
+         TransformValue_IsDefined
+    TableAverager
+    Preprocessor
+         Preprocessor_addCensorWeight
+         Preprocessor_addClassNoise
+         Preprocessor_addClassWeight
+         Preprocessor_addGaussianClassNoise
+         Preprocessor_addGaussianNoise
+         Preprocessor_addMissing
+         Preprocessor_addMissingClasses
+         Preprocessor_addNoise
+         Preprocessor_discretize
+         Preprocessor_drop
+         Preprocessor_dropMissing
+         Preprocessor_dropMissingClasses
+         Preprocessor_filter
+         Preprocessor_ignore
+         Preprocessor_imputeByLearner
+         Preprocessor_removeDuplicates
+         Preprocessor_select
+         Preprocessor_shuffle
+         Preprocessor_take
+         Preprocessor_takeMissing
+         Preprocessor_takeMissingClasses
+    Imputer
+         Imputer_asValue
+         Imputer_defaults
+         Imputer_model
+         Imputer_random
+    ImputerConstructor
+         ImputerConstructor_asValue
+         ImputerConstructor_average
+         ImputerConstructor_maximal
+         ImputerConstructor_minimal
+         ImputerConstructor_model
+         ImputerConstructor_random
+    FilterList
+    Filter
+         Filter_conjunction
+         Filter_disjunction
+         Filter_hasClassValue
+         Filter_hasMeta
+         Filter_hasSpecial
+         Filter_isDefined
+         Filter_random
+         Filter_sameValue
+         Filter_values
+    Discretization
+         BiModalDiscretization
+         EntropyDiscretization
+         EquiDistDiscretization
+         EquiNDiscretization
+    DomainTransformerConstructor
+    RemoveRedundant
+         RemoveRedundantByInduction (?)
+         RemoveRedundantByQuality (?)
+         RemoveRedundantOneValue
+    RemoveUnusedValues
+
+distances
+    AlignmentList (?)
+    DistanceMap
+    DistanceMapConstructor
+    ExampleDistConstructor
+         ExampleDistBySorting
+    ExampleDistVector
+    ExamplesDistance
+         ExamplesDistance_Hamming -> Hamming
+         ExamplesDistance_Normalized
+              ExamplesDistance_DTW -> DTW
+              ExamplesDistance_Euclidean -> Euclidean
+              ExamplesDistance_Manhattan -> Manhattan
+              ExamplesDistance_Maximal -> Maximal
+         ExamplesDistance_Relief -> Relief
+    ExamplesDistanceConstructor
+         ExamplesDistanceConstructor_DTW -> DTWConstructur
+         ExamplesDistanceConstructor_Euclidean -> EuclideanConstructur
+         ExamplesDistanceConstructor_Hamming -> HammingConstructur
+         ExamplesDistanceConstructor_Manhattan -> ...
+         ExamplesDistanceConstructor_Maximal -> ..
+         ExamplesDistanceConstructor_Relief -> ..
+
+classification/wrappers
+    CostWrapperClassifier
+    CostLearner
+    CostWrapperLearner
+    ThresholdCA
+
+feature/construction
+    FeatureInducer
+    univariate
+         FeatureByDistributions
+         DistributionAssessor
+              DistributionAssessor_Kramer
+              DistributionAssessor_Laplace
+              DistributionAssessor_Measure
+              DistributionAssessor_Relief
+              DistributionAssessor_m
+              DistributionAssessor_mf
+         ClustersFromDistributions
+              ClustersFromDistributionsByAssessor
+
+    functionDecomposition
+         GeneralExampleClustering
+              ColoredIG
+              ExampleClusters
+         FeatureByIM
+         FeatureByMinComplexity
+         AssessIMQuality
+         ClustersFromIM
+              ClustersFromIMByAssessor
+         ColorIG
+              ColorIG_MCF
+         ColumnAssessor
+              ColumnAssessor_Kramer
+              ColumnAssessor_Laplace
+              ColumnAssessor_Measure
+              ColumnAssessor_N
+              ColumnAssessor_Relief
+              ColumnAssessor_m
+              ColumnAssessor_mf
+         IG
+         IGConstructor
+              IGBySorting
+         IM
+         IMByRows
+         IMByRowsConstructor
+              IMByRowsByRelief
+              IMByRowsBySorting
+         IMByRowsPreprocessor
+              IMBlurer
+         IMClustering
+         IMConstructor
+              IMByIMByRows
+              IMByRelief
+              IMBySorting
+         StopDistributionClustering
+              StopDistributionClustering_binary
+              StopDistributionClustering_n
+              StopDistributionClustering_noBigChange
+              StopDistributionClustering_noProfit
+         StopIMClusteringByAssessor
+              StopIMClusteringByAssessor_binary
+              StopIMClusteringByAssessor_n
+              StopIMClusteringByAssessor_noBigChange
+              StopIMClusteringByAssessor_noProfit
+
+clustering
+    ExampleCluster
+    HierarchicalCluster
+    HierarchicalClusterList
+    HierarchicalClustering
+
+------------
+         ImputeClassifier
+
+    MeasureAttribute
+         MeasureAttributeFromProbabilities
+              MeasureAttribute_chiSquare
+              MeasureAttribute_cost
+              MeasureAttribute_gainRatio
+              MeasureAttribute_gainRatioA
+              MeasureAttribute_gini
+              MeasureAttribute_info
+              MeasureAttribute_logOddsRatio
+              MeasureAttribute_relevance
+         MeasureAttribute_IM
+         MeasureAttribute_MSE
+         MeasureAttribute_relief
+    PearsonCorrelation
+
+------------
+orng2Array.py -> /dev/null
+orngABCN2.py -> classify/rules (Matija)
+orngABML.py -> naknadno prosimo Martina (Janez)
+orngAddOns.py -> /core/addons.py
+orngAssoc.py -> associate
+orngBayes.py -> classify/bayes
+orngC45.py -> classify/trees
+orngCA.py -> projection/correspondence (?)
+orngCI.py -> feature_construction (?)
+orngCN2.py -> classify/rules
+orngCRS.py -> /dev/null
+orngCluster.py -> /dev/null (preveri)
+orngClustering.py -> clustering
+orngContingency.py -> ???CONT??? (Lan)
+orngDataCaching.py -> /core/???
+orngDebugging.py -> /core/???
+orngDendrogram.py -> /dev/null
+orngDimRed.py -> /dev/null (preveri, �e lahko popolnoma odstranimo)
+orngDimReduction.py -> projection, preprocess (centering, ...) ?
+orngDisc.py -> feature/discretize
+orngEnsemble.py -> classify/ensemble
+orngEnviron.py -> core/environment
+orngEval.py -> /dev/null (preveri!)
+orngEvalAttr.py -> feature/scoring
+orngFSS.py -> feature/selection + feature/scoring
+orngIO.py -> data/io
+orngImpute.py -> preprocess
+orngInteract.py -> /dev/null (zamenjaj z ustreznim! popravi widget!)
+orngInteractions.py -> ???CONT???
+orngLR.py -> classify/logreg
+orngLR_Jakulin.py -> /dev/null (preveri)
+orngLinProj.py -> projection (??)
+orngLinVis.py -> /dev/null (nomogrami, preveri, ali kdo uporablja?)
+orngLookup.py -> classification/lookup
+orngMCPrediction.py -> classification/multitarget (+ dodaj multilabel)
+orngMDS.py -> projection
+orngMisc.py -> core/counters, core, ... (razbiti)
+orngMosaic.py -> OrangeWidgets (ostane pod istim imenom)
+orngMultiClass.py -> classification/multiclass
+orngMultivariatePrediction.py -> classification/multiclass (cmp orngMultiClass.py)
+orngMySQL.py -> data/io
+orngNetwork.py -> network (prespati!)
+orngOutlier.py -> preprocess/outliers
+orngPCA.py -> projection
+orngPade.py -> regression
+orngProjectionPursuit.py -> projection
+orngRegression.py -> regression
+orngSOM.py -> projection
+orngSQL.py -> data/io (cmp orngMySQL)
+orngSVM.py -> classification/svm
+orngSVM_Jakulin.py -? /dev/null
+orngScaleData.py -> OrangeWidgets (ostane pod istim imenom) ? preprocess/scaling
+orngScaleLinProjData.py -> OrangeWidgets (ostane pod istim imenom) ? preprocess/scaling
+orngScalePolyvizData.py -> OrangeWidgets (ostane pod istim imenom) ? preprocess/scaling
+orngScaleScatterPlotData.py -> OrangeWidgets (ostane pod istim imenom) ? preprocess/scaling
+orngServerFiles.py -> /core/server_files
+orngStat.py -> evaluation/scoring
+orngTest.py -> evaluation ? evaluation/testing (sampleandtest)
+orngTree.py -> classification/trees
+orngVisFuncts.py -> razbiti na razno
+orngVizRank.py -> OrangeWidgets (ostane pod istim imenom) ? preprocess/scaling
+orngWrap.py -> optimization
+
+----
+
+data -> {io, domain, variable, example, value, sampling}
+classification -> {trees, rules, lookup, bayes, svm, logreg, knn,
+majority, wrappers, ensamble, multitarget, multilabel, multiclass}
+ensamble -> {forest, boosting, bagging}
+regression -> {majority, pade, linreg, trees}
+statistics -> {estimate, distributions, evd}
+associate -> {rules, itemsets}
+feature -> {scoring, selection, continuization, discretization,
+imputation, construction, interactions}
+clustering -> {kmeans, hierarchical, consensus}
+core -> {orange, counters, serverfiles}
+projection -> {correspondence, pca, freeviz}
+evaluation -> {scoring, testing}
+distance -> {instances, features}
+network -> {graph}
+preprocessing -> {outliers, filter, scaling}
+optimization -> {tuning}

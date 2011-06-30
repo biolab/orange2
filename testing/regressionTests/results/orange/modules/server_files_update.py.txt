@@ -1,0 +1,6 @@
+Downloading domain: demo, file: orngServerFiles.py
+Needs update? False (should be False)
+Changing date to 1800-08-20 12:25:54.624000
+Needs update? True (should be True)
+Updating ...
+Needs update? False (should be False)

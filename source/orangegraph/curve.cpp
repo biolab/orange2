@@ -332,6 +332,20 @@ void Curve::setSymbol(int symbol)
   checkForUpdate();
 }
 
+int Curve::style() const
+{
+    return m_style;
+}
+
+void Curve::setStyle(int style)
+{
+    m_style = style;
+    m_needsUpdate |= UpdateSymbol;
+    checkForUpdate();
+}
+
+
+
 bool Curve::autoUpdate() const
 {
   return m_autoUpdate;

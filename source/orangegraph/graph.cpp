@@ -18,6 +18,7 @@ Graph::~Graph()
 
 void Graph::addItem(PlotItem* item)
 {
+    qDebug() << "Adding item" << item << "in C++";
     item->m_graph = this;
     item->setParentItem(graph_item);
     m_items << item;
@@ -25,10 +26,12 @@ void Graph::addItem(PlotItem* item)
 
 void Graph::removeItem(PlotItem* item)
 {
+    qDebug() << "Removing item" << item << "with parent" << item->parentItem();
     if (m_items.contains(item))
     {
         scene()->removeItem(item);
         m_items.removeAll(item);
+        delete item;
     }
     else
     {
@@ -42,6 +45,7 @@ void Graph::removeAllItems()
     {
         removeItem(item);
     }
+    qDebug() << "Removed all items";
 }
 
 QList< PlotItem* > Graph::itemList()

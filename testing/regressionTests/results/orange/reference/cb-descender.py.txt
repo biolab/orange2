@@ -1,0 +1,42 @@
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no
+|    |    age=pre-presbyopic: soft (100.00%)
+|    |    age=presbyopic: none (50.00%)
+|    |    age=young: soft (100.00%)
+|    astigmatic=yes
+|    |    prescription=hypermetrope: none (66.67%)
+|    |    prescription=myope: hard (100.00%)
+
+['young', 'myope', 'yes', '?', 'hard']
+
+
+Decisions by random branch choice
+Descender decides for  1
+none
+Descender decides for  1
+none
+Descender decides for  0
+hard
+
+
+Decisions by random voting
+Weights: <0.338, 0.662>
+<0.662, 0.338, 0.000>
+
+
+Reporting descender
+Classifying example ['young', 'myope', 'no', 'reduced', 'none']
+Descent: root  >> tear_rate = normal >> astigmatic = no >> age = young ----> soft
+Descender decides for  0
+<0.000, 1.000, 0.000>
+Descender decides for  1
+<1.000, 0.000, 0.000>
+Descender decides for  0
+<0.000, 1.000, 0.000>
+Descender decides for  0
+<0.000, 1.000, 0.000>
+Descender decides for  1
+<1.000, 0.000, 0.000>
+Weights: <0.645, 0.355>
+<0.355, 0.645, 0.000>

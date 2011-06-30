@@ -1,0 +1,4 @@
+Size of data: 977 instances;  p(>50K)=0.242
+Size of data1, first ten instances: 10 instances;  p(>50K)=0.200
+Size of data2, other than first ten instances: 967 instances;  p(>50K)=0.242
+Size of data3, third dozen of instances: 12 instances;  p(>50K)=0.583

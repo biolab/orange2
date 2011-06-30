@@ -1,0 +1,3 @@
+Learner  CA     IS     Brier    AUC
+bayes    0.901  0.758  0.176  0.976
+tree     0.961  0.845  0.075  0.956

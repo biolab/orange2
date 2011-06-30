@@ -38,6 +38,16 @@ enum Symbol {
     UserStyle = 1000
   };
 
+
+  enum Style {
+    NoCurve = Qt::NoPen,
+    Lines = Qt::SolidLine,
+    Sticks,
+    Steps,
+    Dots = Qt::DotLine,
+    UserCurve
+  };
+
   Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene = 0);
   virtual ~Curve();
 
@@ -66,6 +76,9 @@ enum Symbol {
 
   QTransform graphTransform() const;
   void setGraphTransform(const QTransform& transform);
+
+  int style() const;
+  void setStyle(int style);
   
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
