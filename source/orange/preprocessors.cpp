@@ -882,7 +882,7 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
   if (domain.classVar){
 	  if (domain.classVar->varType == TValue::FLOATVAR
 		  && (   !attributes || !attributes->size()
-		             || exists(attributes->begin(), attributes->end(), *vi))
+		             || exists(attributes->begin(), attributes->end(), domain.classVar))
 		  && discretizeClass) {
 		       PVariable evar = method->operator()(gen, domain.classVar);
 		       newDomain->variables->push_back(evar);
