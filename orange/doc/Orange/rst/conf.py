@@ -13,6 +13,9 @@
 
 import sys, os
 
+#disable deprecation decorators for the documentation
+os.environ["orange_no_deprecated_members"] = "1"
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
