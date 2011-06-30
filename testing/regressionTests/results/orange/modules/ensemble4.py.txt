@@ -1,0 +1,10 @@
+first: 3.30, second: 0.57
+
+different random seed
+first: 3.52, second: 0.64
+
+All importances:
+   sepal length:   3.52
+    sepal width:   0.64
+   petal length:  26.99
+    petal width:  34.42

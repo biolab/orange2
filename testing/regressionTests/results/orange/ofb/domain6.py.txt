@@ -1,0 +1,3 @@
+Size of data: 977 instances;  p(>50K)=0.242
+Size of data1, age from 30 to 40: 301 instances;  p(>50K)=0.312
+Size of data2, younger than 30 or older than 40: 676 instances;  p(>50K)=0.210

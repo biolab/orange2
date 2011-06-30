@@ -1,0 +1,7 @@
+5 examples after discretization
+[1.4, 'low', 'Iris-setosa']
+[1.5, 'low', 'Iris-setosa']
+[1.2, 'low', 'Iris-setosa']
+[4.7, 'high', 'Iris-versicolor']
+[3.0, 'medium', 'Iris-versicolor']
+

@@ -1,0 +1,5 @@
+Matches [('mmu:216150', 'Cdc34'), ('mmu:258645', 'Olfr1403'), ('mmu:320910', 'Itgb8'), ('mmu:64339', 'Fndc4')]
+Cdc34 is in ['Ubiquitin mediated proteolysis']
+Olfr1403 is in ['Olfactory transduction']
+Itgb8 is in ['Cell adhesion molecules (CAMs)', 'ECM-receptor interaction', 'Regulation of actin cytoskeleton', 'Focal adhesion']
+Fndc4 is in ['ECM-receptor interaction']

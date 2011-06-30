@@ -1,0 +1,13 @@
+Possible classes: <republican, democrat>
+Probability for republican:
+Original Class Majority      Naive Bayes   Tree          kNN          
+(republican)   0.386         1.000         0.949         1.000        
+(republican)   0.386         1.000         0.973         1.000        
+(democrat  )   0.386         0.995         0.011         0.042        
+(democrat  )   0.386         0.002         0.015         0.000        
+(democrat  )   0.386         0.043         0.015         0.018        
+(democrat  )   0.386         0.228         0.015         0.192        
+(democrat  )   0.386         1.000         0.973         0.684        
+(republican)   0.386         1.000         0.973         0.861        
+(republican)   0.386         1.000         0.973         1.000        
+(democrat  )   0.386         0.000         0.015         0.000        

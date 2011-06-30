@@ -1,0 +1,4 @@
+from Orange.preprocess.scaling import get_variable_values_sorted as getVariableValuesSorted
+from Orange.preprocess.scaling import get_variable_value_indices as getVariableValueIndices
+from Orange.preprocess.scaling import discretize_domain as discretizeDomain
+from Orange.preprocess.scaling import ScaleData as orngScaleData
