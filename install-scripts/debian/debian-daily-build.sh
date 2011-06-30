@@ -18,7 +18,7 @@ trap "echo \"Script failed\"" ERR
 [ -e /mnt/debian/ ] || { echo "/mnt/debian/ not mounted."; exit 2; }
 
 # Default is current latest revision in trunk
-DAILY_REVISION=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+DAILY_REVISION=${1:-`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION" ] || exit 3
 
