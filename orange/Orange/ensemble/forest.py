@@ -116,7 +116,7 @@ class RandomForestLearner(orange.Learner):
             selection = []
             for j in range(n):
                 selection.append(self.rand.randrange(n))
-            data = instances.getitems(selection)
+            data = instances.get_items_ref(selection)
             # build the model from the bootstrap sample
             classifiers.append(learner(data, weight))
             if self.callback:
