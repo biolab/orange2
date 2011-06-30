@@ -29,7 +29,8 @@ if ! grep -q "deb http://orange.biolab.si/debian $DISTRIBUTION main" /etc/apt/so
 	echo "deb-src http://orange.biolab.si/debian $DISTRIBUTION main" >> /etc/apt/sources.list
 fi
 
-if [ -e "/mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/python-orange_0.0.$DAILY_REVISION~svn-*_$ARCH.deb" ]; then
+# We are checking only for -1 debian revision as those are those made by uupdate
+if [ -e "/mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/python-orange_0.0.$DAILY_REVISION~svn-1_$ARCH.deb" ]; then
 	echo "Package for $DAILY_REVISION revision already exists."
 	exit 0
 fi
