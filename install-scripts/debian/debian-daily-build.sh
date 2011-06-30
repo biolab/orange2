@@ -65,7 +65,7 @@ else
 	cd python-orange-0.0.*/
 	export DEBFULLNAME="Mitar"
 	export DEBEMAIL="mitar@tnode.com"
-	uupdate --no-symlink python-orange-0.0.$DAILY_REVISION~svn.tar.gz
+	uupdate --upstream-version 0.0.$DAILY_REVISION~svn --no-symlink python-orange-0.0.$DAILY_REVISION~svn.tar.gz
 	cd ..
 	rm -rf python-orange-0.0.$DAILY_REVISION~svn.orig/ python-orange-0.0.$DAILY_REVISION~svn.tar.gz
 	
@@ -73,7 +73,7 @@ else
 fi
 
 cd python-orange-0.0.$DAILY_REVISION~svn/
-dpkg-buildpackage -D -E -sa -us -uc
+dpkg-buildpackage -D -sa -us -uc
 
 echo "Preparing public biolab Debian repository."
 mkdir -p /mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/
