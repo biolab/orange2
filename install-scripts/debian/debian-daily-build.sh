@@ -29,49 +29,49 @@ if ! grep -q "deb http://orange.biolab.si/debian $DISTRIBUTION main" /etc/apt/so
 	echo "deb-src http://orange.biolab.si/debian $DISTRIBUTION main" >> /etc/apt/sources.list
 fi
 
-if [ -e "/mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/python-orange-svn_0.0.$DAILY_REVISION-1_$ARCH.deb" ]; then
+if [ -e "/mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/python-orange_0.0.$DAILY_REVISION~svn-*_$ARCH.deb" ]; then
 	echo "Package for $DAILY_REVISION revision already exists."
 	exit 0
 fi
 
 aptitude $APTITUDE_ARGS update
 aptitude $APTITUDE_ARGS install devscripts build-essential
-aptitude $APTITUDE_ARGS build-depends python-orange-svn
+aptitude $APTITUDE_ARGS build-depends python-orange
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-apt-get $APT_ARGS source python-orange-svn
+apt-get $APT_ARGS source python-orange
 
-if [ -e "python-orange-svn-0.0.$DAILY_REVISION" ]; then
+if [ -e "python-orange-0.0.$DAILY_REVISION~svn" ]; then
 	echo "Package for $DAILY_REVISION revision already exists, just building it."
 else
-	echo "Making source archive python-orange-svn-0.0.$DAILY_REVISION."
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/orange/ python-orange-svn-0.0.$DAILY_REVISION/
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/source/ python-orange-svn-0.0.$DAILY_REVISION/source/
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/orngCRS/src/ python-orange-svn-0.0.$DAILY_REVISION/source/crs/
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING python-orange-svn-0.0.$DAILY_REVISION/COPYING
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES python-orange-svn-0.0.$DAILY_REVISION/LICENSES
+	echo "Making source archive python-orange-0.0.$DAILY_REVISION~svn."
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/orange/ python-orange-0.0.$DAILY_REVISION~svn/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/source/ python-orange-0.0.$DAILY_REVISION~svn/source/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/orngCRS/src/ python-orange-0.0.$DAILY_REVISION~svn/source/crs/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING python-orange-0.0.$DAILY_REVISION~svn/COPYING
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES python-orange-0.0.$DAILY_REVISION~svn/LICENSES
 	
-	[ -e python-orange-svn-0.0.$DAILY_REVISION/doc/COPYING ] && mv python-orange-svn-0.0.$DAILY_REVISION/doc/COPYING python-orange-svn-0.0.$DAILY_REVISION/
-	[ -e python-orange-svn-0.0.$DAILY_REVISION/doc/LICENSES ] && mv python-orange-svn-0.0.$DAILY_REVISION/doc/LICENSES python-orange-svn-0.0.$DAILY_REVISION/
+	[ -e python-orange-0.0.$DAILY_REVISION~svn/doc/COPYING ] && mv python-orange-0.0.$DAILY_REVISION~svn/doc/COPYING python-orange-0.0.$DAILY_REVISION~svn/
+	[ -e python-orange-0.0.$DAILY_REVISION~svn/doc/LICENSES ] && mv python-orange-0.0.$DAILY_REVISION~svn/doc/LICENSES python-orange-0.0.$DAILY_REVISION~svn/
 	
-	tar -czf python-orange-svn-0.0.$DAILY_REVISION.tar.gz python-orange-svn-0.0.$DAILY_REVISION
-	rm -rf python-orange-svn-0.0.$DAILY_REVISION/
+	tar -czf python-orange-0.0.$DAILY_REVISION~svn.tar.gz python-orange-0.0.$DAILY_REVISION~svn
+	rm -rf python-orange-0.0.$DAILY_REVISION~svn/
 	
 	echo "Updating packages."
-	cd python-orange-svn-0.0.*/
+	cd python-orange-0.0.*/
 	export DEBFULLNAME="Mitar"
 	export DEBEMAIL="mitar@tnode.com"
-	uupdate --no-symlink python-orange-svn-0.0.$DAILY_REVISION.tar.gz
+	uupdate --no-symlink python-orange-0.0.$DAILY_REVISION~svn.tar.gz
 	cd ..
-	rm -rf python-orange-svn-0.0.$DAILY_REVISION.orig/ python-orange-svn-0.0.$DAILY_REVISION.tar.gz
+	rm -rf python-orange-0.0.$DAILY_REVISION~svn.orig/ python-orange-0.0.$DAILY_REVISION~svn.tar.gz
 	
 	echo "Building new packages."
 fi
 
-cd python-orange-svn-0.0.$DAILY_REVISION/
+cd python-orange-0.0.$DAILY_REVISION~svn/
 dpkg-buildpackage -D -E -sa -us -uc
 
 echo "Preparing public biolab Debian repository."
@@ -80,7 +80,7 @@ mkdir -p /mnt/debian/dists/$DISTRIBUTION/main/source/
 
 echo "Copying to repository new packages."
 cd ..
-rm -rf python-orange-svn-0.0.$DAILY_REVISION/
+rm -rf python-orange-0.0.$DAILY_REVISION~svn/
 mv *$DAILY_REVISION*.deb /mnt/debian/dists/$DISTRIBUTION/main/binary-$ARCH/
 mv *$DAILY_REVISION* /mnt/debian/dists/$DISTRIBUTION/main/source/
 
