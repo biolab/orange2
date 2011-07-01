@@ -40,10 +40,7 @@ APT_ARGS="--assume-yes"
 # Path to Fink root
 FINK_ROOT=/sw
 
-ARCH=`arch`
-if [ $ARCH == "ppc" ]; then
-	ARCH="powerpc"
-fi
+ARCH=`perl -MFink::FinkVersion -e 'print Fink::FinkVersion::get_arch'`
 
 if [ "$1" ] || [ "$2" ]; then
 	PACKAGE_SOURCE=1
