@@ -66,7 +66,8 @@ _import("preprocess")
 _import("preprocess.outliers")
 _import("preprocess.scaling")
 
-_import("distances")
+_import("distance")
+_import("distance.instances")
 
 _import("wrappers")
 

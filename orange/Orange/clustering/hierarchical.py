@@ -484,7 +484,7 @@ def clustering(data,
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
     :param distance_constructor: Instance distance constructor
-    :type distance_constructor: :class:`Orange.distances.ExamplesDistanceConstructor`
+    :type distance_constructor: :class:`Orange.distance.instances.ExamplesDistanceConstructor`
     :param linkage: Linkage flag. Must be one of global module level flags:
     
         - SINGLE
@@ -1375,7 +1375,7 @@ def instance_distance_matrix(data,
     :type data: :class:`Orange.data.Table`
     
     :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :class:`Orange.distances.ExampleDistConstructor`
+    :type distance_constructor: :class:`Orange.distance.instances.ExampleDistConstructor`
     
     """
     matrix = orange.SymMatrix(len(data))
