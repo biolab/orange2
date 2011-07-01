@@ -3,6 +3,8 @@
 # Should be run as: sudo ./dailyrun-finkonly.sh
 #
 
+test -r /sw/bin/init.sh && . /sw/bin/init.sh
+
 MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
