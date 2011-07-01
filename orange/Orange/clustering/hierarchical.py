@@ -1024,7 +1024,8 @@ class DendrogramPlotPylab(object):
 """ Dendrogram ploting using Orange.misc.reander
 """
 
-from orngMisc import ColorPalette, EPSRenderer
+from Orange.misc.render import EPSRenderer, ColorPalette
+
 class DendrogramPlot(object):
     """ A class for drawing dendrograms
     Example:
@@ -1167,7 +1168,7 @@ def dendrogram_draw(filename, *args, **kwargs):
     .. todo:: Finish documentation.
     """
     import os
-    from orngMisc import PILRenderer, EPSRenderer, SVGRenderer
+    from Orange.misc.render import PILRenderer, EPSRenderer, SVGRenderer
     name, ext = os.path.splitext(filename)
     kwargs["renderer"] = {".eps":EPSRenderer, ".svg":SVGRenderer, ".png":PILRenderer}.get(ext.lower(), PILRenderer)
 #    print kwargs["renderer"], ext
