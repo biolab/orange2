@@ -638,7 +638,9 @@ class SchemaDoc(QWidget):
         t = "    "  # instead of tab
         n = "\n"
 
-        start = """#This file is automatically created by Orange Canvas and containing an Orange schema
+        start = """#!/usr/bin/env python
+
+#This file is automatically created by Orange Canvas and containing an Orange schema
 
 import orngEnviron
 import orngDebugging
