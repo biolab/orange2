@@ -26,7 +26,7 @@ class Pca(object):
     """
     
     def __new__(cls, dataset = None, **kwds):
-        learner = object.__new__(cls, **kwds)
+        learner = object.__new__(cls)
         learner.__init__(**kwds)
         
         if dataset:
@@ -34,7 +34,7 @@ class Pca(object):
         else:
             return learner
     
-    def __init__(self, standardize = False,
+    def __init__(self, standardize = True,
                  max_components = 0, variance_covered = 1):
         self.standardize = standardize
         self.max_components = max_components
@@ -145,6 +145,9 @@ class PcaClassifier(object):
         self.__dict__.update(kwds)
     
     def __call__(self, dataset):
+        if type(dataset) != Orange.data.Table:
+            dataset = Orange.data.Table(self.input_domain, [dataset])
+
         X = dataset.to_numpy_MA("a")[0]
         Xm, U = self.mean, self.eigen_vectors
         n, m = X.shape
@@ -360,3 +363,4 @@ class PcaClassifier(object):
             plt.savefig(filename)
         else:
             plt.show()
+            
