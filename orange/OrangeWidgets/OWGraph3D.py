@@ -9,12 +9,13 @@ import orange
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.arrays import ArrayDatatype
 from ctypes import byref, c_char_p, c_int, create_string_buffer
 import sys
 import numpy
 from math import sin, cos
 
-# Import undefined functions.
+# Import undefined functions, override some wrappers.
 try:
   from OpenGL import platform
   gl = platform.OpenGL
@@ -32,6 +33,20 @@ glShaderSource = gl.glShaderSource
 glCompileShader = gl.glCompileShader
 glGetShaderiv = gl.glGetShaderiv
 glDeleteShader = gl.glDeleteShader
+glDeleteProgram = gl.glDeleteProgram
+glGetShaderInfoLog = gl.glGetShaderInfoLog
+glGenVertexArrays = gl.glGenVertexArrays
+glBindVertexArray = gl.glBindVertexArray
+glGenBuffers = gl.glGenBuffers
+glDeleteBuffers = gl.glDeleteBuffers
+glVertexAttribPointer = gl.glVertexAttribPointer
+glEnableVertexAttribArray = gl.glEnableVertexAttribArray
+glVertexAttribPointer = gl.glVertexAttribPointer
+glEnableVertexAttribArray = gl.glEnableVertexAttribArray
+#glBegin = gl.glBegin
+#glEnd = gl.glEnd
+#glColor4f = gl.glColor4f
+#glColor3f = gl.glColor3f
 
 
 def normalize(vec):
@@ -41,6 +56,7 @@ def normalize(vec):
 class OWGraph3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
+
         self.commands = []
         self.minx = self.miny = self.minz = 0
         self.maxx = self.maxy = self.maxz = 0
@@ -56,7 +72,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.zoom = 10.
         self.move_factor = 100.
         self.mouse_pos = [100, 100] # TODO: get real mouse position, calculate camera, fix the initial jump
-        self.update_axes()
+        #self.update_axes()
 
         self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
         self.ticks_font = QFont('Helvetica', 9)
@@ -64,12 +80,36 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.y_axis_title = ''
         self.z_axis_title = ''
 
+        self.vertex_buffers = []
+        self.vaos = []
+
+    def __del__(self):
+      #for shader in self.shaders:
+      #  glDeleteShader(shader)
+
+      glDeleteProgram(self.color_shader)
+
+      #for vertex_buffer in self.vertex_buffers:
+      #  glDeleteBuffers(1, byref(vertex_buffer))
+
+    def initializeGL(self):
+        self.update_axes()
+        glClearColor(1.0, 1.0, 1.0, 1.0)
+        glClearDepth(1.0)
+        glDepthFunc(GL_LESS)
+        glEnable(GL_DEPTH_TEST)
+        glShadeModel(GL_SMOOTH)
+        #glEnable(GL_BLEND)
+        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         self.color_shader = glCreateProgram()
         vertex_shader = glCreateShader(GL_VERTEX_SHADER)
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
+        self.shaders = [vertex_shader, fragment_shader]
 
         vertex_shader_source = '''
-            attribute vec4 position;
+            attribute vec3 position;
+            attribute vec3 offset;
             attribute vec4 color;
 
             uniform mat4 projection;
@@ -78,7 +118,27 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             varying vec4 var_color;
 
             void main(void) {
-              gl_Position = projection * modelview * position;
+              //gl_Position = projection * modelview * position;
+
+              // Calculate inverse of rotations (in this case, inverse
+              // is actually just transpose), so that polygons face
+              // camera all the time.
+              mat3 invs;
+
+              invs[0][0] = gl_ModelViewMatrix[0][0];
+              invs[0][1] = gl_ModelViewMatrix[1][0];
+              invs[0][2] = gl_ModelViewMatrix[2][0];
+
+              invs[1][0] = gl_ModelViewMatrix[0][1];
+              invs[1][1] = gl_ModelViewMatrix[1][1];
+              invs[1][2] = gl_ModelViewMatrix[2][1];
+
+              invs[2][0] = gl_ModelViewMatrix[0][2];
+              invs[2][1] = gl_ModelViewMatrix[1][2];
+              invs[2][2] = gl_ModelViewMatrix[2][2];
+
+              vec3 offset_rotated = invs * offset;
+              gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(position+offset_rotated, 1);
               var_color = color;
             }
             '''
@@ -104,48 +164,39 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             print(log.value)
 
         length = c_int(-1)
-        for shader, source in zip([vertex_shader, fragment_shader], [vertex_shader_source, fragment_shader_source]):
-          glShaderSource(shader, 1, byref(source), byref(length));
+        for shader, source in zip([vertex_shader, fragment_shader],
+                                  [vertex_shader_source, fragment_shader_source]):
+          glShaderSource(shader, 1, byref(source), byref(length))
           glCompileShader(shader)
           status = c_int()
           glGetShaderiv(shader, GL_COMPILE_STATUS, byref(status))
           if not status.value:
-            print('Failed to compile shader:')
             print_log(shader)
             glDeleteShader(shader)
+            return
+          else:
+            glAttachShader(self.color_shader, shader)
 
-        print('Shaders compiled!')
-
-
-    def initializeGL(self):
-        glClearColor(1.0, 1.0, 1.0, 1.0)
-        glClearDepth(1.0)
-        glDepthFunc(GL_LESS)
-        glShadeModel(GL_SMOOTH)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(30.0, float(self.width())/float(self.height()), 0.1, 100.0)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
- 
+        glBindAttribLocation(self.color_shader, 0, 'position')
+        glBindAttribLocation(self.color_shader, 1, 'offset')
+        glBindAttribLocation(self.color_shader, 2, 'color')
+        glLinkProgram(self.color_shader)
+        # TODO: link status
+        print('Shaders compiled and linked!')
 
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
+
+    def paintGL(self):
+        glClearColor(1,1,1,1)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        if height == 0:
-            aspect = 1
-        else:
-            aspect = float(width) / height
+        aspect = float(self.width()) / self.height() if self.height() != 0 else 1
         gluPerspective(30.0, aspect, 0.1, 100)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-
-
-    def paintGL(self):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(
@@ -158,23 +209,15 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             0, 1, 0)
         self.paint_axes()
 
-        glEnable(GL_CULL_FACE)
-        glCullFace(GL_BACK)
-
-        for cmd, vertex_buffer in self.commands:
-          self.color_shader.bind()
-          self.color_shader.setAttributeBuffer(0, GL_FLOAT, 0,   4, 8*4)
-          self.color_shader.setAttributeBuffer(1, GL_FLOAT, 4*4, 4, 8*4)
-          self.color_shader.enableAttributeArray(0)
-          self.color_shader.enableAttributeArray(1)
-
-          glDrawArrays(GL_TRIANGLES, 0, vertex_buffer.num_vertices);
-
-          self.color_shader.disableAttributeArray(0)
-          self.color_shader.disableAttributeArray(1)
-          glUseProgram(0)
-
         glDisable(GL_CULL_FACE)
+
+        for cmd, vao in self.commands:
+          if cmd == 'scatter':
+            glUseProgram(self.color_shader)
+            glBindVertexArray(vao.value)
+            glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+            glBindVertexArray(0)
+            glUseProgram(0)
 
     def set_x_axis_title(self, title):
       self.x_axis_title = title
@@ -205,20 +248,31 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         ac = (self.x_axis[0] + self.x_axis[1]) / 2.
         self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.x_axis_title, font=self.axis_title_font)
 
-        glPushMatrix();
+        glPushMatrix()
         ac = (self.y_axis[0] + self.y_axis[1]) / 2.
         glTranslatef(ac[0], ac[1]-0.2, ac[2]-0.2)
-        glRotatef(90, 1,0,0);
+        glRotatef(90, 1,0,0)
         #self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.YaxisTitle, font=self.axisTitleFont)
         self.renderText(0,0,0, self.y_axis_title, font=self.axis_title_font)
-        glPopMatrix();
+        glPopMatrix()
 
         ac = (self.z_axis[0] + self.z_axis[1]) / 2.
         self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.z_axis_title, font=self.axis_title_font)
 
-        outwards = normalize(self.x_axis[0] - bb_center)
-        pos = self.x_axis[0] + outwards * 0.2
-        self.renderText(pos[0], pos[1], pos[2], '{0:.2}'.format(pos[0]))
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, self.x_axis_frame.texture())
+
+        glBegin(GL_QUADS)
+        glTexCoord2f(0,1)
+        glVertex3f(*self.x_axis[0])
+        glTexCoord2f(1,1)
+        glVertex3f(*self.x_axis[1])
+        glTexCoord2f(1,0)
+        glVertex3f(*(self.x_axis[1] + [0,0,-0.5]))
+        glTexCoord2f(0,0)
+        glVertex3f(*(self.x_axis[0] + [0,0,-0.5]))
+        glEnd()
+        glDisable(GL_TEXTURE_2D)
 
         glColor4f(1,1,1,1)
 
@@ -255,15 +309,13 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         color_grid = [0.3, 0.3, 0.3, 1.0]
 
         def paint_plane(plane_quad):
-            #glColor4f(*colorPlane)
-            #paintQuad(planeQuad)
             glColor4f(*color_grid)
             paint_grid(plane_quad)
 
-        def normal_from_points(P1, P2, P3):
-            V1 = P2 - P1
-            V2 = P3 - P1
-            return normalize(numpy.cross(V1, V2))
+        def normal_from_points(p1, p2, p3):
+            v1 = p2 - p1
+            v2 = p3 - p1
+            return normalize(numpy.cross(v1, v2))
  
         def draw_grid_visible(plane_quad, ccw=False):
             normal = normal_from_points(*plane_quad[:3])
@@ -319,7 +371,32 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.axis_plane_yz_right = [B, F, G, C]
         self.axis_plane_xz_top = [E, F, B, A]
 
-    def scatter(self, X, Y, Z, c="b", s=20, **kwargs):
+        if hasattr(self, 'x_axis_frame'):
+          return
+        self.x_axis_frame = QtOpenGL.QGLFramebufferObject(256, 64)
+        print(self.x_axis_frame.isBound())
+        self.x_axis_frame.bind()
+        print(self.x_axis_frame.isValid())
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0,1, 0,1, -1,1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glClearColor(1,0,0,1)
+        glClear(GL_COLOR_BUFFER_BIT)
+        direction = self.x_axis[1] - self.x_axis[0]
+        glColor3f(1,1,1)
+        glBegin(GL_TRIANGLES)
+        glVertex3f(0,0,0)
+        glVertex3f(1,0,0)
+        glVertex3f(0,1,0)
+        glEnd()
+        #for i in range(10):
+        #  pos = self.x_axis[0] + direction * (i / 10.)
+        #  self.renderText(pos[0], 10, '{0:.2}'.format(pos[0]))
+        self.x_axis_frame.release()
+
+    def scatter(self, X, Y, Z, c="b", s=5, **kwargs):
         array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
         if isinstance(c, str):
             color_map = {"r": [1.0, 0.0, 0.0, 1.0],
@@ -340,26 +417,44 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.center = (min + max) / 2 
         self.normal_size = numpy.max(self.center - self.b_box[1]) / 100.
 
-        vertex_buffer = QtOpenGL.QGLBuffer(QtOpenGL.QGLBuffer.VertexBuffer)
-        if vertex_buffer.create() == False:
-          print('Warning: vertex buffers not supported')
-          return
+        vao = c_int()
+        glGenVertexArrays(1, byref(vao))
+        glBindVertexArray(vao.value)
 
-        vertex_buffer.bind()
-        vertex_buffer.setUsagePattern(QtOpenGL.QGLBuffer.StaticDraw)
+        vertex_buffer = c_int()
+        glGenBuffers(1, byref(vertex_buffer))
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.value)
+
+        vertex_size = (3+3+4)*4
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, 0)
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 3*4)
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 6*4)
+        glEnableVertexAttribArray(2)
 
         vertices = []
         for (x,y,z), (r,g,b,a), size in zip(array, colors, s):
-          vertices.extend([x-size*self.normal_size,y,z, r,g,b,a])
-          vertices.extend([x+size*self.normal_size,y,z, r,g,b,a])
-          vertices.extend([x,y+size*self.normal_size,z, r,g,b,a])
+          vertices.extend([x,y,z, -size*self.normal_size,0,0, r,g,b,a])
+          vertices.extend([x,y,z, +size*self.normal_size,0,0, r,g,b,a])
+          vertices.extend([x,y,z, 0,+size*self.normal_size,0, r,g,b,a])
 
-        vertex_buffer.allocate((GLfloat * len(vertices))(vertices), len(vertices)*4)
+        # It's important to keep reference to vertices around,
+        # data uploaded to GPU seem to get corrupted without.
+        vertex_buffer.vertices = numpy.array(vertices, 'f')
+        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4,
+          ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
 
-        self.commands.append(("scatter", (vertex_buffer)))
+        glBindVertexArray(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+        vao.num_vertices = len(vertices) / (vertex_size / 4)
+        self.vertex_buffers.append(vertex_buffer)
+        self.vaos.append(vao)
+        self.commands.append(("scatter", vao))
         self.update_axes()
         self.updateGL()
- 
+
     def mousePressEvent(self, event):
       self.mouse_pos = event.pos()
 
@@ -393,6 +488,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
     def clear(self):
         self.commands = []
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWGraph3D()
@@ -411,9 +507,5 @@ if __name__ == "__main__":
     colors = [palette[int(ex.getclass())] for ex in data]
     colors = [[c.red()/255., c.green()/255., c.blue()/255., 0.8] for c in colors]
 
-#    x = [rand()*2 for i in range(N)]
-#    y = [rand()*2 for i in range(N)]
-#    z = [-3 + rand() for i in range(N)]
-#    colors = "b"
     w.scatter(x, y, z, c=colors)
     app.exec_()
