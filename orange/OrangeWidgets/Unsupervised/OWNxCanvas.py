@@ -733,7 +733,7 @@ class OWNxCanvas(OWGraph):
                 w = ((1 - matrix[u,v]) - min_weight) / span_weights * (self.maxComponentEdgeWidth - self.minComponentEdgeWidth) + self.minComponentEdgeWidth
                 
                 pen = QPen()
-                pen.setWidth(w)
+                pen.setWidth(int(w))
                 pen.setBrush(QColor(50,200,255,15))
                 pen.setCapStyle(Qt.FlatCap)
                 pen.setJoinStyle(Qt.RoundJoin)

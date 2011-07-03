@@ -1135,7 +1135,7 @@ class OWNxExplorer(OWWidget):
         
         for var in vars:
             if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
-                self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+                self.colorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
                 
             if var.varType in [Orange.data.Type.String] and hasattr(self.graph, 'items') and self.graph.items() is not None and len(self.graph.items()) > 0:
                 
@@ -1144,25 +1144,25 @@ class OWNxExplorer(OWWidget):
                 # can value be a list?
                 try:
                     if type(eval(value)) == type([]):
-                        self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                        self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
                         continue
                 except:
                     pass
                 
                 if len(value.split(',')) > 1:
-                    self.vertexSizeCombo.addItem(self.icons[var.varType], "num of " + unicode(var.name))
+                    self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), "num of " + unicode(var.name))
                 
             elif var.varType in [Orange.data.Type.Continuous]:
-                self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
-            self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
-            self.showComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
-            self.editCombo.addItem(self.icons[var.varType], unicode(var.name))
-            self.comboAttSelection.addItem(self.icons[var.varType], unicode(var.name))
+            self.nameComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
+            self.showComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
+            self.editCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
+            self.comboAttSelection.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
         
         for var in edgeVars:
             if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
-                self.edgeColorCombo.addItem(self.icons[var.varType], unicode(var.name))
+                self.edgeColorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
                 
         for i in range(self.vertexSizeCombo.count()):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
