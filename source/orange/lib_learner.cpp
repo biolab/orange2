@@ -49,6 +49,12 @@
 
 #include "externs.px"
 
+/* ************ SIMPLE TREE LEARNER ************ */
+
+#include "tdidt_simple.hpp"
+C_CALL(SimpleTreeLearner - Orange.classification.tree.SimpleTreeLearner, Learner, "([examples], [maxMajority=, minExamples=, maxDepth=])")
+C_NAMED(SimpleTreeClassifier - Orange.classification.tree.SimpleTreeClassifier, Classifier, "()")
+
 /* ************ MAJORITY AND COST ************ */
 
 #include "majority.hpp"
