@@ -48,7 +48,7 @@ enum Symbol {
     UserCurve
   };
 
-  Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene = 0);
+  Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
   virtual ~Curve();
 
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
