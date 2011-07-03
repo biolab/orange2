@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-bioinformatics-gui-svn-py%type_pkg[python]
 Type: python (2.5 2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 24
+Revision: 25
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bioinformatics-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_BIOINFORMATICS__
 Maintainer: Mitar <mitar@tnode.com>
@@ -49,6 +49,7 @@ SplitOff: <<
 #	<<
 	Files: <<
 		lib/python%type_raw[python]/site-packages/orange/add-ons/Bioinformatics/*.py
+		lib/python%type_raw[python]/site-packages/orange/add-ons/Bioinformatics/addon.xml
 		lib/python%type_raw[python]/site-packages/orange-bioinformatics.pth
 		share/doc/orange-bioinformatics-svn-py%type_pkg[python]
 	<<
