@@ -29,6 +29,7 @@ public:
     void setAxes(int x_axis, int y_axis);
     
 private:
+    Q_DISABLE_COPY(PlotItem)
     
     Graph* m_graph;
     QRectF m_dataRect;

@@ -13,7 +13,7 @@ public:
     
     virtual QRectF dataRect() const;
     
-    void attach(Graph* graph);
+    void attach(Graph* graph /TransferThis/);
     void detach();
     
     static QRectF boundingRectFromData(QList<double> xData, QList<double> yData);
@@ -22,5 +22,8 @@ public:
     void setAutoScale(bool autoScale);
     
     QPair<int, int> axes() const;
-    void setAxes(int x_axis, int y_axis);    
+    void setAxes(int x_axis, int y_axis);  
+
+private:
+    PlotItem(const PlotItem &);
 };

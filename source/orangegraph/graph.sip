@@ -34,7 +34,7 @@ public:
     Graph(QWidget* parent /TransferThis/ = 0);
     virtual ~Graph();
     
-    void addItem(PlotItem* item);
+    void addItem(PlotItem* item /Transfer/);
     void removeItem(PlotItem* item);
     void removeAllItems();
     

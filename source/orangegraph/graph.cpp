@@ -19,6 +19,11 @@ Graph::~Graph()
 void Graph::addItem(PlotItem* item)
 {
     qDebug() << "Adding item" << item << "in C++";
+    if (m_items.contains(item))
+    {
+        qWarning() << "Item is already in this graph";
+        return;
+    }
     item->m_graph = this;
     item->setParentItem(graph_item);
     m_items << item;
@@ -31,7 +36,6 @@ void Graph::removeItem(PlotItem* item)
     {
         scene()->removeItem(item);
         m_items.removeAll(item);
-        delete item;
     }
     else
     {
