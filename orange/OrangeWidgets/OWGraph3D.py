@@ -17,15 +17,15 @@ from math import sin, cos
 
 # Import undefined functions, override some wrappers.
 try:
-  from OpenGL import platform
-  gl = platform.OpenGL
+    from OpenGL import platform
+    gl = platform.OpenGL
 except ImportError:
-  try:
-    gl = cdll.LoadLibrary('libGL.so')
-  except OSError:
-    from ctypes.util import find_library
-    path = find_library('OpenGL')
-    gl = cdll.LoadLibrary(path)
+    try:
+        gl = cdll.LoadLibrary('libGL.so')
+    except OSError:
+        from ctypes.util import find_library
+        path = find_library('OpenGL')
+        gl = cdll.LoadLibrary(path)
 
 glCreateProgram = gl.glCreateProgram
 glCreateShader = gl.glCreateShader
@@ -43,14 +43,10 @@ glVertexAttribPointer = gl.glVertexAttribPointer
 glEnableVertexAttribArray = gl.glEnableVertexAttribArray
 glVertexAttribPointer = gl.glVertexAttribPointer
 glEnableVertexAttribArray = gl.glEnableVertexAttribArray
-#glBegin = gl.glBegin
-#glEnd = gl.glEnd
-#glColor4f = gl.glColor4f
-#glColor3f = gl.glColor3f
 
 
 def normalize(vec):
-  return vec / numpy.sqrt(numpy.sum(vec** 2))
+    return vec / numpy.sqrt(numpy.sum(vec** 2))
 
 
 class OWGraph3D(QtOpenGL.QGLWidget):
@@ -72,7 +68,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.zoom = 10.
         self.move_factor = 100.
         self.mouse_pos = [100, 100] # TODO: get real mouse position, calculate camera, fix the initial jump
-        #self.update_axes()
 
         self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
         self.ticks_font = QFont('Helvetica', 9)
@@ -80,17 +75,14 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.y_axis_title = ''
         self.z_axis_title = ''
 
+        self.color_plane = numpy.array([0.95, 0.95, 0.95, 0.3])
+        self.color_grid = numpy.array([0.8, 0.8, 0.8, 1.0])
+
         self.vertex_buffers = []
         self.vaos = []
 
     def __del__(self):
-      #for shader in self.shaders:
-      #  glDeleteShader(shader)
-
-      glDeleteProgram(self.color_shader)
-
-      #for vertex_buffer in self.vertex_buffers:
-      #  glDeleteBuffers(1, byref(vertex_buffer))
+        glDeleteProgram(self.color_shader)
 
     def initializeGL(self):
         self.update_axes()
@@ -98,9 +90,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glClearDepth(1.0)
         glDepthFunc(GL_LESS)
         glEnable(GL_DEPTH_TEST)
-        glShadeModel(GL_SMOOTH)
-        #glEnable(GL_BLEND)
-        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnable(GL_LINE_SMOOTH)
 
         self.color_shader = glCreateProgram()
         vertex_shader = glCreateShader(GL_VERTEX_SHADER)
@@ -155,27 +145,27 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         fragment_shader_source = c_char_p(fragment_shader_source)
 
         def print_log(shader):
-          length = c_int()
-          glGetShaderiv(shader, GL_INFO_LOG_LENGTH, byref(length))
+            length = c_int()
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, byref(length))
 
-          if length.value > 0:
-            log = create_string_buffer(length.value)
-            glGetShaderInfoLog(shader, length, byref(length), log)
-            print(log.value)
+            if length.value > 0:
+                log = create_string_buffer(length.value)
+                glGetShaderInfoLog(shader, length, byref(length), log)
+                print(log.value)
 
         length = c_int(-1)
         for shader, source in zip([vertex_shader, fragment_shader],
                                   [vertex_shader_source, fragment_shader_source]):
-          glShaderSource(shader, 1, byref(source), byref(length))
-          glCompileShader(shader)
-          status = c_int()
-          glGetShaderiv(shader, GL_COMPILE_STATUS, byref(status))
-          if not status.value:
-            print_log(shader)
-            glDeleteShader(shader)
-            return
-          else:
-            glAttachShader(self.color_shader, shader)
+            glShaderSource(shader, 1, byref(source), byref(length))
+            glCompileShader(shader)
+            status = c_int()
+            glGetShaderiv(shader, GL_COMPILE_STATUS, byref(status))
+            if not status.value:
+                print_log(shader)
+                glDeleteShader(shader)
+                return
+            else:
+                glAttachShader(self.color_shader, shader)
 
         glBindAttribLocation(self.color_shader, 0, 'position')
         glBindAttribLocation(self.color_shader, 1, 'offset')
@@ -197,8 +187,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         gluPerspective(30.0, aspect, 0.1, 100)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
         gluLookAt(
             self.camera[0]*self.zoom + self.center[0],
             self.camera[1]*self.zoom + self.center[1],
@@ -209,75 +197,110 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             0, 1, 0)
         self.paint_axes()
 
+        glEnable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
 
         for cmd, vao in self.commands:
-          if cmd == 'scatter':
-            glUseProgram(self.color_shader)
-            glBindVertexArray(vao.value)
-            glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
-            glBindVertexArray(0)
-            glUseProgram(0)
+            if cmd == 'scatter':
+                glUseProgram(self.color_shader)
+                glBindVertexArray(vao.value)
+                glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                glBindVertexArray(0)
+                glUseProgram(0)
 
     def set_x_axis_title(self, title):
-      self.x_axis_title = title
-      self.updateGL()
+        self.x_axis_title = title
+        self.updateGL()
 
     def set_y_axis_title(self, title):
-      self.y_axis_title = title
-      self.updateGL()
+        self.y_axis_title = title
+        self.updateGL()
 
     def set_z_axis_title(self, title):
-      self.z_axis_title = title
-      self.updateGL()
+        self.z_axis_title = title
+        self.updateGL()
 
     def paint_axes(self):
-        glDisable(GL_CULL_FACE)
-        glColor4f(1,1,1,1)
-        for start, end in [self.x_axis, self.y_axis, self.z_axis]:
+        cam_in_space = numpy.array([
+          self.center[0] + self.camera[0]*self.zoom,
+          self.center[1] + self.camera[1]*self.zoom,
+          self.center[2] + self.camera[2]*self.zoom
+        ])
+
+        def normal_from_points(p1, p2, p3):
+            v1 = p2 - p1
+            v2 = p3 - p1
+            return normalize(numpy.cross(v1, v2))
+
+        def plane_visible(plane):
+            normal = normal_from_points(*plane[:3])
+            cam_plane = normalize(plane[0] - cam_in_space)
+            if numpy.dot(normal, cam_plane) > 0:
+                return False
+            return True
+
+        def draw_line(line):
+            glColor4f(0.2, 0.2, 0.2, 1)
+            glLineWidth(2) # Widths > 1 are actually deprecated I think.
             glBegin(GL_LINES)
-            glVertex3f(*start)
-            glVertex3f(*end)
+            glVertex3f(*line[0])
+            glVertex3f(*line[1])
             glEnd()
 
+        def draw_values(axis, coord_index, normal, sub=10):
+            glColor4f(0.1, 0.1, 0.1, 1)
+            glLineWidth(1)
+            start = axis[0]
+            end = axis[1]
+            direction = (end - start) / float(sub)
+            middle = (end - start) / 2.
+            offset = normal*0.3
+            for i in range(sub):
+                position = start + direction*i
+                glBegin(GL_LINES)
+                glVertex3f(*(position-normal*0.08))
+                glVertex3f(*(position+normal*0.08))
+                glEnd()
+                position += offset
+                self.renderText(position[0],
+                                position[1],
+                                position[2],
+                                '{0:.2}'.format(position[coord_index]))
+
+        glDisable(GL_DEPTH_TEST)
+        glLineWidth(1)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         bb_center = (self.b_box[1] + self.b_box[0]) / 2.
 
         # Draw axis labels.
         glColor4f(0,0,0,1)
+        for axis, title in zip([self.x_axis, self.y_axis, self.z_axis],
+                               [self.x_axis_title, self.y_axis_title, self.z_axis_title]):
+            middle = (axis[0] + axis[1]) / 2.
+            self.renderText(middle[0], middle[1]-0.2, middle[2]-0.2, title,
+                            font=self.axis_title_font)
 
-        ac = (self.x_axis[0] + self.x_axis[1]) / 2.
-        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.x_axis_title, font=self.axis_title_font)
-
-        glPushMatrix()
-        ac = (self.y_axis[0] + self.y_axis[1]) / 2.
-        glTranslatef(ac[0], ac[1]-0.2, ac[2]-0.2)
-        glRotatef(90, 1,0,0)
-        #self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.YaxisTitle, font=self.axisTitleFont)
-        self.renderText(0,0,0, self.y_axis_title, font=self.axis_title_font)
-        glPopMatrix()
-
-        ac = (self.z_axis[0] + self.z_axis[1]) / 2.
-        self.renderText(ac[0], ac[1]-0.2, ac[2]-0.2, self.z_axis_title, font=self.axis_title_font)
-
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, self.x_axis_frame.texture())
-
-        glBegin(GL_QUADS)
-        glTexCoord2f(0,1)
-        glVertex3f(*self.x_axis[0])
-        glTexCoord2f(1,1)
-        glVertex3f(*self.x_axis[1])
-        glTexCoord2f(1,0)
-        glVertex3f(*(self.x_axis[1] + [0,0,-0.5]))
-        glTexCoord2f(0,0)
-        glVertex3f(*(self.x_axis[0] + [0,0,-0.5]))
-        glEnd()
-        glDisable(GL_TEXTURE_2D)
-
-        glColor4f(1,1,1,1)
-
-        def paint_grid(plane_quad, sub=20):
-            P11, P12, P22, P21 = numpy.asarray(plane_quad)
+        def draw_axis_plane(axis_plane, sub=10):
+            normal = normal_from_points(*axis_plane[:3])
+            cam_in_space = numpy.array([
+              self.center[0] + self.camera[0]*self.zoom,
+              self.center[1] + self.camera[1]*self.zoom,
+              self.center[2] + self.camera[2]*self.zoom
+            ])
+            camera_vector = normalize(axis_plane[0] - cam_in_space)
+            cos = numpy.dot(normal, camera_vector)
+            cos = max(0.7, cos)
+            glColor4f(*(self.color_plane*cos))
+            P11, P12, P21, P22 = numpy.asarray(axis_plane)
+            glBegin(GL_QUADS)
+            glVertex3f(*P11)
+            glVertex3f(*P12)
+            glVertex3f(*P21)
+            glVertex3f(*P22)
+            glEnd()
+            P22, P21 = P21, P22
+            glColor4f(*(self.color_grid * cos))
             Dx = numpy.linspace(0.0, 1.0, num=sub)
             P1vecH = P12 - P11
             P2vecH = P22 - P21
@@ -289,54 +312,55 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                 end = P21 + P2vecH*dx
                 glVertex3f(*start)
                 glVertex3f(*end)
-
                 start = P11 + P1vecV*dx
                 end = P12 + P2vecV*dx
                 glVertex3f(*start)
                 glVertex3f(*end)
             glEnd()
 
-        def paint_quad(plane_quad):
-            P11, P12, P21, P22 = numpy.asarray(plane_quad)
-            glBegin(GL_QUADS)
-            glVertex3f(*P11)
-            glVertex3f(*P12)
-            glVertex3f(*P21)
-            glVertex3f(*P22)
-            glEnd()
+        planes = [self.axis_plane_xy, self.axis_plane_yz,
+                  self.axis_plane_xy_back, self.axis_plane_yz_right]
+        visible_planes = map(plane_visible, planes)
+        draw_axis_plane(self.axis_plane_xz)
+        for visible, plane in zip(visible_planes, planes):
+            if not visible:
+                draw_axis_plane(plane)
 
-        color_plane = [0.5, 0.5, 0.5, 0.5]
-        color_grid = [0.3, 0.3, 0.3, 1.0]
+        glDisable(GL_BLEND)
 
-        def paint_plane(plane_quad):
-            glColor4f(*color_grid)
-            paint_grid(plane_quad)
+        if visible_planes[0]:
+            draw_line(self.x_axis)
+            draw_values(self.x_axis, 0, numpy.array([0,0,-1]))
+        elif visible_planes[2]:
+            draw_line(self.x_axis + self.unit_z)
+            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0,0,1]))
 
-        def normal_from_points(p1, p2, p3):
-            v1 = p2 - p1
-            v2 = p3 - p1
-            return normalize(numpy.cross(v1, v2))
- 
-        def draw_grid_visible(plane_quad, ccw=False):
-            normal = normal_from_points(*plane_quad[:3])
-            cam_in_space = numpy.array([
-              self.center[0] + self.camera[0]*self.zoom,
-              self.center[1] + self.camera[1]*self.zoom,
-              self.center[2] + self.camera[2]*self.zoom
-            ])
-            camera_vector = normalize(plane_quad[0] - cam_in_space)
-            cos = numpy.dot(normal, camera_vector) * (-1 if ccw else 1)
-            if cos > 0:
-                paint_plane(plane_quad)
+        if visible_planes[1]:
+            draw_line(self.z_axis)
+            draw_values(self.z_axis, 2, numpy.array([-1,0,0]))
+        elif visible_planes[3]:
+            draw_line(self.z_axis + self.unit_x)
+            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1,0,0]))
 
-        draw_grid_visible(self.axis_plane_xy)
-        draw_grid_visible(self.axis_plane_yz)
-        draw_grid_visible(self.axis_plane_xz)
-        draw_grid_visible(self.axis_plane_xy_back)
-        draw_grid_visible(self.axis_plane_yz_right)
-        draw_grid_visible(self.axis_plane_xz_top)
-
-        glEnable(GL_CULL_FACE)
+        try:
+            rightmost_visible = visible_planes[::-1].index(True)
+        except ValueError:
+            return
+        if rightmost_visible == 0 and visible_planes[0] == True:
+            rightmost_visible = 3
+        y_axis_translated = [self.y_axis+self.unit_x,
+                             self.y_axis+self.unit_x+self.unit_z,
+                             self.y_axis+self.unit_z,
+                             self.y_axis]
+        normals = [numpy.array([1,0,0]),
+                   numpy.array([0,0,1]),
+                   numpy.array([-1,0,0]),
+                   numpy.array([0,0,-1])
+                ]
+        axis = y_axis_translated[rightmost_visible]
+        draw_line(axis)
+        normal = normals[rightmost_visible]#normalize(((axis[1]+axis[0]) / 2.) - self.center)
+        draw_values(y_axis_translated[rightmost_visible], 1, normal)
 
     def update_axes(self):
         x_axis = [[self.minx, self.miny, self.minz],
@@ -370,31 +394,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.axis_plane_xy_back = [H, G, F, E]
         self.axis_plane_yz_right = [B, F, G, C]
         self.axis_plane_xz_top = [E, F, B, A]
-
-        if hasattr(self, 'x_axis_frame'):
-          return
-        self.x_axis_frame = QtOpenGL.QGLFramebufferObject(256, 64)
-        print(self.x_axis_frame.isBound())
-        self.x_axis_frame.bind()
-        print(self.x_axis_frame.isValid())
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0,1, 0,1, -1,1)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glClearColor(1,0,0,1)
-        glClear(GL_COLOR_BUFFER_BIT)
-        direction = self.x_axis[1] - self.x_axis[0]
-        glColor3f(1,1,1)
-        glBegin(GL_TRIANGLES)
-        glVertex3f(0,0,0)
-        glVertex3f(1,0,0)
-        glVertex3f(0,1,0)
-        glEnd()
-        #for i in range(10):
-        #  pos = self.x_axis[0] + direction * (i / 10.)
-        #  self.renderText(pos[0], 10, '{0:.2}'.format(pos[0]))
-        self.x_axis_frame.release()
 
     def scatter(self, X, Y, Z, c="b", s=5, **kwargs):
         array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
@@ -439,8 +438,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
           vertices.extend([x,y,z, +size*self.normal_size,0,0, r,g,b,a])
           vertices.extend([x,y,z, 0,+size*self.normal_size,0, r,g,b,a])
 
-        # It's important to keep reference to vertices around,
-        # data uploaded to GPU seem to get corrupted without.
+        # It's important to keep a reference to vertices around,
+        # data uploaded to GPU seem to get corrupted otherwise.
         vertex_buffer.vertices = numpy.array(vertices, 'f')
         glBufferData(GL_ARRAY_BUFFER, len(vertices)*4,
           ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
