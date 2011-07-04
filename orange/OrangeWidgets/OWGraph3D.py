@@ -75,6 +75,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.x_axis_title = ''
         self.y_axis_title = ''
         self.z_axis_title = ''
+        self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
 
         self.color_plane = numpy.array([0.95, 0.95, 0.95, 0.3])
         self.color_grid = numpy.array([0.8, 0.8, 0.8, 1.0])
@@ -83,6 +84,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.vaos = []
 
         self.ortho = False
+        self.show_legend = True
+        self.legend_border_color = [0.3, 0.3, 0.3, 1]
 
     def __del__(self):
         glDeleteProgram(self.color_shader)
@@ -234,16 +237,55 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                 glBindVertexArray(0)
                 glUseProgram(0)
 
+        if self.show_legend:
+            self.draw_legend()
+
+    def draw_legend(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, self.width(), 0, self.height(), -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        glDisable(GL_DEPTH_TEST)
+        glColor4f(*self.legend_border_color)
+        glBegin(GL_QUADS)
+        glVertex2f(10, 10)
+        glVertex2f(10, 100)
+        glVertex2f(200, 100)
+        glVertex2f(200, 10)
+        glEnd()
+
+        glColor4f(1, 1, 1, 1)
+        glBegin(GL_QUADS)
+        glVertex2f(12, 12)
+        glVertex2f(12, 98)
+        glVertex2f(198, 98)
+        glVertex2f(198, 12)
+        glEnd()
+
     def set_x_axis_title(self, title):
         self.x_axis_title = title
+        self.updateGL()
+
+    def set_show_x_axis_title(self, show):
+        self.show_x_axis_title = show
         self.updateGL()
 
     def set_y_axis_title(self, title):
         self.y_axis_title = title
         self.updateGL()
 
+    def set_show_y_axis_title(self, show):
+        self.show_y_axis_title = show
+        self.updateGL()
+
     def set_z_axis_title(self, title):
         self.z_axis_title = title
+        self.updateGL()
+
+    def set_show_z_axis_title(self, show):
+        self.show_z_axis_title = show
         self.updateGL()
 
     def paint_axes(self):
@@ -348,6 +390,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             if not visible:
                 draw_axis_plane(plane)
 
+        glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
         if visible_planes[0]:
@@ -381,7 +424,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                 ]
         axis = y_axis_translated[rightmost_visible]
         draw_line(axis)
-        normal = normals[rightmost_visible]#normalize(((axis[1]+axis[0]) / 2.) - self.center)
+        normal = normals[rightmost_visible]
         draw_values(y_axis_translated[rightmost_visible], 1, normal)
 
     def update_axes(self):
