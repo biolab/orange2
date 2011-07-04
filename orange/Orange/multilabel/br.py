@@ -47,12 +47,12 @@ Examples
 ========
 
 The following example demonstrates a straightforward invocation of
-this algorithm (`br_example.py`_, uses `multidata.tab`_):
+this algorithm (`mlc-br-example.py`_, uses `multidata.tab`_):
 
-.. literalinclude:: code/br_example.py
+.. literalinclude:: code/mlc-br-example.py
    :lines: 1-
 
-.. _br_example.py: code/br_example.py
+.. _br_example.py: code/mlc-br-example.py
 .. _multidata.tab: code/multidata.tab
 
 """

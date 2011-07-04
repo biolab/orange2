@@ -89,4 +89,5 @@ _import("multilabel")
 _import("multilabel.multibase")
 _import("multilabel.br")
 _import("multilabel.testing")
+_import("multilabel.scoring")
 

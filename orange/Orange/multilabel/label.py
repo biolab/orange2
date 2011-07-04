@@ -15,6 +15,14 @@ def get_num_labels(data):
     return len( [i for i, var in enumerate(data.domain.variables)
           if var.attributes.has_key('label')])
 
+def is_multilabel(data):
+    """ Judge whether the data is multi-label, if so, return 1, else return 0"""
+    if not isinstance(data, Orange.data.Table):
+        raise TypeError('data must be of type \'Orange.data.Table\'')
+    if not data.domain.classVar and get_num_labels(data) > 0:
+        return 1
+    return 0
+
 def get_label_indices(data):
     """ get an array containing the indexes of the label attributes within the object of the training data in increasing order. """
     if not isinstance(data, Orange.data.Table):
