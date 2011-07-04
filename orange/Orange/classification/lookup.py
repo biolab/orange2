@@ -18,7 +18,7 @@ to instances in the table.
    single: feature construction; lookup classifiers
 
 A natural habitat for these classifiers is feature construction:
-they usually reside in :obj:`getValueFrom` fields of constructed
+they usually reside in :obj:`~Orange.data.variable.Variable.get_value_from` fields of constructed
 features to facilitate their automatic computation. For instance,
 the following script shows how to translate the `monks-1.tab`_ dataset
 features into a more useful subset that will only include the features
@@ -56,7 +56,7 @@ Note that you don't need :obj:`ClassifierByLookupTable` for this.
 The new feature e1 could be computed with a callback to Python,
 for instance::
 
-    e2.getValueFrom = lambda ex, rw: orange.Value(e2, ex["e"]=="1")
+    e2.get_value_from = lambda ex, rw: orange.Value(e2, ex["e"]=="1")
 
 
 Classifiers by lookup table
@@ -300,12 +300,12 @@ and none in the other.
     ['1', '3', '1', '1'] <0.000, 12.000>
     ['1', '3', '2', '0'] <12.000, 0.000>
 
-ClassifierByDataTable will usually be used by getValueFrom. So, we
+ClassifierByDataTable will usually be used by :obj:`Orange.data.variable.Variable.get_value_from`. So, we
 would probably continue this by constructing a new feature and put the
-classifier into its getValueFrom.
+classifier into its :obj:`Orange.data.variable.Variable.get_value_from`.
 
     >>> y2 = Orange.data.variable.Discrete("y2", values = ["0", "1"])
-    >>> y2.getValueFrom = abe
+    >>> y2.get_value_from = abe
 
 There's something disturbing here. Although abe determines the value of
 y2, abe.class_var is still y. Orange doesn't bother (the whole example
@@ -319,7 +319,7 @@ The whole story can be greatly simplified. LookupLearner can also be
 called differently than other learners. Besides instances, you can pass
 the new class variable and the features that should be used for
 classification. This saves us from constructing data_s and reassigning
-the class_var. It doesn't set the getValueFrom, though.
+the class_var. It doesn't set the :obj:`Orange.data.variable.Variable.get_value_from`, though.
 
 part of `lookup-table.py`_ (uses: `monks-1.tab`_)::
 
@@ -407,7 +407,7 @@ three features (besides the class variable).
         >>> bound = [table.domain[name] for name in ["a", "b"]]
         >>> newVar = Orange.data.variable.Discrete("a=b", values=["no", "yes"])
         >>> lookup = lookup_from_function(newVar, bound, lambda x: x[0]==x[1])
-        >>> newVar.getValueFrom = lookup
+        >>> newVar.get_value_from = lookup
         >>> import orngCI
         >>> table2 = orngCI.addAnAttribute(newVar, table)
         >>> for i in table2[:30]:
@@ -424,10 +424,10 @@ three features (besides the class variable).
         ...
 
     The feature was inserted with use of orngCI.addAnAttribute. By setting
-    newVar.getValueFrom to lookup we state that when converting domains
+    newVar.get_value_from to lookup we state that when converting domains
     (either when needed by addAnAttribute or at some other place), lookup
     should be used to compute newVar's value. (A bit off topic, but
-    important: you should never call getValueFrom directly, but always call
+    important: you should never call :obj:`Orange.data.variable.Variable.get_value_from` directly, but always call
     it through computeValue.)
 
 .. function:: lookup_from_data(examples [, weight])
@@ -448,7 +448,7 @@ three features (besides the class variable).
 
     dump_lookup_function returns a string with a lookup function in
     tab-delimited format. Argument func can be any of the above-mentioned
-    classifiers or a feature whose getValueFrom points to one of such
+    classifiers or a feature whose :obj:`Orange.data.variable.Variable.get_value_from` points to one of such
     classifiers.
 
     For instance, if lookup is such as constructed in the example for
@@ -540,10 +540,10 @@ def lookup_from_data(examples, weight = 0, learnerForUnknown = None):
         
 def dump_lookup_function(func):
     if isinstance(func, Orange.data.variable.Variable):
-        if not func.getValueFrom:
+        if not func.get_value_from:
             raise TypeError, "attribute '%s' does not have an associated function" % func.name
         else:
-            func = func.getValueFrom
+            func = func.get_value_from
 
     outp = ""
     if isinstance(func, ClassifierByDataTable):
