@@ -43,6 +43,7 @@ glVertexAttribPointer = gl.glVertexAttribPointer
 glEnableVertexAttribArray = gl.glEnableVertexAttribArray
 glVertexAttribPointer = gl.glVertexAttribPointer
 glEnableVertexAttribArray = gl.glEnableVertexAttribArray
+glGetProgramiv = gl.glGetProgramiv
 
 
 def normalize(vec):
@@ -81,6 +82,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.vertex_buffers = []
         self.vaos = []
 
+        self.ortho = True
+
     def __del__(self):
         glDeleteProgram(self.color_shader)
 
@@ -104,6 +107,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
             uniform mat4 projection;
             uniform mat4 modelview;
+            uniform vec4 overriden_color;
+            uniform bool override_color;
 
             varying vec4 var_color;
 
@@ -129,7 +134,10 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
               vec3 offset_rotated = invs * offset;
               gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(position+offset_rotated, 1);
-              var_color = color;
+              if (override_color)
+                  var_color = overriden_color;
+              else
+                  var_color = color;
             }
             '''
 
@@ -171,7 +179,12 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glBindAttribLocation(self.color_shader, 1, 'offset')
         glBindAttribLocation(self.color_shader, 2, 'color')
         glLinkProgram(self.color_shader)
-        # TODO: link status
+        self.color_shader_override_color = glGetUniformLocation(self.color_shader, 'override_color')
+        self.color_shader_overriden_color = glGetUniformLocation(self.color_shader, 'overriden_color')
+        linked = c_int()
+        glGetProgramiv(self.color_shader, GL_LINK_STATUS, byref(linked))
+        if not linked.value:
+            print('Failed to link shader!')
         print('Shaders compiled and linked!')
 
     def resizeGL(self, width, height):
@@ -183,14 +196,20 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        aspect = float(self.width()) / self.height() if self.height() != 0 else 1
-        gluPerspective(30.0, aspect, 0.1, 100)
+        width, height = self.width(), self.height()
+        divide = self.zoom*10.
+        if self.ortho:
+            glOrtho(-width/divide, width/divide, -height/divide, height/divide, -1, 1000)
+        else:
+            aspect = float(width) / height if height != 0 else 1
+            gluPerspective(30.0, aspect, 0.1, 100)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+        zoom = 100 if self.ortho else self.zoom
         gluLookAt(
-            self.camera[0]*self.zoom + self.center[0],
-            self.camera[1]*self.zoom + self.center[1],
-            self.camera[2]*self.zoom + self.center[2],
+            self.camera[0]*zoom + self.center[0],
+            self.camera[1]*zoom + self.center[1],
+            self.camera[2]*zoom + self.center[2],
             self.center[0],
             self.center[1],
             self.center[2],
@@ -204,7 +223,14 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             if cmd == 'scatter':
                 glUseProgram(self.color_shader)
                 glBindVertexArray(vao.value)
+                glUniform1i(self.color_shader_override_color, 0)
                 glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                # Draw outlines.
+                glUniform1i(self.color_shader_override_color, 1)
+                glUniform4f(self.color_shader_overriden_color, 0,0,0,1)
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+                glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                 glBindVertexArray(0)
                 glUseProgram(0)
 
@@ -221,10 +247,11 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def paint_axes(self):
+        zoom = 100 if self.ortho else self.zoom
         cam_in_space = numpy.array([
-          self.center[0] + self.camera[0]*self.zoom,
-          self.center[1] + self.camera[1]*self.zoom,
-          self.center[2] + self.camera[2]*self.zoom
+          self.center[0] + self.camera[0]*zoom,
+          self.center[1] + self.camera[1]*zoom,
+          self.center[2] + self.camera[2]*zoom
         ])
 
         def normal_from_points(p1, p2, p3):
@@ -283,11 +310,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
         def draw_axis_plane(axis_plane, sub=10):
             normal = normal_from_points(*axis_plane[:3])
-            cam_in_space = numpy.array([
-              self.center[0] + self.camera[0]*self.zoom,
-              self.center[1] + self.camera[1]*self.zoom,
-              self.center[2] + self.camera[2]*self.zoom
-            ])
             camera_vector = normalize(axis_plane[0] - cam_in_space)
             cos = numpy.dot(normal, camera_vector)
             cos = max(0.7, cos)
