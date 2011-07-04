@@ -279,11 +279,12 @@ class OWTestLearners(OWWidget):
         # e.g., regressions can't deal with classification data
         learners = []
         n = len(self.data.domain.attributes)*2
+        print n
+        print len(self.data)
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
-        print indices
-  
+
         new = self.data
-#        new = self.data.selectref(indices(self.data))
+#         new = self.data.selectref(indices(self.data))
 #        new = self.data.selectref([1]*min(n, len(self.data)) +
 #                                  [0]*(len(self.data) - min(n, len(self.data))))
         
@@ -306,6 +307,7 @@ class OWTestLearners(OWWidget):
                         l.scores = []
                 else:                   #multi-label
                     learners.append(learner)
+                    print "multi-learner"
             except Exception, ex:
                 self.warning(0, "Learner %s ends with exception: %s" % (l.name, str(ex)))
                 l.scores = []
@@ -578,7 +580,7 @@ if __name__=="__main__":
     a.exec_()
 
     data1 = orange.ExampleTable(r'../../doc/datasets/multidata')
-    data2 = orange.ExampleTable(r'../../doc/datasets/glass')
+    data2 = orange.ExampleTable(r'../../doc/datasets/voting')
     datar = orange.ExampleTable(r'../../doc/datasets/adult')
     data3 = orange.ExampleTable(r'../../doc/datasets/balance-scale')
     data4 = orange.ExampleTable(r'../../doc/datasets/bridges')
