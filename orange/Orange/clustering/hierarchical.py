@@ -54,14 +54,14 @@ clusters as well).
                 also called farthest neighbor.
             4. ``HierarchicalClustering.Ward`` uses Ward's distance.
             
-    .. attribute:: overwriteMatrix
-        
+    .. attribute:: overwrite_matrix
+
         If true (default is false), the algorithm will work on the original
         distance matrix, destroying it in the process. The benefit is that it
         will need much less memory (not much more than what is needed to store
         the tree of clusters).
         
-    .. attribute:: progressCallback
+    .. attribute:: progress_callback
         
         A callback function (None by default). It can be any function or
         callable class in Python, which accepts a single float as an
@@ -316,12 +316,11 @@ such a small data set as Iris). ::
 
     import Orange
     from Orange.clustering import hierarchical
-    from Orange import distances
-    
+
     data = Orange.data.Table("iris")
     matrix = Orange.core.SymMatrix(len(data))
     matrix.setattr("objects", data)
-    distance = distances.ExamplesDistanceConstructor_Euclidean(data)
+    distance = Orange.distance.instances.EuclideanConstructor(data)
     for i1, instance1 in enumerate(data):
         for i2 in range(i1+1, len(data)):
             matrix[i1, i2] = distance(instance1, data[i2])
