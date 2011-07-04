@@ -51,12 +51,10 @@ int compar_attr;
 int
 compar_examples(TExample **e1, TExample **e2)
 {
-    /*
     if ((*e1)->values[compar_attr].isSpecial())
         return 1;
     if ((*e2)->values[compar_attr].isSpecial())
         return -1;
-    */
     return (*e1)->values[compar_attr].compare((*e2)->values[compar_attr]);
 }
 
@@ -237,6 +235,11 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 		best_score = -INFINITY;
 		for (i = 0, it = domain->attributes->begin(); it != domain->attributes->end(); it++, i++)
 			if (!args->attr_split_so_far[i]) {
+
+                /* select random subset of attributes - CHANGE ME */
+                if ((double)rand() / RAND_MAX < 0.8) 
+                    continue;
+            
                 if ((*it)->varType == TValue::INTVAR) {
                     score = score_attribute_d(examples, size, i, cls_entropy, args);
                     if (score > best_score) {
