@@ -11,7 +11,13 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, os.path
+
+#rewrite formatargs function with different defaults
+sys.path.insert(0, os.path.dirname(__file__))
+import myinspect
+import sphinx.ext.autodoc
+sphinx.ext.autodoc.inspect = myinspect
 
 #disable deprecation decorators for the documentation
 os.environ["orange_no_deprecated_members"] = "1"
