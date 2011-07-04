@@ -82,7 +82,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.vertex_buffers = []
         self.vaos = []
 
-        self.ortho = True
+        self.ortho = False
 
     def __del__(self):
         glDeleteProgram(self.color_shader)
