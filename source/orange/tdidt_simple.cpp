@@ -40,7 +40,7 @@ enum { DiscreteNode, ContinuousNode, PredictorNode };
 
 struct Args {
     int minExamples, maxDepth;
-    float maxMajority;
+    float maxMajority, skipProb;
 
     int *attr_split_so_far;
 };
@@ -237,7 +237,7 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 			if (!args->attr_split_so_far[i]) {
 
                 /* select random subset of attributes - CHANGE ME */
-                if ((double)rand() / RAND_MAX < 0.8) 
+                if ((double)rand() / RAND_MAX < args->skipProb)
                     continue;
             
                 if ((*it)->varType == TValue::INTVAR) {
@@ -336,10 +336,11 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 	return node;
 }
 
-TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minExamples, int maxDepth) :
+TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minExamples, int maxDepth, float skipProb) :
     maxMajority(maxMajority),
     minExamples(minExamples),
-    maxDepth(maxDepth)
+    maxDepth(maxDepth),
+    skipProb(skipProb)
 {
 }
 
@@ -364,6 +365,7 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
     args.minExamples = minExamples;
     args.maxMajority = maxMajority;
     args.maxDepth = maxDepth;
+    args.skipProb = skipProb;
 
 	tree = build_tree(examples, ogen->numberOfExamples(), 0, &args);
 
