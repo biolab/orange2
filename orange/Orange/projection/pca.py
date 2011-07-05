@@ -146,7 +146,7 @@ class PcaClassifier(object):
     
     def __call__(self, dataset):
         if type(dataset) != Orange.data.Table:
-            dataset = Orange.data.Table(self.input_domain, [dataset])
+            dataset = Orange.data.Table([dataset])
 
         X = dataset.to_numpy_MA("a")[0]
         Xm, U = self.mean, self.eigen_vectors
@@ -363,4 +363,4 @@ class PcaClassifier(object):
             plt.savefig(filename)
         else:
             plt.show()
-            
+ 
