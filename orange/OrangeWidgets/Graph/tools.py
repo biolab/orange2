@@ -101,5 +101,4 @@ class UnconnectedLinesCurve(orangegraph.UnconnectedLinesCurve):
         orangegraph.UnconnectedLinesCurve.__init__(self, xData, yData)
         if pen:
             self.setPen(pen)
-        self.setAutoScale(False)
         self.name = name

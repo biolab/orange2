@@ -27,7 +27,6 @@ import orangegraph
 class Curve(orangegraph.Curve):
     def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None, parent=None, scene=None):
         orangegraph.Curve.__init__(self, xData, yData, parent, scene)
-        self.setAutoScale(False)
         if tooltip:
             self.setToolTip(tooltip)
         self._cached_rect = None

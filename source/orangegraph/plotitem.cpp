@@ -4,7 +4,7 @@
 PlotItem::PlotItem(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene), 
 m_graph(0)
 {
-    
+    setAutoScale(true);
 }
 
 PlotItem::PlotItem(const PlotItem& ): QGraphicsItem(), 
