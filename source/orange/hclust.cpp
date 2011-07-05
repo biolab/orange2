@@ -553,3 +553,317 @@ PHierarchicalCluster THierarchicalClustering::operator()(PSymMatrix distanceMatr
 
   return restructure(root);
 }
+
+
+/*
+ *  Optimal leaf ordering.
+ */
+
+m_element::m_element(THierarchicalCluster * _cluster, int _left, int _right):
+	cluster(_cluster), left(_left), right(_right)
+{}
+
+m_element::m_element(const m_element & other):
+	cluster(other.cluster), left(other.left), right(other.right)
+{}
+
+bool m_element::operator< (const m_element & other)
+{
+	if (cluster < other.cluster)
+		return true;
+	else
+		if (cluster == other.cluster)
+			if (left < other.left)
+				return true;
+			else
+				if (left == other.left)
+					return right < other.right;
+				else
+					return false;
+		else
+			return false;
+}
+
+ordering_element::ordering_element():
+	left(NULL), u(-1), m(-1),
+	right(NULL), w(-1), k(-1)
+{}
+
+ordering_element::ordering_element(THierarchicalCluster * _left,
+		unsigned int _u,
+		unsigned _m,
+		THierarchicalCluster * _right,
+		unsigned int _w,
+		unsigned int _k
+	): left(_left), u(_u), m(_m),
+	   right(_right), w(_w), k(_k)
+{}
+
+ordering_element::ordering_element(const ordering_element & other):
+	   left(other.left), u(other.u), m(other.m),
+	   right(other.right), w(other.w), k(other.k)
+{}
+
+// Return the minimum distance between elements in matrix
+//
+float min_distance(
+		TIntList::iterator indices1_begin,
+		TIntList::iterator indices1_end,
+		TIntList::iterator indices2_begin,
+		TIntList::iterator indices2_end,
+		TSymMatrix & matrix)
+{
+//	TIntList::iterator iter1 = indices1.begin(), iter2 = indices2.begin();
+	float mininum = std::numeric_limits<float>::infinity();
+	for (; indices1_begin != indices1_end; indices1_begin++)
+		for (; indices2_begin != indices2_end; indices2_begin++)
+			mininum = std::min(matrix.getitem(*indices1_begin, *indices2_begin), mininum);
+	return mininum;
+}
+
+
+struct CompareByScores
+{
+	const join_scores & scores;
+	const THierarchicalCluster & cluster;
+	const int & fixed;
+
+	CompareByScores(const join_scores & _scores, const THierarchicalCluster & _cluster, const int & _fixed):
+		scores(_scores), cluster(_cluster), fixed(_fixed)
+	{}
+	bool operator() (int lhs, int rhs)
+	{
+		return scores[m_element(&cluster, fixed, lhs)] < scores[m_element(&cluster, fixed, rhs)];
+	}
+};
+
+// This needs to be called with all left, right pairs to
+// update all scores for cluster.
+#include <iostream>
+#include <cassert>
+
+void partial_opt_ordering(
+		THierarchicalCluster & cluster,
+		THierarchicalCluster & left,
+		THierarchicalCluster & right,
+		THierarchicalCluster & left_left,
+		THierarchicalCluster & left_right,
+		THierarchicalCluster & right_left,
+		THierarchicalCluster & right_right,
+		TSymMatrix &matrix,
+		join_scores & M,
+		cluster_ordering & ordering)
+{
+	int u = 0, w = 0;
+	TIntList & mapping = cluster.mapping.getReference();
+	for (TIntList::iterator u_iter = mapping.begin() + left_left.first;
+			u_iter != mapping.begin() + left_left.last;
+			u_iter++)
+		for (TIntList::iterator w_iter = mapping.begin() + right_right.first;
+				w_iter != mapping.begin() + right_right.last;
+				w_iter++)
+		{
+			u = *u_iter; w = *w_iter;
+			float curr_min = std::numeric_limits<float>::infinity();
+			int curr_k = 0, curr_m = 0;
+			float C = min_distance(mapping.begin() + left_right.first,
+					mapping.begin() + left_right.last,
+					mapping.begin() + right_left.first,
+					mapping.begin() + right_left.last,
+					matrix);
+
+			vector<int> m_ordered(mapping.begin() + left_right.first,
+					mapping.begin() + left_right.last);
+			vector<int> k_ordered(mapping.begin() + right_left.first,
+					mapping.begin() + right_left.last);
+
+			std::sort(m_ordered.begin(), m_ordered.end(), CompareByScores(M, left, u));
+			std::sort(k_ordered.begin(), k_ordered.end(), CompareByScores(M, right, w));
+
+
+			int k0 = k_ordered.front();
+			m_element m_right_k0(&right, w, k0);
+			int m = 0, k = 0;
+			for (vector<int>::iterator iter_m=m_ordered.begin(); iter_m != m_ordered.end(); iter_m++)
+			{
+				m = *iter_m;
+
+				m_element m_left(&left, u, m);
+
+				if (M[m_left] + M[m_right_k0] + C >= curr_min){
+//					M[m_element(&cluster, u, w)] = curr_min;
+					break;
+				}
+				for (vector<int>::iterator iter_k = k_ordered.begin(); iter_k != k_ordered.end(); iter_k++)
+				{
+					k = *iter_k;
+					m_element m_right(&right, w, k);
+					if (M[m_left] + M[m_right] + C >= curr_min)
+					{
+						break;
+					}
+					float test_val = M[m_left] + M[m_right] + matrix.getitem(m, k);
+					if (curr_min > test_val)
+					{
+						curr_min = test_val;
+						curr_k = k;
+						curr_m = m;
+					}
+				}
+
+			}
+
+			M[m_element(&cluster, u, w)] = curr_min;
+			M[m_element(&cluster, w, u)] = curr_min;
+
+			assert(M[m_element(&cluster, u, w)] == M[m_element(&cluster, u, w)]);
+			assert(M[m_element(&cluster, u, w)] == curr_min);
+
+//			assert(ordering.find(m_element(&cluster, u, w)) == ordering.end());
+//			assert(ordering.find(m_element(&cluster, w, u)) == ordering.end());
+
+			ordering[m_element(&cluster, u, w)] = ordering_element(&left, u, curr_m, &right, w, curr_k);
+			ordering[m_element(&cluster, w, u)] = ordering_element(&right, w, curr_k, &left, u, curr_m);
+		}
+}
+
+void THierarchicalClusterOrdering::order_clusters(
+		THierarchicalCluster & cluster,
+		TSymMatrix &matrix,
+		join_scores & M,
+		cluster_ordering & ordering)
+{
+	if (cluster.size() == 1)
+	{
+		M[m_element(&cluster, cluster.mapping->at(cluster.first), cluster.mapping->at(cluster.first))] = 0.0;
+		return;
+	}
+
+	else if (cluster.branches->size() == 2)
+	{
+		PHierarchicalCluster left = cluster.branches->at(0);
+		PHierarchicalCluster right = cluster.branches->at(1);
+
+		order_clusters(left.getReference(), matrix, M, ordering);
+		order_clusters(right.getReference(), matrix, M, ordering);
+
+		PHierarchicalCluster  left_left = (!left->branches) ? left : left->branches->at(0);
+		PHierarchicalCluster  left_right = (!left->branches) ? left : left->branches->at(1);
+		PHierarchicalCluster  right_left = (!right->branches) ? right : right->branches->at(0);
+		PHierarchicalCluster  right_right = (!right->branches) ? right : right->branches->at(1);
+
+		partial_opt_ordering(cluster,
+				left.getReference(), right.getReference(),
+				left_left.getReference(), left_right.getReference(),
+				right_left.getReference(), right_right.getReference(),
+				matrix, M, ordering);
+
+		partial_opt_ordering(cluster,
+				left.getReference(), right.getReference(),
+				left_left.getReference(), left_right.getReference(),
+				right_right.getReference(), right_left.getReference(),
+				matrix, M, ordering);
+
+		partial_opt_ordering(cluster,
+				left.getReference(), right.getReference(),
+				left_right.getReference(), left_left.getReference(),
+				right_left.getReference(), right_right.getReference(),
+				matrix, M, ordering);
+
+		partial_opt_ordering(cluster,
+				left.getReference(), right.getReference(),
+				left_right.getReference(), left_left.getReference(),
+				right_right.getReference(), right_left.getReference(),
+				matrix, M, ordering);
+	}
+}
+
+/* Check if TIntList contains element.
+ */
+bool contains(TIntList::iterator iter_begin, TIntList::iterator iter_end, int element)
+{
+	return std::find(iter_begin, iter_end, element) != iter_end;
+}
+
+void THierarchicalClusterOrdering::optimal_swap(THierarchicalCluster * cluster, int u, int w, cluster_ordering & ordering)
+{
+	if (cluster->branches)
+	{
+		assert(ordering.find(m_element(cluster, u, w)) != ordering.end());
+		ordering_element ord = ordering[m_element(cluster, u, w)];
+
+		PHierarchicalCluster left_right = (ord.left->branches)? ord.left->branches->at(1) : PHierarchicalCluster(NULL);
+		PHierarchicalCluster right_left = (ord.right->branches)? ord.right->branches->at(0) : PHierarchicalCluster(NULL);
+
+		TIntList & mapping = cluster->mapping.getReference();
+		if (left_right && !contains(mapping.begin() + left_right->first,
+				mapping.begin() + left_right->last, ord.m))
+		{
+			assert(!contains(mapping.begin() + left_right->first,
+							 mapping.begin() + left_right->last, ord.m));
+			std::cout << "Swapping left " << ord.m << endl;
+			ord.left->swap();
+			left_right = ord.left->branches->at(1);
+			assert(contains(mapping.begin() + left_right->first,
+							mapping.begin() + left_right->last, ord.m));
+		}
+		optimal_swap(ord.left, ord.u, ord.m, ordering);
+
+		assert(mapping.at(ord.left->first) == ord.u);
+		assert(mapping.at(ord.left->last - 1) == ord.m);
+
+		if (right_left && !contains(mapping.begin() + right_left->first,
+				mapping.begin() + right_left->last, ord.k))
+		{
+			assert(!contains(mapping.begin() + right_left->first,
+							 mapping.begin() + right_left->last, ord.k));
+			std::cout << "Swapping right " << ord.k << endl;
+			ord.right->swap();
+			right_left = ord.right->branches->at(0);
+			assert(contains(mapping.begin() + right_left->first,
+							mapping.begin() + right_left->last, ord.k));
+		}
+		optimal_swap(ord.right, ord.k, ord.w, ordering);
+
+		assert(mapping.at(ord.right->first) == ord.k);
+		assert(mapping.at(ord.right->last - 1) == ord.w);
+
+		assert(mapping.at(cluster->first) == ord.u);
+		assert(mapping.at(cluster->last - 1) == ord.w);
+	}
+}
+
+PHierarchicalCluster THierarchicalClusterOrdering::operator() (
+		PHierarchicalCluster root,
+		PSymMatrix matrix)
+{
+	join_scores M; // scores
+	cluster_ordering ordering;
+	order_clusters(root.getReference(), matrix.getReference(), M, ordering);
+
+	int u = 0, w = 0;
+	int min_u = 0, min_w = 0;
+	float min_score = std::numeric_limits<float>::infinity();
+	TIntList & mapping = root->mapping.getReference();
+
+	for (TIntList::iterator u_iter = mapping.begin() + root->branches->at(0)->first;
+			u_iter != mapping.begin() + root->branches->at(0)->last;
+			u_iter++)
+		for (TIntList::iterator w_iter = mapping.begin() + root->branches->at(1)->first;
+					w_iter != mapping.begin() + root->branches->at(1)->last;
+					w_iter++)
+		{
+			u = *u_iter; w = *w_iter;
+			m_element el(root.getUnwrappedPtr(), u, w);
+			if (M[el] < min_score)
+			{
+				min_score = M[el];
+				min_u = u;
+				min_w = w;
+			}
+		}
+//	std::cout << "Min score "<< min_score << endl;
+
+	optimal_swap(root.getUnwrappedPtr(), min_u, min_w, ordering);
+	return root;
+}
