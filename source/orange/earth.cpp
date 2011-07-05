@@ -64,16 +64,27 @@
  	 Changes to earth.c from earth R package:
  	 - Added defines for STANDALONE, USING_BLAS, _DEBUG
  	 - Removed  #include <crtdbg.h> for windows
+ 	 - Fix defines for ISNAN and FINITE to work on non MSC compilers
  	 - Removed debugging code for windows
  	 - Removed definitions of bool, true false
  	 - Define _C_ as "C" for all compilers
  	 - Define c linkage for error, xerbla
  	 - Replaced POS_INF static global variable with numeric_limits<double>::infinity()
  	 - Added #include <limits>
+ 	 - Changed include of earth.h to earth.ppp and moved it before the module level defines
 
 	- TODO: Move global vars inside the functions using them (most are local)
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <float.h>
+#include <math.h>
+#include <limits>
+
+#include "earth.ppp"
 
 #define STANDALONE 1
 #define USING_BLAS 1
@@ -83,13 +94,6 @@
 #define USING_R 1
 #endif // STANDALONE
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include <float.h>
-#include <math.h>
-#include <limits>
 
 #if _MSC_VER && _DEBUG
     #include <crtdbg.h> // microsoft malloc debugging library
@@ -122,14 +126,20 @@
 #else
     #define warning printf
     extern "C" { void error(const char *args, ...); }
-    #define ISNAN(x)  isnan(x)
-    #define FINITE(x) finite(x)
+	#ifdef _MSC_VER
+		#define ISNAN(x)  _isnan(x)
+		#define FINITE(x) _finite(x)
+	#else
+		#define ISNAN(x)  isnan(x)
+		#define FINITE(x) finite(x)
+	#endif // _MSC_VER
+
     #define ASSERT(x)   \
         if (!(x)) error("internal assertion failed in file %s line %d: %s\n", \
                         __FILE__, __LINE__, #x)
 #endif
 
-#include "earth.ppp"
+//#include "earth.h"
 
 extern _C_ int dqrdc2_(double *x, int *ldx, int *n, int *p,
                         double *tol, int *rank,
@@ -1258,7 +1268,7 @@ static INLINE void InitBxOrthCol(
     Weights = Weights; // prevent compiler warning: unused parameter 'Weights'
 
     if (nTerms == 0) {          // column 0, the intercept
-        double len = 1 / sqrt(nCases);
+        double len = 1 / sqrt((double) nCases);
         bxOrthMean[0] = len;
         for (iCase = 0; iCase < nCases; iCase++)
             bxOrth_(iCase,0) = len;
@@ -2981,7 +2991,7 @@ TEarthLearner::TEarthLearner()
 {
 	max_terms = 21;
 	max_degree = 1;
-	penalty = (max_degree > 1)? 3: 2;
+	penalty = (max_degree > 1)? 3.0: 2.0;
 	threshold = 0.001;
 	prune = true;
 	trace = 3;
@@ -3021,10 +3031,12 @@ PClassifier TEarthLearner::operator() (PExampleGenerator examples, const int & w
 	int * lin_preds = (int *) calloc(num_preds, sizeof(int));
 	double *weights = NULL;
 
+	// Redefine x indexing
+	#undef x_
 	#define x_(i, j) x[i + j * num_cases]
 
 	TExampleGenerator::iterator ex_iter = examples->begin();
-	for (int i=0; i<num_cases; i++, ex_iter++)
+	for (int i=0; i<num_cases; i++, ++ex_iter)
 	{
 		TExample &example = *ex_iter;
 		for (int j=0; j<num_preds; j++)
@@ -3098,6 +3110,11 @@ TEarthClassifier::TEarthClassifier(PDomain _domain, bool * _best_set, int * _dir
 TEarthClassifier::TEarthClassifier(const TEarthClassifier & other)
 {
 	raiseError("Not implemented");
+}
+
+double round(double r)
+{
+	return floor(r + 0.5);
 }
 
 TValue TEarthClassifier::operator()(const TExample& example)

@@ -166,6 +166,9 @@ void PredictEarth(
  * ORANGE INTERFACE
  */
 
+#undef STANDALONE
+#undef USING_R
+
 #include "classify.hpp"
 #include "learn.hpp"
 #include "orange.hpp"
