@@ -503,13 +503,13 @@ class OWGraph(orangegraph.Graph):
                 if x in self.axes and y in self.axes:
                     rect = self.data_rect_for_axes(x,y)
                     if id == xBottom:
-                        line = QLineF(rect.bottomLeft(), rect.bottomRight())
-                    elif id == xTop:
                         line = QLineF(rect.topLeft(), rect.topRight())
+                    elif id == xTop:
+                        line = QLineF(rect.bottomLeft(), rect.bottomRight())
                     elif id == yLeft:
-                        line = QLineF(rect.bottomLeft(), rect.topLeft())
+                        line = QLineF(rect.topLeft(), rect.bottomLeft())
                     elif id == yRight:
-                        line = QLineF(rect.bottomRight(), rect.topRight())
+                        line = QLineF(rect.topRight(), rect.bottomRight())
                     else:
                         line = None
                     item.data_line = line
@@ -748,7 +748,12 @@ class OWGraph(orangegraph.Graph):
         
     def transform_for_axes(self, x_axis = xBottom, y_axis = yLeft):
         if not (x_axis, y_axis) in self._transform_cache:
-            self._transform_cache[(x_axis, y_axis)] = self.transform_from_rects(self.data_rect_for_axes(x_axis, y_axis), self.graph_area)
+            # We must flip the graph area, becase Qt coordinates start from top left, while graph coordinates start from bottom left
+            a = QRectF(self.graph_area)
+            t = a.top()
+            a.setTop(a.bottom())
+            a.setBottom(t)
+            self._transform_cache[(x_axis, y_axis)] = self.transform_from_rects(self.data_rect_for_axes(x_axis, y_axis), a)
         return self._transform_cache[(x_axis, y_axis)]
         
     def transform(self, axis_id, value):

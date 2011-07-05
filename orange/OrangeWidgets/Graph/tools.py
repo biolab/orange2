@@ -8,15 +8,15 @@ from curve import *
     If the list is to be reduced, i.e. if len(lst) > size, then the extra items are first removed from the scene
 """
 
-def resize_plot_item_list(lst, size, item_type, scene):
+def resize_plot_item_list(lst, size, item_type, parent):
     n = len(lst)
     if n > size:
-        if scene:
+        if parent and parent.scene():
             for i in lst[n:]:
-                scene.removeItem(i)
+                parent.scene().removeItem(i)
         return lst[:n]
     elif n < size:
-        return lst + [item_type() for i in range(size - n)]
+        return lst + [item_type(parent) for i in range(size - n)]
     else:
         return lst
 
