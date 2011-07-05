@@ -36,12 +36,14 @@ class distribErrorBarCurve(Curve):
         t = self.graphTransform()
         d = self.data()
         n = len(d)/3
-        self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self.scene())
+        self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
         for i in range(n):
             p = QPainterPath()
             px, py1 = d[3*i]
             _, py2 = d[3*i+1]
             _, py3 = d[3*i+2]
+            pxl = px - 0.1
+            pxr = px + 0.1
             p.moveTo(px, py1)
             p.lineTo(px, py3)
             p.moveTo(pxl, py1)
