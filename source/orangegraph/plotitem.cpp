@@ -35,7 +35,10 @@ void PlotItem::attach(Graph* graph)
 
 void PlotItem::detach()
 {
-    m_graph->removeItem(this);
+    if (m_graph)
+    {
+        m_graph->removeItem(this);
+    }
 }
 
 QPair< int, int > PlotItem::axes() const
