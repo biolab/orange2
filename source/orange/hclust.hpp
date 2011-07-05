@@ -101,7 +101,7 @@ struct m_element {
 	m_element(THierarchicalCluster * cluster, int left, int right);
 	m_element(const m_element & other);
 
-	bool operator< (const m_element & other);
+	bool operator< (const m_element & other) const;
 }; // cluster joined at left and right index
 
 struct ordering_element {

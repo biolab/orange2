@@ -567,7 +567,7 @@ m_element::m_element(const m_element & other):
 	cluster(other.cluster), left(other.left), right(other.right)
 {}
 
-bool m_element::operator< (const m_element & other)
+bool m_element::operator< (const m_element & other) const
 {
 	if (cluster < other.cluster)
 		return true;
@@ -624,16 +624,18 @@ float min_distance(
 
 struct CompareByScores
 {
-	const join_scores & scores;
+	join_scores & scores;
 	const THierarchicalCluster & cluster;
 	const int & fixed;
 
-	CompareByScores(const join_scores & _scores, const THierarchicalCluster & _cluster, const int & _fixed):
+	CompareByScores(join_scores & _scores, const THierarchicalCluster & _cluster, const int & _fixed):
 		scores(_scores), cluster(_cluster), fixed(_fixed)
 	{}
 	bool operator() (int lhs, int rhs)
 	{
-		return scores[m_element(&cluster, fixed, lhs)] < scores[m_element(&cluster, fixed, rhs)];
+		m_element left((THierarchicalCluster*)&cluster, fixed, lhs);
+		m_element right((THierarchicalCluster*)&cluster, fixed, rhs);
+		return scores[left] < scores[right];
 	}
 };
 
