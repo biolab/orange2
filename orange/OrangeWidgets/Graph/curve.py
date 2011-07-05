@@ -30,9 +30,3 @@ class Curve(orangegraph.Curve):
         if tooltip:
             self.setToolTip(tooltip)
         self._cached_rect = None
-
-    def __setattr__(self, name, value):
-        unisetattr(self, name, value, orangegraph.Curve)
-        
-    
-        

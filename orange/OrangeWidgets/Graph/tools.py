@@ -11,9 +11,8 @@ from curve import *
 def resize_plot_item_list(lst, size, item_type, parent):
     n = len(lst)
     if n > size:
-        if parent and parent.scene():
-            for i in lst[n:]:
-                parent.scene().removeItem(i)
+        for i in lst[n:]:
+            i.setParentItem(None)
         return lst[:n]
     elif n < size:
         return lst + [item_type(parent) for i in range(size - n)]

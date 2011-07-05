@@ -28,8 +28,9 @@ class distribErrorBarCurve(Curve):
         
     def updateProperties(self):
         if self.style() != Curve.UserCurve:
-            resize_plot_item_list(self._items, 0, None, self.scene())
+            resize_plot_item_list(self._items, 0, None, self)
             self.items = []
+            self.setDirty()
             Curve.updateProperties(self)
             return
             
@@ -87,11 +88,8 @@ class OWDistributionGraphQt(OWGraph):
     def addCurve(self, xAxis = xBottom, yAxis = yLeft, visible = 1):
         curve = distribErrorBarCurve('')
         curve.setVisible(visible)
-        curve.setXAxis(xAxis)
-        curve.setYAxis(yAxis)
-        OWGraph.add_custom_curve(self, curve, enableLegend=0)
-        return curve
-
+        curve.setAxes(xAxis, yAxis)
+        return OWGraph.add_custom_curve(self, curve, enableLegend=0)
 
     def sizeHint(self):
         return QSize(500, 500)
@@ -386,6 +384,7 @@ class OWDistributionGraphQt(OWGraph):
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
+        
 
         def enableIfExists(curve, en):
             if curve:

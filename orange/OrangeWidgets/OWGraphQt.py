@@ -534,7 +534,9 @@ class OWGraph(orangegraph.Graph):
             self.update_zoom()
             self.update_axes()
             self.update()
-           # self.fitInView(QRectF(self.contentsRect()))
+            ## TODO: fitInView is very slow, but resetTransform doesn't seem to be doing its job
+            self.resetTransform()
+            # self.fitInView(QRectF(self.contentsRect()))
             
     def legend(self):
         return self._legend
