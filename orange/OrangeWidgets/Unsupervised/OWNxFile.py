@@ -338,7 +338,7 @@ class OWNxFile(OWWidget):
             import os
             try:
                 import orngConfiguration
-                startfile = orngConfiguration.datasetsPath
+                startfile = Orange.misc.environ.network_install_dir
             except:
                 startfile = ""
                 
