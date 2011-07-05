@@ -1,4 +1,40 @@
 """
+    .. class:: OWGraph3D
+        Base class for 3D graphs.
+
+    .. attribute:: show_legend
+        Determines whether to display the legend or not.
+
+    .. attribute:: ortho
+        If False, perspective projection is used instead.
+
+    .. method:: set_x_axis_title(title)
+        Sets ``title`` as the current title (label) of x axis.
+
+    .. method:: set_y_axis_title(title)
+        Sets ``title`` as the current title (label) of y axis.
+
+    .. method:: set_z_axis_title(title)
+        Sets ``title`` as the current title (label) of z axis.
+
+    .. method:: set_show_x_axis_title(show)
+        Determines whether to show the title of x axis or not.
+
+    .. method:: set_show_y_axis_title(show)
+        Determines whether to show the title of y axis or not.
+
+    .. method:: set_show_z_axis_title(show)
+        Determines whether to show the title of z axis or not.
+
+    .. method:: scatter(X, Y, Z, c, s)
+        Adds scatter data to command buffer. ``X``, ``Y`` and ``Z`
+        should be arrays (of equal length) with example data.
+        ``c`` is optional, can be an array as well (setting
+        colors of each example) or string ('r', 'g' or 'b'). ``s``
+        optionally sets sizes of individual examples.
+
+    .. method:: clear()
+        Removes everything from the graph.
 """
 
 from PyQt4.QtCore import *
@@ -7,13 +43,17 @@ from PyQt4 import QtOpenGL
 
 import orange
 
+import OpenGL
+OpenGL.ERROR_CHECKING = True
+OpenGL.ERROR_LOGGING = True
+#OpenGL.FULL_LOGGING = True
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.arrays import ArrayDatatype
 from ctypes import byref, c_char_p, c_int, create_string_buffer
 import sys
 import numpy
-from math import sin, cos
+from math import sin, cos, pi
 
 # Import undefined functions, override some wrappers.
 try:
@@ -44,6 +84,8 @@ glEnableVertexAttribArray = gl.glEnableVertexAttribArray
 glVertexAttribPointer = gl.glVertexAttribPointer
 glEnableVertexAttribArray = gl.glEnableVertexAttribArray
 glGetProgramiv = gl.glGetProgramiv
+glDrawElements = gl.glDrawElements
+glDrawArrays = gl.glDrawArrays
 
 
 def normalize(vec):
@@ -81,13 +123,22 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.color_grid = numpy.array([0.8, 0.8, 0.8, 1.0])
 
         self.vertex_buffers = []
+        self.index_buffers = []
         self.vaos = []
 
         self.ortho = False
         self.show_legend = True
-        self.legend_border_color = [0.3, 0.3, 0.3, 1]
+        self.legend_border_color = [0.5, 0.5, 0.5, 1]
+        self.legend_border_thickness = 2
+        self.legend_position = [10, 10]
+        self.legend_size = [200, 50]
+        self.dragging_legend = False
+
+        self.face_symbols = True
+        self.filled_symbols = True
 
     def __del__(self):
+        # TODO: delete shaders and vertex buffer
         glDeleteProgram(self.color_shader)
 
     def initializeGL(self):
@@ -108,16 +159,11 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             attribute vec3 offset;
             attribute vec4 color;
 
-            uniform mat4 projection;
-            uniform mat4 modelview;
-            uniform vec4 overriden_color;
-            uniform bool override_color;
+            uniform bool face_symbols;
 
             varying vec4 var_color;
 
             void main(void) {
-              //gl_Position = projection * modelview * position;
-
               // Calculate inverse of rotations (in this case, inverse
               // is actually just transpose), so that polygons face
               // camera all the time.
@@ -135,12 +181,14 @@ class OWGraph3D(QtOpenGL.QGLWidget):
               invs[2][1] = gl_ModelViewMatrix[1][2];
               invs[2][2] = gl_ModelViewMatrix[2][2];
 
-              vec3 offset_rotated = invs * offset;
-              gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(position+offset_rotated, 1);
-              if (override_color)
-                  var_color = overriden_color;
+              vec3 offset_rotated;
+              if (face_symbols)
+                offset_rotated = invs * offset;
               else
-                  var_color = color;
+                offset_rotated = offset;
+
+              gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(position+offset_rotated, 1);
+              var_color = color;
             }
             '''
 
@@ -184,6 +232,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glLinkProgram(self.color_shader)
         self.color_shader_override_color = glGetUniformLocation(self.color_shader, 'override_color')
         self.color_shader_overriden_color = glGetUniformLocation(self.color_shader, 'overriden_color')
+        self.color_shader_face_symbols = glGetUniformLocation(self.color_shader, 'face_symbols')
         linked = c_int()
         glGetProgramiv(self.color_shader, GL_LINK_STATUS, byref(linked))
         if not linked.value:
@@ -222,19 +271,18 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
 
-        for cmd, vao in self.commands:
+        for cmd, vao, vao_outline in self.commands:
             if cmd == 'scatter':
                 glUseProgram(self.color_shader)
-                glBindVertexArray(vao.value)
-                glUniform1i(self.color_shader_override_color, 0)
-                glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
-                # Draw outlines.
-                glUniform1i(self.color_shader_override_color, 1)
-                glUniform4f(self.color_shader_overriden_color, 0,0,0,1)
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-                glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-                glBindVertexArray(0)
+                glUniform1i(self.color_shader_face_symbols, self.face_symbols)
+                if self.filled_symbols:
+                    glBindVertexArray(vao.value)
+                    glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                    glBindVertexArray(0)
+                else:
+                    glBindVertexArray(vao_outline.value)
+                    glDrawElements(GL_LINES, vao_outline.num_indices, GL_UNSIGNED_INT, 0)
+                    glBindVertexArray(0)
                 glUseProgram(0)
 
         if self.show_legend:
@@ -243,25 +291,29 @@ class OWGraph3D(QtOpenGL.QGLWidget):
     def draw_legend(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(0, self.width(), 0, self.height(), -1, 1)
+        glOrtho(0, self.width(), self.height(), 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+
+        x, y = self.legend_position
+        w, h = self.legend_size
+        t = self.legend_border_thickness
 
         glDisable(GL_DEPTH_TEST)
         glColor4f(*self.legend_border_color)
         glBegin(GL_QUADS)
-        glVertex2f(10, 10)
-        glVertex2f(10, 100)
-        glVertex2f(200, 100)
-        glVertex2f(200, 10)
+        glVertex2f(x,   y)
+        glVertex2f(x+w, y)
+        glVertex2f(x+w, y+h)
+        glVertex2f(x,   y+h)
         glEnd()
 
         glColor4f(1, 1, 1, 1)
         glBegin(GL_QUADS)
-        glVertex2f(12, 12)
-        glVertex2f(12, 98)
-        glVertex2f(198, 98)
-        glVertex2f(198, 12)
+        glVertex2f(x+t,   y+t)
+        glVertex2f(x+w-t, y+t)
+        glVertex2f(x+w-t, y+h-t)
+        glVertex2f(x+t,   y+h-t)
         glEnd()
 
     def set_x_axis_title(self, title):
@@ -460,19 +512,21 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.axis_plane_yz_right = [B, F, G, C]
         self.axis_plane_xz_top = [E, F, B, A]
 
-    def scatter(self, X, Y, Z, c="b", s=5, **kwargs):
+    def scatter(self, X, Y, Z, colors='b', sizes=5, shapes=None, labels=None, **kwargs):
         array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
-        if isinstance(c, str):
-            color_map = {"r": [1.0, 0.0, 0.0, 1.0],
-                         "g": [0.0, 1.0, 0.0, 1.0],
-                         "b": [0.0, 0.0, 1.0, 1.0]}
+        if isinstance(colors, str):
+            color_map = {'r': [1.0, 0.0, 0.0, 1.0],
+                         'g': [0.0, 1.0, 0.0, 1.0],
+                         'b': [0.0, 0.0, 1.0, 1.0]}
             default = [0.0, 0.0, 1.0, 1.0]
-            colors = [color_map.get(c, default) for _ in array]
-        else:
-            colors = c
+            colors = [color_map.get(colors, default) for _ in array]
  
-        if isinstance(s, int):
-            s = [s for _ in array]
+        if isinstance(sizes, int):
+            sizes = [sizes for _ in array]
+
+        if shapes == None:
+            shapes = [0 for _ in array]
+        # TODO: what if shapes are not integers?
 
         max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
         self.b_box = [max, min]
@@ -481,6 +535,22 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.center = (min + max) / 2 
         self.normal_size = numpy.max(self.center - self.b_box[1]) / 100.
 
+        # Generate vertices for shapes and also indices for outlines.
+        vertices = []
+        outline_indices = []
+        index = 0
+        for (x,y,z), (r,g,b,a), size, shape in zip(array, colors, sizes, shapes):
+            sO2 = size * self.normal_size / 2.
+            n = 4 if shape % 2 == 0 else 4
+            angle_inc = 2.*pi / n
+            angle = angle_inc / 2.
+            for i in range(n):
+                vertices.extend([x,y,z, 0,0,0, r,g,b,a])
+                vertices.extend([x,y,z, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
+                angle += angle_inc
+                vertices.extend([x,y,z, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
+                outline_indices.extend([index+1, index+2])
+                index += 3
         vao = c_int()
         glGenVertexArrays(1, byref(vao))
         glBindVertexArray(vao.value)
@@ -497,25 +567,54 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 6*4)
         glEnableVertexAttribArray(2)
 
-        vertices = []
-        for (x,y,z), (r,g,b,a), size in zip(array, colors, s):
-          vertices.extend([x,y,z, -size*self.normal_size,0,0, r,g,b,a])
-          vertices.extend([x,y,z, +size*self.normal_size,0,0, r,g,b,a])
-          vertices.extend([x,y,z, 0,+size*self.normal_size,0, r,g,b,a])
-
         # It's important to keep a reference to vertices around,
         # data uploaded to GPU seem to get corrupted otherwise.
         vertex_buffer.vertices = numpy.array(vertices, 'f')
-        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4,
-          ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER,
+            ArrayDatatype.arrayByteCount(vertex_buffer.vertices),
+            ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
 
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glDisableVertexAttribArray(0)
+        glDisableVertexAttribArray(1)
+        glDisableVertexAttribArray(2)
+
+        # Outline:
+        # generate another VAO, keep the same vertex buffer, but use an index buffer
+        # this time.
+        index_buffer = c_int()
+        glGenBuffers(1, byref(index_buffer))
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.value)
+        index_buffer.indices = numpy.array(outline_indices, 'I')
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+            ArrayDatatype.arrayByteCount(index_buffer.indices),
+            ArrayDatatype.voidDataPointer(index_buffer.indices), GL_STATIC_DRAW)
+
+        vao_outline = c_int()
+        glGenVertexArrays(1, byref(vao_outline))
+        glBindVertexArray(vao_outline.value)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.value)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.value)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, 0)
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 3*4)
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 6*4)
+        glEnableVertexAttribArray(2)
+
+        glBindVertexArray(0)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
         vao.num_vertices = len(vertices) / (vertex_size / 4)
+        vao_outline.num_indices = vao.num_vertices * 2 / 3
         self.vertex_buffers.append(vertex_buffer)
+        self.index_buffers.append(index_buffer)
         self.vaos.append(vao)
-        self.commands.append(("scatter", vao))
+        self.vaos.append(vao_outline)
+        self.commands.append(("scatter", vao, vao_outline))
         self.update_axes()
         self.updateGL()
 
@@ -523,31 +622,43 @@ class OWGraph3D(QtOpenGL.QGLWidget):
       self.mouse_pos = event.pos()
 
     def mouseMoveEvent(self, event):
-      if event.buttons() & Qt.MiddleButton:
         pos = event.pos()
         dx = pos.x() - self.mouse_pos.x()
         dy = pos.y() - self.mouse_pos.y()
-        if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-          off_x = numpy.cross(self.camera, [0,1,0]) * (dx / self.move_factor)
-          #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
-          # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
-          self.center += off_x
-        else:
-          self.yaw += dx /  self.rotation_factor
-          self.pitch += dy / self.rotation_factor
-          self.camera = [
-            sin(self.pitch)*cos(self.yaw),
-            cos(self.pitch),
-            sin(self.pitch)*sin(self.yaw)]
+
+        if event.buttons() & Qt.LeftButton:
+            if self.dragging_legend:
+                self.legend_position[0] += dx
+                self.legend_position[1] += dy
+            elif self.legend_position[0] <= pos.x() <= self.legend_position[0]+self.legend_size[0] and\
+               self.legend_position[1] <= pos.y() <= self.legend_position[1]+self.legend_size[1]:
+                self.dragging_legend = True
+        elif event.buttons() & Qt.MiddleButton:
+            if QApplication.keyboardModifiers() & Qt.ShiftModifier:
+                off_x = numpy.cross(self.camera, [0,1,0]) * (dx / self.move_factor)
+                #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
+                # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
+                self.center += off_x
+            else:
+                self.yaw += dx /  self.rotation_factor
+                self.pitch += dy / self.rotation_factor
+                self.camera = [
+                    sin(self.pitch)*cos(self.yaw),
+                    cos(self.pitch),
+                    sin(self.pitch)*sin(self.yaw)]
+
         self.mouse_pos = pos
         self.updateGL()
 
+    def mouseReleaseEvent(self, event):
+        self.dragging_legend = False
+
     def wheelEvent(self, event):
-      if event.orientation() == Qt.Vertical:
-        self.zoom -= event.delta() / self.zoom_factor
-        if self.zoom < 2:
-          self.zoom = 2
-        self.updateGL()
+        if event.orientation() == Qt.Vertical:
+            self.zoom -= event.delta() / self.zoom_factor
+            if self.zoom < 2:
+                self.zoom = 2
+            self.updateGL()
 
     def clear(self):
         self.commands = []
