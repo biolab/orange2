@@ -297,7 +297,7 @@ class OWPredictions(OWWidget):
                 data = orange.ExampleTable(domain, data)
                 
             dist = getCached(data, orange.DomainBasicAttrStat, (data,))
-            self.dataModel = ExampleTableModel(data, dist)
+            self.dataModel = ExampleTableModel(data, dist, None)
             self.dataView.setModel(self.dataModel)
             self.dataView.setItemDelegate(OWGUI.TableBarItem(self, data, color = Qt.lightGray))
             count = self.dataModel.columnCount()

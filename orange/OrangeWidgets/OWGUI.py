@@ -1714,18 +1714,43 @@ class tableItem(QTableWidgetItem):
         table.setItem(x, y, self)
 
 
+import orange
+
+TableValueRole = OrangeUserRole.next() # Role to retrieve orange.Value 
+TableClassValueRole = OrangeUserRole.next() # Role to retrieve the class value for the row's example
+TableDistribution = OrangeUserRole.next() # Role to retrieve the distribution of the column's attribute
+TableVariable = OrangeUserRole.next()
 
 class TableBarItem(QItemDelegate):
-    BarRole = OrangeUserRole.next() #Qt.UserRole + 1
-    def __init__(self, widget, table = None, color = QColor(255, 170, 127)):
+    BarRole = OrangeUserRole.next()
+    ColorRole = OrangeUserRole.next()
+    def __init__(self, widget, table = None, color = QColor(255, 170, 127), color_schema=None):
+        """
+        :param widget: OWWidget instance
+        :type widget: :class:`OWWidget.OWWidget
+        :param table: Table
+        :type table: :class:`Orange.data.Table`
+        :param color: Color of the distribution bar.
+        :type color: :class:`PyQt4.QtCore.QColor`
+        :param color_schema: If not None it must be an instance of
+            :class:`OWColorPalette.ColorPaletteGenerator` (note: this
+            parameter, if set, overrides the ``color``)
+        :type color_schema: :class:`OWColorPalette.ColorPaletteGenerator`
+          
+        """
         QItemDelegate.__init__(self, widget)
         self.color = color
+        self.color_schema = color_schema
         self.widget = widget
         self.table = table
 
     def paint(self, painter, option, index):
         painter.save()
         self.drawBackground(painter, option, index)
+        if self.table is None:
+            table = getattr(index.model(), "examples", None)
+        else:
+            table = self.table
         ratio = None
         ratio, ok = index.data(TableBarItem.BarRole).toDouble()
         if ratio != ratio: # NaN
@@ -1733,13 +1758,37 @@ class TableBarItem(QItemDelegate):
         if not ok:
             ratio = None
             value, ok = index.data(Qt.DisplayRole).toDouble()
-            if ok and getattr(self.widget, "showBars", False):
+            if ok and getattr(self.widget, "showBars", False) and table is not None:
                 col = index.column()
-                if col < len(self.table.normalizers):
-                    max, span = self.table.normalizers[col]
+                if col < len(table.normalizers):
+                    max, span = table.normalizers[col]
                     ratio = (max - value) / span
+
+        color = self.color
+        if self.color_schema is not None and table is not None \
+            and table.domain.classVar \
+            and isinstance(table.domain.classVar, orange.EnumVariable):
+            class_ = index.data(TableClassValueRole).toPyObject()
+            if not class_.isSpecial():
+                color = self.color_schema[int(class_)]
+        else:
+            color = self.color
+
         if ratio is not None:
-            painter.fillRect(option.rect.adjusted(1, 1, -option.rect.width() * ratio, -1), self.color)
+#            painter.save()
+#            pen = QPen(QBrush(color), 3, Qt.SolidLine, Qt.FlatCap, Qt.BevelJoin)
+#            painter.setPen(pen)
+#            painter.drawRect(option.rect.adjusted(0, 3, -option.rect.width() * ratio, -3))
+#            painter.restore()
+
+#            painter.fillRect(option.rect.adjusted(0, 3, -option.rect.width() * ratio, -3), color)
+
+            painter.save()
+            painter.setPen(QPen(QBrush(color), 5, Qt.SolidLine, Qt.RoundCap))
+            rect = option.rect.adjusted(3, 0, -3, -5)
+            x, y = rect.x(), rect.y() + rect.height()
+            painter.drawLine(x, y, x + rect.width() * ratio, y)
+            painter.restore()
         text = index.data(Qt.DisplayRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)

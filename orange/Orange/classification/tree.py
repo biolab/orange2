@@ -5,9 +5,9 @@
 .. index::
    single: classification; tree
 
-********************
-Classification trees
-********************
+*******************************
+Classification trees (``tree``)
+*******************************
 
 To build a small tree (:obj:`TreeClassifier`) from the iris data set
 (with the depth limited to three levels), use (part of `orngTree1.py`_,
@@ -1882,6 +1882,7 @@ import base64
 import re
 import Orange.data
 import Orange.feature.scoring
+import warnings
 
 class C45Learner(Orange.classification.Learner):
     """
@@ -2230,13 +2231,13 @@ class TreeLearner(Orange.core.Learner):
         The default stopping criterion stops induction when all examples 
         in a node belong to the same class.
 
-    .. attribute:: mForPruning
+    .. attribute:: m_pruning
 
         If non-zero, invokes an error-based bottom-up post-pruning,
         where m-estimate is used to estimate class probabilities 
         (default: 0).
 
-    .. attribute:: sameMajorityPruning
+    .. attribute:: same_majority_pruning
 
         If true, invokes a bottom-up post-pruning by removing the
         subtrees of which all leaves classify to the same class
@@ -2263,13 +2264,26 @@ class TreeLearner(Orange.core.Learner):
             return self.__call__(examples, weightID)
         else:
             return self
-      
+    
     def __init__(self, **kw):
+
+        #name, buildfunction, parameters
+        #buildfunctions are not saved as function references
+        #because that would make problems with object copies
+        for n,(fn,_) in self._built_fn.items():
+            self.__dict__["_handset_" + n] = False
+
+        #measure has to be before split
+        self.measure = None
         self.split = None
         self.stop = None
-        self.measure = None
         self.splitter = None
-        self.__dict__.update(kw)
+        
+        for n,(fn,_) in self._built_fn.items():
+            self.__dict__[n] = fn(self)
+
+        for k,v in kw.items():
+            self.__setattr__(k,v)
       
     def __call__(self, examples, weight=0):
         """
@@ -2279,7 +2293,7 @@ class TreeLearner(Orange.core.Learner):
 
         #set the scoring criteria for regression if it was not
         #set by the user
-        if not self.split and not self.measure:
+        if not self._handset_split and not self.measure:
             measure = fscoring.GainRatio() \
                 if examples.domain.classVar.varType == Orange.data.Type.Discrete \
                 else fscoring.MSE()
@@ -2289,15 +2303,36 @@ class TreeLearner(Orange.core.Learner):
         if self.splitter != None:
             bl.splitter = self.splitter
 
-
         #post pruning
         tree = bl(examples, weight)
-        if getattr(self, "sameMajorityPruning", 0):
+        if getattr(self, "same_majority_pruning", 0):
             tree = Pruner_SameMajority(tree)
-        if getattr(self, "mForPruning", 0):
-            tree = Pruner_m(tree, m=self.mForPruning)
+        if getattr(self, "m_pruning", 0):
+            tree = Pruner_m(tree, m=self.m_pruning)
 
         return TreeClassifier(baseClassifier=tree) 
+
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+        for n,(fn,v) in self._built_fn.items():
+            if name in v:
+                if not self.__dict__["_handset_" + n]:
+                    self.__dict__[n] = fn(self)
+                else:
+                    warnings.warn("Changing \"" + name + "\" does not have any effect as \"" + n + "\" was already set", UserWarning, 2)
+            elif n == name:
+                if value == None:
+                    self.__dict__[n] = fn(self)
+                    self.__dict__["_handset_" + n] = False
+                    #print n, "was now disabled by hand"
+                else:
+                    self.__dict__["_handset_" + n] = True
+                    #print n, "is now handset"
+        #print self.__dict__
+
+    def __delattr__(self, name):
+        self.__setattr__(name, None) #use the __setattr__
+        del self.__dict__[name]
 
     def instance(self):
         """
@@ -2307,85 +2342,79 @@ class TreeLearner(Orange.core.Learner):
         """
         return self._base_learner()
 
-    def build_split(self):
+    def _build_split(self):
         """
         Return the split constructor built according to object attributes.
         """
+        split = SplitConstructor_Combined()
+        split.continuousSplitConstructor = \
+            SplitConstructor_Threshold()
+        binarization = getattr(self, "binarization", 0)
+        if binarization == 1:
+            split.discreteSplitConstructor = \
+                SplitConstructor_ExhaustiveBinary()
+        elif binarization == 2:
+            split.discreteSplitConstructor = \
+                SplitConstructor_OneAgainstOthers()
+        else:
+            split.discreteSplitConstructor = \
+                SplitConstructor_Feature()
+
+        measures = {"infoGain": fscoring.InfoGain,
+            "gainRatio": fscoring.GainRatio,
+            "gini": fscoring.Gini,
+            "relief": fscoring.Relief,
+            "retis": fscoring.MSE
+            }
+
+        measure = self.measure
+        if isinstance(measure, str):
+            measure = measures[measure]()
+        if not measure:
+            measure = fscoring.GainRatio()
+
+        measureIsRelief = isinstance(measure, fscoring.Relief)
+        relM = getattr(self, "reliefM", None)
+        if relM and measureIsRelief:
+            measure.m = relM
         
-        split = self.split
+        relK = getattr(self, "reliefK", None)
+        if relK and measureIsRelief:
+            measure.k = relK
 
-        if not split:
-            split = SplitConstructor_Combined()
-            split.continuousSplitConstructor = \
-                SplitConstructor_Threshold()
-            binarization = getattr(self, "binarization", 0)
-            if binarization == 1:
-                split.discreteSplitConstructor = \
-                    SplitConstructor_ExhaustiveBinary()
-            elif binarization == 2:
-                split.discreteSplitConstructor = \
-                    SplitConstructor_OneAgainstOthers()
-            else:
-                split.discreteSplitConstructor = \
-                    SplitConstructor_Feature()
+        split.continuousSplitConstructor.measure = measure
+        split.discreteSplitConstructor.measure = measure
 
-            measures = {"infoGain": fscoring.InfoGain,
-                "gainRatio": fscoring.GainRatio,
-                "gini": fscoring.Gini,
-                "relief": fscoring.Relief,
-                "retis": fscoring.MSE
-                }
+        wa = getattr(self, "worstAcceptable", 0)
+        if wa:
+            split.continuousSplitConstructor.worstAcceptable = wa
+            split.discreteSplitConstructor.worstAcceptable = wa
 
-            measure = self.measure
-            if isinstance(measure, str):
-                measure = measures[measure]()
-            if not measure:
-                measure = fscoring.GainRatio()
-
-            measureIsRelief = isinstance(measure, fscoring.Relief)
-            relM = getattr(self, "reliefM", None)
-            if relM and measureIsRelief:
-                measure.m = relM
-            
-            relK = getattr(self, "reliefK", None)
-            if relK and measureIsRelief:
-                measure.k = relK
-
-            split.continuousSplitConstructor.measure = measure
-            split.discreteSplitConstructor.measure = measure
-
-            wa = getattr(self, "worstAcceptable", 0)
-            if wa:
-                split.continuousSplitConstructor.worstAcceptable = wa
-                split.discreteSplitConstructor.worstAcceptable = wa
-
-            ms = getattr(self, "minSubset", 0)
-            if ms:
-                split.continuousSplitConstructor.minSubset = ms
-                split.discreteSplitConstructor.minSubset = ms
+        ms = getattr(self, "minSubset", 0)
+        if ms:
+            split.continuousSplitConstructor.minSubset = ms
+            split.discreteSplitConstructor.minSubset = ms
 
         return split
 
-    def build_stop(self):
+    def _build_stop(self):
         """
         Return the stop criteria built according to object's attributes.
         """
-        stop = self.stop
-        if not stop:
-            stop = Orange.classification.tree.StopCriteria_common()
-            mm = getattr(self, "maxMajority", 1.0)
-            if mm < 1.0:
-                stop.maxMajority = self.maxMajority
-            me = getattr(self, "minExamples", 0)
-            if me:
-                stop.minExamples = self.minExamples
+        stop = Orange.classification.tree.StopCriteria_common()
+        mm = getattr(self, "maxMajority", 1.0)
+        if mm < 1.0:
+            stop.maxMajority = self.maxMajority
+        me = getattr(self, "minExamples", 0)
+        if me:
+            stop.minExamples = self.minExamples
         return stop
 
     def _base_learner(self):
         learner = _TreeLearner()
 
-        learner.split = self.build_split()
-        learner.stop = self.build_stop()
+        learner.split = self.split
+        learner.stop = self.stop
 
         for a in ["storeDistributions", "storeContingencies", "storeExamples", 
             "storeNodeClassifier", "nodeLearner", "maxDepth"]:
@@ -2393,6 +2422,18 @@ class TreeLearner(Orange.core.Learner):
                 setattr(learner, a, getattr(self, a))
 
         return learner
+
+    _built_fn = { 
+            "split": [ _build_split, [ "binarization", "measure", "reliefM", "reliefK", "worstAcceptable", "minSubset" ] ], \
+            "stop": [ _build_stop, ["maxMajority", "minExamples" ] ] 
+        }
+
+
+
+TreeLearner = Orange.misc.deprecated_members({
+          "mForPruning": "m_pruning",
+          "sameMajorityPruning": "same_majority_pruning"
+}, wrap_methods=[])(TreeLearner)
 
 #
 # the following is for the output
@@ -2746,6 +2787,9 @@ class _TreeDumper:
          (re_D, replaceD), (re_d, replaced), (re_AE, replaceAE), 
          (re_I, replaceI) ]
 
+    def node(self):
+        return self.tree.tree if "tree" in self.tree.__dict__ else self.tree
+
     def __init__(self, leafStr, nodeStr, stringFormats, minExamples, 
         maxDepth, simpleFirst, tree, **kw):
         self.stringFormats = stringFormats
@@ -2758,7 +2802,8 @@ class _TreeDumper:
         if leafStr:
             self.leafStr = leafStr
         else:
-            if tree.classVar.varType == Orange.data.Type.Discrete:
+            if self.node().node_classifier.classVar.varType == \
+                    Orange.data.Type.Discrete:
                 self.leafStr = "%V (%^.2m%)"
             else:
                 self.leafStr = "%V"
@@ -2843,13 +2888,14 @@ class _TreeDumper:
 
 
     def dumpTree(self):
+        node = self.node()
         if self.nodeStr:
             lev, res = 1, "root: %s\n" % \
-                self.formatString(self.nodeStr, self.tree.tree, None)
+                self.formatString(self.nodeStr, node, None)
             self.maxDepth += 1
         else:
             lev, res = 0, ""
-        return res + self.dumpTree0(self.tree.tree, None, lev)
+        return res + self.dumpTree0(node, None, lev)
         
 
     def dotTree0(self, node, parent, internalName):
@@ -2868,7 +2914,7 @@ class _TreeDumper:
             
             for i, branch in enumerate(node.branches):
                 if branch:
-                    internalBranchName = internalName+chr(i+65)
+                    internalBranchName = "%s-%d" % (internalName,i)
                     self.fle.write('%s -> %s [ label="%s" ]\n' % \
                         (_quoteName(internalName), 
                          _quoteName(internalBranchName), 
@@ -2877,13 +2923,13 @@ class _TreeDumper:
                     
         else:
             self.fle.write('%s [ shape=%s label="%s"]\n' % \
-                (internalName, self.leafShape, 
+                (_quoteName(internalName), self.leafShape, 
                 self.formatString(self.leafStr, node, parent)))
 
 
     def dotTree(self, internalName="n"):
         self.fle.write("digraph G {\n")
-        self.dotTree0(self.tree.tree, None, internalName)
+        self.dotTree0(self.node(), None, internalName)
         self.fle.write("}\n")
 
 def _quoteName(x):
@@ -2961,13 +3007,13 @@ class TreeClassifier(Orange.classification.Classifier):
             self).dumpTree()
 
     def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
-        """ Prints the tree to a file in a format used by 
+        """ Print the tree to a file in a format used by 
         `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
         Uses the same parameters as :meth:`dump` defined above
         plus two parameters which define the shape used for internal
-        nodes and laves of the tree:
+        nodes and leaves of the tree:
 
-        :param leafShape: Shape of the outline around leves of the tree. 
+        :param leafShape: Shape of the outline around leaves of the tree. 
             If "plaintext", no outline is used (default: "plaintext").
         :type leafShape: string
         :param internalNodeShape: Shape of the outline around internal nodes 
@@ -2977,7 +3023,7 @@ class TreeClassifier(Orange.classification.Classifier):
         Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
         for various outlines supported by GraphViz.
         """
-        fle = type(fileName) == str and file(fileName, "wt") or fileName
+        fle = type(fileName) == str and open(fileName, "wt") or fileName
 
         _TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
             _TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 

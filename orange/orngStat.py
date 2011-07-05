@@ -11,6 +11,7 @@ from Orange.evaluation.scoring import \
     rank_difference as rankDifference, \
     confusion_matrices as confusionMatrices, \
     confusion_chi_square as confusionChiSquare, \
+    scotts_pi as scottsPi, \
     compare_2_AUCs as compare2AUCs, \
     compare_2_AROCs as compare2AROCs, \
     compute_ROC as computeROC, \

@@ -162,6 +162,8 @@ class LineEditHint(QLineEdit):
         self.listWidget.setFocusPolicy(Qt.NoFocus)
         QObject.connect(self.listWidget, SIGNAL("itemClicked (QListWidgetItem *)"), self.doneCompletion)
         
+        QObject.connect(self, SIGNAL("editingFinished()"), lambda : self.callbackOnComplete() if self.callbackOnComplete else None)
+        
     def setItems(self, items):
         if items:
             self.itemsAsItems = items
@@ -211,15 +213,12 @@ class LineEditHint(QLineEdit):
             self.setFocus()
         if self.callbackOnComplete:
             QTimer.singleShot(0, self.callbackOnComplete)
-            #self.callbackOnComplete()
-
     
     def textEdited(self):
         self.updateSuggestedItems()
         if self.getLastTextItem() == "":        # if we haven't typed anything yet we hide the list widget
             self.listWidget.hide()
-#        else:
-            
+            self.doneCompletion() 
     
     def getLastTextItem(self):
         text = str(self.text())

@@ -74,7 +74,11 @@ class pyxtract_build_ext(build_ext):
         
     def finalize_options(self):
         build_ext.finalize_options(self)
-        self.library_dirs.append(self.build_lib) # add the build lib dir (for liborange_include)
+        # add the build_lib dir (for liborange_include)
+        if not self.inplace:
+            self.library_dirs.append(self.build_lib) 
+        else:
+            self.library_dirs.append("./") 
         
     def build_extension(self, ext):
         if isinstance(ext, LibStatic):
@@ -89,22 +93,19 @@ class pyxtract_build_ext(build_ext):
             ext_path = self.get_ext_fullpath(ext.name)
             ext_path, ext_filename = os.path.split(ext_path)
             realpath = os.path.realpath(os.curdir)
-#            print realpath, ext_path
             try:
                 os.chdir(ext_path)
-#                copy_file(os.path.join(ext_path, ext_filename), os.path.join(ext_path, "lib"+ext_filename), link="sym")
+                # Get the shared library name
                 lib_filename = self.compiler.library_filename(ext.name, lib_type="shared")
-                ext.install_shared_link = (lib_filename, self.get_ext_filename(ext.name)) # store (lib_name, path) tuple to install shared library link to /usr/lib in the install_lib command
-#                print realpath, ext_path, lib_filename
+                # Create the link
                 copy_file(ext_filename, lib_filename, link="sym")
-#                copy_file(ext_filename, lib_filename, link="sym")
             except OSError, ex:
                 log.info("failed to create shared library for %s: %s" % (ext.name, str(ex)))
             finally:
                 os.chdir(realpath)
             
     def build_pyxtract(self, ext):
-        ## mostly copied from build_extension, changed
+        ## mostly copied from build_extension
         sources = ext.sources
         if sources is None or type(sources) not in (ListType, TupleType):
             raise DistutilsSetupError, \
@@ -311,14 +312,30 @@ class pyxtract_build_ext(build_ext):
             #   package_dir/filename
             return os.path.join(package_dir, filename)
         
-class install_shared(install_lib):
+        
+class my_install_lib(install_lib):
+    """ An command to install orange (preserves liborange.so -> orange.so symlink)
+    """
     def run(self):
         install_lib.run(self)
         
     def copy_tree(self, infile, outfile, preserve_mode=1, preserve_times=1, preserve_symlinks=1, level=1):
         """ Run copy_tree with preserve_symlinks=1 as default
-        """
+        """ 
         install_lib.copy_tree(self, infile, outfile, preserve_mode, preserve_times, preserve_symlinks, level)
+        
+    def install(self):
+        """ Copy build_dir to install_dir
+        """
+        # A Hack to unlink liborange.so -> orange.so if it already exists,
+        # because copy_tree fails to overwrite it
+        # 
+        liborange = os.path.join(self.install_dir, "liborange.so")
+        if self.force and os.path.exists(liborange) and os.path.islink(liborange):
+            log.info("unlinking %s -> %s", liborange, os.path.join(self.install_dir, "orange.so"))
+            os.unlink(liborange)
+            
+        return install_lib.install(self)
         
             
 def get_source_files(path, ext="cpp", exclude=[]):
@@ -383,7 +400,7 @@ for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.
       matches.append(os.path.join(root, filename))
 packages = [pkg.rpartition('/__init__.py')[0].replace('/','.') for pkg in matches]
 
-setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
+setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       name ="Orange",
       version = "2.0.0b",
       description = "Orange data mining library for python.",
@@ -416,7 +433,8 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
                       "OrangeWidgets.Regression": ["icons/*.png"],
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
                       "OrangeWidgets.Visualize": ["icons/*.png"],
-                      "doc": ["datasets/*.tab", ]
+                      "doc": ["datasets/*.tab", ],
+                      ".": ["orangerc.cfg"] 
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),

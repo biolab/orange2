@@ -1,6 +1,5 @@
 from Orange.classification.logreg import \
-    dump as printOUT,\
-    dump as printOut,\
+    dump,\
     has_discrete_values as hasDiscreteValues,\
     LogRegLearner,\
     LogRegLearner as LogRegLearnerClass,\
@@ -30,3 +29,8 @@ RENAMED METHODS:
 BayesianFitter.createArrayData -> BayesianFitter.create_array_data
 BayesianFitter.estimateBeta -> BayesianFitter.estimate_beta
 '''
+
+def printOUT(*a, **b):
+    print dump(*a, **b)
+
+printOut = printOUT    

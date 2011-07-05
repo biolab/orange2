@@ -134,9 +134,7 @@ class OWTestLearners(OWWidget):
         self.trainDataBtn = self.sBtns.buttons[-2]
         self.testDataBtn = self.sBtns.buttons[-1]
         self.testDataBtn.setDisabled(True)
-
-#        box = OWGUI.widgetBox(self.sBtns, orientation='vertical', addSpace=False)
-#        OWGUI.separator(box)
+        
         OWGUI.separator(self.sBtns)
         OWGUI.checkBox(self.sBtns, self, 'applyOnAnyChange',
                        label="Apply on any change", callback=self.applyChange)
@@ -147,19 +145,15 @@ class OWTestLearners(OWWidget):
         if self.resampling == 4:
             self.resampling = 3
 
-#        OWGUI.separator(self.controlArea)
-
         # statistics
         self.statLayout = QStackedLayout()
-#        self.cbox = OWGUI.widgetBox(self.controlArea, spacing=8, margin=0)
-#        self.cbox.layout().setSpacing(8)
         self.cbox = OWGUI.widgetBox(self.controlArea, addToLayout=False)
         self.cStatLabels = [s.name for s in self.cStatistics]
         self.cstatLB = OWGUI.listBox(self.cbox, self, 'selectedCScores',
                                      'cStatLabels', box = "Performance scores",
                                      selectionMode = QListWidget.MultiSelection,
                                      callback=self.newscoreselection)
-#        OWGUI.separator(self.cbox)
+        
         self.cbox.layout().addSpacing(8)
         self.targetCombo = OWGUI.comboBox(self.cbox, self, "targetClass", orientation=0,
                                         callback=[self.changedTarget],
@@ -176,16 +170,11 @@ class OWTestLearners(OWWidget):
         self.controlArea.layout().addLayout(self.statLayout)
         
         self.statLayout.setCurrentWidget(self.cbox)
-        
-#        self.rstatLB.box.hide()
-
 
         # score table
         # table with results
         self.g = OWGUI.widgetBox(self.mainArea, 'Evaluation Results')
         self.tab = OWGUI.table(self.g, selectionMode = QTableWidget.NoSelection)
-
-        #self.lab = QLabel(self.g)
 
         self.resize(680,470)
 
@@ -229,7 +218,6 @@ class OWTestLearners(OWWidget):
         for i in range(len(self.stat)):
             if i not in usestat:
                 self.tab.hideColumn(i+1)
-
 
     def sendReport(self):
         exset = []
@@ -276,9 +264,9 @@ class OWTestLearners(OWWidget):
         n = len(self.data.domain.attributes)*2
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
         new = self.data.selectref(indices(self.data))
-#        new = self.data.selectref([1]*min(n, len(self.data)) +
-#                                  [0]*(len(self.data) - min(n, len(self.data))))
+        
         self.warning(0)
+        learner_exceptions = []
         for l in [self.learners[id] for id in ids]:
             learner = l.learner
             if self.preprocessor:
@@ -290,9 +278,14 @@ class OWTestLearners(OWWidget):
                 else:
                     l.scores = []
             except Exception, ex:
-                self.warning(0, "Learner %s ends with exception: %s" % (l.name, str(ex)))
+                learner_exceptions.append((l, ex))
                 l.scores = []
 
+        if learner_exceptions:
+            text = "\n".join("Learner %s ends with exception: %s" % (l.name, str(ex)) \
+                             for l, ex in learner_exceptions)
+            self.warning(0, text)
+            
         if not learners:
             return
 
@@ -344,7 +337,6 @@ class OWTestLearners(OWWidget):
         for i, s in enumerate(self.stat):
             try:
                 scores.append(eval("orngStat." + s.f))
-                
             except Exception, ex:
                 self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
                            (" ".join([l.name for l in learners]), ex.message))
@@ -384,12 +376,7 @@ class OWTestLearners(OWWidget):
             # new data has arrived
             self.data = orange.Filter_hasClassValue(self.data)
             self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
-#            if self.isclassification():
-#                self.rstatLB.box.hide()
-#                self.cbox.show()
-#            else:
-#                self.cbox.hide()
-#                self.rstatLB.box.show()
+            
             self.stat = [self.rStatistics, self.cStatistics][self.isclassification()]
             
             if self.learners:

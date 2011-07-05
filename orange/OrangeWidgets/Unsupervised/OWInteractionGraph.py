@@ -261,31 +261,66 @@ class OWInteractionGraph(OWWidget):
         self.interactionList.reverse()
 
         import tempfile, os
-        fhandle, fname = tempfile.mkstemp('dot')
+        fhandle, fname = tempfile.mkstemp('.dot')
         os.close(fhandle)
         f = file(fname, "wt")
         self.interactionMatrix.exportGraph(f, significant_digits=3,positive_int=8,negative_int=8,absolute_int=0,url=1)
+        f.flush()
         f.close()
         del f
 
-        # execute dot
         import subprocess
+        def run_dot(dotfile, format):
+            # execute dot command to retrieve an image in 'format'
+            # and an ismap formated dot output.
+            # Using temp files instead of direct pipe output due to EINTR
+            # errors
+            image_handle, image_name = tempfile.mkstemp('.' + format)
+            os.close(image_handle)
+            
+            ismap_handle, ismap_name = tempfile.mkstemp('.ismap')
+            os.close(ismap_handle)
+            
+#            print image_name
+#            subprocess.check_call(" ".join(["dot", fname, "-T" + format, "-o" + image_name]), shell=True)
+#            subprocess.check_call(" ".join(["dot", fname, "-Tismap", "-o" + ismap_name]), shell=True)
+            subprocess.check_call(["dot", fname, "-T" + format, "-o" + image_name])
+            subprocess.check_call(["dot", fname, "-Tismap", "-o" + ismap_name])
+
+            
+            image_data = open(image_name, "rb").read()
+            ismap_data = open(ismap_name, "rb").read()
+            
+            os.remove(image_name)
+            os.remove(ismap_name)
+            
+            return image_data, ismap_data
+
+        self.error([0, 1])
+        ismap = ""
+        image = ""
+        pixmap = QPixmap()
         try:
-            textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
-            textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0].splitlines()
+            # testing different formats, sometimes the png output from 'dot'
+            # fails to load in Qt (no idea why).
+            for format in ["png", "gif", "jpeg", "svg"]: 
+                image, ismap = run_dot(fname, format)
+                qimage = QImage.fromData(QByteArray(image), format)
+                pixmap = QPixmap.fromImage(qimage)
+                if not pixmap.isNull():
+                    break
         except OSError, ex:
-            textPng = ""
-            textPlainList = []
+            self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
+        except subprocess.CalledProcessError, ex:
+            self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
+            
+        if image and pixmap.isNull():
+            self.error(1, "Could not load image from 'dot' output.")
+        
+        textPlainList = ismap.splitlines()
         
         os.remove(fname)
-
-        # if the output from the pipe was empty, then the software isn't installed correctly
-        if len(textPng) == 0:
-            self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
-
-        # create a picture
-        pixmap = QPixmap()
-        pixmap.loadFromData(textPng)
+        
         if hasattr(self, "canvasPixmap"):
             self.canvasPixmap.setPixmap(pixmap)
         else:

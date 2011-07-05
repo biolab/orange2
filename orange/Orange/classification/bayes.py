@@ -4,9 +4,9 @@
 .. index:: 
    single: classification; naive Bayes classifier
 
-**********************
-Naive Bayes classifier
-**********************
+**********************************
+Naive Bayes classifier (``bayes``)
+**********************************
 
 The most primitive Bayesian classifier is :obj:`NaiveLearner`. 
 `Naive Bayes classification algorithm <http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_ 
@@ -16,7 +16,7 @@ in the training data set are discrete. If a number of features are continues, th
 algorithm runs slower due to time spent to estimate continuous conditional distributions.
 
 The following example demonstrates a straightforward invocation of
-this algorithm (`bayes-run.py`_, uses `iris.tab`_):
+this algorithm (`bayes-run.py`_, uses `titanic.tab`_):
 
 .. literalinclude:: code/bayes-run.py
    :lines: 7-
@@ -77,6 +77,7 @@ for "virginica". Critical values where the decision would change are at about
 .. _bayes-plot-iris.py: code/bayes-plot-iris.py
 .. _adult-sample.tab: code/adult-sample.tab
 .. _iris.tab: code/iris.tab
+.. _titanic.tab: code/iris.tab
 .. _lenses.tab: code/lenses.tab
 
 Implementation details
@@ -174,6 +175,7 @@ import Orange
 from Orange.core import BayesClassifier as _BayesClassifier
 from Orange.core import BayesLearner as _BayesLearner
 
+
 class NaiveLearner(Orange.classification.Learner):
     """
     Probabilistic classifier based on applying Bayes' theorem (from Bayesian
@@ -236,22 +238,22 @@ class NaiveLearner(Orange.classification.Learner):
         :class:`orange.ConditionalProbabilityEstimatorConstructor_loess`.
     """
     
-    def __new__(cls, instances = None, weightID = 0, **argkw):
+    def __new__(cls, instances = None, weight_id = 0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances, weightID)
+            return self.__call__(instances, weight_id)
         else:
             return self
         
-    def __init__(self, adjustTreshold=False, m=0, estimatorConstructor=None,
-                 conditionalEstimatorConstructor=None,
-                 conditionalEstimatorConstructorContinuous=None,**argkw):
-        self.adjustThreshold = adjustTreshold
+    def __init__(self, adjust_threshold=False, m=0, estimator_constructor=None,
+                 conditional_estimator_constructor=None,
+                 conditional_estimator_constructor_continuous=None,**argkw):
+        self.adjust_threshold = adjust_threshold
         self.m = m
-        self.estimatorConstructor = estimatorConstructor
-        self.conditionalEstimatorConstructor = conditionalEstimatorConstructor
-        self.conditionalEstimatorConstructorContinuous = conditionalEstimatorConstructorContinuous
+        self.estimator_constructor = estimator_constructor
+        self.conditional_estimator_constructor = conditional_estimator_constructor
+        self.conditional_estimator_constructor_continuous = conditional_estimator_constructor_continuous
         self.__dict__.update(argkw)
 
     def __call__(self, instances, weight=0):
@@ -264,26 +266,34 @@ class NaiveLearner(Orange.classification.Learner):
         :rtype: :class:`Orange.classification.bayes.NaiveBayesClassifier`
         """
         bayes = _BayesLearner()
-        if self.estimatorConstructor:
-            bayes.estimatorConstructor = self.estimatorConstructor
+        if self.estimator_constructor:
+            bayes.estimator_constructor = self.estimator_constructor
             if self.m:
-                if not hasattr(bayes.estimatorConstructor, "m"):
-                    raise AttributeError, "invalid combination of attributes: 'estimatorConstructor' does not expect 'm'"
+                if not hasattr(bayes.estimator_constructor, "m"):
+                    raise AttributeError, "invalid combination of attributes: 'estimator_constructor' does not expect 'm'"
                 else:
-                    self.estimatorConstructor.m = self.m
+                    self.estimator_constructor.m = self.m
         elif self.m:
-            bayes.estimatorConstructor = Orange.core.ProbabilityEstimatorConstructor_m(m = self.m)
-        if self.conditionalEstimatorConstructor:
-            bayes.conditionalEstimatorConstructor = self.conditionalEstimatorConstructor
-        elif bayes.estimatorConstructor:
-            bayes.conditionalEstimatorConstructor = Orange.core.ConditionalProbabilityEstimatorConstructor_ByRows()
-            bayes.conditionalEstimatorConstructor.estimatorConstructor=bayes.estimatorConstructor
-        if self.conditionalEstimatorConstructorContinuous:
-            bayes.conditionalEstimatorConstructorContinuous = self.conditionalEstimatorConstructorContinuous
-        if self.adjustThreshold:
-            bayes.adjustThreshold = self.adjustThreshold
+            bayes.estimator_constructor = Orange.core.ProbabilityEstimatorConstructor_m(m = self.m)
+        if self.conditional_estimator_constructor:
+            bayes.conditional_estimator_constructor = self.conditional_estimator_constructor
+        elif bayes.estimator_constructor:
+            bayes.conditional_estimator_constructor = Orange.core.ConditionalProbabilityEstimatorConstructor_ByRows()
+            bayes.conditional_estimator_constructor.estimator_constructor=bayes.estimator_constructor
+        if self.conditional_estimator_constructor_continuous:
+            bayes.conditional_estimator_constructor_continuous = self.conditional_estimator_constructor_continuous
+        if self.adjust_threshold:
+            bayes.adjust_threshold = self.adjust_threshold
         return NaiveClassifier(bayes(instances, weight))
-            
+NaiveLearner = Orange.misc.deprecated_members(
+{     "adjustThreshold": "adjust_threshold",
+      "estimatorConstructor": "estimator_constructor",
+      "conditionalEstimatorConstructor": "conditional_estimator_constructor",
+      "conditionalEstimatorConstructorContinuous":"conditional_estimator_constructor_continuous",
+      "weightID": "weight_id"
+}, in_place=False)(NaiveLearner)
+
+
 class NaiveClassifier(Orange.classification.Classifier):
     """
     Predictor based on calculated probabilities. It wraps an
@@ -367,17 +377,17 @@ class NaiveClassifier(Orange.classification.Classifier):
         frmtStr=' %10.3f'*nValues
         classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in self.classVar.values]))
         
-        return "\n".join(
+        return "\n".join([
             classes,
             "class probabilities "+(frmtStr % tuple(self.distribution)),
             "",
-            "\n".join(["\n".join(
+            "\n".join(["\n".join([
                 "Attribute " + i.variable.name,
                 classes,
                 "\n".join(
                     ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
-                    for v in xrange(len(i.variable.values)))
-                ) for i in self.conditionalDistributions]))
+                    for v in xrange(len(i.variable.values)))]
+                ) for i in self.conditionalDistributions])])
             
 
 def printModel(model):

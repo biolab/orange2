@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.data
 
-==========
-Data table
-==========
+======================
+Data table (``Table``)
+======================
 
 Class `Orange.data.Table` holds a list of data instances of type
 :obj:`Orange.data.Instance`. All instances belong to the same domain.
@@ -301,7 +301,7 @@ As usual in Python, the data table is considered False, when empty.
         instead of its own copies.
 
         In most cases, this function is preferred over the former
-        since it consumes mush less memory.
+        since it consumes much less memory.
 
         :param filt: filter list
         :type filt: list of integers

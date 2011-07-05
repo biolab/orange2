@@ -18,7 +18,7 @@ Orange Scripting Reference
 
    Orange.clustering
    
-   Orange.distances
+   Orange.distance
 
    Orange.ensemble
 

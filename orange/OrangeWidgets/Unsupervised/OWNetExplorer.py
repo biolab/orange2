@@ -3,7 +3,7 @@
 <description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>3200</priority>
+<priority>7420</priority>
 """
 import orange
 import OWGUI
@@ -30,7 +30,7 @@ dlg_showall = dir + "Dlg_clear.png"
 
 class OWNetExplorer(OWWidget):
     settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
-    "maxLinkSize", "maxVertexSize", "renderAntialiased", "labelsOnMarkedOnly",
+    "maxLinkSize", "minVertexSize", "maxVertexSize", "renderAntialiased",
     "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn",
     "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
     "showWeights", "showIndexes",  "showEdgeLabels", "colorSettings", 
@@ -38,10 +38,11 @@ class OWNetExplorer(OWWidget):
     "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
     "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
     "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
-    "mdsFromCurrentPos"] 
+    "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex"] 
     
-    def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
+    def __init__(self, parent=None, signalManager=None, name = 'Net Explorer', 
+                 NetworkCanvas=OWNetworkCanvas):
+        OWWidget.__init__(self, parent, signalManager, name)
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", orngNetwork.Network, self.setGraph, Default), 
                        ("Items", orange.ExampleTable, self.setItems),
@@ -79,6 +80,7 @@ class OWNetExplorer(OWWidget):
         self.stopOptimization = 0
         self.maxLinkSize = 3
         self.maxVertexSize = 5
+        self.minVertexSize = 5
         self.renderAntialiased = 1
         self.labelsOnMarkedOnly = 0
         self.invertSize = 0
@@ -110,6 +112,7 @@ class OWNetExplorer(OWWidget):
         self.minComponentEdgeWidth = 0
         self.maxComponentEdgeWidth = 0
         self.mdsFromCurrentPos = 0
+        self.tabIndex = 0
         
         self.loadSettings()
         
@@ -119,21 +122,24 @@ class OWNetExplorer(OWWidget):
         self.mainArea.layout().setContentsMargins(0,4,4,4)
         self.controlArea.layout().setContentsMargins(4,4,0,4)
         
-        self.graph = OWNetworkCanvas(self, self.mainArea, "Net Explorer")
-        self.graph.showMissingValues = self.showMissingValues
-        self.mainArea.layout().addWidget(self.graph)
+        self.networkCanvas = NetworkCanvas(self, self.mainArea, "Net Explorer")
+        self.networkCanvas.showMissingValues = self.showMissingValues
+        self.mainArea.layout().addWidget(self.networkCanvas)
         
-        self.graph.maxLinkSize = self.maxLinkSize
-        self.graph.maxVertexSize = self.maxVertexSize
+        self.networkCanvas.maxLinkSize = self.maxLinkSize
+        self.networkCanvas.minVertexSize = self.minVertexSize
+        self.networkCanvas.maxVertexSize = self.maxVertexSize
         
         self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
         
         self.tabs = OWGUI.tabWidget(self.hcontroArea)
+        self.connect(self.tabs, SIGNAL("currentChanged(int)"), self.currentTabChanged)
+        
         self.verticesTab = OWGUI.createTabPage(self.tabs, "Vertices")
         self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
-        self.editTab = OWGUI.createTabPage(self.tabs, "Edit")
+        #self.editTab = OWGUI.createTabPage(self.tabs, "Edit")
         
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.verticesTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
@@ -162,6 +168,7 @@ class OWNetExplorer(OWWidget):
         self.vertexSizeCombo = OWGUI.comboBox(self.verticesTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
         self.vertexSizeCombo.addItem("(none)")
         
+        OWGUI.spin(self.vertexSizeCombo.box, self, "minVertexSize", 5, 200, 1, label="Min vertex size:", callback = self.setVertexSize)
         OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 200, 1, label="Max vertex size:", callback = self.setVertexSize)
         OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
         
@@ -210,7 +217,7 @@ class OWNetExplorer(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertices", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
-        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
+        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(3 if self.hubs==3 else h)))
         #self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
         OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.setMarkMode)
@@ -234,7 +241,7 @@ class OWNetExplorer(OWWidget):
         
         
         T = OWToolbars.NavigateSelectToolbar
-        self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
+        self.zoomSelectToolbar = T(self, self.hcontroArea, self.networkCanvas, self.autoSendSelection,
                                   buttons = (T.IconZoom, 
                                              T.IconZoomExtent, 
                                              T.IconZoomSelection, 
@@ -267,7 +274,7 @@ class OWNetExplorer(OWWidget):
         
         OWGUI.button(ib, self, "Degree distribution", callback=self.showDegreeDistribution, debuggingEnabled=False)
         OWGUI.button(ib, self, "Save network", callback=self.saveNetwork, debuggingEnabled=False)
-        OWGUI.button(ib, self, "Save image", callback=self.graph.saveToFile, debuggingEnabled=False)
+        OWGUI.button(ib, self, "Save image", callback=self.networkCanvas.saveToFile, debuggingEnabled=False)
         
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
@@ -322,43 +329,47 @@ class OWNetExplorer(OWWidget):
         self.setMarkMode()
         
         self.editAttribute = 0
-        self.editCombo = OWGUI.comboBox(self.editTab, self, "editAttribute", label="Edit attribute:", orientation="horizontal")
+        self.editCombo = OWGUI.comboBox(self.infoTab, self, "editAttribute", label="Edit attribute:", orientation="horizontal")
         self.editCombo.addItem("Select attribute")
         self.editValue = ''
-        OWGUI.lineEdit(self.editTab, self, "editValue", "Value:", orientation='horizontal')
-        OWGUI.button(self.editTab, self, "Edit", callback=self.edit)
+        OWGUI.lineEdit(self.infoTab, self, "editValue", "Value:", orientation='horizontal')
+        OWGUI.button(self.infoTab, self, "Edit", callback=self.edit)
         
         self.verticesTab.layout().addStretch(1)
         self.edgesTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
-        self.editTab.layout().addStretch(1)
         
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
-        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
+        self.networkCanvas.contPalette = dlg.getContinuousPalette("contPalette")
+        self.networkCanvas.discPalette = dlg.getDiscretePalette("discPalette")
         
         dlg = self.createColorDialog(self.edgeColorSettings, self.selectedEdgeSchemaIndex)
-        self.graph.contEdgePalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discEdgePalette = dlg.getDiscretePalette("discPalette")
+        self.networkCanvas.contEdgePalette = dlg.getContinuousPalette("contPalette")
+        self.networkCanvas.discEdgePalette = dlg.getDiscretePalette("discPalette")
         
         self.setOptMethod()
         self.setFontSize()
-        
-        self.resize(1000, 600)
+        self.tabs.setCurrentIndex(self.tabIndex)
         self.setGraph(None)
+        self.setMinimumWidth(900)
+        
+        #self.resize(1000, 600)
         #self.controlArea.setEnabled(False)
         
+    def currentTabChanged(self, index): 
+        self.tabIndex = index
+        
     def setComponentEdgeWidth(self):
-        self.graph.minComponentEdgeWidth = self.minComponentEdgeWidth
-        self.graph.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
+        self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
         self.updateCanvas()
     
     def setAutoSendAttributes(self):
         if self.autoSendAttributes:
-            self.graph.callbackSelectVertex = self.sendAttSelectionList
+            self.networkCanvas.callbackSelectVertex = self.sendAttSelectionList
         else:
-            self.graph.callbackSelectVertex = None
+            self.networkCanvas.callbackSelectVertex = None
 
     def sendAttSelectionList(self):
         if self.optimization:
@@ -366,7 +377,7 @@ class OWNetExplorer(OWWidget):
             if not self.comboAttSelection.currentText() in vars:
                 return
             att = str(self.comboAttSelection.currentText())
-            vertices = self.graph.networkCurve.getSelectedVertices()
+            vertices = self.networkCanvas.networkCurve.getSelectedVertices()
             
             if len(vertices) != 1:
                 return
@@ -384,7 +395,7 @@ class OWNetExplorer(OWWidget):
         if not self.editCombo.currentText() in vars:
             return
         att = str(self.editCombo.currentText())
-        vertices = self.graph.networkCurve.getSelectedVertices()
+        vertices = self.networkCanvas.networkCurve.getSelectedVertices()
         
         if len(vertices) == 0:
             return
@@ -400,9 +411,9 @@ class OWNetExplorer(OWWidget):
         
     def drawForce(self):
         if self.btnForce.isChecked() and self.optimization is not None:
-            self.graph.forceVectors = self.optimization._computeForces() 
+            self.networkCanvas.forceVectors = self.optimization._computeForces() 
         else:
-            self.graph.forceVectors = None
+            self.networkCanvas.forceVectors = None
             
         self.updateCanvas()
         
@@ -412,12 +423,12 @@ class OWNetExplorer(OWWidget):
         
     def rotateComponentsMDS(self):
         print "rotate"
-        if self.vertexDistance == None:
+        if self.vertexDistance is None:
             self.information('Set distance matrix to input signal')
             self.btnRotateMDS.setChecked(False)
             return
         
-        if self.optimization == None:
+        if self.optimization is None:
             self.information('No network found')
             self.btnRotateMDS.setChecked(False)
             return
@@ -445,12 +456,12 @@ class OWNetExplorer(OWWidget):
         self.progressBarFinished()
     
     def rotateComponents(self):
-        if self.vertexDistance == None:
+        if self.vertexDistance is None:
             self.information('Set distance matrix to input signal')
             self.btnRotate.setChecked(False)
             return
         
-        if self.optimization == None:
+        if self.optimization is None:
             self.information('No network found')
             self.btnRotate.setChecked(False)
             return
@@ -492,12 +503,12 @@ class OWNetExplorer(OWWidget):
         
         btnCaption = btn.text()
         
-        if self.vertexDistance == None:
+        if self.vertexDistance is None:
             self.information('Set distance matrix to input signal')
             btn.setChecked(False)
             return
         
-        if self.optimization == None:
+        if self.optimization is None:
             self.information('No network found')
             btn.setChecked(False)
             return
@@ -538,32 +549,32 @@ class OWNetExplorer(OWWidget):
         self.error('')
         self.information('')
         
-        if matrix == None or self.optimization == None or self.optimization.graph == None:
+        if matrix is None or self.optimization is None or self.optimization.graph is None:
             self.vertexDistance = None
             if self.optimization: self.optimization.vertexDistance = None
-            if self.graph: self.graph.vertexDistance = None
+            if self.networkCanvas: self.networkCanvas.vertexDistance = None
             return
 
         if matrix.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.vertexDistance = None
             if self.optimization: self.optimization.vertexDistance = None
-            if self.graph: self.graph.vertexDistance = None
+            if self.networkCanvas: self.networkCanvas.vertexDistance = None
             return
         
         self.vertexDistance = matrix
         if self.optimization: self.optimization.vertexDistance = matrix
-        if self.graph: self.graph.vertexDistance = matrix
+        if self.networkCanvas: self.networkCanvas.vertexDistance = matrix
         
         self.updateCanvas()
             
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
-            self.graph.sendMarkedNodes = self.sendMarkedNodes
-            self.sendMarkedNodes(self.graph.getMarkedVertices())
+            self.networkCanvas.sendMarkedNodes = self.sendMarkedNodes
+            self.sendMarkedNodes(self.networkCanvas.getMarkedVertices())
         else:
             self.send("Marked Examples", None)
-            self.graph.sendMarkedNodes = None
+            self.networkCanvas.sendMarkedNodes = None
         
     def sendMarkedNodes(self, markedNodes):        
         if len(markedNodes) == 0:
@@ -580,10 +591,10 @@ class OWNetExplorer(OWWidget):
     def _collapse(self):
         #print "collapse"
         self.optimization.collapse()
-        self.graph.addVisualizer(self.optimization)
+        self.networkCanvas.addVisualizer(self.optimization)
         #if not nodes is None:
-        #    self.graph.updateData()
-        #    self.graph.addSelection(nodes, False)
+        #    self.networkCanvas.updateData()
+        #    self.networkCanvas.addSelection(nodes, False)
         self.updateCanvas()
         
     def clustering(self):
@@ -591,23 +602,23 @@ class OWNetExplorer(OWWidget):
         self.optimization.graph.getClusters()
         
     def insideviewneighbours(self):
-        if self.graph.insideview == 1:
-            self.graph.insideviewNeighbours = self.insideViewNeighbours
+        if self.networkCanvas.insideview == 1:
+            self.networkCanvas.insideviewNeighbours = self.insideViewNeighbours
             self.optButton.setChecked(True)
             self.fr(False)
         
     def insideview(self):
-        print self.graph.getSelectedVertices()
-        if len(self.graph.getSelectedVertices()) == 1:
-            if self.graph.insideview == 1:
+        print self.networkCanvas.getSelectedVertices()
+        if len(self.networkCanvas.getSelectedVertices()) == 1:
+            if self.networkCanvas.insideview == 1:
                 print "insideview: 1"
-                self.graph.insideview = 0
-                self.graph.showAllVertices()
+                self.networkCanvas.insideview = 0
+                self.networkCanvas.showAllVertices()
                 self.updateCanvas()
             else:
                 print "insideview: 0"
-                self.graph.insideview = 1
-                self.graph.insideviewNeighbors = self.insideViewNeighbours
+                self.networkCanvas.insideview = 1
+                self.networkCanvas.insideviewNeighbors = self.insideViewNeighbours
                 self.optButton.setChecked(True)
                 self.fr(False)
     
@@ -615,25 +626,25 @@ class OWNetExplorer(OWWidget):
             print "One node must be selected!"
         
     def showComponents(self):
-        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None:
+        if self.optimization is None or self.optimization.graph is None or self.optimization.graph.items is None:
             return
         
         vars = [x.name for x in self.optimization.getVars()]
         
         if not self.showComponentCombo.currentText() in vars:
-            self.graph.showComponentAttribute = None
+            self.networkCanvas.showComponentAttribute = None
             self.lastNameComponentAttribute = ''
         else:
-            self.graph.showComponentAttribute = self.showComponentCombo.currentText()     
+            self.networkCanvas.showComponentAttribute = self.showComponentCombo.currentText()     
             
-        self.graph.drawPlotItems()
+        self.networkCanvas.drawPlotItems()
         
     def nameComponents(self):
         """Names connected components of genes according to GO terms."""
         self.progressBarFinished()
         self.lastNameComponentAttribute = None
         
-        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None:
+        if self.optimization is None or self.optimization.graph is None or self.optimization.graph.items is None:
             return
         
         vars = [x.name for x in self.optimization.getVars()]
@@ -765,7 +776,7 @@ class OWNetExplorer(OWWidget):
         self.progressBarFinished()   
         
     def nameComponents_old(self):
-        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None:
+        if self.optimization is None or self.optimization.graph is None or self.optimization.graph.items is None:
             return
         
         vars = [x.name for x in self.optimization.getVars()]
@@ -980,29 +991,29 @@ class OWNetExplorer(OWWidget):
         #    print item
                         
     def showIndexLabels(self):
-        self.graph.showIndexes = self.showIndexes
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.showIndexes = self.showIndexes
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def showWeightLabels(self):
-        self.graph.showWeights = self.showWeights
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.showWeights = self.showWeights
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def showDistancesClick(self):
-        if self.visualize and self.visualize.vertexDistance == None:
+        if self.visualize and self.visualize.vertexDistance is None:
             self.warning("Vertex distance signal is not set. Distances are not known.")
-        self.graph.showDistances = self.showDistances
+        self.networkCanvas.showDistances = self.showDistances
         
     def showEdgeLabelsClick(self):
-        self.graph.showEdgeLabels = self.showEdgeLabels
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.showEdgeLabels = self.showEdgeLabels
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def labelsOnMarked(self):
-        self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
     
     def setSearchStringTimer(self):
         self.hubs = 1
@@ -1015,8 +1026,8 @@ class OWNetExplorer(OWWidget):
             self.hubs = i
         
         #print self.hubs
-        self.graph.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
-        self.graph.markWithRed = False
+        self.networkCanvas.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
+        self.networkCanvas.markWithRed = False
 
         if not self.optimization or not self.optimization.graph:
             return
@@ -1025,55 +1036,55 @@ class OWNetExplorer(OWWidget):
         vgraph = self.optimization.graph
 
         if hubs == 0:
-            self.graph.setMarkedVertices([])
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices([])
+            self.networkCanvas.replot()
             return
         
         elif hubs == 1:
             #print "mark on given label"
             txt = self.markSearchString
-            labelText = self.graph.labelText
-            self.graph.markWithRed = self.graph.nVertices > 200
+            labelText = self.networkCanvas.labelText
+            self.networkCanvas.markWithRed = self.networkCanvas.nVertices > 200
             
             toMark = [i for i, values in enumerate(vgraph.items) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(vgraph.items.domain)) + vgraph.items.domain.getmetas().keys()])]
-            self.graph.setMarkedVertices(toMark)
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices(toMark)
+            self.networkCanvas.replot()
             return
         
         elif hubs == 2:
             #print "mark on focus"
-            self.graph.unMark()
-            self.graph.tooltipNeighbours = self.markDistance
+            self.networkCanvas.unMark()
+            self.networkCanvas.tooltipNeighbours = self.markDistance
             return
 
         elif hubs == 3:
             #print "mark selected"
-            self.graph.unMark()
-            self.graph.selectionNeighbours = self.markDistance
-            self.graph.markSelectionNeighbours()
+            self.networkCanvas.unMark()
+            self.networkCanvas.selectionNeighbours = self.markDistance
+            self.networkCanvas.markSelectionNeighbours()
             return
         
-        self.graph.tooltipNeighbours = self.graph.selectionNeighbours = 0
+        self.networkCanvas.tooltipNeighbours = self.networkCanvas.selectionNeighbours = 0
         powers = vgraph.getDegrees()
         
         if hubs == 4: # at least N connections
             #print "mark at least N connections"
             N = self.markNConnections
-            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
+            self.networkCanvas.replot()
         elif hubs == 5:
             #print "mark at most N connections"
             N = self.markNConnections
-            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
+            self.networkCanvas.replot()
         elif hubs == 6:
             #print "mark more than any"
-            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.networkCanvas.replot()
         elif hubs == 7:
             #print "mark more than avg"
-            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.networkCanvas.replot()
         elif hubs == 8:
             #print "mark most"
             sortedIdx = range(len(powers))
@@ -1082,19 +1093,19 @@ class OWNetExplorer(OWWidget):
             cutPower = powers[sortedIdx[cutP]]
             while cutP < len(powers) and powers[sortedIdx[cutP]] == cutPower:
                 cutP += 1
-            self.graph.setMarkedVertices(sortedIdx[:cutP])
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices(sortedIdx[:cutP])
+            self.networkCanvas.replot()
         elif hubs == 9:
             self.setMarkInput()
        
     def testRefresh(self):
         start = time()
-        self.graph.replot()
+        self.networkCanvas.replot()
         stop = time()    
         print "replot in " + str(stop - start)
         
     def saveNetwork(self):
-        if self.graph == None or self.graph.visualizer == None:
+        if self.networkCanvas is None or self.networkCanvas.visualizer is None:
             return
         
         filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK network (*.net)\nGML network (*.gml)')
@@ -1109,23 +1120,23 @@ class OWNetExplorer(OWWidget):
             self.optimization.graph.save(fn)
                     
     def sendData(self):
-        graph = self.graph.getSelectedGraph()
-        vertices = self.graph.getSelectedVertices()
+        graph = self.networkCanvas.getSelectedGraph()
+        vertices = self.networkCanvas.getSelectedVertices()
         
         if graph != None:
             if graph.items != None:
                 self.send("Selected Examples", graph.items)
             else:
-                self.send("Selected Examples", self.graph.getSelectedExamples())
+                self.send("Selected Examples", self.networkCanvas.getSelectedExamples())
             
             #print "sendData:", self.visualize.graph.items.domain
-            self.send("Unselected Examples", self.graph.getUnselectedExamples())    
+            self.send("Unselected Examples", self.networkCanvas.getUnselectedExamples())    
             self.send("Selected Network", graph)
         else:
-            items = self.graph.getSelectedExamples()
+            items = self.networkCanvas.getSelectedExamples()
             self.send("Selected Examples", items)
                 
-            items = self.graph.getUnselectedExamples()
+            items = self.networkCanvas.getUnselectedExamples()
             self.send("Unselected Examples", items)
         
         matrix = None
@@ -1218,23 +1229,24 @@ class OWNetExplorer(OWWidget):
         self.comboAttSelection.addItem("Select attribute")
       
     def setGraph(self, graph):      
-        if graph == None:
+        if graph is None:
             self.optimization = None
-            self.graph.addVisualizer(self.optimization)
+            self.networkCanvas.addVisualizer(self.optimization)
             self.clearCombos()
             return
         
         #print "OWNetwork/setGraph: new visualizer..."
         self.optimization = orngNetwork.NetworkOptimization(graph)
-        self.graph.addVisualizer(self.optimization)
-        self.graph.renderAntialiased = self.renderAntialiased
-        self.graph.showEdgeLabels = self.showEdgeLabels
-        self.graph.maxVertexSize = self.maxVertexSize
-        self.graph.maxEdgeSize = self.maxLinkSize
+        self.networkCanvas.addVisualizer(self.optimization)
+        self.networkCanvas.renderAntialiased = self.renderAntialiased
+        self.networkCanvas.showEdgeLabels = self.showEdgeLabels
+        self.networkCanvas.minVertexSize = self.minVertexSize
+        self.networkCanvas.maxVertexSize = self.maxVertexSize
+        self.networkCanvas.maxEdgeSize = self.maxLinkSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         self.lastColorColumn = self.colorCombo.currentText()
-        self.graph.minComponentEdgeWidth = self.minComponentEdgeWidth
-        self.graph.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
+        self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
         
         
 
@@ -1286,26 +1298,27 @@ class OWNetExplorer(OWWidget):
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 1500: self.frSteps = 1500;
         
-        self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
-        self.graph.showWeights = self.showWeights
-        self.graph.showIndexes = self.showIndexes
+        self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
+        self.networkCanvas.showWeights = self.showWeights
+        self.networkCanvas.showIndexes = self.showIndexes
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
             self.renderAntialiased = 0
+            self.minVertexSize = 5
             self.maxVertexSize = 5
             self.maxLinkSize = 1
             self.optMethod = 0
             self.setOptMethod()            
             
         if self.vertexSize > 0:
-            self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
+            self.networkCanvas.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
         else:
-            self.graph.setVerticesSize()
+            self.networkCanvas.setVerticesSize()
             
         self.setVertexColor()
         self.setEdgeColor()
             
-        self.graph.setEdgesSize()
+        self.networkCanvas.setEdgesSize()
         self.clickedAttLstBox()
         self.clickedTooltipLstBox()
         self.clickedEdgeLabelListBox()
@@ -1319,7 +1332,7 @@ class OWNetExplorer(OWWidget):
     def setItems(self, items=None):
         self.error('')
         
-        if self.optimization == None or self.optimization.graph == None or items == None:
+        if self.optimization is None or self.optimization.graph is None or items is None:
             return
         
         if len(items) != self.optimization.graph.nVertices:
@@ -1334,7 +1347,7 @@ class OWNetExplorer(OWWidget):
         self.showEdgeLabelsClick()
         
         self.setCombos()
-        self.graph.updateData()
+        self.networkCanvas.updateData()
         
     def setMarkInput(self):
         var = str(self.markInputCombo.currentText())
@@ -1343,19 +1356,19 @@ class OWNetExplorer(OWWidget):
             values = [str(x[var]).strip().upper() for x in self.markInputItems]
             toMark = [i for (i,x) in enumerate(self.optimization.graph.items) if str(x[var]).strip().upper() in values]
             #print "mark:", toMark
-            self.graph.setMarkedVertices(list(toMark))
-            self.graph.replot()
+            self.networkCanvas.setMarkedVertices(list(toMark))
+            self.networkCanvas.replot()
             
         else:
-            self.graph.setMarkedVertices([])
-            self.graph.replot()            
+            self.networkCanvas.setMarkedVertices([])
+            self.networkCanvas.replot()            
     
     def markItems(self, items):
         self.markInputCombo.clear()
         self.markInputRadioButton.setEnabled(False)
         self.markInputItems = items
         
-        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None or items == None:
+        if self.optimization is None or self.optimization.graph is None or self.optimization.graph.items is None or items is None:
             return
         
         if len(items) > 0:
@@ -1375,7 +1388,7 @@ class OWNetExplorer(OWWidget):
                         self.setMarkMode(9)
               
     def setExampleSubset(self, subset):
-        if self.graph == None:
+        if self.networkCanvas is None:
             return
         
         self.warning('')
@@ -1392,19 +1405,19 @@ class OWNetExplorer(OWWidget):
                     else:
                         expected += 1
                         
-                hiddenNodes += range(expected-1, self.graph.nVertices)
+                hiddenNodes += range(expected-1, self.networkCanvas.nVertices)
                 
-                self.graph.setHiddenNodes(hiddenNodes)
+                self.networkCanvas.setHiddenNodes(hiddenNodes)
             except:
                 self.warning('"index" attribute does not exist in "items" table.')
                             
     def updateCanvas(self):
         # if network exists
         if self.optimization != None:
-            self.graph.updateCanvas()
+            self.networkCanvas.updateCanvas()
 
     def showDegreeDistribution(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
         from matplotlib import rcParams
@@ -1430,8 +1443,8 @@ class OWNetExplorer(OWWidget):
         if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
-            self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
+            self.networkCanvas.contPalette = dlg.getContinuousPalette("contPalette")
+            self.networkCanvas.discPalette = dlg.getDiscretePalette("discPalette")
             
             self.setVertexColor()
             
@@ -1440,8 +1453,8 @@ class OWNetExplorer(OWWidget):
         if dlg.exec_():
             self.edgeColorSettings = dlg.getColorSchemas()
             self.selectedEdgeSchemaIndex = dlg.selectedSchemaIndex
-            self.graph.contEdgePalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discEdgePalette = dlg.getDiscretePalette("discPalette")
+            self.networkCanvas.contEdgePalette = dlg.getContinuousPalette("contPalette")
+            self.networkCanvas.discEdgePalette = dlg.getDiscretePalette("discPalette")
             
             self.setEdgeColor()
     
@@ -1455,7 +1468,7 @@ class OWNetExplorer(OWWidget):
     Layout Optimization
     """
     def optLayout(self):
-        if self.optimization == None:   #grafa se ni
+        if self.optimization is None:   #grafa se ni
             self.optButton.setChecked(False)
             return
         
@@ -1508,7 +1521,7 @@ class OWNetExplorer(OWWidget):
 
     def random(self):
         #print "OWNetwork/random.."
-        if self.optimization == None:   #grafa se ni
+        if self.optimization is None:   #grafa se ni
             return    
             
         self.optimization.random()
@@ -1517,7 +1530,7 @@ class OWNetExplorer(OWWidget):
         self.updateCanvas();
         
     def fr(self, weighted):
-        if self.optimization == None:   #grafa se ni
+        if self.optimization is None:   #grafa se ni
             return
               
         if not self.optButton.isChecked():
@@ -1543,7 +1556,7 @@ class OWNetExplorer(OWWidget):
                 #print "iteration, initTemp: " + str(initTemp)
                 if self.stopOptimization:
                     return
-                initTemp = self.optimization.fruchtermanReingold(k, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
+                initTemp = self.optimization.fruchtermanReingold(k, initTemp, coolFactor, self.networkCanvas.hiddenNodes, weighted)
                 iteration += 1
                 qApp.processEvents()
                 self.updateCanvas()
@@ -1551,7 +1564,7 @@ class OWNetExplorer(OWWidget):
             #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
             if self.stopOptimization:
                     return
-            initTemp = self.optimization.fruchtermanReingold(o, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
+            initTemp = self.optimization.fruchtermanReingold(o, initTemp, coolFactor, self.networkCanvas.hiddenNodes, weighted)
             qApp.processEvents()
             self.updateCanvas()
         else:
@@ -1559,7 +1572,7 @@ class OWNetExplorer(OWWidget):
                 #print "iteration ostanek, initTemp: " + str(initTemp)
                 if self.stopOptimization:
                     return
-                initTemp = self.optimization.fruchtermanReingold(1, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
+                initTemp = self.optimization.fruchtermanReingold(1, initTemp, coolFactor, self.networkCanvas.hiddenNodes, weighted)
                 iteration += 1
                 qApp.processEvents()
                 self.updateCanvas()
@@ -1568,7 +1581,7 @@ class OWNetExplorer(OWWidget):
         self.optButton.setText("Optimize layout")
         
     def frSpecial(self):
-        if self.optimization == None:   #grafa se ni
+        if self.optimization is None:   #grafa se ni
             return
         
         steps = 100
@@ -1578,13 +1591,13 @@ class OWNetExplorer(OWWidget):
         for rec in self.optimization.network.coors:
             oldXY.append([rec[0], rec[1]])
         #print oldXY
-        initTemp = self.optimization.fruchtermanReingold(steps, initTemp, coolFactor, self.graph.hiddenNodes)
+        initTemp = self.optimization.fruchtermanReingold(steps, initTemp, coolFactor, self.networkCanvas.hiddenNodes)
         #print oldXY
-        self.graph.updateDataSpecial(oldXY)
-        self.graph.replot()
+        self.networkCanvas.updateDataSpecial(oldXY)
+        self.networkCanvas.replot()
                 
     def frRadial(self):
-        if self.optimization == None:   #grafa se ni
+        if self.optimization is None:   #grafa se ni
             return
         
         #print "F-R Radial"
@@ -1600,16 +1613,16 @@ class OWNetExplorer(OWWidget):
         initTemp = 100
         centerNdx = 0
         
-        selection = self.graph.getSelection()
+        selection = self.networkCanvas.getSelection()
         if len(selection) > 0:
             centerNdx = selection[0]
             
         #print "center ndx: " + str(centerNdx)
         initTemp = self.optimization.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
-        self.graph.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
-        #self.graph.circles = [100, 200, 300]
+        self.networkCanvas.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
+        #self.networkCanvas.circles = [100, 200, 300]
         self.updateCanvas()
-        self.graph.circles = []
+        self.networkCanvas.circles = []
         
     def circularOriginal(self):
         #print "Circular Original"
@@ -1630,11 +1643,11 @@ class OWNetExplorer(OWWidget):
             self.updateCanvas()
             
     def pivotMDS(self):
-        if self.vertexDistance == None:
+        if self.vertexDistance is None:
             self.information('Set distance matrix to input signal')
             return
         
-        if self.optimization == None:
+        if self.optimization is None:
             self.information('No network found')
             return
         
@@ -1656,95 +1669,99 @@ class OWNetExplorer(OWWidget):
     """
        
     def clickedAttLstBox(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
         self.lastLabelColumns = set([self.attributes[i][0] for i in self.markerAttributes])
-        self.graph.setLabelText(self.lastLabelColumns)
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.setLabelText(self.lastLabelColumns)
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
   
     def clickedTooltipLstBox(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
         self.lastTooltipColumns = set([self.attributes[i][0] for i in self.tooltipAttributes])
-        self.graph.setTooltipText(self.lastTooltipColumns)
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.setTooltipText(self.lastTooltipColumns)
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def clickedEdgeLabelListBox(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
         self.lastEdgeLabelAttributes = set([self.edgeAttributes[i][0] for i in self.edgeLabelAttributes])
-        self.graph.setEdgeLabelText(self.lastEdgeLabelAttributes)
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.setEdgeLabelText(self.lastEdgeLabelAttributes)
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
 
     def setVertexColor(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
-        self.graph.setVertexColor(self.colorCombo.currentText())
+        self.networkCanvas.setVertexColor(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def setEdgeColor(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
-        self.graph.setEdgeColor(self.edgeColorCombo.currentText())
+        self.networkCanvas.setEdgeColor(self.edgeColorCombo.currentText())
         self.lastEdgeColorColumn = self.edgeColorCombo.currentText()
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
                   
     def setGraphGrid(self):
-        self.graph.enableGridY(self.graphShowGrid)
-        self.graph.enableGridX(self.graphShowGrid)
+        self.networkCanvas.enableGridY(self.networkCanvasShowGrid)
+        self.networkCanvas.enableGridX(self.networkCanvasShowGrid)
     
     def selectAllConnectedNodes(self):
-        self.graph.selectConnectedNodes(1000000)
+        self.networkCanvas.selectConnectedNodes(1000000)
         
     def setShowMissingValues(self):
-        self.graph.showMissingValues = self.showMissingValues
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.showMissingValues = self.showMissingValues
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def setMaxLinkSize(self):
-        if self.optimization == None:
+        if self.optimization is None:
             return
         
-        self.graph.maxEdgeSize = self.maxLinkSize
-        self.graph.setEdgesSize()
-        self.graph.replot()
+        self.networkCanvas.maxEdgeSize = self.maxLinkSize
+        self.networkCanvas.setEdgesSize()
+        self.networkCanvas.replot()
     
     def setVertexSize(self):
-        if self.optimization == None:
+        if self.optimization is None or self.networkCanvas is None:
             return
         
-        self.graph.maxVertexSize = self.maxVertexSize
+        if self.minVertexSize > self.maxVertexSize:
+            self.maxVertexSize = self.minVertexSize
+        
+        self.networkCanvas.minVertexSize = self.minVertexSize
+        self.networkCanvas.maxVertexSize = self.maxVertexSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         
         if self.vertexSize > 0:
-            self.graph.setVerticesSize(self.lastVertexSizeColumn, self.invertSize)
+            self.networkCanvas.setVerticesSize(self.lastVertexSizeColumn, self.invertSize)
         else:
-            self.graph.setVerticesSize()
+            self.networkCanvas.setVerticesSize()
             
-        self.graph.replot()
+        self.networkCanvas.replot()
         
     def setFontSize(self):
-        if self.graph == None:
+        if self.networkCanvas is None:
             return
         
-        self.graph.fontSize = self.fontSize
-        self.graph.drawPlotItems()
+        self.networkCanvas.fontSize = self.fontSize
+        self.networkCanvas.drawPlotItems()
         
     def setRenderAntialiased(self):
-        self.graph.renderAntialiased = self.renderAntialiased
-        self.graph.updateData()
-        self.graph.replot()
+        self.networkCanvas.renderAntialiased = self.renderAntialiased
+        self.networkCanvas.updateData()
+        self.networkCanvas.replot()
         
     def sendReport(self):
         self.reportSettings("Graph data",
@@ -1766,7 +1783,7 @@ class OWNetExplorer(OWWidget):
                             [("Method", self.optCombo.currentText()),
                              ("Iterations", self.frSteps)])
         self.reportSection("Graph")
-        self.reportImage(self.graph.saveToFileDirect)        
+        self.reportImage(self.networkCanvas.saveToFileDirect)        
         
         
 if __name__=="__main__":    

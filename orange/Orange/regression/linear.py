@@ -38,7 +38,7 @@ class LinearRegressionLearner(object):
             data = Orange.data.Table(new_domain, data)
             
         if self.stepwise and self.stepwise_before:
-            use_attributes=stepwise(data, add_sig=self.add_sig,
+            use_attributes=stepwise(data, weight, add_sig=self.add_sig,
                                     remove_sig=self.remove_sig)
             new_domain = Orange.data.Domain(use_attributes, data.domain.class_var)
             new_domain.addmetas(data.domain.getmetas())

@@ -1,4 +1,10 @@
 """
+==============================
+Add-on Management (``addons``)
+==============================
+
+.. index:: add-ons
+
 Orange.misc.addons module provides a framework for Orange add-on management. As
 soon as it is imported, the following initialization takes place: the list of
 installed add-ons is loaded, their directories are added to python path
@@ -107,6 +113,7 @@ Exception classes
 import xml.dom.minidom
 import re
 import os
+import sys
 import glob
 import time
 import socket
@@ -115,11 +122,13 @@ import urllib2 # urllib2 because it reports HTTP Errors for 'urlopen'
 import bisect
 import platform
 
-import orngEnviron
+import Orange.misc.environ
 import widgetParser
 from fileutil import *
 from fileutil import _zip_open
 from zipfile import ZipFile
+
+import warnings
 
 socket.setdefaulttimeout(120)  # In seconds.
 
@@ -299,8 +308,8 @@ class OrangeRegisteredAddOn():
         try:
             xmldoc = xml.dom.minidom.parse(addon_xml_path)
         except Exception, e:
-            print "Could not load addon.xml because \"%s\"; a new one will be"+\
-                " created." % e
+            warnings.warn("Could not load addon.xml because \"%s\"; a new one "+
+                          "will be created." % e, Warning, 0)
             impl = xml.dom.minidom.getDOMImplementation()
             xmldoc = impl.createDocument(None, "OrangeAddOn", None)
         xmldoc_root = xmldoc.documentElement
@@ -368,18 +377,18 @@ class OrangeRegisteredAddOn():
         import codecs
         xmldoc.writexml(codecs.open(addon_xml_path, 'w', "utf-8"),
                         encoding="UTF-8")
-        print "Updated addon.xml written."
+        sys.stderr.write("Updated addon.xml written.\n")
 
         ##########################
         # style.css creation     #
         ##########################
         localcss = os.path.join(self.directory_documentation(), "style.css")
-        orangecss = os.path.join(orngEnviron.orangeDocDir, "style.css")
+        orangecss = os.path.join(Orange.misc.environ.doc_install_dir, "style.css")
         if not os.path.isfile(localcss):
             if os.path.isfile(orangecss):
                 import shutil
                 shutil.copy(orangecss, localcss)
-                print "doc/style.css created."
+                sys.stderr.write("doc/style.css created.\n")
             else:
                 raise PackingException("Could not find style.css in orange"+\
                                        " documentation directory.")
@@ -406,7 +415,7 @@ class OrangeRegisteredAddOn():
                             "documentation is. Well, at least it <i>should</i>"+\
                             " be."))
             indexFile.close()
-            print "doc/index.html written."
+            sys.stderr.write("doc/index.html written.\n")
             
         ##########################
         # iconlist.html creation #
@@ -414,7 +423,7 @@ class OrangeRegisteredAddOn():
         wdocdir = os.path.join(self.directory_documentation(), "widgets")
         if not os.path.isdir(wdocdir): os.mkdir(wdocdir)
         open(os.path.join(wdocdir, "index.html"), 'w').write(self.iconlist_html())
-        print "Widget list (doc/widgets/index.html) written."
+        sys.stderr.write("Widget list (doc/widgets/index.html) written.\n")
 
         ##########################
         # copying the icons      #
@@ -426,8 +435,8 @@ class OrangeRegisteredAddOn():
         proticondocdir = os.path.join(wdocdir, "prototypes", "icons")
 
         import shutil
-        iconbg_file = os.path.join(orngEnviron.picsDir, "background_32.png")
-        iconun_file = os.path.join(orngEnviron.picsDir, "Unknown.png")
+        iconbg_file = os.path.join(Orange.misc.environ.icons_install_dir, "background_32.png")
+        iconun_file = os.path.join(Orange.misc.environ.icons_install_dir, "Unknown.png")
         if not os.path.isdir(icondocdir): os.mkdir(icondocdir)
         if os.path.isfile(iconbg_file): shutil.copy(iconbg_file, icondocdir)
         if os.path.isfile(iconun_file): shutil.copy(iconun_file, icondocdir)
@@ -441,7 +450,7 @@ class OrangeRegisteredAddOn():
                 os.mkdir(os.path.join(wdocdir, "prototypes"))
             if not os.path.isdir(proticondocdir): os.mkdir(proticondocdir)
             distutils.dir_util.copy_tree(proticondir, proticondocdir)
-        print "Widget icons copied to doc/widgets/."
+        sys.stderr.write("Widget icons copied to doc/widgets/.\n")
 
 
     #####################################################
@@ -465,7 +474,7 @@ class OrangeRegisteredAddOn():
         
         inputscode = """<DT>(None)</DT>"""
         outputscode = """<DT>(None)</DT>"""
-        il, ol = eval(widget.inputlist), eval(widget.outputlist)
+        il, ol = eval(widget.inputList), eval(widget.outputList)
         if il:
             inputscode = "\n".join(["<dt>%s (%s)</dt>\n<dd>Describe here, what this input does.</dd>\n" % (p[0], p[1]) for p in il])
         if ol:
@@ -1177,7 +1186,8 @@ class OrangeAddOnRepository:
                 self.refreshdata(True, True)
             except Exception, e:
                 if force:
-                    print "Couldn't load data from repository '%s': %s" % (self.name, e)
+                    warnings.warn("Couldn't load data from repository '%s': %s"
+                                  % (self.name, e), Warning, 0)
                     return
                 raise e
         
@@ -1227,7 +1237,10 @@ class OrangeAddOnRepository:
             versions = self.addons[addon.id]
             for version in versions:
                 if version.version == addon.version:
-                    print "Ignoring the second occurence of addon '%s', version '%s'." % (addon.name, addon.version_str)
+                    warnings.warn("Ignoring the second occurence of addon '%s'"+
+                                  ", version '%s'." % (addon.name,
+                                                       addon.version_str),
+                                  Warning, 0)
                     return
             versions.append(addon)
         else:
@@ -1301,11 +1314,17 @@ class OrangeAddOnRepository:
                                     addon = OrangeAddOnInRepo(self, xmlfile=node)
                                     self._add_addon(addon)
                                 except Exception, e:
-                                    print "Ignoring node nr. %d in repository '%s' because of an error: %s" % (i+1, self.name, e)
+                                    warnings.warn("Ignoring node nr. %d in "+
+                                                  "repository '%s' because of"+
+                                                  " an error: %s" % (i+1,
+                                                                     self.name,
+                                                                     e),
+                                                  Warning, 0)
                         self.has_web_script = True
                         return True
                     except Exception, e:
-                        print "Warning: a problem occurred using server-side script on repository '%s': %s.\nAll add-ons need to be downloaded for their metadata to be extracted!" % (self.name, e)
+                        warnings.warn("A problem occurred using server-side script on repository '%s': %s.\nAll add-ons need to be downloaded for their metadata to be extracted!"
+                                      % (self.name, str(e)), Warning, 0)
 
                     # Invoking script failed - trying to get and parse a directory listing
                     try:
@@ -1318,16 +1337,23 @@ class OrangeAddOnRepository:
                                                 response))
                     if len(addOnFiles)==0:
                         if firstload:
-                            raise RepositoryException("Unable to load repository data: this is not an Orange add-on repository!")
+                            raise RepositoryException("Unable to load reposito"+
+                                                      "ry data: this is not an"+
+                                                      " Orange add-on "+
+                                                      "repository!")
                         else:
-                            print "Repository '%s' is empty ..." % self.name
+                            warnings.warn("Repository '%s' is empty ..." %
+                                          self.name, Warning, 0)
                     self.addons = {}
                     for addOnFile in addOnFiles:
                         try:
                             addOnTmpFile = urllib.urlretrieve(self.url+"/"+addOnFile)[0]
                             self._add_packed_addon(addOnTmpFile, addOnFile)
                         except Exception, e:
-                            print "Ignoring '%s' in repository '%s' because of an error: %s" % (addOnFile, self.name, e)
+                            warnings.warn("Ignoring '%s' in repository '%s' "+
+                                          "because of an error: %s" %
+                                          (addOnFile, self.name, e),
+                                          Warning, 0)
                 elif protocol == "file": # A local repository: open each and every archive to obtain data
                     dir = self.url.replace("file://","")
                     if not os.path.isdir(dir):
@@ -1338,7 +1364,10 @@ class OrangeAddOnRepository:
                             self._add_packed_addon(addOnFile,
                                                   os.path.split(addOnFile)[1])
                         except Exception, e:
-                            print "Ignoring '%s' in repository '%s' because of an error: %s" % (addOnFile, self.name, e)
+                            warnings.warn("Ignoring '%s' in repository '%s' "+
+                                          "because of an error: %s" %
+                                          (addOnFile, self.name, e),
+                                          Warning, 0)
                 return True
             finally:
                 self._refresh_index()
@@ -1439,10 +1468,10 @@ def load_installed_addons_from_dir(dir):
             try:
                 addOn = OrangeAddOnInstalled(addOnDir)
             except Exception, e:
-                print "Add-on in directory '%s' has no valid descriptor (addon.xml): %s" % (addOnDir, e)
+                warnings.warn("Add-on in directory '%s' has no valid descriptor (addon.xml): %s" % (addOnDir, e), Warning, 0)
                 continue
             if addOn.id in installed_addons:
-                print "Add-on in directory '%s' has the same ID as the addon in '%s'!" % (addOnDir, installed_addons[addOn.id].directory)
+                warnings.warn("Add-on in directory '%s' has the same ID as the addon in '%s'!" % (addOnDir, installed_addons[addOn.id].directory), Warning, 0)
                 continue
             installed_addons[addOn.id] = addOn
 
@@ -1451,7 +1480,7 @@ def repository_list_filename():
     Return the full filename of pickled add-on repository list. It resides
     within Canvas settings directory. 
     """
-    canvasSettingsDir = os.path.realpath(orngEnviron.directoryNames["canvasSettingsDir"])
+    canvasSettingsDir = os.path.realpath(Orange.misc.environ.canvas_settings_dir)
     listFileName = os.path.join(canvasSettingsDir, "repositoryList.pickle")
     return listFileName
 
@@ -1479,11 +1508,11 @@ def load_repositories(refresh=True):
                                       in cPickle.load(file)]
             file.close()
         except Exception, e:
-            print "Unable to load repository list! Error: %s" % e
+            warnings.warn("Unable to load repository list! Error: %s" % e, Warning, 0)
     try:
         update_default_repositories(refresh=refresh)
     except Exception, e:
-        print "Unable to refresh default repositories: %s" % (e)
+        warnings.warn("Unable to refresh default repositories: %s" % (e), Warning, 0)
 
     if refresh:
         for r in available_repositories:
@@ -1491,7 +1520,7 @@ def load_repositories(refresh=True):
             try:
                 r.refreshdata(force=False)
             except Exception, e:
-                print "Unable to refresh repository %s! Error: %s" % (r.name, e)
+                warnings.warn("Unable to refresh repository %s! Error: %s" % (r.name, e), Warning, 0)
     save_repositories()
 
 def save_repositories():
@@ -1505,7 +1534,7 @@ def save_repositories():
         global available_repositories
         cPickle.dump(available_repositories, open(listFileName, 'wb'))
     except Exception, e:
-        print "Unable to save repository list! Error: %s" % e
+        warnings.warn("Unable to save repository list! Error: %s" % e, Warning, 0)
     
 
 def update_default_repositories(refresh=True):
@@ -1563,13 +1592,14 @@ def add_addon_directories_to_path():
     sys.path = [dir for dir in sys.path if dir not in addon_directories]
     for addOn in installed_addons.values() + registered_addons:
         path = addOn.directory
-        for p in [path, os.path.join(path, "widgets"),
-                  os.path.join(path, "widgets", "prototypes"),
+        for p in [os.path.join(path, "widgets", "prototypes"),
+                  os.path.join(path, "widgets"),
+                  path,
                   os.path.join(path, "lib-%s" % "-".join(( sys.platform, "x86"
                                                            if (platform.machine()=="")
                                                            else platform.machine(),
                                                            ".".join(map(str, sys.version_info[:2])) )) )]:
-            if os.path.isdir(p) and not any([orngEnviron.samepath(p, x)
+            if os.path.isdir(p) and not any([Orange.misc.environ.samepath(p, x)
                                              for x in sys.path]):
                 if p not in sys.path:
                     addon_directories.append(p)
@@ -1595,8 +1625,8 @@ class InstallationException(Exception):
 def install_addon(oaofile, global_install=False, refresh=True):
     """
     Install an add-on from given .oao package. Installation means unpacking the
-    .oao file to an appropriate directory (:obj:`orngEnviron.addOnsDirUser` or
-    :obj:`orngEnviron.addOnsDirSys`, depending on the
+    .oao file to an appropriate directory (:obj:`Orange.misc.environ.add_ons_dir_user` or
+    :obj:`Orange.misc.environ.add_ons_dir_sys`, depending on the
     :obj:`global_install` parameter), creating an
     :class:`OrangeAddOnInstalled` instance and adding this object into the
     :obj:`installed_addons` dictionary.
@@ -1622,7 +1652,7 @@ def install_addon(oaofile, global_install=False, refresh=True):
             if filename[0]=="\\" or filename[0]=="/" or filename[:2]=="..":
                 raise InstallationException("Refusing to install unsafe package: it contains file named '%s'!" % filename)
         
-        root = orngEnviron.addOnsDirSys if global_install else orngEnviron.addOnsDirUser
+        root = Orange.misc.environ.add_ons_dir if global_install else Orange.misc.environ.add_ons_dir_user
         
         try:
             manifest = _zip_open(pack, 'addon.xml')
@@ -1713,8 +1743,8 @@ def load_addons():
     installation directory (:obj:`orngEnviron.addOnsDirSys`) and user-specific
     add-on installation directory (:obj:`orngEnviron.addOnsDirUser`).
     """
-    load_installed_addons_from_dir(orngEnviron.addOnsDirSys)
-    load_installed_addons_from_dir(orngEnviron.addOnsDirUser)
+    load_installed_addons_from_dir(Orange.misc.environ.add_ons_dir)
+    load_installed_addons_from_dir(Orange.misc.environ.add_ons_dir_user)
 
 def refresh_addons(reload_path=False):
     """
@@ -1742,15 +1772,15 @@ def __read_addons_list(addons_file, systemwide):
         return []
     
 def __read_addon_lists(userOnly=False):
-    return __read_addons_list(os.path.join(orngEnviron.orangeSettingsDir, "add-ons.txt"),
+    return __read_addons_list(os.path.join(Orange.misc.environ.orange_settings_dir, "add-ons.txt"),
                               False) + ([] if userOnly else
-                                        __read_addons_list(os.path.join(orngEnviron.orangeDir, "add-ons.txt"),
+                                        __read_addons_list(os.path.join(Orange.misc.environ.install_dir, "add-ons.txt"),
                                                            True))
 
 def __write_addon_lists(addons, user_only=False):
-    file(os.path.join(orngEnviron.orangeSettingsDir, "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if not a.systemwide]))
+    file(os.path.join(Orange.misc.environ.orange_settings_dir, "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if not a.systemwide]))
     if not user_only:
-        file(os.path.join(orngEnviron.orangeDir        , "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if     a.systemwide]))
+        file(os.path.join(Orange.misc.environ.install_dir        , "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if     a.systemwide]))
 
 def register_addon(name, path, add = True, refresh=True, systemwide=False):
     """

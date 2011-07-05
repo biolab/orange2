@@ -3,7 +3,7 @@
 <description>Embeds a model widget</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
-<priority>1100</priority>
+<priority>1120</priority>
 """
 
 import sip
@@ -27,7 +27,7 @@ class OWModelEmbedder(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Model Embedder")
         
-        self.inputs = [("Examples", orange.ExampleTable, self.setData, Default),
+        self.inputs = [("Examples", orange.ExampleTable, self.setData),
                        ("Model", orange.Example, self.setModel)]
         
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
@@ -36,7 +36,8 @@ class OWModelEmbedder(OWWidget):
         self.data = None
         self.model = None
         
-        self.resize(800, 600)
+        self.loadSettings()
+        
         self.widgets = {}
         
     def setData(self, data):

@@ -130,7 +130,7 @@ class BoostedClassifier(orange.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        votes = [0.] * len(self.classVar.values)
+        votes = Orange.statistics.distribution.Discrete(self.classVar)
         for c, e in self.classifiers:
             votes[int(c(instance))] += e
         index = Orange.misc.selection.selectBestIndex(votes)
@@ -143,5 +143,11 @@ class BoostedClassifier(orange.Classifier):
             votes[i] = votes[i]/sv
         if resultType == orange.GetProbabilities:
             return votes
-        else:
+        elif resultType == orange.GetBoth:
             return (value, votes)
+        else:
+            return value
+        
+    def __reduce__(self):
+        return type(self), (self.classifiers, self.name, self.classVar), dict(self.__dict__)
+    

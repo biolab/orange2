@@ -1,6 +1,6 @@
 """
-<name>Models File</name>
-<description>Loads decision models</description>
+<name>Model File</name>
+<description>Load prediction models</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
 <priority>1100</priority>
@@ -15,11 +15,11 @@ import exceptions
 import os.path
 import pickle
 
-class OWModelsFile(OWDistanceFile):
+class OWModelFile(OWDistanceFile):
     settingsList = ["recentFiles", "origRecentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWDistanceFile.__init__(self, parent, signalManager, inputItems=0)
+        OWDistanceFile.__init__(self, parent, signalManager, name='Model File', inputItems=0)
         #self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
         
         
@@ -63,13 +63,16 @@ class OWModelsFile(OWDistanceFile):
             self.origRecentFiles.insert(0, fnOrigData)
             self.origFileIndex = 0
         else:
-            fnOrigData = self.origRecentFiles[0]
+            if len(self.origRecentFiles) > 0:
+                fnOrigData = self.origRecentFiles[0]
+            else:
+                fnOrigData = ''
 
         self.origFilecombo.clear()
         for file in self.origRecentFiles:
             self.origFilecombo.addItem(os.path.split(file)[1])
         
-        if os.path.exists(fnOrigData):
+        if os.path.isfile(fnOrigData):
             self.originalData = orange.ExampleTable(fnOrigData)
         
         if self.matrix == None:
@@ -88,7 +91,10 @@ class OWModelsFile(OWDistanceFile):
             self.recentFiles.insert(0, fn)
             self.fileIndex = 0
         else:
-            fn = self.recentFiles[0]
+            if len(self.recentFiles) > 0:
+                fn = self.recentFiles[0]
+            else:
+                return
 
         self.filecombo.clear()
         for file in self.recentFiles:
@@ -109,6 +115,7 @@ class OWModelsFile(OWDistanceFile):
             self.warning()
             if os.path.exists(dstFile + ".tab"):
                 self.data = orange.ExampleTable(dstFile + ".tab")
+                self.matrix.items = self.data
             else:
                 warning += "ExampleTable %s not found!\n" % (dstFile + ".tab")
             if os.path.exists(dstFile + ".res"):
@@ -127,7 +134,7 @@ class OWModelsFile(OWDistanceFile):
         
 if __name__=="__main__":
     a = QApplication(sys.argv)
-    ow = OWDistanceFile()
+    ow = OWModelFile()
     ow.show()
     a.exec_()
     ow.saveSettings()

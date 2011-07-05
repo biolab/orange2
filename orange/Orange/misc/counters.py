@@ -1,3 +1,13 @@
+"""
+=======================
+Counters (``counters``)
+=======================
+
+.. index:: misc
+.. index::
+   single: misc; counters
+"""
+
 class BooleanCounter:
   def __init__(self, bits):
     self.bits = bits

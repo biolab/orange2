@@ -1,49 +1,536 @@
-"""
-***********************
-Hierarchical clustering
-***********************
+r"""
+******************************************
+Hierarchical clustering (``hierarchical``)
+******************************************
 
 .. index::
-   single: clustering, kmeans
+   single: clustering, hierarchical, dendrogram
 .. index:: aglomerative clustering
 
-Examples
-========
+The method for hierarchical clustering, encapsulated in class
+:class:`HierarchicalClustering` works on a distance matrix stored as
+:class:`SymMatrix`. The method works in approximately O(n2) time (with
+the worst case O(n3)). For orientation, clustering ten thousand of 
+elements should take roughly 15 seconds on a 2 GHz computer. 
+The algorithm can either make a copy of the distances matrix and work on 
+it, or work on the original distance matrix, destroying it in the process. 
+The latter is useful for clustering larger number of objects. Since the 
+distance matrix stores (n+1)(n+2)/2 floats (cca 2 MB for 1000 objects and 
+200 MB for 10000, assuming the a float takes 4 bytes), by copying it we 
+would quickly run out of physical memory. Using virtual memory is not 
+an option since the matrix is accessed in a random manner.
 
-An example.
+The distance should contain no negative elements. This limitation is
+due to implementation details of the algorithm (it is not absolutely 
+necessary and can be lifted in future versions if often requested; it 
+only helps the algorithm run a bit faster). The elements on the diagonal 
+(representing the element's distance from itself) are ignored.
 
-.. automethod:: Orange.clustering.hierarchical.clustering
+Distance matrix can have the attribute objects describing the objects we 
+are clustering (this is available only in Python). This can be any sequence 
+of the same length as the matrix - an ExampleTable, a list of examples, a 
+list of attributes (if you're clustering attributes), or even a string of 
+the correct length. This attribute is not used in clustering but is only 
+passed to the clusters' attribute ``mapping`` (see below), which will hold a 
+reference to it (if you modify the list, the changes will affect the 
+clusters as well).
+
+.. class:: HierarchicalClustering
+    
+    .. attribute:: linkage
+        
+        Specifies the linkage method, which can be either :
+        
+            1. ``HierarchicalClustering.Single`` (default), where distance
+                between groups is defined as the distance between the closest
+                pair of objects, one from each group,
+            2. ``HierarchicalClustering.Average`` , where the distance between
+                two clusters is defined as the average of distances between
+                all pairs of objects, where each pair is made up of one object
+                from each group, or
+            3. ``HierarchicalClustering.Complete``, where the distance between
+                groups is defined as the distance between the most distant
+                pair of objects, one from each group. Complete linkage is
+                also called farthest neighbor.
+            4. ``HierarchicalClustering.Ward`` uses Ward's distance.
+            
+    .. attribute:: overwrite_matrix
+
+        If true (default is false), the algorithm will work on the original
+        distance matrix, destroying it in the process. The benefit is that it
+        will need much less memory (not much more than what is needed to store
+        the tree of clusters).
+        
+    .. attribute:: progress_callback
+        
+        A callback function (None by default). It can be any function or
+        callable class in Python, which accepts a single float as an
+        argument. The function only gets called if the number of objects
+        being clustered is at least 1000. It will be called for 101 times,
+        and the argument will give the proportion of the work been done.
+        The time intervals between the function calls won't be equal (sorry
+        about that...) since the clustering proceeds faster as the number
+        of clusters decreases.
+        
+    .. method:: __call__(matrix)
+          
+        The ``HierarchicalClustering`` is called with a distance matrix as an
+        argument. It returns an instance of HierarchicalCluster representing
+        the root of the hierarchy (instance of :class:`HierarchicalCluster`).
+        See examples section for details.
+        
+        :param matrix: A distance matrix to perform the clustering on.
+        :type matrix: :class:`Orange.core.SymMatrix`
+
+
+.. class:: HierarchicalCluster
+
+    Represents a node in the clustering tree, as returned by
+    :obj:`HierarchicalClustering``
+
+    .. attribute:: branches
+    
+        A list of sub-clusters (:class:`HierarchicalCluster` instances). If this
+        is a leaf node this attribute is `None`
+        
+    .. attribute:: left
+    
+        The left sub-cluster (defined only if there are only two branches).
+        
+        .. note:: Same as ``branches[0]``
+        
+    .. attribute:: right
+    
+        The right sub-cluster (defined only if there are only two branches).
+        
+        .. note:: Same as ``branches[1]``
+        
+    .. attribute:: height
+    
+        Height of the cluster (distance between the sub-clusters).
+        
+    .. attribute:: mapping
+    
+        A list of indices to the original distance matrix. It is the same
+        for all clusters in the hierarchy - it simply represents the indices
+        ordered according to the clustering.
+        
+    .. attribute:: first
+    .. attribute:: last
+    
+        ``first`` and ``last`` are indices into the elements of ``mapping`` that
+        belong to that cluster. (Seems weird, but is trivial - wait for the
+        examples. On the other hand, you probably won't need to understand this
+        anyway).
+
+    .. method:: __len__()
+    
+        Asking for the length of the cluster gives the number of the objects
+        belonging to it. This equals ``last - first``.
+    
+    .. method:: __getitem__(index)
+    
+        By indexing the cluster we address its elements; these are either 
+        indices or objects (you'll understand this after seeing the examples).
+        For instance cluster[2] gives the third element of the cluster, and
+        list(cluster) will return the cluster elements as a list. The cluster
+        elements are read-only. To actually modify them, you'll have to go
+        through mapping, as described below. This is intentionally complicated
+        to discourage a naive user from doing what he does not understand.
+    
+    .. method:: swap()
+    
+        Swaps the ``left`` and the ``right`` subcluster; obviously this will
+        report an error when the cluster has more than two subclusters. This 
+        function changes the mapping and first and last of all clusters below
+        this one and thus needs O(len(cluster)) time.
+        
+    .. method:: permute(permutation)
+    
+        Permutes the subclusters. Permutation gives the order in which the
+        subclusters will be arranged. As for swap, this function changes the
+        mapping and first and last of all clusters below this one. 
+    
+    
+Example 1 - Toy matrix
+----------------------
+
+Let us construct a simple distance matrix and run clustering on it.
+::
+
+    import Orange
+    from Orange.clustering import hierarchical
+    m = [[],
+         [ 3],
+         [ 2, 4],
+         [17, 5, 4],
+         [ 2, 8, 3, 8],
+         [ 7, 5, 10, 11, 2],
+         [ 8, 4, 1, 5, 11, 13],
+         [ 4, 7, 12, 8, 10, 1, 5],
+         [13, 9, 14, 15, 7, 8, 4, 6],
+         [12, 10, 11, 15, 2, 5, 7, 3, 1]]
+    matrix = Orange.core.SymMatrix(m)
+    root = hierarchical.HierarchicalClustering(matrix,
+            linkage=hierarchical.HierarchicalClustering.Average)
+    
+Root is a root of the cluster hierarchy. We can print using a
+simple recursive function.
+::
+
+    def printClustering(cluster):
+        if cluster.branches:
+            return "(%s%s)" % (printClustering(cluster.left), printClustering(cluster.right))
+        else:
+            return str(cluster[0])
+            
+The output is not exactly nice, but it will have to do. Our clustering,
+printed by calling printClustering(root) looks like this 
+::
+    
+    (((04)((57)(89)))((1(26))3))
+    
+The elements are separated into two groups, the first containing elements
+0, 4, 5, 7, 8, 9, and the second 1, 2, 6, 3. The difference between them
+equals ``root.height``, 9.0 in our case. The first cluster is further
+divided onto 0 and 4 in one, and 5, 7, 8, 9 in the other subcluster...
+
+It is easy to print out the cluster's objects. Here's what's in the
+left subcluster of root.
+::
+
+    >>> for el in root.left:
+        ... print el,
+    0 4 5 7 8 9 
+    
+Everything that can be iterated over, can as well be cast into a list or
+tuple. Let us demonstrate this by writing a better function for printing
+out the clustering (which will also come handy for something else in a
+while). The one above supposed that each leaf contains a single object.
+This is not necessarily so; instead of printing out the first (and
+supposedly the only) element of cluster, cluster[0], we shall print
+it out as a tuple. 
+::
+
+    def printClustering2(cluster):
+        if cluster.branches:
+            return "(%s%s)" % (printClustering2(cluster.left), printClustering2(cluster.right))
+        else:
+            return str(tuple(cluster))
+            
+The distance matrix could have been given a list of objects. We could,
+for instance, put
+::
+    
+    matrix.objects = ["Ann", "Bob", "Curt", "Danny", "Eve",
+                      "Fred", "Greg", "Hue", "Ivy", "Jon"]
+
+above calling the HierarchicalClustering.
+
+.. note:: This code will actually trigger a warning;
+    to avoid it, use matrix.setattr("objects", ["Ann", "Bob"....
+    Why this is needed is explained in the page on `Orange peculiarities`_.
+    
+If we've forgotten to store the objects into matrix prior to clustering,
+nothing is lost. We can add it into clustering later, by
+::
+
+    root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"]
+    
+So, what do these "objects" do? Call printClustering(root) again and you'll
+see. Or, let us print out the elements of the first left cluster, as we did
+before. 
+::
+
+    >>> for el in root.left:
+        ... print el,
+    Ann Eve Fred Hue Ivy Jon
+    
+If objects are given, the cluster's elements, as got by indexing
+(eg root.left[2]) or by iteration, as in the above case, won't be
+indices but the elements we clustered. If we put an ExampleTable
+into objects, root.left[-1] will be the last example of the first
+left cluster.
+
+Now for swapping and permutations. ::
+
+    >>> printClustering(root)
+    ((('Ann''Eve')(('Fred''Hue')('Ivy''Jon')))(('Bob'('Curt''Greg'))'Danny'))
+    >>> root.left.swap()
+    >>> printClustering(root)
+    (((('Fred''Hue')('Ivy''Jon'))('Ann''Eve'))(('Bob'('Curt''Greg'))'Danny'))
+    >>> root.permute([1, 0])
+    >>> printClustering(root)
+    ((('Bob'('Curt''Greg'))'Danny')((('Fred''Hue')('Ivy''Jon'))('Ann''Eve')))
+    
+Calling ``root.left.swap`` reversed the order of subclusters of ``root.left``
+and ``root.permute([1, 0])`` (which is equivalent to ``root.swap`` - there
+aren't many possible permutations of two elements) reverses the order
+of ``root.left`` and ``root.right``.
+
+Let us write function for cluster pruning. ::
+
+    def prune(cluster, togo):
+        if cluster.branches:
+            if togo<0:
+                cluster.branches = None
+            else:
+                for branch in cluster.branches:
+                    prune(branch, togo-cluster.height)
+
+We shall use ``printClustering2`` here, since we can have multiple elements
+in a leaf of the clustering hierarchy. ::
+    
+    >>> prune(root, 9)
+    >>> print printClustering2(root)
+    ((('Bob', 'Curt', 'Greg')('Danny',))(('Fred', 'Hue', 'Ivy', 'Jon')('Ann', 'Eve')))
+    
+We've ended up with four clusters. Need a list of clusters?
+Here's the function. ::
+    
+    def listOfClusters0(cluster, alist):
+        if not cluster.branches:
+            alist.append(list(cluster))
+        else:
+            for branch in cluster.branches:
+                listOfClusters0(branch, alist)
+                
+    def listOfClusters(root):
+        l = []
+        listOfClusters0(root, l)
+        return l
+        
+The function returns a list of lists, in our case
+``[['Bob', 'Curt', 'Greg'], ['Danny'], ['Fred', 'Hue', 'Ivy', 'Jon'], ['Ann', 'Eve']]``    
+If there were no ``objects`` the list would contains indices instead of names.
+
+Example 2 - Clustering of examples
+----------------------------------
+
+The most common things to cluster are certainly examples. To show how to
+this is done, we shall now load the Iris data set, initialize a distance
+matrix with the distances measure by :class:`ExamplesDistance_Euclidean`
+and cluster it with average linkage. Since we don't need the matrix,
+we shall let the clustering overwrite it (not that it's needed for
+such a small data set as Iris). ::
+
+    import Orange
+    from Orange.clustering import hierarchical
+
+    data = Orange.data.Table("iris")
+    matrix = Orange.core.SymMatrix(len(data))
+    matrix.setattr("objects", data)
+    distance = Orange.distance.instances.EuclideanConstructor(data)
+    for i1, instance1 in enumerate(data):
+        for i2 in range(i1+1, len(data)):
+            matrix[i1, i2] = distance(instance1, data[i2])
+            
+    clustering = hierarchical.HierarchicalClustering()
+    clustering.linkage = clustering.Average
+    clustering.overwrite_matrix = 1
+    root = clustering(matrix)
+
+Note that we haven't forgotten to set the ``matrix.objects``. We did it
+through ``matrix.setattr`` to avoid the warning. Let us now prune the
+clustering using the function we've written above, and print out the
+clusters. ::
+    
+    prune(root, 1.4)
+    for n, cluster in enumerate(listOfClusters(root)):
+        print "\n\n Cluster %i \n" % n
+        for instance in cluster:
+            print instance
+            
+Since the printout is pretty long, it might be more informative to just
+print out the class distributions for each cluster. ::
+    
+    for cluster in listOfClusters(root):
+        dist = Orange.core.get_class_distribution(cluster)
+        for e, d in enumerate(dist):
+            print "%s: %3.0f " % (data.domain.class_var.values[e], d),
+        print
+        
+Here's what it shows. ::
+
+    Iris-setosa:  49    Iris-versicolor:   0    Iris-virginica:   0
+    Iris-setosa:   1    Iris-versicolor:   0    Iris-virginica:   0
+    Iris-setosa:   0    Iris-versicolor:  50    Iris-virginica:  17
+    Iris-setosa:   0    Iris-versicolor:   0    Iris-virginica:  33
+    
+Note something else: ``listOfClusters`` does not return a list of
+:class:`Orange.data.Table`, but a list of lists of instances. Therefore,
+in the above script, cluster is a list of examples, not an ``Table``, but
+it gets converted to it automatically when the function is called.
+Most Orange functions will do this for you automatically. You can, for
+instance, call a learning algorithms, passing a cluster as an argument.
+It won't mind. If you, however, want to have a list of table, you can
+easily convert the list by ::
+
+    tables = [Orange.data.Table(cluster) for cluster in listOfClusters(root)]
+    
+Finally, if you are dealing with examples, you may want to take the function
+``listOfClusters`` and replace ``alist.append(list(cluster))`` by
+``alist.append(Orange.data.Table(cluster))``. This function is less general,
+it will fail if objects are not of type :class:`Orange.data.Instance`.
+However, instead of list of lists, it will return a list of tables.
+
+How the data in ``HierarchicalCluster`` is really stored?
+---------------------------------------------------------
+
+To demonstrate how the data in clusters is stored, we shall continue with
+the clustering we got in the first example. ::
+    
+    >>> del root.mapping.objects
+    >>> print printClustering(root)
+    (((1(26))3)(((57)(89))(04)))
+    >>> print root.mapping
+    <1, 2, 6, 3, 5, 7, 8, 9, 0, 4>
+    >>> print root.left.first
+    0
+    >>> print root.left.last
+    4
+    >>> print root.left.mapping[root.left.first:root.left.last]
+    <1, 2, 6, 3>
+    >>> print root.left.left.first
+    0
+    >>> print root.left.left.last
+    3
+    
+We removed objects to just to see more clearly what is going on.
+``mapping`` is an ordered list of indices to the rows/columns of distance
+matrix (and, at the same time, indices into objects, if they exist). Each
+cluster's fields ``first`` and ``last`` are indices into mapping, so the
+clusters elements are actually
+``cluster.mapping[cluster.first:cluster.last]``. ``cluster[i]`` therefore
+returns ``cluster.mapping[cluster.first+i]`` or, if objects are specified,
+``cluster.objects[cluster.mapping[cluster.first+i]]``. Space consumption
+is minimal since all clusters share the same objects ``mapping`` and
+``objects``.
+
+
+Subclusters are ordered so that ``cluster.left.last`` always equals
+``cluster.right.first`` or, in general, ``cluster.branches[i].last``
+equals ``cluster.branches[i+1].first``.
+
+
+Swapping and permutation do three things: change the order of elements in
+``branches``, permute the corresponding regions in ``mapping`` and adjust
+the ``first`` and ``last`` for all the clusters below. For the latter, when
+subclusters of cluster are permuted, the entire subtree starting at
+``cluster.branches[i]`` is moved by the same offset.
+
+
+The hierarchy of objects that represent a clustering is open, everything is
+accessible from Python. You can write your own clustering algorithms that
+build this same structure, or you can use Orange's clustering and then do to
+the structure anything you want. For instance prune it, as we have shown
+earlier. However, it is easy to do things wrong: shuffle the mapping, for
+instance, and forget to adjust the ``first`` and ``last`` pointers. Orange
+does some checking for the internal consistency, but you are surely smarter
+and can find a way to crash it. For instance, just create a cycle in the
+structure, call ``swap`` for some cluster above the cycle and you're there.
+But don't blame it on me then.
+
+
+Utility Functions
+=================
+
+.. autofunction:: clustering
+.. autofunction:: clustering_features
+.. autofunction:: cluster_to_list
+.. autofunction:: top_clusters
+.. autofunction:: top_cluster_membership
+.. autofunction:: order_leaves
+
+.. autofunction:: postorder
+.. autofunction:: preorder
+.. autofunction:: dendrogram_layout
+.. autofunction:: dendrogram_draw
+.. autofunction:: clone
+.. autofunction:: prune
+.. autofunction:: pruned
+.. autofunction:: cluster_depths
+.. autofunction:: instance_distance_matrix
+.. autofunction:: feature_distance_matrix
+.. autofunction:: joining_cluster
+.. autofunction:: cophenetic_distances
+.. autofunction:: cophenetic_correlation
 
 """
+
 import orange
 import Orange
 from Orange.core import HierarchicalClustering, \
                         HierarchicalCluster, \
                         HierarchicalClusterList
-                        
+
 from Orange.misc import progressBarMilestones
                         
 import sys
 
+SINGLE = HierarchicalClustering.Single
+AVERAGE = HierarchicalClustering.Average
+COMPLETE = HierarchicalClustering.Complete
+WARD = HierarchicalClustering.Ward
 
 def clustering(data,
                distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
-               linkage=orange.HierarchicalClustering.Average,
+               linkage=AVERAGE,
                order=False,
                progressCallback=None):
-    """Return a hierarhical clustering of the data set."""
+    """ Return a hierarchical clustering of the instances in a data set.
+    
+    :param data: Input data table for clustering.
+    :type data: :class:`Orange.data.Table`
+    :param distance_constructor: Instance distance constructor
+    :type distance_constructor: :class:`Orange.distance.instances.ExamplesDistanceConstructor`
+    :param linkage: Linkage flag. Must be one of global module level flags:
+    
+        - SINGLE
+        - AVERAGE
+        - COMPLETE
+        - WARD
+        
+    :type linkage: int
+    :param order: If `True` run `order_leaves` on the resulting clustering.
+    :type order: bool
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    """
     distance = distanceConstructor(data)
     matrix = orange.SymMatrix(len(data))
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
+    root = HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
     if order:
         order_leaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
     return root
 
 def clustering_features(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
-    """Return hierarhical clustering of attributes in the data set."""
+    """ Return hierarchical clustering of attributes in a data set.
+    
+    :param data: Input data table for clustering.
+    :type data: :class:`Orange.data.Table`
+    :param distance: Attribute distance constructor 
+        .. note:: currently not used.
+    :param linkage: Linkage flag. Must be one of global module level flags:
+    
+        - SINGLE
+        - AVERAGE
+        - COMPLETE
+        - WARD
+        
+    :type linkage: int
+    :param order: If `True` run `order_leaves` on the resulting clustering.
+    :type order: bool
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    """
     matrix = orange.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
@@ -54,7 +541,15 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
     return root
 
 def cluster_to_list(node, prune=None):
-    """Return a list of clusters down from the node of hierarchical clustering."""
+    """ Return a list of clusters down from the node of hierarchical clustering.
+    
+    :param node: Cluster node.
+    :type node: :class:`HierarchicalCluster`
+    :param prune: If not `None` it must be a positive integer. Any cluster
+        with less then `prune` items will be left out of the list.
+    :type node: int or `NoneType`
+    
+    """
     if prune:
         if len(node) <= prune:
             return [] 
@@ -63,7 +558,14 @@ def cluster_to_list(node, prune=None):
     return [node]
 
 def top_clusters(root, k):
-    """Return k topmost clusters from hierarchical clustering."""
+    """ Return k topmost clusters from hierarchical clustering.
+    
+    :param root: Root cluster.
+    :type root: :class:`HierarchicalCluster`
+    :param k: Number of top clusters.
+    :type k: int
+    
+    """
     candidates = set([root])
     while len(candidates) < k:
         repl = max([(max(c.left.height, c.right.height), c) for c in candidates if c.branches])[1]
@@ -73,7 +575,14 @@ def top_clusters(root, k):
     return candidates
 
 def top_cluster_membership(root, k):
-    """Return data instances' cluster membership (list of indices) to k topmost clusters."""
+    """ Return data instances' cluster membership (list of indices) to k topmost clusters.
+    
+    :param root: Root cluster.
+    :type root: :class:`HierarchicalCluster`
+    :param k: Number of top clusters.
+    :type k: int
+    
+    """
     clist = top_clusters(root, k)
     cmap = [None] * len(root)
     for i, c in enumerate(clist):
@@ -83,14 +592,19 @@ def top_cluster_membership(root, k):
 
 def order_leaves(tree, matrix, progressCallback=None):
     """Order the leaves in the clustering tree.
-
-    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering')
-    Arguments:
-        tree   --binary hierarchical clustering tree of type orange.HierarchicalCluster
-        matrix --orange.SymMatrix that was used to compute the clustering
-        progressCallback --function used to report progress
+    
+    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering))
+    
+    :param tree: Binary hierarchical clustering tree.
+    :type tree: :class:`HierarchicalCluster`
+    :param matrix: SymMatrix that was used to compute the clustering.
+    :type matrix: :class:`Orange.core.SymMatrix`
+    :param progress_callback: Function used to report on progress.
+    :type progress_callback: function
+    
+    .. note:: The ordering is done inplace. 
+    
     """
-#    from Orange.misc import recursion_limit
     
     objects = getattr(tree.mapping, "objects", None)
     tree.mapping.setattr("objects", range(len(tree)))
@@ -269,6 +783,8 @@ def order_leaves(tree, matrix, progressCallback=None):
     if objects:
         tree.mapping.setattr("objects", objects)
 
+""" Matplotlib dendrogram ploting.
+"""
 try:
     import numpy
 except ImportError:
@@ -281,7 +797,7 @@ try:
     from matplotlib.text import Text
     from matplotlib.artist import Artist
 ##    import  matplotlib.pyplot as plt
-except (ImportError, IOError), ex:
+except (ImportError, IOError, RuntimeError), ex:
     matplotlib = None
     Text , Artist, Table, Cell = object, object, object, object
 
@@ -504,7 +1020,11 @@ class DendrogramPlotPylab(object):
             self.plt.show()
         
         
-from orngMisc import ColorPalette, EPSRenderer
+""" Dendrogram ploting using Orange.misc.reander
+"""
+
+from Orange.misc.render import EPSRenderer, ColorPalette
+
 class DendrogramPlot(object):
     """ A class for drawing dendrograms
     Example:
@@ -642,20 +1162,17 @@ class DendrogramPlot(object):
         self.renderer.save(filename)
         
 def dendrogram_draw(filename, *args, **kwargs):
+    """ Plot the dendrogram to `filename`.
+    
+    .. todo:: Finish documentation.
+    """
     import os
-    from orngMisc import PILRenderer, EPSRenderer, SVGRenderer
+    from Orange.misc.render import PILRenderer, EPSRenderer, SVGRenderer
     name, ext = os.path.splitext(filename)
     kwargs["renderer"] = {".eps":EPSRenderer, ".svg":SVGRenderer, ".png":PILRenderer}.get(ext.lower(), PILRenderer)
 #    print kwargs["renderer"], ext
     d = DendrogramPlot(*args, **kwargs)
     d.plot(filename)
-    
-    
-"""
-Utility functions
-=================
-
-"""
     
 def postorder(cluster):
     """ Return a post order list of clusters.
@@ -738,11 +1255,29 @@ def dendrogram_layout(root_cluster, expand_leaves=False):
             
     return result
     
+def clone(cluster):
+    """ Clone a cluster, including it's subclusters.
+    
+    :param cluster: Cluster to clone
+    :type cluster: :class:`HierarchicalCluster`
+    
+    """
+    import copy
+    clones = {}
+    mapping = copy.copy(cluster.mapping)
+    for node in postorder(cluster):
+        node_clone = copy.copy(node)
+        if node.branches:
+            node_clone.branches = [clones[b] for b in node.branches]
+        node_clone.mapping = mapping
+        clones[node] = node_clone
+        
+    return clones[cluster]
     
 def pruned(root_cluster, level=None, height=None, condition=None):
     """ Return a new pruned clustering instance.
     
-    .. note:: This uses `copy.deepcopy` to create a copy of the root_cluster
+    .. note:: This uses :obj:`clone` to create a copy of the `root_cluster`
         instance.
     
     :param cluster: Cluster to prune.
@@ -761,23 +1296,8 @@ def pruned(root_cluster, level=None, height=None, condition=None):
     :type condition: function 
     
     """
-    import copy
-    
-    # XXX This is unsafe HierarchicalCluster should take care of copying
-    if hasattr(root_cluster.mapping, "objects"):
-        objects = root_cluster.mapping.objects
-        root_cluster.mapping.objects = None
-        has_objects = True
-    else:
-        has_objects = False
-        
-    root_cluster = copy.deepcopy(root_cluster)
-    
+    root_cluster = clone(root_cluster)
     prune(root_cluster, level, height, condition)
-    
-    if has_objects:
-        root_cluster.mapping.objects = objects
-        
     return root_cluster
     
     
@@ -854,7 +1374,7 @@ def instance_distance_matrix(data,
     :type data: :class:`Orange.data.Table`
     
     :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :class:`Orange.distances.ExampleDistConstructor`
+    :type distance_constructor: :class:`Orange.distance.instances.ExampleDistConstructor`
     
     """
     matrix = orange.SymMatrix(len(data))
@@ -909,8 +1429,8 @@ def joining_cluster(root_cluster, item1, item2):
     
     :param root_cluster: Clustering.
     :type root_cluster: :class:`HierarchicalCluster`
-    :param item1: Index of the item or an element of `root_cluster.objects`
-    :param item2: Index of the item or an element of `root_cluster.objects`
+    :param item1: An element of `root_cluster.mapping` or `root_cluster.mapping.objects`
+    :param item2: An element of `root_cluster.mapping` or `root_cluster.mapping.objects`
     
     """
     cluster = root_cluster

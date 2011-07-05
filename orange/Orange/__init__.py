@@ -12,7 +12,7 @@ import warnings
 def _import(name):
     try:
         __import__(name, globals(), locals(), [], -1)
-    except:
+    except Exception:
         warnings.warn("Could not import: " + name, UserWarning, 2)
 
 _import("data")
@@ -46,8 +46,10 @@ _import("classification.majority")
 _import("optimization")
 
 _import("projection")
+_import("projection.linear")
 _import("projection.mds")
 _import("projection.som")
+_import("projection.pca")
 
 _import("ensemble")
 _import("ensemble.bagging")
@@ -56,14 +58,20 @@ _import("ensemble.forest")
 
 _import("regression")
 _import("regression.mean")
+_import("regression.tree")
+
+_import("multilabel")
+_import("multilabel.multibase")
+_import("multilabel.br")
 
 _import("associate")
 
 _import("preprocess")
-#import preprocess.value
-#import preprocess.data
+_import("preprocess.outliers")
+_import("preprocess.scaling")
 
-_import("distances")
+_import("distance")
+_import("distance.instances")
 
 _import("wrappers")
 
@@ -80,13 +88,9 @@ _import("clustering.kmeans")
 _import("clustering.hierarchical")
 
 _import("misc")
+_import("misc.environ")
 _import("misc.counters")
 _import("misc.addons")
 _import("misc.render")
 _import("misc.selection")
-
-_import("multilabel")
-_import("multilabel.multibase")
-_import("multilabel.br")
-
-
+_import("misc.r")

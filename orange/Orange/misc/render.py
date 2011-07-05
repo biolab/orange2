@@ -1,6 +1,53 @@
+"""
+===================
+Render (``render``)
+===================
+
+.. index:: misc
+.. index::
+   single: misc; render
+"""
+
 from __future__ import with_statement
 
+import sys
 import numpy
+import math
+
+
+class GeneratorContextManager(object):
+   def __init__(self, gen):
+       self.gen = gen
+   def __enter__(self):
+       try:
+           return self.gen.next()
+       except StopIteration:
+           raise RuntimeError("generator didn't yield")
+   def __exit__(self, type, value, traceback):
+       if type is None:
+           try:
+               self.gen.next()
+           except StopIteration:
+               return
+           else:
+               raise RuntimeError("generator didn't stop")
+       else:
+           try:
+               self.gen.throw(type, value, traceback)
+               raise RuntimeError("generator didn't stop after throw()")
+           except StopIteration:
+               return True
+           except:
+               # only re-raise if it's *not* the exception that was
+               # passed to throw(), because __exit__() must not raise
+               # an exception unless __exit__() itself failed.  But
+               # throw() has to raise the exception to signal
+               # propagation, so this fixes the impedance mismatch 
+               # between the throw() protocol and the __exit__()
+               # protocol.
+               #
+               if sys.exc_info()[1] is not value:
+                   raise
 
 def contextmanager(func):
     def helper(*args, **kwds):
@@ -29,6 +76,39 @@ def with_gc_disabled(func):
         with contextmanager(disabler)():
             return func(*args, **kwargs)
     return wrapper
+
+
+class ColorPalette(object):
+    def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
+        self.colors = colors
+        self.gammaFunc = lambda x, gamma:((math.exp(gamma*math.log(2*x-1)) if x > 0.5 else -math.exp(gamma*math.log(-2*x+1)) if x!=0.5 else 0.0)+1)/2.0
+        self.gamma = gamma
+        self.overflow = overflow
+        self.underflow = underflow
+        self.unknown = unknown
+
+    def get_rgb(self, val, gamma=None):
+        if val is None:
+            return self.unknown
+        gamma = self.gamma if gamma is None else gamma
+        index = int(val * (len(self.colors) - 1))
+        if val < 0.0:
+            return self.underflow
+        elif val > 1.0:
+            return self.overflow
+        elif index == len(self.colors) - 1:
+            return tuple(self.colors[-1][i] for i in range(3)) # self.colors[-1].green(), self.colors[-1].blue())
+        else:
+            red1, green1, blue1 = [self.colors[index][i] for i in range(3)] #, self.colors[index].green(), self.colors[index].blue()
+            red2, green2, blue2 = [self.colors[index + 1][i] for i in range(3)] #, self.colors[index + 1].green(), self.colors[index + 1].blue()
+            x = val * (len(self.colors) - 1) - index
+            if gamma is not None:
+                x = self.gammaFunc(x, gamma)
+            return [(c2 - c1) * x + c1 for c1, c2 in [(red1, red2), (green1, green2), (blue1, blue2)]]
+        
+    def __call__(self, val, gamma=None):
+        return self.get_rgb(val, gamma)
+    
 
 class Renderer(object):
     render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform", "gradient", "text_alignment"]
@@ -324,12 +404,17 @@ mypattern setcolor
         warnings.warn("EpsRenderer class does not suport exact string width estimation", stacklevel=2)
         return len(text) * self.font()[1]
         
-        
+def _int_color(color):
+    """ Transform the color tuple (with floats) to tuple with ints
+    (needed by PIL) 
+    """
+    return tuple(map(int, color))
+
 class PILRenderer(Renderer):
     def __init__(self, width, height):
         Renderer.__init__(self, width, height)
         import Image, ImageDraw, ImageFont
-        self._pil_image = Image.new("RGB", (width, height), (255, 255, 255))
+        self._pil_image = Image.new("RGB", (int(width), int(height)), (255, 255, 255))
         self._draw =  ImageDraw.Draw(self._pil_image, "RGB")
         self._pil_font = ImageFont.load_default()
 
@@ -355,24 +440,28 @@ class PILRenderer(Renderer):
     def draw_line(self, sx, sy, ex, ey, **kwargs):
         sx, sy = self._transform(sx, sy)
         ex, ey = self._transform(ex, ey)
-        self._draw.line((sx, sy, ex, ey), fill=self.stroke_color(), width=int(self.stroke_width()))
+        self._draw.line((sx, sy, ex, ey), fill=_int_color(self.stroke_color()),
+                        width=int(self.stroke_width()))
 
     @with_state
     def draw_rect(self, x, y, w, h, **kwargs):
         x1, y1 = self._transform(x, y)
         x2, y2 = self._transform(x + w, y + h)
-        self._draw.rectangle((x1, y1, x2 ,y2), fill=self.fill_color(), outline=self.stroke_color())
+        self._draw.rectangle((x1, y1, x2 ,y2), fill=_int_color(self.fill_color()),
+                             outline=_int_color(self.stroke_color()))
         
     @with_state
     def draw_text(self, x, y, text, **kwargs):
         x, y = self._transform(x, y - self.font()[1])
-        self._draw.text((x, y), text, font=self._pil_font, fill=self.stroke_color())
+        self._draw.text((x, y), text, font=self._pil_font,
+                        fill=_int_color(self.stroke_color()))
         
     def save(self, file):
         self._pil_image.save(file)
         
     def string_size_hint(self, text, **kwargs):
         return self._pil_font.getsize(text)[1]
+    
 
 class SVGRenderer(Renderer):
     SVG_HEADER = """<?xml version="1.0" ?>

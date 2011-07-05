@@ -107,8 +107,8 @@ class OWRandomForest(OWWidget):
         if self.attributes:
             attrs = self.attributesP
 
-        smallLearner = orngEnsemble.default_small_learner(rand=rand, attributes=attrs)
-        
+        smallLearner = orngTree.TreeLearner()
+
         if self.preNodeInst:
             smallLearner.stop.minExamples = self.preNodeInstP 
         else:
@@ -122,26 +122,15 @@ class OWRandomForest(OWWidget):
         if self.limitDepth:
             smallLearner.maxDepth = self.limitDepthP
         
-        learner = orngEnsemble.RandomForestLearner(learner=smallLearner, 
-                            trees = self.trees, rand=rand, attributes=attrs)
+        learner = orngEnsemble.RandomForestLearner(base_learner=smallLearner, 
+                            trees=self.trees, rand=rand, attributes=attrs)
 
-#        if self.preNodeInst: learner.learner.stop.minExamples = self.preNodeInstP 
-#        else: learner.learner.stop.minExamples = 0
-#
-#        learner.learner.storeExamples = 1
-#        learner.learner.storeNodeClassifier = 1
-#        learner.learner.storeContingencies = 1
-#        learner.learner.storeDistributions = 1
-
-#        if self.limitDepth: learner.learner.maxDepth = self.limitDepthP
         if self.preprocessor:
             learner = self.preprocessor.wrapLearner(learner)
         learner.name = self.name
         return learner
 
-
     def setLearner(self):
-
 
         if hasattr(self, "btnApply"):
             self.btnApply.setFocus()

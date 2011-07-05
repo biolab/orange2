@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.data
 
-======
-Values
-======
+==================
+Values (``Value``)
+==================
 
 .. class:: Value
 

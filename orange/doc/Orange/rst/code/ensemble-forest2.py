@@ -4,21 +4,17 @@
 # Uses:        bupa.tab
 # Referenced:  orngEnsemble.htm
 
-import Orange, orngTree
+import Orange
 
 table = Orange.data.Table('bupa.tab')
 
-tree = orngTree.TreeLearner(storeNodeClassifier = 0, storeContingencies=0, \
-  storeDistributions=1, minExamples=5, ).instance()
-gini = Orange.feature.scoring.Gini()
-tree.split.discreteSplitConstructor.measure = \
-  tree.split.continuousSplitConstructor.measure = gini
+tree = Orange.classification.tree.TreeLearner()
+tree.minExamples = 5
 tree.maxDepth = 5
-tree.split = Orange.ensemble.forest.SplitConstructor_AttributeSubset(tree.split, 3)
 
-forestLearner = Orange.ensemble.forest.RandomForestLearner(learner=tree, trees=50)
-forest = forestLearner(table)
+forest_learner = Orange.ensemble.forest.RandomForestLearner(base_learner=tree, trees=50, attributes=3)
+forest = forest_learner(table)
 
 for c in forest.classifiers:
-    print orngTree.countNodes(c),
+    print c.countNodes(),
 print

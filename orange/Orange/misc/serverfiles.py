@@ -1,4 +1,10 @@
 """
+==============================
+Server files (``serverfiles``)
+==============================
+
+.. index:: server files
+
 Server files allows users to download files from a common
 repository residing on the Orange server. It was designed to simplify
 the download and updates of external data sources for Orange Genomics add-on.

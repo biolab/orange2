@@ -5,9 +5,9 @@
 .. index:: 
    single: classification; rule induction
 
-**************
-Rule induction
-**************
+**************************
+Rule induction (``rules``)
+**************************
 
 Orange implements several supervised rule induction algorithms
 and rule-based classification methods. First, there is an implementation of the classic 

@@ -15,20 +15,6 @@ try:
     __DISABLE_OUTPUT__ = True
 except NameError:
     __DISABLE_OUTPUT__ = False
-    
-def thread_safe_discard(func):
-    """ 
-    """
-    from functools import wraps
-    @wraps(func)
-    def safe_wrapper(self, *args, **kwargs):
-        if not hasattr(self, "_thread_safe_thread"):
-            self._thread_safe_thread = self.thread()
-        if QThread.currentThread() is not self._thread_safe_thread:
-            print >> sys.stderr, "Calling", func, "from the wrong thread.", "Discarding the call!"
-        else:
-            return func(self, *args, **kwargs)
-    return safe_wrapper
 
 def thread_safe_queue(func):
     """
@@ -36,10 +22,10 @@ def thread_safe_queue(func):
     from functools import wraps, partial
     @wraps(func)
     def safe_wrapper(self, *args, **kwargs):
-        if not hasattr(self, "_thread_safe_queue"):
+        if not hasattr(self, "_thread_safe_thread"): 
             self._thread_safe_thread = self.thread()
         if QThread.currentThread() is not self._thread_safe_thread:
-            print >> sys.stderr, "Calling", func, "from the wrong thread.", "Queuing the call!"
+            print >> sys.stderr, "Calling", func, "with", args, kwargs, "from the wrong thread.", "Queuing the call!"
             QMetaObject.invokeMethod(self, "queuedInvoke", Qt.QueuedConnection, Q_ARG("PyQt_PyObject", partial(safe_wrapper, self, *args, **kwargs)))
         else:
             return func(self, *args, **kwargs)
@@ -193,7 +179,8 @@ class OutputWindow(QDialog):
         totalSpace = space
         for i in range(len(list)):
             (file, line, funct, code) = list[i]
-            if code == None: continue
+            if code == None:
+                continue
             (dir, filename) = os.path.split(file)
             text += "<nobr>" + totalSpace + "File: <b>" + filename + "</b>, line %4d" %(line) + " in <b>%s</b></nobr><br>\n" % (self.getSafeString(funct))
             text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>\n"

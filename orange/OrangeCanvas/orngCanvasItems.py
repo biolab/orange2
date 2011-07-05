@@ -365,9 +365,6 @@ class CanvasWidget(QGraphicsRectItem):
                 print >> sys.stderr, "Error deleting the widget: \n%s" % str(ex)
             self.instance = None
             
-            import gc
-            gc.collect()
-            
             self.scene().removeItem(self)
                 
 

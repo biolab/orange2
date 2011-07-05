@@ -1,9 +1,9 @@
 """
 .. index:: Testing, Sampling
 
-====================
-Sampling and Testing
-====================
+==================================
+Sampling and Testing (``testing``)
+==================================
 
 This module includes functions for data sampling and splitting, and for
 testing learners. It implements cross-validation, leave-one out, random
@@ -893,8 +893,8 @@ def learn_and_test_on_test_data(learners, learnset, testset, test_results=None, 
         classifiers.append(learner(learnset, learnweight))
         if callback:
             callback()
-    classifiers = [learner(learnset, learnweight) for learner in learners]
-    for i in range(len(learners)): classifiers[i].name = getattr(learners[i], 'name', 'noname')
+    for i in range(len(learners)):
+        classifiers[i].name = getattr(learners[i], 'name', 'noname')
     test_results = test_on_data(classifiers, (testset, testweight), test_results, iteration_number, storeExamples)
     if store_classifiers:
         test_results.classifiers.append(classifiers)
@@ -945,7 +945,8 @@ def learn_and_test_on_learn_data(learners, learnset, test_results=None, iteratio
         classifiers.append(learner(learnset, learnweight))
         if callback:
             callback()
-    for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
+    for i in range(len(learners)):
+        classifiers[i].name = getattr(learners[i], "name", "noname")
     test_results = test_on_data(classifiers, (testset, learnweight), test_results, iteration_number, storeExamples)
     if store_classifiers:
         test_results.classifiers.append(classifiers)

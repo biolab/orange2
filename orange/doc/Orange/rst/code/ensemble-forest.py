@@ -4,19 +4,29 @@
 # Uses:        bupa.tab
 # Referenced:  orngEnsemble.htm
 
-import Orange, orngTree
+import Orange
 
-table = Orange.data.Table('bupa.tab')
 forest = Orange.ensemble.forest.RandomForestLearner(trees=50, name="forest")
-tree = orngTree.TreeLearner(minExamples=2, mForPrunning=2, \
+tree = Orange.classification.tree.TreeLearner(minExamples=2, mForPrunning=2, \
                             sameMajorityPruning=True, name='tree')
 learners = [tree, forest]
 
-import orngTest, orngStat
-results = orngTest.crossValidation(learners, table, folds=3)
+print "Classification: bupa.tab"
+table = Orange.data.Table("bupa.tab")
+results = Orange.evaluation.testing.cross_validation(learners, table, folds=3)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
-        orngStat.CA(results)[i], 
-        orngStat.BrierScore(results)[i],
-        orngStat.AUC(results)[i])
+        Orange.evaluation.scoring.CA(results)[i], 
+        Orange.evaluation.scoring.Brier_score(results)[i],
+        Orange.evaluation.scoring.AUC(results)[i])
+
+print "Regression: housing.tab"
+table = Orange.data.Table("housing.tab")
+results = Orange.evaluation.testing.cross_validation(learners, table, folds=3)
+print "Learner  MSE    RSE    R2"
+for i in range(len(learners)):
+    print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
+        Orange.evaluation.scoring.MSE(results)[i],
+        Orange.evaluation.scoring.RSE(results)[i],
+        Orange.evaluation.scoring.R2(results)[i],)

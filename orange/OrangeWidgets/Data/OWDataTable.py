@@ -17,7 +17,7 @@ from OWWidget import *
 import OWGUI
 import math
 from orngDataCaching import *
-from PyQt4 import *
+import OWColorPalette
 
 ##############################################################################
 
@@ -31,7 +31,8 @@ def safe_call(func):
             print >> sys.stderr, func.__name__, "call error", ex 
             return QVariant()
     return wrapper
-            
+    
+
 class ExampleTableModel(QAbstractItemModel):
     def __init__(self, examples, dist, *args):
         QAbstractItemModel.__init__(self, *args)
@@ -44,7 +45,7 @@ class ExampleTableModel(QAbstractItemModel):
         self.clsColor = QColor(160,160,160)
         self.metaColor = QColor(220,220,200)
         self.sorted_map = range(len(self.examples))
-#        self.showAttrLabels = True
+        
         self.attrLabels = sorted(reduce(set.union, [attr.attributes for attr in self.all_attrs], set()))
         self._other_data = {}
         
@@ -75,11 +76,16 @@ class ExampleTableModel(QAbstractItemModel):
         elif role == OWGUI.TableBarItem.BarRole and val.varType == orange.VarTypes.Continuous \
                     and not val.isSpecial() and attr not in self.metas:
             dist = self.dist[col]
-            return QVariant((dist.max - float(val)) / (dist.max - dist.min or 1))
+            return QVariant((float(val) - dist.min) / (dist.max - dist.min or 1))
+        elif role == OWGUI.TableValueRole: # The actual value
+            return QVariant(val)
+        elif role == OWGUI.TableClassValueRole: # The class value for the row's example
+            return QVariant(example.get_class())
+        elif role == OWGUI.TableVariable: # The variable descriptor for column
+            return QVariant(val.variable)
         
         return self._other_data.get((index.row(), index.column(), role), QVariant())
         
-    
     def setData(self, index, variant, role):
         self._other_data[index.row(), index.column(), role] = variant
         self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), index, index)
@@ -128,7 +134,7 @@ class ExampleTableModel(QAbstractItemModel):
             
 
 class OWDataTable(OWWidget):
-    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit"]
+    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit", "selectedSchemaIndex", "colorByClass"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
@@ -145,7 +151,10 @@ class OWDataTable(OWWidget):
         self.distColor = QColor(*self.distColorRgb)
         self.locale = QLocale()
         self.autoCommit = False
-
+        self.colorSettings = None
+        self.selectedSchemaIndex = 0
+        self.colorByClass = True
+        
         self.loadSettings()
 
         # info box
@@ -161,16 +170,16 @@ class OWDataTable(OWWidget):
         OWGUI.separator(self.controlArea)
 
         # settings box
-        boxSettings = OWGUI.widgetBox(self.controlArea, "Settings")
+        boxSettings = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
         self.cbShowMeta = OWGUI.checkBox(boxSettings, self, "showMeta", 'Show meta attributes', callback = self.cbShowMetaClicked)
         self.cbShowMeta.setEnabled(False)
         self.cbShowAttLbls = OWGUI.checkBox(boxSettings, self, "showAttributeLabels", 'Show attribute labels (if any)', callback = self.cbShowAttLabelsClicked)
         self.cbShowAttLbls.setEnabled(True)
-        self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
-        colBox = OWGUI.indentedBox(boxSettings, sep=OWGUI.checkButtonOffsetHint(self.cbShowDistributions), orientation = "horizontal")
-        OWGUI.widgetLabel(colBox, "Color: ")
-        self.colButton = OWGUI.toolButton(colBox, self, callback=self.changeColor, width=20, height=20, debuggingEnabled = 0)
-        OWGUI.rubber(colBox)
+
+        box = OWGUI.widgetBox(self.controlArea, "Colors")
+        OWGUI.checkBox(box, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
+        OWGUI.checkBox(box, self, "colorByClass", 'Color by class value', callback = self.cbShowDistributions)
+        OWGUI.button(box, self, "Set colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         resizeColsBox = OWGUI.widgetBox(boxSettings, 0, "horizontal", 0)
         OWGUI.label(resizeColsBox, self, "Resize columns: ")
@@ -188,6 +197,9 @@ class OWDataTable(OWWidget):
 
         OWGUI.rubber(self.controlArea)
 
+        dlg = self.createColorDialog()
+        self.discPalette = dlg.getDiscretePalette("discPalette")
+
         # GUI with tabs
         self.tabs = OWGUI.tabWidget(self.mainArea)
         self.id2table = {}  # key: widget id, value: table
@@ -197,24 +209,21 @@ class OWDataTable(OWWidget):
         self.selectionChangedFlag = False
         
 
-        self.updateColor()
+    def createColorDialog(self):
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Default", "Default color", QColor(Qt.white))
+        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
+        return c
 
-    def changeColor(self):
-        color = QColorDialog.getColor(self.distColor, self)
-        if color.isValid():
-            self.distColorRgb = color.getRgb()
-            self.updateColor()
-
-    def updateColor(self):
-        self.distColor = QColor(*self.distColorRgb)
-        w = self.colButton.width()-8
-        h = self.colButton.height()-8
-        pixmap = QPixmap(w, h)
-        painter = QPainter()
-        painter.begin(pixmap)
-        painter.fillRect(0,0,w,h, QBrush(self.distColor))
-        painter.end()
-        self.colButton.setIcon(QIcon(pixmap))
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_():
+            self.colorSettings = dlg.getColorSchemas()
+            self.selectedSchemaIndex = dlg.selectedSchemaIndex
+            self.discPalette = dlg.getDiscretePalette("discPalette")
+            self.distColorRgb = dlg.getColor("Default")
 
     def increaseColWidth(self):
         table = self.tabs.currentWidget()
@@ -276,7 +285,6 @@ class OWDataTable(OWWidget):
             self.progressBarFinished()
             self.tabs.setCurrentIndex(self.tabs.indexOf(table))
             self.setInfo(data)
-            self.cbShowMeta.setEnabled(len(table.model().metas)>0)        # enable showMetas checkbox only if metas exist
             self.sendButton.setEnabled(not self.autoCommit)
 
         elif self.data.has_key(id):
@@ -288,11 +296,19 @@ class OWDataTable(OWWidget):
             self.table2id.pop(self.id2table.pop(id))
             self.setInfo(self.data.get(self.table2id.get(self.tabs.currentWidget(),None),None))
 
-        # disable showMetas checkbox if there is no data on input
         if len(self.data) == 0:
-            self.cbShowMeta.setEnabled(False)
             self.sendButton.setEnabled(False)
 
+        self.setCbShowMeta()
+
+    def setCbShowMeta(self):
+        for ti in range(self.tabs.count()):
+            if len(self.tabs.widget(ti).model().metas)>0:
+                self.cbShowMeta.setEnabled(True)
+                break
+        else:
+            self.cbShowMeta.setEnabled(False)
+            
     def sendReport(self):
         qTableInstance = self.tabs.currentWidget()
         id = self.table2id.get(qTableInstance, None)
@@ -342,8 +358,9 @@ class OWDataTable(OWWidget):
 #        proxy = QSortFilterProxyModel(self)
 #        proxy.setSourceModel(datamodel)
         
-        table.setItemDelegate(OWGUI.TableBarItem(self, color=self.distColor) if self.showDistributions \
-                              else QStyledItemDelegate(self)) #TableItemDelegate(self, table))
+        color_schema = self.discPalette if self.colorByClass else None
+        table.setItemDelegate(OWGUI.TableBarItem(self, color=self.distColor, color_schema=color_schema) \
+                              if self.showDistributions else QStyledItemDelegate(self)) #TableItemDelegate(self, table))
         
         table.setModel(datamodel)
         def p():
@@ -482,11 +499,15 @@ class OWDataTable(OWWidget):
             self.drawAttributeLabels(table)
 
     def cbShowDistributions(self):
-        table = self.tabs.currentWidget()
-        if table:
-            table.setItemDelegate(OWGUI.TableBarItem(self, color=self.distColor) if self.showDistributions else \
-                                  QStyledItemDelegate(self))
-            table.reset()
+        for ti in range(self.tabs.count()):
+            color_schema = self.discPalette if self.colorByClass else None
+            delegate = OWGUI.TableBarItem(self, color=self.distColor,
+                                          color_schema=color_schema) \
+                       if self.showDistributions else QStyledItemDelegate(self)
+            self.tabs.widget(ti).setItemDelegate(delegate)
+        tab = self.tabs.currentWidget()
+        if tab:
+            tab.reset()
 
     # show data in the default order
     def btnResetSortClicked(self):

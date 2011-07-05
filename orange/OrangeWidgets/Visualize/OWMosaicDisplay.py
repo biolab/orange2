@@ -146,7 +146,7 @@ class OWMosaicDisplay(OWWidget):
         self.mainArea.layout().addWidget(self.canvasView)
         self.canvasView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.canvasView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        #self.canvasView.setRenderHint(QPainter.Antialiasing)
+        self.canvasView.setRenderHint(QPainter.Antialiasing)
         #self.canvasView.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         #GUI
@@ -776,14 +776,14 @@ class OWMosaicDisplay(OWWidget):
         self.names[-1].setPos(startX+15, y); self.names[-1].show()
         xOffset = self.names[-1].boundingRect().width() + distance
 
-        size = 16 # 8 + 8*(self.interiorColoring == PEARSON)
+        size = 8 # 8 + 8*(self.interiorColoring == PEARSON)
 
         for i in range(len(names)-1):
             if self.interiorColoring == PEARSON: edgeColor = Qt.black
             else: edgeColor = colors[i]
 
             OWCanvasRectangle(self.canvas, startX + xOffset, y-size/2, size, size, edgeColor, colors[i])
-            self.names[i].setPos(startX + xOffset + 18, y)
+            self.names[i].setPos(startX + xOffset + 10, y)
             xOffset += distance + self.names[i].boundingRect().width()
 
     def saveToFileCanvas(self):

@@ -1,5 +1,30 @@
 """
-.. automodule:: Orange.preprocess.outliers
+.. autoclass:: Preprocessor_discretizeEntropy
+
+.. autoclass:: Preprocessor_removeContinuous
+
+.. autoclass:: Preprocessor_continuize
+
+.. autoclass:: Preprocessor_removeDiscrete
+
+.. autoclass:: Preprocessor_impute
+
+.. autoclass:: Preprocessor_featureSelection
+
+.. autofunction:: bestP
+
+.. autofunction:: bestN
+
+.. autofunction:: selectNRandom
+
+.. autofunction:: selectPRandom
+
+.. autoclass:: Preprocessor_RFE
+
+.. autoclass:: Preprocessor_sample
+
+.. autoclass:: Preprocessor_preprocessorList
+
 """
 
 from orange import \
@@ -83,6 +108,7 @@ from orange import \
 import outliers
 
 
+import math
 
 import orange
 from Orange.misc import _orange__new__, _orange__reduce__

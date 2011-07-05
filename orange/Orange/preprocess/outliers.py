@@ -1,7 +1,12 @@
 """
-=================
-Outlier detection
-=================
+.. index:: outlier detection
+
+.. index::
+   single: outlier; detection
+
+********************************
+Outlier detection (``outliers``)
+********************************
 
 .. autoclass:: OutlierDetection
     :members:
@@ -11,11 +16,14 @@ Outlier detection
 .. _outliers1.py: code/outlier1.py
 .. _outliers2.py: code/outlier2.py
 
-The following example prints a list of Z-values of examples in bridges dataset (`outliers1.py`_).
+The following example prints a list of Z-values of examples in bridges dataset
+(`outliers1.py`_).
 
 .. literalinclude:: code/outlier1.py
 
-The following example prints 5 examples with highest Z-scores. Euclidian distance is used as a distance measurement and average distance is calculated over 3 nearest neighbours (`outliers2.py`_).
+The following example prints 5 examples with highest Z-scores. Euclidean
+distance is used as a distance measurement and average distance is calculated
+over 3 nearest neighbours (`outliers2.py`_).
 
 .. literalinclude:: code/outlier2.py
 
@@ -67,7 +75,7 @@ class OutlierDetection:
         self._clear()
         self.examples = examples
         if (distance == None):
-          distance = Orange.distances.ManhattanConstructor(self.examples)
+          distance = Orange.distance.instances.ManhattanConstructor(self.examples)
         self.distance = distance
 
     def set_distance_matrix(self, distances):
@@ -80,20 +88,25 @@ class OutlierDetection:
 
     def set_knn(self, knn=0):
         """
-        Set the number of nearest neighbours considered in determinating outliers.
+        Set the number of nearest neighbours considered in determinating.
         """
         self.knn = knn
   
     def _calc_distance_matrix(self):
-        #other distance measures
+        """
+        other distance measures
+        """
         self.distmatrix = Orange.core.SymMatrix(len(self.examples)) #FIXME 
         for i in range(len(self.examples)):
             for j in range(i+1):
-                self.distmatrix[i, j] = self.distance(self.examples[i], self.examples[j])
+                self.distmatrix[i, j] = self.distance(self.examples[i],
+                                                      self.examples[j])
         self.distmatrixC = 1
       
     def distance_matrix(self):
-        """ Return the distance matrix of the dataset."""
+        """
+        Return the distance matrix of the dataset.
+        """
         if (self.distmatrixC == 0): 
             self._calc_distance_matrix()
         return self.distmatrix

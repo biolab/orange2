@@ -3,23 +3,59 @@
 Induction of association rules
 ==============================
 
-Orange provides two algorithms for induction of `association rules <http://en.wikipedia.org/wiki/Association_rule_learning>`_. One is the basic Agrawal's algorithm with dynamic induction of supported itemsets and rules that is designed specifically for datasets with a large number of different items. This is, however, not really suitable for feature-based machine learning problems, which are at the primary focus of Orange. We have thus adapted the original algorithm to be more efficient for the latter type of data, and to induce the rules in which, for contrast to Agrawal's rules, both sides don't only contain features (like "bread, butter -> jam") but also their values ("bread = wheat, butter = yes -> jam = plum"). As a further variation, the algorithm can be limited to search only for classification rules in which the sole feature to appear on the right side of the rule is the class feature.
+Orange provides two algorithms for induction of
+`association rules <http://en.wikipedia.org/wiki/Association_rule_learning>`_.
+One is the basic Agrawal's algorithm with dynamic induction of supported
+itemsets and rules that is designed specifically for datasets with a
+large number of different items. This is, however, not really suitable
+for feature-based machine learning problems, which are at the primary focus
+of Orange. We have thus adapted the original algorithm to be more efficient
+for the latter type of data, and to induce the rules in which, for contrast
+to Agrawal's rules, both sides don't only contain features
+(like "bread, butter -> jam") but also their values
+("bread = wheat, butter = yes -> jam = plum"). As a further variation, the
+algorithm can be limited to search only for classification rules in which
+the sole feature to appear on the right side of the rule is the class feature.
 
-It is also possible to extract item sets instead of association rules. These are often more interesting than the rules themselves.
+It is also possible to extract item sets instead of association rules. These
+are often more interesting than the rules themselves.
 
-Besides association rule inducer, Orange also provides a rather simplified method for classification by association rules.
+Besides association rule inducer, Orange also provides a rather simplified
+method for classification by association rules.
 
 ===================
 Agrawal's algorithm
 ===================
 
-The class that induces rules by Agrawal's algorithm, accepts the data examples of two forms. The first is the standard form in which each example is described by values of a fixed list of features (defined in domain). The algorithm, however, disregards the feature values and only checks whether the value is defined or not. The rule shown above ("bread, butter -> jam") actually means that if "bread" and "butter" are defined, then "jam" is defined as well. It is expected that most of values will be undefined - if this is not so, you need to use the other association rules inducer, described in the chapter :ref:`non-sparse-examples`.
+The class that induces rules by Agrawal's algorithm, accepts the data examples
+of two forms. The first is the standard form in which each example is
+described by values of a fixed list of features (defined in domain).
+The algorithm, however, disregards the feature values and only checks whether
+the value is defined or not. The rule shown above ("bread, butter -> jam")
+actually means that if "bread" and "butter" are defined, then "jam" is defined
+as well. It is expected that most of values will be undefined - if this is not
+so, you need to use the other association rules inducer, described in the
+chapter :ref:`non-sparse-examples`.
 
-Since the usual representation of examples described above is rather unsuitable for sparse examples, AssociationRulesSparseInducer can also use examples represented a bit differently. Sparse examples have no fixed features - the examples' domain is empty, there are neither ordinary nor class features. All values assigned to example are given as meta-attributes. All meta-attributes need, however, be `registered with the domain descriptor <http://orange.biolab.si/doc/reference/Domain.htm#meta-attributes>`_. If you have data of this kind, the most suitable format for it is the `basket format <http://orange.biolab.si/doc/reference/fileformats.htm#basket>`_.
+Since the usual representation of examples described above is rather unsuitable
+for sparse examples, AssociationRulesSparseInducer can also use examples
+represented a bit differently. Sparse examples have no fixed
+features - the examples' domain is empty, there are neither ordinary nor class
+features. All values assigned to example are given as meta-attributes.
+All meta-attributes need, however, be `registered with the domain descriptor
+<http://orange.biolab.si/doc/reference/Domain.htm#meta-attributes>`_.
+If you have data of this kind, the most suitable format for it is the
+`basket format <http://orange.biolab.si/doc/reference/fileformats.htm#basket>`_.
 
-In both cases, the examples are first translated into an internal AssociationRulesSparseInducer's internal format for sparse datasets. The algorithm first dynamically builds all itemsets (sets of features) that have at least the prescribed support. Each of these is then used to derive rules with requested confidence.
+In both cases, the examples are first translated into an internal
+AssociationRulesSparseInducer's internal format for sparse datasets. The
+algorithm first dynamically builds all itemsets (sets of features) that have
+at least the prescribed support. Each of these is then used to derive rules
+with requested confidence.
 
-If examples were given in the sparse form, so are the left and right side of the induced rules. If examples were given in the standard form, so are the examples in association rules.
+If examples were given in the sparse form, so are the left and right side
+of the induced rules. If examples were given in the standard form, so are
+the examples in association rules.
 
 .. class:: Orange.associate.AssociationRulesSparseInducer
 
@@ -33,7 +69,8 @@ If examples were given in the sparse form, so are the left and right side of the
     
     .. attribute:: storeExamples
     
-    Tells the inducer to store the examples covered by each rule and those confirming it.
+    Tells the inducer to store the examples covered by each rule and
+    those confirming it.
     
     .. attribute:: maxItemSets
     
@@ -41,9 +78,21 @@ If examples were given in the sparse form, so are the left and right side of the
 
 .. _maxItemSets:
 
-The maxItemSets attribute deserves some explanation. The algorithm's running time (and its memory consumption) depends on the minimal support; the lower the requested support, the more eligible itemsets will be found. There is no general rule for knowing the itemset in advance (generally, value should be around 0.3, but this depends upon the number of different items, the diversity of examples...) so it's very easy to set the limit too low. In this case, the algorithm can induce hundreds of thousands of itemsets until it runs out of memory. To prevent this, it will stop inducing itemsets and report an error when the prescribed maximum maxItemSets is exceeded. In this case, you should increase the required support. On the other hand, you can (reasonably) increase the maxItemSets to as high as you computer is able to handle.
+The maxItemSets attribute deserves some explanation. The algorithm's
+running time (and its memory consumption) depends on the minimal support;
+the lower the requested support, the more eligible itemsets will be found.
+There is no general rule for knowing the itemset in advance (generally, value
+should be around 0.3, but this depends upon the number of different items, the
+diversity of examples...) so it's very easy to set the limit too low. In this
+case, the algorithm can induce hundreds of thousands of itemsets until it
+runs out of memory. To prevent this, it will stop inducing itemsets and
+report an error when the prescribed maximum maxItemSets is exceeded.
+In this case, you should increase the required support. On the other hand,
+you can (reasonably) increase the maxItemSets to as high as you computer is
+able to handle.
 
-We shall test the rule inducer on a dataset consisting of a brief description of Spanish Inquisition, given by Palin et al:
+We shall test the rule inducer on a dataset consisting of a brief description
+of Spanish Inquisition, given by Palin et al:
 
     NOBODY expects the Spanish Inquisition! Our chief weapon is surprise...surprise and fear...fear and surprise.... Our two weapons are fear and surprise...and ruthless efficiency.... Our *three* weapons are fear, surprise, and ruthless efficiency...and an almost fanatical devotion to the Pope.... Our *four*...no... *Amongst* our weapons.... Amongst our weaponry...are such elements as fear, surprise.... I'll come in again.
 
@@ -84,23 +133,35 @@ The induced rules are surprisingly fear-full: ::
     0.500   1.000   surprise -> our
     0.500   0.714   our -> surprise
 
-If examples are weighted, weight can be passed as an additional argument to call operator.
+If examples are weighted, weight can be passed as an additional argument to
+call operator.
 
-To get only a list of supported item sets, one should call the method getItemsets. The result is a list whose elements are tuples with two elements. The first is a tuple with indices of features in the item set. Sparse examples are usually represented with meta-attributes, so this indices will be negative. The second element is  a list of indices supporting the item set, that is, containing all the items in the set. If storeExamples is False, the second element is None. ::
+To get only a list of supported item sets, one should call the method
+getItemsets. The result is a list whose elements are tuples with two elements.
+The first is a tuple with indices of features in the item set. Sparse examples
+are usually represented with meta-attributes, so this indices will be negative.
+The second element is  a list of indices supporting the item set, that is,
+containing all the items in the set. If storeExamples is False, the second
+element is None. ::
 
     inducer = Orange.associate.AssociationRulesSparseInducer(support = 0.5, storeExamples = True)
     itemsets = inducer.getItemsets(data)
     
-Now itemsets is a list of itemsets along with the examples supporting them since we set storeExamples to True. ::
+Now itemsets is a list of itemsets along with the examples supporting them
+since we set storeExamples to True. ::
 
     >>> itemsets[5]
     ((-11, -7), [1, 2, 3, 6, 9])
     >>> [data.domain[i].name for i in itemsets[5][0]]
     ['surprise', 'our']   
     
-The sixth itemset contains features with indices -11 and -7, that is, the words "surprise" and "our". The examples supporting it are those with indices 1,2, 3, 6 and 9.
+The sixth itemset contains features with indices -11 and -7, that is, the
+words "surprise" and "our". The examples supporting it are those with
+indices 1,2, 3, 6 and 9.
 
-This way of representing the itemsets is not very programmer-friendly, but it is much more memory efficient than and faster to work with than using objects like Variable and Example.
+This way of representing the itemsets is not very programmer-friendly, but
+it is much more memory efficient than and faster to work with than using
+objects like Variable and Example.
 
 .. _non-sparse-examples:
 
@@ -108,7 +169,13 @@ This way of representing the itemsets is not very programmer-friendly, but it is
 Non-sparse examples
 ===================
 
-The other algorithm for association rules provided by Orange (AssociationRulesInducer) is optimized for non-sparse examples in the usual Orange form. Each example is described by values of a fixed set of features. Unknown values are ignored, while values of features are not (as opposite to the above-described algorithm for sparse rules). In addition, the algorithm can be directed to search only for classification rules, in which the only feature on the right-hand side is the class Feature.
+The other algorithm for association rules provided by Orange
+(AssociationRulesInducer) is optimized for non-sparse examples in the usual
+Orange form. Each example is described by values of a fixed set of features.
+Unknown values are ignored, while values of features are not (as opposite to
+the above-described algorithm for sparse rules). In addition, the algorithm
+can be directed to search only for classification rules, in which the only
+feature on the right-hand side is the class Feature.
 
 .. class:: Orange.associate.AssociationRulesInducer(float asupp, float aconf)
 
@@ -125,17 +192,21 @@ The other algorithm for association rules provided by Orange (AssociationRulesIn
     
     .. attribute:: classificationRules
     
-    If 1 (default is 0), the algorithm constructs classification rules instead of general association rules.
+    If 1 (default is 0), the algorithm constructs classification rules instead
+    of general association rules.
     
     .. attribute:: storeExamples
     
-    Tells the inducer to store the examples covered by each rule and those confirming it
+    Tells the inducer to store the examples covered by each rule and those
+    confirming it
     
     .. attribute:: maxItemSets
     
     The maximal number of itemsets.
 
-Meaning of all attributes (except the new one, classificationRules) is the same as for AssociationRulesSparseInducer. See the description of :ref:`maxItemSets <maxItemSets>` there. The example uses `lenses.tab`_: ::
+Meaning of all attributes (except the new one, classificationRules) is the
+same as for AssociationRulesSparseInducer. See the description of
+:ref:`maxItemSets <maxItemSets>` there. The example uses `lenses.tab`_: ::
 
     import Orange
 
@@ -168,9 +239,12 @@ The found rules are, naturally, a subset of the above rules: ::
     0.333  0.667  astigmatic=yes -> lenses=none
     0.500  1.000  tear_rate=reduced -> lenses=none
     
-AssociationRulesInducer can also work with weighted examples; the ID of weight feature should be passed as an additional argument in a call.
+AssociationRulesInducer can also work with weighted examples; the ID of weight
+feature should be passed as an additional argument in a call.
 
-Itemsets are induced in a similar fashion as for sparse data, except that the first element of the tuple, the item set, is represented not by indices of features, as before, but with tuples (feature-index, value-index): ::
+Itemsets are induced in a similar fashion as for sparse data, except that the
+first element of the tuple, the item set, is represented not by indices of
+features, as before, but with tuples (feature-index, value-index): ::
 
     inducer = Orange.associate.AssociationRulesInducer(support = 0.3, storeExamples = True)
     itemsets = inducer.getItemsets(data)
@@ -180,27 +254,37 @@ This prints out ::
 
     (((2, 1), (4, 0)), [2, 6, 10, 14, 15, 18, 22, 23])
     
-meaning that the ninth itemset contains the second value of the third feature (2, 1), and the first value of the fifth (4, 0).
+meaning that the ninth itemset contains the second value of the third feature
+(2, 1), and the first value of the fifth (4, 0).
 
 =================
 AssociationRules
 =================
 
-Both classes for induction of association rules return the induced rules in AssociationRules which is basically a list of instances of AssociationRule.
+Both classes for induction of association rules return the induced rules in
+AssociationRules which is basically a list of instances of AssociationRule.
 
 .. class:: Orange.associate.AssociationRules
 
     .. attribute:: left, right
     
-        The left and the right side of the rule. Both are given as Example. In rules created by AssociationRulesSparseInducer from examples that contain all values as meta-values, left and right are examples in the same form. Otherwise, values in left that do not appear in the rule are "don't care", and value in right are "don't know". Both can, however, be tested by isSpecial (see documentation on  `Value <http://orange.biolab.si/doc/reference/Value.htm>`_).
+        The left and the right side of the rule. Both are given as Example.
+        In rules created by AssociationRulesSparseInducer from examples that
+        contain all values as meta-values, left and right are examples in the
+        same form. Otherwise, values in left that do not appear in the rule
+        are "don't care", and value in right are "don't know". Both can,
+        however, be tested by isSpecial (see documentation on
+        `Value <http://orange.biolab.si/doc/reference/Value.htm>`_).
     
     .. attribute:: nLeft, nRight
     
-        The number of features (ie defined values) on the left and on the right side of the rule.
+        The number of features (i.e. defined values) on the left and on the
+        right side of the rule.
     
     .. attribute:: nAppliesLeft, nAppliesRight, nAppliesBoth
     
-        The number of (learning) examples that conform to the left, the right and to both sides of the rule.
+        The number of (learning) examples that conform to the left, the right
+        and to both sides of the rule.
     
     .. attribute:: nExamples
     
@@ -232,7 +316,11 @@ Both classes for induction of association rules return the induced rules in Asso
     
     .. attribute:: examples, matchLeft, matchBoth
     
-        If storeExamples was True during induction, examples contains a copy of the example table used to induce the rules. Attributes matchLeft and matchBoth are lists of integers, representing the indices of examples which match the left-hand side of the rule and both sides, respectively.
+        If storeExamples was True during induction, examples contains a copy
+        of the example table used to induce the rules. Attributes matchLeft
+        and matchBoth are lists of integers, representing the indices of
+        examples which match the left-hand side of the rule and both sides,
+        respectively.
 
     .. method:: AssociationRule(left, right, nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples)
     
@@ -240,11 +328,15 @@ Both classes for induction of association rules return the induced rules in Asso
     
     .. method:: AssociationRule(left, right, support, confidence)
     
-        Construct association rule and sets its support and confidence. If you intend to pass on such a rule you should set other attributes manually - AssociationRules's constructor cannot compute anything from arguments support and confidence.
+        Construct association rule and sets its support and confidence. If
+        you intend to pass on such a rule you should set other attributes
+        manually - AssociationRules's constructor cannot compute anything
+        from arguments support and confidence.
     
     .. method:: AssociationRule(rule)
     
-        Given an association rule as the argument, constructor copies of the rule.
+        Given an association rule as the argument, constructor copies of the
+        rule.
     
     .. method:: appliesLeft(example)
     
@@ -252,9 +344,15 @@ Both classes for induction of association rules return the induced rules in Asso
     
     .. method:: appliesBoth(example)
     
-        Tells whether the example fits into the left, right or both sides of the rule, respectively. If the rule is represented by sparse examples, the given example must be sparse as well.
+        Tells whether the example fits into the left, right or both sides of
+        the rule, respectively. If the rule is represented by sparse examples,
+        the given example must be sparse as well.
     
-Association rule inducers do not store evidence about which example supports which rule (although this information is available during induction its discarded afterwards). Let us write a function that finds the examples that confirm the rule (fit both sides of it) and those that contradict it (fit the left-hand side but not the right). The example uses the `lenses.tab`_: ::
+Association rule inducers do not store evidence about which example supports
+which rule (although this information is available during induction its
+discarded afterwards). Let us write a function that finds the examples that
+confirm the rule (fit both sides of it) and those that contradict it (fit the
+left-hand side but not the right). The example uses the `lenses.tab`_: ::
 
     import Orange
 
@@ -279,14 +377,17 @@ Association rule inducers do not store evidence about which example supports whi
             print example
     print
 
-The latter printouts get simpler and faster if we instruct the inducer to store the examples. We can then do, for instance, this: ::
+The latter printouts get simpler and faster if we instruct the inducer to
+store the examples. We can then do, for instance, this: ::
 
     print "Match left: "
     print "\\n".join(str(rule.examples[i]) for i in rule.matchLeft)
     print "\\nMatch both: "
     print "\\n".join(str(rule.examples[i]) for i in rule.matchBoth)
 
-The "contradicting" examples are then those whose indices are found in matchLeft but not in matchBoth. The memory friendlier and the faster way to compute this is as follows: ::
+The "contradicting" examples are then those whose indices are found in
+matchLeft but not in matchBoth. The memory friendlier and the faster way
+to compute this is as follows: ::
 
     >>> [x for x in rule.matchLeft if not x in rule.matchBoth]
     [0, 2, 8, 10, 16, 17, 18]
