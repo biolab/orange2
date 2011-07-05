@@ -296,7 +296,6 @@ class OWGraph(orangegraph.Graph):
         self.set_axis_labels(yRight, labels)
         
     def add_custom_curve(self, curve, enableLegend = False):
-        qDebug('Adding item ' + repr(curve))
         self.addItem(curve)
         if enableLegend:
             self.legend().add_curve(curve)
@@ -304,7 +303,7 @@ class OWGraph(orangegraph.Graph):
             if key in self._bounds_cache:
                 del self._bounds_cache[key]
         self._transform_cache = {}
-        if curve.tooltip:
+        if hasattr(curve, 'tooltip'):
             curve.setToolTip(curve.tooltip)
         return curve
         
@@ -315,6 +314,7 @@ class OWGraph(orangegraph.Graph):
         
         c = curve.Curve(xData, yData, parent=self.graph_item)
         c.setAxes(x_axis_key, y_axis_key)
+        c.setToolTip(name)
         c.name = name
         c.setAutoUpdate(False)
         c.setContinuous(style is not Qt.NoPen)
@@ -322,7 +322,7 @@ class OWGraph(orangegraph.Graph):
         c.setSymbol(symbol)
         c.setPointSize(size)
         c.setData(xData,  yData)
-        c.set_graph_transform(self.transform_for_axes(x_axis_key, y_axis_key) * self.zoom_transform)
+        c.setGraphTransform(self.transform_for_axes(x_axis_key, y_axis_key) * self.zoom_transform)
         
         c.setAutoScale(autoScale)
         
@@ -379,7 +379,8 @@ class OWGraph(orangegraph.Graph):
         pass
         
     def clear(self):
-        self.removeAllItems()
+        for i in self.itemList():
+            self.removeItem(i)
         self._bounds_cache = {}
         self._transform_cache = {}
         self.clear_markers()
@@ -453,19 +454,19 @@ class OWGraph(orangegraph.Graph):
             self.map_transform = self.transform_for_axes()
                 
     def update_zoom(self):
-        self.setViewportUpdateMode(QGraphicsView.NoViewportUpdate)
+      #  self.setViewportUpdateMode(QGraphicsView.NoViewportUpdate)
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
        
         for c in self.itemList():
             x,y = c.axes()
-            if hasattr(c, 'set_graph_transform'):
-                c.set_graph_transform(self.transform_for_axes(x,y) * self.zoom_transform)
+            if hasattr(c, 'setGraphTransform'):
+                c.setGraphTransform(self.transform_for_axes(x,y) * self.zoom_transform)
                 c.updateProperties()
             else:
                 ## This shouldn't happen, but it's possible to add such items to the graph
                 ## The check could be removed if all visualizations are well-behaved
-                qDebug(' !!     Warning: an item without set_graph_transform            !!')
+                qDebug(' !!     Warning: an item without setGraphTransform            !!')
                 qDebug(' !! Make sure all your curves inherit from Graph.item.PlotItem  !!')
         
         for a in self.axes.values():
@@ -524,6 +525,11 @@ class OWGraph(orangegraph.Graph):
         
     def replot(self, force = False):
         if not self.block_update or force:
+            if self.isDirty():
+                qDebug('Graph is dirty, clearing caches')
+                self._bounds_cache = {}
+                self._transform_cache = {}
+                self.setClean()
             self.update_layout()
             self.update_zoom()
             self.update_axes()

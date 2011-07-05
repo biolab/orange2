@@ -6,7 +6,7 @@
 
 #include <QtCore/qmath.h>
 
-Curve::Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(xData, yData, parent, scene)
+Curve::Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
     m_continuous = false;
     m_lineItem = 0;
@@ -40,7 +40,6 @@ void Curve::updateNumberOfItems()
 
 void Curve::updateProperties()
 {
-  
   if (m_continuous)
   {
     // Partial updates only make sense for discrete curves, because they have more properties
@@ -75,12 +74,11 @@ void Curve::updateProperties()
       m_pointItems[i]->setPos(m_graphTransform.map(p));
     }
   }
-  if (m_needsUpdate & UpdateColor)
+  if (m_needsUpdate & UpdateBrush)
   {
-    QBrush brush(m_color);
     for (int i = 0; i < n; ++i)
     {
-      m_pointItems[i]->setBrush(brush);
+      m_pointItems[i]->setBrush(m_brush);
     }
   }
   m_needsUpdate = 0;
@@ -95,10 +93,7 @@ void Curve::updateAll()
   
   if (m_continuous)
   {
-    QPen pen;
-    pen.setColor(m_color);
-    pen.setWidth(m_pointSize);
-    m_lineItem->setPen(pen);
+    m_lineItem->setPen(m_pen);
     m_line = QPainterPath();
     m_line.moveTo(QPointF(m_data[0].x, m_data[0].y) * m_graphTransform);
     int n = m_data.size();
@@ -158,6 +153,9 @@ QPainterPath Curve::pathForSymbol(int symbol, int size)
   qreal d = 0.5 * size;
   switch (symbol)
   {
+    case NoSymbol:
+      break;
+      
     case Ellipse:
       path.addEllipse(-d,-d,2*d,2*d);
       break;
@@ -246,6 +244,7 @@ void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
     p.y = yData[i];
     m_data.append(p);
   }
+  setDataRect(boundingRectFromData(xData, yData));
   m_needsUpdate |= UpdatePosition;
   updateBounds();
   checkForUpdate();
@@ -290,13 +289,33 @@ QColor Curve::color() const
 
 void Curve::setColor(const QColor& color)
 {
-  if (color == m_color)
-  {
-    return;
-  }
-  m_color = color;
-  m_needsUpdate |= UpdateColor;
-  checkForUpdate();
+    m_color = color;
+    setPen(color);
+    setBrush(color);
+}
+
+QPen Curve::pen() const
+{
+    return m_pen;
+}
+
+void Curve::setPen(QPen pen)
+{
+    m_pen = pen;
+    m_needsUpdate |= UpdatePen;
+    checkForUpdate();
+}
+
+QBrush Curve::brush() const
+{
+    return m_brush;
+}
+
+void Curve::setBrush(QBrush brush)
+{
+    m_brush = brush;
+    m_needsUpdate |= UpdateBrush;
+    checkForUpdate();
 }
 
 int Curve::pointSize() const

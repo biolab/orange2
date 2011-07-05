@@ -3,6 +3,9 @@
 
 #include "plotitem.h"
 
+#include <QtGui/QPen>
+#include <QtGui/QBrush>
+
 struct DataPoint
 {
   qreal x;
@@ -46,7 +49,7 @@ public:
     Sticks,
     Steps,
     Dots = Qt::DotLine,
-    UserCurve
+    UserCurve = 100
   };
   
   /**
@@ -59,7 +62,7 @@ public:
    * @param parent parent item
    * @param scene if this is not 0, the Curve is automatically added to it
    **/
-  Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+  Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
 
   /**
    * Default destructor
@@ -102,6 +105,12 @@ public:
   QColor color() const;
   void setColor(const QColor& color);
   
+  QPen pen() const;
+  void setPen(QPen pen);
+  
+  QBrush brush() const;
+  void setBrush(QBrush brush);
+  
   int pointSize() const;
   void setPointSize(int size);
   
@@ -114,8 +123,8 @@ public:
   Data data() const;
   void setData(const QList<qreal> xData, const QList<qreal> yData);
   
-  QTransform graphTransform() const;
-  void setGraphTransform(const QTransform& transform);
+  virtual QTransform graphTransform() const;
+  virtual void setGraphTransform(const QTransform& transform);
   
   QRectF graphArea() const;
   void setGraphArea(const QRectF& area);
@@ -149,8 +158,9 @@ private:
     UpdatePosition = 0x02,
     UpdateSymbol = 0x04,
     UpdateSize = 0x08,
-    UpdateColor = 0x10,
-    UpdateContinuous = 0x20,
+    UpdatePen = 0x10,
+    UpdateBrush = 0x20,
+    UpdateContinuous = 0x40,
     UpdateAll = 0xFF
   };
   
@@ -188,6 +198,8 @@ private:
     
     Bounds m_xBounds;
     Bounds m_yBounds;
+  QPen m_pen;
+  QBrush m_brush;
 };
 
 #endif // CURVE_H

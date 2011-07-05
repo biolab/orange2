@@ -1,10 +1,16 @@
 #include "plotitem.h"
 #include "graph.h"
 
-PlotItem::PlotItem(QList< double > xData, QList< double > yData, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene),
-m_dataRect(boundingRectFromData(xData, yData))
+PlotItem::PlotItem(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene), 
+m_graph(0)
 {
+    
+}
 
+PlotItem::PlotItem(const PlotItem& ): QGraphicsItem(), 
+m_graph(0)
+{
+    // Disabled copy constructor
 }
 
 PlotItem::~PlotItem()
@@ -58,7 +64,17 @@ QRectF PlotItem::dataRect() const
     return m_dataRect;
 }
 
-QRectF PlotItem::boundingRectFromData(QList< double > xData, QList< double > yData)
+void PlotItem::setGraphTransform(const QTransform& transform)
+{
+    m_graphTransform = transform;
+}
+
+QTransform PlotItem::graphTransform() const
+{
+    return m_graphTransform;
+}
+
+QRectF PlotItem::boundingRectFromData(const QList< double >& xData, const QList< double >& yData)
 {
     int n = qMin(xData.size(), yData.size());
     if (n == 0)
@@ -74,6 +90,14 @@ QRectF PlotItem::boundingRectFromData(QList< double > xData, QList< double > yDa
         y_max = qMax(y_max, yData[i]);
     }
     return QRectF(x_min, y_min, x_max-x_min, y_max-y_min);
+}
+
+void PlotItem::setDataRect(const QRectF& dataRect) {
+    m_dataRect = dataRect;
+    if (m_graph)
+    {
+        m_graph->setDirty();
+    }
 }
 
 

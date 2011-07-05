@@ -18,7 +18,6 @@ Graph::~Graph()
 
 void Graph::addItem(PlotItem* item)
 {
-    qDebug() << "Adding item" << item << "in C++";
     if (m_items.contains(item))
     {
         qWarning() << "Item is already in this graph";
@@ -36,6 +35,7 @@ void Graph::removeItem(PlotItem* item)
     {
         scene()->removeItem(item);
         m_items.removeAll(item);
+        item->m_graph = 0;
     }
     else
     {
@@ -43,17 +43,9 @@ void Graph::removeItem(PlotItem* item)
     }
 }
 
-void Graph::removeAllItems()
-{
-    foreach (PlotItem* item, m_items)
-    {
-        removeItem(item);
-    }
-    qDebug() << "Removed all items";
-}
-
 QList< PlotItem* > Graph::itemList()
 {
+    qDebug() << "Returning itemlist with" << m_items.size() << "items";
     return m_items;
 }
 
@@ -73,7 +65,46 @@ QRectF Graph::dataRectForAxes(int xAxis, int yAxis)
 
 QPair< double, double > Graph::boundsForAxis(int axis)
 {
-    
+    QRectF y_r;
+    QRectF x_r;
+    foreach (PlotItem* item, m_items)
+    {
+        if (item->isAutoScale())
+        {
+            if (item->axes().first == axis)
+            {
+               x_r |= item->dataRect(); 
+            }
+            else if (item->axes().second == axis)
+            {
+                y_r |= item->dataRect();
+            }
+        }
+    }
+    if (x_r.isValid())
+    {
+        return qMakePair(x_r.left(), x_r.right());
+    }
+    else if (y_r.isValid())
+    {
+        return qMakePair(y_r.top(), y_r.bottom());
+    }
+    return qMakePair(0.0, 0.0);
+}
+
+void Graph::setDirty() 
+{
+    m_dirty = true;
+}
+
+void Graph::setClean() 
+{
+    m_dirty = false;
+}
+
+bool Graph::isDirty() 
+{
+    return m_dirty;
 }
 
 #include "graph.moc"

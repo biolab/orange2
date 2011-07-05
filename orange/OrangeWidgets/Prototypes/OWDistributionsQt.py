@@ -18,36 +18,25 @@ import OWGUI
 import math
 import statc
 
-from orangegraph import Curve as CppCurve
-from Graph.item import *
+from Graph.curve import *
+from Graph.tools import *
 
-class distribErrorBarCurve(CppCurve, PlotItem):
+class distribErrorBarCurve(Curve):
     def __init__(self, text = None):
-        self.items = []
-        CppCurve.__init__(self,[], [])
-        PlotItem.__init__(self)
-        
-    def set_graph_transform(self, transform):
-        CppCurve.setGraphTransform(self, transform)
+        self._items = []
+        Curve.__init__(self,xData=[], yData=[])
         
     def updateProperties(self):
-        if self.style() != CppCurve.UserCurve:
-            for i in self.items:
-                self.scene().removeItem(i)
+        if self.style() != Curve.UserCurve:
+            resize_plot_item_list(self._items, 0, None, self.scene())
             self.items = []
-            CppCurve.updateProperties(self)
+            Curve.updateProperties(self)
             return
             
         t = self.graphTransform()
         d = self.data()
         n = len(d)/3
-        m = len(self.items)
-        if m < n:
-            self.items.extend([QGraphicsPathItem(self) for i in range(n-m)])
-        elif m > n:
-            for i in range(n,m):
-                self.scene().removeItem(self.items[i])
-            self.items = self.items[:n]
+        self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self.scene())
         for i in range(n):
             p = QPainterPath()
             px, py1 = d[3*i]
@@ -59,8 +48,8 @@ class distribErrorBarCurve(CppCurve, PlotItem):
             p.lineTo(pxr, py1)
             p.moveTo(pxl, py3)
             p.lineTo(pxr, py3)
-            self.items[i].setPath(t.map(p))
-            self.items[i].setPen(self.pen())
+            self._items[i].setPath(t.map(p))
+            self._items[i].setPen(self.pen())
 
 class OWDistributionGraphQt(OWGraph):
     def __init__(self, settingsWidget = None, parent = None, name = None):
@@ -383,15 +372,15 @@ class OWDistributionGraphQt(OWGraph):
             self.probCurveKey.setSymbol(newSymbol)
 
             if self.variableContinuous:
-                self.probCurveKey.setStyle(CppCurve.Lines)
+                self.probCurveKey.setStyle(Curve.Lines)
                 if self.showConfidenceIntervals:
                     self.probCurveUpperCIKey.setData(xs, ups)
                     self.probCurveLowerCIKey.setData(xs, lps)
             else:
                 if self.showConfidenceIntervals:
-                    self.probCurveKey.setStyle(CppCurve.UserCurve)
+                    self.probCurveKey.setStyle(Curve.UserCurve)
                 else:
-                    self.probCurveKey.setStyle(CppCurve.Dots)
+                    self.probCurveKey.setStyle(Curve.Dots)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)

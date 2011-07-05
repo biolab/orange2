@@ -35,13 +35,17 @@ public:
     virtual ~Graph();
     
     void addItem(PlotItem* item /Transfer/);
-    void removeItem(PlotItem* item);
-    void removeAllItems();
+    void removeItem(PlotItem* item /TransferBack/);
     
     QRectF dataRectForAxes(int xAxis, int yAxis);
     QPair< double, double > boundsForAxis(int axis);
     
     QList<PlotItem*> itemList();
+    void setDirty();
     
     QGraphicsRectItem* graph_item;
+    
+protected:
+    void setClean();
+    bool isDirty();
 };

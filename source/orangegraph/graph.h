@@ -14,7 +14,6 @@ public:
     
     void addItem(PlotItem* item);
     void removeItem(PlotItem* item);
-    void removeAllItems();
     
     QRectF dataRectForAxes(int xAxis, int yAxis);
     QPair< double, double > boundsForAxis(int axis);
@@ -23,8 +22,15 @@ public:
     
     QGraphicsRectItem* graph_item;
     
+    void setDirty();
+    
+protected:
+    void setClean();;
+    bool isDirty();
+    
 private:
     QList<PlotItem*> m_items;
+    bool m_dirty;
 };
 
 #endif // GRAPH_H

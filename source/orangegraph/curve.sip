@@ -1,11 +1,27 @@
-struct DataPoint {
-
+// DataPoint is implemented as a Python 2-element tuple.
+%MappedType DataPoint /DocType="tuple-of-float-float"/
+{
 %TypeHeaderCode
 #include "curve.h"
 %End
 
-    qreal x;
-    qreal y;
+%ConvertFromTypeCode
+    // Create the tuple.
+    return Py_BuildValue((char *)"dd", sipCpp->x, sipCpp->y);
+%End
+
+%ConvertToTypeCode
+    // Check the type if that is all that is required.
+    if (sipIsErr == NULL)
+        return (PyTuple_Size(sipPy) == 2);
+    
+    DataPoint* qp = new DataPoint();
+
+    PyArg_ParseTuple(sipPy, "dd", &qp->x, &qp->y);
+    *sipCppPtr = qp;
+    
+    return sipGetState(sipTransferObj);
+%End
 };
 
 typedef QList<DataPoint> Data;
@@ -48,7 +64,7 @@ enum Symbol {
     UserCurve
   };
 
-  Curve(QList< double > xData, QList< double > yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+  Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
   virtual ~Curve();
 
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
@@ -61,6 +77,12 @@ enum Symbol {
   
   QColor color() const;
   void setColor(const QColor& color);
+  
+  QPen pen() const;
+  void setPen(QPen pen);
+  
+  QBrush brush() const;
+  void setBrush(QBrush brush);
   
   int pointSize() const;
   void setPointSize(int size);

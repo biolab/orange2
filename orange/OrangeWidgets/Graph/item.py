@@ -3,8 +3,8 @@ from PyQt4.QtCore import QRectF
 import orangegraph
 
 class PlotItem(orangegraph.PlotItem):
-    def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None, parent=None, scene=None):
-        orangegraph.PlotItem.__init__(self, xData, yData)
+    def __init__(self, x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None, parent=None, scene=None):
+        orangegraph.PlotItem.__init__(self, parent, scene)
         self.setAxes(x_axis_key, y_axis_key)
         self.tooltip = tooltip
         

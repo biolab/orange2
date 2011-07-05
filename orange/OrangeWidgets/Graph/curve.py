@@ -24,12 +24,12 @@ import orangegraph
         
 """
 
-class Curve(orangegraph.Curve, PlotItem):
-    def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, parent=None, scene=None):
+class Curve(orangegraph.Curve):
+    def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None, parent=None, scene=None):
         orangegraph.Curve.__init__(self, xData, yData, parent, scene)
-        PlotItem.__init__(self, xData, yData, x_axis_key, y_axis_key, parent=parent, scene=scene)
-        self.set_graph_transform = self.setGraphTransform
         self.setAutoScale(False)
+        if tooltip:
+            self.setToolTip(tooltip)
         self._cached_rect = None
 
     def __setattr__(self, name, value):

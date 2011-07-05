@@ -1,7 +1,24 @@
 from PyQt4.QtGui import QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QPen, QBrush
 from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug
 
-from item import *
+from curve import *
+
+"""
+    Efficiently resizes a list of QGraphicsItems (PlotItems, Curves, etc.)
+    If the list is to be reduced, i.e. if len(lst) > size, then the extra items are first removed from the scene
+"""
+
+def resize_plot_item_list(lst, size, item_type, scene):
+    n = len(lst)
+    if n > size:
+        if scene:
+            for i in lst[n:]:
+                scene.removeItem(i)
+        return lst[:n]
+    elif n < size:
+        return lst + [item_type() for i in range(size - n)]
+    else:
+        return lst
 
 #A dynamic tool tip class
 class TooltipManager:
@@ -39,10 +56,9 @@ class TooltipManager:
         self.texts = []
 
 # Convenience curve classes
-class PolygonCurve(orangegraph.Curve, PlotItem):
+class PolygonCurve(Curve):
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = [], yData = [], tooltip = None):
-        orangegraph.Curve.__init__(self, xData, yData)
-        PlotItem.__init__(self, xData, yData, tooltip=tooltip)
+        Curve.__init__(self, xData, yData, tooltip=tooltip)
         self._data_polygon = self.polygon_from_data(xData, yData)
         self._polygon_item = QGraphicsPolygonItem(self)
         self.pen = pen
@@ -66,22 +82,24 @@ class PolygonCurve(orangegraph.Curve, PlotItem):
             return QPolygonF()
             
 
-class RectangleCurve(QGraphicsRectItem, PlotItem):
+class RectangleCurve(Curve):
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None, tooltip = None):
-        QGraphicsRectItem.__init__(self)
-        PlotItem.__init__(self, xData, yData, tooltip)
+        Curve.__init__(self, xData, yData, tooltip=tooltip)
         self.setPen(pen)
         self.setBrush(brush)
-
-    def set_graph_transform(self, transform):
-        self.setRect(transform.mapRect(self.data_rect()))
+        self._item = QGraphicsRectItem()
         
-class UnconnectedLinesCurve(orangegraph.UnconnectedLinesCurve, PlotItem):
+    def updateProperties(self):
+        d = self.data()
+        if len(d) < 4:
+            self._item.setRect(QRectF())
+        else:
+            self._item.setRect(self.graphTransform().mapRect(self.boundingRectFromData(d)))
+
+class UnconnectedLinesCurve(orangegraph.UnconnectedLinesCurve):
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
         orangegraph.UnconnectedLinesCurve.__init__(self, xData, yData)
-        PlotItem.__init__(self, xData, yData)
         if pen:
             self.setPen(pen)
-        self.set_graph_transform = self.setGraphTransform
         self.setAutoScale(False)
         self.name = name
