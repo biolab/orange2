@@ -86,6 +86,8 @@ glEnableVertexAttribArray = gl.glEnableVertexAttribArray
 glGetProgramiv = gl.glGetProgramiv
 glDrawElements = gl.glDrawElements
 glDrawArrays = gl.glDrawArrays
+glBindBuffer = gl.glBindBuffer
+glBufferData = gl.glBufferData
 
 
 def normalize(vec):
@@ -112,6 +114,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.move_factor = 100.
         self.mouse_pos = [100, 100] # TODO: get real mouse position, calculate camera, fix the initial jump
 
+        self.labels_font = QFont('Helvetice', 8)
         self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
         self.ticks_font = QFont('Helvetica', 9)
         self.x_axis_title = ''
@@ -576,9 +579,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glDisableVertexAttribArray(0)
-        glDisableVertexAttribArray(1)
-        glDisableVertexAttribArray(2)
 
         # Outline:
         # generate another VAO, keep the same vertex buffer, but use an index buffer
@@ -682,5 +682,5 @@ if __name__ == "__main__":
     colors = [palette[int(ex.getclass())] for ex in data]
     colors = [[c.red()/255., c.green()/255., c.blue()/255., 0.8] for c in colors]
 
-    w.scatter(x, y, z, c=colors)
+    w.scatter(x, y, z, colors=colors)
     app.exec_()
