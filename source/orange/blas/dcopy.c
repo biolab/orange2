@@ -2,10 +2,10 @@
 
 int dcopy_(int *n, double *dx, int *incx, double *dy, int *incy)
 {
-	int i, ix, iy, m, mp1;
+	int i, ix, iy, m;
 	int nn = *n, iincx = *incx, iincy = *incy;
 	if (*n <= 0)
-		return;
+		return 0;
 	if (iincx == 1 && iincy == 1)
 	{
 		m = nn % 7;
