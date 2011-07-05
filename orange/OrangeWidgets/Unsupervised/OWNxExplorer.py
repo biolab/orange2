@@ -44,7 +44,8 @@ class OWNxExplorer(OWWidget):
                  NetworkCanvas=OWNxCanvas):
         OWWidget.__init__(self, parent, signalManager, name)
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Orange.network.Graph, self.set_graph, Default), 
+        self.inputs = [("Network", Orange.network.Graph, self.set_graph, Default),
+                       ("Nx View", Orange.network.NxView, self.set_network_view),
                        ("Items", Orange.data.Table, self.setItems),
                        ("Items to Mark", Orange.data.Table, self.markItems), 
                        ("Items Subset", Orange.data.Table, self.setExampleSubset), 
@@ -115,8 +116,11 @@ class OWNxExplorer(OWWidget):
         self.tabIndex = 0
         self.number_of_nodes_label = -1
         self.number_of_edges_label = -1
+        self._items = None
+        self._links = None
         self.loadSettings()
         
+        self._network_view = None
         self.layout = Orange.network.GraphLayout()
         self.graph = None
         self.markInputItems = None
@@ -1215,13 +1219,24 @@ class OWNxExplorer(OWWidget):
             self.clearCombos()
             self.number_of_nodes_label = -1
             self.number_of_edges_label = -1
+            self._items = None
+            self._links = None
             return
+        
+        self._items = graph.items()
+        self._links = graph.links()
+        
+        if self._network_view is not None:
+            graph = self._network_view.init_network(graph)
+        
         
         #print "OWNetwork/setGraph: new visualizer..."
         self.graph = graph
         
-        if graph.items() is not None and 'x' in graph.items().domain and 'y' in graph.items().domain:
-            positions = [(ex['x'].value, ex['y'].value) for ex in graph.items() if ex['x'].value != '?' and ex['y'].value != '?']
+        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
+            positions = [(self._items[node]['x'].value, self._items[node]['y'].value) \
+                         for node in sorted(graph) if self._items[node]['x'].value != '?' \
+                         and self._items[node]['y'].value != '?']
             self.layout.set_graph(graph, positions)
         else:
             self.layout.set_graph(graph)
@@ -1317,8 +1332,11 @@ class OWNxExplorer(OWWidget):
         self.optButton.setChecked(1)
         self.graph_layout()        
         self.information(0)
-        #self.controlArea.setEnabled(True)
-        self.networkCanvas.updateCanvas()
+        #self.networkCanvas.updateCanvas()
+        
+    def set_network_view(self, nxView):
+        self._network_view = nxView
+        self.set_graph(self.graph)
         
     def setItems(self, items=None):
         self.error('')
@@ -1335,7 +1353,7 @@ class OWNxExplorer(OWWidget):
         self.setVertexSize()
         self.networkCanvas.showIndexes = self.showIndexes
         self.networkCanvas.showWeights = self.showWeights
-        self.networkCanvas.showEdgeLabels = self.showEdgeLabels 
+        self.networkCanvas.showEdgeLabels = self.showEdgeLabels
         self.setCombos()
         self.networkCanvas.updateData()
         
@@ -1482,6 +1500,7 @@ class OWNxExplorer(OWWidget):
             self.graph_layout_pivot_mds()
             
         self.optButton.setChecked(False)
+        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
         self.networkCanvas.updateCanvas()
         qApp.processEvents()
         
@@ -1547,6 +1566,7 @@ class OWNxExplorer(OWWidget):
                 initTemp = self.layout.fr(k, initTemp, coolFactor, weighted)
                 iteration += 1
                 qApp.processEvents()
+                self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
                 self.networkCanvas.updateCanvas()
             
             #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
@@ -1554,6 +1574,7 @@ class OWNxExplorer(OWWidget):
                     return
             initTemp = self.layout.fr(o, initTemp, coolFactor, weighted)
             qApp.processEvents()
+            self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
             self.networkCanvas.updateCanvas()
         else:
             while iteration < o:
@@ -1563,6 +1584,7 @@ class OWNxExplorer(OWWidget):
                 initTemp = self.layout.fr(1, initTemp, coolFactor, weighted)
                 iteration += 1
                 qApp.processEvents()
+                self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
                 self.networkCanvas.updateCanvas()
                 
         self.optButton.setChecked(False)
@@ -1669,7 +1691,7 @@ class OWNxExplorer(OWWidget):
         if self.graph is None:
             return
         
-        self.networkCanvas.setVertexColor(self.colorCombo.currentText())
+        self.networkCanvas.set_node_color(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
         self.networkCanvas.updateData()
         self.networkCanvas.replot()
@@ -1678,7 +1700,7 @@ class OWNxExplorer(OWWidget):
         if self.graph is None:
             return
         
-        self.networkCanvas.setEdgeColor(self.edgeColorCombo.currentText())
+        self.networkCanvas.set_edge_color(self.edgeColorCombo.currentText())
         self.lastEdgeColorColumn = self.edgeColorCombo.currentText()
         self.networkCanvas.updateData()
         self.networkCanvas.replot()

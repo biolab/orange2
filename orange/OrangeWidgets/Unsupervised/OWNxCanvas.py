@@ -14,7 +14,7 @@ from numpy import *
 from OWGraph import *
 from orngScaleScatterPlotData import *
 
-class NetworkVertex():
+class NodeItem():
     def __init__(self, index=-1):
         self.index = index
         self.marked = False
@@ -33,7 +33,7 @@ class NetworkVertex():
         self.size = 5
         self.style = 1
     
-class NetworkEdge():
+class EdgeItem():
     def __init__(self, u=None, v=None, weight=0, arrowu=0, arrowv=0, 
                  links_index=None, label=[]):
         self.u = u
@@ -51,14 +51,14 @@ class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen=QPen(Qt.black), xData=None, yData=None):
       QwtPlotCurve.__init__(self, "Network Curve")
 
-      self.coors = None
-      self.vertices = []
+      self.coors = {}
+      self.vertices = {}
       self.edges = []
       self.setItemAttribute(QwtPlotItem.Legend, 0)
       self.showEdgeLabels = 0
 
-  def moveSelectedVertices(self, dx, dy):
-    selected = self.getSelectedVertices()
+  def move_selected_nodes(self, dx, dy):
+    selected = self.get_selected_nodes()
     
     self.coors[0][selected] = self.coors[0][selected] + dx
     self.coors[1][selected] = self.coors[1][selected] + dy
@@ -66,72 +66,72 @@ class NetworkCurve(QwtPlotCurve):
     self.setData(self.coors[0], self.coors[1])
     return selected
   
-  def setVertexColor(self, v, color):
+  def set_node_color(self, v, color):
       pen = self.vertices[v].pen
       self.vertices[v].color = color
       self.vertices[v].pen = QPen(color, pen.width())
       
-  def setEdgeColor(self, index, color, nocolor=0):
+  def set_edge_color(self, index, color, nocolor=0):
       pen = self.edges[index].pen
       if nocolor:
         color.setAlpha(0)
       self.edges[index].pen = QPen(color, pen.width())
       self.edges[index].pen.setCapStyle(Qt.RoundCap)
   
-  def getSelectedVertices(self):
-    return [vertex.index for vertex in self.vertices if vertex.selected]
+  def get_selected_nodes(self):
+    return [vertex.index for vertex in self.vertices.itervalues() if vertex.selected]
 
-  def getUnselectedVertices(self):
-    return [vertex.index for vertex in self.vertices if not vertex.selected]
+  def get_unselected_nodes(self):
+    return [vertex.index for vertex in self.vertices.itervalues() if not vertex.selected]
 
-  def getMarkedVertices(self):
-    return [vertex.index for vertex in self.vertices if vertex.marked]
+  def get_marked_nodes(self):
+    return [vertex.index for vertex in self.vertices.itervalues() if vertex.marked]
   
-  def setMarkedVertices(self, vertices):
-    for vertex in self.vertices:
+  def set_marked_nodes(self, vertices):
+    for vertex in self.vertices.itervalues():
       if vertex.index in vertices:
         vertex.marked = True
       else:
         vertex.marked = False
         
-  def markToSel(self):
-    for vertex in self.vertices:
+  def mark_to_sel(self):
+    for vertex in self.vertices.itervalues():
       if vertex.marked == True:
           vertex.selected = True
           
-  def selToMark(self):
-    for vertex in self.vertices:
+  def sel_to_mark(self):
+    for vertex in self.vertices.itervalues():
       if vertex.selected == True:
           vertex.selected = False
           vertex.marked = True
   
-  def unMark(self):
-    for vertex in self.vertices:
+  def unmark(self):
+    for vertex in self.vertices.itervalues():
       vertex.marked = False
       
-  def unSelect(self):
-    for vertex in self.vertices:
+  def unselect(self):
+    for vertex in self.vertices.itervalues():
         vertex.selected = False
         
-  def setHiddenVertices(self, nodes):
-    for vertex in self.vertices:
+  def set_hidden_nodes(self, nodes):
+    for vertex in self.vertices.itervalues():
       if vertex.index in nodes:
         vertex.show = False
       else:
         vertex.show = True
       
-  def hideSelectedVertices(self):
-    for vertex in self.vertices:
+  def hide_selected_nodes(self):
+    for vertex in self.vertices.itervalues():
       if vertex.selected:
         vertex.show = False
   
-  def hideUnSelectedVertices(self):
-    for vertex in self.vertices:
+  def hide_unselected_nodes(self):
+    for vertex in self.vertices.itervalues():
       if not vertex.selected:
         vertex.show = False
     
-  def showAllVertices(self):
-    for vertex in self.vertices:
+  def show_all_vertices(self):
+    for vertex in self.vertices.itervalues():
       vertex.show = True
     
   def changed(self):
@@ -142,10 +142,10 @@ class NetworkCurve(QwtPlotCurve):
       if edge.u.show and edge.v.show:
         painter.setPen(edge.pen)
 
-        px1 = xMap.transform(self.coors[0][edge.u.index])   #ali pa tudi self.x1, itd
-        py1 = yMap.transform(self.coors[1][edge.u.index])
-        px2 = xMap.transform(self.coors[0][edge.v.index])
-        py2 = yMap.transform(self.coors[1][edge.v.index])
+        px1 = xMap.transform(self.coors[edge.u.index][0])   #ali pa tudi self.x1, itd
+        py1 = yMap.transform(self.coors[edge.u.index][1])
+        px2 = xMap.transform(self.coors[edge.v.index][0])
+        py2 = yMap.transform(self.coors[edge.v.index][1])
         
         painter.drawLine(px1, py1, px2, py2)
         
@@ -184,10 +184,10 @@ class NetworkCurve(QwtPlotCurve):
             painter.fillRect(r, QBrush(Qt.white))
             painter.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, lbl)
     
-    for vertex in self.vertices:
+    for key, vertex in self.vertices.iteritems():
       if vertex.show:
-        pX = xMap.transform(self.coors[0][vertex.index])   #dobimo koordinati v pikslih (tipa integer)
-        pY = yMap.transform(self.coors[1][vertex.index])   #ki se stejeta od zgornjega levega kota canvasa
+        pX = xMap.transform(self.coors[vertex.index][0])   #dobimo koordinati v pikslih (tipa integer)
+        pY = yMap.transform(self.coors[vertex.index][1])   #ki se stejeta od zgornjega levega kota canvasa
         if vertex.selected:    
           painter.setPen(QPen(Qt.yellow, 3))
           painter.setBrush(vertex.color)
@@ -204,6 +204,18 @@ class NetworkCurve(QwtPlotCurve):
           rect = QRectF(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
           painter.drawEllipse(rect)
         
+
+  def closest_node(self, px, py):
+    ndx = min(self.coors, key=lambda x: abs(self.coors[x][0]-px) + abs(self.coors[x][1]-py))
+    return ndx, math.sqrt((self.coors[ndx][0]-px)**2 + (self.coors[ndx][0]-px)**2)
+
+  def get_nodes_in_rect(self, x1, y1, x2, y2):
+      if x1 > x2:
+          x1, x2 = x2, x1
+      if y1 > y2:
+          y1, y2 = y2, y1
+      return [key for key in self.coors if x1 < self.coors[key][0] < x2 and y1 < self.coors[key][1] < y2]
+        
 class OWNxCanvas(OWGraph):
     def __init__(self, master, parent=None, name="None"):
         OWGraph.__init__(self, parent, name)
@@ -211,10 +223,10 @@ class OWNxCanvas(OWGraph):
         self.parent = parent
         self.labelText = []
         self.tooltipText = []
-        self.vertices_old = {}         # distionary of nodes (orngIndex: vertex_objekt)
-        self.edges_old = {}            # distionary of edges (curveKey: edge_objekt)
-        self.vertices = []
-        self.edges = []
+        #self.vertices_old = {}         # distionary of nodes (orngIndex: vertex_objekt)
+        #self.edges_old = {}            # distionary of edges (curveKey: edge_objekt)
+        #self.vertices = []
+        #self.edges = []
         self.indexPairs = {}       # distionary of type CurveKey: orngIndex   (for nodes)
         #self.selection = []        # list of selected nodes (indices)
         self.markerKeys = {}       # dictionary of type NodeNdx : markerCurveKey
@@ -277,27 +289,27 @@ class OWNxCanvas(OWGraph):
         self.setFocusPolicy(Qt.StrongFocus)
         
     def getSelection(self):
-      return self.networkCurve.getSelectedVertices()
+      return self.networkCurve.get_selected_nodes()
     
-    def getMarkedVertices(self):
-      return self.networkCurve.getMarkedVertices()
+    def get_marked_nodes(self):
+      return self.networkCurve.get_marked_nodes()
         
     def getVertexSize(self, index):
         return 6
         
-    def setHiddenVertices(self, nodes):
-        self.networkCurve.setHiddenVertices(nodes)
+    def set_hidden_nodes(self, nodes):
+        self.networkCurve.set_hidden_nodes(nodes)
     
-    def hideSelectedVertices(self):
-      self.networkCurve.hideSelectedVertices()
+    def hide_selected_nodes(self):
+      self.networkCurve.hide_selected_nodes()
       self.drawPlotItems()
       
-    def hideUnSelectedVertices(self):
-      self.networkCurve.hideUnSelectedVertices()
+    def hide_unselected_nodes(self):
+      self.networkCurve.hide_unselected_nodes()
       self.drawPlotItems()
       
-    def showAllVertices(self):
-      self.networkCurve.showAllVertices()
+    def show_all_vertices(self):
+      self.networkCurve.show_all_vertices()
       self.drawPlotItems()
       
     def optimize(self, frSteps):
@@ -328,18 +340,18 @@ class OWNxCanvas(OWGraph):
                 self.updateCanvas()
                 
     def markedToSelection(self):
-        self.networkCurve.markToSel()
+        self.networkCurve.mark_to_sel()
         self.drawPlotItems()
         
     def selectionToMarked(self):
-        self.networkCurve.selToMark()
+        self.networkCurve.sel_to_mark()
         self.drawPlotItems()
         
         if self.sendMarkedNodes != None:
-            self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
+            self.sendMarkedNodes(self.networkCurve.get_marked_nodes())
         
     def removeSelection(self, replot=True):
-        self.networkCurve.unSelect()
+        self.networkCurve.unselect()
         
         if replot:
           self.replot()
@@ -355,7 +367,7 @@ class OWNxCanvas(OWGraph):
                 self.selectNeighbours(sel, neighbours - sel, depth + 1, maxdepth)
         
     def getSelectedExamples(self):
-        selection = self.networkCurve.getSelectedVertices()
+        selection = self.networkCurve.get_selected_nodes()
         
         if len(selection) == 0:
             return None
@@ -365,8 +377,8 @@ class OWNxCanvas(OWGraph):
         else:
             return None
         
-    def getUnselectedExamples(self):
-        unselection = self.networkCurve.getUnselectedVertices()
+    def getunselectedExamples(self):
+        unselection = self.networkCurve.get_unselected_nodes()
         
         if len(unselection) == 0:
             return None
@@ -377,7 +389,7 @@ class OWNxCanvas(OWGraph):
             return None
     
     def getSelectedGraph(self):
-      selection = self.networkCurve.getSelectedVertices()
+      selection = self.networkCurve.get_selected_nodes()
       
       if len(selection) == 0:
           return None
@@ -386,8 +398,8 @@ class OWNxCanvas(OWGraph):
       subnet = Network(subgraph)
       return subnet
     
-    def getSelectedVertices(self):
-      return self.networkCurve.getSelectedVertices()
+    def get_selected_nodes(self):
+      return self.networkCurve.get_selected_nodes()
     
     def getNeighboursUpTo(self, ndx, dist):
         newNeighbours = neighbours = set([ndx])
@@ -402,32 +414,32 @@ class OWNxCanvas(OWGraph):
     def markSelectionNeighbours(self):
         if not self.freezeNeighbours and self.selectionNeighbours:
             toMark = set()
-            for ndx in self.networkCurve.getSelectedVertices():
+            for ndx in self.networkCurve.get_selected_nodes():
                 toMark |= self.getNeighboursUpTo(ndx, self.selectionNeighbours)
             
-            self.networkCurve.setMarkedVertices(toMark)
+            self.networkCurve.set_marked_nodes(toMark)
             self.drawPlotItems()
                 
         elif not self.freezeNeighbours and self.selectionNeighbours == 0:
-            self.networkCurve.setMarkedVertices(self.networkCurve.getSelectedVertices())
+            self.networkCurve.set_marked_nodes(self.networkCurve.get_selected_nodes())
             self.drawPlotItems()
             
         if self.sendMarkedNodes != None:
-            self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
+            self.sendMarkedNodes(self.networkCurve.get_marked_nodes())
                 
-    def unMark(self):
-      self.networkCurve.unMark()
+    def unmark(self):
+      self.networkCurve.unmark()
       self.drawPlotItems(replot=0)
       
       if self.sendMarkedNodes != None:
             self.sendMarkedNodes([])
             
-    def setMarkedVertices(self, vertices):
-      self.networkCurve.setMarkedVertices(vertices)
+    def set_marked_nodes(self, vertices):
+      self.networkCurve.set_marked_nodes(vertices)
       self.drawPlotItems(replot=0)
       
       if self.sendMarkedNodes != None:
-            self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
+            self.sendMarkedNodes(self.networkCurve.get_marked_nodes())
         
     def activateMoveSelection(self):
         self.state = MOVE_SELECTION
@@ -442,7 +454,7 @@ class OWNxCanvas(OWGraph):
             
             dx = newX - self.invTransform(2, self.GMmouseMoveEvent.x())
             dy = newY - self.invTransform(0, self.GMmouseMoveEvent.y())
-            movedVertices = self.networkCurve.moveSelectedVertices(dx, dy)
+            movedVertices = self.networkCurve.move_selected_nodes(dx, dy)
             
             self.GMmouseMoveEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
             self.GMmouseMoveEvent.setY(event.pos().y())
@@ -456,38 +468,38 @@ class OWNxCanvas(OWGraph):
         if not self.freezeNeighbours and self.tooltipNeighbours:
             px = self.invTransform(2, event.x())
             py = self.invTransform(0, event.y())   
-            ndx, mind = self.layout.closest_vertex(px, py)
-            dX = self.transform(QwtPlot.xBottom, self.layout.coors[0][ndx]) - event.x()
-            dY = self.transform(QwtPlot.yLeft,   self.layout.coors[1][ndx]) - event.y()
+            ndx, mind = self.networkCurve.closest_node(px, py)
+            dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - event.x()
+            dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - event.y()
             # transform to pixel distance
             distance = math.sqrt(dX**2 + dY**2) 
               
-            if ndx != -1 and distance <= self.vertices[ndx].size / 2:
+            if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
                 toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
-                self.networkCurve.setMarkedVertices(toMark)
+                self.networkCurve.set_marked_nodes(toMark)
                 self.drawPlotItems()
                 
                 if self.sendMarkedNodes != None:
-                    self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
+                    self.sendMarkedNodes(self.networkCurve.get_marked_nodes())
             else:
-                self.networkCurve.unMark()
+                self.networkCurve.unmark()
                 self.drawPlotItems()
                 
                 if self.sendMarkedNodes != None:
                     self.sendMarkedNodes([])
         
         if self.showDistances:
-            selection = self.networkCurve.getSelectedVertices()
+            selection = self.networkCurve.get_selected_nodes()
             if len(selection) > 0:
                 px = self.invTransform(2, event.x())
                 py = self.invTransform(0, event.y())  
                  
-                v, mind = self.layout.closest_vertex(px, py)
-                dX = self.transform(QwtPlot.xBottom, self.layout.coors[0][v]) - event.x()
-                dY = self.transform(QwtPlot.yLeft,   self.layout.coors[1][v]) - event.y()
+                v, mind = self.networkCurve.closest_node(px, py)
+                dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[v][0]) - event.x()
+                dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[v][1]) - event.y()
                 # transform to pixel distance
                 distance = math.sqrt(dX**2 + dY**2)               
-                if v != -1 and distance <= self.vertices[v].size / 2:
+                if v != -1 and distance <= self.networkCurve.vertices[v].size:
                     if self.items_matrix == None:
                         dst = 'vertex distance signal not set'
                     else:
@@ -556,17 +568,17 @@ class OWNxCanvas(OWGraph):
                 QwtPlot.mouseReleaseEvent(self, event)
             elif self.mouseSelectedVertex == 0:
                  
-                selection = self.layout.get_vertices_in_rect(x1, y1, x2, y2)
+                selection = self.networkCurve.get_nodes_in_rect(x1, y1, x2, y2)
     
                 def selectVertex(ndx):
-                    if self.vertices[ndx].show:
-                        self.vertices[ndx].selected = True
+                    if self.networkCurve.vertices[ndx].show:
+                        self.networkCurve.vertices[ndx].selected = True
                         
                 map(selectVertex, selection)
                 
                 if len(selection) == 0 and x1 == x2 and y1 == y2:
                     self.removeSelection()
-                    self.unMark()
+                    self.unmark()
             
                 self.markSelectionNeighbours()
                 OWGraph.mouseReleaseEvent(self, event)
@@ -590,7 +602,7 @@ class OWNxCanvas(OWGraph):
           return
           
         if e.key() == 87 or e.key() == 81:
-            selection = [v.index for v in self.vertices if v.selected]
+            selection = [v.index for v in self.networkCurve.vertices.itervalues() if v.selected]
             if len(selection) > 0:
                 phi = [math.pi / -180 if e.key() == 87 else math.pi / 180]
                 self.layout.rotate_vertices([selection], phi)
@@ -624,13 +636,16 @@ class OWNxCanvas(OWGraph):
         px = self.invTransform(2, pos.x())
         py = self.invTransform(0, pos.y())   
     
-        ndx, min = self.layout.closest_vertex(px, py)
-        dX = self.transform(QwtPlot.xBottom, self.layout.coors[0][ndx]) - pos.x()
-        dY = self.transform(QwtPlot.yLeft,   self.layout.coors[1][ndx]) - pos.y()
+        ndx, min = self.networkCurve.closest_node(px, py)
+        dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - pos.x()
+        dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - pos.y()
         # transform to pixel distance
         distance = math.sqrt(dX**2 + dY**2)
-        if ndx != -1 and distance <= self.vertices[ndx].size / 2:
-            return self.vertices[ndx].selected
+        
+        #self.networkCurve
+        
+        if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
+            return self.networkCurve.vertices[ndx].selected
         else:
             return False
         
@@ -641,12 +656,12 @@ class OWNxCanvas(OWGraph):
         px = self.invTransform(2, pos.x())
         py = self.invTransform(0, pos.y())   
     
-        ndx, min = self.layout.closest_vertex(px, py)
-        dX = self.transform(QwtPlot.xBottom, self.layout.coors[0][ndx]) - pos.x()
-        dY = self.transform(QwtPlot.yLeft,   self.layout.coors[1][ndx]) - pos.y()
+        ndx, min = self.networkCurve.closest_node(px, py)
+        dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - pos.x()
+        dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - pos.y()
         # transform to pixel distance
         distance = math.sqrt(dX**2 + dY**2)
-        if ndx != -1 and distance <= self.vertices[ndx].size / 2:
+        if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
             return True
         else:
             return False
@@ -658,31 +673,31 @@ class OWNxCanvas(OWGraph):
         px = self.invTransform(2, pos.x())
         py = self.invTransform(0, pos.y())   
     
-        ndx, min = self.layout.closest_vertex(px, py)
+        ndx, min = self.networkCurve.closest_node(px, py)
         
-        dX = self.transform(QwtPlot.xBottom, self.layout.coors[0][ndx]) - pos.x()
-        dY = self.transform(QwtPlot.yLeft,   self.layout.coors[1][ndx]) - pos.y()
+        dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - pos.x()
+        dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - pos.y()
         # transform to pixel distance
         distance = math.sqrt(dX**2 + dY**2)
-        if ndx != -1 and distance <= self.vertices[ndx].size / 2:
+        if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
             if not self.appendToSelection and not self.controlPressed:
                 self.removeSelection()
                       
             if self.insideview:
-                self.networkCurve.unSelect()
-                self.vertices[ndx].selected = not self.vertices[ndx].selected
+                self.networkCurve.unselect()
+                self.networkCurve.vertices[ndx].selected = not self.networkCurve.vertices[ndx].selected
                 self.optimize(100)
                 
                 self.markSelectionNeighbours()
             else:
-                self.vertices[ndx].selected = not self.vertices[ndx].selected
+                self.networkCurve.vertices[ndx].selected = not self.networkCurve.vertices[ndx].selected
                 self.markSelectionNeighbours()
             
             return True  
         else:
             return False
             self.removeSelection()
-            self.unMark()
+            self.unmark()
     
     def updateData(self):
         if self.graph is None:
@@ -720,7 +735,7 @@ class OWNxCanvas(OWGraph):
     #          vals = vals[:2 * matrix.dim]
     #          edges = [(ind / matrix.dim, ind % matrix.dim) for v, ind in vals]
     #          print "number of component edges:", len(edges), "number of components:", len(components)
-            components_c = [(sum(self.layout.coors[0][c]) / len(c), sum(self.layout.coors[1][c]) / len(c)) for c in components]
+            components_c = [(sum(self.networkCurve.coors[c][0]) / len(c), sum(self.networkCurve.coors[c][1]) / len(c)) for c in components]
             weights = [1 - matrix[u,v] for u,v in edges]
             
             max_weight = max(weights)
@@ -743,12 +758,12 @@ class OWNxCanvas(OWGraph):
         self.networkCurve.setData(self.layout.coors[0], self.layout.coors[1])
         
         if self.insideview == 1:
-            selection = self.networkCurve.getSelectedVertices()
+            selection = self.networkCurve.get_selected_nodes()
             if len(selection) >= 1:
                 visible = set()
                 visible |= set(selection)
                 visible |= self.getNeighboursUpTo(selection[0], self.insideviewNeighbours)
-                self.networkCurve.setHiddenVertices(set(range(self.graph.number_of_nodes())) - visible)
+                self.networkCurve.set_hidden_nodes(set(range(self.graph.number_of_nodes())) - visible)
     
         edgesCount = 0
         
@@ -782,8 +797,8 @@ class OWNxCanvas(OWGraph):
     def drawPlotItems(self, replot=1, vertices=[]):
         if len(vertices) > 0:
             for vertex in vertices:
-                x1 = float(self.layout.coors[0][vertex])
-                y1 = float(self.layout.coors[1][vertex])
+                x1 = float(self.networkCurve.coors[vertex][0])
+                y1 = float(self.networkCurve.coors[vertex][1])
                 
                 if vertex in self.markerKeys:
                     mkey = self.markerKeys[vertex]
@@ -825,13 +840,13 @@ class OWNxCanvas(OWGraph):
             if len(component) == 0:
                 continue
             
-            vertices = [vertex for vertex in component if self.vertices[vertex].show]
+            vertices = [vertex for vertex in component if self.networkCurve.vertices[vertex].show]
     
             if len(vertices) == 0:
                 continue
             
-            xes = [self.layout.coors[0][vertex] for vertex in vertices]  
-            yes = [self.layout.coors[1][vertex] for vertex in vertices]  
+            xes = [self.networkCurve.coors[vertex][0] for vertex in vertices]  
+            yes = [self.networkCurve.coors[vertex][1] for vertex in vertices]  
                                   
             x1 = sum(xes) / len(xes)
             y1 = sum(yes) / len(yes)
@@ -846,12 +861,12 @@ class OWNxCanvas(OWGraph):
       self.tooltipKeys = {}
       self.tips.removeAll()
       if len(self.tooltipText) > 0:
-        for vertex in self.vertices:
+        for vertex in self.networkCurve.vertices.itervalues():
           if not vertex.show:
             continue
           
-          x1 = self.layout.coors[0][vertex.index]
-          y1 = self.layout.coors[1][vertex.index]
+          x1 = self.networkCurve.coors[vertex.index][0]
+          y1 = self.networkCurve.coors[vertex.index][1]
           lbl = ""
           values = self.graph.items()[vertex.index]
           for ndx in self.tooltipText:
@@ -874,15 +889,15 @@ class OWNxCanvas(OWGraph):
                    
     def drawLabels(self):
         if len(self.labelText) > 0:
-            for vertex in self.vertices:
+            for vertex in self.networkCurve.vertices.itervalues():
                 if not vertex.show:
                     continue
                 
                 if self.labelsOnMarkedOnly and not (vertex.marked):
                     continue
                                   
-                x1 = self.layout.coors[0][vertex.index]
-                y1 = self.layout.coors[1][vertex.index]
+                x1 = self.networkCurve.coors[vertex.index][0]
+                y1 = self.networkCurve.coors[vertex.index][1]
                 lbl = ""
                 values = self.graph.items()[vertex.index]
                 if self.showMissingValues:
@@ -899,15 +914,15 @@ class OWNxCanvas(OWGraph):
                      
     def drawIndexes(self):
         if self.showIndexes:
-            for vertex in self.vertices:
+            for vertex in self.networkCurve.vertices.itervalues():
                 if not vertex.show:
                     continue
                 
                 if self.labelsOnMarkedOnly and not (vertex.marked):
                     continue
                                   
-                x1 = self.layout.coors[0][vertex.index]
-                y1 = self.layout.coors[1][vertex.index]
+                x1 = self.networkCurve.coors[vertex.index][0]
+                y1 = self.networkCurve.coors[vertex.index][1]
     
                 lbl = str(vertex.index)
                 mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignTop, size=self.fontSize)
@@ -922,8 +937,8 @@ class OWNxCanvas(OWGraph):
                 if self.labelsOnMarkedOnly and not (edge.u.marked and edge.v.marked):
                     continue
                                   
-                x1 = (self.layout.coors[0][edge.u.index] + self.layout.coors[0][edge.v.index]) / 2
-                y1 = (self.layout.coors[1][edge.u.index] + self.layout.coors[1][edge.v.index]) / 2
+                x1 = (self.networkCurve.coors[edge.u.index][0] + self.networkCurve.coors[edge.v.index][0]) / 2
+                y1 = (self.networkCurve.coors[edge.u.index][1] + self.networkCurve.coors[edge.v.index][1]) / 2
                 
                 if edge.weight == None:
                     lbl = "None"
@@ -964,7 +979,7 @@ class OWNxCanvas(OWGraph):
             
         return colorIndices, colorIndex, minValue, maxValue
     
-    def setEdgeColor(self, attribute):
+    def set_edge_color(self, attribute):
         if self.graph is None:
             return
         
@@ -985,28 +1000,29 @@ class OWNxCanvas(OWGraph):
                             value = (float(self.graph.links()[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
                             newColor = self.contEdgePalette[value]
                         
-                    self.networkCurve.setEdgeColor(index, newColor)
+                    self.networkCurve.set_edge_color(index, newColor)
                     
                 elif self.graph.links().domain[colorIndex].varType == orange.VarTypes.Discrete:
                     newColor = self.discEdgePalette[colorIndices[self.graph.links()[links_index][colorIndex].value]]
                     if self.graph.links()[links_index][colorIndex].value == "0":
-                      self.networkCurve.setEdgeColor(index, newColor, nocolor=1)
+                      self.networkCurve.set_edge_color(index, newColor, nocolor=1)
                     else:
-                      self.networkCurve.setEdgeColor(index, newColor)
+                      self.networkCurve.set_edge_color(index, newColor)
                     
             else:
                 newColor = self.discEdgePalette[0]
-                self.networkCurve.setEdgeColor(index, newColor)
+                self.networkCurve.set_edge_color(index, newColor)
         
         self.replot()
     
-    def setVertexColor(self, attribute):
+    def set_node_color(self, attribute):
         if self.graph is None:
             return
         
         colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.graph.items(), attribute, self.discPalette)
     
-        for v in range(self.graph.number_of_nodes()):
+        for key, vertex in self.networkCurve.vertices.iteritems():
+            v = vertex.index
             if colorIndex != None:    
                 if self.graph.items().domain[colorIndex].varType == orange.VarTypes.Continuous:
                     newColor = self.discPalette[0]
@@ -1018,16 +1034,16 @@ class OWNxCanvas(OWGraph):
                             value = (float(self.graph.items()[v][colorIndex].value) - minValue) / (maxValue - minValue)
                             newColor = self.contPalette[value]
                         
-                    self.networkCurve.setVertexColor(v, newColor)
+                    self.networkCurve.set_node_color(v, newColor)
                     
                 elif self.graph.items().domain[colorIndex].varType == orange.VarTypes.Discrete:
                     newColor = self.discPalette[colorIndices[self.graph.items()[v][colorIndex].value]]
                     #print newColor
-                    self.networkCurve.setVertexColor(v, newColor)
+                    self.networkCurve.set_node_color(v, newColor)
                     
             else:
                 newColor = self.discPalette[0]
-                self.networkCurve.setVertexColor(v, newColor)
+                self.networkCurve.set_node_color(v, newColor)
         
         self.replot()
         
@@ -1069,10 +1085,10 @@ class OWNxCanvas(OWGraph):
     def set_graph_layout(self, graph, layout, curve=None):
         self.clear()
         self.vertexDegree = []
-        self.vertices_old = {}
-        self.vertices = []
-        self.edges_old = {}
-        self.edges = []
+        #self.vertices_old = {}
+        #self.vertices = []
+        #self.edges_old = {}
+        #self.edges = []
         self.minEdgeWeight = sys.maxint
         self.maxEdgeWeight = 0
         
@@ -1094,8 +1110,8 @@ class OWNxCanvas(OWGraph):
         self.networkCurve = NetworkCurve(self) if curve is None else curve
         
         #add nodes
-        self.vertices_old = [(None, []) for v in self.graph]
-        self.vertices = [NetworkVertex(v) for v in self.graph]
+        #self.vertices_old = [(None, []) for v in self.graph]
+        vertices = dict((v, NodeItem(v)) for v in self.graph)
         
         #build edge index
         row_ind = {}
@@ -1117,24 +1133,24 @@ class OWNxCanvas(OWGraph):
             labels = ([str(row[r].value) for r in range(2, len(row))] for row in (links[links_index] for links_index in links_indices))
             
             if self.graph.is_directed():
-                self.edges = [NetworkEdge(self.vertices[i], self.vertices[j],
+                edges = [EdgeItem(vertices[i], vertices[j],
                     graph[i][j].get('weight', 1), 0, 1, links_index, label) for \
                     ((i, j), links_index, label) in zip(self.graph.edges(), \
                                                         links_indices, labels)]
             else:
-                self.edges = [NetworkEdge(self.vertices[i], self.vertices[j],
+                edges = [EdgeItem(vertices[i], vertices[j],
                     graph[i][j].get('weight', 1), links_index, label) for \
                     ((i, j), links_index, label) in zip(self.graph.edges(), \
                                                         links_indices, labels)]
         elif self.graph.is_directed():
-            self.edges = [NetworkEdge(self.vertices[i], self.vertices[j],
+            edges = [EdgeItem(vertices[i], vertices[j],
                                       graph[i][j].get('weight', 1), 0, 1) for (i, j) in self.graph.edges()]
         else:
-            self.edges = [NetworkEdge(self.vertices[i], self.vertices[j], 
+            edges = [EdgeItem(vertices[i], vertices[j],
                                       graph[i][j].get('weight', 1)) for (i, j) in self.graph.edges()]
         
-        self.minEdgeWeight = min(edge.weight for edge in self.edges) if len(self.edges) > 0 else 0
-        self.maxEdgeWeight = max(edge.weight for edge in self.edges) if len(self.edges) > 0 else 0
+        self.minEdgeWeight = min(edge.weight for edge in edges) if len(edges) > 0 else 0
+        self.maxEdgeWeight = max(edge.weight for edge in edges) if len(edges) > 0 else 0
         
         if self.minEdgeWeight is None: 
             self.minEdgeWeight = 0 
@@ -1147,9 +1163,9 @@ class OWNxCanvas(OWGraph):
         self.setEdgesSize()
         self.setVerticesSize()
         
-        self.networkCurve.coors = self.layout.coors
-        self.networkCurve.vertices = self.vertices
-        self.networkCurve.edges = self.edges
+        self.networkCurve.coors = self.layout.map_to_graph(self.graph)
+        self.networkCurve.vertices = vertices
+        self.networkCurve.edges = edges
         self.networkCurve.changed()
         
     def setEdgesSize(self):
@@ -1158,7 +1174,7 @@ class OWNxCanvas(OWGraph):
             #print 'maxEdgeWeight',self.maxEdgeWeight
             #print 'minEdgeWeight',self.minEdgeWeight
             k = (self.maxEdgeSize - 1) / (self.maxEdgeWeight - self.minEdgeWeight)
-            for edge in self.edges:
+            for edge in self.networkCurve.edges:
                 if edge.weight == None:
                     size = 1
                     edge.pen = QPen(edge.pen.color(), size)
@@ -1171,7 +1187,7 @@ class OWNxCanvas(OWGraph):
                     edge.pen = QPen(edge.pen.color(), size)
                     edge.pen.setCapStyle(Qt.RoundCap)
         else:
-            for edge in self.edges:
+            for edge in self.networkCurve.edges:
                 edge.pen = QPen(edge.pen.color(), 1)
                 edge.pen.setCapStyle(Qt.RoundCap)
                 
@@ -1204,7 +1220,7 @@ class OWNxCanvas(OWGraph):
                     return float(v)
                  
             if inverted:
-                for vertex in self.vertices:
+                for key, vertex in self.networkCurve.vertices.iteritems():
                     if column in self.graph.items().domain:
                         vertex.size = self.maxVertexSize - ((getValue(self.graph.items()[vertex.index][column]) - minVertexWeight) * k)
                     else:
@@ -1213,7 +1229,7 @@ class OWNxCanvas(OWGraph):
                     
                     vertex.pen.setWidthF(1 + float(vertex.size) / 20)
             else:
-                for vertex in self.vertices:
+                for key, vertex in self.networkCurve.vertices.iteritems():
                     if column in self.graph.items().domain:
                         vertex.size = (getValue(self.graph.items()[vertex.index][column]) - minVertexWeight) * k + self.minVertexSize
                     else:
@@ -1222,7 +1238,7 @@ class OWNxCanvas(OWGraph):
                     #print vertex.size
                     vertex.pen.setWidthF(1 + float(vertex.size) / 20)
         else:
-            for vertex in self.vertices:
+            for key, vertex in self.networkCurve.vertices.iteritems():
                 vertex.size = self.maxVertexSize
                 vertex.pen.setWidthF(1 + float(vertex.size) / 20)
       
@@ -1238,10 +1254,10 @@ class OWNxCanvas(OWGraph):
         self.replot()
         
     def zoomSelection(self):
-        selection = self.networkCurve.getSelectedVertices()
+        selection = self.networkCurve.get_selected_nodes()
         if len(selection) > 0: 
-            x = [self.layout.coors[0][v] for v in selection]
-            y = [self.layout.coors[1][v] for v in selection]
+            x = [self.networkCurve.coors[v][0] for v in selection]
+            y = [self.networkCurve.coors[v][1] for v in selection]
     
             oldXMin = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
             oldXMax = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
