@@ -16,6 +16,14 @@ Curve::Curve(const QList< double >& xData, const QList< double >& yData, QGraphi
     checkForUpdate();
 }
 
+Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
+{
+    m_style = NoCurve;
+    m_lineItem = 0;
+    m_needsUpdate = 0;
+}
+
+
 Curve::~Curve()
 {
 
