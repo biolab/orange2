@@ -174,8 +174,8 @@ class OWNxExplorer(OWWidget):
         self.vertexSizeCombo = OWGUI.comboBox(self.verticesTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
         self.vertexSizeCombo.addItem("(none)")
         
-        OWGUI.spin(self.vertexSizeCombo.box, self, "minVertexSize", 5, 200, 1, label="Min vertex size:", callback = self.setVertexSize)
-        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 200, 1, label="Max vertex size:", callback = self.setVertexSize)
+        OWGUI.spin(self.vertexSizeCombo.box, self, "minVertexSize", 5, 200, 1, label="Min vertex size:", callback=self.setVertexSize)
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 200, 1, label="Max vertex size:", callback=self.setVertexSize)
         OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
         
         colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
@@ -378,10 +378,11 @@ class OWNxExplorer(OWWidget):
         self.networkCanvas.updateCanvas()
     
     def setAutoSendAttributes(self):
-        if self.autoSendAttributes:
-            self.networkCanvas.callbackSelectVertex = self.sendAttSelectionList
-        else:
-            self.networkCanvas.callbackSelectVertex = None
+        print 'TODO setAutoSendAttributes'
+        #if self.autoSendAttributes:
+        #    self.networkCanvas.callbackSelectVertex = self.sendAttSelectionList
+        #else:
+        #    self.networkCanvas.callbackSelectVertex = None
 
     def sendAttSelectionList(self):
         if not self.graph is None:
@@ -1221,6 +1222,71 @@ class OWNxExplorer(OWWidget):
         self.editCombo.addItem("Select attribute")
         self.comboAttSelection.addItem("Select attribute")
       
+    def change_graph(self, newgraph):
+        old_nodes = set(self.graph.nodes_iter())
+        new_nodes = set(newgraph.nodes_iter())
+        inter_nodes = old_nodes.intersection(new_nodes)
+        remove_nodes = old_nodes.difference(inter_nodes)
+        add_nodes = new_nodes.difference(inter_nodes)
+        
+        [self.networkCanvas.networkCurve.coors.pop(c) for c in remove_nodes]
+        self.networkCanvas.networkCurve.coors.update((node, (0,0)) for node in add_nodes)
+        positions = [self.networkCanvas.networkCurve.coors[key] for key in sorted(self.networkCanvas.networkCurve.coors.iterkeys())]
+        self.layout.set_graph(newgraph, positions)
+        
+        self.graph = newgraph
+        self.number_of_nodes_label = self.graph.number_of_nodes()
+        self.number_of_edges_label = self.graph.number_of_edges()
+        
+        self.networkCanvas.change_graph(self.graph, inter_nodes, add_nodes, remove_nodes)
+        
+#        self.nShown = self.graph.number_of_nodes()
+#        
+#        if self.graph.number_of_edges() > 0:
+#            self.verticesPerEdge = float(self.graph.number_of_nodes()) / float(self.graph.number_of_edges())
+#        else:
+#            self.verticesPerEdge = 0
+#            
+#        if self.graph.number_of_nodes() > 0:
+#            self.edgesPerVertex = float(self.graph.number_of_edges()) / float(self.graph.number_of_nodes())
+#        else:
+#            self.edgesPerVertex = 0
+#        
+#        undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
+#        components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
+#        if len(components) > 1:
+#            self.diameter = -1
+#        else:
+#            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
+#        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
+        
+        k = 1.13850193174e-008
+        nodes = self.graph.number_of_nodes()
+        t = k * nodes * nodes
+        self.frSteps = int(5.0 / t)
+        if self.frSteps <   1: self.frSteps = 1;
+        if self.frSteps > 3000: self.frSteps = 3000;
+        
+        if self.frSteps < 10:
+            self.renderAntialiased = 0
+            self.minVertexSize = 5
+            self.maxVertexSize = 5
+            self.maxLinkSize = 1
+            self.optMethod = 0
+            self.graph_layout_method()            
+            
+        #self.setVertexColor()
+        #self.setEdgeColor()
+        #self.networkCanvas.setEdgesSize()
+        
+        #self.clickedAttLstBox()
+        #self.clickedTooltipLstBox()
+        #self.clickedEdgeLabelListBox()
+        
+        self.optButton.setChecked(1)
+        self.graph_layout()        
+        self.information(0)
+        
     def set_graph(self, graph):
         self.set_items_distance_matrix(None)
              
@@ -1247,11 +1313,11 @@ class OWNxExplorer(OWWidget):
         
         if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
             positions = [(self._items[node]['x'].value, self._items[node]['y'].value) \
-                         for node in sorted(graph) if self._items[node]['x'].value != '?' \
+                         for node in sorted(self.graph) if self._items[node]['x'].value != '?' \
                          and self._items[node]['y'].value != '?']
-            self.layout.set_graph(graph, positions)
+            self.layout.set_graph(self.graph, positions)
         else:
-            self.layout.set_graph(graph)
+            self.layout.set_graph(self.graph)
         
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
@@ -1262,17 +1328,12 @@ class OWNxExplorer(OWWidget):
         self.networkCanvas.minVertexSize = self.minVertexSize
         self.networkCanvas.maxVertexSize = self.maxVertexSize
         self.networkCanvas.maxEdgeSize = self.maxLinkSize
-        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
-        self.lastColorColumn = self.colorCombo.currentText()
         self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
         self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+        self.lastColorColumn = self.colorCombo.currentText()
         
-        
-
-        #for i in range(graph.nVertices):
-        #    print "x:", graph.coors[0][i], " y:", graph.coors[1][i]
-
-        self.nShown = graph.number_of_nodes()
+        self.nShown = self.graph.number_of_nodes()
         
         if self.graph.number_of_edges() > 0:
             self.verticesPerEdge = float(self.graph.number_of_nodes()) / float(self.graph.number_of_edges())
@@ -1284,12 +1345,12 @@ class OWNxExplorer(OWWidget):
         else:
             self.edgesPerVertex = 0
         
-        undirected_graph = graph.to_undirected() if graph.is_directed() else graph
+        undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
         components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
         if len(components) > 1:
             self.diameter = -1
         else:
-            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(graph)
+            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
         self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
         
         self.setCombos()
@@ -1348,6 +1409,8 @@ class OWNxExplorer(OWWidget):
         
     def set_network_view(self, nxView):
         self._network_view = nxView
+        self._network_view.set_nx_explorer(self)
+        self.networkCanvas.callbackSelectVertex = self._network_view.nodes_selected
         self.set_graph(self.graph_base)
         
     def setItems(self, items=None):

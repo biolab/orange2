@@ -70,6 +70,11 @@ class NetworkCurve(QwtPlotCurve):
       pen = self.vertices[v].pen
       self.vertices[v].color = color
       self.vertices[v].pen = QPen(color, pen.width())
+
+  def set_nodes_color(self, vertices, color):
+      for v in vertices:
+          v.color = color
+          v.pen = QPen(color, v.pen.width())
       
   def set_edge_color(self, index, color, nocolor=0):
       pen = self.edges[index].pen
@@ -999,36 +1004,39 @@ class OWNxCanvas(OWGraph):
         
         self.replot()
     
-    def set_node_color(self, attribute):
+    def set_node_color(self, attribute, nodes=None):
         if self.graph is None:
             return
         
+        if nodes is None:
+            nodes = self.networkCurve.vertices.itervalues()
+        else:
+            nodes = (self.networkCurve.vertices[nodes] for node in nodes) 
+            
         colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
     
-        for key, vertex in self.networkCurve.vertices.iteritems():
-            v = vertex.index
-            if colorIndex != None:    
-                if self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                    newColor = self.discPalette[0]
-                    
-                    if str(self.items[v][colorIndex]) != "?":
-                        if maxValue == minValue:
-                            newColor = self.discPalette[0]
-                        else:
-                            value = (float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
-                            newColor = self.contPalette[value]
-                        
-                    self.networkCurve.set_node_color(v, newColor)
-                    
-                elif self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
-                    newColor = self.discPalette[colorIndices[self.items[v][colorIndex].value]]
-                    #print newColor
-                    self.networkCurve.set_node_color(v, newColor)
-                    
-            else:
+        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+            for vertex in nodes:
+                v = vertex.index
                 newColor = self.discPalette[0]
+                
+                if str(self.items[v][colorIndex]) != "?":
+                    if maxValue == minValue:
+                        newColor = self.discPalette[0]
+                    else:
+                        value = (float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
+                        newColor = self.contPalette[value]
+                    
                 self.networkCurve.set_node_color(v, newColor)
-        
+                
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+            for vertex in nodes:
+                v = vertex.index
+                newColor = self.discPalette[colorIndices[self.items[v][colorIndex].value]]
+                self.networkCurve.set_node_color(v, newColor)
+        else:
+            self.networkCurve.set_nodes_color(nodes, self.discPalette[0])
+            
         self.replot()
         
     def setLabelText(self, attributes):
@@ -1065,6 +1073,68 @@ class OWNxCanvas(OWGraph):
         self.edgeLabelText = []
         if self.layout is None or self.graph is None or self.items is None:
             return
+        
+    def change_graph(self, newgraph, inter_nodes, add_nodes, remove_nodes):
+        self.graph = newgraph
+        
+        [self.networkCurve.vertices.pop(key) for key in remove_nodes]
+        self.networkCurve.vertices.update(dict((v, NodeItem(v)) for v in add_nodes))
+        vertices = self.networkCurve.vertices
+        
+        #build edge index
+        row_ind = {}
+        if self.links is not None and len(self.links) > 0:
+          for i, r in enumerate(self.links):
+              u = int(r['u'].value)
+              v = int(r['v'].value)
+              if u in self.graph and v in self.graph:
+                  u_dict = row_ind.get(u, {})
+                  v_dict = row_ind.get(v, {})
+                  u_dict[v] = i
+                  v_dict[u] = i
+                  row_ind[u] = u_dict
+                  row_ind[v] = v_dict
+                  
+        #add edges
+        if self.links is not None and len(self.links) > 0:
+            links = self.links
+            links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges())
+            labels = ([str(row[r].value) for r in range(2, len(row))] for row in (links[links_index] for links_index in links_indices))
+            
+            if self.graph.is_directed():
+                edges = [EdgeItem(vertices[i], vertices[j],
+                    self.graph[i][j].get('weight', 1), 0, 1, links_index, label) for \
+                    ((i, j), links_index, label) in zip(self.graph.edges(), \
+                                                        links_indices, labels)]
+            else:
+                edges = [EdgeItem(vertices[i], vertices[j],
+                    self.graph[i][j].get('weight', 1), links_index, label) for \
+                    ((i, j), links_index, label) in zip(self.graph.edges(), \
+                                                        links_indices, labels)]
+        elif self.graph.is_directed():
+            edges = [EdgeItem(vertices[i], vertices[j],
+                                      self.graph[i][j].get('weight', 1), 0, 1) for (i, j) in self.graph.edges()]
+        else:
+            edges = [EdgeItem(vertices[i], vertices[j],
+                                      self.graph[i][j].get('weight', 1)) for (i, j) in self.graph.edges()]
+                  
+        #self.minEdgeWeight = min(edge.weight for edge in edges) if len(edges) > 0 else 0
+        #self.maxEdgeWeight = max(edge.weight for edge in edges) if len(edges) > 0 else 0
+        
+        #if self.minEdgeWeight is None: 
+        #    self.minEdgeWeight = 0 
+        
+        #if self.maxEdgeWeight is None: 
+        #    self.maxEdgeWeight = 0 
+                          
+        #self.maxEdgeSize = 10
+            
+        #self.setEdgesSize()
+        #self.setVerticesSize()
+        
+        self.networkCurve.coors = self.layout.map_to_graph(self.graph)
+        self.networkCurve.edges = edges
+        self.networkCurve.changed()
         
     def set_graph_layout(self, graph, layout, curve=None, items=None, links=None):
         self.clear()
