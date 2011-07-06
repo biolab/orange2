@@ -1,7 +1,7 @@
 #
 # OWScatterPlotGraph.py
 #
-from OWGraphQt import *
+from plot.owplot import *
 import time
 from orngCI import FeatureByCartesianProduct
 ##import OWClusterOptimization
@@ -19,9 +19,9 @@ MIN_SHAPE_SIZE = 6
 ###########################################################################################
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
-class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
+class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
     def __init__(self, scatterWidget, parent = None, name = "None"):
-        OWGraph.__init__(self, parent, name)
+        OWPlot.__init__(self, parent, name)
         orngScaleScatterPlotData.__init__(self)
 
         self.pointWidth = 8
@@ -48,7 +48,7 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
         self.enableWheelZoom = 1
 
     def setData(self, data, subsetData = None, **args):
-        OWGraph.setData(self, data)
+        OWPlot.setData(self, data)
         self.oldLegendKeys = {}
         orngScaleScatterPlotData.setData(self, data, subsetData, **args)
 
@@ -322,7 +322,7 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
                 
             if colorIndex != -1:
                 num = len(self.dataDomain[colorIndex].values)
-                val = [[], [], [self.pointWidth]*num, [Ellipse]*num]
+                val = [[], [], [self.pointWidth]*num, [OWCurve.Ellipse]*num]
                 varValues = getVariableValuesSorted(self.dataDomain[colorIndex])
                 for ind in range(num):
                     val[0].append(legendJoin(self.dataDomain[colorIndex].name, varValues[ind]))
@@ -343,7 +343,7 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
             if sizeIndex != -1:
                 num = len(self.dataDomain[sizeIndex].values)
                 if legendKeys.has_key(sizeIndex):  val = legendKeys[sizeIndex]
-                else:                               val = [[], [Qt.black]*num, [], [Ellipse]*num]
+                else:                               val = [[], [Qt.black]*num, [], [OWCurve.Ellipse]*num]
                 val[2] = []; val[0] = []
                 varValues = getVariableValuesSorted(self.dataDomain[sizeIndex])
                 for ind in range(num):
@@ -405,11 +405,11 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
 ##                clusterLines = closure[key]
 ##                color = self.discPalette[classIndices[self.rawData.domain.classVar[classValue[key]].value]]
 ##                for (p1, p2) in clusterLines:
-##                    self.addCurve("", color, color, 1, QwtPlotCurve.Lines, NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
+##                    self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWCurve.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
 ##        else:
 ##            colorIndex = self.discPalette[classIndices[self.rawData.domain.classVar[classValue].value]]
 ##            for (p1, p2) in closure:
-##                self.addCurve("", color, color, 1, QwtPlotCurve.Lines, NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
+##                self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWCurve.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
 
     def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
@@ -419,7 +419,7 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
         self.tips.addToolTip(x, y, text)
 
 
-    # override the default buildTooltip function defined in OWGraph
+    # override the default buildTooltip function defined in OWPlot
     def buildTooltip(self, exampleIndex):
         if exampleIndex < 0:
             example = self.rawSubsetData[-exampleIndex - 1]
@@ -466,7 +466,7 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
 
 
     def onMouseReleased(self, e):
-        OWGraph.onMouseReleased(self, e)
+        OWPlot.onMouseReleased(self, e)
         self.updateLayout()
 
     def computePotentials(self):
@@ -512,7 +512,7 @@ class OWScatterPlotGraphQt(OWGraph, orngScaleScatterPlotData):
             source = QRectF(0, 0, self.potentialsImage.size().width(), self.potentialsImage.size().height())
             painter.drawImage(target, self.potentialsImage, source)
 #            painter.drawImage(self.transform(xBottom, self.xmin), self.transform(yLeft, self.ymax), self.potentialsImage)
-        OWGraph.drawCanvas(self, painter)
+        OWPlot.drawCanvas(self, painter)
 
 
 

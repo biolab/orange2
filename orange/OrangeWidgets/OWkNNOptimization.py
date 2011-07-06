@@ -1,7 +1,7 @@
 from OWWidget import *
 import OWGUI, OWDlgs, numpy, user, sys
-from Graph.tools import *
-from OWGraphQt import *
+from plot.owtools import *
+from plot.owplot import *
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
 
@@ -633,18 +633,18 @@ class OWVizRank(VizRank, OWWidget):
 
     def attributeAnalysis(self):
         if not self.attributeHistogramDlg:
-            self.attributeHistogramDlg = OWGraphAttributeHistogram(self, VIZRANK_POINT, signalManager = self.signalManager)
+            self.attributeHistogramDlg = OWPlotAttributeHistogram(self, VIZRANK_POINT, signalManager = self.signalManager)
         self.attributeHistogramDlg.show()
         self.attributeHistogramDlg.setResults(self.graph.rawData, self.shownResults)
 
     def graphProjectionQuality(self):
-        dialog = OWGraphProjectionQuality(self, VIZRANK_POINT, signalManager = self.signalManager)
+        dialog = OWPlotProjectionQuality(self, VIZRANK_POINT, signalManager = self.signalManager)
         dialog.show()
         dialog.setResults(self.results)
 
     def identifyOutliers(self):
         if not self.identifyOutliersDlg:
-            self.identifyOutliersDlg = OWGraphIdentifyOutliers(self, VIZRANK_POINT, signalManager = self.signalManager, widget = self.parentWidget)
+            self.identifyOutliersDlg = OWPlotIdentifyOutliers(self, VIZRANK_POINT, signalManager = self.signalManager, widget = self.parentWidget)
         self.identifyOutliersDlg.show()
         self.identifyOutliersDlg.setResults(self.graph.rawData, self.shownResults)
 
@@ -841,7 +841,7 @@ class OWInteractionAnalysis(OWWidget):
         self.geneToSet, self.setToGenes = None, None
         self.useGeneSets = 0
 
-        self.graph = OWGraph(self.mainArea)
+        self.graph = OWPlot(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -1087,8 +1087,8 @@ class OWInteractionAnalysis(OWWidget):
         """
         
         """ 
-            Commented out to be compatible with Qt-only OWGraph
-        self.graph.setAxisScaleDraw(QwtPlot.xBottom, OWGraphTools.DiscreteAxisScaleDraw(attributes))
+            Commented out to be compatible with Qt-only OWPlot
+        self.graph.setAxisScaleDraw(QwtPlot.xBottom, OWPlotTools.DiscreteAxisScaleDraw(attributes))
         self.graph.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Ticks, 0)
         self.graph.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Backbone, 0)
         self.graph.setAxisMaxMajor(QwtPlot.xBottom, len(attributes))
@@ -1098,7 +1098,7 @@ class OWInteractionAnalysis(OWWidget):
             self.graph.axisScaleDraw(QwtPlot.xBottom).setLabelRotation(-90)
             self.graph.axisScaleDraw(QwtPlot.xBottom).setLabelAlignment(Qt.AlignLeft)
 
-        self.graph.setAxisScaleDraw(QwtPlot.yLeft, OWGraphTools.DiscreteAxisScaleDraw([""] + attributes[::-1]))
+        self.graph.setAxisScaleDraw(QwtPlot.yLeft, OWPlotTools.DiscreteAxisScaleDraw([""] + attributes[::-1]))
         self.graph.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Ticks, 0)
         self.graph.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Backbone, 0)
         self.graph.setAxisMaxMajor(QwtPlot.yLeft, len(attributes))
@@ -1117,7 +1117,7 @@ class OWInteractionAnalysis(OWWidget):
         OWWidget.hideEvent(self, ev)
 
 
-class OWGraphAttributeHistogram(OWWidget):
+class OWPlotAttributeHistogram(OWWidget):
     settingsList = ["attributeCount", "projectionCount", "rotateXAttributes", "colorAttributes", "progressLines", "useGeneSets", "recentGeneSets"]
     def __init__(self, parent=None, dialogType=VIZRANK_POINT, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Attribute Histogram", wantGraph = 1, savePosition = True)
@@ -1130,7 +1130,7 @@ class OWGraphAttributeHistogram(OWWidget):
         self.evaluatedAttributes = None
         self.evaluatedAttributesByClass = None
 
-        self.graph = OWGraph(self.mainArea)
+        self.graph = OWPlot(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
 
         self.graph.showYLaxisTitle = 1
@@ -1318,7 +1318,7 @@ class OWGraphAttributeHistogram(OWWidget):
 
 # #############################################################################
 # draw a graph for all the evaluated projections that shows how is the classification accuracy falling when we are moving from the best to the worst evaluated projections
-class OWGraphProjectionQuality(OWWidget):
+class OWPlotProjectionQuality(OWWidget):
     def __init__(self,parent=None, dialogType = VIZRANK_POINT, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Projection Quality", wantGraph = 1)
 
@@ -1338,7 +1338,7 @@ class OWGraphProjectionQuality(OWWidget):
         OWGUI.comboBox(b3, self, "lineWidth", items = range(1,5), callback = self.updateGraph, sendSelectedValue = 1, valueType = int)
         self.controlArea.layout().addStretch(100)
 
-        self.graph = OWGraph(self.mainArea)
+        self.graph = OWPlot(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
         self.graph.showXaxisTitle = 1
         self.graph.showYLaxisTitle = 1
@@ -1420,7 +1420,7 @@ class OWGraphProjectionQuality(OWWidget):
 
 # #############################################################################
 # draw a graph for all the evaluated projections that shows how is the classification accuracy falling when we are moving from the best to the worst evaluated projections
-class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
+class OWPlotIdentifyOutliers(VizRankOutliers, OWWidget):
     settingsList = ["projectionCountList", "showLegend", "showAllClasses", "sortProjections", "showClickedProjection"]
     def __init__(self, vizrank, dialogType, signalManager = None, widget = None):
         OWWidget.__init__(self, vizrank, signalManager, "Outlier Identification", wantGraph = 1, wantStatusBar = 1, savePosition = True)
@@ -1459,7 +1459,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.exampleList = OWGUI.listBox(b6, self, callback = self.exampleListSelectionChanged)
         self.exampleList.setToolTip("Average probabilities of correct classification and indices of corresponding examples")
 
-        self.graph = OWGraph(self.mainArea)
+        self.graph = OWPlot(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
         self.graph.showXaxisTitle = 1
         self.graph.showYLaxisTitle = 1
@@ -1719,6 +1719,6 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWVizRank()
 ##    ow = OWInteractionAnalysis()
-##    ow = OWGraphAttributeHistogram()
+##    ow = OWPlotAttributeHistogram()
     ow.show()
     a.exec_()

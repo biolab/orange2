@@ -13,25 +13,25 @@
 
 from OWColorPalette import ColorPixmap, ColorPaletteGenerator
 from OWWidget import *
-from OWGraphQt import *
+from plot.owplot import *
 import OWGUI
 import math
 import statc
 
-from Graph.curve import *
-from Graph.tools import *
+from plot.owcurve import *
+from plot.owtools import *
 
-class distribErrorBarCurve(Curve):
+class distribErrorBarCurve(OWCurve):
     def __init__(self, text = None):
         self._items = []
-        Curve.__init__(self,xData=[], yData=[])
+        OWCurve.__init__(self,xData=[], yData=[])
         
     def updateProperties(self):
-        if self.style() != Curve.UserCurve:
+        if self.style() != OWCurve.UserCurve:
             resize_plot_item_list(self._items, 0, None, self)
             self.items = []
             self.setDirty()
-            Curve.updateProperties(self)
+            OWCurve.updateProperties(self)
             return
             
         t = self.graphTransform()
@@ -54,9 +54,9 @@ class distribErrorBarCurve(Curve):
             self._items[i].setPath(t.map(p))
             self._items[i].setPen(self.pen())
 
-class OWDistributionGraphQt(OWGraph):
+class OWDistributionGraphQt(OWPlot):
     def __init__(self, settingsWidget = None, parent = None, name = None):
-        OWGraph.__init__(self, parent, name, axes = [xBottom, yLeft, yRight])
+        OWPlot.__init__(self, parent, name, axes = [xBottom, yLeft, yRight])
         self.parent = parent
 
         # initialize settings
@@ -89,7 +89,7 @@ class OWDistributionGraphQt(OWGraph):
         curve = distribErrorBarCurve('')
         curve.setVisible(visible)
         curve.setAxes(xAxis, yAxis)
-        return OWGraph.add_custom_curve(self, curve, enableLegend=0)
+        return OWPlot.add_custom_curve(self, curve, enableLegend=0)
 
     def sizeHint(self):
         return QSize(500, 500)
@@ -273,7 +273,7 @@ class OWDistributionGraphQt(OWGraph):
                 key.setPen(QPen(Qt.black))
             else:
                 key.setColor(Qt.black)
-                key.setSymbol(Diamond)
+                key.setSymbol(OWCurve.Diamond)
                 key.setPointSize(7)
         else:
             self.enableYRaxis(0)
@@ -364,23 +364,23 @@ class OWDistributionGraphQt(OWGraph):
 
             ## (re)set the curves
             if self.variableContinuous:
-                newSymbol = NoSymbol
+                newSymbol = OWCurve.NoSymbol
             else:
-                newSymbol = Diamond
+                newSymbol = OWCurve.Diamond
                 
             self.probCurveKey.setData(xs, mps)
             self.probCurveKey.setSymbol(newSymbol)
 
             if self.variableContinuous:
-                self.probCurveKey.setStyle(Curve.Lines)
+                self.probCurveKey.setStyle(OWCurve.Lines)
                 if self.showConfidenceIntervals:
                     self.probCurveUpperCIKey.setData(xs, ups)
                     self.probCurveLowerCIKey.setData(xs, lps)
             else:
                 if self.showConfidenceIntervals:
-                    self.probCurveKey.setStyle(Curve.UserCurve)
+                    self.probCurveKey.setStyle(OWCurve.UserCurve)
                 else:
-                    self.probCurveKey.setStyle(Curve.Dots)
+                    self.probCurveKey.setStyle(OWCurve.Dots)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)

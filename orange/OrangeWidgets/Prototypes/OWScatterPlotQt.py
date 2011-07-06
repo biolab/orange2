@@ -15,7 +15,7 @@ from OWkNNOptimization import *
 import orngVizRank
 import OWGUI, OWToolbars, OWColorPalette
 from orngScaleData import *
-from Graph.curve import Curve
+from plot.owcurve import *
 
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
@@ -354,7 +354,7 @@ class OWScatterPlotQt(OWWidget):
 
     def alphaChange(self):
         for curve in self.graph.itemList():
-            if isinstance(curve, Curve):
+            if isinstance(curve, OWCurve):
                 color = curve.color()
                 color.setAlpha(self.graph.alphaValue)
                 curve.setColor(color)
@@ -365,7 +365,7 @@ class OWScatterPlotQt(OWWidget):
             self.updateGraph()
         else:
             for curve in self.graph.itemList():
-                if isinstance(curve, Curve):
+                if isinstance(curve, OWCurve):
                     curve.setPointSize(self.graph.pointWidth)
             self.graph.replot()
 
