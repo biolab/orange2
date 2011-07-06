@@ -1,59 +1,64 @@
 from Orange.classification.svm import SVMLearner, MeasureAttribute_SVMWeights, LinearLearner, RFE
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
-import Orange.misc.testing as testing
+from Orange.misc import testing
+from Orange.misc.testing import datasets_driven, test_on_datasets
 import orange
 
-#LinerSVMTestCase = test_case_learner(SVMLearner(kernel_type=SVMLearner.Linear))
-#RBFSVMTestCase = test_case_learner(SVMLearner(kernel_type=SVMLearner.RBF))
 
-@testing.expand_tests
+datasets = testing.CLASSIFICATION_DATASETS + testing.REGRESSION_DATASETS
+@datasets_driven(datasets=datasets)
 class LinearSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-lin", kernel_type=SVMLearner.Linear)
     
-@testing.expand_tests
+    
+@datasets_driven(datasets=datasets)
 class PolySVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-poly", kernel_type=SVMLearner.Polynomial)
     
-@testing.expand_tests
+    
+@datasets_driven(datasets=datasets)
 class RBFSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-RBF", kernel_type=SVMLearner.RBF)
     
-@testing.expand_tests
+    
+@datasets_driven(datasets=datasets)
 class SigmoidSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-sig", kernel_type=SVMLearner.Sigmoid)
     
-@testing.expand_tests
+    
+@datasets_driven(datasets=datasets)
 class BagOfWordsSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-bow", kernel_type=SVMLearner.Custom, kernelFunc=BagOfWords())
     
-@testing.expand_tests
+    
+@datasets_driven(datasets=datasets)
 class CustomWrapperSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner
     
-    @testing.test_on_data
+    @test_on_datasets(datasets=datasets)
     def test_learner_on(self, data):
         """ Test custom kernel wrapper
         """
-        self.LEARNER = self.LEARNER(kernel_type=SVMLearner.Custom,
+        # Need the data for ExamplesDistanceConstructor_Euclidean  
+        self.learner = self.LEARNER(kernel_type=SVMLearner.Custom,
                                     kernelFunc=RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5))
         
-        c = self.LEARNER(data)
+        testing.LearnerTestCase.test_learner_on(self, data)
     
-@testing.expand_tests
+    
+@datasets_driven(datasets=datasets)
 class TestLinLearner(testing.LearnerTestCase):
     LEARNER = LinearLearner
     
     
-@testing.expand_tests
-class TestMeasureAttr_LinWeights(testing.TestMeasureAttribute):
+@datasets_driven(datasets=datasets)
+class TestMeasureAttr_LinWeights(testing.MeasureAttributeTestCase):
     MEASURE = MeasureAttribute_SVMWeights()
-    
 
-@testing.expand_tests
-class TestRFE(testing.BaseTestOnData):
-    FLAGS = testing.TEST_ALL_CLASSIFICATION
-    
-    @testing.test_on_data
+
+@datasets_driven(datasets=datasets)
+class TestRFE(testing.DataTestCase):
+    @datasets_driven
     def test_rfe_on(self, data):
         rfe = RFE()
         num_selected = min(5, len(data.domain.attributes))

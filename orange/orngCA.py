@@ -6,7 +6,6 @@ multi-way tables containing some measure of correspondence between the rows and 
 from numpy import *
 import numpy.linalg
 import orange
-#import pylab
 import operator
 
 def input(filename):
@@ -165,29 +164,32 @@ class CA(object):
         a = [i for (i, v) in tmp]
         a.reverse()
         return a
-#    def PlotScreeDiagram(self):
-        ## todo: legend, axis, etc
-#        pylab.plot(range(1, min(self.__dataMatrix.shape) + 1), self.InertiaOfAxis(1))
-#        pylab.axis([0, min(self.__dataMatrix.shape) + 1, 0, 100])
-#        pylab.show()
+    
+    def PlotScreeDiagram(self):
+        # todo: legend, axis, etc
+        import pylab
+        pylab.plot(range(1, min(self.__dataMatrix.shape) + 1), self.InertiaOfAxis(1))
+        pylab.axis([0, min(self.__dataMatrix.shape) + 1, 0, 100])
+        pylab.show()
         
-#    def Biplot(self, dim = (0, 1)):
-#        if len(dim) != 2:
-#           raise Exception("Dim tuple must be of length two")
-#        pylab.plot(self.getPrincipalRowProfilesCoordinates()[:, dim[0]], self.getPrincipalRowProfilesCoordinates()[:, dim[1]], 'ro',
-#            self.getPrincipalColProfilesCoordinates()[:, dim[0]], self.getPrincipalColProfilesCoordinates()[:, dim[1]], 'bs')
-#        if self.labelR:
-#            for i, x, y in zip(range(len(self.getPrincipalRowProfilesCoordinates()[:, dim[0]])), \
-#                                    self.getPrincipalRowProfilesCoordinates()[:, dim[0]], \
-#                                    self.getPrincipalRowProfilesCoordinates()[:, dim[1]]):
-#                pylab.text(x, y, self.labelR[i], horizontalalignment='center')
-#        if self.labelC:
-#            for i, x, y in zip(range(len(self.getPrincipalColProfilesCoordinates()[:, dim[0]])), \
-#                                    self.getPrincipalColProfilesCoordinates()[:, dim[0]], \
-#                                    self.getPrincipalColProfilesCoordinates()[:, dim[1]]):
-#                pylab.text(x, y, self.labelC[i], horizontalalignment='center')                
-#        pylab.grid()
-#        pylab.show()                
+    def Biplot(self, dim = (0, 1)):
+        import pylab
+        if len(dim) != 2:
+           raise Exception("Dim tuple must be of length two")
+        pylab.plot(self.getPrincipalRowProfilesCoordinates()[:, dim[0]], self.getPrincipalRowProfilesCoordinates()[:, dim[1]], 'ro',
+            self.getPrincipalColProfilesCoordinates()[:, dim[0]], self.getPrincipalColProfilesCoordinates()[:, dim[1]], 'bs')
+        if self.labelR:
+            for i, x, y in zip(range(len(self.getPrincipalRowProfilesCoordinates()[:, dim[0]])), \
+                                    self.getPrincipalRowProfilesCoordinates()[:, dim[0]], \
+                                    self.getPrincipalRowProfilesCoordinates()[:, dim[1]]):
+                pylab.text(x, y, self.labelR[i], horizontalalignment='center')
+        if self.labelC:
+            for i, x, y in zip(range(len(self.getPrincipalColProfilesCoordinates()[:, dim[0]])), \
+                                    self.getPrincipalColProfilesCoordinates()[:, dim[0]], \
+                                    self.getPrincipalColProfilesCoordinates()[:, dim[1]]):
+                pylab.text(x, y, self.labelC[i], horizontalalignment='center')                
+        pylab.grid()
+        pylab.show()                
     
     A = property(getA)
     B = property(getB)

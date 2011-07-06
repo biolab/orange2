@@ -207,7 +207,7 @@ def toR(filename,t):
     as0.append(t.domain.class_var)
     for a in as0:
         labels.append(str(a.name))
-        atyp.append(a.var_ype)
+        atyp.append(a.var_type)
         aord.append(a.ordered)
 
     f.write('data <- data.frame(\n')

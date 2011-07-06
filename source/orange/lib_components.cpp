@@ -3541,6 +3541,8 @@ PyObject *SymMatrix_repr(PyObject *self)
 C_NAMED(HierarchicalCluster - Orange.clustering.hierarchical.HierarchicalCluster, Orange, "()")
 C_CALL3(HierarchicalClustering - Orange.clustering.hierarchical.HierarchicalClustering, HierarchicalClustering, Orange, "(linkage=)")
 
+C_CALL3(HierarchicalClusterOrdering - Orange.clustering.hierarchical.HierarchicalClusterOrdering, HierarchicalClusterOrdering, Orange, "(progressCallback=)")
+
 PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(distance matrix) -> HierarchicalCluster")
 {
 	PyTRY
@@ -3566,6 +3568,18 @@ PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *
 	PyCATCH
 }
 
+PyObject * HierarchicalClusterOrdering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(hierarchical cluster, distance_matrix) -> None")
+{
+	PyTRY
+		NO_KEYWORDS
+		PHierarchicalCluster root;
+		PSymMatrix matrix;
+		if (!PyArg_ParseTuple(args, "O&O&:HierarchicalClustering", cc_HierarchicalCluster, &root, cc_SymMatrix, &matrix))
+			return NULL;
+		SELF_AS(THierarchicalClusterOrdering).operator ()(root, matrix);
+		RETURN_NONE
+	PyCATCH
+}
 
 Py_ssize_t HierarchicalCluster_len_sq(PyObject *self)
 {

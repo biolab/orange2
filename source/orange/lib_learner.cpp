@@ -49,6 +49,12 @@
 
 #include "externs.px"
 
+/* ************ SIMPLE TREE LEARNER ************ */
+
+#include "tdidt_simple.hpp"
+C_CALL(SimpleTreeLearner - Orange.classification.tree.SimpleTreeLearner, Learner, "([examples], [maxMajority=, minExamples=, maxDepth=])")
+C_NAMED(SimpleTreeClassifier - Orange.classification.tree.SimpleTreeClassifier, Classifier, "()")
+
 /* ************ MAJORITY AND COST ************ */
 
 #include "majority.hpp"
@@ -1496,7 +1502,22 @@ PyObject * SVMClassifierSparse_new(PyTypeObject* type, PyObject* args, PyObject*
 	PyCATCH
 }
 
-	
+
+/************ EARTH (MARS) ******/
+#include "earth.hpp"
+
+C_CALL(EarthLearner - Orange.core.EarthLearner, Learner, "([examples], [weight=] -/-> Classifier)")
+C_NAMED(EarthClassifier - Orange.core.EarthClassifier, ClassifierFD, " ")
+
+PyObject *EarthClassifier_formatEarth(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+	PyTRY
+	CAST_TO(TEarthClassifier, classifier);
+	classifier->format_earth();
+	RETURN_NONE;
+	PyCATCH
+}
+
 	
 /************* BAYES ************/
 

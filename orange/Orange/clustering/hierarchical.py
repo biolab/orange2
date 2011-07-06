@@ -54,14 +54,14 @@ clusters as well).
                 also called farthest neighbor.
             4. ``HierarchicalClustering.Ward`` uses Ward's distance.
             
-    .. attribute:: overwriteMatrix
-        
+    .. attribute:: overwrite_matrix
+
         If true (default is false), the algorithm will work on the original
         distance matrix, destroying it in the process. The benefit is that it
         will need much less memory (not much more than what is needed to store
         the tree of clusters).
         
-    .. attribute:: progressCallback
+    .. attribute:: progress_callback
         
         A callback function (None by default). It can be any function or
         callable class in Python, which accepts a single float as an
@@ -316,12 +316,11 @@ such a small data set as Iris). ::
 
     import Orange
     from Orange.clustering import hierarchical
-    from Orange import distances
-    
+
     data = Orange.data.Table("iris")
     matrix = Orange.core.SymMatrix(len(data))
     matrix.setattr("objects", data)
-    distance = distances.ExamplesDistanceConstructor_Euclidean(data)
+    distance = Orange.distance.instances.EuclideanConstructor(data)
     for i1, instance1 in enumerate(data):
         for i2 in range(i1+1, len(data)):
             matrix[i1, i2] = distance(instance1, data[i2])
@@ -484,7 +483,7 @@ def clustering(data,
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
     :param distance_constructor: Instance distance constructor
-    :type distance_constructor: :class:`Orange.distances.ExamplesDistanceConstructor`
+    :type distance_constructor: :class:`Orange.distance.instances.ExamplesDistanceConstructor`
     :param linkage: Linkage flag. Must be one of global module level flags:
     
         - SINGLE
@@ -798,7 +797,7 @@ try:
     from matplotlib.text import Text
     from matplotlib.artist import Artist
 ##    import  matplotlib.pyplot as plt
-except (ImportError, IOError), ex:
+except (ImportError, IOError, RuntimeError), ex:
     matplotlib = None
     Text , Artist, Table, Cell = object, object, object, object
 
@@ -1024,7 +1023,8 @@ class DendrogramPlotPylab(object):
 """ Dendrogram ploting using Orange.misc.reander
 """
 
-from orngMisc import ColorPalette, EPSRenderer
+from Orange.misc.render import EPSRenderer, ColorPalette
+
 class DendrogramPlot(object):
     """ A class for drawing dendrograms
     Example:
@@ -1167,7 +1167,7 @@ def dendrogram_draw(filename, *args, **kwargs):
     .. todo:: Finish documentation.
     """
     import os
-    from orngMisc import PILRenderer, EPSRenderer, SVGRenderer
+    from Orange.misc.render import PILRenderer, EPSRenderer, SVGRenderer
     name, ext = os.path.splitext(filename)
     kwargs["renderer"] = {".eps":EPSRenderer, ".svg":SVGRenderer, ".png":PILRenderer}.get(ext.lower(), PILRenderer)
 #    print kwargs["renderer"], ext
@@ -1374,7 +1374,7 @@ def instance_distance_matrix(data,
     :type data: :class:`Orange.data.Table`
     
     :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :class:`Orange.distances.ExampleDistConstructor`
+    :type distance_constructor: :class:`Orange.distance.instances.ExampleDistConstructor`
     
     """
     matrix = orange.SymMatrix(len(data))

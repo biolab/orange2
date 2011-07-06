@@ -57,15 +57,11 @@ import copy
 import math
 import numpy
 import networkx as nx
-
 import Orange
 import orangeom
-
 import readwrite
-
 from networkx import algorithms 
 from networkx.classes import function
-
 
 class MdsTypeClass():
     def __init__(self):
@@ -74,7 +70,6 @@ class MdsTypeClass():
         self.MDS = 2
 
 MdsType = MdsTypeClass()
-
 
 def _get_doc(doc):
     tmp = doc.replace('nx.', 'Orange.network.')
@@ -201,8 +196,15 @@ class Graph(BaseGraph, nx.Graph):
     """
     
     def __init__(self, data=None, name='', **attr):  
-        nx.Graph.__init__(self, data, name, **attr)
+        nx.Graph.__init__(self, data, name=name, **attr)
         BaseGraph.__init__(self)
+    
+    def subgraph(self, nbunch):
+        G = nx.Graph.subgraph(self, nbunch)
+        nodes = set(nbunch).intersection(self.nodes())
+        
+        return G
+        # TODO: _items, _links
     
     __doc__ += _get_doc(nx.Graph.__doc__)
     __init__.__doc__ = _get_doc(nx.Graph.__init__.__doc__)
@@ -215,7 +217,7 @@ class DiGraph(BaseGraph, nx.DiGraph):
     
     
     def __init__(self, data=None, name='', **attr):
-        nx.DiGraph.__init__(self, data, name, **attr)
+        nx.DiGraph.__init__(self, data, name=name, **attr)
         BaseGraph.__init__(self)
     
     __doc__ += _get_doc(nx.DiGraph.__doc__)
@@ -229,7 +231,7 @@ class MultiGraph(BaseGraph, nx.MultiGraph):
     
     
     def __init__(self, data=None, name='', **attr):
-        nx.MultiGraph.__init__(self, data, name, **attr)
+        nx.MultiGraph.__init__(self, data, name=name, **attr)
         BaseGraph.__init__(self)
     
     __doc__ += _get_doc(nx.MultiGraph.__doc__)
@@ -243,7 +245,7 @@ class MultiDiGraph(BaseGraph, nx.MultiDiGraph):
     
     
     def __init__(self, data=None, name='', **attr):
-        nx.MultiDiGraph.__init__(self, data, name, **attr)
+        nx.MultiDiGraph.__init__(self, data, name=name, **attr)
         BaseGraph.__init__(self)
     
     __doc__ += _get_doc(nx.MultiDiGraph.__doc__)
@@ -880,6 +882,25 @@ class GraphLayout(orangeom.GraphLayout):
     ### BEGIN: DEPRECATED METHODS (TO DELETE IN ORANGE 3.0)                ###
     ##########################################################################
     
+    def map_to_graph(self, graph):
+        nodes = sorted(graph.nodes())
+        return dict((v, (self.coors[0][i], self.coors[1][i])) for i,v in \
+                    enumerate(nodes))
     
+class NxView(object):
+    """Network View
     
+    """
     
+    def __init__(self, **attr):
+        self._network = None
+        self._nx_explorer = None
+        
+    def set_nx_explorer(self, _nx_explorer):
+        self._nx_explorer = _nx_explorer
+        
+    def init_network(self, graph):
+        return graph
+        
+    def nodes_selected(self):
+        pass

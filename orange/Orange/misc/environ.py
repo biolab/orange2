@@ -13,7 +13,7 @@ When this module is imported it will first load and parse a global
 configuration `orangerc.cfg` (located in the root directory off the orange
 installation). Further, it will look for and try to load a user specific
 configuration file located in $(HOME)/.orangerc.cfg or 
-`application_dir`/.orangerc.cfg where `application_dir` is a variable defined
+`application_dir`/orangerc.cfg where `application_dir` is a variable defined
 in the global configuration file.
 
 .. note:: in the configuration files all OS defined environment variables
@@ -54,8 +54,14 @@ The following variables are exposed as top level module members
     Directory where icons for widgets are installed.
 
 `doc_install_dir`:
-    Directory where Orange documentation
-    
+    Directory with Orange documentation.
+ 
+`dataset_install_dir`:
+    Directory with example data sets.
+
+`network_install_dir`:
+    Directory with example networks.
+
 `add_ons_dir`:
     Directory where system-wide add-ons are installed 
     
@@ -112,6 +118,7 @@ _path_fix()
 
 def _get_default_env():
     """ Return a dictionary with default Orange environment."""
+
     version = "orange"
     version_display = "Orange 2.5"
     orange_no_deprecated_members = "False"
@@ -126,6 +133,8 @@ def _get_default_env():
         install_dir = os.path.dirname(os.path.abspath(orange.__file__))
 
     doc_install_dir = os.path.join(install_dir, "doc") 
+    dataset_install_dir = os.path.join(install_dir, "doc", "datasets") 
+    network_install_dir = os.path.join(install_dir, "doc", "networks")
 
     canvas_install_dir = os.path.join(install_dir, "OrangeCanvas")
     widget_install_dir = os.path.join(install_dir, "OrangeWidgets")
@@ -169,7 +178,8 @@ _ALL_ENV_OPTIONS = ["version", "version_display", "is_canvas_installed",
 
 _ALL_DIR_OPTIONS = ["install_dir", "canvas_install_dir",
                     "widget_install_dir", "icons_install_dir",
-                    "doc_install_dir", "add_ons_dir", "add_ons_dir_user",
+                    "doc_install_dir", "dataset_install_dir", 
+                    "network_install_dir", "add_ons_dir", "add_ons_dir_user",
                     "application_dir", "output_dir", "default_reports_dir",
                     "orange_settings_dir", "canvas_settings_dir",
                     "widget_settings_dir", "buffer_dir"]
@@ -181,7 +191,10 @@ def get_platform_option(section, option):
         return parser.get(section + " " + sys.platform, option)
     except Exception:
         return parser.get(section, option)
-    
+
+#options read from environment variables
+_ENVIRON_OPTIONS = [ "orange_no_deprecated_members" ]
+
 def _configure_env(defaults=None):
     """ Apply the configuration files on the default environment
     and return the instance of SafeConfigParser
@@ -190,7 +203,11 @@ def _configure_env(defaults=None):
     if defaults is None:
         defaults = dict(os.environ)
         defaults.update(_get_default_env())
-        
+
+    for opt in _ENVIRON_OPTIONS:
+        if opt in os.environ:
+            defaults[opt] = os.environ[opt]
+    
     parser = ConfigParser.SafeConfigParser(defaults)
     global_cfg = os.path.join(defaults["install_dir"], "orangerc.cfg")
     if not parser.read([global_cfg]):

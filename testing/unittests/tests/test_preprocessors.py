@@ -36,142 +36,152 @@ import orange
 
 import Orange.misc.testing as testing
     
-@testing.expand_tests
-class TestAddClassNoise(testing.TestPreprocessor):
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestAddClassNoise(testing.PreprocessorTestCase):
     """ Test Preprocessor_addClassNoise 
     """
     PREPROCESSOR = Preprocessor_addClassNoise
-    FLAGS = testing.TEST_CLASSIFICATION + testing.TEST_PICKLE
+    
+
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestAddClassWeight(testing.PreprocessorTestCase):
+    PREPROCESSOR = Preprocessor_addClassWeight
 
 
-#class TestAddClassWeight(tesring.TestPreprocessor):
-#    PREPROCESSOR = Preprocessor_addClassWeight
-
-@testing.expand_tests
-class TestAddGaussianClassNoise(testing.TestPreprocessor):
+@testing.datasets_driven(datasets=testing.REGRESSION_DATASETS)
+class TestAddGaussianClassNoise(testing.PreprocessorTestCase):
     """ Test Preprocessor_addGaussianClassNoise
     """
     PREPROCESSOR = Preprocessor_addGaussianClassNoise
-    FLAGS = testing.TEST_REGRESSION | testing.TEST_PICKLE
 
-@testing.expand_tests
-class TestAddGaussianNoise(testing.TestPreprocessor):
+
+@testing.datasets_driven
+class TestAddGaussianNoise(testing.PreprocessorTestCase):
+    """ Test Preprocessor_addGaussianNoise
+    """
     PREPROCESSOR = Preprocessor_addGaussianNoise
-    FLAGS = testing.TEST_ALL
+
     
-@testing.expand_tests
-class TestAddMissing(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestAddMissing(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_addMissing
 
-@testing.expand_tests
-class TestAddMissingClasses(testing.TestPreprocessor):
+
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS + \
+                         testing.REGRESSION_DATASETS)
+class TestAddMissingClasses(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_addMissingClasses
+
     
-@testing.expand_tests
-class TestAddMissing(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestAddMissing(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_addMissing
 
-@testing.expand_tests
-class TestAddNoise(testing.TestPreprocessor):
-    PREPROCESSOR = Preprocessor_addNoise
-    
-@testing.expand_tests
-class TestDiscretizeEquiN(testing.TestPreprocessor):
-    PREPROCESSOR = Preprocessor_discretize(method=orange.EquiNDiscretization())
-    FLAGS = testing.TEST_CLASSIFICATION + testing.CONTINUIZE_DOMAIN
 
-@testing.expand_tests 
-class TestDiscretizeEquiDist(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestAddNoise(testing.PreprocessorTestCase):
+    PREPROCESSOR = Preprocessor_addNoise
+
+    
+@testing.datasets_driven
+class TestDiscretizeEquiN(testing.PreprocessorTestCase):
+    PREPROCESSOR = Preprocessor_discretize(method=orange.EquiNDiscretization())
+
+
+@testing.datasets_driven
+class TestDiscretizeEquiDist(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_discretize(method=orange.EquiDistDiscretization())
     
-@testing.expand_tests
-class TestDiscretizeEntropy(testing.TestPreprocessor):
+    
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestDiscretizeEntropy(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_discretize(method=orange.EntropyDiscretization())
-    FLAGS = testing.TEST_CLASSIFICATION + testing.TEST_PICKLE
 
+##########
 # This crashes with std::bad_cast
-#@testing.expand_tests
-#class TestDiscretizeBiModal(testing.TestPreprocessor):
+##########
+#@testing.datasets_driven
+#class TestDiscretizeBiModal(testing.PreprocessorTestCase):
 #    PREPROCESSOR = Preprocessor_discretize(method=orange.BiModalDiscretization())
-    
+
+##### 
 # Pickling throws a segfault
-@testing.expand_tests
-class TestFilter(testing.TestPreprocessor):
-    PREPROCESSOR = Preprocessor_filter(filter=orange.Filter_random(prob = 0.7, randomGenerator = 24))
-    FLAGS = testing.TEST_ALL - testing.TEST_PICKLE
+#####
+#@testing.datasets_driven
+#class TestFilter(testing.PreprocessorTestCase):
+#    PREPROCESSOR = Preprocessor_filter(filter=orange.Filter_random(prob = 0.7, randomGenerator = 24))
     
-@testing.expand_tests
-class TestDropMissingClasses(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestDropMissingClasses(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_dropMissingClasses
     
-@testing.expand_tests
-class TestIgnore(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestIgnore(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_ignore
     
-@testing.expand_tests
-class TestImputeByLearner(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestImputeByLearner(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_imputeByLearner(learner=orange.MajorityLearner())
     
-@testing.expand_tests
-class TestRemoveDuplicates(testing.TestPreprocessor):
+@testing.datasets_driven(datasets=testing.ALL_DATASETS + ["lenses"])
+class TestRemoveDuplicates(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_removeDuplicates
     
-@testing.expand_tests
-class TestSelect(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestSelect(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_select
     
-@testing.expand_tests
-class TestShuffle(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestShuffle(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_shuffle
     
-@testing.expand_tests
-class TestTake(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestTake(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_take
     
-@testing.expand_tests
-class TestTakeMissing(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestTakeMissing(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_takeMissing
     
-@testing.expand_tests
-class TestTakeMissingClasses(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestTakeMissingClasses(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_takeMissingClasses
     
-@testing.expand_tests
-class TestDiscretizeEntropy(testing.TestPreprocessor):
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestDiscretizeEntropy(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_discretizeEntropy
-    FLAGS = testing.TEST_CLASSIFICATION + testing.TEST_PICKLE
     
-@testing.expand_tests
-class TestRemoveContinuous(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestRemoveContinuous(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_removeContinuous
     
-@testing.expand_tests
-class TestRemoveDiscrete(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestRemoveDiscrete(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_removeDiscrete
     
-@testing.expand_tests
-class TestContinuize(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestContinuize(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_continuize
     
-@testing.expand_tests
-class TestImpute(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestImpute(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_impute
     
-@testing.expand_tests
-class TestFeatureSelection(testing.TestPreprocessor):
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS + \
+                         testing.REGRESSION_DATASETS)
+class TestFeatureSelection(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_featureSelection
     
-@testing.expand_tests
-class TestRFE(testing.TestPreprocessor):
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestRFE(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_RFE
-    FLAGS = testing.TEST_CLASSIFICATION + testing.TEST_PICKLE
     
-@testing.expand_tests
-class TestSample(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestSample(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_sample
     
-@testing.expand_tests
-class TestSelect(testing.TestPreprocessor):
+@testing.datasets_driven
+class TestSelect(testing.PreprocessorTestCase):
     PREPROCESSOR = Preprocessor_preprocessorList(preprocessors=[Preprocessor_sample, Preprocessor_takeMissing])
     
 if __name__ == "__main__":

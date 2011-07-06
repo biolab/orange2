@@ -14,19 +14,19 @@ distributions of discrete and continuous variables.
 
         >>> import Orange
         >>> data = Orange.data.Table("adult_sample")
-	>>> disc = orange.statistics.distribution.Distribution("workclass", data)
-	>>> print disc
-	<685.000, 72.000, 28.000, 29.000, 59.000, 43.000, 2.000>
-	>> print type(disc)
-	<type 'DiscDistribution'>
+        >>> disc = orange.statistics.distribution.Distribution("workclass", data)
+        >>> print disc
+        <685.000, 72.000, 28.000, 29.000, 59.000, 43.000, 2.000>
+        >>> print type(disc)
+        <type 'DiscDistribution'>
 
     The resulting distribution is of type :obj:`DiscDistribution` since variable
     `workclass` is discrete. The printed numbers are counts of examples that have particular
     attribute value. ::
 
-    	>>> workclass = data.domain["workclass"]
-	>>> for i in range(len(workclass.values)):
- 	... print "%20s: %5.3f" % (workclass.values[i], disc[i])
+        >>> workclass = data.domain["workclass"]
+        >>> for i in range(len(workclass.values)):
+        ...     print "%20s: %5.3f" % (workclass.values[i], disc[i])
                  Private: 685.000
         Self-emp-not-inc: 72.000
             Self-emp-inc: 28.000
@@ -96,9 +96,9 @@ distributions of discrete and continuous variables.
         variable on the given data. If instances are weighted, the id of
         meta-attribute with weights can be passed as the third argument.
 
-	If variable is given by descriptor, it doesn't need to exist in the
-	domain, but it must be computable from given instances. For example, the
-	variable can be a discretized version of a variable from data.
+        If variable is given by descriptor, it doesn't need to exist in the
+        domain, but it must be computable from given instances. For example, the
+        variable can be a discretized version of a variable from data.
 
     .. method:: keys()
 
@@ -167,20 +167,20 @@ distributions of discrete and continuous variables.
     .. method:: __init__(frequencies)
 
         Construct an instance and initialize the frequencies from the list, but
-	leave `Distribution.variable` empty.
+        leave `Distribution.variable` empty.
 
         :param frequencies: A list of frequencies
         :type frequencies: list
 
         Distribution constructed in this way can be used, for instance, to
-	generate random numbers from a given discrete distribution::
+        generate random numbers from a given discrete distribution::
 
-            disc = Orange.statistics.distributions.Discrete([0.5, 0.3, 0.2])
+            disc = Orange.statistics.distribution.Discrete([0.5, 0.3, 0.2])
             for i in range(20):
                 print disc.random(),
 
         This prints out approximatelly ten 0's, six 1's and four 2's. The values
-	can be named by assigning a variable::
+        can be named by assigning a variable::
 
             v = orange.EnumVariable(values = ["red", "green", "blue"])
             disc.variable = v
@@ -248,7 +248,7 @@ distributions of discrete and continuous variables.
         :rtype: float
 
         For example, if `d_age` is a continuous distribution, the quartiles can
-	be printed by ::
+        be printed by ::
 
             print "Quartiles: %5.3f - %5.3f - %5.3f" % ( 
                  dage.percentile(25), dage.percentile(50), dage.percentile(75))
@@ -256,7 +256,7 @@ distributions of discrete and continuous variables.
    .. method:: density(x)
 
         Return the probability density at `x`. If the value is not in
-	:obj:`Distribution.keys`, it is interpolated.
+        :obj:`Distribution.keys`, it is interpolated.
 
 
 .. class:: Gaussian
@@ -290,7 +290,7 @@ distributions of discrete and continuous variables.
 
         Construct a distribution which approximates the given distribution,
         which must be either :obj:`Continuous`, in which case its
-	average and deviation will be used for mean and sigma, or and existing
+        average and deviation will be used for mean and sigma, or and existing
         :obj:`GaussianDistribution`, which will be copied. Attribute :obj:`abs`
         is set to the given distribution's ``abs``.
 
@@ -309,7 +309,7 @@ distributions of discrete and continuous variables.
     .. method:: density(x)
 
         Return the density at point ``x``, that is, the Gaussian distribution
-	density multiplied by :obj:`abs`.
+        density multiplied by :obj:`abs`.
 
 
 Class distributions
@@ -350,12 +350,12 @@ indices in the domain, as well as by variables and their names.
 The script below computes distributions for all attributes in the data and
 prints out distributions for discrete and averages for continuous attributes. ::
 
-    dist = Orange.statistics.distributions.Domain(data)
+    dist = Orange.statistics.distribution.Domain(data)
 
         for d in dist:
-	    if d.variable.varType == orange.VarTypes.Discrete:
+            if d.variable.varType == orange.VarTypes.Discrete:
                  print "%30s: %s" % (d.variable.name, d)
-	    else:
+            else:
                  print "%30s: avg. %5.3f" % (d.variable.name, d.average())
 
 The distribution for, say, attribute `age` can be obtained by its index and also

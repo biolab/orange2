@@ -49,6 +49,7 @@ _import("projection")
 _import("projection.linear")
 _import("projection.mds")
 _import("projection.som")
+_import("projection.pca")
 
 _import("ensemble")
 _import("ensemble.bagging")
@@ -62,10 +63,11 @@ _import("regression.tree")
 _import("associate")
 
 _import("preprocess")
-#import preprocess.value
-#import preprocess.data
+_import("preprocess.outliers")
+_import("preprocess.scaling")
 
-_import("distances")
+_import("distance")
+_import("distance.instances")
 
 _import("wrappers")
 

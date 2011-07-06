@@ -2,7 +2,8 @@ from Orange.misc import testing
 import unittest
 import orange
 
-@testing.expand_tests
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestC45(testing.LearnerTestCase):
-    LEARNER = orange.C45Learner
+    def setUp(self):
+        self.learner = orange.C45Learner
        

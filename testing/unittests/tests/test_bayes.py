@@ -1,10 +1,8 @@
 from Orange.misc import testing
 
 # TODO: test different prob estimators
-@testing.expand_tests
-class TestNaiveBayes(testing.LearnerTestCase):
-    FLAGS = testing.TEST_ALL_CLASSIFICATION
-    
+@testing.datasets_driven(testing.CLASSIFICATION_DATASETS)
+class TestNaiveBayes(testing.LearnerTestCase):    
     def setUp(self):
         import orngBayes
         self.learner = orngBayes.BayesLearner()
@@ -12,8 +10,8 @@ class TestNaiveBayes(testing.LearnerTestCase):
     @testing.test_on_data
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
-        # test __str__ method
         
+        # test __str__ method
         print_str = str(self.classifier)
         
         # test p method

@@ -1,7 +1,7 @@
 from Orange.clustering.kmeans import * 
 # from Orange.cluster.hierarchical import * 
 
-from Orange.distances import \
+from Orange.distance.instances import \
      AlignmentList, \
      DistanceMap, \
      DistanceMapConstructor, \
@@ -12,24 +12,24 @@ from Orange.distances import \
      ExamplesDistance_Normalized, \
      ExamplesDistanceConstructor
 
-from Orange.distances import Hamming as ExamplesDistance_Hamming
-from Orange.distances import DTW as ExamplesDistance_DTW
-from Orange.distances import Euclidean as ExamplesDistance_Euclidean
-from Orange.distances import Manhattan as ExamplesDistance_Manhattan
-from Orange.distances import Maximal as ExamplesDistance_Maximal
-from Orange.distances import Relief as ExamplesDistance_Relief
+from Orange.distance.instances import Hamming as ExamplesDistance_Hamming
+from Orange.distance.instances import DTW as ExamplesDistance_DTW
+from Orange.distance.instances import Euclidean as ExamplesDistance_Euclidean
+from Orange.distance.instances import Manhattan as ExamplesDistance_Manhattan
+from Orange.distance.instances import Maximal as ExamplesDistance_Maximal
+from Orange.distance.instances import Relief as ExamplesDistance_Relief
 
-from Orange.distances import DTWConstructor as ExamplesDistanceConstructor_DTW
-from Orange.distances import EuclideanConstructor as ExamplesDistanceConstructor_Euclidean
-from Orange.distances import HammingConstructor as ExamplesDistanceConstructor_Hamming
-from Orange.distances import ManhattanConstructor as ExamplesDistanceConstructor_Manhattan
-from Orange.distances import MaximalConstructor as ExamplesDistanceConstructor_Maximal 
-from Orange.distances import ReliefConstructor as ExamplesDistanceConstructor_Relief
+from Orange.distance.instances import DTWConstructor as ExamplesDistanceConstructor_DTW
+from Orange.distance.instances import EuclideanConstructor as ExamplesDistanceConstructor_Euclidean
+from Orange.distance.instances import HammingConstructor as ExamplesDistanceConstructor_Hamming
+from Orange.distance.instances import ManhattanConstructor as ExamplesDistanceConstructor_Manhattan
+from Orange.distance.instances import MaximalConstructor as ExamplesDistanceConstructor_Maximal 
+from Orange.distance.instances import ReliefConstructor as ExamplesDistanceConstructor_Relief
 
-from Orange.distances import PearsonRConstructor as ExamplesDistanceConstructor_PearsonR
-from Orange.distances import PearsonR as ExamplesDistance_PearsonR
-from Orange.distances import SpearmanRConstructor as ExamplesDistanceConstructor_SpearmanR
-from Orange.distances import SpearmanR as ExamplesDistance_SpearmanR
+from Orange.distance.instances import PearsonRConstructor as ExamplesDistanceConstructor_PearsonR
+from Orange.distance.instances import PearsonR as ExamplesDistance_PearsonR
+from Orange.distance.instances import SpearmanRConstructor as ExamplesDistanceConstructor_SpearmanR
+from Orange.distance.instances import SpearmanR as ExamplesDistance_SpearmanR
 
 
 from Orange.clustering.kmeans import Clustering as KMeans

@@ -52,6 +52,8 @@ public:
     void swap();
     void permute(const TIntList &newOrder);
 
+    unsigned int size(){ return last - first; }
+
 protected:
     void recursiveMove(const int &offset);
 };
@@ -81,6 +83,55 @@ private:
     TClusterW *THierarchicalClustering::merge_SingleLinkage(TClusterW **clusters, float *callbackMilestones);
     TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, float *callbackMilestones);
     // Average linkage also computes Ward's linkage
+
+private:
+    PHierarchicalCluster order_leaves(PHierarchicalCluster root, PSymMatrix matrix, PProgressCallback progress_callback);
+};
+
+
+/*
+ * Optimal leaf ordering.
+ */
+
+struct m_element {
+	THierarchicalCluster * cluster;
+	int left;
+	int right;
+
+	m_element(THierarchicalCluster * cluster, int left, int right);
+	m_element(const m_element & other);
+
+	bool operator< (const m_element & other) const;
+}; // cluster joined at left and right index
+
+struct ordering_element {
+	THierarchicalCluster * left;
+	unsigned int u; // the left most (outer) index of left luster
+	unsigned m; // the rightmost (inner) index of left cluster
+	THierarchicalCluster * right;
+	unsigned int w; // the right most (outer) index of the right cluster
+	unsigned int k; // the left most (inner) index of the right cluster
+
+	ordering_element();
+	ordering_element(THierarchicalCluster * left, unsigned int u, unsigned m,
+			THierarchicalCluster * right, unsigned int w, unsigned int k);
+	ordering_element(const ordering_element & other);
+};
+
+typedef std::map<m_element, double> join_scores;
+typedef std::map<m_element, ordering_element> cluster_ordering;
+
+class ORANGE_API THierarchicalClusterOrdering: public TOrange {
+public:
+	__REGISTER_CLASS
+
+	PProgressCallback progressCallback; //P progress callback function
+
+	PHierarchicalCluster operator() (PHierarchicalCluster root, PSymMatrix matrix);
+
+private:
+	void order_clusters(THierarchicalCluster & cluster, TSymMatrix &matrix, join_scores & M, cluster_ordering & ordering);
+	void optimal_swap(THierarchicalCluster * cluster, int u, int w, cluster_ordering & ordering);
 };
 
 #endif
