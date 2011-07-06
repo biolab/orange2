@@ -284,8 +284,9 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        for cmd, vao, vao_outline in self.commands:
+        for (cmd, params) in self.commands:
             if cmd == 'scatter':
+                vao, vao_outline, array, labels = params
                 glUseProgram(self.color_shader)
                 glUniform1i(self.color_shader_face_symbols, self.face_symbols)
                 glUniform1f(self.color_shader_symbol_scale, self.symbol_scale)
@@ -299,6 +300,10 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                     glDrawElements(GL_LINES, vao_outline.num_indices, GL_UNSIGNED_INT, 0)
                     glBindVertexArray(0)
                 glUseProgram(0)
+
+                if labels != None:
+                    for (x,y,z), label in zip(array, labels):
+                        self.renderText(x,y,z, '{0:.2}'.format(label), font=self.labels_font)
 
         glDisable(GL_BLEND)
         if self.show_legend:
@@ -543,7 +548,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
         if shapes == None:
             shapes = [0 for _ in array]
-        # TODO: what if shapes are not integers?
 
         max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
         self.b_box = [max, min]
@@ -552,13 +556,16 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.center = (min + max) / 2 
         self.normal_size = numpy.max(self.center - self.b_box[1]) / 100.
 
+        # TODO: more shapes? For now, wrap other to these ones.
+        different_shapes = [3, 4, 5, 8]
+
         # Generate vertices for shapes and also indices for outlines.
         vertices = []
         outline_indices = []
         index = 0
         for (x,y,z), (r,g,b,a), size, shape in zip(array, colors, sizes, shapes):
             sO2 = size * self.normal_size / 2.
-            n = 4 if shape % 2 == 0 else 4
+            n = different_shapes[shape % len(different_shapes)]
             angle_inc = 2.*pi / n
             angle = angle_inc / 2.
             for i in range(n):
@@ -628,7 +635,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.index_buffers.append(index_buffer)
         self.vaos.append(vao)
         self.vaos.append(vao_outline)
-        self.commands.append(("scatter", vao, vao_outline))
+        self.commands.append(("scatter", [vao, vao_outline, array, labels]))
         self.update_axes()
         self.updateGL()
 

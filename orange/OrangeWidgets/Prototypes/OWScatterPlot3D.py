@@ -67,7 +67,7 @@ class OWScatterPlot3D(OWWidget):
             tooltip="Attribute to use for pointShape",
             callback=self.on_axis_change,
             indent = 10,
-            emptyString = '(Same shape)'
+            emptyString = '(Same shape)',
             )
 
         self.label_attr_cb = OWGUI.comboBox(additional_box, self, "label_attr", label="Point label:",
@@ -123,6 +123,8 @@ class OWScatterPlot3D(OWWidget):
         self.shape_attr_cb.clear()
         self.label_attr_cb.clear()
 
+        self.discrete_attrs = {}
+
         if self.data is not None:
             self.all_attrs = data.domain.variables + data.domain.getmetas().values()
             self.axis_candidate_attrs = [attr for attr in self.all_attrs
@@ -133,13 +135,16 @@ class OWScatterPlot3D(OWWidget):
             self.shape_attr_cb.addItem('(Same shape)')
             self.label_attr_cb.addItem('(No labels)')
             icons = OWGUI.getAttributeIcons() 
-            for attr in self.axis_candidate_attrs:
+            for (i, attr) in enumerate(self.axis_candidate_attrs):
                 self.x_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.y_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.z_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.color_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.size_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.label_attr_cb.addItem(icons[attr.varType], attr.name)
+                if attr.varType == orange.VarTypes.Discrete:
+                    self.discrete_attrs[len(self.discrete_attrs)+1] = (i, attr)
+                    self.shape_attr_cb.addItem(icons[orange.VarTypes.Discrete], attr.name)
 
             array, c, w = self.data.toNumpyMA()
             if len(c):
@@ -165,52 +170,71 @@ class OWScatterPlot3D(OWWidget):
         self.graph.updateGL()
 
     def update_graph(self):
-      if self.data is None:
-        return
+        if self.data is None:
+            return
 
-      xInd, yInd, zInd = self.getAxesIndices()
-      X, Y, Z, mask = self.getAxisData(xInd, yInd, zInd)
+        x_ind, y_ind, z_ind = self.get_axes_indices()
+        X, Y, Z, mask = self.get_axis_data(x_ind, y_ind, z_ind)
 
-      if self.color_attr > 0:
-        color_attr = self.axis_candidate_attrs[self.color_attr - 1]
-        C = self.data_array[:, self.color_attr - 1]
-        if color_attr.varType == orange.VarTypes.Discrete:
-          palette = OWColorPalette.ColorPaletteHSV(len(color_attr.values))
-          colors = [palette[int(value)] for value in C.ravel()]
-          colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
+        if self.color_attr > 0:
+            color_attr = self.axis_candidate_attrs[self.color_attr - 1]
+            C = self.data_array[:, self.color_attr - 1]
+            if color_attr.varType == orange.VarTypes.Discrete:
+                palette = OWColorPalette.ColorPaletteHSV(len(color_attr.values))
+                colors = [palette[int(value)] for value in C.ravel()]
+                colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
+            else:
+                palette = OWColorPalette.ColorPaletteBW()
+                maxC, minC = numpy.max(C), numpy.min(C)
+                C = (C - minC) / (maxC - minC)
+                colors = [palette[value] for value in C.ravel()]
+                colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
         else:
-          palette = OWColorPalette.ColorPaletteBW()
-          maxC, minC = numpy.max(C), numpy.min(C)
-          C = (C - minC) / (maxC - minC)
-          colors = [palette[value] for value in C.ravel()]
-          colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
-      else:
-        colors = "b"
+            colors = 'b'
 
-      if self.size_attr > 0:
-        size_attr = self.axis_candidate_attrs[self.size_attr - 1]
-        S = self.data_array[:, self.size_attr - 1]
-        if size_attr.varType == orange.VarTypes.Discrete:
-          sizes = [(v + 1) * len(size_attr.values) / (11 - self.symbol_scale) for v in S]
+        if self.size_attr > 0:
+            size_attr = self.axis_candidate_attrs[self.size_attr - 1]
+            S = self.data_array[:, self.size_attr - 1]
+            if size_attr.varType == orange.VarTypes.Discrete:
+                sizes = [(v + 1) * len(size_attr.values) / (11 - self.symbol_scale) for v in S]
+            else:
+                min, max = numpy.min(S), numpy.max(S)
+                sizes = [(v - min) * self.symbol_scale / (max-min) for v in S]
         else:
-          min, max = numpy.min(S), numpy.max(S)
-          sizes = [(v - min) * self.symbol_scale / (max-min) for v in S]
-      else:
-        sizes = 1
+            sizes = 1
 
-      self.graph.clear()
-      self.graph.scatter(X, Y, Z, colors, sizes)
-      self.graph.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
-      self.graph.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
-      self.graph.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+        shapes = None
+        if self.shape_attr > 0:
+            i,shape_attr = self.discrete_attrs[self.shape_attr]
+            if shape_attr.varType == orange.VarTypes.Discrete:
+                # Map discrete attribute to [0...num shapes-1]
+                shapes = self.data_array[:, i]
+                num_shapes = 0
+                unique_shapes = {}
+                for shape in shapes:
+                    if shape not in unique_shapes:
+                        unique_shapes[shape] = num_shapes
+                        num_shapes += 1
+                shapes = [unique_shapes[value] for value in shapes]
 
-    def getAxisData(self, xInd, yInd, zInd):
-      array = self.data_array
-      X, Y, Z = array[:, xInd], array[:, yInd], array[:, zInd]
-      return X, Y, Z, None
+        labels = None
+        if self.label_attr > 0:
+            label_attr = self.axis_candidate_attrs[self.label_attr - 1]
+            labels = self.data_array[:, self.label_attr - 1]
 
-    def getAxesIndices(self):
-      return self.x_attr, self.y_attr, self.z_attr
+        self.graph.clear()
+        self.graph.scatter(X, Y, Z, colors, sizes, shapes, labels)
+        self.graph.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
+        self.graph.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
+        self.graph.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+
+    def get_axis_data(self, x_ind, y_ind, z_ind):
+        array = self.data_array
+        X, Y, Z = array[:, x_ind], array[:, y_ind], array[:, z_ind]
+        return X, Y, Z, None
+
+    def get_axes_indices(self):
+        return self.x_attr, self.y_attr, self.z_attr
 
 if __name__ == "__main__":
   app = QApplication(sys.argv)
