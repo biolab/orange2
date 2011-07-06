@@ -465,18 +465,9 @@ class OWPlot(orangeplot.Plot):
       #  self.setViewportUpdateMode(QGraphicsView.NoViewportUpdate)
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
-        """
         for c in self.itemList():
-            x,y = c.axes()
-            if hasattr(c, 'setGraphTransform'):
-                c.setGraphTransform(self.transform_for_axes(x,y) * self.zoom_transform)
-                c.updateProperties()
-            else:
-                ## This shouldn't happen, but it's possible to add such items to the graph
-                ## The check could be removed if all visualizations are well-behaved
-                qDebug(' !!     Warning: an item without setGraphTransform            !!')
-                qDebug(' !! Make sure all your curves inherit from Graph.item.PlotItem  !!')
-        """
+            c.set_zoom_factor(self._zoom_factor)
+            c.updateProperties()
         self.graph_item.setTransform(self.zoom_transform)
         for a in self.axes.values():
             if a.zoomable:

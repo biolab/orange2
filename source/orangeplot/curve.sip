@@ -24,6 +24,24 @@
 %End
 };
 
+
+struct Updater
+{
+
+%TypeHeaderCode
+#include "curve.h"
+%End
+
+    Updater(qreal scale, const QPen& pen, const QBrush& brush);
+    
+    void operator()(QAbstractGraphicsShapeItem* item);
+    
+    qreal m_scale;
+    QPen m_pen;
+    QBrush m_brush;
+};
+
+
 typedef QList<DataPoint> Data;
 
 class Curve : PlotItem {
@@ -74,6 +92,8 @@ enum Symbol {
   virtual void updateProperties();
   void updateAll();
   
+  void updateItems(QList<QAbstractGraphicsShapeItem*> items, Updater u);
+  
   QGraphicsItem* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
   
   QColor color() const;
@@ -102,7 +122,10 @@ enum Symbol {
 
   int style() const;
   void setStyle(int style);
-  
+ 
+  double zoom_factor();
+  void set_zoom_factor(double factor);
+
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
 

@@ -5,6 +5,7 @@
 #include <QtGui/QPen>
 
 #include <QtCore/qmath.h>
+#include <QtCore/QtConcurrentRun>
 
 Curve::Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
@@ -33,6 +34,7 @@ void Curve::updateNumberOfItems()
 {
   if (m_continuous)
   {
+    m_needsUpdate &= ~UpdateNumberOfItems;
     return;
   }
   int n = m_data.size();
@@ -46,25 +48,32 @@ void Curve::updateNumberOfItems()
   {
     m_pointItems << new QGraphicsPathItem(this);
   }
+  Q_ASSERT(m_pointItems.size() == data().size());
 }
 
 void Curve::updateProperties()
 {
+  qDebug() << "Updating curve " << m_needsUpdate;
   setContinuous(m_style != Curve::NoCurve);
   
-  if (m_continuous || (m_needsUpdate & UpdateAll) )
-  {
-    // Partial updates only make sense for discrete curves, because they have more properties
-    updateAll();
-    return;
-  }
-  
-  int n = m_data.size();  
-
   if (m_needsUpdate & UpdateNumberOfItems)
   {
     updateNumberOfItems();
   }
+  
+  /*
+   * 
+   * 
+  if (m_continuous || (m_needsUpdate & UpdateAll) )
+  {
+    // Partial updates only make sense for discrete curves, because they have more properties
+    qDebug() << "Updating all";
+    QtConcurrent::run(this, &Curve::updateAll);
+    return;
+  }
+  */
+  
+  int n = m_data.size();  
   
   if (m_needsUpdate & (UpdateSize | UpdateSymbol))
   {
@@ -84,13 +93,12 @@ void Curve::updateProperties()
       p = QPointF(m_data[i].x, m_data[i].y);
       m_pointItems[i]->setPos(m_graphTransform.map(p));
     }
-  }
-  if (m_needsUpdate & UpdateBrush)
+  } 
+  
+  if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen) )
   {
-    for (int i = 0; i < n; ++i)
-    {
-      m_pointItems[i]->setBrush(m_brush);
-    }
+      qDebug() << "Setting scale to " << 1.0/m_zoom_factor << m_zoom_factor;
+    updateItems(m_pointItems, Updater(1.0/m_zoom_factor, m_pen, m_brush));
   }
   m_needsUpdate = 0;
 }
@@ -517,4 +525,22 @@ void Curve::setDirty(Curve::UpdateFlags flags)
     checkForUpdate();
 }
 
+double Curve::zoom_factor()
+{
+    return m_zoom_factor;
+}
 
+void Curve::set_zoom_factor(double factor)
+{
+    m_zoom_factor = factor;
+    qDebug() << "zoom factor is now" << factor;
+    m_needsUpdate |= UpdateZoom;
+    checkForUpdate();
+}
+
+void Curve::updateItems(const QList< QAbstractGraphicsShapeItem* >& items, Updater updater)
+{
+    qDebug() << "Updating items asynchronously";
+    qDebug() << updater.m_scale;
+    QtConcurrent::map(items, updater);
+}

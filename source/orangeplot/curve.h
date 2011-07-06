@@ -6,10 +6,33 @@
 #include <QtGui/QPen>
 #include <QtGui/QBrush>
 
+#include <QtCore/QtConcurrentMap>
+
 struct DataPoint
 {
   qreal x;
   qreal y;
+};
+
+struct Updater
+{
+    Updater(qreal scale, const QPen& pen, const QBrush& brush)
+    {
+        m_scale = scale;
+        m_pen = pen;
+        m_brush = brush;
+    }
+    
+    void operator()(QAbstractGraphicsShapeItem* item)
+    {
+        item->setBrush(m_brush);
+        item->setPen(m_pen);
+        item->setScale(m_scale);
+    }
+    
+    qreal m_scale;
+    QPen m_pen;
+    QBrush m_brush;
 };
   
 typedef QList< DataPoint > Data;
@@ -91,6 +114,10 @@ public:
    **/
   virtual void updateAll();
   
+  void updateItems(const QList< QAbstractGraphicsShapeItem* >& items, Updater updater);
+  template <class T>
+  void updateItems(const QList<T*>& items, Updater updater);
+  
   /**
    * @brief ...
    *
@@ -119,7 +146,7 @@ public:
   
   bool isContinuous() const;
   void setContinuous(bool continuous);
-  
+
   Data data() const;
   void setData(const QList<qreal> xData, const QList<qreal> yData);
   
@@ -134,6 +161,9 @@ public:
   
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
+  
+  double zoom_factor();
+  void set_zoom_factor(double factor);
   
   qreal max_x_value() const;
   qreal min_x_value() const;
@@ -158,6 +188,7 @@ public:
     UpdatePen = 0x10,
     UpdateBrush = 0x20,
     UpdateContinuous = 0x40,
+    UpdateZoom = 0x80,
     UpdateAll = 0xFF
   };
   
@@ -201,6 +232,14 @@ private:
     Bounds m_yBounds;
   QPen m_pen;
   QBrush m_brush;
+  double m_zoom_factor;
 };
+
+template <class T>
+void Curve::updateItems(const QList< T* >& items, Updater updater)
+{
+    updateItems(reinterpret_cast< const QList<QAbstractGraphicsShapeItem*>& >(items), updater);
+}
+
 
 #endif // CURVE_H

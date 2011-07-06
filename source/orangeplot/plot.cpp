@@ -47,7 +47,6 @@ void Plot::removeItem(PlotItem* item)
 
 QList< PlotItem* > Plot::itemList()
 {
-    qDebug() << "Returning itemlist with" << m_items.size() << "items";
     return m_items;
 }
 
