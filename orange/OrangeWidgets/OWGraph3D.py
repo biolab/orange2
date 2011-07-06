@@ -139,6 +139,9 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
         self.face_symbols = True
         self.filled_symbols = True
+        self.symbol_scale = 1
+        self.transparency = 255
+        self.grid = True
 
     def __del__(self):
         # TODO: delete shaders and vertex buffer
@@ -163,6 +166,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             attribute vec4 color;
 
             uniform bool face_symbols;
+            uniform float symbol_scale;
+            uniform float transparency;
 
             varying vec4 var_color;
 
@@ -184,14 +189,17 @@ class OWGraph3D(QtOpenGL.QGLWidget):
               invs[2][1] = gl_ModelViewMatrix[1][2];
               invs[2][2] = gl_ModelViewMatrix[2][2];
 
-              vec3 offset_rotated;
-              if (face_symbols)
-                offset_rotated = invs * offset;
-              else
-                offset_rotated = offset;
+              vec3 offset_rotated = offset;
+              offset_rotated.x *= symbol_scale;
+              offset_rotated.y *= symbol_scale;
 
-              gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(position+offset_rotated, 1);
-              var_color = color;
+              if (face_symbols)
+                offset_rotated = invs * offset_rotated;
+
+              vec4 off_pos = vec4(position+offset_rotated, 1);
+
+              gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
+              var_color = vec4(color.rgb, transparency);
             }
             '''
 
@@ -233,9 +241,9 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glBindAttribLocation(self.color_shader, 1, 'offset')
         glBindAttribLocation(self.color_shader, 2, 'color')
         glLinkProgram(self.color_shader)
-        self.color_shader_override_color = glGetUniformLocation(self.color_shader, 'override_color')
-        self.color_shader_overriden_color = glGetUniformLocation(self.color_shader, 'overriden_color')
         self.color_shader_face_symbols = glGetUniformLocation(self.color_shader, 'face_symbols')
+        self.color_shader_symbol_scale = glGetUniformLocation(self.color_shader, 'symbol_scale')
+        self.color_shader_transparency = glGetUniformLocation(self.color_shader, 'transparency')
         linked = c_int()
         glGetProgramiv(self.color_shader, GL_LINK_STATUS, byref(linked))
         if not linked.value:
@@ -271,13 +279,17 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             0, 1, 0)
         self.paint_axes()
 
-        glEnable(GL_DEPTH_TEST)
+        glDisable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         for cmd, vao, vao_outline in self.commands:
             if cmd == 'scatter':
                 glUseProgram(self.color_shader)
                 glUniform1i(self.color_shader_face_symbols, self.face_symbols)
+                glUniform1f(self.color_shader_symbol_scale, self.symbol_scale)
+                glUniform1f(self.color_shader_transparency, self.transparency)
                 if self.filled_symbols:
                     glBindVertexArray(vao.value)
                     glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
@@ -288,6 +300,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                     glBindVertexArray(0)
                 glUseProgram(0)
 
+        glDisable(GL_BLEND)
         if self.show_legend:
             self.draw_legend()
 
@@ -440,10 +453,11 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
         visible_planes = map(plane_visible, planes)
-        draw_axis_plane(self.axis_plane_xz)
-        for visible, plane in zip(visible_planes, planes):
-            if not visible:
-                draw_axis_plane(plane)
+        if self.grid:
+            draw_axis_plane(self.axis_plane_xz)
+            for visible, plane in zip(visible_planes, planes):
+                if not visible:
+                    draw_axis_plane(plane)
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
