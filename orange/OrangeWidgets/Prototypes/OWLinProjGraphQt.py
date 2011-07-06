@@ -7,6 +7,7 @@ from orngScaleLinProjData import *
 import orngVisFuncts
 import OWColorPalette
 from plot.owtools import UnconnectedLinesCurve
+import numpy
 
 # indices in curveData
 SYMBOL = 0
@@ -716,6 +717,15 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             painter.drawImage(target, self.potentialsImage, source)
 #            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
         OWPlot.drawCanvas(self, painter)
+        
+    def updateCurves(self):
+        for c in self.itemList():
+            if isinstance(c, OWCurve):
+                c.setPointSize(self.pointWidth)
+                color = c.color()
+                color.setAlpha(self.alphaValue)
+                c.setColor(color)
+                c.updateProperties()
 
 
 if __name__== "__main__":

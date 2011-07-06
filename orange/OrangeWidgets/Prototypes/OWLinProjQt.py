@@ -144,8 +144,8 @@ class OWLinProjQt(OWVisWidget):
         self.extraTopBox.hide()
 
         box = OWGUI.widgetBox(self.SettingsTab, "Point Properties")
-        OWGUI.hSlider(box, self, 'graph.pointWidth', label = "Size: ", minValue=1, maxValue=20, step=1, callback = self.updateGraph)
-        OWGUI.hSlider(box, self, 'graph.alphaValue', label = "Transparency: ", minValue=0, maxValue=255, step=10, callback = self.updateGraph)
+        OWGUI.hSlider(box, self, 'graph.pointWidth', label = "Size: ", minValue=1, maxValue=20, step=1, callback = self.graph.updateCurves)
+        OWGUI.hSlider(box, self, 'graph.alphaValue', label = "Transparency: ", minValue=0, maxValue=255, step=10, callback = self.graph.updateCurves)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of range):', callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
