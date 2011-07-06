@@ -1,10 +1,10 @@
 import Orange
 
 learners = [Orange.multilabel.BinaryRelevanceLearner(name="br")]
-
 data = Orange.data.Table("multidata")
 
-res = Orange.evaluation.testing.cross_validation(learners, data, folds=10, strat=Orange.core.MakeRandomIndices.StratifiedIfPossible)
+res = Orange.evaluation.testing.cross_validation(learners, data, folds=10,
+                      strat=Orange.core.MakeRandomIndices.StratifiedIfPossible)
 
 #res = Orange.evaluation.testing.cross_validation(learners, data)
 
