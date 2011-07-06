@@ -429,6 +429,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\earth.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\earth.hpp"
+				>
+			</File>
+			<File
 				RelativePath="errors.cpp"
 				>
 			</File>
@@ -972,6 +980,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\blas\dcopy.c"
+					>
+				</File>
+				<File
 					RelativePath=".\blas\ddot.c"
 					>
 				</File>
@@ -981,6 +993,30 @@
 				</File>
 				<File
 					RelativePath=".\blas\dscal.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="linpack"
+				>
+				<File
+					RelativePath=".\linpack\dqrdc2.c"
+					>
+				</File>
+				<File
+					RelativePath=".\linpack\dqrsl.c"
+					>
+				</File>
+				<File
+					RelativePath=".\linpack\dtrsl.c"
+					>
+				</File>
+				<File
+					RelativePath=".\linpack\linpack.c"
+					>
+				</File>
+				<File
+					RelativePath=".\linpack\linpack.h"
 					>
 				</File>
 			</Filter>
