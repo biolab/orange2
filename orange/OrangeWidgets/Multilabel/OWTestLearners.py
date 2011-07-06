@@ -55,7 +55,10 @@ class OWTestLearners(OWWidget):
         ('Precision', 'Prec', 'precision(cm)', False, True),
         ('Recall', 'Recall', 'recall(cm)', False, True),
         ('Brier score', 'Brier', 'BrierScore(res)', True),
-        ('Hamming Loss', 'HammingLoss', 'hamming_loss(res)', True),
+        ('Hamming Loss', 'HammingLoss', 'mlc_hamming_loss(res)', True),
+        ('Accuracy', 'Accuracy', 'mlc_accuracy(res)', True),
+        ('Precision', 'Precision', 'mlc_precision(res)', True),
+        ('Recall', 'Recall', 'mlc_recall(res)', True),
         ('Matthews correlation coefficient', 'MCC', 'MCC(cm)', False, True),
         ]]
 
@@ -274,7 +277,6 @@ class OWTestLearners(OWWidget):
             for id in ids:
                 self.learners[id].results = None
             return
-        print self.data.domain
         # test which learners can accept the given data set
         # e.g., regressions can't deal with classification data
         learners = []
@@ -282,13 +284,9 @@ class OWTestLearners(OWWidget):
         
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
 
-        new = self.data
-#        new = self.data.selectref(indices(self.data))
+        new = self.data.selectref(indices(self.data))
 #        new = self.data.selectref([1]*min(n, len(self.data)) +
 #                                  [0]*(len(self.data) - min(n, len(self.data))))
-        
-        for e in new: 
-            print e
         
         multilabel_flag = label.is_multilabel(self.data)
  
@@ -306,7 +304,6 @@ class OWTestLearners(OWWidget):
                         l.scores = []
                 else:                   #multi-label
                     learners.append(learner)
-                    print "multi-learner"
             except Exception, ex:
                 self.warning(0, "Learner %s ends with exception: %s" % (l.name, str(ex)))
                 l.scores = []
@@ -465,7 +462,6 @@ class OWTestLearners(OWWidget):
 
     def setLearner(self, learner, id=None):
         """add/remove a learner"""
-        print "setLearner"
         if learner: # a new or updated learner
             if id in self.learners: # updated learner
                 time = self.learners[id].time

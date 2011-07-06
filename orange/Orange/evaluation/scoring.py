@@ -434,10 +434,10 @@ Let :math:`D` be a multi-label evaluation data set, conisting of :math:`|D|` mul
 :math:`(x_i,Y_i)`, :math:`i=1..|D|`, :math:`Y_i \\subseteq L`. Let :math:`H` be a multi-label classifier 
 and :math:`Z_i=H(x_i)` be the set of labels predicted by :math:`H` for example :math:`x_i`.
 
-.. autofunction:: hamming_loss 
-.. autofunction:: accuracy
-.. autofunction:: precision
-.. autofunction:: recall
+.. autofunction:: mlc_hamming_loss 
+.. autofunction:: mlc_accuracy
+.. autofunction:: mlc_precision
+.. autofunction:: mlc_recall
 
 So, let's compute all this in part of 
 (`ml-evaluator.py`_, uses `multidata.tab`_) and print it out:
@@ -2596,7 +2596,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
  
     print_figure(fig, filename, **kwargs)
 
-def hamming_loss(res):
+def mlc_hamming_loss(res):
     """
     Schapire and Singer (2000) presented Hamming Loss, which id defined as: 
     
@@ -2618,7 +2618,7 @@ def hamming_loss(res):
             
     return [x/label_num/example_num for x in losses]
 
-def accuracy(res, forgiveness_rate = 1.0):
+def mlc_accuracy(res, forgiveness_rate = 1.0):
     """
     Godbole & Sarawagi, 2004 uses the metrics accuracy, precision, recall as follows:
      
@@ -2653,7 +2653,7 @@ def accuracy(res, forgiveness_rate = 1.0):
             
     return [math.pow(x/example_num,forgiveness_rate) for x in accuracies]
 
-def precision(res):
+def mlc_precision(res):
     """
     :math:`Precision(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Z_i|}`
     """
@@ -2680,7 +2680,7 @@ def precision(res):
             
     return [x/example_num for x in precisions]
 
-def recall(res):
+def mlc_recall(res):
     """
     :math:`Recall(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Y_i|}`
     """
@@ -2707,13 +2707,13 @@ def recall(res):
             
     return [x/example_num for x in recalls]
 
-def ranking_loss(res):
+def mlc_ranking_loss(res):
     pass
 
-def average_precision(res):
+def mlc_average_precision(res):
     pass
 
-def hierarchical_loss(res):
+def mlc_hierarchical_loss(res):
     pass
 
 #########################################################################################
