@@ -38,7 +38,7 @@ public:
     typedef QMap<int, Coord> Coordinates;
     typedef QList<QPair<int, int> > Edges;
     
-    NetworkCurve(const NetworkCurve::Coordinates& coordinates, const NetworkCurve::Edges& edges, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    NetworkCurve(const NetworkCurve::Coordinates& coordinates, const NetworkCurve::Edges& edges, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     virtual ~NetworkCurve();
     
     virtual void updateProperties();

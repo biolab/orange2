@@ -65,6 +65,7 @@ enum Symbol {
   };
 
   Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+  Curve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
   virtual ~Curve();
 
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
