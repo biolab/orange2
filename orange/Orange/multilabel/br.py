@@ -80,6 +80,7 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
             return self
         
     def __init__(self, **argkw):
+        self.multi_flag = 1
         self.__dict__.update(argkw)
         
     def __call__(self, instances, base_learner = None, **kwds):
@@ -116,7 +117,9 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
 
 class BinaryRelevanceClassifier(_multibase.MultiLabelClassifier):
     def __init__(self, **kwds):
+        self.multi_flag = 1
         self.__dict__.update(kwds)
+        
     def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
         num_labels = len(self.label_indices)
         domain = self.instances.domain
