@@ -136,6 +136,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         self.legend_position = [10, 10]
         self.legend_size = [200, 50]
         self.dragging_legend = False
+        self.legend_items = []
 
         self.face_symbols = True
         self.filled_symbols = True
@@ -252,7 +253,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
-        glMatrixMode(GL_PROJECTION)
 
     def paintGL(self):
         glClearColor(1,1,1,1)
@@ -262,10 +262,11 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         width, height = self.width(), self.height()
         divide = self.zoom*10.
         if self.ortho:
-            glOrtho(-width/divide, width/divide, -height/divide, height/divide, -1, 1000)
+            # TODO: fix ortho
+            glOrtho(-width/divide, width/divide, -height/divide, height/divide, -1, 2000)
         else:
             aspect = float(width) / height if height != 0 else 1
-            gluPerspective(30.0, aspect, 0.1, 100)
+            gluPerspective(30.0, aspect, 0.1, 2000)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         zoom = 100 if self.ortho else self.zoom
@@ -336,6 +337,23 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         glVertex2f(x+w-t, y+h-t)
         glVertex2f(x+t,   y+h-t)
         glEnd()
+
+        # TODO: clean this up
+        glColor4f(0.1, 0.1, 0.1, 1)
+        item_pos_y = y + 2*t + 10
+        for shape, text in self.legend_items:
+            if shape == 0:
+                glBegin(GL_TRIANGLES)
+                glVertex2f(x+10, item_pos_y)
+                glVertex2f(x+20, item_pos_y)
+                glVertex2f(x+15, item_pos_y-10)
+                glEnd()
+
+            self.renderText(x+20+4*t, item_pos_y, text)
+            item_pos_y += 15
+
+    def add_legend_item(self, shape, text):
+        self.legend_items.append((shape, text))
 
     def set_x_axis_title(self, title):
         self.x_axis_title = title
@@ -575,6 +593,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                 vertices.extend([x,y,z, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
                 outline_indices.extend([index+1, index+2])
                 index += 3
+
+        # Build Vertex Buffer + Vertex Array Object.
         vao = c_int()
         glGenVertexArrays(1, byref(vao))
         glBindVertexArray(vao.value)
@@ -683,6 +703,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
 
     def clear(self):
         self.commands = []
+        self.legend_items = []
 
 
 if __name__ == "__main__":

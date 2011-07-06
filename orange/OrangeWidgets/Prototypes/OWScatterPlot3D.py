@@ -151,20 +151,21 @@ class OWScatterPlot3D(OWWidget):
               array = numpy.hstack((array, c.reshape(-1,1)))
             self.data_array = array
 
-            self.x_attr, self.y_attr, self.z_attr = numpy.min([[0, 1, 2], [len(self.axis_candidate_attrs) - 1]*3], axis=0)
+            self.x_attr, self.y_attr, self.z_attr = numpy.min([[0, 1, 2],
+                                                               [len(self.axis_candidate_attrs) - 1]*3
+                                                              ], axis=0)
             self.color_attr = max(len(self.axis_candidate_attrs) - 1, 0)
-
-            self.openContext("", data)
+            self.openContext('', data)
 
     def setSubsetData(self, data=None):
-      self.subsetData = data
+        self.subsetData = data
 
     def handleNewSignals(self):
-      self.update_graph()
+        self.update_graph()
 
     def on_axis_change(self):
-      if self.data is not None:
-        self.update_graph()
+        if self.data is not None:
+            self.update_graph()
 
     def on_checkbox_update(self):
         self.graph.updateGL()
@@ -204,14 +205,16 @@ class OWScatterPlot3D(OWWidget):
             sizes = 1
 
         shapes = None
+        legend_items = []
         if self.shape_attr > 0:
             i,shape_attr = self.discrete_attrs[self.shape_attr]
+            legend_items = shape_attr.values
             if shape_attr.varType == orange.VarTypes.Discrete:
                 # Map discrete attribute to [0...num shapes-1]
                 shapes = self.data_array[:, i]
                 num_shapes = 0
                 unique_shapes = {}
-                for shape in shapes:
+                for j,shape in enumerate(shapes):
                     if shape not in unique_shapes:
                         unique_shapes[shape] = num_shapes
                         num_shapes += 1
@@ -227,6 +230,8 @@ class OWScatterPlot3D(OWWidget):
         self.graph.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
         self.graph.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
         self.graph.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+        for i, value in enumerate(legend_items):
+            self.graph.add_legend_item(i, value)
 
     def get_axis_data(self, x_ind, y_ind, z_ind):
         array = self.data_array
