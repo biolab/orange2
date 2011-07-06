@@ -893,9 +893,14 @@ class NxView(object):
     """
     
     def __init__(self, **attr):
-        self.tmp = 1
+        self._network = None
+        self._nx_explorer = None
+        
+    def set_nx_explorer(self, _nx_explorer):
+        self._nx_explorer = _nx_explorer
         
     def init_network(self, graph):
         return graph
         
-    
+    def nodes_selected(self):
+        pass
