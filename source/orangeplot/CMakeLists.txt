@@ -13,7 +13,7 @@ include(SIPMacros)
 include_directories(${QT_INCLUDES} ${SIP_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${PYTHON_INCLUDE_PATH})
 
 #### orangeplot sources ####
-set(orangeplot_SRCS plotitem.cpp curve.cpp unconnectedlinescurve.cpp networkcurve.cpp plot.cpp)
+set(orangeplot_SRCS plotitem.cpp curve.cpp unconnectedlinescurve.cpp plot.cpp)
 qt4_automoc(${orangeplot_SRCS})
 
 #### Python bindings ####
