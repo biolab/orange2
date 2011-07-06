@@ -116,13 +116,12 @@ class OWNxExplorer(OWWidget):
         self.tabIndex = 0
         self.number_of_nodes_label = -1
         self.number_of_edges_label = -1
-        self._items = None
-        self._links = None
         self.loadSettings()
         
         self._network_view = None
         self.layout = Orange.network.GraphLayout()
         self.graph = None
+        self.graph_base = None
         self.markInputItems = None
         
         self.mainArea.layout().setContentsMargins(0,4,4,4)
@@ -386,16 +385,16 @@ class OWNxExplorer(OWWidget):
 
     def sendAttSelectionList(self):
         if not self.graph is None:
-            vars = [x.name for x in self.graph.items_vars()]
+            vars = [x.name for x in self.graph_base.links_vars()]
             if not self.comboAttSelection.currentText() in vars:
                 return
             att = str(self.comboAttSelection.currentText())
-            vertices = self.networkCanvas.networkCurve.getSelectedVertices()
+            vertices = self.networkCanvas.networkCurve.get_selected_vertices()
             
             if len(vertices) != 1:
                 return
             
-            attributes = str(self.graph.items()[vertices[0]][att]).split(', ')
+            attributes = str(self.graph_base.items()[vertices[0]][att]).split(', ')
         else:
             attributes = None
         self.send("Attribute Selection List", attributes)
@@ -404,23 +403,23 @@ class OWNxExplorer(OWWidget):
         if self.graph is None:
             return
         
-        vars = [x.name for x in self.graph.items_vars()]
+        vars = [x.name for x in self.graph_base.items_vars()]
         if not self.editCombo.currentText() in vars:
             return
         att = str(self.editCombo.currentText())
-        vertices = self.networkCanvas.networkCurve.getSelectedVertices()
+        vertices = self.networkCanvas.networkCurve.get_selected_vertices()
         
         if len(vertices) == 0:
             return
         
-        if self.graph.items().domain[att].var_type == Orange.data.Type.Continuous:
+        if self.graph_base.items().domain[att].var_type == Orange.data.Type.Continuous:
             for v in vertices:
-                self.graph.items()[v][att] = float(self.editValue)
+                self.graph_base.items()[v][att] = float(self.editValue)
         else:
             for v in vertices:
-                self.graph.items()[v][att] = str(self.editValue)
+                self.graph_base.items()[v][att] = str(self.editValue)
         
-        self.setItems(self.graph.items())
+        self.setItems(self.graph_base.items())
         
     def drawForce(self):
         if self.btnForce.isChecked() and self.graph is not None:
@@ -590,8 +589,8 @@ class OWNxExplorer(OWWidget):
             self.send("Marked Items", None)
             return
         
-        if self.graph is not None and self.graph.items() is not None:
-            items = self.graph.items().getitems(markedNodes)
+        if self.graph is not None and self.graph_base.items() is not None:
+            items = self.graph_base.items().getitems(markedNodes)
             self.send("Marked Items", items)
             return
         
@@ -622,10 +621,10 @@ class OWNxExplorer(OWWidget):
             print "One node must be selected!"
         
     def showComponents(self):
-        if self.graph is None or self.graph.items() is None:
+        if self.graph is None or self.graph_base.items() is None:
             return
         
-        vars = [x.name for x in self.graph.items_vars()]
+        vars = [x.name for x in self.graph_base.items_vars()]
         
         if not self.showComponentCombo.currentText() in vars:
             self.networkCanvas.showComponentAttribute = None
@@ -640,28 +639,28 @@ class OWNxExplorer(OWWidget):
         self.progressBarFinished()
         self.lastNameComponentAttribute = None
         
-        if self.graph is None or self.graph.items() is None:
+        if self.graph is None or self.graph_base.items() is None:
             return
         
-        vars = [x.name for x in self.graph.items_vars()]
+        vars = [x.name for x in self.graph_base.items_vars()]
         if not self.nameComponentCombo.currentText() in vars:
             return
         
         self.progressBarInit()
         components = [c for c in Orange.network.nx.algorithms.components.connected_components(self.graph) if len(c) > 1]
-        if 'component name' in self.graph.items().domain:
-            keyword_table = self.graph.items()
+        if 'component name' in self.graph_base.items().domain:
+            keyword_table = self.graph_base.items()
         else:
-            keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variable.String('component name')), [[''] for i in range(len(self.graph.items()))]) 
+            keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variable.String('component name')), [[''] for i in range(len(self.graph_base.items()))]) 
         
         import obiGO 
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
         annotations = obiGO.Annotations.Load(self.organism, ontology=ontology, progressCallback=self.progressBarSet)
 
-        allGenes = set([e[str(self.nameComponentCombo.currentText())].value for e in self.graph.items()])
+        allGenes = set([e[str(self.nameComponentCombo.currentText())].value for e in self.graph_base.items()])
         foundGenesets = False
         if len(annotations.geneNames & allGenes) < 1:
-            allGenes = set(reduce(operator.add, [e[str(self.nameComponentCombo.currentText())].value.split(', ') for e in self.graph.items()]))
+            allGenes = set(reduce(operator.add, [e[str(self.nameComponentCombo.currentText())].value.split(', ') for e in self.graph_base.items()]))
             if len(annotations.geneNames & allGenes) < 1:            
                 self.warning('no genes found')
                 return
@@ -727,13 +726,13 @@ class OWNxExplorer(OWWidget):
                 continue
             
             if foundGenesets:
-                genes = reduce(operator.add, [self.graph.items()[v][str(self.nameComponentCombo.currentText())].value.split(', ') for v in component])
+                genes = reduce(operator.add, [self.graph_base.items()[v][str(self.nameComponentCombo.currentText())].value.split(', ') for v in component])
             else:
-                genes = [self.graph.items()[v][str(self.nameComponentCombo.currentText())].value for v in component]
+                genes = [self.graph_base.items()[v][str(self.nameComponentCombo.currentText())].value for v in component]
                     
             res1 = annotations.GetEnrichedTerms(genes, aspect="P")
             res2 = annotations.GetEnrichedTerms(genes, aspect="F")
-            res = res1.items() + res2.items()
+            res = res1_base.items() + res2.items()
             #namingScore = [[(1-p_value) * (float(len(g)) / len(genes)) / (float(ref) / len(annotations.geneNames)), ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             #namingScore = [[(1-p_value) * len(g) / ref, ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             
@@ -768,20 +767,20 @@ class OWNxExplorer(OWWidget):
             self.progressBarSet(i*100.0/len(components))
                 
         self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
-        self.setItems(Orange.data.Table([self.graph.items(), keyword_table]))
+        self.setItems(Orange.data.Table([self.graph_base.items(), keyword_table]))
         self.progressBarFinished()   
         
     def nameComponents_old(self):
-        if self.graph is None or self.graph.items() is None:
+        if self.graph is None or self.graph_base.items() is None:
             return
         
-        vars = [x.name for x in self.graph.items_vars()]
+        vars = [x.name for x in self.graph_base.items_vars()]
         
         if not self.nameComponentCombo.currentText() in vars:
             return
         
         components = Orange.network.nx.algorithms.components.connected_components(self.graph)
-        keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variables.String('component name')), [[''] for i in range(len(self.graph.items()))]) 
+        keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variables.String('component name')), [[''] for i in range(len(self.graph_base.items()))]) 
         
         excludeWord = ["AND", "OF", "KEGG", "ST", "IN", "SIG"]
         excludePart = ["HSA"]
@@ -793,7 +792,7 @@ class OWNxExplorer(OWWidget):
             all_values = []
             for vertex in component:
                 values = []
-                value =  str(self.graph.items()[vertex][str(self.nameComponentCombo.currentText())])
+                value =  str(self.graph_base.items()[vertex][str(self.nameComponentCombo.currentText())])
                 
                 value = value.replace(" ", ",")
                 value_top = value.split(",")
@@ -895,7 +894,7 @@ class OWNxExplorer(OWWidget):
             all_values = []
             for vertex in component:
                 values = []
-                value =  str(self.graph.items()[vertex][str(self.nameComponentCombo.currentText())])
+                value =  str(self.graph_base.items()[vertex][str(self.nameComponentCombo.currentText())])
                 
                 value = value.replace(" ", ",")
                 value_top = value.split(",")
@@ -980,7 +979,7 @@ class OWNxExplorer(OWWidget):
         
         self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
         #print "self.lastNameComponentAttribute:", self.lastNameComponentAttribute
-        items = Orange.data.Table([self.graph.items(), keyword_table])
+        items = Orange.data.Table([self.graph_base.items(), keyword_table])
         self.setItems(items)
         
         #for item in items:
@@ -1008,8 +1007,6 @@ class OWNxExplorer(OWWidget):
             return
         
         hubs = self.hubs
-        vgraph = self.graph
-
         if hubs == 0:
             self.networkCanvas.setMarkedVertices([])
             self.networkCanvas.replot()
@@ -1021,26 +1018,26 @@ class OWNxExplorer(OWWidget):
             labelText = self.networkCanvas.labelText
             self.networkCanvas.markWithRed = self.graph.number_of_nodes > 200
             
-            toMark = [i for i, values in enumerate(vgraph.items()) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(vgraph.items().domain)) + vgraph.items().domain.getmetas().keys()])]
+            toMark = [i for i, values in enumerate(self.graph_base.items()) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(self.graph_base.items().domain)) + self.graph_base.items().domain.getmetas().keys()])]
             self.networkCanvas.setMarkedVertices(toMark)
             self.networkCanvas.replot()
             return
         
         elif hubs == 2:
             #print "mark on focus"
-            self.networkCanvas.unMark()
+            self.networkCanvas.unmark()
             self.networkCanvas.tooltipNeighbours = self.markDistance
             return
 
         elif hubs == 3:
             #print "mark selected"
-            self.networkCanvas.unMark()
+            self.networkCanvas.unmark()
             self.networkCanvas.selectionNeighbours = self.markDistance
             self.networkCanvas.markSelectionNeighbours()
             return
         
         self.networkCanvas.tooltipNeighbours = self.networkCanvas.selectionNeighbours = 0
-        powers = vgraph.degree()
+        powers = self.graph.degree()
         powers = [powers[key] for key in sorted(powers.keys())]
         
         if hubs == 4: # at least N connections
@@ -1055,11 +1052,11 @@ class OWNxExplorer(OWWidget):
             self.networkCanvas.replot()
         elif hubs == 6:
             #print "mark more than any"
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in self.graph.getNeighbours(i)])])
             self.networkCanvas.replot()
         elif hubs == 7:
             #print "mark more than avg"
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > statc.mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > statc.mean([0]+[powers[nn] for nn in self.graph.getNeighbours(i)])])
             self.networkCanvas.replot()
         elif hubs == 8:
             #print "mark most"
@@ -1108,17 +1105,32 @@ class OWNxExplorer(OWWidget):
             if graph.items() is not None:
                 self.send("Selected Items", graph.items())
             else:
-                self.send("Selected Items", self.networkCanvas.getSelectedExamples())
-            
-            #print "sendData:", self.visualize.graph.items().domain
-            self.send("Unselected Items", self.networkCanvas.getUnselectedExamples())    
+                nodes = self.networkCanvas.getSelectedExamples()
+                
+                if len(nodes) > 0 and self.graph_base.items() is not None:
+                    self.send("Selected Items", self.graph_base.items().getitems(nodes))
+                else:
+                    self.send("Selected Items", None)
+                
+            nodes = self.networkCanvas.getUnselectedExamples()
+            if len(nodes) > 0 and self.graph_base.items() is not None:
+                self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+            else:
+                self.send("Unselected Items", None)
+                
             self.send("Selected Network", graph)
         else:
-            items = self.networkCanvas.getSelectedExamples()
-            self.send("Selected Items", items)
+            nodes = self.networkCanvas.getSelectedExamples()
+            if len(nodes) > 0 and self.graph_base.items() is not None:
+                self.send("Selected Items", self.graph_base.items().getitems(nodes))
+            else:
+                self.send("Selected Items", None)
                 
-            items = self.networkCanvas.getUnselectedExamples()
-            self.send("Unselected Items", items)
+            nodes = self.networkCanvas.getUnselectedExamples()
+            if len(nodes) > 0 and self.graph_base.items() is not None:
+                self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+            else:
+                self.send("Unselected Items", None)
         
         matrix = None
         if self.items_matrix is not None:
@@ -1127,8 +1139,8 @@ class OWNxExplorer(OWWidget):
         self.send("Selected Items Distance Matrix", matrix)
                 
     def setCombos(self):
-        vars = self.graph.items_vars()
-        edgeVars = self.graph.links_vars()
+        vars = self.graph_base.items_vars()
+        edgeVars = self.graph_base.links_vars()
         lastLabelColumns = self.lastLabelColumns
         lastTooltipColumns = self.lastTooltipColumns
         
@@ -1141,9 +1153,9 @@ class OWNxExplorer(OWWidget):
             if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
                 self.colorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
                 
-            if var.varType in [Orange.data.Type.String] and hasattr(self.graph, 'items') and self.graph.items() is not None and len(self.graph.items()) > 0:
+            if var.varType in [Orange.data.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
                 
-                value = self.graph.items()[0][var].value
+                value = self.graph_base.items()[0][var].value
                 
                 # can value be a list?
                 try:
@@ -1214,6 +1226,7 @@ class OWNxExplorer(OWWidget):
              
         if graph is None:
             self.graph = None
+            self.graph_base = None
             self.layout.set_graph(None)
             self.networkCanvas.set_graph_layout(None, None)
             self.clearCombos()
@@ -1223,8 +1236,7 @@ class OWNxExplorer(OWWidget):
             self._links = None
             return
         
-        self._items = graph.items()
-        self._links = graph.links()
+        self.graph_base = graph
         
         if self._network_view is not None:
             graph = self._network_view.init_network(graph)
@@ -1244,7 +1256,7 @@ class OWNxExplorer(OWWidget):
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
         
-        self.networkCanvas.set_graph_layout(self.graph, self.layout)
+        self.networkCanvas.set_graph_layout(self.graph, self.layout, items=self.graph_base.items(), links=self.graph_base.links())
         self.networkCanvas.renderAntialiased = self.renderAntialiased
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
         self.networkCanvas.minVertexSize = self.minVertexSize
@@ -1336,7 +1348,7 @@ class OWNxExplorer(OWWidget):
         
     def set_network_view(self, nxView):
         self._network_view = nxView
-        self.set_graph(self.graph)
+        self.set_graph(self.graph_base)
         
     def setItems(self, items=None):
         self.error('')
@@ -1344,11 +1356,11 @@ class OWNxExplorer(OWWidget):
         if self.graph is None or items is None:
             return
         
-        if len(items) != self.graph.number_of_nodes():
+        if len(items) != self.graph_base.number_of_nodes():
             self.error('ExampleTable items must have one example for each vertex.')
             return
         
-        self.graph.set_items(items)
+        self.graph_base.set_items(items)
         
         self.setVertexSize()
         self.networkCanvas.showIndexes = self.showIndexes
@@ -1362,7 +1374,7 @@ class OWNxExplorer(OWWidget):
         #print 'combo:',self.markInputCombo.currentText()
         if self.markInputItems is not None and len(self.markInputItems) > 0:
             values = [str(x[var]).strip().upper() for x in self.markInputItems]
-            toMark = [i for (i,x) in enumerate(self.graph.items()) if str(x[var]).strip().upper() in values]
+            toMark = [i for (i,x) in enumerate(self.graph) if str(self.graph_base.items()[x][var]).strip().upper() in values]
             #print "mark:", toMark
             self.networkCanvas.setMarkedVertices(list(toMark))
             self.networkCanvas.replot()
@@ -1376,17 +1388,17 @@ class OWNxExplorer(OWWidget):
         self.markInputRadioButton.setEnabled(False)
         self.markInputItems = items
         
-        if self.graph is None or self.graph.items() is None or items is None:
+        if self.graph is None or self.graph_base.items() is None or items is None:
             return
         
         if len(items) > 0:
-            lstOrgDomain = [x.name for x in self.graph.items().domain] + [self.graph.items().domain[x].name for x in self.graph.items().domain.getmetas()]
+            lstOrgDomain = [x.name for x in self.graph_base.items().domain] + [self.graph_base.items().domain[x].name for x in self.graph_base.items().domain.getmetas()]
             lstNewDomain = [x.name for x in items.domain] + [items.domain[x].name for x in items.domain.getmetas()]
             commonVars = set(lstNewDomain) & set(lstOrgDomain)
 
             if len(commonVars) > 0:
                 for var in commonVars:
-                    orgVar = self.graph.items().domain[var]
+                    orgVar = self.graph_base.items().domain[var]
                     mrkVar = items.domain[var]
 
                     if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.data.Type.String:

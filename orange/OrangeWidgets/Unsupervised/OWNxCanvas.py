@@ -204,7 +204,6 @@ class NetworkCurve(QwtPlotCurve):
           rect = QRectF(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
           painter.drawEllipse(rect)
         
-
   def closest_node(self, px, py):
     ndx = min(self.coors, key=lambda x: abs(self.coors[x][0]-px) + abs(self.coors[x][1]-py))
     return ndx, math.sqrt((self.coors[ndx][0]-px)**2 + (self.coors[ndx][0]-px)**2)
@@ -285,6 +284,8 @@ class OWNxCanvas(OWGraph):
         self.items_matrix = None
         self.controlPressed = False
         self.altPressed = False
+        self.items = None
+        self.links = None
         
         self.setFocusPolicy(Qt.StrongFocus)
         
@@ -367,26 +368,10 @@ class OWNxCanvas(OWGraph):
                 self.selectNeighbours(sel, neighbours - sel, depth + 1, maxdepth)
         
     def getSelectedExamples(self):
-        selection = self.networkCurve.get_selected_nodes()
+        return self.networkCurve.get_selected_nodes()
         
-        if len(selection) == 0:
-            return None
-        
-        if self.graph.items() is not None:
-            return self.graph.items().getitems(selection)
-        else:
-            return None
-        
-    def getunselectedExamples(self):
-        unselection = self.networkCurve.get_unselected_nodes()
-        
-        if len(unselection) == 0:
-            return None
-        
-        if self.graph.items() is not None:
-            return self.graph.items().getitems(unselection)
-        else:
-            return None
+    def getUnselectedExamples(self):
+        return self.networkCurve.get_unselected_nodes()
     
     def getSelectedGraph(self):
       selection = self.networkCurve.get_selected_nodes()
@@ -628,7 +613,6 @@ class OWNxCanvas(OWGraph):
         
         OWGraph.keyReleaseEvent(self, e)
         
-    
     def clickedSelectedOnVertex(self, pos):
         min = 1000000
         ndx = -1
@@ -827,10 +811,10 @@ class OWNxCanvas(OWGraph):
         if self.showComponentAttribute == None:
             return
         
-        if self.layout is None or self.graph is None or self.graph.items() is None:
+        if self.layout is None or self.graph is None or self.items is None:
             return
         
-        if str(self.showComponentAttribute) not in self.graph.items().domain:
+        if str(self.showComponentAttribute) not in self.items.domain:
             self.showComponentAttribute = None
             return
         
@@ -851,7 +835,7 @@ class OWNxCanvas(OWGraph):
             x1 = sum(xes) / len(xes)
             y1 = sum(yes) / len(yes)
             
-            lbl = str(self.graph.items()[component[0]][str(self.showComponentAttribute)])
+            lbl = str(self.items[component[0]][str(self.showComponentAttribute)])
             
             mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
     
@@ -868,9 +852,9 @@ class OWNxCanvas(OWGraph):
           x1 = self.networkCurve.coors[vertex.index][0]
           y1 = self.networkCurve.coors[vertex.index][1]
           lbl = ""
-          values = self.graph.items()[vertex.index]
+          values = self.items[vertex.index]
           for ndx in self.tooltipText:
-              if not ndx in self.graph.items().domain:
+              if not ndx in self.items.domain:
                   continue
               
               value = str(values[ndx])
@@ -899,7 +883,7 @@ class OWNxCanvas(OWGraph):
                 x1 = self.networkCurve.coors[vertex.index][0]
                 y1 = self.networkCurve.coors[vertex.index][1]
                 lbl = ""
-                values = self.graph.items()[vertex.index]
+                values = self.items[vertex.index]
                 if self.showMissingValues:
                     lbl = ", ".join([str(values[ndx]) for ndx in self.labelText])
                 else:
@@ -983,7 +967,7 @@ class OWNxCanvas(OWGraph):
         if self.graph is None:
             return
         
-        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.graph.links(), attribute, self.discEdgePalette)
+        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.links, attribute, self.discEdgePalette)
     
         for index in range(len(self.networkCurve.edges)):
             if colorIndex != None:
@@ -991,20 +975,20 @@ class OWNxCanvas(OWGraph):
                 if links_index == None:
                     continue
                 
-                if self.graph.links().domain[colorIndex].varType == orange.VarTypes.Continuous:
+                if self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
                     newColor = self.discEdgePalette[0]
-                    if str(self.graph.links()[links_index][colorIndex]) != "?":
+                    if str(self.links[links_index][colorIndex]) != "?":
                         if maxValue == minValue:
                             newColor = self.discEdgePalette[0]
                         else:
-                            value = (float(self.graph.links()[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
+                            value = (float(self.links[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
                             newColor = self.contEdgePalette[value]
                         
                     self.networkCurve.set_edge_color(index, newColor)
                     
-                elif self.graph.links().domain[colorIndex].varType == orange.VarTypes.Discrete:
-                    newColor = self.discEdgePalette[colorIndices[self.graph.links()[links_index][colorIndex].value]]
-                    if self.graph.links()[links_index][colorIndex].value == "0":
+                elif self.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
+                    newColor = self.discEdgePalette[colorIndices[self.links[links_index][colorIndex].value]]
+                    if self.links[links_index][colorIndex].value == "0":
                       self.networkCurve.set_edge_color(index, newColor, nocolor=1)
                     else:
                       self.networkCurve.set_edge_color(index, newColor)
@@ -1019,25 +1003,25 @@ class OWNxCanvas(OWGraph):
         if self.graph is None:
             return
         
-        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.graph.items(), attribute, self.discPalette)
+        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
     
         for key, vertex in self.networkCurve.vertices.iteritems():
             v = vertex.index
             if colorIndex != None:    
-                if self.graph.items().domain[colorIndex].varType == orange.VarTypes.Continuous:
+                if self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
                     newColor = self.discPalette[0]
                     
-                    if str(self.graph.items()[v][colorIndex]) != "?":
+                    if str(self.items[v][colorIndex]) != "?":
                         if maxValue == minValue:
                             newColor = self.discPalette[0]
                         else:
-                            value = (float(self.graph.items()[v][colorIndex].value) - minValue) / (maxValue - minValue)
+                            value = (float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
                             newColor = self.contPalette[value]
                         
                     self.networkCurve.set_node_color(v, newColor)
                     
-                elif self.graph.items().domain[colorIndex].varType == orange.VarTypes.Discrete:
-                    newColor = self.discPalette[colorIndices[self.graph.items()[v][colorIndex].value]]
+                elif self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+                    newColor = self.discPalette[colorIndices[self.items[v][colorIndex].value]]
                     #print newColor
                     self.networkCurve.set_node_color(v, newColor)
                     
@@ -1049,40 +1033,40 @@ class OWNxCanvas(OWGraph):
         
     def setLabelText(self, attributes):
         self.labelText = []
-        if self.layout is None or self.graph is None or self.graph.items() is None:
+        if self.layout is None or self.graph is None or self.items is None:
             return
         
-        if isinstance(self.graph.items(), orange.ExampleTable):
-            data = self.graph.items()
+        if isinstance(self.items, orange.ExampleTable):
+            data = self.items
             for att in attributes:
                 for i in range(len(data.domain)):
                     if data.domain[i].name == att:
                         self.labelText.append(i)
                         
-                if self.graph.items().domain.hasmeta(att):
-                        self.labelText.append(self.graph.items().domain.metaid(att))
+                if self.items.domain.hasmeta(att):
+                        self.labelText.append(self.items.domain.metaid(att))
     
     def setTooltipText(self, attributes):
         self.tooltipText = []
-        if self.layout is None or self.graph is None or self.graph.items() is None:
+        if self.layout is None or self.graph is None or self.items is None:
             return
         
-        if isinstance(self.graph.items(), orange.ExampleTable):
-            data = self.graph.items()
+        if isinstance(self.items, orange.ExampleTable):
+            data = self.items
             for att in attributes:
                 for i in range(len(data.domain)):
                     if data.domain[i].name == att:
                         self.tooltipText.append(i)
                         
-                if self.graph.items().domain.hasmeta(att):
-                        self.tooltipText.append(self.graph.items().domain.metaid(att))
+                if self.items.domain.hasmeta(att):
+                        self.tooltipText.append(self.items.domain.metaid(att))
                         
     def setEdgeLabelText(self, attributes):
         self.edgeLabelText = []
-        if self.layout is None or self.graph is None or self.graph.items() is None:
+        if self.layout is None or self.graph is None or self.items is None:
             return
         
-    def set_graph_layout(self, graph, layout, curve=None):
+    def set_graph_layout(self, graph, layout, curve=None, items=None, links=None):
         self.clear()
         self.vertexDegree = []
         #self.vertices_old = {}
@@ -1096,6 +1080,8 @@ class OWNxCanvas(OWGraph):
             self.graph = None
             self.layout = None
             self.networkCurve = None
+            self.items = None
+            self.links = None
             xMin = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
             xMax = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
             yMin = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
@@ -1108,6 +1094,8 @@ class OWNxCanvas(OWGraph):
         self.graph = graph
         self.layout = layout
         self.networkCurve = NetworkCurve(self) if curve is None else curve
+        self.items = items if items is not None else self.graph.items()
+        self.links = links if links is not None else self.graph.links()
         
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
@@ -1115,20 +1103,21 @@ class OWNxCanvas(OWGraph):
         
         #build edge index
         row_ind = {}
-        if self.graph.links() is not None and len(self.graph.links()) > 0:
-          for i, r in enumerate(self.graph.links()):
+        if self.links is not None and len(self.links) > 0:
+          for i, r in enumerate(self.links):
               u = int(r['u'].value)
               v = int(r['v'].value)
-              u_dict = row_ind.get(u, {})
-              v_dict = row_ind.get(v, {})
-              u_dict[v] = i
-              v_dict[u] = i
-              row_ind[u] = u_dict
-              row_ind[v] = v_dict
+              if u in self.graph and v in self.graph:
+                  u_dict = row_ind.get(u, {})
+                  v_dict = row_ind.get(v, {})
+                  u_dict[v] = i
+                  v_dict[u] = i
+                  row_ind[u] = u_dict
+                  row_ind[v] = v_dict
               
         #add edges
-        if self.graph.links() is not None and len(self.graph.links()) > 0:
-            links = self.graph.links()
+        if self.links is not None and len(self.links) > 0:
+            links = self.links
             links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges())
             labels = ([str(row[r].value) for r in range(2, len(row))] for row in (links[links_index] for links_index in links_indices))
             
@@ -1192,18 +1181,18 @@ class OWNxCanvas(OWGraph):
                 edge.pen.setCapStyle(Qt.RoundCap)
                 
     def setVerticesSize(self, column=None, inverted=0):
-        if self.layout is None or self.graph is None or self.graph.items() is None:
+        if self.layout is None or self.graph is None or self.items is None:
             return
         
         column = str(column)
         
-        if column in self.graph.items().domain or (column.startswith("num of ") and column.replace("num of ", "") in self.graph.items().domain):
+        if column in self.items.domain or (column.startswith("num of ") and column.replace("num of ", "") in self.items.domain):
             values = []
             
-            if column in self.graph.items().domain:
-                values = [x[column].value for x in self.graph.items() if not x[column].isSpecial()]
+            if column in self.items.domain:
+                values = [self.items[x][column].value for x in self.graph if not self.items[x][column].isSpecial()]
             else:
-                values = [len(x[column.replace("num of ", "")].value.split(',')) for x in self.graph.items()]
+                values = [len(self.items[x][column.replace("num of ", "")].value.split(',')) for x in self.graph]
           
             minVertexWeight = float(min(values or [0]))
             maxVertexWeight = float(max(values or [0]))
@@ -1221,19 +1210,19 @@ class OWNxCanvas(OWGraph):
                  
             if inverted:
                 for key, vertex in self.networkCurve.vertices.iteritems():
-                    if column in self.graph.items().domain:
-                        vertex.size = self.maxVertexSize - ((getValue(self.graph.items()[vertex.index][column]) - minVertexWeight) * k)
+                    if column in self.items.domain:
+                        vertex.size = self.maxVertexSize - ((getValue(self.items[vertex.index][column]) - minVertexWeight) * k)
                     else:
-                        vertex.size = self.maxVertexSize - ((len(self.graph.items()[vertex.index][column.replace("num of ", "")].value.split(',')) - minVertexWeight) * k)
+                        vertex.size = self.maxVertexSize - ((len(self.items[vertex.index][column.replace("num of ", "")].value.split(',')) - minVertexWeight) * k)
                     
                     
                     vertex.pen.setWidthF(1 + float(vertex.size) / 20)
             else:
                 for key, vertex in self.networkCurve.vertices.iteritems():
-                    if column in self.graph.items().domain:
-                        vertex.size = (getValue(self.graph.items()[vertex.index][column]) - minVertexWeight) * k + self.minVertexSize
+                    if column in self.items.domain:
+                        vertex.size = (getValue(self.items[vertex.index][column]) - minVertexWeight) * k + self.minVertexSize
                     else:
-                        vertex.size = (float(len(self.graph.items()[vertex.index][column.replace("num of ", "")].value.split(','))) - minVertexWeight) * k + self.minVertexSize
+                        vertex.size = (float(len(self.items[vertex.index][column.replace("num of ", "")].value.split(','))) - minVertexWeight) * k + self.minVertexSize
                         
                     #print vertex.size
                     vertex.pen.setWidthF(1 + float(vertex.size) / 20)
