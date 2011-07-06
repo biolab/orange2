@@ -41,6 +41,8 @@ public:
     QPair< double, double > boundsForAxis(int axis);
     
     QList<PlotItem*> itemList();
+    void setGraphRect(const QRectF rect);
+
     void setDirty();
     
     QGraphicsRectItem* graph_item;

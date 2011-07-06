@@ -135,7 +135,7 @@ void Curve::updateAll()
       QGraphicsPathItem* item = m_pointItems[i];
       DataPoint& point = m_data[i];
       item->setPath(m_path);
-      p = QPointF(point.x, point.x);
+      p = QPointF(point.x, point.y);
       item->setPos(p * m_graphTransform);
       item->setBrush(brush);
     }

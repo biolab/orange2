@@ -11,6 +11,11 @@ edges(edges)
 
 }
 
+NetworkCurve::~NetworkCurve()
+{
+
+}
+
 void NetworkCurve::updateProperties()
 {
     const Data d = data();

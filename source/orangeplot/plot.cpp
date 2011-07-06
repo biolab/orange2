@@ -4,11 +4,13 @@
 #include <QtCore/QDebug>
 
 Plot::Plot(QWidget* parent): 
-QGraphicsView(parent), 
-graph_item(new QGraphicsRectItem())
+QGraphicsView(parent)
 {
     setScene(new QGraphicsScene(this));
-    scene()->addItem(graph_item);
+    clipItem = new QGraphicsRectItem();
+    clipItem->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+    scene()->addItem(clipItem);
+    graph_item = new QGraphicsRectItem(clipItem);
 }
 
 Plot::~Plot()
@@ -105,6 +107,12 @@ void Plot::setClean()
 bool Plot::isDirty() 
 {
     return m_dirty;
+}
+
+void Plot::setGraphRect(const QRectF rect) 
+{
+    clipItem->setRect(rect);
+    graph_item->setRect(rect);
 }
 
 #include "plot.moc"
