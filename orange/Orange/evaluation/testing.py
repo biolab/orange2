@@ -36,7 +36,8 @@ part of `testing-test.py`_ (uses `voting.tab`_)
     :start-after: import random
     :end-before: def printResults(res)
 
-Example scripts for multi-label data.
+Testing can also be used on multi-label data.
+
 part of `mlc-evaluator.py`_ (uses `multidata.tab`_)
 
 .. literalinclude:: code/mlc-evaluator.py
@@ -78,7 +79,7 @@ Many function in this module use a set of common arguments, which we define here
     :obj:`orange.StratifiedIfPossible` which stratifies selections
     if the class variable is discrete and has no unknown values.
 
-*randseed (obsolete: indices_randseed), randomGenerator*
+*randseed (obsolete: indicesrandseed), randomGenerator*
     Random seed (``randseed``) or random generator (``randomGenerator``) for
     random selection of examples. If omitted, random seed of 0 is used and
     the same test will always select the same examples from the example
@@ -200,8 +201,13 @@ pages 317-328.
 
 import Orange
 from Orange.misc import demangleExamples, getobjectname, printVerbose
-import exceptions, cPickle, os, os.path
+from Orange.misc import deprecated_keywords, deprecated_members
 import Orange.multilabel.label as label 
+
+import exceptions
+import cPickle
+import os
+import os.path
 
 #### Some private stuff
 
@@ -258,6 +264,8 @@ class TestedExample:
     :paramtype multilabel_flag: int
     """
 
+    @deprecated_keywords({"iterationNumber": "iteration_number",
+                          "actualClass": "actual_class"})
     def __init__(self, iteration_number=None, actual_class=None, n=0, weight=1.0, multilabel_flag = 0):
         self.classes = [None]*n
         self.probabilities = [None]*n
@@ -287,6 +295,10 @@ class TestedExample:
         else:
             self.classes[i] = aclass
             self.probabilities[i] = list(aprob)
+
+TestedExample = deprecated_members({"iterationNumber": "iteration_number",
+                                    "actualClass": "actual_class"
+                                    })(TestedExample)
             
 class ExperimentResults(object):
     """
@@ -335,6 +347,9 @@ class ExperimentResults(object):
         the weights in statistics.
 
     """
+    @deprecated_keywords({"classifierNames": "classifier_names",
+                          "classValues": "class_values",
+                          "baseClass": "base_class"})
     def __init__(self, iterations, classifier_names, class_values, weights, base_class=-1, **argkw):
         self.class_values = class_values
         self.classifier_names = classifier_names
@@ -450,9 +465,16 @@ class ExperimentResults(object):
                 for i in range(self.number_of_iterations):
                     self.classifiers[replace] = results.classifiers[i][index]
 
+ExperimentResults = deprecated_members({"classValues": "class_values",
+                                        "classifierNames": "classifier_names",
+                                        "numberOfIterations": "number_of_iterations",
+                                        "numberOfLearners": "number_of_learners",
+                                        "baseClass": "base_class"
+                                        })(ExperimentResults)
+
 #### Experimental procedures
 
-def leave_one_out(learners, examples, pps=[], indices_randseed="*", **argkw):
+def leave_one_out(learners, examples, pps=[], indicesrandseed="*", **argkw):
 
     """leave-one-out evaluation of learners on a data set
 
@@ -464,10 +486,10 @@ def leave_one_out(learners, examples, pps=[], indices_randseed="*", **argkw):
     """
 
     (examples, weight) = demangleExamples(examples)
-    return test_with_indices(learners, examples, range(len(examples)), indices_randseed, pps, **argkw)
+    return test_with_indices(learners, examples, range(len(examples)), indicesrandseed, pps, **argkw)
     # return test_with_indices(learners, examples, range(len(examples)), pps=pps, argkw)
 
-# apply(test_with_indices, (learners, (examples, weight), indices, indices_randseed, pps), argkw)
+# apply(test_with_indices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
 
 
 def proportion_test(learners, examples, learnProp, times=10,
@@ -495,7 +517,7 @@ def proportion_test(learners, examples, learnProp, times=10,
     
     # randomGenerator is set either to what users provided or to orange.RandomGenerator(0)
     # If we left it None or if we set MakeRandomIndices2.randseed, it would give same indices each time it's called
-    randomGenerator = argkw.get("indices_randseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
+    randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
     pick = Orange.core.MakeRandomIndices2(stratified = strat, p0 = learnProp, randomGenerator = randomGenerator)
     
     examples, weight = demangleExamples(examples)
@@ -517,19 +539,19 @@ def proportion_test(learners, examples, learnProp, times=10,
 
 def cross_validation(learners, examples, folds=10,
                     strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
-                    pps=[], indices_randseed="*", **argkw):
+                    pps=[], indicesrandseed="*", **argkw):
     """cross-validation evaluation of learners
 
     Performs a cross validation with the given number of folds.
 
     """
     (examples, weight) = demangleExamples(examples)
-    if indices_randseed!="*":
-        indices = Orange.core.MakeRandomIndicesCV(examples, folds, randseed=indices_randseed, stratified = strat)
+    if indicesrandseed!="*":
+        indices = Orange.core.MakeRandomIndicesCV(examples, folds, randseed=indicesrandseed, stratified = strat)
     else:
         randomGenerator = argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
         indices = Orange.core.MakeRandomIndicesCV(examples, folds, stratified = strat, randomGenerator = randomGenerator)
-    return test_with_indices(learners, (examples, weight), indices, indices_randseed, pps, **argkw)
+    return test_with_indices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
 
 
 def learning_curve_n(learners, examples, folds=10,
@@ -554,7 +576,7 @@ def learning_curve_n(learners, examples, folds=10,
 
     """
 
-    seed = argkw.get("indices_randseed", -1) or argkw.get("randseed", -1)
+    seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
     if seed:
         randomGenerator = Orange.core.RandomGenerator(seed)
     else:
@@ -600,7 +622,7 @@ def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.co
             raise SystemError, "cannot preprocess testing examples"
 
     if not cv or not pick:    
-        seed = argkw.get("indices_randseed", -1) or argkw.get("randseed", -1)
+        seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
         if seed:
             randomGenerator = Orange.core.RandomGenerator(seed)
         else:
@@ -700,7 +722,7 @@ def learning_curve_with_test_data(learners, learnset, testset, times=10,
     learnset, learnweight = demangleExamples(learnset)
     testweight = demangleExamples(testset)[1]
     
-    randomGenerator = argkw.get("indices_randseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
+    randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
     pick = Orange.core.MakeRandomIndices2(stratified = strat, randomGenerator = randomGenerator)
     allResults=[]
     for p in proportions:
@@ -720,7 +742,7 @@ def learning_curve_with_test_data(learners, learnset, testset, times=10,
     return allResults
 
    
-def test_with_indices(learners, examples, indices, indices_randseed="*", pps=[], callback=None, **argkw):
+def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
     """
     Performs a cross-validation-like test. The difference is that the
     caller provides indices (each index gives a fold of an example) which
@@ -733,14 +755,14 @@ def test_with_indices(learners, examples, indices, indices_randseed="*", pps=[],
     testing examples is thus not allowed. The computed results can be
     saved in files or loaded therefrom if you add a keyword argument
     ``cache=1``. In this case, you also have to specify the random seed
-    which was used to compute the indices (argument ``indices_randseed``;
+    which was used to compute the indices (argument ``indicesrandseed``;
     if you don't there will be no caching.
 
     """
 
     verb = argkw.get("verbose", 0)
     cache = argkw.get("cache", 0)
-    store_classifiers = argkw.get("store_classifiers", 0) or argkw.get("store_classifiers", 0)
+    store_classifiers = argkw.get("storeclassifiers", 0) or argkw.get("store_classifiers", 0) or argkw.get("storeClassifiers", 0)
     cache = cache and not store_classifiers
 
     examples, weight = demangleExamples(examples)
@@ -752,7 +774,7 @@ def test_with_indices(learners, examples, indices, indices_randseed="*", pps=[],
     #check if the data is a multi-label data
     multilabel_flag = label.is_multilabel(examples)
     
-    if multilabel_flag == 0 and not examples.domain.classVar: #single-label
+    if multilabel_flag == 0 and not examples.domain.classvar: #single-label
         raise ValueError("Test data set without class attribute")
     
 ##    for pp in pps:
@@ -761,9 +783,9 @@ def test_with_indices(learners, examples, indices, indices_randseed="*", pps=[],
 
     nIterations = max(indices)+1
     if multilabel_flag == 0: #single-label
-        if examples.domain.classVar.varType == Orange.data.Type.Discrete:
-            values = list(examples.domain.classVar.values)
-            basevalue = examples.domain.classVar.baseValue
+        if examples.domain.classvar.vartype == Orange.data.Type.Discrete:
+            values = list(examples.domain.classvar.values)
+            basevalue = examples.domain.classvar.basevalue
         else:
             basevalue = values = None
     else: #multi-label
@@ -784,7 +806,7 @@ def test_with_indices(learners, examples, indices, indices_randseed="*", pps=[],
         
     ccsum = hex(examples.checksum())[2:]
     ppsp = encode_PP(pps)
-    fnstr = "{TestWithIndices}_%s_%s%s-%s" % ("%s", indices_randseed, ppsp, ccsum)
+    fnstr = "{TestWithIndices}_%s_%s%s-%s" % ("%s", indicesrandseed, ppsp, ccsum)
     if "*" in fnstr:
         cache = 0
 
@@ -849,6 +871,8 @@ def test_with_indices(learners, examples, indices, indices_randseed="*", pps=[],
     return test_results
 
 
+@deprecated_keywords({"testResults": "test_results",
+                      "iterationNumber": "iteration_number"})
 def learn_and_test_on_test_data(learners, learnset, testset, test_results=None, iteration_number=0, pps=[], callback=None, **argkw):
     """
     This function performs no sampling on its own: two separate datasets
@@ -868,12 +892,12 @@ def learn_and_test_on_test_data(learners, learnset, testset, test_results=None, 
     :obj:`ExperimentResults` will be created.
 
     """
-    store_classifiers = argkw.get("store_classifiers", 0) or argkw.get("store_classifiers", 0)
-    storeExamples = argkw.get("storeExamples", 0)
+    store_classifiers = argkw.get("storeclassifiers", 0) or argkw.get("store_classifiers", 0) or argkw.get("storeClassifiers", 0)
+    store_examples = argkw.get("store_examples", 0) or argkw.get("storeExamples", 0)
 
     learnset, learnweight = demangleExamples(learnset)
     testset, testweight = demangleExamples(testset)
-    store_classifiers = argkw.get("store_classifiers", 0) or argkw.get("store_classifiers", 0)
+    store_classifiers = argkw.get("storeclassifiers", 0) or argkw.get("store_classifiers", 0) or argkw.get("storeClassifiers", 0)
     
     for pp in pps:
         if pp[0]=="B":
@@ -895,12 +919,14 @@ def learn_and_test_on_test_data(learners, learnset, testset, test_results=None, 
             callback()
     for i in range(len(learners)):
         classifiers[i].name = getattr(learners[i], 'name', 'noname')
-    test_results = test_on_data(classifiers, (testset, testweight), test_results, iteration_number, storeExamples)
+    test_results = test_on_data(classifiers, (testset, testweight), test_results, iteration_number, store_examples)
     if store_classifiers:
         test_results.classifiers.append(classifiers)
     return test_results
 
 
+@deprecated_keywords({"testResults": "test_results",
+                      "iterationNumber": "iteration_number"})
 def learn_and_test_on_learn_data(learners, learnset, test_results=None, iteration_number=0, pps=[], callback=None, **argkw):
     """
     This function is similar to the above, except that it learns and
@@ -916,8 +942,8 @@ def learn_and_test_on_learn_data(learners, learnset, test_results=None, iteratio
 
     """
 
-    store_classifiers = argkw.get("store_classifiers", 0) or argkw.get("store_classifiers", 0)
-    storeExamples = argkw.get("storeExamples", 0)
+    store_classifiers = argkw.get("storeclassifiers", 0) or argkw.get("store_classifiers", 0) or argkw.get("storeClassifiers", 0)
+    store_examples = argkw.get("store_examples", 0) or argkw.get("store_examples", 0)
 
     learnset, learnweight = demangleExamples(learnset)
 
@@ -947,13 +973,17 @@ def learn_and_test_on_learn_data(learners, learnset, test_results=None, iteratio
             callback()
     for i in range(len(learners)):
         classifiers[i].name = getattr(learners[i], "name", "noname")
-    test_results = test_on_data(classifiers, (testset, learnweight), test_results, iteration_number, storeExamples)
+    test_results = test_on_data(classifiers, (testset, learnweight),
+                                test_results, iteration_number, store_examples)
     if store_classifiers:
         test_results.classifiers.append(classifiers)
     return test_results
 
 
-def test_on_data(classifiers, testset, test_results=None, iteration_number=0, storeExamples = False, **argkw):
+@deprecated_keywords({"testResults": "test_results",
+                      "iterationNumber": "iteration_number",
+                      "storeExamples": "store_examples"})
+def test_on_data(classifiers, testset, test_results=None, iteration_number=0, store_examples = False, **argkw):
     """
     This function gets a list of classifiers, not learners like the other
     functions in this module. It classifies each testing example with
@@ -974,7 +1004,8 @@ def test_on_data(classifiers, testset, test_results=None, iteration_number=0, st
         else:
             values = None
             baseValue = -1
-        test_results=ExperimentResults(1, [l.name for l in classifiers], values, testweight!=0, baseValue)
+        test_results=ExperimentResults(1, [l.name for l in classifiers], values,
+                                       testweight!=0, baseValue)
 
     examples = getattr(test_results, "examples", False)
     if examples and len(examples):
@@ -990,7 +1021,8 @@ def test_on_data(classifiers, testset, test_results=None, iteration_number=0, st
     
     conv = testset.domain.classVar.varType == Orange.data.Type.Discrete and int or float
     for ex in testset:
-        te = TestedExample(iteration_number, conv(ex.getclass()), 0, ex.getweight(testweight))
+        te = TestedExample(iteration_number, conv(ex.getclass()), 0,
+                           ex.getweight(testweight))
 
         for classifier in classifiers:
             # This is to prevent cheating:

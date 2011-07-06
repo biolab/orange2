@@ -510,7 +510,7 @@ def split_by_iterations(res):
     if res.number_of_iterations < 2:
         return [res]
         
-    ress = [Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    ress = [Orange.evaluation.testing.ExperimentResults(1, res.classifier_names, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded)
             for i in range(res.number_of_iterations)]
     for te in res.results:
         ress[te.iteration_number].results.append(te)
@@ -1599,7 +1599,7 @@ def TC_threshold_average_ROC(ROCcurves, samples = 10):
 def compute_calibration_curve(res, classIndex=-1):
     import corn
     ## merge multiple iterations into one
-    mres = Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded)
     for te in res.results:
         mres.results.append( te )
 
@@ -1661,7 +1661,7 @@ def compute_calibration_curve(res, classIndex=-1):
 def compute_lift_curve(res, classIndex=-1):
     import corn
     ## merge multiple iterations into one
-    mres = Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded)
     for te in res.results:
         mres.results.append( te )
 
