@@ -5,8 +5,13 @@
 
 NetworkCurve::NetworkCurve(const Coordinates& coordinates, const Edges& edges, QGraphicsItem* parent, QGraphicsScene* scene): 
 Curve(parent, scene),
-coordinates(coordinates),
+    coors(coordinates),
 edges(edges)
+{
+
+}
+
+NetworkCurve::NetworkCurve(QGraphicsItem* parent, QGraphicsScene* scene): Curve(parent, scene)
 {
 
 }
@@ -22,24 +27,35 @@ void NetworkCurve::updateProperties()
     const QTransform t = graphTransform();
     int m, n;
     
-    qDeleteAll(m_vertex_items);
-    m_vertex_items.clear();
+    if (m_vertex_items.keys() != coors.keys())
+    {
+        qDeleteAll(m_vertex_items);
+        m_vertex_items.clear();
+        Coordinates::ConstIterator cit = coors.constBegin();
+        Coordinates::ConstIterator cend = coors.constEnd();
+        for (; cit != cend; ++cit)
+        {
+            m_vertex_items.insert(cit.key(), new QGraphicsPathItem(this));
+        }
+    }
     
     QPair<double, double> p;
     QGraphicsPathItem* item;
-    Coordinates::ConstIterator cit = coordinates.constBegin();
-    Coordinates::ConstIterator cend = coordinates.constEnd();
-    QPainterPath path = pathForSymbol(symbol(), pointSize());
+    Coordinates::ConstIterator cit = coors.constBegin();
+    Coordinates::ConstIterator cend = coors.constEnd();
     for (; cit != cend; ++cit)
     {
         p = cit.value();
-        item = new QGraphicsPathItem(path, this);
+        item = m_vertex_items[cit.key()];
         item->setPos( t.map(QPointF(p.first, p.second)) );
         item->setBrush(brush());
-        m_vertex_items.insert(cit.key(), item);
+        NodeItem v = vertices[cit.key()];
+        item->setPen(v.pen);
+        item->setToolTip(v.tooltip);
+        item->setPath(pathForSymbol(symbol(), v.size));
     }
     
-    Q_ASSERT(m_vertex_items.size() == coordinates.size());
+    Q_ASSERT(m_vertex_items.size() == coors.size());
     
     n = edges.size();
     m = m_edge_items.size();
@@ -57,19 +73,19 @@ void NetworkCurve::updateProperties()
     Q_ASSERT(m_edge_items.size() == edges.size());
     
     QPair<int, int> points;
+    EdgeItem edge;
     QLineF line;
     QGraphicsLineItem* line_item;
     n = edges.size();
     for (int i = 0; i < n; ++i)
     {
-        points = edges[i];
-        p = coordinates[points.first];
+        edge = edges[i];
+        p = coors[edge.u->index];
         line.setP1(QPointF( p.first, p.second ));
-        p = coordinates[points.second];
+        p = coors[edge.v->index];
         line.setP2(QPointF( p.first, p.second ));
         line_item = m_edge_items[i];
         line_item->setLine( t.map(line) );
-        line_item->setPen(pen());
+        line_item->setPen(edges[i].pen);
     }
 }
-

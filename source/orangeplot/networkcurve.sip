@@ -27,6 +27,37 @@
 %End
 };
 
+
+struct NodeItem
+{
+    int index;
+    bool marked;
+    bool show;
+    bool highlight;
+    QString label;
+    QString tooltip;
+    int uuid;
+    
+    QPixmap* image;
+    QPen pen;
+    QColor nocolor;
+    QColor color;
+    int size;
+    int style;
+};
+
+struct EdgeItem
+{
+    NodeItem* u;
+    NodeItem* v;
+    int links_index;
+    bool arrowu;
+    bool arrowv;
+    double weight;
+    QString label;
+    QPen pen;
+};
+
 class NetworkCurve : Curve
 {
 
@@ -36,13 +67,14 @@ class NetworkCurve : Curve
 
 public:
     typedef QMap<int, Coord> Coordinates;
-    typedef QList<QPair<int, int> > Edges;
+    typedef QList<EdgeItem> Edges;
     
     NetworkCurve(const NetworkCurve::Coordinates& coordinates, const NetworkCurve::Edges& edges, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+    NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     virtual ~NetworkCurve();
     
     virtual void updateProperties();
     
     NetworkCurve::Edges edges;
-    NetworkCurve::Coordinates coordinates;
+    NetworkCurve::Coordinates coors;
 };
