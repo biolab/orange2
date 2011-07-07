@@ -77,4 +77,5 @@ public:
     
     NetworkCurve::Edges edges;
     NetworkCurve::Coordinates coors;
+    NetworkCurve::Vertices vertices;
 };
