@@ -3014,8 +3014,8 @@ PClassifier TEarthLearner::operator() (PExampleGenerator examples, const int & w
 
 	// TODO: Check for classVar, assert all attributes are continuous
 
-	num_preds = 1;
-	num_cases = 100;
+//	num_preds = 1;
+//	num_cases = 100;
 
 	double best_gcv;
 	int num_terms;
@@ -3060,11 +3060,11 @@ PClassifier TEarthLearner::operator() (PExampleGenerator examples, const int & w
 			tempy = (double) class_value.floatV;
 		y[i] = tempy;
 	}
-	for (int i = 0; i < num_cases; i++) {
-	        const double x0 = (double)i / num_cases;
-	        x[i] = x0;
-	        y[i] = sin(4 * x0);     // target function, change this to whatever you want
-	    }
+//	for (int i = 0; i < num_cases; i++) {
+//	        const double x0 = (double)i / num_cases;
+//	        x[i] = x0;
+//	        y[i] = sin(4 * x0);     // target function, change this to whatever you want
+//	    }
 
 
 	const char **preds_names = NULL; // Used for trace only.
