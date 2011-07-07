@@ -16,23 +16,26 @@ struct DataPoint
 
 struct Updater
 {
-    Updater(qreal scale, const QPen& pen, const QBrush& brush)
+    Updater(qreal scale, const QPen& pen, const QBrush& brush, const QPainterPath& path)
     {
         m_scale = scale;
         m_pen = pen;
         m_brush = brush;
+        m_path = path;
     }
     
-    void operator()(QAbstractGraphicsShapeItem* item)
+    void operator()(QGraphicsPathItem* item)
     {
         item->setBrush(m_brush);
         item->setPen(m_pen);
         item->setScale(m_scale);
+        item->setPath(m_path);
     }
     
     qreal m_scale;
     QPen m_pen;
     QBrush m_brush;
+    QPainterPath m_path;
 };
   
 typedef QList< DataPoint > Data;
@@ -114,7 +117,7 @@ public:
    **/
   virtual void updateAll();
   
-  void updateItems(const QList< QAbstractGraphicsShapeItem* >& items, Updater updater);
+  void updateItems(const QList< QGraphicsPathItem* >& items, Updater updater);
   template <class T>
   void updateItems(const QList<T*>& items, Updater updater);
   
@@ -238,7 +241,7 @@ private:
 template <class T>
 void Curve::updateItems(const QList< T* >& items, Updater updater)
 {
-    updateItems(reinterpret_cast< const QList<QAbstractGraphicsShapeItem*>& >(items), updater);
+    updateItems(reinterpret_cast< const QList<QGraphicsPathItem*>& >(items), updater);
 }
 
 

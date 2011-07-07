@@ -32,9 +32,9 @@ struct Updater
 #include "curve.h"
 %End
 
-    Updater(qreal scale, const QPen& pen, const QBrush& brush);
+    Updater(qreal scale, const QPen& pen, const QBrush& brush, const QPainterPath& path);
     
-    void operator()(QAbstractGraphicsShapeItem* item);
+    void operator()(QGraphicsPathItem* item);
     
     qreal m_scale;
     QPen m_pen;

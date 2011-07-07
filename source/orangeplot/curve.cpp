@@ -48,7 +48,8 @@ void Curve::updateNumberOfItems()
   {
     m_pointItems << new QGraphicsPathItem(this);
   }
-  Q_ASSERT(m_pointItems.size() == data().size());
+  
+  Q_ASSERT(m_pointItems.size() == m_data.size());
 }
 
 void Curve::updateProperties()
@@ -56,58 +57,9 @@ void Curve::updateProperties()
   qDebug() << "Updating curve " << m_needsUpdate;
   setContinuous(m_style != Curve::NoCurve);
   
-  if (m_needsUpdate & UpdateNumberOfItems)
-  {
-    updateNumberOfItems();
-  }
-  
-  /*
-   * 
-   * 
-  if (m_continuous || (m_needsUpdate & UpdateAll) )
-  {
-    // Partial updates only make sense for discrete curves, because they have more properties
-    qDebug() << "Updating all";
-    QtConcurrent::run(this, &Curve::updateAll);
-    return;
-  }
-  */
-  
-  int n = m_data.size();  
-  
-  if (m_needsUpdate & (UpdateSize | UpdateSymbol))
-  {
-    m_path = pathForSymbol(m_symbol, m_pointSize);
-    for (int i = 0; i < n; ++i)
-    {
-      m_pointItems[i]->setPath(m_path);
-    }
-  }
-  
-  // Move, resize, reshape and/or recolor the items
-  if (m_needsUpdate & UpdatePosition)
-  {
-    QPointF p;
-    for (int i = 0; i < n; ++i)
-    {
-      p = QPointF(m_data[i].x, m_data[i].y);
-      m_pointItems[i]->setPos(m_graphTransform.map(p));
-    }
-  } 
-  
-  if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen) )
-  {
-      qDebug() << "Setting scale to " << 1.0/m_zoom_factor << m_zoom_factor;
-    updateItems(m_pointItems, Updater(1.0/m_zoom_factor, m_pen, m_brush));
-  }
-  m_needsUpdate = 0;
-}
-
-void Curve::updateAll()
-{
   if (m_needsUpdate & UpdateContinuous)
   {
-    changeContinuous();
+      changeContinuous();
   }
   
   if (m_continuous)
@@ -126,7 +78,44 @@ void Curve::updateAll()
       }
     }
     m_lineItem->setPath(m_line);
+    return;
   } 
+  
+  int n = m_data.size();
+  if (m_pointItems.size() != n)
+  {
+    updateNumberOfItems();
+  }
+  
+  Q_ASSERT(m_pointItems.size() == n);
+  
+  m_path = pathForSymbol(m_symbol, m_pointSize);
+  
+  // Move, resize, reshape and/or recolor the items
+  if (m_needsUpdate & UpdatePosition)
+  {
+    QPointF p;
+    for (int i = 0; i < n; ++i)
+    {
+      p = QPointF(m_data[i].x, m_data[i].y);
+      m_pointItems[i]->setPos(m_graphTransform.map(p));
+    }
+  } 
+  
+  if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
+  {
+    updateItems(m_pointItems, Updater(1.0/m_zoom_factor, m_pen, m_brush, m_path));
+  }
+  m_needsUpdate = 0;
+}
+
+void Curve::updateAll()
+{
+  if (m_needsUpdate & UpdateContinuous)
+  {
+    changeContinuous();
+  }
+  
   else 
   {
     if (m_needsUpdate & UpdateNumberOfItems)
@@ -538,7 +527,7 @@ void Curve::set_zoom_factor(double factor)
     checkForUpdate();
 }
 
-void Curve::updateItems(const QList< QAbstractGraphicsShapeItem* >& items, Updater updater)
+void Curve::updateItems(const QList< QGraphicsPathItem* >& items, Updater updater)
 {
     qDebug() << "Updating items asynchronously";
     qDebug() << updater.m_scale;
