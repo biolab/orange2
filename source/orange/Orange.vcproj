@@ -897,6 +897,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\tdidt_simple.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\tdidt_simple.hpp"
+				>
+			</File>
+			<File
 				RelativePath="tdidt_split.cpp"
 				>
 			</File>
