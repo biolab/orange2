@@ -67,6 +67,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         range = (-1.13, 1.13)
         self.data_range[xBottom] = range
         self.data_range[yLeft] = range
+        
+        self._extra_curves = []
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -80,6 +82,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, labels = None, setAnchors = 0, **args):
+        self._extra_curves = []
         self.clear()
         self.tooltipMarkers = []
 
@@ -104,9 +107,9 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         # do we want to show anchors and their labels
         if self.showAnchors:
             if self.hideRadius > 0:
-                xdata = self.createXAnchors(100)*(self.hideRadius / 10)
-                ydata = self.createYAnchors(100)*(self.hideRadius / 10)
-                self.addCurve("hidecircle", QColor(200,200,200), QColor(200,200,200), 1, style = Qt.SolidLine, symbol = OWCurve.NoSymbol, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
+                circle = CircleCurve(QColor(200,200,200), QColor(200,200,200), radius = hideRadius)
+                self.add_custom_curve(circle)
+                self._extra_curves.append(circle)
 
             # draw dots at anchors
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
@@ -127,7 +130,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             else:
                 XAnchors = [a[0] for a in shownAnchorData]
                 YAnchors = [a[1] for a in shownAnchorData]
-                self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = Qt.NoPen, symbol = OWCurve.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1)
+                self._extra_curves.append(self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = Qt.NoPen, symbol = OWCurve.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1))
 
                 # draw text at anchors
                 if self.showAttributeNames:
@@ -136,9 +139,9 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
 
         if self.showAnchors and self.normalizeExamples:
             # draw "circle"
-            xdata = self.createXAnchors(100)
-            ydata = self.createYAnchors(100)
-            self.addCurve("circle", QColor(Qt.black), QColor(Qt.black), 1, style = Qt.SolidLine, symbol = OWCurve.NoSymbol, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
+            circle = CircleCurve()
+            self.add_custom_curve(circle)
+            self._extra_curves.append(circle)
 
         self.potentialsClassifier = None # remove the classifier so that repaint won't recompute it
         self.updateLayout()
@@ -720,7 +723,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         
     def updateCurves(self):
         for c in self.itemList():
-            if isinstance(c, OWCurve):
+            if isinstance(c, OWCurve) and c not in self._extra_curves:
                 c.setPointSize(self.pointWidth)
                 color = c.color()
                 color.setAlpha(self.alphaValue)

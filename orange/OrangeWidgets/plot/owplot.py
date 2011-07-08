@@ -314,13 +314,12 @@ class OWPlot(orangeplot.Plot):
                  symbol = OWCurve.Ellipse, enableLegend = False, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
-        
         c = OWCurve(xData, yData, parent=self.graph_item)
         c.setAxes(x_axis_key, y_axis_key)
         c.setToolTip(name)
         c.name = name
         c.setAutoUpdate(False)
-        c.setContinuous(style is not Qt.NoPen)
+        c.setStyle(style)
         c.setColor(brushColor)
         c.setSymbol(symbol)
         c.setPointSize(size)

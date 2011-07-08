@@ -101,3 +101,23 @@ class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
         if pen:
             self.setPen(pen)
         self.name = name
+        
+class CircleCurve(OWCurve):
+    def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.NoBrush), xCenter = 0.0, yCenter = 0.0, radius = 1.0):
+        OWCurve.__init__(self)
+        self.setPen(pen)
+        self.setBrush(brush)
+        self._item = QGraphicsEllipseItem(self)
+        self.center = xCenter, yCenter
+        self.radius = radius
+        self._rect = QRectF(xCenter-radius, yCenter-radius, 2*radius, 2*radius)
+        
+    def updateProperties(self):
+        self._item.setRect(self.graphTransform().mapRect(self.dataRect()))
+        self._item.setPen(self.pen())
+        self._item.setBrush(self.brush())
+        
+    def dataRect(self):
+        x, y = self.center
+        r = self.radius
+        return QRectF(x-r, y-r, 2*r, 2*r)
