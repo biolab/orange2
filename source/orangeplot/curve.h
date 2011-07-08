@@ -236,6 +236,7 @@ private:
   QPen m_pen;
   QBrush m_brush;
   double m_zoom_factor;
+  QFuture<void> m_currentUpdate;
 };
 
 template <class T>

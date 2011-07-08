@@ -54,7 +54,6 @@ void Curve::updateNumberOfItems()
 
 void Curve::updateProperties()
 {
-  qDebug() << "Updating curve " << m_needsUpdate;
   setContinuous(m_style != Curve::NoCurve);
   
   if (m_needsUpdate & UpdateContinuous)
@@ -522,14 +521,16 @@ double Curve::zoom_factor()
 void Curve::set_zoom_factor(double factor)
 {
     m_zoom_factor = factor;
-    qDebug() << "zoom factor is now" << factor;
     m_needsUpdate |= UpdateZoom;
     checkForUpdate();
 }
 
 void Curve::updateItems(const QList< QGraphicsPathItem* >& items, Updater updater)
 {
-    qDebug() << "Updating items asynchronously";
-    qDebug() << updater.m_scale;
-    QtConcurrent::map(items, updater);
+    if (m_currentUpdate.isRunning())
+    {
+        m_currentUpdate.cancel();
+        m_currentUpdate.waitForFinished();
+    }
+    m_currentUpdate = QtConcurrent::map(items, updater);
 }
