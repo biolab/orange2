@@ -799,6 +799,9 @@ class OWPlot(orangeplot.Plot):
     def enableYRaxis(self, enable=1):
         self.set_axis_enabled(yRight, enable)
         
+    def enableXaxis(self, enable=1):
+        self.set_axis_enabled(xBottom, enable)
+        
     def set_axis_enabled(self, axis, enable):
         if axis not in self.axes:
             self.add_axis(axis)

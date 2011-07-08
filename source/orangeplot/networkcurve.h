@@ -5,6 +5,9 @@
 
 struct NodeItem
 {
+    double x;
+    double y;
+    
     int index;
     bool marked;
     bool show;
@@ -33,24 +36,21 @@ struct EdgeItem
     QPen pen;
 };
 
-typedef QPair<double, double> Coord;
-
 class NetworkCurve : public Curve
 {
 public:
-    typedef QMap<int, Coord> Coordinates;
     typedef QList<EdgeItem> Edges;
-    typedef QMap<int, NodeItem> Vertices;
+    typedef QMap<int, NodeItem> Nodes;
 
-    NetworkCurve(const Coordinates& coordinates, const Edges& edges, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     NetworkCurve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~NetworkCurve();
     
     virtual void updateProperties();
     
-    Coordinates coors;
-    Vertices vertices;
-    Edges edges;
+    virtual Nodes get_nodes() const = 0;
+    virtual Edges get_edges() const = 0;
+    
+    virtual QRectF dataRect() const;
     
 private:
     QMap<int, QGraphicsPathItem*> m_vertex_items;

@@ -17,14 +17,15 @@ import orangeplot
 
 class NodeItem(orangeplot.NodeItem):
     def __init__(self, index=-1):
+        orangeplot.NodeItem.__init__(self)
         self.index = index
         self.marked = False
         self.show = True
         self.highlight = False
         self.selected = False
-        self.label = []
-        self.tooltip = []
-        self.uuid = None
+        self.label = ''
+        self.tooltip = ''
+        self.uuid = 0
         
         self.image = None
         self.pen = QPen(Qt.blue, 1)
@@ -36,10 +37,11 @@ class NodeItem(orangeplot.NodeItem):
     
 class EdgeItem(orangeplot.EdgeItem):
     def __init__(self, u=None, v=None, weight=0, arrowu=0, arrowv=0, 
-                 links_index=None, label=[]):
+                 links_index=None, label=''):
+        orangeplot.EdgeItem.__init__(self)
         self.u = u
         self.v = v
-        self.links_index = links_index
+        self.links_index = int(links_index) if links_index is not None else -1
         self.arrowu = arrowu
         self.arrowv = arrowv
         self.weight = weight
@@ -49,10 +51,19 @@ class EdgeItem(orangeplot.EdgeItem):
         self.pen.setCapStyle(Qt.RoundCap)
 
 class NetworkCurve(orangeplot.NetworkCurve):
-  def __init__(self, parent, pen=QPen(Qt.black), xData=None, yData=None):
+  def __init__(self, parent=None, pen=QPen(Qt.black), xData=None, yData=None):
       orangeplot.NetworkCurve.__init__(self, parent)
       self.name = "Network Curve"
       self.showEdgeLabels = 0
+      
+      self.nodes = {}
+      self.edges = []
+      
+  def get_nodes(self):
+      return self.nodes
+        
+  def get_edges(self):
+      return self.edges
 
   def move_selected_nodes(self, dx, dy):
     selected = self.get_selected_nodes()
@@ -217,9 +228,9 @@ class NetworkCurve(orangeplot.NetworkCurve):
           y1, y2 = y2, y1
       return [key for key in self.coors if x1 < self.coors[key][0] < x2 and y1 < self.coors[key][1] < y2]
         
-class OWNxCanvas(OWGraph):
+class OWNxCanvas(OWPlot):
     def __init__(self, master, parent=None, name="None"):
-        OWGraph.__init__(self, parent, name)
+        OWPlot.__init__(self, parent, name)
         self.master = master
         self.parent = parent
         self.labelText = []
@@ -237,8 +248,6 @@ class OWNxCanvas(OWGraph):
         self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
         self.edgesKey = -1
         #self.vertexSize = 6
-        self.enableXaxis(0)
-        self.enableYLaxis(0)
         self.state = NOTHING  #default je rocno premikanje
         self.hiddenNodes = []
         self.markedNodes = set()
@@ -275,10 +284,8 @@ class OWNxCanvas(OWGraph):
         self.appendToSelection = 1
         self.fontSize = 12
              
-        self.setAxisAutoScale(self.xBottom)
-        self.setAxisAutoScale(self.yLeft)
-        
-        self.networkCurve = NetworkCurve(self)
+        self.networkCurve = NetworkCurve()
+        self.add_custom_curve(self.networkCurve)
         self.callbackMoveVertex = None
         self.callbackSelectVertex = None
         self.minComponentEdgeWidth = 0
@@ -450,7 +457,7 @@ class OWNxCanvas(OWGraph):
             if self.callbackMoveVertex:
                 self.callbackMoveVertex()
         else:
-            OWGraph.mouseMoveEvent(self, event)
+            OWPlot.mouseMoveEvent(self, event)
                 
         if not self.freezeNeighbours and self.tooltipNeighbours:
             px = self.invTransform(2, event.x())
@@ -527,9 +534,9 @@ class OWNxCanvas(OWGraph):
               self.mouseSelectedVertex = 1
               self.mouseCurrentlyPressed = 1
           else:
-              OWGraph.mousePressEvent(self, event)  
+              OWPlot.mousePressEvent(self, event)  
       else:
-          OWGraph.mousePressEvent(self, event)     
+          OWPlot.mousePressEvent(self, event)     
     
     def mouseReleaseEvent(self, event):  
         if self.graph is None:
@@ -568,15 +575,15 @@ class OWNxCanvas(OWGraph):
                     self.unmark()
             
                 self.markSelectionNeighbours()
-                OWGraph.mouseReleaseEvent(self, event)
+                OWPlot.mouseReleaseEvent(self, event)
                 self.removeAllSelections()
     
         elif self.state == SELECT_POLYGON:
-                OWGraph.mouseReleaseEvent(self, event)
+                OWPlot.mouseReleaseEvent(self, event)
                 if self.tempSelectionCurve == None:   #if OWVisGraph closed polygon
                     self.selectVertices()
         else:
-            OWGraph.mouseReleaseEvent(self, event)
+            OWPlot.mouseReleaseEvent(self, event)
             
         self.mouseCurrentlyPressed = 0
         self.moveGroup = False
@@ -604,7 +611,7 @@ class OWNxCanvas(OWGraph):
         if e.text() == "f":
             self.graph.freezeNeighbours = not self.graph.freezeNeighbours
         
-        OWGraph.keyPressEvent(self, e)
+        OWPlot.keyPressEvent(self, e)
             
     def keyReleaseEvent(self, e):
         if e.key() == Qt.Key_Control:
@@ -613,7 +620,7 @@ class OWNxCanvas(OWGraph):
         elif e.key() == Qt.Key_Alt:
             self.altPressed = False
         
-        OWGraph.keyReleaseEvent(self, e)
+        OWPlot.keyReleaseEvent(self, e)
         
     def clickedSelectedOnVertex(self, pos):
         min = 1000000
@@ -1138,10 +1145,10 @@ class OWNxCanvas(OWGraph):
             self.networkCurve = None
             self.items = None
             self.links = None
-            xMin = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
-            xMax = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
-            yMin = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
-            yMax = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
+            xMin = -1.0
+            xMax = 1.0
+            yMin = -1.0
+            yMax = 1.0
             self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment=Qt.AlignCenter, size=self.fontSize)
             self.tooltipNeighbours = 0
             self.replot()
@@ -1288,14 +1295,10 @@ class OWNxCanvas(OWGraph):
                 vertex.pen.setWidthF(1 + float(vertex.size) / 20)
       
     def updateCanvas(self):
-        self.setAxisAutoScale(self.xBottom)
-        self.setAxisAutoScale(self.yLeft)
         self.updateData()
         self.replot()  
     
     def zoomExtent(self):
-        self.setAxisAutoScale(self.xBottom)
-        self.setAxisAutoScale(self.yLeft)
         self.replot()
         
     def zoomSelection(self):

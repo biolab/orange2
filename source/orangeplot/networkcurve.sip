@@ -2,34 +2,11 @@
 #include "networkcurve.h"
 %End
 
-%MappedType Coord /DocType="tuple-of-float-float"/
-{
-%TypeHeaderCode
-#include "networkcurve.h"
-%End
-
-%ConvertFromTypeCode
-    // Create the tuple.
-    return Py_BuildValue((char *)"dd", sipCpp->first, sipCpp->second);
-%End
-
-%ConvertToTypeCode
-    // Check the type if that is all that is required.
-    if (sipIsErr == NULL)
-        return (PyTuple_Size(sipPy) == 2);
-    
-    Coord* qp = new Coord;
-
-    PyArg_ParseTuple(sipPy, "dd", &qp->first, &qp->second);
-    *sipCppPtr = qp;
-    
-    return sipGetState(sipTransferObj);
-%End
-};
-
-
 struct NodeItem
 {
+    double x;
+    double y;
+
     int index;
     bool marked;
     bool show;
@@ -66,16 +43,16 @@ class NetworkCurve : Curve
 %End
 
 public:
-    typedef QMap<int, Coord> Coordinates;
+    typedef QMap<int, NodeItem> Nodes;
     typedef QList<EdgeItem> Edges;
     
-    NetworkCurve(const NetworkCurve::Coordinates& coordinates, const NetworkCurve::Edges& edges, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     virtual ~NetworkCurve();
     
     virtual void updateProperties();
     
-    NetworkCurve::Edges edges;
-    NetworkCurve::Coordinates coors;
-    NetworkCurve::Vertices vertices;
+    virtual NetworkCurve::Edges get_edges() const = 0;
+    virtual NetworkCurve::Nodes get_nodes() const = 0;
+
+    virtual QRectF dataRect() const;
 };
