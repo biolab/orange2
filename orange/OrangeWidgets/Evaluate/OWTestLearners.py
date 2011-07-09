@@ -16,6 +16,9 @@ from orngWrap import PreprocessedLearner
 warnings.filterwarnings("ignore", "'id' is not a builtin attribute",
                         orange.AttributeWarning)
 
+import Orange.multilabel.label as label
+import Orange
+
 ##############################################################################
 
 class Learner:
@@ -53,7 +56,12 @@ class OWTestLearners(OWWidget):
         ('Precision', 'Prec', 'precision(cm)', False, True),
         ('Recall', 'Recall', 'recall(cm)', False, True),
         ('Brier score', 'Brier', 'BrierScore(res)', True),
-        ('Matthews correlation coefficient', 'MCC', 'MCC(cm)', False, True)]]
+        ('Matthews correlation coefficient', 'MCC', 'MCC(cm)', False, True),
+        ('Hamming Loss', 'HammingLoss', 'mlc_hamming_loss(res)', True),
+        ('Accuracy', 'Accuracy', 'mlc_accuracy(res)', True),
+        ('Precision', 'Precision', 'mlc_precision(res)', True),
+        ('Recall', 'Recall', 'mlc_recall(res)', True),
+        ]]
 
     rStatistics = [Score(*s) for s in [\
         ("Mean squared error", "MSE", "MSE(res)", False),
@@ -265,6 +273,8 @@ class OWTestLearners(OWWidget):
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
         new = self.data.selectref(indices(self.data))
         
+        multilabel_flag = label.is_multilabel(self.data) #add for multi-label
+        
         self.warning(0)
         learner_exceptions = []
         for l in [self.learners[id] for id in ids]:
@@ -273,10 +283,13 @@ class OWTestLearners(OWWidget):
                 learner = self.preprocessor.wrapLearner(learner)
             try:
                 predictor = learner(new)
-                if predictor(new[0]).varType == new.domain.classVar.varType:
+                if multilabel_flag == 0: #single label
+                    if predictor(new[0]).varType == new.domain.classVar.varType:
+                        learners.append(learner)
+                    else:
+                        l.scores = []
+                else:                   #multi-label
                     learners.append(learner)
-                else:
-                    l.scores = []
             except Exception, ex:
                 learner_exceptions.append((l, ex))
                 l.scores = []
@@ -364,7 +377,13 @@ class OWTestLearners(OWWidget):
     def setData(self, data):
         """handle input train data set"""
         self.closeContext()
-        self.data = self.isDataWithClass(data, checkMissing=True) and data or None
+        
+        multilabel_flag = label.is_multilabel(data) #add for multi-label
+        if multilabel_flag == 0: 
+            self.data = self.isDataWithClass(data, checkMissing=True) and data or None
+        else:
+            self.data = data
+        
         self.fillClassCombo()
         if not self.data:
             # data was removed, remove the scores
@@ -374,7 +393,9 @@ class OWTestLearners(OWWidget):
             self.send("Evaluation Results", None)
         else:
             # new data has arrived
-            self.data = orange.Filter_hasClassValue(self.data)
+            print 'new data'
+            if multilabel_flag == 0: #single label
+                self.data = orange.Filter_hasClassValue(self.data)
             self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
             
             self.stat = [self.rStatistics, self.cStatistics][self.isclassification()]
@@ -415,7 +436,7 @@ class OWTestLearners(OWWidget):
         self.targetCombo.addItems([str(v) for v in domain.classVar.values])
         
         if self.targetClass<len(domain.classVar.values):
-            self.targetCombo.setCurrentIndex(self.targetClass)
+            self.targetCombo.setCurrentIndex(self.targetClass)             
         else:
             self.targetCombo.setCurrentIndex(0)
             self.targetClass=0
@@ -535,10 +556,11 @@ if __name__=="__main__":
     a.exec_()
 
     data1 = orange.ExampleTable(r'../../doc/datasets/voting')
-    data2 = orange.ExampleTable(r'../../golf')
-    datar = orange.ExampleTable(r'../../auto-mpg')
-    data3 = orange.ExampleTable(r'../../sailing-big')
-    data4 = orange.ExampleTable(r'../../sailing-test')
+    data2 = orange.ExampleTable(r'../../doc/datasets/adult')
+    datar = orange.ExampleTable(r'../../doc/datasets/balance-scale')
+    data3 = orange.ExampleTable(r'../../doc/datasets/bridges')
+    data4 = orange.ExampleTable(r'../../doc/datasets/lenses')
+    data5 = orange.ExampleTable(r'../../doc/datasets/multidata')
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 
@@ -552,11 +574,12 @@ if __name__=="__main__":
     l3 = orange.BayesLearner(); l3.name = '3 - NBC (default)'
 
     l4 = orange.MajorityLearner(); l4.name = "4 - Majority"
-
+    l5 = Orange.multilabel.BinaryRelevanceLearner(); l1.name = '5 - BR'
+    
     import orngRegression as r
     r5 = r.LinearRegressionLearner(name="0 - lin reg")
 
-    testcase = 4
+    testcase = 5
 
     if testcase == 0: # 1(UPD), 3, 4
         ow.setData(data2)
@@ -590,5 +613,7 @@ if __name__=="__main__":
         ow.setTestData(data4)
         ow.setLearner(l2, 5)
         ow.setTestData(None)
-
+    if testcase == 5: # binary relevance
+        ow.setData(data5)
+        ow.setLearner(l5, 1)
     ow.saveSettings()
