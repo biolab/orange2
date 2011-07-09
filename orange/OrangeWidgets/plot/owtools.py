@@ -60,13 +60,13 @@ class PolygonCurve(OWCurve):
         OWCurve.__init__(self, xData, yData, tooltip=tooltip)
         self._data_polygon = self.polygon_from_data(xData, yData)
         self._polygon_item = QGraphicsPolygonItem(self)
-        self.pen = pen
-        self.brush = brush
+        self.setPen(pen)
+        self.setBrush(brush)
         
     def updateProperties(self):
         self._polygon_item.setPolygon(self.graphTransform().map(self._data_polygon))
-        self._polygon_item.setPen(self.pen)
-        self._polygon_item.setBrush(self.brush)
+        self._polygon_item.setPen(self.pen())
+        self._polygon_item.setBrush(self.brush())
         
     @staticmethod
     def polygon_from_data(xData, yData):
@@ -80,21 +80,22 @@ class PolygonCurve(OWCurve):
         else:
             return QPolygonF()
             
-
+    def setData(self, xData, yData):
+        self._data_polygon = self.polygon_from_data(xData, yData)
+        OWCurve.setData(self, xData, yData)
+           
 class RectangleCurve(OWCurve):
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None, tooltip = None):
         OWCurve.__init__(self, xData, yData, tooltip=tooltip)
         self.setPen(pen)
         self.setBrush(brush)
-        self._item = QGraphicsRectItem()
+        self._item = QGraphicsRectItem(self)
         
     def updateProperties(self):
-        d = self.data()
-        if len(d) < 4:
-            self._item.setRect(QRectF())
-        else:
-            self._item.setRect(self.graphTransform().mapRect(self.boundingRectFromData(d)))
-
+        self._item.setRect(self.graphTransform().mapRect(self.dataRect()))
+        self._item.setPen(self.pen())
+        self._item.setBrush(self.brush())
+        
 class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
         orangeplot.UnconnectedLinesCurve.__init__(self, xData, yData)
