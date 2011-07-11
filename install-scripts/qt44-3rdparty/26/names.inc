@@ -9,4 +9,5 @@
 	!insertmacro installmodule PIL PIL-1.1.6.win32-py2.6.exe $PythonDir\lib\site-packages\PIL\*.*
 	!insertmacro installmodule PyQt PyQt-Py2.6-gpl-4.5.4-1.exe $PythonDir\lib\site-packages\PyQt4\*.*
 	!insertmacro installmodule PyQwt PyQwt5.2.0-Python2.6-PyQt4.5.4-NumPy1.3.0-1.exe $PythonDir\lib\site-packages\PyQt4\Qwt5\*.*
+	!insertmacro installmodule networkx networkx-1.5.win32.exe $PythonDir\lib\site-packages\networkx\*.*
 !macroend
