@@ -2,7 +2,7 @@
 """
 
 from OWWidget import *
-from OWGraph3D import *
+from owplot3d import *
 
 import OWGUI
 import OWColorPalette
@@ -10,7 +10,7 @@ import OWColorPalette
 import numpy
 
 class OWScatterPlot3D(OWWidget):
-    settingsList = ['graph.show_legend']
+    settingsList = ['plot.show_legend']
     contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
  
     def __init__(self, parent=None, signalManager=None, name="Scatter Plot 3D"):
@@ -77,36 +77,36 @@ class OWScatterPlot3D(OWWidget):
             emptyString = '(No labels)'
             )
 
-        self.graph = OWGraph3D(self)
+        self.plot = OWPlot3D(self)
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
-        OWGUI.hSlider(box, self, "graph.symbol_scale", label="Symbol scale",
+        OWGUI.hSlider(box, self, "plot.symbol_scale", label="Symbol scale",
             minValue=1, maxValue=10,
             tooltip="Scale symbol size",
             callback=self.on_checkbox_update
             )
 
-        OWGUI.hSlider(box, self, "graph.transparency", label="Transparency",
+        OWGUI.hSlider(box, self, "plot.transparency", label="Transparency",
             minValue=10, maxValue=255,
             tooltip="Point transparency value",
             callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
         box = OWGUI.widgetBox(self.settings_tab, 'General settings')
-        OWGUI.checkBox(box, self, 'graph.show_x_axis_title',   'X axis title',   callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.show_y_axis_title',   'Y axis title',   callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.show_z_axis_title',   'Z axis title',   callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.show_legend',         'Show legend',    callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.ortho',               'Use ortho',      callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.filled_symbols',      'Filled symbols', callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.face_symbols',        'Face symbols',   callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'graph.grid',                'Show grid',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_x_axis_title',   'X axis title',   callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_y_axis_title',   'Y axis title',   callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_z_axis_title',   'Z axis title',   callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_legend',         'Show legend',    callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.ortho',               'Use ortho',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.filled_symbols',      'Filled symbols', callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.face_symbols',        'Face symbols',   callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.grid',                'Show grid',      callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
         self.main_tab.layout().addStretch(100)
         self.settings_tab.layout().addStretch(100)
 
-        self.mainArea.layout().addWidget(self.graph)
+        self.mainArea.layout().addWidget(self.plot)
 
         self.data = None
         self.subsetData = None
@@ -161,16 +161,16 @@ class OWScatterPlot3D(OWWidget):
         self.subsetData = data
 
     def handleNewSignals(self):
-        self.update_graph()
+        self.update_plot()
 
     def on_axis_change(self):
         if self.data is not None:
-            self.update_graph()
+            self.update_plot()
 
     def on_checkbox_update(self):
-        self.graph.updateGL()
+        self.plot.updateGL()
 
-    def update_graph(self):
+    def update_plot(self):
         if self.data is None:
             return
 
@@ -214,7 +214,7 @@ class OWScatterPlot3D(OWWidget):
                 shapes = self.data_array[:, i]
                 num_shapes = 0
                 unique_shapes = {}
-                for j,shape in enumerate(shapes):
+                for shape in shapes:
                     if shape not in unique_shapes:
                         unique_shapes[shape] = num_shapes
                         num_shapes += 1
@@ -225,13 +225,13 @@ class OWScatterPlot3D(OWWidget):
             label_attr = self.axis_candidate_attrs[self.label_attr - 1]
             labels = self.data_array[:, self.label_attr - 1]
 
-        self.graph.clear()
-        self.graph.scatter(X, Y, Z, colors, sizes, shapes, labels)
-        self.graph.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
-        self.graph.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
-        self.graph.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+        self.plot.clear()
+        self.plot.scatter(X, Y, Z, colors, sizes, shapes, labels)
+        self.plot.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
+        self.plot.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
+        self.plot.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
         for i, value in enumerate(legend_items):
-            self.graph.add_legend_item(i, value)
+            self.plot.add_legend_item(i, value)
 
     def get_axis_data(self, x_ind, y_ind, z_ind):
         array = self.data_array

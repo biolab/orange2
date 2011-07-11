@@ -1,5 +1,5 @@
 """
-    .. class:: OWGraph3D
+    .. class:: OWPlot3D
         Base class for 3D graphs.
 
     .. attribute:: show_legend
@@ -44,8 +44,8 @@ from PyQt4 import QtOpenGL
 import orange
 
 import OpenGL
-OpenGL.ERROR_CHECKING = True
-OpenGL.ERROR_LOGGING = True
+#OpenGL.ERROR_CHECKING = True
+#OpenGL.ERROR_LOGGING = True
 #OpenGL.FULL_LOGGING = True
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -94,7 +94,7 @@ def normalize(vec):
     return vec / numpy.sqrt(numpy.sum(vec** 2))
 
 
-class OWGraph3D(QtOpenGL.QGLWidget):
+class OWPlot3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
@@ -310,6 +310,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         if self.show_legend:
             self.draw_legend()
 
+        self.draw_center()
+
     def draw_legend(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -378,6 +380,9 @@ class OWGraph3D(QtOpenGL.QGLWidget):
     def set_show_z_axis_title(self, show):
         self.show_z_axis_title = show
         self.updateGL()
+
+    def draw_center(self):
+        pass
 
     def paint_axes(self):
         zoom = 100 if self.ortho else self.zoom
@@ -672,7 +677,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                 self.legend_position[0] += dx
                 self.legend_position[1] += dy
             elif self.legend_position[0] <= pos.x() <= self.legend_position[0]+self.legend_size[0] and\
-               self.legend_position[1] <= pos.y() <= self.legend_position[1]+self.legend_size[1]:
+                 self.legend_position[1] <= pos.y() <= self.legend_position[1]+self.legend_size[1]:
                 self.dragging_legend = True
         elif event.buttons() & Qt.MiddleButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
