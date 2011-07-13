@@ -32,6 +32,7 @@ else
 fi
 
 MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
+ARCH=`perl -MFink::FinkVersion -e 'print Fink::FinkVersion::get_arch'`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
@@ -42,7 +43,7 @@ EXIT_VALUE=$?
 
 /Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
-echo "Orange (bundle) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
+echo "Orange (bundle $MAC_VERSION) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 (($EXIT_VALUE)) && echo "Running bundle-daily-build.sh failed"
@@ -52,7 +53,7 @@ EXIT_VALUE=$?
 
 /Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
-echo "Orange (bundle-64bit) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
+echo "Orange (bundle $MAC_VERSION 64bit) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
 cat /private/tmp/bundle-64bit-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
 (($EXIT_VALUE)) && echo "Running bundle-64bit-daily-build.sh failed"
@@ -62,9 +63,9 @@ EXIT_VALUE=$?
 
 /Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
-echo "Orange (fink) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
-date >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
-cat /private/tmp/fink-daily-build.log >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
+echo "Orange (fink $MAC_VERSION $ARCH) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-$ARCH-daily-build.log"
+date >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-$ARCH-daily-build.log"
+cat /private/tmp/fink-daily-build.log >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-$ARCH-daily-build.log"
 (($EXIT_VALUE)) && echo "Running fink-daily-build.sh failed"
 
 # Zero exit value
