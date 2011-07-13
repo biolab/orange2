@@ -774,7 +774,7 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
     #check if the data is a multi-label data
     multilabel_flag = label.is_multilabel(examples)
     
-    if multilabel_flag == 0 and not examples.domain.classvar: #single-label
+    if multilabel_flag == 0 and not examples.domain.class_var: #single-label
         raise ValueError("Test data set without class attribute")
     
 ##    for pp in pps:
@@ -783,9 +783,9 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
 
     nIterations = max(indices)+1
     if multilabel_flag == 0: #single-label
-        if examples.domain.classvar.vartype == Orange.data.Type.Discrete:
-            values = list(examples.domain.classvar.values)
-            basevalue = examples.domain.classvar.basevalue
+        if examples.domain.class_var.var_type == Orange.data.Type.Discrete:
+            values = list(examples.domain.class_var.values)
+            basevalue = examples.domain.class_var.base_value
         else:
             basevalue = values = None
     else: #multi-label
