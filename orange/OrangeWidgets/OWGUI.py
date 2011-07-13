@@ -1850,6 +1850,8 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
         text = self.displayText(index.data(Qt.DisplayRole), QLocale.system())
         self.initStyleOption(option, index)
         textRect = style.subElementRect(QStyle.SE_ItemViewItemText, option)
+        if not textRect.isValid():
+            textRect = option.rect
         margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin, option) + 1
         textRect = textRect.adjusted(margin, 0, -margin, 0)
         font = index.data(Qt.FontRole)
