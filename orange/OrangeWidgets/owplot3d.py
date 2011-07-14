@@ -1,6 +1,6 @@
 """
     .. class:: OWPlot3D
-        Base class for 3D graphs.
+        Base class for 3D plots.
 
     .. attribute:: show_legend
         Determines whether to display the legend or not.
@@ -92,6 +92,13 @@ glBufferData = gl.glBufferData
 
 def normalize(vec):
     return vec / numpy.sqrt(numpy.sum(vec** 2))
+
+def clamp(value, min, max):
+    if value < min:
+        return min
+    if value > max:
+        return max
+    return value
 
 
 class OWPlot3D(QtOpenGL.QGLWidget):
@@ -304,13 +311,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
                 if labels != None:
                     for (x,y,z), label in zip(array, labels):
-                        self.renderText(x,y,z, '{0:.2}'.format(label), font=self.labels_font)
+                        self.renderText(x,y,z, '{0:.1}'.format(label), font=self.labels_font)
+
+        self.draw_center()
 
         glDisable(GL_BLEND)
         if self.show_legend:
             self.draw_legend()
-
-        self.draw_center()
 
     def draw_legend(self):
         glMatrixMode(GL_PROJECTION)
@@ -382,7 +389,24 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def draw_center(self):
-        pass
+        glColor3f(0,0,0)
+        glLineWidth(2)
+        glBegin(GL_LINES)
+        size = 2.
+        glVertex3f(self.center[0] - size*self.normal_size,
+                   self.center[1] + size*self.normal_size,
+                   self.center[2])
+        glVertex3f(self.center[0] + size*self.normal_size,
+                   self.center[1] - size*self.normal_size,
+                   self.center[2])
+        glVertex3f(self.center[0] - size*self.normal_size,
+                   self.center[1] - size*self.normal_size,
+                   self.center[2])
+        glVertex3f(self.center[0] + size*self.normal_size,
+                   self.center[1] + size*self.normal_size,
+                   self.center[2])
+        glEnd()
+        glLineWidth(1)
 
     def paint_axes(self):
         zoom = 100 if self.ortho else self.zoom
@@ -569,6 +593,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if isinstance(sizes, int):
             sizes = [sizes for _ in array]
 
+        # Normalize sizes to 0..1
+        max_size = float(numpy.max(sizes))
+        sizes = [size / max_size for size in sizes]
+
         if shapes == None:
             shapes = [0 for _ in array]
 
@@ -688,6 +716,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             else:
                 self.yaw += dx /  self.rotation_factor
                 self.pitch += dy / self.rotation_factor
+                self.pitch = clamp(self.pitch, -3., -0.1)
                 self.camera = [
                     sin(self.pitch)*cos(self.yaw),
                     cos(self.pitch),
@@ -713,7 +742,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    w = OWGraph3D()
+    w = OWPlot3D()
     w.show()
  
     from random import random
