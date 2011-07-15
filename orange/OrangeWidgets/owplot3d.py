@@ -102,6 +102,24 @@ def clamp(value, min, max):
         return max
     return value
 
+def normal_from_points(p1, p2, p3):
+    v1 = p2 - p1
+    v2 = p3 - p1
+    return normalize(numpy.cross(v1, v2))
+
+def draw_triangle(x0, y0, x1, y1, x2, y2):
+    glBegin(GL_TRIANGLES)
+    glVertex2f(x0, y0)
+    glVertex2f(x1, y1)
+    glVertex2f(x2, y2)
+    glEnd()
+
+def draw_line(x0, y0, x1, y1):
+    glBegin(GL_LINES)
+    glVertex2f(x0, y0)
+    glVertex2f(x1, y1)
+    glEnd()
+
 def enum(*sequential):
     enums = dict(zip(sequential, range(len(sequential))))
     enums['is_valid'] = lambda self, enum_value: enum_value < len(sequential)
@@ -397,7 +415,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.camera[2]*self.camera_distance,
             0, 0, 0,
             0, 1, 0)
-        self.paint_axes()
+        self.draw_grid_and_axes()
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
@@ -441,19 +459,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.draw_helpers()
 
     def draw_helpers(self):
-        def draw_triangle(x0, y0, x1, y1, x2, y2):
-            glBegin(GL_TRIANGLES)
-            glVertex2f(x0, y0)
-            glVertex2f(x1, y1)
-            glVertex2f(x2, y2)
-            glEnd()
-
-        def draw_line(x0, y0, x1, y1):
-            glBegin(GL_LINES)
-            glVertex2f(x0, y0)
-            glVertex2f(x1, y1)
-            glEnd()
-
         if self.state == PlotState.SCALING:
             if not self.show_legend:
                 glMatrixMode(GL_PROJECTION)
@@ -462,7 +467,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glMatrixMode(GL_MODELVIEW)
                 glLoadIdentity()
             x, y = self.mouse_pos.x(), self.mouse_pos.y()
-            glColor4f(0,0,0,1)
+            glColor4f(0, 0, 0, 1)
             draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
             draw_line(x, y, x, y-30)
             draw_triangle(x-5, y-10, x+5, y-10, x, y)
@@ -472,7 +477,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             draw_line(x+10, y, x+40, y)
             draw_triangle(x+50, y, x+40, y-5, x+40, y+5)
             self.renderText(x+60, y+3,
-                            'Scale {0} axis'.format(['x', 'z'][self.scale_x_axis]),
+                            'Scale {0} axis'.format(['z', 'x'][self.scale_x_axis]),
                             font=self.labels_font)
         elif self.state == PlotState.SELECTING:
             s = self.new_selection
@@ -506,17 +511,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.show_z_axis_title = show
         self.updateGL()
 
-    def paint_axes(self):
+    def draw_grid_and_axes(self):
         cam_in_space = numpy.array([
           self.camera[0]*self.camera_distance,
           self.camera[1]*self.camera_distance,
           self.camera[2]*self.camera_distance
         ])
-
-        def normal_from_points(p1, p2, p3):
-            v1 = p2 - p1
-            v2 = p3 - p1
-            return normalize(numpy.cross(v1, v2))
 
         def plane_visible(plane):
             normal = normal_from_points(*plane[:3])
@@ -525,7 +525,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 return False
             return True
 
-        def draw_line(line):
+        def draw_axis(line):
             glColor4f(0.2, 0.2, 0.2, 1)
             glLineWidth(2) # Widths > 1 are actually deprecated I think.
             glBegin(GL_LINES)
@@ -548,10 +548,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glVertex3f(*(position+normal*0.08))
                 glEnd()
                 position += offset
+                value = position[coord_index] / (self.scale[coord_index] + self.add_scale[coord_index])
+                value += self.center[coord_index]
                 self.renderText(position[0],
                                 position[1],
                                 position[2],
-                                '{0:.2}'.format(position[coord_index]))
+                                '{0:.2}'.format(value))
 
         glDisable(GL_DEPTH_TEST)
         glLineWidth(1)
@@ -571,14 +573,16 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             camera_vector = normalize(axis_plane[0] - cam_in_space)
             cos = numpy.dot(normal, camera_vector)
             cos = max(0.7, cos)
-            glColor4f(*(self.color_plane*cos))
+            glColor4f(*(self.color_plane * cos))
             P11, P12, P21, P22 = numpy.asarray(axis_plane)
+            # Draw background quad first.
             glBegin(GL_QUADS)
             glVertex3f(*P11)
             glVertex3f(*P12)
             glVertex3f(*P21)
             glVertex3f(*P22)
             glEnd()
+
             P22, P21 = P21, P22
             glColor4f(*(self.color_grid * cos))
             Dx = numpy.linspace(0.0, 1.0, num=sub)
@@ -586,6 +590,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             P2vecH = P22 - P21
             P1vecV = P21 - P11
             P2vecV = P22 - P12
+            # Draw grid lines.
             glBegin(GL_LINES)
             for i, dx in enumerate(Dx):
                 start = P11 + P1vecH*dx
@@ -611,17 +616,17 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glDisable(GL_BLEND)
 
         if visible_planes[0]:
-            draw_line(self.x_axis)
+            draw_axis(self.x_axis)
             draw_values(self.x_axis, 0, numpy.array([0,0,-1]))
         elif visible_planes[2]:
-            draw_line(self.x_axis + self.unit_z)
+            draw_axis(self.x_axis + self.unit_z)
             draw_values(self.x_axis + self.unit_z, 0, numpy.array([0,0,1]))
 
         if visible_planes[1]:
-            draw_line(self.z_axis)
+            draw_axis(self.z_axis)
             draw_values(self.z_axis, 2, numpy.array([-1,0,0]))
         elif visible_planes[3]:
-            draw_line(self.z_axis + self.unit_x)
+            draw_axis(self.z_axis + self.unit_x)
             draw_values(self.z_axis + self.unit_x, 2, numpy.array([1,0,0]))
 
         try:
@@ -637,10 +642,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         normals = [numpy.array([1,0,0]),
                    numpy.array([0,0,1]),
                    numpy.array([-1,0,0]),
-                   numpy.array([0,0,-1])
-                ]
+                   numpy.array([0,0,-1])]
         axis = y_axis_translated[rightmost_visible]
-        draw_line(axis)
+        draw_axis(axis)
         normal = normals[rightmost_visible]
         draw_values(y_axis_translated[rightmost_visible], 1, normal)
 
