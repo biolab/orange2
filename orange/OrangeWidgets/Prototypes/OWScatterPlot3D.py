@@ -177,6 +177,7 @@ class OWScatterPlot3D(OWWidget):
         x_ind, y_ind, z_ind = self.get_axes_indices()
         X, Y, Z, mask = self.get_axis_data(x_ind, y_ind, z_ind)
 
+        color_legend_items = []
         if self.color_attr > 0:
             color_attr = self.axis_candidate_attrs[self.color_attr - 1]
             C = self.data_array[:, self.color_attr - 1]
@@ -184,6 +185,9 @@ class OWScatterPlot3D(OWWidget):
                 palette = OWColorPalette.ColorPaletteHSV(len(color_attr.values))
                 colors = [palette[int(value)] for value in C.ravel()]
                 colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
+                palette_colors = [palette[i] for i in range(len(color_attr.values))]
+                color_legend_items = [[Symbol.TRIANGLE, [c.red()/255., c.green()/255., c.blue()/255., 1], 1, title]
+                    for c, title in zip(palette_colors, color_attr.values)]
             else:
                 palette = OWColorPalette.ColorPaletteBW()
                 maxC, minC = numpy.max(C), numpy.min(C)
@@ -205,10 +209,8 @@ class OWScatterPlot3D(OWWidget):
             sizes = 1
 
         shapes = None
-        legend_items = []
         if self.shape_attr > 0:
-            i,shape_attr = self.discrete_attrs[self.shape_attr]
-            legend_items = shape_attr.values
+            i, shape_attr = self.discrete_attrs[self.shape_attr]
             if shape_attr.varType == orange.VarTypes.Discrete:
                 # Map discrete attribute to [0...num shapes-1]
                 shapes = self.data_array[:, i]
@@ -226,12 +228,26 @@ class OWScatterPlot3D(OWWidget):
             labels = self.data_array[:, self.label_attr - 1]
 
         self.plot.clear()
+
+        num_symbols = len(Symbol)
+        if self.shape_attr > 0:
+            _, shape_attr = self.discrete_attrs[self.shape_attr]
+            titles = list(shape_attr.values)
+            for i, title in enumerate(titles):
+                if i == num_symbols-1:
+                    title = ', '.join(titles[i:])
+                self.plot.legend.add_item(i, (0,0,0,1), 1, '{0}={1}'.format(shape_attr.name, title))
+                if i == num_symbols-1:
+                    break
+
+        if color_legend_items:
+            for item in color_legend_items:
+                self.plot.legend.add_item(*item)
+
         self.plot.scatter(X, Y, Z, colors, sizes, shapes, labels)
         self.plot.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
         self.plot.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
         self.plot.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
-        for i, value in enumerate(legend_items):
-            self.plot.add_legend_item(i, value)
 
     def get_axis_data(self, x_ind, y_ind, z_ind):
         array = self.data_array

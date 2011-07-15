@@ -37,6 +37,8 @@
         Removes everything from the graph.
 """
 
+__all__ = ['OWPlot3D', 'Symbol']
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4 import QtOpenGL
@@ -100,24 +102,125 @@ def clamp(value, min, max):
         return max
     return value
 
+def enum(*sequential):
+    enums = dict(zip(sequential, range(len(sequential))))
+    enums['is_valid'] = lambda self, enum_value: enum_value < len(sequential)
+    enums['to_str'] = lambda self, enum_value: sequential[enum_value]
+    enums['__len__'] = lambda self: len(sequential)
+    return type('Enum', (), enums)()
+
+# States the plot can be in:
+# * idle: mostly doing nothing, rotations are not considered special
+# * dragging legend: user has pressed left mouse button and is now dragging legend
+#   to a more suitable location
+# * scaling: user has pressed right mouse button, dragging it up and down
+#   scales data in y-coordinate, dragging it right and left scales data
+#   in current horizontal coordinate (x or z, depends on rotation)
+PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'SCALING', 'SELECTING')
+
+# TODO: more symbols
+Symbol = enum('TRIANGLE', 'RECTANGLE', 'PENTAGON', 'CIRCLE')
+
+class Legend(object):
+    def __init__(self, plot):
+        self.border_color = [0.5, 0.5, 0.5, 1]
+        self.border_thickness = 2
+        self.position = [0, 0]
+        self.size = [0, 0]
+        self.items = []
+        self.plot = plot
+        self.symbol_scale = 6
+        self.font = QFont()
+        self.metrics = QFontMetrics(self.font)
+
+    def add_item(self, symbol, color, size, title):
+        '''Adds an item to the legend.
+           Symbol can be integer value or enum Symbol.
+           Color should be RGBA. Size should be between 0 and 1.
+        '''
+        if not Symbol.is_valid(symbol):
+            return
+        self.items.append([symbol, color, size, title])
+        self.size[0] = max(self.metrics.width(item[3]) for item in self.items) + 40
+        self.size[1] = len(self.items) * self.metrics.height() + 4
+
+    def clear(self):
+        self.items = []
+
+    def draw(self):
+        if not self.items:
+            return
+
+        x, y = self.position
+        w, h = self.size
+        t = self.border_thickness
+
+        # Draw legend outline first.
+        glDisable(GL_DEPTH_TEST)
+        glColor4f(*self.border_color)
+        glBegin(GL_QUADS)
+        glVertex2f(x,   y)
+        glVertex2f(x+w, y)
+        glVertex2f(x+w, y+h)
+        glVertex2f(x,   y+h)
+        glEnd()
+
+        glColor4f(1, 1, 1, 1)
+        glBegin(GL_QUADS)
+        glVertex2f(x+t,   y+t)
+        glVertex2f(x+w-t, y+t)
+        glVertex2f(x+w-t, y+h-t)
+        glVertex2f(x+t,   y+h-t)
+        glEnd()
+
+        def draw_ngon(n, x, y, size):
+            glBegin(GL_TRIANGLES)
+            angle_inc = 2.*pi / n
+            angle = angle_inc / 2.
+            for i in range(n):
+                glVertex2f(x,y)
+                glVertex2f(x-cos(angle)*size, y-sin(angle)*size)
+                angle += angle_inc
+                glVertex2f(x-cos(angle)*size, y-sin(angle)*size)
+            glEnd()
+
+        item_pos_y = y + t + 13
+        symbol_to_n = {Symbol.TRIANGLE: 3,
+                       Symbol.RECTANGLE: 4,
+                       Symbol.PENTAGON: 5,
+                       Symbol.CIRCLE: 8}
+
+        for symbol, color, size, text in self.items:
+            glColor4f(*color)
+            draw_ngon(symbol_to_n[symbol], x+t+10, item_pos_y-4, size*self.symbol_scale)
+            self.plot.renderText(x+t+30, item_pos_y, text)
+            item_pos_y += self.metrics.height()
+
+    def point_inside(self, x, y):
+        return self.position[0] <= x <= self.position[0]+self.size[0] and\
+               self.position[1] <= y <= self.position[1]+self.size[1]
+
+    def move(self, dx, dy):
+        self.position[0] += dx
+        self.position[1] += dy
+
 
 class OWPlot3D(QtOpenGL.QGLWidget):
+
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
         self.commands = []
         self.minx = self.miny = self.minz = 0
         self.maxx = self.maxy = self.maxz = 0
-        self.b_box = [numpy.array([0,   0,   0]), numpy.array([0, 0, 0])]
-        self.camera = numpy.array([0.6, 0.8, 0]) # Location on a unit sphere around the center. This is where camera is looking from.
+        self.camera = numpy.array([0.6, 0.8, 0])
         self.center = numpy.array([0,   0,   0])
-
-        # TODO: move to center shortcut (maybe a GUI element?)
+        self.view_cube_edge = 10
+        self.camera_distance = 30
 
         self.yaw = self.pitch = 0.
         self.rotation_factor = 100.
-        self.zoom_factor = 100.
-        self.zoom = 10.
+        self.zoom_factor = 500.
         self.move_factor = 100.
         self.mouse_pos = [100, 100] # TODO: get real mouse position, calculate camera, fix the initial jump
 
@@ -138,32 +241,36 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.ortho = False
         self.show_legend = True
-        self.legend_border_color = [0.5, 0.5, 0.5, 1]
-        self.legend_border_thickness = 2
-        self.legend_position = [10, 10]
-        self.legend_size = [200, 50]
-        self.dragging_legend = False
-        self.legend_items = []
+        self.legend = Legend(self)
 
         self.face_symbols = True
         self.filled_symbols = True
         self.symbol_scale = 1
         self.transparency = 255
         self.grid = True
+        self.scale = numpy.array([1., 1., 1.])
+        self.add_scale = [0, 0, 0]
+        self.scale_x_axis = True
+        self.scale_factor = 30.
+
+        # Beside n-gons, symbols should also include cubes, spheres and other stuff. TODO
+        self.available_symbols = [3, 4, 5, 8]
+        self.state = PlotState.IDLE
+
+        self.build_axes()
 
     def __del__(self):
         # TODO: delete shaders and vertex buffer
-        glDeleteProgram(self.color_shader)
+        glDeleteProgram(self.symbol_shader)
 
     def initializeGL(self):
-        self.update_axes()
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glClearDepth(1.0)
         glDepthFunc(GL_LESS)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LINE_SMOOTH)
 
-        self.color_shader = glCreateProgram()
+        self.symbol_shader = glCreateProgram()
         vertex_shader = glCreateShader(GL_VERTEX_SHADER)
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
         self.shaders = [vertex_shader, fragment_shader]
@@ -176,6 +283,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             uniform bool face_symbols;
             uniform float symbol_scale;
             uniform float transparency;
+
+            uniform vec3 scale;
+            uniform vec3 translation;
 
             varying vec4 var_color;
 
@@ -204,10 +314,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               if (face_symbols)
                 offset_rotated = invs * offset_rotated;
 
+              position += translation;
+              position *= scale;
               vec4 off_pos = vec4(position+offset_rotated, 1);
 
               gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
-              var_color = vec4(color.rgb, transparency);
+              position = abs(position);
+              float manhattan_distance = max(max(position.x, position.y), position.z)+5.;
+              var_color = vec4(color.rgb, pow(min(1, 10. / manhattan_distance), 5));
             }
             '''
 
@@ -243,17 +357,19 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glDeleteShader(shader)
                 return
             else:
-                glAttachShader(self.color_shader, shader)
+                glAttachShader(self.symbol_shader, shader)
 
-        glBindAttribLocation(self.color_shader, 0, 'position')
-        glBindAttribLocation(self.color_shader, 1, 'offset')
-        glBindAttribLocation(self.color_shader, 2, 'color')
-        glLinkProgram(self.color_shader)
-        self.color_shader_face_symbols = glGetUniformLocation(self.color_shader, 'face_symbols')
-        self.color_shader_symbol_scale = glGetUniformLocation(self.color_shader, 'symbol_scale')
-        self.color_shader_transparency = glGetUniformLocation(self.color_shader, 'transparency')
+        glBindAttribLocation(self.symbol_shader, 0, 'position')
+        glBindAttribLocation(self.symbol_shader, 1, 'offset')
+        glBindAttribLocation(self.symbol_shader, 2, 'color')
+        glLinkProgram(self.symbol_shader)
+        self.symbol_shader_face_symbols = glGetUniformLocation(self.symbol_shader, 'face_symbols')
+        self.symbol_shader_symbol_scale = glGetUniformLocation(self.symbol_shader, 'symbol_scale')
+        self.symbol_shader_transparency = glGetUniformLocation(self.symbol_shader, 'transparency')
+        self.symbol_shader_scale        = glGetUniformLocation(self.symbol_shader, 'scale')
+        self.symbol_shader_translation  = glGetUniformLocation(self.symbol_shader, 'translation')
         linked = c_int()
-        glGetProgramiv(self.color_shader, GL_LINK_STATUS, byref(linked))
+        glGetProgramiv(self.symbol_shader, GL_LINK_STATUS, byref(linked))
         if not linked.value:
             print('Failed to link shader!')
         print('Shaders compiled and linked!')
@@ -267,23 +383,19 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         width, height = self.width(), self.height()
-        divide = self.zoom*10.
-        if self.ortho:
-            # TODO: fix ortho
-            glOrtho(-width/divide, width/divide, -height/divide, height/divide, -1, 2000)
-        else:
-            aspect = float(width) / height if height != 0 else 1
-            gluPerspective(30.0, aspect, 0.1, 2000)
+        #if self.ortho:
+        #    # TODO: fix ortho
+        #    glOrtho(-width/divide, width/divide, -height/divide, height/divide, -1, 2000)
+        #else:
+        aspect = float(width) / height if height != 0 else 1
+        gluPerspective(30.0, aspect, 0.1, 2000)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        zoom = 100 if self.ortho else self.zoom
         gluLookAt(
-            self.camera[0]*zoom + self.center[0],
-            self.camera[1]*zoom + self.center[1],
-            self.camera[2]*zoom + self.center[2],
-            self.center[0],
-            self.center[1],
-            self.center[2],
+            self.camera[0]*self.camera_distance,
+            self.camera[1]*self.camera_distance,
+            self.camera[2]*self.camera_distance,
+            0, 0, 0,
             0, 1, 0)
         self.paint_axes()
 
@@ -295,10 +407,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
                 vao, vao_outline, array, labels = params
-                glUseProgram(self.color_shader)
-                glUniform1i(self.color_shader_face_symbols, self.face_symbols)
-                glUniform1f(self.color_shader_symbol_scale, self.symbol_scale)
-                glUniform1f(self.color_shader_transparency, self.transparency)
+                glUseProgram(self.symbol_shader)
+                glUniform1i(self.symbol_shader_face_symbols, self.face_symbols)
+                glUniform1f(self.symbol_shader_symbol_scale, self.symbol_scale)
+                glUniform1f(self.symbol_shader_transparency, self.transparency)
+                scale = numpy.maximum([0,0,0], self.scale + self.add_scale)
+                glUniform3f(self.symbol_shader_scale,        *scale)
+                glUniform3f(self.symbol_shader_translation,  *(-self.center))
+
                 if self.filled_symbols:
                     glBindVertexArray(vao.value)
                     glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
@@ -313,56 +429,58 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     for (x,y,z), label in zip(array, labels):
                         self.renderText(x,y,z, '{0:.1}'.format(label), font=self.labels_font)
 
-        self.draw_center()
-
         glDisable(GL_BLEND)
         if self.show_legend:
-            self.draw_legend()
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, self.width(), self.height(), 0, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
+            self.legend.draw()
 
-    def draw_legend(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0, self.width(), self.height(), 0, -1, 1)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+        self.draw_helpers()
 
-        x, y = self.legend_position
-        w, h = self.legend_size
-        t = self.legend_border_thickness
+    def draw_helpers(self):
+        def draw_triangle(x0, y0, x1, y1, x2, y2):
+            glBegin(GL_TRIANGLES)
+            glVertex2f(x0, y0)
+            glVertex2f(x1, y1)
+            glVertex2f(x2, y2)
+            glEnd()
 
-        glDisable(GL_DEPTH_TEST)
-        glColor4f(*self.legend_border_color)
-        glBegin(GL_QUADS)
-        glVertex2f(x,   y)
-        glVertex2f(x+w, y)
-        glVertex2f(x+w, y+h)
-        glVertex2f(x,   y+h)
-        glEnd()
+        def draw_line(x0, y0, x1, y1):
+            glBegin(GL_LINES)
+            glVertex2f(x0, y0)
+            glVertex2f(x1, y1)
+            glEnd()
 
-        glColor4f(1, 1, 1, 1)
-        glBegin(GL_QUADS)
-        glVertex2f(x+t,   y+t)
-        glVertex2f(x+w-t, y+t)
-        glVertex2f(x+w-t, y+h-t)
-        glVertex2f(x+t,   y+h-t)
-        glEnd()
+        if self.state == PlotState.SCALING:
+            if not self.show_legend:
+                glMatrixMode(GL_PROJECTION)
+                glLoadIdentity()
+                glOrtho(0, self.width(), self.height(), 0, -1, 1)
+                glMatrixMode(GL_MODELVIEW)
+                glLoadIdentity()
+            x, y = self.mouse_pos.x(), self.mouse_pos.y()
+            glColor4f(0,0,0,1)
+            draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
+            draw_line(x, y, x, y-30)
+            draw_triangle(x-5, y-10, x+5, y-10, x, y)
+            self.renderText(x, y-50, 'Scale y axis', font=self.labels_font)
 
-        # TODO: clean this up
-        glColor4f(0.1, 0.1, 0.1, 1)
-        item_pos_y = y + 2*t + 10
-        for shape, text in self.legend_items:
-            if shape == 0:
-                glBegin(GL_TRIANGLES)
-                glVertex2f(x+10, item_pos_y)
-                glVertex2f(x+20, item_pos_y)
-                glVertex2f(x+15, item_pos_y-10)
-                glEnd()
-
-            self.renderText(x+20+4*t, item_pos_y, text)
-            item_pos_y += 15
-
-    def add_legend_item(self, shape, text):
-        self.legend_items.append((shape, text))
+            draw_triangle(x+10, y, x+20, y-5, x+20, y+5)
+            draw_line(x+10, y, x+40, y)
+            draw_triangle(x+50, y, x+40, y-5, x+40, y+5)
+            self.renderText(x+60, y+3,
+                            'Scale {0} axis'.format(['x', 'z'][self.scale_x_axis]),
+                            font=self.labels_font)
+        elif self.state == PlotState.SELECTING:
+            s = self.new_selection
+            glColor4f(0, 0, 0, 1)
+            draw_line(s[0], s[1], s[0], s[3])
+            draw_line(s[0], s[3], s[2], s[3])
+            draw_line(s[2], s[3], s[2], s[1])
+            draw_line(s[2], s[1], s[0], s[1])
 
     def set_x_axis_title(self, title):
         self.x_axis_title = title
@@ -388,32 +506,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.show_z_axis_title = show
         self.updateGL()
 
-    def draw_center(self):
-        glColor3f(0,0,0)
-        glLineWidth(2)
-        glBegin(GL_LINES)
-        size = 2.
-        glVertex3f(self.center[0] - size*self.normal_size,
-                   self.center[1] + size*self.normal_size,
-                   self.center[2])
-        glVertex3f(self.center[0] + size*self.normal_size,
-                   self.center[1] - size*self.normal_size,
-                   self.center[2])
-        glVertex3f(self.center[0] - size*self.normal_size,
-                   self.center[1] - size*self.normal_size,
-                   self.center[2])
-        glVertex3f(self.center[0] + size*self.normal_size,
-                   self.center[1] + size*self.normal_size,
-                   self.center[2])
-        glEnd()
-        glLineWidth(1)
-
     def paint_axes(self):
-        zoom = 100 if self.ortho else self.zoom
         cam_in_space = numpy.array([
-          self.center[0] + self.camera[0]*zoom,
-          self.center[1] + self.camera[1]*zoom,
-          self.center[2] + self.camera[2]*zoom
+          self.camera[0]*self.camera_distance,
+          self.camera[1]*self.camera_distance,
+          self.camera[2]*self.camera_distance
         ])
 
         def normal_from_points(p1, p2, p3):
@@ -460,7 +557,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glLineWidth(1)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        bb_center = (self.b_box[1] + self.b_box[0]) / 2.
 
         # Draw axis labels.
         glColor4f(0,0,0,1)
@@ -548,20 +644,22 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         normal = normals[rightmost_visible]
         draw_values(y_axis_translated[rightmost_visible], 1, normal)
 
-    def update_axes(self):
-        x_axis = [[self.minx, self.miny, self.minz],
-                  [self.maxx, self.miny, self.minz]]
-        y_axis = [[self.minx, self.miny, self.minz],
-                  [self.minx, self.maxy, self.minz]]
-        z_axis = [[self.minx, self.miny, self.minz],
-                  [self.minx, self.miny, self.maxz]]
+        # Remember which axis to scale when dragging mouse horizontally.
+        self.scale_x_axis = False if rightmost_visible % 2 == 0 else True
+
+    def build_axes(self):
+        edge_half = self.view_cube_edge / 2.
+        x_axis = [[-edge_half,-edge_half,-edge_half], [edge_half,-edge_half,-edge_half]]
+        y_axis = [[-edge_half,-edge_half,-edge_half], [-edge_half,edge_half,-edge_half]]
+        z_axis = [[-edge_half,-edge_half,-edge_half], [-edge_half,-edge_half,edge_half]]
+
         self.x_axis = x_axis = numpy.array(x_axis)
         self.y_axis = y_axis = numpy.array(y_axis)
         self.z_axis = z_axis = numpy.array(z_axis)
 
-        self.unit_x = unit_x = numpy.array([self.maxx - self.minx, 0, 0])
-        self.unit_y = unit_y = numpy.array([0, self.maxy - self.miny, 0])
-        self.unit_z = unit_z = numpy.array([0, 0, self.maxz - self.minz])
+        self.unit_x = unit_x = numpy.array([self.view_cube_edge,0,0])
+        self.unit_y = unit_y = numpy.array([0,self.view_cube_edge,0])
+        self.unit_z = unit_z = numpy.array([0,0,self.view_cube_edge])
  
         A = y_axis[1]
         B = y_axis[1] + unit_x
@@ -581,7 +679,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.axis_plane_yz_right = [B, F, G, C]
         self.axis_plane_xz_top = [E, F, B, A]
 
-    def scatter(self, X, Y, Z, colors='b', sizes=5, shapes=None, labels=None, **kwargs):
+    def scatter(self, X, Y, Z, colors='b', sizes=5, symbols=None, labels=None, **kwargs):
         array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
         if isinstance(colors, str):
             color_map = {'r': [1.0, 0.0, 0.0, 1.0],
@@ -593,30 +691,32 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if isinstance(sizes, int):
             sizes = [sizes for _ in array]
 
-        # Normalize sizes to 0..1
-        max_size = float(numpy.max(sizes))
-        sizes = [size / max_size for size in sizes]
+        # Scale sizes to 0..1
+        self.max_size = float(numpy.max(sizes))
+        sizes = [size / self.max_size for size in sizes]
 
-        if shapes == None:
-            shapes = [0 for _ in array]
+        if symbols == None:
+            symbols = [0 for _ in array]
 
         max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
-        self.b_box = [max, min]
-        self.minx, self.miny, self.minz = min
-        self.maxx, self.maxy, self.maxz = max
+        self.min_x, self.min_y, self.min_z = min
+        self.max_x, self.max_y, self.max_z = max
+        self.range_x, self.range_y, self.range_z = max-min
+        self.middle_x, self.middle_y, self.middle_z = (min+max) / 2.
         self.center = (min + max) / 2 
-        self.normal_size = numpy.max(self.center - self.b_box[1]) / 100.
+        self.normal_size = 0.2
 
-        # TODO: more shapes? For now, wrap other to these ones.
-        different_shapes = [3, 4, 5, 8]
+        self.scale_x = self.view_cube_edge / self.range_x
+        self.scale_y = self.view_cube_edge / self.range_y
+        self.scale_z = self.view_cube_edge / self.range_z
 
         # Generate vertices for shapes and also indices for outlines.
         vertices = []
         outline_indices = []
         index = 0
-        for (x,y,z), (r,g,b,a), size, shape in zip(array, colors, sizes, shapes):
+        for (x,y,z), (r,g,b,a), size, symbol in zip(array, colors, sizes, symbols):
             sO2 = size * self.normal_size / 2.
-            n = different_shapes[shape % len(different_shapes)]
+            n = self.available_symbols[symbol % len(self.available_symbols)]
             angle_inc = 2.*pi / n
             angle = angle_inc / 2.
             for i in range(n):
@@ -689,11 +789,22 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.vaos.append(vao)
         self.vaos.append(vao_outline)
         self.commands.append(("scatter", [vao, vao_outline, array, labels]))
-        self.update_axes()
         self.updateGL()
 
     def mousePressEvent(self, event):
-      self.mouse_pos = event.pos()
+        pos = self.mouse_pos = event.pos()
+        buttons = event.buttons()
+        if buttons & Qt.LeftButton:
+            if self.legend.point_inside(pos.x(), pos.y()):
+                self.state = PlotState.DRAGGING_LEGEND
+            else:
+                self.state = PlotState.SELECTING
+                self.new_selection = [pos.x(), pos.y(), 0, 0]
+        elif buttons & Qt.RightButton:
+            self.state = PlotState.SCALING
+            self.scaling_init_pos = self.mouse_pos
+            self.add_scale = [0, 0, 0]
+            self.updateGL()
 
     def mouseMoveEvent(self, event):
         pos = event.pos()
@@ -701,12 +812,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         dy = pos.y() - self.mouse_pos.y()
 
         if event.buttons() & Qt.LeftButton:
-            if self.dragging_legend:
-                self.legend_position[0] += dx
-                self.legend_position[1] += dy
-            elif self.legend_position[0] <= pos.x() <= self.legend_position[0]+self.legend_size[0] and\
-                 self.legend_position[1] <= pos.y() <= self.legend_position[1]+self.legend_size[1]:
-                self.dragging_legend = True
+            if self.state == PlotState.DRAGGING_LEGEND:
+                self.legend.move(dx, dy)
+            elif self.state == PlotState.SELECTING:
+                self.new_selection[2:] = [pos.x(), pos.y()]
         elif event.buttons() & Qt.MiddleButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 off_x = numpy.cross(self.camera, [0,1,0]) * (dx / self.move_factor)
@@ -714,7 +823,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
                 self.center += off_x
             else:
-                self.yaw += dx /  self.rotation_factor
+                self.yaw += dx / self.rotation_factor
                 self.pitch += dy / self.rotation_factor
                 self.pitch = clamp(self.pitch, -3., -0.1)
                 self.camera = [
@@ -722,22 +831,32 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     cos(self.pitch),
                     sin(self.pitch)*sin(self.yaw)]
 
+        if self.state == PlotState.SCALING:
+            dx = pos.x() - self.scaling_init_pos.x()
+            dy = pos.y() - self.scaling_init_pos.y()
+            self.add_scale = [dx / self.scale_factor, dy / self.scale_factor, 0]\
+                if self.scale_x_axis else [0, dy / self.scale_factor, dx / self.scale_factor]
+
         self.mouse_pos = pos
         self.updateGL()
 
     def mouseReleaseEvent(self, event):
-        self.dragging_legend = False
+        if self.state == PlotState.SCALING:
+            self.scale = numpy.maximum([0,0,0], self.scale + self.add_scale)
+            self.add_scale = [0,0,0]
+
+        self.state = PlotState.IDLE
+        self.updateGL()
 
     def wheelEvent(self, event):
         if event.orientation() == Qt.Vertical:
-            self.zoom -= event.delta() / self.zoom_factor
-            if self.zoom < 2:
-                self.zoom = 2
+            delta = 1 + event.delta() / self.zoom_factor
+            self.scale *= delta
             self.updateGL()
 
     def clear(self):
         self.commands = []
-        self.legend_items = []
+        self.legend.clear()
 
 
 if __name__ == "__main__":
