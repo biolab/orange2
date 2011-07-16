@@ -231,16 +231,19 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.commands = []
         self.minx = self.miny = self.minz = 0
         self.maxx = self.maxy = self.maxz = 0
-        self.camera = numpy.array([0.6, 0.8, 0])
         self.center = numpy.array([0,   0,   0])
         self.view_cube_edge = 10
         self.camera_distance = 30
 
-        self.yaw = self.pitch = 0.
+        self.yaw = self.pitch = -pi / 4.
         self.rotation_factor = 100.
+        self.camera = [
+            sin(self.pitch)*cos(self.yaw),
+            cos(self.pitch),
+            sin(self.pitch)*sin(self.yaw)]
+
         self.zoom_factor = 500.
         self.move_factor = 100.
-        self.mouse_pos = [100, 100] # TODO: get real mouse position, calculate camera, fix the initial jump
 
         self.labels_font = QFont('Helvetice', 8)
         self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
