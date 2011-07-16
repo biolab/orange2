@@ -57,6 +57,11 @@ import sys
 import numpy
 from math import sin, cos, pi
 
+try:
+    from itertools import izip as zip # Python 3 zip == izip in Python 2.x
+except:
+    pass
+
 # Import undefined functions, override some wrappers.
 try:
     from OpenGL import platform
@@ -242,6 +247,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             cos(self.pitch),
             sin(self.pitch)*sin(self.yaw)]
 
+        self.camera_fov = 30.
         self.zoom_factor = 500.
         self.move_factor = 100.
 
@@ -404,12 +410,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         width, height = self.width(), self.height()
-        #if self.ortho:
-        #    # TODO: fix ortho
-        #    glOrtho(-width/divide, width/divide, -height/divide, height/divide, -1, 2000)
-        #else:
-        aspect = float(width) / height if height != 0 else 1
-        gluPerspective(30.0, aspect, 0.1, 2000)
+        denominator = 80.
+        if self.ortho:
+            glOrtho(-width / denominator,
+                     width / denominator,
+                    -height / denominator,
+                     height / denominator, -1, 2000)
+        else:
+            aspect = float(width) / height if height != 0 else 1
+            gluPerspective(self.camera_fov, aspect, 0.1, 2000)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(
@@ -427,7 +436,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
-                vao, vao_outline, array, labels = params
+                vao, vao_outline, (X, Y, Z), labels = params
                 glUseProgram(self.symbol_shader)
                 glUniform1i(self.symbol_shader_face_symbols, self.face_symbols)
                 glUniform1f(self.symbol_shader_symbol_scale, self.symbol_scale)
@@ -447,8 +456,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glUseProgram(0)
 
                 if labels != None:
-                    for (x,y,z), label in zip(array, labels):
-                        self.renderText(x,y,z, '{0:.1}'.format(label), font=self.labels_font)
+                    glScalef(*scale)
+                    glTranslatef(*(-self.center))
+                    for x, y, z, label in zip(X, Y, Z, labels):
+                        self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'), font=self.labels_font)
 
         glDisable(GL_BLEND)
         if self.show_legend:
@@ -530,7 +541,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         def draw_axis(line):
             glColor4f(0.2, 0.2, 0.2, 1)
-            glLineWidth(2) # Widths > 1 are actually deprecated I think.
+            glLineWidth(2)
             glBegin(GL_LINES)
             glVertex3f(*line[0])
             glVertex3f(*line[1])
@@ -539,16 +550,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         def draw_values(axis, coord_index, normal, sub=10):
             glColor4f(0.1, 0.1, 0.1, 1)
             glLineWidth(1)
-            start = axis[0]
-            end = axis[1]
-            direction = (end - start) / float(sub)
-            middle = (end - start) / 2.
+            start, end = axis
             offset = normal*0.3
-            for i in range(sub):
-                position = start + direction*i
+            samples = numpy.linspace(0.0, 1.0, num=sub)
+            for sample in samples:
+                position = start + (end-start)*sample
                 glBegin(GL_LINES)
-                glVertex3f(*(position-normal*0.08))
-                glVertex3f(*(position+normal*0.08))
+                glVertex3f(*(position-normal*0.2))
+                glVertex3f(*(position+normal*0.2))
                 glEnd()
                 position += offset
                 value = position[coord_index] / (self.scale[coord_index] + self.add_scale[coord_index])
@@ -556,7 +565,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.renderText(position[0],
                                 position[1],
                                 position[2],
-                                '{0:.2}'.format(value))
+                                '%.1f' % value)
 
         glDisable(GL_DEPTH_TEST)
         glLineWidth(1)
@@ -574,34 +583,34 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         def draw_axis_plane(axis_plane, sub=10):
             normal = normal_from_points(*axis_plane[:3])
             camera_vector = normalize(axis_plane[0] - cam_in_space)
-            cos = numpy.dot(normal, camera_vector)
-            cos = max(0.7, cos)
+            cos = max(0.7, numpy.dot(normal, camera_vector))
             glColor4f(*(self.color_plane * cos))
-            P11, P12, P21, P22 = numpy.asarray(axis_plane)
+            p11, p12, p21, p22 = numpy.asarray(axis_plane)
             # Draw background quad first.
             glBegin(GL_QUADS)
-            glVertex3f(*P11)
-            glVertex3f(*P12)
-            glVertex3f(*P21)
-            glVertex3f(*P22)
+            glVertex3f(*p11)
+            glVertex3f(*p12)
+            glVertex3f(*p21)
+            glVertex3f(*p22)
             glEnd()
 
-            P22, P21 = P21, P22
-            glColor4f(*(self.color_grid * cos))
-            Dx = numpy.linspace(0.0, 1.0, num=sub)
-            P1vecH = P12 - P11
-            P2vecH = P22 - P21
-            P1vecV = P21 - P11
-            P2vecV = P22 - P12
+            p22, p21 = p21, p22
+            samples = numpy.linspace(0.0, 1.0, num=sub)
+            p1211 = p12 - p11
+            p2221 = p22 - p21
+            p2111 = p21 - p11
+            p2212 = p22 - p12
             # Draw grid lines.
+            glColor4f(*(self.color_grid * cos))
             glBegin(GL_LINES)
-            for i, dx in enumerate(Dx):
-                start = P11 + P1vecH*dx
-                end = P21 + P2vecH*dx
+            for i, dx in enumerate(samples):
+                start = p11 + p1211*dx
+                end = p21 + p2221*dx
                 glVertex3f(*start)
                 glVertex3f(*end)
-                start = P11 + P1vecV*dx
-                end = P12 + P2vecV*dx
+
+                start = p11 + p2111*dx
+                end = p12 + p2212*dx
                 glVertex3f(*start)
                 glVertex3f(*end)
             glEnd()
@@ -687,27 +696,32 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.axis_plane_xz_top = [E, F, B, A]
 
     def scatter(self, X, Y, Z, colors='b', sizes=5, symbols=None, labels=None, **kwargs):
-        array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
+        if len(X) != len(Y) != len(Z):
+            raise ValueError('Axis data arrays must be of equal length')
+        num_points = len(X)
+
         if isinstance(colors, str):
             color_map = {'r': [1.0, 0.0, 0.0, 1.0],
                          'g': [0.0, 1.0, 0.0, 1.0],
                          'b': [0.0, 0.0, 1.0, 1.0]}
             default = [0.0, 0.0, 1.0, 1.0]
-            colors = [color_map.get(colors, default) for _ in array]
+            colors = [color_map.get(colors, default) for _ in range(num_points)]
  
         if isinstance(sizes, int):
-            sizes = [sizes for _ in array]
+            sizes = [sizes for _ in range(num_points)]
 
         # Scale sizes to 0..1
         self.max_size = float(numpy.max(sizes))
         sizes = [size / self.max_size for size in sizes]
 
         if symbols == None:
-            symbols = [0 for _ in array]
+            symbols = [0 for _ in range(num_points)]
 
-        max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
-        self.min_x, self.min_y, self.min_z = min
-        self.max_x, self.max_y, self.max_z = max
+        #max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
+        min = self.min_x, self.min_y, self.min_z = numpy.min(X), numpy.min(Y), numpy.min(Z)
+        max = self.max_x, self.max_y, self.max_z = numpy.max(X), numpy.max(Y), numpy.max(Z)
+        min = numpy.array(min)
+        max = numpy.array(max)
         self.range_x, self.range_y, self.range_z = max-min
         self.middle_x, self.middle_y, self.middle_z = (min+max) / 2.
         self.center = (min + max) / 2 
@@ -721,7 +735,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         vertices = []
         outline_indices = []
         index = 0
-        for (x,y,z), (r,g,b,a), size, symbol in zip(array, colors, sizes, symbols):
+        for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
             sO2 = size * self.normal_size / 2.
             n = self.available_symbols[symbol % len(self.available_symbols)]
             angle_inc = 2.*pi / n
@@ -795,7 +809,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.index_buffers.append(index_buffer)
         self.vaos.append(vao)
         self.vaos.append(vao_outline)
-        self.commands.append(("scatter", [vao, vao_outline, array, labels]))
+        self.commands.append(("scatter", [vao, vao_outline, (X,Y,Z), labels]))
         self.updateGL()
 
     def mousePressEvent(self, event):
