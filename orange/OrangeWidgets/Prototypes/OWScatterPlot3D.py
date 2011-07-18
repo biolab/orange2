@@ -14,10 +14,10 @@ class OWScatterPlot3D(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
  
     def __init__(self, parent=None, signalManager=None, name="Scatter Plot 3D"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, True)
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Subset Examples", ExampleTable, self.setSubsetData)]
-        self.outputs = []
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
 
         self.x_attr = 0
         self.y_attr = 0
@@ -107,6 +107,9 @@ class OWScatterPlot3D(OWWidget):
         self.settings_tab.layout().addStretch(100)
 
         self.mainArea.layout().addWidget(self.plot)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.plot.save_to_file)
+
+        self.plot.auto_send_selection_callback = self.send_selections
 
         self.data = None
         self.subsetData = None
@@ -162,6 +165,18 @@ class OWScatterPlot3D(OWWidget):
 
     def handleNewSignals(self):
         self.update_plot()
+        self.send_selections()
+
+    def send_selections(self):
+        if self.data == None:
+            return
+        indices = self.plot.get_selection_indices()
+        selected = [1 if i in indices else 0 for i in range(len(self.data))]
+        unselected = map(lambda n: 1-n, selected)
+        selected = self.data.selectref(selected)
+        unselected = self.data.selectref(unselected)
+        self.send('Selected Examples', selected)
+        self.send('Unselected Examples', unselected)
 
     def on_axis_change(self):
         if self.data is not None:

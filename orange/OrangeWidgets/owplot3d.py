@@ -42,6 +42,7 @@ __all__ = ['OWPlot3D', 'Symbol']
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4 import QtOpenGL
+from OWDlgs import OWChooseImageSizeDlg
 
 import orange
 
@@ -95,6 +96,14 @@ glDrawElements = gl.glDrawElements
 glDrawArrays = gl.glDrawArrays
 glBindBuffer = gl.glBindBuffer
 glBufferData = gl.glBufferData
+glGenFramebuffers = gl.glGenFramebuffers
+glBindFramebuffer = gl.glBindFramebuffer
+glFramebufferTexture2D = gl.glFramebufferTexture2D
+glCheckFramebufferStatus = gl.glCheckFramebufferStatus
+glGenTextures = gl.glGenTextures
+GL_FRAMEBUFFER_COMPLETE = 0x8CD5
+GL_FRAMEBUFFER = 0x8D40
+GL_COLOR_ATTACHMENT0 = 0x8CE0
 
 
 def normalize(vec):
@@ -162,6 +171,7 @@ class Legend(object):
            Color should be RGBA. Size should be between 0 and 1.
         '''
         if not Symbol.is_valid(symbol):
+            print('Legend: invalid symbol')
             return
         self.items.append([symbol, color, size, title])
         self.size[0] = max(self.metrics.width(item[3]) for item in self.items) + 40
@@ -285,6 +295,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.state = PlotState.IDLE
 
         self.build_axes()
+        self.selections = []
+        self.auto_send_selection_callback = None
 
     def __del__(self):
         # TODO: delete shaders and vertex buffer
@@ -399,12 +411,21 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glGetProgramiv(self.symbol_shader, GL_LINK_STATUS, byref(linked))
         if not linked.value:
             print('Failed to link shader!')
-        print('Shaders compiled and linked!')
+        else:
+            print('Shaders compiled and linked!')
+
+        # Create Framebuffer object, which will be render target for axes values and titles.
+        self.auxiliary_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024)
+        if self.auxiliary_fbo.isValid():
+            print('Auxiliary fbo created!')
+        else:
+            print('Failed to create auxiliary fbo!')
 
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
 
     def paintGL(self):
+
         glClearColor(1,1,1,1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION)
@@ -470,6 +491,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glLoadIdentity()
             self.legend.draw()
 
+        #self.draw_labels_and_titles_to_fbo()
         self.draw_helpers()
 
     def draw_helpers(self):
@@ -493,13 +515,31 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.renderText(x+60, y+3,
                             'Scale {0} axis'.format(['z', 'x'][self.scale_x_axis]),
                             font=self.labels_font)
-        elif self.state == PlotState.SELECTING:
+        elif self.state == PlotState.SELECTING and self.new_selection[3] != None:
             s = self.new_selection
             glColor4f(0, 0, 0, 1)
             draw_line(s[0], s[1], s[0], s[3])
             draw_line(s[0], s[3], s[2], s[3])
             draw_line(s[2], s[3], s[2], s[1])
             draw_line(s[2], s[1], s[0], s[1])
+
+        for s in self.selections:
+            glColor4f(0, 0, 0, 1)
+            draw_line(s[0], s[1], s[0], s[3])
+            draw_line(s[0], s[3], s[2], s[3])
+            draw_line(s[2], s[3], s[2], s[1])
+            draw_line(s[2], s[1], s[0], s[1])
+
+        #glEnable(GL_TEXTURE_2D)
+        #glBindTexture(GL_TEXTURE_2D, self.auxiliary_fbo.texture())
+        #glColor4f(1, 1, 1, 1)
+        #glBegin(GL_QUADS)
+        #glTexCoord2f(0, 0); glVertex2f(10, 10)
+        #glTexCoord2f(1, 0); glVertex2f(200, 10)
+        #glTexCoord2f(1, 1); glVertex2f(200, 200)
+        #glTexCoord2f(0, 1); glVertex2f(10, 200)
+        #glEnd()
+        #glBindTexture(GL_TEXTURE_2D, 0)
 
     def set_x_axis_title(self, title):
         self.x_axis_title = title
@@ -663,6 +703,30 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         # Remember which axis to scale when dragging mouse horizontally.
         self.scale_x_axis = False if rightmost_visible % 2 == 0 else True
 
+    def draw_labels_and_titles_to_fbo(self):
+        self.auxiliary_fbo.bind()
+        #glPushAttrib(GL_VIEWPORT_BIT)
+        #glViewport(0, 0, 512, 512)
+        glClearColor(1, 1, 1, 1)
+        glClear(GL_COLOR_BUFFER_BIT)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, 1024, 1024, 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glColor3f(0,0,0)
+        self.renderText(10,200, 'Are you talking to me?!')
+
+        glColor4f(1, 0, 0, 1)
+        glBegin(GL_TRIANGLES)
+        glVertex2f(10,10)
+        glVertex2f(100, 10)
+        glVertex2f(80, 200)
+        glEnd()
+
+        #glPopAttrib()
+        self.auxiliary_fbo.release()
+
     def build_axes(self):
         edge_half = self.view_cube_edge / 2.
         x_axis = [[-edge_half,-edge_half,-edge_half], [edge_half,-edge_half,-edge_half]]
@@ -717,7 +781,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if symbols == None:
             symbols = [0 for _ in range(num_points)]
 
-        #max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
         min = self.min_x, self.min_y, self.min_z = numpy.min(X), numpy.min(Y), numpy.min(Z)
         max = self.max_x, self.max_y, self.max_z = numpy.max(X), numpy.max(Y), numpy.max(Z)
         min = numpy.array(min)
@@ -812,6 +875,61 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.commands.append(("scatter", [vao, vao_outline, (X,Y,Z), labels]))
         self.updateGL()
 
+    def save_to_file(self):
+        size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
+        size_dlg.exec_()
+
+    def save_to_file_direct(self, file_name):
+        pass
+
+    def get_selection_indices(self):
+        if len(self.selections) == 0:
+            return []
+
+        projection = QMatrix4x4()
+        projection.perspective(self.camera_fov, float(self.width())/self.height(), 0.1, 2000)
+
+        modelview = QMatrix4x4()
+        modelview.lookAt(QVector3D(self.camera[0]*self.camera_distance,
+                                   self.camera[1]*self.camera_distance,
+                                   self.camera[2]*self.camera_distance),
+                         QVector3D(0, 0, 0),
+                         QVector3D(0, 1, 0))
+
+        modelview.scale(*(numpy.maximum([0, 0, 0], self.scale + self.add_scale)))
+        modelview.translate(*(-self.center))
+
+        proj_model = projection * modelview
+        viewport = [0, 0, self.width(), self.height()]
+
+        def project(x, y, z):
+            projected = proj_model * QVector4D(x, y, z, 1)
+            projected /= projected.z()
+            winx = viewport[0] + (1 + projected.x()) * viewport[2] / 2
+            winy = viewport[1] + (1 + projected.y()) * viewport[3] / 2
+            winy = self.height() - winy
+            return winx, winy
+
+        def inside_selection(x_win, y_win):
+            for selection in self.selections:
+                x1, x2 = sorted([selection[0], selection[2]])
+                y1, y2 = sorted([selection[1], selection[3]])
+                if x1 <= x_win <= x2 and\
+                   y1 <= y_win <= y2:
+                    return True
+            return False
+
+        indices = []
+        for (cmd, params) in self.commands:
+            if cmd == 'scatter':
+                _, _, (X, Y, Z), _ = params
+                for i, (x, y, z) in enumerate(zip(X, Y, Z)):
+                    x_win, y_win = project(x, y, z)
+                    if inside_selection(x_win, y_win):
+                        indices.append(i)
+
+        return indices
+
     def mousePressEvent(self, event):
         pos = self.mouse_pos = event.pos()
         buttons = event.buttons()
@@ -820,8 +938,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.state = PlotState.DRAGGING_LEGEND
             else:
                 self.state = PlotState.SELECTING
-                self.new_selection = [pos.x(), pos.y(), 0, 0]
+                self.new_selection = [pos.x(), pos.y(), None, None]
         elif buttons & Qt.RightButton:
+            self.selections = []
             self.state = PlotState.SCALING
             self.scaling_init_pos = self.mouse_pos
             self.add_scale = [0, 0, 0]
@@ -838,8 +957,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             elif self.state == PlotState.SELECTING:
                 self.new_selection[2:] = [pos.x(), pos.y()]
         elif event.buttons() & Qt.MiddleButton:
+            self.selections = []
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-                off_x = numpy.cross(self.camera, [0,1,0]) * (dx / self.move_factor)
+                off_x = numpy.cross(self.camera, [0, 1, 0]) * (dx / self.move_factor)
                 #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
                 # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
                 self.center += off_x
@@ -863,20 +983,26 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def mouseReleaseEvent(self, event):
         if self.state == PlotState.SCALING:
-            self.scale = numpy.maximum([0,0,0], self.scale + self.add_scale)
-            self.add_scale = [0,0,0]
+            self.scale = numpy.maximum([0, 0, 0], self.scale + self.add_scale)
+            self.add_scale = [0, 0, 0]
+        elif self.state == PlotState.SELECTING:
+            if self.new_selection[3] != None:
+                self.selections.append(self.new_selection)
+                self.auto_send_selection_callback() if self.auto_send_selection_callback else None
 
         self.state = PlotState.IDLE
         self.updateGL()
 
     def wheelEvent(self, event):
         if event.orientation() == Qt.Vertical:
+            self.selections = []
             delta = 1 + event.delta() / self.zoom_factor
             self.scale *= delta
             self.updateGL()
 
     def clear(self):
         self.commands = []
+        self.selections = []
         self.legend.clear()
 
 
