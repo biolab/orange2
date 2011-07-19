@@ -237,7 +237,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.commands = []
         self.minx = self.miny = self.minz = 0
         self.maxx = self.maxy = self.maxz = 0
-        self.center = numpy.array([0,   0,   0])
         self.view_cube_edge = 10
         self.camera_distance = 30
 
@@ -248,8 +247,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             cos(self.pitch),
             sin(self.pitch)*sin(self.yaw)]
 
+        self.ortho_scale = 80.
+        self.ortho_near = -1
+        self.ortho_far = 2000
+        self.perspective_near = 0.1
+        self.perspective_far = 2000
         self.camera_fov = 30.
-        self.zoom_factor = 500.
+        self.zoom_factor = 2000.
         self.move_factor = 100.
 
         self.labels_font = QFont('Helvetice', 8)
@@ -277,9 +281,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.transparency = 255
         self.grid = True
         self.scale = numpy.array([1., 1., 1.])
-        self.add_scale = [0, 0, 0]
+        self.additional_scale = [0, 0, 0]
         self.scale_x_axis = True
         self.scale_factor = 30.
+        self.initial_scale = numpy.array([1., 1., 1.])
+        self.initial_center = numpy.array([0, 0, 0])
 
         # Beside n-gons, symbols should also include cubes, spheres and other stuff. TODO
         self.available_symbols = [3, 4, 5, 8]
@@ -345,7 +351,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               if (face_symbols)
                 offset_rotated = invs * offset_rotated;
 
-              position += translation;
+              //position += translation;
               position *= scale;
               vec4 off_pos = vec4(position+offset_rotated, 1);
 
@@ -415,15 +421,16 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         width, height = self.width(), self.height()
-        denominator = 80.
         if self.ortho:
-            glOrtho(-width / denominator,
-                     width / denominator,
-                    -height / denominator,
-                     height / denominator, -1, 2000)
+            glOrtho(-width / self.ortho_scale,
+                     width / self.ortho_scale,
+                    -height / self.ortho_scale,
+                     height / self.ortho_scale,
+                     self.ortho_near,
+                     self.ortho_far)
         else:
             aspect = float(width) / height if height != 0 else 1
-            gluPerspective(self.camera_fov, aspect, 0.1, 2000)
+            gluPerspective(self.camera_fov, aspect, self.perspective_near, self.perspective_far)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(
@@ -445,9 +452,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glUniform1i(self.symbol_shader_face_symbols, self.face_symbols)
                 glUniform1f(self.symbol_shader_symbol_scale, self.symbol_scale)
                 glUniform1f(self.symbol_shader_transparency, self.transparency)
-                scale = numpy.maximum([0, 0, 0], self.scale + self.add_scale)
+                scale = numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
                 glUniform3f(self.symbol_shader_scale,        *scale)
-                glUniform3f(self.symbol_shader_translation,  *(-self.center))
 
                 if self.filled_symbols:
                     glBindVertexArray(vao.value)
@@ -460,9 +466,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glUseProgram(0)
 
                 if labels != None:
-                    glScalef(*scale)
-                    glTranslatef(*(-self.center))
                     for x, y, z, label in zip(X, Y, Z, labels):
+                        x -= self.initial_center[0]
+                        y -= self.initial_center[1]
+                        z -= self.initial_center[2]
+                        x *= self.initial_scale[0] * scale[0]
+                        y *= self.initial_scale[1] * scale[1]
+                        z *= self.initial_scale[2] * scale[2]
                         self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'), font=self.labels_font)
 
         glDisable(GL_BLEND)
@@ -571,9 +581,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glVertex3f(*(position-normal*0.2))
                 glVertex3f(*(position+normal*0.2))
                 glEnd()
+                value = position[coord_index] / (self.scale[coord_index] + self.additional_scale[coord_index])
+                value /= self.initial_scale[coord_index]
+                value += self.initial_center[coord_index]
                 position += offset
-                value = position[coord_index] / (self.scale[coord_index] + self.add_scale[coord_index])
-                value += self.center[coord_index]
                 self.renderText(position[0],
                                 position[1],
                                 position[2],
@@ -732,27 +743,34 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         sizes = [size / self.max_size for size in sizes]
 
         if symbols == None:
-            symbols = [0 for _ in range(num_points)]
+            symbols = [Symbol.TRIANGLE for _ in range(num_points)]
 
         min = self.min_x, self.min_y, self.min_z = numpy.min(X), numpy.min(Y), numpy.min(Z)
         max = self.max_x, self.max_y, self.max_z = numpy.max(X), numpy.max(Y), numpy.max(Z)
         min = numpy.array(min)
         max = numpy.array(max)
-        self.range_x, self.range_y, self.range_z = max-min
-        self.middle_x, self.middle_y, self.middle_z = (min+max) / 2.
-        self.center = (min + max) / 2 
-        self.normal_size = 0.2
+        range_x, range_y, range_z = max-min
+        middle_x, middle_y, middle_z = (min+max) / 2.
+        self.initial_center = (min + max) / 2 
 
-        self.scale[0] = self.view_cube_edge / self.range_x
-        self.scale[1] = self.view_cube_edge / self.range_y
-        self.scale[2] = self.view_cube_edge / self.range_z
+        scale_x = self.view_cube_edge / range_x
+        scale_y = self.view_cube_edge / range_y
+        scale_z = self.view_cube_edge / range_z
+
+        self.initial_scale = [scale_x, scale_y, scale_z]
 
         # Generate vertices for shapes and also indices for outlines.
         vertices = []
         outline_indices = []
         index = 0
         for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
-            sO2 = size * self.normal_size / 2.
+            x -= self.initial_center[0]
+            y -= self.initial_center[1]
+            z -= self.initial_center[2]
+            x *= scale_x
+            y *= scale_y
+            z *= scale_z
+            sO2 = size * 0.1
             n = self.available_symbols[symbol % len(self.available_symbols)]
             angle_inc = 2.*pi / n
             angle = angle_inc / 2.
@@ -840,8 +858,16 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if len(self.selections) == 0:
             return []
 
+        width, height = self.width(), self.height()
+
         projection = QMatrix4x4()
-        projection.perspective(self.camera_fov, float(self.width())/self.height(), 0.1, 2000)
+        if self.ortho:
+            projection.ortho(-width / self.ortho_scale, width / self.ortho_scale,
+                             -height / self.ortho_scale, height / self.ortho_scale,
+                             self.ortho_near, self.ortho_far)
+        else:
+            projection.perspective(self.camera_fov, float(self.width())/self.height(),
+                                   self.perspective_near, self.perspective_far)
 
         modelview = QMatrix4x4()
         modelview.lookAt(QVector3D(self.camera[0]*self.camera_distance,
@@ -850,8 +876,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                          QVector3D(0, 0, 0),
                          QVector3D(0, 1, 0))
 
-        modelview.scale(*(numpy.maximum([0, 0, 0], self.scale + self.add_scale)))
-        modelview.translate(*(-self.center))
+        modelview.scale(*(numpy.maximum([0, 0, 0], self.scale + self.additional_scale)))
 
         proj_model = projection * modelview
         viewport = [0, 0, self.width(), self.height()]
@@ -897,7 +922,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.selections = []
             self.state = PlotState.SCALING
             self.scaling_init_pos = self.mouse_pos
-            self.add_scale = [0, 0, 0]
+            self.additional_scale = [0, 0, 0]
             self.updateGL()
 
     def mouseMoveEvent(self, event):
@@ -916,7 +941,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 off_x = numpy.cross(self.camera, [0, 1, 0]) * (dx / self.move_factor)
                 #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
                 # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
-                self.center += off_x
+                #self.initial_center += off_x
             else:
                 self.yaw += dx / self.rotation_factor
                 self.pitch += dy / self.rotation_factor
@@ -929,7 +954,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
-            self.add_scale = [dx / self.scale_factor, dy / self.scale_factor, 0]\
+            self.additional_scale = [dx / self.scale_factor, dy / self.scale_factor, 0]\
                 if self.scale_x_axis else [0, dy / self.scale_factor, dx / self.scale_factor]
 
         self.mouse_pos = pos
@@ -937,8 +962,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def mouseReleaseEvent(self, event):
         if self.state == PlotState.SCALING:
-            self.scale = numpy.maximum([0, 0, 0], self.scale + self.add_scale)
-            self.add_scale = [0, 0, 0]
+            self.scale = numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+            self.additional_scale = [0, 0, 0]
         elif self.state == PlotState.SELECTING:
             if self.new_selection[3] != None:
                 self.selections.append(self.new_selection)
