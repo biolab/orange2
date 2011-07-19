@@ -880,7 +880,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         size_dlg.exec_()
 
     def save_to_file_direct(self, file_name):
-        pass
+        img = self.grabFrameBuffer()
+        return img.save(file_name)
 
     def get_selection_indices(self):
         if len(self.selections) == 0:
