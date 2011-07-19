@@ -261,8 +261,8 @@ class OWScatterPlot3D(OWWidget):
 
         self.plot.scatter(X, Y, Z, colors, sizes, shapes, labels)
         self.plot.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
-        self.plot.set_x_axis_title(self.axis_candidate_attrs[self.y_attr].name)
-        self.plot.set_x_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+        self.plot.set_y_axis_title(self.axis_candidate_attrs[self.y_attr].name)
+        self.plot.set_z_axis_title(self.axis_candidate_attrs[self.z_attr].name)
 
     def get_axis_data(self, x_ind, y_ind, z_ind):
         array = self.data_array
@@ -273,10 +273,10 @@ class OWScatterPlot3D(OWWidget):
         return self.x_attr, self.y_attr, self.z_attr
 
 if __name__ == "__main__":
-  app = QApplication(sys.argv)
-  w = OWScatterPlot3D()
-  data = orange.ExampleTable("../../doc/datasets/iris")
-  w.setData(data)
-  w.handleNewSignals()
-  w.show()
-  app.exec_()
+    app = QApplication(sys.argv)
+    w = OWScatterPlot3D()
+    data = orange.ExampleTable("../../doc/datasets/iris")
+    w.setData(data)
+    w.handleNewSignals()
+    w.show()
+    app.exec_()

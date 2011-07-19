@@ -96,15 +96,6 @@ glDrawElements = gl.glDrawElements
 glDrawArrays = gl.glDrawArrays
 glBindBuffer = gl.glBindBuffer
 glBufferData = gl.glBufferData
-glGenFramebuffers = gl.glGenFramebuffers
-glBindFramebuffer = gl.glBindFramebuffer
-glFramebufferTexture2D = gl.glFramebufferTexture2D
-glCheckFramebufferStatus = gl.glCheckFramebufferStatus
-glGenTextures = gl.glGenTextures
-GL_FRAMEBUFFER_COMPLETE = 0x8CD5
-GL_FRAMEBUFFER = 0x8D40
-GL_COLOR_ATTACHMENT0 = 0x8CE0
-
 
 def normalize(vec):
     return vec / numpy.sqrt(numpy.sum(vec** 2))
@@ -308,6 +299,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glDepthFunc(GL_LESS)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LINE_SMOOTH)
+        glDisable(GL_CULL_FACE)
 
         self.symbol_shader = glCreateProgram()
         vertex_shader = glCreateShader(GL_VERTEX_SHADER)
@@ -414,19 +406,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         else:
             print('Shaders compiled and linked!')
 
-        # Create Framebuffer object, which will be render target for axes values and titles.
-        self.auxiliary_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024)
-        if self.auxiliary_fbo.isValid():
-            print('Auxiliary fbo created!')
-        else:
-            print('Failed to create auxiliary fbo!')
-
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
 
     def paintGL(self):
-
-        glClearColor(1,1,1,1)
+        glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -451,7 +435,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.draw_grid_and_axes()
 
         glDisable(GL_DEPTH_TEST)
-        glDisable(GL_CULL_FACE)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -462,7 +445,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glUniform1i(self.symbol_shader_face_symbols, self.face_symbols)
                 glUniform1f(self.symbol_shader_symbol_scale, self.symbol_scale)
                 glUniform1f(self.symbol_shader_transparency, self.transparency)
-                scale = numpy.maximum([0,0,0], self.scale + self.add_scale)
+                scale = numpy.maximum([0, 0, 0], self.scale + self.add_scale)
                 glUniform3f(self.symbol_shader_scale,        *scale)
                 glUniform3f(self.symbol_shader_translation,  *(-self.center))
 
@@ -491,17 +474,16 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glLoadIdentity()
             self.legend.draw()
 
-        #self.draw_labels_and_titles_to_fbo()
         self.draw_helpers()
 
     def draw_helpers(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, self.width(), self.height(), 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
         if self.state == PlotState.SCALING:
-            if not self.show_legend:
-                glMatrixMode(GL_PROJECTION)
-                glLoadIdentity()
-                glOrtho(0, self.width(), self.height(), 0, -1, 1)
-                glMatrixMode(GL_MODELVIEW)
-                glLoadIdentity()
             x, y = self.mouse_pos.x(), self.mouse_pos.y()
             glColor4f(0, 0, 0, 1)
             draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
@@ -529,17 +511,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             draw_line(s[0], s[3], s[2], s[3])
             draw_line(s[2], s[3], s[2], s[1])
             draw_line(s[2], s[1], s[0], s[1])
-
-        #glEnable(GL_TEXTURE_2D)
-        #glBindTexture(GL_TEXTURE_2D, self.auxiliary_fbo.texture())
-        #glColor4f(1, 1, 1, 1)
-        #glBegin(GL_QUADS)
-        #glTexCoord2f(0, 0); glVertex2f(10, 10)
-        #glTexCoord2f(1, 0); glVertex2f(200, 10)
-        #glTexCoord2f(1, 1); glVertex2f(200, 200)
-        #glTexCoord2f(0, 1); glVertex2f(10, 200)
-        #glEnd()
-        #glBindTexture(GL_TEXTURE_2D, 0)
 
     def set_x_axis_title(self, title):
         self.x_axis_title = title
@@ -591,8 +562,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glColor4f(0.1, 0.1, 0.1, 1)
             glLineWidth(1)
             start, end = axis
-            offset = normal*0.3
+            offset = normal*0.8
             samples = numpy.linspace(0.0, 1.0, num=sub)
+            samples = samples[:-1] if coord_index != 1 else samples[1:]
             for sample in samples:
                 position = start + (end-start)*sample
                 glBegin(GL_LINES)
@@ -607,17 +579,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                                 position[2],
                                 '%.1f' % value)
 
-        glDisable(GL_DEPTH_TEST)
-        glLineWidth(1)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-        # Draw axis labels.
-        glColor4f(0,0,0,1)
-        for axis, title in zip([self.x_axis, self.y_axis, self.z_axis],
-                               [self.x_axis_title, self.y_axis_title, self.z_axis_title]):
+        def draw_axis_title(axis, title, normal):
             middle = (axis[0] + axis[1]) / 2.
-            self.renderText(middle[0], middle[1]-0.2, middle[2]-0.2, title,
+            middle += normal * 1. if axis[0][1] != axis[1][1] else normal * 2.
+            self.renderText(middle[0], middle[1], middle[2],
+                            title,
                             font=self.axis_title_font)
 
         def draw_axis_plane(axis_plane, sub=10):
@@ -655,6 +621,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glVertex3f(*end)
             glEnd()
 
+        glDisable(GL_DEPTH_TEST)
+        glLineWidth(1)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
         visible_planes = map(plane_visible, planes)
@@ -669,17 +640,22 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if visible_planes[0]:
             draw_axis(self.x_axis)
-            draw_values(self.x_axis, 0, numpy.array([0,0,-1]))
+            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]))
+            draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
         elif visible_planes[2]:
             draw_axis(self.x_axis + self.unit_z)
-            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0,0,1]))
+            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]))
+            draw_axis_title(self.x_axis + self.unit_z,
+                            self.x_axis_title, numpy.array([0, 0, 1]))
 
         if visible_planes[1]:
             draw_axis(self.z_axis)
-            draw_values(self.z_axis, 2, numpy.array([-1,0,0]))
+            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]))
+            draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
         elif visible_planes[3]:
             draw_axis(self.z_axis + self.unit_x)
-            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1,0,0]))
+            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]))
+            draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
 
         try:
             rightmost_visible = visible_planes[::-1].index(True)
@@ -696,36 +672,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                    numpy.array([-1,0,0]),
                    numpy.array([0,0,-1])]
         axis = y_axis_translated[rightmost_visible]
-        draw_axis(axis)
         normal = normals[rightmost_visible]
-        draw_values(y_axis_translated[rightmost_visible], 1, normal)
+        draw_axis(axis)
+        draw_values(axis, 1, normal)
+        draw_axis_title(axis, self.y_axis_title, normal)
 
         # Remember which axis to scale when dragging mouse horizontally.
         self.scale_x_axis = False if rightmost_visible % 2 == 0 else True
-
-    def draw_labels_and_titles_to_fbo(self):
-        self.auxiliary_fbo.bind()
-        #glPushAttrib(GL_VIEWPORT_BIT)
-        #glViewport(0, 0, 512, 512)
-        glClearColor(1, 1, 1, 1)
-        glClear(GL_COLOR_BUFFER_BIT)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0, 1024, 1024, 0, -1, 1)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glColor3f(0,0,0)
-        self.renderText(10,200, 'Are you talking to me?!')
-
-        glColor4f(1, 0, 0, 1)
-        glBegin(GL_TRIANGLES)
-        glVertex2f(10,10)
-        glVertex2f(100, 10)
-        glVertex2f(80, 200)
-        glEnd()
-
-        #glPopAttrib()
-        self.auxiliary_fbo.release()
 
     def build_axes(self):
         edge_half = self.view_cube_edge / 2.
@@ -790,9 +743,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.center = (min + max) / 2 
         self.normal_size = 0.2
 
-        self.scale_x = self.view_cube_edge / self.range_x
-        self.scale_y = self.view_cube_edge / self.range_y
-        self.scale_z = self.view_cube_edge / self.range_z
+        self.scale[0] = self.view_cube_edge / self.range_x
+        self.scale[1] = self.view_cube_edge / self.range_y
+        self.scale[2] = self.view_cube_edge / self.range_z
 
         # Generate vertices for shapes and also indices for outlines.
         vertices = []
@@ -1005,6 +958,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.commands = []
         self.selections = []
         self.legend.clear()
+        self.x_axis_title = self.y_axis_title = self.z_axis_title = ''
+        self.updateGL()
 
 
 if __name__ == "__main__":
@@ -1024,6 +979,5 @@ if __name__ == "__main__":
     z = array[:, 2]
     colors = [palette[int(ex.getclass())] for ex in data]
     colors = [[c.red()/255., c.green()/255., c.blue()/255., 0.8] for c in colors]
-
     w.scatter(x, y, z, colors=colors)
     app.exec_()
