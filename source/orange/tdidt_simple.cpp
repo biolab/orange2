@@ -29,12 +29,22 @@
 #include "examplegen.hpp"
 #include "table.hpp"
 #include "classify.hpp"
-#include "err.h"
 
 #include "tdidt_simple.ppp"
 
-#define ASSERT(x) if (!(x)) err(1, "%s:%d", __FILE__, __LINE__)
-#define LOG2(x) log((x)) / log(2.0)
+#ifndef _MSC_VER
+	#include "err.h"
+	#define ASSERT(x) if (!(x)) err(1, "%s:%d", __FILE__, __LINE__)
+#else
+	#define ASSERT(x) if(!(x)) exit(1)
+#endif // _MSC_VER
+
+#ifndef INFINITY
+	#include <limits>
+	#define INFINITY numeric_limits<float>::infinity()
+#endif // INFINITY
+
+#define LOG2(x) log((double) (x)) / log(2.0)
 
 enum { DiscreteNode, ContinuousNode, PredictorNode };
 
@@ -49,8 +59,10 @@ int compar_attr;
 
 /* This function uses the global variable compar_attr */
 int
-compar_examples(TExample **e1, TExample **e2)
+compar_examples(const void * ptr1, const void * ptr2)
 {
+	TExample **e1 = (TExample **) ptr1;
+	TExample **e2 = (TExample **) ptr2;
     if ((*e1)->values[compar_attr].isSpecial())
         return 1;
     if ((*e2)->values[compar_attr].isSpecial())
@@ -88,9 +100,9 @@ score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, in
     cls_vals = domain->classVar->noOfValues();
 
     /* allocate space */
-    ASSERT(dist_lt = calloc(cls_vals, sizeof *dist_lt));
-    ASSERT(dist_ge = calloc(cls_vals, sizeof *dist_ge));
-    ASSERT(attr_dist = calloc(2, sizeof *attr_dist));
+    ASSERT(dist_lt = (int*) calloc(cls_vals, sizeof *dist_lt));
+    ASSERT(dist_ge = (int*) calloc(cls_vals, sizeof *dist_ge));
+    ASSERT(attr_dist = (int*) calloc(2, sizeof *attr_dist));
 
     /* sort */
     compar_attr = attr;
@@ -156,9 +168,9 @@ score_attribute_d(TExample **examples, int size, int attr, float cls_entropy, st
 	attr_vals = domain->attributes->at(attr)->noOfValues();
 
 	/* allocate space */
-    ASSERT(cont = calloc(cls_vals * attr_vals, sizeof *cont));
-    ASSERT(attr_dist = calloc(attr_vals, sizeof *attr_dist));
-    ASSERT(attr_dist_cls_known = calloc(attr_vals, sizeof *attr_dist));
+    ASSERT(cont = (int *) calloc(cls_vals * attr_vals, sizeof *cont));
+    ASSERT(attr_dist = (int *) calloc(attr_vals, sizeof *attr_dist));
+    ASSERT(attr_dist_cls_known = (int *) calloc(attr_vals, sizeof *attr_dist));
 
 	/* contingency matrix */
     size_attr_known = 0;
@@ -212,12 +224,12 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 	assert(size > 0);
 	domain = examples[0]->domain;
 
-	ASSERT(node = malloc(sizeof(*node)));
+	ASSERT(node = (SimpleTreeNode *) malloc(sizeof(*node)));
 
 	/* class distribution */
     cls_vals = domain->classVar->noOfValues();
 
-    ASSERT(node->dist = calloc(cls_vals, sizeof *node->dist));
+    ASSERT(node->dist = (int *) calloc(cls_vals, sizeof *node->dist));
 	for (ex = examples, ex_end = examples + size; ex != ex_end; ex++)
         if (!(*ex)->getClass().isSpecial())
             node->dist[(*ex)->getClass().intV]++;
@@ -286,8 +298,8 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 		/* counting sort */
 		no_of_values = domain->attributes->at(best_attr)->noOfValues();
 
-		ASSERT(tmp = calloc(size, sizeof *tmp));
-		ASSERT(cnt = calloc(no_of_values, sizeof *cnt));
+		ASSERT(tmp = (TExample **) calloc(size, sizeof *tmp));
+		ASSERT(cnt = (int *) calloc(no_of_values, sizeof *cnt));
 		
 		for (ex = examples, ex_end = examples + size; ex != ex_end; ex++)
 			cnt[(*ex)->values[best_attr].intV]++;
@@ -302,7 +314,7 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 
 		/* recursively build subtrees */
 		node->children_size = no_of_values;
-		ASSERT(node->children = calloc(no_of_values, sizeof *node->children));
+		ASSERT(node->children = (SimpleTreeNode **) calloc(no_of_values, sizeof *node->children));
 
 		args->attr_split_so_far[best_attr] = 1;
 		for (i = 0; i < no_of_values; i++) {
@@ -327,7 +339,7 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 
         /* recursively build subtrees */
         node->children_size = 2;
-        ASSERT(node->children = calloc(2, sizeof *node->children));
+        ASSERT(node->children = (SimpleTreeNode **) calloc(2, sizeof *node->children));
         
         node->children[0] = build_tree(examples, best_rank + 1, depth + 1, args);
         node->children[1] = build_tree(examples + best_rank + 1, size - (best_rank + 1), depth + 1, args);
@@ -356,12 +368,12 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
     	raiseError("class-less domain");
 	
 	/* create a tabel with pointers to examples */
-	ASSERT(examples = calloc(ogen->numberOfExamples(), sizeof(TExample**)));
+	ASSERT(examples = (TExample **) calloc(ogen->numberOfExamples(), sizeof(TExample**)));
 	ex = examples;
 	PEITERATE(ei, ogen)
         *(ex++) = &(*ei);
 
-	ASSERT(args.attr_split_so_far = calloc(ogen->domain->attributes->size(), sizeof(int)));
+	ASSERT(args.attr_split_so_far = (int *) calloc(ogen->domain->attributes->size(), sizeof(int)));
     args.minExamples = minExamples;
     args.maxMajority = maxMajority;
     args.maxDepth = maxDepth;
@@ -415,7 +427,7 @@ classify(const TExample &ex, struct SimpleTreeNode *node, int *free_dist)
             int i, j, cls_vals, *dist, *child_dist;
 
             cls_vals = ex.domain->classVar->noOfValues();
-            ASSERT(dist = calloc(cls_vals, sizeof *dist));
+            ASSERT(dist = (int *) calloc(cls_vals, sizeof *dist));
             for (i = 0; i < node->children_size; i++) {
                 child_dist = classify(ex, node->children[i], free_dist);
                 for (j = 0; j < cls_vals; j++)

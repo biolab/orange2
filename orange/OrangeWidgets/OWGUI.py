@@ -1866,6 +1866,8 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
         text = self.displayText(index.data(Qt.DisplayRole), QLocale.system())
         self.initStyleOption(option, index)
         textRect = style.subElementRect(QStyle.SE_ItemViewItemText, option)
+        if not textRect.isValid():
+            textRect = option.rect
         margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin, option) + 1
         textRect = textRect.adjusted(margin, 0, -margin, 0)
         font = index.data(Qt.FontRole)
@@ -1914,6 +1916,8 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
             style.drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
             text = self.displayText(index.data(Qt.DisplayRole), QLocale.system())
             textRect = style.subElementRect(QStyle.SE_ItemViewItemText, option)
+            if not textRect.isValid():
+                textRect = option.rect
             margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin, option) + 1
             textRect = textRect.adjusted(margin, 0, -margin, 0)
             elideText = QFontMetrics(option.font).elidedText(text, option.textElideMode, textRect.width())

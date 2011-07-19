@@ -347,7 +347,9 @@ include_ext = LibStatic("orange_include", get_source_files("source/include/"), i
 
 libraries = ["stdc++", "orange_include"]
 
-orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + get_source_files("source/orange/blas/", "c"),
+orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + \
+                                               get_source_files("source/orange/blas/", "c") + \
+                                               get_source_files("source/orange/linpack/", "c"),
                                       include_dirs=include_dirs,
                                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
                                       extra_link_args = extra_link_args,

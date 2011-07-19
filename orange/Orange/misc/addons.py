@@ -1463,7 +1463,7 @@ def load_installed_addons_from_dir(dir):
     if os.path.isdir(dir):
         for name in os.listdir(dir):
             addOnDir = os.path.join(dir, name)
-            if not os.path.isdir(addOnDir):
+            if not os.path.isdir(addOnDir) or name.startswith("."):
                 continue
             try:
                 addOn = OrangeAddOnInstalled(addOnDir)
