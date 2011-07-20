@@ -289,7 +289,7 @@ class PolygonSelection(object):
         self.vertices = [[x+dx, y+dy] for x,y in self.vertices]
         self.current_vertex[0] += dx
         self.current_vertex[1] += dy
-        self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
+        self.polygon.translate(dx, dy)
 
     def draw(self):
         glLineWidth(1)
@@ -361,7 +361,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.scale = numpy.array([1., 1., 1.])
         self.additional_scale = [0, 0, 0]
         self.scale_x_axis = True
-        self.scale_factor = 30.
+        self.scale_factor = 100.
         self.initial_scale = numpy.array([1., 1., 1.])
         self.initial_center = numpy.array([0, 0, 0])
 
@@ -1100,6 +1100,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             delta = 1 + event.delta() / self.zoom_factor
             self.scale *= delta
             self.updateGL()
+
+    def remove_last_selection(self):
+        if len(self.selections) > 0:
+            self.selections.pop()
+            self.updateGL()
+
+    def remove_all_selections(self):
+        self.selections = []
+        self.updateGL()
 
     def clear(self):
         self.commands = []
