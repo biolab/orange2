@@ -63,6 +63,7 @@ _import("regression.tree")
 _import("multilabel")
 _import("multilabel.multibase")
 _import("multilabel.br")
+_import("multilabel.powerset")
 
 _import("associate")
 

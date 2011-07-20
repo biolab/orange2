@@ -36,4 +36,4 @@ Orange
    optimization
       tuning
    multilabel
-      br
+      br; powerset
