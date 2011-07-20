@@ -38,9 +38,9 @@ class TooltipManager:
         if len(self.positions) == 0: return ("", -1, -1)
         dists = [max(abs(x-position[0])- position[2],0) + max(abs(y-position[1])-position[3], 0) for position in self.positions]
         nearestIndex = dists.index(min(dists))
-
-        intX = abs(self.graph.transform(self.graph.xBottom, x) - self.graph.transform(self.graph.xBottom, self.positions[nearestIndex][0]))
-        intY = abs(self.graph.transform(self.graph.yLeft, y) - self.graph.transform(self.graph.yLeft, self.positions[nearestIndex][1]))
+        
+        intX = abs(self.graph.transform(xBottom, x) - self.graph.transform(xBottom, self.positions[nearestIndex][0]))
+        intY = abs(self.graph.transform(yLeft, y) - self.graph.transform(yLeft, self.positions[nearestIndex][1]))
         if self.positions[nearestIndex][2] == 0 and self.positions[nearestIndex][3] == 0:   # if we specified no custom range then assume 6 pixels
             if intX + intY < 6:  return (self.texts[nearestIndex], self.positions[nearestIndex][0], self.positions[nearestIndex][1])
             else:                return ("", None, None)

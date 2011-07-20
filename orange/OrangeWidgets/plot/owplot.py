@@ -116,6 +116,7 @@ class OWPlot(orangeplot.Plot):
                 
         # Method aliases, because there are some methods with different names but same functions
         self.setCanvasBackground = self.setCanvasColor
+        self.map_from_widget = self.mapToScene
         
         # OWScatterPlot needs these:
         self.alphaValue = 1
@@ -124,6 +125,7 @@ class OWPlot(orangeplot.Plot):
         self.palette = shared_palette()
         self.curveSymbols = self.palette.curve_symbols
         self.tips = TooltipManager(self)
+        self.setMouseTracking(True)
         
         self.state = NOTHING
         self._pressed_mouse_button = Qt.NoButton
@@ -550,9 +552,9 @@ class OWPlot(orangeplot.Plot):
             return
         self.static_click = True
         self._pressed_mouse_button = event.button()
-        point = self.map_from_widget(event.pos())
+        point = self.mapToScene(event.pos())
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
-            self._selection_start_point = self.map_from_widget(event.pos())
+            self._selection_start_point = self.mapToScene(event.pos())
             self._current_rs_item = QGraphicsRectItem(parent=self.graph_item, scene=self.scene())
             
     def mouseMoveEvent(self, event):
@@ -561,11 +563,11 @@ class OWPlot(orangeplot.Plot):
             return
         if event.buttons():
             self.static_click = False
-        point = self.map_from_widget(event.pos())
+        point = self.mapToScene(event.pos())
         if self._pressed_mouse_button == Qt.LeftButton:
             if self.state == SELECT_RECTANGLE and self._current_rs_item and self.graph_area.contains(point):
                 self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
-        if not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
+        elif not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
             self._current_ps_polygon[-1] = point
             self._current_ps_item.setPolygon(self._current_ps_polygon)
             if self._current_ps_polygon.size() > 2 and self.points_equal(self._current_ps_polygon.first(), self._current_ps_polygon.last()):
@@ -575,7 +577,17 @@ class OWPlot(orangeplot.Plot):
                 self._current_ps_item.setPen(highlight_pen)
             else:
                 self._current_ps_item.setPen(QPen(Qt.black))
-            
+        else:
+            t, ok = (self.transform_for_axes(xBottom, yLeft) * self.zoom_transform).inverted()
+            if ok:
+                p = t.map(point)
+                text, x, y = self.tips.maybeTip(p.x(), p.y())
+                if type(text) == int: 
+                    text = self.buildTooltip(text)
+                if text and x is not None and y is not None:
+                    tp = self.mapFromScene(QPointF(x,y) * self.map_transform)
+                    self.showTip(tp.x(), tp.y(), text)
+           
     def mouseReleaseEvent(self, event):
         if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
             event.accept()
@@ -589,7 +601,7 @@ class OWPlot(orangeplot.Plot):
             self._current_rs_item = None
     
     def mouseStaticClick(self, event):
-        point = self.map_from_widget(event.pos())
+        point = self.mapToScene(event.pos())
         if self.state == ZOOMING:
             t, ok = self.zoom_transform.inverted()
             if not ok:
@@ -693,9 +705,6 @@ class OWPlot(orangeplot.Plot):
             self._current_rs_item = None
         if state != SELECT_POLYGON:
             self._current_ps_item = None
-        
-    def map_from_widget(self, point):
-        return self.mapToScene(point) - self.graph_item.pos()
         
     def get_selected_points(self, xData, yData, validData):
         region = QRegion()
@@ -815,3 +824,45 @@ class OWPlot(orangeplot.Plot):
             return point.y()
         else:
             return None
+            
+    # ####################################################################
+    # return string with attribute names and their values for example example
+    def getExampleTooltipText(self, example, indices = None, maxIndices = 20):
+        if indices and type(indices[0]) == str:
+            indices = [self.attributeNameIndex[i] for i in indices]
+        if not indices: 
+            indices = range(len(self.dataDomain.attributes))
+        
+        # don't show the class value twice
+        if example.domain.classVar:
+            classIndex = self.attributeNameIndex[example.domain.classVar.name]
+            while classIndex in indices:
+                indices.remove(classIndex)      
+      
+        text = "<b>Attributes:</b><br>"
+        for index in indices[:maxIndices]:
+            attr = self.attributeNames[index]
+            if attr not in example.domain:  text += "&nbsp;"*4 + "%s = ?<br>" % (Qt.escape(attr))
+            elif example[attr].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (Qt.escape(attr))
+            else:                           text += "&nbsp;"*4 + "%s = %s<br>" % (Qt.escape(attr), Qt.escape(str(example[attr])))
+        if len(indices) > maxIndices:
+            text += "&nbsp;"*4 + " ... <br>"
+
+        if example.domain.classVar:
+            text = text[:-4]
+            text += "<hr><b>Class:</b><br>"
+            if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (Qt.escape(example.domain.classVar.name))
+            else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (Qt.escape(example.domain.classVar.name), Qt.escape(str(example.getclass())))
+
+        if len(example.domain.getmetas()) != 0:
+            text = text[:-4]
+            text += "<hr><b>Meta attributes:</b><br>"
+            # show values of meta attributes
+            for key in example.domain.getmetas():
+                try: text += "&nbsp;"*4 + "%s = %s<br>" % (Qt.escape(example.domain[key].name), Qt.escape(str(example[key])))
+                except: pass
+        return text[:-4]        # remove the last <br>
+
+    # show a tooltip at x,y with text. if the mouse will move for more than 2 pixels it will be removed
+    def showTip(self, x, y, text):
+        QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3,y-3,6,6))
