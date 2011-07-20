@@ -222,7 +222,7 @@ class Legend(object):
             self.plot.renderText(x+t+30, item_pos_y, text)
             item_pos_y += self.metrics.height()
 
-    def point_inside(self, x, y):
+    def contains(self, x, y):
         return self.position[0] <= x <= self.position[0]+self.size[0] and\
                self.position[1] <= y <= self.position[1]+self.size[1]
 
@@ -235,13 +235,19 @@ class RectangleSelection(object):
         self.first_vertex = first_vertex
         self.current_vertex = first_vertex
 
-    def point_inside(self, x, y):
+    def contains(self, x, y):
         x1, x2 = sorted([self.first_vertex[0], self.current_vertex[0]])
         y1, y2 = sorted([self.first_vertex[1], self.current_vertex[1]])
         if x1 <= x <= x2 and\
            y1 <= y <= y2:
             return True
         return False
+
+    def move(self, dx, dy):
+        self.first_vertex[0] += dx
+        self.first_vertex[1] += dy
+        self.current_vertex[0] += dx
+        self.current_vertex[1] += dy
 
     def draw(self):
         v1, v2 = self.first_vertex, self.current_vertex
@@ -254,26 +260,36 @@ class RectangleSelection(object):
 
     def valid(self):
         return self.first_vertex != self.current_vertex
-        # TODO
+        # TODO: drop if too small
 
 class PolygonSelection(object):
     def __init__(self, first_vertex):
         self.vertices = [first_vertex]
         self.current_vertex = first_vertex
         self.first_vertex = first_vertex
+        self.polygon = None
 
     def add_current_vertex(self):
         distance = (self.current_vertex[0]-self.first_vertex[0])**2
         distance += (self.current_vertex[1]-self.first_vertex[1])**2
         if distance < 10**2:
             self.vertices.append(self.first_vertex)
+            self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
             return True
         else:
             self.vertices.append(self.current_vertex)
             return False
 
-    def point_inside(self, x, y):
-        return False # TODO
+    def contains(self, x, y):
+        if self.polygon == None:
+            return False
+        return self.polygon.containsPoint(QPoint(x, y), Qt.OddEvenFill)
+
+    def move(self, dx, dy):
+        self.vertices = [[x+dx, y+dy] for x,y in self.vertices]
+        self.current_vertex[0] += dx
+        self.current_vertex[1] += dy
+        self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
 
     def draw(self):
         glLineWidth(1)
@@ -959,7 +975,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 for i, (x, y, z) in enumerate(zip(X, Y, Z)):
                     x_win, y_win = project(x, y, z)
                     for selection in self.selections:
-                        if selection.point_inside(x_win, y_win):
+                        if selection.contains(x_win, y_win):
                             indices.append(i)
                             break
 
@@ -974,10 +990,17 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         buttons = event.buttons()
 
         if buttons & Qt.LeftButton:
-            if self.legend.point_inside(pos.x(), pos.y()):
+            if self.legend.contains(pos.x(), pos.y()):
                 self.state = PlotState.DRAGGING_LEGEND
                 self.new_selection = None
             else:
+                if self.state == PlotState.SELECTING:
+                    return
+                for selection in self.selections:
+                    if selection.contains(pos.x(), pos.y()):
+                        self.state = PlotState.PANNING
+                        self.dragged_selection = selection
+                        return
                 self.state = PlotState.SELECTING
                 if self.selection_type == SelectionType.RECTANGLE or\
                    self.selection_type == SelectionType.ZOOM:
@@ -999,7 +1022,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.state == PlotState.IDLE:
             for selection in self.selections:
-                if selection.point_inside(pos.x(), pos.y()):
+                if selection.contains(pos.x(), pos.y()):
                     self.setCursor(Qt.OpenHandCursor)
                     break
             else:
@@ -1010,7 +1033,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         dx = pos.x() - self.mouse_pos.x()
         dy = pos.y() - self.mouse_pos.y()
 
-        if self.state == PlotState.SELECTING:
+        if self.state == PlotState.SELECTING and self.new_selection != None:
             self.new_selection.current_vertex = [pos.x(), pos.y()]
         elif self.state == PlotState.DRAGGING_LEGEND:
             self.legend.move(dx, dy)
@@ -1033,6 +1056,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             dy = pos.y() - self.scaling_init_pos.y()
             self.additional_scale = [dx / self.scale_factor, dy / self.scale_factor, 0]\
                 if self.scale_x_axis else [0, dy / self.scale_factor, dx / self.scale_factor]
+        elif self.state == PlotState.PANNING:
+            self.dragged_selection.move(dx, dy)
 
         self.mouse_pos = pos
         self.updateGL()
@@ -1060,6 +1085,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     self.selection_change_callback() if self.selection_change_callback else None
         elif self.state == PlotState.ROTATING:
             self.state = PlotState.IDLE
+        elif self.state == PlotState.PANNING:
+            self.selection_change_callback() if self.selection_change_callback else None
 
         if not (self.state == PlotState.SELECTING and self.selection_type == SelectionType.POLYGON):
             self.state = PlotState.IDLE
