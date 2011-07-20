@@ -37,7 +37,7 @@
         Removes everything from the graph.
 """
 
-__all__ = ['OWPlot3D', 'Symbol']
+__all__ = ['OWPlot3D', 'Symbol', 'SelectionType']
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -139,10 +139,12 @@ def enum(*sequential):
 # * scaling: user has pressed right mouse button, dragging it up and down
 #   scales data in y-coordinate, dragging it right and left scales data
 #   in current horizontal coordinate (x or z, depends on rotation)
-PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'SCALING', 'SELECTING')
+PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 'PANNING')
 
 # TODO: more symbols
 Symbol = enum('TRIANGLE', 'RECTANGLE', 'PENTAGON', 'CIRCLE')
+
+SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
 
 class Legend(object):
     def __init__(self, plot):
@@ -228,6 +230,66 @@ class Legend(object):
         self.position[0] += dx
         self.position[1] += dy
 
+class RectangleSelection(object):
+    def __init__(self, first_vertex):
+        self.first_vertex = first_vertex
+        self.current_vertex = first_vertex
+
+    def point_inside(self, x, y):
+        x1, x2 = sorted([self.first_vertex[0], self.current_vertex[0]])
+        y1, y2 = sorted([self.first_vertex[1], self.current_vertex[1]])
+        if x1 <= x <= x2 and\
+           y1 <= y <= y2:
+            return True
+        return False
+
+    def draw(self):
+        v1, v2 = self.first_vertex, self.current_vertex
+        glLineWidth(1)
+        glColor4f(0, 0, 0, 1)
+        draw_line(v1[0], v1[1], v1[0], v2[1])
+        draw_line(v1[0], v2[1], v2[0], v2[1])
+        draw_line(v2[0], v2[1], v2[0], v1[1])
+        draw_line(v2[0], v1[1], v1[0], v1[1])
+
+    def valid(self):
+        return self.first_vertex != self.current_vertex
+        # TODO
+
+class PolygonSelection(object):
+    def __init__(self, first_vertex):
+        self.vertices = [first_vertex]
+        self.current_vertex = first_vertex
+        self.first_vertex = first_vertex
+
+    def add_current_vertex(self):
+        distance = (self.current_vertex[0]-self.first_vertex[0])**2
+        distance += (self.current_vertex[1]-self.first_vertex[1])**2
+        if distance < 10**2:
+            self.vertices.append(self.first_vertex)
+            return True
+        else:
+            self.vertices.append(self.current_vertex)
+            return False
+
+    def point_inside(self, x, y):
+        return False # TODO
+
+    def draw(self):
+        glLineWidth(1)
+        glColor4f(0, 0, 0, 1)
+        if len(self.vertices) == 1:
+            v1, v2 = self.vertices[0], self.current_vertex
+            draw_line(v1[0], v1[1], v2[0], v2[1])
+            return
+        last_vertex = self.vertices[0]
+        for vertex in self.vertices[1:]:
+            v1, v2 = vertex, last_vertex
+            draw_line(v1[0], v1[1], v2[0], v2[1])
+            last_vertex = vertex
+
+        v1, v2 = last_vertex, self.current_vertex
+        draw_line(v1[0], v1[1], v2[0], v2[1])
 
 class OWPlot3D(QtOpenGL.QGLWidget):
 
@@ -293,7 +355,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.build_axes()
         self.selections = []
-        self.auto_send_selection_callback = None
+        self.selection_change_callback = None
+        self.selection_type = SelectionType.RECTANGLE
+        self.new_selection = None
+
+        self.setMouseTracking(True)
 
     def __del__(self):
         # TODO: delete shaders and vertex buffer
@@ -507,20 +573,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.renderText(x+60, y+3,
                             'Scale {0} axis'.format(['z', 'x'][self.scale_x_axis]),
                             font=self.labels_font)
-        elif self.state == PlotState.SELECTING and self.new_selection[3] != None:
-            s = self.new_selection
-            glColor4f(0, 0, 0, 1)
-            draw_line(s[0], s[1], s[0], s[3])
-            draw_line(s[0], s[3], s[2], s[3])
-            draw_line(s[2], s[3], s[2], s[1])
-            draw_line(s[2], s[1], s[0], s[1])
+        elif self.state == PlotState.SELECTING and self.new_selection != None:
+            self.new_selection.draw()
 
-        for s in self.selections:
-            glColor4f(0, 0, 0, 1)
-            draw_line(s[0], s[1], s[0], s[3])
-            draw_line(s[0], s[3], s[2], s[3])
-            draw_line(s[2], s[3], s[2], s[1])
-            draw_line(s[2], s[1], s[0], s[1])
+        for selection in self.selections:
+            selection.draw()
 
     def set_x_axis_title(self, title):
         self.x_axis_title = title
@@ -581,7 +638,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glVertex3f(*(position-normal*0.2))
                 glVertex3f(*(position+normal*0.2))
                 glEnd()
-                value = position[coord_index] / (self.scale[coord_index] + self.additional_scale[coord_index])
+                value = position[coord_index] /\
+                    (max(0, self.scale[coord_index] + self.additional_scale[coord_index]))
                 value /= self.initial_scale[coord_index]
                 value += self.initial_center[coord_index]
                 position += offset
@@ -652,21 +710,25 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if visible_planes[0]:
             draw_axis(self.x_axis)
             draw_values(self.x_axis, 0, numpy.array([0, 0, -1]))
-            draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
+            if self.show_x_axis_title:
+                draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
         elif visible_planes[2]:
             draw_axis(self.x_axis + self.unit_z)
             draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]))
-            draw_axis_title(self.x_axis + self.unit_z,
-                            self.x_axis_title, numpy.array([0, 0, 1]))
+            if self.show_x_axis_title:
+                draw_axis_title(self.x_axis + self.unit_z,
+                                self.x_axis_title, numpy.array([0, 0, 1]))
 
         if visible_planes[1]:
             draw_axis(self.z_axis)
             draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]))
-            draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
+            if self.show_z_axis_title:
+                draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
         elif visible_planes[3]:
             draw_axis(self.z_axis + self.unit_x)
             draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]))
-            draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
+            if self.show_z_axis_title:
+                draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
 
         try:
             rightmost_visible = visible_planes[::-1].index(True)
@@ -686,7 +748,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         normal = normals[rightmost_visible]
         draw_axis(axis)
         draw_values(axis, 1, normal)
-        draw_axis_title(axis, self.y_axis_title, normal)
+        if self.show_y_axis_title:
+            draw_axis_title(axis, self.y_axis_title, normal)
 
         # Remember which axis to scale when dragging mouse horizontally.
         self.scale_x_axis = False if rightmost_visible % 2 == 0 else True
@@ -889,54 +952,69 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             winy = self.height() - winy
             return winx, winy
 
-        def inside_selection(x_win, y_win):
-            for selection in self.selections:
-                x1, x2 = sorted([selection[0], selection[2]])
-                y1, y2 = sorted([selection[1], selection[3]])
-                if x1 <= x_win <= x2 and\
-                   y1 <= y_win <= y2:
-                    return True
-            return False
-
         indices = []
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
                 _, _, (X, Y, Z), _ = params
                 for i, (x, y, z) in enumerate(zip(X, Y, Z)):
                     x_win, y_win = project(x, y, z)
-                    if inside_selection(x_win, y_win):
-                        indices.append(i)
+                    for selection in self.selections:
+                        if selection.point_inside(x_win, y_win):
+                            indices.append(i)
+                            break
 
         return indices
+
+    def set_selection_type(self, type):
+        if SelectionType.is_valid(type):
+            self.selection_type = type
 
     def mousePressEvent(self, event):
         pos = self.mouse_pos = event.pos()
         buttons = event.buttons()
+
         if buttons & Qt.LeftButton:
             if self.legend.point_inside(pos.x(), pos.y()):
                 self.state = PlotState.DRAGGING_LEGEND
+                self.new_selection = None
             else:
                 self.state = PlotState.SELECTING
-                self.new_selection = [pos.x(), pos.y(), None, None]
+                if self.selection_type == SelectionType.RECTANGLE or\
+                   self.selection_type == SelectionType.ZOOM:
+                    self.new_selection = RectangleSelection([pos.x(), pos.y()])
         elif buttons & Qt.RightButton:
             self.selections = []
+            self.new_selection = None
             self.state = PlotState.SCALING
             self.scaling_init_pos = self.mouse_pos
             self.additional_scale = [0, 0, 0]
             self.updateGL()
+        elif buttons & Qt.MiddleButton:
+            self.state = PlotState.ROTATING
+            self.selections = []
+            self.new_selection = None
 
     def mouseMoveEvent(self, event):
         pos = event.pos()
+
+        if self.state == PlotState.IDLE:
+            for selection in self.selections:
+                if selection.point_inside(pos.x(), pos.y()):
+                    self.setCursor(Qt.OpenHandCursor)
+                    break
+            else:
+                self.setCursor(Qt.ArrowCursor)
+            # Don't do anything else if idle
+            return
+
         dx = pos.x() - self.mouse_pos.x()
         dy = pos.y() - self.mouse_pos.y()
 
-        if event.buttons() & Qt.LeftButton:
-            if self.state == PlotState.DRAGGING_LEGEND:
-                self.legend.move(dx, dy)
-            elif self.state == PlotState.SELECTING:
-                self.new_selection[2:] = [pos.x(), pos.y()]
-        elif event.buttons() & Qt.MiddleButton:
-            self.selections = []
+        if self.state == PlotState.SELECTING:
+            self.new_selection.current_vertex = [pos.x(), pos.y()]
+        elif self.state == PlotState.DRAGGING_LEGEND:
+            self.legend.move(dx, dy)
+        elif self.state == PlotState.ROTATING:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 off_x = numpy.cross(self.camera, [0, 1, 0]) * (dx / self.move_factor)
                 #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
@@ -950,8 +1028,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     sin(self.pitch)*cos(self.yaw),
                     cos(self.pitch),
                     sin(self.pitch)*sin(self.yaw)]
-
-        if self.state == PlotState.SCALING:
+        elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
             self.additional_scale = [dx / self.scale_factor, dy / self.scale_factor, 0]\
@@ -961,15 +1038,33 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def mouseReleaseEvent(self, event):
+        if self.state == PlotState.SELECTING and self.new_selection == None:
+            self.new_selection = PolygonSelection([event.pos().x(), event.pos().y()])
+            return
+
         if self.state == PlotState.SCALING:
             self.scale = numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
             self.additional_scale = [0, 0, 0]
+            self.state = PlotState.IDLE
         elif self.state == PlotState.SELECTING:
-            if self.new_selection[3] != None:
-                self.selections.append(self.new_selection)
-                self.auto_send_selection_callback() if self.auto_send_selection_callback else None
+            if self.selection_type == SelectionType.POLYGON:
+                last = self.new_selection.add_current_vertex()
+                if last:
+                    self.selections.append(self.new_selection)
+                    self.selection_change_callback() if self.selection_change_callback else None
+                    self.state = PlotState.IDLE
+                    self.new_selection = None
+            else:
+                if self.new_selection.valid():
+                    self.selections.append(self.new_selection)
+                    self.selection_change_callback() if self.selection_change_callback else None
+        elif self.state == PlotState.ROTATING:
+            self.state = PlotState.IDLE
 
-        self.state = PlotState.IDLE
+        if not (self.state == PlotState.SELECTING and self.selection_type == SelectionType.POLYGON):
+            self.state = PlotState.IDLE
+            self.new_selection = None
+
         self.updateGL()
 
     def wheelEvent(self, event):

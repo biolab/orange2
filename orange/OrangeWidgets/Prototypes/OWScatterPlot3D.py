@@ -5,6 +5,7 @@ from OWWidget import *
 from owplot3d import *
 
 import OWGUI
+import OWToolbars
 import OWColorPalette
 
 import numpy
@@ -16,7 +17,7 @@ class OWScatterPlot3D(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Scatter Plot 3D"):
         OWWidget.__init__(self, parent, signalManager, name, True)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Subset Examples", ExampleTable, self.setSubsetData)]
+        self.inputs = [("Examples", ExampleTable, self.set_data, Default), ("Subset Examples", ExampleTable, self.set_subset_data)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
 
         self.x_attr = 0
@@ -103,19 +104,38 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.grid',                'Show grid',      callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
+        self.auto_send_selection = True
+        self.auto_send_selection_update = False
+        self.plot.selection_change_callback = self.send_selections
+        box = OWGUI.widgetBox(self.settings_tab, 'Auto Send Selected Data When...')
+        OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
+            callback = self.on_checkbox_update, tooltip = 'Send selected data whenever a selection area is added or removed')
+        OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving/Resizing selection areas',
+            callback = self.on_checkbox_update, tooltip = 'Send selected data when a user moves or resizes an existing selection area')
+
+        self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection)
+        self.connect(self.zoom_select_toolbar.buttonSendSelections, SIGNAL('clicked()'), self.send_selections)
+        self.connect(self.zoom_select_toolbar.buttonSelectRect, SIGNAL('clicked()'), self.change_selection_type)
+        self.connect(self.zoom_select_toolbar.buttonSelectPoly, SIGNAL('clicked()'), self.change_selection_type)
+        self.connect(self.zoom_select_toolbar.buttonZoom, SIGNAL('clicked()'), self.change_selection_type)
+        self.toolbarSelection = None
+
         self.main_tab.layout().addStretch(100)
         self.settings_tab.layout().addStretch(100)
 
         self.mainArea.layout().addWidget(self.plot)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.plot.save_to_file)
 
-        self.plot.auto_send_selection_callback = self.send_selections
-
         self.data = None
         self.subsetData = None
         self.resize(1000, 600)
 
-    def setData(self, data=None):
+    def change_selection_type(self):
+        if self.toolbarSelection < 3:
+            selection_type = [SelectionType.ZOOM, SelectionType.RECTANGLE, SelectionType.POLYGON][self.toolbarSelection]
+            self.plot.set_selection_type(selection_type)
+
+    def set_data(self, data=None):
         self.closeContext("")
         self.data = data
         self.x_attr_cb.clear()
@@ -160,7 +180,7 @@ class OWScatterPlot3D(OWWidget):
             self.color_attr = max(len(self.axis_candidate_attrs) - 1, 0)
             self.openContext('', data)
 
-    def setSubsetData(self, data=None):
+    def set_subset_data(self, data=None):
         self.subsetData = data
 
     def handleNewSignals(self):
@@ -276,7 +296,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWScatterPlot3D()
     data = orange.ExampleTable("../../doc/datasets/iris")
-    w.setData(data)
+    w.set_data(data)
     w.handleNewSignals()
     w.show()
     app.exec_()
