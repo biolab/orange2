@@ -40,6 +40,7 @@ from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF
 
 from owpalette import *
 from owconstants import *
+from owtools import resize_plot_item_list
 
 class OWAxis(QGraphicsItemGroup):
     def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, parent=None, scene=None):
@@ -116,8 +117,9 @@ class OWAxis(QGraphicsItemGroup):
     def update_graph(self):
         if self.update_callback:
             self.update_callback()
+            
 
-    def update(self):
+    def update(self, zoom_only = False):
         if not self.graph_line or not self.title or not self.scene():
             return
         self.line_item.setLine(self.graph_line)
@@ -147,58 +149,60 @@ class OWAxis(QGraphicsItemGroup):
         self.title_item.setPos(title_pos - c + tl)
         
         ## Arrows
-        if self.start_arrow_item:
-            self.scene().removeItem(self.start_arrow_item)
-            self.start_arrow_item = None
-        if self.end_arrow_item:
-            self.scene().removeItem(self.end_arrow_item)
-            self.end_arrow_item = None
-            
+        if not zoom_only:
+            if self.start_arrow_item:
+                self.scene().removeItem(self.start_arrow_item)
+                self.start_arrow_item = None
+            if self.end_arrow_item:
+                self.scene().removeItem(self.end_arrow_item)
+                self.end_arrow_item = None
+
         if self.arrows & AxisStart:
-            self.start_arrow_item = QGraphicsPathItem(self.arrow_path, self)
+            if not zoom_only or not self.start_arrow_item:
+                self.start_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.start_arrow_item.setPos(self.graph_line.p1())
             self.start_arrow_item.setRotation(-self.graph_line.angle() + 180)
             self.start_arrow_item.setBrush(self.style.brush())
         if self.arrows & AxisEnd:
-            self.end_arrow_item = QGraphicsPathItem(self.arrow_path, self)
+            if not zoom_only or not self.end_arrow_item:
+                self.end_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.end_arrow_item.setPos(self.graph_line.p2())
             self.end_arrow_item.setRotation(-self.graph_line.angle())
-            self.end_arrow_item.setBrush(self.style.brush())\
+            self.end_arrow_item.setBrush(self.style.brush())
             
         ## Labels
         
         self.update_ticks()
         
-        for i in self.label_items:
-            self.scene().removeItem(i)
-        del self.label_items[:]
-        for i in self.tick_items:
-            self.scene().removeItem(i)
-        del self.tick_items[:]
+        n = len(self._ticks)
+        self.label_items = resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
+        self.tick_items = resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
+        
         if self.scale:
             min, max, step = self.scale
         else:
             step = 1
-        ratio = self.zoom_transform.map(self.graph_line).length() / self.graph_line.length()
-        for pos, text, size in self._ticks:
+        
+        test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
+        test_rect.adjust(-1, -1, 1, 1)
+        v = self.graph_line.normalVector().unitVector()
+        for i in range(len(self._ticks)):
+            pos, text, size = self._ticks[i]
             label_pos = self.map_to_graph( pos )
-            test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
-            test_rect.adjust(-1, -1, 1, 1)
             if not test_rect.contains(label_pos):
                 continue
             hs = 0.5*step
             label_pos = self.map_to_graph(pos - hs)
-            item = QGraphicsTextItem(self)
-            item.setHtml( '<center>' + text.strip() + '</center>')
+            item = self.label_items[i]
+            if not zoom_only:
+                item.setHtml( '<center>' + text.strip() + '</center>')
             item.setTextWidth( QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length() )
-            v = self.graph_line.normalVector().unitVector()
             if self.title_above:
                 label_pos = label_pos + (v.p2() - v.p1())*40
             item.setPos(label_pos)
             item.setRotation(-self.graph_line.angle())
-            self.label_items.append(item)
             
-            item = QGraphicsLineItem(self)
+            item = self.tick_items[i]
             tick_line = QLineF(v)
             tick_line.translate(-tick_line.p1())
             tick_line.setLength(size)
@@ -207,8 +211,7 @@ class OWAxis(QGraphicsItemGroup):
             item.setLine( tick_line )
             item.setPen(self.style.pen())
             item.setPos(self.map_to_graph(pos))
-            self.tick_items.append(item)
-       
+            
     @staticmethod
     def make_title(label, unit = None):
         lab = '<i>' + label + '</i>'
@@ -266,28 +269,3 @@ class OWAxis(QGraphicsItemGroup):
     def continuous_labels(self):
         min, max, step = self.scale
         magnitude = log10(abs(max-min))
-        
-    def update_zoom(self):
-        if not self.graph_line:
-            return
-        if self.scale:
-            min, max, step = self.scale
-        else:
-            step = 1
-        v = self.graph_line.normalVector().unitVector()
-        rect = QRectF(self.graph_line.p1(), self.graph_line.p2())
-        rect.adjust(-1, -1, 1, 1)
-        for i in range(len(self._ticks)):
-            pos, text, size = self._ticks[i]
-            hs = 0.5 * step
-            label_pos = self.map_to_graph(pos - hs)
-            self.label_items[i].setTextWidth( QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length() )
-            if self.title_above:
-                label_pos = label_pos + (v.p2() - v.p1())*40
-            self.label_items[i].setPos(label_pos)
-            graph_pos = self.map_to_graph(pos)
-            self.tick_items[i].setPos(graph_pos)
-            visible = rect.contains(graph_pos)
-            self.tick_items[i].setVisible(visible)
-            self.label_items[i].setVisible(visible)
-            

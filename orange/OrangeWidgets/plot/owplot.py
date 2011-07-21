@@ -530,10 +530,7 @@ class OWPlot(orangeplot.Plot):
                     item.graph_line = graph_line
                 item.graph_line.translate(self.graph_item.pos())
             item.zoom_transform = self.zoom_transform
-            if zoom_only:
-                item.update_zoom()
-            else:
-                item.update()
+            item.update(zoom_only)
         
     def replot(self, force = False):
         if not self.block_update or force:
