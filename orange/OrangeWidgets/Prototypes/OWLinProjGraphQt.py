@@ -435,8 +435,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         self.tooltipMarkers = []
 
         canvasPos = self.map_from_widget(e.pos())
-        xFloat = float(canvasPos.x())
-        yFloat = float(canvasPos.y())
+        xFloat, yFloat = self.map_from_graph(canvasPos)
 
         # in case we are drawing a rectangle, we don't draw enhanced tooltips
         # because it would then fail to draw the rectangle
@@ -472,8 +471,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                     nearestPoint = (x_i, y_i, color, index, extraString)
 
             (x_i, y_i, color, index, extraString) = nearestPoint
-            intX = self.transform(QwtPlot.xBottom, x_i)
-            intY = self.transform(QwtPlot.yLeft, y_i)
+            intX = self.transform(xBottom, x_i)
+            intY = self.transform(yLeft, y_i)
 
             if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
@@ -673,13 +672,13 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
 
     def computePotentials(self):
         import orangeom
-        #rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
-        #ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
+        #rx = self.transform(xBottom, 1) - self.transform(xBottom, 0)
+        #ry = self.transform(yLeft, 0) - self.transform(yLeft, 1)
 
-        rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, -1)
-        ry = self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 1)
-        ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, -1)
-        oy = self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 0)
+        rx = self.transform(xBottom, 1) - self.transform(xBottom, -1)
+        ry = self.transform(yLeft, -1) - self.transform(yLeft, 1)
+        ox = self.transform(xBottom, 0) - self.transform(xBottom, -1)
+        oy = self.transform(yLeft, -1) - self.transform(yLeft, 0)
 
         rx -= rx % self.squareGranularity
         ry -= ry % self.squareGranularity
@@ -713,12 +712,12 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         if self.showProbabilities and getattr(self, "potentialsClassifier", None):
             if not (self.potentialsClassifier is getattr(self, "potentialsImageFromClassifier", None)):
                 self.computePotentials()
-            target = QRectF(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1),
-                            self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, -1),
-                            self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 1))
+            target = QRectF(self.transform(xBottom, -1), self.transform(yLeft, 1),
+                            self.transform(xBottom, 1) - self.transform(xBottom, -1),
+                            self.transform(yLeft, -1) - self.transform(yLeft, 1))
             source = QRectF(0, 0, self.potentialsImage.size().width(), self.potentialsImage.size().height())
             painter.drawImage(target, self.potentialsImage, source)
-#            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
+#            painter.drawImage(self.transform(xBottom, -1), self.transform(yLeft, 1), self.potentialsImage)
         OWPlot.drawCanvas(self, painter)
         
     def updateCurves(self):

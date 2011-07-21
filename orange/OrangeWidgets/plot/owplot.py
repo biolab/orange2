@@ -196,8 +196,11 @@ class OWPlot(orangeplot.Plot):
         return (ret.x(), ret.y())
         
     def map_from_graph(self, point, axes = None):
-        (x, y) = point
-        ret = QPointF(x, y) * self.map_transform.inverted()
+        if type(point) == tuple:
+            (x, y) = point
+            point = QPointF(x,y)
+        t, ok = self.map_transform.inverted()
+        ret = point * t
         return (ret.x(), ret.y())
         
     def save_to_file(self, extraButtons = []):
@@ -322,7 +325,17 @@ class OWPlot(orangeplot.Plot):
         c.name = name
         c.setAutoUpdate(False)
         c.setStyle(style)
-        c.setColor(brushColor)
+        
+        if pen:
+            p = pen
+        else:
+            p = QPen()
+            p.setColor(penColor)
+            p.setWidth(lineWidth)
+        c.setPen(p)
+        
+        c.setBrush(brushColor)
+        
         c.setSymbol(symbol)
         c.setPointSize(size)
         c.setData(xData,  yData)
@@ -363,20 +376,11 @@ class OWPlot(orangeplot.Plot):
         
     def add_marker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, 
                     x_axis_key = xBottom, y_axis_key = yLeft):
-        text = name
-        if bold:
-            text = '<b>' + text + '</b>'
-        item = QGraphicsTextItem(parent=self.graph_item, scene=self.scene())
-        item.setHtml(text)
-        (dx,dy) = (4,4)
-        (px,py) = self.map_to_graph((x,y))
-        item.setPos(px+dx,py+dy)
-        if color:
-            item.setPen(QPen(color))
-        if brushColor:
-            item.setBrush(QBrush(brushColor))
-            
-        self._marker_items.append((item, x, y, x_axis_key, y_axis_key))
+        m = Marker(name, x, y, alignment, bold, color, brushColor)
+        self._marker_items.append((m, x, y, x_axis_key, y_axis_key))
+        m.attach(self)
+        
+        return m
         
     def removeAllSelections(self):
         ## TODO
@@ -392,7 +396,7 @@ class OWPlot(orangeplot.Plot):
         
     def clear_markers(self):
         for item,x,y,x_axis,y_axis in self._marker_items:
-            self.scene().removeItem(item)
+            item.detach()
         self._marker_items = []
         
     def update_layout(self):
@@ -467,8 +471,9 @@ class OWPlot(orangeplot.Plot):
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
         for c in self.itemList():
-            c.set_zoom_factor(self._zoom_factor)
-            c.updateProperties()
+            if hasattr(c, 'set_zoom_factor'):
+                c.set_zoom_factor(self._zoom_factor)
+                c.updateProperties()
         self.graph_item.setTransform(self.zoom_transform)
         for a in self.axes.values():
             if a.zoomable:
@@ -477,12 +482,15 @@ class OWPlot(orangeplot.Plot):
             
         for item, region in self.selection_items:
             item.setTransform(self.zoom_transform)
-            
+        
+        """
+        NOTE: I'm not sure if this is necessary
         for item,x,y,x_axis,y_axis in self._marker_items:
             p = QPointF(x,y) * self.transform_for_axes(x_axis, y_axis) * self.zoom_transform + QPointF(4,4)
             r = item.boundingRect()
             item.setPos(p - r.center() + r.topLeft())
-            
+        """
+        
         self.update_axes()
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.update()

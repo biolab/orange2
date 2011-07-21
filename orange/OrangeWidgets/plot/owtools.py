@@ -122,3 +122,22 @@ class CircleCurve(OWCurve):
         x, y = self.center
         r = self.radius
         return QRectF(x-r, y-r, 2*r, 2*r)
+        
+class Marker(orangeplot.PlotItem):
+    def __init__(self, text, x, y, align, bold = 0, color = None, brushColor = None, size=None):
+        orangeplot.PlotItem.__init__(self)
+        self._item = QGraphicsTextItem(text, parent=self)
+        self._data_point = QPointF(x,y)
+        f = self._item.font()
+        f.setBold(bold)
+        if size:
+            f.setPointSize(size)
+        self._item.setFont(f)
+        self._item.setPos(x, y)
+        if color:
+            self._item.setPen(QPen(color))
+        if brushColor:
+            self._item.setBrush(QBrush(brushColor))
+            
+    def updateProperties(self):
+        self._item.setPos(self.graphTransform().map(self._data_point))
