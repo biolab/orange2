@@ -478,11 +478,7 @@ class OWPlot(orangeplot.Plot):
                 c.set_zoom_factor(self._zoom_factor)
                 c.updateProperties()
         self.graph_item.setTransform(self.zoom_transform)
-        for a in self.axes.values():
-            if a.zoomable:
-                a.zoom_transform = self.zoom_transform
-                a.update()
-            
+        
         for item, region in self.selection_items:
             item.setTransform(self.zoom_transform)
         
@@ -493,12 +489,12 @@ class OWPlot(orangeplot.Plot):
             r = item.boundingRect()
             item.setPos(p - r.center() + r.topLeft())
         """
+        self.update_axes(zoom_only=True)
         
-        self.update_axes()
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.update()
         
-    def update_axes(self):
+    def update_axes(self, zoom_only=False):
         for id, item in self.axes.iteritems():
             if item.scale is None and item.labels is None:
                 item.auto_range = self.bounds_for_axis(id)
@@ -533,7 +529,11 @@ class OWPlot(orangeplot.Plot):
                 else:
                     item.graph_line = graph_line
                 item.graph_line.translate(self.graph_item.pos())
-            item.update()
+            item.zoom_transform = self.zoom_transform
+            if zoom_only:
+                item.update_zoom()
+            else:
+                item.update()
         
     def replot(self, force = False):
         if not self.block_update or force:
