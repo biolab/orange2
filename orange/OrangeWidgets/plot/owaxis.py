@@ -268,7 +268,6 @@ class OWAxis(QGraphicsItemGroup):
         magnitude = log10(abs(max-min))
         
     def update_zoom(self):
-        qDebug('Updating zoom, graph line is ' + repr(self.graph_line))
         if not self.graph_line:
             return
         if self.scale:
@@ -276,6 +275,8 @@ class OWAxis(QGraphicsItemGroup):
         else:
             step = 1
         v = self.graph_line.normalVector().unitVector()
+        rect = QRectF(self.graph_line.p1(), self.graph_line.p2())
+        rect.adjust(-1, -1, 1, 1)
         for i in range(len(self._ticks)):
             pos, text, size = self._ticks[i]
             hs = 0.5 * step
@@ -286,8 +287,6 @@ class OWAxis(QGraphicsItemGroup):
             self.label_items[i].setPos(label_pos)
             graph_pos = self.map_to_graph(pos)
             self.tick_items[i].setPos(graph_pos)
-            rect = QRectF(self.graph_line.p1(), self.graph_line.p2())
-            rect.adjust(-1, -1, 1, 1)
             visible = rect.contains(graph_pos)
             self.tick_items[i].setVisible(visible)
             self.label_items[i].setVisible(visible)
