@@ -1,4 +1,4 @@
-"""
+﻿"""
     .. class:: OWPlot3D
         Base class for 3D plots.
 
@@ -45,56 +45,26 @@ from OWDlgs import OWChooseImageSizeDlg
 import orange
 
 import OpenGL
-#OpenGL.ERROR_CHECKING = True
-#OpenGL.ERROR_LOGGING = True
-#OpenGL.FULL_LOGGING = True
+OpenGL.ERROR_CHECKING = False # Turned off for performance improvement.
+OpenGL.ERROR_LOGGING = False
+OpenGL.FULL_LOGGING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.arrays import ArrayDatatype
-from ctypes import byref, c_char_p, c_int, create_string_buffer, c_ubyte
+from OpenGL.GL.ARB.vertex_array_object import *
+from OpenGL.GL.ARB.vertex_buffer_object import *
+from ctypes import c_void_p
+#OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
+
 import sys
-import numpy
 from math import sin, cos, pi
+import struct
+import numpy
 
 try:
     from itertools import izip as zip # Python 3 zip == izip in Python 2.x
 except:
     pass
-
-# Import undefined functions, override some wrappers.
-try:
-    from OpenGL import platform
-    gl = platform.OpenGL
-except ImportError:
-    try:
-        gl = cdll.LoadLibrary('libGL.so')
-    except OSError:
-        from ctypes.util import find_library
-        path = find_library('OpenGL')
-        gl = cdll.LoadLibrary(path)
-
-glCreateProgram = gl.glCreateProgram
-glCreateShader = gl.glCreateShader
-glShaderSource = gl.glShaderSource
-glCompileShader = gl.glCompileShader
-glGetShaderiv = gl.glGetShaderiv
-glDeleteShader = gl.glDeleteShader
-glDeleteProgram = gl.glDeleteProgram
-glGetShaderInfoLog = gl.glGetShaderInfoLog
-glGenVertexArrays = gl.glGenVertexArrays
-glBindVertexArray = gl.glBindVertexArray
-glGenBuffers = gl.glGenBuffers
-glDeleteBuffers = gl.glDeleteBuffers
-glVertexAttribPointer = gl.glVertexAttribPointer
-glEnableVertexAttribArray = gl.glEnableVertexAttribArray
-glVertexAttribPointer = gl.glVertexAttribPointer
-glEnableVertexAttribArray = gl.glEnableVertexAttribArray
-glGetProgramiv = gl.glGetProgramiv
-glDrawElements = gl.glDrawElements
-glDrawArrays = gl.glDrawArrays
-glBindBuffer = gl.glBindBuffer
-glBufferData = gl.glBufferData
-glReadPixels = gl.glReadPixels
 
 def normalize(vec):
     return vec / numpy.sqrt(numpy.sum(vec** 2))
@@ -309,6 +279,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
+        self.activateZooming = lambda: None
+
         self.commands = []
         self.minx = self.miny = self.minz = 0
         self.maxx = self.maxy = self.maxz = 0
@@ -352,7 +324,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.face_symbols = True
         self.filled_symbols = True
-        self.symbol_scale = 1
+        self.symbol_scale = 1.
         self.transparency = 255
         self.grid = True
         self.scale = numpy.array([1., 1., 1.])
@@ -377,8 +349,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.mouseover_callback = None
 
     def __del__(self):
-        # TODO: delete shaders and vertex buffer
-        glDeleteProgram(self.symbol_shader)
+        # TODO: check if anything needs deleting
+        pass
 
     def initializeGL(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -388,11 +360,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glEnable(GL_LINE_SMOOTH)
         glDisable(GL_CULL_FACE)
 
-        self.symbol_shader = glCreateProgram()
-        vertex_shader = glCreateShader(GL_VERTEX_SHADER)
-        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
-        self.shaders = [vertex_shader, fragment_shader]
-
+        self.symbol_shader = QtOpenGL.QGLShaderProgram()
         vertex_shader_source = '''
             attribute vec4 position;
             attribute vec3 offset;
@@ -465,50 +433,26 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             }
             '''
 
-        vertex_shader_source = c_char_p(vertex_shader_source)
-        fragment_shader_source = c_char_p(fragment_shader_source)
+        self.symbol_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
+        self.symbol_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
 
-        def print_log(shader):
-            length = c_int()
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, byref(length))
+        self.symbol_shader.bindAttributeLocation('position', 0)
+        self.symbol_shader.bindAttributeLocation('offset',   1)
+        self.symbol_shader.bindAttributeLocation('color',    2)
 
-            if length.value > 0:
-                log = create_string_buffer(length.value)
-                glGetShaderInfoLog(shader, length, byref(length), log)
-                print(log.value)
-
-        length = c_int(-1)
-        for shader, source in zip([vertex_shader, fragment_shader],
-                                  [vertex_shader_source, fragment_shader_source]):
-            glShaderSource(shader, 1, byref(source), byref(length))
-            glCompileShader(shader)
-            status = c_int()
-            glGetShaderiv(shader, GL_COMPILE_STATUS, byref(status))
-            if not status.value:
-                print_log(shader)
-                glDeleteShader(shader)
-                return
-            else:
-                glAttachShader(self.symbol_shader, shader)
-
-        glBindAttribLocation(self.symbol_shader, 0, 'position')
-        glBindAttribLocation(self.symbol_shader, 1, 'offset')
-        glBindAttribLocation(self.symbol_shader, 2, 'color')
-        glLinkProgram(self.symbol_shader)
-        self.symbol_shader_face_symbols = glGetUniformLocation(self.symbol_shader, 'face_symbols')
-        self.symbol_shader_symbol_scale = glGetUniformLocation(self.symbol_shader, 'symbol_scale')
-        self.symbol_shader_transparency = glGetUniformLocation(self.symbol_shader, 'transparency')
-        self.symbol_shader_scale        = glGetUniformLocation(self.symbol_shader, 'scale')
-        self.symbol_shader_translation  = glGetUniformLocation(self.symbol_shader, 'translation')
-        self.symbol_shader_tooltip_mode = glGetUniformLocation(self.symbol_shader, 'tooltip_mode')
-        linked = c_int()
-        glGetProgramiv(self.symbol_shader, GL_LINK_STATUS, byref(linked))
-        if not linked.value:
-            print('Failed to link shader!')
+        if not self.symbol_shader.link():
+            print('Failed to link symbol shader!')
         else:
-            print('Shaders compiled and linked.')
+            print('Symbol shader linked.')
+        self.symbol_shader_face_symbols = self.symbol_shader.uniformLocation('face_symbols')
+        self.symbol_shader_symbol_scale = self.symbol_shader.uniformLocation('symbol_scale')
+        self.symbol_shader_transparency = self.symbol_shader.uniformLocation('transparency')
+        self.symbol_shader_scale        = self.symbol_shader.uniformLocation('scale')
+        self.symbol_shader_translation  = self.symbol_shader.uniformLocation('translation')
+        self.symbol_shader_tooltip_mode = self.symbol_shader.uniformLocation('tooltip_mode')
 
-        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(512, 512)
+        # TODO: map mouse coordinates properly (instead of using larger FBO)
+        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024)
         if self.tooltip_fbo.isValid():
             print('Tooltip FBO created.')
         else:
@@ -549,33 +493,35 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
-                vao, vao_outline, (X, Y, Z), labels = params
-                glUseProgram(self.symbol_shader)
-                glUniform1i(self.symbol_shader_tooltip_mode, False)
-                glUniform1i(self.symbol_shader_face_symbols, self.face_symbols)
-                glUniform1f(self.symbol_shader_symbol_scale, self.symbol_scale)
-                glUniform1f(self.symbol_shader_transparency, self.transparency)
+                vao_id, outline_vao_id, (X, Y, Z), labels = params
                 scale = numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
-                glUniform3f(self.symbol_shader_scale,        *scale)
+
+                self.symbol_shader.bind()
+                self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, False)
+                self.symbol_shader.setUniformValue(self.symbol_shader_face_symbols, self.face_symbols)
+                # TODO: line below crashes this thing on windows (weird stuff!)
+                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale, self.symbol_scale)
+                self.symbol_shader.setUniformValue(self.symbol_shader_transparency, self.transparency)
+                self.symbol_shader.setUniformValue(self.symbol_shader_scale,        *scale)
 
                 if self.filled_symbols:
-                    glBindVertexArray(vao.value)
-                    glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                    glBindVertexArray(vao_id)
+                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
 
                     self.tooltip_fbo.bind()
                     glClearColor(1, 1, 1, 1)
                     glClear(GL_COLOR_BUFFER_BIT)
                     glDisable(GL_BLEND)
-                    glUniform1i(self.symbol_shader_tooltip_mode, True)
-                    glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                    self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, True)
+                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
                     self.tooltip_fbo.release()
 
                     glBindVertexArray(0)
                 else:
-                    glBindVertexArray(vao_outline.value)
-                    glDrawElements(GL_LINES, vao_outline.num_indices, GL_UNSIGNED_INT, 0)
+                    glBindVertexArray(outline_vao_id)
+                    glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, 0)
                     glBindVertexArray(0)
-                glUseProgram(0)
+                self.symbol_shader.release()
 
                 if labels != None:
                     for x, y, z, label in zip(X, Y, Z, labels):
@@ -894,28 +840,27 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 index += 3
 
         # Build Vertex Buffer + Vertex Array Object.
-        vao = c_int()
-        glGenVertexArrays(1, byref(vao))
-        glBindVertexArray(vao.value)
+        vao_id = GLuint(0)
+        glGenVertexArrays(1, vao_id)
+        glBindVertexArray(vao_id)
 
-        vertex_buffer = c_int()
-        glGenBuffers(1, byref(vertex_buffer))
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.value)
+        vertex_buffer_id = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
 
         vertex_size = (4+3+4)*4
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, 0)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 4*4)
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 7*4)
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(4*4))
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(7*4))
         glEnableVertexAttribArray(0)
         glEnableVertexAttribArray(1)
         glEnableVertexAttribArray(2)
 
         # It's important to keep a reference to vertices around,
         # data uploaded to GPU seem to get corrupted otherwise.
-        vertex_buffer.vertices = numpy.array(vertices, 'f')
-        glBufferData(GL_ARRAY_BUFFER,
-            ArrayDatatype.arrayByteCount(vertex_buffer.vertices),
-            ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
+        #vertex_buffer_id.vertices = numpy.array(vertices, 'f')
+        glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
+            #ArrayDatatype.arrayByteCount(vertex_buffer.vertices),
+            #ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
 
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -923,23 +868,22 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         # Outline:
         # generate another VAO, keep the same vertex buffer, but use an index buffer
         # this time.
-        index_buffer = c_int()
-        glGenBuffers(1, byref(index_buffer))
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.value)
-        index_buffer.indices = numpy.array(outline_indices, 'I')
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-            ArrayDatatype.arrayByteCount(index_buffer.indices),
-            ArrayDatatype.voidDataPointer(index_buffer.indices), GL_STATIC_DRAW)
+        index_buffer_id = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id)
+        #index_buffer.indices = numpy.array(outline_indices, 'I')
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, numpy.array(outline_indices, 'I'), GL_STATIC_DRAW)
+            #ArrayDatatype.arrayByteCount(index_buffer.indices),
+            #ArrayDatatype.voidDataPointer(index_buffer.indices), GL_STATIC_DRAW)
 
-        vao_outline = c_int()
-        glGenVertexArrays(1, byref(vao_outline))
-        glBindVertexArray(vao_outline.value)
+        outline_vao_id = GLuint(0)
+        glGenVertexArrays(1, outline_vao_id)
+        glBindVertexArray(outline_vao_id)
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.value)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.value)
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, 0)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 4*4)
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 7*4)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(4*4))
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(7*4))
         glEnableVertexAttribArray(0)
         glEnableVertexAttribArray(1)
         glEnableVertexAttribArray(2)
@@ -947,14 +891,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glBindVertexArray(0)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-        vao.num_vertices = len(vertices) / (vertex_size / 4)
-        vao_outline.num_indices = vao.num_vertices * 2 / 3
-        self.vertex_buffers.append(vertex_buffer)
-        self.index_buffers.append(index_buffer)
-        self.vaos.append(vao)
-        self.vaos.append(vao_outline)
-        self.commands.append(("scatter", [vao, vao_outline, (X,Y,Z), labels]))
+        
+        vao_id.num_vertices = len(vertices) / (vertex_size / 4)
+        outline_vao_id.num_indices = vao_id.num_vertices * 2 / 3
+        #self.vertex_buffers.append(vertex_buffer)
+        #self.index_buffers.append(index_buffer)
+        #self.vaos.append(vao)
+        #self.vaos.append(vao_outline)
+        self.commands.append(("scatter", [vao_id, outline_vao_id, (X,Y,Z), labels]))
         self.updateGL()
 
     def save_to_file(self):
@@ -1054,16 +998,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.mouseover_callback != None:
             # Use pixel-color-picking to read example index under mouse cursor.
-            value = c_int(-1)
             self.tooltip_fbo.bind()
-            glReadPixels(pos.x(), self.height() - pos.y(),
-                         1, 1,
-                         GL_RGBA,
-                         GL_UNSIGNED_BYTE,
-                         byref(value))
+            value = glReadPixels(pos.x(), self.height() - pos.y(),
+                                 1, 1,
+                                 GL_RGBA,
+                                 GL_UNSIGNED_BYTE)
             self.tooltip_fbo.release()
-            if value.value != -1:
-                self.mouseover_callback(value.value)
+            value = struct.unpack('i', value)[0]
+            if value != -1:
+                self.mouseover_callback(value)
 
         if self.state == PlotState.IDLE:
             for selection in self.selections:
