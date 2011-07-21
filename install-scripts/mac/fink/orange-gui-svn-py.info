@@ -1,8 +1,8 @@
 Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
-Type: python (2.4 2.5 2.6 2.7)
+Type: python (2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 25
+Revision: 26
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -10,7 +10,6 @@ Source2-MD5: __DAILY_MD5SUM_BUNDLELITE__
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://orange.biolab.si/
 License: GPL
-Distribution: (%type_pkg[python] = 24) 10.4, (%type_pkg[python] = 24) 10.5
 Depends: <<
 	python%type_pkg[python],
 	orange-svn-py%type_pkg[python] (>= %v),
@@ -36,7 +35,8 @@ SplitOff: <<
 	Depends: <<
 		python%type_pkg[python],
 		numpy-py%type_pkg[python],
-		pil-py%type_pkg[python]
+		pil-py%type_pkg[python],
+		networkx-py%type_pkg[python]
 	<<
 	Suggests: orange-gui-svn-py%type_pkg[python]
 	Conflicts: orange-py%type_pkg[python]
