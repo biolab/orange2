@@ -37,8 +37,6 @@
         Removes everything from the graph.
 """
 
-__all__ = ['OWPlot3D', 'Symbol', 'SelectionType']
-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4 import QtOpenGL
@@ -53,7 +51,7 @@ import OpenGL
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.arrays import ArrayDatatype
-from ctypes import byref, c_char_p, c_int, create_string_buffer
+from ctypes import byref, c_char_p, c_int, create_string_buffer, c_ubyte
 import sys
 import numpy
 from math import sin, cos, pi
@@ -96,6 +94,7 @@ glDrawElements = gl.glDrawElements
 glDrawArrays = gl.glDrawArrays
 glBindBuffer = gl.glBindBuffer
 glBufferData = gl.glBufferData
+glReadPixels = gl.glReadPixels
 
 def normalize(vec):
     return vec / numpy.sqrt(numpy.sum(vec** 2))
@@ -141,9 +140,7 @@ def enum(*sequential):
 #   in current horizontal coordinate (x or z, depends on rotation)
 PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 'PANNING')
 
-# TODO: more symbols
 Symbol = enum('TRIANGLE', 'RECTANGLE', 'PENTAGON', 'CIRCLE')
-
 SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
 
 class Legend(object):
@@ -377,6 +374,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.setMouseTracking(True)
 
+        self.mouseover_callback = None
+
     def __del__(self):
         # TODO: delete shaders and vertex buffer
         glDeleteProgram(self.symbol_shader)
@@ -395,11 +394,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.shaders = [vertex_shader, fragment_shader]
 
         vertex_shader_source = '''
-            attribute vec3 position;
+            attribute vec4 position;
             attribute vec3 offset;
             attribute vec4 color;
 
             uniform bool face_symbols;
+            uniform bool tooltip_mode;
             uniform float symbol_scale;
             uniform float transparency;
 
@@ -433,14 +433,27 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               if (face_symbols)
                 offset_rotated = invs * offset_rotated;
 
-              //position += translation;
-              position *= scale;
-              vec4 off_pos = vec4(position+offset_rotated, 1);
+              vec3 pos = position.xyz;
+              //pos += translation;
+              pos *= scale;
+              vec4 off_pos = vec4(pos+offset_rotated, 1);
 
               gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
-              position = abs(position);
-              float manhattan_distance = max(max(position.x, position.y), position.z)+5.;
-              var_color = vec4(color.rgb, pow(min(1, 10. / manhattan_distance), 5));
+
+              if (tooltip_mode) {
+                // We've packed example index into .w component of this vertex,
+                // to output it to the screen, it has to be broken down into RGBA.
+                int index = int(position.w);
+                var_color = vec4(((index & 0xFF)) / 255.,
+                                 ((index & 0xFF00) >> 8) / 255.,
+                                 ((index & 0xFF0000) >> 16) / 255.,
+                                 ((index & 0xFF000000) >> 24) / 255.);
+              }
+              else {
+                pos = abs(pos);
+                float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
+                var_color = vec4(color.rgb, pow(min(1, 10. / manhattan_distance), 5));
+              }
             }
             '''
 
@@ -487,12 +500,19 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_shader_transparency = glGetUniformLocation(self.symbol_shader, 'transparency')
         self.symbol_shader_scale        = glGetUniformLocation(self.symbol_shader, 'scale')
         self.symbol_shader_translation  = glGetUniformLocation(self.symbol_shader, 'translation')
+        self.symbol_shader_tooltip_mode = glGetUniformLocation(self.symbol_shader, 'tooltip_mode')
         linked = c_int()
         glGetProgramiv(self.symbol_shader, GL_LINK_STATUS, byref(linked))
         if not linked.value:
             print('Failed to link shader!')
         else:
-            print('Shaders compiled and linked!')
+            print('Shaders compiled and linked.')
+
+        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(512, 512)
+        if self.tooltip_fbo.isValid():
+            print('Tooltip FBO created.')
+        else:
+            print('Failed to create tooltip FBO!')
 
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
@@ -531,6 +551,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             if cmd == 'scatter':
                 vao, vao_outline, (X, Y, Z), labels = params
                 glUseProgram(self.symbol_shader)
+                glUniform1i(self.symbol_shader_tooltip_mode, False)
                 glUniform1i(self.symbol_shader_face_symbols, self.face_symbols)
                 glUniform1f(self.symbol_shader_symbol_scale, self.symbol_scale)
                 glUniform1f(self.symbol_shader_transparency, self.transparency)
@@ -540,6 +561,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 if self.filled_symbols:
                     glBindVertexArray(vao.value)
                     glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+
+                    self.tooltip_fbo.bind()
+                    glClearColor(1, 1, 1, 1)
+                    glClear(GL_COLOR_BUFFER_BIT)
+                    glDisable(GL_BLEND)
+                    glUniform1i(self.symbol_shader_tooltip_mode, True)
+                    glDrawArrays(GL_TRIANGLES, 0, vao.num_vertices)
+                    self.tooltip_fbo.release()
+
                     glBindVertexArray(0)
                 else:
                     glBindVertexArray(vao_outline.value)
@@ -842,6 +872,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         vertices = []
         outline_indices = []
         index = 0
+        ai = -1 # Array index (used in color-picking).
         for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
             x -= self.initial_center[0]
             y -= self.initial_center[1]
@@ -853,11 +884,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             n = self.available_symbols[symbol % len(self.available_symbols)]
             angle_inc = 2.*pi / n
             angle = angle_inc / 2.
+            ai += 1
             for i in range(n):
-                vertices.extend([x,y,z, 0,0,0, r,g,b,a])
-                vertices.extend([x,y,z, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
+                vertices.extend([x,y,z, ai, 0,0,0, r,g,b,a])
+                vertices.extend([x,y,z, ai, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
                 angle += angle_inc
-                vertices.extend([x,y,z, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
+                vertices.extend([x,y,z, ai, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
                 outline_indices.extend([index+1, index+2])
                 index += 3
 
@@ -870,12 +902,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glGenBuffers(1, byref(vertex_buffer))
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.value)
 
-        vertex_size = (3+3+4)*4
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, 0)
+        vertex_size = (4+3+4)*4
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, 0)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 4*4)
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 7*4)
         glEnableVertexAttribArray(0)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 3*4)
         glEnableVertexAttribArray(1)
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 6*4)
         glEnableVertexAttribArray(2)
 
         # It's important to keep a reference to vertices around,
@@ -905,11 +937,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.value)
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.value)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, 0)
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, 0)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 4*4)
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 7*4)
         glEnableVertexAttribArray(0)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, 3*4)
         glEnableVertexAttribArray(1)
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, 6*4)
         glEnableVertexAttribArray(2)
 
         glBindVertexArray(0)
@@ -1020,6 +1052,19 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def mouseMoveEvent(self, event):
         pos = event.pos()
 
+        if self.mouseover_callback != None:
+            # Use pixel-color-picking to read example index under mouse cursor.
+            value = c_int(-1)
+            self.tooltip_fbo.bind()
+            glReadPixels(pos.x(), self.height() - pos.y(),
+                         1, 1,
+                         GL_RGBA,
+                         GL_UNSIGNED_BYTE,
+                         byref(value))
+            self.tooltip_fbo.release()
+            if value.value != -1:
+                self.mouseover_callback(value.value)
+
         if self.state == PlotState.IDLE:
             for selection in self.selections:
                 if selection.contains(pos.x(), pos.y()):
@@ -1027,7 +1072,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     break
             else:
                 self.setCursor(Qt.ArrowCursor)
-            # Don't do anything else if idle
+            self.mouse_pos = pos
             return
 
         dx = pos.x() - self.mouse_pos.x()
@@ -1109,6 +1154,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def remove_all_selections(self):
         self.selections = []
         self.updateGL()
+
+    def show_tooltip(self, text):
+        x, y = self.mouse_pos.x(), self.mouse_pos.y()
+        QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
 
     def clear(self):
         self.commands = []

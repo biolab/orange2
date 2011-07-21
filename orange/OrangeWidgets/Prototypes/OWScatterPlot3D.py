@@ -10,6 +10,8 @@ import OWColorPalette
 
 import numpy
 
+TooltipKind = enum('NONE', 'VISIBLE', 'ALL') # Which attributes should be displayed?
+
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend']
     contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
@@ -122,6 +124,14 @@ class OWScatterPlot3D(OWWidget):
         self.connect(self.zoom_select_toolbar.buttonRemoveAllSelections, SIGNAL('clicked()'), self.plot.remove_all_selections)
         self.toolbarSelection = None
 
+        self.tooltip_kind = TooltipKind.NONE
+        box = OWGUI.widgetBox(self.settings_tab, "Tooltips Settings")
+        OWGUI.comboBox(box, self, 'tooltip_kind', items = [
+            'Don\'t Show Tooltips', 'Show Visible Attributes', 'Show All Attributes'], callback = self.on_axis_change)
+
+        self.plot.mouseover_callback = self.mouseover_callback
+        self.shown_attr_indices = []
+
         self.main_tab.layout().addStretch(100)
         self.settings_tab.layout().addStretch(100)
 
@@ -131,6 +141,47 @@ class OWScatterPlot3D(OWWidget):
         self.data = None
         self.subsetData = None
         self.resize(1000, 600)
+
+    def mouseover_callback(self, index):
+        if self.tooltip_kind == TooltipKind.VISIBLE:
+            self.plot.show_tooltip(self.get_example_tooltip(self.data[index], self.shown_attr_indices))
+        elif self.tooltip_kind == TooltipKind.ALL:
+            self.plot.show_tooltip(self.get_example_tooltip(self.data[index]))
+
+    def get_example_tooltip(self, example, indices=None, max_indices=20):
+        if indices and type(indices[0]) == str:
+            indices = [self.attr_name_index[i] for i in indices]
+        if not indices:
+            indices = range(len(self.data.domain.attributes))
+
+        if example.domain.classVar:
+            classIndex = self.attr_name_index[example.domain.classVar.name]
+            while classIndex in indices:
+                indices.remove(classIndex)
+
+        text = '<b>Attributes:</b><br>'
+        for index in indices[:max_indices]:
+            attr = self.attr_name[index]
+            if attr not in example.domain:  text += '&nbsp;'*4 + '%s = ?<br>' % (attr)
+            elif example[attr].isSpecial(): text += '&nbsp;'*4 + '%s = ?<br>' % (attr)
+            else:                           text += '&nbsp;'*4 + '%s = %s<br>' % (attr, str(example[attr]))
+
+        if len(indices) > max_indices:
+            text += '&nbsp;'*4 + ' ... <br>'
+
+        if example.domain.classVar:
+            text = text[:-4]
+            text += '<hr><b>Class:</b><br>'
+            if example.getclass().isSpecial(): text += '&nbsp;'*4 + '%s = ?<br>' % (example.domain.classVar.name)
+            else:                              text += '&nbsp;'*4 + '%s = %s<br>' % (example.domain.classVar.name, str(example.getclass()))
+
+        if len(example.domain.getmetas()) != 0:
+            text = text[:-4]
+            text += '<hr><b>Meta attributes:</b><br>'
+            for key in example.domain.getmetas():
+                try: text += '&nbsp;'*4 + '%s = %s<br>' % (example.domain[key].name, str(example[key]))
+                except: pass
+        return text[:-4]
 
     def change_selection_type(self):
         if self.toolbarSelection < 3:
@@ -155,6 +206,14 @@ class OWScatterPlot3D(OWWidget):
             self.axis_candidate_attrs = [attr for attr in self.all_attrs
                 if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
 
+            self.attr_name_index = {}
+            for i, attr in enumerate(self.all_attrs):
+                self.attr_name_index[attr.name] = i
+
+            self.attr_name = {}
+            for i, attr in enumerate(self.all_attrs):
+                self.attr_name[i] = attr.name
+
             self.color_attr_cb.addItem('(Same color)')
             self.size_attr_cb.addItem('(Same size)')
             self.shape_attr_cb.addItem('(Same shape)')
@@ -173,13 +232,14 @@ class OWScatterPlot3D(OWWidget):
 
             array, c, w = self.data.toNumpyMA()
             if len(c):
-              array = numpy.hstack((array, c.reshape(-1,1)))
+                array = numpy.hstack((array, c.reshape(-1,1)))
             self.data_array = array
 
             self.x_attr, self.y_attr, self.z_attr = numpy.min([[0, 1, 2],
                                                                [len(self.axis_candidate_attrs) - 1]*3
                                                               ], axis=0)
             self.color_attr = max(len(self.axis_candidate_attrs) - 1, 0)
+            self.shown_attr_indices = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
             self.openContext('', data)
 
     def set_subset_data(self, data=None):
