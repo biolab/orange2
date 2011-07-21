@@ -121,6 +121,9 @@ class OWPlot(orangeplot.Plot):
         # OWScatterPlot needs these:
         self.alphaValue = 1
         self.useAntialiasing = True
+        self.pointWidth = 5
+        self.showFilledSymbols = 1
+        self.alphaValue = 255
         
         self.palette = shared_palette()
         self.curveSymbols = self.palette.curve_symbols
