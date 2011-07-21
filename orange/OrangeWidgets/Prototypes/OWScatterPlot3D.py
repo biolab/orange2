@@ -10,12 +10,16 @@ import OWColorPalette
 
 import numpy
 
-TooltipKind = enum('NONE', 'VISIBLE', 'ALL') # Which attributes should be displayed?
+TooltipKind = enum('NONE', 'VISIBLE', 'ALL') # Which attributes should be displayed in tooltips?
 
 class OWScatterPlot3D(OWWidget):
-    settingsList = ['plot.show_legend']
+    settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
+                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.face_symbols', 'plot.filled_symbols',
+                    'plot.transparency', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
+                    'auto_send_selection', 'auto_send_selection_update']
     contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
- 
+    jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
+
     def __init__(self, parent=None, signalManager=None, name="Scatter Plot 3D"):
         OWWidget.__init__(self, parent, signalManager, name, True)
 
@@ -33,6 +37,8 @@ class OWScatterPlot3D(OWWidget):
 
         self.symbol_scale = 5
         self.alpha_value = 255
+
+        self.loadSettings()
 
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.main_tab = OWGUI.createTabPage(self.tabs, 'Main')
@@ -84,9 +90,9 @@ class OWScatterPlot3D(OWWidget):
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
         OWGUI.hSlider(box, self, "plot.symbol_scale", label="Symbol scale",
-            minValue=1, maxValue=10,
+            minValue=1, maxValue=5,
             tooltip="Scale symbol size",
-            callback=self.on_checkbox_update
+            callback=self.on_checkbox_update,
             )
 
         OWGUI.hSlider(box, self, "plot.transparency", label="Transparency",
@@ -95,15 +101,28 @@ class OWScatterPlot3D(OWWidget):
             callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
+        self.jitter_size = 0
+        self.jitter_continuous = False
+        box = OWGUI.widgetBox(self.settings_tab, "Jittering Options")
+        self.jitter_size_combo = OWGUI.comboBox(box, self, 'jitter_size', label='Jittering size (% of size)'+'  ',
+            orientation='horizontal',
+            callback=self.on_checkbox_update,
+            items=self.jitter_sizes,
+            sendSelectedValue=1,
+            valueType=float)
+        OWGUI.checkBox(box, self, 'jitter_continuous', 'Jitter continuous attributes',
+            callback=self.on_checkbox_update,
+            tooltip='Does jittering apply also on continuous attributes?')
+
         box = OWGUI.widgetBox(self.settings_tab, 'General settings')
         OWGUI.checkBox(box, self, 'plot.show_x_axis_title',   'X axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_y_axis_title',   'Y axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_z_axis_title',   'Z axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_legend',         'Show legend',    callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.ortho',               'Use ortho',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.use_ortho',           'Use ortho',      callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.filled_symbols',      'Filled symbols', callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.face_symbols',        'Face symbols',   callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.grid',                'Show grid',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
         self.auto_send_selection = True
@@ -243,11 +262,34 @@ class OWScatterPlot3D(OWWidget):
             self.openContext('', data)
 
     def set_subset_data(self, data=None):
-        self.subsetData = data
+        self.subsetData = data # TODO: what should scatterplot do with this?
 
     def handleNewSignals(self):
         self.update_plot()
         self.send_selections()
+
+    def saveSettings(self):
+        OWWidget.saveSettings(self)
+
+    def sendReport(self):
+        self.startReport('%s [%s - %s - %s]' % (self.windowTitle(), self.attr_name[self.x_attr],
+                                                self.attr_name[self.y_attr], self.attr_name[self.z_attr]))
+        self.reportSettings('Visualized attributes',
+                            [('X', self.attr_name[self.x_attr]),
+                             ('Y', self.attr_name[self.y_attr]),
+                             ('Z', self.attr_name[self.z_attr]),
+                             self.color_attr and ('Color', self.attr_name[self.color_attr]),
+                             self.label_attr and ('Label', self.attr_name[self.label_attr]),
+                             self.shape_attr and ('Shape', self.attr_name[self.shape_attr]),
+                             self.size_attr  and ('Size', self.attr_name[self.size_attr])])
+        self.reportSettings('Settings',
+                            [('Symbol size', self.plot.symbol_scale),
+                             ('Transparency', self.plot.transparency),
+                             #("Jittering", self.graph.jitterSize),
+                             #("Jitter continuous attributes", OWGUI.YesNo[self.graph.jitterContinuous])])
+                             ])
+        self.reportSection('Plot')
+        self.reportImage(self.plot.save_to_file_direct, QSize(400, 400))
 
     def send_selections(self):
         if self.data == None:
@@ -345,6 +387,21 @@ class OWScatterPlot3D(OWWidget):
         self.plot.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
         self.plot.set_y_axis_title(self.axis_candidate_attrs[self.y_attr].name)
         self.plot.set_z_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+
+        def create_discrete_map(attr_index):
+            keys = range(len(self.axis_candidate_attrs[attr_index].values))
+            values = self.axis_candidate_attrs[attr_index].values
+            map = {}
+            for key, value in zip(keys, values):
+                map[key] = value
+            return map
+
+        if self.axis_candidate_attrs[self.x_attr].varType == orange.VarTypes.Discrete:
+            self.plot.set_x_axis_map(create_discrete_map(self.x_attr))
+        if self.axis_candidate_attrs[self.y_attr].varType == orange.VarTypes.Discrete:
+            self.plot.set_y_axis_map(create_discrete_map(self.y_attr))
+        if self.axis_candidate_attrs[self.z_attr].varType == orange.VarTypes.Discrete:
+            self.plot.set_z_axis_map(create_discrete_map(self.z_attr))
 
     def get_axis_data(self, x_ind, y_ind, z_ind):
         array = self.data_array

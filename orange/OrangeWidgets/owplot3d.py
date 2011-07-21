@@ -5,7 +5,7 @@
     .. attribute:: show_legend
         Determines whether to display the legend or not.
 
-    .. attribute:: ortho
+    .. attribute:: use_ortho
         If False, perspective projection is used instead.
 
     .. method:: set_x_axis_title(title)
@@ -36,6 +36,8 @@
     .. method:: clear()
         Removes everything from the graph.
 """
+
+# TODO: docs!
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -279,7 +281,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
-        self.activateZooming = lambda: None
+        void = lambda: None
+        self.activateZooming = void
+        self.activateRectangleSelection = void
+        self.activatePolygonSelection = void
+        self.activatePanning = void
+        self.activateSelection = void
 
         self.commands = []
         self.minx = self.miny = self.minz = 0
@@ -318,7 +325,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.index_buffers = []
         self.vaos = []
 
-        self.ortho = False
+        self.use_ortho = False
         self.show_legend = True
         self.legend = Legend(self)
 
@@ -326,7 +333,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.filled_symbols = True
         self.symbol_scale = 1.
         self.transparency = 255
-        self.grid = True
+        self.show_grid = True
         self.scale = numpy.array([1., 1., 1.])
         self.additional_scale = [0, 0, 0]
         self.scale_x_axis = True
@@ -347,6 +354,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.setMouseTracking(True)
 
         self.mouseover_callback = None
+
+        self.x_axis_map = None
+        self.y_axis_map = None
+        self.z_axis_map = None
 
     def __del__(self):
         # TODO: check if anything needs deleting
@@ -370,6 +381,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             uniform bool tooltip_mode;
             uniform float symbol_scale;
             uniform float transparency;
+            uniform float view_edge;
 
             uniform vec3 scale;
             uniform vec3 translation;
@@ -420,7 +432,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               else {
                 pos = abs(pos);
                 float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
-                var_color = vec4(color.rgb, pow(min(1, 10. / manhattan_distance), 5));
+                float a = min(pow(min(1, view_edge / manhattan_distance), 5), transparency);
+                var_color = vec4(color.rgb, a);
               }
             }
             '''
@@ -447,6 +460,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_shader_face_symbols = self.symbol_shader.uniformLocation('face_symbols')
         self.symbol_shader_symbol_scale = self.symbol_shader.uniformLocation('symbol_scale')
         self.symbol_shader_transparency = self.symbol_shader.uniformLocation('transparency')
+        self.symbol_shader_view_edge    = self.symbol_shader.uniformLocation('view_edge')
         self.symbol_shader_scale        = self.symbol_shader.uniformLocation('scale')
         self.symbol_shader_translation  = self.symbol_shader.uniformLocation('translation')
         self.symbol_shader_tooltip_mode = self.symbol_shader.uniformLocation('tooltip_mode')
@@ -464,10 +478,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def paintGL(self):
         glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        if len(self.commands) == 0:
+            return
+
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         width, height = self.width(), self.height()
-        if self.ortho:
+        if self.use_ortho:
             glOrtho(-width / self.ortho_scale,
                      width / self.ortho_scale,
                     -height / self.ortho_scale,
@@ -485,6 +503,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.camera[2]*self.camera_distance,
             0, 0, 0,
             0, 1, 0)
+
         self.draw_grid_and_axes()
 
         glDisable(GL_DEPTH_TEST)
@@ -499,9 +518,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.symbol_shader.bind()
                 self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, False)
                 self.symbol_shader.setUniformValue(self.symbol_shader_face_symbols, self.face_symbols)
-                # TODO: line below crashes this thing on windows (weird stuff!)
-                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale, self.symbol_scale)
-                self.symbol_shader.setUniformValue(self.symbol_shader_transparency, self.transparency)
+                self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,    float(self.view_cube_edge))
+                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale, float(self.symbol_scale))
+                self.symbol_shader.setUniformValue(self.symbol_shader_transparency, self.transparency / 255.)
                 self.symbol_shader.setUniformValue(self.symbol_shader_scale,        *scale)
 
                 if self.filled_symbols:
@@ -519,7 +538,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     glBindVertexArray(0)
                 else:
                     glBindVertexArray(outline_vao_id)
-                    glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, 0)
+                    glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
                     glBindVertexArray(0)
                 self.symbol_shader.release()
 
@@ -617,7 +636,27 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glVertex3f(*line[1])
             glEnd()
 
-        def draw_values(axis, coord_index, normal, sub=10):
+        def draw_discrete_axis_values(axis, coord_index, normal, axis_map):
+            start, end = axis
+            scale = (max(0, self.scale[coord_index] + self.additional_scale[coord_index]))
+            scale *= self.initial_scale[coord_index]
+            start_value = (start[coord_index] / scale) + self.initial_center[coord_index]
+            end_value =   (end[coord_index] / scale)   + self.initial_center[coord_index]
+            length = end_value - start_value
+            offset = normal*0.8
+            for key in axis_map.keys():
+                if start_value <= key <= end_value:
+                    position = start + (end-start)*((key-start_value) / length)
+                    position += offset
+                    self.renderText(position[0],
+                                    position[1],
+                                    position[2],
+                                    axis_map[key], font=self.labels_font)
+
+        def draw_values(axis, coord_index, normal, axis_map, sub=10):
+            if axis_map != None:
+                draw_discrete_axis_values(axis, coord_index, normal, axis_map)
+                return
             glColor4f(0.1, 0.1, 0.1, 1)
             glLineWidth(1)
             start, end = axis
@@ -690,7 +729,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
         visible_planes = map(plane_visible, planes)
-        if self.grid:
+        if self.show_grid:
             draw_axis_plane(self.axis_plane_xz)
             for visible, plane in zip(visible_planes, planes):
                 if not visible:
@@ -701,24 +740,24 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if visible_planes[0]:
             draw_axis(self.x_axis)
-            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]))
+            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_map)
             if self.show_x_axis_title:
                 draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
         elif visible_planes[2]:
             draw_axis(self.x_axis + self.unit_z)
-            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]))
+            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_map)
             if self.show_x_axis_title:
                 draw_axis_title(self.x_axis + self.unit_z,
                                 self.x_axis_title, numpy.array([0, 0, 1]))
 
         if visible_planes[1]:
             draw_axis(self.z_axis)
-            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]))
+            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_map)
             if self.show_z_axis_title:
                 draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
         elif visible_planes[3]:
             draw_axis(self.z_axis + self.unit_x)
-            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]))
+            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_map)
             if self.show_z_axis_title:
                 draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
 
@@ -739,7 +778,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         axis = y_axis_translated[rightmost_visible]
         normal = normals[rightmost_visible]
         draw_axis(axis)
-        draw_values(axis, 1, normal)
+        draw_values(axis, 1, normal, self.y_axis_map)
         if self.show_y_axis_title:
             draw_axis_title(axis, self.y_axis_title, normal)
 
@@ -846,6 +885,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         vertex_buffer_id = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+        glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
 
         vertex_size = (4+3+4)*4
         glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
@@ -855,13 +895,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glEnableVertexAttribArray(1)
         glEnableVertexAttribArray(2)
 
-        # It's important to keep a reference to vertices around,
-        # data uploaded to GPU seem to get corrupted otherwise.
-        #vertex_buffer_id.vertices = numpy.array(vertices, 'f')
-        glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
-            #ArrayDatatype.arrayByteCount(vertex_buffer.vertices),
-            #ArrayDatatype.voidDataPointer(vertex_buffer.vertices), GL_STATIC_DRAW)
-
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
@@ -870,10 +903,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         # this time.
         index_buffer_id = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id)
-        #index_buffer.indices = numpy.array(outline_indices, 'I')
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, numpy.array(outline_indices, 'I'), GL_STATIC_DRAW)
-            #ArrayDatatype.arrayByteCount(index_buffer.indices),
-            #ArrayDatatype.voidDataPointer(index_buffer.indices), GL_STATIC_DRAW)
 
         outline_vao_id = GLuint(0)
         glGenVertexArrays(1, outline_vao_id)
@@ -891,22 +921,36 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glBindVertexArray(0)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
-        
+
         vao_id.num_vertices = len(vertices) / (vertex_size / 4)
         outline_vao_id.num_indices = vao_id.num_vertices * 2 / 3
-        #self.vertex_buffers.append(vertex_buffer)
-        #self.index_buffers.append(index_buffer)
-        #self.vaos.append(vao)
-        #self.vaos.append(vao_outline)
+        self.vertex_buffers.append(vertex_buffer_id)
+        self.index_buffers.append(index_buffer_id)
+        self.vaos.append(vao_id)
+        self.vaos.append(outline_vao_id)
         self.commands.append(("scatter", [vao_id, outline_vao_id, (X,Y,Z), labels]))
+        self.updateGL()
+
+    def set_x_axis_map(self, map):
+        self.x_axis_map = map
+        self.updateGL()
+
+    def set_y_axis_map(self, map):
+        self.y_axis_map = map
+        self.updateGL()
+
+    def set_z_axis_map(self, map):
+        self.z_axis_map = map
         self.updateGL()
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
         size_dlg.exec_()
 
-    def save_to_file_direct(self, file_name):
+    def save_to_file_direct(self, file_name, size=None):
         img = self.grabFrameBuffer()
+        if size != None:
+            img = img.scaled(size)
         return img.save(file_name)
 
     def get_selection_indices(self):
@@ -916,7 +960,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         width, height = self.width(), self.height()
 
         projection = QMatrix4x4()
-        if self.ortho:
+        if self.use_ortho:
             projection.ortho(-width / self.ortho_scale, width / self.ortho_scale,
                              -height / self.ortho_scale, height / self.ortho_scale,
                              self.ortho_near, self.ortho_far)
@@ -1107,6 +1151,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.selections = []
         self.legend.clear()
         self.x_axis_title = self.y_axis_title = self.z_axis_title = ''
+        self.x_axis_map = self.y_axis_map = self.z_axis_map = None
         self.updateGL()
 
 
