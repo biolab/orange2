@@ -14,9 +14,11 @@ class MultiLabelLearner(Orange.classification.Learner):
         return self
     
     def __init__(self, **argkw):
+        self.multi_flag = 1
         self.__dict__.update(argkw)
         
 class MultiLabelClassifier(Orange.classification.Classifier):
     def __init__(self, **argkw):
+        self.multi_flag = 1
         self.__dict__.update(argkw)
      

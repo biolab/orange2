@@ -1,1 +1,0 @@
-.. automodule:: Orange.multilabel.powerset

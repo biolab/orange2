@@ -8,4 +8,4 @@ Multilabel (``multilabel``)
    :maxdepth: 1
 
    Orange.multilabel.br
-   Orange.multilabel.powerset
+   Orange.multilabel.lp

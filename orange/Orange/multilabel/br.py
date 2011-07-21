@@ -50,7 +50,7 @@ The following example demonstrates a straightforward invocation of
 this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 
 .. literalinclude:: code/mlc-classify.py
-   :lines: 1-
+   :lines: 1-13
 
 .. _mlc-classify.py: code/mlc-br-example.py
 .. _multidata.tab: code/multidata.tab
@@ -87,8 +87,8 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
-        num_labels = label.get_num_labels(instances);
-        label_indices = label.get_label_indices(instances);
+        num_labels = label.get_num_labels(instances)
+        label_indices = label.get_label_indices(instances)
         
         classifiers = []
             

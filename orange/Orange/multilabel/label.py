@@ -60,4 +60,14 @@ def remove_indices(data,indicesToRemove):
             newdomain.append(domain[id])
             id = id + 1
     return newdomain
-            
+    
+def get_label_bitstream(data,example):
+    """ get the labels in terms of a string of 0 and 1 """
+    if not isinstance(data, Orange.data.Table):
+        raise TypeError('data must be of type \'Orange.data.Table\'')
+    
+    value = ''
+    for i, var in enumerate(data.domain.variables):
+        if var.attributes.has_key('label'):
+            value += example[var].value
+    return value      
