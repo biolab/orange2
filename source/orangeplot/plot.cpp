@@ -38,6 +38,10 @@ void Plot::removeItem(PlotItem* item)
         item->setParentItem(0);
         m_items.removeAll(item);
         item->m_plot = 0;
+        if (scene()->items().contains(item))
+        {
+            scene()->removeItem(item);
+        }
     }
     else
     {
