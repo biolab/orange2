@@ -214,16 +214,14 @@ class OWScatterPlot3D(OWWidget):
     def selection_changed_callback(self):
         if self.plot.selection_type == SelectionType.ZOOM:
             indices = self.plot.get_selection_indices()
-            print(len(indices))
             if len(indices) == 0:
                 return
-            selected = [1 if i in indices else 0 for i in range(len(self.data))]
-            #selected = self.data.selectref(selected)
             X, Y, Z = self.data_array[:, self.x_attr],\
                       self.data_array[:, self.y_attr],\
                       self.data_array[:, self.z_attr]
-            print(type(X))
-            print(X.selectref(selected))
+            X = [X[i] for i in indices]
+            Y = [Y[i] for i in indices]
+            Z = [Z[i] for i in indices]
             min_x, max_x = numpy.min(X), numpy.max(X)
             min_y, max_y = numpy.min(Y), numpy.max(Y)
             min_z, max_z = numpy.min(Z), numpy.max(Z)

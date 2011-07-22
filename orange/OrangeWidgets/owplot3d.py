@@ -528,30 +528,28 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 if self.filled_symbols:
                     glBindVertexArray(vao_id)
                     glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
-
-                    self.tooltip_fbo.bind()
-                    glClearColor(1, 1, 1, 1)
-                    glClear(GL_COLOR_BUFFER_BIT)
-                    glDisable(GL_BLEND)
-                    self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, True)
-                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
-                    self.tooltip_fbo.release()
-
                     glBindVertexArray(0)
                 else:
                     glBindVertexArray(outline_vao_id)
                     glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
                     glBindVertexArray(0)
+
+                # Draw color-picking buffer.
+                glBindVertexArray(vao_id)
+                self.tooltip_fbo.bind()
+                glClearColor(1, 1, 1, 1)
+                glClear(GL_COLOR_BUFFER_BIT)
+                glDisable(GL_BLEND)
+                self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, True)
+                glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                self.tooltip_fbo.release()
+                glBindVertexArray(0)
+
                 self.symbol_shader.release()
 
                 if labels != None:
                     for x, y, z, label in zip(X, Y, Z, labels):
-                        x -= self.initial_center[0]
-                        y -= self.initial_center[1]
-                        z -= self.initial_center[2]
-                        x *= self.initial_scale[0] * scale[0]
-                        y *= self.initial_scale[1] * scale[1]
-                        z *= self.initial_scale[2] * scale[2]
+                        x, y, z = self.transform_data_to_plot((x, y, z))
                         self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'), font=self.labels_font)
 
         glDisable(GL_BLEND)
@@ -946,7 +944,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
-        print((x_min, x_max))
+        return
+        # TODO
         self.initial_center = [(x_max + x_min) / 2.,
                                (y_max + y_min) / 2.,
                                (z_max + z_min) / 2.]
@@ -1066,8 +1065,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                                  GL_RGBA,
                                  GL_UNSIGNED_BYTE)
             self.tooltip_fbo.release()
-            value = struct.unpack('i', value)[0]
-            if value != -1:
+            value = struct.unpack('I', value)[0]
+            # Check if value is less than 4294967295 (
+            # the highest 32-bit unsigned integer) which
+            # corresponds to white background in color-picking buffer.
+            if value < 4294967295:
                 self.mouseover_callback(value)
 
         if self.state == PlotState.IDLE:
