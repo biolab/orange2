@@ -11,7 +11,7 @@
 # The order is important as for validation to work we should first build packages which do not depend on other
 # packages we want to validate (as they would be build without validation as dependencies)
 STABLE_PACKAGES="orange-py25 orange"
-DAILY_PACKAGES="orange-svn-py25 orange-gui-svn-py25 orange-bioinformatics-svn-py25 orange-bioinformatics-gui-svn-py25 orange-text-svn-py25 orange-text-gui-svn-py25 orange-svn-py26 orange-gui-svn-py26 orange-bioinformatics-svn-py26 orange-bioinformatics-gui-svn-py26 orange-text-svn-py26 orange-text-gui-svn-py26 orange-svn-py27 orange-gui-svn-py27 orange-bioinformatics-svn-py27 orange-bioinformatics-gui-svn-py27 orange-text-svn-py27 orange-text-gui-svn-py27"
+DAILY_PACKAGES="orange-svn-py26 orange-gui-svn-py26 orange-bioinformatics-svn-py26 orange-bioinformatics-gui-svn-py26 orange-text-svn-py26 orange-text-gui-svn-py26 orange-svn-py27 orange-gui-svn-py27 orange-bioinformatics-svn-py27 orange-bioinformatics-gui-svn-py27 orange-text-svn-py27 orange-text-gui-svn-py27"
 
 LAST_MAC_VERSION_FOR_STABLE_PACKAGES=5
 
