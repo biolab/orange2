@@ -20,7 +20,8 @@ class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
                     'plot.show_z_axis_title', 'plot.show_legend', 'plot.face_symbols', 'plot.filled_symbols',
                     'plot.transparency', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
-                    'auto_send_selection', 'auto_send_selection_update']
+                    'auto_send_selection', 'auto_send_selection_update',
+                    'jitter_size', 'jitter_continuous']
     contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
     jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
@@ -135,7 +136,7 @@ class OWScatterPlot3D(OWWidget):
 
         self.auto_send_selection = True
         self.auto_send_selection_update = False
-        self.plot.selection_change_callback = self.send_selections
+        self.plot.selection_changed_callback = self.selection_changed_callback
         box = OWGUI.widgetBox(self.settings_tab, 'Auto Send Selected Data When...')
         OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
             callback = self.on_checkbox_update, tooltip = 'Send selected data whenever a selection area is added or removed')
@@ -209,6 +210,24 @@ class OWScatterPlot3D(OWWidget):
                 try: text += '&nbsp;'*4 + '%s = %s<br>' % (example.domain[key].name, str(example[key]))
                 except: pass
         return text[:-4]
+
+    def selection_changed_callback(self):
+        if self.plot.selection_type == SelectionType.ZOOM:
+            indices = self.plot.get_selection_indices()
+            print(len(indices))
+            if len(indices) == 0:
+                return
+            selected = [1 if i in indices else 0 for i in range(len(self.data))]
+            #selected = self.data.selectref(selected)
+            X, Y, Z = self.data_array[:, self.x_attr],\
+                      self.data_array[:, self.y_attr],\
+                      self.data_array[:, self.z_attr]
+            print(type(X))
+            print(X.selectref(selected))
+            min_x, max_x = numpy.min(X), numpy.max(X)
+            min_y, max_y = numpy.min(Y), numpy.max(Y)
+            min_z, max_z = numpy.min(Z), numpy.max(Z)
+            self.plot.set_new_zoom(min_x, max_x, min_y, max_y, min_z, max_z)
 
     def change_selection_type(self):
         if self.toolbarSelection < 3:

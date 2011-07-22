@@ -124,7 +124,7 @@ class Legend(object):
         self.items = []
         self.plot = plot
         self.symbol_scale = 6
-        self.font = QFont()
+        self.font = QFont('Helvetica', 9)
         self.metrics = QFontMetrics(self.font)
 
     def add_item(self, symbol, color, size, title):
@@ -188,7 +188,7 @@ class Legend(object):
         for symbol, color, size, text in self.items:
             glColor4f(*color)
             draw_ngon(symbol_to_n[symbol], x+t+10, item_pos_y-4, size*self.symbol_scale)
-            self.plot.renderText(x+t+30, item_pos_y, text)
+            self.plot.renderText(x+t+30, item_pos_y, text, font=self.font)
             item_pos_y += self.metrics.height()
 
     def contains(self, x, y):
@@ -347,8 +347,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.build_axes()
         self.selections = []
-        self.selection_change_callback = None
-        self.selection_type = SelectionType.RECTANGLE
+        self.selection_changed_callback = None
+        self.selection_type = SelectionType.ZOOM
         self.new_selection = None
 
         self.setMouseTracking(True)
@@ -373,6 +373,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.symbol_shader = QtOpenGL.QGLShaderProgram()
         vertex_shader_source = '''
+            #extension GL_EXT_gpu_shader4 : enable
+
             attribute vec4 position;
             attribute vec3 offset;
             attribute vec4 color;
@@ -424,15 +426,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 // We've packed example index into .w component of this vertex,
                 // to output it to the screen, it has to be broken down into RGBA.
                 uint index = uint(position.w);
-                var_color = vec4(((index & 0xFF)) / 255.,
-                                 ((index & 0xFF00) >> 8) / 255.,
-                                 ((index & 0xFF0000) >> 16) / 255.,
-                                 ((index & 0xFF000000) >> 24) / 255.);
+                var_color = vec4(float((index & 0xFF)) / 255.,
+                                 float((index & 0xFF00) >> 8) / 255.,
+                                 float((index & 0xFF0000) >> 16) / 255.,
+                                 float((index & 0xFF000000) >> 24) / 255.);
               }
               else {
                 pos = abs(pos);
                 float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
-                float a = min(pow(min(1, view_edge / manhattan_distance), 5), transparency);
+                float a = min(pow(min(1., view_edge / manhattan_distance), 5.), transparency);
                 var_color = vec4(color.rgb, a);
               }
             }
@@ -944,7 +946,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
-        pass
+        print((x_min, x_max))
+        self.initial_center = [(x_max + x_min) / 2.,
+                               (y_max + y_min) / 2.,
+                               (z_max + z_min) / 2.]
+        self.initial_center = numpy.array(self.initial_center)
+        self.selections = []
+        self.updateGL()
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
@@ -955,6 +963,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if size != None:
             img = img.scaled(size)
         return img.save(file_name)
+
+    def transform_data_to_plot(self, vertex):
+        vertex -= self.initial_center
+        vertex *= self.initial_scale
+        vertex *= numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+        return vertex
 
     def get_selection_indices(self):
         if len(self.selections) == 0:
@@ -996,6 +1010,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             if cmd == 'scatter':
                 _, _, (X, Y, Z), _ = params
                 for i, (x, y, z) in enumerate(zip(X, Y, Z)):
+                    x, y, z = self.transform_data_to_plot((x,y,z))
                     x_win, y_win = project(x, y, z)
                     for selection in self.selections:
                         if selection.contains(x_win, y_win):
@@ -1111,17 +1126,17 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 last = self.new_selection.add_current_vertex()
                 if last:
                     self.selections.append(self.new_selection)
-                    self.selection_change_callback() if self.selection_change_callback else None
+                    self.selection_changed_callback() if self.selection_changed_callback else None
                     self.state = PlotState.IDLE
                     self.new_selection = None
             else:
                 if self.new_selection.valid():
                     self.selections.append(self.new_selection)
-                    self.selection_change_callback() if self.selection_change_callback else None
+                    self.selection_changed_callback() if self.selection_changed_callback else None
         elif self.state == PlotState.ROTATING:
             self.state = PlotState.IDLE
         elif self.state == PlotState.PANNING:
-            self.selection_change_callback() if self.selection_change_callback else None
+            self.selection_changed_callback() if self.selection_changed_callback else None
 
         if not (self.state == PlotState.SELECTING and self.selection_type == SelectionType.POLYGON):
             self.state = PlotState.IDLE
