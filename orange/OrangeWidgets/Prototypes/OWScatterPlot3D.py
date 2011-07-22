@@ -417,9 +417,9 @@ class OWScatterPlot3D(OWWidget):
     def get_axis_data(self, x_index, y_index, z_index):
         array = self.data_array
         X, Y, Z = array[:, x_index], array[:, y_index], array[:, z_index]
-        X, Y, Z = map(numpy.copy, [X, Y, Z])
 
         if self.jitter_size > 0:
+            X, Y, Z = map(numpy.copy, [X, Y, Z])
             x_range = numpy.max(X)-numpy.min(X)
             y_range = numpy.max(Y)-numpy.min(Y)
             z_range = numpy.max(Z)-numpy.min(Z)
