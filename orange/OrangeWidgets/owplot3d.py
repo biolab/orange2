@@ -423,7 +423,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               if (tooltip_mode) {
                 // We've packed example index into .w component of this vertex,
                 // to output it to the screen, it has to be broken down into RGBA.
-                int index = int(position.w);
+                uint index = uint(position.w);
                 var_color = vec4(((index & 0xFF)) / 255.,
                                  ((index & 0xFF00) >> 8) / 255.,
                                  ((index & 0xFF0000) >> 16) / 255.,
@@ -942,6 +942,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def set_z_axis_map(self, map):
         self.z_axis_map = map
         self.updateGL()
+
+    def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
+        pass
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)

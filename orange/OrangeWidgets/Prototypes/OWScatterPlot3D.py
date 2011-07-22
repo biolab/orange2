@@ -4,6 +4,10 @@
 from OWWidget import *
 from owplot3d import *
 
+import orange
+Discrete = orange.VarTypes.Discrete
+Continuous = orange.VarTypes.Continuous
+
 import OWGUI
 import OWToolbars
 import OWColorPalette
@@ -29,6 +33,10 @@ class OWScatterPlot3D(OWWidget):
         self.x_attr = 0
         self.y_attr = 0
         self.z_attr = 0
+
+        self.x_attr_discrete = False
+        self.y_attr_discrete = False
+        self.z_attr_discrete = False
 
         self.color_attr = None
         self.size_attr = None
@@ -106,12 +114,12 @@ class OWScatterPlot3D(OWWidget):
         box = OWGUI.widgetBox(self.settings_tab, "Jittering Options")
         self.jitter_size_combo = OWGUI.comboBox(box, self, 'jitter_size', label='Jittering size (% of size)'+'  ',
             orientation='horizontal',
-            callback=self.on_checkbox_update,
+            callback=self.update_plot,
             items=self.jitter_sizes,
             sendSelectedValue=1,
             valueType=float)
         OWGUI.checkBox(box, self, 'jitter_continuous', 'Jitter continuous attributes',
-            callback=self.on_checkbox_update,
+            callback=self.update_plot,
             tooltip='Does jittering apply also on continuous attributes?')
 
         box = OWGUI.widgetBox(self.settings_tab, 'General settings')
@@ -222,8 +230,7 @@ class OWScatterPlot3D(OWWidget):
 
         if self.data is not None:
             self.all_attrs = data.domain.variables + data.domain.getmetas().values()
-            self.axis_candidate_attrs = [attr for attr in self.all_attrs
-                if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
+            self.candidate_attrs = [attr for attr in self.all_attrs if attr.varType in [Discrete, Continuous]]
 
             self.attr_name_index = {}
             for i, attr in enumerate(self.all_attrs):
@@ -238,7 +245,7 @@ class OWScatterPlot3D(OWWidget):
             self.shape_attr_cb.addItem('(Same shape)')
             self.label_attr_cb.addItem('(No labels)')
             icons = OWGUI.getAttributeIcons() 
-            for (i, attr) in enumerate(self.axis_candidate_attrs):
+            for (i, attr) in enumerate(self.candidate_attrs):
                 self.x_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.y_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.z_attr_cb.addItem(icons[attr.varType], attr.name)
@@ -255,9 +262,9 @@ class OWScatterPlot3D(OWWidget):
             self.data_array = array
 
             self.x_attr, self.y_attr, self.z_attr = numpy.min([[0, 1, 2],
-                                                               [len(self.axis_candidate_attrs) - 1]*3
+                                                               [len(self.candidate_attrs) - 1]*3
                                                               ], axis=0)
-            self.color_attr = max(len(self.axis_candidate_attrs) - 1, 0)
+            self.color_attr = max(len(self.candidate_attrs) - 1, 0)
             self.shown_attr_indices = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
             self.openContext('', data)
 
@@ -285,8 +292,8 @@ class OWScatterPlot3D(OWWidget):
         self.reportSettings('Settings',
                             [('Symbol size', self.plot.symbol_scale),
                              ('Transparency', self.plot.transparency),
-                             #("Jittering", self.graph.jitterSize),
-                             #("Jitter continuous attributes", OWGUI.YesNo[self.graph.jitterContinuous])])
+                             ("Jittering", self.jitter_size),
+                             ("Jitter continuous attributes", OWGUI.YesNo[self.jitter_continuous])
                              ])
         self.reportSection('Plot')
         self.reportImage(self.plot.save_to_file_direct, QSize(400, 400))
@@ -313,14 +320,22 @@ class OWScatterPlot3D(OWWidget):
         if self.data is None:
             return
 
-        x_ind, y_ind, z_ind = self.get_axes_indices()
-        X, Y, Z, mask = self.get_axis_data(x_ind, y_ind, z_ind)
+        self.x_attr_discrete = self.y_attr_discrete = self.z_attr_discrete = False
+
+        if self.candidate_attrs[self.x_attr].varType == Discrete:
+            self.x_attr_discrete = True
+        if self.candidate_attrs[self.y_attr].varType == Discrete:
+            self.y_attr_discrete = True
+        if self.candidate_attrs[self.z_attr].varType == Discrete:
+            self.z_attr_discrete = True
+
+        X, Y, Z, mask = self.get_axis_data(self.x_attr, self.y_attr, self.z_attr)
 
         color_legend_items = []
         if self.color_attr > 0:
-            color_attr = self.axis_candidate_attrs[self.color_attr - 1]
+            color_attr = self.candidate_attrs[self.color_attr - 1]
             C = self.data_array[:, self.color_attr - 1]
-            if color_attr.varType == orange.VarTypes.Discrete:
+            if color_attr.varType == Discrete:
                 palette = OWColorPalette.ColorPaletteHSV(len(color_attr.values))
                 colors = [palette[int(value)] for value in C.ravel()]
                 colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
@@ -337,9 +352,9 @@ class OWScatterPlot3D(OWWidget):
             colors = 'b'
 
         if self.size_attr > 0:
-            size_attr = self.axis_candidate_attrs[self.size_attr - 1]
+            size_attr = self.candidate_attrs[self.size_attr - 1]
             S = self.data_array[:, self.size_attr - 1]
-            if size_attr.varType == orange.VarTypes.Discrete:
+            if size_attr.varType == Discrete:
                 sizes = [(v + 1) * len(size_attr.values) / (11 - self.symbol_scale) for v in S]
             else:
                 min, max = numpy.min(S), numpy.max(S)
@@ -350,7 +365,7 @@ class OWScatterPlot3D(OWWidget):
         shapes = None
         if self.shape_attr > 0:
             i, shape_attr = self.discrete_attrs[self.shape_attr]
-            if shape_attr.varType == orange.VarTypes.Discrete:
+            if shape_attr.varType == Discrete:
                 # Map discrete attribute to [0...num shapes-1]
                 shapes = self.data_array[:, i]
                 num_shapes = 0
@@ -363,7 +378,7 @@ class OWScatterPlot3D(OWWidget):
 
         labels = None
         if self.label_attr > 0:
-            label_attr = self.axis_candidate_attrs[self.label_attr - 1]
+            label_attr = self.candidate_attrs[self.label_attr - 1]
             labels = self.data_array[:, self.label_attr - 1]
 
         self.plot.clear()
@@ -384,32 +399,37 @@ class OWScatterPlot3D(OWWidget):
                 self.plot.legend.add_item(*item)
 
         self.plot.scatter(X, Y, Z, colors, sizes, shapes, labels)
-        self.plot.set_x_axis_title(self.axis_candidate_attrs[self.x_attr].name)
-        self.plot.set_y_axis_title(self.axis_candidate_attrs[self.y_attr].name)
-        self.plot.set_z_axis_title(self.axis_candidate_attrs[self.z_attr].name)
+        self.plot.set_x_axis_title(self.candidate_attrs[self.x_attr].name)
+        self.plot.set_y_axis_title(self.candidate_attrs[self.y_attr].name)
+        self.plot.set_z_axis_title(self.candidate_attrs[self.z_attr].name)
 
         def create_discrete_map(attr_index):
-            keys = range(len(self.axis_candidate_attrs[attr_index].values))
-            values = self.axis_candidate_attrs[attr_index].values
-            map = {}
-            for key, value in zip(keys, values):
-                map[key] = value
-            return map
+            values = self.candidate_attrs[attr_index].values
+            return {key: value for key, value in enumerate(values)}
 
-        if self.axis_candidate_attrs[self.x_attr].varType == orange.VarTypes.Discrete:
+        if self.candidate_attrs[self.x_attr].varType == Discrete:
             self.plot.set_x_axis_map(create_discrete_map(self.x_attr))
-        if self.axis_candidate_attrs[self.y_attr].varType == orange.VarTypes.Discrete:
+        if self.candidate_attrs[self.y_attr].varType == Discrete:
             self.plot.set_y_axis_map(create_discrete_map(self.y_attr))
-        if self.axis_candidate_attrs[self.z_attr].varType == orange.VarTypes.Discrete:
+        if self.candidate_attrs[self.z_attr].varType == Discrete:
             self.plot.set_z_axis_map(create_discrete_map(self.z_attr))
 
-    def get_axis_data(self, x_ind, y_ind, z_ind):
+    def get_axis_data(self, x_index, y_index, z_index):
         array = self.data_array
-        X, Y, Z = array[:, x_ind], array[:, y_ind], array[:, z_ind]
-        return X, Y, Z, None
+        X, Y, Z = array[:, x_index], array[:, y_index], array[:, z_index]
+        X, Y, Z = map(numpy.copy, [X, Y, Z])
 
-    def get_axes_indices(self):
-        return self.x_attr, self.y_attr, self.z_attr
+        if self.jitter_size > 0:
+            x_range = numpy.max(X)-numpy.min(X)
+            y_range = numpy.max(Y)-numpy.min(Y)
+            z_range = numpy.max(Z)-numpy.min(Z)
+            if self.x_attr_discrete or self.jitter_continuous:
+                X += (numpy.random.random(len(X))-0.5) * (self.jitter_size * x_range / 100.)
+            if self.y_attr_discrete or self.jitter_continuous:
+                Y += (numpy.random.random(len(Y))-0.5) * (self.jitter_size * y_range / 100.)
+            if self.z_attr_discrete or self.jitter_continuous:
+                Z += (numpy.random.random(len(Z))-0.5) * (self.jitter_size * z_range / 100.)
+        return X, Y, Z, None
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
