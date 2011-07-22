@@ -104,6 +104,7 @@ class OWPlot(orangeplot.Plot):
      #   self.graph_item.setPen(QPen(Qt.NoPen))
         
         self._legend = OWLegend(self.scene())
+        self._legend.setZValue(1.0)
         self.axes = dict()
         self.axis_margin = 80
         self.title_margin = 50
@@ -145,7 +146,7 @@ class OWPlot(orangeplot.Plot):
         
         ## Performance optimization
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
-        self.setInteractive(False)
+     #   self.setInteractive(False)
         
         self._bounds_cache = {}
         self._transform_cache = {}
@@ -550,6 +551,16 @@ class OWPlot(orangeplot.Plot):
     def legend(self):
         return self._legend
         
+    def isLegendEvent(self, event, function):
+        rect = self._legend.boundingRect()
+        rect = self._legend.mapRectToScene(rect)
+       # rect.translate(self._legend.pos())
+        if rect.contains(self.mapToScene(event.pos())):
+            function(self, event)
+            return True
+        else:
+            return False
+        
     ## Event handling
     def resizeEvent(self, event):
         self.replot()
@@ -558,9 +569,14 @@ class OWPlot(orangeplot.Plot):
         if self.mousePressEventHandler and self.mousePressEventHandler(event):
             event.accept()
             return
+            
+        if self.isLegendEvent(event, QGraphicsView.mousePressEvent):
+            return
+        
+        point = self.mapToScene(event.pos())
+
         self.static_click = True
         self._pressed_mouse_button = event.button()
-        point = self.mapToScene(event.pos())
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
             self._selection_start_point = self.mapToScene(event.pos())
             self._current_rs_item = QGraphicsRectItem(parent=self.graph_item, scene=self.scene())
@@ -571,7 +587,12 @@ class OWPlot(orangeplot.Plot):
             return
         if event.buttons():
             self.static_click = False
+        
+        if self.isLegendEvent(event, QGraphicsView.mouseMoveEvent):
+            return
+        
         point = self.mapToScene(event.pos())
+                
         if self._pressed_mouse_button == Qt.LeftButton:
             if self.state == SELECT_RECTANGLE and self._current_rs_item and self.graph_area.contains(point):
                 self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
@@ -604,11 +625,16 @@ class OWPlot(orangeplot.Plot):
             event.accept()
             return
         self._pressed_mouse_button = Qt.NoButton
+        
+        if self.isLegendEvent(event, QGraphicsView.mouseReleaseEvent):
+            return
+        
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self._current_rs_item:
             self.add_selection_item(self._current_rs_item, self._current_rs_item.rect())
             self._current_rs_item = None
     
     def mouseStaticClick(self, event):
+            
         point = self.mapToScene(event.pos())
         if self.state == ZOOMING:
             t, ok = self.zoom_transform.inverted()

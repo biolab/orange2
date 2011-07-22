@@ -141,12 +141,3 @@ class Marker(orangeplot.PlotItem):
             
     def updateProperties(self):
         self._item.setPos(self.graphTransform().map(self._data_point))
-
-class MovableItem(orangeplot.PlotItem):
-    def __init__(self):
-        orangeplot.PlotItem.__init__(self)
-        
-    def mouseMoveEvent(self, event):
-        if event.buttons():
-            self.setPos(self.pos() + event.scenePos() - event.lastScenePos())
-    

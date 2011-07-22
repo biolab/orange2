@@ -1,6 +1,6 @@
 
 
-from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsTextItem, QGraphicsRectItem, QColor
+from PyQt4.QtGui import QGraphicsItem, QGraphicsTextItem, QGraphicsRectItem, QColor
 from PyQt4.QtCore import QPointF, QRectF, Qt
 
 from owpoint import *
@@ -10,7 +10,7 @@ PointColor = 1
 PointSize = 2
 PointSymbol = 4
 
-class OWLegend(QGraphicsItemGroup):
+class OWLegend(QGraphicsItem):
     def __init__(self, scene):
         QGraphicsItemGroup.__init__(self, None, scene)
         self.curves = []
@@ -23,6 +23,8 @@ class OWLegend(QGraphicsItemGroup):
                                PointSize : 8, 
                                PointSymbol : OWCurve.Ellipse
                                }
+        self.box_rect = QRectF()
+        self.setFiltersChildEvents(True)
         
     def clear(self):
         self.curves = []
@@ -56,7 +58,8 @@ class OWLegend(QGraphicsItemGroup):
         y = 10
         length = 0
         if self.point_attrs:
-            ## Using the OWGraph API to specify paremeters
+            ## Using the owplot API to specify paremeters
+            ## NOTE: The API is neither finished nor used
             for p_a, d_a in self.point_attrs.iteritems():
                 ## We construct a separate box for each attribute 
                 title_item = QGraphicsTextItem( d_a, self )
@@ -82,6 +85,24 @@ class OWLegend(QGraphicsItemGroup):
                 self.items.append(text)
                 y = y + 20
             if self.curves:
-                box_rect = QRectF(0, 0, 20 + length, y-10)
-                box_item = QGraphicsRectItem(box_rect, self)
+                self.box_rect = QRectF(0, 0, 20 + length, y-10)
+                box_item = QGraphicsRectItem(self.box_rect, self)
+                box_item.setBrush(Qt.white)
+                box_item.setZValue(-1)
                 self.items.append(box_item)
+            else:
+                box_rect = QRectF()
+                
+    def mouseMoveEvent(self, event):
+        self.setPos(self.pos() + event.scenePos() - event.lastScenePos())
+        event.accept()
+            
+    def mousePressEvent(self, event):
+        event.accept()
+
+    def boundingRect(self):
+        return self.box_rect
+        
+    def paint(self, painter, option, widget=None):
+        pass
+    
