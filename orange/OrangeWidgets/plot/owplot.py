@@ -295,8 +295,13 @@ class OWPlot(orangeplot.Plot):
             self.axes[axis_id].set_title(title)
             
     def setShowAxisTitle(self, axis_id, b):
+        qDebug(('Showing' if b else 'Hiding') + ' axis title for ' + ('good' if axis_id in self.axes else 'bad') + ' axis ' + str(axis_id))
+        qDebug(repr(b))
         if axis_id in self.axes:
+            if b == -1:
+                b = not self.axes[axis_id].show_title
             self.axes[axis_id].set_show_title(b)
+            self.replot()
         
     def set_axis_tick_length(self, axis_id, minor, medium, major):
         if axis_id in self.axes:
@@ -548,8 +553,9 @@ class OWPlot(orangeplot.Plot):
             self.update_axes()
             self.update()
             ## TODO: fitInView is very slow, but resetTransform doesn't seem to be doing its job
-            self.resetTransform()
+            # self.resetTransform()
             # self.fitInView(QRectF(self.contentsRect()))
+            self.setSceneRect(QRectF(self.contentsRect()))
             
     def legend(self):
         return self._legend

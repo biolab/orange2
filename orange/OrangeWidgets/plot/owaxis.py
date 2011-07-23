@@ -120,11 +120,13 @@ class OWAxis(QGraphicsItemGroup):
             
 
     def update(self, zoom_only = False):
-        if not self.graph_line or not self.title or not self.scene():
+        if not self.graph_line or not self.scene():
+            qDebug('OWAxis.update(): No line or scene')
             return
         self.line_item.setLine(self.graph_line)
         self.line_item.setPen(self.style.pen())
-        self.title_item.setHtml(self.title)
+        if self.title:
+            self.title_item.setHtml(self.title)
         if self.title_location == AxisMiddle:
             title_p = 0.5
         elif self.title_location == AxisEnd:
