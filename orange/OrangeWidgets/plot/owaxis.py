@@ -190,10 +190,13 @@ class OWAxis(QGraphicsItemGroup):
             pos, text, size = self._ticks[i]
             label_pos = self.map_to_graph( pos )
             if not test_rect.contains(label_pos):
+                self.tick_items[i].setVisible(False)
+                self.label_items[i].setVisible(False)
                 continue
             hs = 0.5*step
             label_pos = self.map_to_graph(pos - hs)
             item = self.label_items[i]
+            item.setVisible(True)
             if not zoom_only:
                 item.setHtml( '<center>' + text.strip() + '</center>')
             item.setTextWidth( QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length() )
@@ -203,6 +206,7 @@ class OWAxis(QGraphicsItemGroup):
             item.setRotation(-self.graph_line.angle())
             
             item = self.tick_items[i]
+            item.setVisible(True)
             tick_line = QLineF(v)
             tick_line.translate(-tick_line.p1())
             tick_line.setLength(size)
