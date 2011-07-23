@@ -190,7 +190,7 @@ class OWAxis(QGraphicsItem):
         test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
         test_rect.adjust(-1, -1, 1, 1)
         v = self.graph_line.normalVector().unitVector()
-        for i in range(len(self._ticks)):
+        for i in range(n):
             pos, text, size = self._ticks[i]
             label_pos = self.map_to_graph( pos )
             if not test_rect.contains(label_pos):
@@ -202,7 +202,7 @@ class OWAxis(QGraphicsItem):
             item = self.label_items[i]
             item.setVisible(True)
             if not zoom_only:
-                item.setHtml( '<center>' + text.strip() + '</center>')
+                item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
             item.setTextWidth( QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length() )
             if self.title_above:
                 label_pos = label_pos + (v.p2() - v.p1())*40
@@ -261,7 +261,9 @@ class OWAxis(QGraphicsItem):
         elif self.auto_range:
             min, max = self.auto_range
         else:
-            return 0
+            return QPointF()
+        if min == max:
+            return QPointF()
         line_point = self.graph_line.pointAt( (x-min)/(max-min) )
         end_point = line_point * self.zoom_transform
         return self.projection(end_point, self.graph_line)
