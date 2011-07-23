@@ -64,7 +64,9 @@ void Curve::updateProperties()
   
   if (m_continuous)
   {
-    m_lineItem->setPen(m_pen);
+    QPen p = m_pen;
+    p.setWidthF(m_pen.widthF()/m_zoom_factor);
+    m_lineItem->setPen(p);
     m_line = QPainterPath();
     if (!m_data.isEmpty())
     {

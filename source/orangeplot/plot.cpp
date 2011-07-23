@@ -8,6 +8,7 @@ QGraphicsView(parent)
 {
     setScene(new QGraphicsScene(this));
     clipItem = new QGraphicsRectItem();
+    clipItem->setPen(Qt::NoPen);
     clipItem->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
     scene()->addItem(clipItem);
     graph_item = new QGraphicsRectItem(clipItem);
