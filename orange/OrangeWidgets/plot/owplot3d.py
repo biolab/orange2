@@ -246,8 +246,30 @@ class PolygonSelection(object):
             self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
             return True
         else:
+            if self.check_intersections():
+                return True
             self.vertices.append(self.current_vertex)
             return False
+
+    def check_intersections(self):
+        if len(self.vertices) < 3:
+            return False
+
+        current_line = QLineF(self.current_vertex[0], self.current_vertex[1],
+                              self.vertices[-1][0], self.vertices[-1][1])
+        intersection = QPointF()
+        v1 = self.vertices[0]
+        for i, v2 in enumerate(self.vertices[1:-1]):
+            line = QLineF(v1[0], v1[1],
+                          v2[0], v2[1])
+            if current_line.intersect(line, intersection) == QLineF.BoundedIntersection:
+                self.current_vertex = [intersection.x(), intersection.y()]
+                self.vertices = [self.current_vertex] + self.vertices[i+1:]
+                self.vertices.append(self.current_vertex)
+                self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
+                return True
+            v1 = v2
+        return False
 
     def contains(self, x, y):
         if self.polygon == None:

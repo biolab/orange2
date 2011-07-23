@@ -2,7 +2,7 @@
 """
 
 from OWWidget import *
-from owplot3d import *
+from plot.owplot3d import *
 
 import orange
 Discrete = orange.VarTypes.Discrete
