@@ -2,6 +2,7 @@
 #define NETWORKCURVE_H
 
 #include "curve.h"
+#include <math.h>
 
 struct NodeItem
 {
@@ -49,9 +50,11 @@ public:
     
     virtual Nodes get_nodes() const = 0;
     virtual Edges get_edges() const = 0;
-    
+
     virtual QRectF dataRect() const;
     
+    int fr(int steps, bool weighted, double temperature, double cooling);
+
 private:
     QMap<int, QGraphicsPathItem*> m_vertex_items;
     QList<QGraphicsLineItem*> m_edge_items;

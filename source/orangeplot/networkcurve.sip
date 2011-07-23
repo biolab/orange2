@@ -55,4 +55,6 @@ public:
     virtual NetworkCurve::Nodes get_nodes() const = 0;
 
     virtual QRectF dataRect() const;
+    
+    int fr(int steps, bool weighted, double temperature, double cooling);
 };
