@@ -177,6 +177,7 @@ class OWPlot(orangeplot.Plot):
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
 
+        self.activate_zooming()
         self.replot()
         
         
@@ -329,6 +330,8 @@ class OWPlot(orangeplot.Plot):
         c.name = name
         c.setAutoUpdate(False)
         c.setStyle(style)
+        
+        c.setColor(penColor)
         
         if pen:
             p = pen
