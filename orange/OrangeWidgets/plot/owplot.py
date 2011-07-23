@@ -320,7 +320,7 @@ class OWPlot(orangeplot.Plot):
         return curve
         
     def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
-                 symbol = OWCurve.Ellipse, enableLegend = False, xData = [], yData = [], showFilledSymbols = None,
+                 symbol = OWPoint.Ellipse, enableLegend = False, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
         c = OWCurve(xData, yData, parent=self.graph_item)

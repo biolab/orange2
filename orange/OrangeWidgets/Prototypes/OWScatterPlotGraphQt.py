@@ -322,7 +322,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
                 
             if colorIndex != -1:
                 num = len(self.dataDomain[colorIndex].values)
-                val = [[], [], [self.pointWidth]*num, [OWCurve.Ellipse]*num]
+                val = [[], [], [self.pointWidth]*num, [OWPoint.Ellipse]*num]
                 varValues = getVariableValuesSorted(self.dataDomain[colorIndex])
                 for ind in range(num):
                     val[0].append(legendJoin(self.dataDomain[colorIndex].name, varValues[ind]))
@@ -343,7 +343,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
             if sizeIndex != -1:
                 num = len(self.dataDomain[sizeIndex].values)
                 if legendKeys.has_key(sizeIndex):  val = legendKeys[sizeIndex]
-                else:                               val = [[], [Qt.black]*num, [], [OWCurve.Ellipse]*num]
+                else:                               val = [[], [Qt.black]*num, [], [OWPoint.Ellipse]*num]
                 val[2] = []; val[0] = []
                 varValues = getVariableValuesSorted(self.dataDomain[sizeIndex])
                 for ind in range(num):
@@ -405,11 +405,11 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 ##                clusterLines = closure[key]
 ##                color = self.discPalette[classIndices[self.rawData.domain.classVar[classValue[key]].value]]
 ##                for (p1, p2) in clusterLines:
-##                    self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWCurve.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
+##                    self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWPoint.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
 ##        else:
 ##            colorIndex = self.discPalette[classIndices[self.rawData.domain.classVar[classValue].value]]
 ##            for (p1, p2) in closure:
-##                self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWCurve.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
+##                self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWPoint.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
 
     def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return

@@ -130,7 +130,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             else:
                 XAnchors = [a[0] for a in shownAnchorData]
                 YAnchors = [a[1] for a in shownAnchorData]
-                self._extra_curves.append(self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = Qt.NoPen, symbol = OWCurve.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1))
+                self._extra_curves.append(self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = Qt.NoPen, symbol = OWPoint.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1))
 
                 # draw text at anchors
                 if self.showAttributeNames:
@@ -304,7 +304,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = self.contPalette.getRGB(self.noJitteringScaledData[self.dataClassIndex][i])
-                self.addCurve(str(i), QColor(*newColor+ (self.alphaValue,)), QColor(*newColor+ (self.alphaValue,)), self.pointWidth, symbol = OWCurve.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
+                self.addCurve(str(i), QColor(*newColor+ (self.alphaValue,)), QColor(*newColor+ (self.alphaValue,)), self.pointWidth, symbol = OWPoint.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
@@ -480,7 +480,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                     for (xAnchor,yAnchor,label) in shownAnchorData:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
-                        curve = self.addCurve("", color, color, 1, style = Qt.SolidLine, symbol = OWCurve.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
+                        curve = self.addCurve("", color, color, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
 
                         marker = None
                         fontsize = 9

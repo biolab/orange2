@@ -6,6 +6,7 @@
 
 #include <QtCore/qmath.h>
 #include <QtCore/QtConcurrentRun>
+#include "point.h"
 
 Curve::Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
@@ -46,7 +47,7 @@ void Curve::updateNumberOfItems()
   int m = n - m_pointItems.size();
   for (int i = 0; i < m; ++i)
   {
-    m_pointItems << new QGraphicsPathItem(this);
+    m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
   }
   
   Q_ASSERT(m_pointItems.size() == m_data.size());
@@ -88,7 +89,6 @@ void Curve::updateProperties()
   
   Q_ASSERT(m_pointItems.size() == n);
   
-  m_path = pathForSymbol(m_symbol, m_pointSize);
   
   // Move, resize, reshape and/or recolor the items
   if (m_needsUpdate & UpdatePosition)
@@ -103,7 +103,7 @@ void Curve::updateProperties()
   
   if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
   {
-    updateItems(m_pointItems, Updater(1.0/m_zoom_factor, m_pen, m_brush, m_path));
+    updateItems(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, 1.0/m_zoom_factor), UpdateSymbol);
   }
   m_needsUpdate = 0;
 }
@@ -124,23 +124,20 @@ void Curve::updateAll()
     
     int n = m_data.size();
     QBrush brush(m_color);
-    m_path = pathForSymbol(m_symbol, m_pointSize);
     QPointF p;
     for (int i = 0; i < n; ++i)
     {
-      QGraphicsPathItem* item = m_pointItems[i];
+      Point* item = m_pointItems[i];
       DataPoint& point = m_data[i];
-      item->setPath(m_path);
       p = QPointF(point.x, point.y);
       item->setPos(p * m_graphTransform);
-      item->setBrush(brush);
-    }
+      }
   }
   m_needsUpdate = 0;
 }
 
 
-QGraphicsItem* Curve::pointItem(qreal x, qreal y, int size, QGraphicsItem* parent)
+Point* Curve::pointItem(qreal x, qreal y, int size, QGraphicsItem* parent)
 {
   if (size == 0)
   {
@@ -150,87 +147,9 @@ QGraphicsItem* Curve::pointItem(qreal x, qreal y, int size, QGraphicsItem* paren
   {
     parent = this;
   }
-  QGraphicsPathItem* item = new QGraphicsPathItem(pathForSymbol(symbol(),size), parent);
+  Point* item = new Point(m_symbol, m_color, m_pointSize, parent);
   item->setPos(x,y);
-  item->setPen(Qt::NoPen);
-  item->setBrush(m_color);
   return item;
-}
-
-QPainterPath Curve::pathForSymbol(int symbol, int size)
-{
-  QPainterPath path;
-  qreal d = 0.5 * size;
-  switch (symbol)
-  {
-    case NoSymbol:
-      break;
-      
-    case Ellipse:
-      path.addEllipse(-d,-d,2*d,2*d);
-      break;
-      
-    case Rect:
-      path.addRect(-d,-d,2*d,2*d);
-      break;
-      
-    case Diamond:
-      path.addRect(-d,-d,2*d,2*d);
-      path = QTransform().rotate(45).map(path);
-      break;
-      
-    case Triangle:
-    case UTriangle:
-      path = trianglePath(d, 0);
-      break;
-      
-    case DTriangle:
-      path = trianglePath(d, 180);
-      break;
-      
-    case LTriangle:
-      path = trianglePath(d, -90);
-      break;
-    
-    case RTriangle:
-      path = trianglePath(d, 90);
-      break;
-
-    case Cross:
-      path = crossPath(d, 0);
-      break;
-    
-    case XCross:
-      path = crossPath(d, 45);
-      break;
-      
-    case HLine:
-      path.moveTo(-d,0);
-      path.lineTo(d,0);
-      break;
-      
-    case VLine:
-      path.moveTo(0,-d);
-      path.lineTo(0,d);
-      break;
-      
-    case Star1:
-      path.addPath(crossPath(d,0));
-      path.addPath(crossPath(d,45));
-      break;
-      
-    case Star2:
-      path = hexPath(d, true);
-      break;
-      
-    case Hexagon:
-      path = hexPath(d, false);
-      break;
-      
-    default:
-      qWarning() << "Unsupported symbol" << symbol;
-  }
-  return path;
 }
 
 Data Curve::data() const
@@ -468,45 +387,6 @@ qreal Curve::min_y_value() const
     return m_yBounds.min;
 }
 
-QPainterPath Curve::trianglePath(double d, double rot) {
-    QPainterPath path;
-    path.moveTo(-d, d*sqrt(3)/3);
-    path.lineTo(d, d*sqrt(3)/3);
-    path.lineTo(0, -2*d*sqrt(3)/3);
-    path.closeSubpath();
-    return QTransform().rotate(rot).map(path);
-}
-
-QPainterPath Curve::crossPath(double d, double rot)
-{
-    QPainterPath path;
-    path.lineTo(0,d);
-    path.moveTo(0,0);
-    path.lineTo(0,-d);
-    path.moveTo(0,0); 
-    path.lineTo(d,0);
-    path.moveTo(0,0);
-    path.lineTo(-d,0);
-    return QTransform().rotate(rot).map(path);
-}
-QPainterPath Curve::hexPath(double d, bool star) {
-    QPainterPath path;
-    if (!star)
-    {
-        path.moveTo(d,0);
-    }
-    for (int i = 0; i < 6; ++i)
-    {
-        path.lineTo( d * cos(M_PI/3*i), d*sin(M_PI/3*i) );
-        if (star)
-        {
-            path.lineTo(0,0);
-        }
-    }
-    path.closeSubpath();
-    return path;
-}
-
 void Curve::setDirty(Curve::UpdateFlags flags)
 {
     m_needsUpdate |= flags;
@@ -523,14 +403,4 @@ void Curve::set_zoom_factor(double factor)
     m_zoom_factor = factor;
     m_needsUpdate |= UpdateZoom;
     checkForUpdate();
-}
-
-void Curve::updateItems(const QList< QGraphicsPathItem* >& items, Updater updater)
-{
-    if (m_currentUpdate.isRunning())
-    {
-        m_currentUpdate.cancel();
-        m_currentUpdate.waitForFinished();
-    }
-    m_currentUpdate = QtConcurrent::map(items, updater);
 }

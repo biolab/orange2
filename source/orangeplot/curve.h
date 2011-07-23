@@ -2,6 +2,7 @@
 #define CURVE_H
 
 #include "plotitem.h"
+#include "point.h"
 
 #include <QtGui/QPen>
 #include <QtGui/QBrush>
@@ -12,6 +13,43 @@ struct DataPoint
 {
   qreal x;
   qreal y;
+};
+
+struct ScaleUpdater
+{
+    ScaleUpdater(qreal scale) {m_scale = scale;}
+    void operator()(QGraphicsItem* item) {item->setScale(m_scale);}
+    
+private:
+    qreal m_scale;
+};
+
+struct PointUpdater
+{
+    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode, qreal scale)
+    {
+        m_symbol = symbol;
+        m_color = color;
+        m_size = size;
+        m_mode = mode;
+        m_scale = scale;
+    }
+    
+    void operator()(Point* point)
+    {
+        point->set_symbol(m_symbol);
+        point->set_color(m_color);
+        point->set_size(m_size);
+        point->set_display_mode(m_mode);
+        point->setScale(m_scale);
+    }
+    
+    private:
+     int m_symbol;
+     QColor m_color;
+     int m_size;
+     Point::DisplayMode m_mode;
+     qreal m_scale;
 };
 
 struct Updater
@@ -44,31 +82,6 @@ class Curve : public PlotItem
 {
   
 public:
-  /**
-   * @brief Point symbol
-   * 
-   * The symbols list here matches the one from QwtPlotCurve. 
-   **/
-  enum Symbol {
-    NoSymbol = -1,
-    Ellipse = 0,
-    Rect = 1,
-    Diamond = 2,
-    Triangle = 3,
-    DTriangle = 4,
-    UTriangle = 5,
-    LTriangle = 6,
-    RTriangle = 7,
-    Cross = 8,
-    XCross = 9,
-    HLine = 10,
-    VLine = 11,
-    Star1 = 12,
-    Star2 = 13,
-    Hexagon = 14,
-    UserStyle = 1000
-  };
-  
   enum Style {
     NoCurve = Qt::NoPen,
     Lines = Qt::SolidLine,
@@ -117,10 +130,6 @@ public:
    **/
   virtual void updateAll();
   
-  void updateItems(const QList< QGraphicsPathItem* >& items, Updater updater);
-  template <class T>
-  void updateItems(const QList<T*>& items, Updater updater);
-  
   /**
    * @brief ...
    *
@@ -130,7 +139,7 @@ public:
    * @param parent ... Defaults to 0.
    * @return QGraphicsItem*
    **/
-  QGraphicsItem* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
+  Point* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
   
   QColor color() const;
   void setColor(const QColor& color);
@@ -173,15 +182,6 @@ public:
   qreal max_y_value() const;
   qreal min_y_value() const;
     
-  /**
-   * Creates a path from a symbol and a size
-   *
-   * @param symbol the point symbol to use
-   * @param size the size of the resulting path
-   * @return a path that can be used in a QGraphicsPathItem
-   **/
-  static QPainterPath pathForSymbol(int symbol, int size);
-
   enum UpdateFlag
   {
     UpdateNumberOfItems = 0x01,
@@ -199,6 +199,9 @@ public:
   
   void setDirty(UpdateFlags flags = UpdateAll);
   
+  template <class Sequence, class Updater>
+  void updateItems(Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
+  
 private:    
 
   struct Bounds
@@ -212,10 +215,6 @@ private:
   void changeContinuous();
   void updateBounds();
   
-  static QPainterPath trianglePath(double d, double rot);
-  static QPainterPath crossPath(double d, double rot);
-  static QPainterPath hexPath(double d, bool star);
-  
   QColor m_color;
   int m_pointSize;
   int m_symbol;
@@ -224,7 +223,7 @@ private:
   Data m_data;
   QTransform m_graphTransform;
   QPainterPath m_path;
-  QList<QGraphicsPathItem*> m_pointItems;
+  QList<Point*> m_pointItems;
   UpdateFlags m_needsUpdate;
   bool m_autoUpdate;
   QRectF m_graphArea;
@@ -236,13 +235,17 @@ private:
   QPen m_pen;
   QBrush m_brush;
   double m_zoom_factor;
-  QFuture<void> m_currentUpdate;
+  QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
 };
 
-template <class T>
-void Curve::updateItems(const QList< T* >& items, Updater updater)
+template <class Sequence, class Updater>
+void Curve::updateItems(Sequence& sequence, Updater updater, Curve::UpdateFlag flag)
 {
-    updateItems(reinterpret_cast< const QList<QGraphicsPathItem*>& >(items), updater);
+    if (m_currentUpdate.contains(flag) && m_currentUpdate[flag].isRunning())
+    {
+        m_currentUpdate[flag].cancel();
+    }
+    m_currentUpdate[flag] = QtConcurrent::map(sequence, updater);
 }
 
 

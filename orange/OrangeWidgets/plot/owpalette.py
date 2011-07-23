@@ -42,7 +42,7 @@ from PyQt4.QtCore import Qt
 _shared_palette = None
 
 class OWLineStyle:
-    def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine,  point_shape=OWCurve.Ellipse, point_size=5):
+    def __init__(self,  color=Qt.black,  width=1,  type=Qt.SolidLine,  point_shape=OWPoint.Ellipse, point_size=5):
         self.color = color
         self.width = width
         self.type = type

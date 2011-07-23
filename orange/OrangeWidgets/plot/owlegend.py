@@ -21,7 +21,7 @@ class OWLegend(QGraphicsItem):
         self.default_values = {
                                PointColor : Qt.black, 
                                PointSize : 8, 
-                               PointSymbol : OWCurve.Ellipse
+                               PointSymbol : OWPoint.Ellipse
                                }
         self.box_rect = QRectF()
         self.setFiltersChildEvents(True)

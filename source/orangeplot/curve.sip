@@ -51,28 +51,6 @@ class Curve : PlotItem {
 %End
 
 public:
-
-enum Symbol {
-    NoSymbol = -1,
-    Ellipse = 0,
-    Rect = 1,
-    Diamond = 2,
-    Triangle = 3,
-    DTriangle = 4,
-    UTriangle = 5,
-    LTriangle = 6,
-    RTriangle = 7,
-    Cross = 8,
-    XCross = 9,
-    HLine = 10,
-    VLine = 11,
-    Star1 = 12,
-    Star2 = 13,
-    Hexagon = 14,
-    UserStyle = 1000
-  };
-
-
   enum Style {
     NoCurve = Qt::NoPen,
     Lines = Qt::SolidLine,
@@ -91,10 +69,8 @@ enum Symbol {
 
   virtual void updateProperties();
   void updateAll();
-  
-  void updateItems(QList<QAbstractGraphicsShapeItem*> items, Updater u);
-  
-  QGraphicsItem* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
+    
+  Point* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
   
   QColor color() const;
   void setColor(const QColor& color);
@@ -128,13 +104,6 @@ enum Symbol {
 
   bool autoUpdate() const;
   void setAutoUpdate(bool autoUpdate);
-
-  static QPainterPath pathForSymbol(int symbol, int size);
-  
-  qreal max_x_value() const;
-  qreal min_x_value() const;
-  qreal max_y_value() const;
-  qreal min_y_value() const;
   
   enum UpdateFlag
   {

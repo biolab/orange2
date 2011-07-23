@@ -271,7 +271,7 @@ class OWDistributionGraphQt(OWPlot):
                 key.setPen(QPen(Qt.black))
             else:
                 key.setColor(Qt.black)
-                key.setSymbol(OWCurve.Diamond)
+                key.setSymbol(OWPoint.Diamond)
                 key.setPointSize(7)
         else:
             self.enableYRaxis(0)
@@ -378,9 +378,9 @@ class OWDistributionGraphQt(OWPlot):
 
             ## (re)set the curves
             if self.variableContinuous:
-                newSymbol = OWCurve.NoSymbol
+                newSymbol = OWPoint.NoSymbol
             else:
-                newSymbol = OWCurve.Diamond
+                newSymbol = OWPoint.Diamond
                 
             self.probCurveKey.setData(xs, mps)
             self.probCurveKey.setSymbol(newSymbol)
