@@ -595,6 +595,13 @@ class OWPlot(orangeplot.Plot):
             return
         
         point = self.mapToScene(event.pos())
+        
+        ## We implement a workaround here, because sometimes mouseMoveEvents are not fast enough
+        ## so the moving legend gets left behind while dragging, and it's left in a pressed state
+        if self._legend.mouse_down:
+            QGraphicsView.mouseMoveEvent(self, event)
+            return
+        
                 
         if self._pressed_mouse_button == Qt.LeftButton:
             if self.state == SELECT_RECTANGLE and self._current_rs_item and self.graph_area.contains(point):

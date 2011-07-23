@@ -25,6 +25,8 @@ class OWLegend(QGraphicsItem):
                                }
         self.box_rect = QRectF()
         self.setFiltersChildEvents(True)
+        self.setFlag(self.ItemHasNoContents, True)
+        self.mouse_down = False
         
     def clear(self):
         self.curves = []
@@ -98,6 +100,13 @@ class OWLegend(QGraphicsItem):
         event.accept()
             
     def mousePressEvent(self, event):
+        self.setCursor(Qt.DragMoveCursor)
+        self.mouse_down = True
+        event.accept()
+        
+    def mouseReleaseEvent(self, event):
+        self.unsetCursor()
+        self.mouse_down = False
         event.accept()
 
     def boundingRect(self):
