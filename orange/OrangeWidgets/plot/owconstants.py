@@ -16,3 +16,7 @@ UserAxis = 100
 XAxes = [xBottom, xTop]
 YAxes = [yLeft, yRight]
 CartesianAxes = XAxes + YAxes
+
+AxisZValue = -2
+PlotZValue = 0
+HighlightZValue = 5

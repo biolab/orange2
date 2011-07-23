@@ -101,7 +101,7 @@ class OWPlot(orangeplot.Plot):
         self.title_item = None
         
         self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
-     #   self.graph_item.setPen(QPen(Qt.NoPen))
+        self.graph_item.setPen(QPen(Qt.NoPen))
         
         self._legend = OWLegend(self.scene())
         self._legend.setZValue(1.0)
@@ -195,16 +195,31 @@ class OWPlot(orangeplot.Plot):
     def graph_area_rect(self):
         return self.graph_area
         
-    def map_to_graph(self, point, axes = None):
-        (x, y) = point
-        ret = QPointF(x, y) * self.map_transform
-        return (ret.x(), ret.y())
+    def map_to_graph(self, point, axes = None, zoom = False):
+        if type(point) == tuple:
+            (x, y) = point
+            point = QPointF(x, y)
+        if axes:
+            x_id, y_id = axes
+            point = point * self.transform_for_axes(x_id, y_id)
+        else:
+            point = point * self.map_transform
+        if zoom:
+            point = point * self.zoom_transform
+        return (point.x(), point.y())
         
-    def map_from_graph(self, point, axes = None):
+    def map_from_graph(self, point, axes = None, zoom = False):
         if type(point) == tuple:
             (x, y) = point
             point = QPointF(x,y)
-        t, ok = self.map_transform.inverted()
+        if zoom:
+            t, ok = self.zoom_transform.inverted()
+            point = point * t
+        if axes:
+            x_id, y_id = axes
+            t, ok = self.transform_for_axes(x_id, y_id).inverted()
+        else:
+            t, ok = self.map_transform.inverted()
         ret = point * t
         return (ret.x(), ret.y())
         
@@ -323,6 +338,8 @@ class OWPlot(orangeplot.Plot):
         self._transform_cache = {}
         if hasattr(curve, 'tooltip'):
             curve.setToolTip(curve.tooltip)
+        curve.setAutoUpdate(True)
+        curve.updateProperties()
         return curve
         
     def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
@@ -330,10 +347,11 @@ class OWPlot(orangeplot.Plot):
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
         c = OWCurve(xData, yData, parent=self.graph_item)
+        c.setAutoUpdate(False)
         c.setAxes(x_axis_key, y_axis_key)
+        c.set_zoom_factor(self._zoom_factor)
         c.setToolTip(name)
         c.name = name
-        c.setAutoUpdate(False)
         c.setStyle(style)
         
         c.setColor(penColor)
@@ -364,7 +382,7 @@ class OWPlot(orangeplot.Plot):
     def plot_data(self, xData, yData, colors, labels, shapes, sizes):
         pass
         
-    def add_axis(self, axis_id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = NoPosition, zoomable = False):
+    def add_axis(self, axis_id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, zoomable = False):
         qDebug('Adding axis with id ' + str(axis_id) + ' and title ' + title)
         a = OWAxis(axis_id, title, title_above, title_location, line, arrows, scene=self.scene())
         a.zoomable = zoomable
@@ -620,24 +638,23 @@ class OWPlot(orangeplot.Plot):
             else:
                 self._current_ps_item.setPen(QPen(Qt.black))
         else:
-            t, ok = (self.transform_for_axes(xBottom, yLeft) * self.zoom_transform).inverted()
-            if ok:
-                p = t.map(point)
-                text, x, y = self.tips.maybeTip(p.x(), p.y())
-                if type(text) == int: 
-                    text = self.buildTooltip(text)
-                if text and x is not None and y is not None:
-                    tp = self.mapFromScene(QPointF(x,y) * self.map_transform)
-                    self.showTip(tp.x(), tp.y(), text)
-           
+            x, y = self.map_from_graph(point)
+            text, x, y = self.tips.maybeTip(x, y)
+            if type(text) == int: 
+                text = self.buildTooltip(text)
+            if text and x is not None and y is not None:
+                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform)
+                self.showTip(tp.x(), tp.y(), text)
+        
     def mouseReleaseEvent(self, event):
+        self._pressed_mouse_button = Qt.NoButton
+
         if self.mouseReleaseEventHandler and self.mouseReleaseEventHandler(event):
             event.accept()
             return
         if self.static_click and self.mouseStaticClickHandler and self.mouseStaticClickHandler(event):
             event.accept()
             return
-        self._pressed_mouse_button = Qt.NoButton
         
         if self.isLegendEvent(event, QGraphicsView.mouseReleaseEvent):
             return

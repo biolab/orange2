@@ -35,16 +35,18 @@
 
 from math import *
 
-from PyQt4.QtGui import QGraphicsItemGroup, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform
+from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform
 from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF
 
 from owpalette import *
 from owconstants import *
 from owtools import resize_plot_item_list
 
-class OWAxis(QGraphicsItemGroup):
+class OWAxis(QGraphicsItem):
     def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, parent=None, scene=None):
-        QGraphicsItemGroup.__init__(self, parent, scene)
+        QGraphicsItem.__init__(self, parent, scene)
+        self.setFlag(QGraphicsItem.ItemHasNoContents)
+        self.setZValue(AxisZValue)
         self.id = id
         self.title = title
         self.title_location = title_location
@@ -64,10 +66,10 @@ class OWAxis(QGraphicsItemGroup):
         self.scale = None
         path = QPainterPath()
         path.setFillRule(Qt.WindingFill)
-        path.lineTo(-20, 10)
-        path.lineTo(-10, 0)
-        path.lineTo(-20, -10)
-        path.lineTo(0, 0)
+        path.moveTo(0, 5)
+        path.lineTo(0, -5)
+        path.lineTo(10, 0)
+        path.closeSubpath()
         self.arrow_path = path
         self.label_items = []
         self.tick_items = []
@@ -275,3 +277,9 @@ class OWAxis(QGraphicsItemGroup):
     def continuous_labels(self):
         min, max, step = self.scale
         magnitude = log10(abs(max-min))
+        
+    def paint(self, painter, option, widget):
+        pass
+    
+    def boundingRect(self):
+        return QRectF()

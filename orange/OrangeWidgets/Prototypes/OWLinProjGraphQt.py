@@ -434,8 +434,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         self.tooltipCurves = []
         self.tooltipMarkers = []
 
-        canvasPos = self.map_from_widget(e.pos())
-        xFloat, yFloat = self.map_from_graph(canvasPos)
+        xFloat, yFloat = self.map_from_graph(self.mapToScene(e.pos()), zoom=True)
 
         # in case we are drawing a rectangle, we don't draw enhanced tooltips
         # because it would then fail to draw the rectangle
@@ -481,6 +480,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
                         curve = self.addCurve("", color, color, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
+                        curve.setZValue(HighlightZValue)
 
                         marker = None
                         fontsize = 9
