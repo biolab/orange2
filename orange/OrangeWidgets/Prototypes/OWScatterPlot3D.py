@@ -47,7 +47,6 @@ class OWScatterPlot3D(OWWidget):
         self.symbol_scale = 5
         self.alpha_value = 255
 
-        self.loadSettings()
 
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.main_tab = OWGUI.createTabPage(self.tabs, 'Main')
@@ -165,6 +164,8 @@ class OWScatterPlot3D(OWWidget):
 
         self.mainArea.layout().addWidget(self.plot)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.plot.save_to_file)
+
+        self.loadSettings()
 
         self.data = None
         self.subsetData = None
