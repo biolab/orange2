@@ -552,9 +552,6 @@ class OWPlot(orangeplot.Plot):
             self.update_zoom()
             self.update_axes()
             self.update()
-            ## TODO: fitInView is very slow, but resetTransform doesn't seem to be doing its job
-            # self.resetTransform()
-            # self.fitInView(QRectF(self.contentsRect()))
             self.setSceneRect(QRectF(self.contentsRect()))
             
     def legend(self):
