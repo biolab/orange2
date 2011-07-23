@@ -28,6 +28,7 @@ int NodeItem::index() const
 void NodeItem::set_graph_transform(const QTransform& transform)
 {
     m_graph_transform = transform;
+    set_coordinates(m_x, m_y);
 }
 
 QTransform NodeItem::graph_transform() const
@@ -205,13 +206,7 @@ void NetworkCurve::updateProperties()
     const QTransform t = graphTransform();
     int m, n;
 
-    Nodes::ConstIterator nit = m_nodes.constBegin();
-    Nodes::ConstIterator nend = m_nodes.constEnd();
-    for (; nit != nend; ++nit)
-    {
-        NodeItem* node = nit.value();
-        node->setPos( t.map(QPointF(node->x(), node->y())) );
-    }
+    updateItems(m_nodes, NodeUpdater(t), UpdatePosition);
     
     QLineF line;
     n = m_edges.size();

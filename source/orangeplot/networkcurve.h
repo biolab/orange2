@@ -96,6 +96,15 @@ private:
     QString m_label;
 };
 
+class NodeUpdater
+{
+public:
+    NodeUpdater(const QTransform& t) : m_t(t) {}
+    void operator()(NodeItem* item) { item->set_graph_transform(m_t); }
+private:
+    QTransform m_t;
+};
+
 class NetworkCurve : public Curve
 {
 public:

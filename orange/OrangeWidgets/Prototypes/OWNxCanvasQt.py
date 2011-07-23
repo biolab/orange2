@@ -13,46 +13,23 @@ import random
 
 from numpy import *
 from plot.owplot import *
+from plot.owpoint import *
 from orngScaleScatterPlotData import *
 import orangeplot
 
 class NodeItem(orangeplot.NodeItem):
-    def __init__(self, index=-1):
-        orangeplot.NodeItem.__init__(self)
-        self.index = index
-        self.marked = False
-        self.show = True
-        self.highlight = False
-        self.selected = False
-        self.label = ''
-        self.tooltip = ''
-        self.uuid = 0
+    def __init__(self, index, x, y, parent=None):
+        orangeplot.NodeItem.__init__(self, index, OWPoint.Ellipse, Qt.blue, 5, parent)
+        self.set_x(x)
+        self.set_y(y)
         
-        self.image = None
-        self.pen = QPen(Qt.blue, 1)
-        self.pen.setJoinStyle(Qt.RoundJoin)
-        self.nocolor = Qt.white
-        self.color = Qt.blue
-        self.size = 5
-        self.style = 1
-        
-        self.x = random.random()
-        self.y = random.random()
-    
 class EdgeItem(orangeplot.EdgeItem):
-    def __init__(self, u=None, v=None, weight=0, arrowu=0, arrowv=0, 
-                 links_index=None, label=''):
-        orangeplot.EdgeItem.__init__(self)
-        self.u = u
-        self.v = v
-        self.links_index = int(links_index) if links_index is not None else -1
-        self.arrowu = arrowu
-        self.arrowv = arrowv
-        self.weight = weight
-        self.label = label
-
-        self.pen = QPen(Qt.lightGray, 1)
-        self.pen.setCapStyle(Qt.RoundCap)
+    def __init__(self, u=None, v=None, weight=1, links_index=0, label='', parent=None):
+        orangeplot.EdgeItem.__init__(self, u, v, parent)
+        self.set_u(u)
+        self.set_v(v)
+        self.set_weight(weight)
+        self.set_links_index(links_index)
 
 class NetworkCurve(orangeplot.NetworkCurve):
   def __init__(self, parent=None, pen=QPen(Qt.black), xData=None, yData=None):
@@ -60,21 +37,6 @@ class NetworkCurve(orangeplot.NetworkCurve):
       self.name = "Network Curve"
       self.showEdgeLabels = 0
       
-      self.nodes = {}
-      self.edges = []
-      
-  def get_nodes(self):
-      return self.nodes
-        
-  def get_edges(self):
-      return self.edges
-  
-  def get_nodes_2(self):
-      return self.nodes
-        
-  def get_edges_2(self):
-      return self.edges
-
   def move_selected_nodes(self, dx, dy):
     selected = self.get_selected_nodes()
     

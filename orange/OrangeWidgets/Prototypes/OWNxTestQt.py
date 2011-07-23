@@ -23,24 +23,13 @@ class OWNxTestQt(OWWidget):
        
         curve = self.canvas.networkCurve
         
-        for i in range(100):
-            n = NodeItem(i)
-            n.x = random.random()
-            n.y = random.random()
-            qDebug('Adding node ' + str(n.x) + ' ' + str(n.y))
-            curve.nodes[i] = n
-            
-        qDebug(str(len(curve.nodes)))
-            
-        for i in range(0, 100, 5):
-            for j in range(0, 100, 7):
-                if j == i:
-                    continue
-                else:
-                    e = EdgeItem()
-                    e.u = curve.nodes[i]
-                    e.v = curve.nodes[j]
-                    curve.edges.append(e)
+        
+        nodes_to_add = dict((i, NodeItem(i, random.random(), random.random(), parent=curve)) for i in range(30))
+        curve.set_nodes(nodes_to_add)
+        
+        edges_to_add = [ EdgeItem(nodes_to_add[2*i], nodes_to_add[3*i], parent=curve) for i in range(10) ]
+        curve.set_edges(edges_to_add)
+
         
         curve.updateProperties()
         self.canvas.replot()
