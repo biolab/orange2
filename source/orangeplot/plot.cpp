@@ -33,7 +33,6 @@ void Plot::addItem(PlotItem* item)
 
 void Plot::removeItem(PlotItem* item)
 {
-    qDebug() << "Removing item" << item << "with parent" << item->parentItem();
     if (m_items.contains(item))
     {
         item->setParentItem(0);

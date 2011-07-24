@@ -123,7 +123,6 @@ class OWAxis(QGraphicsItem):
 
     def update(self, zoom_only = False):
         if not self.graph_line or not self.scene():
-            qDebug('OWAxis.update(): No line or scene')
             return
         self.line_item.setLine(self.graph_line)
         self.line_item.setPen(self.style.pen())
@@ -205,7 +204,7 @@ class OWAxis(QGraphicsItem):
                 item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
             item.setTextWidth( QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length() )
             if self.title_above:
-                label_pos = label_pos + (v.p2() - v.p1())*40
+                label_pos = label_pos + (v.p2() - v.p1())*30
             item.setPos(label_pos)
             item.setRotation(-self.graph_line.angle())
             

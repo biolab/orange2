@@ -106,9 +106,9 @@ class OWPlot(orangeplot.Plot):
         self._legend = OWLegend(self.scene())
         self._legend.setZValue(1.0)
         self.axes = dict()
-        self.axis_margin = 80
-        self.title_margin = 50
-        self.graph_margin = 30
+        self.axis_margin = 50
+        self.title_margin = 40
+        self.graph_margin = 20
         self.mainTitle = None
         self.showMainTitle = False
         self.XaxisTitle = None
