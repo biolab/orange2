@@ -214,6 +214,7 @@ private:
   void updateNumberOfItems();
   void changeContinuous();
   void updateBounds();
+  void cancelAllUpdates();
   
   QColor m_color;
   int m_pointSize;
@@ -244,6 +245,7 @@ void Curve::updateItems(Sequence& sequence, Updater updater, Curve::UpdateFlag f
     if (m_currentUpdate.contains(flag) && m_currentUpdate[flag].isRunning())
     {
         m_currentUpdate[flag].cancel();
+        m_currentUpdate[flag].waitForFinished();
     }
     m_currentUpdate[flag] = QtConcurrent::map(sequence, updater);
 }

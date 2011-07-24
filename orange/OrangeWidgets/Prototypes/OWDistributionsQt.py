@@ -25,34 +25,40 @@ class distribErrorBarCurve(OWCurve):
     def __init__(self, text = None):
         self._items = []
         OWCurve.__init__(self,xData=[], yData=[])
+        self._currently_updating = False
         
     def updateProperties(self):
+        if self._currently_updating:
+            OWCurve.updateProperties(self)
+            self._currently_updating = False
+            return
+            
+        self._currently_updating = True
         if self.style() != OWCurve.UserCurve:
             resize_plot_item_list(self._items, 0, None, self)
             self.items = []
             self.setDirty()
-            OWCurve.updateProperties(self)
-            return
-            
-        t = self.graphTransform()
-        d = self.data()
-        n = len(d)/3
-        self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
-        for i in range(n):
-            p = QPainterPath()
-            px, py1 = d[3*i]
-            _, py2 = d[3*i+1]
-            _, py3 = d[3*i+2]
-            pxl = px - 0.1
-            pxr = px + 0.1
-            p.moveTo(px, py1)
-            p.lineTo(px, py3)
-            p.moveTo(pxl, py1)
-            p.lineTo(pxr, py1)
-            p.moveTo(pxl, py3)
-            p.lineTo(pxr, py3)
-            self._items[i].setPath(t.map(p))
-            self._items[i].setPen(self.pen())
+        else:
+            t = self.graphTransform()
+            d = self.data()
+            n = len(d)/3
+            self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
+            for i in range(n):
+                p = QPainterPath()
+                px, py1 = d[3*i]
+                _, py2 = d[3*i+1]
+                _, py3 = d[3*i+2]
+                pxl = px - 0.1
+                pxr = px + 0.1
+                p.moveTo(px, py1)
+                p.lineTo(px, py3)
+                p.moveTo(pxl, py1)
+                p.lineTo(pxr, py1)
+                p.moveTo(pxl, py3)
+                p.lineTo(pxr, py3)
+                self._items[i].setPath(t.map(p))
+                self._items[i].setPen(self.pen())
+        self._currently_updating = False
 
 class OWDistributionGraphQt(OWPlot):
     def __init__(self, settingsWidget = None, parent = None, name = None):

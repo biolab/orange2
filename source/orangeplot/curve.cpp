@@ -28,11 +28,12 @@ Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, sce
 
 Curve::~Curve()
 {
-
+    cancelAllUpdates();
 }
 
 void Curve::updateNumberOfItems()
 {
+  cancelAllUpdates();
   if (m_continuous)
   {
     m_needsUpdate &= ~UpdateNumberOfItems;
@@ -95,6 +96,7 @@ void Curve::updateProperties()
   // Move, resize, reshape and/or recolor the items
   if (m_needsUpdate & UpdatePosition)
   {
+    cancelAllUpdates();
     QPointF p;
     for (int i = 0; i < n; ++i)
     {
@@ -112,32 +114,9 @@ void Curve::updateProperties()
 
 void Curve::updateAll()
 {
-  if (m_needsUpdate & UpdateContinuous)
-  {
-    changeContinuous();
-  }
-  
-  else 
-  {
-    if (m_needsUpdate & UpdateNumberOfItems)
-    {
-      updateNumberOfItems();
-    }
-    
-    int n = m_data.size();
-    QBrush brush(m_color);
-    QPointF p;
-    for (int i = 0; i < n; ++i)
-    {
-      Point* item = m_pointItems[i];
-      DataPoint& point = m_data[i];
-      p = QPointF(point.x, point.y);
-      item->setPos(p * m_graphTransform);
-      }
-  }
-  m_needsUpdate = 0;
+  m_needsUpdate = UpdateAll;
+  updateProperties();
 }
-
 
 Point* Curve::pointItem(qreal x, qreal y, int size, QGraphicsItem* parent)
 {
@@ -329,6 +308,7 @@ void Curve::checkForUpdate()
 
 void Curve::changeContinuous()
 {
+  cancelAllUpdates();
   if (m_continuous)
   {
     qDeleteAll(m_pointItems);
@@ -405,4 +385,17 @@ void Curve::set_zoom_factor(double factor)
     m_zoom_factor = factor;
     m_needsUpdate |= UpdateZoom;
     checkForUpdate();
+}
+
+void Curve::cancelAllUpdates()
+{
+    foreach (QFuture<void> f, m_currentUpdate)
+    {
+        if (f.isRunning())
+        {
+            f.cancel();
+            f.waitForFinished();
+        }
+    }
+    m_currentUpdate.clear();
 }
