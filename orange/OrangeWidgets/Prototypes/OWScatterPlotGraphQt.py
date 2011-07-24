@@ -8,6 +8,7 @@ from orngCI import FeatureByCartesianProduct
 import orngVisFuncts
 from orngScaleScatterPlotData import *
 import ColorPalette
+import numpy
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1

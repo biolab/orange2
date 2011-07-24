@@ -30,5 +30,6 @@ class OWCurve(orangeplot.Curve):
         self.setAxes(x_axis_key, y_axis_key)
         if tooltip:
             self.setToolTip(tooltip)
+        self.name = ''
 
             
