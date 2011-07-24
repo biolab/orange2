@@ -89,7 +89,8 @@ name_map = {
     "getSelectedPoints" : "get_selected_points",
     "setAxisScale" : "set_axis_scale",
     "setAxisLabels" : "set_axis_labels", 
-    "setTickLength" : "set_axis_tick_length"
+    "setTickLength" : "set_axis_tick_length",
+    "updateCurves" : "update_curves"
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
@@ -124,9 +125,9 @@ class OWPlot(orangeplot.Plot):
         # OWScatterPlot needs these:
         self.alphaValue = 1
         self.useAntialiasing = True
-        self.pointWidth = 5
+        self.point_width = 5
         self.showFilledSymbols = 1
-        self.alphaValue = 255
+        self.alpha_value = 255
         
         self.palette = shared_palette()
         self.curveSymbols = self.palette.curve_symbols
@@ -185,7 +186,9 @@ class OWPlot(orangeplot.Plot):
         
     selectionCurveList = deprecated_attribute("selectionCurveList", "selection_items")
     autoSendSelectionCallback = deprecated_attribute("autoSendSelectionCallback", "auto_send_selection_callback")
-    showLegend = deprecated_attribute("ShowLegend", "show_legend")
+    showLegend = deprecated_attribute("showLegend", "show_legend")
+    pointWidth = deprecated_attribute("pointWidth", "point_width")
+    alphaValue = deprecated_attribute("alphaValue", "alpha_value")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -306,8 +309,10 @@ class OWPlot(orangeplot.Plot):
         if axis_id in self._bounds_cache:
             del self._bounds_cache[axis_id]
         self._transform_cache = {}
-        self.axes[axis_id].set_scale(min, max, step_size)
-        
+        if axis_id in self.axes:
+            self.axes[axis_id].set_scale(min, max, step_size)
+        else:
+            self.data_range[axis_id] = (min, max)
     def setAxisTitle(self, axis_id, title):
         if axis_id in self.axes:
             self.axes[axis_id].set_title(title)
@@ -880,6 +885,9 @@ class OWPlot(orangeplot.Plot):
     def enableYRaxis(self, enable=1):
         self.set_axis_enabled(yRight, enable)
         
+    def enableLRaxis(self, enable=1):
+        self.set_axis_enabled(yLeft, enable)
+        
     def enableXaxis(self, enable=1):
         self.set_axis_enabled(xBottom, enable)
         
@@ -972,4 +980,14 @@ class OWPlot(orangeplot.Plot):
         self.update_layout()
         self.update_axes()
         
-        
+    def update_curves(self):
+        for c in self.itemList():
+            if isinstance(c, orangeplot.Curve):
+                au = c.autoUpdate()
+                c.setAutoUpdate(False)
+                c.setPointSize(self.point_width)
+                color = c.color()
+                color.setAlpha(self.alpha_value)
+                c.setColor(color)
+                c.setAutoUpdate(au)
+                c.updateProperties()

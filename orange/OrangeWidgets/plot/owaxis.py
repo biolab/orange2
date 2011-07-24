@@ -62,7 +62,7 @@ class OWAxis(QGraphicsItem):
         self.title_item = QGraphicsTextItem(self)
         self.end_arrow_item = None
         self.start_arrow_item = None
-        self.show_title = True
+        self.show_title = False
         self.scale = None
         path = QPainterPath()
         path.setFillRule(Qt.WindingFill)
@@ -206,7 +206,6 @@ class OWAxis(QGraphicsItem):
             if self.title_above:
                 label_pos = label_pos + (v.p2() - v.p1())*30
             item.setPos(label_pos)
-            item.setRotation(-self.graph_line.angle())
             
             item = self.tick_items[i]
             item.setVisible(True)

@@ -1,4 +1,4 @@
-from PyQt4.QtGui import QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QPen, QBrush
+from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QPen, QBrush
 from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug
 
 from owcurve import *
@@ -18,7 +18,7 @@ def resize_plot_item_list(lst, size, item_type, parent):
         return lst + [item_type(parent) for i in range(size - n)]
     else:
         return lst
-
+        
 #A dynamic tool tip class
 class TooltipManager:
     # Creates a new dynamic tool tip.
@@ -141,3 +141,4 @@ class Marker(orangeplot.PlotItem):
             
     def updateProperties(self):
         self._item.setPos(self.graphTransform().map(self._data_point))
+
