@@ -20,3 +20,4 @@ CartesianAxes = XAxes + YAxes
 AxisZValue = -2
 PlotZValue = 0
 HighlightZValue = 5
+LegendZValue = 10

@@ -11,8 +11,9 @@ PointSize = 2
 PointSymbol = 4
 
 class OWLegend(QGraphicsItem):
-    def __init__(self, scene):
-        QGraphicsItemGroup.__init__(self, None, scene)
+    def __init__(self, graph, scene):
+        QGraphicsItem.__init__(self, None, scene)
+        self.graph = graph
         self.curves = []
         self.items = []
         self.attributes = []
@@ -97,6 +98,7 @@ class OWLegend(QGraphicsItem):
                 
     def mouseMoveEvent(self, event):
         self.setPos(self.pos() + event.scenePos() - event.lastScenePos())
+        self.graph.notify_legend_moved()
         event.accept()
             
     def mousePressEvent(self, event):

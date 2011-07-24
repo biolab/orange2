@@ -103,8 +103,10 @@ class OWPlot(orangeplot.Plot):
         self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
         self.graph_item.setPen(QPen(Qt.NoPen))
         
-        self._legend = OWLegend(self.scene())
-        self._legend.setZValue(1.0)
+        self._legend = OWLegend(self, self.scene())
+        self._legend.setZValue(LegendZValue)
+        self._legend_margin = QRectF()
+        self._legend_moved = False
         self.axes = dict()
         self.axis_margin = 50
         self.title_margin = 40
@@ -183,6 +185,7 @@ class OWPlot(orangeplot.Plot):
         
     selectionCurveList = deprecated_attribute("selectionCurveList", "selection_items")
     autoSendSelectionCallback = deprecated_attribute("autoSendSelectionCallback", "auto_send_selection_callback")
+    showLegend = deprecated_attribute("ShowLegend", "show_legend")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -445,13 +448,19 @@ class OWPlot(orangeplot.Plot):
             self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
             graph_rect.setTop(graph_rect.top() + self.title_margin)
         
+        self._legend_outside_area = graph_rect
+        
         if self.show_legend:
-            ## TODO: Figure out a good placement for the legend, possibly outside the graph area
-            self._legend.setPos(graph_rect.topRight() - QPointF(100, 0))
+            if not self._legend_moved:
+                self._legend.setPos(graph_rect.topRight() - QPointF(self.legend_rect().width(), 0))
             self._legend.show()
+            
+            ## Adjust for possible external legend:
+            r = self._legend_margin
+            graph_rect.adjust(r.left(), r.top(), -r.right(), -r.bottom())
         else:
             self._legend.hide()
-        
+            
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
         if xBottom in self.axes and self.axes[xBottom].isVisible():
@@ -575,11 +584,11 @@ class OWPlot(orangeplot.Plot):
     def legend(self):
         return self._legend
         
+    def legend_rect(self):
+        return self._legend.mapRectToScene(self._legend.boundingRect())
+        
     def isLegendEvent(self, event, function):
-        rect = self._legend.boundingRect()
-        rect = self._legend.mapRectToScene(rect)
-       # rect.translate(self._legend.pos())
-        if rect.contains(self.mapToScene(event.pos())):
+        if self.legend_rect().contains(self.mapToScene(event.pos())):
             function(self, event)
             return True
         else:
@@ -930,3 +939,36 @@ class OWPlot(orangeplot.Plot):
     # show a tooltip at x,y with text. if the mouse will move for more than 2 pixels it will be removed
     def showTip(self, x, y, text):
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3,y-3,6,6))
+        
+    def notify_legend_moved(self):
+        self._legend_moved = True
+        l = self.legend_rect()
+        g = getattr(self, '_legend_outside_area', QRectF())
+        offset = 10
+        rect = QRectF()
+        if l.right() > g.right() - offset:
+            rect.setRight(l.width())
+        elif l.left() < g.left() + offset:
+            rect.setLeft(l.width())
+        elif l.top() < g.top() + offset:
+            rect.setTop(l.height())
+        elif l.bottom() > g.bottom() + offset:
+            rect.setBottom(l.height())
+        if rect != self._legend_margin:
+            self._legend_animation = QPropertyAnimation(self, 'legend_margin')
+            self._legend_animation.setStartValue(self._legend_margin)
+            self._legend_animation.setEndValue(rect)
+            self._legend_animation.setDuration(100)
+            self._legend_animation.start(QPropertyAnimation.DeleteWhenStopped)
+
+    @pyqtProperty(QRectF)
+    def legend_margin(self):
+        return self._legend_margin
+        
+    @legend_margin.setter
+    def legend_margin(self, value):
+        self._legend_margin = value
+        self.update_layout()
+        self.update_axes()
+        
+        
