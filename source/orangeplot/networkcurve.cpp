@@ -8,6 +8,7 @@
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
 {
     set_index(index);
+    set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
 }
 
 NodeItem::~NodeItem()
@@ -234,15 +235,12 @@ QRectF NetworkCurve::data_rect() const
 
 int NetworkCurve::random()
 {
-	NodeItem *u;
 	Nodes::ConstIterator uit = m_nodes.constBegin();
 	Nodes::ConstIterator uend = m_nodes.constEnd();
 
 	for (; uit != uend; ++uit)
 	{
-		u = uit.value();
-		u->set_x(((qreal)(qrand() % 1000)) * 1000);
-		u->set_y(((qreal)(qrand() % 1000)) * 1000);
+		uit.value()->set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
 	}
 
 	return 0;
@@ -350,12 +348,12 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 			if (dif == 0)
 				dif = 1;
 
-			u->set_x(u->x() + (disp[u->index()].x * qMin(fabs(disp[u->index()].x), temperature) / dif));
-			u->set_y(u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
+			u->set_coordinates(u->x() + (disp[u->index()].x * qMin(fabs(disp[u->index()].x), temperature) / dif),
+			                   u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
 		}
 
-		plot()->replot();
-		plot()->set_dirty();
+		//plot()->replot();
+		//plot()->set_dirty();
 
 		temperature = temperature * cooling;
 	}
