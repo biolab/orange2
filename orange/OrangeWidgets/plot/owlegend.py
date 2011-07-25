@@ -22,6 +22,9 @@ class OWLegendItem(QGraphicsObject):
         self._rect = QRectF(0, 0, height + self.text_item.boundingRect().width(), height )
         self.rect_item = QGraphicsRectItem(self._rect, self)
         self.rect_item.setPen(QPen(Qt.NoPen))
+        self.rect_item.setBrush(Qt.white)
+        self.rect_item.stackBefore(self.text_item)
+        self.rect_item.stackBefore(self.point_item)
         
     def boundingRect(self):
         return self._rect
