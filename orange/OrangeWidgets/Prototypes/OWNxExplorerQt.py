@@ -1263,7 +1263,7 @@ class OWNxExplorerQt(OWWidget):
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
         t = k * nodes * nodes
-        self.frSteps = int(5.0 / t)
+        self.frSteps = 10 #int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 3000: self.frSteps = 3000;
         
@@ -1374,7 +1374,7 @@ class OWNxExplorerQt(OWWidget):
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
         t = k * nodes * nodes
-        self.frSteps = int(5.0 / t)
+        self.frSteps = 10 #int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 3000: self.frSteps = 3000;
         
@@ -1559,7 +1559,8 @@ class OWNxExplorerQt(OWWidget):
         qApp.processEvents()
             
         if self.optMethod == 1:
-            self.layout.random()
+            self.networkCanvas.networkCurve.random()
+            self.networkCanvas.update_canvas()
         elif self.optMethod == 2:
             self.graph_layout_fr(False)
         elif self.optMethod == 3:
@@ -1626,10 +1627,10 @@ class OWNxExplorerQt(OWWidget):
         self.optButton.setText("Stop")
         qApp.processEvents()
         self.stopOptimization = 0
-        cooling = math.exp(math.log(10.0/10000.0) / self.frSteps)
-        self.networkCanvas.networkCurve.fr(10, False, 1000, cooling)
-        self.networkCanvas.networkCurve.updateProperties()
-        self.networkCanvas.replot()
+        temperature = 1000
+        cooling = math.exp(math.log(1. / temperature) / self.frSteps)
+        self.networkCanvas.networkCurve.fr(self.frSteps, False, temperature, cooling)
+        self.networkCanvas.update_canvas()
 #        tolerance = 5
 #        initTemp = 1000
 #        breakpoints = 6
