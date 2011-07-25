@@ -398,6 +398,9 @@ class OWScatterPlot3D(OWWidget):
         if self.label_attr > 0:
             label_attr = self.candidate_attrs[self.label_attr - 1]
             labels = self.data_array[:, self.label_attr - 1]
+            if label_attr.varType == Discrete:
+                value_map = {key: label_attr.values[key] for key in range(len(label_attr.values))}
+                labels = [value_map[value] for value in labels]
 
         self.plot.clear()
 

@@ -552,6 +552,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
                     glBindVertexArray(0)
                 else:
+                    glLineWidth(1)
                     glBindVertexArray(outline_vao_id)
                     glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
                     glBindVertexArray(0)
@@ -572,7 +573,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 if labels != None:
                     for x, y, z, label in zip(X, Y, Z, labels):
                         x, y, z = self.transform_data_to_plot((x, y, z))
-                        self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'), font=self.labels_font)
+                        if isinstance(label, str):
+                            self.renderText(x,y,z, label, font=self.labels_font)
+                        else:
+                            self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'),
+                                            font=self.labels_font)
+            elif cmd == 'custom':
+                callback = params
+                callback()
 
         glDisable(GL_BLEND)
         if self.show_legend:
