@@ -1,28 +1,30 @@
 """ 
-.. index:: LabelPowerset Learner
+.. index:: ML-kNN Learner
    
 .. index:: 
-   single: multilabel;  LabelPowerset Learner
+   single: ML-kNN;  ML-kNN Learner
 
 ***************************************
-LabelPowerset Learner
+ML-kNN Learner
 ***************************************
 
-LabelPowerset Classification is another transformation method for multi-label classification. 
-It consideres each different set of labels that exist in the multi-label data as a 
-single label. It so learns one single-label classifier :math:`H:X \\rightarrow P(L)`, where
-:math:`P(L)` is the power set of L.
-For more information, see G. Tsoumakas and I. Katakis. `Multi-label classification: An overview 
-<http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.104.9401&rep=rep1&type=pdf>`_. 
-International Journal of Data Warehousing and Mining, 3(3):1-13, 2007.
+ML-kNN Classification is a kind of adaptation method for multi-label classification. 
+It is an adaptation of the kNN lazy learning algorithm for multi-label data. In essence,
+ML-kNN uses the kNN algorithm independently for each label :math:'l': It finds the k nearest 
+examples to the test instance and considers those that are labelled at least with :math:'l' 
+as positive and the rest as negative. Actually this method follows the paradigm of Binary Relevance (BR).
+What mainly differentiates this method from BR is the use of prior probabilities. ML-kNN has also
+the capability of producing a ranking of the labels as an output.
+For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
+Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.  
 
-.. index:: LabelPowerset Learner
-.. autoclass:: Orange.multilabel.LabelPowersetLearner
+.. index:: ML-kNN Learner
+.. autoclass:: Orange.multilabel.MLkNNLearner
    :members:
    :show-inheritance:
  
    .. method:: __new__(instances, base_learner, **argkw) 
-   LabelPowersetLearner Constructor
+   MLkNNLearner Constructor
    
    :param instances: a table of instances, covered by the rule.
    :type instances: :class:`Orange.data.Table`
@@ -30,8 +32,8 @@ International Journal of Data Warehousing and Mining, 3(3):1-13, 2007.
    :param base_learner: the binary learner, the default learner is BayesLearner
    :type base_learner: :class:`Orange.classification.Learner`
 
-.. index:: LabelPowerset Classifier
-.. autoclass:: Orange.multilabel.LabelPowersetClassifier
+.. index:: MLkNN Classifier
+.. autoclass:: Orange.multilabel.MLkNNClassifier
    :members:
    :show-inheritance:
 
@@ -46,7 +48,7 @@ The following example demonstrates a straightforward invocation of
 this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 
 .. literalinclude:: code/mlc-classify.py
-   :lines: 1-3, 15-22
+   :lines: 1-3, 24-27
 
 .. _mlc-classify.py: code/mlc-example.py
 .. _multidata.tab: code/multidata.tab
@@ -54,65 +56,33 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 """
 
 import Orange
-from Orange.core import BayesLearner as _BayesLearner
 import label
 import multibase as _multibase
 
-class LabelPowersetLearner(_multibase.MultiLabelLearner):
+class MLkNNLearner(_multibase.MultiLabelLearner):
     """
     Class that implements the LabelPowerset (LP) method. 
     """
-    def __new__(cls, instances = None, base_learner = None, **argkw):
+    def __new__(cls, instances = None, **argkw):
         self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
-        if base_learner:
-            self.base_learner = base_learner
-        else:
-            self.base_learner = _BayesLearner
-        
+                
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances,base_learner)
+            return self.__call__(instances)
         else:
             return self
                 
-    def __call__(self, instances, base_learner = None, **kwds):
+    def __call__(self, instances, **kwds):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
         num_labels = label.get_num_labels(instances)
         label_indices = label.get_label_indices(instances)
         
-        #abtain the labels and use a string to represent it and store the classvalues
-        new_class = Orange.data.variable.Discrete("label")
-        
-        for e in instances:
-            class_value = label.get_label_bitstream(instances,e)
-            new_class.add_value(class_value)
-        
-        #remove the label attributes
-        indices_remove = [var for index, var in enumerate(label_indices)]
-        new_domain = label.remove_indices(instances,indices_remove)
-        
-        #add the class attribute
-        new_domain = Orange.data.Domain(new_domain,new_class)
-        
-        #build the instances
-        newtable = Orange.data.Table(new_domain)
-        for e in instances:
-            new_row = Orange.data.Instance(
-              new_domain, 
-              [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
-              [label.get_label_bitstream(instances,e)])
-            
-            newtable.append(new_row)
-                     
-            #store the classifier
-            classifier = self.base_learner(newtable)
-          
         #Learn from the given table of data instances.
-        return LabelPowersetClassifier(instances = instances, label_indices = label_indices,classifier = classifier)
+        return MLkNNClassifier(instances = instances, label_indices = label_indices)
 
-class LabelPowersetClassifier(_multibase.MultiLabelClassifier):      
+class MLkNNClassifier(_multibase.MultiLabelClassifier):      
     def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
         num_labels = len(self.label_indices)
         domain = self.instances.domain

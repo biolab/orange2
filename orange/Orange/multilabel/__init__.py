@@ -6,3 +6,6 @@ from br import BinaryRelevanceClassifier
 
 from lp import LabelPowersetLearner
 from lp import LabelPowersetClassifier
+
+from mlknn import MLkNNLearner
+from mlknn import MLkNNClassifier

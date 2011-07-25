@@ -9,3 +9,4 @@ Multilabel (``multilabel``)
 
    Orange.multilabel.br
    Orange.multilabel.lp
+   Orange.multilabel.mlknn
