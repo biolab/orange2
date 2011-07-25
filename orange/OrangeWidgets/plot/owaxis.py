@@ -80,6 +80,8 @@ class OWAxis(QGraphicsItem):
         
         self.zoomable = False
         self.update_callback = None
+        self.max_text_width = 50
+        self.text_margin = 5
         
     def update_ticks(self):
         self._ticks = []
@@ -182,30 +184,44 @@ class OWAxis(QGraphicsItem):
         self.tick_items = resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
         
         if self.scale:
-            min, max, step = self.scale
+            _min, _max, step = self.scale
         else:
             step = 1
+        hs = 0.5 * step
         
         test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
         test_rect.adjust(-1, -1, 1, 1)
-        v = self.graph_line.normalVector().unitVector()
+        
+        n_v = self.graph_line.normalVector().unitVector()
+        if self.title_above:
+            n_p = n_v.p2() - n_v.p1()
+        else:
+            n_p = n_v.p1() - n_v.p2()
+        l_v = self.graph_line.unitVector()
+        l_p = l_v.p2() - l_v.p1()
         for i in range(n):
             pos, text, size = self._ticks[i]
-            label_pos = self.map_to_graph( pos )
-            if not test_rect.contains(label_pos):
+            tick_pos = self.map_to_graph( pos )
+            if not test_rect.contains(tick_pos):
                 self.tick_items[i].setVisible(False)
                 self.label_items[i].setVisible(False)
                 continue
-            hs = 0.5*step
-            label_pos = self.map_to_graph(pos - hs)
             item = self.label_items[i]
             item.setVisible(True)
             if not zoom_only:
                 item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
-            item.setTextWidth( QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length() )
-            if self.title_above:
-                label_pos = label_pos + (v.p2() - v.p1())*30
+            if self.id not in CartesianAxes:
+                item.setRotation(-self.graph_line.angle())
+            
+            item.setTextWidth(-1)
+            if self.id in YAxes:
+                w = min(item.boundingRect().width(), self.max_text_width)
+                label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
+            else:
+                w = min(item.boundingRect().width(), QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length())
+                label_pos = tick_pos + n_p * self.text_margin - l_p * w/2
             item.setPos(label_pos)
+            item.setTextWidth(w)
             
             item = self.tick_items[i]
             item.setVisible(True)
