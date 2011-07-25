@@ -11,22 +11,22 @@
 
 struct DataPoint
 {
-  qreal x;
-  qreal y;
+  double x;
+  double y;
 };
 
 struct ScaleUpdater
 {
-    ScaleUpdater(qreal scale) {m_scale = scale;}
+    ScaleUpdater(double scale) {m_scale = scale;}
     void operator()(QGraphicsItem* item) {item->setScale(m_scale);}
     
 private:
-    qreal m_scale;
+    double m_scale;
 };
 
 struct PointUpdater
 {
-    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode, qreal scale)
+    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode, double scale)
     {
         m_symbol = symbol;
         m_color = color;
@@ -49,12 +49,12 @@ struct PointUpdater
      QColor m_color;
      int m_size;
      Point::DisplayMode m_mode;
-     qreal m_scale;
+     double m_scale;
 };
 
 struct Updater
 {
-    Updater(qreal scale, const QPen& pen, const QBrush& brush, const QPainterPath& path)
+    Updater(double scale, const QPen& pen, const QBrush& brush, const QPainterPath& path)
     {
         m_scale = scale;
         m_pen = pen;
@@ -70,7 +70,7 @@ struct Updater
         item->setPath(m_path);
     }
     
-    qreal m_scale;
+    double m_scale;
     QPen m_pen;
     QBrush m_brush;
     QPainterPath m_path;
@@ -118,7 +118,7 @@ public:
    **/
    virtual void update_properties();
   
-  Point* point_item(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
+  Point* point_item(double x, double y, int size = 0, QGraphicsItem* parent = 0);
   
   QColor color() const;
   void set_color(const QColor& color);
@@ -139,7 +139,7 @@ public:
   void set_continuous(bool continuous);
 
   Data data() const;
-  void set_data(const QList<qreal> x_data, const QList<qreal> y_data);
+  void set_data(const QList<double> x_data, const QList<double> y_data);
   
   virtual QTransform graph_transform() const;
   virtual void set_graph_transform(const QTransform& transform);
@@ -156,10 +156,10 @@ public:
   double zoom_factor();
   void set_zoom_factor(double factor);
   
-  qreal max_x_value() const;
-  qreal min_x_value() const;
-  qreal max_y_value() const;
-  qreal min_y_value() const;
+  double max_x_value() const;
+  double min_x_value() const;
+  double max_y_value() const;
+  double min_y_value() const;
     
   enum UpdateFlag
   {

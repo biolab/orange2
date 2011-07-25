@@ -112,7 +112,7 @@ void Curve::update_properties()
   m_needsUpdate = 0;
 }
 
-Point* Curve::point_item(qreal x, qreal y, int size, QGraphicsItem* parent)
+Point* Curve::point_item(double x, double y, int size, QGraphicsItem* parent)
 {
   if (size == 0)
   {
@@ -132,7 +132,7 @@ Data Curve::data() const
   return m_data;
 }
 
-void Curve::set_data(const QList< qreal > x_data, const QList< qreal > y_data)
+void Curve::set_data(const QList< double > x_data, const QList< double > y_data)
 {
   Q_ASSERT(x_data.size() == y_data.size());
   int n = qMin(x_data.size(), y_data.size());
