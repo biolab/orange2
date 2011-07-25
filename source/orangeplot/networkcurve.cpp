@@ -202,14 +202,12 @@ NetworkCurve::~NetworkCurve()
 
 void NetworkCurve::updateProperties()
 {
-    const Data d = data();
     const QTransform t = graphTransform();
-    int m, n;
 
     updateItems(m_nodes, NodeUpdater(t), UpdatePosition);
     
     QLineF line;
-    n = m_edges.size();
+    int n = m_edges.size();
     for (int i = 0; i < n; ++i)
     {
         EdgeItem* edge = m_edges[i];
