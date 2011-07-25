@@ -63,6 +63,7 @@ from math import sin, cos, pi
 import time
 import struct
 import numpy
+#numpy.seterr(all='raise') # Raises exceptions on invalid numerical operations.
 
 try:
     from itertools import izip as zip # Python 3 zip == izip in Python 2.x
@@ -228,6 +229,15 @@ class RectangleSelection(object):
         draw_line(v2[0], v2[1], v2[0], v1[1])
         draw_line(v2[0], v1[1], v1[0], v1[1])
 
+    def draw_mask(self):
+        v1, v2 = self.first_vertex, self.current_vertex
+        glBegin(GL_QUADS)
+        glVertex2f(v1[0], v1[1])
+        glVertex2f(v1[0], v2[1])
+        glVertex2f(v2[0], v2[1])
+        glVertex2f(v2[0], v1[1])
+        glEnd()
+
     def valid(self):
         return self.first_vertex != self.current_vertex
         # TODO: drop if too small
@@ -298,6 +308,17 @@ class PolygonSelection(object):
 
         v1, v2 = last_vertex, self.current_vertex
         draw_line(v1[0], v1[1], v2[0], v2[1])
+
+    def draw_mask(self):
+        if len(self.vertices) < 3:
+            return
+        v0 = self.vertices[0]
+        for i in range(1, len(self.vertices)-1):
+            vi = self.vertices[i]
+            vj = self.vertices[i+1]
+            draw_triangle(v0[0], v0[1],
+                          vi[0], vi[1],
+                          vj[0], vj[1])
 
 class OWPlot3D(QtOpenGL.QGLWidget):
 
@@ -494,7 +515,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_shader_tooltip_mode = self.symbol_shader.uniformLocation('tooltip_mode')
 
         # TODO: map mouse coordinates properly (instead of using larger FBO)
-        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024)
+        format = QtOpenGL.QGLFramebufferObjectFormat()
+        format.setAttachment(QtOpenGL.QGLFramebufferObject.CombinedDepthStencil)
+        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024, format)
         if self.tooltip_fbo.isValid():
             print('Tooltip FBO created.')
         else:
@@ -580,20 +603,50 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
                 vao_id, outline_vao_id, (X, Y, Z), labels = params
-                # Draw into color-picking buffer.
+                # Draw into color-picking buffer. Each example gets its own
+                # unique color, carrying example's index. We also draw stencil mask
+                # of selections, so we can quickly determine whether or not pixel
+                # is selected (and therefore corresponding example). See
+                # get_selection_indices for the other part of the algorithm (reading
+                # and interpreting the FBO).
                 self.tooltip_fbo.bind()
+                glClearColor(1, 1, 1, 1)
+                glClearStencil(0)
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
+                glDisable(GL_BLEND)
+                glEnable(GL_DEPTH_TEST)
+
                 self.symbol_shader.bind()
                 # Most uniforms retain their values.
                 self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, True)
-                glClearColor(1, 1, 1, 1)
-                glClear(GL_COLOR_BUFFER_BIT)
-                glDisable(GL_BLEND)
                 glBindVertexArray(vao_id)
                 glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
                 glBindVertexArray(0)
                 self.symbol_shader.release()
+
+                if len(self.selections) > 0:
+                    glMatrixMode(GL_PROJECTION)
+                    glLoadIdentity()
+                    glOrtho(0, self.width(), self.height(), 0, -1, 1)
+                    glMatrixMode(GL_MODELVIEW)
+                    glLoadIdentity()
+
+                    glDisable(GL_DEPTH_TEST)
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
+                    glDepthMask(GL_FALSE)
+                    glStencilMask(0x01)
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT)
+                    glStencilFunc(GL_ALWAYS, 0, ~0)
+                    glEnable(GL_STENCIL_TEST)
+                    for selection in self.selections:
+                        selection.draw_mask()
+                    glDisable(GL_STENCIL_TEST)
+                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
+                    glDepthMask(GL_TRUE)
+                    glEnable(GL_DEPTH_TEST)
                 self.tooltip_fbo.release()
 
+        glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         if self.show_legend:
             glMatrixMode(GL_PROJECTION)
@@ -1048,7 +1101,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         return vertex
 
     def transform_plot_to_data(self, vertex):
-        vertex /= numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
+        denominator = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
+        denominator = numpy.array(map(lambda v: v+0.00001 if v == 0. else v, denominator))
+        vertex /= denominator
         vertex -= self.translation
         vertex /= self.data_scale
         vertex += self.data_center
@@ -1059,6 +1114,29 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             return []
 
         width, height = self.width(), self.height()
+        # TODO: check width < fbo.width
+        self.tooltip_fbo.bind()
+        color_pixels = glReadPixels(0, 0,
+                                    width, height,
+                                    GL_RGBA,
+                                    GL_UNSIGNED_BYTE)
+        stencil_pixels = glReadPixels(0, 0,
+                                      width, height,
+                                      GL_STENCIL_INDEX,
+                                      GL_FLOAT)
+        self.tooltip_fbo.release()
+        stencils = struct.unpack('f'*width*height, stencil_pixels)
+        colors = struct.unpack('I'*width*height, color_pixels)
+        indices = set([])
+        for stencil, color in zip(stencils, colors):
+            if stencil > 0. and color < 4294967295:
+                indices.add(color)
+
+        # TODO: figure out what' causing incorrect values, filter them out
+        # for now
+        indices = [i for i in indices if i < len(self.commands[0][1][2][0])]
+        return indices
+
 
         projection = QMatrix4x4()
         if self.use_ortho:
@@ -1158,7 +1236,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.state == PlotState.IDLE:
             if any(sel.contains(pos.x(), pos.y()) for sel in self.selections) or\
-               self.legend.contains(pos.x(), pos.y()):
+               (self.show_legend and self.legend.contains(pos.x(), pos.y())):
                 self.setCursor(Qt.OpenHandCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
@@ -1217,6 +1295,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             else:
                 if self.new_selection.valid():
                     self.selections.append(self.new_selection)
+                    self.updateGL()
                     self.selection_changed_callback() if self.selection_changed_callback else None
         elif self.state == PlotState.ROTATING:
             self.state = PlotState.IDLE
