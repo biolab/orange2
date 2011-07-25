@@ -14,11 +14,11 @@ class OWLegendItem(QGraphicsObject):
     def __init__(self, curve, parent):
         QGraphicsObject.__init__(self, parent)
         self.text_item = QGraphicsTextItem(curve.name, self)
-        s = curve.pointSize()
+        s = curve.point_size()
         height = max(2*s, self.text_item.boundingRect().height())
         p = 0.5 * height
         self.text_item.setPos(height, 0)
-        self.point_item = curve.pointItem(p, p, s, self)
+        self.point_item = curve.point_item(p, p, s, self)
         self._rect = QRectF(0, 0, height + self.text_item.boundingRect().width(), height )
         self.rect_item = QGraphicsRectItem(self._rect, self)
         self.rect_item.setPen(QPen(Qt.NoPen))

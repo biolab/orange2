@@ -5,8 +5,8 @@ class UnconnectedLinesCurve : Curve {
 %End
 
 public:
-    UnconnectedLinesCurve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+    UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     virtual ~UnconnectedLinesCurve();
     
-    virtual void updateProperties();
+    virtual void update_properties();
 };

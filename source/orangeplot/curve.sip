@@ -60,50 +60,49 @@ public:
     UserCurve
   };
 
-  Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+  Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
   Curve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
   virtual ~Curve();
 
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
   virtual QRectF boundingRect() const;
 
-  virtual void updateProperties();
-  void updateAll();
+  virtual void update_properties();
     
-  Point* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
+  Point* point_item(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
   
   QColor color() const;
-  void setColor(const QColor& color);
+  void set_color(const QColor& color);
   
   QPen pen() const;
-  void setPen(QPen pen);
+  void set_pen(QPen pen);
   
   QBrush brush() const;
-  void setBrush(QBrush brush);
+  void set_brush(QBrush brush);
   
-  int pointSize() const;
-  void setPointSize(int size);
+  int point_size() const;
+  void set_point_size(int size);
   
   int symbol() const;
-  void setSymbol(int symbol);
+  void set_symbol(int symbol);
   
-  bool isContinuous() const;
-  void setContinuous(bool continuous);
+  bool is_continuous() const;
+  void set_continuous(bool continuous);
   
   Data data() const;
-  void setData(const QList<qreal>& xData, const QList<qreal>& yData);
+  void set_data(const QList<qreal>& x_data, const QList<qreal>& y_data);
 
-  QTransform graphTransform() const;
-  void setGraphTransform(const QTransform& transform);
+  QTransform graph_transform() const;
+  void set_graph_transform(const QTransform& transform);
 
   int style() const;
-  void setStyle(int style);
+  void set_style(int style);
  
   double zoom_factor();
   void set_zoom_factor(double factor);
 
-  bool autoUpdate() const;
-  void setAutoUpdate(bool autoUpdate);
+  bool auto_update() const;
+  void set_auto_update(bool auto_update);
   
   enum UpdateFlag
   {
@@ -119,6 +118,6 @@ public:
   
   typedef QFlags<Curve::UpdateFlag> UpdateFlags;
   
-  void setDirty(Curve::UpdateFlags flags = Curve::UpdateAll);
+  void set_dirty(Curve::UpdateFlags flags = Curve::UpdateAll);
   
 };

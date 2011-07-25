@@ -337,7 +337,7 @@ class OWPlot(orangeplot.Plot):
         self.set_axis_labels(yRight, labels)
         
     def add_custom_curve(self, curve, enableLegend = False):
-        self.addItem(curve)
+        self.add_item(curve)
         if enableLegend:
             self.legend().add_curve(curve)
         for key in [curve.axes()]:
@@ -346,23 +346,20 @@ class OWPlot(orangeplot.Plot):
         self._transform_cache = {}
         if hasattr(curve, 'tooltip'):
             curve.setToolTip(curve.tooltip)
-        curve.setAutoUpdate(True)
-        curve.updateProperties()
+        curve.set_auto_update(True)
+        curve.update_properties()
         return curve
         
     def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
                  symbol = OWPoint.Ellipse, enableLegend = False, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
-        c = OWCurve(xData, yData, parent=self.graph_item)
-        c.setAutoUpdate(False)
-        c.setAxes(x_axis_key, y_axis_key)
+        c = OWCurve(xData, yData, x_axis_key, y_axis_key, tooltip=name, parent=self.graph_item)
         c.set_zoom_factor(self._zoom_factor)
-        c.setToolTip(name)
         c.name = name
-        c.setStyle(style)
+        c.set_style(style)
         
-        c.setColor(penColor)
+        c.set_color(penColor)
         
         if pen:
             p = pen
@@ -370,21 +367,21 @@ class OWPlot(orangeplot.Plot):
             p = QPen()
             p.setColor(penColor)
             p.setWidth(lineWidth)
-        c.setPen(p)
+        c.set_pen(p)
         
-        c.setBrush(brushColor)
+        c.set_brush(brushColor)
         
-        c.setSymbol(symbol)
-        c.setPointSize(size)
-        c.setData(xData,  yData)
-        c.setGraphTransform(self.transform_for_axes(x_axis_key, y_axis_key))
+        c.set_symbol(symbol)
+        c.set_point_size(size)
+        c.set_data(xData,  yData)
+        c.set_graph_transform(self.transform_for_axes(x_axis_key, y_axis_key))
         
-        c.setAutoScale(autoScale)
+        c.set_auto_scale(autoScale)
         
         return self.add_custom_curve(c, enableLegend)
         
     def remove_curve(self, item):
-        self.removeItem(item)
+        self.remove_item(item)
         self.legend().remove_curve(item)
         
     def plot_data(self, xData, yData, colors, labels, shapes, sizes):
@@ -405,7 +402,7 @@ class OWPlot(orangeplot.Plot):
         for id,item in self.axes.iteritems():
             if not user_only or id >= UserAxis:
                 ids.append(id)
-                self.scene().removeItem(item)
+                self.scene().remove_item(item)
         for id in ids:
             del self.axes[id]
         
@@ -425,8 +422,8 @@ class OWPlot(orangeplot.Plot):
         pass
         
     def clear(self):
-        for i in self.itemList():
-            self.removeItem(i)
+        for i in self.plot_items():
+            self.remove_item(i)
         self._bounds_cache = {}
         self._transform_cache = {}
         self.clear_markers()
@@ -445,7 +442,7 @@ class OWPlot(orangeplot.Plot):
         
         if self.showMainTitle and self.mainTitle:
             if self.title_item:
-                self.scene().removeItem(self.title_item)
+                self.scene().remove_item(self.title_item)
                 del self.title_item
             self.title_item = QGraphicsTextItem(self.mainTitle, scene=self.scene())
             title_size = self.title_item.boundingRect().size()
@@ -501,23 +498,23 @@ class OWPlot(orangeplot.Plot):
                 
         if self.graph_area != graph_rect:
             self.graph_area = QRectF(graph_rect)
-            self.setGraphRect(self.graph_area)
+            self.set_graph_rect(self.graph_area)
             self._transform_cache = {}
             self.map_transform = self.transform_for_axes()
         
-        for c in self.itemList():
+        for c in self.plot_items():
             x,y = c.axes()
-            c.setGraphTransform(self.transform_for_axes(x,y))
-            c.updateProperties()
+            c.set_graph_transform(self.transform_for_axes(x,y))
+            c.update_properties()
             
     def update_zoom(self):
       #  self.setViewportUpdateMode(QGraphicsView.NoViewportUpdate)
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
-        for c in self.itemList():
+        for c in self.plot_items():
             if hasattr(c, 'set_zoom_factor'):
                 c.set_zoom_factor(self._zoom_factor)
-                c.updateProperties()
+                c.update_properties()
         self.graph_item.setTransform(self.zoom_transform)
         
         for item, region in self.selection_items:
@@ -575,11 +572,11 @@ class OWPlot(orangeplot.Plot):
         
     def replot(self, force = False):
         if not self.block_update or force:
-            if self.isDirty():
+            if self.is_dirty():
                 qDebug('Graph is dirty, clearing caches')
                 self._bounds_cache = {}
                 self._transform_cache = {}
-                self.setClean()
+                self.set_clean()
             self.update_layout()
             self.update_zoom()
             self.update_axes()
@@ -717,7 +714,7 @@ class OWPlot(orangeplot.Plot):
             for item, region in self.selection_items:
                 qDebug(repr(point) + '   ' + repr(region.rects()))
                 if region.contains(point.toPoint()):
-                    self.scene().removeItem(item)
+                    self.scene().remove_item(item)
                     qDebug('Removed a selection curve')
                     self.selection_items.remove((item, region))
                     if self.auto_send_selection_callback: 
@@ -823,7 +820,7 @@ class OWPlot(orangeplot.Plot):
             y_min, y_max = self.bounds_for_axis(y_axis, try_auto_scale=False)
             if x_min and x_max and y_min and y_max:
                 return QRectF(x_min, y_min, x_max-x_min, y_max-y_min)
-        r = self.dataRectForAxes(x_axis, y_axis)
+        r = orangeplot.Plot.data_rect_for_axes(self, x_axis, y_axis)
         for id, axis in self.axes.iteritems():
             if id not in CartesianAxes and axis.data_line:
                 r |= QRectF(axis.data_line.p1(), axis.data_line.p2())
@@ -878,7 +875,7 @@ class OWPlot(orangeplot.Plot):
             elif self.axes[axis_id].labels:
                 return -0.2, len(self.axes[axis_id].labels) - 0.8
         if try_auto_scale:
-            return self.boundsForAxis(axis_id)
+            return orangeplot.Plot.bounds_for_axis(self, axis_id)
         else:
             return None, None
             
@@ -981,13 +978,13 @@ class OWPlot(orangeplot.Plot):
         self.update_axes()
         
     def update_curves(self):
-        for c in self.itemList():
+        for c in self.plot_items():
             if isinstance(c, orangeplot.Curve):
                 au = c.autoUpdate()
-                c.setAutoUpdate(False)
-                c.setPointSize(self.point_width)
+                c.set_auto_update(False)
+                c.set_point_size(self.point_width)
                 color = c.color()
                 color.setAlpha(self.alpha_value)
-                c.setColor(color)
-                c.setAutoUpdate(au)
-                c.updateProperties()
+                c.set_color(color)
+                c.set_auto_update(au)
+                c.update_properties()

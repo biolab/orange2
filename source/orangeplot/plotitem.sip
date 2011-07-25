@@ -11,23 +11,23 @@ public:
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
     virtual QRectF boundingRect() const;
     
-    virtual QRectF dataRect() const;
-    void setDataRect(const QRectF& dataRect);
+    virtual QRectF data_rect() const;
+    void set_data_rect(const QRectF& data_rect);
     
-    virtual void setGraphTransform(const QTransform& transform);
-    virtual QTransform graphTransform() const;
+    virtual void set_graph_transform(const QTransform& transform);
+    virtual QTransform graph_transform() const;
     
     void attach(Plot* graph /TransferThis/);
     void detach();
     
-    static QRectF boundingRectFromData(const QList<double>& xData, const QList<double>& yData);
+    static QRectF rect_from_data(const QList<double>& x_data, const QList<double>& y_data);
     
-    bool isAutoScale() const;
-    void setAutoScale(bool autoScale);
+    bool is_auto_scale() const;
+    void set_auto_scale(bool auto_scale);
     
     QPair<int, int> axes() const;
-    void setAxes(int x_axis, int y_axis);
+    void set_axes(int x_axis, int y_axis);
     
-    void setXAxis(int x_axis);
-    void setYAxis(int y_axis);
+    void set_x_axis(int x_axis);
+    void set_y_axis(int y_axis);
 };

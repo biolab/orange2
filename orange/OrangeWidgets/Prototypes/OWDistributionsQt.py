@@ -27,9 +27,9 @@ class distribErrorBarCurve(OWCurve):
         OWCurve.__init__(self,xData=[], yData=[])
         self._currently_updating = False
         
-    def updateProperties(self):
+    def update_properties(self):
         if self._currently_updating:
-            OWCurve.updateProperties(self)
+            OWCurve.update_properties(self)
             self._currently_updating = False
             return
             
@@ -37,9 +37,9 @@ class distribErrorBarCurve(OWCurve):
         if self.style() != OWCurve.UserCurve:
             resize_plot_item_list(self._items, 0, None, self)
             self.items = []
-            self.setDirty()
+            self.set_dirty()
         else:
-            t = self.graphTransform()
+            t = self.graph_transform()
             d = self.data()
             n = len(d)/3
             self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
@@ -92,7 +92,7 @@ class OWDistributionGraphQt(OWPlot):
     def addCurve(self, xAxis = xBottom, yAxis = yLeft, visible = 1):
         curve = distribErrorBarCurve('')
         curve.setVisible(visible)
-        curve.setAxes(xAxis, yAxis)
+        curve.set_axes(xAxis, yAxis)
         return OWPlot.add_custom_curve(self, curve, enableLegend=0)
 
     def sizeHint(self):

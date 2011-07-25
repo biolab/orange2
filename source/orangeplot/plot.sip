@@ -34,20 +34,20 @@ public:
     Plot(QWidget* parent /TransferThis/ = 0);
     virtual ~Plot();
     
-    void addItem(PlotItem* item /Transfer/);
-    void removeItem(PlotItem* item /TransferBack/);
+    void add_item(PlotItem* item /Transfer/);
+    void remove_item(PlotItem* item /TransferBack/);
     
-    QRectF dataRectForAxes(int xAxis, int yAxis);
-    QPair< double, double > boundsForAxis(int axis);
+    QRectF data_rect_for_axes(int xAxis, int yAxis);
+    QPair< double, double > bounds_for_axis(int axis);
     
-    QList<PlotItem*> itemList();
-    void setGraphRect(const QRectF rect);
+    QList<PlotItem*> plot_items();
+    void set_graph_rect(const QRectF rect);
 
-    void setDirty();
+    void set_dirty();
     
     QGraphicsRectItem* graph_item;
     
 protected:
-    void setClean();
-    bool isDirty();
+    void set_clean();
+    bool is_dirty();
 };

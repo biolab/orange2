@@ -200,15 +200,15 @@ NetworkCurve::~NetworkCurve()
 
 }
 
-void NetworkCurve::updateProperties()
+void NetworkCurve::update_properties()
 {
-    const QTransform t = graphTransform();
+    const QTransform t = graph_transform();
 
-    updateItems(m_nodes, NodeUpdater(t), UpdatePosition);
-    updateItems(m_edges, EdgeUpdater(t), UpdatePen);
+    update_items(m_nodes, NodeUpdater(t), UpdatePosition);
+    update_items(m_edges, EdgeUpdater(t), UpdatePen);
 }
 
-QRectF NetworkCurve::dataRect() const
+QRectF NetworkCurve::data_rect() const
 {
     QRectF r;
     bool first = true;
@@ -236,7 +236,7 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 	int i, j;
 	NodeItem *u, *v;
 	EdgeItem *edge;
-	QRectF data_rect = dataRect();
+	QRectF data_r = data_rect();
 
 	QMap<int, DataPoint> disp;
 	foreach (const NodeItem* node, m_nodes)
@@ -247,7 +247,7 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 		disp[node->index()] = point;
 	}
 
-	qreal area = data_rect.width() * data_rect.height();
+	qreal area = data_r.width() * data_r.height();
 
 	qreal k2 = area / m_nodes.size();
 	qreal k = sqrt(k2);

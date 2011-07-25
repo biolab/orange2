@@ -12,23 +12,23 @@ public:
     Plot(QWidget* parent = 0);
     virtual ~Plot();
     
-    void addItem(PlotItem* item);
-    void removeItem(PlotItem* item);
+    void add_item(PlotItem* item);
+    void remove_item(PlotItem* item);
     
-    QRectF dataRectForAxes(int xAxis, int yAxis);
-    QPair< double, double > boundsForAxis(int axis);
+    QRectF data_rect_for_axes(int x_axis, int y_axis);
+    QPair< double, double > bounds_for_axis(int axis);
     
-    QList<PlotItem*> itemList();
+    QList<PlotItem*> plot_items();
     
-    void setGraphRect(const QRectF rect);
+    void set_graph_rect(const QRectF rect);
     
     QGraphicsRectItem* graph_item;
     
-    void setDirty();
+    void set_dirty();
     
 protected:
-    void setClean();;
-    bool isDirty();
+    void set_clean();;
+    bool is_dirty();
     
 private:
     QList<PlotItem*> m_items;

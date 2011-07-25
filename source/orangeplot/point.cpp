@@ -31,11 +31,11 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     if (m_display_mode == DisplayPath)
     {
         painter->setPen(m_color);
-        painter->drawPath(pathForSymbol(m_symbol, m_size));
+        painter->drawPath(path_for_symbol(m_symbol, m_size));
     } 
     else if (m_display_mode == DisplayPixmap)
     {
-        QImage image = imageForSymbol(m_symbol, m_color, m_size);
+        QImage image = image_for_symbol(m_symbol, m_color, m_size);
         image.setColor(ChangeableColorIndex, m_color.rgb());
         painter->drawImage(boundingRect(), image);
     }
@@ -43,7 +43,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
 
 QRectF Point::boundingRect() const
 {
-    return rectForSize(m_size);
+    return rect_for_size(m_size);
 }
 
 Point::~Point()
@@ -99,7 +99,7 @@ void Point::set_symbol(int symbol)
 
 
 
-QPainterPath Point::pathForSymbol(int symbol, int size)
+QPainterPath Point::path_for_symbol(int symbol, int size)
 {
   QPainterPath path;
   qreal d = 0.5 * size;
@@ -216,7 +216,7 @@ QPainterPath Point::hexPath(double d, bool star) {
     return path;
 }
 
-QImage Point::imageForSymbol(int symbol, QColor color, int size)
+QImage Point::image_for_symbol(int symbol, QColor color, int size)
 {
     // Indexed8 is the only format with a color table, which means we can replace entire colors
     // and not only indididual pixels
@@ -227,7 +227,7 @@ QImage Point::imageForSymbol(int symbol, QColor color, int size)
     return image;
 }
 
-QRectF Point::rectForSize(double size)
+QRectF Point::rect_for_size(double size)
 {
     return QRectF(-size/2, -size/2, size, size);
 }

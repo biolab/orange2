@@ -65,10 +65,10 @@ public:
     * @param size the size of the resulting path
     * @return a path that can be used in a QGraphicsPathItem or in QPainter::drawPath()
     **/
-    static QPainterPath pathForSymbol(int symbol, int size);
+    static QPainterPath path_for_symbol(int symbol, int size);
     
-    static QImage imageForSymbol(int symbol, QColor color, int size);
-    static QRectF rectForSize(double size);
+    static QImage image_for_symbol(int symbol, QColor color, int size);
+    static QRectF rect_for_size(double size);
     
 private:
     static QPainterPath trianglePath(double d, double rot);

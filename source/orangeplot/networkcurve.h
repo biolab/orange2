@@ -129,8 +129,8 @@ public:
     NetworkCurve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~NetworkCurve();
     
-    virtual void updateProperties();
-    virtual QRectF dataRect() const;
+    virtual void update_properties();
+    virtual QRectF data_rect() const;
     
     int fr(int steps, bool weighted, double temperature, double cooling);
     

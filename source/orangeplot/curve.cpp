@@ -8,13 +8,13 @@
 #include <QtCore/QtConcurrentRun>
 #include "point.h"
 
-Curve::Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
+Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
     m_style = NoCurve;
     m_continuous = false;
     m_lineItem = 0;
     m_needsUpdate = UpdateAll;
-    setData(xData, yData);
+    set_data(x_data, y_data);
     checkForUpdate();
 }
 
@@ -54,9 +54,9 @@ void Curve::updateNumberOfItems()
   Q_ASSERT(m_pointItems.size() == m_data.size());
 }
 
-void Curve::updateProperties()
+void Curve::update_properties()
 {
-  setContinuous(m_style != Curve::NoCurve);
+  set_continuous(m_style != Curve::NoCurve);
   
   if (m_needsUpdate & UpdateContinuous)
   {
@@ -107,22 +107,16 @@ void Curve::updateProperties()
   
   if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
   {
-    updateItems(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, 1.0/m_zoom_factor), UpdateSymbol);
+    update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, 1.0/m_zoom_factor), UpdateSymbol);
   }
   m_needsUpdate = 0;
 }
 
-void Curve::updateAll()
-{
-  m_needsUpdate = UpdateAll;
-  updateProperties();
-}
-
-Point* Curve::pointItem(qreal x, qreal y, int size, QGraphicsItem* parent)
+Point* Curve::point_item(qreal x, qreal y, int size, QGraphicsItem* parent)
 {
   if (size == 0)
   {
-    size = pointSize();
+    size = point_size();
   }
   if (parent == 0)
   {
@@ -138,10 +132,10 @@ Data Curve::data() const
   return m_data;
 }
 
-void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
+void Curve::set_data(const QList< qreal > x_data, const QList< qreal > y_data)
 {
-  Q_ASSERT(xData.size() == yData.size());
-  int n = qMin(xData.size(), yData.size());
+  Q_ASSERT(x_data.size() == y_data.size());
+  int n = qMin(x_data.size(), y_data.size());
   if (n != m_data.size())
   {
     m_needsUpdate |= UpdateNumberOfItems;
@@ -150,22 +144,21 @@ void Curve::setData(const QList< qreal > xData, const QList< qreal > yData)
   for (int i = 0; i < n; ++i)
   {
     DataPoint p;
-    p.x = xData[i];
-    p.y = yData[i];
+    p.x = x_data[i];
+    p.y = y_data[i];
     m_data.append(p);
   }
-  setDataRect(boundingRectFromData(xData, yData));
+  set_data_rect(rect_from_data(x_data, y_data));
   m_needsUpdate |= UpdatePosition;
-  updateBounds();
   checkForUpdate();
 }
 
-QTransform Curve::graphTransform() const
+QTransform Curve::graph_transform() const
 {
   return m_graphTransform;
 }
 
-void Curve::setGraphTransform(const QTransform& transform)
+void Curve::set_graph_transform(const QTransform& transform)
 {
   if (transform == m_graphTransform)
   {
@@ -176,12 +169,12 @@ void Curve::setGraphTransform(const QTransform& transform)
   checkForUpdate();
 }
 
-bool Curve::isContinuous() const
+bool Curve::is_continuous() const
 {
   return m_continuous;
 }
 
-void Curve::setContinuous(bool continuous)
+void Curve::set_continuous(bool continuous)
 {
   if (continuous == m_continuous)
   {
@@ -197,11 +190,11 @@ QColor Curve::color() const
   return m_color;
 }
 
-void Curve::setColor(const QColor& color)
+void Curve::set_color(const QColor& color)
 {
     m_color = color;
-    setPen(color);
-    setBrush(color);
+    set_pen(color);
+    set_brush(color);
 }
 
 QPen Curve::pen() const
@@ -209,7 +202,7 @@ QPen Curve::pen() const
     return m_pen;
 }
 
-void Curve::setPen(QPen pen)
+void Curve::set_pen(QPen pen)
 {
     m_pen = pen;
     m_needsUpdate |= UpdatePen;
@@ -221,19 +214,19 @@ QBrush Curve::brush() const
     return m_brush;
 }
 
-void Curve::setBrush(QBrush brush)
+void Curve::set_brush(QBrush brush)
 {
     m_brush = brush;
     m_needsUpdate |= UpdateBrush;
     checkForUpdate();
 }
 
-int Curve::pointSize() const
+int Curve::point_size() const
 {
   return m_pointSize;
 }
 
-void Curve::setPointSize(int size)
+void Curve::set_point_size(int size)
 {
   if (size == m_pointSize)
   {
@@ -250,7 +243,7 @@ int Curve::symbol() const
   return m_symbol;
 }
 
-void Curve::setSymbol(int symbol)
+void Curve::set_symbol(int symbol)
 {
   if (symbol == m_symbol)
   {
@@ -266,7 +259,7 @@ int Curve::style() const
     return m_style;
 }
 
-void Curve::setStyle(int style)
+void Curve::set_style(int style)
 {
     m_style = style;
     m_needsUpdate |= UpdateSymbol;
@@ -275,26 +268,14 @@ void Curve::setStyle(int style)
 
 
 
-bool Curve::autoUpdate() const
+bool Curve::auto_update() const
 {
   return m_autoUpdate;
 }
 
-void Curve::setAutoUpdate(bool autoUpdate)
+void Curve::set_auto_update(bool auto_update)
 {
-  m_autoUpdate = autoUpdate;
-  checkForUpdate();
-}
-
-QRectF Curve::graphArea() const
-{
-  return m_graphArea;
-}
-
-void Curve::setGraphArea(const QRectF& area)
-{
-  m_graphArea = area;
-  m_needsUpdate |= UpdatePosition;
+  m_autoUpdate = auto_update;
   checkForUpdate();
 }
 
@@ -302,7 +283,7 @@ void Curve::checkForUpdate()
 {
   if ( m_autoUpdate && m_needsUpdate )
   {
-    updateProperties();
+    update_properties();
   }
 }
 
@@ -325,51 +306,7 @@ void Curve::changeContinuous()
   }
 }
 
-void Curve::updateBounds()
-{
-    int n = m_data.size();
-    if (!n)
-    {
-        m_xBounds.min = 0;
-        m_xBounds.max = 0;
-        m_yBounds.min = 0;
-        m_yBounds.max = 0;
-        return;
-    }
-
-    m_xBounds.min = m_xBounds.max = m_data[0].x;
-    m_yBounds.min = m_yBounds.max = m_data[0].y;
-    for (int i = 0; i < n; ++i)
-    {
-        m_xBounds.min = qMin(m_xBounds.min, m_data[i].x);
-        m_xBounds.max = qMax(m_xBounds.max, m_data[i].x);
-        m_yBounds.min = qMin(m_yBounds.min, m_data[i].y);
-        m_yBounds.max = qMax(m_yBounds.max, m_data[i].y);
-    }
-}
-
-qreal Curve::max_x_value() const
-{
-    return m_xBounds.max;
-}
-
-qreal Curve::min_x_value() const
-{
-    return m_yBounds.min;
-}
-
-
-qreal Curve::max_y_value() const
-{
-    return m_yBounds.max;
-}
-
-qreal Curve::min_y_value() const
-{
-    return m_yBounds.min;
-}
-
-void Curve::setDirty(Curve::UpdateFlags flags)
+void Curve::set_dirty(Curve::UpdateFlags flags)
 {
     m_needsUpdate |= flags;
     checkForUpdate();

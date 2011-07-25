@@ -19,7 +19,7 @@ Plot::~Plot()
 
 }
 
-void Plot::addItem(PlotItem* item)
+void Plot::add_item(PlotItem* item)
 {
     if (m_items.contains(item))
     {
@@ -31,7 +31,7 @@ void Plot::addItem(PlotItem* item)
     m_items << item;
 }
 
-void Plot::removeItem(PlotItem* item)
+void Plot::remove_item(PlotItem* item)
 {
     if (m_items.contains(item))
     {
@@ -49,40 +49,40 @@ void Plot::removeItem(PlotItem* item)
     }
 }
 
-QList< PlotItem* > Plot::itemList()
+QList< PlotItem* > Plot::plot_items()
 {
     return m_items;
 }
 
-QRectF Plot::dataRectForAxes(int xAxis, int yAxis)
+QRectF Plot::data_rect_for_axes(int x_axis, int y_axis)
 {
     QRectF r;
-    QPair<int,int> axes = qMakePair(xAxis, yAxis);
+    QPair<int,int> axes = qMakePair(x_axis, y_axis);
     foreach (PlotItem* item, m_items)
     {
-        if (item->isAutoScale() && item->axes() == axes)
+        if (item->is_auto_scale() && item->axes() == axes)
         {
-            r |= item->dataRect();
+            r |= item->data_rect();
         }
     }
     return r;
 }
 
-QPair< double, double > Plot::boundsForAxis(int axis)
+QPair< double, double > Plot::bounds_for_axis(int axis)
 {
     QRectF y_r;
     QRectF x_r;
     foreach (PlotItem* item, m_items)
     {
-        if (item->isAutoScale())
+        if (item->is_auto_scale())
         {
             if (item->axes().first == axis)
             {
-               x_r |= item->dataRect(); 
+               x_r |= item->data_rect(); 
             }
             else if (item->axes().second == axis)
             {
-                y_r |= item->dataRect();
+                y_r |= item->data_rect();
             }
         }
     }
@@ -97,22 +97,22 @@ QPair< double, double > Plot::boundsForAxis(int axis)
     return qMakePair(0.0, 0.0);
 }
 
-void Plot::setDirty() 
+void Plot::set_dirty() 
 {
     m_dirty = true;
 }
 
-void Plot::setClean() 
+void Plot::set_clean() 
 {
     m_dirty = false;
 }
 
-bool Plot::isDirty() 
+bool Plot::is_dirty() 
 {
     return m_dirty;
 }
 
-void Plot::setGraphRect(const QRectF rect) 
+void Plot::set_graph_rect(const QRectF rect) 
 {
     clipItem->setRect(rect);
     graph_item->setRect(rect);

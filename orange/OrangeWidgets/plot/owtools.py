@@ -60,10 +60,10 @@ class PolygonCurve(OWCurve):
         OWCurve.__init__(self, xData, yData, tooltip=tooltip)
         self._data_polygon = self.polygon_from_data(xData, yData)
         self._polygon_item = QGraphicsPolygonItem(self)
-        self.setPen(pen)
-        self.setBrush(brush)
+        self.set_pen(pen)
+        self.set_brush(brush)
         
-    def updateProperties(self):
+    def update_properties(self):
         self._polygon_item.setPolygon(self.graphTransform().map(self._data_polygon))
         self._polygon_item.setPen(self.pen())
         self._polygon_item.setBrush(self.brush())
@@ -80,19 +80,19 @@ class PolygonCurve(OWCurve):
         else:
             return QPolygonF()
             
-    def setData(self, xData, yData):
+    def set_data(self, xData, yData):
         self._data_polygon = self.polygon_from_data(xData, yData)
-        OWCurve.setData(self, xData, yData)
+        OWCurve.set_data(self, xData, yData)
            
 class RectangleCurve(OWCurve):
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None, tooltip = None):
         OWCurve.__init__(self, xData, yData, tooltip=tooltip)
-        self.setPen(pen)
-        self.setBrush(brush)
+        self.set_pen(pen)
+        self.set_brush(brush)
         self._item = QGraphicsRectItem(self)
         
-    def updateProperties(self):
-        self._item.setRect(self.graphTransform().mapRect(self.dataRect()))
+    def update_properties(self):
+        self._item.setRect(self.graph_transform().mapRect(self.data_rect()))
         self._item.setPen(self.pen())
         self._item.setBrush(self.brush())
         
@@ -100,25 +100,25 @@ class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
         orangeplot.UnconnectedLinesCurve.__init__(self, xData, yData)
         if pen:
-            self.setPen(pen)
+            self.set_pen(pen)
         self.name = name
         
 class CircleCurve(OWCurve):
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.NoBrush), xCenter = 0.0, yCenter = 0.0, radius = 1.0):
         OWCurve.__init__(self)
-        self.setPen(pen)
-        self.setBrush(brush)
+        self.set_pen(pen)
+        self.set_brush(brush)
         self._item = QGraphicsEllipseItem(self)
         self.center = xCenter, yCenter
         self.radius = radius
         self._rect = QRectF(xCenter-radius, yCenter-radius, 2*radius, 2*radius)
         
-    def updateProperties(self):
-        self._item.setRect(self.graphTransform().mapRect(self.dataRect()))
+    def update_properties(self):
+        self._item.setRect(self.graph_transform().mapRect(self.data_rect()))
         self._item.setPen(self.pen())
         self._item.setBrush(self.brush())
         
-    def dataRect(self):
+    def data_rect(self):
         x, y = self.center
         r = self.radius
         return QRectF(x-r, y-r, 2*r, 2*r)
@@ -139,6 +139,6 @@ class Marker(orangeplot.PlotItem):
         if brushColor:
             self._item.setBrush(QBrush(brushColor))
             
-    def updateProperties(self):
-        self._item.setPos(self.graphTransform().map(self._data_point))
+    def update_properties(self):
+        self._item.setPos(self.graph_transform().map(self._data_point))
 

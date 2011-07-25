@@ -2,7 +2,7 @@
 #include <QtGui/QPen>
 #include <QtCore/QDebug>
 
-UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent, QGraphicsScene* scene): Curve(xData, yData, parent, scene)
+UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): Curve(x_data, y_data, parent, scene)
 {
 
 }
@@ -12,7 +12,7 @@ UnconnectedLinesCurve::~UnconnectedLinesCurve()
 
 }
 
-void UnconnectedLinesCurve::updateProperties()
+void UnconnectedLinesCurve::update_properties()
 {
     const Data d = data();
     const int n = d.size()/2;
@@ -36,7 +36,7 @@ void UnconnectedLinesCurve::updateProperties()
     for (int i = 0; i < n; ++i)
     {
         line.setLine( d[2*i].x, d[2*i].y, d[2*i+1].x, d[2*i+1].y );
-        m_items[i]->setLine(graphTransform().map(line));
+        m_items[i]->setLine(graph_transform().map(line));
         m_items[i]->setPen(pen());
     }
 }

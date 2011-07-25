@@ -96,12 +96,12 @@ public:
    * 
    * Constructs a Curve from a series of data points
    *
-   * @param xData A list of x coordinates of data points
-   * @param yData A list of y coordinates of data points
+   * @param x_data A list of x coordinates of data points
+   * @param y_data A list of y coordinates of data points
    * @param parent parent item
    * @param scene if this is not 0, the Curve is automatically added to it
    **/
-  Curve(const QList< double >& xData, const QList< double >& yData, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+  Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
   Curve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
   /**
    * Default destructor
@@ -113,66 +113,45 @@ public:
    * @brief Update the curve
    * 
    * Moves all the points to their current locations, and changes their color, shape and size. 
+   * Subclasses should reimplement this method to update their specific properties. 
    * 
-   * @note this method is optimized for cases where only one or two of the curve's properties have been changed. 
-   * If there were multiple changes since the last update, updateAll() is probably faster. 
-   *
    **/
-   virtual void updateProperties();
+   virtual void update_properties();
   
-  /**
-   * @brief Updates all curve's properties
-   * This methods updates all the curve's properties at once, without checking what needs updating. 
-   * It is therefore faster for updates that change more than one property at once
-   * 
-   * @sa update()
-   * 
-   **/
-  virtual void updateAll();
-  
-  /**
-   * @brief ...
-   *
-   * @param x ...
-   * @param y ...
-   * @param size ...
-   * @param parent ... Defaults to 0.
-   * @return QGraphicsItem*
-   **/
-  Point* pointItem(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
+  Point* point_item(qreal x, qreal y, int size = 0, QGraphicsItem* parent = 0);
   
   QColor color() const;
-  void setColor(const QColor& color);
+  void set_color(const QColor& color);
   
   QPen pen() const;
-  void setPen(QPen pen);
+  void set_pen(QPen pen);
   
   QBrush brush() const;
-  void setBrush(QBrush brush);
+  void set_brush(QBrush brush);
   
-  int pointSize() const;
-  void setPointSize(int size);
+  int point_size() const;
+  void set_point_size(int size);
   
   int symbol() const;
-  void setSymbol(int symbol);
+  void set_symbol(int symbol);
   
-  bool isContinuous() const;
-  void setContinuous(bool continuous);
+  bool is_continuous() const;
+  void set_continuous(bool continuous);
 
   Data data() const;
-  void setData(const QList<qreal> xData, const QList<qreal> yData);
+  void set_data(const QList<qreal> x_data, const QList<qreal> y_data);
   
-  virtual QTransform graphTransform() const;
-  virtual void setGraphTransform(const QTransform& transform);
+  virtual QTransform graph_transform() const;
+  virtual void set_graph_transform(const QTransform& transform);
   
   QRectF graphArea() const;
   void setGraphArea(const QRectF& area);
   
   int style() const;
-  void setStyle(int style);
+  void set_style(int style);
   
-  bool autoUpdate() const;
-  void setAutoUpdate(bool autoUpdate);
+  bool auto_update() const;
+  void set_auto_update(bool auto_update);
   
   double zoom_factor();
   void set_zoom_factor(double factor);
@@ -197,23 +176,15 @@ public:
   
   Q_DECLARE_FLAGS(UpdateFlags, UpdateFlag)
   
-  void setDirty(UpdateFlags flags = UpdateAll);
+  void set_dirty(UpdateFlags flags = UpdateAll);
   
   template <class Sequence, class Updater>
-  void updateItems(Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
+  void update_items(Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
   
-private:    
-
-  struct Bounds
-  {
-      qreal min;
-      qreal max;
-  };
-    
+private:
   void checkForUpdate();
   void updateNumberOfItems();
   void changeContinuous();
-  void updateBounds();
   void cancelAllUpdates();
   
   QColor m_color;
@@ -223,16 +194,12 @@ private:
   bool m_continuous;
   Data m_data;
   QTransform m_graphTransform;
-  QPainterPath m_path;
   QList<Point*> m_pointItems;
   UpdateFlags m_needsUpdate;
   bool m_autoUpdate;
-  QRectF m_graphArea;
     QGraphicsPathItem* m_lineItem;
     QPainterPath m_line;
     
-    Bounds m_xBounds;
-    Bounds m_yBounds;
   QPen m_pen;
   QBrush m_brush;
   double m_zoom_factor;
@@ -240,7 +207,7 @@ private:
 };
 
 template <class Sequence, class Updater>
-void Curve::updateItems(Sequence& sequence, Updater updater, Curve::UpdateFlag flag)
+void Curve::update_items(Sequence& sequence, Updater updater, Curve::UpdateFlag flag)
 {
     if (m_currentUpdate.contains(flag) && m_currentUpdate[flag].isRunning())
     {

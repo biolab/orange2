@@ -58,7 +58,7 @@ public:
     * @param size the size of the resulting path
     * @return a path that can be used in a QGraphicsPathItem or in QPainter::drawPath()
     **/
-    static QPainterPath pathForSymbol(int symbol, int size);
+    static QPainterPath path_for_symbol(int symbol, int size);
     
-    static QImage imageForSymbol(int symbol, QColor color, int size);
+    static QImage image_for_symbol(int symbol, QColor color, int size);
 };
