@@ -48,7 +48,9 @@ class OWLegend(QGraphicsItem):
         self.setFlag(self.ItemHasNoContents, True)
         self.mouse_down = False
         self._orientation = Qt.Vertical
-        self.animated = True
+        self.animated = True        
+        self._center_point = None
+
         
     def clear(self):
         self.curves = []
@@ -67,19 +69,29 @@ class OWLegend(QGraphicsItem):
         if self._orientation == Qt.Vertical:
             y = 0
             for item in self.items:
-                self.move_item(item, 0, y)
+                self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
                 y = y + item.boundingRect().height()
-                self.box_rect = self.box_rect | item.mapRectToParent(item.boundingRect())
         elif self._orientation == Qt.Horizontal:
             x = 0
             for item in self.items:
-                self.move_item(item, x, 0)
+                self.box_rect = self.box_rect | item.boundingRect().translated(x, 0)
                 x = x + item.boundingRect().width()
-                self.box_rect = self.box_rect | item.mapRectToParent(item.boundingRect())
-                
+        
+        if self._center_point:
+            self.setPos(self.pos() + self._center_point - self.box_rect.center())
+        x, y = 0, 0
+        if self._orientation == Qt.Vertical:
+            for item in self.items:
+                self.move_item(item, x, y)
+                y = y + item.boundingRect().height()
+        elif self._orientation == Qt.Horizontal:
+            for item in self.items:
+                self.move_item(item, x, y)
+                x = x + item.boundingRect().width()
+    
     def mouseMoveEvent(self, event):
         self.setPos(self.pos() + event.scenePos() - event.lastScenePos())
-        self.graph.notify_legend_moved()
+        self.graph.notify_legend_moved(event.scenePos())
         event.accept()
             
     def mousePressEvent(self, event):
@@ -98,9 +110,14 @@ class OWLegend(QGraphicsItem):
     def paint(self, painter, option, widget=None):
         pass
     
-    def set_orientation(self, orientation):
-        self._orientation = orientation
-        self.update()
+    def set_orientation(self, orientation, origin_point = QPointF()):
+        if self._orientation != orientation:
+            self._orientation = orientation
+            if origin_point.isNull():
+                self._center_point = origin_point
+            else:
+                self._center_point = self.mapFromScene(origin_point)
+            self.update()
         
     def move_item(self, item, x, y):
         if self.animated:

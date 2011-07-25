@@ -948,22 +948,22 @@ class OWPlot(orangeplot.Plot):
     def showTip(self, x, y, text):
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3,y-3,6,6))
         
-    def notify_legend_moved(self):
+    def notify_legend_moved(self, pos):
         self._legend_moved = True
         l = self.legend_rect()
         g = getattr(self, '_legend_outside_area', QRectF())
-        offset = 10
+        offset = 2
         rect = QRectF()
-        if l.right() > g.right() - offset:
+        if pos.x() > g.right() - offset:
             rect.setRight(l.width())
-        elif l.left() < g.left() + offset:
+        elif pos.x() < g.left() + offset:
             rect.setLeft(l.width())
-        elif l.top() < g.top() + offset:
+        elif pos.y() < g.top() + offset:
             rect.setTop(l.height())
-        elif l.bottom() > g.bottom() - offset:
+        elif pos.y() > g.bottom() - offset:
             rect.setBottom(l.height())
         if rect != self._legend_margin:
-            self._legend.set_orientation(Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical)
+            self._legend.set_orientation(Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical, pos)
             self._legend_animation = QPropertyAnimation(self, 'legend_margin')
             self._legend_animation.setStartValue(self._legend_margin)
             self._legend_animation.setEndValue(rect)
