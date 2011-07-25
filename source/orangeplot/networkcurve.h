@@ -3,6 +3,7 @@
 
 #include "curve.h"
 #include "point.h"
+#include "plot.h"
 
 class EdgeItem;
 
@@ -93,6 +94,7 @@ private:
     NodeItem* m_v;
     int m_links_index;
     double m_weight;
+    double m_size;
     QString m_label;
 };
 
@@ -133,6 +135,7 @@ public:
     virtual QRectF data_rect() const;
     
     int fr(int steps, bool weighted, double temperature, double cooling);
+    int random();
     
     void set_nodes(Nodes nodes);
     void set_edges(Edges edges);

@@ -76,6 +76,7 @@ public:
     virtual QRectF data_rect() const;
     
     int fr(int steps, bool weighted, double temperature, double cooling);
+    int random();
     
     void set_nodes(QMap<int, NodeItem*> nodes);
     void set_edges(Edges edges);

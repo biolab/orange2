@@ -102,6 +102,10 @@ EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsSce
 {
     set_u(u);
     set_v(v);
+    m_size = 1;
+    QPen p = pen();
+	p.setWidthF(m_size);
+	setPen(p);
 }
 
 EdgeItem::~EdgeItem()
@@ -180,9 +184,6 @@ void EdgeItem::set_arrows(EdgeItem::Arrows arrows)
 void EdgeItem::set_weight(double weight)
 {
     m_weight = weight;
-    QPen p = pen();
-    p.setWidthF(weight);
-    setPen(p);
 }
 
 double EdgeItem::weight() const
@@ -231,6 +232,22 @@ QRectF NetworkCurve::data_rect() const
     return r;
 }
 
+int NetworkCurve::random()
+{
+	NodeItem *u;
+	Nodes::ConstIterator uit = m_nodes.constBegin();
+	Nodes::ConstIterator uend = m_nodes.constEnd();
+
+	for (; uit != uend; ++uit)
+	{
+		u = uit.value();
+		u->set_x(((qreal)(qrand() % 1000)) * 1000);
+		u->set_y(((qreal)(qrand() % 1000)) * 1000);
+	}
+
+	return 0;
+}
+
 int NetworkCurve::fr(int steps, bool weighted, double temperature, double cooling)
 {
 	int i, j;
@@ -247,24 +264,21 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 		disp[node->index()] = point;
 	}
 
-	qreal area = data_r.width() * data_r.height();
+	double area = data_r.width() * data_r.height();
 
-	qreal k2 = area / m_nodes.size();
-	qreal k = sqrt(k2);
-	qreal kk = 2 * k;
-	qreal kk2 = kk * kk;
 
+	double k2 = area / m_nodes.size();
+	double k = sqrt(k2);
+	double kk = 2 * k;
+	double kk2 = kk * kk;
+	qDebug() << "area " << area << "; k2 " << k2 << "; k " << k << "; kk " << kk << "; kk2 " << kk2;
 	// iterations
 	for (i = 0; i < steps; i++)
 	{
-		DataPoint tmp_point;
-		QMap<int, DataPoint>::ConstIterator qit = disp.constBegin();
-		QMap<int, DataPoint>::ConstIterator qend = disp.constEnd();
-		for (; qit != qend; ++qit)
+		foreach (const NodeItem* node, m_nodes)
 		{
-			tmp_point = qit.value();
-			tmp_point.x = 0;
-			tmp_point.y = 0;
+			disp[node->index()].x = 0;
+			disp[node->index()].y = 0;
 		}
 
 		// calculate repulsive force
@@ -278,85 +292,70 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 			for (; vit != uend; ++vit)
 			{
 				v = vit.value();
-				qreal difx = u->x() - v->x();
-				qreal dify = u->y() - v->y();
 
-				qreal dif2 = difx * difx + dify * dify;
+				double difx = u->x() - v->x();
+				double dify = u->y() - v->y();
+
+				double dif2 = difx * difx + dify * dify;
 
 				if (dif2 < kk2)
 				{
 					if (dif2 == 0)
 						dif2 = 1;
 
-					qreal dX = difx * k2 / dif2;
-					qreal dY = dify * k2 / dif2;
+					double dX = difx * k2 / dif2;
+					double dY = dify * k2 / dif2;
 
-					disp[u->index()].x = disp[u->index()].x + dX;
-					disp[u->index()].y = disp[u->index()].y + dY;
+					disp[u->index()].x += dX;
+					disp[u->index()].y += dY;
 
-					disp[v->index()].x = disp[v->index()].x - dX;
-					disp[v->index()].y = disp[v->index()].y - dY;
+					disp[v->index()].x -= dX;
+					disp[v->index()].y -= dY;
 				}
 			}
 		}
 
 		// calculate attractive forces
-		if (weighted)
+		for (j = 0; j < m_edges.size(); ++j)
 		{
-			for (j = 0; j < m_edges.size(); ++j)
-			{
-				edge = m_edges[j];
-				qreal difx = edge->u()->x() - edge->v()->x();
-				qreal dify = edge->u()->y() - edge->v()->y();
+			edge = m_edges[j];
+			double difx = edge->u()->x() - edge->v()->x();
+			double dify = edge->u()->y() - edge->v()->y();
 
-				qreal dif = sqrt(difx * difx + dify * dify);
+			double dif = sqrt(difx * difx + dify * dify);
 
-				qreal dX = difx * dif / k * edge->weight();
-				qreal dY = dify * dif / k * edge->weight();
+			double dX = difx * dif / k;
+			double dY = dify * dif / k;
 
-				disp[edge->u()->index()].x = disp[edge->u()->index()].x + dX;
-				disp[edge->u()->index()].y = disp[edge->u()->index()].y + dY;
-
-				disp[edge->v()->index()].x = disp[edge->v()->index()].x - dX;
-				disp[edge->v()->index()].y = disp[edge->v()->index()].y - dY;
+			if (weighted) {
+				dX *= edge->weight();
+				dY *= edge->weight();
 			}
+
+			disp[edge->u()->index()].x -= dX;
+			disp[edge->u()->index()].y -= dY;
+
+			disp[edge->v()->index()].x += dX;
+			disp[edge->v()->index()].y += dY;
 		}
-		else
-		{
-			for (j = 0; j < m_edges.size(); ++j)
-			{
-				edge = m_edges[j];
-				qreal difx = edge->u()->x() - edge->v()->x();
-				qreal dify = edge->u()->y() - edge->v()->y();
 
-				qreal dif = sqrt(difx * difx + dify * dify);
-
-				qreal dX = difx * dif / k;
-				qreal dY = dify * dif / k;
-
-				disp[edge->u()->index()].x = disp[edge->u()->index()].x + dX;
-				disp[edge->u()->index()].y = disp[edge->u()->index()].y + dY;
-
-				disp[edge->v()->index()].x = disp[edge->v()->index()].x - dX;
-				disp[edge->v()->index()].y = disp[edge->v()->index()].y - dY;
-			}
-		}
 		// limit the maximum displacement to the temperature t
 		// and then prevent from being displaced outside frame
 		Nodes::Iterator nit = m_nodes.begin();
 		for (; nit != m_nodes.end(); ++nit)
 		{
 			u = nit.value();
-			qreal dif = sqrt(disp[u->index()].x * disp[u->index()].x + disp[u->index()].y * disp[u->index()].y);
+			double dif = sqrt(disp[u->index()].x * disp[u->index()].x + disp[u->index()].y * disp[u->index()].y);
 
 			if (dif == 0)
 				dif = 1;
 
-			qDebug() << i << " old " << u->x() << " " << u->y();
-			u->setX(u->x() + (disp[u->index()].x * qMin(fabs(disp[u->index()].x), temperature) / dif));
-			u->setY(u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
-			qDebug() << i << " new " << u->x() << " " << u->y();
+			u->set_x(u->x() + (disp[u->index()].x * qMin(fabs(disp[u->index()].x), temperature) / dif));
+			u->set_y(u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
 		}
+
+		plot()->replot();
+		plot()->set_dirty();
 
 		temperature = temperature * cooling;
 	}
