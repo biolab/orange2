@@ -362,7 +362,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.scale_x_axis = True
         self.scale_factor = 100.
         self.data_scale = numpy.array([1., 1., 1.])
-        self.data_center = numpy.array([0, 0, 0])
+        self.data_center = numpy.array([0., 0., 0.])
 
         # Beside n-gons, symbols should also include cubes, spheres and other stuff. TODO
         self.available_symbols = [3, 4, 5, 8]
@@ -383,7 +383,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.z_axis_map = None
 
         self.zoom_stack = []
-        self.translation = numpy.array([0, 0, 0])
+        self.translation = numpy.array([0., 0., 0.])
 
     def __del__(self):
         # TODO: check if anything needs deleting
@@ -541,7 +541,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
                 vao_id, outline_vao_id, (X, Y, Z), labels = params
-                scale = numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+                scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
 
                 self.symbol_shader.bind()
                 self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, False)
@@ -562,17 +562,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
                     glBindVertexArray(0)
 
-                # Draw color-picking buffer.
-                glBindVertexArray(vao_id)
-                self.tooltip_fbo.bind()
-                glClearColor(1, 1, 1, 1)
-                glClear(GL_COLOR_BUFFER_BIT)
-                glDisable(GL_BLEND)
-                self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, True)
-                glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
-                self.tooltip_fbo.release()
-                glBindVertexArray(0)
-
                 self.symbol_shader.release()
 
                 if labels != None:
@@ -587,6 +576,23 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             elif cmd == 'custom':
                 callback = params
                 callback()
+
+        for (cmd, params) in self.commands:
+            if cmd == 'scatter':
+                vao_id, outline_vao_id, (X, Y, Z), labels = params
+                # Draw into color-picking buffer.
+                self.tooltip_fbo.bind()
+                self.symbol_shader.bind()
+                # Most uniforms retain their values.
+                self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, True)
+                glClearColor(1, 1, 1, 1)
+                glClear(GL_COLOR_BUFFER_BIT)
+                glDisable(GL_BLEND)
+                glBindVertexArray(vao_id)
+                glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                glBindVertexArray(0)
+                self.symbol_shader.release()
+                self.tooltip_fbo.release()
 
         glDisable(GL_BLEND)
         if self.show_legend:
@@ -1009,7 +1015,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 break
             self.translation = self.translation + translation_step
             self.updateGL()
-        start = time.time()
         for i in range(num_steps):
             if time.time() - start > 1.:
                 self.scale = new_scale
@@ -1039,11 +1044,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         vertex -= self.data_center
         vertex *= self.data_scale
         vertex += self.translation
-        vertex *= numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+        vertex *= numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
         return vertex
 
     def transform_plot_to_data(self, vertex):
-        vertex /= numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+        vertex /= numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
         vertex -= self.translation
         vertex /= self.data_scale
         vertex += self.data_center
@@ -1089,10 +1094,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 for i, (x, y, z) in enumerate(zip(X, Y, Z)):
                     x, y, z = self.transform_data_to_plot((x,y,z))
                     x_win, y_win = project(x, y, z)
-                    for selection in self.selections:
-                        if selection.contains(x_win, y_win):
-                            indices.append(i)
-                            break
+                    if any(sel.contains(x_win, y_win) for sel in self.selections):
+                        indices.append(i)
 
         return indices
 
@@ -1105,7 +1108,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         buttons = event.buttons()
 
         if buttons & Qt.LeftButton:
-            if self.legend.contains(pos.x(), pos.y()):
+            if self.show_legend and self.legend.contains(pos.x(), pos.y()):
                 self.state = PlotState.DRAGGING_LEGEND
                 self.new_selection = None
             else:
@@ -1126,7 +1129,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.new_selection = None
                 self.state = PlotState.SCALING
                 self.scaling_init_pos = self.mouse_pos
-                self.additional_scale = [0, 0, 0]
+                self.additional_scale = [0., 0., 0.]
             else:
                 self.pop_zoom()
             self.updateGL()
@@ -1154,10 +1157,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.mouseover_callback(value)
 
         if self.state == PlotState.IDLE:
-            for selection in self.selections:
-                if selection.contains(pos.x(), pos.y()):
-                    self.setCursor(Qt.OpenHandCursor)
-                    break
+            if any(sel.contains(pos.x(), pos.y()) for sel in self.selections) or\
+               self.legend.contains(pos.x(), pos.y()):
+                self.setCursor(Qt.OpenHandCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
             self.mouse_pos = pos
@@ -1201,8 +1203,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             return
 
         if self.state == PlotState.SCALING:
-            self.scale = numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
-            self.additional_scale = [0, 0, 0]
+            self.scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
+            self.additional_scale = [0., 0., 0.]
             self.state = PlotState.IDLE
         elif self.state == PlotState.SELECTING:
             if self.selection_type == SelectionType.POLYGON:
@@ -1252,6 +1254,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.selections = []
         self.legend.clear()
         self.zoom_stack = []
+        self.translation = numpy.array([0., 0., 0.])
+        self.scale = numpy.array([1., 1., 1.])
+        self.additional_scale = numpy.array([0., 0., 0.])
         self.x_axis_title = self.y_axis_title = self.z_axis_title = ''
         self.x_axis_map = self.y_axis_map = self.z_axis_map = None
         self.updateGL()
