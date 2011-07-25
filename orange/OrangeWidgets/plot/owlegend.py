@@ -54,11 +54,8 @@ class OWLegend(QGraphicsItem):
         self.animated = True        
         self._center_point = None
 
-        
     def clear(self):
-        self.curves = []
-        self.point_attrs = {}
-        self.point_vals = {}
+        self.items = []
         self.update()
         
 
