@@ -205,18 +205,7 @@ void NetworkCurve::updateProperties()
     const QTransform t = graphTransform();
 
     updateItems(m_nodes, NodeUpdater(t), UpdatePosition);
-    
-    QLineF line;
-    int n = m_edges.size();
-    for (int i = 0; i < n; ++i)
-    {
-        EdgeItem* edge = m_edges[i];
-        NodeItem* node = m_nodes[edge->u()->index()];
-        line.setP1(QPointF(node->x(), node->y()));
-        node = m_nodes[edge->v()->index()];
-        line.setP2(QPointF(node->x(), node->y()));
-        edge->setLine(line * t);
-    }
+    updateItems(m_edges, EdgeUpdater(t), UpdatePen);
 }
 
 QRectF NetworkCurve::dataRect() const

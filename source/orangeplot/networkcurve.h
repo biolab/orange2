@@ -105,6 +105,21 @@ private:
     QTransform m_t;
 };
 
+class EdgeUpdater
+{
+public:
+    EdgeUpdater(const QTransform& t) : m_t(t) {}
+    void operator()(EdgeItem* item)
+    {
+        if (item->u() && item->v())
+        {
+            item->setLine(QLineF(item->u()->x(), item->u()->y(), item->v()->x(), item->v()->y()) * m_t);
+        }
+    }
+private:
+    QTransform m_t;
+};
+
 class NetworkCurve : public Curve
 {
 public:
