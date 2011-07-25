@@ -119,7 +119,7 @@ class OWNxExplorerQt(OWWidget):
         self.loadSettings()
         
         self._network_view = None
-        self.layout = Orange.network.GraphLayout()
+#        self.layout = Orange.network.GraphLayout()
         self.graph = None
         self.graph_base = None
         self.markInputItems = None
@@ -423,80 +423,83 @@ class OWNxExplorerQt(OWWidget):
         self.setItems(self.graph_base.items())
         
     def drawForce(self):
-        if self.btnForce.isChecked() and self.graph is not None:
-            self.networkCanvas.forceVectors = self.layout._computeForces() 
-        else:
-            self.networkCanvas.forceVectors = None
-            
-        self.networkCanvas.updateCanvas()
+#        if self.btnForce.isChecked() and self.graph is not None:
+#            self.networkCanvas.forceVectors = self.layout._computeForces() 
+#        else:
+#            self.networkCanvas.forceVectors = None
+#            
+#        self.networkCanvas.updateCanvas()
+        pass
         
     def rotateProgress(self, curr, max):
         self.progressBarSet(int(curr * 100 / max))
         qApp.processEvents()
         
     def rotateComponentsMDS(self):
-        print "rotate"
-        if self.items_matrix is None:
-            self.information('Set distance matrix to input signal')
-            self.btnRotateMDS.setChecked(False)
-            return
-        
-        if self.graph is None:
-            self.information('No network found')
-            self.btnRotateMDS.setChecked(False)
-            return
-        if self.items_matrix.dim != self.graph.number_of_nodes():
-            self.error('Distance matrix dimensionality must equal number of vertices')
-            self.btnRotateMDS.setChecked(False)
-            return
-        
-        if not self.btnRotateMDS.isChecked():
-          self.layout.stopMDS = 1
-          #self.btnMDS.setChecked(False)
-          #self.btnMDS.setText("MDS on graph components")
-          return
-        
-        self.btnRotateMDS.setText("Stop")
-        qApp.processEvents()
-        
-        self.layout.items_matrix = self.items_matrix
-        self.progressBarInit()
-        
-        self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True, mdsFromCurrentPos=self.mdsFromCurrentPos)            
-            
-        self.btnRotateMDS.setChecked(False)
-        self.btnRotateMDS.setText("Rotate graph components (MDS)")
-        self.progressBarFinished()
+#        print "rotate"
+#        if self.items_matrix is None:
+#            self.information('Set distance matrix to input signal')
+#            self.btnRotateMDS.setChecked(False)
+#            return
+#        
+#        if self.graph is None:
+#            self.information('No network found')
+#            self.btnRotateMDS.setChecked(False)
+#            return
+#        if self.items_matrix.dim != self.graph.number_of_nodes():
+#            self.error('Distance matrix dimensionality must equal number of vertices')
+#            self.btnRotateMDS.setChecked(False)
+#            return
+#        
+#        if not self.btnRotateMDS.isChecked():
+#          self.layout.stopMDS = 1
+#          #self.btnMDS.setChecked(False)
+#          #self.btnMDS.setText("MDS on graph components")
+#          return
+#        
+#        self.btnRotateMDS.setText("Stop")
+#        qApp.processEvents()
+#        
+#        self.layout.items_matrix = self.items_matrix
+#        self.progressBarInit()
+#        
+#        self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True, mdsFromCurrentPos=self.mdsFromCurrentPos)            
+#            
+#        self.btnRotateMDS.setChecked(False)
+#        self.btnRotateMDS.setText("Rotate graph components (MDS)")
+#        self.progressBarFinished()
+        pass
     
     def rotateComponents(self):
-        if self.items_matrix is None:
-            self.information('Set distance matrix to input signal')
-            self.btnRotate.setChecked(False)
-            return
-        
-        if self.graph is None:
-            self.information('No network found')
-            self.btnRotate.setChecked(False)
-            return
-        
-        if self.items_matrix.dim != self.graph.number_of_nodes():
-            self.error('Distance matrix dimensionality must equal number of vertices')
-            self.btnRotate.setChecked(False)
-            return
-        
-        if not self.btnRotate.isChecked():
-          self.layout.stopRotate = 1
-          return
-      
-        self.btnRotate.setText("Stop")
-        qApp.processEvents()
-        
-        self.layout.items_matrix = self.items_matrix
-        self.progressBarInit()
-        self.layout.rotateComponents(self.rotateSteps, 0.0001, self.rotateProgress, self.updateCanvas)
-        self.btnRotate.setChecked(False)
-        self.btnRotate.setText("Rotate graph components")
-        self.progressBarFinished()
+#        if self.items_matrix is None:
+#            self.information('Set distance matrix to input signal')
+#            self.btnRotate.setChecked(False)
+#            return
+#        
+#        if self.graph is None:
+#            self.information('No network found')
+#            self.btnRotate.setChecked(False)
+#            return
+#        
+#        if self.items_matrix.dim != self.graph.number_of_nodes():
+#            self.error('Distance matrix dimensionality must equal number of vertices')
+#            self.btnRotate.setChecked(False)
+#            return
+#        
+#        if not self.btnRotate.isChecked():
+#          self.layout.stopRotate = 1
+#          return
+#      
+#        self.btnRotate.setText("Stop")
+#        qApp.processEvents()
+#        
+#        self.layout.items_matrix = self.items_matrix
+#        self.progressBarInit()
+#        self.layout.rotateComponents(self.rotateSteps, 0.0001, self.rotateProgress, self.updateCanvas)
+#        self.btnRotate.setChecked(False)
+#        self.btnRotate.setText("Rotate graph components")
+#        self.progressBarFinished()
+        pass
         
     def mdsProgress(self, avgStress, stepCount):    
         self.drawForce()
@@ -507,76 +510,78 @@ class OWNxExplorerQt(OWWidget):
         qApp.processEvents()
         
     def mds_components(self, mdsType=Orange.network.MdsType.componentMDS):
-        if mdsType == Orange.network.MdsType.componentMDS:
-            btn = self.btnMDS
-        elif mdsType == Orange.network.MdsType.exactSimulation:
-            btn = self.btnESIM
-        elif mdsType == Orange.network.MdsType.MDS:
-            btn = self.btnMDSv
-        
-        btnCaption = btn.text()
-        
-        if self.items_matrix is None:
-            self.information('Set distance matrix to input signal')
-            btn.setChecked(False)
-            return
-        
-        if self.layout is None:
-            self.information('No network found')
-            btn.setChecked(False)
-            return
-        
-        if self.items_matrix.dim != self.graph.number_of_nodes():
-            self.error('Distance matrix dimensionality must equal number of vertices')
-            btn.setChecked(False)
-            return
-        
-        if not btn.isChecked():
-            self.layout.stopMDS = 1
-            btn.setChecked(False)
-            btn.setText(btnCaption)
-            return
-        
-        btn.setText("Stop")
-        qApp.processEvents()
-        
-        self.layout.items_matrix = self.items_matrix
-        self.progressBarInit()
-        
-        if self.mdsAvgLinkage:
-            self.layout.mds_components_avg_linkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)
-        else:
-            self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)            
-        
-        btn.setChecked(False)
-        btn.setText(btnCaption)
-        self.progressBarFinished()
-        
+#        if mdsType == Orange.network.MdsType.componentMDS:
+#            btn = self.btnMDS
+#        elif mdsType == Orange.network.MdsType.exactSimulation:
+#            btn = self.btnESIM
+#        elif mdsType == Orange.network.MdsType.MDS:
+#            btn = self.btnMDSv
+#        
+#        btnCaption = btn.text()
+#        
+#        if self.items_matrix is None:
+#            self.information('Set distance matrix to input signal')
+#            btn.setChecked(False)
+#            return
+#        
+#        if self.layout is None:
+#            self.information('No network found')
+#            btn.setChecked(False)
+#            return
+#        
+#        if self.items_matrix.dim != self.graph.number_of_nodes():
+#            self.error('Distance matrix dimensionality must equal number of vertices')
+#            btn.setChecked(False)
+#            return
+#        
+#        if not btn.isChecked():
+#            self.layout.stopMDS = 1
+#            btn.setChecked(False)
+#            btn.setText(btnCaption)
+#            return
+#        
+#        btn.setText("Stop")
+#        qApp.processEvents()
+#        
+#        self.layout.items_matrix = self.items_matrix
+#        self.progressBarInit()
+#        
+#        if self.mdsAvgLinkage:
+#            self.layout.mds_components_avg_linkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)
+#        else:
+#            self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)            
+#        
+#        btn.setChecked(False)
+#        btn.setText(btnCaption)
+#        self.progressBarFinished()
+        pass
+    
     def set_items_distance_matrix(self, matrix):
-        self.error('')
-        self.information('')
-        self.showDistancesCheckBox.setEnabled(0)
-        
-        if matrix is None or self.graph is None:
-            self.items_matrix = None
-            self.layout.items_matrix = None
-            if self.networkCanvas: self.networkCanvas.items_matrix = None
-            return
-
-        if matrix.dim != self.graph.number_of_nodes():
-            self.error('Distance matrix dimensionality must equal number of vertices')
-            self.items_matrix = None
-            self.layout.items_matrix = None
-            if self.networkCanvas: self.networkCanvas.items_matrix = None
-            return
-        
-        self.items_matrix = matrix
-        self.layout.items_matrix = matrix
-        if self.networkCanvas: self.networkCanvas.items_matrix = matrix
-        self.showDistancesCheckBox.setEnabled(1)
-        
-        self.networkCanvas.updateCanvas()
-            
+#        self.error('')
+#        self.information('')
+#        self.showDistancesCheckBox.setEnabled(0)
+#        
+#        if matrix is None or self.graph is None:
+#            self.items_matrix = None
+#            self.layout.items_matrix = None
+#            if self.networkCanvas: self.networkCanvas.items_matrix = None
+#            return
+#
+#        if matrix.dim != self.graph.number_of_nodes():
+#            self.error('Distance matrix dimensionality must equal number of vertices')
+#            self.items_matrix = None
+#            self.layout.items_matrix = None
+#            if self.networkCanvas: self.networkCanvas.items_matrix = None
+#            return
+#        
+#        self.items_matrix = matrix
+#        self.layout.items_matrix = matrix
+#        if self.networkCanvas: self.networkCanvas.items_matrix = matrix
+#        self.showDistancesCheckBox.setEnabled(1)
+#        
+#        self.networkCanvas.updateCanvas()
+        pass
+    
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
             self.networkCanvas.sendMarkedNodes = self.sendMarkedNodes
@@ -1079,24 +1084,26 @@ class OWNxExplorerQt(OWWidget):
         print "replot in " + str(stop - start)
         
     def save_network(self):
-        if self.networkCanvas is None or self.graph is None:
-            return
-        
-        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'NetworkX graph as Python pickle (*.gpickle)\nPajek network (*.net)\nGML network (*.gml)')
-        if filename:
-            fn = ""
-            head, tail = os.path.splitext(str(filename))
-            if not tail:
-                fn = head + ".net"
-            else:
-                fn = str(filename)
-            
-            for i in range(self.graph.number_of_nodes()):
-                node = self.graph.node[i]
-                node['x'] = self.layout.coors[0][i]
-                node['y'] = self.layout.coors[1][i]
-
-            Orange.network.readwrite.write(self.graph, fn)
+#        if self.networkCanvas is None or self.graph is None:
+#            return
+#        
+#        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'NetworkX graph as Python pickle (*.gpickle)\nPajek network (*.net)\nGML network (*.gml)')
+#        if filename:
+#            fn = ""
+#            head, tail = os.path.splitext(str(filename))
+#            if not tail:
+#                fn = head + ".net"
+#            else:
+#                fn = str(filename)
+#            
+#            for i in range(self.graph.number_of_nodes()):
+#                node = self.graph.node[i]
+#                node['x'] = self.layout.coors[0][i]
+#                node['y'] = self.layout.coors[1][i]
+#
+#            Orange.network.readwrite.write(self.graph, fn)
+        pass
+    
             
     def sendData(self):
         graph = self.networkCanvas.getSelectedGraph()
@@ -1232,7 +1239,7 @@ class OWNxExplorerQt(OWWidget):
         [self.networkCanvas.networkCurve.coors.pop(c) for c in remove_nodes]
         self.networkCanvas.networkCurve.coors.update((node, (0,0)) for node in add_nodes)
         positions = [self.networkCanvas.networkCurve.coors[key] for key in sorted(self.networkCanvas.networkCurve.coors.iterkeys())]
-        self.layout.set_graph(newgraph, positions)
+#        self.layout.set_graph(newgraph, positions)
         
         self.graph = newgraph
         self.number_of_nodes_label = self.graph.number_of_nodes()
@@ -1263,9 +1270,9 @@ class OWNxExplorerQt(OWWidget):
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
         t = k * nodes * nodes
-        self.frSteps = 10 #int(5.0 / t)
+        self.frSteps = int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 3000: self.frSteps = 3000;
+        if self.frSteps > 10000: self.frSteps = 10000;
         
         if self.frSteps < 10:
             self.renderAntialiased = 0
@@ -1293,7 +1300,7 @@ class OWNxExplorerQt(OWWidget):
         if graph is None:
             self.graph = None
             self.graph_base = None
-            self.layout.set_graph(None)
+#            self.layout.set_graph(None)
             self.networkCanvas.set_graph_layout(None, None)
             self.clearCombos()
             self.number_of_nodes_label = -1
@@ -1311,13 +1318,13 @@ class OWNxExplorerQt(OWWidget):
         #print "OWNetwork/setGraph: new visualizer..."
         self.graph = graph
         
-        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
-            positions = [(self._items[node]['x'].value, self._items[node]['y'].value) \
-                         for node in sorted(self.graph) if self._items[node]['x'].value != '?' \
-                         and self._items[node]['y'].value != '?']
-            self.layout.set_graph(self.graph, positions)
-        else:
-            self.layout.set_graph(self.graph)
+#        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
+#            positions = [(self._items[node]['x'].value, self._items[node]['y'].value) \
+#                         for node in sorted(self.graph) if self._items[node]['x'].value != '?' \
+#                         and self._items[node]['y'].value != '?']
+#            self.layout.set_graph(self.graph, positions)
+#        else:
+#            self.layout.set_graph(self.graph)
         
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
@@ -1374,9 +1381,9 @@ class OWNxExplorerQt(OWWidget):
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
         t = k * nodes * nodes
-        self.frSteps = 10 #int(5.0 / t)
+        self.frSteps = int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 3000: self.frSteps = 3000;
+        if self.frSteps > 10000: self.frSteps = 10000;
         
         self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.networkCanvas.showWeights = self.showWeights
@@ -1568,16 +1575,20 @@ class OWNxExplorerQt(OWWidget):
         elif self.optMethod == 4:
             self.graph_layout_fr_radial()
         elif self.optMethod == 5:
-            self.layout.circular_crossing_reduction()
+#            self.layout.circular_crossing_reduction()
+            pass
         elif self.optMethod == 6:
-            self.layout.circular_original()
+#            self.layout.circular_original()
+            pass
         elif self.optMethod == 7:
-            self.layout.circular_random()
+#            self.layout.circular_random()
+            pass
         elif self.optMethod == 8:
-            self.graph_layout_pivot_mds()
+#            self.graph_layout_pivot_mds()
+            pass
             
         self.optButton.setChecked(False)
-        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
+#        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
         self.networkCanvas.updateCanvas()
         qApp.processEvents()
         
@@ -1675,66 +1686,66 @@ class OWNxExplorerQt(OWWidget):
         if self.graph is None:   #grafa se ni
             return
         
-        steps = 100
-        initTemp = 1000
-        coolFactor = math.exp(math.log(10.0/10000.0) / steps)
-        oldXY = [(self.layout.coors[0][i], self.layout.coors[1][i]) for i in range(self.graph.number_of_nodes())]
-        #print oldXY
-        initTemp = self.layout.fr(steps, initTemp, coolFactor)
-        #print oldXY
-        self.networkCanvas.updateDataSpecial(oldXY)
-        self.networkCanvas.replot()
+#        steps = 100
+#        initTemp = 1000
+#        coolFactor = math.exp(math.log(10.0/10000.0) / steps)
+#        oldXY = [(self.layout.coors[0][i], self.layout.coors[1][i]) for i in range(self.graph.number_of_nodes())]
+#        #print oldXY
+#        initTemp = self.layout.fr(steps, initTemp, coolFactor)
+#        #print oldXY
+#        self.networkCanvas.updateDataSpecial(oldXY)
+#        self.networkCanvas.replot()
                 
     def graph_layout_fr_radial(self):
         if self.graph is None:   #grafa se ni
             return
         
-        #print "F-R Radial"
-        k = 1.13850193174e-008
-        nodes = self.graph.number_of_nodes()
-        t = k * nodes * nodes
-        refreshRate = int(5.0 / t)
-        if refreshRate <    1: refreshRate = 1;
-        if refreshRate > 1500: refreshRate = 1500;
-        #print "refreshRate: " + str(refreshRate)
-        
-        tolerance = 5
-        initTemp = 100
-        centerNdx = 0
-        
-        selection = self.networkCanvas.getSelection()
-        if len(selection) > 0:
-            centerNdx = selection[0]
-            
-        #print "center ndx: " + str(centerNdx)
-        initTemp = self.layout.fr_radial(centerNdx, refreshRate, initTemp)
-        self.networkCanvas.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
-        #self.networkCanvas.circles = [100, 200, 300]
-        self.networkCanvas.updateCanvas()
-        self.networkCanvas.circles = []
+#        #print "F-R Radial"
+#        k = 1.13850193174e-008
+#        nodes = self.graph.number_of_nodes()
+#        t = k * nodes * nodes
+#        refreshRate = int(5.0 / t)
+#        if refreshRate <    1: refreshRate = 1;
+#        if refreshRate > 1500: refreshRate = 1500;
+#        #print "refreshRate: " + str(refreshRate)
+#        
+#        tolerance = 5
+#        initTemp = 100
+#        centerNdx = 0
+#        
+#        selection = self.networkCanvas.getSelection()
+#        if len(selection) > 0:
+#            centerNdx = selection[0]
+#            
+#        #print "center ndx: " + str(centerNdx)
+#        initTemp = self.layout.fr_radial(centerNdx, refreshRate, initTemp)
+#        self.networkCanvas.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
+#        #self.networkCanvas.circles = [100, 200, 300]
+#        self.networkCanvas.updateCanvas()
+#        self.networkCanvas.circles = []
             
     def graph_layout_pivot_mds(self):
         self.information()
         
-        if self.items_matrix is None:
-            self.information('Set distance matrix to input signal')
-            return
-        
-        if self.graph is None:
-            self.information('No network found')
-            return
-        
-        if self.items_matrix.dim != self.graph.number_of_nodes():
-            self.error('Distance matrix dimensionality must equal number of vertices')
-            return
-        
-        self.frSteps = min(self.frSteps, self.items_matrix.dim)
-        qApp.processEvents()
-        mds = orngMDS.PivotMDS(self.items_matrix, self.frSteps)
-        x,y = mds.optimize()
-        self.layout.coors[0] = x
-        self.layout.coors[1] = y
-        self.networkCanvas.updateCanvas()
+#        if self.items_matrix is None:
+#            self.information('Set distance matrix to input signal')
+#            return
+#        
+#        if self.graph is None:
+#            self.information('No network found')
+#            return
+#        
+#        if self.items_matrix.dim != self.graph.number_of_nodes():
+#            self.error('Distance matrix dimensionality must equal number of vertices')
+#            return
+#        
+#        self.frSteps = min(self.frSteps, self.items_matrix.dim)
+#        qApp.processEvents()
+#        mds = orngMDS.PivotMDS(self.items_matrix, self.frSteps)
+#        x,y = mds.optimize()
+#        self.layout.coors[0] = x
+#        self.layout.coors[1] = y
+#        self.networkCanvas.updateCanvas()
     
       
     """

@@ -18,10 +18,12 @@ from orngScaleScatterPlotData import *
 import orangeplot
 
 class NodeItem(orangeplot.NodeItem):
-    def __init__(self, index, x, y, parent=None):
+    def __init__(self, index, x=None, y=None, parent=None):
         orangeplot.NodeItem.__init__(self, index, OWPoint.Ellipse, Qt.blue, 5, parent)
-        self.set_x(x)
-        self.set_y(y)
+        if x is not None:
+            self.set_x(x)
+        if y is not None:
+            self.set_y(y)
         
 class EdgeItem(orangeplot.EdgeItem):
     def __init__(self, u=None, v=None, weight=1, links_index=0, label='', parent=None):
@@ -1142,7 +1144,7 @@ class OWNxCanvas(OWPlot):
         
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
-        vertices = dict((v, NodeItem(v, random.random(), random.random(), parent=self.networkCurve)) for v in self.graph)
+        vertices = dict((v, NodeItem(v, parent=self.networkCurve)) for v in self.graph)
         self.networkCurve.set_nodes(vertices)
                 
         #build edge index
