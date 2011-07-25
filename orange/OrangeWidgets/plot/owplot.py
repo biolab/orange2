@@ -570,19 +570,17 @@ class OWPlot(orangeplot.Plot):
             item.zoom_transform = self.zoom_transform
             item.update(zoom_only)
         
-    def replot(self, force = False):
-        if not self.block_update or force:
-            if self.is_dirty():
-                qDebug('Graph is dirty, clearing caches')
-                self._bounds_cache = {}
-                self._transform_cache = {}
-                self.set_clean()
-            self.update_layout()
-            self.update_zoom()
-            self.update_axes()
-            self.update()
-            self.setSceneRect(QRectF(self.contentsRect()))
-            
+    def replot(self):
+        if self.is_dirty():
+            self._bounds_cache = {}
+            self._transform_cache = {}
+            self.set_clean()
+        self.update_layout()
+        self.update_zoom()
+        self.update_axes()
+        self.update()
+        self.setSceneRect(QRectF(self.contentsRect()))
+        
     def legend(self):
         return self._legend
         

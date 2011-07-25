@@ -103,10 +103,7 @@ void PlotItem::set_data_rect(const QRectF& dataRect) {
     }
 }
 
-
-
-
-
-
-
-
+Plot* PlotItem::plot() 
+{
+    return m_plot;
+}

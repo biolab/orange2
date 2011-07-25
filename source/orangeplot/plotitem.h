@@ -23,6 +23,7 @@ public:
     
     void attach(Plot* graph);
     void detach();
+    Plot* plot();
     
     static QRectF rect_from_data(const QList<double>& x_data, const QList<double>& y_data);
     

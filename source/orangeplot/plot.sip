@@ -34,6 +34,8 @@ public:
     Plot(QWidget* parent /TransferThis/ = 0);
     virtual ~Plot();
     
+    virtual void replot() = 0;
+    
     void add_item(PlotItem* item /Transfer/);
     void remove_item(PlotItem* item /TransferBack/);
     
