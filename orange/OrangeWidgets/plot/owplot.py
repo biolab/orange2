@@ -958,7 +958,10 @@ class OWPlot(orangeplot.Plot):
         elif pos.y() > g.bottom() - offset:
             rect.setBottom(l.height())
         if rect != self._legend_margin:
-            self._legend.set_orientation(Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical, pos)
+            orientation = Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical
+            if orientation == Qt.Horizontal:
+                self._legend.max_width = g.width()
+            self._legend.set_orientation(orientation, pos)
             self._legend_animation = QPropertyAnimation(self, 'legend_margin')
             self._legend_animation.setStartValue(self._legend_margin)
             self._legend_animation.setEndValue(rect)

@@ -53,6 +53,7 @@ class OWLegend(QGraphicsItem):
         self._orientation = Qt.Vertical
         self.animated = True        
         self._center_point = None
+        self.max_width = 0
 
     def clear(self):
         self.items = []
@@ -73,8 +74,12 @@ class OWLegend(QGraphicsItem):
                 y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
             x = 0
+            y = 0
             for item in self.items:
-                self.box_rect = self.box_rect | item.boundingRect().translated(x, 0)
+                if self.max_width and x and x + item.boundingRect().width() > self.max_width:
+                    x = 0
+                    y = y + item.boundingRect().height()
+                self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
                 x = x + item.boundingRect().width()
         
         if self._center_point:
@@ -85,7 +90,12 @@ class OWLegend(QGraphicsItem):
                 self.move_item(item, x, y)
                 y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
+            x = 0
+            y = 0
             for item in self.items:
+                if self.max_width and x and x + item.boundingRect().width() > self.max_width:
+                    x = 0
+                    y = y + item.boundingRect().height()
                 self.move_item(item, x, y)
                 x = x + item.boundingRect().width()
     
