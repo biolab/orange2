@@ -60,6 +60,7 @@ from ctypes import c_void_p
 
 import sys
 from math import sin, cos, pi
+import time
 import struct
 import numpy
 
@@ -360,8 +361,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.additional_scale = [0, 0, 0]
         self.scale_x_axis = True
         self.scale_factor = 100.
-        self.initial_scale = numpy.array([1., 1., 1.])
-        self.initial_center = numpy.array([0, 0, 0])
+        self.data_scale = numpy.array([1., 1., 1.])
+        self.data_center = numpy.array([0, 0, 0])
 
         # Beside n-gons, symbols should also include cubes, spheres and other stuff. TODO
         self.available_symbols = [3, 4, 5, 8]
@@ -380,6 +381,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.x_axis_map = None
         self.y_axis_map = None
         self.z_axis_map = None
+
+        self.zoom_stack = []
+        self.translation = numpy.array([0, 0, 0])
 
     def __del__(self):
         # TODO: check if anything needs deleting
@@ -438,7 +442,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 offset_rotated = invs * offset_rotated;
 
               vec3 pos = position.xyz;
-              //pos += translation;
+              pos += translation;
               pos *= scale;
               vec4 off_pos = vec4(pos+offset_rotated, 1);
 
@@ -546,6 +550,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale, float(self.symbol_scale))
                 self.symbol_shader.setUniformValue(self.symbol_shader_transparency, self.transparency / 255.)
                 self.symbol_shader.setUniformValue(self.symbol_shader_scale,        *scale)
+                self.symbol_shader.setUniformValue(self.symbol_shader_translation,  *self.translation)
 
                 if self.filled_symbols:
                     glBindVertexArray(vao_id)
@@ -571,6 +576,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.symbol_shader.release()
 
                 if labels != None:
+                    glColor4f(0, 0, 0, 1)
                     for x, y, z, label in zip(X, Y, Z, labels):
                         x, y, z = self.transform_data_to_plot((x, y, z))
                         if isinstance(label, str):
@@ -668,10 +674,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         def draw_discrete_axis_values(axis, coord_index, normal, axis_map):
             start, end = axis
-            scale = (max(0, self.scale[coord_index] + self.additional_scale[coord_index]))
-            scale *= self.initial_scale[coord_index]
-            start_value = (start[coord_index] / scale) + self.initial_center[coord_index]
-            end_value =   (end[coord_index] / scale)   + self.initial_center[coord_index]
+            start_value = self.transform_plot_to_data(numpy.copy(start))[coord_index]
+            end_value = self.transform_plot_to_data(numpy.copy(end))[coord_index]
             length = end_value - start_value
             offset = normal*0.8
             for key in axis_map.keys():
@@ -699,10 +703,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glVertex3f(*(position-normal*0.2))
                 glVertex3f(*(position+normal*0.2))
                 glEnd()
-                value = position[coord_index] /\
-                    (max(0, self.scale[coord_index] + self.additional_scale[coord_index]))
-                value /= self.initial_scale[coord_index]
-                value += self.initial_center[coord_index]
+                value = self.transform_plot_to_data(numpy.copy(position))[coord_index]
                 position += offset
                 self.renderText(position[0],
                                 position[1],
@@ -801,10 +802,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                              self.y_axis+self.unit_x+self.unit_z,
                              self.y_axis+self.unit_z,
                              self.y_axis]
-        normals = [numpy.array([1,0,0]),
-                   numpy.array([0,0,1]),
-                   numpy.array([-1,0,0]),
-                   numpy.array([0,0,-1])]
+        normals = [numpy.array([1, 0, 0]),
+                   numpy.array([0, 0, 1]),
+                   numpy.array([-1,0, 0]),
+                   numpy.array([0, 0,-1])]
         axis = y_axis_translated[rightmost_visible]
         normal = normals[rightmost_visible]
         draw_axis(axis)
@@ -869,19 +870,26 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if symbols == None:
             symbols = [Symbol.TRIANGLE for _ in range(num_points)]
 
+        # We scale and translate data into almost-unit cube centered around (0,0,0) in plot-space.
+        # It's almost-unit because the length of its edge is specified with view_cube_edge.
+        # This transform is done to ease later calculations and for presentation purposes.
         min = self.min_x, self.min_y, self.min_z = numpy.min(X), numpy.min(Y), numpy.min(Z)
         max = self.max_x, self.max_y, self.max_z = numpy.max(X), numpy.max(Y), numpy.max(Z)
         min = numpy.array(min)
         max = numpy.array(max)
         range_x, range_y, range_z = max-min
-        middle_x, middle_y, middle_z = (min+max) / 2.
-        self.initial_center = (min + max) / 2 
+        self.data_center = (min + max) / 2 
+        self.zoom_stack.append((min, max))
 
         scale_x = self.view_cube_edge / range_x
         scale_y = self.view_cube_edge / range_y
         scale_z = self.view_cube_edge / range_z
 
-        self.initial_scale = [scale_x, scale_y, scale_z]
+        self.data_scale = numpy.array([scale_x, scale_y, scale_z])
+
+        def generate_vertices(symbol):
+            # TODO
+            pass
 
         # Generate vertices for shapes and also indices for outlines.
         vertices = []
@@ -889,9 +897,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         index = 0
         ai = -1 # Array index (used in color-picking).
         for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
-            x -= self.initial_center[0]
-            y -= self.initial_center[1]
-            z -= self.initial_center[2]
+            x -= self.data_center[0]
+            y -= self.data_center[1]
+            z -= self.data_center[2]
             x *= scale_x
             y *= scale_y
             z *= scale_z
@@ -974,14 +982,48 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
-        return
-        # TODO
-        self.initial_center = [(x_max + x_min) / 2.,
-                               (y_max + y_min) / 2.,
-                               (z_max + z_min) / 2.]
-        self.initial_center = numpy.array(self.initial_center)
+        max = numpy.array([x_max, y_max, z_max])
+        min = numpy.array([x_min, y_min, z_min])
         self.selections = []
-        self.updateGL()
+        self.zoom_stack.append((min, max))
+        min, max = map(numpy.copy, [min, max])
+        min -= self.data_center
+        min *= self.data_scale
+        max -= self.data_center
+        max *= self.data_scale
+        center = (max + min) / 2.
+        num_steps = 10
+        new_translation = -numpy.array(center)
+        # Avoid division by zero by adding a small value (this happens when zooming in
+        # on elements with the same value of an attribute).
+        size = numpy.array(map(lambda i: i+0.001 if i == 0 else i, max-min))
+        new_scale = self.view_cube_edge / size
+        translation_step = (new_translation - self.translation) / float(num_steps)
+        scale_step = (new_scale - self.scale) / float(num_steps)
+        # Animate zooming: translate first for a number of steps,
+        # then scale. Make sure it doesn't take too long.
+        start = time.time()
+        for i in range(num_steps):
+            if time.time() - start > 1.:
+                self.translation = new_translation
+                break
+            self.translation = self.translation + translation_step
+            self.updateGL()
+        start = time.time()
+        for i in range(num_steps):
+            if time.time() - start > 1.:
+                self.scale = new_scale
+                break
+            self.scale = self.scale + scale_step
+            self.updateGL()
+
+    def pop_zoom(self):
+        if len(self.zoom_stack) < 2:
+            return
+
+        self.zoom_stack.pop()
+        min, max = self.zoom_stack.pop()
+        self.set_new_zoom(min[0], max[0], min[1], max[1], min[2], max[2])
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
@@ -994,9 +1036,17 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         return img.save(file_name)
 
     def transform_data_to_plot(self, vertex):
-        vertex -= self.initial_center
-        vertex *= self.initial_scale
+        vertex -= self.data_center
+        vertex *= self.data_scale
+        vertex += self.translation
         vertex *= numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+        return vertex
+
+    def transform_plot_to_data(self, vertex):
+        vertex /= numpy.maximum([0, 0, 0], self.scale + self.additional_scale)
+        vertex -= self.translation
+        vertex /= self.data_scale
+        vertex += self.data_center
         return vertex
 
     def get_selection_indices(self):
@@ -1020,8 +1070,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                                    self.camera[2]*self.camera_distance),
                          QVector3D(0, 0, 0),
                          QVector3D(0, 1, 0))
-
-        modelview.scale(*(numpy.maximum([0, 0, 0], self.scale + self.additional_scale)))
 
         proj_model = projection * modelview
         viewport = [0, 0, self.width(), self.height()]
@@ -1073,11 +1121,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                    self.selection_type == SelectionType.ZOOM:
                     self.new_selection = RectangleSelection([pos.x(), pos.y()])
         elif buttons & Qt.RightButton:
-            self.selections = []
-            self.new_selection = None
-            self.state = PlotState.SCALING
-            self.scaling_init_pos = self.mouse_pos
-            self.additional_scale = [0, 0, 0]
+            if QApplication.keyboardModifiers() & Qt.ShiftModifier:
+                self.selections = []
+                self.new_selection = None
+                self.state = PlotState.SCALING
+                self.scaling_init_pos = self.mouse_pos
+                self.additional_scale = [0, 0, 0]
+            else:
+                self.pop_zoom()
             self.updateGL()
         elif buttons & Qt.MiddleButton:
             self.state = PlotState.ROTATING
@@ -1124,7 +1175,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 off_x = numpy.cross(self.camera, [0, 1, 0]) * (dx / self.move_factor)
                 #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
                 # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
-                #self.initial_center += off_x
+                #self.data_center += off_x
             else:
                 self.yaw += dx / self.rotation_factor
                 self.pitch += dy / self.rotation_factor
@@ -1200,6 +1251,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.commands = []
         self.selections = []
         self.legend.clear()
+        self.zoom_stack = []
         self.x_axis_title = self.y_axis_title = self.z_axis_title = ''
         self.x_axis_map = self.y_axis_map = self.z_axis_map = None
         self.updateGL()

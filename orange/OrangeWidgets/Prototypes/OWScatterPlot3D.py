@@ -215,7 +215,8 @@ class OWScatterPlot3D(OWWidget):
     def selection_changed_callback(self):
         if self.plot.selection_type == SelectionType.ZOOM:
             indices = self.plot.get_selection_indices()
-            if len(indices) == 0:
+            if len(indices) < 1:
+                self.plot.selections = []
                 return
             X, Y, Z = self.data_array[:, self.x_attr],\
                       self.data_array[:, self.y_attr],\
