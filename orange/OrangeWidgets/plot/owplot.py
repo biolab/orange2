@@ -160,6 +160,7 @@ class OWPlot(orangeplot.Plot):
         self.mouseMoveEventHandler = None
         self.mouseReleaseEventHandler = None
         self.mouseStaticClickHandler = self.mouseStaticClick
+        self.static_click = False
         
         self._marker_items = []
         
