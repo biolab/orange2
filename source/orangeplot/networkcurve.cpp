@@ -5,15 +5,52 @@
 
 #include <QtCore/qmath.h>
 
+const int ChangeableColorIndex = 0;
+
+/************/
+/* NodeItem */
+/************/
+
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
 {
     set_index(index);
     set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
+    setZValue(0.5);
 }
 
 NodeItem::~NodeItem()
 {
 
+}
+
+void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    Q_UNUSED(option)
+    Q_UNUSED(widget)
+
+    if (m_selected) {
+    	painter->setPen(QPen(Qt::yellow, 3));
+    	painter->setBrush(color());
+    	QRectF rect(-(size() + 4) / 2, -(size() + 4) / 2, size() + 4, size() + 4);
+    	painter->drawEllipse(rect);
+    } else if (m_marked) {
+    	painter->setPen(color());
+    	painter->setBrush(color());
+    	QRectF rect(-size() / 2, -size() / 2, size(), size());
+    	painter->drawEllipse(rect);
+    } else {
+    	painter->setPen(color());
+    	painter->setBrush(Qt::white);
+    	QRectF rect(-size() / 2, -size() / 2, size(), size());
+    	painter->drawEllipse(rect);
+    }
+}
+
+void NodeItem::set_coordinates(double x, double y)
+{
+    m_x = x;
+    m_y = y;
+    setPos(QPointF(m_x, m_y) * m_graph_transform);
 }
 
 void NodeItem::set_index(int index)
@@ -42,21 +79,14 @@ void NodeItem::set_x(double x)
     set_coordinates(x, m_y);
 }
 
-void NodeItem::set_y(double y)
-{
-    set_coordinates(m_x, y);
-}
-
-void NodeItem::set_coordinates(double x, double y)
-{
-    m_x = x;
-    m_y = y;
-    setPos(QPointF(m_x, m_y) * m_graph_transform);
-}
-
 double NodeItem::x() const
 {
     return m_x;
+}
+
+void NodeItem::set_y(double y)
+{
+    set_coordinates(m_x, y);
 }
 
 double NodeItem::y() const
@@ -72,6 +102,26 @@ void NodeItem::set_label(const QString& label)
 QString NodeItem::label() const
 {
     return m_label;
+}
+
+void NodeItem::set_selected(bool selected)
+{
+	m_selected = selected;
+}
+
+bool NodeItem::is_selected() const
+{
+	return m_selected;
+}
+
+void NodeItem::set_marked(bool marked)
+{
+	m_marked = marked;
+}
+
+bool NodeItem::is_marked() const
+{
+	return m_marked;
 }
 
 void NodeItem::set_tooltip(const QString& tooltip)
@@ -99,6 +149,10 @@ void NodeItem::remove_connected_edge(EdgeItem* edge)
     m_connected_edges.removeAll(edge);
 }
 
+/************/
+/* EdgeItem */
+/************/
+
 EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsLineItem(parent, scene)
 {
     set_u(u);
@@ -107,6 +161,7 @@ EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsSce
     QPen p = pen();
 	p.setWidthF(m_size);
 	setPen(p);
+	setZValue(0);
 }
 
 EdgeItem::~EdgeItem()
@@ -192,9 +247,14 @@ double EdgeItem::weight() const
     return m_weight;
 }
 
+/****************/
+/* NetworkCurve */
+/****************/
+
 NetworkCurve::NetworkCurve(QGraphicsItem* parent, QGraphicsScene* scene): Curve(parent, scene)
 {
-
+	 m_min_node_size = 5;
+	 m_max_node_size = 5;
 }
 
 NetworkCurve::~NetworkCurve()
@@ -373,4 +433,31 @@ void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
     m_nodes = nodes;
 }
 
+void NetworkCurve::set_node_color(QMap<int, QColor*> colors)
+{
+	QMap<int, QColor*>::Iterator it;
+	for (it = colors.begin(); it != colors.end(); ++it)
+	{
+		m_nodes[it.key()]->set_color(*it.value());
+	}
+}
 
+void NetworkCurve::set_min_node_size(double size)
+{
+	m_min_node_size = size;
+}
+
+double NetworkCurve::min_node_size() const
+{
+	return m_min_node_size;
+}
+
+void NetworkCurve::set_max_node_size(double size)
+{
+	m_max_node_size = size;
+}
+
+double NetworkCurve::max_node_size() const
+{
+	return m_max_node_size;
+}

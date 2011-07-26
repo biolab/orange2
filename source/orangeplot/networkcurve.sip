@@ -8,10 +8,14 @@ public:
     NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent /TransferThis/ = 0);
     virtual ~NodeItem();
     
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    
     void set_coordinates(double x, double y);
+    
     void set_x(double x);
-    void set_y(double y);
     double x() const;
+    
+    void set_y(double y);
     double y() const;
     
     void set_graph_transform(const QTransform& transform);
@@ -22,6 +26,13 @@ public:
     
     void set_label(const QString& label);
     QString label() const;
+    
+    void set_selected(bool selected);
+    bool is_selected() const;
+
+    void set_marked(bool marked);
+    bool is_marked() const;
+    
     void set_tooltip(const QString& tooltip);
     
     void set_uuid(int uuid);
@@ -80,5 +91,15 @@ public:
     
     void set_nodes(QMap<int, NodeItem*> nodes);
     void set_edges(Edges edges);
+    
+    void set_node_color(QMap<int, QColor*> colors);
+    
+    void set_min_node_size(double size);
+    double min_node_size() const;
+
+    void set_max_node_size(double size);
+    double max_node_size() const;
 };
+
+
 

@@ -12,11 +12,15 @@ class NodeItem : public Point
 public:
     NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~NodeItem();
-    
+
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+
     void set_coordinates(double x, double y);
+
     void set_x(double x);
-    void set_y(double y);
     double x() const;
+
+    void set_y(double y);
     double y() const;
     
     void set_graph_transform(const QTransform& transform);
@@ -27,8 +31,15 @@ public:
     
     void set_label(const QString& label);
     QString label() const;
+
+    void set_selected(bool selected);
+    bool is_selected() const;
+
+    void set_marked(bool marked);
+    bool is_marked() const;
+
     void set_tooltip(const QString& tooltip);
-    
+
     void set_uuid(int uuid);
     int uuid() const;
     
@@ -48,12 +59,12 @@ private:
     
     int m_index;
     bool m_marked;
-    bool m_highlight;
+    bool m_selected;
     QString m_label;
     int m_uuid;
     
     QList<EdgeItem*> m_connected_edges;
-     QTransform m_graph_transform;
+    QTransform m_graph_transform;
 };
 
 struct EdgeItem : public QGraphicsLineItem
@@ -86,7 +97,7 @@ public:
     
     void set_arrows(Arrows arrows);
     void set_arrow(Arrow arrow, bool enable);
-     Arrows arrows();
+    Arrows arrows();
     
 private:
     Arrows m_arrows;
@@ -140,9 +151,20 @@ public:
     void set_nodes(Nodes nodes);
     void set_edges(Edges edges);
 
+    void set_node_color(QMap<int, QColor*> colors);
+
+    void set_min_node_size(double size);
+    double min_node_size() const;
+
+    void set_max_node_size(double size);
+    double max_node_size() const;
+
 private:
     Nodes m_nodes;
     Edges m_edges;
+
+    double m_min_node_size;
+    double m_max_node_size;
 };
 
 #endif // NETWORKCURVE_H
