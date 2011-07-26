@@ -353,20 +353,20 @@ class OWScatterPlotQt(OWWidget):
         self.progressBar.setProgress(current)
 
     def alphaChange(self):
-        for curve in self.graph.itemList():
+        for curve in self.graph.plot_items():
             if isinstance(curve, OWCurve):
                 color = curve.color()
-                color.setAlpha(self.graph.alphaValue)
-                curve.setColor(color)
+                color.setAlpha(self.graph.alpha_value)
+                curve.set_color(color)
         self.graph.replot()
 
     def pointSizeChange(self):
         if self.attrSize:
             self.updateGraph()
         else:
-            for curve in self.graph.itemList():
+            for curve in self.graph.plot_items():
                 if isinstance(curve, OWCurve):
-                    curve.setPointSize(self.graph.pointWidth)
+                    curve.set_point_size(self.graph.point_width)
             self.graph.replot()
 
     def setShowGridlines(self):
