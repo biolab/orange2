@@ -277,7 +277,7 @@ class OWDistributionGraphQt(OWPlot):
                 key.setPen(QPen(Qt.black))
             else:
                 key.setColor(Qt.black)
-                key.setSymbol(OWPoint.Diamond)
+                key.set_symbol(OWPoint.Diamond)
                 key.setPointSize(7)
         else:
             self.enableYRaxis(0)
@@ -388,19 +388,19 @@ class OWDistributionGraphQt(OWPlot):
             else:
                 newSymbol = OWPoint.Diamond
                 
-            self.probCurveKey.setData(xs, mps)
-            self.probCurveKey.setSymbol(newSymbol)
+            self.probCurveKey.set_data(xs, mps)
+            self.probCurveKey.set_symbol(newSymbol)
 
             if self.variableContinuous:
-                self.probCurveKey.setStyle(OWCurve.Lines)
+                self.probCurveKey.set_style(OWCurve.Lines)
                 if self.showConfidenceIntervals:
                     self.probCurveUpperCIKey.setData(xs, ups)
                     self.probCurveLowerCIKey.setData(xs, lps)
             else:
                 if self.showConfidenceIntervals:
-                    self.probCurveKey.setStyle(OWCurve.UserCurve)
+                    self.probCurveKey.set_style(OWCurve.UserCurve)
                 else:
-                    self.probCurveKey.setStyle(OWCurve.Dots)
+                    self.probCurveKey.set_style(OWCurve.Dots)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)

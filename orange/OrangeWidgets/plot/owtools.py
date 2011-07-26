@@ -85,7 +85,7 @@ class PolygonCurve(OWCurve):
         self.set_brush(brush)
         
     def update_properties(self):
-        self._polygon_item.setPolygon(self.graphTransform().map(self._data_polygon))
+        self._polygon_item.setPolygon(self.graph_transform().map(self._data_polygon))
         self._polygon_item.setPen(self.pen())
         self._polygon_item.setBrush(self.brush())
         
