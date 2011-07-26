@@ -92,7 +92,8 @@ public:
     void set_nodes(QMap<int, NodeItem*> nodes);
     void set_edges(Edges edges);
     
-    void set_node_color(QMap<int, QColor*> colors);
+    void set_node_color(QMap<int, QColor*> colors);    
+    void set_edge_size(QMap<int, double> sizes = QMap<int, double>(), double min_size=0, double max_size=0);
     
     void set_min_node_size(double size);
     double min_node_size() const;
