@@ -62,8 +62,8 @@ class OWLineStyle:
 class OWPalette:
     def __init__(self):
         self.grid_style = OWLineStyle(Qt.gray,  1,  Qt.SolidLine)
-        self.line_styles = [ OWLineStyle(QColor(255, 127, 0), 1, Qt.SolidLine), ## Orange, of course
-                             OWLineStyle(Qt.green, 1, Qt.DashLine), 
+        self.line_styles = [OWLineStyle(QColor(255, 127, 0), 1, Qt.SolidLine), ## Orange, of course
+                            OWLineStyle(Qt.green, 1, Qt.DashLine), 
                             OWLineStyle(Qt.red, 1, Qt.DotLine), 
                             OWLineStyle(Qt.blue, 1,  Qt.SolidLine)]
         self.point_styles = []
