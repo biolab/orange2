@@ -1,5 +1,5 @@
 from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QPen, QBrush
-from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug
+from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug, QPropertyAnimation
 
 from owcurve import *
 
@@ -18,6 +18,27 @@ def resize_plot_item_list(lst, size, item_type, parent):
         return lst + [item_type(parent) for i in range(size - n)]
     else:
         return lst
+        
+use_animations = True
+_animations = []
+
+def move_item(item, pos, duration = None):
+    for a in _animations:
+        if a.state() == QPropertyAnimation.Stopped:
+            _animations.remove(a)
+    if use_animations:
+        a = QPropertyAnimation(item, 'pos')
+        a.setStartValue(item.pos())
+        a.setEndValue(pos)
+        if duration:
+            a.setDuration(duration)
+        a.start(QPropertyAnimation.KeepWhenStopped)
+        _animations.append(a)
+    else:
+        item.setPos(x, y)
+
+def move_item_xy(item, x, y, duration = None):
+    move_item(item, QPointF(x, y), duration)
         
 #A dynamic tool tip class
 class TooltipManager:

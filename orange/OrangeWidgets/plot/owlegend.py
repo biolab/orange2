@@ -1,10 +1,11 @@
 
 
-from PyQt4.QtGui import QGraphicsItem, QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen
-from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation
+from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen
+from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF
 
 from owpoint import *
-from owcurve import *
+from owcurve import OWCurve
+from owtools import move_item, move_item_xy
 
 PointColor = 1
 PointSize = 2
@@ -32,9 +33,11 @@ class OWLegendItem(QGraphicsObject):
     def paint(self, painter, option, widget):
         pass
         
-class OWLegend(QGraphicsItem):
+class OWLegend(QGraphicsObject):
     def __init__(self, graph, scene):
-        QGraphicsItem.__init__(self, None, scene)
+        QGraphicsObject.__init__(self)
+        if scene:
+            scene.addItem(self)
         self.graph = graph
         self.curves = []
         self.items = []
@@ -51,11 +54,15 @@ class OWLegend(QGraphicsItem):
         self.setFlag(self.ItemHasNoContents, True)
         self.mouse_down = False
         self._orientation = Qt.Vertical
-        self.animated = True        
         self._center_point = None
-        self.max_width = 0
+        self.max_size = QSizeF()
+        self._floating = True
+        self._floating_animation = None
 
     def clear(self):
+        for i in self.items:
+            i.setParentItem(None)
+            self.scene().removeItem(i)
         self.items = []
         self.update()
         
@@ -67,51 +74,46 @@ class OWLegend(QGraphicsItem):
     def update(self):
         self._animations = []
         self.box_rect = QRectF()
-        if self._orientation == Qt.Vertical:
-            y = 0
-            for item in self.items:
-                self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
-                y = y + item.boundingRect().height()
-        elif self._orientation == Qt.Horizontal:
-            x = 0
-            y = 0
-            for item in self.items:
-                if self.max_width and x and x + item.boundingRect().width() > self.max_width:
-                    x = 0
-                    y = y + item.boundingRect().height()
-                self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
-                x = x + item.boundingRect().width()
-        
-        if self._center_point:
-            self.setPos(self.pos() + self._center_point - self.box_rect.center())
         x, y = 0, 0
         if self._orientation == Qt.Vertical:
             for item in self.items:
-                self.move_item(item, x, y)
+                if self.max_size.height() and y and y + item.boundingRect().height() > self.max_size.height():
+                    y = 0
+                    x = x + item.boundingRect().width()
+                self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
+                move_item_xy(item, x, y)
                 y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
-            x = 0
-            y = 0
             for item in self.items:
-                if self.max_width and x and x + item.boundingRect().width() > self.max_width:
+                if self.max_size.width() and x and x + item.boundingRect().width() > self.max_size.width():
                     x = 0
                     y = y + item.boundingRect().height()
-                self.move_item(item, x, y)
+                self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
+                move_item_xy(item, x, y)
                 x = x + item.boundingRect().width()
+        else:
+            qDebug('A bad orientation of the legend')
     
     def mouseMoveEvent(self, event):
-        self.setPos(self.pos() + event.scenePos() - event.lastScenePos())
         self.graph.notify_legend_moved(event.scenePos())
+        if self._floating:
+            p = event.scenePos() - self._mouse_down_pos
+            if self._floating_animation and self._floating_animation.state() == QPropertyAnimation.Running:
+                self.set_pos_animated(p)
+            else:
+                self.setPos(p)
         event.accept()
             
     def mousePressEvent(self, event):
         self.setCursor(Qt.DragMoveCursor)
         self.mouse_down = True
+        self._mouse_down_pos = event.scenePos() - self.pos()
         event.accept()
         
     def mouseReleaseEvent(self, event):
         self.unsetCursor()
         self.mouse_down = False
+        self._mouse_down_pos = QPointF()
         event.accept()
 
     def boundingRect(self):
@@ -128,13 +130,27 @@ class OWLegend(QGraphicsItem):
             else:
                 self._center_point = self.mapFromScene(origin_point)
             self.update()
-        
-    def move_item(self, item, x, y):
-        if self.animated:
-            a = QPropertyAnimation(item, 'pos')
-            a.setStartValue(item.pos())
-            a.setEndValue(QPointF(x,y))
-            a.start(QPropertyAnimation.DeleteWhenStopped)
-            self._animations.append(a)
+            
+    def set_pos_animated(self, pos):
+        if (self.pos() - pos).manhattanLength() < 6:
+            self.setPos(pos)
         else:
-            item.setPos(x, y)
+            t = 250
+            if self._floating_animation and self._floating_animation.state() == QPropertyAnimation.Running:
+                t = t - self._floating_animation.currentTime()
+                self._floating_animation.stop()
+            self._floating_animation = QPropertyAnimation(self, 'pos')
+            self._floating_animation.setStartValue(self.pos())
+            self._floating_animation.setEndValue(pos)
+            self._floating_animation.setDuration(t)
+            self._floating_animation.start(QPropertyAnimation.KeepWhenStopped)
+        
+    def set_floating(self, floating, pos=None):
+        if floating == self._floating:
+            return
+        self._floating = floating
+        if pos:
+            if floating:
+                self.set_pos_animated(pos - self._mouse_down_pos)
+            else:
+                self.set_pos_animated(pos)

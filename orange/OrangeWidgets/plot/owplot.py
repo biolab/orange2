@@ -451,7 +451,8 @@ class OWPlot(orangeplot.Plot):
             self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
             graph_rect.setTop(graph_rect.top() + self.title_margin)
         
-        self._legend_outside_area = graph_rect
+        self._legend_outside_area = QRectF(graph_rect)
+        self._legend.max_size = self._legend_outside_area.size()
         
         if self.show_legend:
             if not self._legend_moved:
@@ -948,20 +949,29 @@ class OWPlot(orangeplot.Plot):
         self._legend_moved = True
         l = self.legend_rect()
         g = getattr(self, '_legend_outside_area', QRectF())
-        offset = 2
+        p = QPointF()
         rect = QRectF()
+        offset = 20
         if pos.x() > g.right() - offset:
             rect.setRight(l.width())
+            p = g.topRight() - self._legend.boundingRect().topRight()
         elif pos.x() < g.left() + offset:
             rect.setLeft(l.width())
+            p = g.topLeft()
         elif pos.y() < g.top() + offset:
             rect.setTop(l.height())
+            p = g.topLeft()
         elif pos.y() > g.bottom() - offset:
             rect.setBottom(l.height())
+            p = g.bottomLeft() - self._legend.boundingRect().bottomLeft()
+            
+        if p.isNull():
+            self._legend.set_floating(True, pos)
+        else:
+            self._legend.set_floating(False, p)
+            
         if rect != self._legend_margin:
             orientation = Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical
-            if orientation == Qt.Horizontal:
-                self._legend.max_width = g.width()
             self._legend.set_orientation(orientation, pos)
             self._legend_animation = QPropertyAnimation(self, 'legend_margin')
             self._legend_animation.setStartValue(self._legend_margin)
