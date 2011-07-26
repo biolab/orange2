@@ -142,10 +142,8 @@ class OWLinProjQt(OWVisWidget):
         # #####
         self.extraTopBox = OWGUI.widgetBox(self.SettingsTab, orientation = "vertical")
         self.extraTopBox.hide()
-
-        box = OWGUI.widgetBox(self.SettingsTab, "Point Properties")
-        OWGUI.hSlider(box, self, 'graph.pointWidth', label = "Size: ", minValue=1, maxValue=20, step=1, callback = self.graph.updateCurves)
-        OWGUI.hSlider(box, self, 'graph.alphaValue', label = "Transparency: ", minValue=0, maxValue=255, step=10, callback = self.graph.updateCurves)
+        
+        self.graph.gui.point_properties_box(self.SettingsTab)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of range):', callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
@@ -156,14 +154,14 @@ class OWLinProjQt(OWVisWidget):
 
         box = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
         #OWGUI.checkBox(box, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
+        self.graph.gui.show_legend_check_box(box)
         bbox = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
         OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
         OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
-        OWGUI.checkBox(box, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
+        self.graph.gui.filled_symbols_check_box(box)
+        self.graph.gui.antialiasing_check_box(box)
         wbox = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(wbox, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         smallWidget = OWGUI.SmallWidgetLabel(wbox, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")

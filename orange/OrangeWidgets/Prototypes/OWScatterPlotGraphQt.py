@@ -403,6 +403,13 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 ##            colorIndex = self.discPalette[classIndices[self.rawData.domain.classVar[classValue].value]]
 ##            for (p1, p2) in closure:
 ##                self.addCurve("", color, color, 1, QwtPlotCurve.Lines, OWPoint.NoSymbol, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
+    
+    def update_point_size(self):
+        if self.scatterWidget.attrSize:
+            self.scatterWidget.updateGraph()
+        else:
+            self.update_curves()
+    
 
     def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return

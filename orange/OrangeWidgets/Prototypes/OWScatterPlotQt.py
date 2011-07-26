@@ -103,9 +103,7 @@ class OWScatterPlotQt(OWWidget):
         # ####################################
         # SETTINGS TAB
         # point width
-        pointBox = OWGUI.widgetBox(self.SettingsTab, "Point Properties")
-        OWGUI.hSlider(pointBox, self, 'graph.pointWidth', label = "Symbol size:   ", minValue=1, maxValue=20, step=1, callback = self.pointSizeChange)
-        OWGUI.hSlider(pointBox, self, 'graph.alphaValue', label = "Transparency: ", minValue=0, maxValue=255, step=10, callback = self.alphaChange)
+        self.graph.gui.point_properties_box(self.SettingsTab)
 
         # #####
         # jittering options
@@ -118,11 +116,10 @@ class OWScatterPlotQt(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
-        self.graph.gui.show_legend_check_box(box4)
-        self.graph.gui.filled_symbols_check_box(box4)
-        OWGUI.checkBox(box4, self, 'showGridlines', 'Show gridlines', callback = self.setShowGridlines)
-        self.graph.gui.antialiasing_check_box(box4)
-
+        
+        g = self.graph.gui
+        g.add_widgets([g.ShowLegend, g.ShowFilledSymbols, g.ShowGridLines, g.Antialiasing], box4)
+        
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         smallWidget = OWGUI.SmallWidgetLabel(box5, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
@@ -351,24 +348,7 @@ class OWScatterPlotQt(OWWidget):
     def updateProgress(self, current, total):
         self.progressBar.setTotalSteps(total)
         self.progressBar.setProgress(current)
-
-    def alphaChange(self):
-        for curve in self.graph.plot_items():
-            if isinstance(curve, OWCurve):
-                color = curve.color()
-                color.setAlpha(self.graph.alpha_value)
-                curve.set_color(color)
-        self.graph.replot()
-
-    def pointSizeChange(self):
-        if self.attrSize:
-            self.updateGraph()
-        else:
-            for curve in self.graph.plot_items():
-                if isinstance(curve, OWCurve):
-                    curve.set_point_size(self.graph.point_width)
-            self.graph.replot()
-
+        
     def setShowGridlines(self):
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)

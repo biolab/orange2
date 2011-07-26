@@ -129,6 +129,7 @@ class OWPlot(orangeplot.Plot):
         self.point_width = 5
         self.show_filled_symbols = True
         self.alpha_value = 1
+        self.show_grid = False
         
         self.palette = shared_palette()
         self.curveSymbols = self.palette.curve_symbols
@@ -598,6 +599,10 @@ class OWPlot(orangeplot.Plot):
     def update_filled_symbols(self):
         ## TODO: Implement this in Curve.cpp
         pass
+    
+    def update_grid(self):
+        ## TODO: Implement gridlines
+        pass
         
     def legend(self):
         return self._legend
@@ -1008,7 +1013,7 @@ class OWPlot(orangeplot.Plot):
     def update_curves(self):
         for c in self.plot_items():
             if isinstance(c, orangeplot.Curve):
-                au = c.autoUpdate()
+                au = c.auto_update()
                 c.set_auto_update(False)
                 c.set_point_size(self.point_width)
                 color = c.color()
@@ -1016,6 +1021,9 @@ class OWPlot(orangeplot.Plot):
                 c.set_color(color)
                 c.set_auto_update(au)
                 c.update_properties()
-                
+    
+    update_point_size = update_curves
+    update_alpha_value = update_curves
+            
     def update_antialiasing(self):
         self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
