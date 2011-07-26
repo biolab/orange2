@@ -409,7 +409,7 @@ class OWPlot(orangeplot.Plot):
         for id,item in self.axes.iteritems():
             if not user_only or id >= UserAxis:
                 ids.append(id)
-                self.scene().remove_item(item)
+                self.scene().removeItem(item)
         for id in ids:
             del self.axes[id]
         
