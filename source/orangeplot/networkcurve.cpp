@@ -444,8 +444,12 @@ void NetworkCurve::set_node_color(QMap<int, QColor*> colors)
 	}
 }
 
-void NetworkCurve::set_edge_size(QMap<int, double> sizes, double min_size, double max_size)
+void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, double max_size)
 {
+	// TODO inverted
+	NodeItem* node;
+	Nodes::ConstIterator nit;
+
 	double min_size_value = std::numeric_limits<double>::max();
 	double max_size_value = std::numeric_limits<double>::min();
 
@@ -465,7 +469,30 @@ void NetworkCurve::set_edge_size(QMap<int, double> sizes, double min_size, doubl
 		}
 	}
 
-	if (min_size > 0 || max_size > 0)
+	// find min and max size value in nodes dict
+	bool min_changed = true;
+	bool max_changed = true;
+	for (nit = m_nodes.constBegin(); nit != m_nodes.constEnd(); ++nit)
+	{
+		node = nit.value();
+
+		if (node->m_size_value < min_size_value)
+		{
+			min_size_value = node->m_size_value;
+			min_changed = false;
+		}
+
+		if (node->m_size_value > max_size_value)
+		{
+			max_size_value = node->m_size_value;
+			max_changed = false;
+		}
+	}
+
+	double size_span = max_size_value - min_size_value;
+	double node_size_span = m_max_node_size - m_min_node_size;
+
+	if (min_size > 0 || max_size > 0 || min_changed || max_changed)
 	{
 		if (min_size > 0)
 		{
@@ -477,11 +504,47 @@ void NetworkCurve::set_edge_size(QMap<int, double> sizes, double min_size, doubl
 			m_max_node_size = max_size;
 		}
 
-		// TODO: recalibrate all
+		// recalibrate all
+		qDebug() << "recalibrating all";
+		qDebug() << "min_size_value " << min_size_value << " max_size_value " << max_size_value << " m_min_node_size " << m_min_node_size << " m_max_node_size " << m_max_node_size;
+
+		if (size_span > 0)
+		{
+			for (nit = m_nodes.constBegin(); nit != m_nodes.constEnd(); ++nit)
+			{
+				node = nit.value();
+				node->set_size((node->m_size_value - min_size_value) / size_span * node_size_span + m_min_node_size);
+			}
+		}
+		else
+		{
+			for (nit = m_nodes.constBegin(); nit != m_nodes.constEnd(); ++nit)
+			{
+				node = nit.value();
+				node->set_size(m_min_node_size);
+			}
+		}
 	}
 	else if (sizes.size() > 0)
 	{
-		// TODO: recalibrate given
+		// recalibrate given
+		if (size_span > 0)
+		{
+			for (it = sizes.begin(); it != sizes.end(); ++it)
+			{
+				node = m_nodes[it.key()];
+				node->set_size((node->m_size_value - min_size_value) / size_span * node_size_span + m_min_node_size);
+			}
+		}
+		else
+		{
+			for (it = sizes.begin(); it != sizes.end(); ++it)
+			{
+				node = m_nodes[it.key()];
+				node->set_size(m_min_node_size);
+			}
+		}
+
 	}
 }
 
