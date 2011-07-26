@@ -39,6 +39,9 @@ class NetworkCurve(orangeplot.NetworkCurve):
       self.name = "Network Curve"
       self.showEdgeLabels = 0
       
+  def set_node_size(self, values={}, min_size=0, max_size=0):
+      orangeplot.NetworkCurve.set_node_size(self, values, min_size, max_size)
+      
   def move_selected_nodes(self, dx, dy):
     selected = self.get_selected_nodes()
     
@@ -240,8 +243,6 @@ class OWNxCanvas(OWPlot):
         self.maxEdgeWeight = 0
         self.maxEdgeSize = 1
         
-        self.maxVertexSize = 5
-        self.minVertexSize = 5
         self.invertEdgeSize = 0
         self.showComponentAttribute = None
         self.forceVectors = None
@@ -275,9 +276,6 @@ class OWNxCanvas(OWPlot):
     
     def get_marked_nodes(self):
       return self.networkCurve.get_marked_nodes()
-        
-    def getVertexSize(self, index):
-        return 6
         
     def set_hidden_nodes(self, nodes):
         self.networkCurve.set_hidden_nodes(nodes)
@@ -1308,58 +1306,8 @@ class OWNxCanvas(OWPlot):
 #            for edge in self.networkCurve.edges:
 #                edge.pen = QPen(edge.pen.color(), 1)
 #                edge.pen.setCapStyle(Qt.RoundCap)
-        pass                
-    def setVerticesSize(self, column=None, inverted=0):
-        if self.layout is None or self.graph is None or self.items is None:
-            return
-        
-        column = str(column)
-        
-        if column in self.items.domain or (column.startswith("num of ") and column.replace("num of ", "") in self.items.domain):
-            values = []
-            
-            if column in self.items.domain:
-                values = [self.items[x][column].value for x in self.graph if not self.items[x][column].isSpecial()]
-            else:
-                values = [len(self.items[x][column.replace("num of ", "")].value.split(',')) for x in self.graph]
-          
-            minVertexWeight = float(min(values or [0]))
-            maxVertexWeight = float(max(values or [0]))
-            
-            if maxVertexWeight - minVertexWeight == 0:
-                k = 1 #doesn't matter
-            else:
-                k = (self.maxVertexSize - self.minVertexSize) / (maxVertexWeight - minVertexWeight)
-            
-            def getValue(v):
-                if v.isSpecial():
-                    return minVertexWeight
-                else:
-                    return float(v)
-                 
-            if inverted:
-                for key, vertex in self.networkCurve.vertices.iteritems():
-                    if column in self.items.domain:
-                        vertex.size = self.maxVertexSize - ((getValue(self.items[vertex.index][column]) - minVertexWeight) * k)
-                    else:
-                        vertex.size = self.maxVertexSize - ((len(self.items[vertex.index][column.replace("num of ", "")].value.split(',')) - minVertexWeight) * k)
-                    
-                    
-                    vertex.pen.setWidthF(1 + float(vertex.size) / 20)
-            else:
-                for key, vertex in self.networkCurve.vertices.iteritems():
-                    if column in self.items.domain:
-                        vertex.size = (getValue(self.items[vertex.index][column]) - minVertexWeight) * k + self.minVertexSize
-                    else:
-                        vertex.size = (float(len(self.items[vertex.index][column.replace("num of ", "")].value.split(','))) - minVertexWeight) * k + self.minVertexSize
-                        
-                    #print vertex.size
-                    vertex.pen.setWidthF(1 + float(vertex.size) / 20)
-        else:
-            for key, vertex in self.networkCurve.vertices.iteritems():
-                vertex.size = self.maxVertexSize
-                vertex.pen.setWidthF(1 + float(vertex.size) / 20)
-      
+        pass
+    
     def updateCanvas(self):
         self.updateData()
         self.replot()  

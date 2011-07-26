@@ -132,8 +132,8 @@ class OWNxExplorerQt(OWWidget):
         self.mainArea.layout().addWidget(self.networkCanvas)
         
         self.networkCanvas.maxLinkSize = self.maxLinkSize
-        self.networkCanvas.minVertexSize = self.minVertexSize
-        self.networkCanvas.maxVertexSize = self.maxVertexSize
+        self.networkCanvas.networkCurve.set_min_node_size(self.minVertexSize)
+        self.networkCanvas.networkCurve.set_max_node_size(self.maxVertexSize)
         
         self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
         
@@ -1397,11 +1397,7 @@ class OWNxExplorerQt(OWWidget):
             self.optMethod = 0
             self.graph_layout_method()            
             
-        if self.vertexSize > 0:
-            self.networkCanvas.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
-        else:
-            self.networkCanvas.setVerticesSize()
-            
+        self.setVertexSize()
         self.setVertexColor()
         self.setEdgeColor()
             
@@ -1819,15 +1815,27 @@ class OWNxExplorerQt(OWWidget):
         if self.minVertexSize > self.maxVertexSize:
             self.maxVertexSize = self.minVertexSize
         
-        self.networkCanvas.minVertexSize = self.minVertexSize
-        self.networkCanvas.maxVertexSize = self.maxVertexSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         
-        if self.vertexSize > 0:
-            self.networkCanvas.setVerticesSize(self.lastVertexSizeColumn, self.invertSize)
-        else:
-            self.networkCanvas.setVerticesSize()
+        column = str(self.vertexSizeCombo.currentText())
+        items = self.graph_base.items()
+        values = {}
+        if column in items.domain or (column.startswith("num of ") and column.replace("num of ", "") in items.domain):
+            if column in items.domain:
+                values = dict((x, items[x][column].value) for x in self.graph if not items[x][column].isSpecial())
+            else:
+                values = dict((x, len(items[x][column.replace("num of ", "")].value.split(','))) for x in self.graph)
+        
+        if len(values) == 0:
+            values = dict((node, 1.) for node in self.graph)
             
+        if self.invertSize:
+            # TODO: inverted
+            self.networkCanvas.networkCurve.set_node_size(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
+        else:
+            self.networkCanvas.networkCurve.set_node_size(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
+            
+        self.networkCanvas.networkCurve.set_dirty()
         self.networkCanvas.replot()
         
     def setFontSize(self):
