@@ -1,4 +1,7 @@
 """
+###################################
+Discretization (``discretization``)
+###################################
 
 .. index:: discretization
 

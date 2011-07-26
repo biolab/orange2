@@ -1,4 +1,7 @@
 """
+#########################
+Selection (``selection``)
+#########################
 
 .. index:: feature selection
 

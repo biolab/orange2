@@ -1,4 +1,8 @@
 """
+#####################
+Scoring (``scoring``)
+#####################
+
 .. index:: feature scoring
 
 .. index:: 
