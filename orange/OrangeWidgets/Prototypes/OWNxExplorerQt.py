@@ -1785,8 +1785,8 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.set_node_color(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
+        #self.networkCanvas.updateData()
+        #self.networkCanvas.replot()
         
     def setEdgeColor(self):
         if self.graph is None:

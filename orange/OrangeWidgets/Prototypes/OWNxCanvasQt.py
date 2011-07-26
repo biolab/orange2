@@ -47,16 +47,6 @@ class NetworkCurve(orangeplot.NetworkCurve):
       
     self.update_properties()
     return selected
-  
-  def set_node_color(self, v, color):
-      pen = self.vertices[v].pen
-      self.vertices[v].color = color
-      self.vertices[v].pen = QPen(color, pen.width())
-
-  def set_nodes_color(self, vertices, color):
-      for v in vertices:
-          v.color = color
-          v.pen = QPen(color, v.pen.width())
       
   def set_edge_color(self, index, color, nocolor=0):
       pen = self.edges[index].pen
@@ -980,38 +970,36 @@ class OWNxCanvas(OWPlot):
 #        self.replot()
     
     def set_node_color(self, attribute, nodes=None):
-#        if self.graph is None:
-#            return
-#        
-#        if nodes is None:
-#            nodes = self.networkCurve.vertices.itervalues()
-#        else:
-#            nodes = (self.networkCurve.vertices[nodes] for node in nodes) 
-#            
-#        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
-#    
-#        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
-#            for vertex in nodes:
-#                v = vertex.index
-#                newColor = self.discPalette[0]
-#                
-#                if str(self.items[v][colorIndex]) != "?":
-#                    if maxValue == minValue:
-#                        newColor = self.discPalette[0]
-#                    else:
-#                        value = (float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
-#                        newColor = self.contPalette[value]
-#                    
-#                self.networkCurve.set_node_color(v, newColor)
-#                
-#        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
-#            for vertex in nodes:
-#                v = vertex.index
-#                newColor = self.discPalette[colorIndices[self.items[v][colorIndex].value]]
-#                self.networkCurve.set_node_color(v, newColor)
-#        else:
-#            self.networkCurve.set_nodes_color(nodes, self.discPalette[0])
-#            
+        if self.graph is None:
+            return
+
+        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
+        colors = {}
+        
+        if nodes is None:
+            nodes = self.graph.nodes()
+        
+        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+            for v in nodes:
+                newColor = self.discPalette[0]
+                
+                if str(self.items[v][colorIndex]) != "?":
+                    if maxValue == minValue:
+                        newColor = self.discPalette[0]
+                    else:
+                        value = (float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
+                        newColor = self.contPalette[value]
+                    
+                colors[v] = newColor
+                
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+            for v in nodes:
+                newColor = self.discPalette[colorIndices[self.items[v][colorIndex].value]]
+                colors[v] = newColor
+        else:
+            colors.update((node, self.discPalette[0]) for node in nodes)
+        
+        self.networkCurve.set_node_color(colors)
         self.replot()
         
     def setLabelText(self, attributes):
@@ -1145,8 +1133,7 @@ class OWNxCanvas(OWPlot):
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
         vertices = dict((v, NodeItem(v, parent=self.networkCurve)) for v in self.graph)
-        self.networkCurve.set_nodes(vertices)
-                
+        
         #build edge index
         row_ind = {}
         if self.links is not None and len(self.links) > 0:
@@ -1185,6 +1172,7 @@ class OWNxCanvas(OWPlot):
                                       graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges()]
             
         self.networkCurve.set_edges(edges)
+        self.networkCurve.set_nodes(vertices)
         self.networkCurve.update_properties()
         self.replot()
 #        
