@@ -4,6 +4,7 @@
 #include <QtCore/QList>
 
 #include <QtCore/qmath.h>
+#include <limits>
 
 const int ChangeableColorIndex = 0;
 
@@ -16,6 +17,7 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
     set_index(index);
     set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
     setZValue(0.5);
+    m_size_value = 1;
 }
 
 NodeItem::~NodeItem()
@@ -442,9 +444,50 @@ void NetworkCurve::set_node_color(QMap<int, QColor*> colors)
 	}
 }
 
+void NetworkCurve::set_edge_size(QMap<int, double> sizes, double min_size, double max_size)
+{
+	double min_size_value = std::numeric_limits<double>::max();
+	double max_size_value = std::numeric_limits<double>::min();
+
+	QMap<int, double>::Iterator it;
+	for (it = sizes.begin(); it != sizes.end(); ++it)
+	{
+		m_nodes[it.key()]->m_size_value = it.value();
+
+		if (it.value() < min_size_value)
+		{
+			min_size_value = it.value();
+		}
+
+		if (it.value() > max_size_value)
+		{
+			max_size_value = it.value();
+		}
+	}
+
+	if (min_size > 0 || max_size > 0)
+	{
+		if (min_size > 0)
+		{
+			m_min_node_size = min_size;
+		}
+
+		if (max_size > 0)
+		{
+			m_max_node_size = max_size;
+		}
+
+		// TODO: recalibrate all
+	}
+	else if (sizes.size() > 0)
+	{
+		// TODO: recalibrate given
+	}
+}
+
 void NetworkCurve::set_min_node_size(double size)
 {
-	m_min_node_size = size;
+	//set_edge_size(QList<int, double>(), size, 0);
 }
 
 double NetworkCurve::min_node_size() const
@@ -454,10 +497,11 @@ double NetworkCurve::min_node_size() const
 
 void NetworkCurve::set_max_node_size(double size)
 {
-	m_max_node_size = size;
+	//set_edge_size(QList<int, double>(), 0, size);
 }
 
 double NetworkCurve::max_node_size() const
 {
 	return m_max_node_size;
 }
+

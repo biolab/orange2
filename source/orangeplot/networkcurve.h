@@ -53,6 +53,8 @@ public:
     void add_connected_edge(EdgeItem* edge);
     void remove_connected_edge(EdgeItem* edge);
     
+    double m_size_value;
+
 private:
     double m_x;
     double m_y;
@@ -152,6 +154,7 @@ public:
     void set_edges(Edges edges);
 
     void set_node_color(QMap<int, QColor*> colors);
+    void set_edge_size(QMap<int, double> sizes=QMap<int, double>(), double min_size=0, double max_size=0);
 
     void set_min_node_size(double size);
     double min_node_size() const;
