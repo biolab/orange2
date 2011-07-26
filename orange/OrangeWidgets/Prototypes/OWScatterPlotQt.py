@@ -118,10 +118,10 @@ class OWScatterPlotQt(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
+        self.graph.gui.show_legend_check_box(box4)
+        self.graph.gui.filled_symbols_check_box(box4)
         OWGUI.checkBox(box4, self, 'showGridlines', 'Show gridlines', callback = self.setShowGridlines)
-        OWGUI.checkBox(box4, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
+        self.graph.gui.antialiasing_check_box(box4)
 
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")

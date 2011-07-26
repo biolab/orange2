@@ -54,6 +54,7 @@ from owaxis import *
 from owcurve import *
 from owlegend import *
 from owpalette import *
+from owplotgui import OWPlotGUI
 from owtools import *
 
 
@@ -126,7 +127,7 @@ class OWPlot(orangeplot.Plot):
         # OWScatterPlot needs these:
         self.use_antialiasing = True
         self.point_width = 5
-        self.showFilledSymbols = 1
+        self.show_filled_symbols = True
         self.alpha_value = 1
         
         self.palette = shared_palette()
@@ -180,6 +181,8 @@ class OWPlot(orangeplot.Plot):
                 
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
+        
+        self.gui = OWPlotGUI(self)
 
         self.activate_zooming()
         self.replot()
@@ -191,6 +194,7 @@ class OWPlot(orangeplot.Plot):
     pointWidth = deprecated_attribute("pointWidth", "point_width")
     alphaValue = deprecated_attribute("alphaValue", "alpha_value")
     useAntialiasing = deprecated_attribute("useAntialiasing", "use_antialiasing")
+    showFilledSymbols = deprecated_attribute("showFilledSymbols", "show_filled_symbols")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -580,11 +584,20 @@ class OWPlot(orangeplot.Plot):
             self._transform_cache = {}
             self.set_clean()
         self.update_antialiasing()
+        self.update_legend()
         self.update_layout()
         self.update_zoom()
         self.update_axes()
+        self.update_filled_symbols()
         self.update()
         self.setSceneRect(QRectF(self.contentsRect()))
+        
+    def update_legend(self):
+        self._legend.setVisible(self.show_legend)
+        
+    def update_filled_symbols(self):
+        ## TODO: Implement this in Curve.cpp
+        pass
         
     def legend(self):
         return self._legend
