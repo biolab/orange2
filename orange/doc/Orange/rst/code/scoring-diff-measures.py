@@ -2,7 +2,7 @@
 # Category:    feature scoring
 # Uses:        measure
 # Referenced:  Orange.feature.html#scoring
-# Classes:     Orange.feature.scoring.attMeasure, Orange.features.scoring.Info, Orange.features.scoring.GainRatio, Orange.features.scoring.Gini, Orange.features.scoring.Relevance, Orange.features.scoring.Cost, Orange.features.scoring.Relief
+# Classes:     Orange.feature.scoring.measure_domain, Orange.features.scoring.Info, Orange.features.scoring.GainRatio, Orange.features.scoring.Gini, Orange.features.scoring.Relevance, Orange.features.scoring.Cost, Orange.features.scoring.Relief
 
 import Orange
 import random
@@ -23,16 +23,16 @@ fstr = "%30s" + "%15.4f"*attrs
 def printVariants(meas):
     print fstr % (("- no unknowns:",) + tuple([meas(i, table) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.IgnoreUnknowns
+    meas.unknowns_treatment = meas.IgnoreUnknowns
     print fstr % (("- ignore unknowns:",) + tuple([meas(i, table2) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.ReduceByUnknowns
+    meas.unknowns_treatment = meas.ReduceByUnknowns
     print fstr % (("- reduce unknowns:",) + tuple([meas(i, table2) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.UnknownsToCommon
+    meas.unknowns_treatment = meas.UnknownsToCommon
     print fstr % (("- unknowns to common:",) + tuple([meas(i, table2) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.UnknownsAsValue
+    meas.unknowns_treatment = meas.UnknownsAsValue
     print fstr % (("- unknowns as value:",) + tuple([meas(i, table2) for i in range(attrs)]))
     print
 

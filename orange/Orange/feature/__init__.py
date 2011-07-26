@@ -1,11 +1,6 @@
 """
-
-.. index:: feature
-
-This module provides functionality for feature scoring, selection, 
-discretization, continuzation, imputation, construction and feature
-interaction analysis.
-
+Feature scoring, selection, discretization, continuzation, imputation,
+construction and feature interaction analysis.
 """
 
 import scoring
