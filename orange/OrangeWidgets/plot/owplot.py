@@ -90,7 +90,8 @@ name_map = {
     "setAxisScale" : "set_axis_scale",
     "setAxisLabels" : "set_axis_labels", 
     "setTickLength" : "set_axis_tick_length",
-    "updateCurves" : "update_curves"
+    "updateCurves" : "update_curves",
+    "itemList" : "plot_items"
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
@@ -123,11 +124,10 @@ class OWPlot(orangeplot.Plot):
         self.map_from_widget = self.mapToScene
         
         # OWScatterPlot needs these:
-        self.alphaValue = 1
-        self.useAntialiasing = True
+        self.use_antialiasing = True
         self.point_width = 5
         self.showFilledSymbols = 1
-        self.alpha_value = 255
+        self.alpha_value = 1
         
         self.palette = shared_palette()
         self.curveSymbols = self.palette.curve_symbols
@@ -190,6 +190,7 @@ class OWPlot(orangeplot.Plot):
     showLegend = deprecated_attribute("showLegend", "show_legend")
     pointWidth = deprecated_attribute("pointWidth", "point_width")
     alphaValue = deprecated_attribute("alphaValue", "alpha_value")
+    useAntialiasing = deprecated_attribute("useAntialiasing", "use_antialiasing")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -577,6 +578,7 @@ class OWPlot(orangeplot.Plot):
             self._bounds_cache = {}
             self._transform_cache = {}
             self.set_clean()
+        self.update_antialiasing()
         self.update_layout()
         self.update_zoom()
         self.update_axes()
@@ -1000,3 +1002,6 @@ class OWPlot(orangeplot.Plot):
                 c.set_color(color)
                 c.set_auto_update(au)
                 c.update_properties()
+                
+    def update_antialiasing(self):
+        self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
