@@ -56,13 +56,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
     #########################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", labelAttr = None, **args):
-#        if not self.haveData:
         self.clear()
-#            self.oldLegendKeys = {}
-#            return
-        # self.removeDrawingCurves(removeLegendItems = 0)      # my function, that doesn't delete selection curves
-        # self.detachItems(QwtPlotItem.Rtti_PlotMarker)
-        # self.tips.removeAll()
         self.tooltipData = []
         self.potentialsClassifier = None
         self.potentialsImage = None
@@ -308,6 +302,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
         # ##############################################################
         # show legend if necessary
+        qDebug("Updating, legend is " + repr(self.showLegend))
         if self.showLegend == 1:
             legendKeys = {}
             colorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
@@ -354,12 +349,9 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         else:
             legendKeys = {}
 
-        if legendKeys != self.oldLegendKeys:
-            self.oldLegendKeys = legendKeys
-            self.legend().clear()
-            for val in legendKeys.values():       # add new curve keys
-                for i in range(len(val[1])):
-                    self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
+        for val in legendKeys.values():       # add new curve keys
+            for i in range(len(val[1])):
+                self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
 
         # ##############################################################
         # draw color scale for continuous coloring attribute

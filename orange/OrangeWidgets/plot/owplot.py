@@ -429,6 +429,7 @@ class OWPlot(orangeplot.Plot):
         self._bounds_cache = {}
         self._transform_cache = {}
         self.clear_markers()
+        self.tips.removeAll()
         self.legend().clear()
         
     def clear_markers(self):
