@@ -81,8 +81,12 @@ def clamp(value, min, max):
     return value
 
 def normal_from_points(p1, p2, p3):
-    v1 = p2 - p1
-    v2 = p3 - p1
+    if isinstance(p1, (list, tuple)):
+        v1 = [p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]]
+        v2 = [p3[0]-p1[0], p3[1]-p1[1], p3[2]-p1[2]]
+    else:
+        v1 = p2 - p1
+        v2 = p3 - p1
     return normalize(numpy.cross(v1, v2))
 
 def draw_triangle(x0, y0, x1, y1, x2, y2):
@@ -452,6 +456,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             attribute vec4 position;
             attribute vec3 offset;
             attribute vec4 color;
+            attribute vec3 normal;
 
             uniform bool use_2d_symbols;
             uniform bool tooltip_mode;
@@ -465,29 +470,30 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             varying vec4 var_color;
 
             void main(void) {
-              // Calculate inverse of rotations (in this case, inverse
-              // is actually just transpose), so that polygons face
-              // camera all the time.
-              mat3 invs;
-
-              invs[0][0] = gl_ModelViewMatrix[0][0];
-              invs[0][1] = gl_ModelViewMatrix[1][0];
-              invs[0][2] = gl_ModelViewMatrix[2][0];
-
-              invs[1][0] = gl_ModelViewMatrix[0][1];
-              invs[1][1] = gl_ModelViewMatrix[1][1];
-              invs[1][2] = gl_ModelViewMatrix[2][1];
-
-              invs[2][0] = gl_ModelViewMatrix[0][2];
-              invs[2][1] = gl_ModelViewMatrix[1][2];
-              invs[2][2] = gl_ModelViewMatrix[2][2];
-
               vec3 offset_rotated = offset;
               offset_rotated.x *= symbol_scale;
               offset_rotated.y *= symbol_scale;
 
-              if (use_2d_symbols)
-                offset_rotated = invs * offset_rotated;
+              if (use_2d_symbols) {
+                  // Calculate inverse of rotations (in this case, inverse
+                  // is actually just transpose), so that polygons face
+                  // camera all the time.
+                  mat3 invs;
+
+                  invs[0][0] = gl_ModelViewMatrix[0][0];
+                  invs[0][1] = gl_ModelViewMatrix[1][0];
+                  invs[0][2] = gl_ModelViewMatrix[2][0];
+
+                  invs[1][0] = gl_ModelViewMatrix[0][1];
+                  invs[1][1] = gl_ModelViewMatrix[1][1];
+                  invs[1][2] = gl_ModelViewMatrix[2][1];
+
+                  invs[2][0] = gl_ModelViewMatrix[0][2];
+                  invs[2][1] = gl_ModelViewMatrix[1][2];
+                  invs[2][2] = gl_ModelViewMatrix[2][2];
+
+                  offset_rotated = invs * offset_rotated;
+              }
 
               vec3 pos = position.xyz;
               pos += translation;
@@ -509,7 +515,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 pos = abs(pos);
                 float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
                 float a = min(pow(min(1., view_edge / manhattan_distance), 5.), transparency);
-                var_color = vec4(color.rgb, a);
+                // Calculate the amount of lighting this triangle receives (diffuse component only).
+                vec3 light_direction = normalize(vec3(1., 1., 0.5));
+                float diffuse = max(0., dot(normalize((gl_ModelViewMatrix * vec4(normal, 0)).xyz),
+                                    light_direction));
+                vec3 ambient = vec3(0.15, 0.15, 0.15);
+                var_color = vec4(color.rgb*diffuse+ambient, a);
               }
             }
             '''
@@ -584,9 +595,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.draw_grid_and_axes()
 
-        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
 
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
@@ -975,9 +987,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             triangles = get_symbol_data(symbol)
             ss = size*0.1
             for (v1, v2, v3) in triangles:
-                vertices.extend([x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a])
-                vertices.extend([x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a])
-                vertices.extend([x,y,z, ai, ss*v3[0],ss*v3[1],ss*v3[2], r,g,b,a])
+                n = normal_from_points(v1, v2, v3)
+                vertices.extend([x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n[0],n[1],n[2]])
+                vertices.extend([x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n[0],n[1],n[2]])
+                vertices.extend([x,y,z, ai, ss*v3[0],ss*v3[1],ss*v3[2], r,g,b,a, n[0],n[1],n[2]])
 
         # Build Vertex Buffer + Vertex Array Object.
         vao_id = GLuint(0)
@@ -988,13 +1001,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
         glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
 
-        vertex_size = (4+3+4)*4
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(4*4))
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(7*4))
+        vertex_size = (4+3+3+4)*4
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))    # position
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(4*4))  # offset
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(7*4))  # color
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(11*4)) # normal
         glEnableVertexAttribArray(0)
         glEnableVertexAttribArray(1)
         glEnableVertexAttribArray(2)
+        glEnableVertexAttribArray(3)
 
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -1111,7 +1126,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         # TODO: figure out what' causing incorrect values, filter them out
         # for now
-        indices = [i for i in indices if i < len(self.commands[0][1][2][0])]
+        indices = [i for i in indices if i < len(self.commands[0][1][1][0])]
         return indices
 
 
