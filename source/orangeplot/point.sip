@@ -31,6 +31,15 @@ public:
     Hexagon = 14,
     UserStyle = 1000
   };
+
+    enum StateFlag
+    {
+        Normal = 0x00,
+        Marked = 0x01,
+        Selected = 0x02
+    };
+
+    typedef QFlags<Point::StateFlag> State;
   
     Point(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     Point(int symbol, QColor color, int size, QGraphicsItem* parent /TransferThis/ = 0);
@@ -50,6 +59,18 @@ public:
     
     void set_display_mode(DisplayMode mode);
     DisplayMode display_mode() const;
+
+    void set_state(State state);
+    State state() const;
+    void set_state_flag(StateFlag flag, bool on);
+    bool state_flag(StateFlag flag) const;
+    
+    void set_selected(bool selected);
+    bool is_selected() const;
+
+    void set_marked(bool marked);
+    bool is_marked() const;
+
 
     /**
     * Creates a path from a symbol and a size

@@ -45,6 +45,8 @@ public:
         Selected = 0x02
     };
     
+    Q_DECLARE_FLAGS(State, StateFlag)
+  
     enum 
     {
         Type = UserType + 1
@@ -55,8 +57,6 @@ public:
         return Type;
     }
     
-    Q_DECLARE_FLAGS(State, StateFlag)
-  
     Point(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     Point(int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~Point();

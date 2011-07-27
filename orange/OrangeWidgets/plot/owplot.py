@@ -85,6 +85,7 @@ name_map = {
     "addMarker" : "add_marker", 
     "updateLayout" : "update_layout", 
     "activateZooming" : "activate_zooming", 
+    "activateSelection" : "activate_selection", 
     "activateRectangleSelection" : "activate_rectangle_selection", 
     "activatePolygonSelection" : "activate_polygon_selection", 
     "getSelectedPoints" : "get_selected_points",
@@ -250,6 +251,9 @@ class OWPlot(orangeplot.Plot):
         
     def activate_rectangle_selection(self):
         self.state = SELECT_RECTANGLE
+        
+    def activate_selection(self):
+        self.state = SELECT
         
     def activate_polygon_selection(self):
         self.state = SELECT_POLYGON
@@ -743,6 +747,11 @@ class OWPlot(orangeplot.Plot):
                         self.auto_send_selection_callback()
                     break
             self.selection_items.reverse()
+        elif self.state == SELECT:
+            point_item = self.point_at(point)
+            qDebug(repr(point) + ' ' + repr(point_item))
+            if point_item:
+                point_item.set_selected(True)
         else:
             return False
             

@@ -44,7 +44,7 @@ class ZoomSelectToolbar(QGroupBox):
     SelectButtons = 3, 4, 5, 0, 6, 7, 8
     NavigateButtons = 1, 9, 10, 0, 2
 
-    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8), name = "Zoom / Select", exclusiveList = "__toolbars"):
+    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 3, 4, 5, 0, 6, 7, 8), name = "Zoom / Select", exclusiveList = "__toolbars"):
         if not hasattr(ZoomSelectToolbar, "builtinFunctions"):
             ZoomSelectToolbar.builtinFunctions = \
                  (None,
@@ -124,7 +124,7 @@ class NavigateSelectToolbar(QWidget):
 
     IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
 
-    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8)):
+    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 3, 4, 5, 0, 6, 7, 8)):
         if not hasattr(NavigateSelectToolbar, "builtinFunctions"):
             NavigateSelectToolbar.builtinFunctions = (None,
                  ("Zooming", "buttonZoom", "activateZooming", QIcon(dlg_zoom), Qt.CrossCursor, 1, "navigate"),

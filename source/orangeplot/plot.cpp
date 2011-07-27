@@ -186,5 +186,17 @@ QList< int > Plot::selected_points(const QList< double > x_data, const QList< do
     return selected;
 }
 
+Point* Plot::point_at(const QPointF& pos)
+{
+    Point* point;
+    foreach (QGraphicsItem* item, scene()->items(pos))
+    {
+        if (point = qgraphicsitem_cast<Point*>(item))
+        {
+            return point;
+        }
+    }
+    return 0;
+}
 
 #include "plot.moc"
