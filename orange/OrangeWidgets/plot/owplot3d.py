@@ -59,7 +59,7 @@ from ctypes import c_void_p
 #OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
 
 import sys
-from math import sin, cos, pi
+from math import sin, cos, pi, floor, ceil, log10
 import time
 import struct
 import numpy
@@ -101,6 +101,34 @@ def draw_line(x0, y0, x1, y1):
     glVertex2f(x0, y0)
     glVertex2f(x1, y1)
     glEnd()
+
+def nicenum(x, round):
+    expv = floor(log10(x))
+    f = x / pow(10., expv)
+    if round:
+        if f < 1.5: nf = 1.
+        elif f < 3.: nf = 2.
+        elif f < 7.: nf = 5.
+        else: nf = 10.
+    else:
+        if f <= 1.: nf = 1.
+        elif f <= 2.: nf = 2.
+        elif f <= 5.: nf = 5.
+        else: nf = 10.
+    return nf * pow(10., expv)
+
+def loose_label(min_value, max_value, num_ticks):
+    '''Algorithm by Paul S. Heckbert (Graphics Gems).
+       Generates a list of "nice" values between min and max,
+       given the number of ticks. Also returns the number
+       of fractional digits to use.
+    '''
+    range = nicenum(max_value-min_value, False)
+    d = nicenum(range / float(num_ticks-1), True)
+    plot_min = floor(min_value / d) * d
+    plot_max = ceil(max_value / d) * d
+    num_frac = int(max(-floor(log10(d)), 0))
+    return numpy.arange(plot_min, plot_max + 0.5*d, d), num_frac
 
 def enum(*sequential):
     enums = dict(zip(sequential, range(len(sequential))))
@@ -190,14 +218,11 @@ class Legend(object):
             glEnd()
 
         item_pos_y = y + t + 13
-        symbol_to_n = {Symbol.TRIANGLE: 3,
-                       Symbol.RECTANGLE: 4,
-                       Symbol.PENTAGON: 5,
-                       Symbol.CIRCLE: 8}
 
         for symbol, color, size, text in self.items:
             glColor4f(*color)
-            draw_ngon(symbol_to_n[symbol], x+t+10, item_pos_y-4, size*self.symbol_scale)
+            # TODO: 2d symbols
+            #draw_ngon(symbol_to_n[symbol], x+t+10, item_pos_y-4, size*self.symbol_scale)
             self.plot.renderText(x+t+30, item_pos_y, text, font=self.font)
             item_pos_y += self.metrics.height()
 
@@ -473,6 +498,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               vec3 offset_rotated = offset;
               offset_rotated.x *= symbol_scale;
               offset_rotated.y *= symbol_scale;
+              offset_rotated.z *= symbol_scale;
 
               if (use_2d_symbols) {
                   // Calculate inverse of rotations (in this case, inverse
@@ -519,7 +545,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 vec3 light_direction = normalize(vec3(1., 1., 0.5));
                 float diffuse = max(0., dot(normalize((gl_ModelViewMatrix * vec4(normal, 0)).xyz),
                                     light_direction));
-                var_color = vec4(color.rgb+diffuse*0.8, a); // Physically wrong, but looks better.
+                var_color = vec4(color.rgb+diffuse*0.7, a); // Physically wrong, but looks better.
               }
             }
             '''
@@ -589,7 +615,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.camera[0]*self.camera_distance,
             self.camera[1]*self.camera_distance,
             self.camera[2]*self.camera_distance,
-            0, 0, 0,
+            0,-1, 0,
             0, 1, 0)
 
         self.draw_grid_and_axes()
@@ -597,7 +623,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
 
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
@@ -784,18 +809,22 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                                     position[2],
                                     axis_map[key], font=self._theme.labels_font)
 
-        def draw_values(axis, coord_index, normal, axis_map, sub=10):
+        def draw_values(axis, coord_index, normal, axis_map):
             glColor4f(*self._theme.axis_values_color)
             glLineWidth(1)
             if axis_map != None:
                 draw_discrete_axis_values(axis, coord_index, normal, axis_map)
                 return
             start, end = axis
+            start_value = self.transform_plot_to_data(numpy.copy(start))[coord_index]
+            end_value = self.transform_plot_to_data(numpy.copy(end))[coord_index]
+            values, num_frac = loose_label(start_value, end_value, 7)
+            format = '%%.%df' % num_frac
             offset = normal*0.8
-            samples = numpy.linspace(0.0, 1.0, num=sub)
-            samples = samples[:-1] if coord_index != 1 else samples[1:]
-            for sample in samples:
-                position = start + (end-start)*sample
+            for value in values:
+                if not (start_value <= value <= end_value):
+                    continue
+                position = start + (end-start)*((value-start_value) / float(end_value-start_value))
                 glBegin(GL_LINES)
                 glVertex3f(*(position-normal*0.2))
                 glVertex3f(*(position+normal*0.2))
@@ -805,7 +834,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.renderText(position[0],
                                 position[1],
                                 position[2],
-                                '%.1f' % value)
+                                format % value)
 
         def draw_axis_title(axis, title, normal):
             middle = (axis[0] + axis[1]) / 2.
@@ -814,28 +843,21 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                             title,
                             font=self._theme.axis_title_font)
 
-        def draw_grid(axis_plane, sub=5):
-            p11, p12, p21, p22 = numpy.asarray(axis_plane)
-            p22, p21 = p21, p22
-            samples = numpy.linspace(0.0, 1.0, num=sub)
-            p1211 = p12 - p11
-            p2221 = p22 - p21
-            p2111 = p21 - p11
-            p2212 = p22 - p12
-            # Draw grid lines.
+        def draw_grid(axis0, axis1, normal0, normal1, i, j):
             glColor4f(*self._theme.grid_color)
-            glBegin(GL_LINES)
-            for i, dx in enumerate(samples):
-                start = p11 + p1211*dx
-                end = p21 + p2221*dx
-                glVertex3f(*start)
-                glVertex3f(*end)
-
-                start = p11 + p2111*dx
-                end = p12 + p2212*dx
-                glVertex3f(*start)
-                glVertex3f(*end)
-            glEnd()
+            for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
+                start, end = axis
+                start_value = self.transform_plot_to_data(numpy.copy(start))[coord_index]
+                end_value = self.transform_plot_to_data(numpy.copy(end))[coord_index]
+                values, _ = loose_label(start_value, end_value, 7)
+                for value in values:
+                    if not (start_value <= value <= end_value):
+                        continue
+                    position = start + (end-start)*((value-start_value) / float(end_value-start_value))
+                    glBegin(GL_LINES)
+                    glVertex3f(*position)
+                    glVertex3f(*(position-normal*10.))
+                    glEnd()
 
         glDisable(GL_DEPTH_TEST)
         glLineWidth(1)
@@ -844,34 +866,49 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
+        axes = [[self.x_axis, self.y_axis],
+                [self.y_axis, self.z_axis],
+                [self.x_axis+self.unit_z, self.y_axis+self.unit_z],
+                [self.z_axis+self.unit_x, self.y_axis+self.unit_x]]
+        normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
+                   [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
+                   [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
+                   [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
+        coords = [[0, 1],
+                  [1, 2],
+                  [0, 1],
+                  [2, 1]]
         visible_planes = map(plane_visible, planes)
+        xz_visible = not plane_visible(self.axis_plane_xz)
         if self.show_grid:
-            draw_grid(self.axis_plane_xz)
-            for visible, plane in zip(visible_planes, planes):
+            if xz_visible:
+                draw_grid(self.x_axis, self.z_axis, numpy.array([0,0,-1]), numpy.array([-1,0,0]), 0, 2)
+            for visible, (axis0, axis1), (normal0, normal1), (i, j) in\
+                 zip(visible_planes, axes, normals, coords):
                 if not visible:
-                    draw_grid(plane)
+                    draw_grid(axis0, axis1, normal0, normal1, i, j)
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
-        if visible_planes[0]:
+        if visible_planes[0 if xz_visible else 2]:
             draw_axis(self.x_axis)
             draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_map)
             if self.show_x_axis_title:
                 draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
-        elif visible_planes[2]:
+        elif visible_planes[2 if xz_visible else 0]:
             draw_axis(self.x_axis + self.unit_z)
             draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_map)
             if self.show_x_axis_title:
                 draw_axis_title(self.x_axis + self.unit_z,
                                 self.x_axis_title, numpy.array([0, 0, 1]))
 
-        if visible_planes[1]:
+        if visible_planes[1 if xz_visible else 3]:
             draw_axis(self.z_axis)
             draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_map)
             if self.show_z_axis_title:
                 draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
-        elif visible_planes[3]:
+        elif visible_planes[3 if xz_visible else 1]:
             draw_axis(self.z_axis + self.unit_x)
             draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_map)
             if self.show_z_axis_title:
@@ -984,7 +1021,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             y *= scale_y
             z *= scale_z
             triangles = get_symbol_data(symbol)
-            ss = size*0.1
+            ss = size*0.08
             for v0, v1, v2, n0, n1, n2 in triangles:
                 vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0,n1,n2,
                                  x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n0,n1,n2,
