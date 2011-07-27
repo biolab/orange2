@@ -11,8 +11,9 @@ Scoring (``scoring``)
 Features selection aims to find relevant features for the given
 prediction task.
 
-The following example computes feature scores with uses :obj:`measure_domain`
-and prints out the three best features.
+The following example computes feature scores, both with
+:obj:`score_all` and by scoring each feature individually, and prints out 
+the best three features. 
 
 .. _scoring-all.py: code/scoring-all.py
 .. _voting.tab: code/voting.tab
@@ -22,24 +23,32 @@ and prints out the three best features.
 
 The output::
 
-    Feature scores for best three features:
+    Feature scores for best three features (with score_all):
     0.613 physician-fee-freeze
-    0.255 adoption-of-the-budget-resolution
+    0.255 el-salvador-aid
     0.228 synfuels-corporation-cutback
+
+    Feature scores for best three features (scored individually):
+    0.613 physician-fee-freeze
+    0.255 el-salvador-aid
+    0.228 synfuels-corporation-cutback
+
 
 ============
 Base Classes
 ============
 
-Orange implements several methods for scoring relevance of features to
-the class. All are subclasses of :obj:`Measure`. The most common compute
-statistics on conditional distributions of class values given the feature
-values; these are derived from :obj:`MeasureFromProbabilities`.
+Implemented methods for scoring relevances of features to the class
+are subclasses of :obj:`Measure`. Those that compute statistics on
+conditional distributions of class values given the feature values are
+derived from :obj:`MeasureFromProbabilities`.
 
 .. class:: Measure
 
     Abstract base class for feature scoring. Its attributes describe which
     features it can handle and the required data.
+
+    **Capabilities**
 
     .. attribute:: handles_discrete
     
@@ -51,22 +60,32 @@ values; these are derived from :obj:`MeasureFromProbabilities`.
 
     .. attribute:: computes_thresholds
     
-        Indicated whether the measure implements the :obj:`threshold_function`.
+        Indicates whether the measure implements the :obj:`threshold_function`.
+
+    **Input specification**
 
     .. attribute:: needs
     
-        The kind of data needed. Either
+        The type of data needed: :obj:`NeedsGenerator`, :obj:`NeedsDomainContingency`,
+        or :obj:`NeedsContingency_Class`.
 
-        * :obj:`NeedsGenerator`; an instance generator (as, for example,
-          Relief),
+    .. attribute:: NeedsGenerator
 
-        * :obj:`NeedsDomainContingency;` needs
-          :obj:`Orange.statistics.contingency.Domain`,
+        Constant. Indicates that the measure Needs an instance generator on the input (as, for example, the
+        :obj:`Relief` measure).
 
-        * :obj:`NeedsContingency_Class`; needs the contingency
-          (:obj:`Orange.statistics.contingency.VarClass`), feature
-          distribution and the apriori class distribution (as most
-          measures).
+    .. attribute:: NeedsDomainContingency
+
+        Constant. Indicates that the measure needs :obj:`Orange.statistics.contingency.Domain`.
+
+    .. attribute:: NeedsContingency_Class
+
+        Constant. Indicates, that the measure needs the contingency
+        (:obj:`Orange.statistics.contingency.VarClass`), feature
+        distribution and the apriori class distribution (as most
+        measures).
+
+    **Treatment of unknown values**
 
     .. attribute:: unknowns_treatment
 
@@ -94,53 +113,64 @@ values; these are derived from :obj:`MeasureFromProbabilities`.
 
         Constant. Unknown values are treated as a separate value.
 
+    **Methods**
 
-    .. method:: __call__(attribute, examples[, apriori_class_distribution][, weightID])
-    .. method:: __call__(attribute, domain_contingency[, apriori_class_distribution])
-    .. method:: __call__(contingency, class_distribution[, apriori_class_distribution])
+    .. method:: __call__(attribute, instances[, apriori_class_distribution][, weightID])
 
-        :param attribute: the choosen feature, either as a descriptor, 
+        :param attribute: the chosen feature, either as a descriptor, 
           index, or a name.
         :type attribute: :class:`Orange.data.variable.Variable` or int or string
-        :param examples: data.
-        :type examples: `Orange.data.Table`
+        :param instances: data.
+        :type instances: `Orange.data.Table`
+        :param weightID: id for meta-feature with weight.
+
+        Abstract. All measures need to support `__call__` with these
+        parameters.  Described below.
+
+    .. method:: __call__(attribute, domain_contingency[, apriori_class_distribution])
+
+        :param attribute: the chosen feature, either as a descriptor, 
+          index, or a name.
+        :type attribute: :class:`Orange.data.variable.Variable` or int or string
+        :param domain_contingency: 
+        :type domain_contingency: :obj:`Orange.statistics.contingency.Domain`
+
+        Abstract. Described below.
+        
+    .. method:: __call__(contingency, class_distribution[, apriori_class_distribution])
+
+        :param contingency:
+        :type contingency: :obj:`Orange.statistics.contingency.VarClass`
+        :param class_distribution: distribution of the class
+          variable. If :obj:`unknowns_treatment` is :obj:`IgnoreUnknowns`,
+          it should be computed on instances where feature value is
+          defined. Otherwise, class distribution should be the overall
+          class distribution.
+        :type class_distribution: 
+          :obj:`Orange.statistics.distribution.Distribution`
         :param apriori_class_distribution: Optional and most often
           ignored. Useful if the measure makes any probability estimates
           based on apriori class probabilities (such as the m-estimate).
-        :param weightID: id for meta-feature with weight.
-        :param domain_contingency: Not sure.
-        :type domain_contingency: :obj:`Orange.statistics.contingency.Domain`
-        :param distribution: Not sure.
-        :type distribution: :obj:`Orange.statistics.distribution.Distribution`
-
         :return: Feature score - the higher the value, the better the feature.
           If the quality cannot be measured, return :obj:`Measure.Rejected`.
         :rtype: float or :obj:`Measure.Rejected`.
 
-        Abstract. 
-       
-        All measures need to support the first form, with the data on
-        the input.
+        Abstract.
 
-        Not all classes will accept all kinds of arguments. :obj:`Relief`,
-        for instance, cannot be computed from contingencies
-        alone. Besides, the feature and the class need to be of the
-        correct type for a particular measure.
-
-        Different forms of the call enable optimization.  For instance,
+        Different forms of `__call__` enable optimization.  For instance,
         if contingency matrix has already been computed, you can speed
-        ab the computation by passing it to the measure (if it supports
-        that form - most do). Otherwise the measurea will compute the
+        up the computation by passing it to the measure (if it supports
+        that form - most do). Otherwise the measure will have to compute the
         contingency itself.
 
-        Data is given either as examples, contingency tables or distributions
-        for all attributes. In the latter form, what is given as
-        the class distribution depends upon what you do with unknown
-        values (if there are any).  If :obj:`unknowns_treatment` is
-        :obj:`IgnoreUnknowns`, the class distribution should be computed
-        on examples for which the feature value is defined. Otherwise,
-        class distribution should be the overall class distribution.
+        Not all classes will accept all kinds of arguments. :obj:`Relief`,
+        for instance, only supports the form with instances on the input.
 
+        The code sample below shows the use of :obj:`GainRatio` with
+        different call types.
+
+        .. literalinclude:: code/scoring-calls.py
+            :lines: 7-
 
     .. method:: threshold_function(attribute, examples[, weightID])
     
@@ -155,7 +185,8 @@ values; these are derived from :obj:`MeasureFromProbabilities`.
 
     .. method:: best_threshold
 
-        
+        Return the best threshold for binarization. Parameters?
+
 
     The script below shows different ways to assess the quality of astigmatic,
     tear rate and the first feature in the dataset lenses.
@@ -200,6 +231,8 @@ values; these are derived from :obj:`MeasureFromProbabilities`.
         print "Best threshold: %5.3f (score %5.3f)" % (thresh, score)
 
 .. class:: MeasureFromProbabilities
+
+    Bases: :obj:`Measure`
 
     Abstract base class for feature quality measures that can be
     computed from contingency matrices only. It relieves the derived classes
@@ -352,7 +385,7 @@ Undocumented: MeasureAttribute_IM, MeasureAttribute_chiSquare, MeasureAttribute_
 Measures for Regression
 =======================
 
-:obj:`Relief` (described for classification) can be also used for regression.
+:obj:`Relief` can be also used for regression.
 
 .. index:: 
    single: feature scoring; mean square error
@@ -388,7 +421,7 @@ Other
 
 .. autofunction:: Orange.feature.scoring.merge_values
 
-.. autofunction:: Orange.feature.scoring.measure_domain
+.. autofunction:: Orange.feature.scoring.score_all
 
 ==========
 References
@@ -619,7 +652,7 @@ def merge_values(data, attr_list, attr_measure, remove_unused_values = 1):
 
 ######
 # from orngFSS
-def measure_domain(data, measure=Relief(k=20, m=50)):
+def score_all(data, measure=Relief(k=20, m=50)):
     """Assess the quality of features using the given measure and return
     a sorted list of tuples (feature name, measure).
 

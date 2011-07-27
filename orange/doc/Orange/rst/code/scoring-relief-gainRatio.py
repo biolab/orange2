@@ -2,14 +2,14 @@
 # Category:    feature scoring
 # Uses:        voting
 # Referenced:  Orange.feature.html#scoring
-# Classes:     Orange.feature.scoring.measure_domain, Orange.features.scoring.GainRatio
+# Classes:     Orange.feature.scoring.score_all, Orange.features.scoring.GainRatio
 
 import Orange
 table = Orange.data.Table("voting")
 
 print 'Relief GainRt Feature'
-ma_def = Orange.feature.scoring.measure_domain(table)
+ma_def = Orange.feature.scoring.score_all(table)
 gr = Orange.feature.scoring.GainRatio()
-ma_gr  = Orange.feature.scoring.measure_domain(table, gr)
+ma_gr  = Orange.feature.scoring.score_all(table, gr)
 for i in range(5):
     print "%5.3f  %5.3f  %s" % (ma_def[i][1], ma_gr[i][1], ma_def[i][0])

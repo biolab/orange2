@@ -6,4 +6,4 @@ StepwiseLearner_Class = StepwiseLearner
 #This was in the old module
 attsAbovethreshold = attsAboveThreshold
 
-attMeasure = measure_domain
+attMeasure = score_all

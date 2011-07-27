@@ -2,7 +2,7 @@
 # Category:    feature selection
 # Uses:        voting
 # Referenced:  Orange.feature.html#selection
-# Classes:     Orange.feature.scoring.measure_domain, Orange.feature.selection.bestNAtts
+# Classes:     Orange.feature.scoring.score_all, Orange.feature.selection.bestNAtts
 
 import Orange
 
@@ -20,7 +20,7 @@ class BayesFSS(object):
         self.N = 5
       
     def __call__(self, table, weight=None):
-        ma = Orange.feature.scoring.measure_domain(table)
+        ma = Orange.feature.scoring.score_all(table)
         filtered = Orange.feature.selection.selectBestNAtts(table, ma, self.N)
         model = Orange.classification.bayes.NaiveLearner(filtered)
         return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)

@@ -2,7 +2,7 @@
 # Category:    feature scoring
 # Uses:        measure
 # Referenced:  Orange.feature.html#scoring
-# Classes:     Orange.feature.scoring.measure_domain, Orange.features.scoring.Info, Orange.features.scoring.GainRatio, Orange.features.scoring.Gini, Orange.features.scoring.Relevance, Orange.features.scoring.Cost, Orange.features.scoring.Relief
+# Classes:     Orange.features.scoring.Info, Orange.features.scoring.GainRatio, Orange.features.scoring.Gini, Orange.features.scoring.Relevance, Orange.features.scoring.Cost, Orange.features.scoring.Relief
 
 import Orange
 import random

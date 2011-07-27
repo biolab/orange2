@@ -167,15 +167,15 @@ __docformat__ = 'restructuredtext'
 
 import Orange.core as orange
 
-from Orange.feature.scoring import measure_domain
+from Orange.feature.scoring import score_all
 
 # from orngFSS
 def bestNAtts(scores, N):
     """Return the best N features (without scores) from the list returned
-    by :obj:`Orange.feature.scoring.measure_domain`.
+    by :obj:`Orange.feature.scoring.score_all`.
     
     :param scores: a list such as returned by 
-      :obj:`Orange.feature.scoring.measure_domain`
+      :obj:`Orange.feature.scoring.score_all`
     :type scores: list
     :param N: number of best features to select. 
     :type N: int
@@ -186,11 +186,11 @@ def bestNAtts(scores, N):
 
 def attsAboveThreshold(scores, threshold=0.0):
     """Return features (without scores) from the list returned by
-    :obj:`Orange.feature.scoring.measure_domain` with score above or
+    :obj:`Orange.feature.scoring.score_all` with score above or
     equal to a specified threshold.
     
     :param scores: a list such as one returned by
-      :obj:`Orange.feature.scoring.measure_domain`
+      :obj:`Orange.feature.scoring.score_all`
     :type scores: list
     :param threshold: score threshold for attribute selection. Defaults to 0.
     :type threshold: float
@@ -207,7 +207,7 @@ def selectBestNAtts(data, scores, N):
     :param data: an example table
     :type data: Orange.data.table
     :param scores: a list such as one returned by 
-      :obj:`Orange.feature.scoring.measure_domain`
+      :obj:`Orange.feature.scoring.score_all`
     :type scores: list
     :param N: number of features to select
     :type N: int
@@ -220,13 +220,13 @@ def selectBestNAtts(data, scores, N):
 def selectAttsAboveThresh(data, scores, threshold=0.0):
     """Construct and return a new set of examples that includes a class and 
     features from the list returned by 
-    :obj:`Orange.feature.scoring.measure_domain` that have the score above or 
+    :obj:`Orange.feature.scoring.score_all` that have the score above or 
     equal to a specified threshold.
     
     :param data: an example table
     :type data: Orange.data.table
     :param scores: a list such as one returned by
-      :obj:`Orange.feature.scoring.measure_domain`    
+      :obj:`Orange.feature.scoring.score_all`    
     :type scores: list
     :param threshold: score threshold for attribute selection. Defaults to 0.
     :type threshold: float
@@ -255,11 +255,11 @@ def filterRelieff(data, measure=orange.MeasureAttribute_relief(k=20, m=50), marg
     :type margin: float
     
     """
-    measl = measure_domain(data, measure)
+    measl = score_all(data, measure)
     while len(data.domain.attributes)>0 and measl[-1][1]<margin:
         data = selectBestNAtts(data, measl, len(data.domain.attributes)-1)
 #        print 'remaining ', len(data.domain.attributes)
-        measl = measure_domain(data, measure)
+        measl = score_all(data, measure)
     return data
 
 ##############################################################################
@@ -306,7 +306,7 @@ class FilterAttsAboveThresh_Class:
         :type data: Orange.data.table
 
         """
-        ma = measure_domain(data, self.measure)
+        ma = score_all(data, self.measure)
         return selectAttsAboveThresh(data, ma, self.threshold)
 
 def FilterBestNAtts(data=None, **kwds):
@@ -329,7 +329,7 @@ class FilterBestNAtts_Class:
         self.measure = measure
         self.n = n
     def __call__(self, data):
-        ma = measure_domain(data, self.measure)
+        ma = score_all(data, self.measure)
         self.n = min(self.n, len(data.domain.attributes))
         return selectBestNAtts(data, ma, self.n)
 

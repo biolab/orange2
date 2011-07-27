@@ -64,7 +64,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.MeasureAttribute_cost": "Orange.feature.scoring.Cost",
            "orange.MeasureAttribute_MSE": "Orange.feature.scoring.MSE",
 
-           "orngFSS.attMeasure": "Orange.feature.scoring.attMeasure",
+           "orngFSS.attMeasure": "Orange.feature.scoring.score_all",
            "orngFSS.bestNAtts": "Orange.feature.selection.bestNAtts",
            "orngFSS.attsAbovethreshold": "Orange.feature.selection.attsAbovethreshold",
            "orngFSS.selectBestNAtts": "Orange.feature.selection.selectBestNAtts",
