@@ -4,8 +4,6 @@
 #include <QtCore/QDebug>
 #include <QtCore/qmath.h>
 
-const int ChangeableColorIndex = 0;
-
 QHash<PointData, QPixmap> Point::pixmap_cache;
 
 uint qHash(const PointData& data)

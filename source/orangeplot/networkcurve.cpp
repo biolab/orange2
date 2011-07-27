@@ -6,8 +6,6 @@
 #include <QtCore/qmath.h>
 #include <limits>
 
-const int ChangeableColorIndex = 0;
-
 /************/
 /* NodeItem */
 /************/
