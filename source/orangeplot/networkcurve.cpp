@@ -5,6 +5,8 @@
 
 #include <QtCore/qmath.h>
 #include <limits>
+#include <QStyleOptionGraphicsItem>
+#include <QCoreApplication>
 
 /************/
 /* NodeItem */
@@ -30,6 +32,8 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 {
     Q_UNUSED(option)
     Q_UNUSED(widget)
+
+    //painter->setClipRect(option->exposedRect);
 
     if (is_selected()) {
     	painter->setPen(QPen(Qt::yellow, 3));
@@ -289,13 +293,16 @@ int NetworkCurve::random()
 	return 0;
 }
 
-int NetworkCurve::fr(int steps, bool weighted, double temperature, double cooling)
+int NetworkCurve::fr(int steps, bool weighted, double temperature)
 {
 	int i, j;
 	int count = 0;
 	NodeItem *u, *v;
 	EdgeItem *edge;
-	QRectF data_r = data_rect();
+	double rect[4] = {std::numeric_limits<double>::max(),
+			  std::numeric_limits<double>::max(),
+			  std::numeric_limits<double>::min(),
+			  std::numeric_limits<double>::min()};
 
 	QMap<int, DataPoint> disp;
 	foreach (const NodeItem* node, m_nodes)
@@ -304,16 +311,27 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 		point.x = 0;
 		point.y = 0;
 		disp[node->index()] = point;
-	}
 
+		double x = node->x();
+		double y = node->y();
+		if (rect[0] > x) rect[0] = x;
+		if (rect[1] > y) rect[1] = y;
+		if (rect[2] < x) rect[2] = x;
+		if (rect[3] < y) rect[3] = y;
+	}
+	QRectF data_r(rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]);
+	qDebug() << data_r << data_rect();
 	double area = data_r.width() * data_r.height();
 
-	int updateCheckpoint = steps / 100 + 1;
+
+	int updateCheckpoint = steps / 50 + 1;
 	double k2 = area / m_nodes.size();
 	double k = sqrt(k2);
 	double kk = 2 * k;
 	double kk2 = kk * kk;
-	qDebug() << "area " << area << "; k2 " << k2 << "; k " << k << "; kk " << kk << "; kk2 " << kk2;
+	temperature = sqrt(area) / 5;
+	double cooling = exp(log(k / 10 / temperature) / steps);
+	qDebug() << "k " << k;
 	// iterations
 	for (i = 0; i < steps; i++)
 	{
@@ -395,16 +413,19 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 			u->set_coordinates(u->x() + (disp[u->index()].x * qMin(fabs(disp[u->index()].x), temperature) / dif),
 			                   u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
 		}
-		/*
-		++count;
-		if (count % updateCheckpoint == 0)
+
+		if (++count % updateCheckpoint == 0)
 		{
-			update();
+			update_properties();
+			QCoreApplication::processEvents();
 		}
-		*/
+
 		temperature = temperature * cooling;
 	}
-
+	data_r =  data_rect();
+	area = data_r.width() * data_r.height();
+	k = sqrt(data_r.width() * data_r.height() / m_nodes.size());
+	qDebug() << "k " << k;
 	return 0;
 }
 

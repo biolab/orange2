@@ -23,7 +23,7 @@ void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, P
     }
 }
 
-Plot::Plot(QWidget* parent): 
+Plot::Plot(QWidget* parent):
 QGraphicsView(parent)
 {
     setScene(new QGraphicsScene(this));
