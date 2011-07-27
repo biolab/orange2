@@ -21,7 +21,7 @@ for e in data:
     #prints [<orange.Value 'Sports'='1'>] <1.000, 0.000, 0.000, 0.000>
     #prints [<orange.Value 'Religion'='1'>, <orange.Value 'SCience'='1'>] <0.000, 1.000, 1.000, 0.000>
 
-mlknn_cliassifer = Orange.multilabel.MLkNNLearner(data)
+mlknn_cliassifer = Orange.multilabel.MLkNNLearner(data,k=1)
 for e in data:
     c,p = mlknn_cliassifer(e,Orange.classification.Classifier.GetBoth)
     print c,p

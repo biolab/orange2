@@ -97,18 +97,18 @@ class LabelPowersetLearner(_multibase.MultiLabelLearner):
         new_domain = Orange.data.Domain(new_domain,new_class)
         
         #build the instances
-        newtable = Orange.data.Table(new_domain)
+        new_table = Orange.data.Table(new_domain)
         for e in instances:
             new_row = Orange.data.Instance(
               new_domain, 
               [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
-              [label.get_label_bitstream(instances,e)])
+                    [label.get_label_bitstream(instances,e)])
             
-            newtable.append(new_row)
+            new_table.append(new_row)
                      
-            #store the classifier
-            classifier = self.base_learner(newtable)
-          
+        #store the classifier
+        classifier = self.base_learner(new_table)
+        
         #Learn from the given table of data instances.
         return LabelPowersetClassifier(instances = instances, label_indices = label_indices,classifier = classifier)
 
