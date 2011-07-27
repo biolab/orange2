@@ -1,5 +1,5 @@
 """\
-EARTH (Multivariate_adaptive_regression_splines - MARS) (``earth``)
+EARTH (Multivariate adaptive regression splines - MARS) (``earth``)
 
  
 .. autoclass :: EarthLearner
@@ -58,6 +58,7 @@ def base_matrix(data, best_set, dirs, cuts, betas):
         bx[:, termi] = X[:, -1] if X.size else 0.0
         
     return bx
+
 
 class EarthLearner(BaseEarthLearner):
     """ 
@@ -153,14 +154,20 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
     @property
     def num_terms(self):
+        """ Number of terms in the model (including the intercept).
+        """
         return numpy.sum(numpy.asarray(self.best_set, dtype=int))
     
     @property
     def max_terms(self):
+        """ Maximum number of terms (as specified in the learning step).
+        """
         return self.best_set.size
     
     @property
     def num_preds(self):
+        """ Number of predictors (variables) included in the model.
+        """
         return len(self.used_attributes(term))
     
     def __call__(self, example, what=Orange.core.GetValue):
@@ -185,10 +192,18 @@ class EarthClassifier(Orange.core.ClassifierFD):
         """
         raise NotImplementedError
     
+    def filters(self):
+        """ Orange.core.filter objects for each term (where the hinge
+        function is not 0).
+         
+        """
+        
+    
     def base_matrix(self, examples=None):
         """ Return the base matrix (bx) of the Earth model for the table.
         If table is not supplied the base matrix of the training examples 
         is returned.
+        
         
         :param examples: Input examples for the base matrix.
         :type examples: Orange.data.Table 
@@ -207,6 +222,17 @@ class EarthClassifier(Orange.core.ClassifierFD):
             data = numpy.asarray(examples)
             
         return base_matrix(data, self.best_set, self.dirs, self.cuts, self.betas)
+    
+    def _anova_order(self):
+        """ Return indices that sort the terms into the 'ANOVA' format.
+        """
+        terms = [([], 0)] # intercept
+        for i, used in enumerate(self.best_set[1:], 1):
+            attrs = sorted(self.used_attributes(i))
+            if used and attrs:
+                terms.append((attrs, i))
+        terms = sotred(terms, key=lambda t:(len(t[0]), t[0]))
+        return [i for _, i in terms]
     
     def format_model(self, percision=3, indent=3):
         header = "%s =" % self.class_var.name
@@ -252,14 +278,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
     def print_model(self, percision=3, indent=3):
         print self.format_model(percision, indent)
         
-    def format_summary(self):
-        pass
-    
-    def print_summary(self):
-        """ Print model summary
-        """
-        print self.format_summary()
-        
     def predict(self, ex):
         """ Return the predicted value (float) for example.
         """
@@ -296,8 +314,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
         return numpy.sum(bx[self.best_set] * betas)
             
     def used_attributes(self, term=None):
-        """ Return a list of used attributes. If term is given return only
-        attributes used in that single term.
+        """ Return a list of used attributes. If term (index) is given
+        return only attributes used in that single term.
         
         """
         if term is None:
@@ -305,15 +323,13 @@ class EarthClassifier(Orange.core.ClassifierFD):
         else:
             terms = [term]
         attrs = set()
-#        print terms
         for ti in terms:
             attri = numpy.where(self.dirs[ti] != 0.0)[0]
-#            print attri
             attrs.update([self.domain.attributes[i] for i in attri])
         return attrs
         
     def evimp(self, used_only=True):
-        """ Return the variable importance.
+        """ Return the estimated variable importance.
         """
         if self.subsets is None:
             raise ValueError("No subsets. Use the learner with 'prune=True'.")
@@ -336,6 +352,9 @@ class EarthClassifier(Orange.core.ClassifierFD):
                 importances[attr2ind[attr]][1] += 1.0
                 importances[attr2ind[attr]][2] += gcv[i - 1]
                 importances[attr2ind[attr]][3] += rss[i - 1]
+        imp_min = numpy.min(importances[:, [2, 3]], axis=0)
+        imp_max = numpy.max(importances[:, [2, 3]], axis=0)
+        importances[:, [2, 3]] = 100.0 * (importances[:, [2, 3]] - [imp_min]) / ([imp_max - imp_min])
         
         importances = list(importances)
         # Sort by n_subsets and gcv.
@@ -352,6 +371,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
     def plot(self):
         import pylab
         n_terms = self.num_terms
+        grid_size = int(numpy.ceil(numpy.sqrt(n_terms)))
+        fig = pylab.figure()
         
     def __reduce__(self):
         return (EarthClassifier, (self._base_classifier, self.examples,
@@ -360,8 +381,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
                                   self.rss_per_subset, self.gcv_per_subset),
                 {})
                                  
-        
-
+    
 def gcv(rss, n, n_effective_params):
     """ Return the generalized cross validation.
     
@@ -394,11 +414,10 @@ def subsets_selection_xtx(X, Y):
             rss_vec[subset_size] = numpy.sum(res)
         else:
             rss_vec[subset_size] = numpy.sum((Y - numpy.dot(X_work, b)) ** 2)
-#        print "Subset size", subset_size, "Rss", rss_vec[subset_size]
+            
         XtX = numpy.dot(X_work.T, X_work)
         iXtX = numpy.linalg.pinv(XtX)
         diag = numpy.diag(iXtX)
-        
         
         if subset_size == 0:
             break
@@ -406,7 +425,34 @@ def subsets_selection_xtx(X, Y):
         delta_rss = b ** 2 / diag
         delete_i = numpy.argmin(delta_rss[1:]) + 1 # Keep the intercept
         del working_set[delete_i]
-#        print delete_i
     return subsets, rss_vec
 
+
+def plot_evimp(evimp):
+    """ Plot the return value from EarthClassifier.evimp.
+    """
+    import pylab
+    fig = pylab.figure()
+    axes1 = fig.add_subplot(111)
+    attrs = [a for a, _ in evimp]
+    imp = [s for _, s in evimp]
+    imp = numpy.array(imp)
+    X = range(len(attrs))
+    l1 = axes1.plot(X, imp[:,0], "b-",)
+    axes2 = axes1.twinx()
+    
+    l2 = axes2.plot(X, imp[:,1], "g-",)
+    l3 = axes2.plot(X, imp[:,2], "r-",)
+    
+    x_axis = axes1.xaxis
+    x_axis.set_ticks(X)
+    x_axis.set_ticklabels([a.name for a in attrs], rotation=45)
+    
+    axes1.yaxis.set_label_text("nsubsets")
+    axes2.yaxis.set_label_text("normalizes gcc or rss")
+
+    axes1.legend([l1, l2, l3], ["nsubsets", "gcv", "rss"])
+    axes1.set_title("Variable importance")
+    fig.show()
+    
     
