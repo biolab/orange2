@@ -27,7 +27,7 @@ NodeItem::~NodeItem()
 {
 
 }
-
+/*
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     Q_UNUSED(option)
@@ -52,7 +52,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     	painter->drawEllipse(rect);
     }
 }
-
+*/
 void NodeItem::set_coordinates(double x, double y)
 {
     m_x = x;
@@ -329,8 +329,23 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature)
 	double k = sqrt(k2);
 	double kk = 2 * k;
 	double kk2 = kk * kk;
+
+	double cooling, cooling_switch, cooling_1, cooling_2;
 	temperature = sqrt(area) / 5;
-	double cooling = exp(log(k / 10 / temperature) / steps);
+	cooling = exp(log(k / 10 / temperature) / steps);
+	if (steps > 20)
+	{
+		cooling_switch = sqrt(area) / 100;
+		cooling_1 = (temperature - cooling_switch) / 20;
+		cooling_2 = (cooling_switch - sqrt(area) / 2000 ) / (steps - 20);
+	}
+	else
+	{
+		cooling_switch = sqrt(area) / 1000;
+		cooling_1 = (temperature - cooling_switch) / steps;
+		cooling_2 = 0;
+	}
+
 	qDebug() << "k " << k;
 	// iterations
 	for (i = 0; i < steps; i++)
@@ -420,7 +435,17 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature)
 			QCoreApplication::processEvents();
 		}
 
-		temperature = temperature * cooling;
+		//temperature = temperature * cooling;
+		//qDebug() << count << " " << temperature << " " << (temperature > cooling_switch);
+		if ((int)temperature > cooling_switch)
+		{
+			temperature -= cooling_1;
+		}
+		else
+		{
+			temperature -= cooling_2;
+		}
+
 	}
 	data_r =  data_rect();
 	area = data_r.width() * data_r.height();
