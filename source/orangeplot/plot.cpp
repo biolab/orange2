@@ -1,5 +1,6 @@
 #include "plot.h"
 #include "plotitem.h"
+#include "point.h"
 
 #include <QtCore/QDebug>
 
@@ -11,7 +12,7 @@ void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, P
      * than to iterate over all points on the graph and check which of them are 
      * inside the specified rect
      */
-    foreach (QGraphicsItem* item, scene->items(area, Qt::ContainsItemBoundingRect))
+    foreach (QGraphicsItem* item, scene->items(area, Qt::IntersectsItemBoundingRect))
     {
         Point* point = qgraphicsitem_cast<Point*>(item);
         if (point)
@@ -155,5 +156,35 @@ void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior
 {
     set_points_state(area, scene(), Point::Selected, behavior);
 }
+
+QList< int > Plot::selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform)
+{
+    Q_ASSERT(x_data.size() == y_data.size());
+    const int n = qMin(x_data.size(), y_data.size());
+    QList<int> selected;
+    selected.reserve(n);
+    for (int i = 0; i < n; ++i)
+    {
+        const QPointF coords = QPointF(x_data[i], y_data[i]) * transform;
+        bool found_point = false;
+        foreach (QGraphicsItem* item, scene()->items(coords))
+        {
+            if (item->pos() != coords)
+            {
+                continue;
+            }
+            const Point* point = qgraphicsitem_cast<Point*>(item);
+            found_point = (point && point->is_selected());
+            if (found_point)
+            {
+                break;
+            }
+        }
+        selected << found_point;
+    }
+    qDebug() << "Found" << selected.count(1) << "selected points out of" << selected.size();
+    return selected;
+}
+
 
 #include "plot.moc"

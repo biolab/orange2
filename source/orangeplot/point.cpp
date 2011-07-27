@@ -30,7 +30,19 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     
     if (m_display_mode == DisplayPath)
     {
-        painter->setPen(m_color);
+        if (m_state & Selected)
+        {
+            painter->setBrush(m_color);
+            painter->setPen(Qt::yellow);
+        }
+        else if (m_state & Marked)
+        {
+            painter->setBrush(m_color);
+        }
+        else
+        {
+            painter->setPen(m_color);
+        }
         const QPainterPath path = path_for_symbol(m_symbol, m_size);
         painter->drawPath(path_for_symbol(m_symbol, m_size));
     } 
@@ -240,6 +252,7 @@ void Point::set_state_flag(Point::StateFlag flag, bool on) {
     {
         m_size &= ~flag;
     }
+    update();
 }
 bool Point::state_flag(Point::StateFlag flag) const {
     return m_state & flag;

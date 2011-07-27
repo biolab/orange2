@@ -41,6 +41,8 @@ public:
     void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
     
+    QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
+    
 protected:
     void set_clean();;
     bool is_dirty();

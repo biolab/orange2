@@ -439,7 +439,6 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         [xAttr, yAttr] = attrList
         #if not self.rawData: return (None, None, None)
         if not self.haveData: return (None, None)
-        if not self.selectionCurveList: return (None, self.rawData)       # if no selections exist
 
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList)
 

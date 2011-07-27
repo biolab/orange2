@@ -186,6 +186,7 @@ class OWPlot(orangeplot.Plot):
         self.gui = OWPlotGUI(self)
 
         self.activate_zooming()
+        self.selection_behavior = self.AddSelection
         self.replot()
         
         
@@ -803,26 +804,16 @@ class OWPlot(orangeplot.Plot):
             self._current_ps_item = None
         
     def get_selected_points(self, xData, yData, validData):
-        region = QRegion()
         selected = []
         unselected = []
-        for item, reg in self.selection_items:
-            region |= reg
-        for j in range(len(xData)):
-            (x, y) = self.map_to_graph( (xData[j], yData[j]) )
-            p = (QPointF(xData[j], yData[j]) * self.map_transform).toPoint()
-            sel = region.contains(p)
-            selected.append(sel)
-            unselected.append(not sel)
+        qDebug('Getting selected points')
+        for i in self.selected_points(xData, yData, self.map_transform):
+            selected.append(i)
+            unselected.append(not i)
         return selected, unselected
         
     def add_selection_item(self, item, reg):
-        if type(reg) == QRectF:
-            reg = reg.toRect()
-        elif type(reg) == QPolygonF:
-            reg = reg.toPolygon()
-        t = (item, QRegion(reg))
-        self.selection_items.append(t)
+        self.select_points(reg, self.selection_behavior)
         if self.auto_send_selection_callback:
             self.auto_send_selection_callback()
         

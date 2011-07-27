@@ -31,6 +31,13 @@ class Plot : QGraphicsView {
 %End
 
 public:
+    enum SelectionBehavior
+    {
+        AddSelection,
+        RemoveSelection,
+        ToggleSelection
+    };
+    
     Plot(QWidget* parent /TransferThis/ = 0);
     virtual ~Plot();
     
@@ -48,6 +55,13 @@ public:
     void set_dirty();
     
     QGraphicsRectItem* graph_item;
+    
+    void select_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
+    void select_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
+    void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    
+    QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
     
 protected:
     void set_clean();
