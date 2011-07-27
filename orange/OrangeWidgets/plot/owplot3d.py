@@ -114,8 +114,12 @@ def enum(*sequential):
 #   in current horizontal coordinate (x or z, depends on rotation)
 PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 'PANNING')
 
-Symbol = enum('TRIANGLE', 'RECTANGLE', 'PENTAGON', 'CIRCLE')
+Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
+              'DIAMOND', 'WEDGE', 'LWEDGE', 'CROSS', 'XCROSS')
+
 SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
+
+from owprimitives3d import get_symbol_data
 
 class Legend(object):
     def __init__(self, plot):
@@ -202,7 +206,8 @@ class Legend(object):
         self.position[1] += dy
 
 class RectangleSelection(object):
-    def __init__(self, first_vertex):
+    def __init__(self, plot, first_vertex):
+        self.plot = plot
         self.first_vertex = first_vertex
         self.current_vertex = first_vertex
 
@@ -223,7 +228,7 @@ class RectangleSelection(object):
     def draw(self):
         v1, v2 = self.first_vertex, self.current_vertex
         glLineWidth(1)
-        glColor4f(0, 0, 0, 1)
+        glColor4f(*self.plot.theme.helpers_color)
         draw_line(v1[0], v1[1], v1[0], v2[1])
         draw_line(v1[0], v2[1], v2[0], v2[1])
         draw_line(v2[0], v2[1], v2[0], v1[1])
@@ -243,7 +248,8 @@ class RectangleSelection(object):
         # TODO: drop if too small
 
 class PolygonSelection(object):
-    def __init__(self, first_vertex):
+    def __init__(self, plot, first_vertex):
+        self.plot = plot
         self.vertices = [first_vertex]
         self.current_vertex = first_vertex
         self.first_vertex = first_vertex
@@ -295,7 +301,7 @@ class PolygonSelection(object):
 
     def draw(self):
         glLineWidth(1)
-        glColor4f(0, 0, 0, 1)
+        glColor4f(*self.plot.theme.helpers_color)
         if len(self.vertices) == 1:
             v1, v2 = self.vertices[0], self.current_vertex
             draw_line(v1[0], v1[1], v2[0], v2[1])
@@ -392,7 +398,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.show_legend = True
         self.legend = Legend(self)
 
-        self.use_2d_symbols = True
+        self.use_2d_symbols = False
         self.symbol_scale = 1.
         self.transparency = 255
         self.show_grid = True
@@ -437,6 +443,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LINE_SMOOTH)
         glDisable(GL_CULL_FACE)
+        glEnable(GL_MULTISAMPLE)
 
         self.symbol_shader = QtOpenGL.QGLShaderProgram()
         vertex_shader_source = '''
@@ -583,7 +590,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
-                vao_id, outline_vao_id, (X, Y, Z), labels = params
+                vao_id, (X, Y, Z), labels = params
                 scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
 
                 self.symbol_shader.bind()
@@ -598,11 +605,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 glBindVertexArray(vao_id)
                 glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
                 glBindVertexArray(0)
-                if self.use_2d_symbols:
-                    glLineWidth(1)
-                    glBindVertexArray(outline_vao_id)
-                    glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
-                    glBindVertexArray(0)
+                #if self.use_2d_symbols:
+                #    glLineWidth(1)
+                #    glBindVertexArray(outline_vao_id)
+                #    glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
+                #    glBindVertexArray(0)
 
                 self.symbol_shader.release()
 
@@ -621,7 +628,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         for (cmd, params) in self.commands:
             if cmd == 'scatter':
-                vao_id, outline_vao_id, (X, Y, Z), labels = params
+                vao_id, (X, Y, Z), labels = params
                 # Draw into color-picking buffer. Each example gets its own
                 # unique color, carrying example's index. We also draw stencil mask
                 # of selections, so we can quickly determine whether or not pixel
@@ -954,14 +961,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.data_scale = numpy.array([scale_x, scale_y, scale_z])
 
-        def generate_vertices(symbol):
-            # TODO
-            pass
+        # TODO: if self.use_2d_symbols
 
-        # Generate vertices for shapes and also indices for outlines.
         vertices = []
-        outline_indices = []
-        index = 0
         ai = -1 # Array index (used in color-picking).
         for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
             x -= self.data_center[0]
@@ -970,18 +972,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             x *= scale_x
             y *= scale_y
             z *= scale_z
-            sO2 = size * 0.1
-            n = self.available_symbols[symbol % len(self.available_symbols)]
-            angle_inc = 2.*pi / n
-            angle = angle_inc / 2.
-            ai += 1
-            for i in range(n):
-                vertices.extend([x,y,z, ai, 0,0,0, r,g,b,a])
-                vertices.extend([x,y,z, ai, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
-                angle += angle_inc
-                vertices.extend([x,y,z, ai, -cos(angle)*sO2, -sin(angle)*sO2, 0, r,g,b,a])
-                outline_indices.extend([index+1, index+2])
-                index += 3
+            triangles = get_symbol_data(symbol)
+            ss = size*0.1
+            for (v1, v2, v3) in triangles:
+                vertices.extend([x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a])
+                vertices.extend([x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a])
+                vertices.extend([x,y,z, ai, ss*v3[0],ss*v3[1],ss*v3[2], r,g,b,a])
 
         # Build Vertex Buffer + Vertex Array Object.
         vao_id = GLuint(0)
@@ -1003,37 +999,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-        # Outline:
-        # generate another VAO, keep the same vertex buffer, but use an index buffer
-        # this time.
-        index_buffer_id = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, numpy.array(outline_indices, 'I'), GL_STATIC_DRAW)
-
-        outline_vao_id = GLuint(0)
-        glGenVertexArrays(1, outline_vao_id)
-        glBindVertexArray(outline_vao_id)
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(4*4))
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(7*4))
-        glEnableVertexAttribArray(0)
-        glEnableVertexAttribArray(1)
-        glEnableVertexAttribArray(2)
-
-        glBindVertexArray(0)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-
         vao_id.num_vertices = len(vertices) / (vertex_size / 4)
-        outline_vao_id.num_indices = vao_id.num_vertices * 2 / 3
         self.vertex_buffers.append(vertex_buffer_id)
-        self.index_buffers.append(index_buffer_id)
         self.vaos.append(vao_id)
-        self.vaos.append(outline_vao_id)
-        self.commands.append(("scatter", [vao_id, outline_vao_id, (X,Y,Z), labels]))
+        self.commands.append(("scatter", [vao_id, (X,Y,Z), labels]))
         self.updateGL()
 
     def set_x_axis_map(self, map):
@@ -1208,7 +1177,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.state = PlotState.SELECTING
                 if self.selection_type == SelectionType.RECTANGLE or\
                    self.selection_type == SelectionType.ZOOM:
-                    self.new_selection = RectangleSelection([pos.x(), pos.y()])
+                    self.new_selection = RectangleSelection(self, [pos.x(), pos.y()])
         elif buttons & Qt.RightButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 self.selections = []
@@ -1285,7 +1254,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def mouseReleaseEvent(self, event):
         if self.state == PlotState.SELECTING and self.new_selection == None:
-            self.new_selection = PolygonSelection([event.pos().x(), event.pos().y()])
+            self.new_selection = PolygonSelection(self, [event.pos().x(), event.pos().y()])
             return
 
         if self.state == PlotState.SCALING:
