@@ -50,13 +50,6 @@ class NetworkCurve(orangeplot.NetworkCurve):
       
     self.update_properties()
     return selected
-      
-  def set_edge_color(self, index, color, nocolor=0):
-      pen = self.edges[index].pen
-      if nocolor:
-        color.setAlpha(0)
-      self.edges[index].pen = QPen(color, pen.width())
-      self.edges[index].pen.setCapStyle(Qt.RoundCap)
   
   def get_selected_nodes(self):
     return [vertex.index for vertex in self.vertices.itervalues() if vertex.selected]
@@ -261,15 +254,15 @@ class OWNxCanvas(OWPlot):
         self.items = None
         self.links = None
         
+        self.axis_margin = 0
+        self.title_margin = 0
+        self.graph_margin = 1
+        self._legend_margin = QRectF(0, 0, 0, 0)
+        
         self.setFocusPolicy(Qt.StrongFocus)
         
     def update_canvas(self):
         self.networkCurve.update_properties()
-        #rect = self.networkCurve.dataRect()
-        #self.set_axis_scale(xBottom, min, max)
-        #self.set_axis_scale(yLeft, min, max)
-        self.set_dirty()
-        self.replot()
         
     def getSelection(self):
       return self.networkCurve.get_selected_nodes()
@@ -292,32 +285,32 @@ class OWNxCanvas(OWPlot):
       self.networkCurve.show_all_vertices()
       self.drawPlotItems()
       
-    def optimize(self, frSteps):
-        qApp.processEvents()
-        tolerance = 5
-        initTemp = 100
-        breakpoints = 20
-        k = int(frSteps / breakpoints)
-        o = frSteps % breakpoints
-        iteration = 0
-        coolFactor = exp(log(10.0 / 10000.0) / frSteps)
-        #print coolFactor
-        if k > 0:
-            while iteration < breakpoints:
-                initTemp = self.layout.fruchtermanReingold(k, initTemp, coolFactor, self.hiddenNodes)
-                iteration += 1
-                qApp.processEvents()
-                self.updateCanvas()
-    
-            initTemp = self.layout.fruchtermanReingold(o, initTemp, coolFactor, self.hiddenNodes)
-            qApp.processEvents()
-            self.updateCanvas()
-        else:
-            while iteration < o:
-                initTemp = self.layout.fruchtermanReingold(1, initTemp, coolFactor, self.hiddenNodes)
-                iteration += 1
-                qApp.processEvents()
-                self.updateCanvas()
+#    def optimize(self, frSteps):
+#        qApp.processEvents()
+#        tolerance = 5
+#        initTemp = 100
+#        breakpoints = 20
+#        k = int(frSteps / breakpoints)
+#        o = frSteps % breakpoints
+#        iteration = 0
+#        coolFactor = exp(log(10.0 / 10000.0) / frSteps)
+#        #print coolFactor
+#        if k > 0:
+#            while iteration < breakpoints:
+#                initTemp = self.layout.fruchtermanReingold(k, initTemp, coolFactor, self.hiddenNodes)
+#                iteration += 1
+#                qApp.processEvents()
+#                self.updateCanvas()
+#    
+#            initTemp = self.layout.fruchtermanReingold(o, initTemp, coolFactor, self.hiddenNodes)
+#            qApp.processEvents()
+#            self.updateCanvas()
+#        else:
+#            while iteration < o:
+#                initTemp = self.layout.fruchtermanReingold(1, initTemp, coolFactor, self.hiddenNodes)
+#                iteration += 1
+#                qApp.processEvents()
+#                self.updateCanvas()
                 
     def markedToSelection(self):
         self.networkCurve.mark_to_sel()
@@ -404,270 +397,13 @@ class OWNxCanvas(OWPlot):
       
       if self.sendMarkedNodes != None:
             self.sendMarkedNodes(self.networkCurve.get_marked_nodes())
-        
-    def activateMoveSelection(self):
-        self.state = MOVE_SELECTION
-#    
-#    def mouseMoveEvent(self, event):
-#        if not self.graph:
-#          return
-#          
-#        if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION and self.GMmouseMoveEvent != None:
-#            newX = self.invTransform(2, event.pos().x())
-#            newY = self.invTransform(0, event.pos().y())
-#            
-#            dx = newX - self.invTransform(2, self.GMmouseMoveEvent.x())
-#            dy = newY - self.invTransform(0, self.GMmouseMoveEvent.y())
-#            movedVertices = self.networkCurve.move_selected_nodes(dx, dy)
-#            
-#            self.GMmouseMoveEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
-#            self.GMmouseMoveEvent.setY(event.pos().y())
-#            
-#            self.drawPlotItems(replot=1, vertices=movedVertices)
-#            if self.callbackMoveVertex:
-#                self.callbackMoveVertex()
-#        else:
-#            OWPlot.mouseMoveEvent(self, event)
-#                
-#        if not self.freezeNeighbours and self.tooltipNeighbours:
-#            px = self.invTransform(2, event.x())
-#            py = self.invTransform(0, event.y())   
-#            ndx, mind = self.networkCurve.closest_node(px, py)
-#            dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - event.x()
-#            dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - event.y()
-#            # transform to pixel distance
-#            distance = math.sqrt(dX**2 + dY**2) 
-#              
-#            if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
-#                toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
-#                self.networkCurve.set_marked_nodes(toMark)
-#                self.drawPlotItems()
-#                
-#                if self.sendMarkedNodes != None:
-#                    self.sendMarkedNodes(self.networkCurve.get_marked_nodes())
-#            else:
-#                self.networkCurve.unmark()
-#                self.drawPlotItems()
-#                
-#                if self.sendMarkedNodes != None:
-#                    self.sendMarkedNodes([])
-#        
-#        if self.showDistances:
-#            selection = self.networkCurve.get_selected_nodes()
-#            if len(selection) > 0:
-#                px = self.invTransform(2, event.x())
-#                py = self.invTransform(0, event.y())  
-#                 
-#                v, mind = self.networkCurve.closest_node(px, py)
-#                dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[v][0]) - event.x()
-#                dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[v][1]) - event.y()
-#                # transform to pixel distance
-#                distance = math.sqrt(dX**2 + dY**2)               
-#                if v != -1 and distance <= self.networkCurve.vertices[v].size:
-#                    if self.items_matrix == None:
-#                        dst = 'vertex distance signal not set'
-#                    else:
-#                        dst = 0
-#                        for u in selection:
-#                            dst += self.items_matrix[u, v]
-#                        dst = dst / len(selection)
-#                        
-#                    self.showTip(event.pos().x(), event.pos().y(), str(dst))
-#                    self.replot()
-#    
-#    def mousePressEvent(self, event):
-#      if self.graph is None:
-#          return
-#          
-#      #self.grabKeyboard()
-#      self.mouseSelectedVertex = 0
-#      self.GMmouseMoveEvent = None
-#      
-#      if self.state == MOVE_SELECTION:
-#        self.mouseCurrentlyPressed = 1
-#        #if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection != []:
-#        #  self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-#        #else:
-#          # button pressed outside selected area or there is no area
-#        self.selectVertex(event.pos())
-#        self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-#        self.replot()
-#      elif self.state == SELECT_RECTANGLE:
-#          self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-#          
-#          if self.clickedSelectedOnVertex(event.pos()):
-#              self.mouseSelectedVertex = 1
-#              self.mouseCurrentlyPressed = 1
-#              self.state = MOVE_SELECTION
-#              self.GMmouseMoveEvent = QPoint(event.pos().x(), event.pos().y())
-#          elif self.clickedOnVertex(event.pos()):
-#              self.mouseSelectedVertex = 1
-#              self.mouseCurrentlyPressed = 1
-#          else:
-#              OWPlot.mousePressEvent(self, event)  
-#      else:
-#          OWPlot.mousePressEvent(self, event)     
-#    
-#    def mouseReleaseEvent(self, event):  
-#        if self.graph is None:
-#          return
-#          
-#        #self.releaseKeyboard()
-#        if self.state == MOVE_SELECTION:
-#            self.state = SELECT_RECTANGLE
-#            self.mouseCurrentlyPressed = 0
-#            
-#            self.moveGroup = False
-#            #self.GMmouseStartEvent=None
-#            
-#        if self.state == SELECT_RECTANGLE:
-#            x1 = self.invTransform(2, self.GMmouseStartEvent.x())
-#            y1 = self.invTransform(0, self.GMmouseStartEvent.y())
-#            
-#            x2 = self.invTransform(2, event.pos().x())
-#            y2 = self.invTransform(0, event.pos().y())
-#            
-#            
-#            if self.mouseSelectedVertex == 1 and x1 == x2 and y1 == y2 and self.selectVertex(self.GMmouseStartEvent):
-#                QwtPlot.mouseReleaseEvent(self, event)
-#            elif self.mouseSelectedVertex == 0:
-#                 
-#                selection = self.networkCurve.get_nodes_in_rect(x1, y1, x2, y2)
-#    
-#                def selectVertex(ndx):
-#                    if self.networkCurve.vertices[ndx].show:
-#                        self.networkCurve.vertices[ndx].selected = True
-#                        
-#                map(selectVertex, selection)
-#                
-#                if len(selection) == 0 and x1 == x2 and y1 == y2:
-#                    self.removeSelection()
-#                    self.unmark()
-#            
-#                self.markSelectionNeighbours()
-#                OWPlot.mouseReleaseEvent(self, event)
-#                self.removeAllSelections()
-#    
-#        elif self.state == SELECT_POLYGON:
-#                OWPlot.mouseReleaseEvent(self, event)
-#                if self.tempSelectionCurve == None:   #if OWVisGraph closed polygon
-#                    self.selectVertices()
-#        else:
-#            OWPlot.mouseReleaseEvent(self, event)
-#            
-#        self.mouseCurrentlyPressed = 0
-#        self.moveGroup = False
-#            
-#        if self.callbackSelectVertex != None:
-#            self.callbackSelectVertex()
-#    
-#    def keyPressEvent(self, e):
-#        if self.graph is None:
-#          return
-#          
-#        if e.key() == 87 or e.key() == 81:
-#            selection = [v.index for v in self.networkCurve.vertices.itervalues() if v.selected]
-#            if len(selection) > 0:
-#                phi = [math.pi / -180 if e.key() == 87 else math.pi / 180]
-#                self.layout.rotate_vertices([selection], phi)
-#                self.drawPlotItems(replot=1)
-#            
-#        if e.key() == Qt.Key_Control:
-#            self.controlPressed = True
-#        
-#        elif e.key() == Qt.Key_Alt:
-#            self.altPressed = True
-#            
-#        if e.text() == "f":
-#            self.graph.freezeNeighbours = not self.graph.freezeNeighbours
-#        
-#        OWPlot.keyPressEvent(self, e)
-#            
-#    def keyReleaseEvent(self, e):
-#        if e.key() == Qt.Key_Control:
-#            self.controlPressed = False
-#        
-#        elif e.key() == Qt.Key_Alt:
-#            self.altPressed = False
-#        
-#        OWPlot.keyReleaseEvent(self, e)
-#        
-#    def clickedSelectedOnVertex(self, pos):
-#        min = 1000000
-#        ndx = -1
-#    
-#        px = self.invTransform(2, pos.x())
-#        py = self.invTransform(0, pos.y())   
-#    
-#        ndx, min = self.networkCurve.closest_node(px, py)
-#        dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - pos.x()
-#        dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - pos.y()
-#        # transform to pixel distance
-#        distance = math.sqrt(dX**2 + dY**2)
-#        
-#        #self.networkCurve
-#        
-#        if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
-#            return self.networkCurve.vertices[ndx].selected
-#        else:
-#            return False
-#        
-    def clickedOnVertex(self, pos):
-        min = 1000000
-        ndx = -1
-    
-        px = self.invTransform(2, pos.x())
-        py = self.invTransform(0, pos.y())   
-    
-        ndx, min = self.networkCurve.closest_node(px, py)
-        dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - pos.x()
-        dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - pos.y()
-        # transform to pixel distance
-        distance = math.sqrt(dX**2 + dY**2)
-        if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
-            return True
-        else:
-            return False
-                
-    def selectVertex(self, pos):
-        min = 1000000
-        ndx = -1
-    
-        px = self.invTransform(2, pos.x())
-        py = self.invTransform(0, pos.y())   
-    
-        ndx, min = self.networkCurve.closest_node(px, py)
-        
-        dX = self.transform(QwtPlot.xBottom, self.networkCurve.coors[ndx][0]) - pos.x()
-        dY = self.transform(QwtPlot.yLeft,   self.networkCurve.coors[ndx][1]) - pos.y()
-        # transform to pixel distance
-        distance = math.sqrt(dX**2 + dY**2)
-        if ndx != -1 and distance <= self.networkCurve.vertices[ndx].size:
-            if not self.appendToSelection and not self.controlPressed:
-                self.removeSelection()
-                      
-            if self.insideview:
-                self.networkCurve.unselect()
-                self.networkCurve.vertices[ndx].selected = not self.networkCurve.vertices[ndx].selected
-                self.optimize(100)
-                
-                self.markSelectionNeighbours()
-            else:
-                self.networkCurve.vertices[ndx].selected = not self.networkCurve.vertices[ndx].selected
-                self.markSelectionNeighbours()
-            
-            return True  
-        else:
-            return False
-            self.removeSelection()
-            self.unmark()
     
     def updateData(self):
         if self.graph is None:
             return
         
-#        self.removeDrawingCurves(removeLegendItems=0)
-#        self.tips.removeAll()
+        self.clear()
+        self.tooltipData = []
 #        
 #        if self.items_matrix and self.minComponentEdgeWidth > 0 and self.maxComponentEdgeWidth > 0:          
 #            components = Orange.network.nx.algorithms.components.connected_components(self.graph)
@@ -742,38 +478,6 @@ class OWNxCanvas(OWPlot):
         
         self.networkCurve.showEdgeLabels = self.showEdgeLabels
         self.networkCurve.attach(self)
-        self.drawPlotItems(replot=0)
-        
-        #self.zoomExtent()
-        
-    def drawPlotItems(self, replot=1, vertices=[]):
-#        if len(vertices) > 0:
-#            for vertex in vertices:
-#                x1 = float(self.networkCurve.coors[vertex][0])
-#                y1 = float(self.networkCurve.coors[vertex][1])
-#                
-#                if vertex in self.markerKeys:
-#                    mkey = self.markerKeys[vertex]
-#                    mkey.setValue(x1, y1)
-#              
-#                if 'index ' + str(vertex) in self.markerKeys:
-#                    mkey = self.markerKeys['index ' + str(vertex)]
-#                    mkey.setValue(x1, y1)
-#                
-#                if vertex in self.tooltipKeys:
-#                    tkey = self.tooltipKeys[vertex]
-#                    self.tips.positions[tkey] = (x1, y1, 0, 0)
-#        else:
-#            self.markerKeys = {}
-#            self.removeMarkers()
-#            self.drawLabels()
-#            self.drawToolTips()
-#            self.drawWeights()
-#            self.drawIndexes()
-#            self.drawComponentKeywords()
-#        
-#        if replot:
-            self.replot()
             
     def drawComponentKeywords(self):
         if self.showComponentAttribute == None:
@@ -935,37 +639,37 @@ class OWNxCanvas(OWPlot):
         if self.graph is None:
             return
         
-#        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.links, attribute, self.discEdgePalette)
-#    
-#        for index in range(len(self.networkCurve.edges)):
-#            if colorIndex != None:
-#                links_index = self.networkCurve.edges[index].links_index
-#                if links_index == None:
-#                    continue
-#                
-#                if self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
+        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
+        colors = []
+        
+        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
+            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
+        
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+            #colors.update((v, self.contPalette[(float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)]) 
+            #              if str(self.items[v][colorIndex].value) != '?' else 
+            #              (v, self.discPalette[0]) for v in nodes)
+            print "TODO set continuous color"
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+            #colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
+            print "TODO set discrete color"
+        else:
+            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
+            
+        self.networkCurve.set_edge_color(colors)
+        self.replot()
+        
+#                 if self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
 #                    newColor = self.discEdgePalette[0]
-#                    if str(self.links[links_index][colorIndex]) != "?":
-#                        if maxValue == minValue:
-#                            newColor = self.discEdgePalette[0]
 #                        else:
 #                            value = (float(self.links[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
 #                            newColor = self.contEdgePalette[value]
-#                        
-#                    self.networkCurve.set_edge_color(index, newColor)
-#                    
 #                elif self.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
 #                    newColor = self.discEdgePalette[colorIndices[self.links[links_index][colorIndex].value]]
 #                    if self.links[links_index][colorIndex].value == "0":
 #                      self.networkCurve.set_edge_color(index, newColor, nocolor=1)
 #                    else:
 #                      self.networkCurve.set_edge_color(index, newColor)
-#                    
-#            else:
-#                newColor = self.discEdgePalette[0]
-#                self.networkCurve.set_edge_color(index, newColor)
-#        
-#        self.replot()
     
     def set_node_color(self, attribute, nodes=None):
         if self.graph is None:
@@ -977,23 +681,17 @@ class OWNxCanvas(OWPlot):
         if nodes is None:
             nodes = self.graph.nodes()
         
-        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
-            for v in nodes:
-                newColor = self.discPalette[0]
-                
-                if str(self.items[v][colorIndex]) != "?":
-                    if maxValue == minValue:
-                        newColor = self.discPalette[0]
-                    else:
-                        value = (float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
-                        newColor = self.contPalette[value]
-                    
-                colors[v] = newColor
-                
+        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
+            colors.update((node, self.discPalette[0]) for node in nodes)
+        
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+            colors.update((v, self.contPalette[(float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)]) 
+                          if str(self.items[v][colorIndex].value) != '?' else 
+                          (v, self.discPalette[0]) for v in nodes)
+
         elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
-            for v in nodes:
-                newColor = self.discPalette[colorIndices[self.items[v][colorIndex].value]]
-                colors[v] = newColor
+            colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
+            
         else:
             colors.update((node, self.discPalette[0]) for node in nodes)
         
@@ -1131,7 +829,8 @@ class OWNxCanvas(OWPlot):
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
         vertices = dict((v, NodeItem(v, parent=self.networkCurve)) for v in self.graph)
-        
+        self.networkCurve.set_nodes(vertices)
+                
         #build edge index
         row_ind = {}
         if self.links is not None and len(self.links) > 0:
@@ -1170,7 +869,6 @@ class OWNxCanvas(OWPlot):
                                       graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges()]
             
         self.networkCurve.set_edges(edges)
-        self.networkCurve.set_nodes(vertices)
         self.networkCurve.update_properties()
         self.replot()
 #        
@@ -1192,97 +890,6 @@ class OWNxCanvas(OWPlot):
 #        self.networkCurve.vertices = vertices
 #        self.networkCurve.edges = edges
 #        self.networkCurve.changed()
-        
-    def set_graph_layout(self, graph, layout, curve=None, items=None, links=None):
-        self.clear()
-        self.vertexDegree = []
-        #self.vertices_old = {}
-        #self.vertices = []
-        #self.edges_old = {}
-        #self.edges = []
-        self.minEdgeWeight = sys.maxint
-        self.maxEdgeWeight = 0
-        
-        if graph is None or layout is None:
-            self.graph = None
-            self.layout = None
-            self.networkCurve = None
-            self.items = None
-            self.links = None
-            xMin = -1.0
-            xMax = 1.0
-            yMin = -1.0
-            yMax = 1.0
-            self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment=Qt.AlignCenter, size=self.fontSize)
-            self.tooltipNeighbours = 0
-            self.replot()
-            return
-        
-        self.graph = graph
-        self.layout = layout
-        self.networkCurve = NetworkCurve(self) if curve is None else curve
-        self.items = items if items is not None else self.graph.items()
-        self.links = links if links is not None else self.graph.links()
-        
-        #add nodes
-        #self.vertices_old = [(None, []) for v in self.graph]
-        vertices = dict((v, NodeItem(v)) for v in self.graph)
-        
-        #build edge index
-        row_ind = {}
-        if self.links is not None and len(self.links) > 0:
-          for i, r in enumerate(self.links):
-              u = int(r['u'].value)
-              v = int(r['v'].value)
-              if u in self.graph and v in self.graph:
-                  u_dict = row_ind.get(u, {})
-                  v_dict = row_ind.get(v, {})
-                  u_dict[v] = i
-                  v_dict[u] = i
-                  row_ind[u] = u_dict
-                  row_ind[v] = v_dict
-              
-        #add edges
-        if self.links is not None and len(self.links) > 0:
-            links = self.links
-            links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges())
-            labels = ([str(row[r].value) for r in range(2, len(row))] for row in (links[links_index] for links_index in links_indices))
-            
-            if self.graph.is_directed():
-                edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), 0, 1, links_index, label) for \
-                    ((i, j), links_index, label) in zip(self.graph.edges(), \
-                                                        links_indices, labels)]
-            else:
-                edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), links_index, label) for \
-                    ((i, j), links_index, label) in zip(self.graph.edges(), \
-                                                        links_indices, labels)]
-        elif self.graph.is_directed():
-            edges = [EdgeItem(vertices[i], vertices[j],
-                                      graph[i][j].get('weight', 1), 0, 1) for (i, j) in self.graph.edges()]
-        else:
-            edges = [EdgeItem(vertices[i], vertices[j],
-                                      graph[i][j].get('weight', 1)) for (i, j) in self.graph.edges()]
-        
-        self.minEdgeWeight = min(edge.weight for edge in edges) if len(edges) > 0 else 0
-        self.maxEdgeWeight = max(edge.weight for edge in edges) if len(edges) > 0 else 0
-        
-        if self.minEdgeWeight is None: 
-            self.minEdgeWeight = 0 
-        
-        if self.maxEdgeWeight is None: 
-            self.maxEdgeWeight = 0 
-                          
-        self.maxEdgeSize = 10
-            
-        self.setEdgesSize()
-        self.setVerticesSize()
-        
-        self.networkCurve.coors = self.layout.map_to_graph(self.graph)
-        self.networkCurve.vertices = vertices
-        self.networkCurve.edges = edges
-        self.networkCurve.changed()
         
     def setEdgesSize(self):
 #        if self.maxEdgeWeight > self.minEdgeWeight:
@@ -1306,31 +913,10 @@ class OWNxCanvas(OWPlot):
 #            for edge in self.networkCurve.edges:
 #                edge.pen = QPen(edge.pen.color(), 1)
 #                edge.pen.setCapStyle(Qt.RoundCap)
-        pass
-    
-    def updateCanvas(self):
-        self.updateData()
-        self.replot()  
-    
-    def zoomExtent(self):
-        self.replot()
-        
-    def zoomSelection(self):
-        selection = self.networkCurve.get_selected_nodes()
-        if len(selection) > 0: 
-            x = [self.networkCurve.coors[v][0] for v in selection]
-            y = [self.networkCurve.coors[v][1] for v in selection]
-    
-            oldXMin = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
-            oldXMax = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
-            oldYMin = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
-            oldYMax = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
-            newXMin = min(x)
-            newXMax = max(x)
-            newYMin = min(y)
-            newYMax = max(y)
-            self.zoomStack.append((oldXMin, oldXMax, oldYMin, oldYMax))
-            self.setAxisScale(QwtPlot.xBottom, newXMin - 100, newXMax + 100)
-            self.setAxisScale(QwtPlot.yLeft, newYMin - 100, newYMax + 100)
-            self.replot()
+        pass    
                     
+    def replot(self):
+        OWPlot.replot(self)
+        
+        if hasattr(self, 'networkCurve') and self.networkCurve is not None:
+            self.networkCurve.update()

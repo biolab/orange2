@@ -30,7 +30,7 @@ dlg_showall = dir + "Dlg_clear.png"
 
 class OWNxExplorerQt(OWWidget):
     settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
-    "maxLinkSize", "minVertexSize", "maxVertexSize", "renderAntialiased",
+    "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.use_antialiasing",
     "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn",
     "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
     "showWeights", "showIndexes",  "showEdgeLabels", "colorSettings", 
@@ -58,6 +58,8 @@ class OWNxExplorerQt(OWWidget):
                         ("Marked Items", Orange.data.Table),
                         ("Attribute Selection List", AttributeList)]
         
+        self.networkCanvas = NetworkCanvas(self, self.mainArea, "Net Explorer")
+        
         self.markerAttributes = []
         self.tooltipAttributes = []
         self.edgeLabelAttributes = []
@@ -82,7 +84,6 @@ class OWNxExplorerQt(OWWidget):
         self.maxLinkSize = 3
         self.maxVertexSize = 5
         self.minVertexSize = 5
-        self.renderAntialiased = 1
         self.labelsOnMarkedOnly = 0
         self.invertSize = 0
         self.optMethod = 0
@@ -127,7 +128,6 @@ class OWNxExplorerQt(OWWidget):
         self.mainArea.layout().setContentsMargins(0,4,4,4)
         self.controlArea.layout().setContentsMargins(4,4,0,4)
         
-        self.networkCanvas = NetworkCanvas(self, self.mainArea, "Net Explorer")
         self.networkCanvas.showMissingValues = self.showMissingValues
         self.mainArea.layout().addWidget(self.networkCanvas)
         
@@ -203,7 +203,7 @@ class OWNxExplorerQt(OWWidget):
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback=(lambda: self._set_canvas_attr('showIndexes', self.showIndexes)))
         OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback=(lambda: self._set_canvas_attr('labelsOnMarkedOnly', self.labelsOnMarkedOnly)))
-        OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback=(lambda: self._set_canvas_attr('renderAntialiased', self.renderAntialiased)))
+        self.networkCanvas.gui.antialiasing_check_box(ib)
         self.insideView = 0
         self.insideViewNeighbours = 2
         OWGUI.spin(ib, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
@@ -638,7 +638,7 @@ class OWNxExplorerQt(OWWidget):
         else:
             self.networkCanvas.showComponentAttribute = self.showComponentCombo.currentText()     
             
-        self.networkCanvas.drawPlotItems()
+#        self.networkCanvas.drawPlotItems()
         
     def nameComponents(self):
         """Names connected components of genes according to GO terms."""
@@ -1275,15 +1275,16 @@ class OWNxExplorerQt(OWWidget):
         if self.frSteps > 10000: self.frSteps = 10000;
         
         if self.frSteps < 10:
-            self.renderAntialiased = 0
+            self.networkCanvas.use_antialiasing = 0
             self.minVertexSize = 5
             self.maxVertexSize = 5
             self.maxLinkSize = 1
             self.optMethod = 0
             self.graph_layout_method()            
             
-        #self.setVertexColor()
-        #self.setEdgeColor()
+        self.setVertexSize()
+        self.setVertexColor()
+        self.setEdgeColor()
         #self.networkCanvas.setEdgesSize()
         
         #self.clickedAttLstBox()
@@ -1301,7 +1302,7 @@ class OWNxExplorerQt(OWWidget):
             self.graph = None
             self.graph_base = None
 #            self.layout.set_graph(None)
-            self.networkCanvas.set_graph_layout(None, None)
+#            self.networkCanvas.set_graph_layout(None, None)
             self.clearCombos()
             self.number_of_nodes_label = -1
             self.number_of_edges_label = -1
@@ -1331,7 +1332,6 @@ class OWNxExplorerQt(OWWidget):
         
         #self.networkCanvas.set_graph_layout(self.graph, self.layout, items=self.graph_base.items(), links=self.graph_base.links())
         self.networkCanvas.set_graph(self.graph, items=self.graph_base.items(), links=self.graph_base.links())
-        self.networkCanvas.renderAntialiased = self.renderAntialiased
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
         self.networkCanvas.minVertexSize = self.minVertexSize
         self.networkCanvas.maxVertexSize = self.maxVertexSize
@@ -1390,7 +1390,7 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.showIndexes = self.showIndexes
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
-            self.renderAntialiased = 0
+            self.networkCanvas.use_antialiasing = 0
             self.minVertexSize = 5
             self.maxVertexSize = 5
             self.maxLinkSize = 1
@@ -1585,7 +1585,7 @@ class OWNxExplorerQt(OWWidget):
             
         self.optButton.setChecked(False)
 #        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
-        self.networkCanvas.updateCanvas()
+        #self.networkCanvas.updateCanvas()
         qApp.processEvents()
         
     def graph_layout_method(self, method=None):
@@ -1781,8 +1781,6 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.set_node_color(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
-        #self.networkCanvas.updateData()
-        #self.networkCanvas.replot()
         
     def setEdgeColor(self):
         if self.graph is None:
@@ -1790,8 +1788,6 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.set_edge_color(self.edgeColorCombo.currentText())
         self.lastEdgeColorColumn = self.edgeColorCombo.currentText()
-        self.networkCanvas.updateData()
-        self.networkCanvas.replot()
                   
     def setGraphGrid(self):
         self.networkCanvas.enableGridY(self.networkCanvasShowGrid)
@@ -1834,8 +1830,7 @@ class OWNxExplorerQt(OWWidget):
             self.networkCanvas.networkCurve.set_node_size(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
         else:
             self.networkCanvas.networkCurve.set_node_size(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
-            
-        self.networkCanvas.networkCurve.set_dirty()
+        
         self.networkCanvas.replot()
         
     def setFontSize(self):
@@ -1843,7 +1838,7 @@ class OWNxExplorerQt(OWWidget):
             return
         
         self.networkCanvas.fontSize = self.fontSize
-        self.networkCanvas.drawPlotItems()
+#        self.networkCanvas.drawPlotItems()
                 
     def sendReport(self):
         self.reportSettings("Graph data",
