@@ -503,7 +503,7 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 	}
 
 	double size_span = max_size_value - min_size_value;
-	double node_size_span = m_max_node_size - m_min_node_size;
+
 
 	if (min_size > 0 || max_size > 0 || min_changed || max_changed)
 	{
@@ -517,17 +517,14 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 			m_max_node_size = max_size;
 		}
 
+		double node_size_span = m_max_node_size - m_min_node_size;
 		// recalibrate all
-		qDebug() << "recalibrating all";
-		qDebug() << "min_size_value " << min_size_value << " max_size_value " << max_size_value << " m_min_node_size " << m_min_node_size << " m_max_node_size " << m_max_node_size;
-
 		if (size_span > 0)
 		{
 			for (nit = m_nodes.constBegin(); nit != m_nodes.constEnd(); ++nit)
 			{
 				node = nit.value();
 				node->set_size((node->m_size_value - min_size_value) / size_span * node_size_span + m_min_node_size);
-				//node->update();
 			}
 		}
 		else
@@ -536,16 +533,13 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 			{
 				node = nit.value();
 				node->set_size(m_min_node_size);
-				//node->update();
 			}
 		}
 	}
 	else if (sizes.size() > 0)
 	{
+		double node_size_span = m_max_node_size - m_min_node_size;
 		// recalibrate given
-		qDebug() << "recalibrating given nodes";
-		qDebug() << "min_size_value " << min_size_value << " max_size_value " << max_size_value << " m_min_node_size " << m_min_node_size << " m_max_node_size " << m_max_node_size;
-
 		if (size_span > 0)
 		{
 			for (it = sizes.begin(); it != sizes.end(); ++it)
@@ -562,9 +556,7 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 				node->set_size(m_min_node_size);
 			}
 		}
-
 	}
-	//update();
 }
 
 void NetworkCurve::set_min_node_size(double size)
