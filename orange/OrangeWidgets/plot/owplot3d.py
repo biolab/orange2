@@ -519,8 +519,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 vec3 light_direction = normalize(vec3(1., 1., 0.5));
                 float diffuse = max(0., dot(normalize((gl_ModelViewMatrix * vec4(normal, 0)).xyz),
                                     light_direction));
-                vec3 ambient = vec3(0.15, 0.15, 0.15);
-                var_color = vec4(color.rgb*diffuse+ambient, a);
+                var_color = vec4(color.rgb+diffuse*0.8, a); // Physically wrong, but looks better.
               }
             }
             '''
