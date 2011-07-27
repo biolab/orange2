@@ -339,7 +339,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.camera_distance = 30
 
         self.yaw = self.pitch = -pi / 4.
-        self.rotation_factor = 100.
+        self.rotation_factor = 0.3
         self.camera = [
             sin(self.pitch)*cos(self.yaw),
             cos(self.pitch),
@@ -362,7 +362,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.z_axis_title = ''
         self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
 
-        self.color_plane = numpy.array([0.95, 0.95, 0.95, 0.3])
         self.color_grid = numpy.array([0.8, 0.8, 0.8, 1.0])
 
         self.vertex_buffers = []
@@ -373,8 +372,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.show_legend = True
         self.legend = Legend(self)
 
-        self.face_symbols = True
-        self.filled_symbols = True
+        self.use_2d_symbols = True
         self.symbol_scale = 1.
         self.transparency = 255
         self.show_grid = True
@@ -426,7 +424,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             attribute vec3 offset;
             attribute vec4 color;
 
-            uniform bool face_symbols;
+            uniform bool use_2d_symbols;
             uniform bool tooltip_mode;
             uniform float symbol_scale;
             uniform float transparency;
@@ -459,7 +457,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               offset_rotated.x *= symbol_scale;
               offset_rotated.y *= symbol_scale;
 
-              if (face_symbols)
+              if (use_2d_symbols)
                 offset_rotated = invs * offset_rotated;
 
               vec3 pos = position.xyz;
@@ -506,13 +504,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             print('Failed to link symbol shader!')
         else:
             print('Symbol shader linked.')
-        self.symbol_shader_face_symbols = self.symbol_shader.uniformLocation('face_symbols')
-        self.symbol_shader_symbol_scale = self.symbol_shader.uniformLocation('symbol_scale')
-        self.symbol_shader_transparency = self.symbol_shader.uniformLocation('transparency')
-        self.symbol_shader_view_edge    = self.symbol_shader.uniformLocation('view_edge')
-        self.symbol_shader_scale        = self.symbol_shader.uniformLocation('scale')
-        self.symbol_shader_translation  = self.symbol_shader.uniformLocation('translation')
-        self.symbol_shader_tooltip_mode = self.symbol_shader.uniformLocation('tooltip_mode')
+        self.symbol_shader_use_2d_symbols = self.symbol_shader.uniformLocation('use_2d_symbols')
+        self.symbol_shader_symbol_scale   = self.symbol_shader.uniformLocation('symbol_scale')
+        self.symbol_shader_transparency   = self.symbol_shader.uniformLocation('transparency')
+        self.symbol_shader_view_edge      = self.symbol_shader.uniformLocation('view_edge')
+        self.symbol_shader_scale          = self.symbol_shader.uniformLocation('scale')
+        self.symbol_shader_translation    = self.symbol_shader.uniformLocation('translation')
+        self.symbol_shader_tooltip_mode   = self.symbol_shader.uniformLocation('tooltip_mode')
 
         # TODO: map mouse coordinates properly (instead of using larger FBO)
         format = QtOpenGL.QGLFramebufferObjectFormat()
@@ -567,19 +565,18 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
 
                 self.symbol_shader.bind()
-                self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode, False)
-                self.symbol_shader.setUniformValue(self.symbol_shader_face_symbols, self.face_symbols)
-                self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,    float(self.view_cube_edge))
-                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale, float(self.symbol_scale))
-                self.symbol_shader.setUniformValue(self.symbol_shader_transparency, self.transparency / 255.)
-                self.symbol_shader.setUniformValue(self.symbol_shader_scale,        *scale)
-                self.symbol_shader.setUniformValue(self.symbol_shader_translation,  *self.translation)
+                self.symbol_shader.setUniformValue(self.symbol_shader_tooltip_mode,   False)
+                self.symbol_shader.setUniformValue(self.symbol_shader_use_2d_symbols, self.use_2d_symbols)
+                self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,      float(self.view_cube_edge))
+                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale,   float(self.symbol_scale))
+                self.symbol_shader.setUniformValue(self.symbol_shader_transparency,   self.transparency / 255.)
+                self.symbol_shader.setUniformValue(self.symbol_shader_scale,          *scale)
+                self.symbol_shader.setUniformValue(self.symbol_shader_translation,    *self.translation)
 
-                if self.filled_symbols:
-                    glBindVertexArray(vao_id)
-                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
-                    glBindVertexArray(0)
-                else:
+                glBindVertexArray(vao_id)
+                glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                glBindVertexArray(0)
+                if self.use_2d_symbols:
                     glLineWidth(1)
                     glBindVertexArray(outline_vao_id)
                     glDrawElements(GL_LINES, outline_vao_id.num_indices, GL_UNSIGNED_INT, c_void_p(0))
@@ -776,19 +773,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                             title,
                             font=self.axis_title_font)
 
-        def draw_axis_plane(axis_plane, sub=10):
+        def draw_axis_plane(axis_plane, sub=5):
             normal = normal_from_points(*axis_plane[:3])
             camera_vector = normalize(axis_plane[0] - cam_in_space)
             cos = max(0.7, numpy.dot(normal, camera_vector))
-            glColor4f(*(self.color_plane * cos))
             p11, p12, p21, p22 = numpy.asarray(axis_plane)
-            # Draw background quad first.
-            glBegin(GL_QUADS)
-            glVertex3f(*p11)
-            glVertex3f(*p12)
-            glVertex3f(*p21)
-            glVertex3f(*p22)
-            glEnd()
 
             p22, p21 = p21, p22
             samples = numpy.linspace(0.0, 1.0, num=sub)
@@ -1257,8 +1246,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
                 #self.data_center += off_x
             else:
-                self.yaw += dx / self.rotation_factor
-                self.pitch += dy / self.rotation_factor
+                self.yaw += dx / (self.rotation_factor*self.width())
+                self.pitch += dy / (self.rotation_factor*self.height())
                 self.pitch = clamp(self.pitch, -3., -0.1)
                 self.camera = [
                     sin(self.pitch)*cos(self.yaw),

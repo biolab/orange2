@@ -18,7 +18,7 @@ TooltipKind = enum('NONE', 'VISIBLE', 'ALL') # Which attributes should be displa
 
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
-                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.face_symbols', 'plot.filled_symbols',
+                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols',
                     'plot.transparency', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
                     'auto_send_selection', 'auto_send_selection_update',
                     'jitter_size', 'jitter_continuous']
@@ -128,8 +128,7 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.show_z_axis_title',   'Z axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_legend',         'Show legend',    callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.use_ortho',           'Use ortho',      callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.filled_symbols',      'Filled symbols', callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.face_symbols',        'Face symbols',   callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.use_2d_symbols',      'Filled symbols', callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
