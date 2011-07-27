@@ -6,6 +6,27 @@
 
 const int ChangeableColorIndex = 0;
 
+QHash<PointData, QPixmap> Point::pixmap_cache;
+
+uint qHash(const PointData& data)
+{
+    // uint has 32 bits:
+    uint ret = data.size;
+    // size only goes up to 20, so 5 bits is enough
+    ret |= data.symbol << 5;
+    // symbol is less than 16, so 4 bits will do
+    ret |= data.state << 9;
+    // QRgb takes the full uins, so we just XOR by it
+    ret ^= data.color.rgba();
+    return ret;
+}
+
+bool operator==(const PointData& one, const PointData& other)
+{
+    return one.symbol == other.symbol && one.size == other.size && one.state == other.state && one.color == other.color;
+}
+
+
 Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsItem(parent),
  m_symbol(symbol),
  m_color(color),
@@ -28,30 +49,41 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     Q_UNUSED(option)
     Q_UNUSED(widget)
     
-    if (m_display_mode == DisplayPath)
+    const PointData key(m_size, m_symbol, m_color, m_state);
+    // We make the pixmap slighly larger because the point outline has non-zero width
+    const int ps = m_size + 4;
+    if (!pixmap_cache.contains(key))
     {
-        if (m_state & Selected)
+        if (m_display_mode == DisplayPath)
         {
-            painter->setBrush(m_color);
-            painter->setPen(Qt::yellow);
-        }
-        else if (m_state & Marked)
+            QPixmap pixmap(ps, ps);
+            pixmap.fill(Qt::transparent);
+            QPainter p;
+            p.begin(&pixmap);
+            p.setRenderHints(painter->renderHints());
+            if (m_state & Selected)
+            {
+                p.setBrush(m_color);
+                p.setPen(Qt::yellow);
+            }
+            else if (m_state & Marked)
+            {
+                p.setBrush(m_color);
+            }
+            else
+            {
+                p.setPen(m_color);
+            }
+            const QPainterPath path = path_for_symbol(m_symbol, m_size);
+            p.drawPath(path.translated(0.5*ps, 0.5*ps));
+            pixmap_cache.insert(key, pixmap);
+        } 
+        else if (m_display_mode == DisplayPixmap)
         {
-            painter->setBrush(m_color);
+            pixmap_cache.insert(key, pixmap_for_symbol(m_symbol, m_color, m_size));
         }
-        else
-        {
-            painter->setPen(m_color);
-        }
-        const QPainterPath path = path_for_symbol(m_symbol, m_size);
-        painter->drawPath(path_for_symbol(m_symbol, m_size));
-    } 
-    else if (m_display_mode == DisplayPixmap)
-    {
-        QImage image = image_for_symbol(m_symbol, m_color, m_size);
-        image.setColor(ChangeableColorIndex, m_color.rgb());
-        painter->drawImage(boundingRect(), image);
     }
+    painter->drawPixmap(QPointF(-0.5*ps, -0.5*ps), pixmap_cache.value(key));
 }
 
 QRectF Point::boundingRect() const
@@ -222,11 +254,11 @@ QPainterPath Point::hexPath(double d, bool star) {
     return path;
 }
 
-QImage Point::image_for_symbol(int symbol, QColor color, int size)
+QPixmap Point::pixmap_for_symbol(int symbol, QColor color, int size)
 {
     // Indexed8 is the only format with a color table, which means we can replace entire colors
     // and not only indididual pixels
-    QImage image(QSize(size, size), QImage::Format_Indexed8);
+    QPixmap image(QSize(size, size));
     
     // TODO: Create fils with actual images, preferably SVG so they are scalable
     // image.load(filename);
@@ -278,6 +310,12 @@ bool Point::is_marked() const
 {
     return state_flag(Marked);
 }
+
+void Point::clear_cache()
+{
+    pixmap_cache.clear();
+}
+
 
 
 

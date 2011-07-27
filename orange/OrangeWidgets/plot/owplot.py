@@ -1027,3 +1027,4 @@ class OWPlot(orangeplot.Plot):
             
     def update_antialiasing(self):
         self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
+        orangeplot.Point.clear_cache()

@@ -3,6 +3,18 @@
 
 #include <QtGui/QGraphicsItem>
 
+struct PointData
+{
+    PointData(int size, int symbol, const QColor& color, int state) : size(size), symbol(symbol), color(color), state(state) {}
+    int size;
+    int symbol;
+    QColor color;
+    int state;
+};
+
+uint qHash(const PointData& data);
+bool operator==(const PointData& one, const PointData& other);
+
 class Point : public QGraphicsItem
 {
 
@@ -98,13 +110,17 @@ public:
     **/
     static QPainterPath path_for_symbol(int symbol, int size);
     
-    static QImage image_for_symbol(int symbol, QColor color, int size);
+    static QPixmap pixmap_for_symbol(int symbol, QColor color, int size);
     static QRectF rect_for_size(double size);
+    
+    static void clear_cache();
         
 private:
     static QPainterPath trianglePath(double d, double rot);
     static QPainterPath crossPath(double d, double rot);
     static QPainterPath hexPath(double d, bool star);
+    
+    static QHash<PointData, QPixmap> pixmap_cache;
 
     int m_symbol;
     QColor m_color;

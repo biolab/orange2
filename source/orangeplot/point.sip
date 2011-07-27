@@ -81,5 +81,6 @@ public:
     **/
     static QPainterPath path_for_symbol(int symbol, int size);
     
-    static QImage image_for_symbol(int symbol, QColor color, int size);
+    static QPixmap pixmap_for_symbol(int symbol, QColor color, int size);
+    static void clear_cache();
 };
