@@ -30,12 +30,12 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     Q_UNUSED(option)
     Q_UNUSED(widget)
 
-    if (m_selected) {
+    if (is_selected()) {
     	painter->setPen(QPen(Qt::yellow, 3));
     	painter->setBrush(color());
     	QRectF rect(-(size() + 4) / 2, -(size() + 4) / 2, size() + 4, size() + 4);
     	painter->drawEllipse(rect);
-    } else if (m_marked) {
+    } else if (is_marked()) {
     	painter->setPen(color());
     	painter->setBrush(color());
     	QRectF rect(-size() / 2, -size() / 2, size(), size());
@@ -104,26 +104,6 @@ void NodeItem::set_label(const QString& label)
 QString NodeItem::label() const
 {
     return m_label;
-}
-
-void NodeItem::set_selected(bool selected)
-{
-	m_selected = selected;
-}
-
-bool NodeItem::is_selected() const
-{
-	return m_selected;
-}
-
-void NodeItem::set_marked(bool marked)
-{
-	m_marked = marked;
-}
-
-bool NodeItem::is_marked() const
-{
-	return m_marked;
 }
 
 void NodeItem::set_tooltip(const QString& tooltip)

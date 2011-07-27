@@ -3,6 +3,24 @@
 
 #include <QtCore/QDebug>
 
+template <class Area>
+void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, Plot::SelectionBehavior behavior)
+{
+    /*
+     * NOTE: I think it's faster to rely on Qt to get all items in the current rect
+     * than to iterate over all points on the graph and check which of them are 
+     * inside the specified rect
+     */
+    foreach (QGraphicsItem* item, scene->items(area, Qt::ContainsItemBoundingRect))
+    {
+        Point* point = qgraphicsitem_cast<Point*>(item);
+        if (point)
+        {
+            point->set_state_flag(flag, behavior == Plot::AddSelection || (behavior == Plot::ToggleSelection && !point->state_flag(flag)));
+        }
+    }
+}
+
 Plot::Plot(QWidget* parent): 
 QGraphicsView(parent)
 {
@@ -116,6 +134,26 @@ void Plot::set_graph_rect(const QRectF rect)
 {
     clipItem->setRect(rect);
     graph_item->setRect(rect);
+}
+
+void Plot::mark_points(const QRectF& rect, Plot::SelectionBehavior behavior)
+{
+    set_points_state(rect, scene(), Point::Marked, behavior);
+}
+
+void Plot::mark_points(const QPolygonF& area, Plot::SelectionBehavior behavior)
+{
+    set_points_state(area, scene(), Point::Marked, behavior);
+}
+
+void Plot::select_points(const QRectF& rect, Plot::SelectionBehavior behavior)
+{
+    set_points_state(rect, scene(), Point::Selected, behavior);
+}
+
+void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior)
+{
+    set_points_state(area, scene(), Point::Selected, behavior);
 }
 
 #include "plot.moc"

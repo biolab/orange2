@@ -32,12 +32,6 @@ public:
     void set_label(const QString& label);
     QString label() const;
 
-    void set_selected(bool selected);
-    bool is_selected() const;
-
-    void set_marked(bool marked);
-    bool is_marked() const;
-
     void set_tooltip(const QString& tooltip);
 
     void set_uuid(int uuid);
@@ -60,8 +54,6 @@ private:
     double m_y;
     
     int m_index;
-    bool m_marked;
-    bool m_selected;
     QString m_label;
     int m_uuid;
     

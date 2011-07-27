@@ -31,6 +31,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     if (m_display_mode == DisplayPath)
     {
         painter->setPen(m_color);
+        const QPainterPath path = path_for_symbol(m_symbol, m_size);
         painter->drawPath(path_for_symbol(m_symbol, m_size));
     } 
     else if (m_display_mode == DisplayPixmap)
@@ -90,14 +91,6 @@ void Point::set_symbol(int symbol)
 {
     m_symbol = symbol;
 }
-
-
-
-
-
-
-
-
 
 QPainterPath Point::path_for_symbol(int symbol, int size)
 {
@@ -170,7 +163,8 @@ QPainterPath Point::path_for_symbol(int symbol, int size)
       break;
       
     default:
-      qWarning() << "Unsupported symbol" << symbol;
+     // qWarning() << "Unsupported symbol" << symbol;
+        break;
   }
   return path;
 }
@@ -231,5 +225,46 @@ QRectF Point::rect_for_size(double size)
 {
     return QRectF(-size/2, -size/2, size, size);
 }
+void Point::set_state(Point::State state) {
+    m_state = state;
+}
+Point::State Point::state() const {
+    return m_state;
+}
+void Point::set_state_flag(Point::StateFlag flag, bool on) {
+    if (on)
+    {
+        m_state |= flag;
+    }
+    else
+    {
+        m_size &= ~flag;
+    }
+}
+bool Point::state_flag(Point::StateFlag flag) const {
+    return m_state & flag;
+}
+
+
+void Point::set_selected(bool selected)
+{
+    set_state_flag(Selected, selected);
+}
+
+bool Point::is_selected() const
+{
+    return state_flag(Selected);
+}
+
+void Point::set_marked(bool marked)
+{
+    set_state_flag(Marked, marked);
+}
+
+bool Point::is_marked() const
+{
+    return state_flag(Marked);
+}
+
 
 

@@ -3,12 +3,20 @@
 
 #include <QtGui/QGraphicsView>
 
+class Point;
 class PlotItem;
 
 class Plot : public QGraphicsView
 {
     Q_OBJECT
 public:
+    enum SelectionBehavior
+    {
+        AddSelection,
+        RemoveSelection,
+        ToggleSelection
+    };
+    
     Plot(QWidget* parent = 0);
     virtual ~Plot();
     
@@ -27,6 +35,11 @@ public:
     QGraphicsRectItem* graph_item;
     
     void set_dirty();
+    
+    void select_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
+    void select_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
+    void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
     
 protected:
     void set_clean();;

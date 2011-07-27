@@ -3,7 +3,6 @@
 
 #include <QtGui/QGraphicsItem>
 
-
 class Point : public QGraphicsItem
 {
 
@@ -39,6 +38,25 @@ public:
     UserStyle = 1000
   };
   
+    enum StateFlag
+    {
+        Normal = 0x00,
+        Marked = 0x01,
+        Selected = 0x02
+    };
+    
+    enum 
+    {
+        Type = UserType + 1
+    };
+    
+    virtual int type() const
+    {
+        return Type;
+    }
+    
+    Q_DECLARE_FLAGS(State, StateFlag)
+  
     Point(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     Point(int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~Point();
@@ -58,6 +76,19 @@ public:
     void set_display_mode(DisplayMode mode);
     DisplayMode display_mode() const;
     
+    void set_state(State state);
+    State state() const;
+    void set_state_flag(StateFlag flag, bool on);
+    bool state_flag(StateFlag flag) const;
+    
+    void set_selected(bool selected);
+    bool is_selected() const;
+
+    void set_marked(bool marked);
+    bool is_marked() const;
+
+
+    
     /**
     * Creates a path from a symbol and a size
     *
@@ -69,7 +100,7 @@ public:
     
     static QImage image_for_symbol(int symbol, QColor color, int size);
     static QRectF rect_for_size(double size);
-    
+        
 private:
     static QPainterPath trianglePath(double d, double rot);
     static QPainterPath crossPath(double d, double rot);
@@ -79,6 +110,7 @@ private:
     QColor m_color;
     int m_size;
     DisplayMode m_display_mode;
+    State m_state;
 };
 
 #endif // POINT_H
