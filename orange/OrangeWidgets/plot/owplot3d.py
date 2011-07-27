@@ -783,7 +783,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     self.renderText(position[0],
                                     position[1],
                                     position[2],
-                                    axis_map[key], font=self.labels_font)
+                                    axis_map[key], font=self._theme.labels_font)
 
         def draw_values(axis, coord_index, normal, axis_map, sub=10):
             glColor4f(*self._theme.axis_values_color)
@@ -986,11 +986,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             z *= scale_z
             triangles = get_symbol_data(symbol)
             ss = size*0.1
-            for (v1, v2, v3) in triangles:
-                n = normal_from_points(v1, v2, v3)
-                vertices.extend([x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n[0],n[1],n[2]])
-                vertices.extend([x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n[0],n[1],n[2]])
-                vertices.extend([x,y,z, ai, ss*v3[0],ss*v3[1],ss*v3[2], r,g,b,a, n[0],n[1],n[2]])
+            for v0, v1, v2, n0, n1, n2 in triangles:
+                vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0,n1,n2,
+                                 x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n0,n1,n2,
+                                 x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n0,n1,n2])
 
         # Build Vertex Buffer + Vertex Array Object.
         vao_id = GLuint(0)

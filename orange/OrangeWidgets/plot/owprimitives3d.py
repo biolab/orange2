@@ -1,5 +1,5 @@
 import os
-from owplot3d import Symbol
+from owplot3d import Symbol, normal_from_points
 
 symbol_map = {
     Symbol.RECT:      'primitives/cube.obj',
@@ -14,7 +14,7 @@ symbol_map = {
     Symbol.XCROSS:    'primitives/xcross.obj'
 }
 
-symbol_data = {}
+symbol_data = {} # Cache: contains triangles + their normals for each needed symbol.
 
 def get_symbol_data(symbol):
     if not Symbol.is_valid(symbol):
@@ -30,5 +30,7 @@ def get_symbol_data(symbol):
     triangles = [[vertices[face[0]-1],
                   vertices[face[1]-1],
                   vertices[face[2]-1]] for face in faces]
+    for triangle in triangles:
+        triangle.extend(normal_from_points(*triangle))
     symbol_data[symbol] = triangles
     return triangles
