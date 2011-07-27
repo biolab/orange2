@@ -43,7 +43,19 @@ class OWPlotGUI:
         self._slider(widget, 'alpha_value', "Transparency: ", 0, 255, 10, 'update_alpha_value')
         
     def point_properties_box(self, widget):
-        return self.create_box([self.PointSize, self.AlphaValue], widget, "Point Properties")
+        return self.create_box([
+            self.PointSize, 
+            self.AlphaValue
+            ], widget, "Point properties")
+        
+    def plot_settings_box(self, widget):
+        return self.create_box([
+            self.ShowLegend,
+            self.ShowFilledSymbols,
+            self.ShowGridLines,
+            self.UseAnimations,
+            self.Antialiasing
+            ], widget, "Plot settings")
         
     _functions = {
         Antialiasing : antialiasing_check_box,
