@@ -526,7 +526,6 @@ class OWPlot(orangeplot.Plot):
             c.update_properties()
             
     def update_zoom(self):
-      #  self.setViewportUpdateMode(QGraphicsView.NoViewportUpdate)
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
         for c in self.plot_items():
@@ -546,8 +545,6 @@ class OWPlot(orangeplot.Plot):
             item.setPos(p - r.center() + r.topLeft())
         """
         self.update_axes(zoom_only=True)
-        
-        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.update()
         
     def update_axes(self, zoom_only=False):

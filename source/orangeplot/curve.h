@@ -8,6 +8,7 @@
 #include <QtGui/QBrush>
 
 #include <QtCore/QtConcurrentMap>
+#include "pointscollection.h"
 
 struct DataPoint
 {
@@ -78,7 +79,7 @@ struct Updater
   
 typedef QList< DataPoint > Data;
 
-class Curve : public PlotItem
+class Curve : public PlotItem, public PointsCollection
 {
   
 public:
@@ -160,7 +161,7 @@ public:
   double min_x_value() const;
   double max_y_value() const;
   double min_y_value() const;
-    
+
   enum UpdateFlag
   {
     UpdateNumberOfItems = 0x01,

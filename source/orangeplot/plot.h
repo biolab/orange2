@@ -44,6 +44,7 @@ public:
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
     
     Point* point_at(const QPointF& pos);
+    Point* selected_point_at(const QPointF& pos);
     
 protected:
     void set_clean();;

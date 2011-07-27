@@ -435,6 +435,10 @@ void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
 {
     qDeleteAll(m_nodes);
     m_nodes = nodes;
+    foreach (NodeItem* node, nodes)
+    {
+        add_point(node);
+    }
 }
 
 void NetworkCurve::set_node_color(const QMap<int, QColor*> colors)

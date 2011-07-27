@@ -315,7 +315,3 @@ void Point::clear_cache()
 {
     pixmap_cache.clear();
 }
-
-
-
-

@@ -3,6 +3,7 @@
 #include "point.h"
 
 #include <QtCore/QDebug>
+#include "pointscollection.h"
 
 template <class Area>
 void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, Plot::SelectionBehavior behavior)
@@ -165,35 +166,33 @@ QList< int > Plot::selected_points(const QList< double > x_data, const QList< do
     selected.reserve(n);
     for (int i = 0; i < n; ++i)
     {
-        const QPointF coords = QPointF(x_data[i], y_data[i]) * transform;
-        bool found_point = false;
-        foreach (QGraphicsItem* item, scene()->items(coords))
-        {
-            if (item->pos() != coords)
-            {
-                continue;
-            }
-            const Point* point = qgraphicsitem_cast<Point*>(item);
-            found_point = (point && point->is_selected());
-            if (found_point)
-            {
-                break;
-            }
-        }
-        selected << found_point;
+        selected << (selected_point_at(QPointF(x_data[i], y_data[i]) * transform) ? 1 : 0);
     }
-    qDebug() << "Found" << selected.count(1) << "selected points out of" << selected.size();
     return selected;
+}
+
+Point* Plot::selected_point_at(const QPointF& pos)
+{
+    foreach (PlotItem* item, plot_items())
+    {
+        const PointsCollection* collection = dynamic_cast<PointsCollection*>(item);
+        if (collection && collection->contains(pos) && collection->point_at(pos)->is_selected())
+        {
+            return collection->point_at(pos);
+        }
+    }
+    return 0;
 }
 
 Point* Plot::point_at(const QPointF& pos)
 {
     Point* point;
-    foreach (QGraphicsItem* item, scene()->items(pos))
+    foreach (PlotItem* item, plot_items())
     {
-        if (point = qgraphicsitem_cast<Point*>(item))
+        const PointsCollection* collection = dynamic_cast<PointsCollection*>(item);
+        if (collection && collection->contains(pos))
         {
-            return point;
+            return collection->point_at(pos);
         }
     }
     return 0;

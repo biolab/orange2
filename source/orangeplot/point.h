@@ -114,7 +114,7 @@ public:
     static QRectF rect_for_size(double size);
     
     static void clear_cache();
-        
+
 private:
     static QPainterPath trianglePath(double d, double rot);
     static QPainterPath crossPath(double d, double rot);
