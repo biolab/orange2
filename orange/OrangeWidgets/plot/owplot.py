@@ -158,6 +158,9 @@ class OWPlot(orangeplot.Plot):
         self._transform_cache = {}
         self.block_update = False
         
+        self.use_animations = True
+        self._animations = []
+        
         ## Mouse event handlers
         self.mousePressEventHandler = None
         self.mouseMoveEventHandler = None
@@ -715,10 +718,7 @@ class OWPlot(orangeplot.Plot):
                 end_zoom_factor = max(self._zoom_factor/2, 1)
             else:
                 return False
-            self.zoom_factor_animation = QPropertyAnimation(self, 'zoom_factor')
-            self.zoom_factor_animation.setStartValue(float(self._zoom_factor))
-            self.zoom_factor_animation.setEndValue(float(end_zoom_factor))
-            self.zoom_factor_animation.start(QPropertyAnimation.DeleteWhenStopped)
+            self.animate(self, 'zoom_factor', float(end_zoom_factor))
             return True
             
         elif self.state == SELECT_POLYGON and event.button() == Qt.LeftButton:
@@ -994,11 +994,7 @@ class OWPlot(orangeplot.Plot):
         if rect != self._legend_margin:
             orientation = Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical
             self._legend.set_orientation(orientation, pos)
-            self._legend_animation = QPropertyAnimation(self, 'legend_margin')
-            self._legend_animation.setStartValue(self._legend_margin)
-            self._legend_animation.setEndValue(rect)
-            self._legend_animation.setDuration(100)
-            self._legend_animation.start(QPropertyAnimation.DeleteWhenStopped)
+            self.animate(self, 'legend_margin', rect, duration=100)
 
     @pyqtProperty(QRectF)
     def legend_margin(self):
@@ -1028,3 +1024,21 @@ class OWPlot(orangeplot.Plot):
     def update_antialiasing(self):
         self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
         orangeplot.Point.clear_cache()
+        
+    def update_animations(self):
+        use_animations = self.use_animations
+        
+    def animate(self, target, prop_name, end_val, duration = None):
+        for a in self._animations:
+            if a.state() == QPropertyAnimation.Stopped:
+                self._animations.remove(a)
+        if self.use_animations:
+            a = QPropertyAnimation(target, prop_name)
+            a.setStartValue(target.property(prop_name))
+            a.setEndValue(end_val)
+            if duration:
+                a.setDuration(duration)
+            self._animations.append(a)
+            a.start(QPropertyAnimation.KeepWhenStopped)
+        else:
+            target.setProperty(prop_name, end_val)

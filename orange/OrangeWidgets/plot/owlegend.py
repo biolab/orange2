@@ -132,7 +132,7 @@ class OWLegend(QGraphicsObject):
             self.update()
             
     def set_pos_animated(self, pos):
-        if (self.pos() - pos).manhattanLength() < 6:
+        if (self.pos() - pos).manhattanLength() < 6 or not self.graph.use_animations:
             self.setPos(pos)
         else:
             t = 250

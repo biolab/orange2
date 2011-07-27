@@ -10,6 +10,7 @@ class OWPlotGUI:
     ShowGridLines = 4
     PointSize = 5
     AlphaValue = 6
+    UseAnimations = 7
         
     def _get_callback(self, name):
         return getattr(self._plot, name, self._plot.replot)
@@ -28,7 +29,10 @@ class OWPlotGUI:
         
     def grid_lines_check_box(self, widget):
         self._check_box(widget, 'show_grid', 'Show gridlines', 'update_grid')
-        
+    
+    def animations_check_box(self, widget):
+        self._check_box(widget, 'use_animations', 'Use animations', 'update_animations')
+    
     def _slider(self, widget, value, label, min_value, max_value, step, cb_name):
         OWGUI.hSlider(widget, self._plot, value, label=label, minValue=min_value, maxValue=max_value, step=step, callback=self._get_callback(cb_name))
         
@@ -47,7 +51,8 @@ class OWPlotGUI:
         ShowFilledSymbols : filled_symbols_check_box,
         ShowGridLines : grid_lines_check_box,
         PointSize : point_size_slider,
-        AlphaValue : alpha_value_slider
+        AlphaValue : alpha_value_slider,
+        UseAnimations : animations_check_box
         }
         
     def add_widget(self, id, widget):
