@@ -152,6 +152,7 @@ class OWPlot(orangeplot.Plot):
         
         ## Performance optimization
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        self.scene().setItemIndexMethod(QGraphicsScene.NoIndex)
      #   self.setInteractive(False)
         
         self._bounds_cache = {}
