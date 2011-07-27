@@ -122,14 +122,17 @@ class OWScatterPlot3D(OWWidget):
             callback=self.update_plot,
             tooltip='Does jittering apply also on continuous attributes?')
 
+        self.dark_theme = False
+
         box = OWGUI.widgetBox(self.settings_tab, 'General settings')
         OWGUI.checkBox(box, self, 'plot.show_x_axis_title',   'X axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_y_axis_title',   'Y axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_z_axis_title',   'Z axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_legend',         'Show legend',    callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.use_ortho',           'Use ortho',      callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.use_2d_symbols',      'Filled symbols', callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.use_2d_symbols',      '2D symbols',     callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'dark_theme',               'Dark theme',     callback=self.on_theme_change)
         OWGUI.rubber(box)
 
         self.auto_send_selection = True
@@ -330,6 +333,12 @@ class OWScatterPlot3D(OWWidget):
     def on_axis_change(self):
         if self.data is not None:
             self.update_plot()
+
+    def on_theme_change(self):
+        if self.dark_theme:
+            self.plot.theme = DarkTheme()
+        else:
+            self.plot.theme = LightTheme()
 
     def on_checkbox_update(self):
         self.plot.updateGL()

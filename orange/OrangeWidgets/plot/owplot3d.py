@@ -320,8 +320,33 @@ class PolygonSelection(object):
                           vi[0], vi[1],
                           vj[0], vj[1])
 
-class OWPlot3D(QtOpenGL.QGLWidget):
+class PlotTheme(object):
+    def __init__(self):
+        self.labels_font = QFont('Helvetice', 8)
+        self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
+        self.axis_font = QFont('Helvetica', 9)
+        self.helper_font = self.labels_font
+        self.grid_color = [0.8, 0.8, 0.8, 1.]        # Color of the cube grid.
+        self.labels_color = [0., 0., 0., 1.]         # Color used for example labels.
+        self.helpers_color = [0., 0., 0., 1.]        # Color used for helping arrows when scaling.
+        self.axis_color = [0.1, 0.1, 0.1, 1.]        # Color of the axis lines.
+        self.axis_values_color = [0.1, 0.1, 0.1, 1.]
+        self.background_color = [1., 1., 1., 1.]     # Color in the background.
 
+class LightTheme(PlotTheme):
+    pass
+
+class DarkTheme(PlotTheme):
+    def __init__(self):
+        super(DarkTheme, self).__init__()
+        self.grid_color = [0.3, 0.3, 0.3, 1.]
+        self.labels_color = [0.9, 0.9, 0.9, 1.]
+        self.helpers_color = [0.9, 0.9, 0.9, 1.]
+        self.axis_values_color = [0.7, 0.7, 0.7, 1.]
+        self.axis_color = [0.8, 0.8, 0.8, 1.]
+        self.background_color = [0., 0., 0., 1.]
+
+class OWPlot3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
@@ -354,15 +379,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.zoom_factor = 2000.
         self.move_factor = 100.
 
-        self.labels_font = QFont('Helvetice', 8)
-        self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
-        self.ticks_font = QFont('Helvetica', 9)
         self.x_axis_title = ''
         self.y_axis_title = ''
         self.z_axis_title = ''
         self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
-
-        self.color_grid = numpy.array([0.8, 0.8, 0.8, 1.0])
 
         self.vertex_buffers = []
         self.index_buffers = []
@@ -403,6 +423,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.zoom_stack = []
         self.translation = numpy.array([0., 0., 0.])
+
+        self._theme = LightTheme()
 
     def __del__(self):
         # TODO: check if anything needs deleting
@@ -525,7 +547,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glViewport(0, 0, width, height)
 
     def paintGL(self):
-        glClearColor(1, 1, 1, 1)
+        glClearColor(*self._theme.background_color)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         if len(self.commands) == 0:
@@ -585,14 +607,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.symbol_shader.release()
 
                 if labels != None:
-                    glColor4f(0, 0, 0, 1)
+                    glColor4f(*self._theme.labels_color)
                     for x, y, z, label in zip(X, Y, Z, labels):
                         x, y, z = self.transform_data_to_plot((x, y, z))
                         if isinstance(label, str):
-                            self.renderText(x,y,z, label, font=self.labels_font)
+                            self.renderText(x,y,z, label, font=self._theme.labels_font)
                         else:
                             self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'),
-                                            font=self.labels_font)
+                                            font=self._theme.labels_font)
             elif cmd == 'custom':
                 callback = params
                 callback()
@@ -664,18 +686,19 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.state == PlotState.SCALING:
             x, y = self.mouse_pos.x(), self.mouse_pos.y()
-            glColor4f(0, 0, 0, 1)
+            glColor4f(*self._theme.helpers_color)
             draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
             draw_line(x, y, x, y-30)
             draw_triangle(x-5, y-10, x+5, y-10, x, y)
-            self.renderText(x, y-50, 'Scale y axis', font=self.labels_font)
 
             draw_triangle(x+10, y, x+20, y-5, x+20, y+5)
             draw_line(x+10, y, x+40, y)
             draw_triangle(x+50, y, x+40, y-5, x+40, y+5)
+
+            self.renderText(x, y-50, 'Scale y axis', font=self._theme.labels_font)
             self.renderText(x+60, y+3,
                             'Scale {0} axis'.format(['z', 'x'][self.scale_x_axis]),
-                            font=self.labels_font)
+                            font=self._theme.labels_font)
         elif self.state == PlotState.SELECTING and self.new_selection != None:
             self.new_selection.draw()
 
@@ -721,7 +744,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             return True
 
         def draw_axis(line):
-            glColor4f(0.2, 0.2, 0.2, 1)
+            glColor4f(*self._theme.axis_color)
             glLineWidth(2)
             glBegin(GL_LINES)
             glVertex3f(*line[0])
@@ -744,11 +767,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                                     axis_map[key], font=self.labels_font)
 
         def draw_values(axis, coord_index, normal, axis_map, sub=10):
+            glColor4f(*self._theme.axis_values_color)
+            glLineWidth(1)
             if axis_map != None:
                 draw_discrete_axis_values(axis, coord_index, normal, axis_map)
                 return
-            glColor4f(0.1, 0.1, 0.1, 1)
-            glLineWidth(1)
             start, end = axis
             offset = normal*0.8
             samples = numpy.linspace(0.0, 1.0, num=sub)
@@ -771,14 +794,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             middle += normal * 1. if axis[0][1] != axis[1][1] else normal * 2.
             self.renderText(middle[0], middle[1], middle[2],
                             title,
-                            font=self.axis_title_font)
+                            font=self._theme.axis_title_font)
 
-        def draw_axis_plane(axis_plane, sub=5):
-            normal = normal_from_points(*axis_plane[:3])
-            camera_vector = normalize(axis_plane[0] - cam_in_space)
-            cos = max(0.7, numpy.dot(normal, camera_vector))
+        def draw_grid(axis_plane, sub=5):
             p11, p12, p21, p22 = numpy.asarray(axis_plane)
-
             p22, p21 = p21, p22
             samples = numpy.linspace(0.0, 1.0, num=sub)
             p1211 = p12 - p11
@@ -786,7 +805,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             p2111 = p21 - p11
             p2212 = p22 - p12
             # Draw grid lines.
-            glColor4f(*(self.color_grid * cos))
+            glColor4f(*self._theme.grid_color)
             glBegin(GL_LINES)
             for i, dx in enumerate(samples):
                 start = p11 + p1211*dx
@@ -809,10 +828,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
         visible_planes = map(plane_visible, planes)
         if self.show_grid:
-            draw_axis_plane(self.axis_plane_xz)
+            draw_grid(self.axis_plane_xz)
             for visible, plane in zip(visible_planes, planes):
                 if not visible:
-                    draw_axis_plane(plane)
+                    draw_grid(plane)
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
@@ -1311,6 +1330,15 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def remove_all_selections(self):
         self.selections = []
+        self.updateGL()
+
+    @pyqtProperty(PlotTheme)
+    def theme(self):
+        return self._theme
+
+    @theme.setter
+    def theme(self, theme):
+        self._theme = theme
         self.updateGL()
 
     def show_tooltip(self, text):
