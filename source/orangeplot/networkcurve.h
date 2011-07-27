@@ -144,9 +144,11 @@ public:
     
     void set_nodes(Nodes nodes);
     void set_edges(Edges edges);
+    QList<QPair<int, int> > edge_indices();
 
-    void set_node_color(QMap<int, QColor*> colors);
+    void set_node_color(const QMap<int, QColor*> colors);
     void set_node_size(QMap<int, double> sizes=QMap<int, double>(), double min_size=0, double max_size=0);
+    void set_edge_color(const QList<QColor*> colors);
 
     void set_min_node_size(double size);
     double min_node_size() const;

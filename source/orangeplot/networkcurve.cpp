@@ -18,6 +18,9 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
     set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
     setZValue(0.5);
     m_size_value = 1;
+    set_marked(false);
+    set_selected(false);
+    set_label("");
 }
 
 NodeItem::~NodeItem()
@@ -291,6 +294,7 @@ int NetworkCurve::random()
 int NetworkCurve::fr(int steps, bool weighted, double temperature, double cooling)
 {
 	int i, j;
+	int count = 0;
 	NodeItem *u, *v;
 	EdgeItem *edge;
 	QRectF data_r = data_rect();
@@ -306,7 +310,7 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 
 	double area = data_r.width() * data_r.height();
 
-
+	int updateCheckpoint = steps / 100 + 1;
 	double k2 = area / m_nodes.size();
 	double k = sqrt(k2);
 	double kk = 2 * k;
@@ -393,10 +397,13 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature, double coolin
 			u->set_coordinates(u->x() + (disp[u->index()].x * qMin(fabs(disp[u->index()].x), temperature) / dif),
 			                   u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
 		}
-
-		//plot()->replot();
-		//plot()->set_dirty();
-
+		/*
+		++count;
+		if (count % updateCheckpoint == 0)
+		{
+			update();
+		}
+		*/
 		temperature = temperature * cooling;
 	}
 
@@ -409,18 +416,44 @@ void NetworkCurve::set_edges(NetworkCurve::Edges edges)
     m_edges = edges;
 }
 
+QList<QPair<int, int> > NetworkCurve::edge_indices()
+{
+	int i;
+	EdgeItem *e;
+	QList<QPair<int, int> > edge_indices;
+
+	for (i = 0; i < m_edges.size(); ++i)
+	{
+		e = m_edges[i];
+		edge_indices.append(QPair<int, int>(e->u()->index(), e->v()->index()));
+	}
+
+	return edge_indices;
+}
+
 void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
 {
     qDeleteAll(m_nodes);
     m_nodes = nodes;
 }
 
-void NetworkCurve::set_node_color(QMap<int, QColor*> colors)
+void NetworkCurve::set_node_color(const QMap<int, QColor*> colors)
 {
-	QMap<int, QColor*>::Iterator it;
-	for (it = colors.begin(); it != colors.end(); ++it)
+	QMap<int, QColor*>::ConstIterator it;
+	for (it = colors.constBegin(); it != colors.constEnd(); ++it)
 	{
 		m_nodes[it.key()]->set_color(*it.value());
+	}
+}
+
+void NetworkCurve::set_edge_color(const QList<QColor*> colors)
+{
+	int i;
+	for (i = 0; i < colors.size(); ++i)
+	{
+		QPen p = m_edges[i]->pen();
+		p.setColor(*colors[i]);
+		m_edges[i]->setPen(p);
 	}
 }
 
@@ -494,6 +527,7 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 			{
 				node = nit.value();
 				node->set_size((node->m_size_value - min_size_value) / size_span * node_size_span + m_min_node_size);
+				//node->update();
 			}
 		}
 		else
@@ -502,12 +536,16 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 			{
 				node = nit.value();
 				node->set_size(m_min_node_size);
+				//node->update();
 			}
 		}
 	}
 	else if (sizes.size() > 0)
 	{
 		// recalibrate given
+		qDebug() << "recalibrating given nodes";
+		qDebug() << "min_size_value " << min_size_value << " max_size_value " << max_size_value << " m_min_node_size " << m_min_node_size << " m_max_node_size " << m_max_node_size;
+
 		if (size_span > 0)
 		{
 			for (it = sizes.begin(); it != sizes.end(); ++it)
@@ -526,11 +564,12 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 		}
 
 	}
+	//update();
 }
 
 void NetworkCurve::set_min_node_size(double size)
 {
-	//set_edge_size(QList<int, double>(), size, 0);
+	set_node_size(QMap<int, double>(), size, 0);
 }
 
 double NetworkCurve::min_node_size() const
@@ -540,7 +579,7 @@ double NetworkCurve::min_node_size() const
 
 void NetworkCurve::set_max_node_size(double size)
 {
-	//set_edge_size(QList<int, double>(), 0, size);
+	set_node_size(QMap<int, double>(), 0, size);
 }
 
 double NetworkCurve::max_node_size() const
