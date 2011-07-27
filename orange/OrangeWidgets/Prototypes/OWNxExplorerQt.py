@@ -132,8 +132,6 @@ class OWNxExplorerQt(OWWidget):
         self.mainArea.layout().addWidget(self.networkCanvas)
         
         self.networkCanvas.maxLinkSize = self.maxLinkSize
-        self.networkCanvas.networkCurve.set_min_node_size(self.minVertexSize)
-        self.networkCanvas.networkCurve.set_max_node_size(self.maxVertexSize)
         
         self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
         
@@ -171,12 +169,12 @@ class OWNxExplorerQt(OWWidget):
         self.colorCombo.addItem("(same color)")
         OWGUI.button(colorBox, self, "Set vertex color palette", self.setColors, tooltip = "Set vertex color palette", debuggingEnabled = 0)
         
-        self.vertexSizeCombo = OWGUI.comboBox(self.verticesTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
+        self.vertexSizeCombo = OWGUI.comboBox(self.verticesTab, self, "vertexSize", box = "Vertex size attribute", callback=self.set_vertex_size)
         self.vertexSizeCombo.addItem("(none)")
         
-        OWGUI.spin(self.vertexSizeCombo.box, self, "minVertexSize", 5, 200, 1, label="Min vertex size:", callback=self.setVertexSize)
-        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 200, 1, label="Max vertex size:", callback=self.setVertexSize)
-        OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
+        OWGUI.spin(self.vertexSizeCombo.box, self, "minVertexSize", 5, 200, 1, label="Min vertex size:", callback=self.set_vertex_size)
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 200, 1, label="Max vertex size:", callback=self.set_vertex_size)
+        OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.set_vertex_size)
         
         colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
         self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.setEdgeColor)
@@ -1269,7 +1267,8 @@ class OWNxExplorerQt(OWWidget):
         
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
-        t = k * nodes * nodes
+        nedges = selg.graph.number_of_edges()
+        t = k * (nodes**2 + nedges) 
         self.frSteps = int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 10000: self.frSteps = 10000;
@@ -1282,7 +1281,7 @@ class OWNxExplorerQt(OWWidget):
             self.optMethod = 0
             self.graph_layout_method()            
             
-        self.setVertexSize()
+        self.set_vertex_size()
         self.setVertexColor()
         self.setEdgeColor()
         #self.networkCanvas.setEdgesSize()
@@ -1315,8 +1314,6 @@ class OWNxExplorerQt(OWWidget):
         if self._network_view is not None:
             graph = self._network_view.init_network(graph)
         
-        
-        #print "OWNetwork/setGraph: new visualizer..."
         self.graph = graph
         
 #        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
@@ -1332,14 +1329,11 @@ class OWNxExplorerQt(OWWidget):
         
         #self.networkCanvas.set_graph_layout(self.graph, self.layout, items=self.graph_base.items(), links=self.graph_base.links())
         self.networkCanvas.set_graph(self.graph, items=self.graph_base.items(), links=self.graph_base.links())
+        
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
-        self.networkCanvas.minVertexSize = self.minVertexSize
-        self.networkCanvas.maxVertexSize = self.maxVertexSize
         self.networkCanvas.maxEdgeSize = self.maxLinkSize
         self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
         self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
-        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
-        self.lastColorColumn = self.colorCombo.currentText()
         
         self.nShown = self.graph.number_of_nodes()
         
@@ -1380,8 +1374,8 @@ class OWNxExplorerQt(OWWidget):
 
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
-        t = k * nodes * nodes
-        self.frSteps = int(5.0 / t)
+        t = k * (nodes**2 + self.graph.number_of_edges())
+        self.frSteps = int(1.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 10000: self.frSteps = 10000;
         
@@ -1397,7 +1391,7 @@ class OWNxExplorerQt(OWWidget):
             self.optMethod = 0
             self.graph_layout_method()            
             
-        self.setVertexSize()
+        self.set_vertex_size()
         self.setVertexColor()
         self.setEdgeColor()
             
@@ -1409,7 +1403,6 @@ class OWNxExplorerQt(OWWidget):
         self.optButton.setChecked(1)
         self.graph_layout()        
         self.information(0)
-        #self.networkCanvas.updateCanvas()
         
     def set_network_view(self, nxView):
         self._network_view = nxView
@@ -1429,7 +1422,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.graph_base.set_items(items)
         
-        self.setVertexSize()
+        self.set_vertex_size()
         self.networkCanvas.showIndexes = self.showIndexes
         self.networkCanvas.showWeights = self.showWeights
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
@@ -1586,6 +1579,7 @@ class OWNxExplorerQt(OWWidget):
         self.optButton.setChecked(False)
 #        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
         #self.networkCanvas.updateCanvas()
+        self.networkCanvas.replot()
         qApp.processEvents()
         
     def graph_layout_method(self, method=None):
@@ -1636,7 +1630,7 @@ class OWNxExplorerQt(OWWidget):
         self.stopOptimization = 0
         temperature = 1000
         cooling = math.exp(math.log(1. / temperature) / self.frSteps)
-        self.networkCanvas.networkCurve.fr(self.frSteps, False, temperature, cooling)
+        self.networkCanvas.networkCurve.fr(self.frSteps, False, temperature)
         self.networkCanvas.update_canvas()
 #        tolerance = 5
 #        initTemp = 1000
@@ -1804,7 +1798,7 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.setEdgesSize()
         self.networkCanvas.replot()
     
-    def setVertexSize(self):
+    def set_vertex_size(self):
         if self.graph is None or self.networkCanvas is None:
             return
         
@@ -1826,12 +1820,13 @@ class OWNxExplorerQt(OWWidget):
             values = dict((node, 1.) for node in self.graph)
             
         if self.invertSize:
-            # TODO: inverted
+            maxval = max(values.itervalues())
+            values.update((key, maxval-val) for key, val in values.iteritems())
             self.networkCanvas.networkCurve.set_node_size(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
         else:
             self.networkCanvas.networkCurve.set_node_size(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
         
-        self.networkCanvas.replot()
+            self.networkCanvas.replot()
         
     def setFontSize(self):
         if self.networkCanvas is None:
