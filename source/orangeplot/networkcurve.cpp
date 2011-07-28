@@ -252,9 +252,9 @@ NetworkCurve::~NetworkCurve()
 void NetworkCurve::update_properties()
 {
     const QTransform t = graph_transform();
-
-    update_items(m_nodes, NodeUpdater(t), UpdatePosition);
-    update_items(m_edges, EdgeUpdater(t), UpdatePen);
+    const double scale = 1.0/zoom_factor();
+    update_items(m_nodes, NodeUpdater(t, scale), UpdatePosition);
+    update_items(m_edges, EdgeUpdater(t, scale), UpdatePen);
 }
 
 QRectF NetworkCurve::data_rect() const

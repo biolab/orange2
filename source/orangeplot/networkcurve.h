@@ -106,25 +106,34 @@ private:
 class NodeUpdater
 {
 public:
-    NodeUpdater(const QTransform& t) : m_t(t) {}
-    void operator()(NodeItem* item) { item->set_graph_transform(m_t); }
+    NodeUpdater(const QTransform& t, double scale) : m_t(t), m_scale(scale) {}
+    void operator()(NodeItem* item) 
+    { 
+        item->set_graph_transform(m_t); 
+        item->setScale(m_scale);
+    }
 private:
     QTransform m_t;
+    double m_scale;
 };
 
 class EdgeUpdater
 {
 public:
-    EdgeUpdater(const QTransform& t) : m_t(t) {}
+    EdgeUpdater(const QTransform& t, double scale) : m_t(t), m_scale(scale) {}
     void operator()(EdgeItem* item)
     {
         if (item->u() && item->v())
         {
             item->setLine(QLineF(item->u()->x(), item->u()->y(), item->v()->x(), item->v()->y()) * m_t);
+            QPen p = item->pen();
+            p.setWidthF(p.widthF() * m_scale);
+            item->setPen(p);
         }
     }
 private:
     QTransform m_t;
+    double m_scale;
 };
 
 class NetworkCurve : public Curve
