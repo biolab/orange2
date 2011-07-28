@@ -24,6 +24,7 @@ public:
     void attach(Plot* graph);
     void detach();
     Plot* plot();
+    virtual void register_points();
     
     static QRectF rect_from_data(const QList<double>& x_data, const QList<double>& y_data);
     

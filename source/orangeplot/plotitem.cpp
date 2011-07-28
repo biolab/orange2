@@ -107,3 +107,9 @@ Plot* PlotItem::plot()
 {
     return m_plot;
 }
+
+void PlotItem::register_points()
+{
+
+}
+

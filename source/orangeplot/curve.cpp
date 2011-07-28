@@ -7,8 +7,9 @@
 #include <QtCore/qmath.h>
 #include <QtCore/QtConcurrentRun>
 #include "point.h"
+#include "plot.h"
 
-Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene), PointsCollection()
+Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
     m_style = NoCurve;
     m_continuous = false;
@@ -18,7 +19,7 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
     checkForUpdate();
 }
 
-Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene), PointsCollection()
+Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
     m_style = NoCurve;
     m_lineItem = 0;
@@ -34,7 +35,7 @@ Curve::~Curve()
 void Curve::updateNumberOfItems()
 {
   cancelAllUpdates();
-  if (m_continuous)
+  if (m_continuous || (m_data.size() == m_pointItems.size()))
   {
     m_needsUpdate &= ~UpdateNumberOfItems;
     return;
@@ -50,9 +51,8 @@ void Curve::updateNumberOfItems()
   {
     m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
   }
-  
+  register_points();
   Q_ASSERT(m_pointItems.size() == m_data.size());
-  set_points(m_pointItems);
 }
 
 void Curve::update_properties()
@@ -149,7 +149,6 @@ void Curve::set_data(const QList< double > x_data, const QList< double > y_data)
     p.y = y_data[i];
     m_data.append(p);
   }
-  set_data_points(x_data, y_data);
   set_data_rect(rect_from_data(x_data, y_data));
   m_needsUpdate |= UpdatePosition;
   checkForUpdate();
@@ -338,3 +337,14 @@ void Curve::cancelAllUpdates()
     }
     m_currentUpdate.clear();
 }
+
+void Curve::register_points()
+{
+    Plot* p = plot();
+    if (p)
+    {
+        p->remove_all_points(this);
+        p->add_points(m_data, m_pointItems, this);
+    }
+}
+

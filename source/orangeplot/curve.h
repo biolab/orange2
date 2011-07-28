@@ -8,7 +8,6 @@
 #include <QtGui/QBrush>
 
 #include <QtCore/QtConcurrentMap>
-#include "pointscollection.h"
 
 struct DataPoint
 {
@@ -79,7 +78,7 @@ struct Updater
   
 typedef QList< DataPoint > Data;
 
-class Curve : public PlotItem, public PointsCollection
+class Curve : public PlotItem
 {
   
 public:
@@ -144,6 +143,7 @@ public:
   
   virtual QTransform graph_transform() const;
   virtual void set_graph_transform(const QTransform& transform);
+  virtual void register_points();
   
   QRectF graphArea() const;
   void setGraphArea(const QRectF& area);

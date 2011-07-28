@@ -481,10 +481,15 @@ QList<QPair<int, int> > NetworkCurve::edge_indices()
 void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
 {
     qDeleteAll(m_nodes);
+    plot()->remove_all_points(this);
+    
     m_nodes = nodes;
     foreach (NodeItem* node, nodes)
     {
-        add_point(node);
+        DataPoint p;
+        p.x = node->x();
+        p.y = node->y();
+        plot()->add_point(p, node, this);
     }
 }
 
@@ -630,17 +635,32 @@ double NetworkCurve::max_node_size() const
 	return m_max_node_size;
 }
 
+void NetworkCurve::register_points()
+{
+    Plot* p = plot();
+    if (p)
+    {
+        p->remove_all_points(this);
+        const Data d = data();
+        const int n = d.size();
+        for (int i = 0; i < n; ++i)
+        {
+            p->add_point(d[i], m_nodes[i], this);
+        }
+    }
+}
+
 void NetworkCurve::set_use_animations(bool use_animations)
 {
-	m_use_animations = use_animations;
+    m_use_animations = use_animations;
 }
 
 bool NetworkCurve::use_animations() const
 {
-	return m_use_animations;
+    return m_use_animations;
 }
-
+ 
 void NetworkCurve::stop_optimization()
 {
-	m_stop_optimization = true;
+    m_stop_optimization = true;
 }

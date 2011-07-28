@@ -3,7 +3,16 @@
 #include "point.h"
 
 #include <QtCore/QDebug>
-#include "pointscollection.h"
+
+uint qHash(const DataPoint& pos)
+{
+    return pos.x + pos.y;
+}
+
+bool operator==(const DataPoint& one, const DataPoint& other)
+{
+    return one.x == other.x && one.y == other.y;
+}
 
 template <class Area>
 void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, Plot::SelectionBehavior behavior)
@@ -49,6 +58,7 @@ void Plot::add_item(PlotItem* item)
     item->m_plot = this;
     item->setParentItem(graph_item);
     m_items << item;
+    item->register_points();
 }
 
 void Plot::remove_item(PlotItem* item)
@@ -67,6 +77,7 @@ void Plot::remove_item(PlotItem* item)
     {
         qWarning() << "Trying to remove an item that doesn't belong to this graph";
     }
+    remove_all_points(item);
 }
 
 QList< PlotItem* > Plot::plot_items()
@@ -164,38 +175,72 @@ QList< int > Plot::selected_points(const QList< double > x_data, const QList< do
     const int n = qMin(x_data.size(), y_data.size());
     QList<int> selected;
     selected.reserve(n);
+    DataPoint p;
     for (int i = 0; i < n; ++i)
     {
-        selected << (selected_point_at(QPointF(x_data[i], y_data[i]) * transform) ? 1 : 0);
+        p.x = x_data[i];
+        p.y = y_data[i];
+        selected << (selected_point_at(p) ? 1 : 0);
     }
     return selected;
 }
 
-Point* Plot::selected_point_at(const QPointF& pos)
+Point* Plot::selected_point_at(const DataPoint& pos)
 {
     foreach (PlotItem* item, plot_items())
     {
-        const PointsCollection* collection = dynamic_cast<PointsCollection*>(item);
-        if (collection && collection->contains(pos) && collection->point_at(pos)->is_selected())
+        if (m_point_set.contains(item) && m_point_set[item].contains(pos) && m_point_hash[item][pos]->is_selected())
         {
-            return collection->point_at(pos);
+            return m_point_hash[item][pos];
         }
     }
     return 0;
 }
 
-Point* Plot::point_at(const QPointF& pos)
+Point* Plot::point_at(const DataPoint& pos)
 {
     Point* point;
     foreach (PlotItem* item, plot_items())
     {
-        const PointsCollection* collection = dynamic_cast<PointsCollection*>(item);
-        if (collection && collection->contains(pos))
+        if (m_point_set.contains(item) && m_point_set[item].contains(pos))
         {
-            return collection->point_at(pos);
+            return m_point_hash[item][pos];
         }
     }
     return 0;
+}
+
+void Plot::add_point(const DataPoint& pos, Point* item, PlotItem* parent)
+{
+    m_point_set[parent].insert(pos);
+    m_point_hash[parent].insert(pos, item);
+}
+
+void Plot::add_points(const Data& data, const QList< Point* >& items, PlotItem* parent)
+{
+    const int n = qMin(data.size(), items.size());
+    for (int i = 0; i < n; ++i)
+    {
+        add_point(data[i], items[i], parent);
+    }
+}
+
+void Plot::remove_point(const DataPoint& pos, PlotItem* parent)
+{
+    if (m_point_set.contains(parent) && m_point_set[parent].contains(pos))
+    {
+        m_point_set[parent].remove(pos);
+        m_point_hash[parent].remove(pos);
+    }
+}
+
+void Plot::remove_all_points(PlotItem* parent)
+{
+    if (m_point_set.contains(parent))
+    {
+        m_point_set[parent].clear();
+        m_point_hash[parent].clear();
+    }
 }
 
 #include "plot.moc"

@@ -16,7 +16,6 @@ include_directories(${QT_INCLUDES} ${SIP_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR
 set(orangeplot_SRCS 
     plotitem.cpp 
     point.cpp 
-    pointscollection.cpp
     curve.cpp 
     unconnectedlinescurve.cpp 
     networkcurve.cpp

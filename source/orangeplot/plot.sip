@@ -62,7 +62,7 @@ public:
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
     
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
-    Point* point_at(const QPointF& pos);
+    Point* point_at(const DataPoint& pos);
     
 protected:
     void set_clean();

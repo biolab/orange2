@@ -2,6 +2,10 @@
 #define PLOT_H
 
 #include <QtGui/QGraphicsView>
+#include <QtCore/QHash>
+#include <QtCore/QMap>
+
+#include "curve.h"
 
 class Point;
 class PlotItem;
@@ -17,7 +21,11 @@ public:
         ToggleSelection
     };
     
-    Plot(QWidget* parent = 0);
+    typedef QSet<DataPoint> PointSet;
+    typedef QHash<DataPoint, Point*> PointHash;
+
+    
+    explicit Plot(QWidget* parent = 0);
     virtual ~Plot();
     
     virtual void replot() = 0;
@@ -43,17 +51,24 @@ public:
     
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
     
-    Point* point_at(const QPointF& pos);
-    Point* selected_point_at(const QPointF& pos);
+    Point* point_at(const DataPoint& pos);
+    Point* selected_point_at(const DataPoint& pos);
     
+    void add_point(const DataPoint& pos, Point* item, PlotItem* parent);
+    void add_points(const Data& data, const QList<Point*>& items, PlotItem* parent);
+    void remove_point(const DataPoint& pos, PlotItem* parent);
+    void remove_all_points(PlotItem* parent);
+       
 protected:
-    void set_clean();;
+    void set_clean();
     bool is_dirty();
     
 private:
     QList<PlotItem*> m_items;
     bool m_dirty;
     QGraphicsRectItem* clipItem;
+    QMap<PlotItem*, PointSet> m_point_set;
+    QMap<PlotItem*, PointHash> m_point_hash;
 };
 
 #endif // PLOT_H
