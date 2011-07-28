@@ -139,7 +139,7 @@ public:
     virtual void update_properties();
     virtual QRectF data_rect() const;
     
-    int fr(int steps, bool weighted, double temperature);
+    int fr(int steps, bool weighted);
     int random();
     
     void set_nodes(Nodes nodes);
@@ -156,12 +156,15 @@ public:
     void set_max_node_size(double size);
     double max_node_size() const;
 
+    void stop_optimization();
+
 private:
     Nodes m_nodes;
     Edges m_edges;
 
     double m_min_node_size;
     double m_max_node_size;
+    bool m_stop_optimization;
 };
 
 #endif // NETWORKCURVE_H

@@ -293,12 +293,14 @@ int NetworkCurve::random()
 	return 0;
 }
 
-int NetworkCurve::fr(int steps, bool weighted, double temperature)
+int NetworkCurve::fr(int steps, bool weighted)
 {
 	int i, j;
 	int count = 0;
 	NodeItem *u, *v;
 	EdgeItem *edge;
+	m_stop_optimization = false;
+
 	double rect[4] = {std::numeric_limits<double>::max(),
 			  std::numeric_limits<double>::max(),
 			  std::numeric_limits<double>::min(),
@@ -320,17 +322,18 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature)
 		if (rect[3] < y) rect[3] = y;
 	}
 	QRectF data_r(rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]);
-	qDebug() << data_r << data_rect();
 	double area = data_r.width() * data_r.height();
-
-
-	int updateCheckpoint = steps / 50 + 1;
+	int updateCheckpoint = steps / 50;
+	if (updateCheckpoint == 0 || updateCheckpoint % 2 != 0)
+	{
+		updateCheckpoint += 1;
+	}
 	double k2 = area / m_nodes.size();
 	double k = sqrt(k2);
 	double kk = 2 * k;
 	double kk2 = kk * kk;
 
-	double cooling, cooling_switch, cooling_1, cooling_2;
+	double temperature, cooling, cooling_switch, cooling_1, cooling_2;
 	temperature = sqrt(area) / 5;
 	cooling = exp(log(k / 10 / temperature) / steps);
 	if (steps > 20)
@@ -346,7 +349,6 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature)
 		cooling_2 = 0;
 	}
 
-	qDebug() << "k " << k;
 	// iterations
 	for (i = 0; i < steps; i++)
 	{
@@ -435,9 +437,13 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature)
 			QCoreApplication::processEvents();
 		}
 
+		if (m_stop_optimization)
+		{
+			return 0;
+		}
+
 		//temperature = temperature * cooling;
-		//qDebug() << count << " " << temperature << " " << (temperature > cooling_switch);
-		if ((int)temperature > cooling_switch)
+		if (floor(temperature) > cooling_switch)
 		{
 			temperature -= cooling_1;
 		}
@@ -445,12 +451,8 @@ int NetworkCurve::fr(int steps, bool weighted, double temperature)
 		{
 			temperature -= cooling_2;
 		}
-
 	}
-	data_r =  data_rect();
-	area = data_r.width() * data_r.height();
-	k = sqrt(data_r.width() * data_r.height() / m_nodes.size());
-	qDebug() << "k " << k;
+
 	return 0;
 }
 
@@ -627,3 +629,7 @@ double NetworkCurve::max_node_size() const
 	return m_max_node_size;
 }
 
+void NetworkCurve::stop_optimization()
+{
+	m_stop_optimization = true;
+}

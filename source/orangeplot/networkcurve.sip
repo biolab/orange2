@@ -86,7 +86,7 @@ public:
     virtual void update_properties();
     virtual QRectF data_rect() const;
     
-    int fr(int steps, bool weighted, double temperature);
+    int fr(int steps, bool weighted);
     int random();
     
     void set_nodes(QMap<int, NodeItem*> nodes);
@@ -102,6 +102,8 @@ public:
 
     void set_max_node_size(double size);
     double max_node_size() const;
+    
+    void stop_optimization();
 };
 
 
