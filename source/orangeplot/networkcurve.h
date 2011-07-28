@@ -156,6 +156,9 @@ public:
     void set_max_node_size(double size);
     double max_node_size() const;
 
+    void set_use_animations(bool use_animations);
+    bool use_animations() const;
+
     void stop_optimization();
 
 private:
@@ -164,6 +167,7 @@ private:
 
     double m_min_node_size;
     double m_max_node_size;
+    bool m_use_animations;
     bool m_stop_optimization;
 };
 

@@ -328,6 +328,7 @@ int NetworkCurve::fr(int steps, bool weighted)
 	{
 		updateCheckpoint += 1;
 	}
+	qDebug() << "updateCheckpoint " << updateCheckpoint;
 	double k2 = area / m_nodes.size();
 	double k = sqrt(k2);
 	double kk = 2 * k;
@@ -627,6 +628,16 @@ void NetworkCurve::set_max_node_size(double size)
 double NetworkCurve::max_node_size() const
 {
 	return m_max_node_size;
+}
+
+void NetworkCurve::set_use_animations(bool use_animations)
+{
+	m_use_animations = use_animations;
+}
+
+bool NetworkCurve::use_animations() const
+{
+	return m_use_animations;
 }
 
 void NetworkCurve::stop_optimization()

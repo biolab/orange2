@@ -103,6 +103,9 @@ public:
     void set_max_node_size(double size);
     double max_node_size() const;
     
+    void set_use_animations(bool use_animations);
+    bool use_animations() const;
+    
     void stop_optimization();
 };
 
