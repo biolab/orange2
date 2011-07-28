@@ -1,7 +1,7 @@
 
 
 from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen
-from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF
+from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF, qDebug
 
 from owpoint import *
 from owcurve import OWCurve
@@ -54,7 +54,6 @@ class OWLegend(QGraphicsObject):
         self.setFlag(self.ItemHasNoContents, True)
         self.mouse_down = False
         self._orientation = Qt.Vertical
-        self._center_point = None
         self.max_size = QSizeF()
         self._floating = True
         self._floating_animation = None
@@ -72,7 +71,6 @@ class OWLegend(QGraphicsObject):
         self.update()
         
     def update(self):
-        self._animations = []
         self.box_rect = QRectF()
         x, y = 0, 0
         if self._orientation == Qt.Vertical:
@@ -122,13 +120,9 @@ class OWLegend(QGraphicsObject):
     def paint(self, painter, option, widget=None):
         pass
     
-    def set_orientation(self, orientation, origin_point = QPointF()):
+    def set_orientation(self, orientation):
         if self._orientation != orientation:
             self._orientation = orientation
-            if origin_point.isNull():
-                self._center_point = origin_point
-            else:
-                self._center_point = self.mapFromScene(origin_point)
             self.update()
             
     def set_pos_animated(self, pos):

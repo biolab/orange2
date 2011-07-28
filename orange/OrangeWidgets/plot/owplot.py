@@ -471,15 +471,22 @@ class OWPlot(orangeplot.Plot):
         self._legend.max_size = self._legend_outside_area.size()
         
         if self.show_legend:
-            if not self._legend_moved:
-                self._legend.setPos(graph_rect.topRight() + QPointF(-100, 100))
             self._legend.show()
+            if not self._legend_moved:
+                ## If the legend hasn't been moved it, we set it outside, in the top right corner
+                w = self._legend.boundingRect().width()
+                self._legend_margin = QRectF(0, 0, w, 0)
+                self._legend.setPos(graph_rect.topRight() + QPointF(-w, 0))
+                self._legend.set_floating(False)
+                self._legend.set_orientation(Qt.Vertical)
             
             ## Adjust for possible external legend:
             r = self._legend_margin
             graph_rect.adjust(r.left(), r.top(), -r.right(), -r.bottom())
         else:
             self._legend.hide()
+            
+        self._legend.update()
             
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
@@ -991,7 +998,7 @@ class OWPlot(orangeplot.Plot):
             
         if rect != self._legend_margin:
             orientation = Qt.Horizontal if rect.top() or rect.bottom() else Qt.Vertical
-            self._legend.set_orientation(orientation, pos)
+            self._legend.set_orientation(orientation)
             self.animate(self, 'legend_margin', rect, duration=100)
 
     @pyqtProperty(QRectF)
