@@ -193,8 +193,6 @@ class OWNxCanvas(OWPlot):
         OWPlot.__init__(self, parent, name)
         self.master = master
         self.parent = parent
-        self.label_attributes = []
-        self.tooltipText = []
         #self.vertices_old = {}         # distionary of nodes (orngIndex: vertex_objekt)
         #self.edges_old = {}            # distionary of edges (curveKey: edge_objekt)
         #self.vertices = []
@@ -510,64 +508,7 @@ class OWNxCanvas(OWPlot):
             lbl = str(self.items[component[0]][str(self.showComponentAttribute)])
             
             mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
-    
-    def drawToolTips(self):
-      # add ToolTips
-      self.tooltipData = []
-      self.tooltipKeys = {}
-      self.tips.removeAll()
-      if len(self.tooltipText) > 0:
-        for vertex in self.networkCurve.vertices.itervalues():
-          if not vertex.show:
-            continue
           
-          x1 = self.networkCurve.coors[vertex.index][0]
-          y1 = self.networkCurve.coors[vertex.index][1]
-          lbl = ""
-          values = self.items[vertex.index]
-          for ndx in self.tooltipText:
-              if not ndx in self.items.domain:
-                  continue
-              
-              value = str(values[ndx])
-              # wrap text
-              i = 0
-              while i < len(value) / 100:
-                  value = value[:((i + 1) * 100) + i] + "\n" + value[((i + 1) * 100) + i:]
-                  i += 1
-                  
-              lbl = lbl + str(value) + "\n"
-    
-          if lbl != '':
-            lbl = lbl[:-1]
-            self.tips.addToolTip(x1, y1, lbl)
-            self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
-                   
-    def drawLabels(self):
-        if len(self.label_attributes) > 0:
-            for vertex in self.networkCurve.vertices.itervalues():
-                if not vertex.show:
-                    continue
-                
-                if self.labelsOnMarkedOnly and not (vertex.marked):
-                    continue
-                                  
-                x1 = self.networkCurve.coors[vertex.index][0]
-                y1 = self.networkCurve.coors[vertex.index][1]
-                lbl = ""
-                values = self.items[vertex.index]
-                if self.showMissingValues:
-                    lbl = ", ".join([str(values[ndx]) for ndx in self.label_attributes])
-                else:
-                    lbl = ", ".join([str(values[ndx]) for ndx in self.label_attributes if str(values[ndx]) != '?'])
-                #if not self.showMissingValues and lbl == '':
-                #    continue 
-                
-                if lbl:
-                    vertex.label = lbl
-                    mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignBottom, size=self.fontSize)
-                    self.markerKeys[vertex.index] = mkey    
-                     
     def drawIndexes(self):
         if self.showIndexes:
             for vertex in self.networkCurve.vertices.itervalues():
@@ -699,32 +640,26 @@ class OWNxCanvas(OWPlot):
         self.replot()
         
     def set_label_attributes(self, attributes):
-        self.label_attributes = []
         if self.graph is None or self.items is None or \
            not isinstance(self.items, orange.ExampleTable):
             return
         
-        self.label_attributes = [self.items.domain[att] for att in \
+        label_attributes = [self.items.domain[att] for att in \
                                  attributes if att in self.items.domain]
-        self.networkCurve.set_node_labels(dict((node, '\n'.join(str( \
-                    self.items[node][att]) for att in self.label_attributes)) \
-                                                        for node in self.graph))    
-        self.replot()
+        self.networkCurve.set_node_labels(dict((node, ', '.join(str( \
+                    self.items[node][att]) for att in label_attributes)) \
+                                                        for node in self.graph))
         
-    def setTooltipText(self, attributes):
-        self.tooltipText = []
-        if self.layout is None or self.graph is None or self.items is None:
+    def set_tooltip_attributes(self, attributes):
+        if self.graph is None or self.items is None or \
+           not isinstance(self.items, orange.ExampleTable):
             return
         
-        if isinstance(self.items, orange.ExampleTable):
-            data = self.items
-            for att in attributes:
-                for i in range(len(data.domain)):
-                    if data.domain[i].name == att:
-                        self.tooltipText.append(i)
-                        
-                if self.items.domain.hasmeta(att):
-                        self.tooltipText.append(self.items.domain.metaid(att))
+        tooltip_attributes = [self.items.domain[att] for att in \
+                                 attributes if att in self.items.domain]
+        self.networkCurve.set_node_tooltips(dict((node, ', '.join(str( \
+                   self.items[node][att]) for att in tooltip_attributes)) \
+                                                        for node in self.graph))
                         
     def setEdgeLabelText(self, attributes):
         self.edgeLabelText = []

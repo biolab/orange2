@@ -1682,18 +1682,16 @@ class OWNxExplorerQt(OWWidget):
         if self.graph is None:
             return
         
-        self.lastLabelColumns = set([self.attributes[i][0] for i in self.markerAttributes])
+        self.lastLabelColumns = [self.attributes[i][0] for i in self.markerAttributes]
         self.networkCanvas.set_label_attributes(self.lastLabelColumns)
-        self.networkCanvas.updateData()
         self.networkCanvas.replot()
   
     def clickedTooltipLstBox(self):
         if self.graph is None:
             return
         
-        self.lastTooltipColumns = set([self.attributes[i][0] for i in self.tooltipAttributes])
-        self.networkCanvas.setTooltipText(self.lastTooltipColumns)
-        self.networkCanvas.updateData()
+        self.lastTooltipColumns = [self.attributes[i][0] for i in self.tooltipAttributes]
+        self.networkCanvas.set_tooltip_attributes(self.lastTooltipColumns)
         self.networkCanvas.replot()
         
     def clickedEdgeLabelListBox(self):
