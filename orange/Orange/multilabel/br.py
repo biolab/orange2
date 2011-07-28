@@ -79,10 +79,6 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
         else:
             return self
         
-    def __init__(self, **argkw):
-        self.multi_flag = 1
-        self.__dict__.update(argkw)
-        
     def __call__(self, instances, base_learner = None, **kwds):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]

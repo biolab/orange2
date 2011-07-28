@@ -23,14 +23,11 @@ Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.
    :members:
    :show-inheritance:
  
-   .. method:: __new__(instances, base_learner, **argkw) 
+   .. method:: __new__(instances, **argkw) 
    MLkNNLearner Constructor
    
    :param instances: a table of instances, covered by the rule.
    :type instances: :class:`Orange.data.Table`
-      
-   :param base_learner: the binary learner, the default learner is BayesLearner
-   :type base_learner: :class:`Orange.classification.Learner`
 
 .. index:: MLkNN Classifier
 .. autoclass:: Orange.multilabel.MLkNNClassifier
@@ -204,8 +201,6 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
         #Computing the posterior probabilities P(E_j^l|H_b^l)
         self.compute_cond()
         
-        #Computing y_t and r_t
-        
         return MLkNNClassifier(instances = instances, label_indices = label_indices, 
                                prior_probabilities = self.prior_probabilities, 
                                prior_nprobabilities = self.prior_nprobabilities,
@@ -274,6 +269,7 @@ class MLkNNClassifier(_multibase.MultiLabelClassifier):
         if num_labels == 0:
             raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
         
+        #Computing y_t and r_t
         neighbors = self.knn.findNearest(example, self.k)
         for i in range(num_labels):
             # compute sum of aces in KNN

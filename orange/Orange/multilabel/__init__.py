@@ -9,3 +9,6 @@ from lp import LabelPowersetClassifier
 
 from mlknn import MLkNNLearner
 from mlknn import MLkNNClassifier
+
+from mmp import MMPLearner
+from mmp import MMPClassifier
