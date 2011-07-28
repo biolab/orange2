@@ -39,8 +39,8 @@ class NetworkCurve(orangeplot.NetworkCurve):
       self.name = "Network Curve"
       self.showEdgeLabels = 0
       
-  def set_node_size(self, values={}, min_size=0, max_size=0):
-      orangeplot.NetworkCurve.set_node_size(self, values, min_size, max_size)
+  def set_node_sizes(self, values={}, min_size=0, max_size=0):
+      orangeplot.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
       
   def move_selected_nodes(self, dx, dy):
     selected = self.get_selected_nodes()
@@ -193,7 +193,7 @@ class OWNxCanvas(OWPlot):
         OWPlot.__init__(self, parent, name)
         self.master = master
         self.parent = parent
-        self.labelText = []
+        self.label_attributes = []
         self.tooltipText = []
         #self.vertices_old = {}         # distionary of nodes (orngIndex: vertex_objekt)
         #self.edges_old = {}            # distionary of edges (curveKey: edge_objekt)
@@ -544,7 +544,7 @@ class OWNxCanvas(OWPlot):
             self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
                    
     def drawLabels(self):
-        if len(self.labelText) > 0:
+        if len(self.label_attributes) > 0:
             for vertex in self.networkCurve.vertices.itervalues():
                 if not vertex.show:
                     continue
@@ -557,9 +557,9 @@ class OWNxCanvas(OWPlot):
                 lbl = ""
                 values = self.items[vertex.index]
                 if self.showMissingValues:
-                    lbl = ", ".join([str(values[ndx]) for ndx in self.labelText])
+                    lbl = ", ".join([str(values[ndx]) for ndx in self.label_attributes])
                 else:
-                    lbl = ", ".join([str(values[ndx]) for ndx in self.labelText if str(values[ndx]) != '?'])
+                    lbl = ", ".join([str(values[ndx]) for ndx in self.label_attributes if str(values[ndx]) != '?'])
                 #if not self.showMissingValues and lbl == '':
                 #    continue 
                 
@@ -671,7 +671,7 @@ class OWNxCanvas(OWPlot):
 #                    else:
 #                      self.networkCurve.set_edge_color(index, newColor)
     
-    def set_node_color(self, attribute, nodes=None):
+    def set_node_colors(self, attribute, nodes=None):
         if self.graph is None:
             return
 
@@ -695,24 +695,22 @@ class OWNxCanvas(OWPlot):
         else:
             colors.update((node, self.discPalette[0]) for node in nodes)
         
-        self.networkCurve.set_node_color(colors)
+        self.networkCurve.set_node_colors(colors)
         self.replot()
         
-    def setLabelText(self, attributes):
-        self.labelText = []
-        if self.layout is None or self.graph is None or self.items is None:
+    def set_label_attributes(self, attributes):
+        self.label_attributes = []
+        if self.graph is None or self.items is None or \
+           not isinstance(self.items, orange.ExampleTable):
             return
         
-        if isinstance(self.items, orange.ExampleTable):
-            data = self.items
-            for att in attributes:
-                for i in range(len(data.domain)):
-                    if data.domain[i].name == att:
-                        self.labelText.append(i)
-                        
-                if self.items.domain.hasmeta(att):
-                        self.labelText.append(self.items.domain.metaid(att))
-    
+        self.label_attributes = [self.items.domain[att] for att in \
+                                 attributes if att in self.items.domain]
+        self.networkCurve.set_node_labels(dict((node, '\n'.join(str( \
+                    self.items[node][att]) for att in self.label_attributes)) \
+                                                        for node in self.graph))    
+        self.replot()
+        
     def setTooltipText(self, attributes):
         self.tooltipText = []
         if self.layout is None or self.graph is None or self.items is None:
@@ -914,9 +912,12 @@ class OWNxCanvas(OWPlot):
 #                edge.pen = QPen(edge.pen.color(), 1)
 #                edge.pen.setCapStyle(Qt.RoundCap)
         pass    
+    
+    def update_animations(self):
+        OWPlot.use_animations(self)
+        self.networkCurve.set_use_animations(True)
                     
     def replot(self):
         OWPlot.replot(self)
-        
         if hasattr(self, 'networkCurve') and self.networkCurve is not None:
             self.networkCurve.update()
