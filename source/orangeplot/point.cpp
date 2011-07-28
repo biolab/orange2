@@ -70,6 +70,9 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
             }
             else
             {
+                QColor color = m_color;
+                color.setAlpha(m_color.alpha()/8);
+                p.setBrush(color);
                 p.setPen(m_color);
             }
             const QPainterPath path = path_for_symbol(m_symbol, m_size);
