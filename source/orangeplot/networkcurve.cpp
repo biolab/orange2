@@ -485,7 +485,7 @@ void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
     register_points();
 }
 
-void NetworkCurve::set_node_color(const QMap<int, QColor*> colors)
+void NetworkCurve::set_node_colors(const QMap<int, QColor*> colors)
 {
 	QMap<int, QColor*>::ConstIterator it;
 	for (it = colors.constBegin(); it != colors.constEnd(); ++it)
@@ -494,18 +494,7 @@ void NetworkCurve::set_node_color(const QMap<int, QColor*> colors)
 	}
 }
 
-void NetworkCurve::set_edge_color(const QList<QColor*> colors)
-{
-	int i;
-	for (i = 0; i < colors.size(); ++i)
-	{
-		QPen p = m_edges[i]->pen();
-		p.setColor(*colors[i]);
-		m_edges[i]->setPen(p);
-	}
-}
-
-void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, double max_size)
+void NetworkCurve::set_node_sizes(QMap<int, double> sizes, double min_size, double max_size)
 {
 	// TODO inverted
 	NodeItem* node;
@@ -607,9 +596,38 @@ void NetworkCurve::set_node_size(QMap<int, double> sizes, double min_size, doubl
 	}
 }
 
+void NetworkCurve::set_node_labels(const QMap<int, QString> labels)
+{
+	QMap<int, QString>::ConstIterator it;
+	for (it = labels.constBegin(); it != labels.constEnd(); ++it)
+	{
+		m_nodes[it.key()]->set_label(it.value());
+	}
+}
+
+void NetworkCurve::set_node_tooltips(const QMap<int, QString> tooltips)
+{
+	QMap<int, QString>::ConstIterator it;
+	for (it = tooltips.constBegin(); it != tooltips.constEnd(); ++it)
+	{
+		m_nodes[it.key()]->set_tooltip(it.value());
+	}
+}
+
+void NetworkCurve::set_edge_color(const QList<QColor*> colors)
+{
+	int i;
+	for (i = 0; i < colors.size(); ++i)
+	{
+		QPen p = m_edges[i]->pen();
+		p.setColor(*colors[i]);
+		m_edges[i]->setPen(p);
+	}
+}
+
 void NetworkCurve::set_min_node_size(double size)
 {
-	set_node_size(QMap<int, double>(), size, 0);
+	set_node_sizes(QMap<int, double>(), size, 0);
 }
 
 double NetworkCurve::min_node_size() const
@@ -619,7 +637,7 @@ double NetworkCurve::min_node_size() const
 
 void NetworkCurve::set_max_node_size(double size)
 {
-	set_node_size(QMap<int, double>(), 0, size);
+	set_node_sizes(QMap<int, double>(), 0, size);
 }
 
 double NetworkCurve::max_node_size() const
