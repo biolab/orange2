@@ -57,6 +57,9 @@ from owpalette import *
 from owplotgui import OWPlotGUI
 from owtools import *
 
+## Color values copied from orngView.SchemaView for consistency
+SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap)
+SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
 from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty
@@ -649,6 +652,9 @@ class OWPlot(orangeplot.Plot):
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
             self._selection_start_point = self.mapToScene(event.pos())
             self._current_rs_item = QGraphicsRectItem(parent=self.graph_item, scene=self.scene())
+            self._current_rs_item.setPen(SelectionPen)
+            self._current_rs_item.setBrush(SelectionBrush)
+            self._current_rs_item.setZValue(SelectionZValue)
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -681,7 +687,7 @@ class OWPlot(orangeplot.Plot):
                 highlight_pen.setStyle(Qt.DashDotLine)
                 self._current_ps_item.setPen(highlight_pen)
             else:
-                self._current_ps_item.setPen(QPen(Qt.black))
+                self._current_ps_item.setPen(SelectionPen)
         else:
             x, y = self.map_from_graph(point)
             text, x, y = self.tips.maybeTip(x, y)
@@ -705,7 +711,8 @@ class OWPlot(orangeplot.Plot):
             return
         
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self._current_rs_item:
-            self.add_selection_item(self._current_rs_item, self._current_rs_item.rect())
+            self.add_selection(self._current_rs_item.rect())
+            self.scene().removeItem(self._current_rs_item)
             self._current_rs_item = None
     
     def mouseStaticClick(self, event):
@@ -731,12 +738,16 @@ class OWPlot(orangeplot.Plot):
                 self._current_ps_polygon = QPolygonF()
                 self._current_ps_polygon.append(point)
                 self._current_ps_item = QGraphicsPolygonItem(self.graph_item, self.scene())
+                self._current_ps_item.setPen(SelectionPen)
+                self._current_ps_item.setBrush(SelectionBrush)
+                self._current_ps_item.setZValue(SelectionZValue)
+            
             self._current_ps_polygon.append(point)
             self._current_ps_item.setPolygon(self._current_ps_polygon)
             if self._current_ps_polygon.size() > 2 and self.points_equal(self._current_ps_polygon.first(), self._current_ps_polygon.last()):
-                self._current_ps_item.setPen(QPen(Qt.black))
                 self._current_ps_polygon.append(self._current_ps_polygon.first())
-                self.add_selection_item(self._current_ps_item, self._current_ps_polygon)
+                self.add_selection(self._current_ps_polygon)
+                self.scene().removeItem(self._current_ps_item)
                 self._current_ps_item = None
                 
         elif self.state in [SELECT_RECTANGLE, SELECT_POLYGON] and event.button() == Qt.RightButton:
@@ -826,7 +837,7 @@ class OWPlot(orangeplot.Plot):
             unselected.append(not i)
         return selected, unselected
         
-    def add_selection_item(self, item, reg):
+    def add_selection(self, reg):
         self.select_points(reg, self.selection_behavior)
         if self.auto_send_selection_callback:
             self.auto_send_selection_callback()
