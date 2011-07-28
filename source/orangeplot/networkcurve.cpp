@@ -481,16 +481,8 @@ QList<QPair<int, int> > NetworkCurve::edge_indices()
 void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
 {
     qDeleteAll(m_nodes);
-    plot()->remove_all_points(this);
-    
     m_nodes = nodes;
-    foreach (NodeItem* node, nodes)
-    {
-        DataPoint p;
-        p.x = node->x();
-        p.y = node->y();
-        plot()->add_point(p, node, this);
-    }
+    register_points();
 }
 
 void NetworkCurve::set_node_color(const QMap<int, QColor*> colors)
