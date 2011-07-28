@@ -2984,6 +2984,54 @@ extern "C"{
 
 
 /*
+ * Extern interface for ctypes
+ */
+
+extern "C" void EarthForwardPass(
+	int    *pnTerms,            // out: highest used term number in full model
+	bool   FullSet[],           // out: 1 * nMaxTerms, indices of lin indep cols of bx
+	double bx[],                // out: MARS basis matrix, nCases * nMaxTerms
+	int    Dirs[],              // out: nMaxTerms * nPreds, -1,0,1,2 for iTerm, iPred
+	double Cuts[],              // out: nMaxTerms * nPreds, cut for iTerm, iPred
+	int    nFactorsInTerm[],    // out: number of hockey stick funcs in each MARS term
+	int    nUses[],             // out: nbr of times each predictor is used in the model
+	const double x[],           // in: nCases x nPreds
+	const double y[],           // in: nCases x nResp
+	const double WeightsArg[],  // in: nCases x 1, can be NULL, currently ignored
+	const int nCases,           // in: number of rows in x and elements in y
+	const int nResp,            // in: number of cols in y
+	const int nPreds,           // in:
+	const int nMaxDegree,       // in:
+	const int nMaxTerms,        // in:
+	const double Penalty,       // in: GCV penalty per knot
+	double Thresh,              // in: forward step threshold
+	int nFastK,                 // in: Fast MARS K
+	const double FastBeta,      // in: Fast MARS ageing coef
+	const double NewVarPenalty, // in: penalty for adding a new variable (default is 0)
+	const int  LinPreds[],      // in: nPreds x 1, 1 if predictor must enter linearly
+	const bool UseBetaCache,    // in: true to use the beta cache, for speed
+	const char *sPredNames[])   // in: predictor names, can be NULL
+{
+	ForwardPass(pnTerms, FullSet, bx, Dirs, Cuts, nFactorsInTerm, nUses,
+			x, y, WeightsArg, nCases, nResp, nPreds, nMaxDegree,
+			nMaxTerms, Penalty, Thresh, nFastK, FastBeta, NewVarPenalty,
+			LinPreds, UseBetaCache, sPredNames);
+}
+
+extern "C" void EarthEvalSubsetsUsingXtx(
+	bool   PruneTerms[],    // out: nMaxTerms x nMaxTerms
+	double RssVec[],        // out: nMaxTerms x 1, RSS of each subset
+	const int    nCases,    // in
+	const int    nResp,     // in: number of cols in y
+	const int    nMaxTerms, // in: number of MARS terms in full model
+	const double bx[],      // in: nCases x nMaxTerms, all cols must be indep
+	const double y[],       // in: nCases * nResp
+	const double WeightsArg[]) // in: nCases x 1, can be NULL
+{
+	EvalSubsetsUsingXtx(PruneTerms, RssVec, nCases, nResp, nMaxTerms, bx, y, WeightsArg);
+}
+
+/*
  * ORANGE INTERFACE
  */
 
