@@ -27,32 +27,22 @@ NodeItem::~NodeItem()
 {
 
 }
-/*
+
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    Q_UNUSED(option)
-    Q_UNUSED(widget)
+	Point::paint(painter, option, widget);
 
-    //painter->setClipRect(option->exposedRect);
-
-    if (is_selected()) {
-    	painter->setPen(QPen(Qt::yellow, 3));
-    	painter->setBrush(color());
-    	QRectF rect(-(size() + 4) / 2, -(size() + 4) / 2, size() + 4, size() + 4);
-    	painter->drawEllipse(rect);
-    } else if (is_marked()) {
-    	painter->setPen(color());
-    	painter->setBrush(color());
-    	QRectF rect(-size() / 2, -size() / 2, size(), size());
-    	painter->drawEllipse(rect);
-    } else {
-    	painter->setPen(color());
-    	painter->setBrush(Qt::white);
-    	QRectF rect(-size() / 2, -size() / 2, size(), size());
-    	painter->drawEllipse(rect);
-    }
+	if (m_label.compare("") != 0)
+	{
+		QFontMetrics metrics = painter->fontMetrics();
+		int th = metrics.height();
+		int tw = metrics.width(m_label);
+		QRect r(-tw/2, 0, tw, th);
+		//painter->fillRect(r, QBrush(Qt::white));
+		painter->drawText(r, Qt::AlignHCenter, m_label);
+	}
 }
-*/
+
 void NodeItem::set_coordinates(double x, double y)
 {
     m_x = x;

@@ -13,7 +13,7 @@ public:
     NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~NodeItem();
 
-    //virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
 
     void set_coordinates(double x, double y);
 
@@ -144,7 +144,7 @@ public:
 
     NetworkCurve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~NetworkCurve();
-    
+
     virtual void update_properties();
     virtual QRectF data_rect() const;
     virtual void register_points();
