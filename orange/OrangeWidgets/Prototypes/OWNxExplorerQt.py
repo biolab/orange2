@@ -1201,22 +1201,11 @@ class OWNxExplorerQt(OWWidget):
         self.comboAttSelection.addItem("Select attribute")
       
     def change_graph(self, newgraph):
-        old_nodes = set(self.graph.nodes_iter())
-        new_nodes = set(newgraph.nodes_iter())
-        inter_nodes = old_nodes.intersection(new_nodes)
-        remove_nodes = old_nodes.difference(inter_nodes)
-        add_nodes = new_nodes.difference(inter_nodes)
-        
-        [self.networkCanvas.networkCurve.coors.pop(c) for c in remove_nodes]
-        self.networkCanvas.networkCurve.coors.update((node, (0,0)) for node in add_nodes)
-        positions = [self.networkCanvas.networkCurve.coors[key] for key in sorted(self.networkCanvas.networkCurve.coors.iterkeys())]
-#        self.layout.set_graph(newgraph, positions)
-        
         self.graph = newgraph
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
         
-        self.networkCanvas.change_graph(self.graph, inter_nodes, add_nodes, remove_nodes)
+        self.networkCanvas.change_graph(self.graph)
         
 #        self.nShown = self.graph.number_of_nodes()
 #        
@@ -1238,10 +1227,7 @@ class OWNxExplorerQt(OWWidget):
 #            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
 #        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
         
-        k = 1.13850193174e-008
-        nodes = self.graph.number_of_nodes()
-        nedges = selg.graph.number_of_edges()
-        t = k * (nodes**2 + nedges) 
+        t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
         self.frSteps = int(2.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 100: self.frSteps = 100;
@@ -1264,8 +1250,8 @@ class OWNxExplorerQt(OWWidget):
         #self.clickedTooltipLstBox()
         #self.clickedEdgeLabelListBox()
         
-        self.optButton.setChecked(1)
-        self.graph_layout()        
+        #self.optButton.setChecked(1)
+        #self.graph_layout()        
         self.information(0)
         
     def set_graph(self, graph):
@@ -1346,16 +1332,11 @@ class OWNxExplorerQt(OWWidget):
         
         self.showComponentAttribute = None
 
-        k = 1.13850193174e-008
-        nodes = self.graph.number_of_nodes()
-        t = k * (nodes**2 + self.graph.number_of_edges())
+        t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
         self.frSteps = int(2.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 100: self.frSteps = 100;
         
-        self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
-        self.networkCanvas.showWeights = self.showWeights
-        self.networkCanvas.showIndexes = self.showIndexes
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
             self.networkCanvas.use_antialiasing = 0
@@ -1365,6 +1346,10 @@ class OWNxExplorerQt(OWWidget):
             self.maxLinkSize = 1
             self.optMethod = 0
             self.graph_layout_method()            
+        
+        self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
+        self.networkCanvas.showWeights = self.showWeights
+        self.networkCanvas.showIndexes = self.showIndexes
             
         self.set_vertex_size()
         self.setVertexColor()
