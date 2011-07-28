@@ -346,3 +346,99 @@ class Mahalanobis(ExamplesDistance):
         diff = numpy.asmatrix(diff)
         res = diff * self.icm * diff.transpose()
         return res[0,0]**0.5
+    
+    
+class PearsonRAbsoluteConstructor(PearsonRConstructor):
+    """ Construct an instance of PearsonRAbsolute example distance estimator.
+    """
+    def __call__(self, data):
+        indxs = [i for i, a in enumerate(data.domain.attributes) \
+                 if a.varType==Orange.data.Type.Continuous]
+        return PearsonRAbsolute(domain=data.domain, indxs=indxs)
+    
+    
+class PearsonRAbsolute(PearsonR):
+    """ An example distance estimator using absolute value of Pearson
+    correlation coefficient.
+    """
+    def __call__(self, e1, e2):
+        """
+        Return absolute Pearson's dissimilarity between e1 and e2,
+        i.e.
+        
+        .. math:: (1 - abs(r))/2
+        
+        where r is Pearson's correlation coefficient.
+        """
+        X1 = []; X2 = []
+        for i in self.indxs:
+            if not(e1[i].isSpecial() or e2[i].isSpecial()):
+                X1.append(float(e1[i]))
+                X2.append(float(e2[i]))
+        if not X1:
+            return 1.0
+        try:
+            return (1.0 - abs(statc.pearsonr(X1, X2)[0]))
+        except:
+            return 1.0
+        
+        
+class SpearmanRAbsoluteConstructor(SpearmanRConstructor):
+    """ Construct an instance of SpearmanRAbsolute example distance estimator.
+    """
+    def __call__(self, data):
+        indxs = [i for i, a in enumerate(data.domain.attributes) \
+                 if a.varType==Orange.data.Type.Continuous]
+        return SpearmanRAbsolute(domain=data.domain, indxs=indxs)
+    
+    
+class SpearmanRAbsolute(SpearmanR):
+    def __call__(self, e1, e2):
+        """
+        Return absolute Spearman's dissimilarity between e1 and e2,
+        i.e.
+         
+        .. math:: (1 - abs(r))/2
+        
+        where r is Spearman's correlation coefficient.
+        """
+        X1 = []; X2 = []
+        for i in self.indxs:
+            if not(e1[i].isSpecial() or e2[i].isSpecial()):
+                X1.append(float(e1[i]))
+                X2.append(float(e2[i]))
+        if not X1:
+            return 1.0
+        try:
+            return (1.0 - abs(statc.spearmanr(X1, X2)[0]))
+        except:
+            return 1.0
+    
+    
+def distance_matrix(data, distance_constructor, progress_callback=None):
+    """ A helper function that computes an obj:`Orange.core.SymMatrix` of all
+    pairwise distances between instances in `data`.
+    
+    :param data: A data table
+    :type data: :obj:`Orange.data.Table`
+    
+    :param distance_constructor: An ExamplesDistance_Constructor instance.
+    :type distance_constructor: :obj:`Orange.distances.ExampleDistConstructor`
+    
+    """
+    from Orange.misc import progressBarMilestones as progress_milestones
+    matrix = Orange.core.SymMatrix(len(data))
+    dist = distance_constructor(data)
+    
+    msize = len(data)*(len(data) - 1)/2
+    milestones = progress_milestones(msize, 100)
+    count = 0
+    for i in range(len(data)):
+        for j in range(i + 1, len(data)):
+            matrix[i, j] = dist(data[i], data[j])
+            
+            if progress_callback and count in milestones:
+                progress_callback(100.0 * count / msize)
+            count += 1
+            
+    return matrix
