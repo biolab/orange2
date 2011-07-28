@@ -26,7 +26,7 @@ def member_set(obj, name, val):
     yield
     setattr(obj, name, old_val)
     
-def base_matrix(data, best_set, dirs, cuts, betas):
+def base_matrix(data, best_set, dirs, cuts):
     """ Return the base matrix for the earth model.
     
     """
@@ -34,7 +34,6 @@ def base_matrix(data, best_set, dirs, cuts, betas):
     best_set = numpy.asarray(best_set)
     dirs = numpy.asarray(dirs)
     cuts = numpy.asarray(cuts)
-    betas = numpy.asarray(betas)
     
     bx = numpy.zeros((data.shape[0], best_set.shape[0]))
     bx[:, 0] = 1.0 # The intercept
@@ -77,6 +76,9 @@ class EarthLearner(BaseEarthLearner):
             setattr(self, key, val)
     
     def __call__(self, data, weightId=None):
+        if not data.domain.class_var:
+            raise ValueError("No class var in the domain.")
+        
         with member_set(self, "prune", False):
             # We overwrite the prune argument (will do the pruning in python).
             base_clsf =  BaseEarthLearner.__call__(self, data, weightId)
@@ -98,6 +100,7 @@ class EarthLearner(BaseEarthLearner):
     
     def pruning_pass(self, base_clsf, examples):
         """ Prune the terms constructed in the forward pass.
+        (Pure numpy reimplementation)
         """
         n_terms = numpy.sum(base_clsf.best_set)
         n_eff_params = n_terms + self.penalty * (n_terms - 1) / 2.0
@@ -107,7 +110,7 @@ class EarthLearner(BaseEarthLearner):
         
         bx = base_matrix(data, base_clsf.best_set,
                          base_clsf.dirs, base_clsf.cuts,
-                         base_clsf.betas)
+                         )
         
         bx_used = bx[:, best_set]
         subsets, rss_per_subset = subsets_selection_xtx(bx_used, y) # TODO: Use leaps like library
@@ -126,7 +129,7 @@ class EarthLearner(BaseEarthLearner):
         bx_subset = bx[:, best_set]
         betas, rss, rank, s = numpy.linalg.lstsq(bx_subset, y)
         return best_set, betas, rss, subsets, rss_per_subset, gcv_per_subset
-        
+    
         
 class EarthClassifier(Orange.core.ClassifierFD):
     def __init__(self, base_classifier=None, examples=None, best_set=None,
@@ -186,19 +189,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
         else:
             return (value, dist)
     
-     
-    def terms(self):
-        """ Return the terms in the Earth model.
-        """
-        raise NotImplementedError
-    
-    def filters(self):
-        """ Orange.core.filter objects for each term (where the hinge
-        function is not 0).
-         
-        """
-        
-    
     def base_matrix(self, examples=None):
         """ Return the base matrix (bx) of the Earth model for the table.
         If table is not supplied the base matrix of the training examples 
@@ -221,7 +211,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         else:
             data = numpy.asarray(examples)
             
-        return base_matrix(data, self.best_set, self.dirs, self.cuts, self.betas)
+        return base_matrix(data, self.best_set, self.dirs, self.cuts)
     
     def _anova_order(self):
         """ Return indices that sort the terms into the 'ANOVA' format.
@@ -235,45 +225,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         return [i for _, i in terms]
     
     def format_model(self, percision=3, indent=3):
-        header = "%s =" % self.class_var.name
-        indent = " " * indent
-        fmt = "%." + str(percision) + "f"
-        terms = [([], fmt % self.betas[0])]
-        beta_i = 0
-        for i, used in enumerate(self.best_set[1:], 1):
-            if used:
-                beta_i += 1
-                beta = fmt % abs(self.betas[beta_i])
-                knots = [self._format_knot(attr.name, d, c) for d, c, attr in \
-                         zip(self.dirs[i], self.cuts[i], self.domain.attributes) \
-                         if d != 0]
-                term_attrs = [a for a, d in zip(self.domain.attributes, self.dirs[i]) \
-                              if d != 0]
-                term_attrs = sorted(term_attrs)
-                sign = "-" if self.betas[beta_i] < 0 else "+"
-                if knots:
-                    terms.append((term_attrs,
-                                  sign + " * ".join([beta] + knots)))
-                else:
-                    terms.append((term_attr, sign + beta))
-        # Sort by len(term_attrs), then by term_attrs
-        terms = sorted(terms, key=lambda t: (len(t[0]), t[0]))
-        return "\n".join([header] + [indent + t for _, t in terms])
-            
-    def _format_knot(self, name, dir, cut):
-        if dir == 1:
-            txt = "max(0, %s - %.3f)" % (name, cut)
-        elif dir == -1:
-            txt = "max(0, %.3f - %s)" % (cut, name)
-        elif dir == 2:
-            txt = name
-        return txt
-    
-    def _format_term(self, i):
-        knots = [self._format_knot(attr.name, d, c) for d, c, attr in \
-                 zip(self.dirs[i], self.cuts[i], self.domain.attributes) \
-                 if d != 0]
-        return " * ".join(knots)
+        return format_model(self, percision, indent)
     
     def print_model(self, percision=3, indent=3):
         print self.format_model(percision, indent)
@@ -331,48 +283,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
     def evimp(self, used_only=True):
         """ Return the estimated variable importance.
         """
-        if self.subsets is None:
-            raise ValueError("No subsets. Use the learner with 'prune=True'.")
-        
-        subsets = self.subsets
-        n_subsets = self.num_terms
-        
-        rss = -numpy.diff(self.rss_per_subset)
-        gcv = -numpy.diff(self.gcv_per_subset)
-        attributes = list(self.domain.attributes)
-        
-        attr2ind = dict(zip(attributes, range(len(attributes))))
-        importances = numpy.zeros((len(attributes), 4))
-        importances[:, 0] = range(len(attributes))
-        
-        for i in range(1, n_subsets):
-            term_subset = self.subsets[i, :i + 1]
-            used_attributes = reduce(set.union, [self.used_attributes(term) for term in term_subset], set())
-            for attr in used_attributes:
-                importances[attr2ind[attr]][1] += 1.0
-                importances[attr2ind[attr]][2] += gcv[i - 1]
-                importances[attr2ind[attr]][3] += rss[i - 1]
-        imp_min = numpy.min(importances[:, [2, 3]], axis=0)
-        imp_max = numpy.max(importances[:, [2, 3]], axis=0)
-        importances[:, [2, 3]] = 100.0 * (importances[:, [2, 3]] - [imp_min]) / ([imp_max - imp_min])
-        
-        importances = list(importances)
-        # Sort by n_subsets and gcv.
-        importances = sorted(importances, key=lambda row: (row[1], row[2]),
-                             reverse=True)
-        importances = numpy.array(importances)
-        
-        if used_only:
-            importances = importances[importances[:,0] > 0.0]
-        
-        res = [(attributes[int(row[0])], tuple(row[1:])) for row in importances]
-        return res
-            
-    def plot(self):
-        import pylab
-        n_terms = self.num_terms
-        grid_size = int(numpy.ceil(numpy.sqrt(n_terms)))
-        fig = pylab.figure()
+        return evimp(self, used_only)
         
     def __reduce__(self):
         return (EarthClassifier, (self._base_classifier, self.examples,
@@ -396,7 +307,7 @@ def gcv(rss, n, n_effective_params):
     
 
 def subsets_selection_xtx(X, Y):
-    """
+    """ A numpy implementation of EvalSubsetsUsingXtx in the Earth package. 
     """
     X = numpy.asarray(X)
     Y = numpy.asarray(Y)
@@ -428,8 +339,391 @@ def subsets_selection_xtx(X, Y):
     return subsets, rss_vec
 
 
+"""
+Multilabel
+"""
+
+def is_label_attr(attr):
+    """ Is attribute a label.
+    """
+    return attr.attributes.has_key("label")
+    
+def data_label_indices(domain):
+    """ Return the indices of label attributes in data.
+    """
+    return numpy.where(data_label_mask(domain))[0]
+
+def data_label_mask(domain):
+    """ Return an array of booleans indicating whether a variable in the
+    domain is a label.
+    """
+    is_label = map(is_label_attr, domain.variables)
+    if domain.class_var:
+        is_label[-1] = True
+    return numpy.array(is_label, dtype=bool)
+
+class EarthLearnerML(Orange.core.LearnerFD):
+    """ Multilabel (multi response) earth learner.
+    """
+    def __new__(cls, examples=None, weight_id=None, **kwargs):
+        self = Orange.core.LearnerFD.__new__(cls)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weight_id)
+        else:
+            return self
+        
+    def __init__(self, degree=1, terms=21, penalty= None, thresh=1e-3,
+                 min_span=0, new_var_penalty=0, fast_k=20, fast_beta=1,
+                 pruned_terms=None, scale_resp=False, store_examples=True, **kwds):
+        """ 
+        .. todo:: min_span, prunning_method
+        
+        """
+        self.degree = degree
+        self.terms = terms
+        if penalty is None:
+            penalty = 3 if degree > 1 else 2
+        self.penalty = penalty 
+        self.thresh = thresh
+        self.min_span = min_span
+        self.new_var_penalty = new_var_penalty
+        self.fast_k = fast_k
+        self.fast_beta = fast_beta
+        self.pruned_terms = pruned_terms
+        self.scale_resp = scale_resp
+        self.store_examples = store_examples
+        self.__dict__.update(kwds)
+        
+    def __call__(self, examples, weight_id=None):
+        label_mask = data_label_mask(examples.domain)
+        if not any(label_mask):
+            raise ValueError("The domain has no response variable.")
+        data = examples.to_numpy_MA("Ac")[0]
+        y = data[:, label_mask]
+        x = data[:, ~ label_mask]
+        
+        # TODO: y scaling
+        n_terms, used, bx, dirs, cuts = _forward_pass(x, y,
+            degree=self.degree, terms=self.terms, penalty=self.penalty,
+            thresh=self.thresh, fast_k=self.fast_k, fast_beta=self.fast_beta,
+            new_var_penalty=self.new_var_penalty)
+        
+        # discard unused terms from bx, dirs, cuts
+        bx = bx[:, used]
+        dirs = dirs[used, :]
+        cuts = cuts[used, :]
+        
+        # pruning
+        used, subsets, rss_per_subset, gcv_per_subset = \
+            pruning_pass(bx, y, self.penalty,
+                         pruned_terms=self.pruned_terms)
+        
+        # Fit betas
+        bx_used = bx[:, used]
+        betas, res, rank, s = numpy.linalg.lstsq(bx_used, y)
+        
+        return EarthClassifierML(examples.domain, used, dirs, cuts, betas.T,
+                                 subsets, rss_per_subset, gcv_per_subset,
+                                 examples=examples if self.store_examples else None,
+                                 label_mask=label_mask)
+    
+
+class EarthClassifierML(Orange.core.ClassifierFD):
+    """ Multi label Earth classifier.
+    """
+    def __init__(self, domain, best_set, dirs, cuts, betas, subsets=None,
+                 rss_per_subset=None, gcv_per_subset=None, examples=None,
+                 label_mask=None, **kwargs):
+        self.multi_flag = 1
+        self.domain = domain
+        self.best_set = best_set
+        self.dirs = dirs
+        self.cuts = cuts
+        self.betas = betas
+        self.subsets = subsets
+        self.rss_per_subset = rss_per_subset
+        self.gcv_per_subset = gcv_per_subset
+        self.examples = examples
+        self.label_mask = label_mask
+        self.__dict__.update(kwargs)
+        
+    def __call__(self, example, result_type=Orange.core.GetValue):
+        resp_vars = [v for v, m in zip(self.domain.variables, self.label_mask)\
+                     if m]
+        vals = self.predict(example)
+        vals = [var(val) for var, val in zip(resp_vars, vals)]
+        
+        probs = []
+        for var, val in zip(resp_vars, vals):
+            dist = Orange.statistics.distribution.Distribution(var)
+            dist[val] = 1.0
+            probs.append(dist)
+            
+        if result_type == Orange.core.GetValue:
+            return vals
+        elif result_type == Orange.core.GetProbabilities:
+            return zip(vals, probs)
+        else:
+            return probs
+    
+    def format_model(self, percision=3, indent=3):
+        """ Return a string representation of the model.
+        """
+        return format_model(self, percision, indent)
+    
+    def print_model(self, percision=3, indent=3):
+        """ Print the model to stdout.
+        """
+        print self.format_model(percision, indent)
+        
+    def base_matrix(self, examples=None):
+        """Return the base matrix (bx) of the Earth model for the table.
+        If table is not supplied the base matrix of the training examples 
+        is returned.
+        
+        :param examples: Input examples for the base matrix.
+        :type examples: :class:`Orange.data.Table` 
+        
+        """
+        if examples is None:
+            examples = self.examples
+        (data,) = examples.to_numpy_MA("Ac")
+        data = data[:, ~ self.label_mask]
+        bx = base_matrix(data, self.best_set, self.dirs, self.cuts)
+        return bx
+    
+    def predict(self, example):
+        """ Predict the response values for the example
+        
+        :param example: example instance
+        :type example: :class:`Orange.data.Example`
+        """
+        data = Orange.data.Table(self.domain, [example])
+        bx = self.base_matrix(data)
+        bx_used = bx[:, self.best_set]
+        vals = numpy.dot(bx_used, self.betas.T).ravel()
+        return vals
+    
+    def used_attributes(self, term=None):
+        """ Return the used terms for term (index). If no term is given
+        return all attributes in the model.
+        
+        :param term: term index
+        :type term: int
+        
+        """
+        if term is None:
+            return reduce(set.union, [self.used_attributes(i) \
+                                      for i in range(self.best_set.size)],
+                          set())
+        attrs = [a for a, m in zip(self.domain.variables, self.label_mask)
+                 if not m]
+        
+        used_mask = self.dirs[term, :] != 0.0
+        return [a for a, u in zip(attrs, used_mask) if u]
+    
+    def evimp(self, used_only=True):
+        """ Return the estimated variable importances.
+        
+        :param used_only: if True return only used attributes
+         
+        """  
+        return evimp(self, used_only)
+    
+    def __reduce__(self):
+        return (type(self), (self.domain, self.best_set, self.dirs,
+                            self.cuts, self.betas),
+                dict(self.__dict__))
+
+    
+"""
+ctypes interface to ForwardPass and EvalSubsetsUsingXtx.
+
+"""
+        
+import ctypes
+from numpy import ctypeslib
+import orange
+
+_c_orange_lib = ctypeslib.load_library(orange.__file__, "")
+_c_forward_pass_ = _c_orange_lib.EarthForwardPass
+
+_c_forward_pass_.argtypes = \
+    [ctypes.POINTER(ctypes.c_int),  #pnTerms:
+     ctypeslib.ndpointer(dtype=numpy.bool, ndim=1),  #FullSet
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #bx
+     ctypeslib.ndpointer(dtype=numpy.int, ndim=2, flags="F_CONTIGUOUS"),    #Dirs
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #Cuts
+     ctypeslib.ndpointer(dtype=numpy.int, ndim=1),  #nFactorsInTerms
+     ctypeslib.ndpointer(dtype=numpy.int, ndim=1),  #nUses
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #x
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #y
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=1), # Weights
+     ctypes.c_int,  #nCases
+     ctypes.c_int,  #nResp
+     ctypes.c_int,  #nPred
+     ctypes.c_int,  #nMaxDegree
+     ctypes.c_int,  #nMaxTerms
+     ctypes.c_double,   #Penalty
+     ctypes.c_double,   #Thresh
+     ctypes.c_int,  #nFastK
+     ctypes.c_double,   #FastBeta
+     ctypes.c_double,   #NewVarPenalty
+     ctypeslib.ndpointer(dtype=numpy.int, ndim=1),  #LinPreds
+     ctypes.c_bool, #UseBetaCache
+     ctypes.c_char_p    #sPredNames
+     ]
+    
+def _forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
+                  fast_k=21, fast_beta=1, new_var_penalty=2):
+    """ Do forward pass.
+    """
+    import ctypes, orange
+    x = numpy.asfortranarray(x, dtype="d")
+    y = numpy.asfortranarray(y, dtype="d")
+    if x.shape[0] != y.shape[0]:
+        raise ValueError("First dimensions of x and y must be the same.")
+    if y.ndim == 1:
+        y = y.reshape((-1, 1), order="F")
+    if penalty is None:
+        penalty = 2
+    n_cases = x.shape[0]
+    n_preds = x.shape[1]
+    
+    n_resp = y.shape[1] if y.ndim == 2 else y.shape[0]
+    
+    # Output variables
+    n_term = ctypes.c_int()
+    full_set = numpy.zeros((terms,), dtype=numpy.bool, order="F")
+    bx = numpy.zeros((n_cases, terms), dtype=numpy.double, order="F")
+    dirs = numpy.zeros((terms, n_preds), dtype=numpy.int, order="F")
+    cuts = numpy.zeros((terms, n_preds), dtype=numpy.double, order="F")
+    n_factors_in_terms = numpy.zeros((terms,), dtype=numpy.int, order="F")
+    n_uses = numpy.zeros((n_preds,), dtype=numpy.int, order="F")
+    weights = numpy.ones((n_cases,), dtype=numpy.double, order="F")
+    lin_preds = numpy.zeros((n_preds,), dtype=numpy.int, order="F")
+    use_beta_cache = True
+    
+    _c_forward_pass_(ctypes.byref(n_term), full_set, bx, dirs, cuts,
+                     n_factors_in_terms, n_uses, x, y, weights, n_cases,
+                     n_resp, n_preds, degree, terms, penalty, thresh,
+                     fast_k, fast_beta, new_var_penalty, lin_preds, 
+                     use_beta_cache, None)
+    return n_term.value, full_set, bx, dirs, cuts
+
+
+_c_eval_subsets_xtx = _c_orange_lib.EarthEvalSubsetsUsingXtx
+
+_c_eval_subsets_xtx.argtypes = \
+    [ctypeslib.ndpointer(dtype=numpy.bool, ndim=2, flags="F_CONTIGUOUS"),   #PruneTerms
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=1),   #RssVec
+     ctypes.c_int,  #nCases
+     ctypes.c_int,  #nResp
+     ctypes.c_int,  #nMaxTerms
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"),   #bx
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"),   #y
+     ctypeslib.ndpointer(dtype=numpy.double, ndim=1)  #WeightsArg
+     ]
+
+def _subset_selection_xtx(X, Y):
+    """ Subsets selection using EvalSubsetsUsingXtx in the Earth package.
+    """
+    X = numpy.asfortranarray(X, dtype=numpy.double)
+    Y = numpy.asfortranarray(Y, dtype=numpy.double)
+    if Y.ndim == 1:
+        Y = Y.reshape((-1, 1), order="F")
+        
+    if X.shape[0] != Y.shape[0]:
+        raise ValueError("First dimensions of bx and y must be the same")
+        
+    var_count = X.shape[1]
+    resp_count = Y.shape[1]
+    cases = X.shape[0]
+    subsets = numpy.zeros((var_count, var_count), dtype=numpy.bool,
+                              order="F")
+    rss_vec = numpy.zeros((var_count,), dtype=numpy.double, order="F")
+    weights = numpy.ones((cases,), dtype=numpy.double, order="F")
+    
+    _c_eval_subsets_xtx(subsets, rss_vec, cases, resp_count, var_count,
+                        X, Y, weights)
+    
+    subsets_ind = numpy.zeros((var_count, var_count), dtype=int)
+    for i, used in enumerate(subsets.T):
+        subsets_ind[i, :i + 1] = numpy.where(used)[0]
+        
+    return subsets_ind, rss_vec
+    
+    
+def pruning_pass(bx, y, penalty, pruned_terms=-1):
+    """ Do pruning pass
+    
+    .. todo:: leaps
+    
+    """
+    subsets, rss_vec = _subset_selection_xtx(bx, y)
+    
+    cases, terms = bx.shape
+    n_effective_params = numpy.arange(terms) + 1.0
+    n_effective_params += penalty * (n_effective_params - 1.0) / 2.0
+    
+    gcv_vec = gcv(rss_vec, cases, n_effective_params)
+    
+    min_i = numpy.argmin(gcv_vec)
+    used = numpy.zeros((terms), dtype=bool)
+    
+    used[subsets[min_i, :min_i + 1]] = True
+    
+    return used, subsets, rss_vec, gcv_vec
+    
+    
+def evimp(model, used_only=True):
+    """ Return the estimated variable importance for the model.
+    """
+    if model.subsets is None:
+        raise ValueError("No subsets. Use the learner with 'prune=True'.")
+    
+    subsets = model.subsets
+    n_subsets = numpy.sum(model.best_set)
+    
+    rss = -numpy.diff(model.rss_per_subset)
+    gcv = -numpy.diff(model.gcv_per_subset)
+    attributes = list(model.domain.variables)
+    
+    attr2ind = dict(zip(attributes, range(len(attributes))))
+    importances = numpy.zeros((len(attributes), 4))
+    importances[:, 0] = range(len(attributes))
+    
+    for i in range(1, n_subsets):
+        term_subset = subsets[i, :i + 1]
+        used_attributes = reduce(set.union, [model.used_attributes(term) \
+                                             for term in term_subset], set())
+        for attr in used_attributes:
+            importances[attr2ind[attr]][1] += 1.0
+            importances[attr2ind[attr]][2] += gcv[i - 1]
+            importances[attr2ind[attr]][3] += rss[i - 1]
+    imp_min = numpy.min(importances[:, [2, 3]], axis=0)
+    imp_max = numpy.max(importances[:, [2, 3]], axis=0)
+    
+    #Normalize importances.
+    importances[:, [2, 3]] = 100.0 * (importances[:, [2, 3]] \
+                            - [imp_min]) / ([imp_max - imp_min])
+    
+    importances = list(importances)
+    # Sort by n_subsets and gcv.
+    importances = sorted(importances, key=lambda row: (row[1], row[2]),
+                         reverse=True)
+    importances = numpy.array(importances)
+    
+    if used_only:
+        importances = importances[importances[:,1] > 0.0]
+    
+    res = [(attributes[int(row[0])], tuple(row[1:])) for row in importances]
+    return res
+
+
 def plot_evimp(evimp):
-    """ Plot the return value from EarthClassifier.evimp.
+    """ Plot the return value from :obj:`EarthClassifier.evimp` call.
     """
     import pylab
     fig = pylab.figure()
@@ -455,4 +749,73 @@ def plot_evimp(evimp):
     axes1.set_title("Variable importance")
     fig.show()
     
+
+"""
+Printing functions.
+"""
+
+def print_model(model, percision=3, indent=3):
+    """ Print model to stdout.
+    """
+    print format_model(model, percision, indent)
     
+def format_model(model, percision=3, indent=3):
+    """ Return a formated string representation of the model.
+    """
+    if model.class_var:
+        r_names = [model.class_var.name]
+        betas = [model.betas]
+    elif hasattr(model, "label_mask"):
+        mask = model.label_mask
+        r_vars = [v for v, m in zip(model.domain.variables,
+                                    model.label_mask)
+                  if m]
+        r_names = [v.name for v in r_vars]
+        betas = model.betas
+        
+    resp = []
+    for name, betas in zip(r_names, betas):
+        resp.append(_format_response(model, name, betas,
+                                     percision, indent))
+    return "\n\n".join(resp)
+
+def _format_response(model, resp_name, betas, percision=3, indent=3):
+    header = "%s =" % resp_name
+    indent = " " * indent
+    fmt = "%." + str(percision) + "f"
+    terms = [([], fmt % betas[0])]
+    beta_i = 0
+    for i, used in enumerate(model.best_set[1:], 1):
+        if used:
+            beta_i += 1
+            beta = fmt % abs(betas[beta_i])
+            knots = [_format_knot(model, attr.name, d, c) for d, c, attr in \
+                     zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
+                     if d != 0]
+            term_attrs = [a for a, d in zip(model.domain.attributes, model.dirs[i]) \
+                          if d != 0]
+            term_attrs = sorted(term_attrs)
+            sign = "-" if betas[beta_i] < 0 else "+"
+            if knots:
+                terms.append((term_attrs,
+                              sign + " * ".join([beta] + knots)))
+            else:
+                terms.append((term_attrs, sign + beta))
+    # Sort by len(term_attrs), then by term_attrs
+    terms = sorted(terms, key=lambda t: (len(t[0]), t[0]))
+    return "\n".join([header] + [indent + t for _, t in terms])
+        
+def _format_knot(model, name, dir, cut):
+    if dir == 1:
+        txt = "max(0, %s - %.3f)" % (name, cut)
+    elif dir == -1:
+        txt = "max(0, %.3f - %s)" % (cut, name)
+    elif dir == 2:
+        txt = name
+    return txt
+
+def _format_term(model, i, attr_name):
+    knots = [_format_knot(model, attr, d, c) for d, c, attr in \
+             zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
+             if d != 0]
+    return " * ".join(knots)
