@@ -3,13 +3,21 @@
 #include "point.h"
 
 #include <QtCore/QDebug>
+#include <QtCore/qmath.h>
+#include <limits>
 
-uint qHash(const DataPoint& pos)
+inline uint qHash(const DataPoint& pos)
 {
     return pos.x + pos.y;
 }
 
-bool operator==(const DataPoint& one, const DataPoint& other)
+inline double distance(const DataPoint& one, const DataPoint& other)
+{
+    // For speed, we use the slightly wrong method, also known as Manhattan distance
+    return fabs(one.x - other.x) + fabs(one.y - other.y); 
+}
+
+inline bool operator==(const DataPoint& one, const DataPoint& other)
 {
     return one.x == other.x && one.y == other.y;
 }
@@ -199,13 +207,40 @@ Point* Plot::selected_point_at(const DataPoint& pos)
 
 Point* Plot::point_at(const DataPoint& pos)
 {
-    Point* point;
     foreach (PlotItem* item, plot_items())
     {
         if (m_point_set.contains(item) && m_point_set[item].contains(pos))
         {
             return m_point_hash[item][pos];
         }
+    }
+    return 0;
+}
+
+Point* Plot::nearest_point(const DataPoint& pos, double max_distance)
+{
+    QPair<double, DataPoint> closest_point = qMakePair( std::numeric_limits<double>::max(), DataPoint() );
+    foreach (PlotItem* item, plot_items())
+    {
+        if (!m_point_set.contains(item))
+        {
+            continue;
+        }
+        PointSet::ConstIterator it = m_point_set[item].constBegin();
+        PointSet::ConstIterator end = m_point_set[item].constEnd();
+        for (it; it != end; ++it)
+        {
+            const double d = distance(*it, pos);
+            if (d < closest_point.first)
+            {
+                closest_point.first = d;
+                closest_point.second = *it;
+            }
+        }
+    }
+    if (closest_point.first < max_distance)
+    {
+        return point_at(closest_point.second);
     }
     return 0;
 }

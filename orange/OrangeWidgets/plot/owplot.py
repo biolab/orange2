@@ -764,8 +764,11 @@ class OWPlot(orangeplot.Plot):
                     break
             self.selection_items.reverse()
         elif self.state == SELECT:
-            point_item = self.point_at(point)
-            qDebug(repr(point) + ' ' + repr(point_item))
+            dr = self.data_rect_for_axes()
+            gr = self.graph_area
+            d = 10 * max(dr.width(), dr.height()) / max(gr.width(), gr.height())
+            point_item = self.nearest_point(self.map_from_graph(point), d)
+            qDebug(repr(self.map_from_graph(point)) + ' ' + repr(point_item))
             if point_item:
                 point_item.set_selected(True)
         else:

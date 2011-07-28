@@ -49,9 +49,24 @@ public:
     void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
     
+    /**
+     * For each point defined with @p x_data and @p y_data, this function checks whether such a point is selected. 
+     * This function is precise, so you have to supply it with precisely the same data as the curves that 
+     * created the points
+     **/
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
     
+    /**
+     * This function uses a fuzzy equality check, so it will return any function that is near enough. 
+     * 
+     * The equality check is specified in compare_data()
+     * 
+     **/
+    Point* nearest_point(const DataPoint& pos, double max_distance);
+    
     Point* point_at(const DataPoint& pos);
+    
+    
     Point* selected_point_at(const DataPoint& pos);
     
     void add_point(const DataPoint& pos, Point* item, PlotItem* parent);
