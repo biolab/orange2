@@ -1023,9 +1023,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             triangles = get_symbol_data(symbol)
             ss = size*0.08
             for v0, v1, v2, n0, n1, n2 in triangles:
-                vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0,n1,n2,
-                                 x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n0,n1,n2,
-                                 x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n0,n1,n2])
+                vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0[0],n0[1],n0[2],
+                                 x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n1[0],n1[1],n1[2],
+                                 x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n2[0],n2[1],n2[2]])
 
         # Build Vertex Buffer + Vertex Array Object.
         vao_id = GLuint(0)
