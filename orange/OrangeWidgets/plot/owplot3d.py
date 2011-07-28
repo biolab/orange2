@@ -438,8 +438,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.data_scale = numpy.array([1., 1., 1.])
         self.data_center = numpy.array([0., 0., 0.])
 
-        # Beside n-gons, symbols should also include cubes, spheres and other stuff. TODO
-        self.available_symbols = [3, 4, 5, 8]
         self.state = PlotState.IDLE
 
         self.build_axes()
@@ -449,7 +447,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.new_selection = None
 
         self.setMouseTracking(True)
-
         self.mouseover_callback = None
 
         self.x_axis_map = None
@@ -460,6 +457,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.translation = numpy.array([0., 0., 0.])
 
         self._theme = LightTheme()
+        self.show_axes = True
+        self.show_chassis = True
 
     def __del__(self):
         # TODO: check if anything needs deleting
@@ -618,6 +617,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             0,-1, 0,
             0, 1, 0)
 
+        if self.show_chassis:
+            self.draw_chassis()
         self.draw_grid_and_axes()
 
         glEnable(GL_DEPTH_TEST)
@@ -772,6 +773,25 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.show_z_axis_title = show
         self.updateGL()
 
+    def draw_chassis(self):
+        glColor4f(*self._theme.axis_values_color)
+        glEnable(GL_LINE_STIPPLE)
+        glLineStipple(1, 0x00FF)
+        edges = [self.x_axis, self.y_axis, self.z_axis,
+                 self.x_axis+self.unit_z, self.x_axis+self.unit_y,
+                 self.x_axis+self.unit_z+self.unit_y,
+                 self.y_axis+self.unit_x, self.y_axis+self.unit_z,
+                 self.y_axis+self.unit_x+self.unit_z,
+                 self.z_axis+self.unit_x, self.z_axis+self.unit_y,
+                 self.z_axis+self.unit_x+self.unit_y]
+        glBegin(GL_LINES)
+        for edge in edges:
+            start, end = edge
+            glVertex3f(*start)
+            glVertex3f(*end)
+        glEnd()
+        glDisable(GL_LINE_STIPPLE)
+
     def draw_grid_and_axes(self):
         cam_in_space = numpy.array([
           self.camera[0]*self.camera_distance,
@@ -890,6 +910,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
+
+        if not self.show_axes:
+            return
 
         if visible_planes[0 if xz_visible else 2]:
             draw_axis(self.x_axis)

@@ -20,6 +20,7 @@ class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
                     'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols',
                     'plot.transparency', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
+                    'plot.show_chassis', 'plot.show_axes',
                     'auto_send_selection', 'auto_send_selection_update',
                     'jitter_size', 'jitter_continuous']
     contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
@@ -46,7 +47,6 @@ class OWScatterPlot3D(OWWidget):
 
         self.symbol_scale = 5
         self.alpha_value = 255
-
 
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.main_tab = OWGUI.createTabPage(self.tabs, 'Main')
@@ -131,8 +131,10 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.show_legend',         'Show legend',    callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.use_ortho',           'Use ortho',      callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.use_2d_symbols',      '2D symbols',     callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'dark_theme',               'Dark theme',     callback=self.on_theme_change)
+        OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_axes',           'Show axes',      callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.show_chassis',        'Show chassis',   callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
         self.auto_send_selection = True
