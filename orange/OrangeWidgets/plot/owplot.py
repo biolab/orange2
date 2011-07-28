@@ -555,7 +555,7 @@ class OWPlot(orangeplot.Plot):
             item.setPos(p - r.center() + r.topLeft())
         """
         self.update_axes(zoom_only=True)
-        self.update()
+        self.viewport().update()
         
     def update_axes(self, zoom_only=False):
         for id, item in self.axes.iteritems():
@@ -606,8 +606,8 @@ class OWPlot(orangeplot.Plot):
         self.update_zoom()
         self.update_axes()
         self.update_filled_symbols()
-        self.update()
         self.setSceneRect(QRectF(self.contentsRect()))
+        self.viewport().update()
         
     def update_legend(self):
         self._legend.setVisible(self.show_legend)
@@ -773,6 +773,13 @@ class OWPlot(orangeplot.Plot):
                 point_item.set_selected(True)
         else:
             return False
+            
+    def mouseDoubleClickEvent(self, event):
+        ## We don't want this events to propagate to the scene
+        event.ignore()
+        
+    def contextMenuEvent(self, event):
+        event.ignore()
             
     @staticmethod
     def transform_from_rects(r1, r2):
@@ -1036,6 +1043,7 @@ class OWPlot(orangeplot.Plot):
                 c.set_color(color)
                 c.set_auto_update(au)
                 c.update_properties()
+        self.viewport().update()
     
     update_point_size = update_curves
     update_alpha_value = update_curves
