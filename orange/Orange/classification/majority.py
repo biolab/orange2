@@ -16,16 +16,16 @@ constructs is an instance of :obj:`ConstantClassifier`.
 .. class:: MajorityLearner
 
     MajorityLearner will most often be used as is, without setting any
-    features. Nevertheless, it has two.
+    parameters. Nevertheless, it has two.
 
-    .. attribute:: estimatorConstructor
+    .. attribute:: estimator_constructor
     
         An estimator constructor that can be used for estimation of
         class probabilities. If left None, probability of each class is
         estimated as the relative frequency of instances belonging to
         this class.
         
-    .. attribute:: aprioriDistribution
+    .. attribute:: apriori_distribution
     
         Apriori class distribution that is passed to estimator
         constructor if one is given.
@@ -35,19 +35,19 @@ constructs is an instance of :obj:`ConstantClassifier`.
     ConstantClassifier always classifies to the same class and reports
     same class probabilities.
 
-    .. attribute:: defaultVal
+    .. attribute:: default_val
     
         Value that is returned by the classifier.
     
-    .. attribute:: defaultDistribution
+    .. attribute:: default_distribution
 
         Class probabilities returned by the classifier.
 
 The ConstantClassifier's constructor can be called without arguments,
-with value (for defaultVal), variable (for classVar). If the value is
-given and is of type orange.Value (alternatives are an integer index
-of a discrete value or a continuous value), its field variable is will
-either be used for initializing classVar if variable is not given as
+with value (for default_val), variable (for class_var). If the value is
+given and is of type Orange.data.Value (alternatives are an integer index
+of a discrete value or a continuous value), its field variable will
+either be used for initializing class_var if variable is not given as
 an argument, or checked against the variable argument, if it is given. 
 
 Examples

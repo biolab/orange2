@@ -340,11 +340,11 @@ class SchemaDoc(QWidget):
         if not widget:
             return
         
-        with self.signalManager.freeze():
-            while widget.inLines != []: self.removeLine1(widget.inLines[0])
-            while widget.outLines != []:  self.removeLine1(widget.outLines[0])
+        #with self.signalManager.freeze():
+        while widget.inLines != []: self.removeLine1(widget.inLines[0])
+        while widget.outLines != []:  self.removeLine1(widget.outLines[0])
     
-            self.signalManager.removeWidget(widget.instance)
+        self.signalManager.removeWidget(widget.instance)
             
         self.widgets.remove(widget)
         widget.remove()

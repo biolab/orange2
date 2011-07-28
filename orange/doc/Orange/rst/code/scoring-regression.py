@@ -4,8 +4,8 @@
 # Referenced:  Orange.feature.html#scoring
 # Classes:     Orange.feature.scoring.MSE
 
-import Orange
-import random
+import Orange, random
+
 data = Orange.data.Table("measure-c")
 
 data2 = Orange.data.Table(data)
@@ -23,13 +23,13 @@ fstr = "%30s" + "%15.4f"*attrs
 def printVariants(meas):
     print fstr % (("- no unknowns:",) + tuple([meas(i, data) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.IgnoreUnknowns
+    meas.unknowns_treatment = meas.IgnoreUnknowns
     print fstr % (("- ignore unknowns:",) + tuple([meas(i, data2) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.ReduceByUnknowns
+    meas.unknowns_treatment = meas.ReduceByUnknowns
     print fstr % (("- reduce unknowns:",) + tuple([meas(i, data2) for i in range(attrs)]))
 
-    meas.unknownsTreatment = meas.UnknownsToCommon
+    meas.unknowns_treatment = meas.UnknownsToCommon
     print fstr % (("- unknowns to common:",) + tuple([meas(i, data2) for i in range(attrs)]))
     print
     

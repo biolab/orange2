@@ -200,30 +200,47 @@ public:
 
 };
 
+#include "slist.hpp"
+
 class ORANGE_API TEarthClassifier: public TClassifierFD {
 public:
 	__REGISTER_CLASS
-	TEarthClassifier() {};
+
+	TEarthClassifier();
 	TEarthClassifier(PDomain domain, bool * best_set, int * dirs, double * cuts, double *betas, int num_preds, int num_responses, int num_terms, int max_terms);
 	TEarthClassifier(const TEarthClassifier & other);
+
 	virtual ~TEarthClassifier();
 
 	TValue operator()(const TExample&);
 	std::string format_earth();
 
-	int num_preds; //P
-	int num_terms; //P
-	int max_terms; //P
-	int num_responses; //P
+	int num_preds; //P Number of predictor variables
+	int num_terms; //P Number of used terms
+	int max_terms; //P Maximum number of terms
+	int num_responses; //P Number of response variables
 
+	PBoolList best_set; //P Used terms.
+	PFloatListList dirs; //P max_preds x num_preds matrix
+	PFloatListList cuts; //P max_preds x num_preds matrix of cuts
+	PFloatList betas; //P Term coefficients;
+
+	void save_model(TCharBuffer& buffer);
+	void load_model(TCharBuffer& buffer);
 private:
 
+	PBoolList get_best_set();
+	PFloatListList get_dirs();
+	PFloatListList get_cuts();
+	PFloatList get_betas();
+
+	void init_members();
 	double* to_xvector(const TExample&);
 
-	bool* best_set;
-	int * dirs;
-	double * cuts;
-	double * betas;
+	bool* _best_set;
+	int * _dirs;
+	double * _cuts;
+	double * _betas;
 };
 
 WRAPPER(EarthLearner)

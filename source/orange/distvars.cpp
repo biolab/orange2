@@ -1261,9 +1261,9 @@ float TContDistribution::randomFloat()
 
   float ri = randomGenerator->randfloat(abs);
   const_iterator di(begin());
-  while (ri > (*di).first)
-    ri -= (*(di++)).first;
-  return (*di).second;
+  while (ri > (*di).second)
+    ri -= (*(di++)).second;
+  return (*di).first;
 }
 
 
@@ -1271,9 +1271,9 @@ float TContDistribution::randomFloat(const long &random)
 { 
   float ri = (random & 0x7fffffff) / float(0x7fffffff);
   const_iterator di(begin());
-  while (ri > (*di).first)
-    ri -= (*(di++)).first;
-  return (*di).second;
+  while (ri > (*di).second)
+    ri -= (*(di++)).second;
+  return (*di).first;
 }
 
 

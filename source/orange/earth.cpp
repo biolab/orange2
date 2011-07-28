@@ -2994,7 +2994,7 @@ TEarthLearner::TEarthLearner()
 	penalty = (max_degree > 1)? 3.0: 2.0;
 	threshold = 0.001;
 	prune = true;
-	trace = 3;
+	trace = 0.0;
 	min_span = 0;
 	fast_k = 20;
 	fast_beta = 0.0;
@@ -3079,7 +3079,7 @@ PClassifier TEarthLearner::operator() (PExampleGenerator examples, const int & w
 			fast_k, fast_beta, new_var_penalty, lin_preds, use_beta_cache, trace, preds_names);
 
 	PEarthClassifier classifier = mlnew TEarthClassifier(examples->domain, best_set, dirs, cuts, betas, num_preds, num_responses, num_terms, max_terms);
-	std::string str = classifier->format_earth();
+//	std::string str = classifier->format_earth();
 
 	// Free memory
 	free((void *)x);
@@ -3092,18 +3092,34 @@ PClassifier TEarthLearner::operator() (PExampleGenerator examples, const int & w
 	return classifier;
 }
 
-TEarthClassifier::TEarthClassifier(PDomain _domain, bool * _best_set, int * _dirs, double * _cuts, double *_betas, int _num_preds, int _num_responses, int _num_terms, int _max_terms)
+TEarthClassifier::TEarthClassifier(PDomain _domain, bool * best_set, int * dirs, double * cuts, double *betas, int _num_preds, int _num_responses, int _num_terms, int _max_terms)
 {
 	domain = _domain;
 	classVar = domain->classVar;
-	best_set = _best_set;
-	dirs = _dirs;
-	cuts = _cuts;
-	betas = _betas;
+	_best_set = best_set;
+	_dirs = dirs;
+	_cuts = cuts;
+	_betas = betas;
 	num_preds = _num_preds;
 	num_responses = _num_responses;
 	num_terms = _num_terms;
 	max_terms = _max_terms;
+	computesProbabilities = false;
+	init_members();
+}
+
+TEarthClassifier::TEarthClassifier()
+{
+	domain = NULL;
+	classVar = NULL;
+	_best_set = NULL;
+	_dirs = NULL;
+	_cuts = NULL;
+	_betas = NULL;
+	num_preds = 0;
+	num_responses = 0;
+	num_terms = 0;
+	max_terms = 0;
 	computesProbabilities = false;
 }
 
@@ -3112,36 +3128,34 @@ TEarthClassifier::TEarthClassifier(const TEarthClassifier & other)
 	raiseError("Not implemented");
 }
 
-double round(double r)
+TEarthClassifier::~TEarthClassifier()
 {
-	return floor(r + 0.5);
+	if (_best_set)
+		free(_best_set);
+	if (_dirs)
+		free(_dirs);
+	if (_cuts)
+		free(_cuts);
+	if (_betas)
+		free(_betas);
 }
 
 TValue TEarthClassifier::operator()(const TExample& example)
 {
 	double *x = to_xvector(example);
 	double y = 0.0;
-	PredictEarth(&y, x, best_set, dirs, cuts, betas, num_preds, num_responses, num_terms, max_terms);
+	PredictEarth(&y, x, _best_set, _dirs, _cuts, _betas, num_preds, num_responses, num_terms, max_terms);
 	free(x);
 	if (classVar->varType == TValue::INTVAR)
-		return TValue((int) std::max<float>(0.0, round(y)));
+		return TValue((int) std::max<float>(0.0, floor(y + 0.5)));
 	else
 		return TValue((float) y);
 }
 
 std::string TEarthClassifier::format_earth(){
-	FormatEarth(best_set, dirs, cuts, betas, num_preds, 1, num_terms, max_terms, 3, 0.0);
+	FormatEarth(_best_set, _dirs, _cuts, _betas, num_preds, 1, num_terms, max_terms, 3, 0.0);
 	// TODO: FormatEarth to a string.
 	return "";
-}
-
-
-TEarthClassifier::~TEarthClassifier()
-{
-	free(best_set);
-	free(dirs);
-	free(cuts);
-	free(betas);
 }
 
 double* TEarthClassifier::to_xvector(const TExample& example)
@@ -3160,4 +3174,91 @@ double* TEarthClassifier::to_xvector(const TExample& example)
 	}
 	return x;
 }
+
+PBoolList TEarthClassifier::get_best_set()
+{
+	PBoolList list = mlnew TBoolList();
+	for (bool * p=_best_set; p < _best_set + max_terms; p++)
+		 list->push_back(*p);
+	return list;
+}
+
+PFloatListList TEarthClassifier::get_dirs()
+{
+	PFloatListList list = mlnew TFloatListList();
+	for (int i=0; i<max_terms; i++)
+	{
+		TFloatList * inner_list = mlnew TFloatList();
+		for(int j=0; j<num_preds; j++)
+			inner_list->push_back(_dirs[i + j*max_terms]);
+		list->push_back(inner_list);
+	}
+	return list;
+}
+
+PFloatListList TEarthClassifier::get_cuts()
+{
+	PFloatListList list = mlnew TFloatListList();
+	for (int i=0; i<max_terms; i++)
+	{
+		TFloatList * inner_list = mlnew TFloatList();
+		for (int j=0; j<num_preds; j++)
+			inner_list->push_back(_cuts[i + j*max_terms]);
+		list->push_back(inner_list);
+	}
+	return list;
+}
+
+PFloatList TEarthClassifier::get_betas()
+{
+	PFloatList list = mlnew TFloatList();
+	for (double * p=_betas; p < _betas + max_terms; p++)
+		list->push_back((float)*p);
+	return list;
+}
+
+void TEarthClassifier::init_members()
+{
+	best_set = get_best_set();
+	dirs = get_dirs();
+	cuts = get_cuts();
+	betas = get_betas();
+
+}
+
+void TEarthClassifier::save_model(TCharBuffer& buffer)
+{
+	buffer.writeInt(max_terms);
+	buffer.writeInt(num_terms);
+	buffer.writeInt(num_preds);
+	buffer.writeInt(num_responses);
+	buffer.writeBuf((void *) _best_set, sizeof(bool) * max_terms);
+	buffer.writeBuf((void *) _dirs, sizeof(int) * max_terms * num_preds);
+	buffer.writeBuf((void *) _cuts, sizeof(double) * max_terms * num_preds);
+	buffer.writeBuf((void *) _betas, sizeof(double) * max_terms * num_responses);
+}
+
+void TEarthClassifier::load_model(TCharBuffer& buffer)
+{
+	if (max_terms)
+		raiseError("Cannot overwrite a model");
+
+	max_terms = buffer.readInt();
+	num_terms = buffer.readInt();
+	num_preds = buffer.readInt();
+	num_responses = buffer.readInt();
+
+	_best_set = (bool *) calloc(max_terms, sizeof(bool));
+	_dirs = (int *) calloc(max_terms * num_preds, sizeof(int));
+	_cuts = (double *) calloc(max_terms * num_preds, sizeof(double));
+	_betas = (double *) calloc(max_terms * num_responses, sizeof(double));
+
+	buffer.readBuf((void *) _best_set, sizeof(bool) * max_terms);
+	buffer.readBuf((void *) _dirs, sizeof(int) * max_terms * num_preds);
+	buffer.readBuf((void *) _cuts, sizeof(double) * max_terms * num_preds);
+	buffer.readBuf((void *) _betas, sizeof(double) * max_terms * num_responses);
+	init_members();
+}
+
+
 
