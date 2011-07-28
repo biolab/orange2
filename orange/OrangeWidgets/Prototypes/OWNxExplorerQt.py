@@ -80,7 +80,6 @@ class OWNxExplorerQt(OWWidget):
         self.vertexSize = 0
         self.nShown = self.nHidden = self.nMarked = self.nSelected = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
         self.optimizeWhat = 1
-        self.stopOptimization = 0
         self.maxLinkSize = 3
         self.maxVertexSize = 5
         self.minVertexSize = 5
@@ -1269,9 +1268,9 @@ class OWNxExplorerQt(OWWidget):
         nodes = self.graph.number_of_nodes()
         nedges = selg.graph.number_of_edges()
         t = k * (nodes**2 + nedges) 
-        self.frSteps = int(5.0 / t)
+        self.frSteps = int(2.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 10000: self.frSteps = 10000;
+        if self.frSteps > 100: self.frSteps = 100;
         
         if self.frSteps < 10:
             self.networkCanvas.use_antialiasing = 0
@@ -1375,9 +1374,9 @@ class OWNxExplorerQt(OWWidget):
         k = 1.13850193174e-008
         nodes = self.graph.number_of_nodes()
         t = k * (nodes**2 + self.graph.number_of_edges())
-        self.frSteps = int(1.0 / t)
+        self.frSteps = int(2.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 10000: self.frSteps = 10000;
+        if self.frSteps > 100: self.frSteps = 100;
         
         self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.networkCanvas.showWeights = self.showWeights
@@ -1548,7 +1547,7 @@ class OWNxExplorerQt(OWWidget):
             self.optButton.setChecked(False)
             return
         
-        if not self.optButton.isChecked():
+        if not self.optButton.isChecked() and not self.optMethod == 2:
             self.optButton.setChecked(False)
             return
         
@@ -1615,60 +1614,20 @@ class OWNxExplorerQt(OWWidget):
             self.graph_layout()
         
     def graph_layout_fr(self, weighted):
-        if self.graph is None:   #grafa se ni
+        if self.graph is None:
             return
               
         if not self.optButton.isChecked():
-          #print "not"
-          self.stopOptimization = 1
-          self.optButton.setChecked(False)
-          self.optButton.setText("Optimize layout")
-          return
+            print 'stop opt'
+            self.networkCanvas.networkCurve.stop_optimization();
+            self.optButton.setChecked(False)
+            self.optButton.setText("Optimize layout")
+            return
         
         self.optButton.setText("Stop")
         qApp.processEvents()
-        self.stopOptimization = 0
-        temperature = 1000
-        cooling = math.exp(math.log(1. / temperature) / self.frSteps)
-        self.networkCanvas.networkCurve.fr(self.frSteps, False, temperature)
+        self.networkCanvas.networkCurve.fr(self.frSteps, False)
         self.networkCanvas.update_canvas()
-#        tolerance = 5
-#        initTemp = 1000
-#        breakpoints = 6
-#        k = int(self.frSteps / breakpoints)
-#        o = self.frSteps % breakpoints
-#        iteration = 0
-#        coolFactor = math.exp(math.log(10.0/10000.0) / self.frSteps)
-#
-#        if k > 0:
-#            while iteration < breakpoints:
-#                #print "iteration, initTemp: " + str(initTemp)
-#                if self.stopOptimization:
-#                    return
-#                initTemp = self.layout.fr(k, initTemp, coolFactor, weighted)
-#                iteration += 1
-#                qApp.processEvents()
-#                self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
-#                self.networkCanvas.updateCanvas()
-#            
-#            #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
-#            if self.stopOptimization:
-#                    return
-#            initTemp = self.layout.fr(o, initTemp, coolFactor, weighted)
-#            qApp.processEvents()
-#            self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
-#            self.networkCanvas.updateCanvas()
-#        else:
-#            while iteration < o:
-#                #print "iteration ostanek, initTemp: " + str(initTemp)
-#                if self.stopOptimization:
-#                    return
-#                initTemp = self.layout.fr(1, initTemp, coolFactor, weighted)
-#                iteration += 1
-#                qApp.processEvents()
-#                self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
-#                self.networkCanvas.updateCanvas()
-                
         self.optButton.setChecked(False)
         self.optButton.setText("Optimize layout")
         
