@@ -46,6 +46,7 @@ public:
      **/
     void add_connected_edge(EdgeItem* edge);
     void remove_connected_edge(EdgeItem* edge);
+    QList<EdgeItem*> connected_edges();
     
     double m_size_value;
 
@@ -153,6 +154,7 @@ public:
     int random();
     
     void set_nodes(Nodes nodes);
+    void remove_nodes(const QList<int> nodes);
     void set_edges(Edges edges);
     QList<QPair<int, int> > edge_indices();
 

@@ -90,6 +90,7 @@ public:
     int random();
     
     void set_nodes(QMap<int, NodeItem*> nodes);
+    void remove_nodes(const QList<int> nodes);
     void set_edges(Edges edges);
     QList<QPair<int, int> > edge_indices();
     

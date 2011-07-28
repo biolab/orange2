@@ -25,7 +25,13 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
 
 NodeItem::~NodeItem()
 {
-
+	/*
+	foreach(EdgeItem* edge, m_connected_edges)
+	{
+		m_connected_edges.removeOne(edge);
+		delete edge;
+	}
+	*/
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -126,6 +132,12 @@ void NodeItem::remove_connected_edge(EdgeItem* edge)
     m_connected_edges.removeAll(edge);
 }
 
+QList<EdgeItem*> NodeItem::connected_edges()
+{
+	return m_connected_edges;
+}
+
+
 /************/
 /* EdgeItem */
 /************/
@@ -148,6 +160,7 @@ EdgeItem::~EdgeItem()
 
 void EdgeItem::set_u(NodeItem* item)
 {
+	item->add_connected_edge(this);
     m_u = item;
 }
 
@@ -158,6 +171,7 @@ NodeItem* EdgeItem::u()
 
 void EdgeItem::set_v(NodeItem* item)
 {
+	item->add_connected_edge(this);
     m_v = item;
 }
 
@@ -473,6 +487,17 @@ void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
     qDeleteAll(m_nodes);
     m_nodes = nodes;
     register_points();
+}
+
+void NetworkCurve::remove_nodes(const QList<int> nodes)
+{
+	/*
+	QList<int>::ConstIterator it;
+	for (it = nodes.constBegin(); it != nodes.constEnd(); ++it)
+	{
+		delete m_nodes.take(*it);
+	}
+	*/
 }
 
 void NetworkCurve::set_node_colors(const QMap<int, QColor*> colors)
