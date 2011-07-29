@@ -16,7 +16,6 @@ def trans_mulan_data(xml_name,arff_name):
     """
     
     #load XML file
-    print xml_name
     doc = xml.dom.minidom.parse(xml_name)
     
     labels = []
@@ -27,11 +26,14 @@ def trans_mulan_data(xml_name,arff_name):
     arff_table = Orange.data.Table(arff_name)
     domain = arff_table.domain
     
+    #remove class tag
+    domain = Orange.data.Domain(domain,False)
+    
     for i, var in enumerate(domain.variables):
         if var.name in labels:
             domain[i].attributes["label"] = 1
     
-    table = arff_table
+    table = arff_table.translate(domain)
     
     return table
 
@@ -40,5 +42,8 @@ def trans_mulan_data(xml_name,arff_name):
 
 if __name__=="__main__":
     table = trans_mulan_data("../../doc/datasets/emotions.xml","../../doc/datasets/emotions.arff")
+    
+    for i in range(10):
+        print table[i]
     
     table.save("emotions.tab")

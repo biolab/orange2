@@ -66,7 +66,8 @@ class MMPLearner(_multibase.MultiLabelLearner):
     
     .. attribute:: smooth
     
-        Smoothing parameter controlling the strength of uniform prior (Default value is set to 1 which yields the Laplace smoothing).
+        Smoothing parameter controlling the strength of uniform prior 
+        (Default value is set to 1 which yields the Laplace smoothing).
     
     .. attribute:: knn
         
@@ -83,7 +84,8 @@ class MMPLearner(_multibase.MultiLabelLearner):
         :param k: number of nearest neighbors used in classification
         :type k: int
         
-        :param smooth: Smoothing parameter controlling the strength of uniform prior (Default value is set to 1 which yields the Laplace smoothing).
+        :param smooth: Smoothing parameter controlling the strength of uniform prior 
+        (Default value is set to 1 which yields the Laplace smoothing).
         :type smooth: Float
         
         :rtype: :class:`MLkNNLearner`
