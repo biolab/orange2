@@ -9,4 +9,5 @@ Projections (``projection``)
    Orange.projection.mds
    Orange.projection.pca
    orange.projection.som
+   Orange.projection.correspondence
 
