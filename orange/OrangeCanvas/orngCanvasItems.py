@@ -211,17 +211,18 @@ class CanvasLine(QGraphicsPathItem):
         painter.drawPath(self.path())
 
     def updateTooltip(self):
-        status = self.getEnabled() == 0 and " (Disabled)" or ""
-        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b>" + status + "</nobr><hr>Signals:<br>"
-        for (outSignal, inSignal) in self.getSignals():
-            string += "<nobr> &nbsp; &nbsp; - " + outSignal + " --> " + inSignal + "</nobr><br>"
-        string = string[:-4]
-        self.setToolTip(string)
-
-        # print the text with the signals
-        self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
-        self.captionItem.setHtml("<center>%s</center>" % self.caption.replace("\n", "<br/>"))
-        self.updatePainterPath()
+        if self.inWidget and self.outWidget:
+            status = self.getEnabled() == 0 and " (Disabled)" or ""
+            string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b>" + status + "</nobr><hr>Signals:<br>"
+            for (outSignal, inSignal) in self.getSignals():
+                string += "<nobr> &nbsp; &nbsp; - " + outSignal + " --> " + inSignal + "</nobr><br>"
+            string = string[:-4]
+            self.setToolTip(string)
+    
+            # print the text with the signals
+            self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
+            self.captionItem.setHtml("<center>%s</center>" % self.caption.replace("\n", "<br/>"))
+            self.updatePainterPath()
 
     def hoverEnterEvent(self, event):
         self.hoverState = True
