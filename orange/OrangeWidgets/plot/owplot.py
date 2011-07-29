@@ -1,41 +1,13 @@
-"""
-    .. class:: OWPlot
-        The base class for all graphs in Orange. It is written in Qt with QGraphicsItems
-        
-    .. attribute:: show_legend
-        A boolean controlling whether the legend is displayed or not
-        
-    .. attribute:: legend_position
-        Determines where the legend is positions, if ``show_legend`` is True.
-        
-    .. atribute:: palette
-        Chooses which palette is used by this graph. By default, this is `shared_palette`. 
-        
-    .. method map_to_graph(axis_ids, point)
-        Maps the ``point`` in data coordinates to graph (scene) coordinates
-        This method has to be reimplemented in graphs with special axes (RadViz, PolyViz)
-        
-    .. method map_from_graph(axis_ids, point)
-        Maps the ``point`` from scene coordinates to data coordinates
-        This method has to be reimplemented in graphs with special axes (RadViz, PolyViz)
-        
-    .. method activateZooming()
-        Activates zoom
-        
-    .. method clear()
-        Removes all curves from the graph
-        
-    .. method graph_area_rect()
-        Return the QRectF of the area where data is plotted (without axes)
-        
-    .. method send_data():
-        This method is not defined here, it is up to subclasses to implement it. 
-        It should send selected examples to the next widget
-        
-    .. method add_curve(name, attributes, ...)
-        Attributes is a map of { point_property: ("data_property", value) }, for example 
-            { PointColor : ("building_type", "house"), PointSize : ("age", 20) }
-"""
+'''
+##############################
+Plot (``owplot``)
+##############################
+
+.. autoclass:: OWPlot
+    :members:
+    :show-inheritance:
+    
+'''
 
 NOTHING = 0
 ZOOMING = 1
@@ -100,8 +72,35 @@ name_map = {
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
-class OWPlot(orangeplot.Plot):
+class OWPlot(orangeplot.Plot): 
+    """
+    The base class for all plots in Orange. It uses the Qt Graphics View Framework
+    to draw elements on a graph. 
+        
+    .. attribute:: show_legend
+    
+        A boolean controlling whether the legend is displayed or not
+        
+    .. attribute:: show_main_title
+    
+        Controls whether or not the main plot title is displayed
+        
+    .. attribute:: main_title
+    
+        The plot title, usually show on top of the plot
+        
+    .. attribute:: zoom_transform
+        
+        Contains the current zoom transformation 
+    """
     def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft] ):
+        """
+            Creates a new graph
+            
+            If your visualization uses axes other than ``xBottom`` and ``yLeft``, specify them in the
+            ``axes`` parameter. To use non-cartesian axes, set ``axes`` to an empty list
+            and add custom axes with :meth:`add_axis` or :meth:`add_custom_axis`
+        """
         orangeplot.Plot.__init__(self, parent)
         self.parent_name = name
         self.show_legend = show_legend
@@ -205,6 +204,8 @@ class OWPlot(orangeplot.Plot):
     alphaValue = deprecated_attribute("alphaValue", "alpha_value")
     useAntialiasing = deprecated_attribute("useAntialiasing", "use_antialiasing")
     showFilledSymbols = deprecated_attribute("showFilledSymbols", "show_filled_symbols")
+    mainTitle = deprecated_attribute("mainTitle", "main_title")
+    showMainTitle = deprecated_attribute("showMainTitle", "show_main_title")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -218,6 +219,12 @@ class OWPlot(orangeplot.Plot):
         return self.graph_area
         
     def map_to_graph(self, point, axes = None, zoom = False):
+        '''
+            Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from data coordinates
+            to scene coordinates. 
+            
+            If ``zoom`` is ``True``, the point is additionally transformed with :attr:`zoom_transform`
+        '''
         if type(point) == tuple:
             (x, y) = point
             point = QPointF(x, y)
@@ -231,6 +238,12 @@ class OWPlot(orangeplot.Plot):
         return (point.x(), point.y())
         
     def map_from_graph(self, point, axes = None, zoom = False):
+        '''
+            Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from scene coordinates
+            to data coordinates. 
+            
+            If ``zoom`` is ``True``, the point is additionally transformed with :attr:`zoom_transform`
+        '''
         if type(point) == tuple:
             (x, y) = point
             point = QPointF(x,y)
@@ -254,22 +267,42 @@ class OWPlot(orangeplot.Plot):
         sizeDlg.saveImage(fileName, size)
         
     def activate_zooming(self):
+        '''
+            Activates the zooming mode, where the user can zoom in and out with a single mouse click 
+            or by dragging the mouse to form a rectangular area
+        '''
         self.state = ZOOMING
         
     def activate_rectangle_selection(self):
+        '''
+            Activates the rectangle selection mode, where the user can select points in a rectangular area
+            by dragging the mouse over them
+        '''
         self.state = SELECT_RECTANGLE
         
     def activate_selection(self):
+        '''
+            Activates the point selection mode, where the user can select points by clicking on them
+        '''
         self.state = SELECT
         
     def activate_polygon_selection(self):
+        '''
+            Activates the polygon selection mode, where the user can select points by drawing a polygon around them
+        '''
         self.state = SELECT_POLYGON
         
     def setShowMainTitle(self, b):
+        '''
+            Shows the main title if ``b`` is ``True``, and hides it otherwise. 
+        '''
         self.showMainTitle = b
         self.replot()
 
     def setMainTitle(self, t):
+        '''
+            Sets the main title to ``t``
+        '''
         self.mainTitle = t
         self.replot()
 
@@ -318,12 +351,20 @@ class OWPlot(orangeplot.Plot):
             self.set_axis_labels(xTop, labels)
         
     def set_axis_labels(self, axis_id, labels):
+        '''
+            Sets the labels of axis ``axis_id`` to ``labels``. This changes the axis scale and removes any previous scale
+            set with :meth: `set_axis_scale`. 
+        '''
         if axis_id in self._bounds_cache:
             del self._bounds_cache[axis_id]
         self._transform_cache = {}
         self.axes[axis_id].set_labels(labels)
     
     def set_axis_scale(self, axis_id, min, max, step_size=0):
+        '''
+            Sets the labels of axis ``axis_id`` to ``labels``. This changes the axis scale and removes any previous labels
+            set with :meth: `set_axis_labels`. 
+        '''
         qDebug('Setting axis scale for ' + str(axis_id) + ' with axes ' + ' '.join(str(i) for i in self.axes))
         if axis_id in self._bounds_cache:
             del self._bounds_cache[axis_id]
@@ -356,6 +397,12 @@ class OWPlot(orangeplot.Plot):
         self.set_axis_labels(yRight, labels)
         
     def add_custom_curve(self, curve, enableLegend = False):
+        '''
+            Adds a custom PlotItem ``curve`` to the plot. 
+            If ``enableLegend`` is ``True``, a curve symbol defined by 
+            :meth:`OrangeWidgets.plot.OWCurve.point_item` and the ``curve``'s name
+            :obj:`OrangeWidgets.plot.OWCurve.name` is added to the legend. 
+        '''
         self.add_item(curve)
         if enableLegend:
             self.legend().add_curve(curve)
@@ -373,6 +420,10 @@ class OWPlot(orangeplot.Plot):
                  symbol = OWPoint.Ellipse, enableLegend = False, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
+        '''
+            Creates a new :obj:`OrangeWidgets.plot.OWCurve` with the specified parameters and adds it to the graph. 
+            If ``enableLegend`` is ``True``, a curve symbol is added to the legend. 
+        '''
         c = OWCurve(xData, yData, x_axis_key, y_axis_key, tooltip=name, parent=self.graph_item)
         c.set_zoom_factor(self._zoom_factor)
         c.name = name
@@ -400,6 +451,9 @@ class OWPlot(orangeplot.Plot):
         return self.add_custom_curve(c, enableLegend)
         
     def remove_curve(self, item):
+        '''
+            Removes ``item`` from the plot
+        '''
         self.remove_item(item)
         self.legend().remove_curve(item)
         
@@ -407,6 +461,9 @@ class OWPlot(orangeplot.Plot):
         pass
         
     def add_axis(self, axis_id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, zoomable = False):
+        '''
+            Creates an :obj:`OrangeWidgets.plot.OWAxis` with the specified ``axis_id`` and ``title``. 
+        '''
         qDebug('Adding axis with id ' + str(axis_id) + ' and title ' + title)
         a = OWAxis(axis_id, title, title_above, title_location, line, arrows, scene=self.scene())
         a.zoomable = zoomable
@@ -417,6 +474,9 @@ class OWPlot(orangeplot.Plot):
         self.axes[axis_id] = a
         
     def remove_all_axes(self, user_only = True):
+        '''
+            Removes all axes from the plot
+        '''
         ids = []
         for id,item in self.axes.iteritems():
             if not user_only or id >= UserAxis:
@@ -426,6 +486,9 @@ class OWPlot(orangeplot.Plot):
             del self.axes[id]
         
     def add_custom_axis(self, axis_id, axis):
+        '''
+            Adds a custom ``axis`` with id ``axis_id`` to the plot
+        '''
         self.axes[axis_id] = axis
         
     def add_marker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, 
@@ -441,6 +504,10 @@ class OWPlot(orangeplot.Plot):
         pass
         
     def clear(self):
+        '''
+            Clears the plot, removing all curves, markers and tooltips. 
+            Axes are not removed
+        '''
         for i in self.plot_items():
             self.remove_item(i)
         self._bounds_cache = {}
@@ -450,11 +517,20 @@ class OWPlot(orangeplot.Plot):
         self.legend().clear()
         
     def clear_markers(self):
+        '''
+            Removes all markers added with :meth:`add_marker` from the plot
+        '''
         for item,x,y,x_axis,y_axis in self._marker_items:
             item.detach()
         self._marker_items = []
         
     def update_layout(self):
+        '''
+            Updates the plot layout. 
+            
+            This function recalculates the position of titles, axes, the legend and the main plot area. 
+            It does not update the curve or the other plot items. 
+        '''
         graph_rect = QRectF(self.contentsRect())
         self.centerOn(graph_rect.center())
         m = self.graph_margin
@@ -536,6 +612,9 @@ class OWPlot(orangeplot.Plot):
             c.update_properties()
             
     def update_zoom(self):
+        '''
+            Updates the zoom transformation of the plot items. 
+        '''
         self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
         for c in self.plot_items():
@@ -596,6 +675,11 @@ class OWPlot(orangeplot.Plot):
             item.update(zoom_only)
         
     def replot(self):
+        '''
+            Replot the entire graph. 
+            
+            This functions redraws everything on the graph, so it can be very slow
+        '''
         if self.is_dirty():
             self._bounds_cache = {}
             self._transform_cache = {}
@@ -621,6 +705,9 @@ class OWPlot(orangeplot.Plot):
         pass
         
     def legend(self):
+        '''
+            Returns the plot's legend, which is a :obj:`OrangeWidgets.plot.OWLegend`
+        '''
         return self._legend
         
     def legend_rect(self):
