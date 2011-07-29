@@ -1178,8 +1178,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         new_translation = -numpy.array(center)
         # Avoid division by zero by adding a small value (this happens when zooming in
         # on elements with the same value of an attribute).
-        self.size = numpy.array(map(lambda i: i+0.001 if i == 0 else i, max-min))
-        new_scale = self.view_cube_edge / self.size
+        self.zoomed_size = numpy.array(map(lambda i: i+0.001 if i == 0 else i, max-min))
+        new_scale = self.view_cube_edge / self.zoomed_size
         self._animate_new_scale_translation(new_scale, new_translation)
 
     def _animate_new_scale_translation(self, new_scale, new_translation, num_steps=10):
@@ -1394,8 +1394,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
-            dx /= float(self.size[0 if self.scale_x_axis else 2])
-            dy /= float(self.size[1])
+            dx /= float(self.zoomed_size[0 if self.scale_x_axis else 2])
+            dy /= float(self.zoomed_size[1])
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
             self.additional_scale = [dx, dy, 0] if self.scale_x_axis else [0, dy, dx]
