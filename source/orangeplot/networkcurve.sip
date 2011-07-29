@@ -91,6 +91,8 @@ public:
     
     void set_nodes(QMap<int, NodeItem*> nodes);
     void remove_nodes(const QList<int> nodes);
+    void remove_node(int index);
+
     void set_edges(Edges edges);
     QList<QPair<int, int> > edge_indices();
     

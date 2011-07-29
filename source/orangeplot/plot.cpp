@@ -5,6 +5,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/qmath.h>
 #include <limits>
+#include "sceneeventfilter.h"
 
 inline uint qHash(const DataPoint& pos)
 {
@@ -44,6 +45,7 @@ Plot::Plot(QWidget* parent):
 QGraphicsView(parent)
 {
     setScene(new QGraphicsScene(this));
+    scene()->installEventFilter(new SceneEventFilter(this));
     clipItem = new QGraphicsRectItem();
     clipItem->setPen(Qt::NoPen);
     clipItem->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
