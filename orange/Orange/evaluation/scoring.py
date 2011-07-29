@@ -443,7 +443,7 @@ So, let's compute all this in part of
 (`ml-evaluator.py`_, uses `multidata.tab`_) and print it out:
 
 .. literalinclude:: code/mlc-evaluator.py
-   :lines: 1-
+   :lines: 1-15
 
 .. _multidata.tab: code/multidata.tab
 .. _ml-evaluator.py: code/mlc-evaluator.py
@@ -2609,7 +2609,8 @@ def mlc_hamming_loss(res):
     for e in res.results:
         aclass = e.actual_class
         for i in range(len(e.classes)):
-            labels = e.classes[i] 
+            labels = e.classes[i]
+            #print labels,aclass
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
             for j in range(label_num):

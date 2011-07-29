@@ -41,7 +41,7 @@ Testing can also be used on multi-label data.
 part of `mlc-evaluator.py`_ (uses `multidata.tab`_)
 
 .. literalinclude:: code/mlc-evaluator.py
-    :lines: 1-7
+    :lines: 1-6
 
 After testing is done, classification accuracies can be computed and
 printed by the following function.
@@ -276,13 +276,17 @@ class TestedExample:
     
     def add_result(self, aclass, aprob):
         """Appends a new result (class and probability prediction by a single classifier) to the classes and probabilities field."""
-        if self.multilabel_flag and type(aclass.value)==float:
-            self.classes.append(float(aclass))
-            self.probabilities.append(aprob)
+        if self.multilabel_flag == 0:
+            if type(aclass.value)==float:
+                self.classes.append(float(aclass))
+                self.probabilities.append(aprob)
+            else:
+                self.classes.append(int(aclass))
+                self.probabilities.append(list(aprob))
         else:
-            self.classes.append(int(aclass))
-            self.probabilities.append(list(aprob))
-       
+            self.classes.append(aclass)
+            self.probabilities.append(aprob)
+            
     def set_result(self, i, aclass, aprob):
         """Sets the result of the i-th classifier to the given values."""
         if self.multilabel_flag == 0:
@@ -522,12 +526,24 @@ def proportion_test(learners, examples, learnProp, times=10,
     
     examples, weight = demangleExamples(examples)
     classVar = examples.domain.classVar
-    if classVar.varType == Orange.data.Type.Discrete:
-        values = list(classVar.values)
-        baseValue = classVar.baseValue
-    else:
-        baseValue = values = None
-    test_results = ExperimentResults(times, [l.name for l in learners], values, weight!=0, baseValue)
+    
+    multilabel_flag = label.is_multilabel(examples)
+    if multilabel_flag == 0: #single-label
+        if classVar.var_type == Orange.data.Type.Discrete:
+            values = list(classVar.values)
+            base_value = classVar.base_value
+        else:
+            base_value = values = None
+    else: #multi-label
+        values = label.get_label_names(examples)
+        base_value = None
+    
+    #if classVar.varType == Orange.data.Type.Discrete:
+    #    values = list(classVar.values)
+    #    baseValue = classVar.baseValue
+    #else:
+    #    baseValue = values = None
+    test_results = ExperimentResults(times, [l.name for l in learners], values, weight!=0, base_value)
 
     for time in range(times):
         indices = pick(examples)
@@ -649,12 +665,21 @@ def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.co
             if "*" in fnstr:
                 cache = 0
 
-        conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float
-        test_results = ExperimentResults(cv.folds, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
-        test_results.results = [TestedExample(folds[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
+        multilabel_flag = label.is_multilabel(examples)
+        if multilabel_flag == 0:
+            conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float
+            test_results = ExperimentResults(cv.folds, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
+            test_results.results = [TestedExample(folds[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                                for i in range(len(examples))]
-
+        else:
+            test_results = ExperimentResults(cv.folds, [l.name for l in learners], label.get_label_names(examples), weight!=0, None)
+            test_results.results = [TestedExample(folds[i], label.get_labels(examples,examples[i]), nLrn, examples[i].getweight(weight),multilabel_flag)
+                           for i in range(len(examples))]
+        
+        #if the selectref fails to have a set, it will fail to laod the result. If so, there will be no predicted class in the data
+        loaded_res_flag = False 
         if cache and test_results.load_from_files(learners, fnstr):
+            loaded_res_flag = True
             printVerbose("  loaded from cache", verb)
         else:
             for fold in range(cv.folds):
@@ -665,6 +690,8 @@ def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.co
                 learnset = learnset.selectref(pick(learnset, p0=p), 0)
                 if not len(learnset):
                     continue
+                
+                loaded_res_flag = True
                 
                 for pp in pps:
                     learnset = pp[1](learnset)
@@ -679,7 +706,8 @@ def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.co
                     if (folds[i]==fold):
                         # This is to prevent cheating:
                         ex = Orange.data.Instance(examples[i])
-                        ex.setclass("?")
+                        if multilabel_flag == 0:
+                            ex.setclass("?")
                         for cl in range(nLrn):
                             if not cache or not test_results.loaded[cl]:
                                 cls, pro = classifiers[cl](ex, Orange.core.GetBoth)
@@ -688,8 +716,9 @@ def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.co
             if cache:
                 test_results.save_to_files(learners, fnstr)
 
-        allResults.append(test_results)
-        
+        if loaded_res_flag:
+            allResults.append(test_results)
+    
     return allResults
 
 
@@ -785,14 +814,14 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
     if multilabel_flag == 0: #single-label
         if examples.domain.class_var.var_type == Orange.data.Type.Discrete:
             values = list(examples.domain.class_var.values)
-            basevalue = examples.domain.class_var.base_value
+            base_value = examples.domain.class_var.base_value
         else:
-            basevalue = values = None
+            base_value = values = None
     else: #multi-label
         values = label.get_label_names(examples)
-        basevalue = None
+        base_value = None
     
-    test_results = ExperimentResults(nIterations, [getobjectname(l) for l in learners], values, weight!=0, basevalue)
+    test_results = ExperimentResults(nIterations, [getobjectname(l) for l in learners], values, weight!=0, base_value)
     if multilabel_flag == 0:
         conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float
         test_results.results = [TestedExample(indices[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
@@ -1019,15 +1048,23 @@ def test_on_data(classifiers, testset, test_results=None, iteration_number=0, st
         # We do not clone at the first iteration - cloning might never be needed at all...
         test_results.examples = testset
     
-    conv = testset.domain.classVar.varType == Orange.data.Type.Discrete and int or float
+    multilabel_flag = label.is_multilabel(testset)
+    if multilabel_flag == 0:
+        conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float
+      
     for ex in testset:
-        te = TestedExample(iteration_number, conv(ex.getclass()), 0,
+        if multilabel_flag == 0:
+            te = TestedExample(iteration_number, conv(ex.getclass()), 0,
                            ex.getweight(testweight))
-
+        else:
+            te = TestedExample(iteration_number, label.get_labels(testset,ex), 0,
+                           ex.getweight(testweight),multilabel_flag)
+        
         for classifier in classifiers:
             # This is to prevent cheating:
             ex2 = Orange.data.Instance(ex)
-            ex2.setclass("?")
+            if multilabel_flag == 0:
+                ex2.setclass("?")
             cr = classifier(ex2, Orange.core.GetBoth)
             te.add_result(cr[0], cr[1])
         test_results.results.append(te)
