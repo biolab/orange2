@@ -405,7 +405,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             cos(self.pitch),
             sin(self.pitch)*sin(self.yaw)]
 
-        self.ortho_scale = 80.
+        self.ortho_scale = 100.
         self.ortho_near = -1
         self.ortho_far = 2000
         self.perspective_near = 0.1
@@ -464,6 +464,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.selection_fbo_dirty = True
         self.use_fbos = True
 
+        self.draw_point_cloud = False
+        self.hide_outside = False
+
     def __del__(self):
         # TODO: check if anything needs deleting
         pass
@@ -487,12 +490,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             attribute vec4 color;
             attribute vec3 normal;
 
-            const int MODE_NORMAL = 0;
-            const int MODE_TOOLTIP = 1;
-            const int MODE_SELECTION = 2;
-
             uniform bool use_2d_symbols;
-            uniform int mode;
+            uniform bool shrink_symbols;
+            uniform bool encode_color;
+            uniform bool hide_outside;
             uniform float symbol_scale;
             uniform float transparency;
             uniform float view_edge;
@@ -534,18 +535,17 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               pos *= scale;
               vec4 off_pos = vec4(pos, 1.);
 
-              if (mode != MODE_SELECTION) {
-                  off_pos = vec4(pos+offset_rotated, 1.);
+              if (shrink_symbols) {
+                  // Shrink symbols into points by ignoring offsets.
+                  gl_PointSize = 2.;
               }
               else {
-                  // Shrunk symbols into points by ignoring offsets when
-                  // mode == MODE_SELECTION.
-                  gl_PointSize = 2.;
+                  off_pos = vec4(pos+offset_rotated, 1.);
               }
 
               gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
 
-              if (mode != MODE_NORMAL) {
+              if (encode_color) {
                 // We've packed example index into .w component of this vertex,
                 // to output it to the screen, it has to be broken down into RGBA.
                 uint index = uint(position.w);
@@ -563,6 +563,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 float diffuse = max(0., dot(normalize((gl_ModelViewMatrix * vec4(normal, 0.)).xyz),
                                     light_direction));
                 var_color = vec4(color.rgb+diffuse*0.7, a); // Physically wrong, but looks better.
+                if (manhattan_distance > view_edge && hide_outside)
+                    var_color.a = 0.;
               }
             }
             '''
@@ -593,7 +595,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_shader_view_edge      = self.symbol_shader.uniformLocation('view_edge')
         self.symbol_shader_scale          = self.symbol_shader.uniformLocation('scale')
         self.symbol_shader_translation    = self.symbol_shader.uniformLocation('translation')
-        self.symbol_shader_mode           = self.symbol_shader.uniformLocation('mode')
+        self.symbol_shader_shrink_symbols = self.symbol_shader.uniformLocation('shrink_symbols')
+        self.symbol_shader_encode_color   = self.symbol_shader.uniformLocation('encode_color')
+        self.symbol_shader_hide_outside   = self.symbol_shader.uniformLocation('hide_outside')
 
         # Create two FBOs (framebuffer objects):
         # - one will be used together with stencil mask to find out which
@@ -657,19 +661,26 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
 
                 self.symbol_shader.bind()
-                self.symbol_shader.setUniformValue(self.symbol_shader_mode,           0)
                 self.symbol_shader.setUniformValue(self.symbol_shader_use_2d_symbols, self.use_2d_symbols)
+                self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, self.draw_point_cloud)
+                self.symbol_shader.setUniformValue(self.symbol_shader_encode_color,   False)
+                self.symbol_shader.setUniformValue(self.symbol_shader_hide_outside,   self.hide_outside)
                 self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,      float(self.view_cube_edge))
                 self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale,   float(self.symbol_scale))
                 self.symbol_shader.setUniformValue(self.symbol_shader_transparency,   self.transparency / 255.)
                 self.symbol_shader.setUniformValue(self.symbol_shader_scale,          *scale)
                 self.symbol_shader.setUniformValue(self.symbol_shader_translation,    *self.translation)
 
-                glEnable(GL_DEPTH_TEST)
-                glEnable(GL_BLEND)
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                 glBindVertexArray(vao_id)
-                glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                if self.draw_point_cloud:
+                    glDisable(GL_DEPTH_TEST)
+                    glDisable(GL_BLEND)
+                    glDrawArrays(GL_POINTS, 0, vao_id.num_vertices)
+                else:
+                    glEnable(GL_DEPTH_TEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
                 glBindVertexArray(0)
 
                 self.symbol_shader.release()
@@ -710,7 +721,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 vao_id, _, _ = params
 
                 if self.tooltip_fbo_dirty:
-                    print('tooltip fbo was dirty')
                     # Draw data the same as to the screen, but with
                     # disabled blending and enabled depth testing.
                     self.tooltip_fbo.bind()
@@ -719,7 +729,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
                     self.symbol_shader.bind()
                     # Most uniforms retain their values.
-                    self.symbol_shader.setUniformValue(self.symbol_shader_mode, 1)
+                    self.symbol_shader.setUniformValue(self.symbol_shader_encode_color, True)
+                    self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, False)
                     glBindVertexArray(vao_id)
                     glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
                     glBindVertexArray(0)
@@ -728,12 +739,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     self.tooltip_fbo_dirty = False
 
                 if self.selection_fbo_dirty:
-                    print('selection fbo was dirty')
                     # Draw data as points instead, this means that examples farther away
                     # will still have a good chance at being visible (not covered).
                     self.selection_fbo.bind()
                     self.symbol_shader.bind()
-                    self.symbol_shader.setUniformValue(self.symbol_shader_mode, 2)
+                    self.symbol_shader.setUniformValue(self.symbol_shader_encode_color, True)
+                    self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, True)
                     glDisable(GL_DEPTH_TEST)
                     glDisable(GL_BLEND)
                     glBindVertexArray(vao_id)
@@ -1220,7 +1231,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         return vertex
 
     def get_selection_indices(self):
-        print('get_selection_indices')
         if len(self.selections) == 0:
             return []
 

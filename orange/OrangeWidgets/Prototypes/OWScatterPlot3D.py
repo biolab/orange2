@@ -135,6 +135,8 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_axes',           'Show axes',      callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_chassis',        'Show chassis',   callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.draw_point_cloud',    'Point cloud',    callback=self.on_checkbox_update)
+        OWGUI.checkBox(box, self, 'plot.hide_outside',        'Hide outside',   callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
         self.auto_send_selection = True
