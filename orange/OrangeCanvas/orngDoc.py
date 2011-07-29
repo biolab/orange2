@@ -78,6 +78,7 @@ class SchemaDoc(QWidget):
             ce.accept()
         else:
             ce.ignore()
+            return
             
         QWidget.closeEvent(self, ce)
         orngHistory.logCloseSchema(self.schemaID)
