@@ -9,7 +9,7 @@
 #include <QCoreApplication>
 
 /************/
-/* NodeItem */
+/* NodeItem */  
 /************/
 
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
@@ -25,13 +25,6 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
 
 NodeItem::~NodeItem()
 {
-	/*
-	foreach(EdgeItem* edge, m_connected_edges)
-	{
-		m_connected_edges.removeOne(edge);
-		delete edge;
-	}
-	*/
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -124,7 +117,10 @@ int NodeItem::uuid() const
 
 void NodeItem::add_connected_edge(EdgeItem* edge)
 {
-    m_connected_edges << edge;
+    if (!m_connected_edges.contains(edge))
+    {
+        m_connected_edges << edge;
+    }
 }
 
 void NodeItem::remove_connected_edge(EdgeItem* edge)
@@ -142,7 +138,8 @@ QList<EdgeItem*> NodeItem::connected_edges()
 /* EdgeItem */
 /************/
 
-EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsLineItem(parent, scene)
+EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsLineItem(parent, scene),
+m_u(0), m_v(0)
 {
     set_u(u);
     set_v(v);
@@ -160,7 +157,14 @@ EdgeItem::~EdgeItem()
 
 void EdgeItem::set_u(NodeItem* item)
 {
-	item->add_connected_edge(this);
+    if (m_u)
+    {
+        m_u->remove_connected_edge(this);
+    }
+    if (item)
+    {
+        item->add_connected_edge(this);
+    }
     m_u = item;
 }
 
@@ -171,7 +175,14 @@ NodeItem* EdgeItem::u()
 
 void EdgeItem::set_v(NodeItem* item)
 {
-	item->add_connected_edge(this);
+    if (m_v)
+    {
+        m_v->remove_connected_edge(this);
+    }
+    if (item)
+    {
+        item->add_connected_edge(this);
+    }
     m_v = item;
 }
 
@@ -491,13 +502,22 @@ void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
 
 void NetworkCurve::remove_nodes(const QList<int> nodes)
 {
-	/*
-	QList<int>::ConstIterator it;
-	for (it = nodes.constBegin(); it != nodes.constEnd(); ++it)
-	{
-		delete m_nodes.take(*it);
-	}
-	*/
+    foreach (int i, nodes)
+    {
+        remove_node(i);
+    }
+    
+}
+
+void NetworkCurve::remove_node(int index)
+{
+    NodeItem* node = m_nodes.take(index);
+    foreach (EdgeItem* edge, node->connected_edges())
+    {
+        m_edges.removeOne(edge);
+        delete edge;
+    }
+    delete node;
 }
 
 void NetworkCurve::set_node_colors(const QMap<int, QColor*> colors)
