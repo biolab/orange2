@@ -1327,7 +1327,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def mouseMoveEvent(self, event):
         pos = event.pos()
 
-        if self.mouseover_callback != None and self.state == PlotState.IDLE:
+        if self.mouseover_callback != None and self.state == PlotState.IDLE and\
+            (not self.show_legend or not self.legend.contains(pos.x(), pos.y())):
             # Use pixel-color-picking to read example index under mouse cursor.
             self.tooltip_fbo.bind()
             value = glReadPixels(pos.x(), self.height() - pos.y(),
