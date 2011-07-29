@@ -4,15 +4,12 @@
 Plot classes and tools for use in Orange widgets
 *************************
 
-The main class of this module is :obj:`OrangeWidgets.plot.OWPlot`, from which all plots 
+The main class of this module is :obj:`OWPlot`, from which all plots 
 in visualization widgets should inherit. 
 
-This module also contains plot elements, which are normally use by the :obj:`OrangeWidgets.plot.OWPlot`, but can 
-be either subclassed or used directly from outside. These elements are:
-* :obj: `OrangeWidgets.plot.OWCurve`
-* :obj: `OrangeWidgets.plot.OWPoint`
-* :obj: `OrangeWidgets.plot.OWAxis`
-* :obj: `OrangeWidgets.plot.OWLegend`
+This module also contains plot elements, which are normally used by the :obj:`OrangeWidgets.plot.owplot.OWPlot`, 
+but can also be used directly or subclassed
+
 """
 
 from owcurve import *

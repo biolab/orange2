@@ -3,7 +3,7 @@
 Plot (``owplot``)
 ##############################
 
-.. autoclass:: OWPlot
+.. autoclass:: OrangeWidgets.plot.OWPlot
     :members:
     :show-inheritance:
     
@@ -353,7 +353,7 @@ class OWPlot(orangeplot.Plot):
     def set_axis_labels(self, axis_id, labels):
         '''
             Sets the labels of axis ``axis_id`` to ``labels``. This changes the axis scale and removes any previous scale
-            set with :meth: `set_axis_scale`. 
+            set with :meth:`set_axis_scale`. 
         '''
         if axis_id in self._bounds_cache:
             del self._bounds_cache[axis_id]
@@ -363,7 +363,7 @@ class OWPlot(orangeplot.Plot):
     def set_axis_scale(self, axis_id, min, max, step_size=0):
         '''
             Sets the labels of axis ``axis_id`` to ``labels``. This changes the axis scale and removes any previous labels
-            set with :meth: `set_axis_labels`. 
+            set with :meth:`set_axis_labels`. 
         '''
         qDebug('Setting axis scale for ' + str(axis_id) + ' with axes ' + ' '.join(str(i) for i in self.axes))
         if axis_id in self._bounds_cache:

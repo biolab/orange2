@@ -1,14 +1,45 @@
+'''
+##############################
+Plot tools (``owtools``)
+##############################
+
+.. autoclass:: TooltipManager
+    :members:
+    
+.. autoclass:: PolygonCurve
+    :members:
+    :show-inheritance:
+    
+.. autoclass:: RectangleCurve
+    :members:
+    :show-inheritance:
+    
+.. autoclass:: CircleCurve
+    :members:
+    :show-inheritance:
+    
+.. autoclass:: UnconnectedLinesCurve
+    :members:
+    :show-inheritance:
+    
+.. autoclass:: Marker
+    :members:
+    :show-inheritance:
+
+'''
+
 from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QPen, QBrush
 from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug, QPropertyAnimation
 
 from owcurve import *
 
-"""
-    Efficiently resizes a list of QGraphicsItems (PlotItems, Curves, etc.)
-    If the list is to be reduced, i.e. if len(lst) > size, then the extra items are first removed from the scene
-"""
-
 def resize_plot_item_list(lst, size, item_type, parent):
+    """
+        Efficiently resizes a list of QGraphicsItems (PlotItems, Curves, etc.). 
+        If the list is to be reduced, i.e. if len(lst) > size, then the extra items are first removed from the scene.
+        If items have to be added to the scene, new items will be of type ``item_type`` and will have ``parent``
+        as their parent item. 
+    """
     n = len(lst)
     if n > size:
         for i in lst[n:]:
