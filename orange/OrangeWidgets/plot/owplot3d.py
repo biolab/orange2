@@ -462,6 +462,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.tooltip_fbo_dirty = True
         self.selection_fbo_dirty = True
+        self.use_fbos = True
 
     def __del__(self):
         # TODO: check if anything needs deleting
@@ -475,6 +476,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glEnable(GL_LINE_SMOOTH)
         glDisable(GL_CULL_FACE)
         glEnable(GL_MULTISAMPLE)
+        glEnable(GL_VERTEX_PROGRAM_POINT_SIZE)
 
         self.symbol_shader = QtOpenGL.QGLShaderProgram()
         vertex_shader_source = '''
@@ -531,11 +533,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               pos += translation;
               pos *= scale;
               vec4 off_pos = vec4(pos, 1.);
-              off_pos = vec4(pos+offset_rotated, 1.);
+
               if (mode != MODE_SELECTION) {
-                  // Converge symbols into points by ignoring offsets when
+                  off_pos = vec4(pos+offset_rotated, 1.);
+              }
+              else {
+                  // Shrunk symbols into points by ignoring offsets when
                   // mode == MODE_SELECTION.
-                  //off_pos = vec4(pos+offset_rotated, 1.);
+                  gl_PointSize = 2.;
               }
 
               gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
@@ -602,11 +607,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             print('Selection FBO created.')
         else:
             print('Failed to create selection FBO! Selections may be slow.')
+            self.use_fbos = False
         self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024, format)
         if self.tooltip_fbo.isValid():
             print('Tooltip FBO created.')
         else:
             print('Failed to create tooltip FBO! Tooltips disabled.')
+            self.use_fbos = False
 
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
@@ -723,14 +730,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 if self.selection_fbo_dirty:
                     print('selection fbo was dirty')
                     # Draw data as points instead, this means that examples farther away
-                    # will still have a good chance at being visible.
+                    # will still have a good chance at being visible (not covered).
                     self.selection_fbo.bind()
                     self.symbol_shader.bind()
                     self.symbol_shader.setUniformValue(self.symbol_shader_mode, 2)
                     glDisable(GL_DEPTH_TEST)
                     glDisable(GL_BLEND)
                     glBindVertexArray(vao_id)
-                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                    glDrawArrays(GL_POINTS, 0, vao_id.num_vertices)
                     glBindVertexArray(0)
                     self.symbol_shader.release()
 
@@ -1217,73 +1224,71 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if len(self.selections) == 0:
             return []
 
-        self.selection_fbo_dirty = True
-        self.updateGL()
+        if self.use_fbos:
+            self.selection_fbo_dirty = True
+            self.updateGL()
 
-        width, height = self.width(), self.height()
-        # TODO: check width < fbo.width
-        self.selection_fbo.bind()
-        color_pixels = glReadPixels(0, 0,
-                                    width, height,
-                                    GL_RGBA,
-                                    GL_UNSIGNED_BYTE)
-        stencil_pixels = glReadPixels(0, 0,
-                                      width, height,
-                                      GL_STENCIL_INDEX,
-                                      GL_FLOAT)
-        self.selection_fbo.release()
-        stencils = struct.unpack('f'*width*height, stencil_pixels)
-        colors = struct.unpack('I'*width*height, color_pixels)
-        indices = set([])
-        for stencil, color in zip(stencils, colors):
-            if stencil > 0. and color < 4294967295:
-                indices.add(color)
+            width, height = self.width(), self.height()
+            # TODO: check width < fbo.width
+            self.selection_fbo.bind()
+            color_pixels = glReadPixels(0, 0,
+                                        width, height,
+                                        GL_RGBA,
+                                        GL_UNSIGNED_BYTE)
+            stencil_pixels = glReadPixels(0, 0,
+                                          width, height,
+                                          GL_STENCIL_INDEX,
+                                          GL_FLOAT)
+            self.selection_fbo.release()
+            stencils = struct.unpack('f'*width*height, stencil_pixels)
+            colors = struct.unpack('I'*width*height, color_pixels)
+            indices = set([])
+            for stencil, color in zip(stencils, colors):
+                if stencil > 0. and color < 4294967295:
+                    indices.add(color)
 
-        print(indices)
-        # TODO: figure out what' causing incorrect values, filter them out
-        # for now
-        indices = [i for i in indices if i < len(self.commands[0][1][1][0])]
-        return indices
-
-
-        projection = QMatrix4x4()
-        if self.use_ortho:
-            projection.ortho(-width / self.ortho_scale, width / self.ortho_scale,
-                             -height / self.ortho_scale, height / self.ortho_scale,
-                             self.ortho_near, self.ortho_far)
+            print(indices)
+            return indices
         else:
-            projection.perspective(self.camera_fov, float(self.width())/self.height(),
-                                   self.perspective_near, self.perspective_far)
+            projection = QMatrix4x4()
+            if self.use_ortho:
+                projection.ortho(-width / self.ortho_scale, width / self.ortho_scale,
+                                 -height / self.ortho_scale, height / self.ortho_scale,
+                                 self.ortho_near, self.ortho_far)
+            else:
+                projection.perspective(self.camera_fov, float(self.width())/self.height(),
+                                       self.perspective_near, self.perspective_far)
 
-        modelview = QMatrix4x4()
-        modelview.lookAt(QVector3D(self.camera[0]*self.camera_distance,
-                                   self.camera[1]*self.camera_distance,
-                                   self.camera[2]*self.camera_distance),
-                         QVector3D(0, 0, 0),
-                         QVector3D(0, 1, 0))
+            modelview = QMatrix4x4()
+            modelview.lookAt(QVector3D(self.camera[0]*self.camera_distance,
+                                       self.camera[1]*self.camera_distance,
+                                       self.camera[2]*self.camera_distance),
+                             QVector3D(0,-1, 0),
+                             QVector3D(0, 1, 0))
 
-        proj_model = projection * modelview
-        viewport = [0, 0, self.width(), self.height()]
+            proj_model = projection * modelview
+            viewport = [0, 0, self.width(), self.height()]
 
-        def project(x, y, z):
-            projected = proj_model * QVector4D(x, y, z, 1)
-            projected /= projected.z()
-            winx = viewport[0] + (1 + projected.x()) * viewport[2] / 2
-            winy = viewport[1] + (1 + projected.y()) * viewport[3] / 2
-            winy = self.height() - winy
-            return winx, winy
+            def project(x, y, z):
+                projected = proj_model * QVector4D(x, y, z, 1)
+                projected /= projected.z()
+                winx = viewport[0] + (1 + projected.x()) * viewport[2] / 2
+                winy = viewport[1] + (1 + projected.y()) * viewport[3] / 2
+                winy = self.height() - winy
+                return winx, winy
 
-        indices = []
-        for (cmd, params) in self.commands:
-            if cmd == 'scatter':
-                _, _, (X, Y, Z), _ = params
-                for i, (x, y, z) in enumerate(zip(X, Y, Z)):
-                    x, y, z = self.transform_data_to_plot((x,y,z))
-                    x_win, y_win = project(x, y, z)
-                    if any(sel.contains(x_win, y_win) for sel in self.selections):
-                        indices.append(i)
+            indices = []
+            for (cmd, params) in self.commands:
+                if cmd == 'scatter':
+                    _, (X, Y, Z), _ = params
+                    for i, (x, y, z) in enumerate(zip(X, Y, Z)):
+                        x, y, z = self.transform_data_to_plot((x,y,z))
+                        x_win, y_win = project(x, y, z)
+                        if any(sel.contains(x_win, y_win) for sel in self.selections):
+                            indices.append(i)
 
-        return indices
+            print(indices)
+            return indices
 
     def set_selection_type(self, type):
         if SelectionType.is_valid(type):
