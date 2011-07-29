@@ -52,60 +52,58 @@ class NetworkCurve(orangeplot.NetworkCurve):
     return selected
   
   def get_selected_nodes(self):
-    return [vertex.index for vertex in self.vertices.itervalues() if vertex.selected]
+    return [vertex.index() for vertex in self.nodes().itervalues() if vertex.is_selected()]
 
   def get_unselected_nodes(self):
-    return [vertex.index for vertex in self.vertices.itervalues() if not vertex.selected]
+    return [vertex.index() for vertex in self.nodes().itervalues() if not vertex.is_selected()]
 
   def get_marked_nodes(self):
-    return [vertex.index for vertex in self.vertices.itervalues() if vertex.marked]
+    return [vertex.index() for vertex in self.nodes().itervalues() if vertex.is_marked()]
   
   def set_marked_nodes(self, vertices):
-    for vertex in self.vertices.itervalues():
-      if vertex.index in vertices:
-        vertex.marked = True
-      else:
-        vertex.marked = False
+    n = self.nodes()
+    for vertex in n.itervalues():
+      vertex.set_marked(False)
+    for index in vertices:
+      if index in n:
+        n[index].set_marked(True)
         
   def mark_to_sel(self):
-    for vertex in self.vertices.itervalues():
-      if vertex.marked == True:
-          vertex.selected = True
+    for vertex in self.nodes().itervalues():
+      if vertex.is_marked():
+          vertex.set_selected(True)
           
   def sel_to_mark(self):
-    for vertex in self.vertices.itervalues():
-      if vertex.selected == True:
-          vertex.selected = False
-          vertex.marked = True
+    for vertex in self.nodes().itervalues():
+      if vertex.is_selected():
+          vertex.set_selected(False)
+          vertex.set_marked(True)
   
   def unmark(self):
-    for vertex in self.vertices.itervalues():
-      vertex.marked = False
+    for vertex in self.nodes().itervalues():
+      vertex.set_marked(False)
       
   def unselect(self):
-    for vertex in self.vertices.itervalues():
-        vertex.selected = False
+    for vertex in self.nodes().itervalues():
+        vertex.set_selected(False)
         
   def set_hidden_nodes(self, nodes):
-    for vertex in self.vertices.itervalues():
-      if vertex.index in nodes:
-        vertex.show = False
-      else:
-        vertex.show = True
+    for vertex in self.nodes().itervalues():
+        vertex.setVisible(vertex.index() in nodes)
       
   def hide_selected_nodes(self):
-    for vertex in self.vertices.itervalues():
+    for vertex in self.nodes().itervalues():
       if vertex.selected:
-        vertex.show = False
+        vertex.hide()
   
   def hide_unselected_nodes(self):
-    for vertex in self.vertices.itervalues():
+    for vertex in self.nodes().itervalues():
       if not vertex.selected:
-        vertex.show = False
+        vertex.hide()
     
   def show_all_vertices(self):
-    for vertex in self.vertices.itervalues():
-      vertex.show = True
+    for vertex in self.nodes().itervalues():
+      vertex.show()
     
   def changed(self):
       self.itemChanged()

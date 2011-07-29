@@ -484,6 +484,11 @@ void NetworkCurve::set_edges(NetworkCurve::Edges edges)
     m_edges = edges;
 }
 
+NetworkCurve::Edges NetworkCurve::edges()
+{
+    return m_edges;
+}
+
 QList<QPair<int, int> > NetworkCurve::edge_indices()
 {
 	int i;
@@ -504,6 +509,11 @@ void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
     qDeleteAll(m_nodes);
     m_nodes = nodes;
     register_points();
+}
+
+NetworkCurve::Nodes NetworkCurve::nodes()
+{
+    return m_nodes;
 }
 
 void NetworkCurve::remove_nodes(const QList<int> nodes)

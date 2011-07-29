@@ -92,10 +92,12 @@ public:
     void set_nodes(QMap<int, NodeItem*> nodes);
     void remove_nodes(const QList<int> nodes);
     void remove_node(int index);
+    Nodes nodes();
 
     void set_edges(Edges edges);
     QList<QPair<int, int> > edge_indices();
-    
+    Edges edges();
+
     void set_node_colors(const QMap<int, QColor*> colors);    
     void set_node_sizes(QMap<int, double> sizes = QMap<int, double>(), double min_size=0, double max_size=0);
     void set_node_labels(const QMap<int, QString> labels);
