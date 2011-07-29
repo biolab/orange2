@@ -50,13 +50,13 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False # Turned off for performance improvement.
 OpenGL.ERROR_LOGGING = False
 OpenGL.FULL_LOGGING = False
+#OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.arrays import ArrayDatatype
 from OpenGL.GL.ARB.vertex_array_object import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from ctypes import c_void_p
-#OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
 
 import sys
 from math import sin, cos, pi, floor, ceil, log10
@@ -71,7 +71,7 @@ except:
     pass
 
 def normalize(vec):
-    return vec / numpy.sqrt(numpy.sum(vec** 2))
+    return vec / numpy.sqrt(numpy.sum(vec**2))
 
 def clamp(value, min, max):
     if value < min:
@@ -391,6 +391,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.activatePolygonSelection = void
         self.activatePanning = void
         self.activateSelection = void
+        self.removeLastSelection = void
 
         self.commands = []
         self.minx = self.miny = self.minz = 0
@@ -400,10 +401,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.yaw = self.pitch = -pi / 4.
         self.rotation_factor = 0.3
-        self.camera = [
-            sin(self.pitch)*cos(self.yaw),
-            cos(self.pitch),
-            sin(self.pitch)*sin(self.yaw)]
+        self.update_camera()
 
         self.ortho_scale = 100.
         self.ortho_near = -1
@@ -497,9 +495,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             uniform bool shrink_symbols;
             uniform bool encode_color;
             uniform bool hide_outside;
-            uniform float symbol_scale;
-            uniform float transparency;
-            uniform float view_edge;
+            uniform vec2 transparency; // vec2 instead of float, fixing a bug on windows
+                                       // (setUniformValue with float crashes)
+			uniform vec2 symbol_scale;
+            uniform vec2 view_edge;
 
             uniform vec3 scale;
             uniform vec3 translation;
@@ -508,9 +507,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
             void main(void) {
               vec3 offset_rotated = offset;
-              offset_rotated.x *= symbol_scale;
-              offset_rotated.y *= symbol_scale;
-              offset_rotated.z *= symbol_scale;
+              offset_rotated.x *= symbol_scale.x;
+              offset_rotated.y *= symbol_scale.x;
+              offset_rotated.z *= symbol_scale.x;
 
               if (use_2d_symbols) {
                   // Calculate inverse of rotations (in this case, inverse
@@ -560,13 +559,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
               else {
                 pos = abs(pos);
                 float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
-                float a = min(pow(min(1., view_edge / manhattan_distance), 5.), transparency);
+                float a = min(pow(min(1., view_edge.x / manhattan_distance), 5.), transparency.x);
                 // Calculate the amount of lighting this triangle receives (diffuse component only).
                 vec3 light_direction = normalize(vec3(1., 1., 0.5));
                 float diffuse = max(0., dot(normalize((gl_ModelViewMatrix * vec4(normal, 0.)).xyz),
                                     light_direction));
                 var_color = vec4(color.rgb+diffuse*0.7, a); // Physically wrong, but looks better.
-                if (manhattan_distance > view_edge && hide_outside)
+                if (manhattan_distance > view_edge.x && hide_outside)
                     var_color.a = 0.;
               }
             }
@@ -625,6 +624,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
 
+    def update_camera(self):
+        self.pitch = clamp(self.pitch, -3., -0.1)
+        self.camera = [
+            sin(self.pitch)*cos(self.yaw),
+            cos(self.pitch),
+            sin(self.pitch)*sin(self.yaw)]
+
     def paintGL(self):
         glClearColor(*self._theme.background_color)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -668,9 +674,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, self.draw_point_cloud)
                 self.symbol_shader.setUniformValue(self.symbol_shader_encode_color,   False)
                 self.symbol_shader.setUniformValue(self.symbol_shader_hide_outside,   self.hide_outside)
-                self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,      float(self.view_cube_edge))
-                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale,   float(self.symbol_scale))
-                self.symbol_shader.setUniformValue(self.symbol_shader_transparency,   self.transparency / 255.)
+				# Specifying float uniforms with vec2 because of a weird bug in PyQt
+                self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,      self.view_cube_edge, self.view_cube_edge)
+                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale,   self.symbol_scale, self.symbol_scale)
+                self.symbol_shader.setUniformValue(self.symbol_shader_transparency,   self.transparency / 255., self.transparency / 255.)
                 self.symbol_shader.setUniformValue(self.symbol_shader_scale,          *scale)
                 self.symbol_shader.setUniformValue(self.symbol_shader_translation,    *self.translation)
 
@@ -1386,11 +1393,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             else:
                 self.yaw += dx / (self.rotation_factor*self.width())
                 self.pitch += dy / (self.rotation_factor*self.height())
-                self.pitch = clamp(self.pitch, -3., -0.1)
-                self.camera = [
-                    sin(self.pitch)*cos(self.yaw),
-                    cos(self.pitch),
-                    sin(self.pitch)*sin(self.yaw)]
+                self.update_camera()
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()

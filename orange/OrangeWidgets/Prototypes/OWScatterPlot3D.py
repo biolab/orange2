@@ -173,6 +173,7 @@ class OWScatterPlot3D(OWWidget):
         self.connect(self.graphButton, SIGNAL("clicked()"), self.plot.save_to_file)
 
         self.loadSettings()
+        self.plot.update_camera()
 
         self.data = None
         self.subsetData = None
