@@ -142,9 +142,9 @@ class OWScatterPlot3D(OWWidget):
         self.plot.selection_changed_callback = self.selection_changed_callback
         box = OWGUI.widgetBox(self.settings_tab, 'Auto Send Selected Data When...')
         OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
-            callback = self.on_checkbox_update, tooltip = 'Send selected data whenever a selection area is added or removed')
+            callback = self.on_checkbox_update, tooltip='Send selected data whenever a selection area is added or removed')
         OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving/Resizing selection areas',
-            callback = self.on_checkbox_update, tooltip = 'Send selected data when a user moves or resizes an existing selection area')
+            callback = self.on_checkbox_update, tooltip='Send selected data when a user moves or resizes an existing selection area')
 
         self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection,
             buttons=(1, 4, 5, 0, 6, 7, 8))
@@ -159,7 +159,7 @@ class OWScatterPlot3D(OWWidget):
         self.tooltip_kind = TooltipKind.NONE
         box = OWGUI.widgetBox(self.settings_tab, "Tooltips Settings")
         OWGUI.comboBox(box, self, 'tooltip_kind', items = [
-            'Don\'t Show Tooltips', 'Show Visible Attributes', 'Show All Attributes'], callback = self.on_axis_change)
+            'Don\'t Show Tooltips', 'Show Visible Attributes', 'Show All Attributes'])
 
         self.plot.mouseover_callback = self.mouseover_callback
         self.shown_attr_indices = []
