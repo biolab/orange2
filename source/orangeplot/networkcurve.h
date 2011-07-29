@@ -10,11 +10,13 @@ class EdgeItem;
 class NodeItem : public Point
 {
 public:
+    enum {Type = Point::Type + 1};
     NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~NodeItem();
 
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
-
+    virtual int type() const {return Type;}
+    
     void set_coordinates(double x, double y);
 
     void set_x(double x);

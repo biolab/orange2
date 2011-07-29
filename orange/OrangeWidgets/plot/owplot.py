@@ -849,6 +849,7 @@ class OWPlot(orangeplot.Plot):
         
     def add_selection(self, reg):
         self.select_points(reg, self.selection_behavior)
+        self.viewport().update()
         if self.auto_send_selection_callback:
             self.auto_send_selection_callback()
         

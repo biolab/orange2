@@ -451,6 +451,12 @@ int NetworkCurve::fr(int steps, bool weighted)
 		{
 			update_properties();
 			QCoreApplication::processEvents();
+            Plot* p = plot();
+            if (p)
+            {
+                p->set_dirty();
+                p->replot();
+            }
 		}
 
 		if (m_stop_optimization)
@@ -686,11 +692,12 @@ void NetworkCurve::register_points()
     if (p)
     {
         p->remove_all_points(this);
-        const Data d = data();
-        const int n = d.size();
-        for (int i = 0; i < n; ++i)
+        foreach (NodeItem* node, m_nodes)
         {
-            p->add_point(d[i], m_nodes[i], this);
+            DataPoint d;
+            d.x = node->x();
+            d.y = node->y();
+            p->add_point(d, node, this);
         }
     }
 }

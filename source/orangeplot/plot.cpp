@@ -33,7 +33,7 @@ void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, P
      */
     foreach (QGraphicsItem* item, scene->items(area, Qt::IntersectsItemBoundingRect))
     {
-        Point* point = qgraphicsitem_cast<Point*>(item);
+        Point* point = dynamic_cast<Point*>(item);
         if (point)
         {
             point->set_state_flag(flag, behavior == Plot::AddSelection || (behavior == Plot::ToggleSelection && !point->state_flag(flag)));
