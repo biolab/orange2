@@ -146,7 +146,8 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving/Resizing selection areas',
             callback = self.on_checkbox_update, tooltip = 'Send selected data when a user moves or resizes an existing selection area')
 
-        self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection)
+        self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection,
+            buttons=(1, 4, 5, 0, 6, 7, 8))
         self.connect(self.zoom_select_toolbar.buttonSendSelections, SIGNAL('clicked()'), self.send_selections)
         self.connect(self.zoom_select_toolbar.buttonSelectRect, SIGNAL('clicked()'), self.change_selection_type)
         self.connect(self.zoom_select_toolbar.buttonSelectPoly, SIGNAL('clicked()'), self.change_selection_type)
@@ -173,7 +174,7 @@ class OWScatterPlot3D(OWWidget):
 
         self.data = None
         self.subsetData = None
-        self.resize(1000, 600)
+        self.resize(1100, 600)
 
     def mouseover_callback(self, index):
         if self.tooltip_kind == TooltipKind.VISIBLE:
