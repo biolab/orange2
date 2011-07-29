@@ -773,7 +773,7 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
     
     #check if the data is a multi-label data
     multilabel_flag = label.is_multilabel(examples)
-    
+
     if multilabel_flag == 0 and not examples.domain.class_var: #single-label
         raise ValueError("Test data set without class attribute")
     
@@ -859,7 +859,7 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
                     tcn += 1
                     for cl in range(nLrn):
                         if not cache or not test_results.loaded[cl]:
-                            cr = classifiers[cl](ex, Orange.core.GetBoth)                                      
+                            cr = classifiers[cl](ex, Orange.core.GetBoth)                       
                             if multilabel_flag == 0 and cr[0].isSpecial():
                                 raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
                             test_results.results[i].set_result(cl, cr[0], cr[1])

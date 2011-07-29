@@ -122,7 +122,8 @@ class MMPClassifier(_multibase.MultiLabelClassifier):
             raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
         
         disc = Orange.statistics.distribution.Discrete(prob)
-        disc.variable = Orange.core.EnumVariable(values = [domain[val].name for index,val in enumerate(self.label_indices)])
+        disc.variable = Orange.core.EnumVariable(
+            values = [domain[val].name for index,val in enumerate(self.label_indices)])
         
         if result_type == Orange.classification.Classifier.GetValue:
             return labels

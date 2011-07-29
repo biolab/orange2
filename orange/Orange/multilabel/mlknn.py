@@ -132,7 +132,8 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
         :param k: number of nearest neighbors used in classification
         :type k: int
         
-        :param smooth: Smoothing parameter controlling the strength of uniform prior (Default value is set to 1 which yields the Laplace smoothing).
+        :param smooth: Smoothing parameter controlling the strength of uniform prior 
+        (Default value is set to 1 which yields the Laplace smoothing).
         :type smooth: Float
         
         :rtype: :class:`MLkNNLearner`
@@ -297,7 +298,8 @@ class MLkNNClassifier(_multibase.MultiLabelClassifier):
             prob.append( prob_in / (prob_in + prob_out) )
        
         disc = Orange.statistics.distribution.Discrete(prob)
-        disc.variable = Orange.core.EnumVariable(values = [domain[val].name for index,val in enumerate(self.label_indices)])
+        disc.variable = Orange.core.EnumVariable(
+            values = [domain[val].name for index,val in enumerate(self.label_indices)])
         
         if result_type == Orange.classification.Classifier.GetValue:
             return labels

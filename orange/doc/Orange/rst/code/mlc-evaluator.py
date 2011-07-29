@@ -1,7 +1,7 @@
 import Orange
 
 learners = [Orange.multilabel.BinaryRelevanceLearner(name="br")]
-data = Orange.data.Table("multidata")
+data = Orange.data.Table("multidata.tab")
 
 res = Orange.evaluation.testing.cross_validation(learners, data)
 
