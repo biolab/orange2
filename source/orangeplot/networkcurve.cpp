@@ -146,6 +146,7 @@ m_u(0), m_v(0)
     m_size = 1;
     QPen p = pen();
 	p.setWidthF(m_size);
+    p.setCosmetic(true);
 	setPen(p);
 	setZValue(0);
 }
@@ -269,7 +270,7 @@ void NetworkCurve::update_properties()
     const QTransform t = graph_transform();
     const double scale = 1.0/zoom_factor();
     update_items(m_nodes, NodeUpdater(t, scale), UpdatePosition);
-    update_items(m_edges, EdgeUpdater(t, scale), UpdatePen);
+    update_items(m_edges, EdgeUpdater(t), UpdatePen);
 }
 
 QRectF NetworkCurve::data_rect() const

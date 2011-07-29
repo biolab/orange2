@@ -123,15 +123,12 @@ private:
 class EdgeUpdater
 {
 public:
-    EdgeUpdater(const QTransform& t, double scale) : m_t(t), m_scale(scale) {}
+    EdgeUpdater(const QTransform& t) : m_t(t){}
     void operator()(EdgeItem* item)
     {
         if (item->u() && item->v())
         {
             item->setLine(QLineF(item->u()->x(), item->u()->y(), item->v()->x(), item->v()->y()) * m_t);
-            QPen p = item->pen();
-            p.setWidthF(p.widthF() * m_scale);
-            item->setPen(p);
         }
     }
 private:
