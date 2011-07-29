@@ -434,9 +434,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.scale = numpy.array([1., 1., 1.])
         self.additional_scale = [0, 0, 0]
         self.scale_x_axis = True
-        self.scale_factor = 100.
+        self.scale_factor = 0.05
         self.data_scale = numpy.array([1., 1., 1.])
         self.data_center = numpy.array([0., 0., 0.])
+        self.zoomed_size = [self.view_cube_edge,
+                            self.view_cube_edge,
+                            self.view_cube_edge]
 
         self.state = PlotState.IDLE
 
@@ -1094,7 +1097,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         max = numpy.array(max)
         range_x, range_y, range_z = max-min
         self.data_center = (min + max) / 2 
-        self.zoom_stack.append((min, max))
 
         scale_x = self.view_cube_edge / range_x
         scale_y = self.view_cube_edge / range_y
@@ -1162,22 +1164,25 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
+        self.selections = []
+        self.zoom_stack.append((self.scale, self.translation))
+
         max = numpy.array([x_max, y_max, z_max])
         min = numpy.array([x_min, y_min, z_min])
-        self.selections = []
-        self.zoom_stack.append((min, max))
         min, max = map(numpy.copy, [min, max])
         min -= self.data_center
         min *= self.data_scale
         max -= self.data_center
         max *= self.data_scale
         center = (max + min) / 2.
-        num_steps = 10
         new_translation = -numpy.array(center)
         # Avoid division by zero by adding a small value (this happens when zooming in
         # on elements with the same value of an attribute).
-        size = numpy.array(map(lambda i: i+0.001 if i == 0 else i, max-min))
-        new_scale = self.view_cube_edge / size
+        self.size = numpy.array(map(lambda i: i+0.001 if i == 0 else i, max-min))
+        new_scale = self.view_cube_edge / self.size
+        self._animate_new_scale_translation(new_scale, new_translation)
+
+    def _animate_new_scale_translation(self, new_scale, new_translation, num_steps=10):
         translation_step = (new_translation - self.translation) / float(num_steps)
         scale_step = (new_scale - self.scale) / float(num_steps)
         # Animate zooming: translate first for a number of steps,
@@ -1197,12 +1202,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.updateGL()
 
     def pop_zoom(self):
-        if len(self.zoom_stack) < 2:
-            return
-
-        self.zoom_stack.pop()
-        min, max = self.zoom_stack.pop()
-        self.set_new_zoom(min[0], max[0], min[1], max[1], min[2], max[2])
+        if len(self.zoom_stack) < 1:
+            new_translation = numpy.array([0., 0., 0.])
+            new_scale = numpy.array([1., 1., 1.])
+        else:
+            new_scale, new_translation = self.zoom_stack.pop()
+        self._animate_new_scale_translation(new_scale, new_translation)
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
@@ -1257,7 +1262,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 if stencil > 0. and color < 4294967295:
                     indices.add(color)
 
-            print(indices)
             return indices
         else:
             projection = QMatrix4x4()
@@ -1297,7 +1301,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                         if any(sel.contains(x_win, y_win) for sel in self.selections):
                             indices.append(i)
 
-            print(indices)
             return indices
 
     def set_selection_type(self, type):
@@ -1391,8 +1394,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
-            self.additional_scale = [dx / self.scale_factor, dy / self.scale_factor, 0]\
-                if self.scale_x_axis else [0, dy / self.scale_factor, dx / self.scale_factor]
+            dx /= float(self.size[0 if self.scale_x_axis else 2])
+            dy /= float(self.size[1])
+            dx /= self.scale_factor * self.width()
+            dy /= self.scale_factor * self.height()
+            self.additional_scale = [dx, dy, 0] if self.scale_x_axis else [0, dy, dx]
         elif self.state == PlotState.PANNING:
             self.dragged_selection.move(dx, dy)
 
@@ -1421,8 +1427,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     self.selections.append(self.new_selection)
                     self.updateGL()
                     self.selection_changed_callback() if self.selection_changed_callback else None
-        elif self.state == PlotState.ROTATING:
-            self.state = PlotState.IDLE
         elif self.state == PlotState.PANNING:
             self.selection_changed_callback() if self.selection_changed_callback else None
 
