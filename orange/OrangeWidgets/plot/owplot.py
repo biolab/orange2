@@ -651,7 +651,7 @@ class OWPlot(orangeplot.Plot):
         self._pressed_mouse_button = event.button()
         if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
             self._selection_start_point = self.mapToScene(event.pos())
-            self._current_rs_item = QGraphicsRectItem(parent=self.graph_item, scene=self.scene())
+            self._current_rs_item = QGraphicsRectItem(scene=self.scene())
             self._current_rs_item.setPen(SelectionPen)
             self._current_rs_item.setBrush(SelectionBrush)
             self._current_rs_item.setZValue(SelectionZValue)
@@ -737,7 +737,7 @@ class OWPlot(orangeplot.Plot):
             if not self._current_ps_item:
                 self._current_ps_polygon = QPolygonF()
                 self._current_ps_polygon.append(point)
-                self._current_ps_item = QGraphicsPolygonItem(self.graph_item, self.scene())
+                self._current_ps_item = QGraphicsPolygonItem(scene=self.scene())
                 self._current_ps_item.setPen(SelectionPen)
                 self._current_ps_item.setBrush(SelectionBrush)
                 self._current_ps_item.setZValue(SelectionZValue)
