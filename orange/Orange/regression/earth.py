@@ -3,6 +3,8 @@
 Multivariate Adaptive Regression Splines (``earth``)
 ====================================================
 
+.. index:: regression, linear model
+
 `Multivariate adaptive regression splines (MARS)`_ is a non-parametric
 regression method that extends a linear model with non-linear
 interactions.
@@ -13,13 +15,34 @@ package`_ by Stephen Milborrow.
 .. _`Multivariate adaptive regression splines (MARS)`: http://en.wikipedia.org/wiki/Multivariate_adaptive_regression_splines
 .. _`Earth R package`: http://cran.r-project.org/web/packages/earth/index.html
 
+Example ::
+
+    >>> from Orange.regression import earth
+    >>> data = Orange.data.Table("housing")
+    >>> c = earth.EarthLearner(data, degree=2, terms=5)
+    >>> c.print_model()
+    MEDV =
+       23.710
+       +9.379 * max(0, RM - 6.431)
+       +1.714 * max(0, 6.431 - RM)
+       -0.656 * max(0, LSTAT - 6.120)
+       +2.748 * max(0, 6.120 - LSTAT)
+       
+    >>> 
+
+
 .. autoclass:: EarthLearner
+    :members:
 
 .. autoclass:: EarthClassifier
+    :members:
 
-.. autoclass:: EarthLearnerML
+Utility functions
+-----------------
 
-.. autoclass:: EarthClassifierML
+.. autofunction:: gcv
+
+.. autofunction:: plot_evimp
 
 """
 
@@ -44,8 +67,38 @@ class EarthLearner(Orange.core.LearnerFD):
                  min_span=0, new_var_penalty=0, fast_k=20, fast_beta=1,
                  pruned_terms=None, scale_resp=False, store_examples=True,
                  multi_label=False, **kwds):
-        """ 
+        """ Initialize the learner instance.
+        
+        :param degree: Maximum degree (num. of hinge functions per term)
+            of the terms in the model.
+        :type degree: int
+        :param terms: Maximum number of terms in the forward pass.
+        :type terms: int
+        :param penalty: Penalty for hinges in the GCV computation (used 
+            in the pruning pass). By default it is 3.0 if the degree > 1,
+            2.0 otherwise. 
+        :type penalty: float
+        :param thresh: Threshold for RSS decrease in the forward pass
+            (default 0.001).
+        :type thresh: float
+        :param min_span: TODO.
+        :param new_var_penalty: Penalty for introducing a new variable
+            in the model during the forward pass (default 0).
+        :type new_var_penalty: float
+        :param fast_k: Fast k.
+        :param fast_beta: Fast beta.
+        :param pruned_terms: Maximum number if terms in the model after
+            pruning (default None - no limit).
+        :type pruned_terms: int
+        :param scale_resp: Scale responses prior to forward pass.
+        :type scale_resp: bool
+        :param store_examples: Store training examples in the model (default True).
+        :type store_examples: bool
+        :param multi_label: If True build a multi label model (default False).
+        :type multi_label: bool  
+         
         .. todo:: min_span, prunning_method
+        
         """
         self.degree = degree
         self.terms = terms
@@ -177,6 +230,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
         :param example: example instance
         :type example: :class:`Orange.data.Example`
+        
         """
         data = Orange.data.Table(self.domain, [example])
         bx = self.base_matrix(data)
@@ -281,7 +335,7 @@ def base_matrix(data, best_set, dirs, cuts):
 def gcv(rss, n, n_effective_params):
     """ Return the generalized cross validation.
     
-    .. math: gcv = rss / (n * (1 - n_effective_params / n) ^ 2)
+    .. math:: gcv = rss / (n * (1 - NumEffectiveParams / n) ^ 2)
     
     :param rss: Residual sum of squares.
     :param n: Number of training examples.

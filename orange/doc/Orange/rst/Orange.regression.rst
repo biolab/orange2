@@ -7,4 +7,5 @@ Regression (``regression``)
 
    Orange.regression.mean
    Orange.regression.tree
+   Orange.regression.earth
 
