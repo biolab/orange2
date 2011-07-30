@@ -5,6 +5,7 @@
 """
 
 from plot.owplot3d import *
+from plot.owprimitives3d import get_symbol_data
 from plot.owplotgui import OWPlotGUI
 from OWLinProjQt import *
 
@@ -22,20 +23,45 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData):
 
         self.gui = OWPlotGUI(self)
 
+        self.sphere_data = get_symbol_data(Symbol.CIRCLE)
+        self.show_axes = self.show_chassis = self.show_grid = False
+
     def setData(self, data, subsetData=None, **args):
         orngScaleLinProjData.setData(self, data, subsetData, **args)
+
+    def updateGraph(self, attrList=None, setAnchors=0, insideColors=None, **args):
+        pass
+
+    def draw_callback(self):
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
+        glColor4f(1,0,0,1)
+
+        glScalef(5, 5, 5)
+        glBegin(GL_TRIANGLES)
+        for v0, v1, v2, n0, n1, n2 in self.sphere_data:
+            glVertex3f(*v0)
+            glVertex3f(*v1)
+            glVertex3f(*v2)
+        glEnd()
 
     def setCanvasColor(self, c):
         pass
 
     def updateData(self, labels=None, setAnchors=0, **args):
-        pass
+        self.commands.append(('custom', self.draw_callback))
+        self.updateGL()
 
     def getSelectionsAsExampleTables(self, attrList, useAnchorData=1, addProjectedPositions=0):
         return (None, None)
 
+    def removeAllSelections(self):
+        pass
+
     def replot(self):
         pass
+
+    # TODO: catch mouseEvents
 
 class OWRadviz3D(OWLinProjQt):
     settingsList = ['showAllAttributes']

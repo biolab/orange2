@@ -34,7 +34,7 @@ if __name__=="__main__":
     ow=OWRadvizQt()
     ow.show()
     #data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
-    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\iris.tab")
+    data = orange.ExampleTable('../../doc/datasets/iris')
     ow.setData(data)
     ow.handleNewSignals()
     a.exec_()
