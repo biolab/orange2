@@ -1150,3 +1150,11 @@ class OWPlot(orangeplot.Plot):
             a.start(QPropertyAnimation.KeepWhenStopped)
         else:
             target.setProperty(prop_name, end_val)
+            
+    def clear_selection(self):
+        ## TODO
+        pass
+    
+    def send_selection(self):
+        if self.auto_send_selection_callback:
+            self.auto_send_selection_callback()

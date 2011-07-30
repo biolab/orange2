@@ -4,7 +4,7 @@ import OWGUI
 from owconstants import *
 
 from PyQt4.QtGui import QWidget, QToolButton, QGroupBox, QVBoxLayout, QHBoxLayout, QIcon
-from PyQt4.QtCore import Qt, qDebug, pyqtSignal
+from PyQt4.QtCore import Qt, pyqtSignal
 
 class OrientedWidget(QWidget):
     def __init__(self, orientation, parent):
@@ -27,7 +27,6 @@ class StateButtonContainer(OrientedWidget):
             
     def button_clicked(self, checked):
         sender = self.sender()
-        qDebug(repr(sender))
         for button in self.buttons.itervalues():
             button.setDown(button is sender)
             
@@ -49,9 +48,17 @@ class AttributeChangeButton(QToolButton):
     downChanged = pyqtSignal('bool')
     
     def setDown(self, down):
-	self.downChanged.emit(down)
-	QToolButton.setDown(self, down)
-	
+        self.downChanged.emit(down)
+        QToolButton.setDown(self, down)
+    
+class CallbackButton(QToolButton):
+    def __init__(self, plot, callback, parent):
+        QToolButton.__init__(self, parent)
+        self.setMinimumSize(30, 30)
+        if type(callback) == str:
+            callback = getattr(plot, callback, None)
+        if callback:
+            self.clicked.connect(callback)
                     
 class OWPlotGUI:
     '''
@@ -78,11 +85,14 @@ class OWPlotGUI:
     SelectionToggle = 23
     SelectionOne = 24
     
+    SendSelection = 31
+    ClearSelection = 32
+    
     '''
         A map of 
         id : (name, attr_name, attr_value, icon_name)
     '''
-    _buttons = {
+    _attribute_buttons = {
         Zoom : ('Zoom', 'state', ZOOMING, 'Dlg_zoom'),
         Pan : ('Pan', 'state', PANNING, 'Dlg_pan_hand'),
         Select : ('Select', 'state', SELECT, 'Dlg_arrow'),
@@ -90,6 +100,11 @@ class OWPlotGUI:
         SelectionRemove : ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, ''),
         SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, ''),
         SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_ONE, '')
+    }
+    
+    _action_buttons = {
+        SendSelection : ('Send selection', None, 'Dlg_send'),
+        ClearSelection : ('Clear selection', 'clear_selection', 'Dlg_clear')
     }
 
     def _get_callback(self, name):
@@ -161,12 +176,18 @@ class OWPlotGUI:
         return box
         
     def tool_button(self, id, widget):
-        if id not in self._buttons:
-            return None
-        name, attr_name, attr_value, icon_name = self._buttons[id]
-        b = AttributeChangeButton(self._plot, attr_name, attr_value, widget)
+        if id in self._attribute_buttons:
+            name, attr_name, attr_value, icon_name = self._attribute_buttons[id]
+            b = AttributeChangeButton(self._plot, attr_name, attr_value, widget)
+        elif id in self._action_buttons:
+            name, cb, icon_name = self._action_buttons[id]
+            b = CallbackButton(self._plot, cb, widget)
+        else:
+            return
         b.setToolTip(name)
         b.setIcon(QIcon(os.path.dirname(__file__) + "/../icons/" + icon_name + '.png'))
+        if widget.layout():
+            widget.layout().addWidget(b)
         return b
         
     def state_buttons(self, ids, orientation, widget):
@@ -176,14 +197,20 @@ class OWPlotGUI:
         '''
         return StateButtonContainer(self, ids, orientation, widget)
         
-    def zoom_select_toolbar(self, widget, orientation = Qt.Horizontal):
+    def zoom_select_toolbar(self, widget, orientation = Qt.Horizontal, send_selection_callback = None):
         o = 'vertial' if orientation == Qt.Vertical else 'horizontal'
         t = OWGUI.widgetBox(widget, 'Zoom / Select', orientation=o)
         zps = self.state_buttons([OWPlotGUI.Zoom, OWPlotGUI.Pan, OWPlotGUI.Select], orientation, t)
         t.layout().addWidget(zps)
         selection_modes = self.state_buttons([OWPlotGUI.SelectionOne, OWPlotGUI.SelectionAdd, OWPlotGUI.SelectionRemove], orientation, t)
+        t.layout().addSpacing(10)
         t.layout().addWidget(selection_modes)
         zps.button(OWPlotGUI.Select).downChanged.connect(selection_modes.setEnabled)
         zps.button(OWPlotGUI.Select).downChanged.connect(selection_modes.button(OWPlotGUI.SelectionOne).click)
         zps.button(OWPlotGUI.Zoom).click()
+        t.layout().addSpacing(10)
+        self.tool_button(OWPlotGUI.ClearSelection, t)
+        b = self.tool_button(OWPlotGUI.SendSelection, t)
+        if send_selection_callback:
+            b.clicked.connect(send_selection_callback)
         return t
