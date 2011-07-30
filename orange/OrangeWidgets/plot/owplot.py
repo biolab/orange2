@@ -9,13 +9,6 @@ Plot (``owplot``)
     
 '''
 
-NOTHING = 0
-ZOOMING = 1
-SELECT_RECTANGLE = 2
-SELECT_POLYGON = 3
-PANNING = 4
-SELECT = 5
-
 LeftLegend = 0
 RightLegend = 1
 BottomLegend = 2
