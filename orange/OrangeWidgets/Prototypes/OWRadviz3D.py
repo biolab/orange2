@@ -16,6 +16,12 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData):
         OWPlot3D.__init__(self, parent)
         orngScaleLinProjData.__init__(self)
 
+        self.show_value_lines = False
+        self.value_line_length = 0
+        self.use_different_symbols = True
+        self.use_different_colors = True
+        self.send_selection_on_update = False
+
     def set_data(self, data, subset_data=None, **args):
         orngScaleLinProjData.setData(self, data, subset_data, **args)
 
@@ -93,49 +99,45 @@ class OWRadviz3D(OWVisWidget):
         box = OWGUI.widgetBox(self.settings_tab, "General Graph Settings")
         #self.graph.gui.show_legend_check_box(box)
         bbox = OWGUI.widgetBox(box, orientation="horizontal")
-        #OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
-        #OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
-        #OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
-        #OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
-        #self.graph.gui.filled_symbols_check_box(box)
-        #self.graph.gui.antialiasing_check_box(box)
-        #wbox = OWGUI.widgetBox(box, orientation = "horizontal")
-        #OWGUI.checkBox(wbox, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
-        #smallWidget = OWGUI.SmallWidgetLabel(wbox, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
-        #OWGUI.rubber(wbox)
+        OWGUI.checkBox(bbox, self, 'plot.show_value_lines', 'Show value lines  ', callback=self.update_plot)
+        OWGUI.qwtHSlider(bbox, self, 'plot.value_line_length', minValue=1, maxValue=10, step=1, callback=self.update_plot, showValueLabel=0)
+        OWGUI.checkBox(box, self, 'plot.use_different_symbols', 'Use different symbols', callback=self.update_plot,
+            tooltip="Show different class values using different symbols")
+        OWGUI.checkBox(box, self, 'plot.use_different_colors', 'Use different colors',
+            callback=self.update_plot, tooltip="Show different class values using different colors")
 
         box = OWGUI.widgetBox(self.settings_tab, "Colors", orientation="horizontal")
         OWGUI.button(box, self, "Colors", self.set_colors,
             tooltip="Set the canvas background color and color palette for coloring variables",
             debuggingEnabled=0)
 
-        #box = OWGUI.widgetBox(self.settings_tab, "Tooltips Settings")
-        #OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
-        #OWGUI.comboBox(box, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
+        self.tooltip_kind = 0
+        self.tooltip_value = 0
+        box = OWGUI.widgetBox(self.settings_tab, "Tooltips Settings")
+        OWGUI.comboBox(box, self, "tooltip_kind",
+            items=["Show line tooltips", "Show visible attributes", "Show all attributes"],
+            callback=self.update_plot)
+        OWGUI.comboBox(box, self, "tooltip_value",
+            items=["Tooltips show data values", "Tooltips show spring values"],
+            callback=self.update_plot,
+            tooltip="Do you wish that tooltips would show you original values of visualized"+\
+                    "attributes or the 'spring' values (values between 0 and 1). \nSpring values "+\
+                    "are scaled values that are used for determining the position of shown points."+\
+                    "Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
-        #box = OWGUI.widgetBox(self.SettingsTab, "Auto Send Selected Data When...")
-        #OWGUI.checkBox(box, self, 'autoSendSelection', 'Adding/Removing selection areas', callback = self.selectionChanged, tooltip = "Send selected data whenever a selection area is added or removed")
-        #OWGUI.checkBox(box, self, 'graph.sendSelectionOnUpdate', 'Moving/Resizing selection areas', tooltip = "Send selected data when a user moves or resizes an existing selection area")
-        #OWGUI.comboBox(box, self, "addProjectedPositions", items = ["Do not modify the domain", "Append projection as attributes", "Append projection as meta attributes"], callback = self.sendSelections)
-        #self.selectionChanged()
-
-        #box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
-        #OWGUI.widgetLabel(box, "Granularity:  ")
-        #OWGUI.hSlider(box, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
-
-        #box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
-        #OWGUI.checkBox(box, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
+        self.auto_send_selection = 0
+        self.add_projected_positions = 0
+        box = OWGUI.widgetBox(self.settings_tab, "Auto Send Selected Data When...")
+        OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
+            callback=self.selection_changed, tooltip="Send selected data whenever a selection area is added or removed")
+        OWGUI.checkBox(box, self, 'plot.send_selection_on_update', 'Moving/Resizing selection areas',
+            tooltip="Send selected data when a user moves or resizes an existing selection area")
+        OWGUI.comboBox(box, self, "add_projected_positions",
+            items=["Do not modify the domain", "Append projection as attributes", "Append projection as meta attributes"],
+            callback=self.send_selections)
+        self.selection_changed()
 
         self.settings_tab.layout().addStretch(100)
-
-        #self.icons = self.createAttributeIconDict()
-        #self.debugSettings = ["hiddenAttributes", "shownAttributes"]
-
-        #dlg = self.createColorDialog()
-        #self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        #self.graph.discPalette = dlg.getDiscretePalette("discPalette")
-        #self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-
         self.resize(900, 700)
 
     def selection_changed(self):
