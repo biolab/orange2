@@ -35,7 +35,8 @@ public:
     {
         AddSelection,
         RemoveSelection,
-        ToggleSelection
+        ToggleSelection,
+        ReplaceSelection
     };
     
     Plot(QWidget* parent /TransferThis/ = 0);
@@ -58,8 +59,11 @@ public:
     
     void select_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void select_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void unselect_all_points();
+    
     void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void unmark_all_points();
     
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
     Point* nearest_point(const DataPoint& pos, double max_distance);

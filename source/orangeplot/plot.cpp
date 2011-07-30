@@ -161,21 +161,41 @@ void Plot::set_graph_rect(const QRectF rect)
 
 void Plot::mark_points(const QRectF& rect, Plot::SelectionBehavior behavior)
 {
+    if (behavior == ReplaceSelection)
+    {
+        unmark_all_points();
+        behavior = AddSelection;
+    }
     set_points_state(rect, scene(), Point::Marked, behavior);
 }
 
 void Plot::mark_points(const QPolygonF& area, Plot::SelectionBehavior behavior)
 {
+    if (behavior == ReplaceSelection)
+    {
+        unmark_all_points();
+        behavior = AddSelection;
+    }
     set_points_state(area, scene(), Point::Marked, behavior);
 }
 
 void Plot::select_points(const QRectF& rect, Plot::SelectionBehavior behavior)
 {
+    if (behavior == ReplaceSelection)
+    {
+        unselect_all_points();
+        behavior = AddSelection;
+    }
     set_points_state(rect, scene(), Point::Selected, behavior);
 }
 
 void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior)
 {
+    if (behavior == ReplaceSelection)
+    {
+        unselect_all_points();
+        behavior = AddSelection;
+    }
     set_points_state(area, scene(), Point::Selected, behavior);
 }
 
@@ -279,5 +299,31 @@ void Plot::remove_all_points(PlotItem* parent)
         m_point_hash[parent].clear();
     }
 }
+
+void Plot::unmark_all_points()
+{
+    foreach (const PointHash& hash, m_point_hash)
+    {
+        foreach (Point* point, hash)
+        {
+            point->set_marked(false);
+        }
+    }
+}
+
+void Plot::unselect_all_points()
+{
+    int i = 0;
+    foreach (const PointHash& hash, m_point_hash)
+    {
+        foreach (Point* point, hash)
+        {
+            ++i;
+            point->set_selected(false);
+        }
+    }
+    qDebug() << "Unselected" << i << "points";
+}
+
 
 #include "plot.moc"

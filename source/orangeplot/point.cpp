@@ -283,7 +283,7 @@ void Point::set_state_flag(Point::StateFlag flag, bool on) {
     }
     else
     {
-        m_size &= ~flag;
+        m_state &= ~flag;
     }
     update();
 }

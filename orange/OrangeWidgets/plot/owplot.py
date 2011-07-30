@@ -848,9 +848,12 @@ class OWPlot(orangeplot.Plot):
             gr = self.graph_area
             d = 10 * max(dr.width(), dr.height()) / max(gr.width(), gr.height())
             point_item = self.nearest_point(self.map_from_graph(point), d)
-            qDebug(repr(self.map_from_graph(point)) + ' ' + repr(point_item))
+            b = self.selection_behavior
+            if b == self.ReplaceSelection:
+                self.unselect_all_points()
+                b = self.AddSelection
             if point_item:
-                point_item.set_selected(True)
+                point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
         else:
             return False
             

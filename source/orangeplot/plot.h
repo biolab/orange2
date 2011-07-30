@@ -18,7 +18,8 @@ public:
     {
         AddSelection,
         RemoveSelection,
-        ToggleSelection
+        ToggleSelection,
+        ReplaceSelection
     };
     
     typedef QSet<DataPoint> PointSet;
@@ -73,12 +74,15 @@ public:
     void add_points(const Data& data, const QList<Point*>& items, PlotItem* parent);
     void remove_point(const DataPoint& pos, PlotItem* parent);
     void remove_all_points(PlotItem* parent);
+    
+    void unselect_all_points();
+    void unmark_all_points();
        
 protected:
     void set_clean();
     bool is_dirty();
     
-private:
+private:    
     QList<PlotItem*> m_items;
     bool m_dirty;
     QGraphicsRectItem* clipItem;

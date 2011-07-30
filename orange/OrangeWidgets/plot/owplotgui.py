@@ -99,7 +99,7 @@ class OWPlotGUI:
         SelectionAdd : ('Add to selection', 'selection_behavior', SELECTION_ADD, ''),
         SelectionRemove : ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, ''),
         SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, ''),
-        SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_ONE, '')
+        SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_REPLACE, '')
     }
     
     _action_buttons = {
