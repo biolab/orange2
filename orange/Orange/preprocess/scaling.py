@@ -538,6 +538,7 @@ class ScaleLinProjData(ScaleData):
 
     @deprecated_keywords({"xAnchors": "xanchors", "yAnchors": "yanchors"})
     def set_anchors(self, xanchors, yanchors, attributes):
+        print('set anchors')
         if attributes:
             if xanchors != None and yanchors != None:
                 self.anchor_data = [(xanchors[i], yanchors[i], attributes[i])
@@ -553,6 +554,7 @@ class ScaleLinProjData(ScaleData):
         Create anchors around the circle.
         
         """
+        print('create anchors')
         xanchors = self.create_xanchors(num_of_attr)
         yanchors = self.create_yanchors(num_of_attr)
         if labels:
@@ -692,6 +694,7 @@ class ScaleLinProjData(ScaleData):
     @deprecated_keywords({"attrIndices": "attr_indices",
                           "settingsDict": "settings_dict"})
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
+        print('create projection as numeric array')
         # load the elements from the settings dict
         validData = settings_dict.get("validData")
         classList = settings_dict.get("classList")
@@ -794,6 +797,137 @@ class ScaleLinProjData(ScaleData):
 
     createProjectionAsNumericArray = create_projection_as_numeric_array
     
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_numeric_array_3D(self, attr_indices, **settings_dict):
+        print('create projection as numeric array')
+        # load the elements from the settings dict
+        validData = settings_dict.get("validData")
+        classList = settings_dict.get("classList")
+        sum_i     = settings_dict.get("sum_i")
+        XAnchors = settings_dict.get("XAnchors")
+        YAnchors = settings_dict.get("YAnchors")
+        ZAnchors = settings_dict.get("ZAnchors")
+        scaleFactor = settings_dict.get("scaleFactor", 1.0)
+        normalize = settings_dict.get("normalize")
+        jitterSize = settings_dict.get("jitterSize", 0.0)
+        useAnchorData = settings_dict.get("useAnchorData", 0)
+        removeMissingData = settings_dict.get("removeMissingData", 1)
+        useSubsetData = settings_dict.get("useSubsetData", 0)        # use the data or subsetData?
+        #minmaxVals = settings_dict.get("minmaxVals", None)
+
+        # if we want to use anchor data we can get attr_indices from the anchor_data
+        if useAnchorData and self.anchor_data:
+            attr_indices = [self.attribute_name_index[val[3]] for val in self.anchor_data]
+
+        if validData == None:
+            if useSubsetData: validData = self.get_valid_subset_list(attr_indices)
+            else:             validData = self.get_valid_list(attr_indices)
+        if sum(validData) == 0:
+            return None
+
+        if classList == None and self.data_domain.class_var:
+            if useSubsetData: classList = self.original_subset_data[self.data_class_index]
+            else:             classList = self.original_data[self.data_class_index]
+
+        # if jitterSize is set below zero we use scaled_data that has already jittered data
+        if useSubsetData:
+            if jitterSize < 0.0: data = self.scaled_subset_data
+            else:                data = self.no_jittering_scaled_subset_data
+        else:
+            if jitterSize < 0.0: data = self.scaled_data
+            else:                data = self.no_jittering_scaled_data
+
+        selectedData = numpy.take(data, attr_indices, axis = 0)
+        if removeMissingData:
+            selectedData = numpy.compress(validData, selectedData, axis = 1)
+            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
+                classList = numpy.compress(validData, classList)
+
+        if useAnchorData and self.anchor_data:
+            XAnchors = numpy.array([val[0] for val in self.anchor_data])
+            YAnchors = numpy.array([val[1] for val in self.anchor_data])
+            ZAnchors = numpy.array([val[2] for val in self.anchor_data])
+            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
+            if normalize == 1 or (normalize == None and self.normalize_examples):
+                XAnchors *= r
+                YAnchors *= r
+                ZAnchors *= r
+        elif (XAnchors != None and YAnchors != None and ZAnchors != None):
+            XAnchors = numpy.array(XAnchors);
+            YAnchors = numpy.array(YAnchors)
+            ZAnchors = numpy.array(ZAnchors)
+            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
+        else:
+            # Golden Section Spiral algorithm approximates even distribution of points on a sphere
+            # (read more here http://www.softimageblog.com/archives/115)
+            n = len(attr_indices)
+            XAnchors = []
+            YAnchors = []
+            ZAnchors = []
+
+            inc = math.pi * (3 - math.sqrt(5))
+            off = 2. / n
+            for k in range(n):
+                y = k * off - 1 + (off / 2)
+                r = math.sqrt(1 - y*y)
+                phi = k * inc
+                XAnchors.append(math.cos(phi)*r)
+                YAnchors.append(y)
+                ZAnchors.append(math.sin(phi)*r)
+            r = numpy.ones(len(XAnchors), numpy.float)
+
+        x_positions = numpy.dot(XAnchors, selectedData)
+        y_positions = numpy.dot(YAnchors, selectedData)
+        z_positions = numpy.dot(ZAnchors, selectedData)
+
+        if normalize == 1 or (normalize == None and self.normalize_examples):
+            if sum_i == None:
+                sum_i = self._getSum_i(selectedData, useAnchorData, r)
+            x_positions /= sum_i
+            y_positions /= sum_i
+            z_positions /= sum_i
+            self.trueScaleFactor = scaleFactor
+        else:
+            if not removeMissingData:
+                try:
+                    x_validData = numpy.compress(validData, x_positions)
+                    y_validData = numpy.compress(validData, y_positions)
+                    z_validData = numpy.compress(validData, z_positions)
+                except:
+                    print validData
+                    print x_positions
+                    print numpy.shape(validData)
+                    print numpy.shape(x_positions)
+            else:
+                x_validData = x_positions
+                y_validData = y_positions
+            
+            dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData + z_validData*z_validData)) or 1
+            self.trueScaleFactor = scaleFactor / dist
+
+        self.unscaled_x_positions = numpy.array(x_positions)
+        self.unscaled_y_positions = numpy.array(y_positions)
+        self.unscaled_z_positions = numpy.array(z_positions)
+
+        if self.trueScaleFactor != 1.0:
+            x_positions *= self.trueScaleFactor
+            y_positions *= self.trueScaleFactor
+            z_positions *= self.trueScaleFactor
+
+        if jitterSize > 0.0:
+            x_positions += numpy.random.uniform(-jitterSize, jitterSize, len(x_positions))
+            y_positions += numpy.random.uniform(-jitterSize, jitterSize, len(y_positions))
+            z_positions += numpy.random.uniform(-jitterSize, jitterSize, len(z_positions))
+
+        self.last_attr_indices = attr_indices
+        if classList != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, z_positions, classList)))
+        else:
+            return numpy.transpose(numpy.array((x_positions, y_positions, z_positions)))
+
+    createProjectionAsNumericArray3D = create_projection_as_numeric_array_3D
+ 
     @deprecated_keywords({"useAnchorData": "use_anchor_data",
                           "anchorRadius": "anchor_radius"})
     def _getsum_i(self, data, use_anchor_data = 0, anchor_radius = None):
@@ -822,6 +956,7 @@ ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
                                        "get_projected_point_position": "get_projected_point_position",
                                        "create_projection_as_example_table": "create_projection_as_example_table",
                                        "create_projection_as_numeric_array": "create_projection_as_numeric_array",
+                                       "create_projection_as_numeric_array_3D": "create_projection_as_numeric_array_3D",
                                        "_getSum_i": "_getsum_i",
                                        "normalizeExamples": "normalize_examples",
                                        "anchorData": "anchor_data",
