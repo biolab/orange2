@@ -11,10 +11,21 @@ Continuous = orange.VarTypes.Continuous
 import OWGUI
 import OWToolbars
 import OWColorPalette
+import orngVizRank
+from OWkNNOptimization import *
+from orngScaleScatterPlotData import *
 
 import numpy
 
 TooltipKind = enum('NONE', 'VISIBLE', 'ALL') # Which attributes should be displayed in tooltips?
+
+class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
+    def __init__(self, parent=None):
+        OWPlot3D.__init__(self, parent)
+        orngScaleScatterPlotData.__init__(self)
+
+    def set_data(self, data, subsetData=None, **args):
+        orngScaleScatterPlotData.setData(self, data, subsetData, **args)
 
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
@@ -23,7 +34,7 @@ class OWScatterPlot3D(OWWidget):
                     'plot.show_chassis', 'plot.show_axes',
                     'auto_send_selection', 'auto_send_selection_update',
                     'jitter_size', 'jitter_continuous']
-    contextHandlers = {"": DomainContextHandler("", ["xAttr", "yAttr", "zAttr"])}
+    contextHandlers = {"": DomainContextHandler("", ["x_attr", "y_attr", "z_attr"])}
     jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
     def __init__(self, parent=None, signalManager=None, name="Scatter Plot 3D"):
@@ -94,7 +105,14 @@ class OWScatterPlot3D(OWWidget):
             emptyString = '(No labels)'
             )
 
-        self.plot = OWPlot3D(self)
+        self.plot = ScatterPlot(self)
+        self.vizrank = OWVizRank(self, self.signalManager, self.plot, orngVizRank.SCATTERPLOT3D, "ScatterPlot3D")
+        self.optimization_dlg = self.vizrank
+
+        self.optimization_buttons = OWGUI.widgetBox(self.main_tab, 'Optimization dialogs', orientation='horizontal')
+        OWGUI.button(self.optimization_buttons, self, "VizRank", callback=self.vizrank.reshow,
+            tooltip='Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes',
+            debuggingEnabled=0)
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
         OWGUI.hSlider(box, self, "plot.symbol_scale", label="Symbol scale",
@@ -245,6 +263,7 @@ class OWScatterPlot3D(OWWidget):
     def set_data(self, data=None):
         self.closeContext("")
         self.data = data
+        self.plot.set_data(data)
         self.x_attr_cb.clear()
         self.y_attr_cb.clear()
         self.z_attr_cb.clear()
@@ -466,6 +485,29 @@ class OWScatterPlot3D(OWWidget):
             if self.z_attr_discrete or self.jitter_continuous:
                 Z += (numpy.random.random(len(Z))-0.5) * (self.jitter_size * z_range / 100.)
         return X, Y, Z, None
+
+    def showSelectedAttributes(self):
+        val = self.vizrank.getSelectedProjection()
+        if not val: return
+        if self.data.domain.classVar:
+            self.attr_color = self.attr_name_index[self.data.domain.classVar.name]
+        if not self.plot.have_data:
+            return
+        attr_list = val[3]
+        if attr_list and len(attr_list) == 3:
+            self.x_attr = self.attr_name_index[attr_list[0]]
+            self.y_attr = self.attr_name_index[attr_list[1]]
+            self.z_attr = self.attr_name_index[attr_list[2]]
+
+        #if self.graph.dataHasDiscreteClass and (self.vizrank.showKNNCorrectButton.isChecked() or self.vizrank.showKNNWrongButton.isChecked()):
+        #    kNNExampleAccuracy, probabilities = self.vizrank.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
+        #    if self.vizrank.showKNNCorrectButton.isChecked(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
+        #    else: kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
+        #else:
+        #    kNNExampleAccuracy = None
+        #self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
+        #self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.attrLabel)
+        self.update_plot()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

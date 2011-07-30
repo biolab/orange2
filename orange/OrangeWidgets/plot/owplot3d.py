@@ -385,14 +385,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
-        void = lambda: None
-        self.activateZooming = void
-        self.activateRectangleSelection = void
-        self.activatePolygonSelection = void
-        self.activatePanning = void
-        self.activateSelection = void
-        self.removeLastSelection = void
-
         self.commands = []
         self.minx = self.miny = self.minz = 0
         self.maxx = self.maxy = self.maxz = 0

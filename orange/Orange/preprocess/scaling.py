@@ -1088,6 +1088,36 @@ class ScaleScatterPlotData(ScaleData):
 
     @deprecated_keywords({"attrIndices": "attr_indices",
                           "settingsDict": "settings_dict"})
+    def create_projection_as_example_table_3D(self, attr_indices, **settings_dict):
+        """
+        Create the projection of attribute indices given in attr_indices and
+        create an example table with it.
+        
+        """
+        if self.data_has_class:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[2]].name),
+                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                                                                       values = get_variable_values_sorted(self.data_domain.class_var))])
+        else:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[2]].name)])
+
+        data = self.create_projection_as_numeric_array_3D(attr_indices,
+                                                          **settings_dict)
+        if data != None:
+            return Orange.data.Table(domain, data)
+        else:
+            return Orange.data.Table(domain)
+
+    createProjectionAsExampleTable3D = create_projection_as_example_table_3D
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
         validData = settings_dict.get("validData")
         classList = settings_dict.get("classList")
@@ -1114,6 +1144,37 @@ class ScaleScatterPlotData(ScaleData):
         return data
 
     createProjectionAsNumericArray = create_projection_as_numeric_array
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_numeric_array_3D(self, attr_indices, **settings_dict):
+        validData = settings_dict.get("validData")
+        classList = settings_dict.get("classList")
+        jitterSize = settings_dict.get("jitter_size", 0.0)
+
+        if validData == None:
+            validData = self.get_valid_list(attr_indices)
+        if sum(validData) == 0:
+            return None
+
+        if classList == None and self.data_has_class:
+            classList = self.original_data[self.data_class_index]
+
+        xArray = self.no_jittering_scaled_data[attr_indices[0]]
+        yArray = self.no_jittering_scaled_data[attr_indices[1]]
+        zArray = self.no_jittering_scaled_data[attr_indices[2]]
+        if jitterSize > 0.0:
+            xArray += (numpy.random.random(len(xArray))-0.5)*jitterSize
+            yArray += (numpy.random.random(len(yArray))-0.5)*jitterSize
+            zArray += (numpy.random.random(len(zArray))-0.5)*jitterSize
+        if classList != None:
+            data = numpy.compress(validData, numpy.array((xArray, yArray, zArray, classList)), axis = 1)
+        else:
+            data = numpy.compress(validData, numpy.array((xArray, yArray, zArray)), axis = 1)
+        data = numpy.transpose(data)
+        return data
+
+    createProjectionAsNumericArray3D = create_projection_as_numeric_array_3D
 
     @deprecated_keywords({"attributeNameOrder": "attribute_name_order",
                           "addResultFunct": "add_result_funct"})
@@ -1185,6 +1246,8 @@ ScaleScatterPlotData = deprecated_members({"getOriginalData": "get_original_data
                                            "getXYSubsetDataPositions": "get_xy_subset_data_positions",
                                            "getProjectedPointPosition": "get_projected_point_position",
                                            "createProjectionAsExampleTable": "create_projection_as_example_table",
+                                           "createProjectionAsExampleTable3D": "create_projection_as_example_table_3D",
                                            "createProjectionAsNumericArray": "create_projection_as_numeric_array",
+                                           "createProjectionAsNumericArray3D": "create_projection_as_numeric_array_3D",
                                            "getOptimalClusters": "get_optimal_clusters"
                                            })(ScaleScatterPlotData)
