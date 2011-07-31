@@ -1024,15 +1024,20 @@ def test_on_data(classifiers, testset, test_results=None, iteration_number=0, st
     """
 
     testset, testweight = demangleExamples(testset)
-
+    multilabel_flag = label.is_multilabel(testset)
+    
     if not test_results:
-        classVar = testset.domain.classVar
-        if testset.domain.classVar.varType == Orange.data.Type.Discrete:
-            values = classVar.values.native()
-            baseValue = classVar.baseValue
+        if multilabel_flag == 0:
+            classVar = testset.domain.classVar
+            if testset.domain.classVar.varType == Orange.data.Type.Discrete:
+                values = classVar.values.native()
+                baseValue = classVar.baseValue
+            else:
+                values = None
+                baseValue = -1
         else:
-            values = None
-            baseValue = -1
+             values = label.get_label_names(testset)
+             base_value = None
         test_results=ExperimentResults(1, [l.name for l in classifiers], values,
                                        testweight!=0, baseValue)
 
@@ -1048,7 +1053,6 @@ def test_on_data(classifiers, testset, test_results=None, iteration_number=0, st
         # We do not clone at the first iteration - cloning might never be needed at all...
         test_results.examples = testset
     
-    multilabel_flag = label.is_multilabel(testset)
     if multilabel_flag == 0:
         conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float
       

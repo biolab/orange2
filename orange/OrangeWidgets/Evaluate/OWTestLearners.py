@@ -210,6 +210,14 @@ class OWTestLearners(OWWidget):
             return False 
         return label.is_multilabel(self.data) == 1
     
+    def set_usestat(self):
+        #usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        if self.is_multilabel():
+            usestat = self.selectedMScores
+        else:
+            usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        return usestat
+    
     def paintscores(self):
         """paints the table with evaluation scores"""
 
@@ -240,7 +248,8 @@ class OWTestLearners(OWWidget):
         # adjust the width of the score table cloumns
         self.tab.resizeColumnsToContents()
         self.tab.resizeRowsToContents()
-        usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        usestat = self.set_usestat()
+        
         for i in range(len(self.stat)):
             if i not in usestat:
                 self.tab.hideColumn(i+1)
@@ -253,10 +262,15 @@ class OWTestLearners(OWWidget):
             exset = [("Repetitions", self.pRepeat), ("Proportion of training instances", "%i%%" % self.pLearning)]
         else:
             exset = []
-        self.reportSettings("Validation method",
+        if not self.is_multilabel():
+            self.reportSettings("Validation method",
                             [("Method", self.resamplingMethods[self.resampling])]
                             + exset +
                             ([("Target class", self.data.domain.classVar.values[self.targetClass])] if self.data else []))
+        else:
+             self.reportSettings("Validation method",
+                            [("Method", self.resamplingMethods[self.resampling])]
+                            + exset)
         
         self.reportData(self.data)
 
@@ -265,8 +279,7 @@ class OWTestLearners(OWWidget):
             learners = [(l.time, l) for l in self.learners.values()]
             learners.sort()
             learners = [lt[1] for lt in learners]
-            usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
-            
+            usestat = self.set_usestat()
             res = "<table><tr><th></th>"+"".join("<th><b>%s</b></th>" % hr for hr in [s.label for i, s in enumerate(self.stat) if i in usestat])+"</tr>"
             for i, l in enumerate(learners):
                 res += "<tr><th><b>%s</b></th>" % l.name
@@ -538,10 +551,7 @@ class OWTestLearners(OWWidget):
 
     def newscoreselection(self):
         """handle change in set of scores to be displayed"""
-        if self.is_multilabel():
-            usestat = self.selectedMScores
-        else:
-            usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        usestat = self.set_usestat()
         
         for i in range(len(self.stat)):
             if i in usestat:
