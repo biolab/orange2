@@ -1,3 +1,28 @@
+'''
+    
+.. index:: plot
+
+######################################
+GUI elements for plots (``owplotgui``)
+######################################
+
+.. autoclass:: OrientedWidget
+    :show-inheritance:
+    
+.. autoclass:: StateButtonContainer
+    :show-inheritance:
+    
+.. autoclass:: OWToolbar
+    :show-inheritance:
+    
+.. autoclass:: OWButton
+    :show-inheritance:
+
+.. autoclass:: OrangeWidgets.plot.OWPlotGUI
+    :members:
+
+'''
+
 import os
 import OWGUI
 
@@ -8,6 +33,9 @@ from PyQt4.QtCore import Qt, pyqtSignal, qDebug
 
 
 class OrientedWidget(QWidget):
+    '''
+        A simple QWidget with a box layout that matches its ``orientation``. 
+    '''
     def __init__(self, orientation, parent):
         QWidget.__init__(self, parent)
         if orientation == Qt.Vertical:
@@ -17,6 +45,9 @@ class OrientedWidget(QWidget):
         self.setLayout(self._layout)
 
 class OWToolbar(OrientedWidget):
+    '''
+        A toolbar is a container that can contain any number of buttons.  
+    '''
     def __init__(self, gui, text, orientation, buttons, parent):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
@@ -49,6 +80,9 @@ class OWToolbar(OrientedWidget):
 
 
 class StateButtonContainer(OrientedWidget):
+    '''
+        This class can contain any number of checkable buttons, of which only one can be selected at any time. 
+    '''
     def __init__(self, gui, ids, orientation, parent):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
@@ -75,6 +109,24 @@ class StateButtonContainer(OrientedWidget):
             self._clicked_button.click()
                     
 class OWButton(QToolButton):
+    '''
+        A custom tool button that can set and attribute or call a function when clicked. 
+        
+        :param plot: The object whose attributes will be modified
+        :type plot: :obj:`.OWPlot`
+        
+        :param attr_name: Name of attribute which will be set when the button is clicked. 
+                          If this parameter is empty or None, no attribute will be set. 
+        :type attr_name: str
+        
+        :param attr_value: The value that will be assigned to the ``attr_name`` when the button is clicked. 
+        :type attr: any
+        
+        :param callback: Function to be called when the button is clicked. 
+                         If a string is passed as ``callback``, a method by that name of ``plot`` will be called. 
+                         If this parameter is empty or None, no function will be called
+        :type callback: str or function
+    '''
     def __init__(self, plot, attr_name, attr_value, callback, parent):
         QToolButton.__init__(self, parent)
         self.setMinimumSize(30, 30)
@@ -236,6 +288,18 @@ class OWPlotGUI:
         return box
         
     def tool_button(self, id, widget):
+        '''
+            Creates an :obj:`.OWButton` and adds it to the parent ``widget``. 
+            
+            :param id: If ``id`` is an ``int``, a button is constructed from the default table. 
+                       Otherwise, ``id`` must be tuple of size 4 or 5 with members. The first is optional and 
+                       is a unique identifier for the button, the second is its name, and
+                       the last three are the ``attr_name``, ``attr_value`` and ``callback`` arguments to :obj:`.OWButton`
+            :type if: int or tuple
+            
+            :param widget: The button's parent widget
+            :type widget: QWidget
+        '''
         if type(id) == int:
             name, attr_name, attr_value, callback, icon_name = self._buttons[id]
         elif len(id) == 4:
