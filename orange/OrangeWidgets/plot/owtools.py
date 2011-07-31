@@ -3,6 +3,12 @@
 Plot tools (``owtools``)
 ##############################
 
+.. autofunction:: resize_plot_item_list
+
+.. autofunction:: move_item
+
+.. autofunction:: move_item_xy
+
 .. autoclass:: TooltipManager
     :members:
     
@@ -38,7 +44,22 @@ def resize_plot_item_list(lst, size, item_type, parent):
         Efficiently resizes a list of QGraphicsItems (PlotItems, Curves, etc.). 
         If the list is to be reduced, i.e. if len(lst) > size, then the extra items are first removed from the scene.
         If items have to be added to the scene, new items will be of type ``item_type`` and will have ``parent``
-        as their parent item. 
+        as their parent item.
+        
+        :param lst: The list to be resized
+        :type lst: List of QGraphicsItems
+        
+        :param size: The needed size of the list
+        :type size: int
+        
+        :param item_type: The type of items that should be added if the list has to be increased
+        :type item_type: type
+        
+        :param parent: Any new items will have this as their parent item
+        :type parent: QGraphicsItem
+        
+        :rtype: List of QGraphicsItems
+        :returns: The resized list
     """
     n = len(lst)
     if n > size:
@@ -54,6 +75,19 @@ use_animations = True
 _animations = []
 
 def move_item(item, pos, duration = None):
+    '''
+        Animates ``item`` to move to position ``pos``. 
+        If animations are turned off globally, the item is instead move immediately, without any animation. 
+        
+        :param item: The item to move
+        :type item: QGraphicsItem
+        
+        :param pos: The final position of the item
+        :type pos: QPointF
+        
+        :param duration: The duration of the animation. If unspecified, Qt's default value of 250 miliseconds is used.
+        :type duration: int
+    '''
     for a in _animations:
         if a.state() == QPropertyAnimation.Stopped:
             _animations.remove(a)
@@ -69,6 +103,10 @@ def move_item(item, pos, duration = None):
         item.setPos(x, y)
 
 def move_item_xy(item, x, y, duration = None):
+    '''
+        Same as 
+        move_item(item, QPointF(x, y), duration)
+    '''
     move_item(item, QPointF(x, y), duration)
         
 #A dynamic tool tip class

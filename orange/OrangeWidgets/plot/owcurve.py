@@ -3,6 +3,28 @@
 Curve (``owcurve``)
 ##############################
 
+.. class:: orangeplot.PlotItem
+
+    This class represents a base for any item than can be added to a plot. 
+    
+    .. method:: attach(plot)
+    
+        :param plot: the plot to which to add this item
+        :type plot: :obj:`.OWPlot`
+        
+    .. method:: detach()
+        
+        Remove this item from its plot
+        
+    .. method:: data_rect()
+        
+        Returns the bounding rectangle of this item in data coordinates. This method is used in autoscale calculations. 
+        
+    .. method:: set_data_rect(rect)
+        
+        :param rect: The new bounding rectangle in data coordinates
+        :type rect: :obj:`.QRectF`
+        
 .. autoclass:: OWCurve
     :members:
     :show-inheritance:
@@ -19,7 +41,7 @@ from Orange.misc import deprecated_members
 })
 class OWCurve(orangeplot.Curve):
     """
-        This class represents a curve on a plot.      
+        This class represents a curve on a plot.
     """
     def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None, parent=None, scene=None):
         orangeplot.Curve.__init__(self, xData, yData, parent, scene)

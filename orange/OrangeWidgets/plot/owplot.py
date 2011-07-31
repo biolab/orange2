@@ -1,11 +1,12 @@
 '''
+
+.. index:: plot
+
 ##############################
 Plot (``owplot``)
 ##############################
 
 .. autoclass:: OrangeWidgets.plot.OWPlot
-    :members:
-    :show-inheritance:
     
 '''
 
@@ -61,7 +62,10 @@ name_map = {
     "setAxisLabels" : "set_axis_labels", 
     "setTickLength" : "set_axis_tick_length",
     "updateCurves" : "update_curves",
-    "itemList" : "plot_items"
+    "itemList" : "plot_items",
+    "setShowMainTitle" : "set_show_main_title",
+    "setMainTitle" : "set_main_title",
+    "inv_transform" : "invTransform"
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
@@ -69,22 +73,69 @@ class OWPlot(orangeplot.Plot):
     """
     The base class for all plots in Orange. It uses the Qt Graphics View Framework
     to draw elements on a graph. 
-        
-    .. attribute:: show_legend
     
-        A boolean controlling whether the legend is displayed or not
-        
-    .. attribute:: show_main_title
+    **Plot layout**
     
-        Controls whether or not the main plot title is displayed
-        
-    .. attribute:: main_title
+        .. attribute:: show_legend
     
-        The plot title, usually show on top of the plot
+            A boolean controlling whether the legend is displayed or not
         
-    .. attribute:: zoom_transform
+        .. attribute:: show_main_title
+    
+            Controls whether or not the main plot title is displayed
+            
+        .. attribute:: main_title
         
-        Contains the current zoom transformation 
+            The plot title, usually show on top of the plot
+            
+        .. attribute:: zoom_transform
+            
+            Contains the current zoom transformation 
+            
+        .. automethod:: set_main_title
+        
+        .. automethod:: set_show_main_title
+    
+    **Coordinate transformation**
+    
+        .. attribute zoom_transform
+        
+            A QTransform that contains the current zoom transformation
+        
+        .. automethod:: map_to_graph
+        
+        .. automethod:: map_from_graph
+        
+        .. automethod:: transform
+        
+        .. automethod:: inv_transform
+        
+        
+    **Data curves**
+        
+        
+        .. automethod:: add_curve
+        
+        .. automethod:: add_custom_curve
+        
+        .. automethod:: add_marker
+        
+        .. method:: add_item
+        
+            Adds any PlotItem to this plot
+            
+    **Axes**
+    
+        .. automethod:: add_axis
+        
+        .. automethod:: add_custom_axis
+        
+        .. automethod:: set_axis_enabled
+        
+        .. automethod:: set_axis_labels
+        
+        .. automethod:: set_axis_scale
+    
     """
     def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft] ):
         """
@@ -285,14 +336,14 @@ class OWPlot(orangeplot.Plot):
         '''
         self.state = SELECT_POLYGON
         
-    def setShowMainTitle(self, b):
+    def set_show_main_title(self, b):
         '''
             Shows the main title if ``b`` is ``True``, and hides it otherwise. 
         '''
         self.showMainTitle = b
         self.replot()
 
-    def setMainTitle(self, t):
+    def set_main_title(self, t):
         '''
             Sets the main title to ``t``
         '''
@@ -345,8 +396,15 @@ class OWPlot(orangeplot.Plot):
         
     def set_axis_labels(self, axis_id, labels):
         '''
-            Sets the labels of axis ``axis_id`` to ``labels``. This changes the axis scale and removes any previous scale
-            set with :meth:`set_axis_scale`. 
+            Sets the labels of axis ``axis_id`` to ``labels``. This is used for axes displaying a discrete data type. 
+            
+            :param labels: The ID of the axis to change
+            :type labels: int
+            
+            :param labels: The list of labels to be displayed along the axis
+            :type labels: A list of strings
+            
+            .. note:: This changes the axis scale and removes any previous scale set with :meth:`set_axis_scale`. 
         '''
         if axis_id in self._bounds_cache:
             del self._bounds_cache[axis_id]
@@ -355,8 +413,11 @@ class OWPlot(orangeplot.Plot):
     
     def set_axis_scale(self, axis_id, min, max, step_size=0):
         '''
-            Sets the labels of axis ``axis_id`` to ``labels``. This changes the axis scale and removes any previous labels
-            set with :meth:`set_axis_labels`. 
+            Sets the scale of axis ``axis_id`` to show an interval between ``min`` and ``max``. 
+            If ``step`` is specified and non-zero, it determines the steps between label on the axis. 
+            Otherwise, they are calculated automatically. 
+            
+            .. note:: This changes the axis scale and removes any previous labels set with :meth:`set_axis_labels`. 
         '''
         qDebug('Setting axis scale for ' + str(axis_id) + ' with axes ' + ' '.join(str(i) for i in self.axes))
         if axis_id in self._bounds_cache:
@@ -393,8 +454,11 @@ class OWPlot(orangeplot.Plot):
         '''
             Adds a custom PlotItem ``curve`` to the plot. 
             If ``enableLegend`` is ``True``, a curve symbol defined by 
-            :meth:`OrangeWidgets.plot.OWCurve.point_item` and the ``curve``'s name
-            :obj:`OrangeWidgets.plot.OWCurve.name` is added to the legend. 
+            :meth:`.OWCurve.point_item` and the ``curve``'s name
+            :obj:`.OWCurve.name` is added to the legend. 
+            
+            :param curve: The curve to add
+            :type curve: :obj:`.OWCurve`
         '''
         self.add_item(curve)
         if enableLegend:
@@ -414,7 +478,7 @@ class OWPlot(orangeplot.Plot):
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
         '''
-            Creates a new :obj:`OrangeWidgets.plot.OWCurve` with the specified parameters and adds it to the graph. 
+            Creates a new :obj:`.OWCurve` with the specified parameters and adds it to the graph. 
             If ``enableLegend`` is ``True``, a curve symbol is added to the legend. 
         '''
         c = OWCurve(xData, yData, x_axis_key, y_axis_key, tooltip=name, parent=self.graph_item)
@@ -985,7 +1049,7 @@ class OWPlot(orangeplot.Plot):
         else:
             return margin + (value-m)/(M-m) * size
         
-    def invTransform(self, axis_id, value):
+    def inv_transform(self, axis_id, value):
         if axis_id in XAxes:
             size = self.graph_area.width()
             margin = self.graph_area.left()
