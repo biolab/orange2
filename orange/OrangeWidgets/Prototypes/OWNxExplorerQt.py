@@ -247,29 +247,17 @@ class OWNxExplorerQt(OWWidget):
                                         [G.Spacing] * 2 + 
                                         G.default_zoom_select_buttons + 
                                         [
-                                            ("buttonM2S", "Add marked to selection", None, None, "markedToSelection", 'Dlg_Mark2Sel')
+                                            G.Spacing,
+                                            ("buttonM2S", "Add marked to selection", None, None, "markedToSelection", 'Dlg_Mark2Sel'),
+                                            ("buttonS2M", "Add selection to marked", None, None, "selectionToMarked", 
+                                            'Dlg_Sel2Mark'),
+                                            ("buttonRMS", "Remove selection", None, None, "removeSelection", 'Dlg_SelisMark'),
+                                            G.Spacing,
+                                            ("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
+                                            ("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
+                                            ("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
                                         ])
-        
-        T = OWToolbars.NavigateSelectToolbar
-        self.zoomSelectToolbar = T(self, self.hcontroArea, self.networkCanvas, self.autoSendSelection,
-                                  buttons = (T.IconZoom, 
-                                             T.IconZoomExtent, 
-                                             T.IconZoomSelection, 
-                                             T.IconPan, 
-                                             ("", "", "", None, None, 0),
-                                             #("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1),
-                                             T.IconRectangle, 
-                                             #T.IconPolygon,  
-                                             T.IconSendSelection,
-                                             ("", "", "", None, None, 0, "select"),
-                                             ("Add marked to selection", "buttonM2S", "markedToSelection", QIcon(dlg_mark2sel), Qt.ArrowCursor, 0),
-                                             ("Add selection to marked", "buttonS2M", "selectionToMarked", QIcon(dlg_sel2mark), Qt.ArrowCursor, 0),
-                                             ("Remove selection", "buttonRMS", "removeSelection", QIcon(dlg_selIsmark), Qt.ArrowCursor, 0),
-                                             ("", "", "", None, None, 0, "select"),
-                                             ("Hide selected", "buttonSEL", "hideSelectedVertices", QIcon(dlg_selected), Qt.ArrowCursor, 0),
-                                             ("Hide unselected", "buttonUN", "hideUnSelectedVertices", QIcon(dlg_unselected), Qt.ArrowCursor, 0),
-                                             ("Show all nodes", "buttonSW", "showAllVertices", QIcon(dlg_showall), Qt.ArrowCursor, 0)))
-                        
+        self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.sendData)
         OWGUI.rubber(self.zoomSelectToolbar)
         
         ib = OWGUI.widgetBox(self.infoTab, "General")

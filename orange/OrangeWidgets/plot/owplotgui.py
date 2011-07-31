@@ -293,8 +293,9 @@ class OWPlotGUI:
             
             :param id: If ``id`` is an ``int``, a button is constructed from the default table. 
                        Otherwise, ``id`` must be tuple of size 4 or 5 with members. The first is optional and 
-                       is a unique identifier for the button, the second is its name, and
-                       the last three are the ``attr_name``, ``attr_value`` and ``callback`` arguments to :obj:`.OWButton`
+                       is a unique identifier for the button, the second is its name,
+                       the next three are the ``attr_name``, ``attr_value`` and ``callback`` arguments to :obj:`.OWButton`, 
+                       and the last one is the icon name
             :type if: int or tuple
             
             :param widget: The button's parent widget

@@ -96,16 +96,16 @@ class OWScatterPlotQt(OWWidget):
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization dialogs", orientation = "horizontal")
         OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes", debuggingEnabled = 0)
 
+        g = self.graph.gui
+
         # zooming / selection
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
-        self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
-        
-        self.graph.gui.zoom_select_toolbar(self.GeneralTab, send_selection_callback=self.sendSelections)
+        self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab)
+        self.zoomSelectToolbar.buttons[g.SendSelection].clicked.connect(self.sendSelections)
 
         # ####################################
         # SETTINGS TAB
         # point width
-        self.graph.gui.point_properties_box(self.SettingsTab)
+        g.point_properties_box(self.SettingsTab)
 
         # #####
         # jittering options
@@ -119,7 +119,6 @@ class OWScatterPlotQt(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         
-        g = self.graph.gui
         g.add_widgets([g.ShowLegend, g.ShowFilledSymbols, g.ShowGridLines, g.UseAnimations, g.Antialiasing], box4)
         
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
@@ -163,7 +162,6 @@ class OWScatterPlotQt(OWWidget):
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
 
-        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         #self.SettingsTab.resize(self.SettingsTab.sizeHint())
 
         self.resize(700, 550)
@@ -356,7 +354,7 @@ class OWScatterPlotQt(OWWidget):
         self.graph.enableGridYL(self.showGridlines)
 
     def selectionChanged(self):
-        self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
+        self.zoomSelectToolbar.buttons[OWPlotGUI.SendSelection].setEnabled(not self.autoSendSelection)
         if self.autoSendSelection:
             self.sendSelections()
 

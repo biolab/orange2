@@ -217,7 +217,7 @@ class OWPlot(orangeplot.Plot):
         
         self._marker_items = []
         
-        self._zoom_factor = 1
+        self._zoom_factor = 1.0
         self._zoom_point = None
         self.zoom_transform = QTransform()
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -668,11 +668,12 @@ class OWPlot(orangeplot.Plot):
             c.set_graph_transform(self.transform_for_axes(x,y))
             c.update_properties()
             
-    def update_zoom(self):
+    def update_zoom(self, recalculate_transform = True):
         '''
             Updates the zoom transformation of the plot items. 
         '''
-        self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
+        if recalculate_transform:
+            self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
         self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
         for c in self.plot_items():
             if hasattr(c, 'set_zoom_factor'):
@@ -793,12 +794,8 @@ class OWPlot(orangeplot.Plot):
 
         self.static_click = True
         self._pressed_mouse_button = event.button()
-        if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
-            self._selection_start_point = self.mapToScene(event.pos())
-            self._current_rs_item = QGraphicsRectItem(scene=self.scene())
-            self._current_rs_item.setPen(SelectionPen)
-            self._current_rs_item.setBrush(SelectionBrush)
-            self._current_rs_item.setZValue(SelectionZValue)
+        if event.button() == Qt.LeftButton and self.state == PANNING:
+            self._last_pan_pos = point
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -818,10 +815,20 @@ class OWPlot(orangeplot.Plot):
             QGraphicsView.mouseMoveEvent(self, event)
             return
         
-                
         if self._pressed_mouse_button == Qt.LeftButton:
-            if self.state == SELECT_RECTANGLE and self._current_rs_item and self.graph_area.contains(point):
-                self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
+            if self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
+                if not self._current_rs_item:
+                    self._selection_start_point = self.mapToScene(event.pos())
+                    self._current_rs_item = QGraphicsRectItem(scene=self.scene())
+                    self._current_rs_item.setPen(SelectionPen)
+                    self._current_rs_item.setBrush(SelectionBrush)
+                    self._current_rs_item.setZValue(SelectionZValue)
+                if self._current_rs_item:
+                    self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
+            elif self.state == PANNING:
+                self._zoom_point = self._zoom_point - (point - self._last_pan_pos) * (self._zoom_factor - 1.0)
+                self._last_pan_pos = point
+                self.update_zoom()
         elif not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
             self._current_ps_polygon[-1] = point
             self._current_ps_item.setPolygon(self._current_ps_polygon)
