@@ -4,7 +4,8 @@ import OWGUI
 from owconstants import *
 
 from PyQt4.QtGui import QWidget, QToolButton, QGroupBox, QVBoxLayout, QHBoxLayout, QIcon
-from PyQt4.QtCore import Qt, pyqtSignal
+from PyQt4.QtCore import Qt, pyqtSignal, qDebug
+
 
 class OrientedWidget(QWidget):
     def __init__(self, orientation, parent):
@@ -15,10 +16,44 @@ class OrientedWidget(QWidget):
             self._layout = QHBoxLayout()
         self.setLayout(self._layout)
 
+class OWToolbar(OrientedWidget):
+    def __init__(self, gui, text, orientation, buttons, parent):
+        OrientedWidget.__init__(self, orientation, parent)
+        self.buttons = {}
+        self.groups = {}
+        i = 0
+        n = len(buttons)
+        while i < n:
+            if buttons[i] == gui.StateButtonsBegin:
+                state_buttons = []
+                for j in range(i+1, n):
+                    if buttons[j] == gui.StateButtonsEnd:
+                        qDebug('Adding state buttons ' + repr(state_buttons) + ' to layout ' + repr(self.layout()))
+                        s = gui.state_buttons(state_buttons, orientation, self)
+                        self.buttons.update(s.buttons)
+                        self.groups[buttons[i+1]] = s
+                        i = j
+                        break
+                    else:
+                        state_buttons.append(buttons[j])
+            elif buttons[i] == gui.Spacing:
+                self.layout().addSpacing(10)
+            elif type(buttons[i] == int):
+                self.buttons[buttons[i]] = gui.tool_button(buttons[i], self)
+            elif len(buttons[i] == 4):
+                gui.tool_button(buttons[i], self)
+            else:
+                self.buttons[buttons[i][0]] = gui.tool_button(buttons[i], self)
+            i = i + 1
+        self.layout().addStretch()
+
+
 class StateButtonContainer(OrientedWidget):
     def __init__(self, gui, ids, orientation, parent):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self._clicked_button = None
         for i in ids:
             b = gui.tool_button(i, self)
             b.clicked.connect(self.button_clicked)
@@ -27,22 +62,33 @@ class StateButtonContainer(OrientedWidget):
             
     def button_clicked(self, checked):
         sender = self.sender()
+        self._clicked_button = sender
         for button in self.buttons.itervalues():
             button.setDown(button is sender)
             
     def button(self, id):
         return self.buttons[id]
+        
+    def setEnabled(self, enabled):
+        OrientedWidget.setEnabled(self, enabled)
+        if enabled and self._clicked_button:
+            self._clicked_button.click()
                     
-class AttributeChangeButton(QToolButton):
-    def __init__(self, plot, attr_name, attr_value, parent):
+class OWButton(QToolButton):
+    def __init__(self, plot, attr_name, attr_value, callback, parent):
         QToolButton.__init__(self, parent)
         self.setMinimumSize(30, 30)
         self.plot = plot
-        self.attr_name = attr_name
-        self.attr_value = attr_value
-        self.clicked.connect(self.button_clicked)
+        if type(callback) == str:
+            callback = getattr(plot, callback, None)
+        if callback:
+            self.clicked.connect(callback)
+        if attr_name:
+            self.attr_name = attr_name
+            self.attr_value = attr_value
+            self.clicked.connect(self.set_attribute)
         
-    def button_clicked(self, clicked):
+    def set_attribute(self, clicked):
         setattr(self.plot, self.attr_name, self.attr_value)
     
     downChanged = pyqtSignal('bool')
@@ -50,15 +96,6 @@ class AttributeChangeButton(QToolButton):
     def setDown(self, down):
         self.downChanged.emit(down)
         QToolButton.setDown(self, down)
-    
-class CallbackButton(QToolButton):
-    def __init__(self, plot, callback, parent):
-        QToolButton.__init__(self, parent)
-        self.setMinimumSize(30, 30)
-        if type(callback) == str:
-            callback = getattr(plot, callback, None)
-        if callback:
-            self.clicked.connect(callback)
                     
 class OWPlotGUI:
     '''
@@ -67,6 +104,8 @@ class OWPlotGUI:
     '''
     def __init__(self, plot):
         self._plot = plot
+        
+    Spacing = 0
         
     Antialiasing = 1
     ShowLegend = 2
@@ -80,6 +119,8 @@ class OWPlotGUI:
     Pan = 12
     Select = 13
     
+    ZoomSelection = 15
+    
     SelectionAdd = 21
     SelectionRemove = 22
     SelectionToggle = 23
@@ -88,23 +129,42 @@ class OWPlotGUI:
     SendSelection = 31
     ClearSelection = 32
     
+    StateButtonsBegin = 35
+    StateButtonsEnd = 36
+    
+    UserButton = 100
+    
+    default_zoom_select_buttons = [
+        StateButtonsBegin,
+            Zoom,
+            Pan, 
+            Select,
+        StateButtonsEnd,
+        Spacing,
+        StateButtonsBegin,
+            SelectionOne,
+            SelectionAdd, 
+            SelectionRemove,
+        StateButtonsEnd,
+        Spacing,
+        SendSelection,
+        ClearSelection
+    ]
+    
     '''
         A map of 
-        id : (name, attr_name, attr_value, icon_name)
+        id : (name, attr_name, attr_value, callback, icon_name)
     '''
-    _attribute_buttons = {
-        Zoom : ('Zoom', 'state', ZOOMING, 'Dlg_zoom'),
-        Pan : ('Pan', 'state', PANNING, 'Dlg_pan_hand'),
-        Select : ('Select', 'state', SELECT, 'Dlg_arrow'),
-        SelectionAdd : ('Add to selection', 'selection_behavior', SELECTION_ADD, ''),
-        SelectionRemove : ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, ''),
-        SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, ''),
-        SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_REPLACE, '')
-    }
-    
-    _action_buttons = {
-        SendSelection : ('Send selection', None, 'Dlg_send'),
-        ClearSelection : ('Clear selection', 'clear_selection', 'Dlg_clear')
+    _buttons = {
+        Zoom : ('Zoom', 'state', ZOOMING, None, 'Dlg_zoom'),
+        Pan : ('Pan', 'state', PANNING, None, 'Dlg_pan_hand'),
+        Select : ('Select', 'state', SELECT, None, 'Dlg_arrow'),
+        SelectionAdd : ('Add to selection', 'selection_behavior', SELECTION_ADD, None, ''),
+        SelectionRemove : ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, None, ''),
+        SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, None, ''),
+        SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_REPLACE, None, ''),
+        SendSelection : ('Send selection', None, None, 'send_selection', 'Dlg_send'),
+        ClearSelection : ('Clear selection', None, None, 'clear_selection', 'Dlg_clear')
     }
 
     def _get_callback(self, name):
@@ -176,17 +236,16 @@ class OWPlotGUI:
         return box
         
     def tool_button(self, id, widget):
-        if id in self._attribute_buttons:
-            name, attr_name, attr_value, icon_name = self._attribute_buttons[id]
-            b = AttributeChangeButton(self._plot, attr_name, attr_value, widget)
-        elif id in self._action_buttons:
-            name, cb, icon_name = self._action_buttons[id]
-            b = CallbackButton(self._plot, cb, widget)
+        if type(id) == int:
+            name, attr_name, attr_value, callback, icon_name = self._buttons[id]
+        elif len(id) == 4:
+            name, attr_name, attr_value, callback, icon_name = id
         else:
-            return
+            id, name, attr_name, attr_value, callback, icon_name = id
+        b = OWButton(self._plot, attr_name, attr_value, callback, widget)
         b.setToolTip(name)
         b.setIcon(QIcon(os.path.dirname(__file__) + "/../icons/" + icon_name + '.png'))
-        if widget.layout():
+        if widget.layout() is not None:
             widget.layout().addWidget(b)
         return b
         
@@ -195,22 +254,22 @@ class OWPlotGUI:
             This function creates a set of checkable buttons and connects them so that only one
             may be checked at a time. 
         '''
-        return StateButtonContainer(self, ids, orientation, widget)
+        c = StateButtonContainer(self, ids, orientation, widget)
+        if widget.layout() is not None:
+            widget.layout().addWidget(c)
+        return c
         
-    def zoom_select_toolbar(self, widget, orientation = Qt.Horizontal, send_selection_callback = None):
-        o = 'vertial' if orientation == Qt.Vertical else 'horizontal'
-        t = OWGUI.widgetBox(widget, 'Zoom / Select', orientation=o)
-        zps = self.state_buttons([OWPlotGUI.Zoom, OWPlotGUI.Pan, OWPlotGUI.Select], orientation, t)
-        t.layout().addWidget(zps)
-        selection_modes = self.state_buttons([OWPlotGUI.SelectionOne, OWPlotGUI.SelectionAdd, OWPlotGUI.SelectionRemove], orientation, t)
-        t.layout().addSpacing(10)
-        t.layout().addWidget(selection_modes)
-        zps.button(OWPlotGUI.Select).downChanged.connect(selection_modes.setEnabled)
-        zps.button(OWPlotGUI.Select).downChanged.connect(selection_modes.button(OWPlotGUI.SelectionOne).click)
-        zps.button(OWPlotGUI.Zoom).click()
-        t.layout().addSpacing(10)
-        self.tool_button(OWPlotGUI.ClearSelection, t)
-        b = self.tool_button(OWPlotGUI.SendSelection, t)
-        if send_selection_callback:
-            b.clicked.connect(send_selection_callback)
+    def toolbar(self, widget, text, orientation, buttons):
+        t = OWToolbar(self, text, orientation, buttons, widget)
+        if widget.layout() is not None:
+            widget.layout().addWidget(t)
         return t
+        
+    def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons):
+        t = self.toolbar(widget, text, orientation, buttons)
+        t.groups[self.SelectionOne].setEnabled(t.buttons[self.Select].isDown())
+        t.buttons[self.Select].downChanged.connect(t.groups[self.SelectionOne].setEnabled)
+        t.buttons[self.Select].click()
+        t.buttons[self.SelectionOne].click()
+        return t
+    

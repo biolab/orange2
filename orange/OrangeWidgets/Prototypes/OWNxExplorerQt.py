@@ -240,6 +240,15 @@ class OWNxExplorerQt(OWWidget):
         self.checkSendMarkedNodes = 0
         OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked vertices', callback = self.setSendMarkedNodes, disabled=0)
         
+        G = self.networkCanvas.gui
+        
+        self.zoomSelectToolbar = G.zoom_select_toolbar(self.hcontroArea, orientation = Qt.Vertical,
+                                    buttons = 
+                                        [G.Spacing] * 2 + 
+                                        G.default_zoom_select_buttons + 
+                                        [
+                                            ("buttonM2S", "Add marked to selection", None, None, "markedToSelection", 'Dlg_Mark2Sel')
+                                        ])
         
         T = OWToolbars.NavigateSelectToolbar
         self.zoomSelectToolbar = T(self, self.hcontroArea, self.networkCanvas, self.autoSendSelection,
