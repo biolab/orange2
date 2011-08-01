@@ -156,6 +156,14 @@ EdgeItem::~EdgeItem()
 
 }
 
+
+void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+	painter->setRenderHint(QPainter::Antialiasing, false);
+	QGraphicsLineItem::paint(painter, option, widget);
+}
+
+
 void EdgeItem::set_u(NodeItem* item)
 {
     if (m_u)
@@ -323,7 +331,7 @@ int NetworkCurve::fr(int steps, bool weighted)
 			  std::numeric_limits<double>::min()};
 
 	QMap<int, DataPoint> disp;
-	foreach (const NodeItem* node, m_nodes)
+	foreach (const NodeItem*   node, m_nodes)
 	{
 		DataPoint point;
 		point.x = 0;

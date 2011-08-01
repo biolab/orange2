@@ -55,6 +55,8 @@ public:
     EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     virtual ~EdgeItem();
     
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    
     void set_u(NodeItem* item);
     NodeItem* u();
     void set_v(NodeItem* item);

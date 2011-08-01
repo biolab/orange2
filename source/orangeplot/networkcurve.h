@@ -76,7 +76,9 @@ public:
     
     EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~EdgeItem();
-   
+
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+
     void set_u(NodeItem* item);
     NodeItem* u();
     void set_v(NodeItem* item);
@@ -126,9 +128,12 @@ public:
     EdgeUpdater(const QTransform& t) : m_t(t){}
     void operator()(EdgeItem* item)
     {
-        if (item->u() && item->v())
+    	NodeItem *u = item->u();
+    	NodeItem *v = item->v();
+
+        if (u && v)
         {
-            item->setLine(QLineF(item->u()->x(), item->u()->y(), item->v()->x(), item->v()->y()) * m_t);
+            item->setLine(QLineF(u->x(), u->y(), v->x(), v->y()) * m_t);
         }
     }
 private:
