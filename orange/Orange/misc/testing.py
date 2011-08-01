@@ -406,12 +406,13 @@ class LearnerTestCase(DataTestCase):
         test = dataset.select(indices, 0)
         
         for ex in test:
-            if classifier(ex, orange.GetValue) != classifier_clone(ex, orange.GetValue):
-                print classifier(ex, orange.GetBoth) , classifier_clone(ex, orange.GetBoth)
-                print classifier(ex, orange.GetValue) , classifier_clone(ex, orange.GetValue)
-            self.assertEqual(classifier(ex, orange.GetValue), classifier_clone(ex, orange.GetValue), "Pickled and original classifier return a different value!")
-        self.assertTrue(all(classifier(ex, orange.GetValue) == classifier_clone(ex, orange.GetValue) for ex in test))
-
+            if isinstance(dataset.domain.class_var, Orange.data.variable.Continuous):
+                self.assertAlmostEqual(classifier(ex, orange.GetValue).native(),
+                                       classifier_clone(ex, orange.GetValue).native(),
+                                       dataset.domain.class_var.number_of_decimals + 3,
+                                       "Pickled and original classifier return a different value!")
+            else:
+                self.assertEqual(classifier(ex, orange.GetValue), classifier_clone(ex, orange.GetValue), "Pickled and original classifier return a different value!")
 
 class MeasureAttributeTestCase(DataTestCase):
     """ Test orange MeasureAttribute subclass.
