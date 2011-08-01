@@ -3,7 +3,7 @@ import re
 from owplot3d import Symbol, normal_from_points
 
 symbol_map = {
-    Symbol.RECT:      'primitives/sphere.obj',
+    Symbol.RECT:      'primitives/cube.obj',
     Symbol.TRIANGLE:  'primitives/pyramid.obj',
     Symbol.DTRIANGLE: 'primitives/dpyramid.obj',
     Symbol.CIRCLE:    'primitives/sphere.obj',
@@ -15,7 +15,35 @@ symbol_map = {
     Symbol.XCROSS:    'primitives/xcross.obj'
 }
 
+symbol_map_2d = {
+    Symbol.RECT:      'primitives/rect.obj',
+    Symbol.TRIANGLE:  'primitives/triangle.obj',
+    Symbol.DTRIANGLE: 'primitives/dtriangle.obj',
+    Symbol.CIRCLE:    'primitives/circle.obj',
+    Symbol.LTRIANGLE: 'primitives/ltriangle.obj',
+    Symbol.DIAMOND:   'primitives/diamond_2d.obj',
+    Symbol.WEDGE:     'primitives/wedge_2d.obj',
+    Symbol.LWEDGE:    'primitives/lwedge_2d.obj',
+    Symbol.CROSS:     'primitives/cross_2d.obj',
+    Symbol.XCROSS:    'primitives/xcross_2d.obj'
+}
+
+symbol_edge_map = {
+    Symbol.RECT:      'primitives/rect_edges.obj',
+    Symbol.TRIANGLE:  'primitives/triangle_edges.obj',
+    Symbol.DTRIANGLE: 'primitives/dtriangle_edges.obj',
+    Symbol.CIRCLE:    'primitives/circle_edges.obj',
+    Symbol.LTRIANGLE: 'primitives/ltriangle_edges.obj',
+    Symbol.DIAMOND:   'primitives/diamond_edges.obj',
+    Symbol.WEDGE:     'primitives/wedge_edges.obj',
+    Symbol.LWEDGE:    'primitives/lwedge_edges.obj',
+    Symbol.CROSS:     'primitives/cross_edges.obj',
+    Symbol.XCROSS:    'primitives/xcross_edges.obj'
+}
+
 _symbol_data = {} # Cache: contains triangles + their normals for each needed symbol.
+_symbol_data_2d = {}
+_symbol_edges = {}
 
 def parse_obj(file_name):
     lines = open(file_name).readlines()
@@ -54,3 +82,34 @@ def get_symbol_data(symbol):
     triangles = parse_obj(file_name)
     _symbol_data[symbol] = triangles
     return triangles
+
+def get_2d_symbol_data(symbol):
+    if not Symbol.is_valid(symbol):
+        return []
+    if symbol in _symbol_data_2d:
+        return _symbol_data_2d[symbol]
+    file_name = symbol_map_2d[symbol]
+    file_name = os.path.join(os.path.dirname(__file__), file_name)
+    triangles = parse_obj(file_name)
+    _symbol_data_2d[symbol] = triangles
+    return triangles
+
+def get_2d_symbol_edges(symbol):
+    if not Symbol.is_valid(symbol):
+        return []
+    if symbol in _symbol_edges:
+        return _symbol_edges[symbol]
+    file_name = symbol_edge_map[symbol]
+    file_name = os.path.join(os.path.dirname(__file__), file_name)
+    lines = open(file_name).readlines()
+    vertices_lines = filter(lambda line: line.startswith('v'), lines)
+    edges_lines =    filter(lambda line: line.startswith('f'), lines)
+    vertices = [map(float, line.split()[1:]) for line in vertices_lines]
+    edges_indices = [map(int, line.split()[1:]) for line in edges_lines]
+    edges = []
+    for i0, i1 in edges_indices:
+        v0 = vertices[i0-1]
+        v1 = vertices[i1-1]
+        edges.append([v0, v1])
+    _symbol_edges[symbol] = edges
+    return edges

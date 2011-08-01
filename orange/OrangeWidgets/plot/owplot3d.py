@@ -150,7 +150,7 @@ Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
 
 SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
 
-from owprimitives3d import get_symbol_data
+from owprimitives3d import get_symbol_data, get_2d_symbol_data, get_2d_symbol_edges
 
 class Legend(object):
     def __init__(self, plot):
@@ -487,6 +487,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             uniform bool shrink_symbols;
             uniform bool encode_color;
             uniform bool hide_outside;
+            uniform vec4 force_color;
             uniform vec2 transparency; // vec2 instead of float, fixing a bug on windows
                                        // (setUniformValue with float crashes)
 			uniform vec2 symbol_scale;
@@ -539,7 +540,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
               gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
 
-              if (encode_color) {
+              if (force_color.a > 0.) {
+                var_color = force_color;
+              }
+              else if (encode_color) {
                 // We've packed example index into .w component of this vertex,
                 // to output it to the screen, it has to be broken down into RGBA.
                 uint index = uint(position.w);
@@ -598,6 +602,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_shader_shrink_symbols = self.symbol_shader.uniformLocation('shrink_symbols')
         self.symbol_shader_encode_color   = self.symbol_shader.uniformLocation('encode_color')
         self.symbol_shader_hide_outside   = self.symbol_shader.uniformLocation('hide_outside')
+        self.symbol_shader_force_color    = self.symbol_shader.uniformLocation('force_color')
 
         # Create two FBOs (framebuffer objects):
         # - one will be used together with stencil mask to find out which
@@ -678,17 +683,27 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.symbol_shader.setUniformValue(self.symbol_shader_transparency,   self.transparency / 255., self.transparency / 255.)
                 self.symbol_shader.setUniformValue(self.symbol_shader_scale,          *scale)
                 self.symbol_shader.setUniformValue(self.symbol_shader_translation,    *self.translation)
+                self.symbol_shader.setUniformValue(self.symbol_shader_force_color,    0., 0., 0., 0.)
 
                 glBindVertexArray(vao_id)
                 if self.draw_point_cloud:
                     glDisable(GL_DEPTH_TEST)
                     glDisable(GL_BLEND)
-                    glDrawArrays(GL_POINTS, 0, vao_id.num_vertices)
+                    glDrawArrays(GL_POINTS, 0, vao_id.num_3d_vertices)
                 else:
                     glEnable(GL_DEPTH_TEST)
                     glEnable(GL_BLEND)
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                    if self.use_2d_symbols:
+                        glDrawArrays(GL_TRIANGLES, vao_id.num_3d_vertices, vao_id.num_2d_vertices)
+                        # Draw outlines (somewhat dark, discuss)
+                        #self.symbol_shader.setUniformValue(self.symbol_shader_force_color,
+                            #0., 0., 0., self.transparency / 255. + 0.01)
+                        #glDisable(GL_DEPTH_TEST)
+                        #glDrawArrays(GL_LINES, vao_id.num_3d_vertices+vao_id.num_2d_vertices, vao_id.num_edge_vertices)
+                        #self.symbol_shader.setUniformValue(self.symbol_shader_force_color, 0., 0., 0., 0.)
+                    else:
+                        glDrawArrays(GL_TRIANGLES, 0, vao_id.num_3d_vertices)
                 glBindVertexArray(0)
 
                 self.symbol_shader.release()
@@ -740,7 +755,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     self.symbol_shader.setUniformValue(self.symbol_shader_encode_color, True)
                     self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, False)
                     glBindVertexArray(vao_id)
-                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_vertices)
+                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_3d_vertices)
                     glBindVertexArray(0)
                     self.symbol_shader.release()
                     self.tooltip_fbo.release()
@@ -756,7 +771,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     glDisable(GL_DEPTH_TEST)
                     glDisable(GL_BLEND)
                     glBindVertexArray(vao_id)
-                    glDrawArrays(GL_POINTS, 0, vao_id.num_vertices)
+                    glDrawArrays(GL_POINTS, 0, vao_id.num_3d_vertices)
                     glBindVertexArray(0)
                     self.symbol_shader.release()
 
@@ -1111,6 +1126,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         # TODO: if self.use_2d_symbols
 
+        num_3d_vertices = 0
+        num_2d_vertices = 0
+        num_edge_vertices = 0
         vertices = []
         ai = -1 # Array index (used in color-picking).
         for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
@@ -1124,9 +1142,39 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             ss = size*0.02
             ai += 1
             for v0, v1, v2, n0, n1, n2 in triangles:
+                num_3d_vertices += 3
                 vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0[0],n0[1],n0[2],
                                  x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n1[0],n1[1],n1[2],
                                  x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n2[0],n2[1],n2[2]])
+
+        for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
+            x -= self.data_center[0]
+            y -= self.data_center[1]
+            z -= self.data_center[2]
+            x *= scale_x
+            y *= scale_y
+            z *= scale_z
+            triangles = get_2d_symbol_data(symbol)
+            ss = size*0.02
+            for v0, v1, v2, _, _, _ in triangles:
+                num_2d_vertices += 3
+                vertices.extend([x,y,z, 0, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, 0,0,0,
+                                 x,y,z, 0, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, 0,0,0,
+                                 x,y,z, 0, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, 0,0,0])
+
+        for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
+            x -= self.data_center[0]
+            y -= self.data_center[1]
+            z -= self.data_center[2]
+            x *= scale_x
+            y *= scale_y
+            z *= scale_z
+            edges = get_2d_symbol_edges(symbol)
+            ss = size*0.02
+            for v0, v1 in edges:
+                num_edge_vertices += 2
+                vertices.extend([x,y,z, 0, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, 0,0,0,
+                                 x,y,z, 0, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, 0,0,0])
 
         # Build Vertex Buffer + Vertex Array Object.
         vao_id = GLuint(0)
@@ -1150,7 +1198,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-        vao_id.num_vertices = len(vertices) / (vertex_size / 4)
+        vao_id.num_3d_vertices = num_3d_vertices
+        vao_id.num_2d_vertices = num_2d_vertices
+        vao_id.num_edge_vertices = num_edge_vertices
         self.vertex_buffers.append(vertex_buffer_id)
         self.vaos.append(vao_id)
         self.commands.append(("scatter", [vao_id, (X,Y,Z), labels]))
