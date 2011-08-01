@@ -87,22 +87,22 @@ class OWScatterPlot3D(OWWidget):
         self.size_attr_cb = OWGUI.comboBox(additional_box, self, "size_attr", label="Point size:",
             tooltip="Attribute to use for pointSize",
             callback=self.on_axis_change,
-            indent = 10,
-            emptyString = '(Same size)',
+            indent=10,
+            emptyString='(Same size)',
             )
 
         self.shape_attr_cb = OWGUI.comboBox(additional_box, self, "shape_attr", label="Point shape:",
             tooltip="Attribute to use for pointShape",
             callback=self.on_axis_change,
-            indent = 10,
-            emptyString = '(Same shape)',
+            indent=10,
+            emptyString='(Same shape)',
             )
 
         self.label_attr_cb = OWGUI.comboBox(additional_box, self, "label_attr", label="Point label:",
             tooltip="Attribute to use for pointLabel",
             callback=self.on_axis_change,
-            indent = 10,
-            emptyString = '(No labels)'
+            indent=10,
+            emptyString='(No labels)'
             )
 
         self.plot = ScatterPlot(self)
@@ -310,7 +310,7 @@ class OWScatterPlot3D(OWWidget):
             self.x_attr, self.y_attr, self.z_attr = numpy.min([[0, 1, 2],
                                                                [len(self.candidate_attrs) - 1]*3
                                                               ], axis=0)
-            self.color_attr = max(len(self.candidate_attrs) - 1, 0)
+            self.color_attr = 0
             self.shown_attr_indices = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
             self.openContext('', data)
 
