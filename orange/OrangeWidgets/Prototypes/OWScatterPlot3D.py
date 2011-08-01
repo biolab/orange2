@@ -160,10 +160,11 @@ class OWScatterPlot3D(OWWidget):
         self.auto_send_selection = True
         self.auto_send_selection_update = False
         self.plot.selection_changed_callback = self.selection_changed_callback
+        self.plot.selection_updated_callback = self.selection_updated_callback
         box = OWGUI.widgetBox(self.settings_tab, 'Auto Send Selected Data When...')
         OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
             callback = self.on_checkbox_update, tooltip='Send selected data whenever a selection area is added or removed')
-        OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving/Resizing selection areas',
+        OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving selection areas',
             callback = self.on_checkbox_update, tooltip='Send selected data when a user moves or resizes an existing selection area')
 
         self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection,
@@ -242,7 +243,7 @@ class OWScatterPlot3D(OWWidget):
         if self.plot.selection_type == SelectionType.ZOOM:
             indices = self.plot.get_selection_indices()
             if len(indices) < 1:
-                self.plot.selections = []
+                self.plot.remove_all_selections()
                 return
             X, Y, Z = self.data_array[:, self.x_attr],\
                       self.data_array[:, self.y_attr],\
@@ -254,6 +255,33 @@ class OWScatterPlot3D(OWWidget):
             min_y, max_y = numpy.min(Y), numpy.max(Y)
             min_z, max_z = numpy.min(Z), numpy.max(Z)
             self.plot.set_new_zoom(min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            if self.auto_send_selection:
+                self._send_selections()
+
+    def selection_updated_callback(self):
+        if self.plot.selection_type != SelectionType.ZOOM and self.auto_send_selection_update:
+            self._send_selections()
+
+    def _send_selections(self):
+        # TODO: implement precise get_selection_indices
+        indices = self.plot.get_selection_indices()
+        if len(indices) < 1:
+            return
+
+        selected_indices = [1 if i in indices else 0
+                            for i in range(len(self.data))]
+        unselected_indices = [1-i for i in selected_indices]
+        selected = self.plot.rawData.selectref(selected_indices)
+        unselected = self.plot.rawData.selectref(unselected_indices)
+
+        if len(selected) == 0:
+            selected = None
+        if len(unselected) == 0:
+            unselected = None
+
+        self.send('Selected Examples', selected)
+        self.send('Unselected Examples', unselected)
 
     def change_selection_type(self):
         if self.toolbarSelection < 3:
@@ -263,7 +291,7 @@ class OWScatterPlot3D(OWWidget):
     def set_data(self, data=None):
         self.closeContext("")
         self.data = data
-        self.plot.set_data(data)
+        self.plot.set_data(data, self.subsetData)
         self.x_attr_cb.clear()
         self.y_attr_cb.clear()
         self.z_attr_cb.clear()
@@ -315,7 +343,7 @@ class OWScatterPlot3D(OWWidget):
             self.openContext('', data)
 
     def set_subset_data(self, data=None):
-        self.subsetData = data # TODO: what should scatterplot do with this?
+        self.subsetData = data
 
     def handleNewSignals(self):
         self.update_plot()

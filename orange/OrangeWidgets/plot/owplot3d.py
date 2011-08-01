@@ -435,6 +435,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.build_axes()
         self.selections = []
         self.selection_changed_callback = None
+        self.selection_updated_callback = None
         self.selection_type = SelectionType.ZOOM
         self.new_selection = None
 
@@ -1431,7 +1432,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                     self.updateGL()
                     self.selection_changed_callback() if self.selection_changed_callback else None
         elif self.state == PlotState.PANNING:
-            self.selection_changed_callback() if self.selection_changed_callback else None
+            self.selection_updated_callback() if self.selection_updated_callback else None
 
         if not (self.state == PlotState.SELECTING and self.selection_type == SelectionType.POLYGON):
             self.state = PlotState.IDLE
@@ -1452,9 +1453,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if len(self.selections) > 0:
             self.selections.pop()
             self.updateGL()
+            self.selection_changed_callback() if self.selection_changed_callback else None
 
     def remove_all_selections(self):
         self.selections = []
+        self.selection_changed_callback() if self.selection_changed_callback else None
         self.updateGL()
 
     @pyqtProperty(PlotTheme)
