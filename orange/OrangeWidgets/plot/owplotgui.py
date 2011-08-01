@@ -47,6 +47,21 @@ class OrientedWidget(QWidget):
 class OWToolbar(OrientedWidget):
     '''
         A toolbar is a container that can contain any number of buttons.  
+        
+        :param gui: Used to create containers and buttons
+        :type gui: :obj:`.OWPlotGUI`
+        
+        :param text: The name of this toolbar
+        :type text: str
+        
+        :param orientation: The orientation of this toolbar, either Qt.Vertical or Qt.Horizontal
+        :type tex: int
+        
+        :param buttons: A list of button identifiers to be added to this toolbar
+        :type buttons: list of (int or tuple)
+        
+        :param parent: The toolbar's parent widget
+        :type parent: :obj:`.QWidget`
     '''
     def __init__(self, gui, text, orientation, buttons, parent):
         OrientedWidget.__init__(self, orientation, parent)
@@ -60,7 +75,7 @@ class OWToolbar(OrientedWidget):
                 for j in range(i+1, n):
                     if buttons[j] == gui.StateButtonsEnd:
                         qDebug('Adding state buttons ' + repr(state_buttons) + ' to layout ' + repr(self.layout()))
-                        s = gui.state_buttons(state_buttons, orientation, self)
+                        s = gui.state_buttons(orientation, state_buttons, self)
                         self.buttons.update(s.buttons)
                         self.groups[buttons[i+1]] = s
                         i = j
@@ -82,13 +97,25 @@ class OWToolbar(OrientedWidget):
 class StateButtonContainer(OrientedWidget):
     '''
         This class can contain any number of checkable buttons, of which only one can be selected at any time. 
+    
+        :param gui: Used to create containers and buttons
+        :type gui: :obj:`.OWPlotGUI`
+        
+        :param buttons: A list of button identifiers to be added to this toolbar
+        :type buttons: list of (int or tuple)
+       
+        :param orientation: The orientation of this toolbar, either Qt.Vertical or Qt.Horizontal
+        :type tex: int
+        
+        :param parent: The toolbar's parent widget
+        :type parent: :obj:`.QWidget`
     '''
-    def __init__(self, gui, ids, orientation, parent):
+    def __init__(self, gui, orientation, buttons, parent):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
         self.layout().setContentsMargins(0, 0, 0, 0)
         self._clicked_button = None
-        for i in ids:
+        for i in buttons:
             b = gui.tool_button(i, self)
             b.clicked.connect(self.button_clicked)
             self.buttons[i] = b
@@ -153,6 +180,8 @@ class OWPlotGUI:
     '''
         This class contains functions to create common user interface elements (QWidgets)
         for configuration and interaction with the ``plot``. 
+        
+        It provides shorter version of some methods in :obj:`.OWGUI` that are directly related to an :obj:`.OWPlot` object. 
     '''
     def __init__(self, plot):
         self._plot = plot
@@ -203,10 +232,6 @@ class OWPlotGUI:
         ClearSelection
     ]
     
-    '''
-        A map of 
-        id : (name, attr_name, attr_value, callback, icon_name)
-    '''
     _buttons = {
         Zoom : ('Zoom', 'state', ZOOMING, None, 'Dlg_zoom'),
         Pan : ('Pan', 'state', PANNING, None, 'Dlg_pan_hand'),
@@ -218,17 +243,37 @@ class OWPlotGUI:
         SendSelection : ('Send selection', None, None, 'send_selection', 'Dlg_send'),
         ClearSelection : ('Clear selection', None, None, 'clear_selection', 'Dlg_clear')
     }
+    '''
+        The list of built-in buttons. It is a map of 
+        id : (name, attr_name, attr_value, callback, icon_name)
+        
+        .. seealso:: :meth:`.tool_button`
+    '''
 
     def _get_callback(self, name):
-        return getattr(self._plot, name, self._plot.replot)
+        if type(name) == str:
+            return getattr(self._plot, name, self._plot.replot)
+        else:
+            return name
         
     def _check_box(self, widget, value, label, cb_name):
+        '''
+            Adds a :obj:`.QCheckBox` to ``widget``. 
+            When the checkbox is toggled, the attribute ``value`` of the plot object is set to the checkbox' check state,
+            and the callback ``cb_name`` is called. 
+        '''
         OWGUI.checkBox(widget, self._plot, value, label, callback=self._get_callback(cb_name))    
         
     def antialiasing_check_box(self, widget):
+        '''
+            Creates a check box that toggles the Antialiasing of the plot 
+        '''
         self._check_box(widget, 'use_antialiasing', 'Use antialiasing', 'update_antialiasing')
         
     def show_legend_check_box(self, widget):
+        '''
+            Creates a check box that shows and hides the plot legend
+        '''
         self._check_box(widget, 'show_legend', 'Show legend', 'update_legend')
     
     def filled_symbols_check_box(self, widget):
@@ -238,24 +283,40 @@ class OWPlotGUI:
         self._check_box(widget, 'show_grid', 'Show gridlines', 'update_grid')
     
     def animations_check_box(self, widget):
+        '''
+            Creates a check box that enabled or disables animations
+        '''
         self._check_box(widget, 'use_animations', 'Use animations', 'update_animations')
     
     def _slider(self, widget, value, label, min_value, max_value, step, cb_name):
         OWGUI.hSlider(widget, self._plot, value, label=label, minValue=min_value, maxValue=max_value, step=step, callback=self._get_callback(cb_name))
         
     def point_size_slider(self, widget):
+        '''
+            Creates a slider that controls point size
+        '''
         self._slider(widget, 'point_width', "Symbol size:   ", 1, 20, 1, 'update_point_size')
         
     def alpha_value_slider(self, widget):
+        '''
+            Creates a slider that controls point transparency
+        '''
         self._slider(widget, 'alpha_value', "Transparency: ", 0, 255, 10, 'update_alpha_value')
         
     def point_properties_box(self, widget):
+        '''
+            Creates a box with controls for common point properties. 
+            Currently, these properties are point size and transparency. 
+        '''
         return self.create_box([
             self.PointSize, 
             self.AlphaValue
             ], widget, "Point properties")
         
     def plot_settings_box(self, widget):
+        '''
+            Creates a box with controls for common plot settings
+        '''
         return self.create_box([
             self.ShowLegend,
             self.ShowFilledSymbols,
@@ -283,6 +344,10 @@ class OWPlotGUI:
             self.add_widget(id, widget)
             
     def create_box(self, ids, widget, name):
+        '''
+            Creates a :obj:`.QGroupBox` with text ``name`` and adds it to ``widget``. 
+            The ``ids`` argument is a list of widget ID's that will be added to this box
+        '''
         box = OWGUI.widgetBox(widget, name)
         self.add_widgets(ids, widget)
         return box
@@ -314,17 +379,22 @@ class OWPlotGUI:
             widget.layout().addWidget(b)
         return b
         
-    def state_buttons(self, ids, orientation, widget):
+    def state_buttons(self, orientation, buttons, widget):
         '''
             This function creates a set of checkable buttons and connects them so that only one
             may be checked at a time. 
         '''
-        c = StateButtonContainer(self, ids, orientation, widget)
+        c = StateButtonContainer(self, orientation, buttons, widget)
         if widget.layout() is not None:
             widget.layout().addWidget(c)
         return c
         
     def toolbar(self, widget, text, orientation, buttons):
+        '''
+            Creates an :obj:`.OWToolbar` with the specified ``text``, ``orientation`` and ``buttons`` and adds it to ``widget``. 
+            
+            .. seealso:: :obj:`.OWToolbar`
+        '''
         t = OWToolbar(self, text, orientation, buttons, widget)
         if widget.layout() is not None:
             widget.layout().addWidget(t)
