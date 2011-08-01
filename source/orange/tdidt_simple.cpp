@@ -53,13 +53,16 @@ struct Args {
     float maxMajority, skipProb;
 
     int *attr_split_so_far;
+    PDomain domain;
 };
 
 int compar_attr;
 
-/* This function uses the global variable compar_attr */
+/* This function uses the global variable compar_attr.
+ * Examples with unknowns are larger so that when sorted, appear at the bottom.
+ */
 int
-compar_examples(const void * ptr1, const void * ptr2)
+compar_examples(const void *ptr1, const void *ptr2)
 {
 	TExample **e1 = (TExample **) ptr1;
 	TExample **e2 = (TExample **) ptr2;
@@ -82,22 +85,20 @@ entropy(int *xs, int size)
             sum += *ip;
         }
 
-	return e / sum + LOG2(sum);
+	return sum == 0 ? 0.0 : e / sum + LOG2(sum);
 }
 
 
 float
 score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, int *rank, struct Args *args)
 {
-	PDomain domain;
     TExample **ex, **ex_end, **ex_next;
-    int i, cls_vals, *attr_dist, *dist_lt, *dist_ge;
+    int i, cls_vals, *attr_dist, *dist_lt, *dist_ge, minExamples;
     float best_score;
 
     assert(size > 0);
-    domain = examples[0]->domain;
 
-    cls_vals = domain->classVar->noOfValues();
+    cls_vals = args->domain->classVar->noOfValues();
 
     /* allocate space */
     ASSERT(dist_lt = (int*) calloc(cls_vals, sizeof *dist_lt));
@@ -116,10 +117,13 @@ score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, in
             size--;
     }
 
-    best_score = -HUGE_VAL;
+    best_score = -INFINITY;
     attr_dist[1] = size;
-    ex = examples + args->minExamples - 1;
-    ex_end = examples + size - (args->minExamples - 1);
+
+    /* minExamples should be at least 1, otherwise there is no point in splitting */
+    minExamples = minExamples < 1 ? 1 : minExamples;
+    ex = examples + minExamples - 1;
+    ex_end = examples + size - (minExamples - 1);
     for (ex_next = ex + 1, i = 0; ex_next < ex_end; ex++, ex_next++, i++) {
         int cls;
         float score;
@@ -145,6 +149,8 @@ score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, in
         }
     }
 
+    /* printf("C %s %f\n", args->domain->attributes->at(attr)->get_name().c_str(), best_score); */
+
     /* cleanup */
     free(dist_lt);
     free(dist_ge);
@@ -156,16 +162,14 @@ score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, in
 float
 score_attribute_d(TExample **examples, int size, int attr, float cls_entropy, struct Args *args)
 {
-	PDomain domain;
 	TExample **ex, **ex_end;
 	int i, j, cls_vals, attr_vals, *cont, *attr_dist, *attr_dist_cls_known, min, size_attr_known, size_attr_cls_known;
 	float score;
 
 	assert(size > 0);
-	domain = examples[0]->domain;
 
-	cls_vals = domain->classVar->noOfValues();
-	attr_vals = domain->attributes->at(attr)->noOfValues();
+	cls_vals = args->domain->classVar->noOfValues();
+	attr_vals = args->domain->attributes->at(attr)->noOfValues();
 
 	/* allocate space */
     ASSERT(cont = (int *) calloc(cls_vals * attr_vals, sizeof *cont));
@@ -204,6 +208,8 @@ score_attribute_d(TExample **examples, int size, int attr, float cls_entropy, st
 		score += attr_dist_cls_known[i] * entropy(cont + i * cls_vals, cls_vals);
 	score = (cls_entropy - score / size_attr_cls_known) / entropy(attr_dist, attr_vals) * ((float)size_attr_known / size);
 
+    /* printf("D %s %f\n", args->domain->attributes->at(attr)->get_name().c_str(), score); */
+
 finish:
 	free(cont);
     free(attr_dist);
@@ -212,24 +218,26 @@ finish:
 }
 
 struct SimpleTreeNode *
-build_tree(TExample **examples, int size, int depth, struct Args *args)
+build_tree(TExample **examples, int size, int depth, struct SimpleTreeNode *parent, struct Args *args)
 {
-	PDomain domain;
 	TExample **ex, **ex_top, **ex_end;
 	TVarList::const_iterator it;
 	struct SimpleTreeNode *node;
 	float score, best_score, cls_entropy;
 	int i, best_attr, best_rank, sum, best_val, finish, cls_vals;
 
-	assert(size > 0);
-	domain = examples[0]->domain;
-
 	ASSERT(node = (SimpleTreeNode *) malloc(sizeof(*node)));
+    cls_vals = args->domain->classVar->noOfValues();
+    ASSERT(node->dist = (int *) calloc(cls_vals, sizeof *node->dist));
+
+    if (size == 0) {
+        assert(parent);
+		node->type = PredictorNode;
+        memcpy(node->dist, parent->dist, cls_vals * sizeof *node->dist);
+        return node;
+    }
 
 	/* class distribution */
-    cls_vals = domain->classVar->noOfValues();
-
-    ASSERT(node->dist = (int *) calloc(cls_vals, sizeof *node->dist));
 	for (ex = examples, ex_end = examples + size; ex != ex_end; ex++)
         if (!(*ex)->getClass().isSpecial())
             node->dist[(*ex)->getClass().intV]++;
@@ -245,7 +253,7 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 	if (!finish) {
         cls_entropy = entropy(node->dist, cls_vals);
 		best_score = -INFINITY;
-		for (i = 0, it = domain->attributes->begin(); it != domain->attributes->end(); it++, i++)
+		for (i = 0, it = args->domain->attributes->begin(); it != args->domain->attributes->end(); it++, i++)
 			if (!args->attr_split_so_far[i]) {
 
                 /* select random subset of attributes - CHANGE ME */
@@ -286,17 +294,17 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
             *ex_top++ = *ex;
     size = ex_top - examples;
 
-    if (domain->attributes->at(best_attr)->varType == TValue::INTVAR) {
+    if (args->domain->attributes->at(best_attr)->varType == TValue::INTVAR) {
 		TExample **tmp;
 		int *cnt, no_of_values;
 
-		/* printf("%2d %3s %3d %f\n", depth, domain->attributes->at(best_attr)->get_name().c_str(), size, best_score); */
+		/* printf("* %2d %3s %3d %f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), size, best_score); */
 
 		node->type = DiscreteNode;
 		node->split_attr = best_attr;
 		
 		/* counting sort */
-		no_of_values = domain->attributes->at(best_attr)->noOfValues();
+		no_of_values = args->domain->attributes->at(best_attr)->noOfValues();
 
 		ASSERT(tmp = (TExample **) calloc(size, sizeof *tmp));
 		ASSERT(cnt = (int *) calloc(no_of_values, sizeof *cnt));
@@ -321,13 +329,13 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
 			int new_size;
 
 			new_size = (i == no_of_values - 1) ? size - cnt[i] : cnt[i + 1] - cnt[i];
-			node->children[i] = build_tree(examples + cnt[i], new_size, depth + 1, args);
+			node->children[i] = build_tree(examples + cnt[i], new_size, depth + 1, node, args);
 		}
 		args->attr_split_so_far[best_attr] = 0;
 
 		free(tmp);
 		free(cnt);
-    } else if (domain->attributes->at(best_attr)->varType == TValue::FLOATVAR) {
+    } else if (args->domain->attributes->at(best_attr)->varType == TValue::FLOATVAR) {
         compar_attr = best_attr;
         qsort(examples, size, sizeof(TExample *), compar_examples);
 
@@ -335,14 +343,14 @@ build_tree(TExample **examples, int size, int depth, struct Args *args)
         node->split_attr = best_attr;
         node->split = (examples[best_rank]->values[best_attr].floatV + examples[best_rank + 1]->values[best_attr].floatV) / 2.0;
 
-		/* printf("%2d %3s %.4f\n", depth, domain->attributes->at(best_attr)->get_name().c_str(), node->split); */
+		/* printf("%2d %3s %.4f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), node->split); */
 
         /* recursively build subtrees */
         node->children_size = 2;
         ASSERT(node->children = (SimpleTreeNode **) calloc(2, sizeof *node->children));
         
-        node->children[0] = build_tree(examples, best_rank + 1, depth + 1, args);
-        node->children[1] = build_tree(examples + best_rank + 1, size - (best_rank + 1), depth + 1, args);
+        node->children[0] = build_tree(examples, best_rank + 1, depth + 1, node, args);
+        node->children[1] = build_tree(examples + best_rank + 1, size - (best_rank + 1), depth + 1, node, args);
     }
 
 	return node;
@@ -378,8 +386,9 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
     args.maxMajority = maxMajority;
     args.maxDepth = maxDepth;
     args.skipProb = skipProb;
+    args.domain = ogen->domain;
 
-	tree = build_tree(examples, ogen->numberOfExamples(), 0, &args);
+	tree = build_tree(examples, ogen->numberOfExamples(), 0, NULL, &args);
 
 	free(examples);
 	free(args.attr_split_so_far);

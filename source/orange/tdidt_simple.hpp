@@ -43,7 +43,7 @@ public:
     int maxDepth; //P
     float skipProb; //P
 
-	TSimpleTreeLearner(const int & =0, float=1.0, int=1, int=INT_MAX, float=0.0);
+	TSimpleTreeLearner(const int & =0, float=1.0, int=0, int=INT_MAX, float=0.0);
 	PClassifier operator()(PExampleGenerator, const int & =0);
 };
 
