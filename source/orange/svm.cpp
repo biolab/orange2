@@ -3726,8 +3726,9 @@ TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable _examples, sv
 	    kernelFunc=model->param.learner->kernelFunc;
     model->param.learner=NULL;
 	currentExample=NULL;
-	computesProbabilities = model && model->param.svm_type!=EPSILON_SVR &&
-		model->param.svm_type!=NU_SVR &&  (model->param.probability != 0);
+	int svm_type = svm_get_svm_type(model);
+	computesProbabilities = model && svm_check_probability_model(model) && \
+			(svm_type != NU_SVR && svm_type != EPSILON_SVR); // Disable prob. estimation for regression
 	if(!classVar && model->param.svm_type==ONE_CLASS)
 		classVar=mlnew TFloatVariable();
 	int nr_class=svm_get_nr_class(model);
@@ -3742,7 +3743,7 @@ TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable _examples, sv
 			supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
 		}
 	}
-    int svm_type=model->param.svm_type;
+	
     if (svm_type==C_SVC || svm_type==NU_SVC){
 	    nSV=mlnew TIntList(nr_class); // num of SVs for each class (sum = model->l)
 	    for(i=0;i<nr_class;i++)
@@ -3779,20 +3780,21 @@ TSVMClassifier::~TSVMClassifier(){
 }
 
 PDistribution TSVMClassifier::classDistribution(const TExample & example){
-	if(!computesProbabilities)
-		return TClassifierFD::classDistribution(example);
 	if(!model)
 		raiseError("No Model");
+
+	if(!computesProbabilities)
+		return TClassifierFD::classDistribution(example);
+
 	currentExample=&example;
 	int exlen=getNumOfElements(example);
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
-	if(svm_type==NU_SVR || svm_type==EPSILON_SVR)
-		raiseError("Model does not support probabilities for regression");
+
 	int *labels=(int *) malloc(nr_class*sizeof(int));
 	double *prob_estimates=NULL;
 	svm_node *x=Malloc(svm_node, exlen);
-	svm_get_labels(model,labels);
+	svm_get_labels(model, labels);
 	prob_estimates = (double *) malloc(nr_class*sizeof(double));
 	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	svm_predict_probability(model,x,prob_estimates);
@@ -3817,7 +3819,7 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	svm_node *x=Malloc(svm_node, exlen);
 	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	double v;
-	if(model->param.probability){
+	if(svm_check_probability_model(model)){
 		double *prob=(double *) malloc(nr_class*sizeof(double));
 		v=svm_predict_probability(model,x, prob);
 		free(prob);
