@@ -1384,10 +1384,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.legend.move(dx, dy)
         elif self.state == PlotState.ROTATING:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-                off_x = numpy.cross(self.camera, [0, 1, 0]) * (dx / self.move_factor)
-                #off_y = numpy.cross(self.camera, [1,0,0]) * (dy / self.move_factor)
-                # TODO: this incidentally works almost fine, but the math is wrong and should be fixed
-                #self.data_center += off_x
+                right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
+                up_vec = normalize(numpy.cross(right_vec, self.camera))
+                right_scale = self.width()*max(self.scale[0], self.scale[2])*0.1
+                up_scale = self.height()*self.scale[1]*0.1
+                self.translation -= right_vec*(dx / right_scale) +\
+                                    up_vec*(dy / up_scale)
             else:
                 self.yaw += dx / (self.rotation_factor*self.width())
                 self.pitch += dy / (self.rotation_factor*self.height())
