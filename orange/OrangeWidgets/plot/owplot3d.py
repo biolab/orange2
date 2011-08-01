@@ -1082,7 +1082,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             default = [0.0, 0.0, 1.0, 1.0]
             colors = [color_map.get(colors, default) for _ in range(num_points)]
  
-        if isinstance(sizes, int):
+        if isinstance(sizes, (int, float)):
             sizes = [sizes for _ in range(num_points)]
 
         # Scale sizes to 0..1
@@ -1120,7 +1120,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             y *= scale_y
             z *= scale_z
             triangles = get_symbol_data(symbol)
-            ss = size*0.08
+            ss = size*0.02
             ai += 1
             for v0, v1, v2, n0, n1, n2 in triangles:
                 vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0[0],n0[1],n0[2],

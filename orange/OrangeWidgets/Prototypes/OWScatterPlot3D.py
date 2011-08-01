@@ -56,7 +56,6 @@ class OWScatterPlot3D(OWWidget):
         self.shape_attr = None
         self.label_attr = None
 
-        self.symbol_scale = 5
         self.alpha_value = 255
 
         self.tabs = OWGUI.tabWidget(self.controlArea)
@@ -115,11 +114,12 @@ class OWScatterPlot3D(OWWidget):
             debuggingEnabled=0)
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
-        OWGUI.hSlider(box, self, "plot.symbol_scale", label="Symbol scale",
-            minValue=1, maxValue=5,
+        ss = OWGUI.hSlider(box, self, "plot.symbol_scale", label="Symbol scale",
+            minValue=1, maxValue=20,
             tooltip="Scale symbol size",
             callback=self.on_checkbox_update,
             )
+        ss.setValue(5)
 
         OWGUI.hSlider(box, self, "plot.transparency", label="Transparency",
             minValue=10, maxValue=255,
@@ -407,12 +407,12 @@ class OWScatterPlot3D(OWWidget):
             size_attr = self.candidate_attrs[self.size_attr - 1]
             S = self.data_array[:, self.size_attr - 1]
             if size_attr.varType == Discrete:
-                sizes = [(v + 1) * len(size_attr.values) / (11 - self.symbol_scale) for v in S]
+                sizes = [v+1. for v in S]
             else:
                 min, max = numpy.min(S), numpy.max(S)
-                sizes = [(v - min) * self.symbol_scale / (max-min) for v in S]
+                sizes = [(v - min) / (max-min) for v in S]
         else:
-            sizes = 1
+            sizes = 1.
 
         shapes = None
         if self.shape_attr > 0:
