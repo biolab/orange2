@@ -1212,6 +1212,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         else:
             new_scale, new_translation = self.zoom_stack.pop()
         self._animate_new_scale_translation(new_scale, new_translation)
+        self.zoomed_size = self.view_cube_edge / new_scale
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
@@ -1472,6 +1473,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.selections = []
         self.legend.clear()
         self.zoom_stack = []
+        self.zoomed_size = [self.view_cube_edge,
+                            self.view_cube_edge,
+                            self.view_cube_edge]
         self.translation = numpy.array([0., 0., 0.])
         self.scale = numpy.array([1., 1., 1.])
         self.additional_scale = numpy.array([0., 0., 0.])
