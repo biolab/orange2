@@ -1026,7 +1026,7 @@ bool Value_pack(const TValue &value, TCharBuffer &buf, PyObject *&otherValues)
 
 bool Value_unpack(TValue &value, TCharBuffer &buf, PyObject *otherValues, int &otherValuesIndex)
 {
-  char flags = buf.readChar();
+  unsigned char flags = (unsigned char) buf.readChar();
 
   if (flags & (1 << 5))
     value.svalV = PyOrange_AsSomeValue(PyList_GetItem(otherValues, otherValuesIndex++));
@@ -1042,7 +1042,7 @@ bool Value_unpack(TValue &value, TCharBuffer &buf, PyObject *otherValues, int &o
   if (value.varType == TValue::INTVAR) {
     flags >>= 6;
     if (flags == 1)
-      value.intV = buf.readChar();
+      value.intV = (unsigned char) buf.readChar();
     else if (flags == 2)
       value.intV = buf.readShort();
     else if (flags == 3)
