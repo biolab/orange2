@@ -552,11 +552,17 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 pos = abs(pos);
                 float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
                 float a = min(pow(min(1., view_edge.x / manhattan_distance), 5.), transparency.x);
-                // Calculate the amount of lighting this triangle receives (diffuse component only).
-                vec3 light_direction = normalize(vec3(1., 1., 0.5));
-                float diffuse = max(0., dot(normalize((gl_ModelViewMatrix * vec4(normal, 0.)).xyz),
-                                    light_direction));
-                var_color = vec4(color.rgb+diffuse*0.7, a); // Physically wrong, but looks better.
+                if (use_2d_symbols) {
+                    var_color = vec4(color.rgb, a);
+                }
+                else {
+                    // Calculate the amount of lighting this triangle receives (diffuse component only).
+                    // The calculations are physically wrong, but look better. TODO: make them look better
+                    vec3 light_direction = normalize(vec3(1., 1., 0.5));
+                    float diffuse = max(0.,
+                        dot(normalize((gl_ModelViewMatrix * vec4(normal, 0.)).xyz), light_direction));
+                    var_color = vec4(color.rgb+diffuse*0.7, a);
+                }
                 if (manhattan_distance > view_edge.x && hide_outside)
                     var_color.a = 0.;
               }
