@@ -72,7 +72,14 @@ class OWVizRank(VizRank, OWWidget):
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")    
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
 
-        if visualizationMethod != SCATTERPLOT:
+        if visualizationMethod == SCATTERPLOT3D:
+            self.label1 = OWGUI.widgetLabel(self.buttonBox, 'Projections with ' )
+            self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    "])
+            self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = [3], tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
+            self.optimizationTypeCombo.setDisabled(True)
+            self.attributeCountCombo.setDisabled(True)
+            self.attributeLabel = OWGUI.widgetLabel(self.buttonBox, ' attributes')
+        elif visualizationMethod != SCATTERPLOT:
             self.label1 = OWGUI.widgetLabel(self.buttonBox, 'Projections with ' )
             self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
             self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 20), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
