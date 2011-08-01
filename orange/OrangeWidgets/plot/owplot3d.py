@@ -53,7 +53,6 @@ OpenGL.FULL_LOGGING = False
 #OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.arrays import ArrayDatatype
 from OpenGL.GL.ARB.vertex_array_object import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from ctypes import c_void_p

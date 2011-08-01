@@ -797,9 +797,209 @@ class ScaleLinProjData(ScaleData):
 
     createProjectionAsNumericArray = create_projection_as_numeric_array
     
+    @deprecated_keywords({"useAnchorData": "use_anchor_data",
+                          "anchorRadius": "anchor_radius"})
+    def _getsum_i(self, data, use_anchor_data = 0, anchor_radius = None):
+        """
+        Function to compute the sum of all values for each element in the data.
+        Used to normalize.
+        
+        """
+        if use_anchor_data:
+            if anchor_radius == None:
+                anchor_radius = numpy.sqrt([a[0]**2+a[1]**2 for a in self.anchor_data])
+            sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchor_radius))
+        else:
+            sum_i = numpy.add.reduce(data)
+        if len(numpy.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
+            sum_i += numpy.where(sum_i == 0, 1.0, 0.0)
+        return sum_i
+    
+    _getSum_i = _getsum_i
+
+ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
+                                       "createAnchors": "create_anchors",
+                                       "createXAnchors": "create_xanchors",
+                                       "createYAnchors": "create_yanchors",
+                                       "saveProjectionAsTabData": "save_projection_as_tab_data",
+                                       "get_projected_point_position": "get_projected_point_position",
+                                       "create_projection_as_example_table": "create_projection_as_example_table",
+                                       "create_projection_as_numeric_array": "create_projection_as_numeric_array",
+                                       "_getSum_i": "_getsum_i",
+                                       "normalizeExamples": "normalize_examples",
+                                       "anchorData": "anchor_data",
+                                       "lastAttrIndices": "last_attr_indices",
+                                       "anchorDict": "anchor_dict",
+                                      })(ScaleLinProjData)
+
+class ScaleLinProjData3D(ScaleData):
+    def __init__(self):
+        ScaleData.__init__(self)
+        self.normalize_examples = 1
+        self.anchor_data = []        # form: [(anchor1x, anchor1y, anchor1z, label1),(anchor2x, anchor2y, anchor2z, label2), ...]
+        self.last_attr_indices = None
+        self.anchor_dict = {}
+
+    @deprecated_keywords({"xAnchors": "xanchors", "yAnchors": "yanchors"})
+    def set_anchors(self, xanchors, yanchors, zanchors, attributes):
+        print('set anchors')
+        if attributes:
+            if xanchors != None and yanchors != None and zanchors != None:
+                self.anchor_data = [(xanchors[i], yanchors[i], zanchors[i], attributes[i])
+                                    for i in range(len(attributes))]
+            else:
+                self.anchor_data = self.create_anchors(len(attributes), attributes)
+
+    setAnchors = set_anchors
+
+    @deprecated_keywords({"numOfAttr": "num_of_attr"})
+    def create_anchors(self, num_of_attr, labels=None):
+        """
+        Create anchors on the sphere.
+        
+        """
+        print('creating anchors')
+        # Golden Section Spiral algorithm approximates even distribution of points on a sphere
+        # (read more here http://www.softimageblog.com/archives/115)
+        n = num_of_attr
+        xanchors = []
+        yanchors = []
+        zanchors = []
+
+        inc = math.pi * (3 - math.sqrt(5))
+        off = 2. / n
+        for k in range(n):
+            y = k * off - 1 + (off / 2)
+            r = math.sqrt(1 - y*y)
+            phi = k * inc
+            xanchors.append(math.cos(phi)*r)
+            yanchors.append(y)
+            zanchors.append(math.sin(phi)*r)
+        r = numpy.ones(len(xanchors), numpy.float)
+
+        if labels:
+            return [(xanchors[i], yanchors[i], zanchors[i], labels[i]) for i in range(num_of_attr)]
+        else:
+            return [(xanchors[i], yanchors[i], zanchors[i]) for i in range(num_of_attr)]
+
+    createAnchors = create_anchors
+
+    @deprecated_keywords({"fileName": "filename", "attrList": "attrlist",
+                          "useAnchorData": "use_anchor_data"})
+    def save_projection_as_tab_data(self, filename, attrlist, use_anchor_data=0):
+        """
+        Save projection (xattr, yattr, classval) into a filename filename.
+        
+        """
+        Orange.core.saveTabDelimited(filename,
+            self.create_projection_as_example_table([self.attribute_name_index[i]
+                                                     for i in attrlist],
+                                                    use_anchor_data=use_anchor_data))
+    
+    saveProjectionAsTabData = save_projection_as_tab_data
+
     @deprecated_keywords({"attrIndices": "attr_indices",
                           "settingsDict": "settings_dict"})
-    def create_projection_as_numeric_array_3D(self, attr_indices, **settings_dict):
+    def get_projected_point_position(self, attr_indices, values, **settings_dict):
+        """
+        For attributes in attr_indices and values of these attributes in values
+        compute point positions. This function has more sense in radviz and
+        polyviz methods.
+    
+        """
+        # load the elements from the settings dict
+        use_anchor_data = settings_dict.get("useAnchorData")
+        xanchors = settings_dict.get('xAnchors')
+        yanchors = settings_dict.get('yAnchors')
+        zanchors = settings_dict.get('zAnchors')
+        anchor_radius = settings_dict.get("anchorRadius")
+        normalize_example = settings_dict.get("normalizeExample")
+
+        if attr_indices != self.last_attr_indices:
+            print "get_projected_point_position. Warning: Possible bug. The "+\
+                  "set of attributes is not the same as when computing the "+\
+                  "whole projection"
+
+        if xanchors != None and yanchors != None and zanchors != None:
+            xanchors = numpy.array(xanchors)
+            yanchors = numpy.array(yanchors)
+            zanchors = numpy.array(zanchors)
+            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
+                                                                 yanchors*yanchors +
+                                                                 zanchors*zanchors)
+        elif use_anchor_data and self.anchor_data:
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            zanchors = numpy.array([val[2] for val in self.anchor_data])
+            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
+                                                                 yanchors*yanchors +
+                                                                 zanchors*zanchors)
+        else:
+            self.create_anchors(len(attr_indices))
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            zanchors = numpy.array([val[2] for val in self.anchor_data])
+            anchor_radius = numpy.ones(len(attr_indices), numpy.float)
+
+        if normalize_example == 1 or (normalize_example == None
+                                      and self.normalize_examples):
+            m = min(values); M = max(values)
+            if m < 0.0 or M > 1.0: 
+                # we have to do rescaling of values so that all the values will
+                # be in the 0-1 interval
+                #print "example values are not in the 0-1 interval"
+                values = [max(0.0, min(val, 1.0)) for val in values]
+                #m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
+                #values = [(val-m) / float(diff) for val in values]
+
+            s = sum(numpy.array(values)*anchor_radius)
+            if s == 0: return [0.0, 0.0]
+            x = self.trueScaleFactor * numpy.dot(xanchors*anchor_radius,
+                                                 values) / float(s)
+            y = self.trueScaleFactor * numpy.dot(yanchors*anchor_radius,
+                                                 values) / float(s)
+            z = self.trueScaleFactor * numpy.dot(zanchors*anchor_radius,
+                                                 values) / float(s)
+        else:
+            x = self.trueScaleFactor * numpy.dot(xanchors, values)
+            y = self.trueScaleFactor * numpy.dot(yanchors, values)
+            z = self.trueScaleFactor * numpy.dot(zanchors, values)
+
+        return [x, y, z]
+
+    getProjectedPointPosition = get_projected_point_position
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_example_table(self, attr_indices, **settings_dict):
+        """
+        Create the projection of attribute indices given in attr_indices and
+        create an example table with it.
+        """
+        if self.data_domain.class_var:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
+                                         Orange.data.variable.Continuous("yVar"),
+                                         Orange.data.variable.Continuous("zVar"),
+                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                                                                       values = get_variable_values_sorted(self.data_domain.class_var))])
+        else:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
+                                         Orange.data.variable.Continuous("yVar"),
+                                         Orange.data.variable.Continuous("zVar")])
+        data = self.create_projection_as_numeric_array(attr_indices,
+                                                       **settings_dict)
+        if data != None:
+            return Orange.data.Table(domain, data)
+        else:
+            return Orange.data.Table(domain)
+
+    createProjectionAsExampleTable = create_projection_as_example_table
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
         print('create projection as numeric array')
         # load the elements from the settings dict
         validData = settings_dict.get("validData")
@@ -854,27 +1054,15 @@ class ScaleLinProjData(ScaleData):
                 YAnchors *= r
                 ZAnchors *= r
         elif (XAnchors != None and YAnchors != None and ZAnchors != None):
-            XAnchors = numpy.array(XAnchors);
+            XAnchors = numpy.array(XAnchors)
             YAnchors = numpy.array(YAnchors)
             ZAnchors = numpy.array(ZAnchors)
             r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
         else:
-            # Golden Section Spiral algorithm approximates even distribution of points on a sphere
-            # (read more here http://www.softimageblog.com/archives/115)
-            n = len(attr_indices)
-            XAnchors = []
-            YAnchors = []
-            ZAnchors = []
-
-            inc = math.pi * (3 - math.sqrt(5))
-            off = 2. / n
-            for k in range(n):
-                y = k * off - 1 + (off / 2)
-                r = math.sqrt(1 - y*y)
-                phi = k * inc
-                XAnchors.append(math.cos(phi)*r)
-                YAnchors.append(y)
-                ZAnchors.append(math.sin(phi)*r)
+            self.create_anchors(len(attr_indices))
+            XAnchors = numpy.array([val[0] for val in self.anchor_data])
+            YAnchors = numpy.array([val[1] for val in self.anchor_data])
+            ZAnchors = numpy.array([val[2] for val in self.anchor_data])
             r = numpy.ones(len(XAnchors), numpy.float)
 
         x_positions = numpy.dot(XAnchors, selectedData)
@@ -902,6 +1090,7 @@ class ScaleLinProjData(ScaleData):
             else:
                 x_validData = x_positions
                 y_validData = y_positions
+                z_validData = z_positions
             
             dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData + z_validData*z_validData)) or 1
             self.trueScaleFactor = scaleFactor / dist
@@ -926,11 +1115,11 @@ class ScaleLinProjData(ScaleData):
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions, z_positions)))
 
-    createProjectionAsNumericArray3D = create_projection_as_numeric_array_3D
- 
+    createProjectionAsNumericArray = create_projection_as_numeric_array
+
     @deprecated_keywords({"useAnchorData": "use_anchor_data",
                           "anchorRadius": "anchor_radius"})
-    def _getsum_i(self, data, use_anchor_data = 0, anchor_radius = None):
+    def _getsum_i(self, data, use_anchor_data=0, anchor_radius=None):
         """
         Function to compute the sum of all values for each element in the data.
         Used to normalize.
@@ -938,7 +1127,7 @@ class ScaleLinProjData(ScaleData):
         """
         if use_anchor_data:
             if anchor_radius == None:
-                anchor_radius = numpy.sqrt([a[0]**2+a[1]**2 for a in self.anchor_data])
+                anchor_radius = numpy.sqrt([a[0]**2+a[1]**2+a[2]**2 for a in self.anchor_data])
             sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchor_radius))
         else:
             sum_i = numpy.add.reduce(data)
@@ -948,21 +1137,18 @@ class ScaleLinProjData(ScaleData):
     
     _getSum_i = _getsum_i
 
-ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
+ScaleLinProjData3D = deprecated_members({"setAnchors": "set_anchors",
                                        "createAnchors": "create_anchors",
-                                       "createXAnchors": "create_xanchors",
-                                       "createYAnchors": "create_yanchors",
                                        "saveProjectionAsTabData": "save_projection_as_tab_data",
                                        "get_projected_point_position": "get_projected_point_position",
                                        "create_projection_as_example_table": "create_projection_as_example_table",
                                        "create_projection_as_numeric_array": "create_projection_as_numeric_array",
-                                       "create_projection_as_numeric_array_3D": "create_projection_as_numeric_array_3D",
                                        "_getSum_i": "_getsum_i",
                                        "normalizeExamples": "normalize_examples",
                                        "anchorData": "anchor_data",
                                        "lastAttrIndices": "last_attr_indices",
                                        "anchorDict": "anchor_dict",
-                                      })(ScaleLinProjData)
+                                      })(ScaleLinProjData3D)
 
 class ScalePolyvizData(ScaleLinProjData):
     def __init__(self):
