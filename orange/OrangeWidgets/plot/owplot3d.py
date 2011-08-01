@@ -205,23 +205,17 @@ class Legend(object):
         glVertex2f(x+t,   y+h-t)
         glEnd()
 
-        def draw_ngon(n, x, y, size):
-            glBegin(GL_TRIANGLES)
-            angle_inc = 2.*pi / n
-            angle = angle_inc / 2.
-            for i in range(n):
-                glVertex2f(x,y)
-                glVertex2f(x-cos(angle)*size, y-sin(angle)*size)
-                angle += angle_inc
-                glVertex2f(x-cos(angle)*size, y-sin(angle)*size)
-            glEnd()
-
         item_pos_y = y + t + 13
 
         for symbol, color, size, text in self.items:
             glColor4f(*color)
-            # TODO: 2d symbols
-            #draw_ngon(symbol_to_n[symbol], x+t+10, item_pos_y-4, size*self.symbol_scale)
+            triangles = get_2d_symbol_data(symbol)
+            glBegin(GL_TRIANGLES)
+            for v0, v1, v2, _, _, _ in triangles:
+                glVertex2f(x+v0[0]*self.symbol_scale+10, item_pos_y+v0[1]*self.symbol_scale-5)
+                glVertex2f(x+v1[0]*self.symbol_scale+10, item_pos_y+v1[1]*self.symbol_scale-5)
+                glVertex2f(x+v2[0]*self.symbol_scale+10, item_pos_y+v2[1]*self.symbol_scale-5)
+            glEnd()
             self.plot.renderText(x+t+30, item_pos_y, text, font=self.font)
             item_pos_y += self.metrics.height()
 
