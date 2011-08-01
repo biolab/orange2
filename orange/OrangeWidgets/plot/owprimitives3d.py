@@ -15,22 +15,17 @@ symbol_map = {
     Symbol.XCROSS:    'primitives/xcross.obj'
 }
 
-symbol_data = {} # Cache: contains triangles + their normals for each needed symbol.
+_symbol_data = {} # Cache: contains triangles + their normals for each needed symbol.
 
-def get_symbol_data(symbol):
-    if not Symbol.is_valid(symbol):
-        return []
-    if symbol in symbol_data:
-        return symbol_data[symbol]
-    file_name = symbol_map[symbol]
-    lines = open(os.path.join(os.path.dirname(__file__), file_name)).readlines()
+def parse_obj(file_name):
+    lines = open(file_name).readlines()
     normals_lines =  filter(lambda line: line.startswith('vn'), lines)
     vertices_lines = filter(lambda line: line.startswith('v'), lines)
     faces_lines =    filter(lambda line: line.startswith('f'), lines)
     normals =  [map(float, line.split()[1:]) for line in normals_lines]
     vertices = [map(float, line.split()[1:]) for line in vertices_lines]
     if len(normals) > 0:
-        pattern = 'f (\d+)//(\d+) (\d+)//(\d+) (\d+)//(\d+)'
+        pattern = r'f (\d+)//(\d+) (\d+)//(\d+) (\d+)//(\d+)'
         faces = [map(int, re.match(pattern, line).groups()) for line in faces_lines]
         triangles = [[vertices[face[0]-1],
                       vertices[face[2]-1],
@@ -47,5 +42,15 @@ def get_symbol_data(symbol):
             v2 = vertices[face[2]-1]
             normal = normal_from_points(v0, v1, v2)
             triangles.append([v0, v1, v2, normal, normal, normal])
-    symbol_data[symbol] = triangles
+    return triangles
+
+def get_symbol_data(symbol):
+    if not Symbol.is_valid(symbol):
+        return []
+    if symbol in _symbol_data:
+        return _symbol_data[symbol]
+    file_name = symbol_map[symbol]
+    file_name = os.path.join(os.path.dirname(__file__), file_name)
+    triangles = parse_obj(file_name)
+    _symbol_data[symbol] = triangles
     return triangles

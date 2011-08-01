@@ -4,8 +4,10 @@
 <priority>2000</priority>
 """
 
+import os
+
 from plot.owplot3d import *
-from plot.owprimitives3d import get_symbol_data
+from plot.owprimitives3d import parse_obj
 from plot.owplotgui import OWPlotGUI
 from OWLinProjQt import *
 
@@ -23,7 +25,7 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData):
 
         self.gui = OWPlotGUI(self)
 
-        self.sphere_data = get_symbol_data(Symbol.CIRCLE)
+        self.sphere_data = parse_obj(os.path.join(os.path.dirname(__file__), '../plot/primitives/sphere_hq.obj'))
         self.show_axes = self.show_chassis = self.show_grid = False
 
     def setData(self, data, subsetData=None, **args):
@@ -35,8 +37,9 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData):
     def draw_callback(self):
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
-        glColor4f(1,0,0,1)
+        glColor4f(1,0,0,0.5)
 
+        # TODO: vaos
         glScalef(5, 5, 5)
         glBegin(GL_TRIANGLES)
         for v0, v1, v2, n0, n1, n2 in self.sphere_data:
