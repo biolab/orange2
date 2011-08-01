@@ -896,7 +896,8 @@ class VizRank:
             contVars = [orange.FloatVariable(attr.name) for attr in self.graph.data_domain.attributes]
             attrCount = len(self.graph.data_domain.attributes)
 
-            count = len(evaluatedAttributes)*(len(evaluatedAttributes)-1)/2
+            leva = len(evaluatedAttributes)
+            count = leva*(leva-1)*(leva-2) / 6
             strCount = orngVisFuncts.createStringFromNumber(count)
             
             for i in range(len(evaluatedAttributes)):
