@@ -1,4 +1,4 @@
-Orange is a component based machine learning library for Python developed at Laboratory of Artificial Intelligence, Faculty of Computer and Information Science, University of Ljubljana, Slovenia.
+Orange is a component based machine learning library for Python developed at Bioinformatics Laboratory, Faculty of Computer and Information Science, University of Ljubljana, Slovenia.
 
 Orange is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3.0 of the License, or (at your option) any later version.
 
@@ -32,7 +32,6 @@ documentation and/or other materials provided with the distribution.
 may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -46,7 +45,6 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---- (end libsvm copyright) -----
-
 
 ---- (liblinear copyright) ----------
 
@@ -68,7 +66,6 @@ documentation and/or other materials provided with the distribution.
 may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -81,12 +78,9 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 ---- (end liblinear copyright) -----
 
-
 ---- (qhull copyright) ----------
-
 
                     Qhull, Copyright (c) 1993-2003
 
