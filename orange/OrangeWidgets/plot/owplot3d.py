@@ -1244,12 +1244,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if len(self.selections) == 0:
             return []
 
-        if self.use_fbos:
+        width, height = self.width(), self.height()
+        if self.use_fbos and width <= 1024 and height <= 1024:
             self.selection_fbo_dirty = True
             self.updateGL()
 
-            width, height = self.width(), self.height()
-            # TODO: check width < fbo.width
             self.selection_fbo.bind()
             color_pixels = glReadPixels(0, 0,
                                         width, height,
@@ -1269,13 +1268,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
             return indices
         else:
+            # Slower method (projects points manually and checks containments).
             projection = QMatrix4x4()
             if self.use_ortho:
                 projection.ortho(-width / self.ortho_scale, width / self.ortho_scale,
                                  -height / self.ortho_scale, height / self.ortho_scale,
                                  self.ortho_near, self.ortho_far)
             else:
-                projection.perspective(self.camera_fov, float(self.width())/self.height(),
+                projection.perspective(self.camera_fov, float(width) / height,
                                        self.perspective_near, self.perspective_far)
 
             modelview = QMatrix4x4()
@@ -1286,14 +1286,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                              QVector3D(0, 1, 0))
 
             proj_model = projection * modelview
-            viewport = [0, 0, self.width(), self.height()]
+            viewport = [0, 0, width, height]
 
             def project(x, y, z):
                 projected = proj_model * QVector4D(x, y, z, 1)
                 projected /= projected.z()
                 winx = viewport[0] + (1 + projected.x()) * viewport[2] / 2
                 winy = viewport[1] + (1 + projected.y()) * viewport[3] / 2
-                winy = self.height() - winy
+                winy = height - winy
                 return winx, winy
 
             indices = []
