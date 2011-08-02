@@ -416,17 +416,17 @@ class OWScatterPlot3D(OWWidget):
 
         X, Y, Z, mask = self.get_axis_data(self.x_attr, self.y_attr, self.z_attr)
 
-        color_legend_items = []
+        color_discrete = shape_discrete = size_discrete = False
+
         if self.color_attr > 0:
             color_attr = self.candidate_attrs[self.color_attr - 1]
             C = self.data_array[:, self.color_attr - 1]
             if color_attr.varType == Discrete:
+                color_discrete = True
                 palette = OWColorPalette.ColorPaletteHSV(len(color_attr.values))
                 colors = [palette[int(value)] for value in C.ravel()]
                 colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
                 palette_colors = [palette[i] for i in range(len(color_attr.values))]
-                color_legend_items = [[0, [c.red()/255., c.green()/255., c.blue()/255., 1], 1, title]
-                    for c, title in zip(palette_colors, color_attr.values)]
             else:
                 palette = OWColorPalette.ColorPaletteBW()
                 maxC, minC = numpy.max(C), numpy.min(C)
@@ -440,6 +440,7 @@ class OWScatterPlot3D(OWWidget):
             size_attr = self.candidate_attrs[self.size_attr - 1]
             S = self.data_array[:, self.size_attr - 1]
             if size_attr.varType == Discrete:
+                size_discrete = True
                 sizes = [v+1. for v in S]
             else:
                 min, max = numpy.min(S), numpy.max(S)
@@ -451,15 +452,8 @@ class OWScatterPlot3D(OWWidget):
         if self.shape_attr > 0:
             i, shape_attr = self.discrete_attrs[self.shape_attr]
             if shape_attr.varType == Discrete:
-                # Map discrete attribute to [0...num shapes-1]
+                shape_discrete = True
                 shapes = self.data_array[:, i]
-                num_shapes = 0
-                unique_shapes = {}
-                for shape in shapes:
-                    if shape not in unique_shapes:
-                        unique_shapes[shape] = num_shapes
-                        num_shapes += 1
-                shapes = [unique_shapes[value] for value in shapes]
 
         labels = None
         if self.label_attr > 0:
@@ -471,23 +465,61 @@ class OWScatterPlot3D(OWWidget):
 
         self.plot.clear()
 
-        num_symbols = len(Symbol)
-        if self.shape_attr > 0:
-            _, shape_attr = self.discrete_attrs[self.shape_attr]
-            titles = list(shape_attr.values)
-            for i, title in enumerate(titles):
-                if i == num_symbols-1:
-                    title = ', '.join(titles[i:])
-                if color_legend_items:
-                    self.plot.legend.add_item(i, color_legend_items[i][1], 1, '{0}={1}'.format(shape_attr.name, title))
-                else:
-                    self.plot.legend.add_item(i, (0,0,0,1), 1, '{0}={1}'.format(shape_attr.name, title))
-                if i == num_symbols-1:
-                    break
+        if self.plot.show_legend:
+            legend_keys = {}
+            color_attr = color_attr if self.color_attr > 0 and color_discrete else None
+            size_attr = size_attr if self.size_attr > 0 and size_discrete else None
+            shape_attr = shape_attr if self.shape_attr > 0 and shape_discrete else None
 
-        if color_legend_items and not self.shape_attr > 0:
-            for item in color_legend_items:
-                self.plot.legend.add_item(*item)
+            single_legend = [color_attr, size_attr, shape_attr].count(None) == 2
+            if single_legend:
+                legend_join = lambda name, val: val
+            else:
+                legend_join = lambda name, val: name + '=' + val 
+
+            if color_attr != None:
+                num = len(color_attr.values)
+                val = [[], [], [1.]*num, [Symbol.RECT]*num]
+                var_values = getVariableValuesSorted(self.data.domain[self.attr_name_index[color_attr.name]])
+                for i in range(num):
+                    val[0].append(legend_join(color_attr.name, var_values[i]))
+                    c = palette_colors[i]
+                    val[1].append([c.red()/255., c.green()/255., c.blue()/255., 1.])
+                legend_keys[color_attr] = val
+
+            if shape_attr != None:
+                num = len(shape_attr.values)
+                if legend_keys.has_key(shape_attr):
+                    val = legend_keys[shape_attr]
+                else:
+                    val = [[], [(0, 0, 0, 1)]*num, [1.]*num, []]
+                var_values = getVariableValuesSorted(self.data.domain[self.attr_name_index[shape_attr.name]])
+                val[3] = []
+                val[0] = []
+                for i in range(num):
+                    val[3].append(i)
+                    val[0].append(legend_join(shape_attr.name, var_values[i]))
+                legend_keys[shape_attr] = val
+
+            if size_attr != None:
+                num = len(size_attr.values)
+                if legend_keys.has_key(size_attr):
+                    val = legend_keys[size_attr]
+                else:
+                    val = [[], [(0, 0, 0, 1)]*num, [], [Symbol.RECT]*num]
+                val[2] = []
+                val[0] = []
+                var_values = getVariableValuesSorted(self.data.domain[self.attr_name_index[size_attr.name]])
+                for i in range(num):
+                    val[0].append(legend_join(size_attr.name, var_values[i]))
+                    val[2].append(0.1 + float(i) / len(var_values))
+                legend_keys[size_attr] = val
+        else:
+            legend_keys = {}
+
+        for val in legend_keys.values():
+            for i in range(len(val[1])):
+                self.plot.legend.add_item(val[3][i], val[1][i], val[2][i], val[0][i])
 
         self.plot.scatter(X, Y, Z, colors, sizes, shapes, labels)
         self.plot.set_x_axis_title(self.candidate_attrs[self.x_attr].name)

@@ -212,9 +212,9 @@ class Legend(object):
             triangles = get_2d_symbol_data(symbol)
             glBegin(GL_TRIANGLES)
             for v0, v1, v2, _, _, _ in triangles:
-                glVertex2f(x+v0[0]*self.symbol_scale+10, item_pos_y+v0[1]*self.symbol_scale-5)
-                glVertex2f(x+v1[0]*self.symbol_scale+10, item_pos_y+v1[1]*self.symbol_scale-5)
-                glVertex2f(x+v2[0]*self.symbol_scale+10, item_pos_y+v2[1]*self.symbol_scale-5)
+                glVertex2f(x+v0[0]*self.symbol_scale*size+10, item_pos_y+v0[1]*self.symbol_scale*size-5)
+                glVertex2f(x+v1[0]*self.symbol_scale*size+10, item_pos_y+v1[1]*self.symbol_scale*size-5)
+                glVertex2f(x+v2[0]*self.symbol_scale*size+10, item_pos_y+v2[1]*self.symbol_scale*size-5)
             glEnd()
             self.plot.renderText(x+t+30, item_pos_y, text, font=self.font)
             item_pos_y += self.metrics.height()
