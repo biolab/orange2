@@ -183,8 +183,10 @@ void Plot::select_points(const QRectF& rect, Plot::SelectionBehavior behavior)
 {
     if (behavior == ReplaceSelection)
     {
+        bool b = blockSignals(true);
         unselect_all_points();
         behavior = AddSelection;
+        blockSignals(b);
     }
     set_points_state(rect, scene(), Point::Selected, behavior);
     emit selection_changed();
@@ -194,8 +196,10 @@ void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior
 {
     if (behavior == ReplaceSelection)
     {
+        bool b = blockSignals(true);
         unselect_all_points();
         behavior = AddSelection;
+        blockSignals(b);
     }
     set_points_state(area, scene(), Point::Selected, behavior);
     emit selection_changed();
