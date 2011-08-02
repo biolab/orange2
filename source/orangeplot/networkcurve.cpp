@@ -536,6 +536,14 @@ void NetworkCurve::remove_nodes(const QList<int> nodes)
 void NetworkCurve::remove_node(int index)
 {
     NodeItem* node = m_nodes.take(index);
+    Plot* p = plot();
+    if (p)
+    {
+        DataPoint d;
+        d.x = node->x();
+        d.y = node->y();
+        p->remove_point(d, this);
+    }
     foreach (EdgeItem* edge, node->connected_edges())
     {
         m_edges.removeOne(edge);

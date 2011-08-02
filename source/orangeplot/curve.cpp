@@ -30,6 +30,10 @@ Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, sce
 Curve::~Curve()
 {
     cancelAllUpdates();
+    if (plot())
+    {
+        plot()->remove_all_points(this);
+    }
 }
 
 void Curve::updateNumberOfItems()
