@@ -15,18 +15,21 @@ struct DataPoint
   double y;
 };
 
-struct ScaleUpdater
+struct ZoomUpdater
 {
-    ScaleUpdater(double scale) {m_scale = scale;}
-    void operator()(QGraphicsItem* item) {item->setScale(m_scale);}
+    ZoomUpdater(const QTransform& inv_zoom) : transform(inv_zoom) {}
+    void operator()(QGraphicsItem* item)
+    {
+        item->setTransform(transform);
+    }
     
 private:
-    double m_scale;
+    QTransform transform;
 };
 
 struct PointUpdater
 {
-    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode, double scale)
+    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode, const QTransform& scale)
     {
         m_symbol = symbol;
         m_color = color;
@@ -41,7 +44,7 @@ struct PointUpdater
         point->set_color(m_color);
         point->set_size(m_size);
         point->set_display_mode(m_mode);
-        point->setScale(m_scale);
+        point->setTransform(m_scale);
     }
     
     private:
@@ -49,7 +52,7 @@ struct PointUpdater
      QColor m_color;
      int m_size;
      Point::DisplayMode m_mode;
-     double m_scale;
+     QTransform m_scale;
 };
 
 struct Updater
@@ -154,8 +157,8 @@ public:
   bool auto_update() const;
   void set_auto_update(bool auto_update);
   
-  double zoom_factor();
-  void set_zoom_factor(double factor);
+  QTransform zoom_transform();
+  void set_zoom_transform(const QTransform& transform);
   
   double max_x_value() const;
   double min_x_value() const;
@@ -182,6 +185,9 @@ public:
   template <class Sequence, class Updater>
   void update_items(Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
   
+protected:
+  QTransform point_transform();
+  
 private:
   void checkForUpdate();
   void updateNumberOfItems();
@@ -203,7 +209,7 @@ private:
     
   QPen m_pen;
   QBrush m_brush;
-  double m_zoom_factor;
+  QTransform m_zoom_transform;
   QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
 };
 

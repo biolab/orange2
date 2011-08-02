@@ -67,7 +67,7 @@ void Curve::update_properties()
   if (m_continuous)
   {
     QPen p = m_pen;
-    p.setWidthF(m_pen.widthF()/m_zoom_factor);
+    p.setWidthF(m_pen.widthF()/m_zoom_transform.determinant());
     m_lineItem->setPen(p);
     m_line = QPainterPath();
     if (!m_data.isEmpty())
@@ -108,7 +108,7 @@ void Curve::update_properties()
   
   if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
   {
-    update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, 1.0/m_zoom_factor), UpdateSymbol);
+    update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, point_transform()), UpdateSymbol);
   }
   m_needsUpdate = 0;
 }
@@ -313,16 +313,16 @@ void Curve::set_dirty(Curve::UpdateFlags flags)
     checkForUpdate();
 }
 
-double Curve::zoom_factor()
+void Curve::set_zoom_transform(const QTransform& transform)
 {
-    return m_zoom_factor;
-}
-
-void Curve::set_zoom_factor(double factor)
-{
-    m_zoom_factor = factor;
+    m_zoom_transform = transform;
     m_needsUpdate |= UpdateZoom;
     checkForUpdate();
+}
+
+QTransform Curve::zoom_transform()
+{
+    return m_zoom_transform;
 }
 
 void Curve::cancelAllUpdates()
@@ -346,5 +346,11 @@ void Curve::register_points()
         p->remove_all_points(this);
         p->add_points(m_data, m_pointItems, this);
     }
+}
+
+QTransform Curve::point_transform()
+{
+    const QTransform i = m_zoom_transform.inverted();
+    return QTransform(i.m11(), 0, 0, 0, i.m22(), 0, 0, 0, 1.0);
 }
 

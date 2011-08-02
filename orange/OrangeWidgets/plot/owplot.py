@@ -88,19 +88,12 @@ class OWPlot(orangeplot.Plot):
         
             The plot title, usually show on top of the plot
             
-        .. attribute:: zoom_transform
-            
-            Contains the current zoom transformation 
-            
         .. automethod:: set_main_title
         
         .. automethod:: set_show_main_title
     
     **Coordinate transformation**
     
-        .. attribute zoom_transform
-        
-            A QTransform that contains the current zoom transformation
         
         .. automethod:: map_to_graph
         
@@ -217,9 +210,8 @@ class OWPlot(orangeplot.Plot):
         
         self._marker_items = []
         
-        self._zoom_factor = 1.0
-        self._zoom_point = None
-        self.zoom_transform = QTransform()
+        self._zoom_rect = None
+        self._zoom_transform = QTransform()
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
@@ -278,7 +270,7 @@ class OWPlot(orangeplot.Plot):
         else:
             point = point * self.map_transform
         if zoom:
-            point = point * self.zoom_transform
+            point = point * self._zoom_transform
         return (point.x(), point.y())
         
     def map_from_graph(self, point, axes = None, zoom = False):
@@ -292,7 +284,7 @@ class OWPlot(orangeplot.Plot):
             (x, y) = point
             point = QPointF(x,y)
         if zoom:
-            t, ok = self.zoom_transform.inverted()
+            t, ok = self._zoom_transform.inverted()
             point = point * t
         if axes:
             x_id, y_id = axes
@@ -385,7 +377,6 @@ class OWPlot(orangeplot.Plot):
         
     def setData(self, data):
         self.clear()
-        self.zoomStack = []
         self.replot()
         
     def setXlabels(self, labels):
@@ -482,7 +473,7 @@ class OWPlot(orangeplot.Plot):
             If ``enableLegend`` is ``True``, a curve symbol is added to the legend. 
         '''
         c = OWCurve(xData, yData, x_axis_key, y_axis_key, tooltip=name, parent=self.graph_item)
-        c.set_zoom_factor(self._zoom_factor)
+        c.set_zoom_transform(self._zoom_transform)
         c.name = name
         c.set_style(style)
         
@@ -565,6 +556,7 @@ class OWPlot(orangeplot.Plot):
             Clears the plot, removing all curves, markers and tooltips. 
             Axes are not removed
         '''
+        qDebug('  ## Clearing the plot ##  ')
         for i in self.plot_items():
             self.remove_item(i)
         self._bounds_cache = {}
@@ -668,29 +660,19 @@ class OWPlot(orangeplot.Plot):
             c.set_graph_transform(self.transform_for_axes(x,y))
             c.update_properties()
             
-    def update_zoom(self, recalculate_transform = True):
+    def update_zoom(self):
         '''
             Updates the zoom transformation of the plot items. 
         '''
-        if recalculate_transform:
-            self.zoom_transform = self.transform_for_zoom(self._zoom_factor, self._zoom_point, self.graph_area)
-        self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
+        zt = self.zoom_transform
+        self._zoom_transform = zt
         for c in self.plot_items():
-            if hasattr(c, 'set_zoom_factor'):
-                c.set_zoom_factor(self._zoom_factor)
+            if hasattr(c, 'set_zoom_transform'):
+                c.set_zoom_transform(zt)
                 c.update_properties()
-        self.graph_item.setTransform(self.zoom_transform)
+                
+        self.graph_item.setTransform(zt)
         
-        for item, region in self.selection_items:
-            item.setTransform(self.zoom_transform)
-        
-        """
-        NOTE: I'm not sure if this is necessary
-        for item,x,y,x_axis,y_axis in self._marker_items:
-            p = QPointF(x,y) * self.transform_for_axes(x_axis, y_axis) * self.zoom_transform + QPointF(4,4)
-            r = item.boundingRect()
-            item.setPos(p - r.center() + r.topLeft())
-        """
         self.update_axes(zoom_only=True)
         self.viewport().update()
         
@@ -725,11 +707,11 @@ class OWPlot(orangeplot.Plot):
                 t = self.transform_for_axes(x, y)
                 graph_line = t.map(item.data_line)
                 if item.zoomable:
-                    item.graph_line = self.zoom_transform.map(graph_line)
+                    item.graph_line = self._zoom_transform.map(graph_line)
                 else:
                     item.graph_line = graph_line
                 item.graph_line.translate(self.graph_item.pos())
-            item.zoom_transform = self.zoom_transform
+            item.zoom_transform = self._zoom_transform
             item.update(zoom_only)
         
     def replot(self):
@@ -769,10 +751,13 @@ class OWPlot(orangeplot.Plot):
         return self._legend
         
     def legend_rect(self):
-        return self._legend.mapRectToScene(self._legend.boundingRect())
+        if self.show_legend:
+            return self._legend.mapRectToScene(self._legend.boundingRect())
+        else:
+            return QRectF()
         
     def isLegendEvent(self, event, function):
-        if self.legend_rect().contains(self.mapToScene(event.pos())):
+        if self.show_legend and self.legend_rect().contains(self.mapToScene(event.pos())):
             function(self, event)
             return True
         else:
@@ -796,6 +781,7 @@ class OWPlot(orangeplot.Plot):
         self._pressed_mouse_button = event.button()
         if event.button() == Qt.LeftButton and self.state == PANNING:
             self._last_pan_pos = point
+        event.accept()
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -816,19 +802,18 @@ class OWPlot(orangeplot.Plot):
             return
         
         if self._pressed_mouse_button == Qt.LeftButton:
-            if self.state == SELECT_RECTANGLE and self.graph_area.contains(point):
+            if self.state in [ZOOMING, SELECT] and self.graph_area.contains(point):
                 if not self._current_rs_item:
                     self._selection_start_point = self.mapToScene(event.pos())
                     self._current_rs_item = QGraphicsRectItem(scene=self.scene())
                     self._current_rs_item.setPen(SelectionPen)
                     self._current_rs_item.setBrush(SelectionBrush)
                     self._current_rs_item.setZValue(SelectionZValue)
-                if self._current_rs_item:
-                    self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
+                self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
             elif self.state == PANNING:
-                self._zoom_point = self._zoom_point - (point - self._last_pan_pos) * (self._zoom_factor - 1.0)
+                if self._last_pan_pos:
+                    self.pan(point - self._last_pan_pos)
                 self._last_pan_pos = point
-                self.update_zoom()
         elif not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
             self._current_ps_polygon[-1] = point
             self._current_ps_item.setPolygon(self._current_ps_polygon)
@@ -845,7 +830,7 @@ class OWPlot(orangeplot.Plot):
             if type(text) == int: 
                 text = self.buildTooltip(text)
             if text and x is not None and y is not None:
-                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform)
+                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self._zoom_transform)
                 self.showTip(tp.x(), tp.y(), text)
         
     def mouseReleaseEvent(self, event):
@@ -861,27 +846,26 @@ class OWPlot(orangeplot.Plot):
         if self.isLegendEvent(event, QGraphicsView.mouseReleaseEvent):
             return
         
-        if event.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE and self._current_rs_item:
-            self.add_selection(self._current_rs_item.rect())
+        if event.button() == Qt.LeftButton and self.state in [ZOOMING, SELECT] and self._current_rs_item:
+            rect = self._current_rs_item.rect()
+            if self.state == ZOOMING:
+                self.zoom_to_rect(rect)
+            else:
+                self.add_selection(rect)
             self.scene().removeItem(self._current_rs_item)
             self._current_rs_item = None
     
     def mouseStaticClick(self, event):
-            
         point = self.mapToScene(event.pos())
+        if point not in self.graph_area:
+            return False
         if self.state == ZOOMING:
-            t, ok = self.zoom_transform.inverted()
-            if not ok:
-                return False
-            p = point * t
             if event.button() == Qt.LeftButton:
-                end_zoom_factor = self._zoom_factor * 2
-                self._zoom_point = p
+                self.zoom_in(point)
             elif event.button() == Qt.RightButton:
-                end_zoom_factor = max(self._zoom_factor/2, 1)
+                self.zoom_out(point)
             else:
                 return False
-            self.animate(self, 'zoom_factor', float(end_zoom_factor))
             return True
             
         elif self.state == SELECT_POLYGON and event.button() == Qt.LeftButton:
@@ -915,10 +899,7 @@ class OWPlot(orangeplot.Plot):
                     break
             self.selection_items.reverse()
         elif self.state == SELECT:
-            dr = self.data_rect_for_axes()
-            gr = self.graph_area
-            d = 10 * max(dr.width(), dr.height()) / max(gr.width(), gr.height())
-            point_item = self.nearest_point(self.map_from_graph(point), d)
+            point_item = self.nearest_point(point)
             b = self.selection_behavior
             if b == self.ReplaceSelection:
                 self.unselect_all_points()
@@ -937,6 +918,8 @@ class OWPlot(orangeplot.Plot):
             
     @staticmethod
     def transform_from_rects(r1, r2):
+        if r1 is None or r2 is None:
+            return QTransform()
         if r1.width() == 0 or r1.height() == 0 or r2.width() == 0 or r2.height() == 0:
             return QTransform()
         tr1 = QTransform().translate(-r1.left(), -r1.top())
@@ -955,35 +938,16 @@ class OWPlot(orangeplot.Plot):
         t.scale(factor, factor)
         t.translate(-dp.x(), -dp.y())
         return t
-
-    @pyqtProperty(QRectF)
-    def zoom_area(self):
-        return self._zoom_area
         
-    @zoom_area.setter
-    def zoom_area(self, value):
-        self._zoom_area = value
-        self.zoom_transform = self.transform_from_rects(self._zoom_area, self.graph_area)
-        self.zoom_rect = self.zoom_transform.mapRect(self.graph_area)
-        self.replot()
+    def rect_for_zoom(self, point, old_rect, scale = 2):
+        r = QRectF()
+        r.setWidth(old_rect.width() / scale)
+        r.setHeight(old_rect.height() / scale)
+        r.moveCenter(point)
         
-    @pyqtProperty(float)
-    def zoom_factor(self):
-        return self._zoom_factor
+        self.ensure_inside(r, old_rect)
         
-    @zoom_factor.setter
-    def zoom_factor(self, value):
-        self._zoom_factor = value
-        self.update_zoom()
-        
-    @pyqtProperty(QPointF)
-    def zoom_point(self):
-        return self._zoom_point
-        
-    @zoom_point.setter
-    def zoom_point(self, value):
-        self._zoom_point = value
-        self.update_zoom()
+        return r
         
     def set_state(self, state):
         self.state = state
@@ -1232,3 +1196,70 @@ class OWPlot(orangeplot.Plot):
     def send_selection(self):
         if self.auto_send_selection_callback:
             self.auto_send_selection_callback()
+            
+    def pan(self, delta):
+        if type(delta) == tuple:
+            x, y = delta
+        else:
+            x, y = delta.x(), delta.y()
+        t = self.zoom_transform
+        x = x / t.m11()
+        y = y / t.m22()
+        r = QRectF(self.zoom_rect)
+        r.translate(-QPointF(x,y))
+        self.ensure_inside(r, self.graph_area)
+        self.zoom_rect = r
+
+    def zoom_to_rect(self, rect):
+        self.ensure_inside(rect, self.graph_area)
+        self.animate(self, 'zoom_rect', rect)
+
+    def reset_zoom(self):
+        self._zoom_rect = None
+        self.update_zoom()
+        
+    @pyqtProperty(QTransform)
+    def zoom_transform(self):
+        return self.transform_from_rects(self.zoom_rect, self.graph_area)
+        
+    def zoom_in(self, point):
+        self.zoom(point, scale = 2)
+        
+    def zoom_out(self, point):
+        self.zoom(point, scale = 0.5)
+        
+    def zoom(self, point, scale):
+        r = QRectF(self.zoom_rect)
+        i = 1.0/scale
+        r.setTopLeft(point*(1-i) + r.topLeft()*i)
+        r.setBottomRight(point*(1-i) + r.bottomRight()*i)
+        
+        self.ensure_inside(r, self.graph_area)
+        self.zoom_to_rect(r)
+        
+    @pyqtProperty(QRectF)
+    def zoom_rect(self):
+        return self._zoom_rect if self._zoom_rect else self.graph_area
+        
+    @zoom_rect.setter
+    def zoom_rect(self, rect):
+        self._zoom_rect = rect
+        self._zoom_transform = self.transform_from_rects(rect, self.graph_area)
+        self.update_zoom()
+        
+    @staticmethod
+    def ensure_inside(small_rect, big_rect):
+        if small_rect.width() > big_rect.width():
+            small_rect.setWidth(big_rect.width())
+        if small_rect.height() > big_rect.height():
+            small_rect.setHeight(big_rect.height())
+        
+        if small_rect.right() > big_rect.right():
+            small_rect.moveRight(big_rect.right())
+        elif small_rect.left() < big_rect.left():
+            small_rect.moveLeft(big_rect.left())
+            
+        if small_rect.bottom() > big_rect.bottom():
+            small_rect.moveBottom(big_rect.bottom())
+        elif small_rect.top() < big_rect.top():
+            small_rect.moveTop(big_rect.top())

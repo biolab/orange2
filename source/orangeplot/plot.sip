@@ -66,7 +66,7 @@ public:
     void unmark_all_points();
     
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
-    Point* nearest_point(const DataPoint& pos, double max_distance);
+    Point* nearest_point(const QPointF& pos);
     Point* point_at(const DataPoint& pos);
     
 protected:

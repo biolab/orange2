@@ -111,21 +111,21 @@ private:
 class NodeUpdater
 {
 public:
-    NodeUpdater(const QTransform& t, double scale) : m_t(t), m_scale(scale) {}
+    NodeUpdater(const QTransform& t, const QTransform& zoom) : m_t(t), m_zoom(zoom) {}
     void operator()(NodeItem* item) 
     { 
         item->set_graph_transform(m_t); 
-        item->setScale(m_scale);
+        item->setTransform(m_zoom);
     }
 private:
     QTransform m_t;
-    double m_scale;
+    QTransform m_zoom;
 };
 
 class EdgeUpdater
 {
 public:
-    EdgeUpdater(const QTransform& t) : m_t(t){}
+    EdgeUpdater(const QTransform& t) : m_t(t) {}
     void operator()(EdgeItem* item)
     {
     	NodeItem *u = item->u();
@@ -138,7 +138,6 @@ public:
     }
 private:
     QTransform m_t;
-    double m_scale;
 };
 
 class NetworkCurve : public Curve

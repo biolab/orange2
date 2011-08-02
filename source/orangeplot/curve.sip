@@ -98,8 +98,8 @@ public:
   int style() const;
   void set_style(int style);
  
-  double zoom_factor();
-  void set_zoom_factor(double factor);
+  QTransform zoom_transform();
+  void set_zoom_transform(const QTransform& transform);
 
   bool auto_update() const;
   void set_auto_update(bool auto_update);
@@ -119,5 +119,8 @@ public:
   typedef QFlags<Curve::UpdateFlag> UpdateFlags;
   
   void set_dirty(Curve::UpdateFlags flags = Curve::UpdateAll);
+  
+protected:
+  QTransform point_transform();
   
 };

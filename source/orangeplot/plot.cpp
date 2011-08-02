@@ -12,10 +12,10 @@ inline uint qHash(const DataPoint& pos)
     return pos.x + pos.y;
 }
 
-inline double distance(const DataPoint& one, const DataPoint& other)
+inline double distance(const QPointF& one, const QPointF& other)
 {
     // For speed, we use the slightly wrong method, also known as Manhattan distance
-    return fabs(one.x - other.x) + fabs(one.y - other.y); 
+    return (one - other).manhattanLength();
 }
 
 inline bool operator==(const DataPoint& one, const DataPoint& other)
@@ -239,7 +239,7 @@ Point* Plot::point_at(const DataPoint& pos)
     return 0;
 }
 
-Point* Plot::nearest_point(const DataPoint& pos, double max_distance)
+Point* Plot::nearest_point(const QPointF& pos)
 {
     QPair<double, DataPoint> closest_point = qMakePair( std::numeric_limits<double>::max(), DataPoint() );
     foreach (PlotItem* item, plot_items())
@@ -252,7 +252,7 @@ Point* Plot::nearest_point(const DataPoint& pos, double max_distance)
         PointSet::ConstIterator end = m_point_set[item].constEnd();
         for (it; it != end; ++it)
         {
-            const double d = distance(*it, pos);
+            const double d = distance(m_point_hash[item][*it]->pos(), pos);
             if (d < closest_point.first)
             {
                 closest_point.first = d;
@@ -260,11 +260,15 @@ Point* Plot::nearest_point(const DataPoint& pos, double max_distance)
             }
         }
     }
-    if (closest_point.first < max_distance)
+    Point* point = point_at(closest_point.second);
+    if(distance(point->pos(), pos) <= point->size())
     {
-        return point_at(closest_point.second);
+        return point;
     }
-    return 0;
+    else
+    {
+        return 0;
+    }
 }
 
 void Plot::add_point(const DataPoint& pos, Point* item, PlotItem* parent)

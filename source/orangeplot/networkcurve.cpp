@@ -276,8 +276,7 @@ NetworkCurve::~NetworkCurve()
 void NetworkCurve::update_properties()
 {
     const QTransform t = graph_transform();
-    const double scale = 1.0/zoom_factor();
-    update_items(m_nodes, NodeUpdater(t, scale), UpdatePosition);
+    update_items(m_nodes, NodeUpdater(t, point_transform()), UpdatePosition);
     update_items(m_edges, EdgeUpdater(t), UpdatePen);
 }
 

@@ -57,13 +57,7 @@ public:
      **/
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
     
-    /**
-     * This function uses a fuzzy equality check, so it will return any function that is near enough. 
-     * 
-     * The equality check is specified in compare_data()
-     * 
-     **/
-    Point* nearest_point(const DataPoint& pos, double max_distance);
+    Point* nearest_point(const QPointF& pos);
     
     Point* point_at(const DataPoint& pos);
     
