@@ -101,6 +101,7 @@ def get_2d_symbol_edges(symbol):
         return _symbol_edges[symbol]
     file_name = symbol_edge_map[symbol]
     file_name = os.path.join(os.path.dirname(__file__), file_name)
+    print(file_name)
     lines = open(file_name).readlines()
     vertices_lines = filter(lambda line: line.startswith('v'), lines)
     edges_lines =    filter(lambda line: line.startswith('f'), lines)

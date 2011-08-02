@@ -1100,7 +1100,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         sizes = [size / self.max_size for size in sizes]
 
         if symbols == None:
-            symbols = [Symbol.TRIANGLE for _ in range(num_points)]
+            symbols = [Symbol.RECT for _ in range(num_points)]
 
         # We scale and translate data into almost-unit cube centered around (0,0,0) in plot-space.
         # It's almost-unit because the length of its edge is specified with view_cube_edge.

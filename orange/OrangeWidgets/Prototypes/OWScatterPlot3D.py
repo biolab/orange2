@@ -420,7 +420,7 @@ class OWScatterPlot3D(OWWidget):
                 colors = [palette[int(value)] for value in C.ravel()]
                 colors = [[c.red()/255., c.green()/255., c.blue()/255., self.alpha_value/255.] for c in colors]
                 palette_colors = [palette[i] for i in range(len(color_attr.values))]
-                color_legend_items = [[Symbol.TRIANGLE, [c.red()/255., c.green()/255., c.blue()/255., 1], 1, title]
+                color_legend_items = [[0, [c.red()/255., c.green()/255., c.blue()/255., 1], 1, title]
                     for c, title in zip(palette_colors, color_attr.values)]
             else:
                 palette = OWColorPalette.ColorPaletteBW()
@@ -473,11 +473,14 @@ class OWScatterPlot3D(OWWidget):
             for i, title in enumerate(titles):
                 if i == num_symbols-1:
                     title = ', '.join(titles[i:])
-                self.plot.legend.add_item(i, (0,0,0,1), 1, '{0}={1}'.format(shape_attr.name, title))
+                if color_legend_items:
+                    self.plot.legend.add_item(i, color_legend_items[i][1], 1, '{0}={1}'.format(shape_attr.name, title))
+                else:
+                    self.plot.legend.add_item(i, (0,0,0,1), 1, '{0}={1}'.format(shape_attr.name, title))
                 if i == num_symbols-1:
                     break
 
-        if color_legend_items:
+        if color_legend_items and not self.shape_attr > 0:
             for item in color_legend_items:
                 self.plot.legend.add_item(*item)
 
