@@ -44,8 +44,8 @@ class OWNxExplorerQt(OWWidget):
                  NetworkCanvas=OWNxCanvas):
         OWWidget.__init__(self, parent, signalManager, name)
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Orange.network.Graph, self.set_graph, Default),
-                       ("Nx View", Orange.network.NxView, self.set_network_view),
+        self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
+                       ("Network", Orange.network.Graph, self.set_graph, Default),
                        ("Items", Orange.data.Table, self.setItems),
                        ("Items to Mark", Orange.data.Table, self.markItems), 
                        ("Items Subset", Orange.data.Table, self.setExampleSubset), 

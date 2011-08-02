@@ -668,12 +668,25 @@ class OWNxCanvas(OWPlot):
         remove_nodes = list(old_nodes.difference(inter_nodes))
         add_nodes = new_nodes.difference(inter_nodes)
         
-        
-        
         self.graph = newgraph
+        
         self.networkCurve.remove_nodes(list(remove_nodes))
         
         nodes = dict((v, NodeItem(v, parent=self.networkCurve)) for v in new_nodes)
+        
+        #build edge index
+        row_ind = {}
+        if self.links is not None and len(self.links) > 0:
+          for i, r in enumerate(self.links):
+              u = int(r['u'].value)
+              v = int(r['v'].value)
+              if u in self.graph and v in self.graph:
+                  u_dict = row_ind.get(u, {})
+                  v_dict = row_ind.get(v, {})
+                  u_dict[v] = i
+                  v_dict[u] = i
+                  row_ind[u] = u_dict
+                  row_ind[v] = v_dict
         
         #add edges
         if self.links is not None and len(self.links) > 0:
@@ -699,23 +712,10 @@ class OWNxCanvas(OWPlot):
                                       self.graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges(new_nodes)]
             
         
-        #self.networkCurve.add_nodes(nodes, edges)
-                  
-        #self.minEdgeWeight = min(edge.weight for edge in edges) if len(edges) > 0 else 0
-        #self.maxEdgeWeight = max(edge.weight for edge in edges) if len(edges) > 0 else 0
+        self.networkCurve.add_nodes(nodes, edges)
         
-        #if self.minEdgeWeight is None: 
-        #    self.minEdgeWeight = 0 
-        
-        #if self.maxEdgeWeight is None: 
-        #    self.maxEdgeWeight = 0 
-                          
-        #self.maxEdgeSize = 10
-            
-        #self.setEdgesSize()
-        #self.setVerticesSize()
-        
-        self.replot()
+        #self.replot()
+        pass
         
     def set_graph(self, graph, curve=None, items=None, links=None):
         self.clear()
@@ -789,25 +789,6 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_edges(edges)
         self.networkCurve.update_properties()
         self.replot()
-#        
-#        self.minEdgeWeight = min(edge.weight for edge in edges) if len(edges) > 0 else 0
-#        self.maxEdgeWeight = max(edge.weight for edge in edges) if len(edges) > 0 else 0
-#        
-#        if self.minEdgeWeight is None: 
-#            self.minEdgeWeight = 0 
-#        
-#        if self.maxEdgeWeight is None: 
-#            self.maxEdgeWeight = 0 
-#                          
-#        self.maxEdgeSize = 10
-#            
-#        self.setEdgesSize()
-#        self.setVerticesSize()
-#        
-#        self.networkCurve.coors = self.layout.map_to_graph(self.graph)
-#        self.networkCurve.vertices = vertices
-#        self.networkCurve.edges = edges
-#        self.networkCurve.changed()
         
     def setEdgesSize(self):
 #        if self.maxEdgeWeight > self.minEdgeWeight:
