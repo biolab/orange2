@@ -44,6 +44,8 @@ Utility functions
 
 .. autofunction:: plot_evimp
 
+.. autofunction:: bagged_evimp
+
 """
 
 import Orange
@@ -65,7 +67,7 @@ class EarthLearner(Orange.core.LearnerFD):
         
     def __init__(self, degree=1, terms=21, penalty= None, thresh=1e-3,
                  min_span=0, new_var_penalty=0, fast_k=20, fast_beta=1,
-                 pruned_terms=None, scale_resp=False, store_examples=True,
+                 pruned_terms=None, scale_resp=True, store_examples=True,
                  multi_label=False, **kwds):
         """ Initialize the learner instance.
         
@@ -131,6 +133,11 @@ class EarthLearner(Orange.core.LearnerFD):
         y = data[:, label_mask]
         x = data[:, ~ label_mask]
         
+        if self.scale_resp:
+            y = y - numpy.mean(y, axis=0)
+            y = y / numpy.std(y, axis=1)
+            
+            
         # TODO: y scaling
         n_terms, used, bx, dirs, cuts = forward_pass(x, y,
             degree=self.degree, terms=self.terms, penalty=self.penalty,
@@ -455,6 +462,38 @@ def forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
     lin_preds = numpy.zeros((n_preds,), dtype=numpy.int, order="F")
     use_beta_cache = True
     
+    # These tests are performed in ForwardPass, and if they fail the function
+    # calls exit. So we must check it here and raise a exception to avoid a
+    # process shutdown.
+    if n_cases < 8:
+        raise ValueError("Need at least 8 data instances.")
+    if n_cases > 1e8:
+        raise ValueError("To many data instances.")
+    if n_resp < 1:
+        raise ValueError("No response column.")
+    if n_resp > 1e6:
+        raise ValueError("To many response columns.")
+    if n_preds < 1:
+        raise ValueError("No predictor columns.")
+    if n_preds > 1e5:
+        raise ValueError("To many predictor columns.")
+    if degree <= 0 or degree > 100:
+        raise ValueError("Invalid 'degree'.")
+    if terms < 3 or terms > 10000:
+        raise ValueError("'terms' must be in >= 3 and <= 10000.")
+    if penalty < 0 and penalty != -1:
+        raise ValueError("Invalid 'penalty' (the only legal negative value is -1).")
+    if penalty > 1000:
+        raise ValueError("Invalid 'penalty' (must be <= 1000).")
+    if thresh < 0.0 or thresh >= 1.0:
+        raise ValueError("Invalid 'thresh' (must be in [0.0, 1.0) ).")
+    if fast_beta < 0 or fast_beta > 1000:
+        raise ValueError("Invalid 'fast_beta' (must be in [0, 1000] ).")
+    if new_var_penalty < 0 or new_var_penalty > 10:
+        raise ValueError("Invalid 'new_var_penalty' (must be in [0, 10] ).")
+    if (numpy.var(y, axis=0) <= 1e-8).any():
+        raise ValueError("Variance of y is zero (or near zero).")
+     
     _c_forward_pass_(ctypes.byref(n_term), full_set, bx, dirs, cuts,
                      n_factors_in_terms, n_uses, x, y, weights, n_cases,
                      n_resp, n_preds, degree, terms, penalty, thresh,
@@ -597,12 +636,45 @@ def plot_evimp(evimp):
     x_axis.set_ticklabels([a.name for a in attrs], rotation=45)
     
     axes1.yaxis.set_label_text("nsubsets")
-    axes2.yaxis.set_label_text("normalizes gcc or rss")
+    axes2.yaxis.set_label_text("normalized gcv or rss")
 
     axes1.legend([l1, l2, l3], ["nsubsets", "gcv", "rss"])
     axes1.set_title("Variable importance")
     fig.show()
     
+def bagged_evimp(classifier, used_only=True):
+    """ Extract combined (average) evimp from an instance of BaggedClassifier
+    
+    Example: ::
+        >>> from Orange.ensemble.bagging import BaggedLearner
+        >>> bc = BaggedLearner(EarthLearner(degree=3, terms=10), data)
+        >>> bagged_evimp(bc)
+        
+    """
+    def assert_type(object, class_):
+        if not isinstance(object, class_):
+            raise TypeError("Instance of %r expected." % (class_))
+    from collections import defaultdict
+    from Orange.ensemble.bagging import BaggedClassifier
+    
+    assert_type(classifier, BaggedClassifier)
+    bagged_imp = defaultdict(list)
+    
+    for c in classifier.classifiers:
+        assert_type(c, EarthClassifier)
+        imp = evimp(c, used_only=False)
+        for attr, score in imp:
+            bagged_imp[attr].append(score)
+            
+    for attr, scores in bagged_imp.items():
+        scores = numpy.average(scores, axis=0)
+        bagged_imp[attr] = tuple(scores)
+    
+    bagged_imp = sorted(bagged_imp.items(), key=lambda t:t[1][0],
+                        reverse=True)    
+    if used_only:
+        bagged_imp = [(a, r) for a, r in bagged_imp if r[0] > 0]
+    return bagged_imp
 
 """
 Printing functions.
