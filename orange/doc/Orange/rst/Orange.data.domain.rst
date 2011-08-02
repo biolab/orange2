@@ -20,11 +20,11 @@ Domains as lists
 ================
 
 Domains resemble lists: the length of domain is the number of
-variables, including the class attribute. Iterating through domain
-goes through attributes and the class attribute, but not through meta
+variables, including the class variable. Iterating through domain
+goes through features and the class variable, but not through meta
 attributes. Domains can be indexed by integer indices, variable names
 or instances of :obj:`Orange.data.variables.Variable`. Domain has a
-method :obj:`Domain.index` that returns the index of an attribute
+method :obj:`Domain.index` that returns the index of a variable
 specified by a descriptor, name. Slices can be retrieved, but not
 set. ::
 
@@ -185,7 +185,7 @@ appropriate values, otherwise they will have a "don't know" value. ::
 
 Domain ``d2`` in this example has variables ``a``, ``b``, ``e`` and the
 class, while the other three variables are added as meta
-attributes, together with additional attribute X. Results is as
+attributes, together with additional attribute X. Results are as
 follows. ::
 
      >>> print data[55]
@@ -193,7 +193,7 @@ follows. ::
      >>> print data2[55]
      ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?'}
 
-fter conversion, the three attributes are moved to meta attributes
+After conversion, the three attributes are moved to meta attributes
 and the new attribute appears as unknown.
 
 .. class:: Domain
