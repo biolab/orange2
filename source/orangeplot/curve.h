@@ -187,6 +187,8 @@ public:
   
 protected:
   QTransform point_transform();
+  Curve::UpdateFlags needs_update();
+  void set_updated(Curve::UpdateFlags flags);
   
 private:
   void checkForUpdate();
@@ -223,6 +225,8 @@ void Curve::update_items(Sequence& sequence, Updater updater, Curve::UpdateFlag 
     }
     m_currentUpdate[flag] = QtConcurrent::map(sequence, updater);
 }
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Curve::UpdateFlags)
 
 
 #endif // CURVE_H

@@ -354,3 +354,15 @@ QTransform Curve::point_transform()
     return QTransform(i.m11(), 0, 0, 0, i.m22(), 0, 0, 0, 1.0);
 }
 
+Curve::UpdateFlags Curve::needs_update()
+{
+    return m_needsUpdate;
+}
+
+void Curve::set_updated(Curve::UpdateFlags flags)
+{
+    m_needsUpdate &= ~flags;
+}
+
+
+

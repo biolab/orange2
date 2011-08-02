@@ -122,5 +122,7 @@ public:
   
 protected:
   QTransform point_transform();
+  void set_updated(Curve::UpdateFlags flags);
+  Curve::UpdateFlags needs_update();
   
 };

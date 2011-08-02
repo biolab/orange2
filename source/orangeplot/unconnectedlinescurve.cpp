@@ -32,13 +32,17 @@ void UnconnectedLinesCurve::update_properties()
         }
     }
     Q_ASSERT(m_items.size() == n);
-    QLineF line;
-    QPen p = pen();
-    p.setCosmetic(true);
-    for (int i = 0; i < n; ++i)
+    if (needs_update() & (UpdatePosition | UpdatePen) )
     {
-        line.setLine( d[2*i].x, d[2*i].y, d[2*i+1].x, d[2*i+1].y );
-        m_items[i]->setLine(graph_transform().map(line));
-        m_items[i]->setPen(p);
+        QLineF line;
+        QPen p = pen();
+        p.setCosmetic(true);
+        for (int i = 0; i < n; ++i)
+        {
+            line.setLine( d[2*i].x, d[2*i].y, d[2*i+1].x, d[2*i+1].y );
+            m_items[i]->setLine(graph_transform().map(line));
+            m_items[i]->setPen(p);
+        }
+        set_updated(UpdatePosition | UpdatePen);
     }
 }
