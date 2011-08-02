@@ -552,6 +552,24 @@ void NetworkCurve::remove_node(int index)
     delete node;
 }
 
+void NetworkCurve::add_nodes(Nodes nodes, Edges edges)
+{
+	int i, ndx;
+	for (i = 0; i < nodes.size(); ++i)
+	{
+		ndx = nodes[i]->index();
+		if (m_nodes.contains(ndx))
+		{
+			remove_node(ndx);
+		}
+	}
+
+	m_nodes.unite(nodes);
+	register_points();
+
+	m_edges.append(edges);
+}
+
 void NetworkCurve::set_node_colors(const QMap<int, QColor*> colors)
 {
 	QMap<int, QColor*>::ConstIterator it;
