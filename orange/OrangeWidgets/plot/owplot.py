@@ -906,6 +906,7 @@ class OWPlot(orangeplot.Plot):
                 b = self.AddSelection
             if point_item:
                 point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
+                self.selection_changed.emit()
         else:
             return False
             

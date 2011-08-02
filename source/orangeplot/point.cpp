@@ -287,10 +287,10 @@ void Point::set_state_flag(Point::StateFlag flag, bool on) {
     }
     update();
 }
+
 bool Point::state_flag(Point::StateFlag flag) const {
     return m_state & flag;
 }
-
 
 void Point::set_selected(bool selected)
 {

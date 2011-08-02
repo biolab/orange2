@@ -187,6 +187,7 @@ void Plot::select_points(const QRectF& rect, Plot::SelectionBehavior behavior)
         behavior = AddSelection;
     }
     set_points_state(rect, scene(), Point::Selected, behavior);
+    emit selection_changed();
 }
 
 void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior)
@@ -197,6 +198,7 @@ void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior
         behavior = AddSelection;
     }
     set_points_state(area, scene(), Point::Selected, behavior);
+    emit selection_changed();
 }
 
 QList< int > Plot::selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform)
@@ -213,6 +215,22 @@ QList< int > Plot::selected_points(const QList< double > x_data, const QList< do
         selected << (selected_point_at(p) ? 1 : 0);
     }
     return selected;
+}
+
+QList< Point* > Plot::selected_points()
+{
+    QList<Point*> list;
+    foreach (const PointHash& hash, m_point_hash)
+    {
+        foreach (Point* point, hash)
+        {
+            if (point->is_selected())
+            {
+                list.append(point);
+            }
+        }
+    }
+    return list;
 }
 
 Point* Plot::selected_point_at(const DataPoint& pos)

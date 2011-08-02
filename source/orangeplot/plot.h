@@ -56,6 +56,7 @@ public:
      * created the points
      **/
     QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
+    QList< Point*> selected_points();
     
     Point* nearest_point(const QPointF& pos);
     
@@ -71,7 +72,10 @@ public:
     
     void unselect_all_points();
     void unmark_all_points();
-       
+    
+Q_SIGNALS:
+    void selection_changed();
+    
 protected:
     void set_clean();
     bool is_dirty();
