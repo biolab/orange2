@@ -910,6 +910,11 @@ class OWPlot(orangeplot.Plot):
         else:
             return False
             
+    def wheelEvent(self, event):
+        point = self.mapToScene(event.pos())
+        d = event.delta() / 120.0
+        self.zoom(point, pow(2,d))
+            
     def mouseDoubleClickEvent(self, event):
         ## We don't want this events to propagate to the scene
         event.ignore()
@@ -946,7 +951,7 @@ class OWPlot(orangeplot.Plot):
         r.setHeight(old_rect.height() / scale)
         r.moveCenter(point)
         
-        self.ensure_inside(r, old_rect)
+        self.ensure_inside(r, self.graph_area)
         
         return r
         
