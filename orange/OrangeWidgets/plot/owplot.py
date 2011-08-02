@@ -520,6 +520,8 @@ class OWPlot(orangeplot.Plot):
             del self._bounds_cache[axis_id]
         self._transform_cache = {}
         self.axes[axis_id] = a
+        if not axis_id in CartesianAxes:
+            self.setShowAxisTitle(axis_id, True)
         
     def remove_all_axes(self, user_only = True):
         '''
@@ -711,6 +713,10 @@ class OWPlot(orangeplot.Plot):
                 else:
                     item.graph_line = graph_line
                 item.graph_line.translate(self.graph_item.pos())
+            if item.data_line and item.graph_line:
+                item.show()
+            else:
+                item.hide()
             item.zoom_transform = self._zoom_transform
             item.update(zoom_only)
         
