@@ -3,7 +3,7 @@ from Orange.clustering.hierarchical import (clustering,
     top_clusters, HierarchicalClustering)
                            
 from Orange.clustering.kmeans import Clustering
-from Orange.distances import *
+from Orange.distance.instances import *
                            
 import Orange.misc.testing as testing
 import orange

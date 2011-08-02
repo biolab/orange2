@@ -470,7 +470,35 @@ class PreprocessorTestCase(DataTestCase):
         s = cPickle.dumps(self.PREPROCESSOR)
         prep = cPickle.loads(s)
         
-            
+        
+from Orange.distance.instances import distance_matrix
+from Orange.misc import member_set
+
+class DistanceTestCase(DataTestCase):
+    """ Test orange.ExamplesDistance/Constructor
+    """
+    DISTANCE_CONSTRUCTOR = None
+    
+    def setUp(self):
+        self.distance_constructor = self.DISTANCE_CONSTRUCTOR
+        
+    @test_on_data
+    def test_distance_on(self, dataset):
+        import numpy
+        indices = orange.MakeRandomIndices2(dataset, min(20, len(dataset)))
+        dataset = dataset.select(indices, 0)
+        with member_set(self.distance_constructor, "ignore_class", True):
+            mat = distance_matrix(dataset, self.distance_constructor)
+        
+        m = numpy.array(list(mat))
+        self.assertTrue((m >= 0.0).all())
+        
+        if dataset.domain.class_var:
+            with member_set(self.distance_constructor, "ignore_class", False):
+                mat = distance_matrix(dataset, self.distance_constructor)
+            m1 = numpy.array(list(mat))
+            self.assertTrue((m1 != m).all() or dataset, "%r does not seem to respect the 'ignore_class' flag")
+        
 def test_case_script(path):
     """ Return a TestCase instance from a script in `path`.
     The script will be run in the directory it is in.

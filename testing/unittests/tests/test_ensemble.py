@@ -11,7 +11,8 @@ class TestBoosting(testing.LearnerTestCase):
     def test_pickling_on(self, dataset):
         testing.LearnerTestCase.test_pickling_on(self, dataset)
         
-@datasets_driven
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS +\
+                 testing.REGRESSION_DATASETS)
 class TestBagging(testing.LearnerTestCase):
     def setUp(self): 
         import orngEnsemble, orngTree
@@ -21,8 +22,8 @@ class TestBagging(testing.LearnerTestCase):
     def test_pickling_on(self, dataset):
         testing.LearnerTestCase.test_pickling_on(self, dataset)
 
-@datasets_driven
-class TestRandomForest(testing.LearnerTestCase):    
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestRandomForest(testing.LearnerTestCase):
     def setUp(self): 
         import orngEnsemble, orngTree
         self.learner = orngEnsemble.RandomForestLearner()

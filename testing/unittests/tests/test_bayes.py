@@ -1,7 +1,7 @@
 from Orange.misc import testing
 
 # TODO: test different prob estimators
-@testing.datasets_driven(testing.CLASSIFICATION_DATASETS)
+@testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestNaiveBayes(testing.LearnerTestCase):    
     def setUp(self):
         import orngBayes

@@ -1,7 +1,7 @@
 from Orange.classification.svm import SVMLearner, MeasureAttribute_SVMWeights, LinearLearner, RFE
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
 from Orange.misc import testing
-from Orange.misc.testing import datasets_driven, test_on_datasets
+from Orange.misc.testing import datasets_driven, test_on_datasets, test_on_data
 import orange
 
 
@@ -35,7 +35,7 @@ class BagOfWordsSVMTestCase(testing.LearnerTestCase):
 class CustomWrapperSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner
     
-    @test_on_datasets(datasets=datasets)
+    @test_on_data
     def test_learner_on(self, data):
         """ Test custom kernel wrapper
         """
@@ -46,7 +46,7 @@ class CustomWrapperSVMTestCase(testing.LearnerTestCase):
         testing.LearnerTestCase.test_learner_on(self, data)
     
     
-@datasets_driven(datasets=datasets)
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestLinLearner(testing.LearnerTestCase):
     LEARNER = LinearLearner
     
@@ -56,9 +56,9 @@ class TestMeasureAttr_LinWeights(testing.MeasureAttributeTestCase):
     MEASURE = MeasureAttribute_SVMWeights()
 
 
-@datasets_driven(datasets=datasets)
+@datasets_driven(datasets=["iris"])
 class TestRFE(testing.DataTestCase):
-    @datasets_driven
+    @test_on_data
     def test_rfe_on(self, data):
         rfe = RFE()
         num_selected = min(5, len(data.domain.attributes))
