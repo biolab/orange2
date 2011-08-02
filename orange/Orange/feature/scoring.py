@@ -8,17 +8,18 @@ Scoring (``scoring``)
 .. index:: 
    single: feature; feature scoring
 
-Features scoring scores the relevance of features to the
-class variable. 
+Features scoring is an assesment the relevance of features to the
+class variable; the higher a feature is scored, the better it
+should be for prediction.
 
-If `data` contains the "lenses" dataset, you can measure the quality of
-feature "tear_rate" with information gain by ::
+You can score the feature "tear_rate" of the Lenses data set
+(loaded into `data`) with::
 
     >>> meas = Orange.feature.scoring.InfoGain()
     >>> print meas("tear_rate", data)
     0.548794925213
 
-Orange also implements other measures; see
+Apart from information gain you could also use other measures;
 :ref:`classification` and :ref:`regression`. For various
 ways to call them see :obj:`Measure.__call__`.
 
@@ -30,9 +31,9 @@ it on-the-fly::
 
 You shouldn't use this with :obj:`Relief`; see :obj:`Relief` for the explanation.
 
-It is also possible to score features that are not 
-in the domain. For instance, you can score discretized
-features on the fly (slow with :obj:`Relief`):
+It is also possible to score features that are not in the domain. For
+instance, discretized features can be scored without producing a
+data table in advance (slow with :obj:`Relief`):
 
 .. literalinclude:: code/scoring-info-iris.py
     :lines: 7-11
@@ -96,17 +97,17 @@ Measures for Classification
 .. class:: GainRatio
 
     Information gain divided by the entropy of the feature's
-    value. Introduced by Quinlan in order to avoid overestimation of
-    multi-valued features. It has been shown, however, that it
-    still overestimates features with multiple values.
+    value. Introduced in [Quinlan1986]_ in order to avoid overestimation
+    of multi-valued features. It has been shown, however, that it still
+    overestimates features with multiple values.
 
 .. index:: 
    single: feature scoring; gini index
 
 .. class:: Gini
 
-    The probability that two randomly chosen examples will have different
-    classes; first introduced by Breiman.
+    The probability that two randomly chosen instances will have different
+    classes; first introduced by Breiman [Breiman1984]_.
 
 .. index:: 
    single: feature scoring; relevance
@@ -127,7 +128,7 @@ Measures for Classification
      
         Cost matrix, see :obj:`Orange.classification.CostMatrix` for details.
 
-    If cost of predicting the first class of an example that is actually in
+    If the cost of predicting the first class of an instance that is actually in
     the second is 5, and the cost of the opposite error is 1, than an appropriate
     measure can be constructed as follows::
 
@@ -137,7 +138,7 @@ Measures for Classification
         0.083333350718021393
 
     Knowing the value of feature 3 would decrease the
-    classification cost for approximately 0.083 per example.
+    classification cost for approximately 0.083 per instance.
 
 .. index:: 
    single: feature scoring; ReliefF
@@ -145,17 +146,19 @@ Measures for Classification
 .. class:: Relief
 
     Assesses features' ability to distinguish between very similar
-    examples from different classes.  First developed by Kira and Rendell
-    and then improved by Kononenko.
+    instances from different classes.  First developed by Kira and
+    Rendell and then improved by Kononenko. The class :obj:`Relief`
+    works on discrete and continuous classes and thus implements ReliefF
+    and RReliefF.
 
     .. attribute:: k
     
-       Number of neighbours for each example. Default is 5.
+       Number of neighbours for each instance. Default is 5.
 
     .. attribute:: m
     
-        Number of reference examples. Default is 100. Set to -1 to take all the
-        examples.
+        Number of reference instances. Default is 100. Set to -1 to take all the
+        instances.
 
     .. attribute:: check_cached_data
     
@@ -163,14 +166,14 @@ Measures for Classification
         on large tables.  Defaults to True. Disable it if you know that
         the data will not change.
 
-    ReliefF is slow since it needs to find k nearest neighbours for each
-    of m reference examples.  As we normally compute ReliefF for all
-    features in the dataset, :obj:`Relief` caches the results. When called
-    to score a certain feature, it computes all feature scores.
-    When called again, it uses the stored results if the domain and the
-    data table have not changed (data table version and the data checksum
-    are compared). Caching will only work if you use the same instance.
-    So, don't do this::
+    ReliefF is slow since it needs to find k nearest neighbours for
+    each of m reference instances. As we normally compute ReliefF for
+    all features in the dataset, :obj:`Relief` caches the results for
+    all features, when called to score a certain feature.  When called
+    again, it uses the stored results if the domain and the data table
+    have not changed (data table version and the data checksum are
+    compared). Caching will only work if you use the same object. So,
+    don't do this::
 
         for attr in data.domain.attributes:
             print Orange.feature.scoring.Relief(attr, data)
@@ -181,18 +184,13 @@ Measures for Classification
         for attr in table.domain.attributes:
             print meas(attr, data)
 
-    Class :obj:`Relief` works on discrete and continuous classes and thus 
-    implements functionality of algorithms ReliefF and RReliefF.
-
     .. note::
        Relief can also compute the threshold function, that is, the feature
        quality at different thresholds for binarization.
 
 .. autoclass:: Orange.feature.scoring.Distance
-   :members:
    
 .. autoclass:: Orange.feature.scoring.MDL
-   :members:
 
 .. _regression:
 
@@ -256,7 +254,7 @@ derived from :obj:`MeasureFromProbabilities`.
 
     .. attribute:: NeedsGenerator
 
-        Constant. Indicates that the measure Needs an instance generator on the input (as, for example, the
+        Constant. Indicates that the measure needs an instance generator on the input (as, for example, the
         :obj:`Relief` measure).
 
     .. attribute:: NeedsDomainContingency
@@ -281,14 +279,14 @@ derived from :obj:`MeasureFromProbabilities`.
 
     .. attribute:: IgnoreUnknowns
 
-        Constant. Examples for which the feature value is unknown are removed.
+        Constant. Instances for which the feature value is unknown are removed.
 
     .. attribute:: ReduceByUnknown
 
         Constant. Features with unknown values are 
         punished. The feature quality is reduced by the proportion of
         unknown values. For impurity measures the impurity decreases
-        only where the value is defined and stays the same otherwise,
+        only where the value is defined and stays the same otherwise.
 
     .. attribute:: UnknownsToCommon
 
@@ -309,7 +307,7 @@ derived from :obj:`MeasureFromProbabilities`.
         :type instances: `Orange.data.Table`
         :param weightID: id for meta-feature with weight.
 
-        Abstract. All measures need to support `__call__` with these
+        Abstract. All measures need to support these
         parameters.  Described below.
 
     .. method:: __call__(attribute, domain_contingency[, apriori_class_distribution])
@@ -365,7 +363,7 @@ derived from :obj:`MeasureFromProbabilities`.
         :obj:`attribute`.  Return a list of tuples, where the first
         element is a threshold (between two existing values), the second
         is the quality of the corresponding binary feature, and the last
-        the distribution of examples below and above the threshold. The
+        the distribution of instancs below and above the threshold. The
         last element is optional.
 
         To show the computation of thresholds, we shall use the Iris data set
@@ -428,6 +426,11 @@ Other
 .. [Kononenko2007] Igor Kononenko, Matjaz Kukar: Machine Learning and Data Mining, 
   Woodhead Publishing, 2007.
 
+.. [Quinlan1986] J R Quinlan: Induction of Decision Trees, Machine Learning, 1986.
+
+.. [Breiman1984] L Breiman et al: Classification and Regression Trees, Chapman and Hall, 1984.
+
+
 .. _iris.tab: code/iris.tab
 .. _lenses.tab: code/lenses.tab
 .. _scoring-relief-gainRatio.py: code/scoring-relief-gainRatio.py
@@ -474,10 +477,10 @@ class OrderAttributes:
         """Score and order all features.
 
         :param data: a data table used to score features
-        :type data: Orange.data.table
+        :type data: Orange.data.Table
 
         :param weight: meta attribute that stores weights of instances
-        :type weight: Orange.data.variable
+        :type weight: Orange.data.variable.Variable
 
         """
         if self.measure:
@@ -503,11 +506,10 @@ class Distance(Measure):
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __call__(self, attr, data, apriori_dist=None, weightID=None):
-        """Take :obj:`Orange.data.table` data table and score the given 
-        :obj:`Orange.data.variable`.
+        """Score the given feature.
 
         :param attr: feature to score
-        :type attr: Orange.data.variable
+        :type attr: Orange.data.variable.Variable
 
         :param data: a data table used to score features
         :type data: Orange.data.table
@@ -516,7 +518,7 @@ class Distance(Measure):
         :type apriori_dist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.data.variable
+        :type weightID: Orange.data.variable.Variable
 
         """
         import numpy
@@ -548,11 +550,10 @@ class MDL(Measure):
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __call__(self, attr, data, apriori_dist=None, weightID=None):
-        """Take :obj:`Orange.data.table` data table and score the given 
-        :obj:`Orange.data.variable`.
+        """Score the given feature.
 
         :param attr: feature to score
-        :type attr: Orange.data.variable
+        :type attr: Orange.data.variable.Variable
 
         :param data: a data table used to score the feature
         :type data: Orange.data.table
@@ -561,7 +562,7 @@ class MDL(Measure):
         :type apriori_dist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.data.variable
+        :type weightID: Orange.data.variable.Variable
 
         """
         attrClassCont = orange.ContingencyAttrClass(attr, data)
@@ -647,11 +648,11 @@ def score_all(data, measure=Relief(k=20, m=50)):
     a sorted list of tuples (feature name, measure).
 
     :param data: data table should include a discrete class.
-    :type data: :obj:`Orange.data.table`
+    :type data: :obj:`Orange.data.Table`
     :param measure:  feature scoring function. Derived from
-      :obj:`Orange.feature.scoring.Measure`. Defaults to 
-      :obj:`Orange.feature.scoring.Relief` with k=20 and m=50.
-    :type measure: :obj:`Orange.feature.scoring.Measure` 
+      :obj:`~Orange.feature.scoring.Measure`. Defaults to 
+      :obj:`~Orange.feature.scoring.Relief` with k=20 and m=50.
+    :type measure: :obj:`~Orange.feature.scoring.Measure` 
     :rtype: :obj:`list`; a sorted list of tuples (feature name, score)
 
     """
