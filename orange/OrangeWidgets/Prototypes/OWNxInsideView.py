@@ -42,8 +42,8 @@ class NxInsideView(Orange.network.NxView):
     def set_nhops(self, nhops):
         self._nhops = nhops
         
-    def nodes_selected(self):
-        selection = self._nx_explorer.networkCanvas.get_selected_nodes()
+    def node_selection_changed(self):
+        selection = self._nx_explorer.networkCanvas.selected_nodes()
         if len(selection) == 1:
             self._center_node = selection[0]
             self.update_network()

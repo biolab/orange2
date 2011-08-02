@@ -241,7 +241,7 @@ class OWNxCanvas(OWPlot):
         self.networkCurve = NetworkCurve()
         self.add_custom_curve(self.networkCurve)
         self.callbackMoveVertex = None
-        self.callbackSelectVertex = None
+        
         self.minComponentEdgeWidth = 0
         self.maxComponentEdgeWidth = 0
         self.items_matrix = None
@@ -260,9 +260,6 @@ class OWNxCanvas(OWPlot):
     def update_canvas(self):
         self.networkCurve.update_properties()
         
-    def getSelection(self):
-      return self.networkCurve.get_selected_nodes()
-    
     def get_marked_nodes(self):
       return self.networkCurve.get_marked_nodes()
         
@@ -351,8 +348,8 @@ class OWNxCanvas(OWPlot):
       subnet = Network(subgraph)
       return subnet
     
-    def get_selected_nodes(self):
-      return self.networkCurve.get_selected_nodes()
+    def selected_nodes(self):
+        return [p.index() for p in self.selected_points()]
     
     def getNeighboursUpTo(self, ndx, dist):
         newNeighbours = neighbours = set([ndx])
@@ -668,12 +665,41 @@ class OWNxCanvas(OWPlot):
         old_nodes = set(self.graph.nodes_iter())
         new_nodes = set(newgraph.nodes_iter())
         inter_nodes = old_nodes.intersection(new_nodes)
-        remove_nodes = old_nodes.difference(inter_nodes)
+        remove_nodes = list(old_nodes.difference(inter_nodes))
         add_nodes = new_nodes.difference(inter_nodes)
         
-        self.graph = newgraph
-        self.networkCurve.remove_nodes(remove_nodes)
         
+        
+        self.graph = newgraph
+        self.networkCurve.remove_nodes(list(remove_nodes))
+        
+        nodes = dict((v, NodeItem(v, parent=self.networkCurve)) for v in new_nodes)
+        
+        #add edges
+        if self.links is not None and len(self.links) > 0:
+            links = self.links
+            links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges(new_nodes))
+            labels = ([str(row[r].value) for r in range(2, len(row))] for row in (links[links_index] for links_index in links_indices))
+            
+            if self.graph.is_directed():
+                edges = [EdgeItem(nodes[i], nodes[j],
+                    self.graph[i][j].get('weight', 1), 0, 1, links_index, label, parent=self.networkCurve) for \
+                    ((i, j), links_index, label) in zip(self.graph.edges(new_nodes), \
+                                                        links_indices, labels)]
+            else:
+                edges = [EdgeItem(nodes[i], nodes[j],
+                    self.graph[i][j].get('weight', 1), links_index, label) for \
+                    ((i, j), links_index, label) in zip(self.graph.edges(new_nodes), \
+                                                        links_indices, labels, parent=self.networkCurve)]
+        elif self.graph.is_directed():
+            edges = [EdgeItem(nodes[i], nodes[j],
+                                      self.graph[i][j].get('weight', 1), 0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges(new_nodes)]
+        else:
+            edges = [EdgeItem(nodes[i], nodes[j],
+                                      self.graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges(new_nodes)]
+            
+        
+        #self.networkCurve.add_nodes(nodes, edges)
                   
         #self.minEdgeWeight = min(edge.weight for edge in edges) if len(edges) > 0 else 0
         #self.maxEdgeWeight = max(edge.weight for edge in edges) if len(edges) > 0 else 0
@@ -694,10 +720,6 @@ class OWNxCanvas(OWPlot):
     def set_graph(self, graph, curve=None, items=None, links=None):
         self.clear()
         self.vertexDegree = []
-        #self.vertices_old = {}
-        #self.vertices = []
-        #self.edges_old = {}
-        #self.edges = []
         self.minEdgeWeight = sys.maxint
         self.maxEdgeWeight = 0
         

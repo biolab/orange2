@@ -1364,8 +1364,9 @@ class OWNxExplorerQt(OWWidget):
     def set_network_view(self, nxView):
         self._network_view = nxView
         self._network_view.set_nx_explorer(self)
-        self.networkCanvas.callbackSelectVertex = self._network_view.nodes_selected
         self.set_graph(self.graph_base)
+        
+        QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
         
     def setItems(self, items=None):
         self.error('')
