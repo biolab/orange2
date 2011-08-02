@@ -170,6 +170,19 @@ def lru_cache(maxsize=100):
         return wrapped
     return decorating_function
 
+#from Orange.misc.render import contextmanager
+from contextlib import contextmanager
+
+@contextmanager
+def member_set(obj, name, val):
+    """ A context manager that sets member ``name`` on ``obj`` to ``val``
+    and restores the previous value on exit. 
+    """
+    old_val = getattr(obj, name, val)
+    setattr(obj, name, val)
+    yield
+    setattr(obj, name, old_val)
+    
 
 class recursion_limit(object):
     """ A context manager that sets a new recursion limit. 

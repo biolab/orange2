@@ -273,19 +273,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
 Utility functions
 -----------------
 """
-
-from Orange.misc.render import contextmanager
-
-@contextmanager 
-def member_set(obj, name, val):
-    """ A context manager that sets member ``name`` on ``obj`` to ``val``
-    and restores the previous value on exit. 
-    """
-    old_val = getattr(obj, name, val)
-    setattr(obj, name, val)
-    yield
-    setattr(obj, name, old_val)
-    
     
 def base_matrix(data, best_set, dirs, cuts):
     """ Return the base matrix for the earth model.
@@ -684,7 +671,8 @@ def _format_term(model, i, attr_name):
     return " * ".join(knots)
 
 
-
+#from Orange.misc import member_set
+# 
 #class _EarthLearner(BaseEarthLearner):
 #    """ An earth learner. 
 #    """
