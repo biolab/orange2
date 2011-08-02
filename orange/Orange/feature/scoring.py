@@ -8,8 +8,34 @@ Scoring (``scoring``)
 .. index:: 
    single: feature; feature scoring
 
-Features selection aims to find relevant features for the given
-prediction task.
+Features scoring scores the relevance of features to the
+class variable. 
+
+If `data` contains the "lenses" dataset, you can measure the quality of
+feature "tear_rate" with information gain by ::
+
+    >>> meas = Orange.feature.scoring.InfoGain()
+    >>> print meas("tear_rate", data)
+    0.548794925213
+
+Orange also implements other measures; see
+:ref:`classification` and :ref:`regression`. For various
+ways to call them see :obj:`Measure.__call__`.
+
+You can also construct the object and use
+it on-the-fly::
+
+    >>> print Orange.feature.scoring.InfoGain("tear_rate", data)
+    0.548794925213
+
+You shouldn't use this with :obj:`Relief`; see :obj:`Relief` for the explanation.
+
+It is also possible to score features that are not 
+in the domain. For instance, you can score discretized
+features on the fly (slow with :obj:`Relief`):
+
+.. literalinclude:: code/scoring-info-iris.py
+    :lines: 7-11
 
 The following example computes feature scores, both with
 :obj:`score_all` and by scoring each feature individually, and prints out 
@@ -32,6 +58,165 @@ The output::
     0.613 physician-fee-freeze
     0.255 el-salvador-aid
     0.228 synfuels-corporation-cutback
+
+.. comment::
+
+    The next script uses :obj:`GainRatio` and :obj:`Relief`.
+
+    .. literalinclude:: code/scoring-relief-gainRatio.py
+        :lines: 7-
+
+    Notice that on this data the ranks of features match::
+        
+        Relief GainRt Feature
+        0.613  0.752  physician-fee-freeze
+        0.255  0.444  el-salvador-aid
+        0.228  0.414  synfuels-corporation-cutback
+        0.189  0.382  crime
+        0.166  0.345  adoption-of-the-budget-resolution
+
+.. _classification:
+
+===========================
+Measures for Classification
+===========================
+
+.. Undocumented: MeasureAttribute_IM, MeasureAttribute_chiSquare, MeasureAttribute_gainRatioA, MeasureAttribute_logOddsRatio, MeasureAttribute_splitGain.
+
+.. index:: 
+   single: feature scoring; information gain
+
+.. class:: InfoGain
+
+    Measures the expected decrease of entropy.
+
+.. index:: 
+   single: feature scoring; gain ratio
+
+.. class:: GainRatio
+
+    Information gain divided by the entropy of the feature's
+    value. Introduced by Quinlan in order to avoid overestimation of
+    multi-valued features. It has been shown, however, that it
+    still overestimates features with multiple values.
+
+.. index:: 
+   single: feature scoring; gini index
+
+.. class:: Gini
+
+    The probability that two randomly chosen examples will have different
+    classes; first introduced by Breiman.
+
+.. index:: 
+   single: feature scoring; relevance
+
+.. class:: Relevance
+
+    The potential value for decision rules.
+
+.. index:: 
+   single: feature scoring; cost
+
+.. class:: Cost
+
+    Evaluates features based on the "saving" achieved by knowing the value of
+    feature, according to the specified cost matrix.
+
+    .. attribute:: cost
+     
+        Cost matrix, see :obj:`Orange.classification.CostMatrix` for details.
+
+    If cost of predicting the first class of an example that is actually in
+    the second is 5, and the cost of the opposite error is 1, than an appropriate
+    measure can be constructed as follows::
+
+        >>> meas = Orange.feature.scoring.Cost()
+        >>> meas.cost = ((0, 5), (1, 0))
+        >>> meas(3, data)
+        0.083333350718021393
+
+    Knowing the value of feature 3 would decrease the
+    classification cost for approximately 0.083 per example.
+
+.. index:: 
+   single: feature scoring; ReliefF
+
+.. class:: Relief
+
+    Assesses features' ability to distinguish between very similar
+    examples from different classes.  First developed by Kira and Rendell
+    and then improved by Kononenko.
+
+    .. attribute:: k
+    
+       Number of neighbours for each example. Default is 5.
+
+    .. attribute:: m
+    
+        Number of reference examples. Default is 100. Set to -1 to take all the
+        examples.
+
+    .. attribute:: check_cached_data
+    
+        Check if the cached data is changed with data checksum. Slow
+        on large tables.  Defaults to True. Disable it if you know that
+        the data will not change.
+
+    ReliefF is slow since it needs to find k nearest neighbours for each
+    of m reference examples.  As we normally compute ReliefF for all
+    features in the dataset, :obj:`Relief` caches the results. When called
+    to score a certain feature, it computes all feature scores.
+    When called again, it uses the stored results if the domain and the
+    data table have not changed (data table version and the data checksum
+    are compared). Caching will only work if you use the same instance.
+    So, don't do this::
+
+        for attr in data.domain.attributes:
+            print Orange.feature.scoring.Relief(attr, data)
+
+    But this::
+
+        meas = Orange.feature.scoring.Relief()
+        for attr in table.domain.attributes:
+            print meas(attr, data)
+
+    Class :obj:`Relief` works on discrete and continuous classes and thus 
+    implements functionality of algorithms ReliefF and RReliefF.
+
+    .. note::
+       Relief can also compute the threshold function, that is, the feature
+       quality at different thresholds for binarization.
+
+.. autoclass:: Orange.feature.scoring.Distance
+   :members:
+   
+.. autoclass:: Orange.feature.scoring.MDL
+   :members:
+
+.. _regression:
+
+=======================
+Measures for Regression
+=======================
+
+You can also use :obj:`Relief` for regression.
+
+.. index:: 
+   single: feature scoring; mean square error
+
+.. class:: MSE
+
+    Implements the mean square error measure.
+
+    .. attribute:: unknowns_treatment
+    
+        What to do with unknown values. See :obj:`Measure.unknowns_treatment`.
+
+    .. attribute:: m
+    
+        Parameter for m-estimate of error. Default is 0 (no m-estimate).
+
 
 
 ============
@@ -172,7 +357,7 @@ derived from :obj:`MeasureFromProbabilities`.
         .. literalinclude:: code/scoring-calls.py
             :lines: 7-
 
-    .. method:: threshold_function(attribute, examples[, weightID])
+    .. method:: threshold_function(attribute, instances[, weightID])
     
         Abstract. 
         
@@ -183,52 +368,24 @@ derived from :obj:`MeasureFromProbabilities`.
         the distribution of examples below and above the threshold. The
         last element is optional.
 
-    .. method:: best_threshold
+        To show the computation of thresholds, we shall use the Iris data set
+        (part of `scoring-info-iris.py`_, uses `iris.tab`_):
 
-        Return the best threshold for binarization. Parameters?
+        .. literalinclude:: code/scoring-info-iris.py
+            :lines: 13-15
 
+    .. method:: best_threshold(attribute, instances)
 
-    The script below shows different ways to assess the quality of astigmatic,
-    tear rate and the first feature in the dataset lenses.
+        Return the best threshold for binarization, that is, the threshold
+        with which the resulting binary feature will have the optimal
+        score.
 
-    .. literalinclude:: code/scoring-info-lenses.py
-        :lines: 7-21
+        The script below prints out the best threshold for
+        binarization of an feature. ReliefF is used scoring: (part of
+        `scoring-info-iris.py`_, uses `iris.tab`_):
 
-    As for many other classes in Orange, you can construct the object and use
-    it on-the-fly. For instance, to measure the quality of feature
-    "tear_rate", you could write simply::
-
-        >>> print Orange.feature.scoring.Info("tear_rate", data)
-        0.548794984818
-
-    You shouldn't use this with :obj:`Relief`; see :obj:`Relief` for the explanation.
-
-    It is also possible to score features that are not 
-    in the domain. For instance, you can score discretized
-    features on the fly:
-
-    .. literalinclude:: code/scoring-info-iris.py
-        :lines: 7-11
-
-    Note that this is not possible with :obj:`Relief`, as it would be too slow.
-
-    To show the computation of thresholds, we shall use the Iris data set.
-
-    `scoring-info-iris.py`_ (uses `iris.tab`_):
-
-    .. literalinclude:: code/scoring-info-iris.py
-        :lines: 7-15
-
-    If we hadn't constructed the feature in advance, we could write 
-    `Orange.feature.scoring.Relief().threshold_function("petal length", data)`.
-    This is not recommendable for ReliefF, since it may be a lot slower.
-
-    The script below finds and prints out the best threshold for binarization
-    of an feature, that is, the threshold with which the resulting binary
-    feature will have the optimal ReliefF (or any other measure)::
-
-        thresh, score, distr = meas.best_threshold("petal length", data)
-        print "Best threshold: %5.3f (score %5.3f)" % (thresh, score)
+        .. literalinclude:: code/scoring-info-iris.py
+            :lines: 17-18
 
 .. class:: MeasureFromProbabilities
 
@@ -255,153 +412,6 @@ derived from :obj:`MeasureFromProbabilities`.
         :obj:`ProbabilityEstimatorConstructor_m`), respectively.
         Both default to relative frequencies.
 
-===========================
-Measures for Classification
-===========================
-
-This script uses :obj:`GainRatio` and :obj:`Relief`.
-
-.. literalinclude:: code/scoring-relief-gainRatio.py
-    :lines: 7-
-
-Notice that on this data the ranks of features match::
-    
-    Relief GainRt Feature
-    0.613  0.752  physician-fee-freeze
-    0.255  0.444  el-salvador-aid
-    0.228  0.414  synfuels-corporation-cutback
-    0.189  0.382  crime
-    0.166  0.345  adoption-of-the-budget-resolution
-
-Undocumented: MeasureAttribute_IM, MeasureAttribute_chiSquare, MeasureAttribute_gainRatioA, MeasureAttribute_logOddsRatio, MeasureAttribute_splitGain.
-
-.. index:: 
-   single: feature scoring; information gain
-
-.. class:: InfoGain
-
-    Measures the expected decrease of entropy.
-
-.. index:: 
-   single: feature scoring; gain ratio
-
-.. class:: GainRatio
-
-    Information gain divided by the entropy of the feature's
-    value. Introduced by Quinlan in order to avoid overestimation of
-    multi-valued features. It has been shown, however, that it
-    still overestimates features with multiple values.
-
-.. index:: 
-   single: feature scoring; gini index
-
-.. class:: Gini
-
-    The probability that two randomly chosen examples will have different
-    classes; first introduced by Breiman.
-
-.. index:: 
-   single: feature scoring; relevance
-
-.. class:: Relevance
-
-    The potential value for decision rules.
-
-.. index:: 
-   single: feature scoring; cost
-
-.. class:: Cost
-
-    Evaluates features based on the "saving" achieved by knowing the value of
-    feature, according to the specified cost matrix.
-
-    .. attribute:: cost
-     
-        Cost matrix, see :obj:`Orange.classification.CostMatrix` for details.
-
-    If cost of predicting the first class of an example that is actually in
-    the second is 5, and the cost of the opposite error is 1, than an appropriate
-    measure can be constructed as follows::
-
-        >>> meas = Orange.feature.scoring.Cost()
-        >>> meas.cost = ((0, 5), (1, 0))
-        >>> meas(3, data)
-        0.083333350718021393
-
-    Knowing the value of feature 3 would decrease the
-    classification cost for approximately 0.083 per example.
-
-.. index:: 
-   single: feature scoring; ReliefF
-
-.. class:: Relief
-
-    Assesses features' ability to distinguish between very similar
-    examples from different classes.  First developed by Kira and Rendell
-    and then improved by Kononenko.
-
-    .. attribute:: k
-    
-       Number of neighbours for each example. Default is 5.
-
-    .. attribute:: m
-    
-        Number of reference examples. Default is 100. Set to -1 to take all the
-        examples.
-
-    .. attribute:: check_cached_data
-    
-        Check if the cached data is changed with data checksum. Slow
-        on large tables.  Defaults to True. Disable it if you know that
-        the data will not change.
-
-    ReliefF is slow since it needs to find k nearest neighbours for each
-    of m reference examples.  As we normally compute ReliefF for all
-    features in the dataset, :obj:`Relief` caches the results. When called
-    to score a certain feature, it computes all feature scores.
-    When called again, it uses the stored results if the domain and the
-    data table have not changed (data table version and the data checksum
-    are compared). Caching will only work if you use the same instance.
-    So, don't do this::
-
-        for attr in data.domain.attributes:
-            print Orange.feature.scoring.Relief(attr, data)
-
-    But this::
-
-        meas = Orange.feature.scoring.Relief()
-        for attr in table.domain.attributes:
-            print meas(attr, data)
-
-    Class :obj:`Relief` works on discrete and continuous classes and thus 
-    implements functionality of algorithms ReliefF and RReliefF.
-
-    .. note::
-       Relief can also compute the threshold function, that is, the feature
-       quality at different thresholds for binarization.
-
-
-=======================
-Measures for Regression
-=======================
-
-:obj:`Relief` can be also used for regression.
-
-.. index:: 
-   single: feature scoring; mean square error
-
-.. class:: MSE
-
-    Implements the mean square error measure.
-
-    .. attribute:: unknowns_treatment
-    
-        What to do with unknown values. See :obj:`Measure.unknowns_treatment`.
-
-    .. attribute:: m
-    
-        Parameter for m-estimate of error. Default is 0 (no m-estimate).
-
 ============
 Other
 ============
@@ -409,25 +419,13 @@ Other
 .. autoclass:: Orange.feature.scoring.OrderAttributes
    :members:
 
-.. autofunction:: Orange.feature.scoring.Distance
-
-.. autoclass:: Orange.feature.scoring.DistanceClass
-   :members:
-   
-.. autofunction:: Orange.feature.scoring.MDL
-
-.. autoclass:: Orange.feature.scoring.MDLClass
-   :members:
-
 .. autofunction:: Orange.feature.scoring.merge_values
 
 .. autofunction:: Orange.feature.scoring.score_all
 
-==========
-References
-==========
+.. comment .. rubric:: References
 
-* Igor Kononeko, Matjaz Kukar: Machine Learning and Data Mining, 
+.. [Kononenko2007] Igor Kononenko, Matjaz Kukar: Machine Learning and Data Mining, 
   Woodhead Publishing, 2007.
 
 .. _iris.tab: code/iris.tab
@@ -491,25 +489,17 @@ class OrderAttributes:
         measured.sort(lambda x, y: cmp(x[1], y[1]))
         return [x[0] for x in measured]
 
-def Distance(attr=None, data=None):
-    """Instantiate :obj:`DistanceClass` and use it to return
-    the score of a given feature on given data.
-    
-    :param attr: feature to score
-    :type attr: Orange.data.variable
-    
-    :param data: data table used for feature scoring
-    :type data: Orange.data.table 
-    
-    """
-    m = DistanceClass()
-    if attr != None and data != None:
-        return m(attr, data)
-    else:
-        return m
+class Distance(Measure):
+    """The 1-D feature distance measure described in [Kononenko2007]_."""
 
-class DistanceClass(Measure):
-    """The 1-D feature distance measure described in Kononenko."""
+    @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
+    def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
+        self = Measure.__new__(cls)
+        if attr != None and data != None:
+            #self.__init__(**argkw)
+            return self.__call__(attr, data, apriori_dist, weightID)
+        else:
+            return self
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __call__(self, attr, data, apriori_dist=None, weightID=None):
@@ -544,17 +534,17 @@ class DistanceClass(Measure):
         else:
             return 0
 
-def MDL(attr=None, data=None):
-    """Instantiate :obj:`MDLClass` and use it n given data to
-    return the feature's score."""
-    m = MDLClass()
-    if attr != None and data != None:
-        return m(attr, data)
-    else:
-        return m
-
-class MDLClass(Measure):
+class MDL(Measure):
     """Score feature based on the minimum description length principle."""
+
+    @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
+    def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
+        self = Measure.__new__(cls)
+        if attr != None and data != None:
+            #self.__init__(**argkw)
+            return self.__call__(attr, data, apriori_dist, weightID)
+        else:
+            return self
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __call__(self, attr, data, apriori_dist=None, weightID=None):
@@ -662,7 +652,7 @@ def score_all(data, measure=Relief(k=20, m=50)):
       :obj:`Orange.feature.scoring.Measure`. Defaults to 
       :obj:`Orange.feature.scoring.Relief` with k=20 and m=50.
     :type measure: :obj:`Orange.feature.scoring.Measure` 
-    :rtype: :obj:`list` a sorted list of tuples (feature name, score)
+    :rtype: :obj:`list`; a sorted list of tuples (feature name, score)
 
     """
     measl=[]

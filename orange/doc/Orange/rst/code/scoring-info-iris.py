@@ -2,13 +2,13 @@
 # Category:    feature scoring
 # Uses:        iris
 # Referenced:  Orange.feature.html#scoring
-# Classes:     Orange.feature.scoring.EntropyDiscretization, Orange.feature.scoring.Measure, Orange.feature.scoring.InfoGain
+# Classes:     Orange.feature.discretization.EntropyDiscretization, Orange.feature.scoring.Measure, Orange.feature.scoring.InfoGain, Orange.feature.scoring.Relief
 
 import Orange
 table = Orange.data.Table("iris")
 
 d1 = Orange.feature.discretization.EntropyDiscretization("petal length", table)
-print Orange.feature.scoring.Relief(d1, table)
+print Orange.feature.scoring.InfoGain(d1, table)
 
 meas = Orange.feature.scoring.Relief()
 for t in meas.threshold_function("petal length", table):

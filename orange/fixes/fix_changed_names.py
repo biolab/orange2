@@ -483,6 +483,14 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngScaleLinProjData.orngScaleLinProjData": "Orange.preprocess.scaling.ScaleLinProjData",
            "orngScalePolyvizData.orngScalePolyvizData": "Orange.preprocess.scaling.ScalePolyvizData",
            "orngScaleScatterPlotData.orngScaleScatterPlotData": "Orange.preprocess.scaling.ScaleScatterPlotData",
+
+           "orngEvalAttr.mergeAttrValues": "Orange.feature.scoring.merge_values",
+           "orngEvalAttr.MeasureAttribute_MDL": "Orange.feature.scoring.MDL",
+           "orngEvalAttr.MeasureAttribute_MDLClass": "Orange.feature.scoring.MDL",
+           "orngEvalAttr.MeasureAttribute_Distance": "Orange.feature.scoring.Distance",
+           "orngEvalAttr.MeasureAttribute_DistanceClass": "Orange.feature.scoring.Distance",
+           "orngEvalAttr.OrderAttributesByMeasure": "Orange.feature.scoring.OrderAttributes",
+
            }
 
 for k, v in MAPPING.items():
