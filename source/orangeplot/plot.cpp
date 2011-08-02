@@ -344,6 +344,7 @@ void Plot::unselect_all_points()
             point->set_selected(false);
         }
     }
+    emit selection_changed();
     qDebug() << "Unselected" << i << "points";
 }
 
