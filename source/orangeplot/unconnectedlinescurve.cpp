@@ -14,26 +14,31 @@ UnconnectedLinesCurve::~UnconnectedLinesCurve()
 
 void UnconnectedLinesCurve::update_properties()
 {
-    const Data d = data();
-    const int n = d.size()/2;
-    const int m = m_items.size();
-    if (m > n)
-    {
-        for (int i = n; i < m; ++i)
+    if (needs_update() & (UpdateNumberOfItems))
+    {   
+        const int n = data().size()/2;
+        const int m = m_items.size();
+        if (m > n)
         {
-            delete m_items.takeLast();
+            for (int i = n; i < m; ++i)
+            {
+                delete m_items.takeLast();
+            }
         }
-    }
-    else if (m < n)
-    {
-        for (int i = m; i < n; ++i)
+        else if (m < n)
         {
-            m_items << new QGraphicsLineItem(this);
+            for (int i = m; i < n; ++i)
+            {
+                m_items << new QGraphicsLineItem(this);
+            }
         }
+        set_updated(UpdateNumberOfItems);
+        Q_ASSERT(m_items.size() == n);
     }
-    Q_ASSERT(m_items.size() == n);
     if (needs_update() & (UpdatePosition | UpdatePen) )
     {
+        const Data d = data();
+        const int n = d.size()/2;
         QLineF line;
         QPen p = pen();
         p.setCosmetic(true);
