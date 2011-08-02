@@ -196,6 +196,7 @@ class OWScatterPlot3D(OWWidget):
 
         self.data = None
         self.subsetData = None
+        self.data_array_jittered = None
         self.resize(1100, 600)
 
     def mouseover_callback(self, index):
@@ -245,9 +246,13 @@ class OWScatterPlot3D(OWWidget):
             if len(indices) < 1:
                 self.plot.remove_all_selections()
                 return
-            X, Y, Z = self.data_array[:, self.x_attr],\
-                      self.data_array[:, self.y_attr],\
-                      self.data_array[:, self.z_attr]
+            # TODO: refactor this properly
+            if self.data_array_jittered:
+                X, Y, Z = self.data_array_jittered
+            else:
+                X, Y, Z = self.data_array[:, self.x_attr],\
+                          self.data_array[:, self.y_attr],\
+                          self.data_array[:, self.z_attr]
             X = [X[i] for i in indices]
             Y = [Y[i] for i in indices]
             Z = [Z[i] for i in indices]
@@ -515,6 +520,7 @@ class OWScatterPlot3D(OWWidget):
                 Y += (numpy.random.random(len(Y))-0.5) * (self.jitter_size * y_range / 100.)
             if self.z_attr_discrete or self.jitter_continuous:
                 Z += (numpy.random.random(len(Z))-0.5) * (self.jitter_size * z_range / 100.)
+            self.data_array_jittered = (X, Y, Z)
         return X, Y, Z, None
 
     def showSelectedAttributes(self):
