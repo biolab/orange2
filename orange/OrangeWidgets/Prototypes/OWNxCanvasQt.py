@@ -691,9 +691,11 @@ class OWNxCanvas(OWPlot):
                   row_ind[v] = v_dict
         
         #add edges
+        new_edges = self.graph.edges(add_nodes)
+        
         if self.links is not None and len(self.links) > 0:
             links = self.links
-            links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges(add_nodes))
+            links_indices = (row_ind[i + 1][j + 1] for (i, j) in new_edges)
             labels = ([str(row[r].value) for r in range(2, len(row))] for row \
                       in (links[links_index] for links_index in links_indices))
             
@@ -701,18 +703,18 @@ class OWNxCanvas(OWPlot):
                 edges = [EdgeItem(nodes[i], nodes[j],
                     self.graph[i][j].get('weight', 1), 0, 1, links_index, label, \
                     parent=self.networkCurve) for ((i, j), links_index, label) in \
-                         zip(self.graph.edges(add_nodes), links_indices, labels)]
+                         zip(new_edges, links_indices, labels)]
             else:
                 edges = [EdgeItem(nodes[i], nodes[j],
                     self.graph[i][j].get('weight', 1), links_index, label) for \
-                    ((i, j), links_index, label) in zip(self.graph.edges(add_nodes), \
+                    ((i, j), links_index, label) in zip(new_edges, \
                                         links_indices, labels, parent=self.networkCurve)]
         elif self.graph.is_directed():
             edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
-                    0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges(add_nodes)]
+                    0, 1, parent=self.networkCurve) for (i, j) in new_edges]
         else:
             edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
-                    parent=self.networkCurve) for (i, j) in self.graph.edges(add_nodes)]
+                    parent=self.networkCurve) for (i, j) in new_edges]
             
         self.networkCurve.add_edges(edges)
         
