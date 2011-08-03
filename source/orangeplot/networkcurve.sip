@@ -109,30 +109,34 @@ public:
     
     int fr(int steps, bool weighted);
     int random();
-    
+
+    Nodes nodes();
     void set_nodes(const Nodes& nodes);
     %MethodCode
         transfer_nodes_to(*a0, sipCpp);
         sipCpp->set_nodes(*a0);
     %End
-    void remove_nodes(const QList<int>& nodes);
-    void remove_node(int index);
-    void add_nodes(const Nodes& nodes, const Edges& edges);
+    void add_nodes(const Nodes& nodes);
     %MethodCode
         transfer_nodes_to(*a0, sipCpp);
-        transfer_edges_to(*a1, sipCpp);
-        sipCpp->add_nodes(*a0, *a1);
+        sipCpp->add_nodes(*a0);
     %End
+    void remove_node(int index);
+    void remove_nodes(const QList< int >& nodes);
     
-    Nodes nodes();
-
+    Edges edges();
     void set_edges(const Edges& edges);
     %MethodCode
         transfer_edges_to(*a0, sipCpp);
         sipCpp->set_edges(*a0);
     %End
+    void add_edges(const Edges& edges);
+    %MethodCode
+        transfer_edges_to(*a0, sipCpp);
+        sipCpp->add_edges(*a0);
+    %End
+    
     QList<QPair<int, int> > edge_indices();
-    Edges edges();
 
     void set_node_colors(const QMap<int, QColor*>& colors);    
     void set_node_sizes(const QMap<int, double>& sizes = QMap<int, double>(), double min_size=0, double max_size=0);
