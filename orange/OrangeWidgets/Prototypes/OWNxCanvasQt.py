@@ -672,7 +672,9 @@ class OWNxCanvas(OWPlot):
         
         self.networkCurve.remove_nodes(list(remove_nodes))
         
-        nodes = dict((v, NodeItem(v, parent=self.networkCurve)) for v in new_nodes)
+        nodes = dict((v, NodeItem(v, parent=self.networkCurve)) for v in add_nodes)
+        self.networkCurve.add_nodes(nodes)
+        nodes = self.networkCurve.nodes()
         
         #build edge index
         row_ind = {}
@@ -691,31 +693,28 @@ class OWNxCanvas(OWPlot):
         #add edges
         if self.links is not None and len(self.links) > 0:
             links = self.links
-            links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges(new_nodes))
-            labels = ([str(row[r].value) for r in range(2, len(row))] for row in (links[links_index] for links_index in links_indices))
+            links_indices = (row_ind[i + 1][j + 1] for (i, j) in self.graph.edges(add_nodes))
+            labels = ([str(row[r].value) for r in range(2, len(row))] for row \
+                      in (links[links_index] for links_index in links_indices))
             
             if self.graph.is_directed():
                 edges = [EdgeItem(nodes[i], nodes[j],
-                    self.graph[i][j].get('weight', 1), 0, 1, links_index, label, parent=self.networkCurve) for \
-                    ((i, j), links_index, label) in zip(self.graph.edges(new_nodes), \
-                                                        links_indices, labels)]
+                    self.graph[i][j].get('weight', 1), 0, 1, links_index, label, \
+                    parent=self.networkCurve) for ((i, j), links_index, label) in \
+                         zip(self.graph.edges(add_nodes), links_indices, labels)]
             else:
                 edges = [EdgeItem(nodes[i], nodes[j],
                     self.graph[i][j].get('weight', 1), links_index, label) for \
-                    ((i, j), links_index, label) in zip(self.graph.edges(new_nodes), \
-                                                        links_indices, labels, parent=self.networkCurve)]
+                    ((i, j), links_index, label) in zip(self.graph.edges(add_nodes), \
+                                        links_indices, labels, parent=self.networkCurve)]
         elif self.graph.is_directed():
-            edges = [EdgeItem(nodes[i], nodes[j],
-                                      self.graph[i][j].get('weight', 1), 0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges(new_nodes)]
+            edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
+                    0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges(add_nodes)]
         else:
-            edges = [EdgeItem(nodes[i], nodes[j],
-                                      self.graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges(new_nodes)]
+            edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
+                    parent=self.networkCurve) for (i, j) in self.graph.edges(add_nodes)]
             
-        
-        self.networkCurve.add_nodes(nodes, edges)
-        
-        #self.replot()
-        pass
+        self.networkCurve.add_edges(edges)
         
     def set_graph(self, graph, curve=None, items=None, links=None):
         self.clear()
