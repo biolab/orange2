@@ -19,6 +19,11 @@ public:
     
     void attach(Plot* graph /TransferThis/);
     void detach();
+    %MethodCode
+        sipTransferBack(sipGetPyObject(sipCpp, sipType_PlotItem));
+        sipCpp->detach();
+    %End
+
     Plot* plot();
     
     static QRectF rect_from_data(const QList<double>& x_data, const QList<double>& y_data);

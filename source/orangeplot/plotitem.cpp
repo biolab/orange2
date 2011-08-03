@@ -35,6 +35,7 @@ void PlotItem::attach(Plot* plot)
 
 void PlotItem::detach()
 {
+    qDebug() << "PlotItem::detach";
     if (m_plot)
     {
         m_plot->remove_item(this);
