@@ -286,7 +286,7 @@ Point* Plot::nearest_point(const QPointF& pos)
         }
     }
     Point* point = point_at(closest_point.second);
-    if(distance(point->pos(), pos) <= point->size())
+    if(point && distance(point->pos(), pos) <= point->size())
     {
         return point;
     }
