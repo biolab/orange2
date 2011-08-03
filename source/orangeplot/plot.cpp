@@ -55,7 +55,10 @@ QGraphicsView(parent)
 
 Plot::~Plot()
 {
-
+    foreach (PlotItem* item, m_items)
+    {
+        remove_item(item);
+    }
 }
 
 void Plot::add_item(PlotItem* item)
@@ -339,17 +342,14 @@ void Plot::unmark_all_points()
 
 void Plot::unselect_all_points()
 {
-    int i = 0;
     foreach (const PointHash& hash, m_point_hash)
     {
         foreach (Point* point, hash)
         {
-            ++i;
             point->set_selected(false);
         }
     }
     emit selection_changed();
-    qDebug() << "Unselected" << i << "points";
 }
 
 

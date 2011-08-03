@@ -27,12 +27,6 @@ public:
     void set_label(const QString& label);
     QString label() const;
     
-    void set_selected(bool selected);
-    bool is_selected() const;
-
-    void set_marked(bool marked);
-    bool is_marked() const;
-    
     void set_tooltip(const QString& tooltip);
     
     void set_uuid(int uuid);
@@ -78,28 +72,9 @@ public:
 
 class NetworkCurve : Curve
 {
-
-%TypeCode
-static void transfer_nodes_to(const NetworkCurve::Nodes& nodes, NetworkCurve* owner)
-{
-    foreach (NodeItem* item, nodes)
-    {
-        sipTransferTo(sipGetPyObject(item, sipType_NodeItem), sipGetPyObject(owner, sipType_NetworkCurve));
-    }
-}
-
-static void transfer_edges_to(const NetworkCurve::Edges& edges, NetworkCurve* owner)
-{
-    foreach (EdgeItem* item, edges)
-    {
-        sipTransferTo(sipGetPyObject(item, sipType_EdgeItem), sipGetPyObject(owner, sipType_NetworkCurve));
-    }
-}
-%End
-
 public:
-    typedef QList<EdgeItem*> Edges /NoTypeName/;
-    typedef QMap<int, NodeItem*> Nodes /NoTypeName/;
+    typedef QList<EdgeItem*> Edges;
+    typedef QMap<int, NodeItem*> Nodes;
 
     NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
     virtual ~NetworkCurve();
@@ -110,31 +85,15 @@ public:
     int fr(int steps, bool weighted);
     int random();
 
-    Nodes nodes();
+    Nodes nodes() const;
     void set_nodes(const Nodes& nodes);
-    %MethodCode
-        transfer_nodes_to(*a0, sipCpp);
-        sipCpp->set_nodes(*a0);
-    %End
     void add_nodes(const Nodes& nodes);
-    %MethodCode
-        transfer_nodes_to(*a0, sipCpp);
-        sipCpp->add_nodes(*a0);
-    %End
     void remove_node(int index);
     void remove_nodes(const QList< int >& nodes);
     
-    Edges edges();
+    Edges edges() const;
     void set_edges(const Edges& edges);
-    %MethodCode
-        transfer_edges_to(*a0, sipCpp);
-        sipCpp->set_edges(*a0);
-    %End
     void add_edges(const Edges& edges);
-    %MethodCode
-        transfer_edges_to(*a0, sipCpp);
-        sipCpp->add_edges(*a0);
-    %End
     
     QList<QPair<int, int> > edge_indices();
 

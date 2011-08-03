@@ -21,7 +21,7 @@ template<TYPE>
         TYPE *t = i.value();
 
         PyObject *kobj = SIPLong_FromLong(i.key());
-        PyObject *tobj = sipConvertFromNewType(t, sipType_TYPE, sipTransferObj);
+        PyObject *tobj = sipConvertFromType(t, sipType_TYPE, sipTransferObj);
 
         if (kobj == NULL || tobj == NULL || PyDict_SetItem(d, kobj, tobj) < 0)
         {

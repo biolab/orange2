@@ -277,6 +277,7 @@ NetworkCurve::NetworkCurve(QGraphicsItem* parent, QGraphicsScene* scene): Curve(
 
 NetworkCurve::~NetworkCurve()
 {
+    cancelAllUpdates();
     qDeleteAll(m_edges);
     m_edges.clear();
     qDeleteAll(m_nodes);
@@ -309,7 +310,6 @@ QRectF NetworkCurve::data_rect() const
             r.setRight( qMax(r.right(), node->x()) );
         }
     }
-    qDebug() << "NetworkCurve::dataRect()" << r;
     return r;
 }
 
@@ -503,7 +503,7 @@ void NetworkCurve::set_edges(const NetworkCurve::Edges& edges)
     m_edges = edges;
 }
 
-NetworkCurve::Edges NetworkCurve::edges()
+NetworkCurve::Edges NetworkCurve::edges() const
 {
     return m_edges;
 }
@@ -530,10 +530,11 @@ void NetworkCurve::set_nodes(const NetworkCurve::Nodes& nodes)
     m_edges.clear();
     qDeleteAll(m_nodes);
     m_nodes = nodes;
+    Q_ASSERT(m_nodes.uniqueKeys() == m_nodes.keys());
     register_points();
 }
 
-NetworkCurve::Nodes NetworkCurve::nodes()
+NetworkCurve::Nodes NetworkCurve::nodes() const
 {
     return m_nodes;
 }
@@ -594,6 +595,7 @@ void NetworkCurve::add_nodes(const NetworkCurve::Nodes& nodes)
 	}
 
 	m_nodes.unite(nodes);
+    Q_ASSERT(m_nodes.uniqueKeys() == m_nodes.keys());
 	register_points();
 }
 

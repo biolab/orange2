@@ -15,7 +15,7 @@ PlotItem::PlotItem(const PlotItem& ): QGraphicsItem(),
 
 PlotItem::~PlotItem()
 {
-
+    detach();
 }
 
 void PlotItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

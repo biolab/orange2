@@ -156,13 +156,13 @@ public:
     int fr(int steps, bool weighted);
     int random();
     
-    Nodes nodes();
+    Nodes nodes() const;
     void set_nodes(const Nodes& nodes);
     void add_nodes(const Nodes& nodes);
     void remove_node(int index);
     void remove_nodes(const QList< int >& nodes);
     
-    Edges edges();
+    Edges edges() const;
     void set_edges(const Edges& edges);
     void add_edges(const Edges& edges);
 

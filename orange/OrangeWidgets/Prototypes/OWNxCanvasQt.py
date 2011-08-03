@@ -717,6 +717,8 @@ class OWNxCanvas(OWPlot):
                     parent=self.networkCurve) for (i, j) in new_edges]
             
         self.networkCurve.add_edges(edges)
+        self.set_dirty()
+        self.replot()
         
     def set_graph(self, graph, curve=None, items=None, links=None):
         self.clear()
@@ -777,9 +779,9 @@ class OWNxCanvas(OWPlot):
                                                         links_indices, labels)]
             else:
                 edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), links_index, label) for \
+                    graph[i][j].get('weight', 1), links_index, label, parent=self.networkCurve) for \
                     ((i, j), links_index, label) in zip(self.graph.edges(), \
-                                                        links_indices, labels, parent=self.networkCurve)]
+                                                        links_indices, labels)]
         elif self.graph.is_directed():
             edges = [EdgeItem(vertices[i], vertices[j],
                                       graph[i][j].get('weight', 1), 0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges()]
@@ -789,6 +791,7 @@ class OWNxCanvas(OWPlot):
             
         self.networkCurve.set_edges(edges)
         self.networkCurve.update_properties()
+        self.set_dirty()
         self.replot()
         
     def setEdgesSize(self):
