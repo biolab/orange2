@@ -10,8 +10,8 @@ MOVE_SELECTION = 100
 
 import Orange
 import random 
+import numpy
 
-from numpy import *
 from plot.owplot import *
 from plot.owpoint import *
 from orngScaleScatterPlotData import *
@@ -617,13 +617,17 @@ class OWNxCanvas(OWPlot):
         new_nodes = set(newgraph.nodes_iter())
         inter_nodes = old_nodes.intersection(new_nodes)
         remove_nodes = list(old_nodes.difference(inter_nodes))
-        add_nodes = new_nodes.difference(inter_nodes)
+        add_nodes = list(new_nodes.difference(inter_nodes))
         
         self.graph = newgraph
         
+        current_nodes = self.networkCurve.nodes()
+        
+        pos = dict((n, [numpy.average(c) for c in zip(*[(current_nodes[u].x(), current_nodes[u].y()) for u in old_nodes.intersection(self.graph.neighbors(n))])]) for n in add_nodes)
+        
         self.networkCurve.remove_nodes(list(remove_nodes))
         
-        nodes = dict((v, NodeItem(v, parent=self.networkCurve)) for v in add_nodes)
+        nodes = dict((v, NodeItem(v, x=pos[v][0], y=pos[v][1], parent=self.networkCurve)) for v in add_nodes)
         self.networkCurve.add_nodes(nodes)
         nodes = self.networkCurve.nodes()
         
