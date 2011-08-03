@@ -87,6 +87,9 @@ Measures for Classification
 .. index:: 
    single: feature scoring; information gain
 
+As all measures are subclasses of :class:`Measure`, see
+:obj:`Measure.__call__` for usage.
+
 .. class:: InfoGain
 
     Measures the expected decrease of entropy.
@@ -197,6 +200,9 @@ Measures for Classification
 =======================
 Measures for Regression
 =======================
+
+As all measures are subclasses of :class:`Measure`, see
+:obj:`Measure.__call__` for usage.
 
 You can also use :obj:`Relief` for regression.
 
