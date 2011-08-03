@@ -441,8 +441,10 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 
 				double dif2 = difx * difx + dify * dify;
 
+				// if nodes are close, apply repulsive force
 				if (dif2 < kk2)
 				{
+					// if nodes overlap
 					if (dif2 == 0)
 					{
 						dif2 = 1 / k;
