@@ -39,6 +39,8 @@ public:
     void set_uuid(int uuid);
     int uuid() const;
     
+    QList<NodeItem*> neighbors();
+
     /**
      * @brief Connect an edge to this node
      * 
@@ -153,8 +155,8 @@ public:
     virtual QRectF data_rect() const;
     virtual void register_points();
     
-    int fr(int steps, bool weighted, bool smooth_cooling);
     int random();
+    int fr(int steps, bool weighted, bool smooth_cooling);
     
     Nodes nodes() const;
     void set_nodes(const Nodes& nodes);

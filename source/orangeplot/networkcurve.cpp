@@ -133,6 +133,27 @@ QList<EdgeItem*> NodeItem::connected_edges()
 	return m_connected_edges;
 }
 
+QList<NodeItem*> NodeItem::neighbors()
+{
+	QList<NodeItem*> neighbors;
+
+	EdgeItem *e;
+	QList<EdgeItem*> edges = connected_edges();
+	int size = edges.size();
+	foreach(e, edges)
+	{
+		if (e->u()->index() == index())
+		{
+			neighbors.append(e->v());
+		}
+		else
+		{
+			neighbors.append(e->u());
+		}
+	}
+
+	return neighbors;
+}
 
 /************/
 /* EdgeItem */
@@ -366,7 +387,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	double k = sqrt(k2);
 	double kk = 2 * k;
 	double kk2 = kk * kk;
-
+	double jitter = sqrt(area) / 2000;
 	double temperature, cooling, cooling_switch, cooling_1, cooling_2;
 	temperature = sqrt(area) / 5;
 	cooling = exp(log(k / 10 / temperature) / steps);
@@ -423,7 +444,13 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 				if (dif2 < kk2)
 				{
 					if (dif2 == 0)
-						dif2 = 1;
+					{
+						dif2 = 1 / k;
+						u->set_x(u->x() + jitter);
+						u->set_y(u->y() + jitter);
+						v->set_x(v->x() - jitter);
+						v->set_y(v->y() - jitter);
+					}
 
 					double dX = difx * k2 / dif2;
 					double dY = dify * k2 / dif2;
@@ -597,8 +624,11 @@ void NetworkCurve::add_nodes(const NetworkCurve::Nodes& nodes)
 {
     Nodes::ConstIterator it = nodes.constBegin();
     Nodes::ConstIterator end = nodes.constEnd();
+    QList<int> indices;
 	for (it; it != end; ++it)
 	{
+		indices.append(it.key());
+
 		if (m_nodes.contains(it.key()))
 		{
 			remove_node(it.key());

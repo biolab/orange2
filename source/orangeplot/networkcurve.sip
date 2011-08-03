@@ -82,8 +82,8 @@ public:
     virtual void update_properties();
     virtual QRectF data_rect() const;
     
-    int fr(int steps, bool weighted, bool smooth_cooling);
     int random();
+    int fr(int steps, bool weighted, bool smooth_cooling);
 
     Nodes nodes() const;
     void set_nodes(const Nodes& nodes);
