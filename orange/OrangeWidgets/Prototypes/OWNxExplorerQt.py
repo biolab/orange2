@@ -31,9 +31,9 @@ dlg_showall = dir + "Dlg_clear.png"
 class OWNxExplorerQt(OWWidget):
     settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
     "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.use_antialiasing", "networkCanvas.use_animations",
-    "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn",
+    "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices"
     "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
-    "showWeights", "showIndexes",  "showEdgeLabels", "colorSettings", 
+    "showWeights", "showEdgeLabels", "colorSettings", 
     "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
     "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
     "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
@@ -92,7 +92,6 @@ class OWNxExplorerQt(OWWidget):
         self.lastLabelColumns = set()
         self.lastTooltipColumns = set()
         self.showWeights = 0
-        self.showIndexes = 0
         self.showEdgeLabels = 0
         self.colorSettings = None
         self.selectedSchemaIndex = 0
@@ -116,6 +115,7 @@ class OWNxExplorerQt(OWWidget):
         self.tabIndex = 0
         self.number_of_nodes_label = -1
         self.number_of_edges_label = -1
+        
         self.loadSettings()
         
         self._network_view = None
@@ -198,7 +198,7 @@ class OWNxExplorerQt(OWWidget):
         self.edgeLabelBox.setEnabled(False)
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
-        OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback=(lambda: self._set_canvas_attr('showIndexes', self.showIndexes)))
+        OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_label_attributes)
         OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback=(lambda: self._set_canvas_attr('labelsOnMarkedOnly', self.labelsOnMarkedOnly)))
         self.networkCanvas.gui.antialiasing_check_box(ib)
         self.networkCanvas.gui.animations_check_box(ib)
@@ -1197,6 +1197,27 @@ class OWNxExplorerQt(OWWidget):
         self.editCombo.addItem("Select attribute")
         self.comboAttSelection.addItem("Select attribute")
       
+    def compute_network_info(self):
+        self.nShown = self.graph.number_of_nodes()
+        
+        if self.graph.number_of_edges() > 0:
+            self.verticesPerEdge = float(self.graph.number_of_nodes()) / float(self.graph.number_of_edges())
+        else:
+            self.verticesPerEdge = 0
+            
+        if self.graph.number_of_nodes() > 0:
+            self.edgesPerVertex = float(self.graph.number_of_edges()) / float(self.graph.number_of_nodes())
+        else:
+            self.edgesPerVertex = 0
+        
+        undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
+        components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
+        if len(components) > 1:
+            self.diameter = -1
+        else:
+            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
+        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
+      
     def change_graph(self, newgraph):
         self.graph = newgraph
         self.number_of_nodes_label = self.graph.number_of_nodes()
@@ -1204,51 +1225,36 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.change_graph(self.graph)
         
-#        self.nShown = self.graph.number_of_nodes()
-#        
-#        if self.graph.number_of_edges() > 0:
-#            self.verticesPerEdge = float(self.graph.number_of_nodes()) / float(self.graph.number_of_edges())
-#        else:
-#            self.verticesPerEdge = 0
-#            
-#        if self.graph.number_of_nodes() > 0:
-#            self.edgesPerVertex = float(self.graph.number_of_edges()) / float(self.graph.number_of_nodes())
-#        else:
-#            self.edgesPerVertex = 0
-#        
-#        undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
-#        components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
-#        if len(components) > 1:
-#            self.diameter = -1
-#        else:
-#            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
-#        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
+        self.compute_network_info()
         
         t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
         self.frSteps = int(2.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 100: self.frSteps = 100;
+#        
+#        if self.frSteps < 10:
+#            self.networkCanvas.use_antialiasing = 0
+#            self.networkCanvas.use_animations = 0
+#            self.minVertexSize = 5
+#            self.maxVertexSize = 5
+#            self.maxLinkSize = 1
+#            self.optMethod = 0
+#            self.graph_layout_method()
         
-        if self.frSteps < 10:
-            self.networkCanvas.use_antialiasing = 0
-            self.networkCanvas.use_animations = 0
-            self.minVertexSize = 5
-            self.maxVertexSize = 5
-            self.maxLinkSize = 1
-            self.optMethod = 0
-            self.graph_layout_method()            
-            
         self.set_vertex_size()
         self.setVertexColor()
         self.setEdgeColor()
-        #self.networkCanvas.setEdgesSize()
+            
+        self.networkCanvas.setEdgesSize()
+        self.clickedAttLstBox()
+        self.clickedTooltipLstBox()
+        self.clickedEdgeLabelListBox()
         
-        #self.clickedAttLstBox()
-        #self.clickedTooltipLstBox()
-        #self.clickedEdgeLabelListBox()
-        
-        #self.optButton.setChecked(1)
-        #self.graph_layout()        
+        self.networkCanvas.replot()
+        qApp.processEvents()
+        self.networkCanvas.networkCurve.fr(100, weighted=False, smooth_cooling=True)
+        self.networkCanvas.replot()
+          
         self.information(0)
         
     def set_graph(self, graph):
@@ -1292,26 +1298,7 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
         self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
         
-        self.nShown = self.graph.number_of_nodes()
-        
-        if self.graph.number_of_edges() > 0:
-            self.verticesPerEdge = float(self.graph.number_of_nodes()) / float(self.graph.number_of_edges())
-        else:
-            self.verticesPerEdge = 0
-            
-        if self.graph.number_of_nodes() > 0:
-            self.edgesPerVertex = float(self.graph.number_of_edges()) / float(self.graph.number_of_nodes())
-        else:
-            self.edgesPerVertex = 0
-        
-        undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
-        components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
-        if len(components) > 1:
-            self.diameter = -1
-        else:
-            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
-        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
-        
+        self.compute_network_info()
         self.setCombos()
             
         lastNameComponentAttributeFound = False
@@ -1346,7 +1333,6 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.networkCanvas.showWeights = self.showWeights
-        self.networkCanvas.showIndexes = self.showIndexes
             
         self.set_vertex_size()
         self.setVertexColor()
@@ -1363,10 +1349,14 @@ class OWNxExplorerQt(OWWidget):
         
     def set_network_view(self, nxView):
         self._network_view = nxView
-        self._network_view.set_nx_explorer(self)
+        
+        if self._network_view is not None:
+            self._network_view.set_nx_explorer(self)
+        
         self.set_graph(self.graph_base)
         
-        QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
+        if self._network_view is not None:
+            QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
         
     def setItems(self, items=None):
         self.error('')
@@ -1382,7 +1372,6 @@ class OWNxExplorerQt(OWWidget):
         
         self.set_vertex_size()
         self.networkCanvas.items = items
-        self.networkCanvas.showIndexes = self.showIndexes
         self.networkCanvas.showWeights = self.showWeights
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
         self.setCombos()

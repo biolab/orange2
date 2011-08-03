@@ -30,12 +30,12 @@ class NxInsideView(Orange.network.NxView):
         
         self._center_node = graph.nodes_iter().next()
         nodes = self._get_neighbors()
-        return self._network.subgraph(nodes)
+        return Orange.network.nx.Graph.subgraph(self._network, nodes)
     
     def update_network(self):
         nodes = self._get_neighbors()
-        subnet = self._network.subgraph(nodes)
-        
+        subnet = Orange.network.nx.Graph.subgraph(self._network, nodes)
+
         if self._nx_explorer is not None:
             self._nx_explorer.change_graph(subnet)
         
