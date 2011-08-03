@@ -78,6 +78,25 @@ public:
 
 class NetworkCurve : Curve
 {
+
+%TypeCode
+static void transfer_nodes_to(const NetworkCurve::Nodes& nodes, NetworkCurve* owner)
+{
+    foreach (NodeItem* item, nodes)
+    {
+        sipTransferTo(sipGetPyObject(item, sipType_NodeItem), sipGetPyObject(owner, sipType_NetworkCurve));
+    }
+}
+
+static void transfer_edges_to(const NetworkCurve::Edges& edges, NetworkCurve* owner)
+{
+    foreach (EdgeItem* item, edges)
+    {
+        sipTransferTo(sipGetPyObject(item, sipType_EdgeItem), sipGetPyObject(owner, sipType_NetworkCurve));
+    }
+}
+%End
+
 public:
     typedef QList<EdgeItem*> Edges /NoTypeName/;
     typedef QMap<int, NodeItem*> Nodes /NoTypeName/;
@@ -91,23 +110,36 @@ public:
     int fr(int steps, bool weighted);
     int random();
     
-    void set_nodes(QMap<int, NodeItem*> nodes);
-    void remove_nodes(const QList<int> nodes);
+    void set_nodes(const Nodes& nodes);
+    %MethodCode
+        transfer_nodes_to(*a0, sipCpp);
+        sipCpp->set_nodes(*a0);
+    %End
+    void remove_nodes(const QList<int>& nodes);
     void remove_node(int index);
-    void add_nodes(Nodes nodes, Edges edges);
+    void add_nodes(const Nodes& nodes, const Edges& edges);
+    %MethodCode
+        transfer_nodes_to(*a0, sipCpp);
+        transfer_edges_to(*a1, sipCpp);
+        sipCpp->add_nodes(*a0, *a1);
+    %End
     
     Nodes nodes();
 
-    void set_edges(Edges edges);
+    void set_edges(const Edges& edges);
+    %MethodCode
+        transfer_edges_to(*a0, sipCpp);
+        sipCpp->set_edges(*a0);
+    %End
     QList<QPair<int, int> > edge_indices();
     Edges edges();
 
-    void set_node_colors(const QMap<int, QColor*> colors);    
-    void set_node_sizes(QMap<int, double> sizes = QMap<int, double>(), double min_size=0, double max_size=0);
-    void set_node_labels(const QMap<int, QString> labels);
-    void set_node_tooltips(const QMap<int, QString> tooltips);
+    void set_node_colors(const QMap<int, QColor*>& colors);    
+    void set_node_sizes(const QMap<int, double>& sizes = QMap<int, double>(), double min_size=0, double max_size=0);
+    void set_node_labels(const QMap<int, QString>& labels);
+    void set_node_tooltips(const QMap<int, QString>& tooltips);
     
-    void set_edge_color(const QList<QColor*> colors);
+    void set_edge_color(const QList<QColor*>& colors);
     
     void set_min_node_size(double size);
     double min_node_size() const;

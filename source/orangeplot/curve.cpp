@@ -336,6 +336,12 @@ void Curve::cancelAllUpdates()
         if (f.isRunning())
         {
             f.cancel();
+        }
+    }
+    foreach (QFuture<void> f, m_currentUpdate)
+    {
+        if (f.isRunning())
+        {
             f.waitForFinished();
         }
     }

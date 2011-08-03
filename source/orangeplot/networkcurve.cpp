@@ -153,7 +153,14 @@ m_u(0), m_v(0)
 
 EdgeItem::~EdgeItem()
 {
-
+    if (m_u)
+    {
+        m_u->remove_connected_edge(this);
+    }
+    if (m_v)
+    {
+        m_v->remove_connected_edge(this);
+    }
 }
 
 
@@ -270,7 +277,10 @@ NetworkCurve::NetworkCurve(QGraphicsItem* parent, QGraphicsScene* scene): Curve(
 
 NetworkCurve::~NetworkCurve()
 {
-
+    qDeleteAll(m_edges);
+    m_edges.clear();
+    qDeleteAll(m_nodes);
+    m_nodes.clear();
 }
 
 void NetworkCurve::update_properties()
@@ -486,8 +496,9 @@ int NetworkCurve::fr(int steps, bool weighted)
 	return 0;
 }
 
-void NetworkCurve::set_edges(NetworkCurve::Edges edges)
+void NetworkCurve::set_edges(const NetworkCurve::Edges& edges)
 {
+    cancelAllUpdates();
     qDeleteAll(m_edges);
     m_edges = edges;
 }
@@ -512,8 +523,11 @@ QList<QPair<int, int> > NetworkCurve::edge_indices()
 	return edge_indices;
 }
 
-void NetworkCurve::set_nodes(NetworkCurve::Nodes nodes)
+void NetworkCurve::set_nodes(const NetworkCurve::Nodes& nodes)
 {
+    cancelAllUpdates();
+    qDeleteAll(m_edges);
+    m_edges.clear();
     qDeleteAll(m_nodes);
     m_nodes = nodes;
     register_points();
@@ -524,8 +538,9 @@ NetworkCurve::Nodes NetworkCurve::nodes()
     return m_nodes;
 }
 
-void NetworkCurve::remove_nodes(const QList<int> nodes)
+void NetworkCurve::remove_nodes(const QList<int>& nodes)
 {
+    cancelAllUpdates();
     foreach (int i, nodes)
     {
         remove_node(i);
@@ -535,7 +550,14 @@ void NetworkCurve::remove_nodes(const QList<int> nodes)
 
 void NetworkCurve::remove_node(int index)
 {
+    cancelAllUpdates();
+    if (!m_nodes.contains(index))
+    {
+        qWarning() << "Trying to remove node" << index << "which is not in the network";
+        return;
+    }
     NodeItem* node = m_nodes.take(index);
+    Q_ASSERT(node->index() == index);
     Plot* p = plot();
     if (p)
     {
@@ -544,23 +566,25 @@ void NetworkCurve::remove_node(int index)
         d.y = node->y();
         p->remove_point(d, this);
     }
+    
     foreach (EdgeItem* edge, node->connected_edges())
     {
         m_edges.removeOne(edge);
         delete edge;
     }
+    Q_ASSERT(node->connected_edges().isEmpty());
     delete node;
 }
 
-void NetworkCurve::add_nodes(Nodes nodes, Edges edges)
+void NetworkCurve::add_nodes(const NetworkCurve::Nodes& nodes, const NetworkCurve::Edges& edges)
 {
-	int i, ndx;
-	for (i = 0; i < nodes.size(); ++i)
+    Nodes::ConstIterator it = nodes.constBegin();
+    Nodes::ConstIterator end = nodes.constEnd();
+	for (it; it != end; ++it)
 	{
-		ndx = nodes[i]->index();
-		if (m_nodes.contains(ndx))
+		if (m_nodes.contains(it.key()))
 		{
-			remove_node(ndx);
+			remove_node(it.key());
 		}
 	}
 
@@ -570,7 +594,7 @@ void NetworkCurve::add_nodes(Nodes nodes, Edges edges)
 	m_edges.append(edges);
 }
 
-void NetworkCurve::set_node_colors(const QMap<int, QColor*> colors)
+void NetworkCurve::set_node_colors(const QMap<int, QColor*>& colors)
 {
 	QMap<int, QColor*>::ConstIterator it;
 	for (it = colors.constBegin(); it != colors.constEnd(); ++it)
@@ -579,8 +603,9 @@ void NetworkCurve::set_node_colors(const QMap<int, QColor*> colors)
 	}
 }
 
-void NetworkCurve::set_node_sizes(QMap<int, double> sizes, double min_size, double max_size)
+void NetworkCurve::set_node_sizes(const QMap<int, double>& sizes, double min_size, double max_size)
 {
+    cancelAllUpdates();
 	// TODO inverted
 	NodeItem* node;
 	Nodes::ConstIterator nit;
@@ -588,7 +613,7 @@ void NetworkCurve::set_node_sizes(QMap<int, double> sizes, double min_size, doub
 	double min_size_value = std::numeric_limits<double>::max();
 	double max_size_value = std::numeric_limits<double>::min();
 
-	QMap<int, double>::Iterator it;
+	QMap<int, double>::ConstIterator it;
 	for (it = sizes.begin(); it != sizes.end(); ++it)
 	{
 		m_nodes[it.key()]->m_size_value = it.value();
@@ -681,8 +706,9 @@ void NetworkCurve::set_node_sizes(QMap<int, double> sizes, double min_size, doub
 	}
 }
 
-void NetworkCurve::set_node_labels(const QMap<int, QString> labels)
+void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
 {
+    cancelAllUpdates();
 	QMap<int, QString>::ConstIterator it;
 	for (it = labels.constBegin(); it != labels.constEnd(); ++it)
 	{
@@ -690,8 +716,9 @@ void NetworkCurve::set_node_labels(const QMap<int, QString> labels)
 	}
 }
 
-void NetworkCurve::set_node_tooltips(const QMap<int, QString> tooltips)
+void NetworkCurve::set_node_tooltips(const QMap<int, QString>& tooltips)
 {
+    cancelAllUpdates();
 	QMap<int, QString>::ConstIterator it;
 	for (it = tooltips.constBegin(); it != tooltips.constEnd(); ++it)
 	{
@@ -699,8 +726,9 @@ void NetworkCurve::set_node_tooltips(const QMap<int, QString> tooltips)
 	}
 }
 
-void NetworkCurve::set_edge_color(const QList<QColor*> colors)
+void NetworkCurve::set_edge_color(const QList<QColor*>& colors)
 {
+    cancelAllUpdates();
 	int i;
 	for (i = 0; i < colors.size(); ++i)
 	{

@@ -156,22 +156,22 @@ public:
     int fr(int steps, bool weighted);
     int random();
     
-    void set_nodes(Nodes nodes);
-    void remove_nodes(const QList<int> nodes);
+    void set_nodes(const Nodes& nodes);
+    void remove_nodes(const QList< int >& nodes);
     void remove_node(int index);
-    void add_nodes(Nodes nodes, Edges edges);
+    void add_nodes(const Nodes& nodes, const Edges& edges);
 
     Nodes nodes();
     
-    void set_edges(Edges edges);
+    void set_edges(const Edges& edges);
     QList<QPair<int, int> > edge_indices();
     Edges edges();
 
-    void set_node_colors(const QMap<int, QColor*> colors);
-    void set_node_sizes(QMap<int, double> sizes=QMap<int, double>(), double min_size=0, double max_size=0);
-    void set_edge_color(const QList<QColor*> colors);
-    void set_node_labels(const QMap<int, QString> labels);
-    void set_node_tooltips(const QMap<int, QString> tooltips);
+    void set_node_colors(const QMap<int, QColor*>& colors);
+    void set_node_sizes(const QMap<int, double>& sizes = QMap<int, double>(), double min_size=0, double max_size=0);
+    void set_edge_color(const QList< QColor* >& colors);
+    void set_node_labels(const QMap<int, QString>& labels);
+    void set_node_tooltips(const QMap<int, QString>& tooltips);
 
     void set_min_node_size(double size);
     double min_node_size() const;

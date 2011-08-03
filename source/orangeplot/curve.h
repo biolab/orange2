@@ -189,12 +189,12 @@ protected:
   QTransform point_transform();
   Curve::UpdateFlags needs_update();
   void set_updated(Curve::UpdateFlags flags);
+  void cancelAllUpdates();
   
 private:
   void checkForUpdate();
   void updateNumberOfItems();
   void changeContinuous();
-  void cancelAllUpdates();
   
   QColor m_color;
   int m_pointSize;
