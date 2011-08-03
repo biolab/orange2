@@ -1253,6 +1253,7 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.replot()
         qApp.processEvents()
         self.networkCanvas.networkCurve.fr(100, weighted=False, smooth_cooling=True)
+        self.networkCanvas.networkCurve.update_properties()
         self.networkCanvas.replot()
           
         self.information(0)
