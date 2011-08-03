@@ -326,7 +326,7 @@ int NetworkCurve::random()
 	return 0;
 }
 
-int NetworkCurve::fr(int steps, bool weighted)
+int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 {
 	int i, j;
 	int count = 0;
@@ -381,6 +381,17 @@ int NetworkCurve::fr(int steps, bool weighted)
 		cooling_switch = sqrt(area) / 1000;
 		cooling_1 = (temperature - cooling_switch) / steps;
 		cooling_2 = 0;
+	}
+
+	if (smooth_cooling)
+	{
+		if (steps < 20)
+		{
+			steps = 20;
+		}
+		temperature = cooling_switch;
+		cooling_1 = 0;
+		cooling_2 = (cooling_switch - sqrt(area) / 2000 ) / steps;
 	}
 
 	// iterations

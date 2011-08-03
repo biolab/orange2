@@ -153,7 +153,7 @@ public:
     virtual QRectF data_rect() const;
     virtual void register_points();
     
-    int fr(int steps, bool weighted);
+    int fr(int steps, bool weighted, bool smooth_cooling);
     int random();
     
     Nodes nodes() const;
