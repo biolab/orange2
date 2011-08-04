@@ -319,14 +319,22 @@ class PlotGrid(orangeplot.PlotItem):
         if b < 0:
             b = not self._x_enabled
         self._x_enabled = b
+        self.update_properties()
         
-    def enable_y(self, b):
+    def is_x_enabled(self):
+        return self._x_enabled
+        
+    def set_y_enabled(self, b):
         if b < 0:
             b = not self._y_enabled
         self._y_enabled = b
+        self.update_properties()
+        
+    def is_y_enabled(self):
+        return self._y_enabled
         
     def set_pen(self, pen):
-        self._pen = pen
+        self._path_item.setPen(pen)
         
     def update_properties(self):
         p = self.plot()
@@ -344,5 +352,3 @@ class PlotGrid(orangeplot.PlotItem):
                 path.moveTo(rect.left(), pos)
                 path.lineTo(rect.right(), pos)
         self._path_item.setPath(self.graph_transform().map(path))
-        
-    

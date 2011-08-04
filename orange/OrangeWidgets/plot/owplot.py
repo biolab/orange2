@@ -160,8 +160,6 @@ class OWPlot(orangeplot.Plot):
         self.YLaxisTitle = None
         self.YRaxisTitle = None
         
-        self.grid_curve = PlotGrid(self)
-                
         # Method aliases, because there are some methods with different names but same functions
         self.setCanvasBackground = self.setCanvasColor
         self.map_from_widget = self.mapToScene
@@ -211,6 +209,7 @@ class OWPlot(orangeplot.Plot):
         self.static_click = False
         
         self._marker_items = []
+        self.grid_curve = PlotGrid(self)
         
         self._zoom_rect = None
         self._zoom_transform = QTransform()
@@ -363,15 +362,15 @@ class OWPlot(orangeplot.Plot):
         self.setAxisTitle(yRight, title)
 
     def enableGridXB(self, b):
-      #  self.gridCurve.enableX(b)
+        self.grid_curve.set_x_enabled(b)
         self.replot()
 
     def enableGridYL(self, b):
-       # self.gridCurve.enableY(b)
+        self.grid_curve.set_y_enabled(b)
         self.replot()
 
     def setGridColor(self, c):
-       # self.gridCurve.setPen(QPen(c))
+        self.grid_curve.set_pen(QPen(c))
         self.replot()
 
     def setCanvasColor(self, c):
@@ -412,7 +411,6 @@ class OWPlot(orangeplot.Plot):
             
             .. note:: This changes the axis scale and removes any previous labels set with :meth:`set_axis_labels`. 
         '''
-        qDebug('Setting axis scale for ' + str(axis_id) + ' with axes ' + ' '.join(str(i) for i in self.axes))
         if axis_id in self._bounds_cache:
             del self._bounds_cache[axis_id]
         self._transform_cache = {}
@@ -514,7 +512,6 @@ class OWPlot(orangeplot.Plot):
         '''
             Creates an :obj:`OrangeWidgets.plot.OWAxis` with the specified ``axis_id`` and ``title``. 
         '''
-        qDebug('Adding axis with id ' + str(axis_id) + ' and title ' + title)
         a = OWAxis(axis_id, title, title_above, title_location, line, arrows, scene=self.scene())
         a.zoomable = zoomable
         a.update_callback = self.replot
@@ -558,16 +555,17 @@ class OWPlot(orangeplot.Plot):
     def clear(self):
         '''
             Clears the plot, removing all curves, markers and tooltips. 
-            Axes are not removed
+            Axes and the grid are not removed
         '''
-        qDebug('  ## Clearing the plot ##  ')
         for i in self.plot_items():
-            self.remove_item(i)
+            if i is not self.grid_curve:
+                self.remove_item(i)
         self._bounds_cache = {}
         self._transform_cache = {}
         self.clear_markers()
         self.tips.removeAll()
         self.legend().clear()
+        self.update_grid()
         
     def clear_markers(self):
         '''
@@ -749,8 +747,9 @@ class OWPlot(orangeplot.Plot):
         pass
     
     def update_grid(self):
-        ## TODO: Implement gridlines
-        pass
+        self.grid_curve.set_x_enabled(self.show_grid)
+        self.grid_curve.set_y_enabled(self.show_grid)
+        self.grid_curve.update_properties()
         
     def legend(self):
         '''
@@ -972,7 +971,6 @@ class OWPlot(orangeplot.Plot):
     def get_selected_points(self, xData, yData, validData):
         selected = []
         unselected = []
-        qDebug('Getting selected points')
         for i in self.selected_points(xData, yData, self.map_transform):
             selected.append(i)
             unselected.append(not i)

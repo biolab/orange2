@@ -1,16 +1,15 @@
 #include "plotitem.h"
 #include "plot.h"
 
+// Copied from OrangeWidgets/plot/owconstants.py
+const int xBottom = 2;
+const int yLeft = 0;
+
 PlotItem::PlotItem(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene), 
     m_plot(0)
 {
+    set_axes(xBottom, yLeft);
     set_auto_scale(true);
-}
-
-PlotItem::PlotItem(const PlotItem& ): QGraphicsItem(), 
-    m_plot(0)
-{
-    // Disabled copy constructor
 }
 
 PlotItem::~PlotItem()

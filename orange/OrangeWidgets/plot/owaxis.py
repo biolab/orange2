@@ -256,13 +256,13 @@ class OWAxis(QGraphicsItem):
     def set_labels(self, labels):
         self.labels = labels
         self.graph_line = None
+        self.update_ticks()
         self.update_graph()
         
     def set_scale(self, min, max, step_size):
-        if not step_size:
-            step_size = (max-min)/10
         self.scale = (min, max, step_size)
         self.graph_line = None
+        self.update_ticks()
         self.update_graph()
     
     def set_tick_length(self, minor, medium, major):
@@ -301,4 +301,6 @@ class OWAxis(QGraphicsItem):
         return QRectF()
         
     def ticks(self):
+        if not self._ticks:
+            self.update_ticks()
         return self._ticks
