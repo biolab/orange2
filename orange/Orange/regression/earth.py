@@ -134,12 +134,12 @@ class EarthLearner(Orange.core.LearnerFD):
         x = data[:, ~ label_mask]
         
         if self.scale_resp:
-            y = y - numpy.mean(y, axis=0)
-            y = y / numpy.std(y, axis=1)
+            sy = y - numpy.mean(y, axis=0)
+            sy = sy / numpy.std(sy, axis=1)
+        else:
+            sy = y
             
-            
-        # TODO: y scaling
-        n_terms, used, bx, dirs, cuts = forward_pass(x, y,
+        n_terms, used, bx, dirs, cuts = forward_pass(x, sy,
             degree=self.degree, terms=self.terms, penalty=self.penalty,
             thresh=self.thresh, fast_k=self.fast_k, fast_beta=self.fast_beta,
             new_var_penalty=self.new_var_penalty)
@@ -670,7 +670,7 @@ def bagged_evimp(classifier, used_only=True):
         scores = numpy.average(scores, axis=0)
         bagged_imp[attr] = tuple(scores)
     
-    bagged_imp = sorted(bagged_imp.items(), key=lambda t:t[1][0],
+    bagged_imp = sorted(bagged_imp.items(), key=lambda t: (t[1][0],t[1][1]),
                         reverse=True)    
     if used_only:
         bagged_imp = [(a, r) for a, r in bagged_imp if r[0] > 0]
