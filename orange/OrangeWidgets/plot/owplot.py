@@ -787,7 +787,9 @@ class OWPlot(orangeplot.Plot):
         self._pressed_mouse_button = event.button()
         if event.button() == Qt.LeftButton and self.state == PANNING:
             self._last_pan_pos = point
-        event.accept()
+            event.accept()
+        else:
+            orangeplot.Plot.mousePressEvent(self, event)
             
     def mouseMoveEvent(self, event):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
@@ -838,6 +840,8 @@ class OWPlot(orangeplot.Plot):
             if text and x is not None and y is not None:
                 tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self._zoom_transform)
                 self.showTip(tp.x(), tp.y(), text)
+            else:
+                orangeplot.Plot.mouseMoveEvent(self, event)
         
     def mouseReleaseEvent(self, event):
         self._pressed_mouse_button = Qt.NoButton
@@ -860,6 +864,8 @@ class OWPlot(orangeplot.Plot):
                 self.add_selection(rect)
             self.scene().removeItem(self._current_rs_item)
             self._current_rs_item = None
+            return
+        orangeplot.Plot.mouseReleaseEvent(self, event)
     
     def mouseStaticClick(self, event):
         point = self.mapToScene(event.pos())
@@ -920,13 +926,6 @@ class OWPlot(orangeplot.Plot):
         point = self.mapToScene(event.pos())
         d = event.delta() / 120.0
         self.zoom(point, pow(2,d))
-            
-    def mouseDoubleClickEvent(self, event):
-        ## We don't want this events to propagate to the scene
-        event.ignore()
-        
-    def contextMenuEvent(self, event):
-        event.ignore()
             
     @staticmethod
     def transform_from_rects(r1, r2):

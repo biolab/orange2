@@ -45,7 +45,6 @@ Plot::Plot(QWidget* parent):
 QGraphicsView(parent)
 {
     setScene(new QGraphicsScene(this));
-    scene()->installEventFilter(new SceneEventFilter(this));
     clipItem = new QGraphicsRectItem();
     clipItem->setPen(Qt::NoPen);
     clipItem->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);

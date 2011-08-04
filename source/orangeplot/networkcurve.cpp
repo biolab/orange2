@@ -21,6 +21,7 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
     set_marked(false);
     set_selected(false);
     set_label("");
+    setAcceptHoverEvents(true);
 }
 
 NodeItem::~NodeItem()
