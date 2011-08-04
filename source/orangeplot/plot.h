@@ -75,6 +75,7 @@ public:
     
 Q_SIGNALS:
     void selection_changed();
+    void point_hovered(Point* point);
     
 protected:
     void set_clean();

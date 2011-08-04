@@ -555,3 +555,7 @@ class OWNxCanvas(OWPlot):
         OWPlot.replot(self)
         if hasattr(self, 'networkCurve') and self.networkCurve is not None:
             self.networkCurve.update()
+            
+    def mouseMoveEvent(self, event):
+        self.point_hovered.emit(self.nearest_point(self.mapToScene(event.pos())))
+        OWPlot.mouseMoveEvent(self, event)
