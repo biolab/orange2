@@ -2,11 +2,9 @@
 #include <QtGui/QPen>
 #include <QtCore/QDebug>
 
-const Curve::UpdateFlags UlcUpdateFlags = Curve::UpdateNumberOfItems | Curve::UpdatePosition | Curve::UpdatePen;
-
 UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): Curve(x_data, y_data, parent, scene)
 {
-
+    m_path_item = new QGraphicsPathItem(this);
 }
 
 UnconnectedLinesCurve::~UnconnectedLinesCurve()
@@ -16,36 +14,24 @@ UnconnectedLinesCurve::~UnconnectedLinesCurve()
 
 void UnconnectedLinesCurve::update_properties()
 {
-    if (needs_update() & UlcUpdateFlags)
-    {   
+    if (needs_update() & UpdatePosition)
+    {
         const Data d = data();
-        const int n = d.size()/2;
-        const int m = m_items.size();
-        if (m > n)
-        {
-            for (int i = n; i < m; ++i)
-            {
-                delete m_items.takeLast();
-            }
-        }
-        else if (m < n)
-        {
-            for (int i = m; i < n; ++i)
-            {
-                m_items << new QGraphicsLineItem(this);
-            }
-        }
-        Q_ASSERT(m_items.size() == n);
-        
-        QLineF line;
-        QPen p = pen();
-        p.setCosmetic(true);
+        const int n = d.size();
+        QPainterPath path;
         for (int i = 0; i < n; ++i)
         {
-            line.setLine( d[2*i].x, d[2*i].y, d[2*i+1].x, d[2*i+1].y );
-            m_items[i]->setLine(graph_transform().map(line));
-            m_items[i]->setPen(p);
+            path.moveTo(d[i].x, d[i].y);
+            ++i;
+            path.lineTo(d[i].x, d[i].y);
         }
-        set_updated(UlcUpdateFlags);
+        m_path_item->setPath(graph_transform().map(path));
     }
+    if (needs_update() & UpdatePen)
+    {   
+        QPen p = pen();
+        p.setCosmetic(true);
+        m_path_item->setPen(p);
+    }
+    set_updated(Curve::UpdateAll);
 }

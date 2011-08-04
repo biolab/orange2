@@ -142,6 +142,7 @@ void Curve::set_data(const QList< double > x_data, const QList< double > y_data)
     m_needsUpdate |= UpdateNumberOfItems;
   }
   m_data.clear();
+  m_data.reserve(n);
   for (int i = 0; i < n; ++i)
   {
     DataPoint p;

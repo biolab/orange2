@@ -2,7 +2,6 @@
 #define UNCONNECTEDLINESCURVE_H
 
 #include "curve.h"
-#include <QtGui/QPen>
 
 class UnconnectedLinesCurve : public Curve
 {
@@ -14,7 +13,7 @@ public:
     virtual void update_properties();
     
 private:
-    QList<QGraphicsLineItem*> m_items;
+     QGraphicsPathItem* m_path_item;
 };
 
 #endif // UNCONNECTEDLINESCURVE_H
