@@ -5,11 +5,12 @@
 
 struct PointData
 {
-    PointData(int size, int symbol, const QColor& color, int state) : size(size), symbol(symbol), color(color), state(state) {}
+    PointData(int size, int symbol, const QColor& color, int state, bool transparent) : size(size), symbol(symbol), color(color), state(state), transparent(transparent) {}
     int size;
     int symbol;
     QColor color;
     int state;
+    bool transparent;
 };
 
 uint qHash(const PointData& data);

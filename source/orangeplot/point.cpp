@@ -14,6 +14,8 @@ uint qHash(const PointData& data)
     ret |= data.symbol << 5;
     // symbol is less than 16, so 4 bits will do
     ret |= data.state << 9;
+    // state is currently only two bits
+    ret |= data.transparent << 11;
     // QRgb takes the full uins, so we just XOR by it
     ret ^= data.color.rgba();
     return ret;
@@ -31,6 +33,7 @@ Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphi
  m_size(size)
 {
     m_display_mode = DisplayPath;
+    m_transparent = true;
 }
 
 Point::Point(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene)
@@ -48,7 +51,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     Q_UNUSED(option)
     Q_UNUSED(widget)
     
-    const PointData key(m_size, m_symbol, m_color, m_state);
+    const PointData key(m_size, m_symbol, m_color, m_state, m_transparent);
     // We make the pixmap slighly larger because the point outline has non-zero width
     const int ps = m_size + 4;
     if (!pixmap_cache.contains(key))
