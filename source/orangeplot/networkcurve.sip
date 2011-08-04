@@ -101,6 +101,8 @@ public:
     void set_node_sizes(const QMap<int, double>& sizes = QMap<int, double>(), double min_size=0, double max_size=0);
     void set_node_labels(const QMap<int, QString>& labels);
     void set_node_tooltips(const QMap<int, QString>& tooltips);
+    void set_node_marks(const QMap<int, bool>& marks);
+    void clear_node_marks();
     
     void set_edge_color(const QList<QColor*>& colors);
     

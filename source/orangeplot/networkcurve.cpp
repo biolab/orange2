@@ -774,6 +774,26 @@ void NetworkCurve::set_node_tooltips(const QMap<int, QString>& tooltips)
 	}
 }
 
+void NetworkCurve::set_node_marks(const QMap<int, bool>& marks)
+{
+	cancelAllUpdates();
+	QMap<int, bool>::ConstIterator it;
+	for (it = marks.constBegin(); it != marks.constEnd(); ++it)
+	{
+		m_nodes[it.key()]->set_marked(it.value());
+	}
+}
+
+void NetworkCurve::clear_node_marks()
+{
+	cancelAllUpdates();
+	Nodes::Iterator it;
+	for (it = m_nodes.begin(); it != m_nodes.end(); ++it)
+	{
+		it.value()->set_marked(false);
+	}
+}
+
 void NetworkCurve::set_edge_color(const QList<QColor*>& colors)
 {
     cancelAllUpdates();

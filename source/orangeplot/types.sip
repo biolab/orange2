@@ -164,7 +164,7 @@ template<TYPE>
     {
         int k = SIPLong_AsLong(kobj);
         bool t = false;
-        if PyBool_Check(tobj)
+        if (tobj == Py_True)
         {
         	t = true;
         }

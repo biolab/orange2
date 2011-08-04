@@ -175,6 +175,8 @@ public:
     void set_edge_color(const QList< QColor* >& colors);
     void set_node_labels(const QMap<int, QString>& labels);
     void set_node_tooltips(const QMap<int, QString>& tooltips);
+    void set_node_marks(const QMap<int, bool>& marks);
+    void clear_node_marks();
 
     void set_min_node_size(double size);
     double min_node_size() const;
