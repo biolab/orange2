@@ -31,7 +31,7 @@ dlg_showall = dir + "Dlg_clear.png"
 class OWNxExplorerQt(OWWidget):
     settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
     "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.use_antialiasing", "networkCanvas.use_animations",
-    "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices"
+    "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices",
     "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
     "showWeights", "showEdgeLabels", "colorSettings", 
     "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
@@ -208,37 +208,37 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
         
-        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "None", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices", callback = self.setMarkMode)
+        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "None", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices", callback = self.set_mark_mode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
-        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setMarkMode)
+        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.set_mark_mode)
         
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertices", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertices", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.set_mark_mode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
-        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
+        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.set_mark_mode(h)))
         #self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback = self.setMarkMode)
-        self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.setMarkMode(h)))
-        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "most connections", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback = self.set_mark_mode)
+        self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.set_mark_mode(h)))
+        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "most connections", callback = self.set_mark_mode)
         ib = OWGUI.indentedBox(ribg)
-        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setMarkMode(h)))
+        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.set_mark_mode(h)))
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
-        self.markInputRadioButton = OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
+        self.markInputRadioButton = OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.set_mark_mode)
         ib = OWGUI.indentedBox(ribg)
         self.markInput = 0
-        self.markInputCombo = OWGUI.comboBox(ib, self, "markInput", callback=(lambda h=9: self.setMarkMode(h)))
+        self.markInputCombo = OWGUI.comboBox(ib, self, "markInput", callback=(lambda h=9: self.set_mark_mode(h)))
         self.markInputRadioButton.setEnabled(False)
         
         ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
         self.checkSendMarkedNodes = 0
-        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked vertices', callback = self.setSendMarkedNodes, disabled=0)
+        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked vertices', callback = self.send_marked_nodes, disabled=0)
         
         G = self.networkCanvas.gui
         
@@ -323,7 +323,7 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.checkBox(ib, self, 'autoSendAttributes', "auto send attributes", callback=self.setAutoSendAttributes)
         
         self.icons = self.createAttributeIconDict()
-        self.setMarkMode()
+        self.set_mark_mode()
         
         self.editAttribute = 0
         self.editCombo = OWGUI.comboBox(self.infoTab, self, "editAttribute", label="Edit attribute:", orientation="horizontal")
@@ -574,25 +574,23 @@ class OWNxExplorerQt(OWWidget):
 #        self.networkCanvas.updateCanvas()
         pass
     
-    def setSendMarkedNodes(self):
+    def send_marked_nodes(self):
         if self.checkSendMarkedNodes:
-            self.networkCanvas.sendMarkedNodes = self.sendMarkedNodes
-            self.sendMarkedNodes(self.networkCanvas.getMarkedVertices())
+            markedNodes = self.networkCanvas.marked_nodes()
+            
+            if len(markedNodes) == 0:
+                self.send("Marked Items", None)
+                return
+            
+            if self.graph is not None and self.graph_base.items() is not None:
+                items = self.graph_base.items().getitems(markedNodes)
+                self.send("Marked Items", items)
+                return
+            
+            self.send("Marked Items", None)
         else:
+            self.networkCanvas.send_marked_nodes = None
             self.send("Marked Items", None)
-            self.networkCanvas.sendMarkedNodes = None
-        
-    def sendMarkedNodes(self, markedNodes):        
-        if len(markedNodes) == 0:
-            self.send("Marked Items", None)
-            return
-        
-        if self.graph is not None and self.graph_base.items() is not None:
-            items = self.graph_base.items().getitems(markedNodes)
-            self.send("Marked Items", items)
-            return
-        
-        self.send("Marked Items", None)
             
     def showComponents(self):
         if self.graph is None or self.graph_base.items() is None:
@@ -968,82 +966,92 @@ class OWNxExplorerQt(OWWidget):
         self.searchStringTimer.stop()
         self.searchStringTimer.start(1000)
          
-    def setMarkMode(self, i = None):
+    def set_mark_mode(self, i=None):
         self.searchStringTimer.stop()
         if not i is None:
             self.hubs = i
         
-        #print self.hubs
-        self.networkCanvas.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
-        self.networkCanvas.markWithRed = False
-
+        QObject.disconnect(self.networkCanvas, SIGNAL('selection_changed()'), self.networkCanvas.mark_on_selection_changed)
+        
         if self.graph is None:
             return
         
         hubs = self.hubs
-        if hubs == 0:
-            self.networkCanvas.setMarkedVertices([])
-            self.networkCanvas.replot()
-            return
         
-        elif hubs == 1:
-            #print "mark on given label"
-            txt = self.markSearchString
-            labelText = self.networkCanvas.labelText
-            self.networkCanvas.markWithRed = self.graph.number_of_nodes > 200
+        if hubs in [0,1,2,3]:
+            if hubs == 0:
+                self.networkCanvas.networkCurve.clear_node_marks()
+            elif hubs == 1:
+                #print "mark on given label"
+                txt = self.markSearchString
+                
+                toMark = set(i for i, values in enumerate(self.graph_base.items()) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(self.graph_base.items().domain)) + self.graph_base.items().domain.getmetas().keys()]))
+                toMark = toMark.intersection(self.graph.nodes())
+                self.networkCanvas.networkCurve.clear_node_marks()
+                self.networkCanvas.networkCurve.set_node_marks(dict((i, True) for i in toMark))
+            elif hubs == 2:
+                #print "mark on focus"
+                self.networkCanvas.mark_neighbors = self.markDistance
+            elif hubs == 3:
+                #print "mark selected"
+                self.networkCanvas.mark_neighbors = self.markDistance
+                QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self.networkCanvas.mark_on_selection_changed)
+                self.networkCanvas.mark_on_selection_changed()
+                
+        elif hubs in [4,5,6,7,8,9]:
             
-            toMark = [i for i, values in enumerate(self.graph_base.items()) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(self.graph_base.items().domain)) + self.graph_base.items().domain.getmetas().keys()])]
-            self.networkCanvas.setMarkedVertices(toMark)
-            self.networkCanvas.replot()
-            return
+            powers = sorted(self.graph.degree_iter(), key=itemgetter(1), reverse=True)
+            
+            if hubs == 4:
+                #print "mark at least N connections"
+                N = self.markNConnections
+                self.networkCanvas.networkCurve.set_node_marks(dict((i, True) if \
+                    d >= N else (i, False) for i, d in powers))
+            elif hubs == 5:
+                #print "mark at most N connections"
+                N = self.markNConnections
+                self.networkCanvas.networkCurve.set_node_marks(dict((i, True) if \
+                    d <= N else (i, False) for i, d in powers))
+            elif hubs == 6:
+                #print "mark more than any"
+                self.networkCanvas.networkCurve.set_node_marks(dict((i, True) if \
+                    d > max([0]+self.graph.degree(self.graph.neighbors(i)).values()) \
+                    else (i, False) for i,d in powers ))
+            elif hubs == 7:
+                #print "mark more than avg"
+                self.networkCanvas.networkCurve.set_node_marks(dict((i, True) if \
+                    d > statc.mean([0]+self.graph.degree(self.graph.neighbors(i)).values()) \
+                    else (i, False) for i,d in powers ))
+                self.networkCanvas.replot()
+            elif hubs == 8:
+                #print "mark most"
+                self.networkCanvas.networkCurve.clear_node_marks()
+                
+                if self.markNumber < 1:
+                    return
+                
+                cut = self.markNumber
+                cutPower = powers[cut-1][1]
+                while cut < len(powers) and powers[cut][1] == cutPower:
+                    cut += 1
+    
+                self.networkCanvas.networkCurve.clear_node_marks()
+                self.networkCanvas.networkCurve.set_node_marks(dict((i, True) for \
+                    i,d in powers[:cut]))
+                
+            elif hubs == 9:
+                var = str(self.markInputCombo.currentText())
+                if self.markInputItems is not None and len(self.markInputItems) > 0:
+                    values = [str(x[var]).strip().upper() for x in self.markInputItems]
+                    tomark = dict((x, True) for x in self.graph.nodes() if str(self.graph_base.items()[x][var]).strip().upper() in values)
+                    self.networkCanvas.networkCurve.clear_node_marks()
+                    self.networkCanvas.networkCurve.set_node_marks(tomark)
+                    
+                else:
+                    self.networkCanvas.networkCurve.clear_node_marks()      
         
-        elif hubs == 2:
-            #print "mark on focus"
-            self.networkCanvas.unmark()
-            self.networkCanvas.tooltipNeighbours = self.markDistance
-            return
-
-        elif hubs == 3:
-            #print "mark selected"
-            self.networkCanvas.unmark()
-            self.networkCanvas.selectionNeighbours = self.markDistance
-            self.networkCanvas.markSelectionNeighbours()
-            return
-        
-        self.networkCanvas.tooltipNeighbours = self.networkCanvas.selectionNeighbours = 0
-        powers = self.graph.degree()
-        powers = [powers[key] for key in sorted(powers.keys())]
-        
-        if hubs == 4: # at least N connections
-            #print "mark at least N connections"
-            N = self.markNConnections
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
-            self.networkCanvas.replot()
-        elif hubs == 5:
-            #print "mark at most N connections"
-            N = self.markNConnections
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
-            self.networkCanvas.replot()
-        elif hubs == 6:
-            #print "mark more than any"
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in self.graph.getNeighbours(i)])])
-            self.networkCanvas.replot()
-        elif hubs == 7:
-            #print "mark more than avg"
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > statc.mean([0]+[powers[nn] for nn in self.graph.getNeighbours(i)])])
-            self.networkCanvas.replot()
-        elif hubs == 8:
-            #print "mark most"
-            sortedIdx = range(len(powers))
-            sortedIdx.sort(lambda x,y: -cmp(powers[x], powers[y]))
-            cutP = self.markNumber - 1
-            cutPower = powers[sortedIdx[cutP]]
-            while cutP < len(powers) and powers[sortedIdx[cutP]] == cutPower:
-                cutP += 1
-            self.networkCanvas.setMarkedVertices(sortedIdx[:cutP])
-            self.networkCanvas.replot()
-        elif hubs == 9:
-            self.setMarkInput()
+        self.nMarked = len(self.networkCanvas.marked_nodes())
+        self.send_marked_nodes()
        
     def testRefresh(self):
         start = time.time()
@@ -1350,6 +1358,9 @@ class OWNxExplorerQt(OWWidget):
         self.information(0)
         
     def set_network_view(self, nxView):
+        if self._network_view is not None:
+            QObject.disconnect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
+            
         self._network_view = nxView
         
         if self._network_view is not None:
@@ -1377,22 +1388,8 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.showWeights = self.showWeights
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
         self.setCombos()
-        self.networkCanvas.updateData()
+        #self.networkCanvas.updateData()
         
-    def setMarkInput(self):
-        var = str(self.markInputCombo.currentText())
-        #print 'combo:',self.markInputCombo.currentText()
-        if self.markInputItems is not None and len(self.markInputItems) > 0:
-            values = [str(x[var]).strip().upper() for x in self.markInputItems]
-            toMark = [i for (i,x) in enumerate(self.graph) if str(self.graph_base.items()[x][var]).strip().upper() in values]
-            #print "mark:", toMark
-            self.networkCanvas.setMarkedVertices(list(toMark))
-            self.networkCanvas.replot()
-            
-        else:
-            self.networkCanvas.setMarkedVertices([])
-            self.networkCanvas.replot()            
-    
     def markItems(self, items):
         self.markInputCombo.clear()
         self.markInputRadioButton.setEnabled(False)
@@ -1415,7 +1412,7 @@ class OWNxExplorerQt(OWWidget):
                         self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
                         self.markInputRadioButton.setEnabled(True)
                 
-                        self.setMarkMode(9)
+                        self.set_mark_mode(9)
               
     def setExampleSubset(self, subset):
         if self.networkCanvas is None:
@@ -1674,7 +1671,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.lastEdgeLabelAttributes = set([self.edgeAttributes[i][0] for i in self.edgeLabelAttributes])
         self.networkCanvas.setEdgeLabelText(self.lastEdgeLabelAttributes)
-        self.networkCanvas.updateData()
+        #self.networkCanvas.updateData()
         self.networkCanvas.replot()
 
     def setVertexColor(self):
