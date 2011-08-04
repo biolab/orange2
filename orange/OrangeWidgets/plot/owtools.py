@@ -299,3 +299,50 @@ class ProbabilitiesItem(orangeplot.PlotItem):
     
     def data_rect(self):
         return self.rect
+        
+@deprecated_members({
+        'enableX' : 'set_x_enabled',
+        'enableY' : 'set_y_enabled',
+        'xEnabled' : 'is_x_enabled',
+        'yEnabled' : 'is_y_enabled',
+        'setPen' : 'set_pen'
+    })
+class PlotGrid(orangeplot.PlotItem):
+    def __init__(self, plot):
+        orangeplot.PlotItem.__init__(self)
+        self._x_enabled = True
+        self._y_enabled = True
+        self._path_item = QGraphicsPathItem(self)
+        self.attach(plot)
+        
+    def set_x_enabled(self, b):
+        if b < 0:
+            b = not self._x_enabled
+        self._x_enabled = b
+        
+    def enable_y(self, b):
+        if b < 0:
+            b = not self._y_enabled
+        self._y_enabled = b
+        
+    def set_pen(self, pen):
+        self._pen = pen
+        
+    def update_properties(self):
+        p = self.plot()
+        if p is None:
+            return
+        x_id, y_id = self.axes()
+        rect = p.data_rect_for_axes(x_id, y_id)
+        path = QPainterPath()
+        if self._x_enabled and x_id in p.axes:
+            for pos, label, size in p.axes[x_id].ticks():
+                path.moveTo(pos, rect.bottom())
+                path.lineTo(pos, rect.top())
+        if self._y_enabled and y_id in p.axes:
+            for pos, label, size in p.axes[y_id].ticks():
+                path.moveTo(rect.left(), pos)
+                path.lineTo(rect.right(), pos)
+        self._path_item.setPath(self.graph_transform().map(path))
+        
+    

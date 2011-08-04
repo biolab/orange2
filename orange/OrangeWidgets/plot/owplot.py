@@ -159,6 +159,8 @@ class OWPlot(orangeplot.Plot):
         self.XaxisTitle = None
         self.YLaxisTitle = None
         self.YRaxisTitle = None
+        
+        self.grid_curve = PlotGrid(self)
                 
         # Method aliases, because there are some methods with different names but same functions
         self.setCanvasBackground = self.setCanvasColor
@@ -232,7 +234,6 @@ class OWPlot(orangeplot.Plot):
         self.selection_behavior = self.AddSelection
         self.replot()
         
-        
     selectionCurveList = deprecated_attribute("selectionCurveList", "selection_items")
     autoSendSelectionCallback = deprecated_attribute("autoSendSelectionCallback", "auto_send_selection_callback")
     showLegend = deprecated_attribute("showLegend", "show_legend")
@@ -242,6 +243,7 @@ class OWPlot(orangeplot.Plot):
     showFilledSymbols = deprecated_attribute("showFilledSymbols", "show_filled_symbols")
     mainTitle = deprecated_attribute("mainTitle", "main_title")
     showMainTitle = deprecated_attribute("showMainTitle", "show_main_title")
+    gridCurve = deprecated_attribute("gridCurve", "grid_curve")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)

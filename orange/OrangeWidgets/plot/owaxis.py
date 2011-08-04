@@ -299,3 +299,6 @@ class OWAxis(QGraphicsItem):
     
     def boundingRect(self):
         return QRectF()
+        
+    def ticks(self):
+        return self._ticks
