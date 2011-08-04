@@ -111,7 +111,7 @@ def open_data(name, flags=0):
     return dataset
 
 CLASSIFICATION_DATASETS = ["iris", "brown-selected", "lenses", "monks-1"]
-REGRESSION_DATASETS = ["housing", "auto-mpg"]
+REGRESSION_DATASETS = ["housing", "auto-mpg", "servo"]
 CLASSLES_DATASETS =  ["water-treatment"]
 ALL_DATASETS  = CLASSIFICATION_DATASETS + REGRESSION_DATASETS + CLASSLES_DATASETS
 
@@ -424,6 +424,9 @@ class MeasureAttributeTestCase(DataTestCase):
     MEASURE = None
     """ MEASURE must be defined in the subclass
     """
+    
+    def setUp(self):
+        self.measure = self.MEASURE
             
     @test_on_data
     def test_measure_attribute_on(self, data):
@@ -431,7 +434,7 @@ class MeasureAttributeTestCase(DataTestCase):
         """
         scores = []
         for attr in data.domain.attributes:
-            score = self.MEASURE(attr, data)
+            score = self.measure(attr, data)
 #            self.assertTrue(score >= 0.0)
             scores.append(score)
         # any scores actually non zero
@@ -442,7 +445,7 @@ class MeasureAttributeTestCase(DataTestCase):
         """ Test attribute measure pickling support.
         """
         import cPickle
-        s = cPickle.dumps(self.MEASURE)
+        s = cPickle.dumps(self.measure)
         measure = cPickle.loads(s)
         # TODO: make sure measure computes the same scores as measure
          
@@ -452,27 +455,31 @@ class PreprocessorTestCase(DataTestCase):
     
     """ 
     PREPROCESSOR = None
+    
+    def setUp(self):
+        self.preprocessor = self.PREPROCESSOR
 
     @test_on_data
     def test_preprocessor_on(self, dataset):
         """ Test preprocessor on dataset 
         """
-        newdata = self.PREPROCESSOR(dataset)
+        newdata = self.preprocessor(dataset)
         
     def test_pickle(self):
         """ Test preprocessor pickling
         """
-        if isinstance(self.PREPROCESSOR, type):
-            prep = self.PREPROCESSOR() # Test the default constructed
+        if isinstance(self.preprocessor, type):
+            prep = self.preprocessor() # Test the default constructed
             s = cPickle.dumps(prep)
             prep = cPickle.loads(s)
                 
-        s = cPickle.dumps(self.PREPROCESSOR)
+        s = cPickle.dumps(self.preprocessor)
         prep = cPickle.loads(s)
         
         
 from Orange.distance.instances import distance_matrix
 from Orange.misc import member_set
+
 
 class DistanceTestCase(DataTestCase):
     """ Test orange.ExamplesDistance/Constructor
