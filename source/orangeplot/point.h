@@ -99,7 +99,8 @@ public:
     void set_marked(bool marked);
     bool is_marked() const;
 
-
+    bool is_transparent();
+    void set_transparent(bool transparent);
     
     /**
     * Creates a path from a symbol and a size
@@ -115,18 +116,19 @@ public:
     
     static void clear_cache();
 
+    static QHash<PointData, QPixmap> pixmap_cache;
+
 private:
     static QPainterPath trianglePath(double d, double rot);
     static QPainterPath crossPath(double d, double rot);
     static QPainterPath hexPath(double d, bool star);
-    
-    static QHash<PointData, QPixmap> pixmap_cache;
 
     int m_symbol;
     QColor m_color;
     int m_size;
     DisplayMode m_display_mode;
     State m_state;
+    bool m_transparent;
 };
 
 #endif // POINT_H

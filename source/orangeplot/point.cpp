@@ -39,6 +39,7 @@ Point::Point(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent
     m_color = Qt::black;
     m_size = 5;
     m_display_mode = DisplayPath;
+    m_transparent = true;
 }
 
 
@@ -54,6 +55,8 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     {
         if (m_display_mode == DisplayPath)
         {
+        	QColor brush_color = m_color;
+
             QPixmap pixmap(ps, ps);
             pixmap.fill(Qt::transparent);
             QPainter p;
@@ -61,21 +64,26 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
             p.setRenderHints(painter->renderHints());
             if (m_state & Selected)
             {
-                p.setBrush(m_color);
                 p.setPen(Qt::yellow);
             }
             else if (m_state & Marked)
             {
-                p.setBrush(m_color);
+                //p.setBrush(m_color);
             }
             else
             {
-                QColor color = m_color;
-                color.setAlpha(m_color.alpha()/8);
-                p.setBrush(color);
+                brush_color.setAlpha(m_color.alpha()/8);
                 p.setPen(m_color);
             }
             const QPainterPath path = path_for_symbol(m_symbol, m_size);
+
+            if (!m_transparent)
+            {
+            	p.setBrush(Qt::white);
+            	p.drawPath(path.translated(0.5*ps, 0.5*ps));
+            }
+
+            p.setBrush(brush_color);
             p.drawPath(path.translated(0.5*ps, 0.5*ps));
             pixmap_cache.insert(key, pixmap);
         } 
@@ -310,6 +318,15 @@ void Point::set_marked(bool marked)
 bool Point::is_marked() const
 {
     return state_flag(Marked);
+}
+
+bool Point::is_transparent()
+{
+	return m_transparent;
+}
+void Point::set_transparent(bool transparent)
+{
+	m_transparent = transparent;
 }
 
 void Point::clear_cache()

@@ -22,6 +22,7 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
     set_selected(false);
     set_label("");
     setAcceptHoverEvents(true);
+    set_transparent(false);
 }
 
 NodeItem::~NodeItem()
@@ -771,7 +772,7 @@ void NetworkCurve::set_node_tooltips(const QMap<int, QString>& tooltips)
 	QMap<int, QString>::ConstIterator it;
 	for (it = tooltips.constBegin(); it != tooltips.constEnd(); ++it)
 	{
-		m_nodes[it.key()]->set_tooltip(it.value());
+		m_nodes[it.key()]->setToolTip(it.value());
 	}
 }
 
