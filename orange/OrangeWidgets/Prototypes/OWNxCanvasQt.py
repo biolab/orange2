@@ -51,11 +51,11 @@ class NetworkCurve(orangeplot.NetworkCurve):
         self.update_properties()
         return selected
   
-    def get_selected_nodes(self):
-        return [vertex.index() for vertex in self.nodes().itervalues() if vertex.is_selected()]
+#    def get_selected_nodes(self):
+#        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_selected()]
 
     def get_unselected_nodes(self):
-        return [vertex.index() for vertex in self.nodes().itervalues() if not vertex.is_selected()]
+        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if not vertex.is_selected()]
 
     def get_marked_nodes(self):
         return [vertex.index() for vertex in self.nodes().itervalues() if vertex.is_marked()]
@@ -277,17 +277,18 @@ class OWNxCanvas(OWPlot):
         return self.networkCurve.get_unselected_nodes()
     
     def getSelectedGraph(self):
-      selection = self.networkCurve.get_selected_nodes()
+        selection = self.networkCurve.get_selected_nodes()
       
-      if len(selection) == 0:
-          return None
+        if len(selection) == 0:
+            return None
       
-      subgraph = self.graph.subgraph(selection)
-      subnet = Network(subgraph)
-      return subnet
+        subgraph = self.graph.subgraph(selection)
+        subnet = Network(subgraph)
+        return subnet
     
     def selected_nodes(self):
-        return [p.index() for p in self.selected_points()]
+        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_selected()]
+        #return [p.index() for p in self.selected_points()]
     
     def getNeighboursUpTo(self, ndx, dist):
         newNeighbours = neighbours = set([ndx])
@@ -621,6 +622,9 @@ class OWNxCanvas(OWPlot):
         
         self.graph = newgraph
         
+        if len(remove_nodes) == 0 and len(add_nodes) == 0:
+            return False
+        
         current_nodes = self.networkCurve.nodes()
         
         pos = dict((n, [numpy.average(c) for c in zip(*[(current_nodes[u].x(), current_nodes[u].y()) for u in old_nodes.intersection(self.graph.neighbors(n))])]) for n in add_nodes)
@@ -672,6 +676,7 @@ class OWNxCanvas(OWPlot):
                     parent=self.networkCurve) for (i, j) in new_edges]
             
         self.networkCurve.add_edges(edges)
+        return True
         
     def set_graph(self, graph, curve=None, items=None, links=None):
         self.clear()

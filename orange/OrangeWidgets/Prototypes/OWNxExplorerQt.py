@@ -1223,7 +1223,8 @@ class OWNxExplorerQt(OWWidget):
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
         
-        self.networkCanvas.change_graph(self.graph)
+        if not self.networkCanvas.change_graph(self.graph):
+            return
         
         self.compute_network_info()
         
