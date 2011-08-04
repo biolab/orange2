@@ -187,6 +187,9 @@ public:
     void set_use_animations(bool use_animations);
     bool use_animations() const;
 
+    void set_labels_on_marked_only(bool labels_on_marked_only);
+    bool labels_on_marked_only();
+
     void stop_optimization();
 
 private:
@@ -197,6 +200,7 @@ private:
     double m_max_node_size;
     bool m_use_animations;
     bool m_stop_optimization;
+    bool m_labels_on_marked_only;
 };
 
 #endif // NETWORKCURVE_H

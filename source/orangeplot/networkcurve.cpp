@@ -853,6 +853,16 @@ bool NetworkCurve::use_animations() const
 {
     return m_use_animations;
 }
+
+void NetworkCurve::set_labels_on_marked_only(bool labels_on_marked_only)
+{
+	m_labels_on_marked_only = labels_on_marked_only;
+}
+
+bool NetworkCurve::labels_on_marked_only()
+{
+	return m_labels_on_marked_only;
+}
  
 void NetworkCurve::stop_optimization()
 {

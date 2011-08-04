@@ -115,6 +115,9 @@ public:
     void set_use_animations(bool use_animations);
     bool use_animations() const;
     
+    void set_labels_on_marked_only(bool labels_on_marked_only);
+    bool labels_on_marked_only();
+    
     void stop_optimization();
 };
 
