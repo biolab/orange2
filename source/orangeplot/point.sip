@@ -70,7 +70,9 @@ public:
 
     void set_marked(bool marked);
     bool is_marked() const;
-
+	
+	bool is_transparent();
+    void set_transparent(bool transparent);
 
     /**
     * Creates a path from a symbol and a size
