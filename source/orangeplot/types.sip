@@ -96,6 +96,93 @@ template<TYPE>
 %End
 };
 
+// QMap<int, bool> is implemented as a Python dictionary.
+%MappedType QMap<int, bool> /DocType="dict-of-int-bool"/
+{
+%TypeHeaderCode
+#include <qmap.h>
+%End
+
+%ConvertFromTypeCode
+    // Create the dictionary.
+    PyObject *d = PyDict_New();
+
+    if (!d)
+        return NULL;
+
+    // Set the dictionary elements.
+    QMap<int, bool>::const_iterator i = sipCpp->constBegin();
+
+    while (i != sipCpp->constEnd())
+    {
+        PyObject *kobj = SIPLong_FromLong(i.key());
+        PyObject *tobj = Py_False;
+        
+        if (i.value())
+        {
+        	tobj = Py_True;
+        }
+
+        if (kobj == NULL || tobj == NULL || PyDict_SetItem(d, kobj, tobj) < 0)
+        {
+            Py_DECREF(d);
+            if (kobj)
+            {
+                Py_DECREF(kobj);
+            }
+            if (tobj)
+            {
+                Py_DECREF(tobj);
+            }
+            return NULL;
+        }
+
+        Py_DECREF(kobj);
+        Py_DECREF(tobj);
+
+        ++i;
+    }
+
+    return d;
+%End
+
+%ConvertToTypeCode
+    PyObject *kobj, *tobj;
+    SIP_SSIZE_T i = 0;
+
+    // Check the type if that is all that is required.
+    if (sipIsErr == NULL)
+    {
+        if (!PyDict_Check(sipPy))
+            return 0;
+        return 1;
+    }
+
+    QMap<int, bool> *qm = new QMap<int, bool>;
+ 
+    while (PyDict_Next(sipPy, &i, &kobj, &tobj))
+    {
+        int k = SIPLong_AsLong(kobj);
+        bool t = false;
+        if PyBool_Check(tobj)
+        {
+        	t = true;
+        }
+ 
+        if (*sipIsErr)
+        {
+            delete qm;
+            return 0;
+        }
+
+        qm->insert(k, t);
+    }
+ 
+    *sipCppPtr = qm;
+ 
+    return sipGetState(sipTransferObj);
+%End
+};
 
 // QMap<int, double> is implemented as a Python dictionary.
 %MappedType QMap<int, double> /DocType="dict-of-int-float"/
@@ -140,6 +227,7 @@ template<TYPE>
 
     return d;
 %End
+
 
 %ConvertToTypeCode
     PyObject *kobj, *tobj;
