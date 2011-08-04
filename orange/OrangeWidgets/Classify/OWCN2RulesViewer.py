@@ -341,7 +341,10 @@ class OWCN2RulesViewer(OWWidget):
             visible = getattr(self, "show_%s" % header.replace(" ", "_"))
             self.tableView.horizontalHeader().setSectionHidden(i, not visible)
             anyVisible = anyVisible or visible
-        self.reportButton.setEnabled(anyVisible)
+        
+        # report button is not available if not running canvas
+        if hasattr(self, "reportButton"):
+            self.reportButton.setEnabled(anyVisible)
 
     
     def commitIf(self):
