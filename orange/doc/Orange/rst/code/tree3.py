@@ -12,8 +12,8 @@ seed(0)
 data = Orange.data.Table("iris.tab")
 
 print "SOME RANDOMNESS IN STOPING:"
-defStop = Orange.classification.tree.StopCriteria()
-f = lambda examples, weightID, contingency: defStop(examples, weightID, contingency) or randint(1, 5) == 1
+def_stop = Orange.classification.tree.StopCriteria()
+f = lambda examples, weightID, contingency: def_stop(examples, weightID, contingency) or randint(1, 5) == 1
 l = Orange.classification.tree.TreeLearner(data, stop=f)
 print l.dump()
 
