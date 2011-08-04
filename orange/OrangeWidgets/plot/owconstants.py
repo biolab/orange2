@@ -17,7 +17,8 @@ XAxes = [xBottom, xTop]
 YAxes = [yLeft, yRight]
 CartesianAxes = XAxes + YAxes
 
-SelectionZValue = -100
+ProbabilitiesZValue = -20
+SelectionZValue = -10
 AxisZValue = -2
 PlotZValue = 0
 HighlightZValue = 5

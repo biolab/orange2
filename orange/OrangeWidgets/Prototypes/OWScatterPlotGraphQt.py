@@ -148,14 +148,17 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
             probData = numpy.transpose(numpy.array([scX, scY, classData]))
             probData= numpy.compress(validData, probData, axis = 0)
-            if probData.any():
-                self.potentialsClassifier = orange.P2NN(domain, probData, None, None, None, None)
-            else:
-                self.potentialsClassifier = None
+            
             sys.stderr.flush()
             self.xmin = xmin; self.xmax = xmax
             self.ymin = ymin; self.ymax = ymax
-
+            
+            if probData.any():
+                self.potentialsClassifier = orange.P2NN(domain, probData, None, None, None, None)
+                ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, self.spaceBetweenCells).attach(self)            
+            else:
+                self.potentialsClassifier = None
+            
         # ##############################################################
         # if we have insideColors defined
         if self.insideColors and self.dataHasDiscreteClass and self.haveData:
@@ -470,33 +473,20 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
     def computePotentials(self):
         import orangeom
-        rx = self.transform(xBottom, self.xmax) - self.transform(xBottom, self.xmin)
-        ry = self.transform(yLeft, self.ymin) - self.transform(yLeft, self.ymax)
+        s = self.graph_area.toRect().size()
+        qDebug('Computing potentials with size ' + repr(s))
+        if not s.isValid():
+            self.potentialsImage = QImage()
+            return
+        rx = s.width()
+        ry = s.height()
         rx -= rx % self.squareGranularity
         ry -= ry % self.squareGranularity
 
-        ox = self.transform(xBottom, 0) - self.transform(xBottom, self.xmin)
-        oy = self.transform(yLeft, self.ymin) - self.transform(yLeft, 0)
+        ox = int(self.transform(xBottom, 0) - self.transform(xBottom, self.xmin))
+        oy = int(self.transform(yLeft, self.ymin) - self.transform(yLeft, 0))
 
         if not getattr(self, "potentialsImage", None) or getattr(self, "potentialContext", None) != (rx, ry, self.shownXAttribute, self.shownYAttribute, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells):
-            if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
-                palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
-            else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, 1., self.spaceBetweenCells) # the last argument is self.trueScaleFactor (in LinProjGraph...)
-                palette = []
-                sortedClasses = getVariableValuesSorted(self.potentialsClassifier.domain.classVar)
-                for cls in self.potentialsClassifier.classVar.values:
-                    color = self.discPalette.getRGB(sortedClasses.index(cls))
-                    towhite = [255-c for c in color]
-                    for s in range(nShades):
-                        si = 1-float(s)/nShades
-                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
-
-            self.potentialsImage = QImage(imagebmp, rx, ry, QImage.Format_Indexed8)
-            self.potentialsImage.setColorTable(ColorPalette.signedPalette(palette) if qVersion() < "4.5" else palette)
-            self.potentialsImage.setNumColors(256)
             self.potentialContext = (rx, ry, self.shownXAttribute, self.shownYAttribute, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
             self.potentialsImageFromClassifier = self.potentialsClassifier
 

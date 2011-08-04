@@ -39,6 +39,10 @@ from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug, QPropertyAnimation
 
 from owcurve import *
 
+from Orange.preprocess.scaling import get_variable_values_sorted
+import orangeom
+import ColorPalette
+
 def resize_plot_item_list(lst, size, item_type, parent):
     """
         Efficiently resizes a list of QGraphicsItems (PlotItems, Curves, etc.). 
@@ -188,6 +192,7 @@ class RectangleCurve(OWCurve):
         
 class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
+        qDebug('Creting an ULC')
         orangeplot.UnconnectedLinesCurve.__init__(self, xData, yData)
         if pen:
             self.set_pen(pen)
@@ -232,3 +237,65 @@ class Marker(orangeplot.PlotItem):
     def update_properties(self):
         self._item.setPos(self.graph_transform().map(self._data_point))
 
+class ProbabilitiesItem(orangeplot.PlotItem):
+    def __init__(self, classifier, granularity, spacing):
+        orangeplot.PlotItem.__init__(self)
+        self.classifier = classifier
+        self.rect = QRectF()
+        self.granularity = granularity
+        self.spacing = spacing
+        self.pixmap_item = QGraphicsPixmapItem(self)
+        self.setZValue(ProbabilitiesZValue)
+        
+    def update_properties(self):
+        ## Mostly copied from OWScatterPlotGraph
+        if not self.plot():
+            return
+            
+        x,y = self.axes()
+        self.rect = self.plot().data_rect_for_axes(x,y)
+        s = self.graph_transform().mapRect(self.rect).size().toSize()
+        if not s.isValid():
+            return
+        rx = s.width()
+        ry = s.height()
+        
+        rx -= rx % self.granularity
+        ry -= ry % self.granularity
+        
+        """
+        NOTE: This seems to cause a discrepancy with the old ScatterPlot
+        
+        p = self.graph_transform().map(QPointF(0, 0)) - self.graph_transform().map(self.rect.topLeft())
+        p = -p.toPoint()
+        
+        ox = p.x()
+        oy = p.y()
+        """
+        ox = 0
+        oy = 0
+        
+        
+        if self.classifier.classVar.varType == orange.VarTypes.Continuous:
+            imagebmp = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
+        else:
+            imagebmp, nShades = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, 1., self.spacing) # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            palette = []
+            sortedClasses = get_variable_values_sorted(self.classifier.domain.classVar)
+            for cls in self.classifier.classVar.values:
+                color = self.plot().discPalette.getRGB(sortedClasses.index(cls))
+                towhite = [255-c for c in color]
+                for s in range(nShades):
+                    si = 1-float(s)/nShades
+                    palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+            palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+
+        self.potentialsImage = QImage(imagebmp, rx, ry, QImage.Format_Indexed8)
+        self.potentialsImage.setColorTable(ColorPalette.signedPalette(palette) if qVersion() < "4.5" else palette)
+        self.potentialsImage.setNumColors(256)
+        self.pixmap_item.setPixmap(QPixmap.fromImage(self.potentialsImage))
+        self.pixmap_item.setPos(self.graph_transform().map(self.rect.bottomLeft()))
+    
+    def data_rect(self):
+        return self.rect
