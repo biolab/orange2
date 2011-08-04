@@ -743,6 +743,94 @@ def _format_term(model, i, attr_name):
     return " * ".join(knots)
 
 
+"""
+High level interface for measuring variable importance
+(compatible with Orange.feature.scoring module).
+
+"""
+from Orange.feature import scoring
+from Orange.misc import _orange__new__
+
+class ScoreEarthImportance(scoring.Measure):
+    """ Score features based on there importance in the Earth model using
+    ``bagged_evimp``'s function return value.
+    """
+    # Return types  
+    NSUBSETS = 0
+    RSS = 1
+    GCV = 2
+    
+#    _cache = weakref.WeakKeyDictionary()
+    __new__ = _orange__new__(scoring.Measure)
+        
+    def __init__(self, t=10, score_what="nsubsets", cached=True):
+        """
+        :param t: Number of earth models to train on the data
+            (using BaggedLearner).
+            
+        :param score_what: What to return as a score.
+            Can be one of: "nsubsets", "rss", "gcv" or class constants
+            NSUBSETS, RSS, GCV.
+            
+        """
+        self.t = t
+        if isinstance(score_what, basestring):
+            score_what = {"nsubsets":self.NSUBSETS, "rss":self.RSS,
+                          "gcv":self.GCV}.get(score_what, None)
+                          
+        if score_what not in range(3):
+            raise ValueError("Invalid  'score_what' parameter.")
+
+        self.score_what = score_what
+        self.cached = cached
+        self._cache_ref = None
+        
+    def __call__(self, attr, data, weight_id=None):
+        ref = self._cache_ref
+        if ref is not None and ref is data:
+            evimp = self._cached_evimp
+        else:
+            from Orange.ensemble.bagging import BaggedLearner
+            bc = BaggedLearner(EarthLearner(degree=2, terms=10))(data, weight_id)
+            evimp = bagged_evimp(bc, used_only=False)
+            self._cache_ref = data #weakref.ref(data)
+            self._cached_evimp = evimp
+            
+        evimp = dict(evimp)
+        score = evimp.get(attr, None)
+        
+        if score is None:
+            raise ValueError("Attribute %r not in the domain." % attr)
+        else:
+            return score[self.score_what]
+    
+    
+class ScoreRSS(scoring.Measure):
+    __new__ = _orange__new__(scoring.Measure)
+    def __init__(self):
+        self._cache_data = None
+        self._cache_rss = None
+        
+    def __call__(self, attr, data, weight_id=None):
+        ref = self._cache_data
+        if ref is not None and ref is data:
+            rss = self._cache_rss
+        else:
+            x, y = data.to_numpy_MA("1A/c")
+            subsets, rss = subsets_selection_xtx_numpy(x, y)
+            rss_diff = -numpy.diff(rss)
+            rss = numpy.zeros_like(rss)
+            for s_size in range(1, subsets.shape[0]):
+                subset = subsets[s_size, :s_size + 1]
+                rss[subset] += rss_diff[s_size - 1]
+            rss = rss[1:] #Drop the intercept
+            self._cache_data = data
+            self._cache_rss = rss
+#        print sorted(zip(rss, data.domain.attributes))
+        index = list(data.domain.attributes).index(attr)
+        return rss[index]
+        
+    
 #from Orange.misc import member_set
 # 
 #class _EarthLearner(BaseEarthLearner):
