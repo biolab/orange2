@@ -470,7 +470,26 @@ def split_by_iterations(res):
             for i in range(res.numberOfIterations)]
     for te in res.results:
         ress[te.iterationNumber].results.append(te)
-    return ress    
+    return ress
+
+def split_by_classifiers(res):
+    """ Splites an instance of :obj:`ExperimentResults` into a list of
+    :obj:`ExperimentResults`, one for each classifier. 
+    """
+    split_res = []
+    for i in range(len(res.classifierNames)):
+        r = Orange.evaluation.testing.ExperimentResults(res.numberOfIterations,
+                    [res.classifierNames[i]], res.classValues,
+                    weights=res.weights, baseClass=res.baseClass,
+                    classifiers=[res.classifiers[i]] if res.classifiers else [])
+        r.results = []
+        for te in res.results:
+            r.results.append(Orange.evaluation.testing.TestedExample(te.iterationNumber,
+                                te.actualClass, n=1, weight=te.weight))
+            r.results[-1].classes = [te.classes[i]]
+            r.results[-1].probabilities = [te.probabilities[i]]
+        split_res.append(r)
+    return split_res
 
 
 def class_probabilities_from_res(res, **argkw):
