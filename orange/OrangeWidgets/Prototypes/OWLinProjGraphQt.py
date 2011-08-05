@@ -456,6 +456,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         if point is self.current_tooltip_point:
             return
             
+	self.current_tooltip_point = point
+            
         for curve in self.tooltipCurves:  curve.detach()
         for marker in self.tooltipMarkers: marker.detach()
         self.tooltipCurves = []
@@ -480,11 +482,11 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                         markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
                         curve = self.addCurve("", color, color, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
                         curve.setZValue(HighlightZValue)
+                        self.tooltipCurves.append(curve)
 
                         marker = None
                         fontsize = 9
                         markerAlign = Qt.AlignCenter
-                        self.tooltipCurves.append(curve)
                         labelIndex = self.attributeNameIndex[label]
                         if self.tooltipValue == TOOLTIPS_SHOW_DATA:
                             if self.dataDomain[labelIndex].varType == orange.VarTypes.Continuous:
