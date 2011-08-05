@@ -10,6 +10,7 @@ PlotItem::PlotItem(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(
 {
     set_axes(xBottom, yLeft);
     set_auto_scale(true);
+    set_in_background(false);
 }
 
 PlotItem::~PlotItem()
@@ -76,6 +77,16 @@ QTransform PlotItem::graph_transform() const
     return m_graphTransform;
 }
 
+void PlotItem::set_zoom_transform(const QTransform& zoom)
+{
+    m_zoom_transform = zoom;
+}
+
+QTransform PlotItem::zoom_transform() const
+{
+    return m_zoom_transform;
+}
+
 QRectF PlotItem::rect_from_data(const QList< double >& x_data, const QList< double >& y_data)
 {
     int n = qMin(x_data.size(), y_data.size());
@@ -100,6 +111,20 @@ void PlotItem::set_data_rect(const QRectF& dataRect) {
     {
         m_plot->set_dirty();
     }
+}
+
+void PlotItem::set_in_background(bool bg)
+{
+    m_background = bg;
+    if (m_plot)
+    {
+        m_plot->set_item_in_background(this, bg);
+    }
+}
+
+bool PlotItem::is_in_background() const
+{
+    return m_background;
 }
 
 Plot* PlotItem::plot() 

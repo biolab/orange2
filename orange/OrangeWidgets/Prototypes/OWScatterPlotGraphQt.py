@@ -155,7 +155,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
             
             if probData.any():
                 self.potentialsClassifier = orange.P2NN(domain, probData, None, None, None, None)
-                ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, self.spaceBetweenCells).attach(self)            
+                ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, 1., self.spaceBetweenCells).attach(self)            
             else:
                 self.potentialsClassifier = None
             

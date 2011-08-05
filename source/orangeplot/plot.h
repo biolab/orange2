@@ -33,15 +33,15 @@ public:
     
     void add_item(PlotItem* item);
     void remove_item(PlotItem* item);
-    
+    void set_item_in_background(PlotItem* item, bool bg);
+
     QRectF data_rect_for_axes(int x_axis, int y_axis);
     QPair< double, double > bounds_for_axis(int axis);
     
     QList<PlotItem*> plot_items();
     
     void set_graph_rect(const QRectF rect);
-    
-    QGraphicsRectItem* graph_item;
+    void set_zoom_transform(const QTransform& zoom);
     
     void set_dirty();
     
@@ -84,7 +84,12 @@ protected:
 private:    
     QList<PlotItem*> m_items;
     bool m_dirty;
-    QGraphicsRectItem* clipItem;
+    
+    QGraphicsRectItem* back_clip_item;
+    QGraphicsRectItem* front_clip_item;
+    QGraphicsRectItem* graph_item;
+    QGraphicsRectItem* graph_back_item;
+    
     QMap<PlotItem*, PointSet> m_point_set;
     QMap<PlotItem*, PointHash> m_point_hash;
 };

@@ -45,11 +45,23 @@ Plot::Plot(QWidget* parent):
 QGraphicsView(parent)
 {
     setScene(new QGraphicsScene(this));
-    clipItem = new QGraphicsRectItem();
-    clipItem->setPen(Qt::NoPen);
-    clipItem->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
-    scene()->addItem(clipItem);
-    graph_item = new QGraphicsRectItem(clipItem);
+    
+    back_clip_item = new QGraphicsRectItem();
+    back_clip_item->setPen(Qt::NoPen);
+    back_clip_item->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+    back_clip_item->setZValue(-1000);
+    scene()->addItem(back_clip_item);
+    
+    front_clip_item = new QGraphicsRectItem();
+    front_clip_item->setPen(Qt::NoPen);
+    front_clip_item->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+    front_clip_item->setZValue(0);
+    scene()->addItem(front_clip_item);
+    
+    graph_back_item = new QGraphicsRectItem(back_clip_item);
+    graph_back_item->setPen(Qt::NoPen);
+    graph_item = new QGraphicsRectItem(front_clip_item);
+    graph_item->setPen(Qt::NoPen);
 }
 
 Plot::~Plot()
@@ -68,7 +80,7 @@ void Plot::add_item(PlotItem* item)
         return;
     }
     item->m_plot = this;
-    item->setParentItem(graph_item);
+    item->setParentItem(item->is_in_background() ? graph_back_item : graph_item);
     m_items << item;
     item->register_points();
 }
@@ -90,6 +102,11 @@ void Plot::remove_item(PlotItem* item)
         qWarning() << "Trying to remove an item that doesn't belong to this graph";
     }
     remove_all_points(item);
+}
+
+void Plot::set_item_in_background(PlotItem* item, bool bg)
+{
+    item->setParentItem(bg ? graph_back_item : graph_item);
 }
 
 QList< PlotItem* > Plot::plot_items()
@@ -157,8 +174,20 @@ bool Plot::is_dirty()
 
 void Plot::set_graph_rect(const QRectF rect) 
 {
-    clipItem->setRect(rect);
-    graph_item->setRect(rect);
+    foreach (QGraphicsRectItem* item, QList<QGraphicsRectItem*>() << front_clip_item << back_clip_item << graph_item << graph_back_item)
+    {
+        item->setRect(rect);
+    }
+}
+
+void Plot::set_zoom_transform(const QTransform& zoom)
+{
+    graph_item->setTransform(zoom);
+    graph_back_item->setTransform(zoom);
+    foreach (PlotItem* item, plot_items())
+    {
+        item->set_zoom_transform(zoom);
+    }
 }
 
 void Plot::mark_points(const QRectF& rect, Plot::SelectionBehavior behavior)

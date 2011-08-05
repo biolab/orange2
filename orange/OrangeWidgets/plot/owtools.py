@@ -238,13 +238,15 @@ class Marker(orangeplot.PlotItem):
         self._item.setPos(self.graph_transform().map(self._data_point))
 
 class ProbabilitiesItem(orangeplot.PlotItem):
-    def __init__(self, classifier, granularity, spacing):
+    def __init__(self, classifier, granularity, scale, spacing, rect=None):
         orangeplot.PlotItem.__init__(self)
         self.classifier = classifier
-        self.rect = QRectF()
+        self.rect = rect
         self.granularity = granularity
+        self.scale = scale
         self.spacing = spacing
         self.pixmap_item = QGraphicsPixmapItem(self)
+        self.set_in_background(True)
         self.setZValue(ProbabilitiesZValue)
         
     def update_properties(self):
@@ -252,8 +254,9 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         if not self.plot():
             return
             
-        x,y = self.axes()
-        self.rect = self.plot().data_rect_for_axes(x,y)
+        if not self.rect:
+            x,y = self.axes()
+            self.rect = self.plot().data_rect_for_axes(x,y)
         s = self.graph_transform().mapRect(self.rect).size().toSize()
         if not s.isValid():
             return
@@ -270,10 +273,10 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         oy = -p.y()
         
         if self.classifier.classVar.varType == orange.VarTypes.Continuous:
-            imagebmp = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            imagebmp = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, self.scale)
             palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
         else:
-            imagebmp, nShades = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, 1., self.spacing) # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            imagebmp, nShades = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, self.scale, self.spacing)
             palette = []
             sortedClasses = get_variable_values_sorted(self.classifier.domain.classVar)
             for cls in self.classifier.classVar.values:
@@ -291,7 +294,7 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         self.pixmap_item.setPos(self.graph_transform().map(self.rect.bottomLeft()))
     
     def data_rect(self):
-        return self.rect
+        return self.rect if self.rect else QRectF()
         
 @deprecated_members({
         'enableX' : 'set_x_enabled',
@@ -306,6 +309,7 @@ class PlotGrid(orangeplot.PlotItem):
         self._x_enabled = True
         self._y_enabled = True
         self._path_item = QGraphicsPathItem(self)
+        self.set_in_background(True)
         self.attach(plot)
         
     def set_x_enabled(self, b):

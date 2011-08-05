@@ -6,7 +6,7 @@ from math import *
 from orngScaleLinProjData import *
 import orngVisFuncts
 import OWColorPalette
-from plot.owtools import UnconnectedLinesCurve
+from plot.owtools import UnconnectedLinesCurve, ProbabilitiesItem
 import numpy
 
 # indices in curveData
@@ -172,6 +172,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             classData = numpy.compress(validData, self.originalData[self.dataClassIndex])
             if classData.any():
                 self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, self.unscaled_x_positions), numpy.compress(validData, self.unscaled_y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+                c = ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells, QRectF(-1, -1, 2, 2))
+                c.attach(self)
             else:
                 self.potentialsClassifier = None
             self.potentialsImage = None

@@ -144,7 +144,6 @@ class OWPlot(orangeplot.Plot):
         self.title_item = None
         
         self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
-        self.graph_item.setPen(QPen(Qt.NoPen))
         
         self._legend = OWLegend(self, self.scene())
         self._legend.setZValue(LegendZValue)
@@ -472,7 +471,7 @@ class OWPlot(orangeplot.Plot):
             Creates a new :obj:`.OWCurve` with the specified parameters and adds it to the graph. 
             If ``enableLegend`` is ``True``, a curve symbol is added to the legend. 
         '''
-        c = OWCurve(xData, yData, x_axis_key, y_axis_key, tooltip=name, parent=self.graph_item)
+        c = OWCurve(xData, yData, x_axis_key, y_axis_key, tooltip=name)
         c.set_zoom_transform(self._zoom_transform)
         c.name = name
         c.set_style(style)
@@ -668,12 +667,7 @@ class OWPlot(orangeplot.Plot):
         '''
         zt = self.zoom_transform
         self._zoom_transform = zt
-        for c in self.plot_items():
-            if hasattr(c, 'set_zoom_transform'):
-                c.set_zoom_transform(zt)
-                c.update_properties()
-                
-        self.graph_item.setTransform(zt)
+        self.set_zoom_transform(zt)
         
         self.update_axes(zoom_only=True)
         self.viewport().update()
@@ -712,7 +706,6 @@ class OWPlot(orangeplot.Plot):
                     item.graph_line = self._zoom_transform.map(graph_line)
                 else:
                     item.graph_line = graph_line
-                item.graph_line.translate(self.graph_item.pos())
             if item.data_line and item.graph_line:
                 item.show()
             else:
@@ -786,6 +779,7 @@ class OWPlot(orangeplot.Plot):
 
         self.static_click = True
         self._pressed_mouse_button = event.button()
+        self._pressed_mouse_pos = event.pos()
         if event.button() == Qt.LeftButton and self.state == PANNING:
             self._last_pan_pos = point
             event.accept()
@@ -796,7 +790,7 @@ class OWPlot(orangeplot.Plot):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
             event.accept()
             return
-        if event.buttons():
+        if event.buttons() and (self._pressed_mouse_pos - event.pos()).manhattanLength() > qApp.startDragDistance():
             self.static_click = False
         
         if self.isLegendEvent(event, QGraphicsView.mouseMoveEvent):
@@ -1223,9 +1217,11 @@ class OWPlot(orangeplot.Plot):
 
     def zoom_to_rect(self, rect):
         self.ensure_inside(rect, self.graph_area)
+        qDebug('Zoom to rect, final state is' + repr(rect))
         self.animate(self, 'zoom_rect', rect)
 
     def reset_zoom(self):
+        qDebug('Resetting zoom')
         self._zoom_rect = None
         self.update_zoom()
         

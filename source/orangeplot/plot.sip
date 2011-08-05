@@ -46,17 +46,18 @@ public:
     
     void add_item(PlotItem* item /Transfer/);
     void remove_item(PlotItem* item /TransferBack/);
+    QList<PlotItem*> plot_items();
+    
+    void set_item_in_background(PlotItem* item /Transfer/, bool bg);
     
     QRectF data_rect_for_axes(int xAxis, int yAxis);
     QPair< double, double > bounds_for_axis(int axis);
     
-    QList<PlotItem*> plot_items();
     void set_graph_rect(const QRectF rect);
+    void set_zoom_transform(const QTransform& zoom);
 
     void set_dirty();
-    
-    QGraphicsRectItem* graph_item;
-    
+
     void select_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void select_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
     void unselect_all_points();

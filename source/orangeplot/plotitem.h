@@ -21,6 +21,9 @@ public:
     virtual void set_graph_transform(const QTransform& transform);
     virtual QTransform graph_transform() const;
     
+    virtual void set_zoom_transform(const QTransform& zoom);
+    virtual QTransform zoom_transform() const;
+    
     void attach(Plot* graph);
     void detach();
     Plot* plot();
@@ -30,6 +33,9 @@ public:
     
     bool is_auto_scale() const;
     void set_auto_scale(bool auto_scale);
+    
+    bool is_in_background() const;
+    void set_in_background(bool bg);
     
     QPair<int, int> axes() const;
     void set_axes(int x_axis, int y_axis);
@@ -51,6 +57,9 @@ private:
     QPair<int, int> m_axes;
     bool m_autoScale;
     QTransform m_graphTransform;
+    QTransform m_zoom_transform;
+    
+    bool m_background;
     
     friend class Plot;
     

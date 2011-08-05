@@ -158,7 +158,7 @@ public:
   void set_auto_update(bool auto_update);
   
   QTransform zoom_transform();
-  void set_zoom_transform(const QTransform& transform);
+  virtual void set_zoom_transform(const QTransform& transform);
   
   double max_x_value() const;
   double min_x_value() const;
