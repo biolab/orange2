@@ -1,9 +1,5 @@
 """
-<name>Net Explorer</name>
-<description>Orange widget for network exploration.</description>
-<icon>icons/Network.png</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>7420</priority>
+THIS WIDGET IS OBSOLETE; USE OWNxExplorer.py
 """
 import orange
 import OWGUI

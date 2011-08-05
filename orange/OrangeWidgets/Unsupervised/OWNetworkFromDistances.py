@@ -1,9 +1,5 @@
 """
-<name>Network from Distances</name>
-<description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is between given threshold.</description>
-<icon>icons/NetworkFromDistances.png</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>7430</priority>
+THIS WIDGET IS OBSOLETE; USE OWNxFromDistances.py
 """
 
 #
