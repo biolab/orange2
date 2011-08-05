@@ -228,10 +228,6 @@ class Marker(orangeplot.PlotItem):
             f.setPointSize(size)
         self._item.setFont(f)
         self._item.setPos(x, y)
-        if color:
-            self._item.setPen(QPen(color))
-        if brushColor:
-            self._item.setBrush(QBrush(brushColor))
             
     def update_properties(self):
         self._item.setPos(self.graph_transform().map(self._data_point))
@@ -348,3 +344,4 @@ class PlotGrid(orangeplot.PlotItem):
                 path.moveTo(rect.left(), pos)
                 path.lineTo(rect.right(), pos)
         self._path_item.setPath(self.graph_transform().map(path))
+        

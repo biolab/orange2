@@ -11,13 +11,17 @@
 
 Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
-    m_autoUpdate = true;
+    // Don't make any calls to update_properties() until the constructor is finished
+    // Otherwise, the program hangs if this is called from a subclass constructor
+    m_autoUpdate = false; 
+    
     m_style = NoCurve;
     m_continuous = false;
     m_lineItem = 0;
     m_needsUpdate = UpdateAll;
     set_data(x_data, y_data);
-    checkForUpdate();
+    
+    m_autoUpdate = true;
 }
 
 Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
