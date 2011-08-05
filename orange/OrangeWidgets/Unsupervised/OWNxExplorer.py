@@ -1,9 +1,9 @@
 """
-<name>Nx Explorer</name>
+<name>Net Explorer</name>
 <description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>6430</priority>
+<priority>6420</priority>
 """
 import math
 import operator
@@ -1351,7 +1351,11 @@ class OWNxExplorer(OWWidget):
             self.diameter = -1
         else:
             self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
-        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
+        
+        if self.graph.is_multigraph():
+            self.clustering_coefficient = -1
+        else:
+            self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
         
         self.setCombos()
             
