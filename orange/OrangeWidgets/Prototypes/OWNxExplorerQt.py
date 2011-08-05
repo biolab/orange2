@@ -199,10 +199,9 @@ class OWNxExplorerQt(OWWidget):
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_label_attributes)
-        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback=(lambda: self._set_canvas_attr('labelsOnMarkedOnly', self.labelsOnMarkedOnly)))
+        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback=(lambda: self.networkCanvas.networkCurve.set_labels_on_marked_only(self.labelsOnMarkedOnly)))
         self.networkCanvas.gui.antialiasing_check_box(ib)
         self.networkCanvas.gui.animations_check_box(ib)
-        OWGUI.checkBox(ib, self, 'showMissingValues', 'Show missing values', callback=(lambda: self._set_canvas_attr('showMissingValues', self.showMissingValues)))
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
@@ -959,6 +958,10 @@ class OWNxExplorerQt(OWWidget):
                         
     def _set_canvas_attr(self, attr, value):
         setattr(self.networkCanvas, attr, value)
+        self.networkCanvas.updateCanvas()
+    
+    def _set_curve_attr(self, attr, value):
+        setattr(self.networkCanvas.networkCurve, attr, value)
         self.networkCanvas.updateCanvas()
                 
     def setSearchStringTimer(self):

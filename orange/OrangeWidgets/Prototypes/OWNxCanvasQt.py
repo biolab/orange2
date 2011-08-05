@@ -97,7 +97,7 @@ class OWNxCanvas(OWPlot):
         self.minComponentEdgeWidth = 0
         self.maxComponentEdgeWidth = 0
         self.items_matrix = None
-        
+         
         self.items = None
         self.links = None
         
