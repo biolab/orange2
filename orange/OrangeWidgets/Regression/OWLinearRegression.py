@@ -6,7 +6,7 @@ from OWWidget import *
 
 import Orange
 from Orange.regression import linear
-from Orange.preprocess import Preprocessor
+from orngWrap import PreprocessedLearner
 
 class OWLinearRegression(OWWidget):
     settingsList = []
@@ -14,7 +14,7 @@ class OWLinearRegression(OWWidget):
     def __init__(self, parent=None, signalManager=None, title="Linear Regression"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
-        self.inputs = [("Training data", Orange.data.Table, self.set_data), ("Preprocessor", Preprocessor, self.set_preprocessor)]
+        self.inputs = [("Training data", Orange.data.Table, self.set_data), ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]
         self.outputs = [("Learner", Orange.core.Learner), ("Predictor", Orange.core.Classifier)]
         
         ##########
@@ -22,6 +22,7 @@ class OWLinearRegression(OWWidget):
         ##########
          
         self.name = "Linear Regression"
+#        self.beta0 = True
         
         
         #####
@@ -30,6 +31,10 @@ class OWLinearRegression(OWWidget):
         
         OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/predictor name", 
                        tooltip="Name of the learner/predictor")
+        
+#        OWGUI.checkBox(self.controlArea, self, "beta0", "Include intercept.",
+#                       box="Settings",
+#                       tooltip="Add an intercept to the linear model")
         
         OWGUI.button(self.controlArea, self, "&Apply",
                      callback=self.apply,
