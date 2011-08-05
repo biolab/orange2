@@ -212,6 +212,7 @@ class OWPlot(orangeplot.Plot):
         
         self._zoom_rect = None
         self._zoom_transform = QTransform()
+        self.zoom_stack = []
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
@@ -876,7 +877,7 @@ class OWPlot(orangeplot.Plot):
             if event.button() == Qt.LeftButton:
                 self.zoom_in(point)
             elif event.button() == Qt.RightButton:
-                self.zoom_out(point)
+                self.zoom_back()
             else:
                 return False
             return True
@@ -1223,8 +1224,13 @@ class OWPlot(orangeplot.Plot):
 
     def zoom_to_rect(self, rect):
         self.ensure_inside(rect, self.graph_area)
-        qDebug('Zoom to rect, final state is' + repr(rect))
+        self.zoom_stack.append(self.zoom_rect)
         self.animate(self, 'zoom_rect', rect)
+        
+    def zoom_back(self):
+        if self.zoom_stack:
+            rect = self.zoom_stack.pop()
+            self.animate(self, 'zoom_rect', rect)
 
     def reset_zoom(self):
         qDebug('Resetting zoom')
