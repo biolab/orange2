@@ -6,22 +6,24 @@ import OWGUI
 import Orange
 
 from Orange.regression import earth
-from Orange.preprocess import Preprocessor
+from orngWrap import PreprocessedLearner
  
 class OWEarth(OWWidget):
-    settingsList = []
+    settingsList = ["degree", "terms", "penalty"]
     
     def __init__(self, parent=None, signalManager=None,
                  title="Earth - Multivariate Adaptive Regression Splines"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
-        self.inputs = [("Training data", Orange.data.Table, self.set_data), ("Preprocessor", Preprocessor, self.set_preprocessor)]
+        self.inputs = [("Training data", Orange.data.Table, self.set_data), ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]
         self.outputs = [("Learner", earth.EarthLearner), ("Predictor", earth.EarthClassifier)]
         
         self.name = "Earth Learner"
-        self.degree = 2
+        self.degree = 1
         self.terms = 21
         self.penalty = 2
+        
+        self.loadSettings()
         
         #####
         # GUI
@@ -87,6 +89,7 @@ if __name__ == "__main__":
     w.set_data(Orange.data.Table("auto-mpg"))
     w.show()
     app.exec_()
+    w.saveSettings()
             
             
         
