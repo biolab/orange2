@@ -65,7 +65,7 @@ name_map = {
     "itemList" : "plot_items",
     "setShowMainTitle" : "set_show_main_title",
     "setMainTitle" : "set_main_title",
-    "inv_transform" : "invTransform"
+    "invTransform" : "inv_transform"
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
