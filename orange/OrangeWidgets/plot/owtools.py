@@ -262,19 +262,12 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         
         rx -= rx % self.granularity
         ry -= ry % self.granularity
-        
-        """
-        NOTE: This seems to cause a discrepancy with the old ScatterPlot
-        
+                
         p = self.graph_transform().map(QPointF(0, 0)) - self.graph_transform().map(self.rect.topLeft())
-        p = -p.toPoint()
+        p = p.toPoint()
         
         ox = p.x()
-        oy = p.y()
-        """
-        ox = 0
-        oy = 0
-        
+        oy = -p.y()
         
         if self.classifier.classVar.varType == orange.VarTypes.Continuous:
             imagebmp = orangeom.potentialsBitmap(self.classifier, rx, ry, ox, oy, self.granularity, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
