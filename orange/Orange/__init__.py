@@ -65,6 +65,7 @@ _import("multilabel.multibase")
 _import("multilabel.br")
 _import("multilabel.lp")
 _import("multilabel.mlknn")
+_import("multilabel.brknn")
 _import("multilabel.mmp")
 
 _import("associate")

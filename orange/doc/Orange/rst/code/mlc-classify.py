@@ -26,7 +26,7 @@ for e in data:
     c,p = mlknn_cliassifer(e,Orange.classification.Classifier.GetBoth)
     print c,p
     
-mmp_cliassifer = Orange.multilabel.MMPLearner(data)
+br_cliassifer = Orange.multilabel.BRkNNLearner(data,k=1)
 for e in data:
-    c,p = mmp_cliassifer(e,Orange.classification.Classifier.GetBoth)
+    c,p = br_cliassifer(e,Orange.classification.Classifier.GetBoth)
     print c,p

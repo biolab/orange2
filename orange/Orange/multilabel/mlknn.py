@@ -2,7 +2,7 @@
 .. index:: ML-kNN Learner
    
 .. index:: 
-   single: ML-kNN;  ML-kNN Learner
+   single: multilabel;  ML-kNN Learner
 
 ***************************************
 ML-kNN Learner
@@ -54,9 +54,9 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 import random
 import Orange
 import label
-import multibase as _multibase
+import multiknn as _multiknn
 
-class MLkNNLearner(_multibase.MultiLabelLearner):
+class MLkNNLearner(_multiknn.MultikNNLearner):
     """
     Class implementing the ML-kNN (Multi-Label k Nearest Neighbours) algorithm. The class is based on the 
     pseudo-code made available by the authors.
@@ -110,8 +110,7 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
      
     .. attribute:: k
     
-        Number of neighbors. If set to 0 (which is also the default value), 
-        the square root of the number of instances is used.
+        Number of neighbors. The default value is 1 
     
     .. attribute:: smooth
     
@@ -119,7 +118,7 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
     
     .. attribute:: knn
         
-        :class:`Orange.classification.knn.kNNLearner` for nearest neighbor search
+        :class:`Orange.classification.knn.FindNearest` for nearest neighbor search
     
     """
     def __new__(cls, instances = None, k=1, smooth = 1.0, **argkw):
@@ -139,9 +138,7 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
         :rtype: :class:`MLkNNLearner`
         """
         
-        self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
-        
-        self.k = k
+        self = _multiknn.MultikNNLearner.__new__(cls, k, **argkw)
         self.smooth = smooth
         
         if instances:
@@ -155,11 +152,9 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
-        self.num_labels = label.get_num_labels(instances)
-        self.label_indices = label.get_label_indices(instances)
-        
+        _multiknn.MultikNNLearner.transfor_table(self,instances)
+
         num_labels = self.num_labels
-        label_indices = self.label_indices
         k = self.k
         
         #A table holding the prior probability for an instance to belong in each class
@@ -174,35 +169,13 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
         #A table holding the probability for an instance not to belong in each class given that i:0..k of its neighbors belong to that class
         self.cond_nprobabilities  = [ [0.] * (k + 1) ] * num_labels
         
-        #build a kNNLearner
-        #remove labels
-        indices_remove = [var for index, var in enumerate(label_indices)]
-        new_domain = label.remove_indices(instances,indices_remove) 
-        
-        new_class = Orange.data.variable.Discrete("label")
-        for e in instances:
-            class_value = label.get_label_bitstream(instances,e)
-            new_class.add_value(class_value)
-        
-        new_domain = Orange.data.Domain(new_domain,new_class)
-        
-        new_table = Orange.data.Table(new_domain)
-        for e in instances:
-            new_row = Orange.data.Instance(
-              new_domain, 
-              [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
-                    [label.get_label_bitstream(instances,e)])
-            
-            new_table.append(new_row)
-        self.knn = Orange.classification.knn.kNNLearner(new_table,k)
-        
         #Computing the prior probabilities P(H_b^l)
         self.compute_prior()
         
         #Computing the posterior probabilities P(E_j^l|H_b^l)
         self.compute_cond()
         
-        return MLkNNClassifier(instances = instances, label_indices = label_indices, 
+        return MLkNNClassifier(instances = self.instances, label_indices = self.label_indices, 
                                prior_probabilities = self.prior_probabilities, 
                                prior_nprobabilities = self.prior_nprobabilities,
                                cond_probabilities = self.cond_probabilities,
@@ -234,7 +207,7 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
         temp_nci = [ [0] * (k + 1) ] * num_labels
 
         for i  in range(num_instances):
-            neighbors = self.knn.findNearest(instances[i], k)
+            neighbors = self.knn(instances[i], k)
                  
             # now compute values of temp_ci and temp_nci for every class label
             for j in range(num_labels):
@@ -261,7 +234,7 @@ class MLkNNLearner(_multibase.MultiLabelLearner):
                 self.cond_probabilities[i][j] = (self.smooth + temp_ci[i][j]) / (self.smooth * (k + 1) + temp1)
                 self.cond_nprobabilities[i][j] = (self.smooth + temp_nci[i][j]) / (self.smooth * (k + 1) + temp2)
  
-class MLkNNClassifier(_multibase.MultiLabelClassifier):      
+class MLkNNClassifier(_multiknn.MultikNNClassifier):      
     def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
         num_labels = len(self.label_indices)
         domain = self.instances.domain
@@ -271,7 +244,7 @@ class MLkNNClassifier(_multibase.MultiLabelClassifier):
             raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
         
         #Computing y_t and r_t
-        neighbors = self.knn.findNearest(example, self.k)
+        neighbors = self.knn(example, self.k)
         for i in range(num_labels):
             # compute sum of aces in KNN
             aces = 0  #num of aces in Knn for i
