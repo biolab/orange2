@@ -835,12 +835,12 @@ class OWPlot(orangeplot.Plot):
             else:
                 self._current_ps_item.setPen(SelectionPen)
         else:
-            x, y = self.map_from_graph(point)
+            x, y = self.map_from_graph(point, zoom=True)
             text, x, y = self.tips.maybeTip(x, y)
             if type(text) == int: 
                 text = self.buildTooltip(text)
             if text and x is not None and y is not None:
-                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self._zoom_transform)
+                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform)
                 self.showTip(tp.x(), tp.y(), text)
             else:
                 orangeplot.Plot.mouseMoveEvent(self, event)
@@ -1248,6 +1248,8 @@ class OWPlot(orangeplot.Plot):
         self.zoom(point, scale = 0.5)
         
     def zoom(self, point, scale):
+        t, ok = self.zoom_transform.inverted()
+        point = point * t
         r = QRectF(self.zoom_rect)
         i = 1.0/scale
         r.setTopLeft(point*(1-i) + r.topLeft()*i)
