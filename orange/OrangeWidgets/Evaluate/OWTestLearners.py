@@ -218,6 +218,13 @@ class OWTestLearners(OWWidget):
             usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
         return usestat
     
+    def set_newstate(self):
+        if self.is_multilabel():
+            stat = self.mStatistics
+        else:
+            stat = [self.rStatistics, self.cStatistics][self.isclassification()]
+        return stat
+    
     def paintscores(self):
         """paints the table with evaluation scores"""
 
@@ -559,13 +566,6 @@ class OWTestLearners(OWWidget):
                 self.tab.resizeColumnToContents(i+1)
             else:
                 self.tab.hideColumn(i+1)
-                
-    def set_newstate(self):
-        if self.is_multilabel():
-            stat = self.mStatistics
-        else:
-            stat = [self.rStatistics, self.cStatistics][self.isclassification()]
-        return stat
     
     def recompute(self, forced=False):
         """recompute the scores for all learners,
