@@ -167,7 +167,7 @@ class OWPlot(orangeplot.Plot):
         self.use_antialiasing = True
         self.point_width = 5
         self.show_filled_symbols = True
-        self.alpha_value = 1
+        self.alpha_value = 255
         self.show_grid = False
         
         self.palette = shared_palette()
@@ -423,8 +423,6 @@ class OWPlot(orangeplot.Plot):
             self.axes[axis_id].set_title(title)
             
     def setShowAxisTitle(self, axis_id, b):
-        qDebug(('Showing' if b else 'Hiding') + ' axis title for ' + ('good' if axis_id in self.axes else 'bad') + ' axis ' + str(axis_id))
-        qDebug(repr(b))
         if axis_id in self.axes:
             if b == -1:
                 b = not self.axes[axis_id].show_title
@@ -542,7 +540,6 @@ class OWPlot(orangeplot.Plot):
         
     def add_marker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, 
                     x_axis_key = xBottom, y_axis_key = yLeft):
-        qDebug('Adding marker %s at pas %f,%f' % (name,x,y))
         m = Marker(name, x, y, alignment, bold, color, brushColor)
         self._marker_items.append((m, x, y, x_axis_key, y_axis_key))
         self.add_custom_curve(m)
@@ -558,7 +555,6 @@ class OWPlot(orangeplot.Plot):
             Clears the plot, removing all curves, markers and tooltips. 
             Axes and the grid are not removed
         '''
-        qDebug(' == OWPlot.clear() == ')
         for i in self.plot_items():
             if i is not self.grid_curve:
                 self.remove_item(i)
@@ -1165,7 +1161,7 @@ class OWPlot(orangeplot.Plot):
         
     def update_curves(self):
         for c in self.plot_items():
-            if isinstance(c, orangeplot.Curve):
+            if isinstance(c, orangeplot.Curve) and not getattr(c, 'ignore_alpha', False):
                 au = c.auto_update()
                 c.set_auto_update(False)
                 c.set_point_size(self.point_width)

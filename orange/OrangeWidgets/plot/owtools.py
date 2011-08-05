@@ -34,7 +34,7 @@ Plot tools (``owtools``)
 
 '''
 
-from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QPen, QBrush
+from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QGraphicsEllipseItem, QPen, QBrush
 from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug, QPropertyAnimation
 
 from owcurve import *
@@ -192,7 +192,6 @@ class RectangleCurve(OWCurve):
         
 class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
-        qDebug('Creting an ULC')
         orangeplot.UnconnectedLinesCurve.__init__(self, xData, yData)
         if pen:
             self.set_pen(pen)
@@ -201,12 +200,12 @@ class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
 class CircleCurve(OWCurve):
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.NoBrush), xCenter = 0.0, yCenter = 0.0, radius = 1.0):
         OWCurve.__init__(self)
-        self.set_pen(pen)
-        self.set_brush(brush)
         self._item = QGraphicsEllipseItem(self)
         self.center = xCenter, yCenter
         self.radius = radius
         self._rect = QRectF(xCenter-radius, yCenter-radius, 2*radius, 2*radius)
+        self.set_pen(pen)
+        self.set_brush(brush)
         
     def update_properties(self):
         self._item.setRect(self.graph_transform().mapRect(self.data_rect()))

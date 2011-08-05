@@ -2,9 +2,10 @@
 #include <QtGui/QPen>
 #include <QtCore/QDebug>
 
-UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): Curve(x_data, y_data, parent, scene)
+UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): Curve(parent, scene)
 {
     m_path_item = new QGraphicsPathItem(this);
+    set_data(x_data, y_data);
 }
 
 UnconnectedLinesCurve::~UnconnectedLinesCurve()
@@ -14,6 +15,7 @@ UnconnectedLinesCurve::~UnconnectedLinesCurve()
 
 void UnconnectedLinesCurve::update_properties()
 {
+    cancelAllUpdates();
     if (needs_update() & UpdatePosition)
     {
         const Data d = data();

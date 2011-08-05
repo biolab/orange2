@@ -109,7 +109,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         # do we want to show anchors and their labels
         if self.showAnchors:
             if self.hideRadius > 0:
-                circle = CircleCurve(QColor(200,200,200), QColor(200,200,200), radius = hideRadius)
+                circle = CircleCurve(QColor(200,200,200), QColor(200,200,200), radius = self.hideRadius)
+                circle.ignore_alpha = True
                 self.add_custom_curve(circle)
                 self._extra_curves.append(circle)
 
@@ -132,7 +133,9 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             else:
                 XAnchors = [a[0] for a in shownAnchorData]
                 YAnchors = [a[1] for a in shownAnchorData]
-                self._extra_curves.append(self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = Qt.NoPen, symbol = OWPoint.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1))
+                c = self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = Qt.NoPen, symbol = OWPoint.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1)
+                c.ignore_alpha = True
+                self._extra_curves.append(c)
 
                 # draw text at anchors
                 if self.showAttributeNames:
@@ -142,6 +145,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         if self.showAnchors and self.normalizeExamples:
             # draw "circle"
             circle = CircleCurve()
+            circle.ignore_alpha = True
             self.add_custom_curve(circle)
             self._extra_curves.append(circle)
 
