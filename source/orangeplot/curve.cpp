@@ -110,7 +110,6 @@ void Curve::update_properties()
   
   if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
   {
-      qDebug() << "Updating zoom";
     update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, point_transform()), UpdateSymbol);
   }
   m_needsUpdate = 0;
@@ -320,7 +319,6 @@ void Curve::set_dirty(Curve::UpdateFlags flags)
 
 void Curve::set_zoom_transform(const QTransform& transform)
 {
-    qDebug() << "Curve: Setting zoom transform to" << transform;
     m_zoom_transform = transform;
     m_needsUpdate |= UpdateZoom;
     checkForUpdate();
