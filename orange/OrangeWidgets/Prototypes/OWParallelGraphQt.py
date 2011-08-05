@@ -183,24 +183,16 @@ class OWParallelGraph(OWPlot, orngScaleData):
 
         # ############################################
         # draw vertical lines that represent attributes
+        self.remove_all_axes()
         for i in range(len(attributes)):
-            self.addCurve("", lineWidth = 2, style = OWCurve.Lines, symbol = OWPoint.NoSymbol, xData = [i,i], yData = [0,1])
+	    self.add_axis(UserAxis + i, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd)
             if self.showAttrValues == 1:
                 attr = self.dataDomain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
-                    strVal1 = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][0])
-                    strVal2 = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][1])
-                    align1 = i == 0 and Qt.AlignRight | Qt.AlignBottom or i == len(attributes)-1 and Qt.AlignLeft | Qt.AlignBottom or Qt.AlignHCenter | Qt.AlignBottom
-                    align2 = i == 0 and Qt.AlignRight | Qt.AlignTop or i == len(attributes)-1 and Qt.AlignLeft | Qt.AlignTop or Qt.AlignHCenter | Qt.AlignTop
-                    self.addMarker(strVal1, i, 0.0-0.01, alignment = align1)
-                    self.addMarker(strVal2, i, 1.0+0.01, alignment = align2)
-
+		    self.set_axis_scale(UserAxis + i, 0.0-0.01, 1.0+0.01)
                 elif attr.varType == orange.VarTypes.Discrete:
-                    attrVals = getVariableValuesSorted(self.dataDomain[attributes[i]])
-                    valsLen = len(attrVals)
-                    for pos in range(len(attrVals)):
-                        # show a rectangle behind the marker
-                        self.addMarker(attrVals[pos], i+0.01, float(1+2*pos)/float(2*valsLen), alignment = Qt.AlignRight | Qt.AlignVCenter, bold = 1, brushColor = Qt.white)
+		    attrVals = getVariableValuesSorted(self.dataDomain[attributes[i]])
+		    self.set_axis_labels(UserAxis + i, attrVals)
 
         # ##############################################
         # show lines that represent standard deviation or quartiles
