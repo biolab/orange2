@@ -87,6 +87,11 @@ QTransform PlotItem::zoom_transform() const
     return m_zoom_transform;
 }
 
+void PlotItem::update_properties()
+{
+
+}
+
 QRectF PlotItem::rect_from_data(const QList< double >& x_data, const QList< double >& y_data)
 {
     int n = qMin(x_data.size(), y_data.size());

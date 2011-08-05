@@ -11,6 +11,7 @@
 
 Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
+    m_autoUpdate = true;
     m_style = NoCurve;
     m_continuous = false;
     m_lineItem = 0;
@@ -21,6 +22,7 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
 
 Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
 {
+    m_autoUpdate = true;
     m_style = NoCurve;
     m_lineItem = 0;
     m_needsUpdate = 0;
@@ -101,13 +103,14 @@ void Curve::update_properties()
     QPointF p;
     for (int i = 0; i < n; ++i)
     {
-      p = QPointF(m_data[i].x, m_data[i].y);
-      m_pointItems[i]->setPos(m_graphTransform.map(p));
+      m_pointItems[i]->set_coordinates(m_data[i]);
     }
+    update_items(m_pointItems, PointPosUpdater(m_graphTransform), UpdatePosition);
   } 
   
   if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
   {
+      qDebug() << "Updating zoom";
     update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, point_transform()), UpdateSymbol);
   }
   m_needsUpdate = 0;
@@ -306,6 +309,7 @@ void Curve::changeContinuous()
     delete m_lineItem;
     m_lineItem = 0;
   }
+  register_points();
 }
 
 void Curve::set_dirty(Curve::UpdateFlags flags)
@@ -316,6 +320,7 @@ void Curve::set_dirty(Curve::UpdateFlags flags)
 
 void Curve::set_zoom_transform(const QTransform& transform)
 {
+    qDebug() << "Curve: Setting zoom transform to" << transform;
     m_zoom_transform = transform;
     m_needsUpdate |= UpdateZoom;
     checkForUpdate();

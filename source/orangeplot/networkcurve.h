@@ -25,8 +25,8 @@ public:
     void set_y(double y);
     double y() const;
     
-    void set_graph_transform(const QTransform& transform);
-    QTransform graph_transform() const;
+    virtual void set_graph_transform(const QTransform& transform);
+    virtual QTransform graph_transform() const;
     
     void set_index(int index);
     int index() const;

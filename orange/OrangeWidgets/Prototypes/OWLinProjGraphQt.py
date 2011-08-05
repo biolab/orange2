@@ -69,6 +69,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         self.data_range[yLeft] = range
         
         self._extra_curves = []
+        self.current_tooltip_point = None
+        self.point_hovered.connect(self.draw_tooltips)
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -380,10 +382,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
     # create a dictionary value for the data point
     # this will enable to show tooltips faster and to make selection of examples available
     def addTooltipKey(self, x, y, color, index, extraString = None):
-        dictValue = "%.1f-%.1f"%(x, y)
-        if not self.dataMap.has_key(dictValue): self.dataMap[dictValue] = []
-        self.dataMap[dictValue].append((x, y, color, index, extraString))
-
+        dictValue = (x, y)
+        self.dataMap[dictValue] = (x, y, color, index, extraString)
 
     def addValueLineCurve(self, x, y, color, exampleIndex, attrIndices):
         XAnchors = numpy.array([val[0] for val in self.anchorData])
@@ -426,56 +426,49 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         else:
             OWPlot.mouseReleaseEvent(self, e)
 
-    # ##############################################################
-    # draw tooltips
     def mouseMoveEvent(self, e):
-        redraw = (self.tooltipCurves != [] or self.tooltipMarkers != [])
+        if self._pressed_mouse_button and self.manualPositioning and self.selectedAnchorIndex != None:
+            if self.selectedAnchorIndex != None:
+                if self.widget.freeVizDlg.restrain == 1:
+                    rad = sqrt(xFloat**2 + yFloat**2)
+                    xFloat /= rad
+                    yFloat /= rad
+                elif self.widget.freeVizDlg.restrain == 2:
+                    rad = sqrt(xFloat**2 + yFloat**2)
+                    phi = 2 * self.selectedAnchorIndex * math.pi / len(self.anchorData)
+                    xFloat = rad * cos(phi)
+                    yFloat = rad * sin(phi)
+                self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2])
+                self.updateData(self.shownAttributes)
+                self.replot()
+                #self.widget.recomputeEnergy()
+        else:
+            OWPlot.mouseMoveEvent(self, e)
+    
 
+    # ##############################################################
+    # draw tooltips        
+    def draw_tooltips(self, point):
+        if point is self.current_tooltip_point:
+            return
+            
         for curve in self.tooltipCurves:  curve.detach()
         for marker in self.tooltipMarkers: marker.detach()
         self.tooltipCurves = []
         self.tooltipMarkers = []
-
-        xFloat, yFloat = self.map_from_graph(self.mapToScene(e.pos()), zoom=True)
-
-        # in case we are drawing a rectangle, we don't draw enhanced tooltips
-        # because it would then fail to draw the rectangle
-        if self._pressed_mouse_button:
-            if not self.manualPositioning:
-                OWPlot.mouseMoveEvent(self, e)
-                if redraw: self.replot()
-            else:
-                if self.selectedAnchorIndex != None:
-                    if self.widget.freeVizDlg.restrain == 1:
-                        rad = sqrt(xFloat**2 + yFloat**2)
-                        xFloat /= rad
-                        yFloat /= rad
-                    elif self.widget.freeVizDlg.restrain == 2:
-                        rad = sqrt(xFloat**2 + yFloat**2)
-                        phi = 2 * self.selectedAnchorIndex * math.pi / len(self.anchorData)
-                        xFloat = rad * cos(phi)
-                        yFloat = rad * sin(phi)
-                    self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2])
-                    self.updateData(self.shownAttributes)
-                    self.replot()
-                    #self.widget.recomputeEnergy()
+        
+        if not point:
             return
 
-        dictValue = "%.1f-%.1f"%(xFloat, yFloat)
-        if self.dataMap.has_key(dictValue):
-            points = self.dataMap[dictValue]
-            bestDist = 100.0
-            for (x_i, y_i, color, index, extraString) in points:
-                currDist = sqrt((xFloat-x_i)*(xFloat-x_i) + (yFloat-y_i)*(yFloat-y_i))
-                if currDist < bestDist:
-                    bestDist = currDist
-                    nearestPoint = (x_i, y_i, color, index, extraString)
+        xFloat, yFloat = point.coordinates()
 
-            (x_i, y_i, color, index, extraString) = nearestPoint
+        dictValue = (xFloat, yFloat)
+        if self.dataMap.has_key(dictValue):
+            (x_i, y_i, color, index, extraString) = self.dataMap[dictValue]
             intX = self.transform(xBottom, x_i)
             intY = self.transform(yLeft, y_i)
 
-            if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
+            if self.tooltipKind == LINE_TOOLTIPS:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 if not self.normalizeExamples:
                     for (xAnchor,yAnchor,label) in shownAnchorData:
@@ -511,10 +504,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                 if extraString:
                     text += "<hr>" + extraString
                 self.showTip(intX, intY, text)
-
-        OWPlot.mouseMoveEvent(self, e)
-        self.replot()
-
 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, useAnchorData = 1, addProjectedPositions = 0):

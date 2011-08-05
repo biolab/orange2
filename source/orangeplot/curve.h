@@ -9,12 +9,6 @@
 
 #include <QtCore/QtConcurrentMap>
 
-struct DataPoint
-{
-  double x;
-  double y;
-};
-
 struct ZoomUpdater
 {
     ZoomUpdater(const QTransform& inv_zoom) : transform(inv_zoom) {}

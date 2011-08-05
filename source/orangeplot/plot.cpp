@@ -83,6 +83,7 @@ void Plot::add_item(PlotItem* item)
     item->setParentItem(item->is_in_background() ? graph_back_item : graph_item);
     m_items << item;
     item->register_points();
+    item->update_properties();
 }
 
 void Plot::remove_item(PlotItem* item)
@@ -297,6 +298,7 @@ Point* Plot::nearest_point(const QPointF& pos)
     QPair<double, DataPoint> closest_point = qMakePair( std::numeric_limits<double>::max(), DataPoint() );
     foreach (PlotItem* item, plot_items())
     {
+        Q_ASSERT(m_point_set[item].toList() == m_point_hash[item].keys());
         if (!m_point_set.contains(item))
         {
             continue;
@@ -352,8 +354,8 @@ void Plot::remove_all_points(PlotItem* parent)
 {
     if (m_point_set.contains(parent))
     {
-        m_point_set[parent].clear();
-        m_point_hash[parent].clear();
+        m_point_set.remove(parent);
+        m_point_hash.remove(parent);
     }
 }
 

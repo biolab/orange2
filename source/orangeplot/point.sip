@@ -1,3 +1,29 @@
+// DataPoint is implemented as a Python 2-element tuple.
+%MappedType DataPoint /DocType="tuple-of-float-float"/
+{
+%TypeHeaderCode
+#include "point.h"
+%End
+
+%ConvertFromTypeCode
+    // Create the tuple.
+    return Py_BuildValue((char *)"dd", sipCpp->x, sipCpp->y);
+%End
+
+%ConvertToTypeCode
+    // Check the type if that is all that is required.
+    if (sipIsErr == NULL)
+        return (PyTuple_Size(sipPy) == 2);
+    
+    DataPoint* qp = new DataPoint();
+
+    PyArg_ParseTuple(sipPy, "dd", &qp->x, &qp->y);
+    *sipCppPtr = qp;
+    
+    return sipGetState(sipTransferObj);
+%End
+};
+
 class Point : QGraphicsItem
 {
     
@@ -73,6 +99,9 @@ public:
 	
 	bool is_transparent();
     void set_transparent(bool transparent);
+    
+    DataPoint coordinates() const;
+    void set_coordinates(const DataPoint& data_point);
 
     /**
     * Creates a path from a symbol and a size

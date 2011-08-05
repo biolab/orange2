@@ -332,6 +332,16 @@ void Point::set_transparent(bool transparent)
 	m_transparent = transparent;
 }
 
+DataPoint Point::coordinates() const
+{
+    return m_coordinates;
+}
+
+void Point::set_coordinates(const DataPoint& data_point)
+{
+    m_coordinates = data_point;
+}
+
 void Point::clear_cache()
 {
     pixmap_cache.clear();

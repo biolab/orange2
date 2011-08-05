@@ -459,7 +459,8 @@ class OWPlot(orangeplot.Plot):
         self._transform_cache = {}
         if hasattr(curve, 'tooltip'):
             curve.setToolTip(curve.tooltip)
-        curve.set_auto_update(True)
+        x,y = curve.axes()
+        curve.set_graph_transform(self.transform_for_axes(x,y))
         curve.update_properties()
         return curve
         
@@ -491,7 +492,6 @@ class OWPlot(orangeplot.Plot):
         c.set_symbol(symbol)
         c.set_point_size(size)
         c.set_data(xData,  yData)
-        c.set_graph_transform(self.transform_for_axes(x_axis_key, y_axis_key))
         
         c.set_auto_scale(autoScale)
         
@@ -541,9 +541,10 @@ class OWPlot(orangeplot.Plot):
         
     def add_marker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, 
                     x_axis_key = xBottom, y_axis_key = yLeft):
+        qDebug('Adding marker %s at pas %f,%f' % (name,x,y))
         m = Marker(name, x, y, alignment, bold, color, brushColor)
         self._marker_items.append((m, x, y, x_axis_key, y_axis_key))
-        m.attach(self)
+        self.add_custom_curve(m)
         
         return m
         
@@ -556,6 +557,7 @@ class OWPlot(orangeplot.Plot):
             Clears the plot, removing all curves, markers and tooltips. 
             Axes and the grid are not removed
         '''
+        qDebug(' == OWPlot.clear() == ')
         for i in self.plot_items():
             if i is not self.grid_curve:
                 self.remove_item(i)
@@ -790,6 +792,7 @@ class OWPlot(orangeplot.Plot):
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
             event.accept()
             return
+            
         if event.buttons() and (self._pressed_mouse_pos - event.pos()).manhattanLength() > qApp.startDragDistance():
             self.static_click = False
         
@@ -797,6 +800,8 @@ class OWPlot(orangeplot.Plot):
             return
         
         point = self.mapToScene(event.pos())
+        if not self._pressed_mouse_button:
+            self.point_hovered.emit(self.nearest_point(point))
         
         ## We implement a workaround here, because sometimes mouseMoveEvents are not fast enough
         ## so the moving legend gets left behind while dragging, and it's left in a pressed state
@@ -804,18 +809,19 @@ class OWPlot(orangeplot.Plot):
             QGraphicsView.mouseMoveEvent(self, event)
             return
         
-        if self._pressed_mouse_button == Qt.LeftButton:
+        if self._pressed_mouse_button == Qt.LeftButton and not self.static_click:
             if self.state in [ZOOMING, SELECT] and self.graph_area.contains(point):
                 if not self._current_rs_item:
-                    self._selection_start_point = self.mapToScene(event.pos())
+                    self._selection_start_point = self.mapToScene(self._pressed_mouse_pos)
                     self._current_rs_item = QGraphicsRectItem(scene=self.scene())
                     self._current_rs_item.setPen(SelectionPen)
                     self._current_rs_item.setBrush(SelectionBrush)
                     self._current_rs_item.setZValue(SelectionZValue)
                 self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
             elif self.state == PANNING:
-                if self._last_pan_pos:
-                    self.pan(point - self._last_pan_pos)
+                if not self._last_pan_pos:
+                    self._last_pan_pos = self.mapToScene(self._pressed_mouse_pos)
+                self.pan(point - self._last_pan_pos)
                 self._last_pan_pos = point
         elif not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
             self._current_ps_polygon[-1] = point

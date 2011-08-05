@@ -3,6 +3,13 @@
 
 #include <QtGui/QGraphicsItem>
 
+
+struct DataPoint
+{
+  double x;
+  double y;
+};
+
 struct PointData
 {
     PointData(int size, int symbol, const QColor& color, int state, bool transparent) : size(size), symbol(symbol), color(color), state(state), transparent(transparent) {}
@@ -103,6 +110,9 @@ public:
     bool is_transparent();
     void set_transparent(bool transparent);
     
+    DataPoint coordinates() const;
+    void set_coordinates(const DataPoint& data_point);
+    
     /**
     * Creates a path from a symbol and a size
     *
@@ -130,6 +140,20 @@ private:
     DisplayMode m_display_mode;
     State m_state;
     bool m_transparent;
+    
+    DataPoint m_coordinates;
+};
+
+struct PointPosUpdater
+{
+  PointPosUpdater(QTransform t) : t(t) {}
+  void operator()(Point* point)
+  {
+    point->setPos(t.map(QPointF(point->coordinates().x, point->coordinates().y)));
+  }
+  
+private:
+    QTransform t;
 };
 
 #endif // POINT_H

@@ -1,30 +1,3 @@
-// DataPoint is implemented as a Python 2-element tuple.
-%MappedType DataPoint /DocType="tuple-of-float-float"/
-{
-%TypeHeaderCode
-#include "curve.h"
-%End
-
-%ConvertFromTypeCode
-    // Create the tuple.
-    return Py_BuildValue((char *)"dd", sipCpp->x, sipCpp->y);
-%End
-
-%ConvertToTypeCode
-    // Check the type if that is all that is required.
-    if (sipIsErr == NULL)
-        return (PyTuple_Size(sipPy) == 2);
-    
-    DataPoint* qp = new DataPoint();
-
-    PyArg_ParseTuple(sipPy, "dd", &qp->x, &qp->y);
-    *sipCppPtr = qp;
-    
-    return sipGetState(sipTransferObj);
-%End
-};
-
-
 struct Updater
 {
 
@@ -92,14 +65,14 @@ public:
   Data data() const;
   void set_data(const QList<qreal>& x_data, const QList<qreal>& y_data);
 
-  QTransform graph_transform() const;
-  void set_graph_transform(const QTransform& transform);
+  virtual QTransform graph_transform() const;
+  virtual void set_graph_transform(const QTransform& transform);
 
   int style() const;
   void set_style(int style);
  
-  QTransform zoom_transform();
-  void set_zoom_transform(const QTransform& transform);
+  virtual QTransform zoom_transform();
+  virtual void set_zoom_transform(const QTransform& transform);
 
   bool auto_update() const;
   void set_auto_update(bool auto_update);

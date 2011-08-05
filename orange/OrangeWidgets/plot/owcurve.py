@@ -45,7 +45,6 @@ class OWCurve(orangeplot.Curve):
     """
     def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None, parent=None, scene=None):
         orangeplot.Curve.__init__(self, xData, yData, parent, scene)
-        self.set_auto_update(False)
         self.set_axes(x_axis_key, y_axis_key)
         if tooltip:
             self.setToolTip(tooltip)

@@ -24,6 +24,8 @@ public:
     virtual void set_zoom_transform(const QTransform& zoom);
     virtual QTransform zoom_transform() const;
     
+    virtual void update_properties();
+    
     void attach(Plot* graph);
     void detach();
     Plot* plot();
