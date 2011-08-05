@@ -49,8 +49,12 @@ Utility functions
 """
 
 import Orange
-from Orange.core import (EarthLearner as BaseEarthLearner,
-                         EarthClassifier as BaseEarthClassifier)
+from Orange.core import EarthLearner as BaseEarthLearner, \
+                        EarthClassifier as BaseEarthClassifier
+from Orange.preprocess import Preprocessor_continuize, \
+                              Preprocessor_impute, \
+                              Preprocessor_preprocessorList, \
+                              DomainContinuizer
             
 import numpy
 
@@ -118,7 +122,16 @@ class EarthLearner(Orange.core.LearnerFD):
         self.multi_label = multi_label
         self.__dict__.update(kwds)
         
+        impute = Preprocessor_impute()
+        cont = Preprocessor_continuize(multinomialTreatment=
+                                       DomainContinuizer.AsOrdinal)
+        
+        self.preproc = Preprocessor_preprocessorList(preprocessors=\
+                                                     [impute, cont])
+        
     def __call__(self, examples, weight_id=None):
+        examples = self.preproc(examples)
+        
         if self.multi_label:
             label_mask = data_label_mask(examples.domain)
         else:
