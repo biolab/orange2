@@ -136,7 +136,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.tabs = OWGUI.tabWidget(self.hcontroArea)
         
-        self.verticesTab = OWGUI.createTabPage(self.tabs, "Vertices")
+        self.verticesTab = OWGUI.createTabPage(self.tabs, "Nodes")
         self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
@@ -156,19 +156,19 @@ class OWNxExplorerQt(OWWidget):
         self.optCombo.addItem("Circular Crossing Reduction")
         self.optCombo.addItem("Circular Original")
         self.optCombo.addItem("Circular Random")
-        self.optCombo.addItem("Pivot MDS")
+        #self.optCombo.addItem("Pivot MDS")
         self.optCombo.setCurrentIndex(self.optMethod)
         self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 100000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.graph_layout, toggleButton=1)
         
-        colorBox = OWGUI.widgetBox(self.verticesTab, "Vertex color attribute", orientation="horizontal", addSpace = False)
+        colorBox = OWGUI.widgetBox(self.verticesTab, "Node color attribute", orientation="horizontal", addSpace = False)
         self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.setVertexColor)
         self.colorCombo.addItem("(same color)")
-        OWGUI.button(colorBox, self, "Set vertex color palette", self.setColors, tooltip = "Set vertex color palette", debuggingEnabled = 0)
+        OWGUI.button(colorBox, self, "Set node color palette", self.setColors, tooltip = "Set node color palette", debuggingEnabled = 0)
         
-        ib = OWGUI.widgetBox(self.verticesTab, "Vertex size attribute", orientation="vertical", addSpace = False)
+        ib = OWGUI.widgetBox(self.verticesTab, "Node size attribute", orientation="vertical", addSpace = False)
         hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
         OWGUI.checkBox(hb, self, "invertSize", "Invert size", callback = self.set_vertex_size)
         OWGUI.spin(hb, self, "minVertexSize", 5, 200, 1, label="Min:", callback=self.set_vertex_size)
@@ -176,7 +176,7 @@ class OWNxExplorerQt(OWWidget):
         self.vertexSizeCombo = OWGUI.comboBox(ib, self, "vertexSize", callback=self.set_vertex_size)
         self.vertexSizeCombo.addItem("(none)")
         
-        ib = OWGUI.widgetBox(self.verticesTab, "Vertex labels | tooltips", orientation="vertical", addSpace = False)
+        ib = OWGUI.widgetBox(self.verticesTab, "Node labels | tooltips", orientation="vertical", addSpace = False)
         OWGUI.spin(ib, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.setFontSize)
         hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
         self.attListBox = OWGUI.listBox(hb, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
@@ -186,7 +186,7 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback=(lambda: self._set_canvas_attr('showWeights', self.showWeights)))
         OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback=(lambda: self._set_canvas_attr('showEdgeLabels', self.showEdgeLabels)))
         OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.setMaxLinkSize)
-        self.showDistancesCheckBox = OWGUI.checkBox(ib, self, 'showDistances', 'Explore vertex distances', callback=(lambda: self._set_canvas_attr('showDistances', self.showDistances)), disabled=1)
+        self.showDistancesCheckBox = OWGUI.checkBox(ib, self, 'showDistances', 'Explore node distances', callback=(lambda: self._set_canvas_attr('showDistances', self.showDistances)), disabled=1)
         
         colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
         self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.setEdgeColor)
@@ -199,27 +199,27 @@ class OWNxExplorerQt(OWWidget):
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_label_attributes)
-        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback=(lambda: self.networkCanvas.networkCurve.set_labels_on_marked_only(self.labelsOnMarkedOnly)))
+        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback=(lambda: self.networkCanvas.set_labels_on_marked_only(self.labelsOnMarkedOnly)))
         self.networkCanvas.gui.antialiasing_check_box(ib)
         self.networkCanvas.gui.animations_check_box(ib)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
-        OWGUI.label(ib, self, "Vertices (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
-        OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
+        OWGUI.label(ib, self, "Nodes (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
+        OWGUI.label(ib, self, "Selected: %(nSelected)i, marked: %(nMarked)i")
         
-        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.set_mark_mode)
+        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Mark", callback = self.set_mark_mode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "None", callback = self.set_mark_mode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Search", callback = self.set_mark_mode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
         self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.set_mark_mode)
         
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertices", callback = self.set_mark_mode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Neighbors of focused", callback = self.set_mark_mode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Neighbours of selected", callback = self.set_mark_mode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
         self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.set_mark_mode(h)))
         #self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
-        OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
+        OWGUI.widgetLabel(ribg, "Mark nodes with ...")
         OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.set_mark_mode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback = self.set_mark_mode)
         self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.set_mark_mode(h)))
@@ -227,9 +227,9 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour", callback = self.set_mark_mode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "most connections", callback = self.set_mark_mode)
         ib = OWGUI.indentedBox(ribg)
-        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.set_mark_mode(h)))
-        OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
-        self.markInputRadioButton = OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.set_mark_mode)
+        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of nodes:", callback=(lambda h=8: self.set_mark_mode(h)))
+        OWGUI.widgetLabel(ib, "(More nodes are marked in case of ties)")
+        self.markInputRadioButton = OWGUI.appendRadioButton(ribg, self, "hubs", "Mark nodes given in the input signal", callback = self.set_mark_mode)
         ib = OWGUI.indentedBox(ribg)
         self.markInput = 0
         self.markInputCombo = OWGUI.comboBox(ib, self, "markInput", callback=(lambda h=9: self.set_mark_mode(h)))
@@ -237,7 +237,7 @@ class OWNxExplorerQt(OWWidget):
         
         ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
         self.checkSendMarkedNodes = 0
-        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked vertices', callback = self.send_marked_nodes, disabled=0)
+        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.send_marked_nodes, disabled=0)
         
         G = self.networkCanvas.gui
         
@@ -260,10 +260,10 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.rubber(self.zoomSelectToolbar)
         
         ib = OWGUI.widgetBox(self.infoTab, "General")
-        OWGUI.label(ib, self, "Number of vertices: %(number_of_nodes_label)i")
+        OWGUI.label(ib, self, "Number of nodes: %(number_of_nodes_label)i")
         OWGUI.label(ib, self, "Number of edges: %(number_of_edges_label)i")
-        OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
-        OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
+        OWGUI.label(ib, self, "Nodes per edge: %(verticesPerEdge).2f")
+        OWGUI.label(ib, self, "Edges per node: %(edgesPerVertex).2f")
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
@@ -1227,7 +1227,11 @@ class OWNxExplorerQt(OWWidget):
             self.diameter = -1
         else:
             self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
-        self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
+            
+        if self.graph.is_multigraph():
+            self.clustering_coefficient = -1
+        else:
+            self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
       
     def change_graph(self, newgraph):
         self.graph = newgraph
@@ -1310,6 +1314,7 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.maxEdgeSize = self.maxLinkSize
         self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
         self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        self.networkCanvas.set_labels_on_marked_only(self.labelsOnMarkedOnly)
         
         self.compute_network_info()
         self.setCombos()
@@ -1506,7 +1511,6 @@ class OWNxExplorerQt(OWWidget):
             
         if self.optMethod == 1:
             self.networkCanvas.networkCurve.random()
-            self.networkCanvas.update_canvas()
         elif self.optMethod == 2:
             self.graph_layout_fr(False)
         elif self.optMethod == 3:
@@ -1514,14 +1518,11 @@ class OWNxExplorerQt(OWWidget):
         elif self.optMethod == 4:
             self.graph_layout_fr_radial()
         elif self.optMethod == 5:
-#            self.layout.circular_crossing_reduction()
-            pass
+            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_crossing);
         elif self.optMethod == 6:
-#            self.layout.circular_original()
-            pass
+            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_original);
         elif self.optMethod == 7:
-#            self.layout.circular_random()
-            pass
+            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_random);
         elif self.optMethod == 8:
 #            self.graph_layout_pivot_mds()
             pass
@@ -1529,6 +1530,7 @@ class OWNxExplorerQt(OWWidget):
         self.optButton.setChecked(False)
 #        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
         #self.networkCanvas.updateCanvas()
+        self.networkCanvas.networkCurve.update_properties()
         self.networkCanvas.replot()
         qApp.processEvents()
         
@@ -1713,10 +1715,15 @@ class OWNxExplorerQt(OWWidget):
         if self.minVertexSize > self.maxVertexSize:
             self.maxVertexSize = self.minVertexSize
         
-        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
-        
-        column = str(self.vertexSizeCombo.currentText())
         items = self.graph_base.items()
+        
+        if items is None:
+            self.networkCanvas.networkCurve.set_node_sizes({}, min_size=self.minVertexSize, max_size=self.maxVertexSize)
+            return
+        
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+        column = str(self.vertexSizeCombo.currentText())
+        
         values = {}
         if column in items.domain or (column.startswith("num of ") and column.replace("num of ", "") in items.domain):
             if column in items.domain:
@@ -1740,8 +1747,10 @@ class OWNxExplorerQt(OWWidget):
         if self.networkCanvas is None:
             return
         
-        self.networkCanvas.fontSize = self.fontSize
-#        self.networkCanvas.drawPlotItems()
+        font = self.networkCanvas.font()
+        font.setPointSize(self.fontSize)
+        self.networkCanvas.setFont(font) 
+        
                 
     def sendReport(self):
         self.reportSettings("Graph data",

@@ -549,7 +549,11 @@ class OWNxCanvas(OWPlot):
     def update_animations(self):
         OWPlot.use_animations(self)
         self.networkCurve.set_use_animations(True)
-                    
+    
+    def set_labels_on_marked_only(self, labelsOnMarkedOnly):
+        self.networkCurve.set_labels_on_marked_only(labelsOnMarkedOnly)
+        self.replot()
+    
     def replot(self):
         self.set_dirty()
         OWPlot.replot(self)
