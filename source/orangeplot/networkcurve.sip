@@ -73,6 +73,13 @@ public:
 class NetworkCurve : Curve
 {
 public:
+	enum CircularLayoutType
+	{
+		circular_original = 0x01,
+		circular_random = 0x02,
+		circular_crossing = 0x03
+	};
+	
     typedef QList<EdgeItem*> Edges;
     typedef QMap<int, NodeItem*> Nodes;
 
@@ -83,6 +90,7 @@ public:
     virtual QRectF data_rect() const;
     
     int random();
+    int circular(NetworkCurve::CircularLayoutType type);
     int fr(int steps, bool weighted, bool smooth_cooling);
 
     Nodes nodes() const;

@@ -4,6 +4,58 @@
 #include "curve.h"
 #include "point.h"
 #include "plot.h"
+#include <deque>
+#include <algorithm>
+
+class QueueVertex
+{
+public:
+	int ndx;
+	int position;
+	unsigned int unplacedNeighbours;
+	unsigned int placedNeighbours;
+	std::vector<int> neighbours;
+
+	bool hasNeighbour(int index)
+	{
+		std::vector<int>::iterator iter;
+
+		for (iter = neighbours.begin(); iter != neighbours.end(); iter++)
+			if (*iter == index)
+				return true;
+
+		return false;
+	}
+
+	friend std::ostream & operator<<(std::ostream &os, const QueueVertex &v)
+	{
+		os << "ndx: " << v.ndx << " unplaced: " << v.unplacedNeighbours << " placed: " << v.placedNeighbours << " neighbours: ";
+		int i;
+		for (i = 0; i < v.neighbours.size(); i++)
+			os << v.neighbours[i] << " ";
+
+		return (os);
+	}
+
+	QueueVertex(int index = -1, unsigned int neighbours = 0)
+	{
+		ndx = index;
+		unplacedNeighbours = neighbours;
+		placedNeighbours = 0;
+	}
+
+	bool operator () (const QueueVertex * a, const QueueVertex * b)
+	{
+		if (a->unplacedNeighbours < b->unplacedNeighbours)
+			return false;
+		else if (a->unplacedNeighbours > b->unplacedNeighbours)
+			return true;
+		else
+		{
+			return a->placedNeighbours < b->placedNeighbours;
+		}
+	}
+};
 
 class EdgeItem;
 
@@ -145,6 +197,13 @@ private:
 class NetworkCurve : public Curve
 {
 public:
+	enum CircularLayoutType
+	{
+		circular_original = 0x01,
+		circular_random = 0x02,
+		circular_crossing = 0x03
+	};
+
     typedef QList<EdgeItem*> Edges;
     typedef QMap<int, NodeItem*> Nodes;
 
@@ -156,6 +215,8 @@ public:
     virtual void register_points();
     
     int random();
+    int circular(CircularLayoutType type);
+    int circular_crossing_reduction();
     int fr(int steps, bool weighted, bool smooth_cooling);
     
     Nodes nodes() const;

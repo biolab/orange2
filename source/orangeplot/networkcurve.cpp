@@ -352,6 +352,228 @@ int NetworkCurve::random()
 	return 0;
 }
 
+#define PI 3.14159265
+
+int NetworkCurve::circular(CircularLayoutType type)
+{
+	// type
+	// 0 - original
+	// 1 - random
+	// 2 - crossing reduction
+
+	if (type == NetworkCurve::circular_crossing)
+	{
+		qDebug() << "crossing_reduction";
+		return circular_crossing_reduction();
+	}
+
+	if (type == NetworkCurve::circular_original)
+		qDebug() << "original";
+
+	if (type == NetworkCurve::circular_random)
+			qDebug() << "random";
+
+	QRectF rect = data_rect();
+	int xCenter = rect.width() / 2;
+	int yCenter = rect.height() / 2;
+	int r = (rect.width() < rect.height()) ? rect.width() * 0.38 : rect.height() * 0.38;
+
+	int i;
+	double fi = PI;
+	double step = 2 * PI / m_nodes.size();
+
+	srand(time(NULL));
+	std::vector<int> vertices;
+	Nodes::ConstIterator it;
+	for (it = m_nodes.constBegin(); it != m_nodes.constEnd(); ++it)
+	{
+		vertices.push_back(it.key());
+	}
+
+	for (i = 0; i < m_nodes.size(); ++i)
+	{
+		if (type == NetworkCurve::circular_original)
+		{
+			m_nodes[vertices[i]]->set_x(r * cos(fi) + xCenter);
+			m_nodes[vertices[i]]->set_y(r * sin(fi) + yCenter);
+		}
+		else if (type == NetworkCurve::circular_random)
+		{
+			int ndx = rand() % vertices.size();
+			m_nodes[vertices[ndx]]->set_x(r * cos(fi) + xCenter);
+			m_nodes[vertices[ndx]]->set_y(r * sin(fi) + yCenter);
+			vertices.erase(vertices.begin() + ndx);
+		}
+		fi = fi - step;
+	}
+	return 0;
+}
+
+
+int NetworkCurve::circular_crossing_reduction()
+{
+	QMap<int, QueueVertex*> qvertices;
+	std::vector<QueueVertex*> vertices;
+	std::vector<QueueVertex*> original;
+
+	Nodes::ConstIterator it;
+	for (it = m_nodes.constBegin(); it != m_nodes.constEnd(); ++it)
+	{
+		QueueVertex *vertex = new QueueVertex();
+		vertex->ndx = it.key();
+		qvertices[it.key()] = vertex;
+
+		std::vector<int> neighbours;
+		vertex->unplacedNeighbours = neighbours.size();
+		vertex->neighbours = neighbours;
+		vertices.push_back(vertex);
+	}
+	int i;
+	EdgeItem *edge;
+	for (i = 0; i < m_edges.size(); i++)
+	{
+		edge = m_edges[i];
+		int u = edge->u()->index();
+		int v = edge->v()->index();
+		qvertices[u]->neighbours.push_back(v);
+		qvertices[u]->unplacedNeighbours += 1;
+		qvertices[v]->neighbours.push_back(u);
+		qvertices[v]->unplacedNeighbours += 1;
+	}
+	original.assign(vertices.begin(), vertices.end());
+
+	std::deque<int> positions;
+	while (vertices.size() > 0)
+	{
+		std::sort(vertices.begin(), vertices.end(), QueueVertex());
+		QueueVertex *vertex = vertices.back();
+
+
+		// update neighbours
+		for (i = 0; i < vertex->neighbours.size(); i++)
+		{
+			int ndx = vertex->neighbours[i];
+
+			original[ndx]->placedNeighbours++;
+			original[ndx]->unplacedNeighbours--;
+		}
+
+		// count left & right crossings
+		if (vertex->placedNeighbours > 0)
+		{
+			int left = 0;
+			std::vector<int> lCrossings;
+			std::vector<int> rCrossings;
+			for (i = 0; i < positions.size(); i++)
+			{
+				int ndx = positions[i];
+
+				if (vertex->hasNeighbour(ndx))
+				{
+					lCrossings.push_back(left);
+					left += original[ndx]->unplacedNeighbours;
+					rCrossings.push_back(left);
+				}
+				else
+					left += original[ndx]->unplacedNeighbours;
+			}
+
+			int leftCrossings = 0;
+			int rightCrossings = 0;
+
+			for (i = 0; i < lCrossings.size(); i++)
+				leftCrossings += lCrossings[i];
+
+			rCrossings.push_back(left);
+			for (i = rCrossings.size() - 1; i > 0 ; i--)
+				rightCrossings += rCrossings[i] - rCrossings[i - 1];
+			//cout << "left: " << leftCrossings << " right: " <<rightCrossings << endl;
+			if (leftCrossings < rightCrossings)
+				positions.push_front(vertex->ndx);
+			else
+				positions.push_back(vertex->ndx);
+
+		}
+		else
+			positions.push_back(vertex->ndx);
+
+		vertices.pop_back();
+	}
+
+	// Circular sifting
+	for (i = 0; i < positions.size(); i++)
+		original[positions[i]]->position = i;
+
+	int step;
+	for (step = 0; step < 5; step++)
+	{
+		for (i = 0; i < m_nodes.size(); i++)
+		{
+			bool stop = false;
+			int switchNdx = -1;
+			QueueVertex *u = original[positions[i]];
+			int vNdx = (i + 1) % m_nodes.size();
+
+			while (!stop)
+			{
+				QueueVertex *v = original[positions[vNdx]];
+
+				int midCrossings = u->neighbours.size() * v->neighbours.size() / 2;
+				int crossings = 0;
+				int j,k;
+				for (j = 0; j < u->neighbours.size(); j++)
+					for (k = 0; k < v->neighbours.size(); k++)
+						if ((original[u->neighbours[j]]->position == v->position) || (original[v->neighbours[k]]->position == u->position))
+							midCrossings = (u->neighbours.size() - 1) * (v->neighbours.size() - 1) / 2;
+						else if ((original[u->neighbours[j]]->position + m_nodes.size() - u->position) % m_nodes.size() < (original[v->neighbours[k]]->position + m_nodes.size() - u->position) % m_nodes.size())
+							crossings++;
+
+				//cout << "v: " <<  v->ndx << " crossings: " << crossings << " u.n.size: " << u->neighbours.size() << " v.n.size: " << v->neighbours.size() << " mid: " << midCrossings << endl;
+				if (crossings > midCrossings)
+					switchNdx = vNdx;
+				else
+					stop = true;
+
+				vNdx = (vNdx + 1) % m_nodes.size();
+			}
+			int j;
+			if (switchNdx > -1)
+			{
+				//cout << "u: " << u->ndx << " switch: " << original[switchNdx]->ndx << endl << endl;
+				positions.erase(positions.begin() + i);
+				positions.insert(positions.begin() + switchNdx, u->ndx);
+
+				for (j = i; j <= switchNdx; j++)
+					original[positions[j]]->position = j;
+			}
+			//else
+			//	cout << "u: " << u->ndx << " switch: " << switchNdx << endl;
+		}
+	}
+
+	QRectF rect = data_rect();
+	int xCenter = rect.width() / 2;
+	int yCenter = rect.height() / 2;
+	int r = (rect.width() < rect.height()) ? rect.width() * 0.38 : rect.height() * 0.38;
+	double fi = PI;
+	double fiStep = 2 * PI / m_nodes.size();
+
+	for (i = 0; i < m_nodes.size(); i++)
+	{
+		m_nodes[positions[i]]->set_x(r * cos(fi) + xCenter);
+		m_nodes[positions[i]]->set_y(r * sin(fi) + yCenter);
+		fi = fi - fiStep;
+	}
+
+	for (std::vector<QueueVertex*>::iterator i = original.begin(); i != original.end(); ++i)
+		delete *i;
+
+	original.clear();
+	vertices.clear();
+	qvertices.clear();
+	return 0;
+}
+
 int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 {
 	int i, j;
