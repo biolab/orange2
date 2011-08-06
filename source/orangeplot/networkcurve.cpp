@@ -33,7 +33,10 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 {
 	Point::paint(painter, option, widget);
 
-	if (m_label.compare("") != 0)
+	NetworkCurve *curve = (NetworkCurve*)parentItem();
+	bool on_marked_only = curve->labels_on_marked_only();
+
+	if (m_label.compare("") != 0 && (!on_marked_only || is_marked()))
 	{
 		QFontMetrics metrics = painter->fontMetrics();
 		int th = metrics.height();
