@@ -335,18 +335,20 @@ QTransform Curve::zoom_transform()
 
 void Curve::cancelAllUpdates()
 {
-    foreach (QFuture<void> f, m_currentUpdate)
+    QMap<UpdateFlag, QFuture< void > >::iterator it = m_currentUpdate.begin();
+    QMap<UpdateFlag, QFuture< void > >::iterator end = m_currentUpdate.end();
+    for (it; it != end; ++it)
     {
-        if (f.isRunning())
+        if (it.value().isRunning())
         {
-            f.cancel();
+            it.value().cancel();
         }
     }
-    foreach (QFuture<void> f, m_currentUpdate)
+    for (it = m_currentUpdate.begin(); it != end; ++it)
     {
-        if (f.isRunning())
+        if (it.value().isRunning())
         {
-            f.waitForFinished();
+            it.value().waitForFinished();
         }
     }
     m_currentUpdate.clear();

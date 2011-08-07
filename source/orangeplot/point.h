@@ -77,7 +77,7 @@ public:
         return Type;
     }
     
-    Point(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    explicit Point(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     Point(int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~Point();
     

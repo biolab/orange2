@@ -9,7 +9,7 @@ class PlotItem : public QGraphicsItem
 {
 
 public:
-    PlotItem(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    explicit PlotItem(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~PlotItem();
     
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);

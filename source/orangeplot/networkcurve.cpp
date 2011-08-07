@@ -450,7 +450,7 @@ int NetworkCurve::circular_crossing_reduction()
 
 
 		// update neighbours
-		for (i = 0; i < vertex->neighbours.size(); i++)
+		for (i = 0; i < vertex->neighbours.size(); ++i)
 		{
 			int ndx = vertex->neighbours[i];
 
@@ -464,7 +464,7 @@ int NetworkCurve::circular_crossing_reduction()
 			int left = 0;
 			std::vector<int> lCrossings;
 			std::vector<int> rCrossings;
-			for (i = 0; i < positions.size(); i++)
+			for (i = 0; i < positions.size(); ++i)
 			{
 				int ndx = positions[i];
 
@@ -481,11 +481,11 @@ int NetworkCurve::circular_crossing_reduction()
 			int leftCrossings = 0;
 			int rightCrossings = 0;
 
-			for (i = 0; i < lCrossings.size(); i++)
+			for (i = 0; i < lCrossings.size(); --i)
 				leftCrossings += lCrossings[i];
 
 			rCrossings.push_back(left);
-			for (i = rCrossings.size() - 1; i > 0 ; i--)
+			for (i = rCrossings.size() - 1; i > 0 ; --i)
 				rightCrossings += rCrossings[i] - rCrossings[i - 1];
 			//cout << "left: " << leftCrossings << " right: " <<rightCrossings << endl;
 			if (leftCrossings < rightCrossings)
@@ -501,13 +501,13 @@ int NetworkCurve::circular_crossing_reduction()
 	}
 
 	// Circular sifting
-	for (i = 0; i < positions.size(); i++)
+	for (i = 0; i < positions.size(); ++i)
 		original[positions[i]]->position = i;
 
 	int step;
-	for (step = 0; step < 5; step++)
+	for (step = 0; step < 5; ++step)
 	{
-		for (i = 0; i < m_nodes.size(); i++)
+		for (i = 0; i < m_nodes.size(); ++i)
 		{
 			bool stop = false;
 			int switchNdx = -1;
@@ -521,12 +521,12 @@ int NetworkCurve::circular_crossing_reduction()
 				int midCrossings = u->neighbours.size() * v->neighbours.size() / 2;
 				int crossings = 0;
 				int j,k;
-				for (j = 0; j < u->neighbours.size(); j++)
-					for (k = 0; k < v->neighbours.size(); k++)
+				for (j = 0; j < u->neighbours.size(); ++j)
+					for (k = 0; k < v->neighbours.size(); ++k)
 						if ((original[u->neighbours[j]]->position == v->position) || (original[v->neighbours[k]]->position == u->position))
 							midCrossings = (u->neighbours.size() - 1) * (v->neighbours.size() - 1) / 2;
 						else if ((original[u->neighbours[j]]->position + m_nodes.size() - u->position) % m_nodes.size() < (original[v->neighbours[k]]->position + m_nodes.size() - u->position) % m_nodes.size())
-							crossings++;
+							++crossings;
 
 				//cout << "v: " <<  v->ndx << " crossings: " << crossings << " u.n.size: " << u->neighbours.size() << " v.n.size: " << v->neighbours.size() << " mid: " << midCrossings << endl;
 				if (crossings > midCrossings)
@@ -543,7 +543,7 @@ int NetworkCurve::circular_crossing_reduction()
 				positions.erase(positions.begin() + i);
 				positions.insert(positions.begin() + switchNdx, u->ndx);
 
-				for (j = i; j <= switchNdx; j++)
+				for (j = i; j <= switchNdx; ++j)
 					original[positions[j]]->position = j;
 			}
 			//else
@@ -558,15 +558,14 @@ int NetworkCurve::circular_crossing_reduction()
 	double fi = PI;
 	double fiStep = 2 * PI / m_nodes.size();
 
-	for (i = 0; i < m_nodes.size(); i++)
+	for (i = 0; i < m_nodes.size(); ++i)
 	{
 		m_nodes[positions[i]]->set_x(r * cos(fi) + xCenter);
 		m_nodes[positions[i]]->set_y(r * sin(fi) + yCenter);
 		fi = fi - fiStep;
 	}
 
-	for (std::vector<QueueVertex*>::iterator i = original.begin(); i != original.end(); ++i)
-		delete *i;
+        qDeleteAll(original);
 
 	original.clear();
 	vertices.clear();
@@ -643,7 +642,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	}
 
 	// iterations
-	for (i = 0; i < steps; i++)
+	for (i = 0; i < steps; ++i)
 	{
 		foreach (const NodeItem* node, m_nodes)
 		{

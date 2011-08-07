@@ -20,7 +20,6 @@ set(orangeplot_SRCS
     unconnectedlinescurve.cpp 
     networkcurve.cpp
     plot.cpp 
-    sceneeventfilter.cpp
 )
 qt4_automoc(${orangeplot_SRCS})
 

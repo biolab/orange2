@@ -5,7 +5,6 @@
 #include <QtCore/QDebug>
 #include <QtCore/qmath.h>
 #include <limits>
-#include "sceneeventfilter.h"
 
 inline uint qHash(const DataPoint& pos)
 {

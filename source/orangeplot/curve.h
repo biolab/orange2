@@ -99,7 +99,7 @@ public:
    * @param scene if this is not 0, the Curve is automatically added to it
    **/
   Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
-  Curve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+  explicit Curve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
   /**
    * Default destructor
    *
