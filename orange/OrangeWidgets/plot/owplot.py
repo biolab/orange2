@@ -103,6 +103,25 @@ class OWPlot(orangeplot.Plot):
         
         .. automethod:: inv_transform
         
+        .. method:: nearest_point(pos)
+        
+            Returns the point nearest to ``pos``, or ``None`` if no point is close enough. 
+            
+            :param pos: The position in scene coordinates
+            :type pos: QPointF
+            
+            :rtype: :obj:`.OWPoint`
+            
+        .. method:: point_at(pos)
+        
+            If there is a point with data coordinates equal to ``pos``, if is returned. 
+            Otherwise, this function returns None. 
+        
+            :param pos: The position in data coordinates
+            :type pos: tuple of float float
+            
+            :rtype: :obj:`.OWPoint`
+        
         
     **Data curves**
         
@@ -113,9 +132,15 @@ class OWPlot(orangeplot.Plot):
         
         .. automethod:: add_marker
         
-        .. method:: add_item
+        .. method:: add_item(item)
         
-            Adds any PlotItem to this plot
+            Adds any PlotItem ``item`` to this plot. 
+            Calling this function directly is useful for adding a :obj:`.Marker` or another object that does not have to appear in the legend. 
+            For data curves, consider using :meth:`add_custom_curve` instead. 
+            
+        .. method:: plot_items()
+        
+            Returns the list of all plot items added to this graph with :meth:`add_item` or :meth:`.PlotItem.attach`. 
             
     **Axes**
     
@@ -128,6 +153,73 @@ class OWPlot(orangeplot.Plot):
         .. automethod:: set_axis_labels
         
         .. automethod:: set_axis_scale
+        
+    **Settings**
+    
+	.. attribute:: gui
+	
+            An :obj:`.OWPlotGUI` object associated with this graph
+            
+    **Point Selection and Marking**
+    
+        There are four possible selection behaviors used for selecting or marking points in OWPlot. 
+        They are used in :meth:`select_points` and :meth:`mark_points` and are the same for both operations. 
+    
+        .. data:: AddSelection
+            
+            The points are added to the selection, without affected the currently selected points
+            
+        .. data:: RemoveSelection
+    
+            The points are removed from the selection, without affected the currently selected points
+            
+        .. data:: ToggleSelection
+        
+            The points' selection state is toggled
+            
+        .. data:: ReplaceSelection
+        
+            The current selection is replaced with the new one
+            
+        .. note:: There are exacly the same functions for point selection and marking. 
+                For simplicity, they are only documented once.  
+
+        .. method:: select_points(area, behavior)
+        .. method:: mark_points(area, behavior)
+        
+            Selects or marks all points inside the ``area``
+        
+            :param area: The newly selected/marked area
+            :type area: QRectF or QPolygonF
+            
+            :param behavior: :data:`AddSelection`, :data:`RemoveSelection`, :data:`ToggleSelection` or :data:`ReplaceSelection` 
+            :type behavior: int
+            
+        .. method:: unselect_all_points()
+        .. method:: unmark_all_points()
+        
+            Unselects or unmarks all the points in the plot
+            
+        .. method:: selected_points()
+        .. method:: marked_points()
+        
+            Returns a list of all selected or marked points
+            
+            :rtype: list of OWPoint
+            
+        .. method:: selected_points(xData, yData)
+        
+            For each of the point specified by ``xData`` and ``yData``, the point's selection state is returned. 
+            
+            :param xData: The list of x coordinates
+            :type xData: list of float
+            
+            :param yData: The list of y coordinates
+            :type yData: list of float
+            
+            :rtype: list of int
+            
+        
     
     """
     def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft] ):
@@ -228,7 +320,9 @@ class OWPlot(orangeplot.Plot):
         self.discPalette = ColorPaletteGenerator()
         
         self.gui = OWPlotGUI(self)
-
+	"""
+            An :obj:`.OWPlotGUI` object associated with this plot
+	"""
         self.activate_zooming()
         self.selection_behavior = self.AddSelection
         self.replot()
@@ -260,7 +354,17 @@ class OWPlot(orangeplot.Plot):
             Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from data coordinates
             to scene coordinates. 
             
-            If ``zoom`` is ``True``, the point is additionally transformed with :attr:`zoom_transform`
+            :param point: The point in data coordinates
+            :type point: tuple or QPointF
+            
+            :param axes: The pair of axes along which to transform the point. If none are specified, (xBottom, yLeft) will be used. 
+            :type axes: tuple of float float
+            
+            :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation.
+            :type zoom: int
+            
+            :return: The transformed point in scene coordinates
+            :type: tuple of float float
         '''
         if type(point) == tuple:
             (x, y) = point
@@ -276,10 +380,20 @@ class OWPlot(orangeplot.Plot):
         
     def map_from_graph(self, point, axes = None, zoom = False):
         '''
-            Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from scene coordinates
-            to data coordinates. 
+            Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from data coordinates
+            to scene coordinates. 
             
-            If ``zoom`` is ``True``, the point is additionally transformed with :attr:`zoom_transform`
+            :param point: The point in data coordinates
+            :type point: tuple or QPointF
+            
+            :param axes: The pair of axes along which to transform the point. If none are specified, (xBottom, yLeft) will be used. 
+            :type axes: tuple of float float
+            
+            :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation.
+            :type zoom: int
+            
+            :returns: The transformed point in data coordinates
+            :rtype: tuple of float float
         '''
         if type(point) == tuple:
             (x, y) = point
@@ -1016,6 +1130,11 @@ class OWPlot(orangeplot.Plot):
         return self._transform_cache[(x_axis, y_axis)]
         
     def transform(self, axis_id, value):
+        """
+            Transforms the ``value`` from data to scene coordinates along the axis ``axis_id``. 
+            
+            This function always ignores zoom. If you need to account for zooming, use :meth:`map_to_graph`. 
+        """
         if axis_id in XAxes:
             size = self.graph_area.width()
             margin = self.graph_area.left()
@@ -1029,6 +1148,11 @@ class OWPlot(orangeplot.Plot):
             return margin + (value-m)/(M-m) * size
         
     def inv_transform(self, axis_id, value):
+        """
+            Transforms the ``value`` from scene to data coordinates along the axis ``axis_id``. 
+            
+            This function always ignores zoom. If you need to account for zooming, use :meth:`map_from_graph`. 
+        """
         if axis_id in XAxes:
             size = self.graph_area.width()
             margin = self.graph_area.left()

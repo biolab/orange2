@@ -66,7 +66,7 @@ public:
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
     void unmark_all_points();
     
-    QList< int > selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform);
+    QList< int > selected_points(const QList< double > x_data, const QList< double > y_data);
     QList< Point* > selected_points();
     Point* nearest_point(const QPointF& pos);
     Point* point_at(const DataPoint& pos);

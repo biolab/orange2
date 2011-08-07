@@ -237,7 +237,7 @@ void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior
     emit selection_changed();
 }
 
-QList< int > Plot::selected_points(const QList< double > x_data, const QList< double > y_data, const QTransform& transform)
+QList< int > Plot::selected_points(const QList< double > x_data, const QList< double > y_data)
 {
     Q_ASSERT(x_data.size() == y_data.size());
     const int n = qMin(x_data.size(), y_data.size());

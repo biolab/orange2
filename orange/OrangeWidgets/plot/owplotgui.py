@@ -6,6 +6,8 @@
 GUI elements for plots (``owplotgui``)
 ######################################
 
+This module contains functions and classes for creating GUI elements commonly used for plots. 
+
 .. autoclass:: OrientedWidget
     :show-inheritance:
     
@@ -141,18 +143,6 @@ class OWButton(QToolButton):
         
         :param plot: The object whose attributes will be modified
         :type plot: :obj:`.OWPlot`
-        
-        :param attr_name: Name of attribute which will be set when the button is clicked. 
-                          If this parameter is empty or None, no attribute will be set. 
-        :type attr_name: str
-        
-        :param attr_value: The value that will be assigned to the ``attr_name`` when the button is clicked. 
-        :type attr: any
-        
-        :param callback: Function to be called when the button is clicked. 
-                         If a string is passed as ``callback``, a method by that name of ``plot`` will be called. 
-                         If this parameter is empty or None, no function will be called
-        :type callback: str or function
     '''
     def __init__(self, plot, attr_name, attr_value, callback, parent):
         QToolButton.__init__(self, parent)
@@ -181,7 +171,54 @@ class OWPlotGUI:
         This class contains functions to create common user interface elements (QWidgets)
         for configuration and interaction with the ``plot``. 
         
-        It provides shorter version of some methods in :obj:`.OWGUI` that are directly related to an :obj:`.OWPlot` object. 
+        It provides shorter versions of some methods in :obj:`.OWGUI` that are directly related to an :obj:`.OWPlot` object. 
+        
+        Normally, you don't have to construct this class manually. Instead, first create the plot, 
+        then use the :attr:`.OWPlot.gui` attribute. 
+        
+        Most methods in this class have similar arguments, so they are explaned here in a single place. 
+        
+        :param widget: The parent widget which will contain the newly created widget. 
+        :type widget: QWidget
+        
+        :param id: If ``id`` is an ``int``, a button is constructed from the default table. 
+                   Otherwise, ``id`` must be tuple with 5 or 6 elements. These elements
+                   are explained in the next table. 
+        :type id: int or tuple
+        
+        :param ids: A list of widget identifiers
+        :type ids: list of id
+        
+        :param text: The text displayed on the widget
+        :type text: str
+        
+        When using widgets that are specific to your visualization and not included here, you have to provide your
+        own widgets id's. They are a tuple with the following members:
+        
+        :param id: An optional unique identifier for the widget. 
+                   This is only needed if you want to retrive this widget using :obj:`.OWToolbar.buttons`. 
+        :type id: int or str
+        
+        :param text: The text to be displayed on or next to the widget
+        :type text: str
+        
+        :param attr_name: Name of attribute which will be set when the button is clicked. 
+                          If this widget is checkable, its check state will be set
+                          according to the current value of this attribute. 
+                          If this parameter is empty or None, no attribute will be read or set. 
+        :type attr_name: str
+        
+        :param attr_value: The value that will be assigned to the ``attr_name`` when the button is clicked. 
+        :type attr: any
+        
+        :param callback: Function to be called when the button is clicked. 
+                         If a string is passed as ``callback``, a method by that name of ``plot`` will be called. 
+                         If this parameter is empty or ``None``, no function will be called
+        :type callback: str or function
+        
+        :param icon_name: The filename of the icon for this widget, without the '.png' suffix. 
+        :type icon_name: str
+        
     '''
     def __init__(self, plot):
         self._plot = plot
@@ -355,16 +392,6 @@ class OWPlotGUI:
     def tool_button(self, id, widget):
         '''
             Creates an :obj:`.OWButton` and adds it to the parent ``widget``. 
-            
-            :param id: If ``id`` is an ``int``, a button is constructed from the default table. 
-                       Otherwise, ``id`` must be tuple of size 4 or 5 with members. The first is optional and 
-                       is a unique identifier for the button, the second is its name,
-                       the next three are the ``attr_name``, ``attr_value`` and ``callback`` arguments to :obj:`.OWButton`, 
-                       and the last one is the icon name
-            :type if: int or tuple
-            
-            :param widget: The button's parent widget
-            :type widget: QWidget
         '''
         if type(id) == int:
             name, attr_name, attr_value, callback, icon_name = self._buttons[id]
@@ -406,5 +433,4 @@ class OWPlotGUI:
         t.buttons[self.Select].downChanged.connect(t.groups[self.SelectionOne].setEnabled)
         t.buttons[self.Select].click()
         t.buttons[self.SelectionOne].click()
-        return t
-    
+        return t    
