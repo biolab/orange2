@@ -73,7 +73,7 @@ class NetworkCurve(orangeplot.NetworkCurve):
         
 class OWNxCanvas(OWPlot):
     def __init__(self, master, parent=None, name="None"):
-        OWPlot.__init__(self, parent, name)
+        OWPlot.__init__(self, parent, name, axes=[])
         self.master = master
         self.parent = parent
         
