@@ -1,9 +1,9 @@
 """
-<name>Label Powerset</name>
-<description>LabelPowerset Learner/multilabel.</description>
+<name>ML-kNN</name>
+<description>ML-kNN Learner/multilabel.</description>
 <icon>icons/Unknown.png</icon>
 <contact>Wencan Luo (wencanluo.cn(@at@)gmail.com)</contact>
-<priority>100</priority>
+<priority>200</priority>
 """
 from OWWidget import *
 import OWGUI
@@ -13,34 +13,38 @@ from orngWrap import PreprocessedLearner
 import Orange
 import Orange.multilabel.label as label
 
-class OWLP(OWWidget):
-    settingsList = ["name"]
+class OWMLkNN(OWWidget):
+    settingsList = ["name","k"]
 
-    def __init__(self, parent=None, signalManager = None, name='Label Powerset'):
+    def __init__(self, parent=None, signalManager = None, name='ML-kNN'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
         self.callbackDeposit = []
 
         self.inputs = [("Examples", ExampleTable, self.set_data), 
-                       ("Preprocess", PreprocessedLearner, self.set_preprocessor),
-                       ("Binary Classification", Orange.classification.Learner, self.set_base_learner)
+                       ("Preprocess", PreprocessedLearner, self.set_preprocessor)
                        ]
-        self.outputs = [("Learner", orange.Learner),("LabelPowerset Classifier", Orange.multilabel.LabelPowersetClassifier)]
+        self.outputs = [("Learner", orange.Learner),("ML-kNN Classifier", Orange.multilabel.MLkNNClassifier)]
 
         # Settings
-        self.name = 'Label Powerset'
-        self.base_learner = Orange.core.BayesLearner;
+        self.name = 'ML-kNN'
+        self.k = 1
         
         self.loadSettings()
 
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
-        self.set_learner()                   # this just sets the learner, no data
+        self.set_learner()                  # this just sets the learner, no data
                                             # has come to the input yet
 
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
+        OWGUI.separator(self.controlArea)
+
+        wbN = OWGUI.widgetBox(self.controlArea, "Neighbours")
+        OWGUI.spin(wbN, self, "k", 1, 100, 1, None, "Number of neighbours", orientation="horizontal")
+        
         OWGUI.separator(self.controlArea)
 
         OWGUI.button(self.controlArea, self, "&Apply", callback=self.set_learner, disabled=0, default=True)
@@ -67,13 +71,9 @@ class OWLP(OWWidget):
     def set_preprocessor(self, pp):
         self.preprocessor = pp
         self.set_learner()
-        
-    def set_base_learner(self,base_learner):
-        self.base_learner = base_learner
-        self.set_learner()
-    
+         
     def set_learner(self):
-        self.learner = Orange.multilabel.BinaryRelevanceLearner(base_learner = self.base_learner)
+        self.learner = Orange.multilabel.BinaryRelevanceLearner(k = self.k)
         if self.preprocessor:
             self.learner = self.preprocessor.wrapLearner(self.learner)
         self.learner.name = self.name
@@ -91,7 +91,7 @@ class OWLP(OWWidget):
             except Exception, (errValue):
                 self.classifier = None
                 self.error(str(errValue))
-        self.send("LabelPowerset Classifier", self.classifier)
+        self.send("ML-kNN Classifier", self.classifier)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -100,7 +100,7 @@ class OWLP(OWWidget):
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWLP()
+    ow=OWMLkNN()
 
     dataset = Orange.data.Table('../../doc/datasets/multidata.tab')
     ow.set_data(dataset)

@@ -540,9 +540,9 @@ def proportion_test(learners, examples, learnProp, times=10,
     
     #if classVar.varType == Orange.data.Type.Discrete:
     #    values = list(classVar.values)
-    #    baseValue = classVar.baseValue
+    #    base_value = classVar.base_value
     #else:
-    #    baseValue = values = None
+    #    base_value = values = None
     test_results = ExperimentResults(times, [l.name for l in learners], values, weight!=0, base_value)
 
     for time in range(times):
@@ -1031,15 +1031,15 @@ def test_on_data(classifiers, testset, test_results=None, iteration_number=0, st
             classVar = testset.domain.classVar
             if testset.domain.classVar.varType == Orange.data.Type.Discrete:
                 values = classVar.values.native()
-                baseValue = classVar.baseValue
+                base_value = classVar.baseValue
             else:
                 values = None
-                baseValue = -1
+                base_value = -1
         else:
              values = label.get_label_names(testset)
              base_value = None
         test_results=ExperimentResults(1, [l.name for l in classifiers], values,
-                                       testweight!=0, baseValue)
+                                       testweight!=0, base_value)
 
     examples = getattr(test_results, "examples", False)
     if examples and len(examples):

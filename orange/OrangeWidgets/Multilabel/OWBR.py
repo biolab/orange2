@@ -1,6 +1,6 @@
 """
 <name>Binary Relevance</name>
-<description>Binary Relevance learner/multilabel.</description>
+<description>Binary Relevance Learner/multilabel.</description>
 <icon>icons/Unknown.png</icon>
 <contact>Wencan Luo (wencanluo.cn(@at@)gmail.com)</contact>
 <priority>25</priority>
