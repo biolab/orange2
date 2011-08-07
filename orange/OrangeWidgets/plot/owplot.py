@@ -1090,7 +1090,7 @@ class OWPlot(orangeplot.Plot):
     def get_selected_points(self, xData, yData, validData):
         selected = []
         unselected = []
-        for i in self.selected_points(xData, yData, self.map_transform):
+        for i in self.selected_points(xData, yData):
             selected.append(i)
             unselected.append(not i)
         return selected, unselected
