@@ -51,7 +51,7 @@ def resize_plot_item_list(lst, size, item_type, parent):
         as their parent item.
         
         :param lst: The list to be resized
-        :type lst: List of QGraphicsItems
+        :type lst: list of QGraphicsItem
         
         :param size: The needed size of the list
         :type size: int
@@ -62,7 +62,7 @@ def resize_plot_item_list(lst, size, item_type, parent):
         :param parent: Any new items will have this as their parent item
         :type parent: QGraphicsItem
         
-        :rtype: List of QGraphicsItems
+        :rtype: list of QGraphicsItem
         :returns: The resized list
     """
     n = len(lst)
@@ -113,22 +113,57 @@ def move_item_xy(item, x, y, duration = None):
     '''
     move_item(item, QPointF(x, y), duration)
         
-#A dynamic tool tip class
 class TooltipManager:
-    # Creates a new dynamic tool tip.
-    # The second argument is a OWGraph instance
-    def __init__(self, graph):
-        self.graph = graph
+    """
+        A dynamic tool tip manager. 
+        
+        :param plot: The plot used for transforming the coordinates
+        :type plot: :obj:`.OWPlot`
+    """
+    def __init__(self, plot):
+        self.graph = plot
         self.positions=[]
         self.texts=[]
 
-    # Adds a tool tip. If a tooltip with the same name already exists, it updates it instead of adding a new one.
     def addToolTip(self, x, y, text, customX = 0, customY = 0):
+        """
+            Adds a tool tip. If a tooltip with the same name already exists, it updates it instead of adding a new one.
+            
+            :param x: The x coordinate of the tip, in data coordinates. 
+            :type x: float
+            
+            :param y: The y coordinate of the tip, in data coordinates. 
+            :type y: float
+            
+            :param text: The text to show in the tip. 
+            :type text: str or int
+            
+            :param customX: The maximum horizontal distance in pixels from the point (x,y) at which to show the tooltip. 
+            :type customX: float
+            
+            :param customY: The maximum vertical distance in pixels from the point (x,y) at which to show the tooltip. 
+            :type customY: float
+            
+            If ``customX`` and ``customY`` are omitted, a default of 6 pixels is used. 
+        """
         self.positions.append((x,y, customX, customY))
         self.texts.append(text)
 
     #Decides whether to pop up a tool tip and which text to pop up
     def maybeTip(self, x, y):
+        """
+            Decides whether to pop up a tool tip and which text to show in it.
+            
+            :param x: the x coordinate of the mouse in data coordinates. 
+            :type x: float
+            
+            :param y: the y coordinate of the mouse in data coordinates. 
+            :type y: float
+            
+            :returns: A tuple consisting of the ``text``, ``x`` and ``y`` arguments to :meth:`addToolTip` of the
+                      closest point. 
+            :rtype: tuple of (int or str), float, float
+        """
         if len(self.positions) == 0: return ("", -1, -1)
         dists = [max(abs(x-position[0])- position[2],0) + max(abs(y-position[1])-position[3], 0) for position in self.positions]
         nearestIndex = dists.index(min(dists))
@@ -145,11 +180,31 @@ class TooltipManager:
                 return ("", None, None)
 
     def removeAll(self):
+        """
+            Removes all tips
+        """
         self.positions = []
         self.texts = []
 
-# Convenience curve classes
 class PolygonCurve(OWCurve):
+    """
+        A plot item that shows a filled or empty polygon. 
+        
+        :param pen: The pen used to draw the polygon's outline
+        :type pen: :obj:`.QPen`
+        
+        :param brush: The brush used to paint the polygon's inside
+        :type brush: :obj:`.QBrush
+        
+        :param xData: The list of x coordinates
+        :type xData: list of float
+
+        :param yData: The list of y coordinates
+        :type yData: list of float
+        
+        :param tooltip: The tool tip shown when hovering over this curve
+        :type tooltip: str
+    """
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = [], yData = [], tooltip = None):
         OWCurve.__init__(self, xData, yData, tooltip=tooltip)
         self._data_polygon = self.polygon_from_data(xData, yData)
@@ -164,6 +219,12 @@ class PolygonCurve(OWCurve):
         
     @staticmethod
     def polygon_from_data(xData, yData):
+        """
+            Creates a polygon from a list of x and y coordinates. 
+            
+            :returns: A polygon with point corresponding to ``xData`` and ``yData``.
+            :rtype: QPolygonF
+        """
         if xData and yData:
             n = min(len(xData), len(yData))
             p = QPolygonF(n+1)
@@ -179,6 +240,12 @@ class PolygonCurve(OWCurve):
         OWCurve.set_data(self, xData, yData)
            
 class RectangleCurve(OWCurve):
+    """
+        A plot item that shows a rectangle. 
+        
+        This class accepts the same options as :obj:`.PolygonCurve`. 
+        The rectangle is calculated as the smallest rectangle that contains all points in ``xData`` and ``yData``. 
+    """
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None, tooltip = None):
         OWCurve.__init__(self, xData, yData, tooltip=tooltip)
         self.set_pen(pen)
@@ -191,6 +258,24 @@ class RectangleCurve(OWCurve):
         self._item.setBrush(self.brush())
         
 class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
+    """
+        A plot item that shows a series of unconnected straight lines. 
+        
+        :param name: The name of this curve. :seealso: :attr:`.OWCurve.name`
+        :type name: str
+        
+        :param pen: The pen used to draw the lines
+        :type pen: QPen
+        
+        :param xData: The list of x coordinates
+        :type xData: list of float
+
+        :param yData: The list of y coordinates
+        :type yData: list of float
+        
+        The data should contain an even number of elements. Lines are drawn between the `n`-th and 
+        `(n+1)`-th point for each even `n`. 
+    """
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
         orangeplot.UnconnectedLinesCurve.__init__(self, xData, yData)
         if pen:
@@ -198,6 +283,24 @@ class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
         self.name = name
         
 class CircleCurve(OWCurve):
+    """
+        Displays a circle on the plot
+        
+        :param pen: The pen used to draw the outline of the circle
+        :type pen: QPen
+        
+        :param brush: The brush used to paint the inside of the circle
+        :type brush: QBrush
+        
+        :param xCenter: The x coordinate of the circle's center
+        :type xCenter: float
+        
+        :param yCenter: The y coordinate of the circle's center
+        :type yCenter: float
+        
+        :param radius: The circle's radius
+        :type radius: float
+    """
     def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.NoBrush), xCenter = 0.0, yCenter = 0.0, radius = 1.0):
         OWCurve.__init__(self)
         self._item = QGraphicsEllipseItem(self)
@@ -218,6 +321,33 @@ class CircleCurve(OWCurve):
         return QRectF(x-r, y-r, 2*r, 2*r)
         
 class Marker(orangeplot.PlotItem):
+    """
+        Displays a text marker on the plot. 
+        
+        :param text: The text to display. It can be HTML-formatted
+        :type tex: str
+        
+        :param x: The x coordinate of the marker's position
+        :type x: float
+        
+        :param y: The y coordinate of the marker's position
+        :type y: float
+        
+        :param align: The text alignment
+        :type align: 
+        
+        :param bold: If ``True``, the text will be show bold. 
+        :type bold: int
+        
+        :param color: The text color
+        :type color: QColor
+        
+        :param brushColor: The color of the brush user to paint the background
+        :type color: QColor
+        
+        :param size: Font size
+        :type size: int
+    """
     def __init__(self, text, x, y, align, bold = 0, color = None, brushColor = None, size=None):
         orangeplot.PlotItem.__init__(self)
         self._item = QGraphicsTextItem(text, parent=self)
@@ -233,6 +363,24 @@ class Marker(orangeplot.PlotItem):
         self._item.setPos(self.graph_transform().map(self._data_point))
 
 class ProbabilitiesItem(orangeplot.PlotItem):
+    """
+        Displays class probabilities in the background
+        
+        :param classifier: The classifier for which the probabilities are calculated
+        :type classifier: orange.P2NN
+        
+        :param granularity: The size of individual cells
+        :type granularity: int
+        
+        :param scale: The data scale factor
+        :type scale: float
+        
+        :param spacing: The space between cells
+        :param spacing: int
+        
+        :param rect: The rectangle into which to draw the probabilities. If unspecified, the entire plot is used. 
+        :type rect: QRectF
+    """
     def __init__(self, classifier, granularity, scale, spacing, rect=None):
         orangeplot.PlotItem.__init__(self)
         self.classifier = classifier
@@ -299,33 +447,55 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         'setPen' : 'set_pen'
     })
 class PlotGrid(orangeplot.PlotItem):
-    def __init__(self, plot):
+    """
+        Draws a grid onto the plot
+        
+        :param plot: If specified, the grid will be attached to the ``plot``. 
+        :type plot: :obj:`.OWPlot`
+    """
+    def __init__(self, plot = None):
         orangeplot.PlotItem.__init__(self)
         self._x_enabled = True
         self._y_enabled = True
         self._path_item = QGraphicsPathItem(self)
         self.set_in_background(True)
-        self.attach(plot)
-        
+        if plot:
+            self.attach(plot)
+            
     def set_x_enabled(self, b):
+        """
+            Enables or disabled vertial grid lines
+        """
         if b < 0:
             b = not self._x_enabled
         self._x_enabled = b
         self.update_properties()
         
     def is_x_enabled(self):
+        """
+            Returns whether vertical grid lines are enabled
+        """
         return self._x_enabled
         
     def set_y_enabled(self, b):
+        """
+            Enables or disabled horizontal grid lines
+        """
         if b < 0:
             b = not self._y_enabled
         self._y_enabled = b
         self.update_properties()
         
     def is_y_enabled(self):
+        """
+            Returns whether horizontal grid lines are enabled
+        """
         return self._y_enabled
         
     def set_pen(self, pen):
+        """
+            Sets the pen used for drawing the grid lines
+        """
         self._path_item.setPen(pen)
         
     def update_properties(self):

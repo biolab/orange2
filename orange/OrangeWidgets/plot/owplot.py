@@ -1,10 +1,8 @@
 '''
 
-.. index:: plot
-
-##############################
+#################
 Plot (``owplot``)
-##############################
+#################
 
 .. autoclass:: OrangeWidgets.plot.OWPlot
     
@@ -357,7 +355,8 @@ class OWPlot(orangeplot.Plot):
             :param point: The point in data coordinates
             :type point: tuple or QPointF
             
-            :param axes: The pair of axes along which to transform the point. If none are specified, (xBottom, yLeft) will be used. 
+            :param axes: The pair of axes along which to transform the point. 
+                         If none are specified, (xBottom, yLeft) will be used. 
             :type axes: tuple of float float
             
             :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation.
@@ -786,6 +785,12 @@ class OWPlot(orangeplot.Plot):
         self.viewport().update()
         
     def update_axes(self, zoom_only=False):
+        """
+            Updates the axes. 
+            
+            If ``zoom_only`` is ``True``, only the positions of the axes and their labels are recalculated. 
+            Otherwise, all their labels are updated. 
+        """
         for id, item in self.axes.iteritems():
             if item.scale is None and item.labels is None:
                 item.auto_range = self.bounds_for_axis(id)
@@ -1041,6 +1046,9 @@ class OWPlot(orangeplot.Plot):
             
     @staticmethod
     def transform_from_rects(r1, r2):
+        """
+            Returns a QTransform that maps from rectangle ``r1`` to ``r2``. 
+        """
         if r1 is None or r2 is None:
             return QTransform()
         if r1.width() == 0 or r1.height() == 0 or r2.width() == 0 or r2.height() == 0:
@@ -1088,6 +1096,9 @@ class OWPlot(orangeplot.Plot):
         return selected, unselected
         
     def add_selection(self, reg):
+        """
+            Selects all points in the region ``reg`` using the current :attr: `selection_behavior`. 
+        """
         self.select_points(reg, self.selection_behavior)
         self.viewport().update()
         if self.auto_send_selection_callback:
@@ -1103,6 +1114,9 @@ class OWPlot(orangeplot.Plot):
         return (QPointF(p1)-QPointF(p2)).manhattanLength() < self.polygon_close_treshold
         
     def data_rect_for_axes(self, x_axis = xBottom, y_axis = yLeft):
+        """
+            Calculates the bounding rectangle in data coordinates for the axes ``x_axis`` and ``y_axis``. 
+        """
         if x_axis in self.axes and y_axis in self.axes:
             x_min, x_max = self.bounds_for_axis(x_axis, try_auto_scale=False)
             y_min, y_max = self.bounds_for_axis(y_axis, try_auto_scale=False)
@@ -1120,6 +1134,9 @@ class OWPlot(orangeplot.Plot):
         return r
         
     def transform_for_axes(self, x_axis = xBottom, y_axis = yLeft):
+        """
+            Returns the graph transform that maps from data to scene coordinates using axes ``x_axis`` and ``y_axis``. 
+        """
         if not (x_axis, y_axis) in self._transform_cache:
             # We must flip the graph area, becase Qt coordinates start from top left, while graph coordinates start from bottom left
             a = QRectF(self.graph_area)

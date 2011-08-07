@@ -9,7 +9,7 @@ Curve (``owcurve``)
     
     .. method:: attach(plot)
     
-        Attaches this item to ``plot``. 
+        Attaches this item to ``plot``. The Plot takes the ownership of this item. 
     
         :param plot: the plot to which to add this item
         :type plot: :obj:`.OWPlot`
@@ -18,7 +18,12 @@ Curve (``owcurve``)
         
     .. method:: detach()
         
-        Remove this item from its plot
+        Removes this item from its plot. The item's ownership is returned to Python. 
+        
+    .. method:: plot()
+    
+        :returns: The plot this item is attached to. If the item is not attached to any plot, ``None`` is returned. 
+        :rtype: :obj:`.OWPlot`
         
     .. method:: data_rect()
         
@@ -28,7 +33,57 @@ Curve (``owcurve``)
         
         :param rect: The new bounding rectangle in data coordinates
         :type rect: :obj:`.QRectF`
-
+        
+    .. method:: set_graph_transform(transform)
+    
+        Sets the graph transform (the transformation that maps from data to plot coordinates) for this item.
+        
+    .. method:: graph_transform()
+    
+        :returns: The current graph transformation.
+        :rtype: QTransform
+        
+    .. method:: set_zoom_transform(transform)
+    
+        Sets the zoom transform (the transformation that maps from plot to scene coordinates) for this item.
+        
+    .. method:: zoom_transform()
+    
+        :returns: The current zoom transformation.
+        :rtype: QTransform
+        
+    .. method:: set_axes(x_axis, y_axis)
+    
+        Sets the pair of axes used for positioning this item. 
+        
+    .. method:: axes()
+        
+        :returns: The item's pair of axes
+        :rtype: tuple of int int
+        
+    .. method:: update_properties()
+    
+        Called by the plot, this function is supposed to updates the item's internal state to match its settings. 
+        
+        The default implementation does nothing and shold be reimplemented by subclasses. 
+        
+    .. method:: register_points()
+        
+        If this item constains any points (of type :obj:`OWPoint`), add them to the plot in this function.
+        
+        The default implementation does nothing. 
+        
+    .. method:: set_in_background(background)
+    
+        If ``background`` is ``True``, the item is moved to be background of this plot, behind other items and axes. 
+        Otherwise, it's brought to the front, in front of axes. 
+        
+        The default in ``False``, so that items apper in front of axes. 
+        
+    .. method:: is_in_background()
+    
+        Returns if item is in the background, set with :meth:`set_in_background`. 
+        
 .. autoclass:: OWCurve
     :members:
     :show-inheritance:
@@ -82,13 +137,7 @@ class OWCurve(orangeplot.Curve):
         .. attribute:: name
             :type: str
 
-            The name of the curve, used in the legend or in tooltips
-            
-        .. method:: update_properties()
-        
-            Called by the plot, this function updates the curve's internal state to match its settings. 
-            
-            The default implementation moves creates the points and sets their position, size, shape and color. 
+            The name of the curve, used in the legend or in tooltips. 
             
         .. method:: set_data(x_data, y_data)
         
