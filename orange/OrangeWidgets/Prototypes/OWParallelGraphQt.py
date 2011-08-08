@@ -48,6 +48,8 @@ class OWParallelGraph(OWPlot, orngScaleData):
     def updateData(self, attributes, midLabels = None, updateAxisScale = 1):
         if attributes != self.visualizedAttributes:
             self.selectionConditions = {}       # reset selections
+            
+        self.clear()
 
         self.visualizedAttributes = []
         self.visualizedMidLabels = []
@@ -185,14 +187,16 @@ class OWParallelGraph(OWPlot, orngScaleData):
         # draw vertical lines that represent attributes
         self.remove_all_axes()
         for i in range(len(attributes)):
+            id = UserAxis + i
 	    self.add_axis(UserAxis + i, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd)
+	    self.axes[id].always_horizontal_text = True
             if self.showAttrValues == 1:
                 attr = self.dataDomain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
-		    self.set_axis_scale(UserAxis + i, 0.0-0.01, 1.0+0.01)
+		    self.set_axis_scale(id, 0.0-0.01, 1.0+0.01)
                 elif attr.varType == orange.VarTypes.Discrete:
 		    attrVals = getVariableValuesSorted(self.dataDomain[attributes[i]])
-		    self.set_axis_labels(UserAxis + i, attrVals)
+		    self.set_axis_labels(id, attrVals)
 
         # ##############################################
         # show lines that represent standard deviation or quartiles
@@ -538,36 +542,21 @@ class ParallelCoordinatesCurve(OWCurve):
 
     def update_properties(self):
 	if self.fitted:
-	    self._item.setPath(selg.cubicPath())
+	    path = self.cubicPath()
 	else:
 	    path = QPainterPath()
 	    for x, y in self.data():
 		path.lineTo(x, y)
-	    self._item.setPath(path)
+        self._item.setPath(self.graph_transform().map(path))
+        self._item.setPen(self.pen())
 	
-    def drawCurve(self, painter, style, xMap, yMap, iFrom, iTo):
-        low = max(0, int(math.floor(xMap.s1())))
-        high = min(self.attrCount-1, int(math.ceil(xMap.s2())))
-        painter.setPen(self.pen())
-        if not self.testCurveAttribute(OWCurve.Fitted):
-            for i in range(self.dataSize() / self.attrCount):
-                start = self.attrCount * i + low
-                end = self.attrCount * i + high 
-                self.drawLines(painter, xMap, yMap, start, end)
-        else:
-            painter.save()
-#            painter.scale(xMap.transform(1.0), yMap.transform(1.0))
-            painter.strokePath(self.cubicPath(xMap, yMap), self.pen())
-#            painter.strokePath(self._cubic, self.pen())
-            painter.restore()
-
     def cubicPath(self):
         path = QPainterPath()
         transform = lambda x, y: self.graph_transform().map(QPointF(x,y))
 #        transform = lambda x, y: QPointF(x, y)
 #        data = [QPointF(transform(x, y)) for x, y in zip(self.xData, self.yData)]
         data = self.data()
-        for i in range(self.dataSize() / self.attrCount):
+        for i in range(len(data) / self.attrCount):
             segment = data[i*self.attrCount: (i + 1)*self.attrCount]
             for i, p in enumerate(segment[:-1]):
                 x1, y1 = p

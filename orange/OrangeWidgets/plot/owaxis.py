@@ -82,6 +82,7 @@ class OWAxis(QGraphicsItem):
         self.update_callback = None
         self.max_text_width = 50
         self.text_margin = 5
+        self.always_horizontal_text = False
         
     def update_ticks(self):
         self._ticks = []
@@ -210,11 +211,11 @@ class OWAxis(QGraphicsItem):
             item.setVisible(True)
             if not zoom_only:
                 item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
-            if self.id not in CartesianAxes:
+            if self.id not in CartesianAxes and not self.always_horizontal_text:
                 item.setRotation(-self.graph_line.angle())
             
             item.setTextWidth(-1)
-            if self.id in YAxes:
+            if self.id in YAxes or self.always_horizontal_text:
                 w = min(item.boundingRect().width(), self.max_text_width)
                 label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
             else:
