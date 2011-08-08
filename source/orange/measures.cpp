@@ -244,7 +244,7 @@ float TMeasureAttribute::bestThreshold(PDistribution &left_right, float &score, 
       score = 0;
       return ILLEGAL_FLOAT;
     }
-    float &score = res.front().second;
+    score = res.front().second;
     float &bestThresh = res.front().first;
     ITERATE(TFloatFloatList, ii, res) {
       if ((*ii).second > score) {
@@ -252,7 +252,7 @@ float TMeasureAttribute::bestThreshold(PDistribution &left_right, float &score, 
         score = (*ii).second;
       }
     }
-    return score;
+    return bestThresh;
   }
   
   if (!gen->domain->classVar)
