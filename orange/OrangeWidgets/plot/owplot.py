@@ -886,6 +886,10 @@ class OWPlot(orangeplot.Plot):
         self.replot()
         
     def mousePressEvent(self, event):
+        self.static_click = True
+        self._pressed_mouse_button = event.button()
+        self._pressed_mouse_pos = event.pos()
+
         if self.mousePressEventHandler and self.mousePressEventHandler(event):
             event.accept()
             return
@@ -895,9 +899,6 @@ class OWPlot(orangeplot.Plot):
         
         point = self.mapToScene(event.pos())
 
-        self.static_click = True
-        self._pressed_mouse_button = event.button()
-        self._pressed_mouse_pos = event.pos()
         if event.button() == Qt.LeftButton and self.state == PANNING:
             self._last_pan_pos = point
             event.accept()
@@ -905,13 +906,13 @@ class OWPlot(orangeplot.Plot):
             orangeplot.Plot.mousePressEvent(self, event)
             
     def mouseMoveEvent(self, event):
+        if event.buttons() and (self._pressed_mouse_pos - event.pos()).manhattanLength() > qApp.startDragDistance():
+            self.static_click = False
+        
         if self.mouseMoveEventHandler and self.mouseMoveEventHandler(event):
             event.accept()
             return
             
-        if event.buttons() and (self._pressed_mouse_pos - event.pos()).manhattanLength() > qApp.startDragDistance():
-            self.static_click = False
-        
         if self.isLegendEvent(event, QGraphicsView.mouseMoveEvent):
             return
         

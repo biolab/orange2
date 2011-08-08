@@ -92,17 +92,10 @@ def move_item(item, pos, duration = None):
         :param duration: The duration of the animation. If unspecified, Qt's default value of 250 miliseconds is used.
         :type duration: int
     '''
-    for a in _animations:
-        if a.state() == QPropertyAnimation.Stopped:
-            _animations.remove(a)
     if use_animations:
-        a = QPropertyAnimation(item, 'pos')
-        a.setStartValue(item.pos())
-        a.setEndValue(pos)
-        if duration:
-            a.setDuration(duration)
-        a.start(QPropertyAnimation.KeepWhenStopped)
-        _animations.append(a)
+        if not duration:
+            duration = 250
+        orangeplot.PlotItem.move_item(item, pos, duration)
     else:
         item.setPos(x, y)
 
