@@ -8,30 +8,29 @@ Scoring (``scoring``)
 .. index:: 
    single: feature; feature scoring
 
-Features scoring is an assesment the relevance of features to the
-class variable; the higher a feature is scored, the better it
-should be for prediction.
+Feature scoring is assessment of the usefulness of the feature for 
+prediction of the dependant (class) variable.
 
-You can score the feature "tear_rate" of the Lenses data set
-(loaded into `data`) with::
+To compute the information gain of feature "tear_rate" in the Lenses data set (loaded into `data`) use:
 
     >>> meas = Orange.feature.scoring.InfoGain()
     >>> print meas("tear_rate", data)
     0.548794925213
 
-Apart from information gain you could also use other measures;
+Apart from information gain you could also use other scoring methods;
 :ref:`classification` and :ref:`regression`. For various
-ways to call them see :obj:`Measure.__call__`.
+ways to call them see :ref:`callingscore`.
 
-You can also construct the object and use
+It is possible to construct the object and use
 it on-the-fly::
 
     >>> print Orange.feature.scoring.InfoGain("tear_rate", data)
     0.548794925213
 
-You shouldn't use this with :obj:`Relief`; see :obj:`Relief` for the explanation.
+But constructing new instances for each feature is slow for
+scoring methods that use caching, such as :obj:`Relief`.
 
-It is also possible to score features that are not in the domain. For
+Scoring features that are not in the domain is also possible. For
 instance, discretized features can be scored without producing a
 data table in advance (slow with :obj:`Relief`):
 
@@ -76,10 +75,70 @@ The output::
         0.189  0.382  crime
         0.166  0.345  adoption-of-the-budget-resolution
 
+
+.. _callingscore:
+
+=======================
+Calling scoring methods
+=======================
+
+To score a feature use :obj:`Score.__call__`. There are diferent
+function signatures, which enable optimization. For instance,
+if contingency matrix has already been computed, you can speed
+up the computation by passing it to the scoring method (if it supports
+that form - most do). Otherwise the scoring method will have to compute the
+contingency itself.
+
+Not all classes will accept all kinds of arguments. :obj:`Relief`,
+for instance, only supports the form with instances on the input.
+
+.. method:: Score.__call__(attribute, instances[, apriori_class_distribution][, weightID])
+
+    :param attribute: the chosen feature, either as a descriptor, 
+      index, or a name.
+    :type attribute: :class:`Orange.data.variable.Variable` or int or string
+    :param instances: data.
+    :type instances: `Orange.data.Table`
+    :param weightID: id for meta-feature with weight.
+
+    All scoring methods need to support these parameters.
+
+.. method:: Score.__call__(attribute, domain_contingency[, apriori_class_distribution])
+
+    :param attribute: the chosen feature, either as a descriptor, 
+      index, or a name.
+    :type attribute: :class:`Orange.data.variable.Variable` or int or string
+    :param domain_contingency: 
+    :type domain_contingency: :obj:`Orange.statistics.contingency.Domain`
+
+.. method:: Score.__call__(contingency, class_distribution[, apriori_class_distribution])
+
+    :param contingency:
+    :type contingency: :obj:`Orange.statistics.contingency.VarClass`
+    :param class_distribution: distribution of the class
+      variable. If :obj:`unknowns_treatment` is :obj:`IgnoreUnknowns`,
+      it should be computed on instances where feature value is
+      defined. Otherwise, class distribution should be the overall
+      class distribution.
+    :type class_distribution: 
+      :obj:`Orange.statistics.distribution.Distribution`
+    :param apriori_class_distribution: Optional and most often
+      ignored. Useful if the scoring method makes any probability estimates
+      based on apriori class probabilities (such as the m-estimate).
+    :return: Feature score - the higher the value, the better the feature.
+      If the quality cannot be scored, return :obj:`Score.Rejected`.
+    :rtype: float or :obj:`Score.Rejected`.
+
+The code below scores the same feature with :obj:`GainRatio` in
+different ways.
+
+.. literalinclude:: code/scoring-calls.py
+    :lines: 7-
+
 .. _classification:
 
 ===========================
-Measures for Classification
+Feature scoring in classification problems
 ===========================
 
 .. Undocumented: MeasureAttribute_IM, MeasureAttribute_chiSquare, MeasureAttribute_gainRatioA, MeasureAttribute_logOddsRatio, MeasureAttribute_splitGain.
@@ -87,30 +146,29 @@ Measures for Classification
 .. index:: 
    single: feature scoring; information gain
 
-As all measures are subclasses of :class:`Measure`, see
-:obj:`Measure.__call__` for usage.
-
 .. class:: InfoGain
 
-    Measures the expected decrease of entropy.
+    Information gain - the expected decrease of entropy. See `page on wikipedia
+    <http://en.wikipedia.org/wiki/Information_gain_ratio>`_.
 
 .. index:: 
    single: feature scoring; gain ratio
 
 .. class:: GainRatio
 
-    Information gain divided by the entropy of the feature's
+    Information gain ratio - information gain divided by the entropy of the feature's
     value. Introduced in [Quinlan1986]_ in order to avoid overestimation
     of multi-valued features. It has been shown, however, that it still
-    overestimates features with multiple values.
+    overestimates features with multiple values. See `Wikipedia
+    <http://en.wikipedia.org/wiki/Information_gain_ratio>`_.
 
 .. index:: 
    single: feature scoring; gini index
 
 .. class:: Gini
 
-    The probability that two randomly chosen instances will have different
-    classes; first introduced by Breiman [Breiman1984]_.
+    Gini index is the probability that two randomly chosen instances will have different
+    classes. See `Gini coefficient on Wikipedia <http://en.wikipedia.org/wiki/Gini_coefficient>`_.
 
 .. index:: 
    single: feature scoring; relevance
@@ -124,7 +182,7 @@ As all measures are subclasses of :class:`Measure`, see
 
 .. class:: Cost
 
-    Evaluates features based on the "saving" achieved by knowing the value of
+    Evaluates features based on the cost decrease achieved by knowing the value of
     feature, according to the specified cost matrix.
 
     .. attribute:: cost
@@ -133,7 +191,9 @@ As all measures are subclasses of :class:`Measure`, see
 
     If the cost of predicting the first class of an instance that is actually in
     the second is 5, and the cost of the opposite error is 1, than an appropriate
-    measure can be constructed as follows::
+    score can be constructed as follows::
+
+    .. comment:: opposite error - is this term correct? TODO
 
         >>> meas = Orange.feature.scoring.Cost()
         >>> meas.cost = ((0, 5), (1, 0))
@@ -149,7 +209,8 @@ As all measures are subclasses of :class:`Measure`, see
 .. class:: Relief
 
     Assesses features' ability to distinguish between very similar
-    instances from different classes.  First developed by Kira and
+    instances from different classes. This scoring method was
+    first developed by Kira and
     Rendell and then improved by Kononenko. The class :obj:`Relief`
     works on discrete and continuous classes and thus implements ReliefF
     and RReliefF.
@@ -175,13 +236,14 @@ As all measures are subclasses of :class:`Measure`, see
     all features, when called to score a certain feature.  When called
     again, it uses the stored results if the domain and the data table
     have not changed (data table version and the data checksum are
-    compared). Caching will only work if you use the same object. So,
-    don't do this::
+    compared). Caching will only work if you use the same object. 
+    Constructing new instances of :obj:`Relief` fir each feature,
+    like this::
 
         for attr in data.domain.attributes:
             print Orange.feature.scoring.Relief(attr, data)
 
-    But this::
+    runs much slower than reusing the same instance::
 
         meas = Orange.feature.scoring.Relief()
         for attr in table.domain.attributes:
@@ -198,11 +260,8 @@ As all measures are subclasses of :class:`Measure`, see
 .. _regression:
 
 =======================
-Measures for Regression
+Feature scoring in regression problems
 =======================
-
-As all measures are subclasses of :class:`Measure`, see
-:obj:`Measure.__call__` for usage.
 
 You can also use :obj:`Relief` for regression.
 
@@ -211,11 +270,11 @@ You can also use :obj:`Relief` for regression.
 
 .. class:: MSE
 
-    Implements the mean square error measure.
+    Implements the mean square error score.
 
     .. attribute:: unknowns_treatment
     
-        What to do with unknown values. See :obj:`Measure.unknowns_treatment`.
+        What to do with unknown values. See :obj:`Score.unknowns_treatment`.
 
     .. attribute:: m
     
@@ -228,11 +287,11 @@ Base Classes
 ============
 
 Implemented methods for scoring relevances of features to the class
-are subclasses of :obj:`Measure`. Those that compute statistics on
+are subclasses of :obj:`Score`. Those that compute statistics on
 conditional distributions of class values given the feature values are
-derived from :obj:`MeasureFromProbabilities`.
+derived from :obj:`ScoreFromProbabilities`.
 
-.. class:: Measure
+.. class:: Score
 
     Abstract base class for feature scoring. Its attributes describe which
     features it can handle and the required data.
@@ -241,44 +300,44 @@ derived from :obj:`MeasureFromProbabilities`.
 
     .. attribute:: handles_discrete
     
-        Indicates whether the measure can handle discrete features.
+        Indicates whether the scoring method can handle discrete features.
 
     .. attribute:: handles_continuous
     
-        Indicates whether the measure can handle continuous features.
+        Indicates whether the scoring method can handle continuous features.
 
     .. attribute:: computes_thresholds
     
-        Indicates whether the measure implements the :obj:`threshold_function`.
+        Indicates whether the scoring method implements the :obj:`threshold_function`.
 
     **Input specification**
 
     .. attribute:: needs
     
-        The type of data needed: :obj:`NeedsGenerator`, :obj:`NeedsDomainContingency`,
-        or :obj:`NeedsContingency_Class`.
+        The type of data needed: :obj:`Generator`, :obj:`DomainContingency`,
+        or :obj:`Contingency_Class`.
 
-    .. attribute:: NeedsGenerator
+    .. attribute:: Generator
 
-        Constant. Indicates that the measure needs an instance generator on the input (as, for example, the
-        :obj:`Relief` measure).
+        Constant. Indicates that the scoring method needs an instance generator on the input (as, for example,
+        :obj:`Relief`).
 
-    .. attribute:: NeedsDomainContingency
+    .. attribute:: DomainContingency
 
-        Constant. Indicates that the measure needs :obj:`Orange.statistics.contingency.Domain`.
+        Constant. Indicates that the scoring method needs :obj:`Orange.statistics.contingency.Domain`.
 
-    .. attribute:: NeedsContingency_Class
+    .. attribute:: Contingency_Class
 
-        Constant. Indicates, that the measure needs the contingency
+        Constant. Indicates, that the scoring method needs the contingency
         (:obj:`Orange.statistics.contingency.VarClass`), feature
         distribution and the apriori class distribution (as most
-        measures).
+        scoring methods).
 
     **Treatment of unknown values**
 
     .. attribute:: unknowns_treatment
 
-        Not defined in :obj:`Measure` but defined in
+        Not defined in :obj:`Score` but defined in
         classes that are able to treat unknown values. Either
         :obj:`IgnoreUnknowns`, :obj:`ReduceByUnknown`.
         :obj:`UnknownsToCommon`, or :obj:`UnknownsAsValue`.
@@ -291,7 +350,7 @@ derived from :obj:`MeasureFromProbabilities`.
 
         Constant. Features with unknown values are 
         punished. The feature quality is reduced by the proportion of
-        unknown values. For impurity measures the impurity decreases
+        unknown values. For impurity scores the impurity decreases
         only where the value is defined and stays the same otherwise.
 
     .. attribute:: UnknownsToCommon
@@ -304,62 +363,9 @@ derived from :obj:`MeasureFromProbabilities`.
 
     **Methods**
 
-    .. method:: __call__(attribute, instances[, apriori_class_distribution][, weightID])
+    .. method:: __call__
 
-        :param attribute: the chosen feature, either as a descriptor, 
-          index, or a name.
-        :type attribute: :class:`Orange.data.variable.Variable` or int or string
-        :param instances: data.
-        :type instances: `Orange.data.Table`
-        :param weightID: id for meta-feature with weight.
-
-        Abstract. All measures need to support these
-        parameters.  Described below.
-
-    .. method:: __call__(attribute, domain_contingency[, apriori_class_distribution])
-
-        :param attribute: the chosen feature, either as a descriptor, 
-          index, or a name.
-        :type attribute: :class:`Orange.data.variable.Variable` or int or string
-        :param domain_contingency: 
-        :type domain_contingency: :obj:`Orange.statistics.contingency.Domain`
-
-        Abstract. Described below.
-        
-    .. method:: __call__(contingency, class_distribution[, apriori_class_distribution])
-
-        :param contingency:
-        :type contingency: :obj:`Orange.statistics.contingency.VarClass`
-        :param class_distribution: distribution of the class
-          variable. If :obj:`unknowns_treatment` is :obj:`IgnoreUnknowns`,
-          it should be computed on instances where feature value is
-          defined. Otherwise, class distribution should be the overall
-          class distribution.
-        :type class_distribution: 
-          :obj:`Orange.statistics.distribution.Distribution`
-        :param apriori_class_distribution: Optional and most often
-          ignored. Useful if the measure makes any probability estimates
-          based on apriori class probabilities (such as the m-estimate).
-        :return: Feature score - the higher the value, the better the feature.
-          If the quality cannot be measured, return :obj:`Measure.Rejected`.
-        :rtype: float or :obj:`Measure.Rejected`.
-
-        Abstract.
-
-        Different forms of `__call__` enable optimization.  For instance,
-        if contingency matrix has already been computed, you can speed
-        up the computation by passing it to the measure (if it supports
-        that form - most do). Otherwise the measure will have to compute the
-        contingency itself.
-
-        Not all classes will accept all kinds of arguments. :obj:`Relief`,
-        for instance, only supports the form with instances on the input.
-
-        The code sample below shows the use of :obj:`GainRatio` with
-        different call types.
-
-        .. literalinclude:: code/scoring-calls.py
-            :lines: 7-
+        Abstract. See :ref:`callingscore`.
 
     .. method:: threshold_function(attribute, instances[, weightID])
     
@@ -391,11 +397,11 @@ derived from :obj:`MeasureFromProbabilities`.
         .. literalinclude:: code/scoring-info-iris.py
             :lines: 17-18
 
-.. class:: MeasureFromProbabilities
+.. class:: ScoreFromProbabilities
 
-    Bases: :obj:`Measure`
+    Bases: :obj:`Score`
 
-    Abstract base class for feature quality measures that can be
+    Abstract base class for feature scoring method that can be
     computed from contingency matrices only. It relieves the derived classes
     from having to compute the contingency matrix by defining the first two
     forms of call operator. (Well, that's not something you need to know if
@@ -403,7 +409,7 @@ derived from :obj:`MeasureFromProbabilities`.
 
     .. attribute:: unknowns_treatment
      
-        See :obj:`Measure.unknowns_treatment`.
+        See :obj:`Score.unknowns_treatment`.
 
     .. attribute:: estimator_constructor
     .. attribute:: conditional_estimator_constructor
@@ -454,8 +460,8 @@ Other
 import Orange.core as orange
 import Orange.misc
 
-from orange import MeasureAttribute as Measure
-from orange import MeasureAttributeFromProbabilities as MeasureFromProbabilities
+from orange import MeasureAttribute as Score
+from orange import MeasureAttributeFromProbabilities as ScoreFromProbabilities
 from orange import MeasureAttribute_info as InfoGain
 from orange import MeasureAttribute_gainRatio as GainRatio
 from orange import MeasureAttribute_gini as Gini
@@ -467,17 +473,18 @@ from orange import MeasureAttribute_MSE as MSE
 
 ######
 # from orngEvalAttr.py
+
 class OrderAttributes:
     """Orders features by their scores.
     
-    .. attribute::  measure
+    .. attribute::  score
     
-        A measure derived from :obj:`~Orange.feature.scoring.Measure`.
-        If None, :obj:`Relief` will be used.
+        A scoring method derived from :obj:`~Orange.feature.scoring.Score`.
+        If None, :obj:`Relief` with m=5 and k=10 will be used.
     
     """
-    def __init__(self, measure=None):
-        self.measure = measure
+    def __init__(self, score=None):
+        self.score = score
 
     def __call__(self, data, weight):
         """Score and order all features.
@@ -489,21 +496,25 @@ class OrderAttributes:
         :type weight: Orange.data.variable.Variable
 
         """
-        if self.measure:
-            measure = self.measure
+        if self.score:
+            measure = self.score
         else:
-            measure = Relief(m=5,k=10)
+            measure = Relief(m=5, k=10)
 
         measured = [(attr, measure(attr, data, None, weight)) for attr in data.domain.attributes]
         measured.sort(lambda x, y: cmp(x[1], y[1]))
         return [x[0] for x in measured]
 
-class Distance(Measure):
-    """The 1-D feature distance measure described in [Kononenko2007]_."""
+OrderAttributes = Orange.misc.deprecated_members({
+          "measure": "score",
+}, wrap_methods=[])(OrderAttributes)
+
+class Distance(Score):
+    """The 1-D feature distance score described in [Kononenko2007]_. TODO"""
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
-        self = Measure.__new__(cls)
+        self = Score.__new__(cls)
         if attr != None and data != None:
             #self.__init__(**argkw)
             return self.__call__(attr, data, apriori_dist, weightID)
@@ -542,12 +553,12 @@ class Distance(Measure):
         else:
             return 0
 
-class MDL(Measure):
-    """Score feature based on the minimum description length principle."""
+class MDL(Score):
+    """Score feature based on the minimum description length principle. TODO."""
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
-        self = Measure.__new__(cls)
+        self = Score.__new__(cls)
         if attr != None and data != None:
             #self.__init__(**argkw)
             return self.__call__(attr, data, apriori_dist, weightID)
@@ -606,8 +617,8 @@ def _logMultipleCombs(n, ks):
     return ret
 
 
-@Orange.misc.deprecated_keywords({"attrList": "attr_list", "attrMeasure": "attr_measure", "removeUnusedValues": "remove_unused_values"})
-def merge_values(data, attr_list, attr_measure, remove_unused_values = 1):
+@Orange.misc.deprecated_keywords({"attrList": "attr_list", "attrMeasure": "attr_score", "removeUnusedValues": "remove_unused_values"})
+def merge_values(data, attr_list, attr_score, remove_unused_values = 1):
     import orngCI
     #data = data.select([data.domain[attr] for attr in attr_list] + [data.domain.classVar])
     newData = data.select(attr_list + [data.domain.class_var])
@@ -616,14 +627,14 @@ def merge_values(data, attr_list, attr_measure, remove_unused_values = 1):
     activeValues = []
     for i in range(len(newAttr.values)):
         if dist[newAttr.values[i]] > 0: activeValues.append(i)
-    currScore = attr_measure(newAttr, newData)
+    currScore = attr_score(newAttr, newData)
     while 1:
         bestScore, bestMerge = currScore, None
         for i1, ind1 in enumerate(activeValues):
             oldInd1 = newAttr.get_value_from.lookupTable[ind1]
             for ind2 in activeValues[:i1]:
                 newAttr.get_value_from.lookupTable[ind1] = ind2
-                score = attr_measure(newAttr, newData)
+                score = attr_score(newAttr, newData)
                 if score >= bestScore:
                     bestScore, bestMerge = score, (ind1, ind2)
                 newAttr.get_value_from.lookupTable[ind1] = oldInd1
@@ -649,24 +660,22 @@ def merge_values(data, attr_list, attr_measure, remove_unused_values = 1):
 
 ######
 # from orngFSS
-def score_all(data, measure=Relief(k=20, m=50)):
+@Orange.misc.deprecated_keywords({"measure": "score"})
+def score_all(data, score=Relief(k=20, m=50)):
     """Assess the quality of features using the given measure and return
     a sorted list of tuples (feature name, measure).
 
     :param data: data table should include a discrete class.
     :type data: :obj:`Orange.data.Table`
-    :param measure:  feature scoring function. Derived from
-      :obj:`~Orange.feature.scoring.Measure`. Defaults to 
+    :param score:  feature scoring function. Derived from
+      :obj:`~Orange.feature.scoring.Score`. Defaults to 
       :obj:`~Orange.feature.scoring.Relief` with k=20 and m=50.
-    :type measure: :obj:`~Orange.feature.scoring.Measure` 
+    :type measure: :obj:`~Orange.feature.scoring.Score` 
     :rtype: :obj:`list`; a sorted list of tuples (feature name, score)
 
     """
     measl=[]
     for i in data.domain.attributes:
-        measl.append((i.name, measure(i, data)))
+        measl.append((i.name, score(i, data)))
     measl.sort(lambda x,y:cmp(y[1], x[1]))
-   
-#  for i in measl:
-#    print "%25s, %6.3f" % (i[0], i[1])
     return measl

@@ -764,7 +764,7 @@ High level interface for measuring variable importance
 from Orange.feature import scoring
 from Orange.misc import _orange__new__
 
-class ScoreEarthImportance(scoring.Measure):
+class ScoreEarthImportance(scoring.Score):
     """ Score features based on there importance in the Earth model using
     ``bagged_evimp``'s function return value.
     """
@@ -774,7 +774,7 @@ class ScoreEarthImportance(scoring.Measure):
     GCV = 2
     
 #    _cache = weakref.WeakKeyDictionary()
-    __new__ = _orange__new__(scoring.Measure)
+    __new__ = _orange__new__(scoring.Score)
         
     def __init__(self, t=10, score_what="nsubsets", cached=True):
         """
@@ -818,8 +818,8 @@ class ScoreEarthImportance(scoring.Measure):
             return score[self.score_what]
     
     
-class ScoreRSS(scoring.Measure):
-    __new__ = _orange__new__(scoring.Measure)
+class ScoreRSS(scoring.Score):
+    __new__ = _orange__new__(scoring.Score)
     def __init__(self):
         self._cache_data = None
         self._cache_rss = None
