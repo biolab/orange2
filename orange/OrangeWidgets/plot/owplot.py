@@ -880,7 +880,28 @@ class OWPlot(orangeplot.Plot):
             return True
         else:
             return False
+    
+    def mouse_action(self, event):
+        b = event.buttons() | event.button()
+        m = event.modifiers()
+        if b == Qt.LeftButton | Qt.RightButton:
+            b = Qt.MidButton
+        if m & Qt.AltModifier and b == Qt.LeftButton:
+            m = m & ~AltModifier
+            b = Qt.MidButton
         
+        if b == Qt.LeftButton and not m:
+            return self.state
+            
+        if b == Qt.MidButton:
+            return PANNING
+            
+        if b in [Qt.LeftButton, Qt.RightButton] and (self.state == ZOOMING or m == Qt.ControlModifier):
+            return ZOOMING
+            
+        if b == Qt.LeftButton and m == Qt.ShiftModifier:
+            return SELECT
+    
     ## Event handling
     def resizeEvent(self, event):
         self.replot()
@@ -898,8 +919,9 @@ class OWPlot(orangeplot.Plot):
             return
         
         point = self.mapToScene(event.pos())
+        a = self.mouse_action(event)
 
-        if event.button() == Qt.LeftButton and self.state == PANNING:
+        if a == PANNING:
             self._last_pan_pos = point
             event.accept()
         else:
@@ -925,31 +947,22 @@ class OWPlot(orangeplot.Plot):
         if self._legend.mouse_down:
             QGraphicsView.mouseMoveEvent(self, event)
             return
+            
+        a = self.mouse_action(event)
         
-        if self._pressed_mouse_button == Qt.LeftButton and not self.static_click:
-            if self.state in [ZOOMING, SELECT] and self.graph_area.contains(point):
-                if not self._current_rs_item:
-                    self._selection_start_point = self.mapToScene(self._pressed_mouse_pos)
-                    self._current_rs_item = QGraphicsRectItem(scene=self.scene())
-                    self._current_rs_item.setPen(SelectionPen)
-                    self._current_rs_item.setBrush(SelectionBrush)
-                    self._current_rs_item.setZValue(SelectionZValue)
-                self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
-            elif self.state == PANNING:
-                if not self._last_pan_pos:
-                    self._last_pan_pos = self.mapToScene(self._pressed_mouse_pos)
-                self.pan(point - self._last_pan_pos)
-                self._last_pan_pos = point
-        elif not self._pressed_mouse_button and self.state == SELECT_POLYGON and self._current_ps_item:
-            self._current_ps_polygon[-1] = point
-            self._current_ps_item.setPolygon(self._current_ps_polygon)
-            if self._current_ps_polygon.size() > 2 and self.points_equal(self._current_ps_polygon.first(), self._current_ps_polygon.last()):
-                highlight_pen = QPen()
-                highlight_pen.setWidth(2)
-                highlight_pen.setStyle(Qt.DashDotLine)
-                self._current_ps_item.setPen(highlight_pen)
-            else:
-                self._current_ps_item.setPen(SelectionPen)
+        if a in [SELECT, ZOOMING] and self.graph_area.contains(point):
+            if not self._current_rs_item:
+                self._selection_start_point = self.mapToScene(self._pressed_mouse_pos)
+                self._current_rs_item = QGraphicsRectItem(scene=self.scene())
+                self._current_rs_item.setPen(SelectionPen)
+                self._current_rs_item.setBrush(SelectionBrush)
+                self._current_rs_item.setZValue(SelectionZValue)
+            self._current_rs_item.setRect(QRectF(self._selection_start_point, point).normalized())
+        elif a == PANNING:
+            if not self._last_pan_pos:
+                self._last_pan_pos = self.mapToScene(self._pressed_mouse_pos)
+            self.pan(point - self._last_pan_pos)
+            self._last_pan_pos = point
         else:
             x, y = self.map_from_graph(point, zoom=True)
             text, x, y = self.tips.maybeTip(x, y)
@@ -974,9 +987,10 @@ class OWPlot(orangeplot.Plot):
         if self.isLegendEvent(event, QGraphicsView.mouseReleaseEvent):
             return
         
-        if event.button() == Qt.LeftButton and self.state in [ZOOMING, SELECT] and self._current_rs_item:
+        a = self.mouse_action(event)
+        if a in [ZOOMING, SELECT] and self._current_rs_item:
             rect = self._current_rs_item.rect()
-            if self.state == ZOOMING:
+            if a == ZOOMING:
                 self.zoom_to_rect(rect)
             else:
                 self.add_selection(rect)
@@ -989,7 +1003,10 @@ class OWPlot(orangeplot.Plot):
         point = self.mapToScene(event.pos())
         if point not in self.graph_area:
             return False
-        if self.state == ZOOMING:
+            
+        a = self.mouse_action(event)
+            
+        if a == ZOOMING:
             if event.button() == Qt.LeftButton:
                 self.zoom_in(point)
             elif event.button() == Qt.RightButton:
@@ -997,38 +1014,7 @@ class OWPlot(orangeplot.Plot):
             else:
                 return False
             return True
-            
-        elif self.state == SELECT_POLYGON and event.button() == Qt.LeftButton:
-            if not self._current_ps_item:
-                self._current_ps_polygon = QPolygonF()
-                self._current_ps_polygon.append(point)
-                self._current_ps_item = QGraphicsPolygonItem(scene=self.scene())
-                self._current_ps_item.setPen(SelectionPen)
-                self._current_ps_item.setBrush(SelectionBrush)
-                self._current_ps_item.setZValue(SelectionZValue)
-            
-            self._current_ps_polygon.append(point)
-            self._current_ps_item.setPolygon(self._current_ps_polygon)
-            if self._current_ps_polygon.size() > 2 and self.points_equal(self._current_ps_polygon.first(), self._current_ps_polygon.last()):
-                self._current_ps_polygon.append(self._current_ps_polygon.first())
-                self.add_selection(self._current_ps_polygon)
-                self.scene().removeItem(self._current_ps_item)
-                self._current_ps_item = None
-                
-        elif self.state in [SELECT_RECTANGLE, SELECT_POLYGON] and event.button() == Qt.RightButton:
-            qDebug('Right conditions for removing a selection curve ' + repr(self.selection_items))
-            self.selection_items.reverse()
-            for item, region in self.selection_items:
-                qDebug(repr(point) + '   ' + repr(region.rects()))
-                if region.contains(point.toPoint()):
-                    self.scene().remove_item(item)
-                    qDebug('Removed a selection curve')
-                    self.selection_items.remove((item, region))
-                    if self.auto_send_selection_callback: 
-                        self.auto_send_selection_callback()
-                    break
-            self.selection_items.reverse()
-        elif self.state == SELECT:
+        elif a == SELECT:
             point_item = self.nearest_point(point)
             b = self.selection_behavior
             if b == self.ReplaceSelection:
