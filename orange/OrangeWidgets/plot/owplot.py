@@ -849,11 +849,12 @@ class OWPlot(orangeplot.Plot):
                     item.graph_line = self._zoom_transform.map(graph_line)
                 else:
                     item.graph_line = graph_line
-            if item.data_line and item.graph_line:
-                item.show()
-            else:
-                item.hide()
-                self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
+            if not zoom_only:
+                if item.data_line and item.graph_line:
+                    item.show()
+                else:
+                    item.hide()
+                    self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
             item.zoom_transform = self._zoom_transform
             item.update(zoom_only)
         
