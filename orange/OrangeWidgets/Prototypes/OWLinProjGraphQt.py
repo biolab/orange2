@@ -362,7 +362,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                     if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
                     else:                             curveSymbol = self.curveSymbols[index]
 
-                    self.addCurve(classVariableValues[index], color, color, self.pointWidth, symbol = curveSymbol, xData = [], yData = [], penAlpha = self.alphaValue, brushAlpha = self.alphaValue, enableLegend = True)
+                    self.legend().add_item(self.dataDomain.classVar.name, classVariableValues[index], OWPoint(curveSymbol, color, self.pointWidth))
             # show legend for continuous class
             elif self.dataHasContinuousClass:
                 xs = [1.15, 1.20, 1.20, 1.15]

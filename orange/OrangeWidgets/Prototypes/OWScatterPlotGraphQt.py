@@ -337,13 +337,12 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
         # ##############################################################
         # show legend if necessary
-        qDebug("Updating, legend is " + repr(self.showLegend))
         if self.showLegend == 1:
             legendKeys = {}
             colorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
             shapeIndex = shapeIndex if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete else -1
             sizeIndex = sizeIndex if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete else -1
-            
+                        
             singleLegend = len([index for index in [colorIndex, shapeIndex, sizeIndex] if index != -1]) == 1
             if singleLegend:
                 #Show only values
@@ -353,40 +352,21 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
                 
             if colorIndex != -1:
                 num = len(self.dataDomain[colorIndex].values)
-                val = [[], [], [self.pointWidth]*num, [OWPoint.Ellipse]*num]
                 varValues = getVariableValuesSorted(self.dataDomain[colorIndex])
                 for ind in range(num):
-                    val[0].append(legendJoin(self.dataDomain[colorIndex].name, varValues[ind]))
-                    val[1].append(self.discPalette[ind])
-                legendKeys[colorIndex] = val
+                    self.legend().add_item(self.dataDomain[colorIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, self.discPalette[ind], self.pointWidth))
 
             if shapeIndex != -1:
                 num = len(self.dataDomain[shapeIndex].values)
-                if legendKeys.has_key(shapeIndex):  val = legendKeys[shapeIndex]
-                else:                               val = [[], [Qt.black]*num, [self.pointWidth]*num, []]
                 varValues = getVariableValuesSorted(self.dataDomain[shapeIndex])
-                val[3] = []; val[0] = []
                 for ind in range(num):
-                    val[3].append(self.curveSymbols[ind])
-                    val[0].append(legendJoin(self.dataDomain[shapeIndex].name, varValues[ind]))
-                legendKeys[shapeIndex] = val
+                    self.legend().add_item(self.dataDomain[shapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], Qt.black, self.pointWidth))
 
             if sizeIndex != -1:
                 num = len(self.dataDomain[sizeIndex].values)
-                if legendKeys.has_key(sizeIndex):  val = legendKeys[sizeIndex]
-                else:                               val = [[], [Qt.black]*num, [], [OWPoint.Ellipse]*num]
-                val[2] = []; val[0] = []
                 varValues = getVariableValuesSorted(self.dataDomain[sizeIndex])
                 for ind in range(num):
-                    val[0].append(legendJoin(self.dataDomain[sizeIndex].name, varValues[ind]))
-                    val[2].append(MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues)))
-                legendKeys[sizeIndex] = val
-        else:
-            legendKeys = {}
-
-        for val in legendKeys.values():       # add new curve keys
-            for i in range(len(val[1])):
-                self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
+                    self.legend().add_item(self.dataDomain[sizeIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, Qt.black, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
 
         # ##############################################################
         # draw color scale for continuous coloring attribute

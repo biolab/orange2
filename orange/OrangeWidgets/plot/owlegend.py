@@ -12,14 +12,16 @@ PointSize = 2
 PointSymbol = 4
 
 class OWLegendItem(QGraphicsObject):
-    def __init__(self, curve, parent):
+    def __init__(self, name, point, parent):
         QGraphicsObject.__init__(self, parent)
-        self.text_item = QGraphicsTextItem(curve.name, self)
-        s = curve.point_size()
+        self.text_item = QGraphicsTextItem(name, self)
+        s = point.size()
         height = max(2*s, self.text_item.boundingRect().height())
         p = 0.5 * height
         self.text_item.setPos(height, 0)
-        self.point_item = curve.point_item(p, p, s, self)
+        self.point_item = point
+        self.point_item.setParentItem(self)
+        self.point_item.setPos(p, p)
         self._rect = QRectF(0, 0, height + self.text_item.boundingRect().width(), height )
         self.rect_item = QGraphicsRectItem(self._rect, self)
         self.rect_item.setPen(QPen(Qt.NoPen))
@@ -32,6 +34,20 @@ class OWLegendItem(QGraphicsObject):
         
     def paint(self, painter, option, widget):
         pass
+    
+class OWLegendTitle(QGraphicsObject):
+    def __init__(self, text, parent):
+        QGraphicsObject.__init__(self, parent)
+        self.text_item = QGraphicsTextItem(text + ':', self)
+        f = self.text_item.font()
+        f.setBold(True)
+        self.text_item.setFont(f)
+        
+    def boundingRect(self):
+        return self.text_item.boundingRect()
+        
+    def paint(self, painter, option, widget):
+        pass
         
 class OWLegend(QGraphicsObject):
     def __init__(self, graph, scene):
@@ -40,7 +56,7 @@ class OWLegend(QGraphicsObject):
             scene.addItem(self)
         self.graph = graph
         self.curves = []
-        self.items = []
+        self.items = {}
         self.attributes = []
         self.point_attrs = {}
         self.point_vals = {}
@@ -59,36 +75,52 @@ class OWLegend(QGraphicsObject):
         self._floating_animation = None
 
     def clear(self):
-        for i in self.items:
-            i.setParentItem(None)
-            self.scene().removeItem(i)
-        self.items = []
+        for lst in self.items.itervalues():
+            for i in lst:
+                i.setParentItem(None)
+                self.scene().removeItem(i)
+        self.items = {}
         self.update()
         
 
     def add_curve(self, curve, attributes = []):
-        self.items.append(OWLegendItem(curve, self))
+        i = curve.name.find('=')
+        if i == -1:
+            cat = ''
+            name = curve.name
+        else:
+            cat = curve.name[:i]
+            name = curve.name[i+1:]
+        self.add_item('', curve.name, curve.point_item(0, 0, 0))
+        
+    def add_item(self, category, value, point):
+        if category not in self.items:
+            self.items[category] = [OWLegendTitle(category, self)]
+        self.items[category].append(OWLegendItem(str(value), point, self))
         self.update()
         
     def update(self):
         self.box_rect = QRectF()
         x, y = 0, 0
+        
         if self._orientation == Qt.Vertical:
-            for item in self.items:
-                if self.max_size.height() and y and y + item.boundingRect().height() > self.max_size.height():
-                    y = 0
-                    x = x + item.boundingRect().width()
-                self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
-                move_item_xy(item, x, y)
-                y = y + item.boundingRect().height()
-        elif self._orientation == Qt.Horizontal:
-            for item in self.items:
-                if self.max_size.width() and x and x + item.boundingRect().width() > self.max_size.width():
-                    x = 0
+            for lst in self.items.itervalues():
+                for item in lst:
+                    if self.max_size.height() and y and y + item.boundingRect().height() > self.max_size.height():
+                        y = 0
+                        x = x + item.boundingRect().width()
+                    self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
+                    move_item_xy(item, x, y)
                     y = y + item.boundingRect().height()
-                self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
-                move_item_xy(item, x, y)
-                x = x + item.boundingRect().width()
+        elif self._orientation == Qt.Horizontal:
+            for lst in self.items.itervalues():
+                for item in lst:
+                    if self.max_size.width() and x and x + item.boundingRect().width() > self.max_size.width():
+                        x = 0
+                        y = y + item.boundingRect().height()
+                    self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
+                    move_item_xy(item, x, y)
+                    x = x + item.boundingRect().width()
         else:
             qDebug('A bad orientation of the legend')
     

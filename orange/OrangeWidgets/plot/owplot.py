@@ -1275,16 +1275,20 @@ class OWPlot(orangeplot.Plot):
         rect = QRectF()
         offset = 20
         if pos.x() > g.right() - offset:
-            rect.setRight(l.width())
+            self._legend.set_orientation(Qt.Vertical)
+            rect.setRight(self._legend.boundingRect().width())
             p = g.topRight() - self._legend.boundingRect().topRight()
         elif pos.x() < g.left() + offset:
-            rect.setLeft(l.width())
+            self._legend.set_orientation(Qt.Vertical)
+            rect.setLeft(self._legend.boundingRect().width())
             p = g.topLeft()
         elif pos.y() < g.top() + offset:
-            rect.setTop(l.height())
+            self._legend.set_orientation(Qt.Horizontal)
+            rect.setTop(self._legend.boundingRect().height())
             p = g.topLeft()
         elif pos.y() > g.bottom() - offset:
-            rect.setBottom(l.height())
+            self._legend.set_orientation(Qt.Horizontal)
+            rect.setBottom(self._legend.boundingRect().height())
             p = g.bottomLeft() - self._legend.boundingRect().bottomLeft()
             
         if p.isNull():
