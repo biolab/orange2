@@ -11,15 +11,15 @@ Scoring (``scoring``)
 Feature scoring is assessment of the usefulness of the feature for 
 prediction of the dependant (class) variable.
 
-To compute the information gain of feature "tear_rate" in the Lenses data set (loaded into `data`) use:
+To compute the information gain of feature "tear_rate" in the Lenses data set (loaded into ``data``) use:
 
     >>> meas = Orange.feature.scoring.InfoGain()
     >>> print meas("tear_rate", data)
     0.548794925213
 
 Apart from information gain you could also use other scoring methods;
-:ref:`classification` and :ref:`regression`. For various
-ways to call them see :ref:`callingscore`.
+see :ref:`classification` and :ref:`regression`. Various
+ways to call them are described on :ref:`callingscore`.
 
 It is possible to construct the object and use
 it on-the-fly::
@@ -89,7 +89,7 @@ up the computation by passing it to the scoring method (if it supports
 that form - most do). Otherwise the scoring method will have to compute the
 contingency itself.
 
-Not all classes will accept all kinds of arguments. :obj:`Relief`,
+Not all classes accept all kinds of arguments. :obj:`Relief`,
 for instance, only supports the form with instances on the input.
 
 .. method:: Score.__call__(attribute, instances[, apriori_class_distribution][, weightID])
@@ -193,7 +193,6 @@ Feature scoring in classification problems
     the second is 5, and the cost of the opposite error is 1, than an appropriate
     score can be constructed as follows::
 
-    .. comment:: opposite error - is this term correct? TODO
 
         >>> meas = Orange.feature.scoring.Cost()
         >>> meas.cost = ((0, 5), (1, 0))
@@ -202,6 +201,8 @@ Feature scoring in classification problems
 
     Knowing the value of feature 3 would decrease the
     classification cost for approximately 0.083 per instance.
+
+    .. comment:: opposite error - is this term correct? TODO
 
 .. index:: 
    single: feature scoring; ReliefF
@@ -227,7 +228,7 @@ Feature scoring in classification problems
     .. attribute:: check_cached_data
     
         Check if the cached data is changed with data checksum. Slow
-        on large tables.  Defaults to True. Disable it if you know that
+        on large tables.  Defaults to :obj:`True`. Disable it if you know that
         the data will not change.
 
     ReliefF is slow since it needs to find k nearest neighbours for
@@ -442,6 +443,7 @@ Other
 
 .. [Breiman1984] L Breiman et al: Classification and Regression Trees, Chapman and Hall, 1984.
 
+.. [Kononenko1995] I Kononenko: On biases in estimating multi-valued attributes, International Joint Conference on Artificial Intelligence, 1995.
 
 .. _iris.tab: code/iris.tab
 .. _lenses.tab: code/lenses.tab
@@ -480,7 +482,7 @@ class OrderAttributes:
     .. attribute::  score
     
         A scoring method derived from :obj:`~Orange.feature.scoring.Score`.
-        If None, :obj:`Relief` with m=5 and k=10 will be used.
+        If :obj:`None`, :obj:`Relief` with m=5 and k=10 will be used.
     
     """
     def __init__(self, score=None):
@@ -510,7 +512,13 @@ OrderAttributes = Orange.misc.deprecated_members({
 }, wrap_methods=[])(OrderAttributes)
 
 class Distance(Score):
-    """The 1-D feature distance score described in [Kononenko2007]_. TODO"""
+    """The :math:`1-D` distance is defined as information gain divided
+    by joint entropy :math:`H_{CA}` (:math:`C` is the class variable
+    and :math:`A` the feature):
+
+    .. math::
+        1-D(C,A) = \\frac{\\mathrm{Gain}(A)}{H_{CA}}
+    """
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
@@ -554,7 +562,20 @@ class Distance(Score):
             return 0
 
 class MDL(Score):
-    """Score feature based on the minimum description length principle. TODO."""
+    """Minimum description length principle [Kononenko1995]_. Let
+    :math:`n` be the number of instances, :math:`n_0` the number of
+    classes, and :math:`n_{cj}` the number of instances with feature
+    value :math:`j` and class value :math:`c`. Then MDL score for the
+    feature A is
+
+    .. math::
+         \mathrm{MDL}(A) = \\frac{1}{n} \\Bigg[
+         \\log\\binom{n}{n_{1.},\\cdots,n_{n_0 .}} - \\sum_j
+         \\log \\binom{n_{.j}}{n_{1j},\\cdots,n_{n_0 j}} \\\\
+         + \\log \\binom{n+n_0-1}{n_0-1} - \\sum_j \\log
+         \\binom{n_{.j}+n_0-1}{n_0-1}
+         \\Bigg]
+    """
 
     @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
