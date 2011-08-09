@@ -3,6 +3,7 @@
 #include <QtGui/QPainter>
 #include <QtCore/QDebug>
 #include <QtCore/qmath.h>
+#include <QtGui/QStyleOptionGraphicsItem>
 
 QHash<PointData, QPixmap> Point::pixmap_cache;
 
@@ -96,6 +97,16 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
         }
     }
     painter->drawPixmap(QPointF(-0.5*ps, -0.5*ps), pixmap_cache.value(key));
+    if (!m_label.isEmpty())
+    {        
+        QFontMetrics metrics = option->fontMetrics;
+        int th = metrics.height();
+        int tw = metrics.width(m_label);
+        QRect r(-tw/2, 0, tw, th);
+        //painter->fillRect(r, QBrush(Qt::white));
+        painter->drawText(r, Qt::AlignHCenter, m_label);
+    }
+
 }
 
 QRectF Point::boundingRect() const

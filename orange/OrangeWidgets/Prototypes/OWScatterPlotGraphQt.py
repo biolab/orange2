@@ -86,10 +86,6 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         if sizeShapeAttr != "" and sizeShapeAttr != "(Same size)":
             sizeIndex = self.attributeNameIndex[sizeShapeAttr]
             
-        labelIndex = -1
-        if labelAttr != "" and labelAttr != "(Same label)":
-            labelIndex = self.attributeNameIndex[labelAttr]
-
         showContinuousColorLegend = self.showLegend and colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous
 
         (xVarMin, xVarMax) = self.attrValues[xAttr]
@@ -186,7 +182,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
                 shapeData = [self.curveSymbols[0]]
                 
             if labelAttr and labelAttr in [self.rawData.domain.getmeta(mykey).name for mykey in self.rawData.domain.getmetas().keys()] + [var.name for var in self.rawData.domain]:
-                if self.dataDomain[0][labelAttr].varType == orange.VarTypes.Continuous:
+                if self.rawData[0][labelAttr].varType == orange.VarTypes.Continuous:
                     labelData = ["%4.1f" % orange.Value(i[labelAttr]) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
                 else:
                     labelData = [str(i[labelAttr].value) if not i[labelAttr].isSpecial() else "" for i in self.rawData]

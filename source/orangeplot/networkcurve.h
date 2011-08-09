@@ -109,7 +109,6 @@ private:
     double m_y;
     
     int m_index;
-    QString m_label;
     int m_uuid;
     
     QList<EdgeItem*> m_connected_edges;

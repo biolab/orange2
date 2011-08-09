@@ -31,20 +31,15 @@ NodeItem::~NodeItem()
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	Point::paint(painter, option, widget);
-
-	NetworkCurve *curve = (NetworkCurve*)parentItem();
-	bool on_marked_only = curve->labels_on_marked_only();
-
-	if (m_label.compare("") != 0 && (!on_marked_only || is_marked()))
-	{
-		QFontMetrics metrics = painter->fontMetrics();
-		int th = metrics.height();
-		int tw = metrics.width(m_label);
-		QRect r(-tw/2, 0, tw, th);
-		//painter->fillRect(r, QBrush(Qt::white));
-		painter->drawText(r, Qt::AlignHCenter, m_label);
-	}
+    NetworkCurve *curve = (NetworkCurve*)parentItem();
+    bool on_marked_only = curve->labels_on_marked_only();
+    const QString l = label();
+    if (on_marked_only && !is_marked() && l.isEmpty())
+    {
+        set_label(QString());
+    }
+    Point::paint(painter, option, widget);
+    set_label(l);
 }
 
 void NodeItem::set_coordinates(double x, double y)
