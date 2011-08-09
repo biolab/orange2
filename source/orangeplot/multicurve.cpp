@@ -122,7 +122,6 @@ void MultiCurve::update_properties()
     const int n = d.size();
     const QTransform t = graph_transform();
     const QList<Point*> p = points();
-    qDebug() << "Updating multicurve" << p.size() << d.size();
     for (int i = 0; i < n; ++i)
     {
         p[i]->setPos(t.map(QPointF(d[i].x, d[i].y)));

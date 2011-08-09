@@ -40,7 +40,6 @@ Curve::~Curve()
 
 void Curve::updateNumberOfItems()
 {
-    qDebug() << "Updating number of items" << m_continuous;
   cancelAllUpdates();
   if (m_continuous || (m_data.size() == m_pointItems.size()))
   {

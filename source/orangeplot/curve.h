@@ -215,7 +215,6 @@ private:
 template <class Sequence, class Updater>
 void Curve::update_items(const Sequence& sequence, Updater updater, Curve::UpdateFlag flag)
 {
-    qDebug() << "Updating" << sequence.size() << "point";
     if (m_currentUpdate.contains(flag) && m_currentUpdate[flag].isRunning())
     {
         m_currentUpdate[flag].cancel();
