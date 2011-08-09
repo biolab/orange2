@@ -14,6 +14,8 @@ BottomLegend = 2
 TopLegend = 3
 ExternalLegend = 4
 
+UNUSED_ATTRIBUTES_STR = 'unused attributes'
+
 from owaxis import *
 from owcurve import *
 from owlegend import *
@@ -811,6 +813,9 @@ class OWPlot(orangeplot.Plot):
             If ``zoom_only`` is ``True``, only the positions of the axes and their labels are recalculated. 
             Otherwise, all their labels are updated. 
         """
+        if not zoom_only:
+            self._legend.remove_category(UNUSED_ATTRIBUTES_STR)
+            
         for id, item in self.axes.iteritems():
             if item.scale is None and item.labels is None:
                 item.auto_range = self.bounds_for_axis(id)
@@ -848,6 +853,7 @@ class OWPlot(orangeplot.Plot):
                 item.show()
             else:
                 item.hide()
+                self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
             item.zoom_transform = self._zoom_transform
             item.update(zoom_only)
         

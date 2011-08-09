@@ -130,7 +130,7 @@ class OWAxis(QGraphicsItem):
         self.line_item.setLine(self.graph_line)
         self.line_item.setPen(self.style.pen())
         if self.title:
-            self.title_item.setHtml(self.title)
+            self.title_item.setHtml('<b>' + self.title + '</b>')
         if self.title_location == AxisMiddle:
             title_p = 0.5
         elif self.title_location == AxisEnd:

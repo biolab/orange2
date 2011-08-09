@@ -15,19 +15,24 @@ class OWLegendItem(QGraphicsObject):
     def __init__(self, name, point, parent):
         QGraphicsObject.__init__(self, parent)
         self.text_item = QGraphicsTextItem(name, self)
-        s = point.size()
-        height = max(2*s, self.text_item.boundingRect().height())
+        if point:
+            s = point.size()
+            height = max(2*s, self.text_item.boundingRect().height())
+        else:
+            height = self.text_item.boundingRect().height()
         p = 0.5 * height
         self.text_item.setPos(height, 0)
         self.point_item = point
-        self.point_item.setParentItem(self)
-        self.point_item.setPos(p, p)
+        if point:
+            self.point_item.setParentItem(self)
+            self.point_item.setPos(p, p)
         self._rect = QRectF(0, 0, height + self.text_item.boundingRect().width(), height )
         self.rect_item = QGraphicsRectItem(self._rect, self)
         self.rect_item.setPen(QPen(Qt.NoPen))
         self.rect_item.setBrush(Qt.white)
         self.rect_item.stackBefore(self.text_item)
-        self.rect_item.stackBefore(self.point_item)
+        if self.point_item:
+            self.rect_item.stackBefore(self.point_item)
         
     def boundingRect(self):
         return self._rect
@@ -98,6 +103,13 @@ class OWLegend(QGraphicsObject):
             self.items[category] = [OWLegendTitle(category, self)]
         self.items[category].append(OWLegendItem(str(value), point, self))
         self.update()
+        
+    def remove_category(self, category):
+        if category not in self.items:
+            return
+        for item in self.items[category]:
+            self.scene().removeItem(item)
+        del self.items[category]
         
     def update(self):
         self.box_rect = QRectF()

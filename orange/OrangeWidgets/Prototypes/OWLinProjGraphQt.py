@@ -128,7 +128,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                         line = QLineF(x, y, 0, 0)
                         arrows = AxisStart
                         label_pos = AxisStart
-                    self.add_axis(UserAxis + i, title='<b>' + a + '</b>', title_location=label_pos, line=line, arrows=arrows, zoomable=True)
+                    self.add_axis(UserAxis + i, title=a, title_location=label_pos, line=line, arrows=arrows, zoomable=True)
                     self.setAxisLabels(UserAxis + i, [])
             else:
                 XAnchors = [a[0] for a in shownAnchorData]
