@@ -854,7 +854,7 @@ void NetworkCurve::add_nodes(const NetworkCurve::Nodes& nodes)
 	register_points();
 }
 
-void NetworkCurve::set_node_colors(const QMap<int, QColor*>& colors)
+void NetworkCurve::set_node_colors(const QMap<int, QColor>& colors)
 {
 	QMap<int, QColor*>::ConstIterator it;
 	for (it = colors.constBegin(); it != colors.constEnd(); ++it)
@@ -1006,7 +1006,7 @@ void NetworkCurve::clear_node_marks()
 	}
 }
 
-void NetworkCurve::set_edge_color(const QList<QColor*>& colors)
+void NetworkCurve::set_edge_color(const QList<QColor>& colors)
 {
     cancelAllUpdates();
 	int i;
