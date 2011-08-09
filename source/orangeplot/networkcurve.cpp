@@ -593,12 +593,6 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	}
 	QRectF data_r(rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]);
 	double area = data_r.width() * data_r.height();
-	int updateCheckpoint = steps / 50;
-	if (updateCheckpoint == 0 || updateCheckpoint % 2 != 0)
-	{
-		updateCheckpoint += 1;
-	}
-	qDebug() << "updateCheckpoint " << updateCheckpoint;
 	double k2 = area / m_nodes.size();
 	double k = sqrt(k2);
 	double kk = 2 * k;
@@ -607,6 +601,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	double temperature, cooling, cooling_switch, cooling_1, cooling_2;
 	temperature = sqrt(area) / 5;
 	cooling = exp(log(k / 10 / temperature) / steps);
+
 	if (steps > 20)
 	{
 		cooling_switch = sqrt(area) / 100;
@@ -632,6 +627,12 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	}
 
 	// iterations
+	//clock_t refresh_time = clock() + 0.05 * CLOCKS_PER_SEC;
+
+	struct timeval time;
+	gettimeofday(&time, NULL);
+	double refresh_time = time.tv_sec * 1000000 + time.tv_usec + 10000;
+
 	for (i = 0; i < steps; ++i)
 	{
 		foreach (const NodeItem* node, m_nodes)
@@ -681,7 +682,6 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 				}
 			}
 		}
-
 		// calculate attractive forces
 		for (j = 0; j < m_edges.size(); ++j)
 		{
@@ -721,24 +721,25 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 			                   u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
 		}
 
-		if (++count % updateCheckpoint == 0)
+		gettimeofday(&time, NULL);
+		if (time.tv_sec * 1000000 + time.tv_usec > refresh_time && i % 2 == 0)
 		{
 			update_properties();
-			QCoreApplication::processEvents();
-            Plot* p = plot();
-            if (p)
-            {
-                p->set_dirty();
-                p->replot();
-            }
-		}
 
+			gettimeofday(&time, NULL);
+			double start_time = time.tv_sec * 1000000 + time.tv_usec;
+            QCoreApplication::processEvents();
+            gettimeofday(&time, NULL);
+			double refresh_duration = time.tv_sec * 1000000 + time.tv_usec - start_time;
+			double next_refresh = qMax(refresh_duration * 2, 10000.0);
+            gettimeofday(&time, NULL);
+            //qDebug() << "next refresh: " << next_refresh;
+            refresh_time = time.tv_sec * 1000000 + time.tv_usec + next_refresh;
+		}
 		if (m_stop_optimization)
 		{
 			return 0;
 		}
-
-		//temperature = temperature * cooling;
 		if (floor(temperature) > cooling_switch)
 		{
 			temperature -= cooling_1;

@@ -6,6 +6,7 @@
 #include "plot.h"
 #include <deque>
 #include <algorithm>
+#include <sys/time.h>
 
 class QueueVertex
 {
