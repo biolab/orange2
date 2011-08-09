@@ -246,6 +246,7 @@ class OWPlotGUI:
     
     SendSelection = 31
     ClearSelection = 32
+    ShufflePoints = 33
     
     StateButtonsBegin = 35
     StateButtonsEnd = 36
@@ -278,7 +279,8 @@ class OWPlotGUI:
         SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, None, ''),
         SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_REPLACE, None, ''),
         SendSelection : ('Send selection', None, None, 'send_selection', 'Dlg_send'),
-        ClearSelection : ('Clear selection', None, None, 'clear_selection', 'Dlg_clear')
+        ClearSelection : ('Clear selection', None, None, 'clear_selection', 'Dlg_clear'),
+        ShufflePoints : ('ShufflePoints', None, None, 'shuffle_points', 'Dlg_sort')
     }
     '''
         The list of built-in buttons. It is a map of 

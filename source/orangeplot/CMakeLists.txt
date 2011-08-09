@@ -19,6 +19,7 @@ set(orangeplot_SRCS
     curve.cpp 
     unconnectedlinescurve.cpp 
     networkcurve.cpp
+    multicurve.cpp
     plot.cpp 
 )
 qt4_automoc(${orangeplot_SRCS})

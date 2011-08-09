@@ -346,3 +346,15 @@ void Point::clear_cache()
 {
     pixmap_cache.clear();
 }
+
+
+void Point::set_label(const QString& label)
+{
+    m_label = label;
+}
+
+QString Point::label() const
+{
+    return m_label;
+}
+

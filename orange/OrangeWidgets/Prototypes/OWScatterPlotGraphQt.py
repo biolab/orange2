@@ -85,6 +85,10 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         sizeIndex = -1
         if sizeShapeAttr != "" and sizeShapeAttr != "(Same size)":
             sizeIndex = self.attributeNameIndex[sizeShapeAttr]
+            
+        labelIndex = -1
+        if labelAttr != "" and labelAttr != "(Same label)":
+            labelIndex = self.attributeNameIndex[labelAttr]
 
         showContinuousColorLegend = self.showLegend and colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous
 
@@ -158,10 +162,42 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
                 ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, 1., self.spaceBetweenCells).attach(self)            
             else:
                 self.potentialsClassifier = None
-            
+        
+        """
+            Create a single curve with different points
+        """
+        self.singleCurve = True
+        if self.singleCurve:                
+            if colorIndex != -1:
+                if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
+                    colorData = [QColor(*self.contPalette.getRGB(i)) for i in self.noJitteringScaledData[colorIndex]]
+                else:
+                    colorData = [QColor(*self.discPalette.getRGB(i)) for i in self.originalData[colorIndex]]
+            else: colorData = [(0,0,0)]
+
+            if sizeIndex != -1:
+                sizeData = [MIN_SHAPE_SIZE + round(i * self.pointWidth) for i in self.noJitteringScaledData[sizeIndex]]
+            else:
+                sizeData = [self.pointWidth]
+                
+            if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete:
+                shapeData = [self.curveSymbols[int(i)] for i in self.originalData[shapeIndex]]
+            else:
+                shapeData = [self.curveSymbols[0]]
+                
+            if labelAttr and labelAttr in [self.rawData.domain.getmeta(mykey).name for mykey in self.rawData.domain.getmetas().keys()] + [var.name for var in self.rawData.domain]:
+                if self.dataDomain[0][labelAttr].varType == orange.VarTypes.Continuous:
+                    labelData = ["%4.1f" % orange.Value(i[labelAttr]) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
+                else:
+                    labelData = [str(i[labelAttr].value) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
+            else:
+                labelData = [""]
+
+            self.set_main_curve_data(xData, yData, colorData, labelData, sizeData, shapeData)
+
         # ##############################################################
         # if we have insideColors defined
-        if self.insideColors and self.dataHasDiscreteClass and self.haveData:
+        elif self.insideColors and self.dataHasDiscreteClass and self.haveData:
             # variables and domain for the table
             classData = self.originalData[self.dataClassIndex]
             (insideData, stringData) = self.insideColors

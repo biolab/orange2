@@ -40,6 +40,7 @@ Curve::~Curve()
 
 void Curve::updateNumberOfItems()
 {
+    qDebug() << "Updating number of items" << m_continuous;
   cancelAllUpdates();
   if (m_continuous || (m_data.size() == m_pointItems.size()))
   {
@@ -379,6 +380,19 @@ void Curve::set_updated(Curve::UpdateFlags flags)
 {
     m_needsUpdate &= ~flags;
 }
+
+void Curve::set_points(const QList< Point* >& points)
+{
+    m_pointItems = points;
+    register_points();
+}
+
+QList< Point* > Curve::points()
+{
+    return m_pointItems;
+}
+
+
 
 
 

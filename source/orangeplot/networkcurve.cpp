@@ -95,16 +95,6 @@ double NodeItem::y() const
     return m_y;
 }
 
-void NodeItem::set_label(const QString& label)
-{
-    m_label = label;
-}
-
-QString NodeItem::label() const
-{
-    return m_label;
-}
-
 void NodeItem::set_tooltip(const QString& tooltip)
 {
     setToolTip(tooltip);

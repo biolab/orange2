@@ -1,34 +1,11 @@
 #include "plotitem.h"
 #include "plot.h"
 
-#include <QtCore/QVariantAnimation>
+#include <QtCore/QPropertyAnimation>
 
 // Copied from OrangeWidgets/plot/owconstants.py
 const int xBottom = 2;
 const int yLeft = 0;
-
-class MoveAnimation : public QVariantAnimation
-{
-public:
-    MoveAnimation(QGraphicsItem* item, const QPointF& pos, int duration);
-    virtual void updateCurrentValue(const QVariant& value);
-private:
-    QGraphicsItem* m_item;
-};
-
-MoveAnimation::MoveAnimation(QGraphicsItem* item, const QPointF& pos, int duration): QVariantAnimation()
-{
-    m_item = item;
-    setStartValue(item->pos());
-    setEndValue(pos);
-    setDuration(duration);
-}
-
-void MoveAnimation::updateCurrentValue(const QVariant& value)
-{
-    m_item->setPos(value.toPointF());
-}
-
 
 PlotItem::PlotItem(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene), 
     m_plot(0)
@@ -135,10 +112,15 @@ QRectF PlotItem::rect_from_data(const QList< double >& x_data, const QList< doub
     return QRectF(x_min, y_min, x_max-x_min, y_max-y_min);
 }
 
-void PlotItem::move_item(QGraphicsItem* item, const QPointF& pos, int duration)
+void PlotItem::move_item(QGraphicsObject* item, const QPointF& pos, int duration)
 {
-    MoveAnimation* m = new MoveAnimation(item, pos, duration);
-    m->start(QAbstractAnimation::DeleteWhenStopped);
+    QPropertyAnimation* a = new QPropertyAnimation();
+    a->setTargetObject(item);
+    a->setPropertyName("pos");
+    a->setStartValue(item->pos());
+    a->setEndValue(pos);
+    a->setDuration(duration);
+    a->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 void PlotItem::set_data_rect(const QRectF& dataRect) {

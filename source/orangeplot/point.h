@@ -113,6 +113,9 @@ public:
     DataPoint coordinates() const;
     void set_coordinates(const DataPoint& data_point);
     
+    void set_label(const QString& label);
+    QString label() const;
+    
     /**
     * Creates a path from a symbol and a size
     *
@@ -142,6 +145,7 @@ private:
     bool m_transparent;
     
     DataPoint m_coordinates;
+    QString m_label;
 };
 
 struct PointPosUpdater

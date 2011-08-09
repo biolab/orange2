@@ -177,7 +177,10 @@ public:
   void set_dirty(UpdateFlags flags = UpdateAll);
   
   template <class Sequence, class Updater>
-  void update_items(Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
+  void update_items(const Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
+  
+  void set_points(const QList<Point*>& points);
+  QList<Point*> points();
   
 protected:
   QTransform point_transform();
@@ -185,11 +188,11 @@ protected:
   void set_updated(Curve::UpdateFlags flags);
   void cancelAllUpdates();
   
-private:
   void checkForUpdate();
   void updateNumberOfItems();
   void changeContinuous();
   
+private:
   QColor m_color;
   int m_pointSize;
   int m_symbol;
@@ -210,8 +213,9 @@ private:
 };
 
 template <class Sequence, class Updater>
-void Curve::update_items(Sequence& sequence, Updater updater, Curve::UpdateFlag flag)
+void Curve::update_items(const Sequence& sequence, Updater updater, Curve::UpdateFlag flag)
 {
+    qDebug() << "Updating" << sequence.size() << "point";
     if (m_currentUpdate.contains(flag) && m_currentUpdate[flag].isRunning())
     {
         m_currentUpdate[flag].cancel();

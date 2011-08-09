@@ -323,6 +323,9 @@ class OWPlot(orangeplot.Plot):
 	"""
         self.activate_zooming()
         self.selection_behavior = self.AddSelection
+        
+        self.main_curve = None
+        
         self.replot()
         
     selectionCurveList = deprecated_attribute("selectionCurveList", "selection_items")
@@ -608,6 +611,23 @@ class OWPlot(orangeplot.Plot):
         c.set_auto_scale(autoScale)
         
         return self.add_custom_curve(c, enableLegend)
+                
+    def set_main_curve_data(self, x_data, y_data, color_data, label_data, size_data, shape_data, x_axis_key=xBottom, y_axis_key=yLeft):
+        """
+            Creates a single curve that can have points of different colors, shapes and sizes. 
+        """
+        if not self.main_curve:
+            self.main_curve = orangeplot.MultiCurve([], [])
+
+        c = self.main_curve
+        c.set_data(x_data, y_data)
+        c.set_axes(x_axis_key, y_axis_key)
+        c.set_point_colors(color_data)
+        c.set_point_labels(label_data)
+        c.set_point_sizes(size_data)
+        c.set_point_symbols(shape_data)
+        c.name = 'Main Curve'
+        return self.add_custom_curve(c)
         
     def remove_curve(self, item):
         '''
@@ -1408,3 +1428,7 @@ class OWPlot(orangeplot.Plot):
             small_rect.moveBottom(big_rect.bottom())
         elif small_rect.top() < big_rect.top():
             small_rect.moveTop(big_rect.top())
+            
+    def shuffle_points(self):
+        if self.main_curve:
+            self.main_curve.shuffle_points()

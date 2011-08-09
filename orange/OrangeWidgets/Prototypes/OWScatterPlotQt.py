@@ -99,7 +99,7 @@ class OWScatterPlotQt(OWWidget):
         g = self.graph.gui
 
         # zooming / selection
-        self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab)
+        self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons = g.default_zoom_select_buttons + [g.Spacing, g.ShufflePoints])
         self.zoomSelectToolbar.buttons[g.SendSelection].clicked.connect(self.sendSelections)
 
         # ####################################

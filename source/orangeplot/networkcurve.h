@@ -82,9 +82,6 @@ public:
     
     void set_index(int index);
     int index() const;
-    
-    void set_label(const QString& label);
-    QString label() const;
 
     void set_tooltip(const QString& tooltip);
 

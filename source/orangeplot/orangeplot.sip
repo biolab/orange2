@@ -9,3 +9,4 @@
 %Include curve.sip
 %Include unconnectedlinescurve.sip
 %Include networkcurve.sip
+%Include multicurve.sip
