@@ -423,6 +423,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         if self.scatterWidget.attrSize:
             self.scatterWidget.updateGraph()
         else:
+            self.main_curve.set_point_sizes([self.point_width])
             self.update_curves()
     
 
