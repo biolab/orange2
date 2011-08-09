@@ -14,6 +14,7 @@ public:
     void set_point_sizes(const QList<int>& colors);
 
     void shuffle_points();
+    void set_alpha_value(int alpha);
 
     virtual void update_properties();
 };

@@ -22,6 +22,19 @@
 
 #include "curve.h"
 
+struct PointAlphaUpdater
+{
+    PointAlphaUpdater(int alpha) : alpha(alpha) {}
+    void operator()(Point* p)
+    {
+        QColor c = p->color();
+        c.setAlpha(alpha);
+        p->set_color(c);
+    }
+    
+private:
+    int alpha;
+};
 
 class MultiCurve : public Curve
 {
@@ -35,6 +48,7 @@ public:
     void set_point_sizes(const QList<int>& colors);
     
     void shuffle_points();
+    void set_alpha_value(int alpha);
 
     virtual void update_properties();
 };

@@ -1308,6 +1308,8 @@ class OWPlot(orangeplot.Plot):
         self.update_axes()
         
     def update_curves(self):
+        if self.main_curve:
+            self.main_curve.set_alpha_value(self.alpha_value)
         for c in self.plot_items():
             if isinstance(c, orangeplot.Curve) and not getattr(c, 'ignore_alpha', False):
                 au = c.auto_update()

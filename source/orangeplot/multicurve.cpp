@@ -139,4 +139,7 @@ void MultiCurve::shuffle_points()
     }
 }
 
-
+void MultiCurve::set_alpha_value(int alpha)
+{
+    update_items(points(), PointAlphaUpdater(alpha), UpdateBrush);
+}
