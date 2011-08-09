@@ -50,6 +50,8 @@ def resize_plot_item_list(lst, size, item_type, parent):
         If items have to be added to the scene, new items will be of type ``item_type`` and will have ``parent``
         as their parent item.
         
+        The list is resized in place, this function returns nothing. 
+        
         :param lst: The list to be resized
         :type lst: list of QGraphicsItem
         
@@ -61,19 +63,16 @@ def resize_plot_item_list(lst, size, item_type, parent):
         
         :param parent: Any new items will have this as their parent item
         :type parent: QGraphicsItem
-        
-        :rtype: list of QGraphicsItem
-        :returns: The resized list
     """
     n = len(lst)
     if n > size:
-        for i in lst[n:]:
+        for i in lst[size:]:
             i.setParentItem(None)
-        return lst[:n]
+            if i.scene():
+                i.scene().removeItem(i)
+        del lst[size:]
     elif n < size:
-        return lst + [item_type(parent) for i in range(size - n)]
-    else:
-        return lst
+        lst.extend(item_type(parent) for i in range(size - n))
         
 use_animations = True
 _animations = []

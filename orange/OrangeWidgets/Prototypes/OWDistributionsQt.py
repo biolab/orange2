@@ -42,7 +42,7 @@ class distribErrorBarCurve(OWCurve):
             t = self.graph_transform()
             d = self.data()
             n = len(d)/3
-            self._items = resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
+            resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
             for i in range(n):
                 p = QPainterPath()
                 px, py1 = d[3*i]

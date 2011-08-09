@@ -181,8 +181,8 @@ class OWAxis(QGraphicsItem):
         self.update_ticks()
         
         n = len(self._ticks)
-        self.label_items = resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
-        self.tick_items = resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
+        resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
+        resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
         
         if self.scale:
             _min, _max, step = self.scale
