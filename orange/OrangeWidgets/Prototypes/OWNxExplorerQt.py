@@ -156,7 +156,7 @@ class OWNxExplorerQt(OWWidget):
         self.optCombo.addItem("Circular Crossing Reduction")
         self.optCombo.addItem("Circular Original")
         self.optCombo.addItem("Circular Random")
-        #self.optCombo.addItem("Pivot MDS")
+        self.optCombo.addItem("Pivot MDS")
         self.optCombo.setCurrentIndex(self.optMethod)
         self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 100000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
@@ -548,30 +548,28 @@ class OWNxExplorerQt(OWWidget):
         pass
     
     def set_items_distance_matrix(self, matrix):
-#        self.error('')
-#        self.information('')
-#        self.showDistancesCheckBox.setEnabled(0)
-#        
-#        if matrix is None or self.graph is None:
-#            self.items_matrix = None
-#            self.layout.items_matrix = None
-#            if self.networkCanvas: self.networkCanvas.items_matrix = None
-#            return
-#
-#        if matrix.dim != self.graph.number_of_nodes():
-#            self.error('Distance matrix dimensionality must equal number of vertices')
-#            self.items_matrix = None
-#            self.layout.items_matrix = None
-#            if self.networkCanvas: self.networkCanvas.items_matrix = None
-#            return
-#        
-#        self.items_matrix = matrix
-#        self.layout.items_matrix = matrix
-#        if self.networkCanvas: self.networkCanvas.items_matrix = matrix
-#        self.showDistancesCheckBox.setEnabled(1)
-#        
-#        self.networkCanvas.updateCanvas()
-        pass
+        self.error('')
+        self.information('')
+        self.showDistancesCheckBox.setEnabled(0)
+        
+        if matrix is None or self.graph_base is None:
+            self.items_matrix = None
+            self.networkCanvas.items_matrix = None
+            return
+
+        if matrix.dim != self.graph_base.number_of_nodes():
+            self.error('The number of vertices does not match matrix size.')
+            self.items_matrix = None
+            self.networkCanvas.items_matrix = None
+            return
+        
+        self.items_matrix = matrix
+        self.networkCanvas.items_matrix = matrix
+        self.showDistancesCheckBox.setEnabled(1)
+        
+        if self.optMethod == 8:
+            self.optButton.setChecked(True)
+            self.graph_layout()
     
     def send_marked_nodes(self):
         if self.checkSendMarkedNodes:
@@ -1275,7 +1273,7 @@ class OWNxExplorerQt(OWWidget):
         self.information(0)
         
     def set_graph(self, graph):
-        self.set_items_distance_matrix(None)
+        self.information()
              
         if graph is None:
             self.graph = None
@@ -1287,9 +1285,13 @@ class OWNxExplorerQt(OWWidget):
             self.number_of_edges_label = -1
             self._items = None
             self._links = None
+            self.set_items_distance_matrix(None)
             return
         
         self.graph_base = graph
+        
+        if self.items_matrix is not None and self.items_matrix.dim != self.graph_base.number_of_nodes():
+            self.set_items_distance_matrix(None)
         
         if self._network_view is not None:
             graph = self._network_view.init_network(graph)
@@ -1341,8 +1343,8 @@ class OWNxExplorerQt(OWWidget):
         
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
-            self.networkCanvas.use_antialiasing = 0
-            self.networkCanvas.use_animations = 0
+            self.networkCanvas.update_antialiasing(False)
+            self.networkCanvas.update_animations(False)
             self.minVertexSize = 5
             self.maxVertexSize = 5
             self.maxLinkSize = 1
@@ -1363,7 +1365,6 @@ class OWNxExplorerQt(OWWidget):
         
         self.optButton.setChecked(1)
         self.graph_layout()        
-        self.information(0)
         
     def set_network_view(self, nxView):
         if self._network_view is not None:
@@ -1524,8 +1525,7 @@ class OWNxExplorerQt(OWWidget):
         elif self.optMethod == 7:
             self.networkCanvas.networkCurve.circular(NetworkCurve.circular_random);
         elif self.optMethod == 8:
-#            self.graph_layout_pivot_mds()
-            pass
+            self.graph_layout_pivot_mds()
             
         self.optButton.setChecked(False)
 #        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
@@ -1583,20 +1583,6 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.update_canvas()
         self.optButton.setChecked(False)
         self.optButton.setText("Optimize layout")
-        
-    def graph_layout_fr_special(self):
-        if self.graph is None:   #grafa se ni
-            return
-        
-#        steps = 100
-#        initTemp = 1000
-#        coolFactor = math.exp(math.log(10.0/10000.0) / steps)
-#        oldXY = [(self.layout.coors[0][i], self.layout.coors[1][i]) for i in range(self.graph.number_of_nodes())]
-#        #print oldXY
-#        initTemp = self.layout.fr(steps, initTemp, coolFactor)
-#        #print oldXY
-#        self.networkCanvas.updateDataSpecial(oldXY)
-#        self.networkCanvas.replot()
                 
     def graph_layout_fr_radial(self):
         if self.graph is None:   #grafa se ni
@@ -1629,27 +1615,33 @@ class OWNxExplorerQt(OWWidget):
     def graph_layout_pivot_mds(self):
         self.information()
         
-#        if self.items_matrix is None:
-#            self.information('Set distance matrix to input signal')
-#            return
-#        
-#        if self.graph is None:
-#            self.information('No network found')
-#            return
-#        
-#        if self.items_matrix.dim != self.graph.number_of_nodes():
-#            self.error('Distance matrix dimensionality must equal number of vertices')
-#            return
-#        
-#        self.frSteps = min(self.frSteps, self.items_matrix.dim)
-#        qApp.processEvents()
-#        mds = orngMDS.PivotMDS(self.items_matrix, self.frSteps)
-#        x,y = mds.optimize()
-#        self.layout.coors[0] = x
-#        self.layout.coors[1] = y
-#        self.networkCanvas.updateCanvas()
-    
-      
+        if self.items_matrix is None:
+            self.information('Set distance matrix to input signal')
+            return
+        
+        if self.graph_base is None:
+            self.information('No network found')
+            return
+        
+        if self.items_matrix.dim != self.graph_base.number_of_nodes():
+            self.error('The number of vertices does not match matrix size.')
+            return
+        
+        self.frSteps = min(self.frSteps, self.graph.number_of_nodes())
+        qApp.processEvents()
+        
+        if self.graph.number_of_nodes() == self.graph_base.number_of_nodes():
+            matrix = self.items_matrix
+        else:
+            matrix = self.items_matrix.get_items(sorted(self.graph.nodes()))
+        
+        mds = orngMDS.PivotMDS(matrix, self.frSteps)
+        x,y = mds.optimize()
+        xy = zip(list(x), list(y))
+        coors = dict(zip(sorted(self.graph.nodes()), xy))
+        self.networkCanvas.networkCurve.set_node_coordinates(coors)
+        self.networkCanvas.update_canvas()
+
     """
     Network Visualization
     """
@@ -1741,7 +1733,7 @@ class OWNxExplorerQt(OWWidget):
         else:
             self.networkCanvas.networkCurve.set_node_sizes(values, min_size=self.minVertexSize, max_size=self.maxVertexSize)
         
-            self.networkCanvas.replot()
+        self.networkCanvas.replot()
         
     def setFontSize(self):
         if self.networkCanvas is None:

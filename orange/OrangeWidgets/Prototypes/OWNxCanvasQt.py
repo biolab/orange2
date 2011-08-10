@@ -546,10 +546,10 @@ class OWNxCanvas(OWPlot):
 #                edge.pen.setCapStyle(Qt.RoundCap)
         pass    
     
-    def update_animations(self):
-        OWPlot.use_animations(self)
-        self.networkCurve.set_use_animations(True)
-    
+    def update_animations(self, use_animations=None):
+        OWPlot.update_animations(self, use_animations)
+        self.networkCurve.set_use_animations(self.use_animations)
+
     def set_labels_on_marked_only(self, labelsOnMarkedOnly):
         self.networkCurve.set_labels_on_marked_only(labelsOnMarkedOnly)
         self.replot()
