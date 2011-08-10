@@ -194,20 +194,26 @@ void Plot::mark_points(const QRectF& rect, Plot::SelectionBehavior behavior)
 {
     if (behavior == ReplaceSelection)
     {
+        bool b = blockSignals(true);
         unmark_all_points();
         behavior = AddSelection;
+        blockSignals(b);
     }
     set_points_state(rect, scene(), Point::Marked, behavior);
+    emit marked_points_changed();
 }
 
 void Plot::mark_points(const QPolygonF& area, Plot::SelectionBehavior behavior)
 {
     if (behavior == ReplaceSelection)
     {
+        bool b = blockSignals(true);
         unmark_all_points();
         behavior = AddSelection;
+        blockSignals(b);
     }
     set_points_state(area, scene(), Point::Marked, behavior);
+    emit marked_points_changed();
 }
 
 void Plot::select_points(const QRectF& rect, Plot::SelectionBehavior behavior)
@@ -383,6 +389,7 @@ void Plot::unmark_all_points()
             point->set_marked(false);
         }
     }
+    emit marked_points_changed();
 }
 
 void Plot::unselect_all_points()
@@ -408,6 +415,7 @@ void Plot::selected_to_marked()
 		}
 	}
 	emit selection_changed();
+        emit marked_points_changed();
 }
 
 void Plot::marked_to_selected()
@@ -420,6 +428,8 @@ void Plot::marked_to_selected()
 			point->set_marked(false);
 		}
 	}
+	emit selection_changed();
+        emit marked_points_changed();
 }
 
 
