@@ -331,8 +331,8 @@ template<TYPE>
     while (PyDict_Next(sipPy, &i, &kobj, &tobj))
     {
         int k = SIPLong_AsLong(kobj);
-        double fst = (int)PyInt_AsLong(PyTuple_GET_ITEM(tobj,0));
-		double sec = (int)PyInt_AsLong(PyTuple_GET_ITEM(tobj,1));
+        double fst = PyFloat_AsDouble(PyTuple_GET_ITEM(tobj,0));
+		double sec = PyFloat_AsDouble(PyTuple_GET_ITEM(tobj,1));
 		
 		QPair<double, double> t(fst,sec);
  
