@@ -262,3 +262,91 @@ template<TYPE>
     return sipGetState(sipTransferObj);
 %End
 };
+
+// QMap<int, QPair<double, double> > is implemented as a Python dictionary of tuples.
+%MappedType QMap<int, QPair<double, double> > /DocType="dict-of-int-tuple"/
+{
+%TypeHeaderCode
+#include <qmap.h>
+%End
+
+%ConvertFromTypeCode
+    // Create the dictionary.
+    PyObject *d = PyDict_New();
+
+    if (!d)
+        return NULL;
+
+    // Set the dictionary elements.
+    QMap<int, QPair<double, double> >::const_iterator i = sipCpp->constBegin();
+
+    while (i != sipCpp->constEnd())
+    {
+        PyObject *kobj = SIPLong_FromLong(i.key());
+        PyObject *tobj;
+		if ((tobj = PyTuple_New(2)) == NULL)
+			return NULL;
+		
+		PyTuple_SET_ITEM(tobj, 0, PyFloat_FromDouble((double)i.value().first));
+		PyTuple_SET_ITEM(tobj, 1, PyFloat_FromDouble((double)i.value().second));
+    
+        if (kobj == NULL || tobj == NULL || PyDict_SetItem(d, kobj, tobj) < 0)
+        {
+            Py_DECREF(d);
+            if (kobj)
+            {
+                Py_DECREF(kobj);
+            }
+            if (tobj)
+            {
+                Py_DECREF(tobj);
+            }
+            return NULL;
+        }
+
+        Py_DECREF(kobj);
+        Py_DECREF(tobj);
+
+        ++i;
+    }
+
+    return d;
+%End
+
+
+%ConvertToTypeCode
+    PyObject *kobj, *tobj;
+    SIP_SSIZE_T i = 0;
+
+    // Check the type if that is all that is required.
+    if (sipIsErr == NULL)
+    {
+        if (!PyDict_Check(sipPy))
+            return 0;
+        return 1;
+    }
+
+    QMap<int, QPair<double, double> > *qm = new QMap<int, QPair<double, double> >;
+ 
+    while (PyDict_Next(sipPy, &i, &kobj, &tobj))
+    {
+        int k = SIPLong_AsLong(kobj);
+        double fst = (int)PyInt_AsLong(PyTuple_GET_ITEM(tobj,0));
+		double sec = (int)PyInt_AsLong(PyTuple_GET_ITEM(tobj,1));
+		
+		QPair<double, double> t(fst,sec);
+ 
+        if (*sipIsErr)
+        {
+            delete qm;
+            return 0;
+        }
+
+        qm->insert(k, t);
+    }
+ 
+    *sipCppPtr = qm;
+ 
+    return sipGetState(sipTransferObj);
+%End
+};
