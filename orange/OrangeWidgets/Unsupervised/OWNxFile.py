@@ -203,7 +203,7 @@ class OWNxFile(OWWidget):
             self.readingFailed(infob='Error reading file')
             return
 
-        self.infoa.setText("%d nodes" % net.number_of_nodes())
+        self.infoa.setText("%d nodes, %d edges" % (net.number_of_nodes(), net.number_of_edges()))
         
         if net.is_directed():
             self.infob.setText("Directed graph")
