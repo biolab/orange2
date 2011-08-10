@@ -1,8 +1,5 @@
 """ 
 .. index:: ML-kNN Learner
-   
-.. index:: 
-   single: multilabel;  ML-kNN Learner
 
 ***************************************
 ML-kNN Learner

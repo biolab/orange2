@@ -1,5 +1,5 @@
 ###################################
-Multilabel (``multilabel``)
+Multi-label classification (``multilabel``)
 ###################################
 
 .. automodule:: Orange.multilabel
@@ -12,4 +12,3 @@ Multilabel (``multilabel``)
    Orange.multilabel.multiknn
    Orange.multilabel.mlknn
    Orange.multilabel.brknn
-   Orange.multilabel.mmp

@@ -1,8 +1,5 @@
 """ 
 .. index:: BR-kNN Learner
-   
-.. index:: 
-   single: multilabel;  BR-kNN Learner
 
 ***************************************
 BR-kNN Learner

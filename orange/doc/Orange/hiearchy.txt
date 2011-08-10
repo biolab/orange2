@@ -36,4 +36,4 @@ Orange
    optimization
       tuning
    multilabel
-      br; lp; multiknn; mlknn; brknn; mmp
+      br; lp; multiknn; mlknn; brknn

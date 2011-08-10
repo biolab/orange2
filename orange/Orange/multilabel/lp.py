@@ -1,8 +1,5 @@
 """ 
 .. index:: LabelPowerset Learner
-   
-.. index:: 
-   single: multilabel;  LabelPowerset Learner
 
 ***************************************
 LabelPowerset Learner

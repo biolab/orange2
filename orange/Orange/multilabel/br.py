@@ -1,8 +1,5 @@
 """ 
 .. index:: Binary Relevance Learner
-   
-.. index:: 
-   single: multilabel;  Binary Relevance Learner
 
 ***************************************
 Binary Relevance Learner

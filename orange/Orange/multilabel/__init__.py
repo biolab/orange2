@@ -15,6 +15,3 @@ from mlknn import MLkNNClassifier
 
 from brknn import BRkNNLearner
 from brknn import BRkNNClassifier
-
-from mmp import MMPLearner
-from mmp import MMPClassifier
