@@ -112,10 +112,7 @@ class OWNxCanvas(OWPlot):
         
     def update_canvas(self):
         self.networkCurve.update_properties()
-        
-    def get_marked_nodes(self):
-      return self.networkCurve.get_marked_nodes()
-        
+            
     def set_hidden_nodes(self, nodes):
         self.networkCurve.set_hidden_nodes(nodes)
     
@@ -130,20 +127,6 @@ class OWNxCanvas(OWPlot):
     def show_all_vertices(self):
       self.networkCurve.show_all_vertices()
       self.drawPlotItems()
-      
-    def markedToSelection(self):
-        self.networkCurve.mark_to_sel()
-        self.drawPlotItems()
-        
-    def selectionToMarked(self):
-        self.networkCurve.sel_to_mark()
-        self.drawPlotItems()
-        
-    def removeSelection(self, replot=True):
-        self.networkCurve.unselect()
-        
-        if replot:
-          self.replot()
     
     def selectNeighbours(self, sel, nodes, depth, maxdepth):
         #print "list: " + str(sel)
@@ -155,29 +138,20 @@ class OWNxCanvas(OWPlot):
                 #print "neighbours: " + str(neighbours)
                 self.selectNeighbours(sel, neighbours - sel, depth + 1, maxdepth)
         
-    def getSelectedExamples(self):
-        return self.networkCurve.get_selected_nodes()
-        
-    def getUnselectedExamples(self):
-        return self.networkCurve.get_unselected_nodes()
-    
-    def getSelectedGraph(self):
-        selection = self.networkCurve.get_selected_nodes()
-      
-        if len(selection) == 0:
-            return None
-      
-        subgraph = self.graph.subgraph(selection)
-        subnet = Network(subgraph)
-        return subnet
-    
     def selected_nodes(self):
-        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_selected()]
-        #return [p.index() for p in self.selected_points()]
+        #return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_selected()]
+        return [p.index() for p in self.selected_points()]
+        
+    def not_selected_nodes(self):
+        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if not vertex.is_selected()]
         
     def marked_nodes(self):
-        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_marked()]
+        #return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_marked()]
+        return [p.index() for p in self.marked_points()]
         
+    def not_marked_nodes(self):
+        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if not vertex.is_marked()]    
+    
     def get_neighbors_upto(self, ndx, dist):
         newNeighbours = neighbours = set([ndx])
         for d in range(dist):

@@ -242,21 +242,19 @@ class OWNxExplorerQt(OWWidget):
         G = self.networkCanvas.gui
         
         self.zoomSelectToolbar = G.zoom_select_toolbar(self.hcontroArea, orientation = Qt.Vertical,
-                                    buttons = 
-                                        [G.Spacing] * 2 + 
-                                        G.default_zoom_select_buttons + 
-                                        [
-                                            G.Spacing,
-                                            ("buttonM2S", "Add marked to selection", None, None, "markedToSelection", 'Dlg_Mark2Sel'),
-                                            ("buttonS2M", "Add selection to marked", None, None, "selectionToMarked", 
-                                            'Dlg_Sel2Mark'),
-                                            ("buttonRMS", "Remove selection", None, None, "removeSelection", 'Dlg_SelisMark'),
-                                            G.Spacing,
-                                            ("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
-                                            ("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
-                                            ("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
-                                        ])
-        self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.sendData)
+            buttons = 
+                [G.Spacing] * 2 + 
+                G.default_zoom_select_buttons + 
+                [
+                    G.Spacing,
+                    ("buttonM2S", "Add marked to selection", None, None, "marked_to_selected", 'Dlg_Mark2Sel'),
+                    ("buttonS2M", "Add selection to marked", None, None, "selected_to_marked", 'Dlg_Sel2Mark'),
+                    G.Spacing,
+                    ("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
+                    ("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
+                    ("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
+                ])
+        self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_data)
         OWGUI.rubber(self.zoomSelectToolbar)
         
         ib = OWGUI.widgetBox(self.infoTab, "General")
@@ -1080,24 +1078,15 @@ class OWNxExplorerQt(OWWidget):
 #
 #            Orange.network.readwrite.write(self.graph, fn)
         pass
-    
             
-    def sendData(self):
-        graph = self.networkCanvas.getSelectedGraph()
-        vertices = self.networkCanvas.getSelectedVertices()
+    def send_data(self):
+        selected_nodes = self.networkCanvas.selected_nodes()
+        graph = self.graph_base.subgraph(selected_nodes)
         
         if graph is not None:
-            if graph.items() is not None:
-                self.send("Selected Items", graph.items())
-            else:
-                nodes = self.networkCanvas.getSelectedExamples()
-                
-                if len(nodes) > 0 and self.graph_base.items() is not None:
-                    self.send("Selected Items", self.graph_base.items().getitems(nodes))
-                else:
-                    self.send("Selected Items", None)
-                
-            nodes = self.networkCanvas.getUnselectedExamples()
+            self.send("Selected Items", graph.items())
+            
+            nodes = self.networkCanvas.not_selected_nodes()
             if len(nodes) > 0 and self.graph_base.items() is not None:
                 self.send("Unselected Items", self.graph_base.items().getitems(nodes))
             else:
@@ -1105,22 +1094,11 @@ class OWNxExplorerQt(OWWidget):
                 
             self.send("Selected Network", graph)
         else:
-            nodes = self.networkCanvas.getSelectedExamples()
-            if len(nodes) > 0 and self.graph_base.items() is not None:
-                self.send("Selected Items", self.graph_base.items().getitems(nodes))
-            else:
-                self.send("Selected Items", None)
-                
-            nodes = self.networkCanvas.getUnselectedExamples()
-            if len(nodes) > 0 and self.graph_base.items() is not None:
-                self.send("Unselected Items", self.graph_base.items().getitems(nodes))
-            else:
-                self.send("Unselected Items", None)
-        
-        matrix = None
-        if self.items_matrix is not None:
-            matrix = self.items_matrix.getitems(vertices)
-
+            self.send("Selected Items", None)
+            self.send("Unselected Items", None)
+            self.send("Selected Network", None)
+            
+        matrix = None if self.items_matrix is None else self.items_matrix.getitems(selected_nodes)
         self.send("Selected Items Distance Matrix", matrix)
                 
     def setCombos(self):
