@@ -1210,7 +1210,16 @@ class OWNxExplorerQt(OWWidget):
             self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
       
     def change_graph(self, newgraph):
+        self.information()
+        
+        # if graph has more nodes and edges than pixels in 1600x1200 display, 
+        # it is too big to visualize!
+        if newgraph.number_of_nodes() + newgraph.number_of_edges() > 50000:
+            self.information('New graph is too big to visualize. Keeping the old graph.')
+            return
+        
         self.graph = newgraph
+        
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
         
@@ -1248,33 +1257,42 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.networkCurve.update_properties()
         self.networkCanvas.replot()
           
-        self.information(0)
+        
+        
+    def set_graph_none():
+        self.graph = None
+        self.graph_base = None
+        self.clearCombos()
+        self.number_of_nodes_label = -1
+        self.number_of_edges_label = -1
+        self._items = None
+        self._links = None
+        self.set_items_distance_matrix(None)
         
     def set_graph(self, graph):
         self.information()
-             
+        self.error()
+        
         if graph is None:
-            self.graph = None
-            self.graph_base = None
-#            self.layout.set_graph(None)
-#            self.networkCanvas.set_graph_layout(None, None)
-            self.clearCombos()
-            self.number_of_nodes_label = -1
-            self.number_of_edges_label = -1
-            self._items = None
-            self._links = None
-            self.set_items_distance_matrix(None)
+            self.set_graph_none();
             return
         
         self.graph_base = graph
-        
-        if self.items_matrix is not None and self.items_matrix.dim != self.graph_base.number_of_nodes():
-            self.set_items_distance_matrix(None)
         
         if self._network_view is not None:
             graph = self._network_view.init_network(graph)
         
         self.graph = graph
+        
+        # if graph has more nodes and edges than pixels in 1600x1200 display, 
+        # it is too big to visualize!
+        if self.graph.number_of_nodes() + self.graph.number_of_edges() > 50000:
+            self.set_graph_none();
+            self.error('Graph is too big to visualize. Try using one of the network views.')
+            return
+        
+        if self.items_matrix is not None and self.items_matrix.dim != self.graph_base.number_of_nodes():
+            self.set_items_distance_matrix(None)
         
 #        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
 #            positions = [(self._items[node]['x'].value, self._items[node]['y'].value) \
