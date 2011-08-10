@@ -112,7 +112,7 @@ QRectF PlotItem::rect_from_data(const QList< double >& x_data, const QList< doub
     return QRectF(x_min, y_min, x_max-x_min, y_max-y_min);
 }
 
-void PlotItem::move_item(QGraphicsObject* item, const QPointF& pos, int duration)
+void PlotItem::move_item(QGraphicsObject* item, const QPointF& pos, bool animate, int duration)
 {
     QPropertyAnimation* a = new QPropertyAnimation();
     a->setTargetObject(item);

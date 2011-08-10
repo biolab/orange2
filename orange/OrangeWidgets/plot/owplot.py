@@ -1343,11 +1343,9 @@ class OWPlot(orangeplot.Plot):
         self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
         orangeplot.Point.clear_cache()
         
-    def update_animations(self, use_antialiasing=None):
-        if use_antialiasing is not None:
-            self.use_antialiasing = use_antialiasing
-        
-        #use_animations = self.use_antialiasing
+    def update_animations(self, use_animations=None):
+        if use_animations is not None:
+            self.use_animations = use_animations
         
     def animate(self, target, prop_name, end_val, duration = None):
         for a in self._animations:

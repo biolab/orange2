@@ -32,7 +32,7 @@ public:
     Plot* plot();
     
     static QRectF rect_from_data(const QList<double>& x_data, const QList<double>& y_data);
-    static void move_item(QGraphicsObject* item, const QPointF& pos, int duration = 250);
+    static void move_item(QGraphicsObject* item, const QPointF& pos, bool animate = true, int duration = 250);
     
     bool is_auto_scale() const;
     void set_auto_scale(bool auto_scale);

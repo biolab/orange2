@@ -74,10 +74,7 @@ def resize_plot_item_list(lst, size, item_type, parent):
     elif n < size:
         lst.extend(item_type(parent) for i in range(size - n))
         
-use_animations = True
-_animations = []
-
-def move_item(item, pos, duration = None):
+def move_item(item, pos, animate = True, duration = None):
     '''
         Animates ``item`` to move to position ``pos``. 
         If animations are turned off globally, the item is instead move immediately, without any animation. 
@@ -91,19 +88,16 @@ def move_item(item, pos, duration = None):
         :param duration: The duration of the animation. If unspecified, Qt's default value of 250 miliseconds is used.
         :type duration: int
     '''
-    if use_animations:
-        if not duration:
-            duration = 250
-        orangeplot.PlotItem.move_item(item, pos, duration)
-    else:
-        item.setPos(x, y)
-
-def move_item_xy(item, x, y, duration = None):
+    if not duration:
+        duration = 250
+    orangeplot.PlotItem.move_item(item, pos, animate, duration)
+    
+def move_item_xy(item, x, y, animate = True, duration = None):
     '''
         Same as 
         move_item(item, QPointF(x, y), duration)
     '''
-    move_item(item, QPointF(x, y), duration)
+    move_item(item, QPointF(x, y), animate, duration)
         
 class TooltipManager:
     """

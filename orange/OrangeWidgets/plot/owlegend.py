@@ -5,7 +5,7 @@ from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF, qDebug
 
 from owpoint import *
 from owcurve import OWCurve
-from owtools import move_item, move_item_xy
+from owtools import move_item_xy
 
 PointColor = 1
 PointSize = 2
@@ -122,7 +122,7 @@ class OWLegend(QGraphicsObject):
                         y = 0
                         x = x + item.boundingRect().width()
                     self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
-                    move_item_xy(item, x, y)
+                    move_item_xy(item, x, y, self.graph.use_animations)
                     y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
             for lst in self.items.itervalues():
@@ -131,7 +131,7 @@ class OWLegend(QGraphicsObject):
                         x = 0
                         y = y + item.boundingRect().height()
                     self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
-                    move_item_xy(item, x, y)
+                    move_item_xy(item, x, y, self.graph.use_animations)
                     x = x + item.boundingRect().width()
         else:
             qDebug('A bad orientation of the legend')
