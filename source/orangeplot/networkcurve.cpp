@@ -1006,6 +1006,18 @@ void NetworkCurve::clear_node_marks()
 	}
 }
 
+void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >& coordinates)
+{
+	NodeItem *node;
+	QMap<int, QPair<double, double> >::ConstIterator it = coordinates.constBegin();
+	for (; it != coordinates.constEnd(); ++it)
+	{
+		node = m_nodes[it.key()];
+		node->set_x(it.value().first);
+		node->set_y(it.value().second);
+	}
+}
+
 void NetworkCurve::set_edge_color(const QList<QColor>& colors)
 {
     cancelAllUpdates();

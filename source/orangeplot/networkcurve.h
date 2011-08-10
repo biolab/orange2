@@ -235,6 +235,7 @@ public:
     void set_node_tooltips(const QMap<int, QString>& tooltips);
     void set_node_marks(const QMap<int, bool>& marks);
     void clear_node_marks();
+    void set_node_coordinates(const QMap<int, QPair<double, double> >& coordinates);
 
     void set_min_node_size(double size);
     double min_node_size() const;
