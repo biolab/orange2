@@ -1336,12 +1336,18 @@ class OWPlot(orangeplot.Plot):
     update_point_size = update_curves
     update_alpha_value = update_curves
             
-    def update_antialiasing(self):
+    def update_antialiasing(self, use_antialiasing=None):
+        if use_antialiasing is not None:
+            self.use_antialiasing= use_antialiasing
+            
         self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
         orangeplot.Point.clear_cache()
         
-    def update_animations(self):
-        use_animations = self.use_animations
+    def update_animations(self, use_antialiasing=None):
+        if use_antialiasing is not None:
+            self.use_antialiasing = use_antialiasing
+        
+        #use_animations = self.use_antialiasing
         
     def animate(self, target, prop_name, end_val, duration = None):
         for a in self._animations:
