@@ -1,5 +1,5 @@
 /*
-    This file is part of orangeplot, a plot library for Orange
+    This file is part of the plot module for Orange
     Copyright (C) 2011  Miha Čančula <miha@noughmad.eu>
 
     This program is free software: you can redistribute it and/or modify

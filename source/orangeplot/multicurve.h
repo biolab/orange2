@@ -1,5 +1,5 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
+    This file is part of the plot module for Orange
     Copyright (C) 2011  Miha Čančula <miha@noughmad.eu>
 
     This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 #ifndef MULTICURVE_H
 #define MULTICURVE_H
