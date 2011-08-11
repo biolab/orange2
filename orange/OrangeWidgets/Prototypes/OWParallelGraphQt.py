@@ -280,7 +280,7 @@ class OWParallelGraph(OWPlot, orngScaleData):
                 self.addMarker(midLabels[j], j+0.5, 1.0, alignment = Qt.AlignCenter | Qt.AlignTop)
 
         # show the legend
-        if self.dataHasDiscreteClass:
+        if self.dataHasClass:
             if self.dataDomain.classVar.varType == orange.VarTypes.Discrete:
                 legendKeys = []
                 varValues = getVariableValuesSorted(self.dataDomain.classVar)
@@ -294,20 +294,9 @@ class OWParallelGraph(OWPlot, orngScaleData):
                     for (name, color) in legendKeys:
                         self.legend().add_item(self.dataDomain.classVar.name, name, OWPoint(OWPoint.Rect, color, self.point_width))
             else:
-                l = len(attributes)-1
-                xs = [l*1.15, l*1.20, l*1.20, l*1.15]
-                count = 200; height = 1/200.
-                for i in range(count):
-                    y = i/float(count)
-                    col = self.contPalette[y]
-                    curve = PolygonCurve(QPen(col), QBrush(col), xData = xs, yData = [y,y, y+height, y+height])
-                    curve.attach(self)
-
-                # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.dataDomain.classVar.name]
+                values = self.attrValues[self.dataDomain.classVar.name]
                 decimals = self.dataDomain.classVar.numberOfDecimals
-                self.addMarker("%%.%df" % (decimals) % (minVal), xs[0] - l*0.02, 0.04, Qt.AlignLeft)
-                self.addMarker("%%.%df" % (decimals) % (maxVal), xs[0] - l*0.02, 1.0 - 0.04, Qt.AlignLeft)
+                self.legend().add_color_gradient(self.dataDomain.classVar.name, ["%%.%df" % decimals % v for v in values])
         else:
             self.legend().clear()
             self.oldLegendKeys = []

@@ -12,7 +12,7 @@ Plot legend (``owlegend``)
 
 """
 
-from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen
+from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen, QLinearGradient
 from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF, qDebug
 
 from owpoint import *
@@ -82,6 +82,53 @@ class OWLegendTitle(QGraphicsObject):
         
     def paint(self, painter, option, widget):
         pass
+    
+class OWLegendGradient(QGraphicsObject):
+    
+    gradient_width = 20
+    
+    def __init__(self, palette, values, parent):
+        QGraphicsObject.__init__(self, parent)
+        self.palette = palette
+        self.values = values
+        self.legend = parent
+        self.label_items = [QGraphicsTextItem(text, self) for text in values]
+        self.gradient_item = QGraphicsRectItem(self)
+        self.gradient = QLinearGradient()
+        self.gradient.setStops([(v, self.palette[v]) for v in [0,1] ])
+        self.orientation = Qt.Horizontal
+        self.set_orientation(Qt.Vertical)
+        
+    def set_orientation(self, orientation):
+        if self.orientation == orientation:
+            return
+            
+        self.orientation = orientation
+        
+        if orientation == Qt.Vertical:
+            height = self.label_items[0].boundingRect().height()
+            total_height = height * max(5, len(self.label_items))
+            interval = (total_height - self.label_items[0].boundingRect().height()) / (len(self.label_items) -1)
+            self.gradient_item.setRect(10, 0, self.gradient_width, total_height)
+            self.gradient.setStart(10, 0)
+            self.gradient.setFinalStop(10, total_height)
+            self.gradient_item.setBrush(QBrush(self.gradient))
+            self.gradient_item.setPen(QPen(Qt.NoPen))
+            y = 0
+            x = 30
+            for item in self.label_items:
+                move_item_xy(item, x, y)
+                y += interval
+                
+    def boundingRect(self):
+        if self.orientation == Qt.Vertical:
+            return QRectF(10, 0, self.gradient_width + max([item.boundingRect().width() for item in self.label_items]), self.label_items[0].boundingRect().height() * max(5, len(self.label_items)))
+        else:
+            return QRectF(0, 0, )
+        
+    def paint(self, painter, option, widget):
+        pass
+        
         
 class OWLegend(QGraphicsObject):
     """
@@ -93,7 +140,7 @@ class OWLegend(QGraphicsObject):
         
         Arbitrary categories can be created, for an example see :meth:`.OWPlot.update_axes`, which creates a special category
         for unused axes. 
-        
+        decimals
         .. image:: files/legend-categories.png
         
         In the image above, `type` and `milk` are categories with 7 and 2 possible values, respectively. 
@@ -149,7 +196,7 @@ class OWLegend(QGraphicsObject):
         else:
             cat = curve.name[:i]
             name = curve.name[i+1:]
-        self.add_item('', curve.name, curve.point_item(0, 0, 0))
+        self.add_item(cat, name, curve.point_item(0, 0, 0))
         
     def add_item(self, category, value, point):
         """
@@ -158,6 +205,16 @@ class OWLegend(QGraphicsObject):
         if category not in self.items:
             self.items[category] = [OWLegendTitle(category, self)]
         self.items[category].append(OWLegendItem(str(value), point, self))
+        self.update()
+        
+    def add_color_gradient(self, title, values):
+        if len(values) < 2:
+            # No point in showing a gradient with less that two values
+            return
+        if title in self.items:
+            self.remove_category(title)
+        item = OWLegendGradient(self.graph.contPalette, [str(v) for v in values], self)
+        self.items[title] = [OWLegendTitle(title, self), item]
         self.update()
         
     def remove_category(self, category):
@@ -180,6 +237,8 @@ class OWLegend(QGraphicsObject):
         if self._orientation == Qt.Vertical:
             for lst in self.items.itervalues():
                 for item in lst:
+                    if isinstance(item, OWLegendGradient):
+                        item.set_orientation(self._orientation)
                     if self.max_size.height() and y and y + item.boundingRect().height() > self.max_size.height():
                         y = 0
                         x = x + item.boundingRect().width()
@@ -193,6 +252,8 @@ class OWLegend(QGraphicsObject):
                     x = 0
                     y = y + max_h
                 for item in lst:
+                    if isinstance(item, OWLegendGradient):
+                        item.set_orientation(self._orientation)
                     if self.max_size.width() and x and x + item.boundingRect().width() > self.max_size.width():
                         x = 0
                         y = y + max_h
@@ -237,6 +298,9 @@ class OWLegend(QGraphicsObject):
         if self._orientation != orientation:
             self._orientation = orientation
             self.update()
+            
+    def orientation(self):
+        return self._orientation
             
     def set_pos_animated(self, pos):
         if (self.pos() - pos).manhattanLength() < 6 or not self.graph.use_animations:

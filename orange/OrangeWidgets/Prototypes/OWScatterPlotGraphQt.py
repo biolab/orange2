@@ -86,7 +86,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         if sizeShapeAttr != "" and sizeShapeAttr != "(Same size)":
             sizeIndex = self.attributeNameIndex[sizeShapeAttr]
             
-        showContinuousColorLegend = self.showLegend and colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous
+        showContinuousColorLegend = colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous
 
         (xVarMin, xVarMax) = self.attrValues[xAttr]
         (yVarMin, yVarMax) = self.attrValues[yAttr]
@@ -339,57 +339,34 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         # show legend if necessary
         if self.showLegend == 1:
             legendKeys = {}
-            colorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
-            shapeIndex = shapeIndex if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete else -1
-            sizeIndex = sizeIndex if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete else -1
+            discColorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
+            discShapeIndex = shapeIndex if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete else -1
+            discSizeIndex = sizeIndex if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete else -1
                         
-            singleLegend = len([index for index in [colorIndex, shapeIndex, sizeIndex] if index != -1]) == 1
-            if singleLegend:
-                #Show only values
-                legendJoin = lambda name, val: val
-            else:
-                legendJoin = lambda name, val: name + "=" + val 
-                
-            if colorIndex != -1:
-                num = len(self.dataDomain[colorIndex].values)
-                varValues = getVariableValuesSorted(self.dataDomain[colorIndex])
+            if discColorIndex != -1:
+                num = len(self.dataDomain[discColorIndex].values)
+                varValues = getVariableValuesSorted(self.dataDomain[discColorIndex])
                 for ind in range(num):
-                    self.legend().add_item(self.dataDomain[colorIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, self.discPalette[ind], self.pointWidth))
+                    self.legend().add_item(self.dataDomain[discColorIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, self.discPalette[ind], self.pointWidth))
 
-            if shapeIndex != -1:
-                num = len(self.dataDomain[shapeIndex].values)
-                varValues = getVariableValuesSorted(self.dataDomain[shapeIndex])
+            if discShapeIndex != -1:
+                num = len(self.dataDomain[discShapeIndex].values)
+                varValues = getVariableValuesSorted(self.dataDomain[discShapeIndex])
                 for ind in range(num):
-                    self.legend().add_item(self.dataDomain[shapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], Qt.black, self.pointWidth))
+                    self.legend().add_item(self.dataDomain[discShapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], Qt.black, self.pointWidth))
 
             if sizeIndex != -1:
-                num = len(self.dataDomain[sizeIndex].values)
-                varValues = getVariableValuesSorted(self.dataDomain[sizeIndex])
+                num = len(self.dataDomain[discSizeIndex].values)
+                varValues = getVariableValuesSorted(self.dataDomain[discSizeIndex])
                 for ind in range(num):
-                    self.legend().add_item(self.dataDomain[sizeIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, Qt.black, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
+                    self.legend().add_item(self.dataDomain[discSizeIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, Qt.black, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
 
         # ##############################################################
         # draw color scale for continuous coloring attribute
+        qDebug('Show continuous legend? ' + str(colorIndex) + '  ' + repr(showContinuousColorLegend))
         if colorIndex != -1 and showContinuousColorLegend:
-            x0 = xmax + xVar*1.0/100.0;  x1 = x0 + xVar*2.5/100.0
-            count = 200
-            height = yVar / float(count)
-            xs = [x0, x1, x1, x0]
-
-            for i in range(count):
-                y = yVarMin + i*yVar/float(count)
-                col = self.contPalette[i/float(count)]
-                col.setAlpha(self.alphaValue)
-                curve = PolygonCurve(QPen(col), QBrush(col))
-                curve.setData(xs, [y,y, y+height, y+height])
-                curve.attach(self)
-
-
-            # add markers for min and max value of color attribute
-            (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
-            self.addMarker("%s = %%.%df" % (colorAttr, self.dataDomain[colorAttr].numberOfDecimals) % (colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
-            self.addMarker("%s = %%.%df" % (colorAttr, self.dataDomain[colorAttr].numberOfDecimals) % (colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
-
+            self.legend().add_color_gradient(colorAttr, [("%%.%df" % self.dataDomain[colorAttr].numberOfDecimals % v) for v in self.attrValues[colorAttr]])
+            
         self.replot()
 
 ##    # ##############################################################
