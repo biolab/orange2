@@ -91,9 +91,53 @@ class OWPlot(orangeplot.Plot):
         .. automethod:: set_main_title
         
         .. automethod:: set_show_main_title
+        
+        .. attribute:: axis_margin
+            
+            How much space (in pixels) should be left on each side for the axis, its label and its title.
+        
+        .. attribute:: title_margin
+        
+            How much space (in pixels) should be left at the top of the plot for the title, if the title is shown. 
+            
+            .. seealso:: attribute :attr:`show_main_title`
+            
+        .. attribute:: plot_margin
+        
+            How much space (in pixels) should be left at each side of the plot as whitespace. 
+            
     
     **Coordinate transformation**
     
+        There are several coordinate systems used by OWPlot:
+        
+        * `widget` coordinates. 
+          
+          This is the coordinate system of the position returned by :meth:`.QEvent.pos()`. 
+          No calculations or positions is done with this coordinates, they must first be converted 
+          to scene coordinates with :meth:`mapToScene`. 
+          
+        * `data` coordinates. 
+        
+          The value used internally in Orange to specify the values of attributes. 
+          For example, this can be age in years, the number of legs, or any other numeric value. 
+          
+        * `plot` coordinates. 
+        
+          These coordinates specify where the plot items are placed on the graph, but doesn't account for zoom. 
+          They can be retrieved for a particular plot item with :meth:`.PlotItem.pos()`. 
+          
+        * `scene` or `zoom` coordinates. 
+        
+          Like plot coordinates, except that they take the :attr:`zoom_transform` into account. They represent the
+          actual position of an item on the scene. 
+          
+          These are the coordinates returned by :meth:`.PlotItem.scenePos()` and :meth:`mapToScene`. 
+          
+          For example, they can be used to determine what is under the cursor. 
+          
+        In most cases, you will use data coordinates for interacting with the actual data, and scene coordinates for
+        interacting with the plot items. The other two sets are mostly used for converting. 
         
         .. automethod:: map_to_graph
         
@@ -124,7 +168,10 @@ class OWPlot(orangeplot.Plot):
         
         
     **Data curves**
+        The preferred method for showing a series of data points is :meth:`set_main_curve_data`. 
+        It allows you to specify point positions, colors, labels, sizes and shapes. 
         
+        .. automethod:: set_main_curve_data
         
         .. automethod:: add_curve
         
@@ -242,9 +289,11 @@ class OWPlot(orangeplot.Plot):
         self._legend_margin = QRectF(0, 0, 100, 0)
         self._legend_moved = False
         self.axes = dict()
+
         self.axis_margin = 50
         self.title_margin = 40
         self.graph_margin = 20
+        
         self.mainTitle = None
         self.showMainTitle = False
         self.XaxisTitle = None
@@ -355,7 +404,7 @@ class OWPlot(orangeplot.Plot):
     def map_to_graph(self, point, axes = None, zoom = False):
         '''
             Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from data coordinates
-            to scene coordinates. 
+            to plot coordinates. 
             
             :param point: The point in data coordinates
             :type point: tuple or QPointF
@@ -364,7 +413,7 @@ class OWPlot(orangeplot.Plot):
                          If none are specified, (xBottom, yLeft) will be used. 
             :type axes: tuple of float float
             
-            :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation.
+            :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation, and the result will be in scene coordinates instead. 
             :type zoom: int
             
             :return: The transformed point in scene coordinates
@@ -384,8 +433,8 @@ class OWPlot(orangeplot.Plot):
         
     def map_from_graph(self, point, axes = None, zoom = False):
         '''
-            Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from data coordinates
-            to scene coordinates. 
+            Maps ``point``, which can be ether a tuple of (x,y), a QPoint or a QPointF, from plot coordinates
+            to data coordinates. 
             
             :param point: The point in data coordinates
             :type point: tuple or QPointF
@@ -393,7 +442,7 @@ class OWPlot(orangeplot.Plot):
             :param axes: The pair of axes along which to transform the point. If none are specified, (xBottom, yLeft) will be used. 
             :type axes: tuple of float float
             
-            :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation.
+            :param zoom: if ``True``, the current :attr:`zoom_transform` will be considered in the transformation, and the ``point`` should be in scene coordinates instead. 
             :type zoom: int
             
             :returns: The transformed point in data coordinates
@@ -617,6 +666,32 @@ class OWPlot(orangeplot.Plot):
     def set_main_curve_data(self, x_data, y_data, color_data, label_data, size_data, shape_data, x_axis_key=xBottom, y_axis_key=yLeft):
         """
             Creates a single curve that can have points of different colors, shapes and sizes. 
+            This is the preferred method for visualization that show a series of different points. 
+            
+            :param x_data: The list of X coordinates of the points 
+            :type x_data: list of float
+            
+            :param y_data: The list of Y coordinates of the points 
+            :type y_data: list of float
+            
+            :param color_data: The list of point colors
+            :type color_data: list of QColor
+            
+            :param label_data: The list of point labels
+            :type label_data: list of str
+            
+            :param size_data: The list of point sizes
+            :type size_data: list of int
+            
+            :param shape_data: The list of point symbols
+            :type shape_data: list of int
+            
+            The number of points in the curve will be equal to min(len(x_data), len(y_data)). 
+            The other four list can be empty, in which case a default value will be used. 
+            If they contain only one element, its value will be used for all points. 
+            
+            .. note:: This function does not add items to the legend automatically. 
+                      You will have to add them yourself with :meth:`.OWLegend.add_item`. 
         """
         if not self.main_curve:
             self.main_curve = orangeplot.MultiCurve([], [])
@@ -1162,7 +1237,7 @@ class OWPlot(orangeplot.Plot):
         
     def transform(self, axis_id, value):
         """
-            Transforms the ``value`` from data to scene coordinates along the axis ``axis_id``. 
+            Transforms the ``value`` from data to plot coordinates along the axis ``axis_id``. 
             
             This function always ignores zoom. If you need to account for zooming, use :meth:`map_to_graph`. 
         """
@@ -1180,7 +1255,7 @@ class OWPlot(orangeplot.Plot):
         
     def inv_transform(self, axis_id, value):
         """
-            Transforms the ``value`` from scene to data coordinates along the axis ``axis_id``. 
+            Transforms the ``value`` from plot to data coordinates along the axis ``axis_id``. 
             
             This function always ignores zoom. If you need to account for zooming, use :meth:`map_from_graph`. 
         """

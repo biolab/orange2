@@ -1,4 +1,16 @@
+"""
+##########################
+Plot legend (``owlegend``)
+##########################
 
+.. autoclass:: OWLegendItem
+
+.. autoclass:: OWLegendTitle
+
+.. autoclass:: OWLegend
+    :members:
+
+"""
 
 from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen
 from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF, qDebug
@@ -12,6 +24,20 @@ PointSize = 2
 PointSymbol = 4
 
 class OWLegendItem(QGraphicsObject):
+    """
+        Represents a legend item with a title and a point symbol.
+        
+        :param name: The text to display
+        :type name: str
+        
+        :param point: The point symbol
+        :type point: :obj:`.OWPoint`
+        
+        :param parent: The parent item, passed to QGraphicsItem
+        :type parent: :obj:`QGraphicsItem`
+        
+        .. seealso:: :meth:`.OWLegend.add_item`, :meth:`.OWLegend.add_curve`. 
+    """
     def __init__(self, name, point, parent):
         QGraphicsObject.__init__(self, parent)
         self.text_item = QGraphicsTextItem(name, self)
@@ -41,6 +67,9 @@ class OWLegendItem(QGraphicsObject):
         pass
     
 class OWLegendTitle(QGraphicsObject):
+    """
+        A legend item that shows ``text`` with a bold font and no symbol. 
+    """
     def __init__(self, text, parent):
         QGraphicsObject.__init__(self, parent)
         self.text_item = QGraphicsTextItem(text + ':', self)
@@ -55,6 +84,21 @@ class OWLegendTitle(QGraphicsObject):
         pass
         
 class OWLegend(QGraphicsObject):
+    """
+        A legend for :obj:`.OWPlot`. 
+        
+        Its items are arranged into a hierarchy by `category`. This is useful when points differ in more than one attribute. 
+        In such a case, there can be one category for point color and one for point shape. Usually the category name
+        will be the name of the attribute, while the item's title will be the value. 
+        
+        Arbitrary categories can be created, for an example see :meth:`.OWPlot.update_axes`, which creates a special category
+        for unused axes. 
+        
+        .. image:: files/legend-categories.png
+        
+        In the image above, `type` and `milk` are categories with 7 and 2 possible values, respectively. 
+        
+    """
     def __init__(self, graph, scene):
         QGraphicsObject.__init__(self)
         if scene:
@@ -80,6 +124,9 @@ class OWLegend(QGraphicsObject):
         self._floating_animation = None
 
     def clear(self):
+        """
+            Removes all items from the legend
+        """
         for lst in self.items.itervalues():
             for i in lst:
                 i.setParentItem(None)
@@ -88,7 +135,13 @@ class OWLegend(QGraphicsObject):
         self.update()
         
 
-    def add_curve(self, curve, attributes = []):
+    def add_curve(self, curve):
+        """
+            Adds a legend item with the same point symbol and name as ``curve``.
+            
+            If the curve's name contains the equal sign (=), it is split at that sign. The first part of the curve
+            is a used as the category, and the second part as the value. 
+        """
         i = curve.name.find('=')
         if i == -1:
             cat = ''
@@ -99,12 +152,18 @@ class OWLegend(QGraphicsObject):
         self.add_item('', curve.name, curve.point_item(0, 0, 0))
         
     def add_item(self, category, value, point):
+        """
+            Adds an item with title ``value`` and point symbol ``point`` to the specified ``category``. 
+        """
         if category not in self.items:
             self.items[category] = [OWLegendTitle(category, self)]
         self.items[category].append(OWLegendItem(str(value), point, self))
         self.update()
         
     def remove_category(self, category):
+        """
+            Removes ``category`` and all items that belong to it. 
+        """
         if category not in self.items:
             return
         for item in self.items[category]:
@@ -112,6 +171,9 @@ class OWLegend(QGraphicsObject):
         del self.items[category]
         
     def update(self):
+        """
+            Updates the legend, repositioning the items according to the legend's orientation. 
+        """
         self.box_rect = QRectF()
         x, y = 0, 0
         
@@ -126,13 +188,17 @@ class OWLegend(QGraphicsObject):
                     y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
             for lst in self.items.itervalues():
+                max_h = max(item.boundingRect().height() for item in lst)
+                if lst:
+                    x = 0
+                    y = y + max_h
                 for item in lst:
                     if self.max_size.width() and x and x + item.boundingRect().width() > self.max_size.width():
                         x = 0
-                        y = y + item.boundingRect().height()
+                        y = y + max_h
                     self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
                     move_item_xy(item, x, y, self.graph.use_animations)
-                    x = x + item.boundingRect().width()
+                    x = x + item.boundingRect().width()                
         else:
             qDebug('A bad orientation of the legend')
     
@@ -165,6 +231,9 @@ class OWLegend(QGraphicsObject):
         pass
     
     def set_orientation(self, orientation):
+        """
+            Sets the legend's orientation to ``orientation``. 
+        """
         if self._orientation != orientation:
             self._orientation = orientation
             self.update()
@@ -184,6 +253,12 @@ class OWLegend(QGraphicsObject):
             self._floating_animation.start(QPropertyAnimation.KeepWhenStopped)
         
     def set_floating(self, floating, pos=None):
+        """
+            If floating is ``True``, the legend can be dragged with the mouse. 
+            Otherwise, it's fixed in its position. 
+            
+            If ``pos`` is specified, the legend is moved there. 
+        """
         if floating == self._floating:
             return
         self._floating = floating

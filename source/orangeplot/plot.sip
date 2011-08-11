@@ -75,6 +75,11 @@ public:
     Point* nearest_point(const QPointF& pos);
     Point* point_at(const DataPoint& pos);
     
+    void add_point(Point* point, PlotItem* parent);
+    void add_points(const QList<Point*>& items, PlotItem* parent);
+    void remove_point(Point* point, PlotItem* parent);
+    void remove_all_points(PlotItem* parent);
+
 Q_SIGNALS:
     void selection_changed();
     
