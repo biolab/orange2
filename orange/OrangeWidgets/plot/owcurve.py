@@ -69,7 +69,7 @@ Curve (``owcurve``)
         
     .. method:: register_points()
         
-        If this item constains any points (of type :obj:`OWPoint`), add them to the plot in this function.
+        If this item constains any points (of type :obj:`.OWPoint`), add them to the plot in this function.
         
         The default implementation does nothing. 
         

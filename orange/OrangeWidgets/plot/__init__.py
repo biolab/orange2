@@ -4,10 +4,10 @@
 Plot classes and tools for use in Orange widgets
 *************************
 
-The main class of this module is :obj:`OWPlot`, from which all plots 
+The main class of this module is :obj:`.OWPlot`, from which all plots 
 in visualization widgets should inherit. 
 
-This module also contains plot elements, which are normally used by the :obj:`OrangeWidgets.plot.owplot.OWPlot`, 
+This module also contains plot elements, which are normally used by the :obj:`.OWPlot`, 
 but can also be used directly or subclassed
 
 """
