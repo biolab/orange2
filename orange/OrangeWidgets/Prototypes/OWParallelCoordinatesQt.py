@@ -20,7 +20,7 @@ from sys import getrecursionlimit, setrecursionlimit
 class OWParallelCoordinatesQt(OWVisWidget):
     settingsList = ["graph.jitterSize", "graph.showDistributions",
                     "graph.showAttrValues", "graph.useAntialiasing",
-                    "graph.useSplines", "graph.alphaValue", "graph.alphaValue2", "graph.enabledLegend", "autoSendSelection",
+                    "graph.useSplines", "graph.alphaValue", "graph.alphaValue2", "graph.show_legend", "autoSendSelection",
                     "toolbarSelection", "graph.showStatistics", "colorSettings", "selectedSchemaIndex", "showAllAttributes"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
@@ -56,7 +56,7 @@ class OWParallelCoordinatesQt(OWVisWidget):
         self.graph.showStatistics = 0
         self.graph.showAttrValues = 1
         self.graph.useSplines = 0
-        self.graph.enabledLegend = 1
+        self.graph.show_legend = 1
 
         #load settings
         self.loadSettings()
@@ -93,7 +93,7 @@ class OWParallelCoordinatesQt(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateGraph, tooltip  = "Show lines using splines")
-        OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
+        OWGUI.checkBox(box, self, 'graph.show_legend', 'Show legend', callback = self.updateGraph)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Axis Distance")
         resizeColsBox = OWGUI.widgetBox(box, 0, "horizontal", 0)

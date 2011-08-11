@@ -24,7 +24,7 @@ class OWParallelGraph(OWPlot, orngScaleData):
         self.useSplines = 0
         self.showStatistics = 0
         self.lastSelectedCurve = None
-        self.enabledLegend = 0
+        self.show_legend = 0
         self.enableGridXB(0)
         self.enableGridYL(0)
         self.domainContingency = None
@@ -280,7 +280,7 @@ class OWParallelGraph(OWPlot, orngScaleData):
                 self.addMarker(midLabels[j], j+0.5, 1.0, alignment = Qt.AlignCenter | Qt.AlignTop)
 
         # show the legend
-        if self.enabledLegend == 1 and self.dataHasDiscreteClass:
+        if self.dataHasDiscreteClass:
             if self.dataDomain.classVar.varType == orange.VarTypes.Discrete:
                 legendKeys = []
                 varValues = getVariableValuesSorted(self.dataDomain.classVar)
@@ -291,9 +291,8 @@ class OWParallelGraph(OWPlot, orngScaleData):
                 if legendKeys != self.oldLegendKeys:
                     self.oldLegendKeys = legendKeys
                     self.legend().clear()
-                    self.addCurve("<b>" + self.dataDomain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = OWPoint.NoSymbol, enableLegend = 1)
                     for (name, color) in legendKeys:
-                        self.addCurve(name, color, color, 15, symbol = OWPoint.Rect, enableLegend = 1)
+                        self.legend().add_item(self.dataDomain.classVar.name, name, OWPoint(OWPoint.Rect, color, self.point_width))
             else:
                 l = len(attributes)-1
                 xs = [l*1.15, l*1.20, l*1.20, l*1.15]
@@ -383,11 +382,11 @@ class OWParallelGraph(OWPlot, orngScaleData):
     # handle tooltip events
     def event(self, ev):
         if ev.type() == QEvent.ToolTip:
-            x = self.invTransform(QwtPlot.xBottom, ev.pos().x())
-            y = self.invTransform(QwtPlot.yLeft, ev.pos().y())
+            x = self.invTransform(xBottom, ev.pos().x())
+            y = self.invTransform(yLeft, ev.pos().y())
 
-            canvasPos = self.canvas().mapFrom(self, ev.pos())
-            xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+            canvasPos = self.mapToScene(ev.pos())
+            xFloat = self.invTransform(xBottom, canvasPos.x())
             contact, (index, pos) = self.testArrowContact(int(round(xFloat)), canvasPos.x(), canvasPos.y())
             if contact:
                 attr = self.dataDomain[self.visualizedAttributes[index]]
@@ -417,30 +416,30 @@ class OWParallelGraph(OWPlot, orngScaleData):
         if type(indices) != list: indices = [indices]
         for index in indices:
             if index >= len(self.visualizedAttributes) or index < 0: continue
-            intX = self.transform(QwtPlot.xBottom, index)
-            bottom = self.transform(QwtPlot.yLeft, self.selectionConditions.get(self.visualizedAttributes[index], [0,1])[0])
+            intX = self.transform(xBottom, index)
+            bottom = self.transform(yLeft, self.selectionConditions.get(self.visualizedAttributes[index], [0,1])[0])
             bottomRect = QRect(intX-self.bottomPixmap.width()/2, bottom, self.bottomPixmap.width(), self.bottomPixmap.height())
             if bottomRect.contains(QPoint(x,y)): return 1, (index, 0)
-            top = self.transform(QwtPlot.yLeft, self.selectionConditions.get(self.visualizedAttributes[index], [0,1])[1])
+            top = self.transform(yLeft, self.selectionConditions.get(self.visualizedAttributes[index], [0,1])[1])
             topRect = QRect(intX-self.topPixmap.width()/2, top-self.topPixmap.height(), self.topPixmap.width(), self.topPixmap.height())
             if topRect.contains(QPoint(x,y)): return 1, (index, 1)
         return 0, (0, 0)
 
     def mousePressEvent(self, e):
-        canvasPos = self.canvas().mapFrom(self, e.pos())
-        xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+        canvasPos = self.mapToScene(e.pos())
+        xFloat = self.invTransform(xBottom, canvasPos.x())
         contact, info = self.testArrowContact(int(round(xFloat)), canvasPos.x(), canvasPos.y())
 
         if contact:
             self.pressedArrow = info
-        elif self.state in [ZOOMING, PANNING]:
+        else:
             OWPlot.mousePressEvent(self, e)
 
 
     def mouseMoveEvent(self, e):
         if hasattr(self, "pressedArrow"):
-            canvasPos = self.canvas().mapFrom(self, e.pos())
-            yFloat = min(1, max(0, self.invTransform(QwtPlot.yLeft, canvasPos.y())))
+            canvasPos = self.mapToScene(e.pos())
+            yFloat = min(1, max(0, self.invTransform(yLeft, canvasPos.y())))
             index, pos = self.pressedArrow
             attr = self.dataDomain[self.visualizedAttributes[index]]
             oldCondition = self.selectionConditions.get(attr.name, [0,1])
@@ -455,7 +454,7 @@ class OWParallelGraph(OWPlot, orngScaleData):
             if self.sendSelectionOnUpdate and self.autoSendSelectionCallback:
                 self.autoSendSelectionCallback()
 
-        elif self.state in [ZOOMING, PANNING]:
+        else:
             OWPlot.mouseMoveEvent(self, e)
 
     def mouseReleaseEvent(self, e):
@@ -463,7 +462,7 @@ class OWParallelGraph(OWPlot, orngScaleData):
             del self.pressedArrow
             if self.autoSendSelectionCallback and not (self.sendSelectionOnUpdate and self.autoSendSelectionCallback):
                 self.autoSendSelectionCallback() # send the new selection
-        elif self.state in [ZOOMING, PANNING]:
+        else:
             OWPlot.mouseReleaseEvent(self, e)
 
 
@@ -471,24 +470,24 @@ class OWParallelGraph(OWPlot, orngScaleData):
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
             if self.tempSelectionCurve: self.tempSelectionCurve.detach()
             self.tempSelectionCurve = None
-            canvasPos = self.canvas().mapFrom(self, e.pos())
-            x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
-            y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
-            diffX = (self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue() -  self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()) / 2.
+            canvasPos = self.mapToScene(e.pos())
+            x = self.invTransform(xBottom, canvasPos.x())
+            y = self.invTransform(yLeft, canvasPos.y())
+            diffX = (self.axisScaleDiv(xBottom).interval().maxValue() -  self.axisScaleDiv(xBottom).interval().minValue()) / 2.
 
-            xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()) / diffX
-            xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue() - x) / diffX
-            ymin = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
-            ymax = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
+            xmin = x - (diffX/2.) * (x - self.axisScaleDiv(xBottom).interval().minValue()) / diffX
+            xmax = x + (diffX/2.) * (self.axisScaleDiv(xBottom).interval().maxValue() - x) / diffX
+            ymin = self.axisScaleDiv(yLeft).interval().maxValue()
+            ymax = self.axisScaleDiv(yLeft).interval().minValue()
 
-            self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).interval().minValue(), self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().minValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()))
+            self.zoomStack.append((self.axisScaleDiv(xBottom).interval().minValue(), self.axisScaleDiv(xBottom).interval().maxValue(), self.axisScaleDiv(yLeft).interval().minValue(), self.axisScaleDiv(yLeft).interval().maxValue()))
             self.setNewZoom(xmin, xmax, ymax, ymin)
             return 1
 
         # if the user clicked between two lines send a list with the names of the two attributes
         elif self.parallelDlg:
-            x1 = int(self.invTransform(QwtPlot.xBottom, e.x()))
-            axis = self.axisScaleDraw(QwtPlot.xBottom)
+            x1 = int(self.invTransform(xBottom, e.x()))
+            axis = self.axisScaleDraw(xBottom)
             self.parallelDlg.sendShownAttributes([str(axis.label(x1)), str(axis.label(x1+1))])
         return 0
 
@@ -501,10 +500,10 @@ class OWParallelGraph(OWPlot, orngScaleData):
     # draw the curves and the selection conditions
     def drawCanvas(self, painter):
         OWPlot.drawCanvas(self, painter)
-        for i in range(int(max(0, math.floor(self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()))), int(min(len(self.visualizedAttributes), math.ceil(self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue())+1))):
+        for i in range(int(max(0, math.floor(self.axisScaleDiv(xBottom).interval().minValue()))), int(min(len(self.visualizedAttributes), math.ceil(self.axisScaleDiv(xBottom).interval().maxValue())+1))):
             bottom, top = self.selectionConditions.get(self.visualizedAttributes[i], (0, 1))
-            painter.drawPixmap(self.transform(QwtPlot.xBottom, i)-self.bottomPixmap.width()/2, self.transform(QwtPlot.yLeft, bottom), self.bottomPixmap)
-            painter.drawPixmap(self.transform(QwtPlot.xBottom, i)-self.topPixmap.width()/2, self.transform(QwtPlot.yLeft, top)-self.topPixmap.height(), self.topPixmap)
+            painter.drawPixmap(self.transform(xBottom, i)-self.bottomPixmap.width()/2, self.transform(yLeft, bottom), self.bottomPixmap)
+            painter.drawPixmap(self.transform(xBottom, i)-self.topPixmap.width()/2, self.transform(yLeft, top)-self.topPixmap.height(), self.topPixmap)
 
     # get selected examples
     # this function must be called after calling self.updateGraph
