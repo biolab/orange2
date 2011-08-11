@@ -552,17 +552,14 @@ class ParallelCoordinatesCurve(OWCurve):
 	
     def cubicPath(self):
         path = QPainterPath()
-        transform = lambda x, y: self.graph_transform().map(QPointF(x,y))
-#        transform = lambda x, y: QPointF(x, y)
-#        data = [QPointF(transform(x, y)) for x, y in zip(self.xData, self.yData)]
         data = self.data()
         for i in range(len(data) / self.attrCount):
             segment = data[i*self.attrCount: (i + 1)*self.attrCount]
             for i, p in enumerate(segment[:-1]):
                 x1, y1 = p
                 x2, y2 = segment[i + 1]
-                path.moveTo(transform(x1, y1))
-                path.cubicTo(transform(x1 + 0.5, y1), transform(x2 - 0.5, y2), transform(x2, y2))
+                path.moveTo(x1, y1)
+                path.cubicTo(QPointF(x1 + 0.5, y1), QPointF(x2 - 0.5, y2), QPointF(x2, y2))
         return path        
                 
                 
