@@ -3148,7 +3148,12 @@ at the end with fclose
 #include "slist.hpp"
 int svm_save_model_alt(string& buffer, const svm_model *model){
 	FILE *fp = tmpfile();
-	if(fp==NULL) return -1;
+
+	if(fp==NULL)
+	{
+		perror("tmpfile");
+		return -1;
+	}
 
 	const svm_parameter& param = model->param;
 
@@ -3236,9 +3241,9 @@ int svm_save_model_alt(string& buffer, const svm_model *model){
 		buffer+=str;
 	}
 
-	if (ferror (fp) != 0){
-		perror ("") ;
-		fclose (fp);
+	if (ferror(fp) != 0){
+		perror("fgets");
+		fclose(fp);
 		return -1;
 	}
 	fclose(fp);
