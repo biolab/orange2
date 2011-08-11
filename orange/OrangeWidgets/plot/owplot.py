@@ -1102,11 +1102,11 @@ class OWPlot(orangeplot.Plot):
             self._current_ps_item = None
         
     def get_selected_points(self, xData, yData, validData):
-        selected = []
-        unselected = []
-        for i in self.selected_points(xData, yData):
-            selected.append(i)
-            unselected.append(not i)
+        if self.main_curve:
+            selected = [point.is_selected() for point in self.main_curve.points()]
+        else:
+            selected = self.selected_points(xData, yData)
+        unselected = [not i for i in selected]
         return selected, unselected
         
     def add_selection(self, reg):

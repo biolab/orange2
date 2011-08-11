@@ -92,6 +92,9 @@ public:
   typedef QFlags<Curve::UpdateFlag> UpdateFlags;
   
   void set_dirty(Curve::UpdateFlags flags = Curve::UpdateAll);
+
+  void set_points(const QList<Point*>& points);
+  QList<Point*> points();
   
 protected:
   QTransform point_transform();

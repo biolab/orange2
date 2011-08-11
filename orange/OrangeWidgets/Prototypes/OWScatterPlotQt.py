@@ -143,7 +143,7 @@ class OWScatterPlotQt(OWWidget):
         box = OWGUI.widgetBox(self.SettingsTab, "Auto Send Selected Data When...")
         OWGUI.checkBox(box, self, 'autoSendSelection', 'Adding/Removing selection areas', callback = self.selectionChanged, tooltip = "Send selected data whenever a selection area is added or removed")
         OWGUI.checkBox(box, self, 'graph.sendSelectionOnUpdate', 'Moving/Resizing selection areas', tooltip = "Send selected data when a user moves or resizes an existing selection area")
-        self.graph.autoSendSelectionCallback = self.selectionChanged
+        self.graph.selection_changed.connect(self.selectionChanged)
 
         self.GeneralTab.layout().addStretch(100)
         self.SettingsTab.layout().addStretch(100)

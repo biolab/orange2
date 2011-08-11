@@ -503,22 +503,6 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
             self.potentialContext = (rx, ry, self.shownXAttribute, self.shownYAttribute, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
             self.potentialsImageFromClassifier = self.potentialsClassifier
 
-
-    def drawCanvas(self, painter):
-        if self.showProbabilities and getattr(self, "potentialsClassifier", None):
-            if not (self.potentialsClassifier is getattr(self,"potentialsImageFromClassifier", None)):
-                self.computePotentials()
-            target = QRectF(self.transform(xBottom, self.xmin), self.transform(yLeft, self.ymax),
-                            self.transform(xBottom, self.xmax) - self.transform(xBottom,self.xmin),
-                            self.transform(yLeft, self.ymin) - self.transform(yLeft, self.ymax))
-            source = QRectF(0, 0, self.potentialsImage.size().width(), self.potentialsImage.size().height())
-            painter.drawImage(target, self.potentialsImage, source)
-#            painter.drawImage(self.transform(xBottom, self.xmin), self.transform(yLeft, self.ymax), self.potentialsImage)
-        OWPlot.drawCanvas(self, painter)
-
-
-
-
 if __name__== "__main__":
     #Draw a simple graph
     a = QApplication(sys.argv)
