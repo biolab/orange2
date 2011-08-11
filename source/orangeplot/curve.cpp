@@ -360,7 +360,7 @@ void Curve::register_points()
     if (p)
     {
         p->remove_all_points(this);
-        p->add_points(m_data, m_pointItems, this);
+        p->add_points(m_pointItems, this);
     }
 }
 

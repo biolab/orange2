@@ -27,6 +27,15 @@ bool operator==(const PointData& one, const PointData& other)
     return one.symbol == other.symbol && one.size == other.size && one.state == other.state && one.color == other.color;
 }
 
+QDebug& operator<<(QDebug& stream, const DataPoint& point)
+{
+    stream.maybeSpace() << "DataPoint(" << point.x << ','<< point.y << ')';
+}
+
+bool operator==(const DataPoint& one, const DataPoint& other)
+{
+    return one.x == other.x && one.y == other.y;
+}
 
 Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsItem(parent),
  m_symbol(symbol),

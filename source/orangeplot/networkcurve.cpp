@@ -46,6 +46,12 @@ void NodeItem::set_coordinates(double x, double y)
 {
     m_x = x;
     m_y = y;
+    
+    DataPoint p;
+    p.x = m_x;
+    p.y = m_y;
+    Point::set_coordinates(p);
+    
     setPos(QPointF(m_x, m_y) * m_graph_transform);
 }
 
@@ -379,18 +385,17 @@ int NetworkCurve::circular(CircularLayoutType type)
 	{
 		if (type == NetworkCurve::circular_original)
 		{
-			m_nodes[vertices[i]]->set_x(r * cos(fi) + xCenter);
-			m_nodes[vertices[i]]->set_y(r * sin(fi) + yCenter);
+			m_nodes[vertices[i]]->set_coordinates(r * cos(fi) + xCenter, r * sin(fi) + yCenter);
 		}
 		else if (type == NetworkCurve::circular_random)
 		{
 			int ndx = rand() % vertices.size();
-			m_nodes[vertices[ndx]]->set_x(r * cos(fi) + xCenter);
-			m_nodes[vertices[ndx]]->set_y(r * sin(fi) + yCenter);
+                        m_nodes[vertices[ndx]]->set_coordinates(r * cos(fi) + xCenter, r * sin(fi) + yCenter);
 			vertices.erase(vertices.begin() + ndx);
 		}
 		fi = fi - step;
 	}
+	register_points();
 	return 0;
 }
 
@@ -555,6 +560,9 @@ int NetworkCurve::circular_crossing_reduction()
 	original.clear();
 	vertices.clear();
 	qvertices.clear();
+        
+        register_points();
+        
 	return 0;
 }
 
@@ -574,10 +582,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	QMap<int, DataPoint> disp;
 	foreach (const NodeItem*   node, m_nodes)
 	{
-		DataPoint point;
-		point.x = 0;
-		point.y = 0;
-		disp[node->index()] = point;
+		disp[node->index()] = node->coordinates();
 
 		double x = node->x();
 		double y = node->y();
@@ -733,7 +738,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		}
 		if (m_stop_optimization)
 		{
-			return 0;
+			break;
 		}
 		if (floor(temperature) > cooling_switch)
 		{
@@ -745,7 +750,8 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		}
 	}
 
-	return 0;
+        register_points();
+        return 0;
 }
 
 void NetworkCurve::set_edges(const NetworkCurve::Edges& edges)
@@ -814,10 +820,7 @@ void NetworkCurve::remove_node(int index)
     Plot* p = plot();
     if (p)
     {
-        DataPoint d;
-        d.x = node->x();
-        d.y = node->y();
-        p->remove_point(d, this);
+        p->remove_point(node, this);
     }
     
     foreach (EdgeItem* edge, node->connected_edges())
@@ -1016,6 +1019,7 @@ void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >&
 		node->set_x(it.value().first);
 		node->set_y(it.value().second);
 	}
+	register_points();
 }
 
 void NetworkCurve::set_edge_color(const QList<QColor>& colors)
@@ -1058,10 +1062,7 @@ void NetworkCurve::register_points()
         p->remove_all_points(this);
         foreach (NodeItem* node, m_nodes)
         {
-            DataPoint d;
-            d.x = node->x();
-            d.y = node->y();
-            p->add_point(d, node, this);
+            p->add_point(node, this);
         }
     }
 }

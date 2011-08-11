@@ -1230,8 +1230,8 @@ class OWNxExplorerQt(OWWidget):
         
         t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
         self.frSteps = int(2.0 / t)
-        if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 100: self.frSteps = 100;
+        if self.frSteps <   1: self.frSteps = 1
+        if self.frSteps > 100: self.frSteps = 100
 #        
 #        if self.frSteps < 10:
 #            self.networkCanvas.use_antialiasing = 0
@@ -1259,7 +1259,7 @@ class OWNxExplorerQt(OWWidget):
           
         
         
-    def set_graph_none():
+    def set_graph_none(self):
         self.graph = None
         self.graph_base = None
         self.clearCombos()
@@ -1274,7 +1274,7 @@ class OWNxExplorerQt(OWWidget):
         self.error()
         
         if graph is None:
-            self.set_graph_none();
+            self.set_graph_none()
             return
         
         self.graph_base = graph
@@ -1287,7 +1287,7 @@ class OWNxExplorerQt(OWWidget):
         # if graph has more nodes and edges than pixels in 1600x1200 display, 
         # it is too big to visualize!
         if self.graph.number_of_nodes() + self.graph.number_of_edges() > 50000:
-            self.set_graph_none();
+            self.set_graph_none()
             self.error('Graph is too big to visualize. Try using one of the network views.')
             return
         
@@ -1334,8 +1334,8 @@ class OWNxExplorerQt(OWWidget):
 
         t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
         self.frSteps = int(2.0 / t)
-        if self.frSteps <   1: self.frSteps = 1;
-        if self.frSteps > 100: self.frSteps = 100;
+        if self.frSteps <   1: self.frSteps = 1
+        if self.frSteps > 100: self.frSteps = 100
         
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
@@ -1515,11 +1515,11 @@ class OWNxExplorerQt(OWWidget):
         elif self.optMethod == 4:
             self.graph_layout_fr_radial()
         elif self.optMethod == 5:
-            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_crossing);
+            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_crossing)
         elif self.optMethod == 6:
-            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_original);
+            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_original)
         elif self.optMethod == 7:
-            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_random);
+            self.networkCanvas.networkCurve.circular(NetworkCurve.circular_random)
         elif self.optMethod == 8:
             self.graph_layout_pivot_mds()
             
@@ -1568,7 +1568,7 @@ class OWNxExplorerQt(OWWidget):
               
         if not self.optButton.isChecked():
             print 'stop opt'
-            self.networkCanvas.networkCurve.stop_optimization();
+            self.networkCanvas.networkCurve.stop_optimization()
             self.optButton.setChecked(False)
             self.optButton.setText("Optimize layout")
             return
@@ -1589,8 +1589,8 @@ class OWNxExplorerQt(OWWidget):
 #        nodes = self.graph.number_of_nodes()
 #        t = k * nodes * nodes
 #        refreshRate = int(5.0 / t)
-#        if refreshRate <    1: refreshRate = 1;
-#        if refreshRate > 1500: refreshRate = 1500;
+#        if refreshRate <    1: refreshRate = 1
+#        if refreshRate > 1500: refreshRate = 1500
 #        #print "refreshRate: " + str(refreshRate)
 #        
 #        tolerance = 5

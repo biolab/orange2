@@ -294,9 +294,15 @@ Point* Plot::selected_point_at(const DataPoint& pos)
 {
     foreach (PlotItem* item, plot_items())
     {
-        if (m_point_set.contains(item) && m_point_set[item].contains(pos) && m_point_hash[item][pos]->is_selected())
+        if (m_point_set.contains(item) && m_point_set[item].contains(pos))
         {
-            return m_point_hash[item][pos];
+            foreach (Point* p, m_point_hash[item].values(pos))
+            {
+                if (p->is_selected())
+                {
+                    return p;
+                }
+            }
         }
     }
     return 0;
@@ -308,38 +314,39 @@ Point* Plot::point_at(const DataPoint& pos)
     {
         if (m_point_set.contains(item) && m_point_set[item].contains(pos))
         {
-            return m_point_hash[item][pos];
+            qDebug() << "Found a point at" << pos;
+            return m_point_hash[item].values(pos).first();
         }
     }
+    qDebug() << "No point at" << pos;
     return 0;
 }
 
 Point* Plot::nearest_point(const QPointF& pos)
 {
-    QPair<double, DataPoint> closest_point = qMakePair( std::numeric_limits<double>::max(), DataPoint() );
+    QPair<double, Point*> closest_point;
+    closest_point.first = std::numeric_limits<double>::max();
+    closest_point.second = 0;
+    
     foreach (PlotItem* item, plot_items())
     {
-        Q_ASSERT(m_point_set[item].toList() == m_point_hash[item].keys());
         if (!m_point_set.contains(item))
         {
             continue;
         }
-        PointSet::ConstIterator it = m_point_set[item].constBegin();
-        PointSet::ConstIterator end = m_point_set[item].constEnd();
-        for (it; it != end; ++it)
+        foreach (Point* p, m_point_hash[item])
         {
-            const double d = distance(m_point_hash[item][*it]->pos(), pos);
+            const double d = distance(p->pos(), pos);
             if (d < closest_point.first)
             {
                 closest_point.first = d;
-                closest_point.second = *it;
+                closest_point.second = p;
             }
         }
     }
-    Point* point = point_at(closest_point.second);
-    if(point && distance(point->pos(), pos) <= point->size())
+    if(closest_point.second && closest_point.first <= closest_point.second->size())
     {
-        return point;
+        return closest_point.second;
     }
     else
     {
@@ -347,37 +354,35 @@ Point* Plot::nearest_point(const QPointF& pos)
     }
 }
 
-void Plot::add_point(const DataPoint& pos, Point* item, PlotItem* parent)
+void Plot::add_point(Point* point, PlotItem* parent)
 {
+    const DataPoint pos = point->coordinates();
     m_point_set[parent].insert(pos);
-    m_point_hash[parent].insert(pos, item);
+    m_point_hash[parent].insert(pos, point);
 }
 
-void Plot::add_points(const Data& data, const QList< Point* >& items, PlotItem* parent)
+void Plot::add_points(const QList< Point* >& items, PlotItem* parent)
 {
-    const int n = qMin(data.size(), items.size());
-    for (int i = 0; i < n; ++i)
+    foreach (Point* p, items)
     {
-        add_point(data[i], items[i], parent);
+        add_point(p, parent);
     }
 }
 
-void Plot::remove_point(const DataPoint& pos, PlotItem* parent)
+void Plot::remove_point(Point* point, PlotItem* parent)
 {
+    const DataPoint pos = point->coordinates();
     if (m_point_set.contains(parent) && m_point_set[parent].contains(pos))
     {
         m_point_set[parent].remove(pos);
-        m_point_hash[parent].remove(pos);
+        m_point_hash[parent].remove(pos, point);
     }
 }
 
 void Plot::remove_all_points(PlotItem* parent)
 {
-    if (m_point_set.contains(parent))
-    {
-        m_point_set.remove(parent);
-        m_point_hash.remove(parent);
-    }
+    m_point_set.remove(parent);
+    m_point_hash.remove(parent);
 }
 
 void Plot::unmark_all_points()

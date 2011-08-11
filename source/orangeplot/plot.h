@@ -23,7 +23,7 @@ public:
     };
     
     typedef QSet<DataPoint> PointSet;
-    typedef QHash<DataPoint, Point*> PointHash;
+    typedef QMultiHash<DataPoint, Point*> PointHash;
 
     
     explicit Plot(QWidget* parent = 0);
@@ -66,9 +66,9 @@ public:
     
     Point* selected_point_at(const DataPoint& pos);
     
-    void add_point(const DataPoint& pos, Point* item, PlotItem* parent);
-    void add_points(const Data& data, const QList<Point*>& items, PlotItem* parent);
-    void remove_point(const DataPoint& pos, PlotItem* parent);
+    void add_point(Point* point, PlotItem* parent);
+    void add_points(const QList<Point*>& items, PlotItem* parent);
+    void remove_point(Point* point, PlotItem* parent);
     void remove_all_points(PlotItem* parent);
     
     void unselect_all_points();

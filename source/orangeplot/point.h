@@ -2,6 +2,7 @@
 #define POINT_H
 
 #include <QtGui/QGraphicsItem>
+#include <QtCore/QDebug>
 
 
 struct DataPoint
@@ -9,6 +10,9 @@ struct DataPoint
   double x;
   double y;
 };
+
+QDebug& operator<<(QDebug& stream, const DataPoint& point);
+bool operator==(const DataPoint& one, const DataPoint& other);
 
 struct PointData
 {
@@ -19,9 +23,6 @@ struct PointData
     int state;
     bool transparent;
 };
-
-uint qHash(const PointData& data);
-bool operator==(const PointData& one, const PointData& other);
 
 class Point : public QGraphicsItem
 {
