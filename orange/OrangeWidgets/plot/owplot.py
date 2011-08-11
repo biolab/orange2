@@ -692,9 +692,11 @@ class OWPlot(orangeplot.Plot):
             
             .. note:: This function does not add items to the legend automatically. 
                       You will have to add them yourself with :meth:`.OWLegend.add_item`. 
+                      
+            .. seealso:: :obj:`.OWMultiCurve`, :obj:`.OWPoint`
         """
         if not self.main_curve:
-            self.main_curve = orangeplot.MultiCurve([], [])
+            self.main_curve = OWMultiCurve([], [])
 
         c = self.main_curve
         c.set_data(x_data, y_data)

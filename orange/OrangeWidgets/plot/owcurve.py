@@ -135,7 +135,6 @@ class OWCurve(orangeplot.Curve):
             :type parent: :obj:`.QGraphicsItem`
             
         .. attribute:: name
-            :type: str
 
             The name of the curve, used in the legend or in tooltips. 
             
@@ -154,5 +153,7 @@ class OWCurve(orangeplot.Curve):
         if tooltip:
             self.setToolTip(tooltip)
         self.name = ''
+        
+OWMultiCurve = orangeplot.MultiCurve
 
             
