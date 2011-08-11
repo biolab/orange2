@@ -1380,7 +1380,7 @@ PyObject *SVMClassifier__reduce__(PyObject* self)
     CAST_TO(TSVMClassifier, svm);
     string buf;
     if (svm_save_model_alt(buf, svm->getModel())){
-        printf("error saving svm model");
+    	raiseError("Error saving SVM model");
     }
     if(svm->kernelFunc)
         return Py_BuildValue("O(OOOsO)N", self->ob_type,
@@ -1407,7 +1407,7 @@ PyObject *SVMClassifierSparse__reduce__(PyObject* self)
     CAST_TO(TSVMClassifierSparse, svm);
     string buf;
     if (svm_save_model_alt(buf, svm->getModel())){
-        printf("error saving svm model");
+        raiseError("Error saving SVM model.");
     }
     if(svm->kernelFunc)
         return Py_BuildValue("O(OOOsbO)N", self->ob_type,
@@ -1415,7 +1415,7 @@ PyObject *SVMClassifierSparse__reduce__(PyObject* self)
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
                                     buf.c_str(),
-									(char)svm->useNonMeta,
+									(char)(svm->useNonMeta? 1: 0),
                                     WrapOrange(svm->kernelFunc),
                                     packOrangeDictionary(self));
     else
@@ -1424,7 +1424,7 @@ PyObject *SVMClassifierSparse__reduce__(PyObject* self)
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
                                     buf.c_str(),
-									(char)svm->useNonMeta,
+                                    (char)(svm->useNonMeta? 1: 0),
                                     packOrangeDictionary(self));
   PyCATCH
 }
@@ -1443,7 +1443,10 @@ PyCATCH
 PyObject *SVMClassifier_getModel(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "() -> string")
 {PyTRY
 	string buf;
-	svm_save_model_alt(buf, SELF_AS(TSVMClassifier).getModel());
+	svm_model* model = SELF_AS(TSVMClassifier).getModel();
+	if (!model)
+		raiseError("No model.");
+	svm_save_model_alt(buf, model);
 	return Py_BuildValue("s", buf.c_str());
 PyCATCH
 }
