@@ -5,7 +5,7 @@ ifndef ORANGE_LIBDIR
   ORANGE_LIBDIR=../..
 endif
 
-MODULES=include orange orangeom orangene corn statc
+MODULES=include orange orangeom orangene corn statc orangeplot
 ACTIONS=all clean cleantemp
 
 $(ACTIONS):

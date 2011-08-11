@@ -43,12 +43,3 @@ set(SIP_EXTRA_LINK_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 set(SIP_EXTRA_SOURCES ${orangeplot_SRCS})
 
 add_sip_python_module(orangeplot orangeplot.sip)
-
-#### copying the library after building ####
-get_target_property(PYTHON_LIB_LOCATION python_module_orangeplot LOCATION)
-add_custom_command(
-   TARGET python_module_orangeplot
-   POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy ${PYTHON_LIB_LOCATION} ${PROJECT_SOURCE_DIR}/..
- )
-

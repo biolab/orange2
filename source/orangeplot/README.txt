@@ -12,6 +12,8 @@ orangeplot also needs the Qt libraries and headers (the qt-dev or qt-devel packa
 
 = Compilation =
 
+If you use GNU Make, it's enough to just call 'make' from the orangeplot directory
+
 Follow the standard CMake instructions to compile orangeplot:
  1.a) Use the CMake GUI, and load the orangeplot directory from there. 
 	The build directory must be a new or empty directory, and is usually called build and placed inside the source directory.
