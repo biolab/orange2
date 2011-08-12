@@ -43,3 +43,17 @@ set(SIP_EXTRA_LINK_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 set(SIP_EXTRA_SOURCES ${orangeqt_SRCS})
 
 add_sip_python_module(orangeqt orangeqt.sip)
+
+#### copying the library after building ####
+if (NOT ORANGE_LIB_DIR)
+    set (ORANGE_LIB_DIR "../..")
+endif()
+
+message(${ORANGE_LIB_DIR})
+
+get_target_property(PYTHON_LIB_LOCATION python_module_orangeqt LOCATION)
+add_custom_command(
+   TARGET python_module_orangeqt
+   POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy ${PYTHON_LIB_LOCATION} ${ORANGE_LIB_DIR}
+ )
