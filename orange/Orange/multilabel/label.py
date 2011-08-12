@@ -1,7 +1,7 @@
 import Orange
 
 def get_labels(data,example):
-    """ get the label list in the example, using 0,1 to indicate whether the example is belong to the label """
+    """ get the list of labels of the example, using 0,1 to indicate whether the example is belong to this label """
     if not isinstance(data, Orange.data.Table):
         raise TypeError('data must be of type \'Orange.data.Table\'')
     
@@ -16,7 +16,7 @@ def get_num_labels(data):
           if var.attributes.has_key('label')])
 
 def is_multilabel(data):
-    """ Judge whether the data is multi-label, if so, return 1, else return 0"""
+    """ Judge whether the data is multi-label data; if so, return 1, else return 0"""
     if not isinstance(data, Orange.data.Table):
         raise TypeError('data must be of type \'Orange.data.Table\'')
     if get_num_labels(data) > 0:
@@ -24,7 +24,7 @@ def is_multilabel(data):
     return 0
 
 def get_label_indices(data):
-    """ get an array containing the indexes of the label attributes within the object of the training data in increasing order. """
+    """ get the index array of the label in the attributes in an increasing order. """
     if not isinstance(data, Orange.data.Table):
         raise TypeError('data must be of type \'Orange.data.Table\'')
     
@@ -32,15 +32,15 @@ def get_label_indices(data):
           if var.attributes.has_key('label')]
 
 def get_label_names(data):
-    """ get the list of all label names """
+    """ get a list of label names """
     if not isinstance(data, Orange.data.Table):
         raise TypeError('data must be of type \'Orange.data.Table\'')
     
     return [var.name for i, var in enumerate(data.domain.variables)
           if var.attributes.has_key('label')]
 
-def remove_indices(data,indicesToRemove):
-    """ remove the attributes in the data according to indicesToRemove, (the indices are sorted from small to big) """
+def remove_indices(data,indices_to_remove):
+    """ remove the attributes in the data according to indices_to_remove, (the indices are sorted from small to large order) """
     if not isinstance(data, Orange.data.Table):
         raise TypeError('data must be of type \'Orange.data.Table\'')
     
@@ -49,8 +49,8 @@ def remove_indices(data,indicesToRemove):
     index = 0
     id = 0
     while id < len(domain.variables):
-        if index < len(indicesToRemove):
-            while id < indicesToRemove[index]:
+        if index < len(indices_to_remove):
+            while id < indices_to_remove[index]:
                 newdomain.append(domain[id])
                 id = id + 1  
             else:
@@ -60,6 +60,13 @@ def remove_indices(data,indicesToRemove):
             newdomain.append(domain[id])
             id = id + 1
     return newdomain
+
+def remove_labels(data):
+    """ remove the label attributes in the data"""
+    domain = data.domain
+    newdomain =  [domain[i] for i, var in enumerate(data.domain.variables)
+          if var.attributes.has_key('label')]
+    new_data = data.translate(newdomain)
     
 def get_label_bitstream(data,example):
     """ get the labels in terms of a string of 0 and 1 """

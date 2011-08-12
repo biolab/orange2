@@ -341,12 +341,24 @@ class OWTestLearners(OWWidget):
             return
 
         # computation of results (res, and cm if classification)
+        print self.resampling
         pb = None
         if self.resampling==0:
             pb = OWGUI.ProgressBar(self, iterations=self.nFolds)
-            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds,
-                                           strat=orange.MakeRandomIndices.StratifiedIfPossible,
-                                           callback=pb.advance, storeExamples = True)
+            #print self.nFolds
+            #res = orngTest.crossValidation(learners, self.data, folds=self.nFolds,
+            #                               strat=orange.MakeRandomIndices.StratifiedIfPossible,
+            #                               callback=pb.advance, storeExamples = True)
+            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds)
+            
+            loss = Orange.evaluation.scoring.mlc_hamming_loss(res)
+            accuracy = Orange.evaluation.scoring.mlc_accuracy(res)
+            precision = Orange.evaluation.scoring.mlc_precision(res)
+            recall = Orange.evaluation.scoring.mlc_recall(res)
+            print 'loss=', loss
+            print 'accuracy=', accuracy
+            print 'precision=', precision
+            print 'recall=', recall
             pb.finish()
         elif self.resampling==1:
             pb = OWGUI.ProgressBar(self, iterations=len(self.data))
@@ -435,7 +447,7 @@ class OWTestLearners(OWWidget):
                 self.data = orange.Filter_hasClassValue(self.data)
             #self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
             
-            print multilabel_flag
+            #print multilabel_flag
             #self.stat = [self.rStatistics, self.cStatistics][self.isclassification()]
             if multilabel_flag == 1:
                 self.statLayout.setCurrentWidget(self.mbox)
@@ -605,6 +617,7 @@ if __name__=="__main__":
     data3 = orange.ExampleTable(r'../../doc/datasets/bridges')
     data4 = orange.ExampleTable(r'../../doc/datasets/lenses')
     data5 = orange.ExampleTable(r'../../doc/datasets/multidata')
+    data6 = orange.ExampleTable(r'../../doc/datasets/emotions')
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 
@@ -619,6 +632,8 @@ if __name__=="__main__":
 
     l4 = orange.MajorityLearner(); l4.name = "4 - Majority"
     l5 = Orange.multilabel.BinaryRelevanceLearner(); l1.name = '5 - BR'
+    
+    l6 = Orange.multilabel.LabelPowersetLearner();
     
     import orngRegression as r
     r5 = r.LinearRegressionLearner(name="0 - lin reg")
@@ -660,4 +675,7 @@ if __name__=="__main__":
     if testcase == 5: # binary relevance
         ow.setData(data5)
         ow.setLearner(l5, 1)
+    if testcase == 6: #label powerset
+        ow.setData(data6)
+        ow.setLearner(l6,1)
     ow.saveSettings()

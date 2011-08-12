@@ -146,7 +146,7 @@ class LabelPowersetClassifier(_multibase.MultiLabelClassifier):
 if __name__ == "__main__":
     data = Orange.data.Table("emotions.tab")
 
-    classifier = Orange.multilabel.LabelPowersetLearner(data,Orange.classification.knn.kNNLearner)
+    classifier = Orange.multilabel.LabelPowersetLearner(data)
     for i in range(10):
         c,p = classifier(data[i],Orange.classification.Classifier.GetBoth)
         print c,p

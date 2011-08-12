@@ -73,7 +73,7 @@ class OWBRkNN(OWWidget):
         self.set_learner()
          
     def set_learner(self):
-        self.learner = Orange.multilabel.BinaryRelevanceLearner(k = self.k)
+        self.learner = Orange.multilabel.BRkNNLearner(k = self.k)
         if self.preprocessor:
             self.learner = self.preprocessor.wrapLearner(self.learner)
         self.learner.name = self.name

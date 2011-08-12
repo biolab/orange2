@@ -73,7 +73,7 @@ class OWLP(OWWidget):
         self.set_learner()
     
     def set_learner(self):
-        self.learner = Orange.multilabel.BinaryRelevanceLearner(base_learner = self.base_learner)
+        self.learner = Orange.multilabel.LabelPowersetLearner(base_learner = self.base_learner)
         if self.preprocessor:
             self.learner = self.preprocessor.wrapLearner(self.learner)
         self.learner.name = self.name
@@ -88,6 +88,9 @@ class OWLP(OWWidget):
             try:
                 self.classifier = self.learner(self.data)
                 self.classifier.name = self.name
+                for i in range(10):
+                    c,p = self.classifier(self.data[i],Orange.classification.Classifier.GetBoth)
+                    print c,p
             except Exception, (errValue):
                 self.classifier = None
                 self.error(str(errValue))
@@ -102,7 +105,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLP()
 
-    dataset = Orange.data.Table('../../doc/datasets/multidata.tab')
+    dataset = Orange.data.Table('../../doc/datasets/emotions.tab')
     ow.set_data(dataset)
 
     ow.show()
