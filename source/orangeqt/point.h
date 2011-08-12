@@ -19,7 +19,7 @@
 #ifndef POINT_H
 #define POINT_H
 
-#include <QtGui/QGraphicsItem>
+#include <QtGui/QGraphicsObject>
 #include <QtCore/QDebug>
 
 
@@ -42,9 +42,10 @@ struct PointData
     bool transparent;
 };
 
-class Point : public QGraphicsItem
+class Point : public QGraphicsObject
 {
-
+    Q_OBJECT
+    
 public:
     enum DisplayMode
     {

@@ -55,7 +55,7 @@ bool operator==(const DataPoint& one, const DataPoint& other)
     return one.x == other.x && one.y == other.y;
 }
 
-Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsItem(parent),
+Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsObject(parent),
  m_symbol(symbol),
  m_color(color),
  m_size(size)
@@ -64,7 +64,7 @@ Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphi
     m_transparent = true;
 }
 
-Point::Point(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene)
+Point::Point(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsObject(parent)
 {
     m_symbol = Ellipse;
     m_color = Qt::black;
