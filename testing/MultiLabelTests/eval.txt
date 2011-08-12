@@ -1,0 +1,25 @@
+Fold 1/2
+Fold 2/2
+BinaryRelevance
+Hamming Loss: 0.2555±0.0001
+Subset Accuracy: 0.1956±0.0138
+Example-Based Precision: NaN±NaN
+Example-Based Recall: 0.7670±0.0097
+Example-Based F Measure: NaN±NaN
+Example-Based Accuracy: 0.5207±0.0022
+Micro-averaged Precision: 0.5663±0.0001
+Micro-averaged Recall: 0.7671±0.0081
+Micro-averaged F-Measure: 0.6516±0.0030
+Macro-averaged Precision: 0.5627±0.0027
+Macro-averaged Recall: 0.7645±0.0082
+Macro-averaged F-Measure: 0.6459±0.0041
+Average Precision: 0.7083±0.0105
+Coverage: 2.2125±0.0030
+OneError: 0.4469±0.0227
+IsError: 0.6037±0.0111
+ErrorSetSize: 1.8989±0.0268
+Ranking Loss: 0.2589±0.0036
+Mean Average Precision: 0.5543±0.0099
+Micro-averaged AUC: 0.7507±0.0023
+Macro-averaged AUC: 0.7488±0.0027
+
