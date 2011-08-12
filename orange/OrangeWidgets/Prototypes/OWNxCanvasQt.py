@@ -15,32 +15,32 @@ import numpy
 from plot.owplot import *
 from plot.owpoint import *
 from orngScaleScatterPlotData import *
-import orangeplot
+import orangeqt
 
-class NodeItem(orangeplot.NodeItem):
+class NodeItem(orangeqt.NodeItem):
     def __init__(self, index, x=None, y=None, parent=None):
-        orangeplot.NodeItem.__init__(self, index, OWPoint.Ellipse, Qt.blue, 5, parent)
+        orangeqt.NodeItem.__init__(self, index, OWPoint.Ellipse, Qt.blue, 5, parent)
         if x is not None:
             self.set_x(x)
         if y is not None:
             self.set_y(y)
         
-class EdgeItem(orangeplot.EdgeItem):
+class EdgeItem(orangeqt.EdgeItem):
     def __init__(self, u=None, v=None, weight=1, links_index=0, label='', parent=None):
-        orangeplot.EdgeItem.__init__(self, u, v, parent)
+        orangeqt.EdgeItem.__init__(self, u, v, parent)
         self.set_weight(weight)
         self.set_links_index(links_index)
 
-class NetworkCurve(orangeplot.NetworkCurve):
+class NetworkCurve(orangeqt.NetworkCurve):
     def __init__(self, parent=None, pen=QPen(Qt.black), xData=None, yData=None):
-        orangeplot.NetworkCurve.__init__(self, parent)
+        orangeqt.NetworkCurve.__init__(self, parent)
         self.name = "Network Curve"
         
     def fr(self, steps, weighted=False, smooth_cooling=False):
-        orangeplot.NetworkCurve.fr(self, steps, weighted, smooth_cooling)
+        orangeqt.NetworkCurve.fr(self, steps, weighted, smooth_cooling)
       
     def set_node_sizes(self, values={}, min_size=0, max_size=0):
-        orangeplot.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
+        orangeqt.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
       
 #    def move_selected_nodes(self, dx, dy):
 #        selected = self.get_selected_nodes()
