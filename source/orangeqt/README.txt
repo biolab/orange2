@@ -35,5 +35,28 @@ On windows, follow the standard CMake instructions to compile orangeqt:
  2) This step depends on your selected compiler. If you chose any type of makefiles, run "make" or "nmake" in the build directory. If you used Visual Studio, open the Solution file located in the build directory. 
 
  There is no need to install the library, because CMake will copy both the library into the parent directory, with other Orange libraries. However, make sure that the generated library (orangeqt.so or orangeqt.pyd) is in Python's path. You can either adjust the path, or copy the library somewhere where Python will find it. 
- 
+
+If any step reports an error, it is mostly likely some of the dependencies listed above are not installed or not found. 
+
+= Compilation on Windows XP =
+
+1.) Install:
+	 * Visual C++ 2010 Express http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+	 * Qt libraries 4.7.3 for Windows (VS 2010): http://qt.nokia.com/downloads/
+	 * PyQt4 Windows installer: http://www.riverbankcomputing.co.uk/software/pyqt/download
+	 * CMake (Win32 installer): cmake-2.8.5-win32-x86.exe (put it in path)
+	 
+2.) In file c:\Qt\4.7.3\bin\qtvars.bat replace win32-msvc2008 with win32-msvc2010
+
+3.) Run Visual Studio Command Prompt
+	 * navigate to orangeqt directory
+	 * mkdir build
+	 * cd build
+	 * c:\Qt\4.7.3\bin\qtvars.bat
+	 * cmake -DCMAKE_BUILD_TYPE=Release -G "NMake Makefiles" ..
+	 * nmake
+	 * move orangeqt.pyd to orange directory
+	 
+?.) if you use this pyd file on another machine, I thik you must install Microsoft Visual C++ 2010 Redistributable Package: http://www.microsoft.com/download/en/details.aspx?id=5555=======
  If any step reports an error, it is mostly likely some of the dependencies listed above are not installed or not found. 
+ 
