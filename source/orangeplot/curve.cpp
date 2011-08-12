@@ -75,7 +75,6 @@ void Curve::updateNumberOfItems()
   {
     m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
   }
-  register_points();
   Q_ASSERT(m_pointItems.size() == m_data.size());
 }
 
@@ -127,6 +126,7 @@ void Curve::update_properties()
     {
       m_pointItems[i]->set_coordinates(m_data[i]);
     }
+    register_points();
     update_items(m_pointItems, PointPosUpdater(m_graphTransform), UpdatePosition);
   } 
   
@@ -161,6 +161,7 @@ void Curve::set_data(const QList< double > x_data, const QList< double > y_data)
 {
   Q_ASSERT(x_data.size() == y_data.size());
   int n = qMin(x_data.size(), y_data.size());
+  qDebug() << "Curve::set_data with" << n << "points";
   if (n != m_data.size())
   {
     m_needsUpdate |= UpdateNumberOfItems;
@@ -379,6 +380,7 @@ void Curve::register_points()
     {
         p->remove_all_points(this);
         p->add_points(m_pointItems, this);
+        qDebug() << "Registered" << m_pointItems.size() << "points";
     }
 }
 

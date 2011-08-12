@@ -365,20 +365,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                     self.legend().add_item(self.dataDomain.classVar.name, classVariableValues[index], OWPoint(curveSymbol, color, self.pointWidth))
             # show legend for continuous class
             elif self.dataHasContinuousClass:
-                xs = [1.15, 1.20, 1.20, 1.15]
-                count = 200
-                height = 2 / float(count)
-                for i in range(count):
-                    y = -1.0 + i*2.0/float(count)
-                    col = self.contPalette[i/float(count)]
-                    col.setAlpha(self.alphaValue)
-                    PolygonCurve(QPen(col), QBrush(col), xData = xs, yData = [y,y, y+height, y+height]).attach(self)
-
-                # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.dataDomain.classVar.name]
-                self.addMarker("%s = %%.%df" % (self.dataDomain.classVar.name, self.dataDomain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %%.%df" % (self.dataDomain.classVar.name, self.dataDomain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
-
+                self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
         self.replot()
 
 

@@ -95,7 +95,7 @@ class OWLegendGradient(QGraphicsObject):
         self.label_items = [QGraphicsTextItem(text, self) for text in values]
         self.gradient_item = QGraphicsRectItem(self)
         self.gradient = QLinearGradient()
-        self.gradient.setStops([(v, self.palette[v]) for v in [0,1] ])
+        self.gradient.setStops([(v*0.1, self.palette[v*0.1]) for v in range(11) ])
         self.orientation = Qt.Horizontal
         self.set_orientation(Qt.Vertical)
         

@@ -65,8 +65,11 @@ public:
     
     void select_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void select_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void select_points(const Data& data, SelectionBehavior behavior = AddSelection);
+    
     void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void mark_points(const Data& data, SelectionBehavior behavior = AddSelection);
     
     /**
      * For each point defined with @p x_data and @p y_data, this function checks whether such a point is selected. 

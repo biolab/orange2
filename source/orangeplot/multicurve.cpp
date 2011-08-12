@@ -122,11 +122,15 @@ void MultiCurve::update_properties()
     const int n = d.size();
     const QTransform t = graph_transform();
     const QList<Point*> p = points();
+    
     for (int i = 0; i < n; ++i)
     {
-        p[i]->setPos(t.map(QPointF(d[i].x, d[i].y)));
+        p[i]->set_coordinates(d[i]);
     }
     
+    register_points();
+    
+    update_items(points(), PointPosUpdater(graph_transform()), UpdatePosition);    
     update_items(points(), ZoomUpdater(point_transform()), UpdateZoom);
 }
 

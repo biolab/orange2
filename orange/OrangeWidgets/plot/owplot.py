@@ -697,6 +697,7 @@ class OWPlot(orangeplot.Plot):
         """
         if not self.main_curve:
             self.main_curve = OWMultiCurve([], [])
+            self.add_item(self.main_curve)
 
         c = self.main_curve
         c.set_data(x_data, y_data)
@@ -706,7 +707,12 @@ class OWPlot(orangeplot.Plot):
         c.set_point_sizes(size_data)
         c.set_point_symbols(shape_data)
         c.name = 'Main Curve'
-        return self.add_custom_curve(c)
+        
+    def mark_points_at(self, x_data, y_data):
+        for data_point in zip(x_data, y_data):
+            point = self.point_at(data_point)
+            if point:
+                point.set_marked(true)
         
     def remove_curve(self, item):
         '''
@@ -1398,16 +1404,17 @@ class OWPlot(orangeplot.Plot):
     def update_curves(self):
         if self.main_curve:
             self.main_curve.set_alpha_value(self.alpha_value)
-        for c in self.plot_items():
-            if isinstance(c, orangeplot.Curve) and not getattr(c, 'ignore_alpha', False):
-                au = c.auto_update()
-                c.set_auto_update(False)
-                c.set_point_size(self.point_width)
-                color = c.color()
-                color.setAlpha(self.alpha_value)
-                c.set_color(color)
-                c.set_auto_update(au)
-                c.update_properties()
+        else:
+            for c in self.plot_items():
+                if isinstance(c, orangeplot.Curve) and not getattr(c, 'ignore_alpha', False):
+                    au = c.auto_update()
+                    c.set_auto_update(False)
+                    c.set_point_size(self.point_width)
+                    color = c.color()
+                    color.setAlpha(self.alpha_value)
+                    c.set_color(color)
+                    c.set_auto_update(au)
+                    c.update_properties()
         self.viewport().update()
     
     update_point_size = update_curves

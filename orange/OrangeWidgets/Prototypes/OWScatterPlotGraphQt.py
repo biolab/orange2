@@ -190,6 +190,8 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
                 labelData = [""]
 
             self.set_main_curve_data(xData, yData, colorData, labelData, sizeData, shapeData)
+            sub_x_data, sub_y_data = self.getXYSubsetDataPositions(xAttr, yAttr)
+            self.mark_points_at(sub_x_data, sub_y_data)
 
         # ##############################################################
         # if we have insideColors defined
@@ -363,7 +365,6 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
         # ##############################################################
         # draw color scale for continuous coloring attribute
-        qDebug('Show continuous legend? ' + str(colorIndex) + '  ' + repr(showContinuousColorLegend))
         if colorIndex != -1 and showContinuousColorLegend:
             self.legend().add_color_gradient(colorAttr, [("%%.%df" % self.dataDomain[colorAttr].numberOfDecimals % v) for v in self.attrValues[colorAttr]])
             

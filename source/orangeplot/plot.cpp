@@ -328,15 +328,13 @@ Point* Plot::selected_point_at(const DataPoint& pos)
 
 Point* Plot::point_at(const DataPoint& pos)
 {
-    foreach (PlotItem* item, plot_items())
+    foreach (const PointHash& hash, m_point_hash)
     {
-        if (m_point_set.contains(item) && m_point_set[item].contains(pos))
+        if (hash.contains(pos))
         {
-            qDebug() << "Found a point at" << pos;
-            return m_point_hash[item].values(pos).first();
+            return hash.values(pos).first();
         }
     }
-    qDebug() << "No point at" << pos;
     return 0;
 }
 
@@ -454,6 +452,43 @@ void Plot::marked_to_selected()
 	emit selection_changed();
         emit marked_points_changed();
 }
+
+void Plot::mark_points(const Data& data, Plot::SelectionBehavior behavior)
+{
+    foreach (const PointHash& hash, m_point_hash)
+    {
+        foreach (Point* point, hash)
+        {
+            if (data.contains(point->coordinates()))
+            {
+                point->set_marked(behavior == AddSelection || (behavior == ToggleSelection && !point->is_marked()));
+            }
+            else if (behavior == ReplaceSelection)
+            {
+                point->set_marked(false);
+            }
+        }
+    }
+}
+
+void Plot::select_points(const Data& data, Plot::SelectionBehavior behavior)
+{
+    foreach (const PointHash& hash, m_point_hash)
+    {
+        foreach (Point* point, hash)
+        {
+            if (data.contains(point->coordinates()))
+            {
+                point->set_selected(behavior == AddSelection || (behavior == ToggleSelection && !point->is_selected()));
+            }
+            else if (behavior == ReplaceSelection)
+            {
+                point->set_selected(false);
+            }
+        }
+    }
+}
+
 
 
 #include "plot.moc"
