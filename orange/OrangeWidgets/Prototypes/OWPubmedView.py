@@ -40,7 +40,8 @@ class PubmedNetworkView(Orange.network.NxView):
             self._nx_explorer.change_graph(subnet)
         
     def set_nhops(self, nhops):
-        self._nhops = nhops
+        self._nhops = nhops  
+		
         
     def node_selection_changed(self):
         selection = self._nx_explorer.networkCanvas.selected_nodes()
