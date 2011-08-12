@@ -76,7 +76,7 @@ public:
      * This function is precise, so you have to supply it with precisely the same data as the curves that 
      * created the points
      **/
-    QList< int > selected_points(const QList< double > x_data, const QList< double > y_data);
+    QList< bool > selected_points(const QList< double > x_data, const QList< double > y_data);
     QList< Point*> selected_points();
     QList< Point*> marked_points();
     

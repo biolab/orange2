@@ -46,6 +46,8 @@ public:
     void set_point_symbols(const QList< int >& symbols);
     void set_point_sizes(const QList<int>& colors);
     
+    void set_points_marked(const QList<bool>& marked);
+    
     void shuffle_points();
     void set_alpha_value(int alpha);
 

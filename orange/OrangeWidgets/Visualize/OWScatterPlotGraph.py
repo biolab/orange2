@@ -288,7 +288,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     xPointsToAdd[(newColor, size, Symbol, 1)].append(xData[i])
                     yPointsToAdd[(newColor, size, Symbol, 1)].append(yData[i])
                     self.tips.addToolTip(xData[i], yData[i], -i-1)     # we add a tooltip for this point
-
+    
                     # Show a label by each marker
                     if labelAttr:
                         if labelAttr in [self.rawSubsetData.domain.getmeta(mykey).name for mykey in self.rawSubsetData.domain.getmetas().keys()] + [var.name for var in self.rawSubsetData.domain]:

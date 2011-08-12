@@ -260,18 +260,18 @@ void Plot::select_points(const QPolygonF& area, Plot::SelectionBehavior behavior
     emit selection_changed();
 }
 
-QList< int > Plot::selected_points(const QList< double > x_data, const QList< double > y_data)
+QList< bool > Plot::selected_points(const QList< double > x_data, const QList< double > y_data)
 {
     Q_ASSERT(x_data.size() == y_data.size());
     const int n = qMin(x_data.size(), y_data.size());
-    QList<int> selected;
+    QList<bool> selected;
     selected.reserve(n);
     DataPoint p;
     for (int i = 0; i < n; ++i)
     {
         p.x = x_data[i];
         p.y = y_data[i];
-        selected << (selected_point_at(p) ? 1 : 0);
+        selected << (selected_point_at(p) ? true : false);
     }
     return selected;
 }
@@ -455,13 +455,15 @@ void Plot::marked_to_selected()
 
 void Plot::mark_points(const Data& data, Plot::SelectionBehavior behavior)
 {
+    qDebug() << "Trying to mark" << data.size() << "points";
     foreach (const PointHash& hash, m_point_hash)
     {
         foreach (Point* point, hash)
         {
             if (data.contains(point->coordinates()))
             {
-                point->set_marked(behavior == AddSelection || (behavior == ToggleSelection && !point->is_marked()));
+                qDebug() << "Found a point, marking it";
+                point->set_marked(behavior == AddSelection || behavior == ReplaceSelection || (behavior == ToggleSelection && !point->is_marked()));
             }
             else if (behavior == ReplaceSelection)
             {

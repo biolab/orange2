@@ -57,6 +57,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", labelAttr = None, **args):
         self.clear()
+        qDebug('Updating with data %s and subset %s' % (self.rawData, self.rawSubsetData))
         self.tooltipData = []
         self.potentialsClassifier = None
         self.potentialsImage = None
@@ -162,206 +163,71 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         """
             Create a single curve with different points
         """
-        self.singleCurve = True
-        if self.singleCurve:                
-            if colorIndex != -1:
-                if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
-                    colorData = [QColor(*self.contPalette.getRGB(i)) for i in self.noJitteringScaledData[colorIndex]]
-                else:
-                    colorData = [QColor(*self.discPalette.getRGB(i)) for i in self.originalData[colorIndex]]
-            else: colorData = [(0,0,0)]
 
-            if sizeIndex != -1:
-                sizeData = [MIN_SHAPE_SIZE + round(i * self.pointWidth) for i in self.noJitteringScaledData[sizeIndex]]
+        if colorIndex != -1:
+            if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
+                colorData = [QColor(*self.contPalette.getRGB(i)) for i in self.noJitteringScaledData[colorIndex]]
             else:
-                sizeData = [self.pointWidth]
-                
-            if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete:
-                shapeData = [self.curveSymbols[int(i)] for i in self.originalData[shapeIndex]]
-            else:
-                shapeData = [self.curveSymbols[0]]
-                
-            if labelAttr and labelAttr in [self.rawData.domain.getmeta(mykey).name for mykey in self.rawData.domain.getmetas().keys()] + [var.name for var in self.rawData.domain]:
-                if self.rawData[0][labelAttr].varType == orange.VarTypes.Continuous:
-                    labelData = ["%4.1f" % orange.Value(i[labelAttr]) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
-                else:
-                    labelData = [str(i[labelAttr].value) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
-            else:
-                labelData = [""]
+                colorData = [QColor(*self.discPalette.getRGB(i)) for i in self.originalData[colorIndex]]
+        else: colorData = [Qt.black]
 
-            self.set_main_curve_data(xData, yData, colorData, labelData, sizeData, shapeData)
-            sub_x_data, sub_y_data = self.getXYSubsetDataPositions(xAttr, yAttr)
-            self.mark_points_at(sub_x_data, sub_y_data)
-
-        # ##############################################################
-        # if we have insideColors defined
-        elif self.insideColors and self.dataHasDiscreteClass and self.haveData:
-            # variables and domain for the table
-            classData = self.originalData[self.dataClassIndex]
-            (insideData, stringData) = self.insideColors
-            j = 0
-            equalSize = len(self.rawData) == len(insideData)
-            for i in range(len(self.rawData)):
-                if not validData[i]:
-                    j += equalSize
-                    continue
-
-                fillColor = self.discPalette[classData[i], 255*insideData[j]]
-                edgeColor = self.discPalette[classData[i]]
-
-                key = self.addCurve("", fillColor, edgeColor, self.pointWidth, xData = [xData[i]], yData = [yData[i]])
-
-                # we add a tooltip for this point
-                text = self.getExampleTooltipText(self.rawData[j], attrIndices)
-                text += "<hr>" + stringData % (100*insideData[i])
-                self.addTip(xData[i], yData[i], text = text.decode("unicode_escape"))
-                j+=1
-
-        # ##############################################################
-        # no subset data and discrete color index
-        elif (colorIndex == -1 or self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeIndex == -1 and self.haveData and not self.haveSubsetData and not labelAttr:
-            if colorIndex != -1:
-                classCount = len(self.dataDomain[colorIndex].values)
-            else: classCount = 1
-
-            pos = [[ [] , [] ] for i in range(classCount)]
-            indices = [colorIndex, xAttrIndex, yAttrIndex]
-            if -1 in indices: indices.remove(-1)
-            validData = self.getValidList(indices)
-            colorData = self.originalData[colorIndex]
-            for i in range(len(self.rawData)):
-                if not validData[i]: continue
-                if colorIndex != -1: index = int(colorData[i])
-                else:                index = 0
-                pos[index][0].append(xData[i])
-                pos[index][1].append(yData[i])
-                self.tips.addToolTip(xData[i], yData[i], i)    # we add a tooltip for this point
-
-            for i in range(classCount):
-                newColor = colorIndex != -1 and QColor(self.discPalette[i]) or QColor(Qt.black)
-                newColor.setAlpha(self.alphaValue)
-                key = self.addCurve("", newColor, newColor, self.pointWidth, symbol = self.curveSymbols[0], xData = pos[i][0], yData = pos[i][1])
-
-
-        # ##############################################################
-        # slower, unoptimized drawing because we use different symbols and/or different sizes of symbols
+        if sizeIndex != -1:
+            sizeData = [MIN_SHAPE_SIZE + round(i * self.pointWidth) for i in self.noJitteringScaledData[sizeIndex]]
         else:
-            attrs = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeIndex]
-            while -1 in attrs: attrs.remove(-1)
-            validData = self.getValidList(attrs)
-            if self.haveSubsetData:
-                subsetIdsToDraw = dict([(example.id, 1) for example in self.rawSubsetData])
-                showFilled = 0
+            sizeData = [self.pointWidth]
+            
+        if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete:
+            shapeData = [self.curveSymbols[int(i)] for i in self.originalData[shapeIndex]]
+        else:
+            shapeData = [self.curveSymbols[0]]
+            
+        if labelAttr and labelAttr in [self.rawData.domain.getmeta(mykey).name for mykey in self.rawData.domain.getmetas().keys()] + [var.name for var in self.rawData.domain]:
+            if self.rawData[0][labelAttr].varType == orange.VarTypes.Continuous:
+                labelData = ["%4.1f" % orange.Value(i[labelAttr]) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
             else:
-                subsetIdsToDraw ={}
-                showFilled = self.showFilledSymbols
+                labelData = [str(i[labelAttr].value) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
+        else:
+            labelData = [""]
+            
+        qDebug(' '.join(str(len(i)) for i in [xData, yData, colorData, labelData, sizeData, shapeData]))
+        qDebug(repr(xData[:50]))
 
-            xPointsToAdd = {}
-            yPointsToAdd = {}
-            for i in range(len(self.rawData)):
-                if not validData[i]: continue
-                if subsetIdsToDraw.has_key(self.rawData[i].id):
-                    continue
+        if self.haveSubsetData:
+            subset_ids = [example.id for example in self.rawSubsetData]
+            marked_data = [example.id in subset_ids for example in self.rawData]
+            showFilled = 0
+            sub_x_data, sub_y_data = self.getXYSubsetDataPositions(xAttr, yAttr)
+        else:
+            marked_data = []
+        self.set_main_curve_data(xData, yData, colorData, labelData, sizeData, shapeData, marked_data=marked_data)
+        qDebug(repr(sub_x_data[:20]))
+        self.mark_points(zip(sub_x_data, sub_y_data), self.ReplaceSelection)
+        
+        '''
+            Create legend items in any case
+            so that show/hide legend only
+        '''
+        discColorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
+        discShapeIndex = shapeIndex if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete else -1
+        discSizeIndex = sizeIndex if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete else -1
+                    
+        if discColorIndex != -1:
+            num = len(self.dataDomain[discColorIndex].values)
+            varValues = getVariableValuesSorted(self.dataDomain[discColorIndex])
+            for ind in range(num):
+                self.legend().add_item(self.dataDomain[discColorIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, self.discPalette[ind], self.pointWidth))
 
-                if colorIndex != -1:
-                    if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
-                        newColor = self.contPalette.getRGB(self.noJitteringScaledData[colorIndex][i])
-                    else:
-                        newColor = self.discPalette.getRGB(self.originalData[colorIndex][i])
-                else: newColor = (0,0,0)
+        if discShapeIndex != -1:
+            num = len(self.dataDomain[discShapeIndex].values)
+            varValues = getVariableValuesSorted(self.dataDomain[discShapeIndex])
+            for ind in range(num):
+                self.legend().add_item(self.dataDomain[discShapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], Qt.black, self.pointWidth))
 
-                Symbol = self.curveSymbols[0]
-                if shapeIndex != -1: Symbol = self.curveSymbols[int(self.originalData[shapeIndex][i])]
-
-                size = self.pointWidth
-                if sizeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeIndex][i] * self.pointWidth)
-
-                if not xPointsToAdd.has_key((newColor, size, Symbol, showFilled)):
-                    xPointsToAdd[(newColor, size, Symbol, showFilled)] = []
-                    yPointsToAdd[(newColor, size, Symbol, showFilled)] = []
-                xPointsToAdd[(newColor, size, Symbol, showFilled)].append(xData[i])
-                yPointsToAdd[(newColor, size, Symbol, showFilled)].append(yData[i])
-                self.tips.addToolTip(xData[i], yData[i], i)     # we add a tooltip for this point
-
-                # Show a label by each marker
-                if labelAttr:
-                    if labelAttr in [self.rawData.domain.getmeta(mykey).name for mykey in self.rawData.domain.getmetas().keys()] + [var.name for var in self.rawData.domain]:
-                        if self.rawData[i][labelAttr].isSpecial(): continue
-                        if self.rawData[i][labelAttr].varType==orange.VarTypes.Continuous:
-                            lbl = "%4.1f" % orange.Value(self.rawData[i][labelAttr])
-                        else:
-                            lbl = str(self.rawData[i][labelAttr].value)
-                        self.addMarker(lbl, xData[i], yData[i], Qt.AlignCenter | Qt.AlignBottom)
-
-            # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-            if self.haveSubsetData:
-                validSubData = self.getValidSubsetList(attrs)
-                xData, yData = self.getXYSubsetDataPositions(xAttr, yAttr)
-                for i in range(len(self.rawSubsetData)):
-                    if not validSubData[i]: continue
-
-                    if colorIndex != -1 and self.validSubsetDataArray[colorIndex][i]:
-                        if self.rawData.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                            newColor = self.contPalette.getRGB(self.scaledSubsetData[colorIndex][i])
-                        else:
-                            newColor = self.discPalette.getRGB(self.originalSubsetData[colorIndex][i])
-                    else: newColor = (0,0,0)
-
-                    if shapeIndex != -1: Symbol = self.curveSymbols[int(self.originalSubsetData[shapeIndex][i])]
-                    else:                Symbol = self.curveSymbols[0]
-
-                    size = self.pointWidth
-                    if sizeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledSubsetData[sizeIndex][i] * self.pointWidth)
-
-                    if not xPointsToAdd.has_key((newColor, size, Symbol, 1)):
-                        xPointsToAdd[(newColor, size, Symbol, 1)] = []
-                        yPointsToAdd[(newColor, size, Symbol, 1)] = []
-                    xPointsToAdd[(newColor, size, Symbol, 1)].append(xData[i])
-                    yPointsToAdd[(newColor, size, Symbol, 1)].append(yData[i])
-                    self.tips.addToolTip(xData[i], yData[i], -i-1)     # we add a tooltip for this point
-
-                    # Show a label by each marker
-                    if labelAttr:
-                        if labelAttr in [self.rawSubsetData.domain.getmeta(mykey).name for mykey in self.rawSubsetData.domain.getmetas().keys()] + [var.name for var in self.rawSubsetData.domain]:
-                            if self.rawSubsetData[i][labelAttr].isSpecial(): continue
-                            if self.rawSubsetData[i][labelAttr].varType==orange.VarTypes.Continuous:
-                                lbl = "%4.1f" % orange.Value(self.rawSubsetData[i][labelAttr])
-                            else:
-                                lbl = str(self.rawSubsetData[i][labelAttr].value)
-                            self.addMarker(lbl, xData[i], yData[i], Qt.AlignCenter | Qt.AlignBottom)
-
-            for i, (color, size, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
-                xData = xPointsToAdd[(color, size, symbol, showFilled)]
-                yData = yPointsToAdd[(color, size, symbol, showFilled)]
-                c = QColor(*color)
-                c.setAlpha(self.alphaValue)
-                self.addCurve("", c, c, size, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
-
-        # ##############################################################
-        # show legend if necessary
-        if self.showLegend == 1:
-            legendKeys = {}
-            discColorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
-            discShapeIndex = shapeIndex if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete else -1
-            discSizeIndex = sizeIndex if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete else -1
-                        
-            if discColorIndex != -1:
-                num = len(self.dataDomain[discColorIndex].values)
-                varValues = getVariableValuesSorted(self.dataDomain[discColorIndex])
-                for ind in range(num):
-                    self.legend().add_item(self.dataDomain[discColorIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, self.discPalette[ind], self.pointWidth))
-
-            if discShapeIndex != -1:
-                num = len(self.dataDomain[discShapeIndex].values)
-                varValues = getVariableValuesSorted(self.dataDomain[discShapeIndex])
-                for ind in range(num):
-                    self.legend().add_item(self.dataDomain[discShapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], Qt.black, self.pointWidth))
-
-            if sizeIndex != -1:
-                num = len(self.dataDomain[discSizeIndex].values)
-                varValues = getVariableValuesSorted(self.dataDomain[discSizeIndex])
-                for ind in range(num):
-                    self.legend().add_item(self.dataDomain[discSizeIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, Qt.black, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
+        if discSizeIndex != -1:
+            num = len(self.dataDomain[discSizeIndex].values)
+            varValues = getVariableValuesSorted(self.dataDomain[discSizeIndex])
+            for ind in range(num):
+                self.legend().add_item(self.dataDomain[discSizeIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, Qt.black, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
 
         # ##############################################################
         # draw color scale for continuous coloring attribute

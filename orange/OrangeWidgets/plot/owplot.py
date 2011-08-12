@@ -663,7 +663,7 @@ class OWPlot(orangeplot.Plot):
         
         return self.add_custom_curve(c, enableLegend)
                 
-    def set_main_curve_data(self, x_data, y_data, color_data, label_data, size_data, shape_data, x_axis_key=xBottom, y_axis_key=yLeft):
+    def set_main_curve_data(self, x_data, y_data, color_data, label_data, size_data, shape_data, marked_data = [], x_axis_key=xBottom, y_axis_key=yLeft):
         """
             Creates a single curve that can have points of different colors, shapes and sizes. 
             This is the preferred method for visualization that show a series of different points. 
@@ -706,13 +706,10 @@ class OWPlot(orangeplot.Plot):
         c.set_point_labels(label_data)
         c.set_point_sizes(size_data)
         c.set_point_symbols(shape_data)
+        if marked_data:
+            c.set_points_marked(marked_data)
+            self.marked_points_changed.emit()
         c.name = 'Main Curve'
-        
-    def mark_points_at(self, x_data, y_data):
-        for data_point in zip(x_data, y_data):
-            point = self.point_at(data_point)
-            if point:
-                point.set_marked(true)
         
     def remove_curve(self, item):
         '''
@@ -776,6 +773,7 @@ class OWPlot(orangeplot.Plot):
         for i in self.plot_items():
             if i is not self.grid_curve:
                 self.remove_item(i)
+        self.main_curve = None
         self._bounds_cache = {}
         self._transform_cache = {}
         self.clear_markers()

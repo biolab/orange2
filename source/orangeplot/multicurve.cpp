@@ -147,3 +147,26 @@ void MultiCurve::set_alpha_value(int alpha)
 {
     update_items(points(), PointAlphaUpdater(alpha), UpdateBrush);
 }
+
+void MultiCurve::set_points_marked(const QList< bool >& marked)
+{
+    updateNumberOfItems();
+    QList<Point*> p = points();
+    const int n = p.size();
+    if (marked.size() == n)
+    {
+        for (int i = 0; i < n; ++i)
+        {
+            p[i]->set_marked(marked[i]);
+        }
+    }
+    else 
+    {
+        bool m = marked.isEmpty() ? false : marked.first();
+        foreach (Point* point, p)
+        {
+            point->set_marked(m);
+        }
+    }
+}
+

@@ -60,16 +60,18 @@ public:
 
     void select_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void select_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void select_points(const Data& data, SelectionBehavior behavior = AddSelection);
     void unselect_all_points();
     
     void mark_points(const QRectF& rect, SelectionBehavior behavior = AddSelection);
     void mark_points(const QPolygonF& area, SelectionBehavior behavior = AddSelection);
+    void mark_points(const Data& data, SelectionBehavior behavior = AddSelection);
     void unmark_all_points();
     
     void selected_to_marked();
     void marked_to_selected();
     
-    QList< int > selected_points(const QList< double > x_data, const QList< double > y_data);
+    QList< bool > selected_points(const QList< double > x_data, const QList< double > y_data);
     QList< Point* > selected_points();
     QList< Point*> marked_points();
     Point* nearest_point(const QPointF& pos);

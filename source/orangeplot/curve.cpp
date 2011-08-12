@@ -380,7 +380,6 @@ void Curve::register_points()
     {
         p->remove_all_points(this);
         p->add_points(m_pointItems, this);
-        qDebug() << "Registered" << m_pointItems.size() << "points";
     }
 }
 
