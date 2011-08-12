@@ -2614,7 +2614,7 @@ def mlc_hamming_loss(res):
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
             for j in range(label_num):
-                if labels[j] == aclass[j]:
+                if labels[j] <> aclass[j]:
                     losses[i] = losses[i]+1
             
     return [x/label_num/example_num for x in losses]

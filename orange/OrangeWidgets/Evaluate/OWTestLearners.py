@@ -435,8 +435,8 @@ class OWTestLearners(OWWidget):
                 self.data = orange.Filter_hasClassValue(self.data)
             #self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
             
+            print multilabel_flag
             #self.stat = [self.rStatistics, self.cStatistics][self.isclassification()]
-            self.stat = self.set_newstate()
             if multilabel_flag == 1:
                 self.statLayout.setCurrentWidget(self.mbox)
             else:
@@ -444,7 +444,8 @@ class OWTestLearners(OWWidget):
             
             if self.learners:
                 self.score([l.id for l in self.learners.values()])
-
+            self.stat = self.set_newstate()
+            
         self.openContext("", data)
         self.paintscores()
 

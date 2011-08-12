@@ -63,7 +63,7 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
     """
     Class that implements the Binary Relevance (BR) method. 
     """
-    def __new__(cls, instances = None, base_learner = None, **argkw):
+    def __new__(cls, instances = None, base_learner = None, weight_id = 0, **argkw):
         self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
         if base_learner:
             self.base_learner = base_learner
@@ -72,11 +72,11 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
         
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances,base_learner)
+            return self.__call__(instances,base_learner,weight_id)
         else:
             return self
         
-    def __call__(self, instances, base_learner = None, **kwds):
+    def __call__(self, instances, base_learner = None, weight_id = 0, **kwds):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
@@ -106,7 +106,10 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
             classifiers.append(classifer)
             
         #Learn from the given table of data instances.
-        return BinaryRelevanceClassifier(instances = instances, label_indices = label_indices,classifiers = classifiers)
+        return BinaryRelevanceClassifier(instances = instances, 
+                                         label_indices = label_indices,
+                                         classifiers = classifiers,
+                                         weight_id = weight_id)
 
 class BinaryRelevanceClassifier(_multibase.MultiLabelClassifier):
     def __init__(self, **kwds):
@@ -148,3 +151,11 @@ class BinaryRelevanceClassifier(_multibase.MultiLabelClassifier):
             return disc
         return labels,disc
         
+#########################################################################################
+if __name__ == "__main__":
+    data = Orange.data.Table("emotions.tab")
+
+    classifier = Orange.multilabel.BinaryRelevanceLearner(data,Orange.classification.knn.kNNLearner)
+    for i in range(10):
+        c,p = classifier(data[i],Orange.classification.Classifier.GetBoth)
+        print c,p

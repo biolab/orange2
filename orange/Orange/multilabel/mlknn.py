@@ -118,7 +118,7 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
         :class:`Orange.classification.knn.FindNearest` for nearest neighbor search
     
     """
-    def __new__(cls, instances = None, k=1, smooth = 1.0, **argkw):
+    def __new__(cls, instances = None, k=1, smooth = 1.0, weight_id = 0, **argkw):
         """
         Constructor of MLkNNLearner
         
@@ -139,13 +139,12 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
         self.smooth = smooth
         
         if instances:
-            self.instances = instances
             self.__init__(**argkw)
-            return self.__call__(instances)
+            return self.__call__(instances,weight_id)
         else:
             return self
 
-    def __call__(self, instances, **kwds):
+    def __call__(self, instances, weight_id = 0, **kwds):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
@@ -167,38 +166,38 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
         self.cond_nprobabilities  = [ [0.] * (k + 1) ] * num_labels
         
         #Computing the prior probabilities P(H_b^l)
-        self.compute_prior()
+        self.compute_prior(instances)
         
         #Computing the posterior probabilities P(E_j^l|H_b^l)
-        self.compute_cond()
+        self.compute_cond(instances)
         
-        return MLkNNClassifier(instances = self.instances, label_indices = self.label_indices, 
+        return MLkNNClassifier(instances = instances, label_indices = self.label_indices, 
                                prior_probabilities = self.prior_probabilities, 
                                prior_nprobabilities = self.prior_nprobabilities,
                                cond_probabilities = self.cond_probabilities,
                                cond_nprobabilities = self.cond_nprobabilities,
                                knn = self.knn,
-                               k = self.k)
+                               k = self.k,
+                               weight_id = weight_id)
 
-    def compute_prior(self):
+    def compute_prior(self,instances):
         """ Computing Prior and PriorN Probabilities for each class of the training set """
-        num_instances = len(self.instances)
+        num_instances = len(instances)
         for i in range(self.num_labels):
             temp_ci = 0
             for j in range(num_instances):
-                value = self.instances[j][self.label_indices[i]].value
+                value = instances[j][self.label_indices[i]].value
                 if value == '1':
                     temp_ci = temp_ci+1
             self.prior_probabilities[i] = (self.smooth + temp_ci) / (self.smooth * 2 + num_instances)
             self.prior_nprobabilities[i] = 1 - self.prior_probabilities[i]
             
-    def compute_cond(self):
+    def compute_cond(self,instances):
         """ Computing Cond and CondN Probabilities for each class of the training set """
         num_labels = self.num_labels
         label_indices = self.label_indices
         k = self.k
-        num_instances = len(self.instances)
-        instances = self.instances
+        num_instances = len(instances)
         
         temp_ci  = [ [0] * (k + 1) ] * num_labels
         temp_nci = [ [0] * (k + 1) ] * num_labels
@@ -277,3 +276,11 @@ class MLkNNClassifier(_multiknn.MultikNNClassifier):
             return disc
         return labels,disc
         
+#########################################################################################
+if __name__ == "__main__":
+    data = Orange.data.Table("emotions.tab")
+
+    classifier = Orange.multilabel.MLkNNLearner(data,5,1.0)
+    for i in range(10):
+        c,p = classifier(data[i],Orange.classification.Classifier.GetBoth)
+        print c,p

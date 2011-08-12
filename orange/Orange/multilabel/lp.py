@@ -59,7 +59,7 @@ class LabelPowersetLearner(_multibase.MultiLabelLearner):
     """
     Class that implements the LabelPowerset (LP) method. 
     """
-    def __new__(cls, instances = None, base_learner = None, **argkw):
+    def __new__(cls, instances = None, base_learner = None, weight_id = 0, **argkw):
         self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
         if base_learner:
             self.base_learner = base_learner
@@ -68,11 +68,11 @@ class LabelPowersetLearner(_multibase.MultiLabelLearner):
         
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances,base_learner)
+            return self.__call__(instances,base_learner,weight_id)
         else:
             return self
                 
-    def __call__(self, instances, base_learner = None, **kwds):
+    def __call__(self, instances, base_learner = None, weight_id = 0, **kwds):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
@@ -102,12 +102,15 @@ class LabelPowersetLearner(_multibase.MultiLabelLearner):
                     [label.get_label_bitstream(instances,e)])
             
             new_table.append(new_row)
-                     
+             
         #store the classifier
         classifier = self.base_learner(new_table)
         
         #Learn from the given table of data instances.
-        return LabelPowersetClassifier(instances = instances, label_indices = label_indices,classifier = classifier)
+        return LabelPowersetClassifier(instances = instances, 
+                                       label_indices = label_indices,
+                                       classifier = classifier,
+                                       weight_id = weight_id)
 
 class LabelPowersetClassifier(_multibase.MultiLabelClassifier):      
     def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
@@ -138,4 +141,12 @@ class LabelPowersetClassifier(_multibase.MultiLabelClassifier):
         if result_type == Orange.classification.Classifier.GetProbabilities:
             return disc
         return labels,disc
-        
+
+#########################################################################################
+if __name__ == "__main__":
+    data = Orange.data.Table("emotions.tab")
+
+    classifier = Orange.multilabel.LabelPowersetLearner(data,Orange.classification.knn.kNNLearner)
+    for i in range(10):
+        c,p = classifier(data[i],Orange.classification.Classifier.GetBoth)
+        print c,p

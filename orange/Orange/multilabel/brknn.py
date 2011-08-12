@@ -70,7 +70,7 @@ class BRkNNLearner(_multiknn.MultikNNLearner):
         :class:`Orange.classification.knn.FindNearest` for nearest neighbor search
     
     """
-    def __new__(cls, instances = None, k=1, ext = None, **argkw):
+    def __new__(cls, instances = None, k=1, ext = None, weight_id = 0, **argkw):
         """
         Constructor of BRkNNLearner
         
@@ -95,11 +95,11 @@ class BRkNNLearner(_multiknn.MultikNNLearner):
         if instances:
             self.instances = instances
             self.__init__(**argkw)
-            return self.__call__(instances)
+            return self.__call__(instances,weight_id)
         else:
             return self
 
-    def __call__(self, instances, **kwds):
+    def __call__(self, instances, weight_id = 0, **kwds):
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
@@ -162,7 +162,7 @@ class BRkNNClassifier(_multiknn.MultikNNClassifier):
         """
         total = 0
         weight = 0
-        neighborLabels = 0
+        neighbor_labels = 0
         confidences = [0.0]* self.num_labels
 
         #Set up a correction to the estimator
@@ -184,10 +184,10 @@ class BRkNNClassifier(_multiknn.MultikNNClassifier):
                 value = current.get_class().value[j]
                 if value == '1':
                     confidences[j] += weight
-                    neighborLabels += weight
+                    neighbor_labels += weight
             total += weight
 
-        self.avgPredictedLabels = math.ceil(neighborLabels / total)
+        self.avg_predicted_labels = int(math.ceil(neighbor_labels / total))
         
         #Normalise distribution
         if total > 0:
@@ -257,20 +257,28 @@ class BRkNNClassifier(_multiknn.MultikNNClassifier):
         counter = 0
 
         for i in range(self.num_labels):
-            if prob[i] > prob[self.num_labels - self.avgPredictedLabels]:
+            if prob[i] > prob[self.num_labels - self.avg_predicted_labels]:
                 labels[i].value = '1'
                 counter = counter + 1
-            elif prob[i] == prob[self.num_labels - self.avgPredictedLabels]:
+            elif prob[i] == prob[self.num_labels - self.avg_predicted_labels]:
                 indices.append(i)
 
         size = len(indices)
 
-        j = avgPredictedLabels - counter
+        j = self.avg_predicted_labels - counter
         while j > 0:
-            next = rrandom.randint(0,size-1)
+            next = random.randint(0,size-1)
             if labels[indices[next]] <> '1':
                 labels[indices[next]] = '1'
                 j = j - 1
         
         return labels       
     
+#########################################################################################
+if __name__ == "__main__":
+    data = Orange.data.Table("emotions.tab")
+
+    classifier = Orange.multilabel.BRkNNLearner(data,5)
+    for i in range(10):
+        c,p = classifier(data[i],Orange.classification.Classifier.GetBoth)
+        print c,p
