@@ -65,11 +65,12 @@ def remove_labels(data):
     """ remove the label attributes in the data"""
     domain = data.domain
     newdomain =  [domain[i] for i, var in enumerate(data.domain.variables)
-          if var.attributes.has_key('label')]
+          if not var.attributes.has_key('label')]
     new_data = data.translate(newdomain)
-    
+    return new_data
+
 def get_label_bitstream(data,example):
-    """ get the labels in terms of a string of 0 and 1 """
+    """ get the labels in a 0/1 string. For example, if the first char in the string is '1', then the example belongs to the first label"""
     if not isinstance(data, Orange.data.Table):
         raise TypeError('data must be of type \'Orange.data.Table\'')
     

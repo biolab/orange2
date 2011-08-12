@@ -88,9 +88,9 @@ class OWLP(OWWidget):
             try:
                 self.classifier = self.learner(self.data)
                 self.classifier.name = self.name
-                for i in range(10):
-                    c,p = self.classifier(self.data[i],Orange.classification.Classifier.GetBoth)
-                    print c,p
+                #for i in range(10):
+                #    c,p = self.classifier(self.data[i],Orange.classification.Classifier.GetBoth)
+                #    print c,p
             except Exception, (errValue):
                 self.classifier = None
                 self.error(str(errValue))

@@ -39,6 +39,7 @@ def trans_mulan_data(xml_name,arff_name):
 
 ##############################################################################
 # Test the code, run from DOS prompt
+# assume the data file is in proper directory
 
 if __name__=="__main__":
     table = trans_mulan_data("../../doc/datasets/emotions.xml","../../doc/datasets/emotions.arff")

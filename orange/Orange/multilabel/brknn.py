@@ -275,6 +275,9 @@ class BRkNNClassifier(_multiknn.MultikNNClassifier):
         return labels       
     
 #########################################################################################
+# Test the code, run from DOS prompt
+# assume the data file is in proper directory
+
 if __name__ == "__main__":
     data = Orange.data.Table("emotions.tab")
 

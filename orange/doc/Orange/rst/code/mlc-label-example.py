@@ -25,10 +25,17 @@ print label.get_num_labels(data)
 #print 4
 
 #test getlabelIndices
+print "#test getlabelIndices:"
 for id in label.get_label_indices(data):
     print data.domain[id].name,
 print
 # print Sports Religion Science Politics
+
+#test remove_labels
+print "#test remove_labels:"
+data3 = label.remove_labels(data)
+for e in data3:
+    print e
 
 #test removeIndices
 sub_domain = label.remove_indices(data,[2,3,4])
@@ -47,3 +54,4 @@ for e in data2:
 #['2', '0', '2']
 #['3', '1', '3']
 #['4', '0', '4']
+

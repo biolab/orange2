@@ -6,7 +6,7 @@ LabelPowerset Learner
 ***************************************
 
 LabelPowerset Classification is another transformation method for multi-label classification. 
-It consideres each different set of labels that exist in the multi-label data as a 
+It considers each different set of labels that exist in the multi-label data as a 
 single label. It so learns one single-label classifier :math:`H:X \\rightarrow P(L)`, where
 :math:`P(L)` is the power set of L.
 For more information, see G. Tsoumakas and I. Katakis. `Multi-label classification: An overview 
@@ -143,6 +143,9 @@ class LabelPowersetClassifier(_multibase.MultiLabelClassifier):
         return labels,disc
 
 #########################################################################################
+# Test the code, run from DOS prompt
+# assume the data file is in proper directory
+
 if __name__ == "__main__":
     data = Orange.data.Table("emotions.tab")
 

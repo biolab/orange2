@@ -6,13 +6,15 @@ ML-kNN Learner
 ***************************************
 
 ML-kNN Classification is a kind of adaptation method for multi-label classification. 
-It is an adaptation of the kNN lazy learning algorithm for multi-label data. In essence,
-ML-kNN uses the kNN algorithm independently for each label :math:'l': It finds the k nearest 
-examples to the test instance and considers those that are labelled at least with :math:'l' 
-as positive and the rest as negative. Actually this method follows the paradigm of Binary Relevance (BR).
-What mainly differentiates this method from BR is the use of prior probabilities. ML-kNN has also
+It is an adaptation of the kNN lazy learning algorithm for multi-label data. 
+In essence, ML-kNN uses the kNN algorithm independently for each label :math:'l': 
+It finds the k nearest examples to the test instance and considers those that are 
+labelled at least with :math:'l' as positive and the rest as negative. 
+Actually this method follows the paradigm of Binary Relevance (BR). What mainly 
+differentiates this method from BR is the use of prior probabilities. ML-kNN has also
 the capability of producing a ranking of the labels as an output.
-For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
+For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning 
+approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
 Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.  
 
 .. index:: ML-kNN Learner
@@ -277,6 +279,9 @@ class MLkNNClassifier(_multiknn.MultikNNClassifier):
         return labels,disc
         
 #########################################################################################
+# Test the code, run from DOS prompt
+# assume the data file is in proper directory
+
 if __name__ == "__main__":
     data = Orange.data.Table("emotions.tab")
 
