@@ -47,7 +47,7 @@ bool operator==(const PointData& one, const PointData& other)
 
 QDebug& operator<<(QDebug& stream, const DataPoint& point)
 {
-    stream.maybeSpace() << "DataPoint(" << point.x << ','<< point.y << ')';
+	return stream.maybeSpace() << "DataPoint(" << point.x << ','<< point.y << ')';
 }
 
 bool operator==(const DataPoint& one, const DataPoint& other)
@@ -266,9 +266,9 @@ QPainterPath Point::path_for_symbol(int symbol, int size)
 
 QPainterPath Point::trianglePath(double d, double rot) {
     QPainterPath path;
-    path.moveTo(-d, d*sqrt(3)/3);
-    path.lineTo(d, d*sqrt(3)/3);
-    path.lineTo(0, -2*d*sqrt(3)/3);
+    path.moveTo(-d, d*sqrt(3.0)/3);
+    path.lineTo(d, d*sqrt(3.0)/3);
+    path.lineTo(0, -2*d*sqrt(3.0)/3);
     path.closeSubpath();
     return QTransform().rotate(rot).map(path);
 }

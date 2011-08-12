@@ -35,11 +35,6 @@ inline double distance(const QPointF& one, const QPointF& other)
     return (one - other).manhattanLength();
 }
 
-inline bool operator==(const DataPoint& one, const DataPoint& other)
-{
-    return one.x == other.x && one.y == other.y;
-}
-
 template <class Area>
 void set_points_state(Area area, QGraphicsScene* scene, Point::StateFlag flag, Plot::SelectionBehavior behavior)
 {

@@ -24,7 +24,6 @@
 #include "plot.h"
 #include <deque>
 #include <algorithm>
-#include <sys/time.h>
 
 class QueueVertex
 {
@@ -133,7 +132,7 @@ private:
     QTransform m_graph_transform;
 };
 
-struct EdgeItem : public QGraphicsLineItem
+class EdgeItem : public QGraphicsLineItem
 {
 public:
     enum Arrow

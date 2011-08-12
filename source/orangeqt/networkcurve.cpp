@@ -26,6 +26,8 @@
 #include <QStyleOptionGraphicsItem>
 #include <QCoreApplication>
 
+#include <QtCore/QTime>
+
 /************/
 /* NodeItem */  
 /************/
@@ -391,7 +393,7 @@ int NetworkCurve::circular(CircularLayoutType type)
 	double fi = PI;
 	double step = 2 * PI / m_nodes.size();
 
-	srand(time(NULL));
+	qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 	std::vector<int> vertices;
 	Nodes::ConstIterator it;
 	for (it = m_nodes.constBegin(); it != m_nodes.constEnd(); ++it)
@@ -647,10 +649,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	// iterations
 	//clock_t refresh_time = clock() + 0.05 * CLOCKS_PER_SEC;
 
-	struct timeval time;
-	gettimeofday(&time, NULL);
-	double refresh_time = time.tv_sec * 1000000 + time.tv_usec + 10000;
-
+	QTime refresh_time = QTime::currentTime();
 	for (i = 0; i < steps; ++i)
 	{
 		foreach (const NodeItem* node, m_nodes)
@@ -739,20 +738,14 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 			                   u->y() + (disp[u->index()].y * qMin(fabs(disp[u->index()].y), temperature) / dif));
 		}
 
-		gettimeofday(&time, NULL);
-		if (time.tv_sec * 1000000 + time.tv_usec > refresh_time && i % 2 == 0)
+		QTime before_refresh_time = QTime::currentTime();
+		if (before_refresh_time > refresh_time && i % 2 == 0)
 		{
 			update_properties();
-
-			gettimeofday(&time, NULL);
-			double start_time = time.tv_sec * 1000000 + time.tv_usec;
             QCoreApplication::processEvents();
-            gettimeofday(&time, NULL);
-			double refresh_duration = time.tv_sec * 1000000 + time.tv_usec - start_time;
-			double next_refresh = qMax(refresh_duration * 2, 10000.0);
-            gettimeofday(&time, NULL);
-            //qDebug() << "next refresh: " << next_refresh;
-            refresh_time = time.tv_sec * 1000000 + time.tv_usec + next_refresh;
+			int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());
+
+			refresh_time = before_refresh_time.addMSecs(qMax(refresh_duration * 3, 10));
 		}
 		if (m_stop_optimization)
 		{
