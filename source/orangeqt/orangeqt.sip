@@ -1,4 +1,4 @@
-%Module(name=orangeplot, keyword_arguments="Optional", version=1)
+%Module(name=orangeqt, keyword_arguments="Optional", version=1)
 
 %Import QtGui/QtGuimod.sip
 

@@ -1,4 +1,4 @@
-project(orangeplot)
+project(orangeqt)
 
 cmake_minimum_required(VERSION 2.6)
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
@@ -12,8 +12,8 @@ include(SIPMacros)
 
 include_directories(${QT_INCLUDES} ${SIP_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${PYTHON_INCLUDE_PATH})
 
-#### orangeplot sources ####
-set(orangeplot_SRCS 
+#### orangeqt sources ####
+set(orangeqt_SRCS 
     plotitem.cpp 
     point.cpp 
     curve.cpp 
@@ -22,7 +22,7 @@ set(orangeplot_SRCS
     multicurve.cpp
     plot.cpp 
 )
-qt4_automoc(${orangeplot_SRCS})
+qt4_automoc(${orangeqt_SRCS})
 
 #### Python bindings ####
 set(SIP_PLATFORM_TAG)
@@ -40,6 +40,6 @@ set(SIP_INCLUDES ${PYQT4_SIP_DIR})
 set(SIP_CONCAT_PARTS 1)
 
 set(SIP_EXTRA_LINK_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
-set(SIP_EXTRA_SOURCES ${orangeplot_SRCS})
+set(SIP_EXTRA_SOURCES ${orangeqt_SRCS})
 
-add_sip_python_module(orangeplot orangeplot.sip)
+add_sip_python_module(orangeqt orangeqt.sip)
