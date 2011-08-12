@@ -90,7 +90,7 @@ def move_item(item, pos, animate = True, duration = None):
     '''
     if not duration:
         duration = 250
-    orangeplot.PlotItem.move_item(item, pos, animate, duration)
+    orangeqt.PlotItem.move_item(item, pos, animate, duration)
     
 def move_item_xy(item, x, y, animate = True, duration = None):
     '''
@@ -243,7 +243,7 @@ class RectangleCurve(OWCurve):
         self._item.setPen(self.pen())
         self._item.setBrush(self.brush())
         
-class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
+class UnconnectedLinesCurve(orangeqt.UnconnectedLinesCurve):
     """
         A plot item that shows a series of unconnected straight lines. 
         
@@ -263,7 +263,7 @@ class UnconnectedLinesCurve(orangeplot.UnconnectedLinesCurve):
         `(n+1)`-th point for each even `n`. 
     """
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
-        orangeplot.UnconnectedLinesCurve.__init__(self, xData, yData)
+        orangeqt.UnconnectedLinesCurve.__init__(self, xData, yData)
         if pen:
             self.set_pen(pen)
         self.name = name
@@ -306,7 +306,7 @@ class CircleCurve(OWCurve):
         r = self.radius
         return QRectF(x-r, y-r, 2*r, 2*r)
         
-class Marker(orangeplot.PlotItem):
+class Marker(orangeqt.PlotItem):
     """
         Displays a text marker on the plot. 
         
@@ -335,7 +335,7 @@ class Marker(orangeplot.PlotItem):
         :type size: int
     """
     def __init__(self, text, x, y, align, bold = 0, color = None, brushColor = None, size=None):
-        orangeplot.PlotItem.__init__(self)
+        orangeqt.PlotItem.__init__(self)
         self._item = QGraphicsTextItem(text, parent=self)
         self._data_point = QPointF(x,y)
         f = self._item.font()
@@ -348,7 +348,7 @@ class Marker(orangeplot.PlotItem):
     def update_properties(self):
         self._item.setPos(self.graph_transform().map(self._data_point))
 
-class ProbabilitiesItem(orangeplot.PlotItem):
+class ProbabilitiesItem(orangeqt.PlotItem):
     """
         Displays class probabilities in the background
         
@@ -368,7 +368,7 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         :type rect: QRectF
     """
     def __init__(self, classifier, granularity, scale, spacing, rect=None):
-        orangeplot.PlotItem.__init__(self)
+        orangeqt.PlotItem.__init__(self)
         self.classifier = classifier
         self.rect = rect
         self.granularity = granularity
@@ -432,7 +432,7 @@ class ProbabilitiesItem(orangeplot.PlotItem):
         'yEnabled' : 'is_y_enabled',
         'setPen' : 'set_pen'
     })
-class PlotGrid(orangeplot.PlotItem):
+class PlotGrid(orangeqt.PlotItem):
     """
         Draws a grid onto the plot
         
@@ -440,7 +440,7 @@ class PlotGrid(orangeplot.PlotItem):
         :type plot: :obj:`.OWPlot`
     """
     def __init__(self, plot = None):
-        orangeplot.PlotItem.__init__(self)
+        orangeqt.PlotItem.__init__(self)
         self._x_enabled = True
         self._y_enabled = True
         self._path_item = QGraphicsPathItem(self)

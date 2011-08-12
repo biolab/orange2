@@ -3,7 +3,7 @@
 Curve (``owcurve``)
 ##############################
 
-.. class:: orangeplot.PlotItem
+.. class:: orangeqt.PlotItem
 
     This class represents a base for any item than can be added to a plot. 
     
@@ -91,14 +91,14 @@ Curve (``owcurve``)
 
 from OWBaseWidget import *
 from owconstants import *
-import orangeplot
+import orangeqt
 from Orange.misc import deprecated_members
 
 @deprecated_members({
     "setYAxis" : "set_y_axis",
     "setData" : "set_data"
 })
-class OWCurve(orangeplot.Curve):
+class OWCurve(orangeqt.Curve):
     """ 
         This class represents a curve on a plot.
         
@@ -148,12 +148,12 @@ class OWCurve(orangeplot.Curve):
             :rtype: list of tuple of float float
     """
     def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None):
-        orangeplot.Curve.__init__(self, xData, yData)
+        orangeqt.Curve.__init__(self, xData, yData)
         self.set_axes(x_axis_key, y_axis_key)
         if tooltip:
             self.setToolTip(tooltip)
         self.name = ''
         
-OWMultiCurve = orangeplot.MultiCurve
+OWMultiCurve = orangeqt.MultiCurve
 
             

@@ -35,7 +35,7 @@ from OWBaseWidget import unisetattr
 from OWColorPalette import *      # color palletes, ...
 from Orange.misc import deprecated_members, deprecated_attribute
 
-import orangeplot
+import orangeqt
 
 def n_min(*args):
     lst = args[0] if len(args) == 1 else args
@@ -69,7 +69,7 @@ name_map = {
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
-class OWPlot(orangeplot.Plot): 
+class OWPlot(orangeqt.Plot): 
     """
     The base class for all plots in Orange. It uses the Qt Graphics View Framework
     to draw elements on a graph. 
@@ -277,7 +277,7 @@ class OWPlot(orangeplot.Plot):
             ``axes`` parameter. To use non-cartesian axes, set ``axes`` to an empty list
             and add custom axes with :meth:`add_axis` or :meth:`add_custom_axis`
         """
-        orangeplot.Plot.__init__(self, parent)
+        orangeqt.Plot.__init__(self, parent)
         self.parent_name = name
         self.show_legend = show_legend
         self.title_item = None
@@ -1033,7 +1033,7 @@ class OWPlot(orangeplot.Plot):
             self._last_pan_pos = point
             event.accept()
         else:
-            orangeplot.Plot.mousePressEvent(self, event)
+            orangeqt.Plot.mousePressEvent(self, event)
             
     def mouseMoveEvent(self, event):
         if event.buttons() and (self._pressed_mouse_pos - event.pos()).manhattanLength() > qApp.startDragDistance():
@@ -1080,7 +1080,7 @@ class OWPlot(orangeplot.Plot):
                 tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform)
                 self.showTip(tp.x(), tp.y(), text)
             else:
-                orangeplot.Plot.mouseMoveEvent(self, event)
+                orangeqt.Plot.mouseMoveEvent(self, event)
         
     def mouseReleaseEvent(self, event):
         self._pressed_mouse_button = Qt.NoButton
@@ -1105,7 +1105,7 @@ class OWPlot(orangeplot.Plot):
             self.scene().removeItem(self._current_rs_item)
             self._current_rs_item = None
             return
-        orangeplot.Plot.mouseReleaseEvent(self, event)
+        orangeqt.Plot.mouseReleaseEvent(self, event)
     
     def mouseStaticClick(self, event):
         point = self.mapToScene(event.pos())
@@ -1217,7 +1217,7 @@ class OWPlot(orangeplot.Plot):
             y_min, y_max = self.bounds_for_axis(y_axis, try_auto_scale=False)
             if x_min and x_max and y_min and y_max:
                 return QRectF(x_min, y_min, x_max-x_min, y_max-y_min)
-        r = orangeplot.Plot.data_rect_for_axes(self, x_axis, y_axis)
+        r = orangeqt.Plot.data_rect_for_axes(self, x_axis, y_axis)
         for id, axis in self.axes.iteritems():
             if id not in CartesianAxes and axis.data_line:
                 r |= QRectF(axis.data_line.p1(), axis.data_line.p2())
@@ -1285,7 +1285,7 @@ class OWPlot(orangeplot.Plot):
             elif self.axes[axis_id].labels:
                 return -0.2, len(self.axes[axis_id].labels) - 0.8
         if try_auto_scale:
-            return orangeplot.Plot.bounds_for_axis(self, axis_id)
+            return orangeqt.Plot.bounds_for_axis(self, axis_id)
         else:
             return None, None
             
@@ -1404,7 +1404,7 @@ class OWPlot(orangeplot.Plot):
             self.main_curve.set_alpha_value(self.alpha_value)
         else:
             for c in self.plot_items():
-                if isinstance(c, orangeplot.Curve) and not getattr(c, 'ignore_alpha', False):
+                if isinstance(c, orangeqt.Curve) and not getattr(c, 'ignore_alpha', False):
                     au = c.auto_update()
                     c.set_auto_update(False)
                     c.set_point_size(self.point_width)
@@ -1423,7 +1423,7 @@ class OWPlot(orangeplot.Plot):
             self.use_antialiasing= use_antialiasing
             
         self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
-        orangeplot.Point.clear_cache()
+        orangeqt.Point.clear_cache()
         
     def update_animations(self, use_animations=None):
         if use_animations is not None:
