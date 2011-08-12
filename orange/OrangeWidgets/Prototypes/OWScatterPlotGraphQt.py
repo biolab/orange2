@@ -188,20 +188,14 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
                 labelData = [str(i[labelAttr].value) if not i[labelAttr].isSpecial() else "" for i in self.rawData]
         else:
             labelData = [""]
-            
-        qDebug(' '.join(str(len(i)) for i in [xData, yData, colorData, labelData, sizeData, shapeData]))
-        qDebug(repr(xData[:50]))
 
         if self.haveSubsetData:
             subset_ids = [example.id for example in self.rawSubsetData]
             marked_data = [example.id in subset_ids for example in self.rawData]
             showFilled = 0
-            sub_x_data, sub_y_data = self.getXYSubsetDataPositions(xAttr, yAttr)
         else:
             marked_data = []
         self.set_main_curve_data(xData, yData, colorData, labelData, sizeData, shapeData, marked_data=marked_data)
-        qDebug(repr(sub_x_data[:20]))
-        self.mark_points(zip(sub_x_data, sub_y_data), self.ReplaceSelection)
         
         '''
             Create legend items in any case
