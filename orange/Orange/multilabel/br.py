@@ -87,22 +87,26 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
             
         for i in range(num_labels):
             # Indices of attributes to remove
-            indices_remove = [var for index, var in enumerate(label_indices) if var <> label_indices[i]]
-            sub_domain = label.remove_indices(instances,indices_remove)
+            #abtain the labels and use a string to represent it and store the classvalues
+            new_class = Orange.data.variable.Discrete(instances.domain[ label_indices[i] ].name, values = ['0','1'])
             
-            class_index = 0
-            for index,var in enumerate(sub_domain):
-                if var == instances.domain[ label_indices[i]]:
-                     class_index = index
+            #remove the label attributes
+            indices_remove = [var for index, var in enumerate(label_indices)]
+            new_domain = label.remove_indices(instances,indices_remove)
             
-            #set the class label
-            sub_domain = Orange.data.Domain(sub_domain,sub_domain[class_index])
-           
-            sub_instances = instances.translate(sub_domain)
-                   
-            #store the classifier
-            classifer = self.base_learner(sub_instances)
+            #add the class attribute
+            new_domain = Orange.data.Domain(new_domain,new_class)
             
+            #build the instances
+            new_table = Orange.data.Table(new_domain)
+            for e in instances:
+                new_row = Orange.data.Instance(
+                  new_domain, 
+                  [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
+                        [e[label_indices[i]].value])
+                new_table.append(new_row)
+            
+            classifer = self.base_learner(new_table)
             classifiers.append(classifer)
             
         #Learn from the given table of data instances.
