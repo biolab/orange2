@@ -24,10 +24,13 @@
 
 #include <QtCore/qmath.h>
 #include <QtCore/QtConcurrentRun>
+#include <QtCore/QFutureWatcher>
+
 #include "point.h"
 #include "plot.h"
+#include <QtCore/QParallelAnimationGroup>
 
-Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
+Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent): PlotItem(parent)
 {
     // Don't make any calls to update_properties() until the constructor is finished
     // Otherwise, the program hangs if this is called from a subclass constructor
@@ -38,16 +41,18 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
     m_lineItem = 0;
     m_needsUpdate = UpdateAll;
     set_data(x_data, y_data);
+    QObject::connect(&m_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
     
     m_autoUpdate = true;
 }
 
-Curve::Curve(QGraphicsItem* parent, QGraphicsScene* scene): PlotItem(parent, scene)
+Curve::Curve(QGraphicsItem* parent): PlotItem(parent)
 {
     m_autoUpdate = true;
     m_style = NoCurve;
     m_lineItem = 0;
     m_needsUpdate = 0;
+    QObject::connect(&m_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
 }
 
 
@@ -124,10 +129,11 @@ void Curve::update_properties()
     QPointF p;
     for (int i = 0; i < n; ++i)
     {
+        
       m_pointItems[i]->set_coordinates(m_data[i]);
     }
     register_points();
-    update_items(m_pointItems, PointPosUpdater(m_graphTransform), UpdatePosition);
+    update_items(m_pointItems, AnimatedPointPosUpdater(m_graphTransform), UpdatePosition);
   } 
   
   if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
@@ -401,6 +407,10 @@ void Curve::set_updated(Curve::UpdateFlags flags)
 
 void Curve::set_points(const QList< Point* >& points)
 {
+    if (points == m_pointItems)
+    {
+        return;
+    }
     m_pointItems = points;
     register_points();
 }
@@ -410,7 +420,37 @@ QList< Point* > Curve::points()
     return m_pointItems;
 }
 
+void Curve::update_point_positions()
+{
+    if (m_watcher.future().isRunning())
+    {
+        m_watcher.future().cancel();
+        m_watcher.future().waitForFinished();
+    }
+    if (plot() && plot()->use_animations)
+    {
+        m_watcher.setFuture(QtConcurrent::mapped(m_pointItems, PointPosMapper(m_graphTransform)));
+    }
+    else
+    {
+        update_items(m_pointItems, PointPosUpdater(m_graphTransform), UpdatePosition);
+    }
+}
+
+void Curve::pointMapFinished()
+{
+    QParallelAnimationGroup* group = new QParallelAnimationGroup;
+    int n = m_pointItems.size();
+    for (int i = 0; i < n; ++i)
+    {
+        QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos");
+        a->setEndValue(m_watcher.resultAt(i));
+        group->addAnimation(a);
+    }
+    group->start(QAbstractAnimation::DeleteWhenStopped);
+}
 
 
 
+#include "curve.moc"
 

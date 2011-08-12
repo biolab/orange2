@@ -33,8 +33,8 @@ public:
     UserCurve
   };
 
-  Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
-  Curve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+  Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent /TransferThis/ = 0);
+  Curve(QGraphicsItem* parent /TransferThis/ = 0);
   virtual ~Curve();
 
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
@@ -95,6 +95,8 @@ public:
 
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
+
+  void update_point_positions();
   
 protected:
   QTransform point_transform();

@@ -24,7 +24,7 @@
 %End
 };
 
-class Point : QGraphicsItem
+class Point : QGraphicsObject
 {
     
 %TypeHeaderCode
@@ -67,7 +67,7 @@ public:
 
     typedef QFlags<Point::StateFlag> State;
   
-    Point(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+    Point(QGraphicsItem* parent /TransferThis/ = 0);
     Point(int symbol, QColor color, int size, QGraphicsItem* parent /TransferThis/ = 0);
     virtual ~Point();
     

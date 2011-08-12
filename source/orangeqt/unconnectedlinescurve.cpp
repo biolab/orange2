@@ -20,7 +20,7 @@
 #include <QtGui/QPen>
 #include <QtCore/QDebug>
 
-UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent, QGraphicsScene* scene): Curve(parent, scene)
+UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent): Curve(parent)
 {
     m_path_item = new QGraphicsPathItem(this);
     set_data(x_data, y_data);

@@ -81,6 +81,8 @@ public:
     void add_points(const QList<Point*>& items, PlotItem* parent);
     void remove_point(Point* point, PlotItem* parent);
     void remove_all_points(PlotItem* parent);
+    
+    bool use_animations;
 
 Q_SIGNALS:
     void selection_changed();

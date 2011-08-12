@@ -56,8 +56,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
     #########################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", labelAttr = None, **args):
-        self.clear()
-        qDebug('Updating with data %s and subset %s' % (self.rawData, self.rawSubsetData))
+        self.legend().clear()
         self.tooltipData = []
         self.potentialsClassifier = None
         self.potentialsImage = None

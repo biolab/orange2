@@ -19,15 +19,15 @@
 #ifndef PLOTITEM_H
 #define PLOTITEM_H
 
-#include <QtGui/QGraphicsItem>
+#include <QtGui/QGraphicsObject>
 
 class Plot;
 
-class PlotItem : public QGraphicsItem
+class PlotItem : public QGraphicsObject
 {
-
+    Q_OBJECT
 public:
-    explicit PlotItem(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    explicit PlotItem(QGraphicsItem* parent = 0);
     virtual ~PlotItem();
     
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);

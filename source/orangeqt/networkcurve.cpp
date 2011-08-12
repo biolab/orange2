@@ -27,6 +27,7 @@
 #include <QCoreApplication>
 
 #include <QtCore/QTime>
+#include <QtCore/QParallelAnimationGroup>
 
 /************/
 /* NodeItem */  
@@ -71,8 +72,6 @@ void NodeItem::set_coordinates(double x, double y)
     p.x = m_x;
     p.y = m_y;
     Point::set_coordinates(p);
-    
-    setPos(QPointF(m_x, m_y) * m_graph_transform);
 }
 
 void NodeItem::set_index(int index)
@@ -306,7 +305,7 @@ double EdgeItem::weight() const
 /* NetworkCurve */
 /****************/
 
-NetworkCurve::NetworkCurve(QGraphicsItem* parent, QGraphicsScene* scene): Curve(parent, scene)
+NetworkCurve::NetworkCurve(QGraphicsItem* parent): Curve(parent)
 {
 	 m_min_node_size = 5;
 	 m_max_node_size = 5;
@@ -324,7 +323,7 @@ NetworkCurve::~NetworkCurve()
 void NetworkCurve::update_properties()
 {
     const QTransform t = graph_transform();
-    update_items(m_nodes, NodeUpdater(t, point_transform()), UpdatePosition);
+    update_point_positions();
     update_items(m_edges, EdgeUpdater(t), UpdatePen);
 }
 
@@ -1067,15 +1066,12 @@ double NetworkCurve::max_node_size() const
 
 void NetworkCurve::register_points()
 {
-    Plot* p = plot();
-    if (p)
+    QList<Point*> list;
+    foreach (NodeItem* node, m_nodes)
     {
-        p->remove_all_points(this);
-        foreach (NodeItem* node, m_nodes)
-        {
-            p->add_point(node, this);
-        }
+        list << node;
     }
+    set_points(list);
 }
 
 void NetworkCurve::set_use_animations(bool use_animations)

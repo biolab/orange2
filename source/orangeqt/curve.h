@@ -24,8 +24,21 @@
 
 #include <QtGui/QPen>
 #include <QtGui/QBrush>
-
 #include <QtCore/QtConcurrentMap>
+#include <QtCore/QFutureWatcher>
+
+struct PointPosMapper{
+  PointPosMapper(const QTransform& t) : t(t) {}
+  typedef QPointF result_type;
+  result_type operator()(Point* p)
+  {
+      return t.map(p->coordinates());
+  }
+  
+private:
+    QTransform t;
+};
+
 
 struct ZoomUpdater
 {
@@ -95,6 +108,7 @@ typedef QList< DataPoint > Data;
 
 class Curve : public PlotItem
 {
+    Q_OBJECT
   
 public:
   enum Style {
@@ -114,10 +128,9 @@ public:
    * @param x_data A list of x coordinates of data points
    * @param y_data A list of y coordinates of data points
    * @param parent parent item
-   * @param scene if this is not 0, the Curve is automatically added to it
    **/
-  Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
-  explicit Curve(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+  Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0);
+  explicit Curve(QGraphicsItem* parent = 0);
   /**
    * Default destructor
    *
@@ -197,6 +210,8 @@ public:
   template <class Sequence, class Updater>
   void update_items(const Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
   
+  void update_point_positions();
+  
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
   
@@ -209,6 +224,9 @@ protected:
   void checkForUpdate();
   void updateNumberOfItems();
   void changeContinuous();
+  
+private slots:
+    void pointMapFinished();
   
 private:
   QColor m_color;
@@ -228,6 +246,8 @@ private:
   QBrush m_brush;
   QTransform m_zoom_transform;
   QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
+  QFutureWatcher<QPointF> m_watcher;
+  
 };
 
 template <class Sequence, class Updater>

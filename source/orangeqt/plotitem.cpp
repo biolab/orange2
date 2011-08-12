@@ -25,7 +25,7 @@
 const int xBottom = 2;
 const int yLeft = 0;
 
-PlotItem::PlotItem(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsItem(parent, scene), 
+PlotItem::PlotItem(QGraphicsItem* parent): QGraphicsObject(parent), 
     m_plot(0)
 {
     set_axes(xBottom, yLeft);
@@ -173,3 +173,4 @@ void PlotItem::register_points()
 
 }
 
+#include "plotitem.moc"

@@ -55,6 +55,12 @@ bool operator==(const DataPoint& one, const DataPoint& other)
     return one.x == other.x && one.y == other.y;
 }
 
+DataPoint::operator QPointF()
+{
+    return QPointF(x, y);
+}
+
+
 Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsObject(parent),
  m_symbol(symbol),
  m_color(color),
@@ -64,7 +70,7 @@ Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphi
     m_transparent = true;
 }
 
-Point::Point(QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsObject(parent)
+Point::Point(QGraphicsItem* parent): QGraphicsObject(parent)
 {
     m_symbol = Ellipse;
     m_color = Qt::black;
@@ -319,12 +325,17 @@ QRectF Point::rect_for_size(double size)
 {
     return QRectF(-size/2, -size/2, size, size);
 }
-void Point::set_state(Point::State state) {
+
+void Point::set_state(Point::State state) 
+{
     m_state = state;
 }
-Point::State Point::state() const {
+
+Point::State Point::state() const 
+{
     return m_state;
 }
+
 void Point::set_state_flag(Point::StateFlag flag, bool on) {
     if (on)
     {
@@ -396,3 +407,4 @@ QString Point::label() const
     return m_label;
 }
 
+#include "point.moc"

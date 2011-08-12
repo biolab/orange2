@@ -21,12 +21,15 @@
 
 #include <QtGui/QGraphicsObject>
 #include <QtCore/QDebug>
+#include <QtCore/QPropertyAnimation>
 
 
 struct DataPoint
 {
   double x;
   double y;
+  
+  operator QPointF();
 };
 
 QDebug& operator<<(QDebug& stream, const DataPoint& point);
@@ -97,7 +100,7 @@ public:
         return Type;
     }
     
-    explicit Point(QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    explicit Point(QGraphicsItem* parent = 0);
     Point(int symbol, QColor color, int size, QGraphicsItem* parent = 0);
     virtual ~Point();
     
@@ -176,6 +179,26 @@ struct PointPosUpdater
     point->setPos(t.map(QPointF(point->coordinates().x, point->coordinates().y)));
   }
   
+private:
+    QTransform t;
+};
+
+struct AnimatedPointPosUpdater
+{
+    AnimatedPointPosUpdater(const QTransform& t) : t(t) {}
+    void operator()(Point* point)
+    {
+        QPointF endPos = t.map(point->coordinates());
+        if (endPos == point->pos())
+        {
+            return;
+        }
+        QPropertyAnimation* animation = new QPropertyAnimation(point, "pos", point);
+        qDebug() << animation->startValue() << point->property("pos");
+        animation->setEndValue(endPos);
+        animation->setDuration(100);
+        animation->start(QPropertyAnimation::DeleteWhenStopped);
+    }
 private:
     QTransform t;
 };

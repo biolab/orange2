@@ -1,11 +1,11 @@
-class PlotItem : QGraphicsItem {
+class PlotItem : QGraphicsObject {
 
 %TypeHeaderCode
 #include "plotitem.h"
 %End
 
 public:
-    PlotItem(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+    PlotItem(QGraphicsItem* parent /TransferThis/ = 0);
     virtual ~PlotItem();
     
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);

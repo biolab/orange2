@@ -18,6 +18,7 @@
 
 
 #include "multicurve.h"
+#include "plot.h"
 
 MultiCurve::MultiCurve(const QList< double >& x_data, const QList< double >& y_data): Curve()
 {
@@ -129,8 +130,7 @@ void MultiCurve::update_properties()
     }
     
     register_points();
-    
-    update_items(points(), PointPosUpdater(graph_transform()), UpdatePosition);    
+    update_point_positions();
     update_items(points(), ZoomUpdater(point_transform()), UpdateZoom);
 }
 

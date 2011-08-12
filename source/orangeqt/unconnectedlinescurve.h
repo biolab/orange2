@@ -25,7 +25,7 @@ class UnconnectedLinesCurve : public Curve
 {
 
 public:
-    UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
+    UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0);
     virtual ~UnconnectedLinesCurve();
     
     virtual void update_properties();

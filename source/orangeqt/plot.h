@@ -97,6 +97,8 @@ public:
     void selected_to_marked();
     void marked_to_selected();
     
+    bool use_animations;
+    
 Q_SIGNALS:
     void selection_changed();
     void marked_points_changed();

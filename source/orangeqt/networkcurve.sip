@@ -80,7 +80,7 @@ public:
     typedef QList<EdgeItem*> Edges;
     typedef QMap<int, NodeItem*> Nodes;
 
-    NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0, QGraphicsScene* scene /TransferThis/ = 0);
+    NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0);
     virtual ~NetworkCurve();
     
     virtual void update_properties();
