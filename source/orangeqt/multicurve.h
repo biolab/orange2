@@ -20,6 +20,7 @@
 #define MULTICURVE_H
 
 #include "curve.h"
+#include <QtCore/QTime>
 
 struct PointAlphaUpdater
 {
@@ -33,6 +34,15 @@ struct PointAlphaUpdater
     
 private:
     int alpha;
+};
+
+struct PointShuffler
+{
+    PointShuffler() {qsrand(QTime(0,0,0).msecsTo(QTime::currentTime())); }
+    void operator()(Point* p)
+    {
+        p->setZValue(1.0 * qrand() / RAND_MAX);
+    }
 };
 
 class MultiCurve : public Curve

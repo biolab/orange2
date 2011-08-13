@@ -340,7 +340,7 @@ class OWPlot(orangeqt.Plot):
         self.antialias_lines = True
         
         self.auto_adjust_performance = True
-        self.disable_animations_threshold = 2000
+        self.disable_animations_threshold = 5000
      #   self.setInteractive(False)
         
         self._bounds_cache = {}
@@ -1460,6 +1460,7 @@ class OWPlot(orangeqt.Plot):
                 self.animate_points = True
                 self.animate_plot = True
                 self.antialias_lines = True
+            qDebug(repr(self.animate_points))
         
     def animate(self, target, prop_name, end_val, duration = None):
         for a in self._animations:

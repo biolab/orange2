@@ -176,20 +176,6 @@ private:
     QString m_label;
 };
 
-class NodeUpdater
-{
-public:
-    NodeUpdater(const QTransform& t, const QTransform& zoom) : m_t(t), m_zoom(zoom) {}
-    void operator()(NodeItem* item) 
-    { 
-        item->set_graph_transform(m_t); 
-        item->setTransform(m_zoom);
-    }
-private:
-    QTransform m_t;
-    QTransform m_zoom;
-};
-
 class EdgeUpdater
 {
 public:

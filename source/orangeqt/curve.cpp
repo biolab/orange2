@@ -50,6 +50,7 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
 
 Curve::Curve(QGraphicsItem* parent): PlotItem(parent)
 {
+    m_continuous = false;
     m_autoUpdate = true;
     m_style = NoCurve;
     m_lineItem = 0;
@@ -76,11 +77,14 @@ void Curve::updateNumberOfItems()
   int m = m_pointItems.size();
   if (m > n)
   {
+      qDebug() << "Deleting" << (m-n) << "points";
     qDeleteAll(m_pointItems.constBegin() + n, m_pointItems.constEnd());
     m_pointItems.erase(m_pointItems.begin() + n, m_pointItems.end());
   }
   else if (m < n)
   {  
+    qDebug() << "Creating" << (n-m) << "points";
+    m_pointItems.reserve(n);
     Plot* p = plot();
     int delta = n - m;
     if (p && delta > 500)
@@ -154,19 +158,12 @@ void Curve::update_properties()
   if (m_needsUpdate & UpdatePosition)
   {
     cancelAllUpdates();
-    QPointF p;
-    for (int i = 0; i < n; ++i)
-    {
-        
-      m_pointItems[i]->set_coordinates(m_data[i]);
-    }
-    register_points();
-    update_items(m_pointItems, AnimatedPointPosUpdater(m_graphTransform), UpdatePosition);
+    update_point_coordinates();
   } 
   
-  if (m_needsUpdate & (UpdateZoom | UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
+  if (m_needsUpdate & (UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
   {
-    update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath, point_transform()), UpdateSymbol);
+    update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath), UpdateSymbol);
   }
   m_needsUpdate = 0;
 }
@@ -405,6 +402,10 @@ void Curve::cancelAllUpdates()
         }
     }
     m_currentUpdate.clear();
+    m_coords_watcher.future().cancel();
+    m_pos_watcher.future().cancel();
+    m_coords_watcher.waitForFinished();
+    m_pos_watcher.waitForFinished();
 }
 
 void Curve::register_points()
@@ -415,12 +416,6 @@ void Curve::register_points()
         p->remove_all_points(this);
         p->add_points(m_pointItems, this);
     }
-}
-
-QTransform Curve::point_transform()
-{
-    const QTransform i = m_zoom_transform.inverted();
-    return QTransform(i.m11(), 0, 0, 0, i.m22(), 0, 0, 0, 1.0);
 }
 
 Curve::UpdateFlags Curve::needs_update()
@@ -465,7 +460,11 @@ void Curve::update_point_positions()
         m_pos_watcher.future().cancel();
         m_pos_watcher.future().waitForFinished();
     }
-    if (plot() && plot()->animate_points)
+    if (m_pointItems.isEmpty())
+    {
+        return;
+    }
+    if (use_animations())
     {
         m_pos_watcher.setFuture(QtConcurrent::mapped(m_pointItems, PointPosMapper(m_graphTransform)));
     }
@@ -513,7 +512,7 @@ void Curve::update_point_properties_same(const QByteArray& property, const QVari
     }
     else
     {
-        QtConcurrent::map(m_pointItems, PointPropertyUpdater(property, value));
+        m_property_updates[property] = QtConcurrent::map(m_pointItems, PointPropertyUpdater(property, value));
     }
 }
 

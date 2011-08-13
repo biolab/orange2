@@ -58,23 +58,13 @@ void MultiCurve::set_point_symbols(const QList< int >& symbols)
 void MultiCurve::update_properties()
 {
     updateNumberOfItems();
-    
-    const Data d = data();
-    const int n = d.size();
-    const QTransform t = graph_transform();
-    const QList<Point*> p = points();
-    
     update_point_coordinates();
-    update_items(points(), ZoomUpdater(point_transform()), UpdateZoom);
 }
 
 void MultiCurve::shuffle_points()
 {
     updateNumberOfItems();
-    foreach (Point* p, points())
-    {
-        p->setZValue(qrand() * 1.0 / RAND_MAX);
-    }
+    update_items(points(), PointShuffler(), UpdateContinuous);
 }
 
 void MultiCurve::set_alpha_value(int alpha)
@@ -85,22 +75,6 @@ void MultiCurve::set_alpha_value(int alpha)
 void MultiCurve::set_points_marked(const QList< bool >& marked)
 {
     updateNumberOfItems();
-    QList<Point*> p = points();
-    const int n = p.size();
-    if (marked.size() == n)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_marked(marked[i]);
-        }
-    }
-    else 
-    {
-        bool m = marked.isEmpty() ? false : marked.first();
-        foreach (Point* point, p)
-        {
-            point->set_marked(m);
-        }
-    }
+    update_point_properties("marked", marked, false);
 }
 

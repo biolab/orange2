@@ -23,7 +23,6 @@
 #include <QtCore/QDebug>
 #include <QtCore/QPropertyAnimation>
 
-
 struct DataPoint
 {
   double x;
@@ -55,7 +54,6 @@ class Point : public QGraphicsObject
     Q_PROPERTY(int size READ size WRITE set_size)
     Q_PROPERTY(QString label READ label WRITE set_label)
     Q_PROPERTY(DataPoint coordinates READ coordinates WRITE set_coordinates)
-    
     
 public:
     enum DisplayMode
@@ -187,26 +185,6 @@ struct PointPosUpdater
     point->setPos(t.map(QPointF(point->coordinates().x, point->coordinates().y)));
   }
   
-private:
-    QTransform t;
-};
-
-struct AnimatedPointPosUpdater
-{
-    AnimatedPointPosUpdater(const QTransform& t) : t(t) {}
-    void operator()(Point* point)
-    {
-        QPointF endPos = t.map(point->coordinates());
-        if (endPos == point->pos())
-        {
-            return;
-        }
-        QPropertyAnimation* animation = new QPropertyAnimation(point, "pos", point);
-        qDebug() << animation->startValue() << point->property("pos");
-        animation->setEndValue(endPos);
-        animation->setDuration(100);
-        animation->start(QPropertyAnimation::DeleteWhenStopped);
-    }
 private:
     QTransform t;
 };

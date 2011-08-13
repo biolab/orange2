@@ -34,35 +34,21 @@ struct PointPosMapper{
   typedef QPointF result_type;
   result_type operator()(Point* p)
   {
-      return t.map(p->coordinates());
+    return t.map(p->coordinates());
   }
   
 private:
     QTransform t;
 };
 
-
-struct ZoomUpdater
-{
-    ZoomUpdater(const QTransform& inv_zoom) : transform(inv_zoom) {}
-    void operator()(QGraphicsItem* item)
-    {
-        item->setTransform(transform);
-    }
-    
-private:
-    QTransform transform;
-};
-
 struct PointUpdater
 {
-    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode, const QTransform& scale)
+    PointUpdater(int symbol, QColor color, int size, Point::DisplayMode mode)
     {
         m_symbol = symbol;
         m_color = color;
         m_size = size;
         m_mode = mode;
-        m_scale = scale;
     }
     
     void operator()(Point* point)
@@ -71,7 +57,6 @@ struct PointUpdater
         point->set_color(m_color);
         point->set_size(m_size);
         point->set_display_mode(m_mode);
-        point->setTransform(m_scale);
     }
     
     private:
@@ -224,7 +209,6 @@ public:
   QList<Point*> points();
   
 protected:
-  QTransform point_transform();
   Curve::UpdateFlags needs_update();
   void set_updated(Curve::UpdateFlags flags);
   void cancelAllUpdates();
@@ -260,6 +244,7 @@ private:
   QBrush m_brush;
   QTransform m_zoom_transform;
   QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
+  QMap<QByteArray, QFuture<void> > m_property_updates;
   QFutureWatcher<QPointF> m_pos_watcher;
   QFutureWatcher<void> m_coords_watcher;
   
@@ -273,12 +258,21 @@ void Curve::update_items(const Sequence& sequence, Updater updater, Curve::Updat
         m_currentUpdate[flag].cancel();
         m_currentUpdate[flag].waitForFinished();
     }
-    m_currentUpdate[flag] = QtConcurrent::map(sequence, updater);
+    if (!sequence.isEmpty())
+    {
+        m_currentUpdate[flag] = QtConcurrent::map(sequence, updater);
+    }
 }
 
 template < class T >
 void Curve::update_point_properties(const QByteArray& property, const QList< T >& values, bool animate)
 {
+    if (m_property_updates.contains(property))
+    {
+        m_property_updates[property].cancel();
+        m_property_updates[property].waitForFinished();
+    }
+
     int n = m_pointItems.size();
     if (n != values.size())
     {
@@ -307,7 +301,7 @@ void Curve::update_point_properties(const QByteArray& property, const QList< T >
     }
     else
     {
-        QtConcurrent::run(this, &Curve::update_point_properties_threaded<T>, property, values);
+        m_property_updates[property] = QtConcurrent::run(this, &Curve::update_point_properties_threaded<T>, property, values);
     }
 }
 

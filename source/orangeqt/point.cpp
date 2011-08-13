@@ -68,6 +68,7 @@ Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphi
 {
     m_display_mode = DisplayPath;
     m_transparent = true;
+    setFlag(ItemIgnoresTransformations);
 }
 
 Point::Point(QGraphicsItem* parent): QGraphicsObject(parent)
@@ -77,9 +78,9 @@ Point::Point(QGraphicsItem* parent): QGraphicsObject(parent)
     m_size = 5;
     m_display_mode = DisplayPath;
     m_transparent = true;
+    setFlag(ItemIgnoresTransformations);
 }
-
-
+  
 void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     Q_UNUSED(option)
@@ -140,7 +141,6 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
         //painter->fillRect(r, QBrush(Qt::white));
         painter->drawText(r, Qt::AlignHCenter, m_label);
     }
-
 }
 
 QRectF Point::boundingRect() const
@@ -150,7 +150,6 @@ QRectF Point::boundingRect() const
 
 Point::~Point()
 {
-
 }
 
 QColor Point::color() const
@@ -337,7 +336,8 @@ Point::State Point::state() const
     return m_state;
 }
 
-void Point::set_state_flag(Point::StateFlag flag, bool on) {
+void Point::set_state_flag(Point::StateFlag flag, bool on) 
+{
     if (on)
     {
         m_state |= flag;
@@ -349,7 +349,8 @@ void Point::set_state_flag(Point::StateFlag flag, bool on) {
     update();
 }
 
-bool Point::state_flag(Point::StateFlag flag) const {
+bool Point::state_flag(Point::StateFlag flag) const 
+{
     return m_state & flag;
 }
 
@@ -375,11 +376,11 @@ bool Point::is_marked() const
 
 bool Point::is_transparent()
 {
-	return m_transparent;
+    return m_transparent;
 }
 void Point::set_transparent(bool transparent)
 {
-	m_transparent = transparent;
+    m_transparent = transparent;
 }
 
 DataPoint Point::coordinates() const
