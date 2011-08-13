@@ -1451,10 +1451,12 @@ class OWPlot(orangeqt.Plot):
                 else:
                     num_points = sum( len(c.points()) for c in self.curves )
             if num_points > self.disable_animations_threshold:
+                qDebug('Disabling animations')
                 self.animate_points = False
                 self.animate_plot = False
                 self.antialias_lines = False
             else:
+                qDebug('Enabling animations')
                 self.animate_points = True
                 self.animate_plot = True
                 self.antialias_lines = True
@@ -1463,7 +1465,7 @@ class OWPlot(orangeqt.Plot):
         for a in self._animations:
             if a.state() == QPropertyAnimation.Stopped:
                 self._animations.remove(a)
-        if self.use_animations:
+        if self.animate_plot:
             a = QPropertyAnimation(target, prop_name)
             a.setStartValue(target.property(prop_name))
             a.setEndValue(end_val)

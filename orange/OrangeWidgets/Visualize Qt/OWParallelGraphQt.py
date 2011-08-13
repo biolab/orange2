@@ -15,7 +15,7 @@ MEDIAN = 2
 
 class OWParallelGraph(OWPlot, orngScaleData):
     def __init__(self, parallelDlg, parent = None, name = None):
-        OWPlot.__init__(self, parent, name, axes = [])
+        OWPlot.__init__(self, parent, name, axes = [], widget=parallelDlg)
         orngScaleData.__init__(self)
 
         self.parallelDlg = parallelDlg
