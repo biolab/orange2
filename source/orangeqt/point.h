@@ -48,6 +48,11 @@ struct PointData
 class Point : public QGraphicsObject
 {
     Q_OBJECT
+    Q_PROPERTY(QColor color READ color WRITE set_color)
+    Q_PROPERTY(int symbol READ symbol WRITE set_symbol)
+    Q_PROPERTY(int size READ size WRITE set_size)
+    Q_PROPERTY(QString label READ label WRITE set_label)
+    
     
 public:
     enum DisplayMode
@@ -201,6 +206,19 @@ struct AnimatedPointPosUpdater
     }
 private:
     QTransform t;
+};
+
+struct PointPropertyUpdater
+{
+    PointPropertyUpdater(const QByteArray& property, const QVariant& value) : property(property), value(value) {}
+    void operator()(Point* point)
+    {
+        point->setProperty(property, value);
+    }
+    
+private:
+    QByteArray property;
+    QVariant value;
 };
 
 #endif // POINT_H

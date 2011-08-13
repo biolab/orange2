@@ -18,7 +18,7 @@ def frange(low, up, steps):
 
 class DiscGraph(OWPlot):
     def __init__(self, master, *args):
-        OWPlot.__init__(self, *args)
+        OWPlot.__init__(self, *args, widget=master)
         self.master=master
 
         self.rugKeys = []

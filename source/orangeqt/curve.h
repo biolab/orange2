@@ -26,6 +26,8 @@
 #include <QtGui/QBrush>
 #include <QtCore/QtConcurrentMap>
 #include <QtCore/QFutureWatcher>
+#include <QtCore/QParallelAnimationGroup>
+#include <QtCore/QtConcurrentRun>
 
 struct PointPosMapper{
   PointPosMapper(const QTransform& t) : t(t) {}
@@ -212,6 +214,14 @@ public:
   
   void update_point_positions();
   
+  template <class T>
+  void update_point_properties(const QByteArray& property, const QList< T >& values, bool animate = true);
+
+  template <class T>
+  void update_point_properties_threaded(const QByteArray& property, const QList<T>& values);
+  
+  void update_point_properties_same(const QByteArray& property, const QVariant& value);
+
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
   
@@ -224,6 +234,8 @@ protected:
   void checkForUpdate();
   void updateNumberOfItems();
   void changeContinuous();
+  
+  bool use_animations();
   
 private slots:
     void pointMapFinished();
@@ -259,6 +271,51 @@ void Curve::update_items(const Sequence& sequence, Updater updater, Curve::Updat
         m_currentUpdate[flag].waitForFinished();
     }
     m_currentUpdate[flag] = QtConcurrent::map(sequence, updater);
+}
+
+template < class T >
+void Curve::update_point_properties(const QByteArray& property, const QList< T >& values, bool animate)
+{
+    int n = m_pointItems.size();
+    if (n != values.size())
+    {
+        if (values.isEmpty())
+        {
+            update_point_properties_same(property, T());
+        }
+        else
+        {
+            update_point_properties_same(property, values.first());
+        }
+        
+        return;
+    }
+    
+    if (animate && use_animations())
+    {
+        QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
+        for (int i = 0; i < n; ++i)
+        {
+            QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], property, m_pointItems[i]);
+            a->setEndValue(values[i]);
+            group->addAnimation(a);
+        }
+        group->start(QAbstractAnimation::DeleteWhenStopped);
+    }
+    else
+    {
+        QtConcurrent::run(this, &Curve::update_point_properties_threaded<T>, property, values);
+    }
+}
+
+template < class T >
+void Curve::update_point_properties_threaded(const QByteArray& property, const QList< T >& values)
+{
+    const int n = values.size();
+    for (int i = 0; i < n; ++i)
+    {
+        m_pointItems[i]->setProperty(property, values[i]);
+    }
 }
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Curve::UpdateFlags)

@@ -26,7 +26,7 @@ TOOLTIPS_SHOW_SPRINGS = 1
 ###########################################################################################
 class OWLinProjGraph(OWPlot, orngScaleLinProjData):
     def __init__(self, widget, parent = None, name = "None"):
-        OWPlot.__init__(self, parent, name, axes=[])
+        OWPlot.__init__(self, parent, name, axes=[], widget=widget)
         orngScaleLinProjData.__init__(self)
 
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions

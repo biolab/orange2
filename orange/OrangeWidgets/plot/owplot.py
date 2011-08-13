@@ -269,7 +269,7 @@ class OWPlot(orangeqt.Plot):
         
     
     """
-    def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft] ):
+    def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft], widget = None ):
         """
             Creates a new graph
             
@@ -278,6 +278,7 @@ class OWPlot(orangeqt.Plot):
             and add custom axes with :meth:`add_axis` or :meth:`add_custom_axis`
         """
         orangeqt.Plot.__init__(self, parent)
+        self.widget = widget
         self.parent_name = name
         self.show_legend = show_legend
         self.title_item = None
@@ -806,6 +807,9 @@ class OWPlot(orangeqt.Plot):
             This function recalculates the position of titles, axes, the legend and the main plot area. 
             It does not update the curve or the other plot items. 
         '''
+        if not self.isVisible():
+            # No point in updating the graph if it's still hidden
+            return
         graph_rect = QRectF(self.contentsRect())
         self.centerOn(graph_rect.center())
         m = self.graph_margin
@@ -1450,6 +1454,10 @@ class OWPlot(orangeqt.Plot):
                 self.animate_points = False
                 self.animate_plot = False
                 self.antialias_lines = False
+            else:
+                self.animate_points = True
+                self.animate_plot = True
+                self.antialias_lines = True
         
     def animate(self, target, prop_name, end_val, duration = None):
         for a in self._animations:
@@ -1553,3 +1561,20 @@ class OWPlot(orangeqt.Plot):
     def shuffle_points(self):
         if self.main_curve:
             self.main_curve.shuffle_points()
+            
+    def set_progress(self, done, total):
+        if not self.widget:
+            return
+            
+        if done == total:
+            self.widget.progressBarFinished()
+        else:
+            self.widget.progressBarSet(100.0 * done / total)
+        
+    def start_progress(self):
+        if self.widget:
+            self.widget.progressBarInit()
+            
+    def end_progress(self):
+        if self.widget:
+            self.widget.progressBarFinished()

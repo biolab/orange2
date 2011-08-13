@@ -22,7 +22,7 @@ MIN_SHAPE_SIZE = 6
 ###########################################################################################
 class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
     def __init__(self, scatterWidget, parent = None, name = "None"):
-        OWPlot.__init__(self, parent, name)
+        OWPlot.__init__(self, parent, name, widget = scatterWidget)
         orngScaleScatterPlotData.__init__(self)
 
         self.pointWidth = 8

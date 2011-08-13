@@ -34,85 +34,25 @@ MultiCurve::~MultiCurve()
 void MultiCurve::set_point_colors(const QList< QColor >& colors)
 {
     updateNumberOfItems();
-    const QList<Point*> p = points();
-    int n = p.size();
-    if (colors.size() == n)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_color(colors[i]);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_color(Qt::black);
-        }
-    }
+    update_point_properties("color", colors);
 }
 
 void MultiCurve::set_point_labels(const QStringList& labels)
 {
     updateNumberOfItems();
-    const QList<Point*> p = points();
-    int n = p.size();
-    if (labels.size() == n)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_label(labels[i]);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_label(QString());
-        }
-    }
+    update_point_properties("label", labels, false);
 }
 
 void MultiCurve::set_point_sizes(const QList<int>& sizes)
 {
     updateNumberOfItems();
-    const QList<Point*> p = points();
-    int n = p.size();
-    if (sizes.size() == n)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_size(sizes[i]);
-        }
-    }
-    else if (!sizes.isEmpty())
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_size(sizes.first());
-        }
-    }
+    update_point_properties("size", sizes);
 }
 
 void MultiCurve::set_point_symbols(const QList< int >& symbols)
 {
     updateNumberOfItems();
-    const QList<Point*> p = points();
-    int n = p.size();
-    if (symbols.size() == n)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_symbol(symbols[i]);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            p[i]->set_symbol(Point::Ellipse);
-        }
-    }
+    update_point_properties("symbol", symbols, false);
 }
 
 void MultiCurve::update_properties()

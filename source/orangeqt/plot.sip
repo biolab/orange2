@@ -43,6 +43,9 @@ public:
     virtual ~Plot();
     
     virtual void replot() = 0;
+    virtual void start_progress() = 0;
+    virtual void set_progress(int done, int total) = 0;
+    virtual void end_progress() = 0;
     
     void add_item(PlotItem* item /Transfer/);
     void remove_item(PlotItem* item /TransferBack/);

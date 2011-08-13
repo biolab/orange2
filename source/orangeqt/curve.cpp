@@ -28,7 +28,9 @@
 
 #include "point.h"
 #include "plot.h"
+
 #include <QtCore/QParallelAnimationGroup>
+#include <QtCore/QCoreApplication>
 
 Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent): PlotItem(parent)
 {
@@ -70,15 +72,40 @@ void Curve::updateNumberOfItems()
     return;
   }
   int n = m_data.size();
-  if (m_pointItems.size() > n)
+  int m = m_pointItems.size();
+  if (m > n)
   {
     qDeleteAll(m_pointItems.constBegin() + n, m_pointItems.constEnd());
     m_pointItems.erase(m_pointItems.begin() + n, m_pointItems.end());
   }
-  int m = n - m_pointItems.size();
-  for (int i = 0; i < m; ++i)
-  {
-    m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
+  else if (m < n)
+  {  
+    Plot* p = plot();
+    int delta = n - m;
+    if (p && delta > 500)
+    {
+        int update_every = qMax(5, delta / 100);
+        p->start_progress();
+        for (int i = 0; i < delta; ++i)
+        {
+            m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
+        
+            if (i % update_every == 0)
+            {
+                qApp->processEvents();
+                p->set_progress(i, delta);
+            }
+        }
+        p->end_progress();
+        qApp->processEvents();
+    }
+    else
+    {
+      for (int i = 0; i < delta; ++i)
+      {
+        m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
+      }
+    }
   }
   Q_ASSERT(m_pointItems.size() == m_data.size());
 }
@@ -439,6 +466,11 @@ void Curve::update_point_positions()
 
 void Curve::pointMapFinished()
 {
+    if (m_pointItems.size() != m_watcher.future().results().size())
+    {
+        // The calculation that just finished is already out of date, ignore it
+        return;
+    }
     QParallelAnimationGroup* group = new QParallelAnimationGroup;
     int n = m_pointItems.size();
     for (int i = 0; i < n; ++i)
@@ -449,6 +481,31 @@ void Curve::pointMapFinished()
     }
     group->start(QAbstractAnimation::DeleteWhenStopped);
 }
+
+bool Curve::use_animations()
+{
+    return plot() && plot()->animate_points;
+}
+void Curve::update_point_properties_same(const QByteArray& property, const QVariant& value) {
+    int n = m_pointItems.size();
+
+    if (use_animations())
+    {
+        QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
+        for (int i = 0; i < n; ++i)
+        {
+            QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], property, m_pointItems[i]);
+            a->setEndValue(value);
+            group->addAnimation(a);
+        }
+        group->start(QAbstractAnimation::DeleteWhenStopped);
+    }
+    else
+    {
+        QtConcurrent::map(m_pointItems, PointPropertyUpdater(property, value));
+    }
+}
+
 
 
 

@@ -70,7 +70,7 @@ TOOLTIPS_SHOW_SPRINGS = 1
 class OWPolyvizGraphQt(OWPlot, orngScalePolyvizData):
     def __init__(self, polyvizWidget, parent = None, name = None):
         "Constructs the graph"
-        OWPlot.__init__(self, parent, name, axes = [])
+        OWPlot.__init__(self, parent, name, axes = [], widget=polyvizWidget)
         orngScalePolyvizData.__init__(self)
         self.enableGridXB(0)
         self.enableGridYL(0)
