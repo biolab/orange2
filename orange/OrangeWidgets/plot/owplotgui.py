@@ -251,6 +251,14 @@ class OWPlotGUI:
     StateButtonsBegin = 35
     StateButtonsEnd = 36
     
+    AnimatePlot = 41
+    AnimatePoints = 42
+    AntialiasPlot = 43
+    AntialiasPoints = 44
+    AntialiasLines = 45
+    DisableAnimationsThreshold = 48
+    AutoAdjustPerformance = 49
+    
     UserButton = 100
     
     default_zoom_select_buttons = [
@@ -281,6 +289,15 @@ class OWPlotGUI:
         SendSelection : ('Send selection', None, None, 'send_selection', 'Dlg_send'),
         ClearSelection : ('Clear selection', None, None, 'clear_selection', 'Dlg_clear'),
         ShufflePoints : ('ShufflePoints', None, None, 'shuffle_points', 'Dlg_sort')
+    }
+    
+    _check_boxes = {
+        AnimatePlot : ('Animate plot', 'animate_plot', 'update_animations'),
+        AnimatePoints : ('Animate points', 'animate_points', 'update_animations'),
+        AntialiasPlot : ('Antialias plot', 'antialias_plot', 'update_antialiasing'),
+        AntialiasPoints : ('Antialias points', 'antialias_points', 'update_antialiasing'),
+        AntialiasLines : ('Antialias lines', 'antialias_lines', 'update_antialiasing'),
+        AutoAdjustPerformance : ('Disable effects for large data sets', 'auto_adjust_performance', 'update_performance')
     }
     '''
         The list of built-in buttons. It is a map of 
@@ -360,8 +377,6 @@ class OWPlotGUI:
             self.ShowLegend,
             self.ShowFilledSymbols,
             self.ShowGridLines,
-            self.UseAnimations,
-            self.Antialiasing
             ], widget, "Plot settings")
         
     _functions = {
@@ -377,6 +392,9 @@ class OWPlotGUI:
     def add_widget(self, id, widget):
         if id in self._functions:
             self._functions[id](self, widget)
+        elif id in self._check_boxes:
+            label, attr, cb = self._check_boxes[id]
+            self._check_box(widget, attr, label, cb)
             
     def add_widgets(self, ids, widget):
         for id in ids:
@@ -436,3 +454,14 @@ class OWPlotGUI:
         t.buttons[self.Select].click()
         t.buttons[self.SelectionOne].click()
         return t    
+        
+    def effects_box(self, widget):
+        b = self.create_box([
+            self.AnimatePlot, 
+            self.AnimatePoints,
+            self.AntialiasPlot,
+            self.AntialiasPoints,
+            self.AntialiasLines,
+            self.AutoAdjustPerformance,
+            self.DisableAnimationsThreshold], widget, "Visual effects")
+        return b

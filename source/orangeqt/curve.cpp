@@ -427,7 +427,7 @@ void Curve::update_point_positions()
         m_watcher.future().cancel();
         m_watcher.future().waitForFinished();
     }
-    if (plot() && plot()->use_animations)
+    if (plot() && plot()->animate_points)
     {
         m_watcher.setFuture(QtConcurrent::mapped(m_pointItems, PointPosMapper(m_graphTransform)));
     }

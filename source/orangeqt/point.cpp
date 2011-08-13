@@ -99,6 +99,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
             QPainter p;
             p.begin(&pixmap);
             p.setRenderHints(painter->renderHints());
+            p.setRenderHint(QPainter::Antialiasing, true);
             if (m_state & Selected)
             {
                 p.setPen(Qt::yellow);

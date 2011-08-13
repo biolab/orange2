@@ -305,7 +305,6 @@ class OWPlot(orangeqt.Plot):
         self.map_from_widget = self.mapToScene
         
         # OWScatterPlot needs these:
-        self.use_antialiasing = True
         self.point_width = 5
         self.show_filled_symbols = True
         self.alpha_value = 255
@@ -332,6 +331,15 @@ class OWPlot(orangeqt.Plot):
         ## Performance optimization
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.scene().setItemIndexMethod(QGraphicsScene.NoIndex)
+        
+        self.animate_plot = True
+        self.animate_points = True
+        self.antialias_plot = True
+        self.antialias_points = True
+        self.antialias_lines = True
+        
+        self.auto_adjust_performance = True
+        self.disable_animations_threshold = 2000
      #   self.setInteractive(False)
         
         self._bounds_cache = {}
@@ -698,6 +706,8 @@ class OWPlot(orangeqt.Plot):
         if not self.main_curve:
             self.main_curve = OWMultiCurve([], [])
             self.add_item(self.main_curve)
+            
+        self.update_performance(len(x_data))
 
         c = self.main_curve
         c.set_data(x_data, y_data)
@@ -1422,12 +1432,24 @@ class OWPlot(orangeqt.Plot):
         if use_antialiasing is not None:
             self.use_antialiasing= use_antialiasing
             
-        self.setRenderHint(QPainter.Antialiasing, self.use_antialiasing)
+        self.setRenderHint(QPainter.Antialiasing, self.antialias_plot)
         orangeqt.Point.clear_cache()
         
     def update_animations(self, use_animations=None):
         if use_animations is not None:
             self.use_animations = use_animations
+            
+    def update_performance(self, num_points = None):
+        if self.auto_adjust_performance:
+            if not num_points:
+                if self.main_curve:
+                    num_points = len(self.main_curve.points())
+                else:
+                    num_points = sum( len(c.points()) for c in self.curves )
+            if num_points > self.disable_animations_threshold:
+                self.animate_points = False
+                self.animate_plot = False
+                self.antialias_lines = False
         
     def animate(self, target, prop_name, end_val, duration = None):
         for a in self._animations:

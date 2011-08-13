@@ -119,7 +119,7 @@ class OWScatterPlotQt(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         
-        g.add_widgets([g.ShowLegend, g.ShowFilledSymbols, g.ShowGridLines, g.UseAnimations, g.Antialiasing], box4)
+        g.add_widgets([g.ShowLegend, g.ShowFilledSymbols, g.ShowGridLines], box4)
         
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
@@ -144,9 +144,13 @@ class OWScatterPlotQt(OWWidget):
         OWGUI.checkBox(box, self, 'autoSendSelection', 'Adding/Removing selection areas', callback = self.selectionChanged, tooltip = "Send selected data whenever a selection area is added or removed")
         OWGUI.checkBox(box, self, 'graph.sendSelectionOnUpdate', 'Moving/Resizing selection areas', tooltip = "Send selected data when a user moves or resizes an existing selection area")
         self.graph.selection_changed.connect(self.selectionChanged)
+        
+        self.EffectsTab = OWGUI.createTabPage(self.tabs, "Performance")
+        g.effects_box(self.EffectsTab)
 
         self.GeneralTab.layout().addStretch(100)
         self.SettingsTab.layout().addStretch(100)
+        self.EffectsTab.layout().addStretch(100)
         self.icons = self.createAttributeIconDict()
 
         self.debugSettings = ["attrX", "attrY", "attrColor", "attrLabel", "attrShape", "attrSize"]

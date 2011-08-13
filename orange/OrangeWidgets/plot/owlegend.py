@@ -243,7 +243,7 @@ class OWLegend(QGraphicsObject):
                         y = 0
                         x = x + item.boundingRect().width()
                     self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
-                    move_item_xy(item, x, y, self.graph.use_animations)
+                    move_item_xy(item, x, y, self.graph.animate_plot)
                     y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
             for lst in self.items.itervalues():
@@ -258,7 +258,7 @@ class OWLegend(QGraphicsObject):
                         x = 0
                         y = y + max_h
                     self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
-                    move_item_xy(item, x, y, self.graph.use_animations)
+                    move_item_xy(item, x, y, self.graph.animate_plot)
                     x = x + item.boundingRect().width()                
         else:
             qDebug('A bad orientation of the legend')
@@ -303,7 +303,7 @@ class OWLegend(QGraphicsObject):
         return self._orientation
             
     def set_pos_animated(self, pos):
-        if (self.pos() - pos).manhattanLength() < 6 or not self.graph.use_animations:
+        if (self.pos() - pos).manhattanLength() < 6 or not self.graph.animate_plot:
             self.setPos(pos)
         else:
             t = 250

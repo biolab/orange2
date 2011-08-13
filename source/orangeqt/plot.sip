@@ -82,7 +82,7 @@ public:
     void remove_point(Point* point, PlotItem* parent);
     void remove_all_points(PlotItem* parent);
     
-    bool use_animations;
+    bool animate_points;
 
 Q_SIGNALS:
     void selection_changed();
