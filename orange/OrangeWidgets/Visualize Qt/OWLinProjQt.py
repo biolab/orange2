@@ -1,5 +1,5 @@
 """
-<name>Linear Projection Qt</name>
+<name>Linear Projection (Qt)</name>
 <description>Create a linear projection.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/LinearProjection.png</icon>
@@ -30,7 +30,7 @@ class OWLinProjQt(OWVisWidget):
 
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
 
-    def __init__(self,parent=None, signalManager = None, name = "Linear Projection", graphClass = None):
+    def __init__(self,parent=None, signalManager = None, name = "Linear Projection (qt)", graphClass = None):
         OWVisWidget.__init__(self, parent, signalManager, name, TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.setData, Default),

@@ -1,5 +1,5 @@
 """
-<name>Scatterplot Qt</name>
+<name>Scatterplot (Qt)</name>
 <description>Scatterplot visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ScatterPlot.png</icon>
@@ -32,7 +32,7 @@ class OWScatterPlotQt(OWWidget):
                                                      ("attrLabel", DomainContextHandler.Optional + DomainContextHandler.IncludeMetaAttributes)])}
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Scatter Plot", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "Scatterplot (Qt)", TRUE)
 
         self.inputs =  [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute selection", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]

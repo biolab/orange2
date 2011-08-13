@@ -421,7 +421,7 @@ class OWDistributionsQt(OWWidget):
 
     def __init__(self, parent=None, signalManager = None):
         "Constructor"
-        OWWidget.__init__(self, parent, signalManager, "&Distributions (Qt)", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "Distributions (Qt)", TRUE)
         # settings
         self.numberOfBars = 5
         self.barSize = 50

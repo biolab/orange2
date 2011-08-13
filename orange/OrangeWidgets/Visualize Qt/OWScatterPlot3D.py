@@ -1,4 +1,4 @@
-"""<name> 3D Scatterplot</name>
+"""<name>Scatterplot 3D</name>
 """
 
 from OWWidget import *
@@ -37,7 +37,7 @@ class OWScatterPlot3D(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["x_attr", "y_attr", "z_attr"])}
     jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
-    def __init__(self, parent=None, signalManager=None, name="Scatter Plot 3D"):
+    def __init__(self, parent=None, signalManager=None, name="Scatterplot 3D"):
         OWWidget.__init__(self, parent, signalManager, name, True)
 
         self.inputs = [("Examples", ExampleTable, self.set_data, Default), ("Subset Examples", ExampleTable, self.set_subset_data)]

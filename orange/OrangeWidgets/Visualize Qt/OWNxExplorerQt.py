@@ -40,7 +40,7 @@ class OWNxExplorerQt(OWWidget):
     "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
     "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex"] 
     
-    def __init__(self, parent=None, signalManager=None, name = 'Nx Explorer', 
+    def __init__(self, parent=None, signalManager=None, name = 'Nx Explorer (qt)', 
                  NetworkCanvas=OWNxCanvas):
         OWWidget.__init__(self, parent, signalManager, name)
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}

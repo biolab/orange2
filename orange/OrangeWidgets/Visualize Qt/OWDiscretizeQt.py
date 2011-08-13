@@ -382,7 +382,7 @@ class OWDiscretizeQt(OWWidget):
     D_LEAVE, D_ENTROPY, D_FREQUENCY, D_WIDTH, D_REMOVE = range(5)
     D_NEED_N_INTERVALS = [2, 3]
 
-    def __init__(self, parent=None, signalManager=None, name="Interactive Discretization"):
+    def __init__(self, parent=None, signalManager=None, name="Interactive Discretization (qt)"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.showBaseLine=1
         self.showLookaheadLine=1

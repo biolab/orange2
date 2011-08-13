@@ -21,7 +21,7 @@ class OWRadvizQt(OWLinProjQt):
                     "learnerIndex", "colorSettings", "selectedSchemaIndex", "addProjectedPositions", "VizRankLearnerName"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWLinProjQt.__init__(self, parent, signalManager, "Radviz")
+        OWLinProjQt.__init__(self, parent, signalManager, "Radviz (Qt)")
 
         self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]

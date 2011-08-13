@@ -23,7 +23,7 @@ class OWPolyvizQt(OWLinProjQt):
                     "colorSettings", "selectedSchemaIndex", "addProjectedPositions", "showAllAttributes", "graph.lineLength"]
 
     def __init__(self,parent=None, signalManager = None):
-        OWLinProjQt.__init__(self, parent, signalManager, "Polyviz", graphClass = OWPolyvizGraphQt)
+        OWLinProjQt.__init__(self, parent, signalManager, "Polyviz (qt)", graphClass = OWPolyvizGraphQt)
 
         self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
