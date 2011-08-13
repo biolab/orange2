@@ -30,8 +30,11 @@ dlg_showall = dir + "Dlg_clear.png"
 
 class OWNxExplorerQt(OWWidget):
     settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
-    "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.use_antialiasing", "networkCanvas.use_animations",
-    "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices",
+    "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.animate_plot",
+    "networkCanvas.animate_points", "networkCanvas.antialias_plot", 
+    "networkCanvas.antialias_points", "networkCanvas.antialias_lines", 
+    "networkCanvas.auto_adjust_performance", "invertSize", "optMethod", 
+    "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices",
     "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
     "showWeights", "showEdgeLabels", "colorSettings", 
     "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
@@ -140,6 +143,7 @@ class OWNxExplorerQt(OWWidget):
         self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
+        self.performanceTab = OWGUI.createTabPage(self.tabs, "Performance")
         #self.editTab = OWGUI.createTabPage(self.tabs, "Edit")
         
         self.tabs.setCurrentIndex(self.tabIndex)
@@ -200,8 +204,6 @@ class OWNxExplorerQt(OWWidget):
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_label_attributes)
         OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback=(lambda: self.networkCanvas.set_labels_on_marked_only(self.labelsOnMarkedOnly)))
-        self.networkCanvas.gui.antialiasing_check_box(ib)
-        self.networkCanvas.gui.animations_check_box(ib)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
         OWGUI.label(ib, self, "Nodes (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
@@ -329,10 +331,13 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.lineEdit(self.infoTab, self, "editValue", "Value:", orientation='horizontal')
         OWGUI.button(self.infoTab, self, "Edit", callback=self.edit)
         
+        self.networkCanvas.gui.effects_box(self.performanceTab)
+        
         self.verticesTab.layout().addStretch(1)
         self.edgesTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
+        self.performanceTab.layout().addStretch(1)
         
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
         self.networkCanvas.contPalette = dlg.getContinuousPalette("contPalette")
