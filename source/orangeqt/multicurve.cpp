@@ -64,13 +64,7 @@ void MultiCurve::update_properties()
     const QTransform t = graph_transform();
     const QList<Point*> p = points();
     
-    for (int i = 0; i < n; ++i)
-    {
-        p[i]->set_coordinates(d[i]);
-    }
-    
-    register_points();
-    update_point_positions();
+    update_point_coordinates();
     update_items(points(), ZoomUpdater(point_transform()), UpdateZoom);
 }
 

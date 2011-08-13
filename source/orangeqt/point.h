@@ -32,6 +32,8 @@ struct DataPoint
   operator QPointF();
 };
 
+Q_DECLARE_METATYPE(DataPoint)
+
 QDebug& operator<<(QDebug& stream, const DataPoint& point);
 bool operator==(const DataPoint& one, const DataPoint& other);
 
@@ -52,6 +54,7 @@ class Point : public QGraphicsObject
     Q_PROPERTY(int symbol READ symbol WRITE set_symbol)
     Q_PROPERTY(int size READ size WRITE set_size)
     Q_PROPERTY(QString label READ label WRITE set_label)
+    Q_PROPERTY(DataPoint coordinates READ coordinates WRITE set_coordinates)
     
     
 public:

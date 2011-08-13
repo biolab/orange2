@@ -43,8 +43,8 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
     m_lineItem = 0;
     m_needsUpdate = UpdateAll;
     set_data(x_data, y_data);
-    QObject::connect(&m_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
-    
+    QObject::connect(&m_pos_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
+    QObject::connect(&m_coords_watcher, SIGNAL(finished()), SLOT(update_point_positions()));
     m_autoUpdate = true;
 }
 
@@ -54,7 +54,8 @@ Curve::Curve(QGraphicsItem* parent): PlotItem(parent)
     m_style = NoCurve;
     m_lineItem = 0;
     m_needsUpdate = 0;
-    QObject::connect(&m_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
+    QObject::connect(&m_pos_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
+    QObject::connect(&m_coords_watcher, SIGNAL(finished()), SLOT(update_point_positions()));
 }
 
 
@@ -447,16 +448,26 @@ QList< Point* > Curve::points()
     return m_pointItems;
 }
 
+void Curve::update_point_coordinates()
+{
+    if (m_coords_watcher.future().isRunning())
+    {
+        m_coords_watcher.future().cancel();
+        m_coords_watcher.future().waitForFinished();
+    }
+    m_coords_watcher.setFuture(QtConcurrent::run(this, &Curve::update_point_properties_threaded<DataPoint>, QByteArray("coordinates"), m_data));
+}
+
 void Curve::update_point_positions()
 {
-    if (m_watcher.future().isRunning())
+    if (m_pos_watcher.future().isRunning())
     {
-        m_watcher.future().cancel();
-        m_watcher.future().waitForFinished();
+        m_pos_watcher.future().cancel();
+        m_pos_watcher.future().waitForFinished();
     }
     if (plot() && plot()->animate_points)
     {
-        m_watcher.setFuture(QtConcurrent::mapped(m_pointItems, PointPosMapper(m_graphTransform)));
+        m_pos_watcher.setFuture(QtConcurrent::mapped(m_pointItems, PointPosMapper(m_graphTransform)));
     }
     else
     {
@@ -466,7 +477,7 @@ void Curve::update_point_positions()
 
 void Curve::pointMapFinished()
 {
-    if (m_pointItems.size() != m_watcher.future().results().size())
+    if (m_pointItems.size() != m_pos_watcher.future().results().size())
     {
         // The calculation that just finished is already out of date, ignore it
         return;
@@ -476,7 +487,7 @@ void Curve::pointMapFinished()
     for (int i = 0; i < n; ++i)
     {
         QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos");
-        a->setEndValue(m_watcher.resultAt(i));
+        a->setEndValue(m_pos_watcher.resultAt(i));
         group->addAnimation(a);
     }
     group->start(QAbstractAnimation::DeleteWhenStopped);

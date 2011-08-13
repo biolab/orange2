@@ -211,9 +211,7 @@ public:
   
   template <class Sequence, class Updater>
   void update_items(const Sequence& sequence, Updater updater, Curve::UpdateFlag flag);
-  
-  void update_point_positions();
-  
+    
   template <class T>
   void update_point_properties(const QByteArray& property, const QList< T >& values, bool animate = true);
 
@@ -237,9 +235,13 @@ protected:
   
   bool use_animations();
   
+public slots:
+    void update_point_coordinates();
+    void update_point_positions();
+  
 private slots:
     void pointMapFinished();
-  
+
 private:
   QColor m_color;
   int m_pointSize;
@@ -258,7 +260,8 @@ private:
   QBrush m_brush;
   QTransform m_zoom_transform;
   QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
-  QFutureWatcher<QPointF> m_watcher;
+  QFutureWatcher<QPointF> m_pos_watcher;
+  QFutureWatcher<void> m_coords_watcher;
   
 };
 
@@ -314,7 +317,7 @@ void Curve::update_point_properties_threaded(const QByteArray& property, const Q
     const int n = values.size();
     for (int i = 0; i < n; ++i)
     {
-        m_pointItems[i]->setProperty(property, values[i]);
+        m_pointItems[i]->setProperty(property, QVariant::fromValue<T>(values[i]));
     }
 }
 
