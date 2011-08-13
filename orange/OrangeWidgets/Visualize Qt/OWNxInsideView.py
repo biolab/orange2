@@ -1,5 +1,5 @@
 """
-<name>Nx Inside View (qt)</name>
+<name>Nx Inside View (Qt)</name>
 <description>Orange widget for community detection in networks</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
@@ -62,7 +62,7 @@ class OWNxInsideView(OWWidget):
     settingsList = ['_nhops']
     
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'Nx Inside View (qt)')
+        OWWidget.__init__(self, parent, signalManager, 'Nx Inside View (Qt)')
         
         self.inputs = []
         self.outputs = [("Nx View", Orange.network.NxView)]
