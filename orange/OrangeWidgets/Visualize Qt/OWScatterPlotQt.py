@@ -3,7 +3,7 @@
 <description>Scatterplot visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ScatterPlot.png</icon>
-<priority>1000</priority>
+<priority>30</priority>
 """
 # ScatterPlotQt.py
 #

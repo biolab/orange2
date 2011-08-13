@@ -3,7 +3,7 @@
 <description>Displays attribute value distributions.</description>
 <contact>Tomaz Curk</contact>
 <icon>icons/Distribution.png</icon>
-<priority>100</priority>
+<priority>10</priority>
 """
 
 #

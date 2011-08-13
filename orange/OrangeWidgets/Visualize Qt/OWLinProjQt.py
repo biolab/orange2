@@ -3,7 +3,7 @@
 <description>Create a linear projection.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/LinearProjection.png</icon>
-<priority>2000</priority>
+<priority>40</priority>
 """
 # LinProj.py
 #

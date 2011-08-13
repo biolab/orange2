@@ -1,7 +1,7 @@
 """
 <name>Sphereviz 3D</name>
 <icon>icons/Radviz.png</icon>
-<priority>2000</priority>
+<priority>220</priority>
 """
 
 import os

@@ -3,7 +3,7 @@
 <description>Polyviz (multiattribute) visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/Polyviz.png</icon>
-<priority>3150</priority>
+<priority>60</priority>
 """
 # Polyviz.py
 #

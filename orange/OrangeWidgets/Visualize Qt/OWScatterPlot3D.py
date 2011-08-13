@@ -1,4 +1,8 @@
 """<name>Scatterplot 3D</name>
+<description></description>
+<icon></icon>
+<contact></contact>
+<priority>210</priority>
 """
 
 from OWWidget import *
