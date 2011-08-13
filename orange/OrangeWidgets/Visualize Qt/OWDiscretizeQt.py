@@ -3,7 +3,7 @@
 <description>Discretization of continuous attributes.</description>
 <icon>icons/Discretize.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>100</priority>
+<priority>200</priority>
 """
 import orange
 from OWWidget import *

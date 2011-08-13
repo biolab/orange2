@@ -3,7 +3,7 @@
 <description>Orange widget for community detection in networks</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>320</priority>
+<priority>420</priority>
 """
 
 import Orange

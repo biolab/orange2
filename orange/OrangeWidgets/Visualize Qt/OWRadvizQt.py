@@ -3,7 +3,7 @@
 <description>Create a radviz projection.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/Radviz.png</icon>
-<priority>50</priority>
+<priority>150</priority>
 """
 # Radviz.py
 #

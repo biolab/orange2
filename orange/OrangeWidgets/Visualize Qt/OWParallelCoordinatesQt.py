@@ -3,7 +3,7 @@
 <description>Parallel coordinates (multiattribute) visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ParallelCoordinates.png</icon>
-<priority>70</priority>
+<priority>170</priority>
 """
 # ParallelCoordinates.py
 #

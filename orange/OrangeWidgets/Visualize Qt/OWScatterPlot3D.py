@@ -2,7 +2,7 @@
 <description></description>
 <icon></icon>
 <contact></contact>
-<priority>210</priority>
+<priority>310</priority>
 """
 
 from OWWidget import *
