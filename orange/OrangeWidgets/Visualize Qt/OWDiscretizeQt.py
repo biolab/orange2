@@ -3,7 +3,7 @@
 <description>Discretization of continuous attributes.</description>
 <icon>icons/Discretize.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>200</priority>
+<priority>2100</priority>
 """
 import orange
 from OWWidget import *
@@ -18,7 +18,7 @@ def frange(low, up, steps):
 
 class DiscGraph(OWPlot):
     def __init__(self, master, *args):
-        OWPlot.__init__(self, *args)
+        OWPlot.__init__(self, *args, widget=master)
         self.master=master
 
         self.rugKeys = []
@@ -382,7 +382,7 @@ class OWDiscretizeQt(OWWidget):
     D_LEAVE, D_ENTROPY, D_FREQUENCY, D_WIDTH, D_REMOVE = range(5)
     D_NEED_N_INTERVALS = [2, 3]
 
-    def __init__(self, parent=None, signalManager=None, name="Interactive Discretization (qt)"):
+    def __init__(self, parent=None, signalManager=None, name="Interactive Discretization"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.showBaseLine=1
         self.showLookaheadLine=1
