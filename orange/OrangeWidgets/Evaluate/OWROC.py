@@ -11,6 +11,8 @@ from OWGraph import *
 import OWGUI
 import orngStat, orngTest
 import statc, math
+import time
+import warnings
 
 def TCconvexHull(curves):
     ## merge curves into one
@@ -969,6 +971,13 @@ class OWROC(OWWidget):
             self.removeGraphs()
             self.openContext("", dres)
             return
+        
+        self.warning(0)
+        if len(dres.results) > 0 and dres.results[0].multilabel_flag == 1:
+            text = "there is no consensus on how to apply it in multi-class problems"
+            self.warning(0, text)
+            return
+            
         self.dres = dres
 
         self.classifiersQLB.clear()

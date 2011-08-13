@@ -346,19 +346,11 @@ class OWTestLearners(OWWidget):
         if self.resampling==0:
             pb = OWGUI.ProgressBar(self, iterations=self.nFolds)
             #print self.nFolds
-            #res = orngTest.crossValidation(learners, self.data, folds=self.nFolds,
-            #                               strat=orange.MakeRandomIndices.StratifiedIfPossible,
-            #                               callback=pb.advance, storeExamples = True)
-            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds)
+            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds,
+                                           strat=orange.MakeRandomIndices.StratifiedIfPossible,
+                                           callback=pb.advance, storeExamples = True)
+            #res = orngTest.crossValidation(learners, self.data, folds=self.nFolds)
             
-            loss = Orange.evaluation.scoring.mlc_hamming_loss(res)
-            accuracy = Orange.evaluation.scoring.mlc_accuracy(res)
-            precision = Orange.evaluation.scoring.mlc_precision(res)
-            recall = Orange.evaluation.scoring.mlc_recall(res)
-            print 'loss=', loss
-            print 'accuracy=', accuracy
-            print 'precision=', precision
-            print 'recall=', recall
             pb.finish()
         elif self.resampling==1:
             pb = OWGUI.ProgressBar(self, iterations=len(self.data))
