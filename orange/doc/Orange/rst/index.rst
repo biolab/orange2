@@ -15,6 +15,8 @@ Orange Scripting Reference
    Orange.data
 
    Orange.classification
+   
+   Orange.multilabel
 
    Orange.clustering
    
@@ -39,8 +41,6 @@ Orange Scripting Reference
    Orange.statistics
    
    Orange.misc
-
-   Orange.multilabel
 
 ****************
 Index and search
