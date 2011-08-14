@@ -179,9 +179,8 @@ m_u(0), m_v(0)
 {
     set_u(u);
     set_v(v);
-    m_size = 1;
     QPen p = pen();
-	p.setWidthF(m_size);
+	p.setWidthF(1);
     p.setCosmetic(true);
 	setPen(p);
 	setZValue(0);
@@ -647,6 +646,9 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 
 	// iterations
 	//clock_t refresh_time = clock() + 0.05 * CLOCKS_PER_SEC;
+	Plot *p = plot();
+	bool animation_enabled = p->animate_points;
+	p->animate_points = false;
 
 	QTime refresh_time = QTime::currentTime();
 	for (i = 0; i < steps; ++i)
@@ -760,8 +762,9 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		}
 	}
 
-        register_points();
-        return 0;
+	p->animate_points = animation_enabled;
+	register_points();
+	return 0;
 }
 
 void NetworkCurve::set_edges(const NetworkCurve::Edges& edges)
@@ -879,7 +882,7 @@ void NetworkCurve::set_node_colors(const QMap<int, QColor>& colors)
 void NetworkCurve::set_node_sizes(const QMap<int, double>& sizes, double min_size, double max_size)
 {
     cancelAllUpdates();
-	// TODO inverted
+
 	NodeItem* node;
 	Nodes::ConstIterator nit;
 
@@ -1032,7 +1035,7 @@ void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >&
 	register_points();
 }
 
-void NetworkCurve::set_edge_color(const QList<QColor>& colors)
+void NetworkCurve::set_edge_colors(const QList<QColor>& colors)
 {
     cancelAllUpdates();
 	int i;
@@ -1041,6 +1044,61 @@ void NetworkCurve::set_edge_color(const QList<QColor>& colors)
 		QPen p = m_edges[i]->pen();
 		p.setColor(colors[i]);
 		m_edges[i]->setPen(p);
+	}
+}
+
+void NetworkCurve::set_edge_sizes(double max_size)
+{
+    cancelAllUpdates();
+
+    double min_size_value = std::numeric_limits<double>::max();
+	double max_size_value = std::numeric_limits<double>::min();
+
+	int i;
+	for (i = 0; i < m_edges.size(); ++i)
+	{
+		double w = m_edges[i]->weight();
+		if (w < min_size_value)
+		{
+			min_size_value = w;
+		}
+		if (w > max_size_value)
+		{
+			max_size_value = w;
+		}
+	}
+
+	double size_span = max_size_value - min_size_value;
+	double edge_size_span = (max_size > 0) ? max_size - 1 : 0;
+
+	if (size_span > 0 && edge_size_span > 0)
+	{
+		for (i = 0; i < m_edges.size(); ++i)
+		{
+			double w = m_edges[i]->weight();
+			QPen p = m_edges[i]->pen();
+			p.setWidthF((w - min_size_value) / size_span * edge_size_span + 1);
+			m_edges[i]->setPen(p);
+		}
+	}
+	else
+	{
+		for (i = 0; i < m_edges.size(); ++i)
+		{
+			QPen p = m_edges[i]->pen();
+			p.setWidthF(1);
+			m_edges[i]->setPen(p);
+		}
+	}
+}
+
+void NetworkCurve::set_edge_labels(const QList<QString>& labels)
+{
+    cancelAllUpdates();
+	int i;
+	for (i = 0; i < labels.size(); ++i)
+	{
+		m_edges[i]->set_label(labels[i]);
 	}
 }
 

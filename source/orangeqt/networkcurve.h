@@ -172,7 +172,6 @@ private:
     NodeItem* m_v;
     int m_links_index;
     double m_weight;
-    double m_size;
     QString m_label;
 };
 
@@ -233,12 +232,15 @@ public:
 
     void set_node_colors(const QMap<int, QColor>& colors);
     void set_node_sizes(const QMap<int, double>& sizes = QMap<int, double>(), double min_size=0, double max_size=0);
-    void set_edge_color(const QList<QColor>& colors);
     void set_node_labels(const QMap<int, QString>& labels);
     void set_node_tooltips(const QMap<int, QString>& tooltips);
     void set_node_marks(const QMap<int, bool>& marks);
     void clear_node_marks();
     void set_node_coordinates(const QMap<int, QPair<double, double> >& coordinates);
+
+    void set_edge_colors(const QList<QColor>& colors);
+    void set_edge_sizes(double max_size);
+    void set_edge_labels(const QList<QString>& labels);
 
     void set_min_node_size(double size);
     double min_node_size() const;

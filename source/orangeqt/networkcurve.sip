@@ -110,7 +110,9 @@ public:
     void clear_node_marks();
     void set_node_coordinates(const QMap<int, QPair<double, double> >& coordinates);
     
-    void set_edge_color(const QList<QColor>& colors);
+    void set_edge_colors(const QList<QColor>& colors);
+    void set_edge_sizes(double max_size);
+    void set_edge_labels(const QList<QString>& labels);
     
     void set_min_node_size(double size);
     double min_node_size() const;
