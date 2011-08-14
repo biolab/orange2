@@ -63,7 +63,7 @@ class OWLinProjQt(OWVisWidget):
         else:
             self.graph = OWLinProjGraph(self, self.mainArea, name)
         self.mainArea.layout().addWidget(self.graph)
-
+        
         # graph variables
         self.graph.manualPositioning = 0
         self.graph.hideRadius = 0
@@ -109,7 +109,8 @@ class OWLinProjQt(OWVisWidget):
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
         self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings", canScroll = 1)
-
+        self.PerformanceTab = OWGUI.createTabPage(self.tabs, "Performance")
+        
         #add controls to self.controlArea widget
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
 
@@ -161,7 +162,6 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         self.graph.gui.filled_symbols_check_box(box)
-        self.graph.gui.antialiasing_check_box(box)
         wbox = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(wbox, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         smallWidget = OWGUI.SmallWidgetLabel(wbox, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
@@ -188,6 +188,9 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
 
         self.SettingsTab.layout().addStretch(100)
+        
+        self.graph.gui.effects_box(self.PerformanceTab, )
+        self.PerformanceTab.layout().addStretch(100)
 
         self.icons = self.createAttributeIconDict()
         self.debugSettings = ["hiddenAttributes", "shownAttributes"]

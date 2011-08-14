@@ -263,7 +263,8 @@ class UnconnectedLinesCurve(orangeqt.UnconnectedLinesCurve):
         `(n+1)`-th point for each even `n`. 
     """
     def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
-        orangeqt.UnconnectedLinesCurve.__init__(self, xData, yData)
+        orangeqt.UnconnectedLinesCurve.__init__(self)
+        self.set_data(xData, yData)
         if pen:
             self.set_pen(pen)
         self.name = name

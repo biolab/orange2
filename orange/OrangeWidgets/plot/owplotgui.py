@@ -225,13 +225,11 @@ class OWPlotGUI:
         
     Spacing = 0
         
-    Antialiasing = 1
     ShowLegend = 2
     ShowFilledSymbols = 3
     ShowGridLines = 4
     PointSize = 5
     AlphaValue = 6
-    UseAnimations = 7
     
     Zoom = 11
     Pan = 12
@@ -380,13 +378,11 @@ class OWPlotGUI:
             ], widget, "Plot settings")
         
     _functions = {
-        Antialiasing : antialiasing_check_box,
         ShowLegend : show_legend_check_box,
         ShowFilledSymbols : filled_symbols_check_box,
         ShowGridLines : grid_lines_check_box,
         PointSize : point_size_slider,
         AlphaValue : alpha_value_slider,
-        UseAnimations : animations_check_box
         }
         
     def add_widget(self, id, widget):

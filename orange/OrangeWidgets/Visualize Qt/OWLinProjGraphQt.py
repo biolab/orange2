@@ -71,6 +71,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         self._extra_curves = []
         self.current_tooltip_point = None
         self.point_hovered.connect(self.draw_tooltips)
+        
+        self.value_line_curves = []
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -84,9 +86,14 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, labels = None, setAnchors = 0, **args):
+        for c in self._extra_curves:
+            c.detach()
         self._extra_curves = []
-        self.clear()
         self.tooltipMarkers = []
+        for c in self.value_line_curves:
+            c.detach()
+        self.value_line_curves = []
+        self.legend().clear()
 
         self.__dict__.update(args)
         if labels == None: labels = [anchor[2] for anchor in self.anchorData]
@@ -164,9 +171,9 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         projData = transProjData.T
         x_positions = projData[0]
         y_positions = projData[1]
+        
         xPointsToAdd = {}
         yPointsToAdd = {}
-
 
         if self.showProbabilities and self.haveData and self.dataHasClass:
             # construct potentialsClassifier from unscaled positions
@@ -185,6 +192,33 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             self.potentialsImage = None
 
 
+        if self.useDifferentColors:
+            if self.dataHasDiscreteClass:
+                color_data = [QColor(*self.discPalette.getRGB(i)) for i in self.originalData[self.dataClassIndex]]
+            elif self.dataHasContinuousClass:    
+                color_data = [QColor(*self.contPalette.getRGB(i)) for i in self.originalData[self.dataClassIndex]]
+            else:
+                color_data = [Qt.black]
+        else:
+            color_data = [Qt.black]
+                        
+        if self.useDifferentSymbols and self.dataHasDiscreteClass:
+            symbol_data = [self.curveSymbols[int(i)] for i in self.originalData[self.dataClassIndex]]
+        else:
+            symbol_data = [OWPoint.Ellipse]
+            
+        size_data = [self.point_width]
+        label_data = []
+        
+        if self.haveSubsetData:
+            subset_ids = [example.id for example in self.rawSubsetData]
+            marked_data = [example.id in subset_ids for example in self.rawData]
+            showFilled = 0
+        else:
+            marked_data = []
+
+        self.set_main_curve_data(x_positions, y_positions, color_data, label_data, size_data, symbol_data, marked_data, validData)
+        
         # ##############################################################
         # show model quality
         # ##############################################################
@@ -210,7 +244,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                         edgeColor = classColors.getRGB(self.originalData[self.dataClassIndex][i])
                     else:
                         fillColor = edgeColor = (0,0,0)
-                    self.addCurve(str(i), QColor(*fillColor+ (self.alphaValue,)), QColor(*edgeColor+ (self.alphaValue,)), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                     if self.showValueLines:
                         self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
                     self.addTooltipKey(x_positions[i], y_positions[i], QColor(*edgeColor), i, stringData % (100*insideData[j]))
@@ -223,7 +256,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                         edgeColor = classColors.getRGB(self.originalData[self.dataClassIndex][i])
                     else:
                         fillColor = edgeColor = (0,0,0)
-                    self.addCurve(str(i), QColor(*fillColor+ (self.alphaValue,)), QColor(*edgeColor+ (self.alphaValue,)), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                     if self.showValueLines:
                         self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
                     self.addTooltipKey(x_positions[i], y_positions[i], QColor(*edgeColor), i, stringData % (100*insideData[i]))
@@ -253,46 +285,10 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                 else:
                     curveSymbol = self.curveSymbols[0]
 
-                if not xPointsToAdd.has_key((newColor, curveSymbol,0)):
-                    xPointsToAdd[(newColor, curveSymbol,0)] = []
-                    yPointsToAdd[(newColor, curveSymbol,0)] = []
-                xPointsToAdd[(newColor, curveSymbol,0)].append(x_positions[i])
-                yPointsToAdd[(newColor, curveSymbol,0)].append(y_positions[i])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
 
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
-
-            # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-            XAnchors = numpy.array([val[0] for val in self.anchorData])
-            YAnchors = numpy.array([val[1] for val in self.anchorData])
-            anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
-            validSubData = self.getValidSubsetList(indices)
-            projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1).T
-            sub_x_positions = projSubData[0]
-            sub_y_positions = projSubData[1]
-
-            for i in range(len(self.rawSubsetData)):
-                if not validSubData[i]: continue    # check if has missing values
-
-                if not self.dataHasClass or self.rawSubsetData[i].getclass().isSpecial():
-                    newColor = (0,0,0)
-                else:
-                    if self.dataHasDiscreteClass:
-                        newColor = self.discPalette.getRGB(self.originalSubsetData[self.dataClassIndex][i])
-                    else:
-                        newColor = self.contPalette.getRGB(self.noJitteringScaledSubsetData[self.dataClassIndex][i])
-
-                if self.useDifferentSymbols and self.dataHasDiscreteClass and self.validSubsetDataArray[self.dataClassIndex][i]:
-                    curveSymbol = self.curveSymbols[int(self.originalSubsetData[self.dataClassIndex][i])]
-                else:
-                    curveSymbol = self.curveSymbols[0]
-
-                if not xPointsToAdd.has_key((newColor, curveSymbol, 1)):
-                    xPointsToAdd[(newColor, curveSymbol, 1)] = []
-                    yPointsToAdd[(newColor, curveSymbol, 1)] = []
-                xPointsToAdd[(newColor, curveSymbol, 1)].append(sub_x_positions[i])
-                yPointsToAdd[(newColor, curveSymbol, 1)].append(sub_y_positions[i])
 
         elif not self.dataHasClass:
             xs = []; ys = []
@@ -303,7 +299,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(Qt.black), i)
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], (0,0,0), i, indices)
-            self.addCurve(str(1), QColor(0,0,0,self.alphaValue), QColor(0,0,0,self.alphaValue), self.pointWidth, symbol = self.curveSymbols[0], xData = xs, yData = ys, penAlpha = self.alphaValue, brushAlpha = self.alphaValue)
 
         # ##############################################################
         # CONTINUOUS class
@@ -312,7 +307,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = self.contPalette.getRGB(self.noJitteringScaledData[self.dataClassIndex][i])
-                self.addCurve(str(i), QColor(*newColor+ (self.alphaValue,)), QColor(*newColor+ (self.alphaValue,)), self.pointWidth, symbol = OWPoint.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
@@ -325,13 +319,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
                 if not validData[i]: continue
                 if self.useDifferentColors: newColor = self.discPalette.getRGB(self.originalData[self.dataClassIndex][i])
                 else:                       newColor = (0,0,0)
-                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[int(self.originalData[self.dataClassIndex][i])]
-                else:                        curveSymbol = self.curveSymbols[0]
-                if not xPointsToAdd.has_key((newColor, curveSymbol, self.showFilledSymbols)):
-                    xPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
-                    yPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
-                xPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)].append(x_positions[i])
-                yPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)].append(y_positions[i])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
@@ -341,12 +328,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             for i, color in enumerate(self.valueLineCurves[0].keys()):
                 curve = UnconnectedLinesCurve("", QPen(QColor(*color + (self.alphaValue,))), self.valueLineCurves[0][color], self.valueLineCurves[1][color])
                 curve.attach(self)
+                self.value_line_curves.append(curve)
 
-        # draw all the points with a small number of curves
-        for i, (color, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
-            xData = xPointsToAdd[(color, symbol, showFilled)]
-            yData = yPointsToAdd[(color, symbol, showFilled)]
-            self.addCurve(str(i), QColor(*color + (self.alphaValue,)), QColor(*color + (self.alphaValue,)), self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
 
         # ##############################################################
         # draw the legend
@@ -392,7 +375,6 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             ys += [y, y + yVect[i]*exVals[i]]
         self.valueLineCurves[0][color] = self.valueLineCurves[0].get(color, []) + xs
         self.valueLineCurves[1][color] = self.valueLineCurves[1].get(color, []) + ys
-
 
     def mousePressEvent(self, e):
         if self.manualPositioning:

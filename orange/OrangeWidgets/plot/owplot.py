@@ -672,7 +672,7 @@ class OWPlot(orangeqt.Plot):
         
         return self.add_custom_curve(c, enableLegend)
                 
-    def set_main_curve_data(self, x_data, y_data, color_data, label_data, size_data, shape_data, marked_data = [], x_axis_key=xBottom, y_axis_key=yLeft):
+    def set_main_curve_data(self, x_data, y_data, color_data, label_data, size_data, shape_data, marked_data = [], valid_data = [], x_axis_key=xBottom, y_axis_key=yLeft):
         """
             Creates a single curve that can have points of different colors, shapes and sizes. 
             This is the preferred method for visualization that show a series of different points. 
@@ -709,7 +709,20 @@ class OWPlot(orangeqt.Plot):
             self.add_item(self.main_curve)
             
         self.update_performance(len(x_data))
-
+        
+        if len(valid_data):
+            import numpy
+            x_data = numpy.compress(valid_data, x_data)
+            y_data = numpy.compress(valid_data, y_data)
+            if len(color_data) > 1:
+                color_data = numpy.compress(valid_data, color_data)
+            if len(size_data) > 1:
+                size_data = numpy.compress(valid_data, size_data)
+            if len(shape_data) > 1:
+                shape_data = numpy.compress(valid_data, shape_data)
+            if len(label_data) > 1:
+                label_data = numpy.compress(valid_data, label_data)
+        
         c = self.main_curve
         c.set_data(x_data, y_data)
         c.set_axes(x_axis_key, y_axis_key)
