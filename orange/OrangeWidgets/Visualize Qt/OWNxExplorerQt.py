@@ -1246,17 +1246,21 @@ class OWNxExplorerQt(OWWidget):
 #            self.optMethod = 0
 #            self.graph_layout_method()
         
+        animation_enabled = self.networkCanvas.animate_points;
+        self.networkCanvas.animate_points = False;
+        
         self.set_node_sizes()
         self.set_node_colors()
         self.set_edge_sizes()
         self.set_edge_colors()
             
-        self.networkCanvas.setEdgesSize()
         self.clickedAttLstBox()
         self.clickedTooltipLstBox()
         self.clickedEdgeLabelListBox()
         
         self.networkCanvas.replot()
+        
+        self.networkCanvas.animate_points = animation_enabled
         qApp.processEvents()
         self.networkCanvas.networkCurve.fr(100, weighted=False, smooth_cooling=True)
         self.networkCanvas.networkCurve.update_properties()
