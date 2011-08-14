@@ -274,30 +274,25 @@ QList< bool > Plot::selected_points(const QList< double > x_data, const QList< d
 QList< Point* > Plot::selected_points()
 {
     QList<Point*> list;
-    foreach (const PointHash& hash, m_point_hash)
+    foreach (Point* p, all_points())
     {
-        foreach (Point* point, hash)
+        if (p->is_selected())
         {
-            if (point->is_selected())
-            {
-                list.append(point);
-            }
+            list << p;
         }
     }
+    qDebug() << "Found" << list.size() << "selected points";
     return list;
 }
 
 QList< Point* > Plot::marked_points()
 {
     QList<Point*> list;
-    foreach (const PointHash& hash, m_point_hash)
+    foreach (Point* point, all_points())
     {
-        foreach (Point* point, hash)
+        if (point->is_marked())
         {
-            if (point->is_marked())
-            {
-                list.append(point);
-            }
+            list.append(point);
         }
     }
     return list;
@@ -370,6 +365,7 @@ void Plot::add_point(Point* point, PlotItem* parent)
     const DataPoint pos = point->coordinates();
     m_point_set[parent].insert(pos);
     m_point_hash[parent].insert(pos, point);
+    qDebug() << "Added point" << m_point_set[parent].size();
 }
 
 void Plot::add_points(const QList< Point* >& items, PlotItem* parent)
@@ -398,24 +394,18 @@ void Plot::remove_all_points(PlotItem* parent)
 
 void Plot::unmark_all_points()
 {
-    foreach (const PointHash& hash, m_point_hash)
+    foreach (Point* point, all_points())
     {
-        foreach (Point* point, hash)
-        {
-            point->set_marked(false);
-        }
+        point->set_marked(false);
     }
     emit marked_points_changed();
 }
 
 void Plot::unselect_all_points()
 {
-    foreach (const PointHash& hash, m_point_hash)
+    foreach (Point* point, all_points())
     {
-        foreach (Point* point, hash)
-        {
-            point->set_selected(false);
-        }
+        point->set_selected(false);
     }
     emit selection_changed();
 }
@@ -450,7 +440,6 @@ void Plot::marked_to_selected()
 
 void Plot::mark_points(const Data& data, Plot::SelectionBehavior behavior)
 {
-    qDebug() << "Trying to mark" << data.size() << "points";
     foreach (const PointHash& hash, m_point_hash)
     {
         foreach (Point* point, hash)
@@ -486,6 +475,19 @@ void Plot::select_points(const Data& data, Plot::SelectionBehavior behavior)
     }
 }
 
-
+QList< Point* > Plot::all_points()
+{
+    QList<Point*> list;
+    foreach (PlotItem* item, plot_items())
+    {
+        Curve* curve = qobject_cast<Curve*>(item);
+        if (!curve)
+        {
+            continue;
+        }
+        list << curve->points();
+    }
+    return list;
+}
 
 #include "plot.moc"

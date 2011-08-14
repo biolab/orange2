@@ -77,8 +77,11 @@ public:
     QList< bool > selected_points(const QList< double > x_data, const QList< double > y_data);
     QList< Point* > selected_points();
     QList< Point*> marked_points();
-    Point* nearest_point(const QPointF& pos);
+        
+    Point* nearest_point(const QPointF& pos);    
     Point* point_at(const DataPoint& pos);
+    Point* selected_point_at(const DataPoint& pos);
+    QList<Point*> all_points();
     
     void add_point(Point* point, PlotItem* parent);
     void add_points(const QList<Point*>& items, PlotItem* parent);
