@@ -186,6 +186,7 @@ m_u(0), m_v(0)
     p.setCosmetic(true);
 	setPen(p);
 	setZValue(0);
+	//setFlag(ItemIgnoresTransformations);
 }
 
 EdgeItem::~EdgeItem()
