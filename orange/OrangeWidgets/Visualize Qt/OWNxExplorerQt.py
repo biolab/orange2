@@ -1360,7 +1360,6 @@ class OWNxExplorerQt(OWWidget):
         self.set_edge_sizes()
         self.set_edge_colors()
             
-        self.networkCanvas.setEdgesSize()
         self.clickedAttLstBox()
         self.clickedTooltipLstBox()
         self.clickedEdgeLabelListBox()

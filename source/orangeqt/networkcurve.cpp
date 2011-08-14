@@ -55,10 +55,12 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     NetworkCurve *curve = (NetworkCurve*)parentItem();
     bool on_marked_only = curve->labels_on_marked_only();
     const QString l = label();
-    if (on_marked_only && !is_marked() && l.isEmpty())
+
+    if (on_marked_only && !(is_marked() || is_selected()))
     {
         set_label(QString());
     }
+
     Point::paint(painter, option, widget);
     set_label(l);
 }
@@ -203,6 +205,29 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 {
 	painter->setRenderHint(QPainter::Antialiasing, false);
 	QGraphicsLineItem::paint(painter, option, widget);
+
+	if (!m_label.isEmpty())
+	{
+		NetworkCurve *curve = (NetworkCurve*)parentItem();
+		bool on_marked_only = curve->labels_on_marked_only();
+		bool is_marked = (u()->is_marked() || u()->is_selected()) && (v()->is_marked() || v()->is_selected());
+
+		if(!on_marked_only || (on_marked_only && is_marked))
+		{
+			QLineF _line = line();
+			double x = (_line.x1() + _line.x2()) / 2;
+			double y = (_line.y1() + _line.y2()) / 2;
+			QFontMetrics metrics = option->fontMetrics;
+			int th = metrics.height();
+			int tw = metrics.width(m_label);
+			QRect r(x-tw/2, y-th/2, tw, th);
+			//painter->fillRect(r, QBrush(Qt::white));
+			QPen p = painter->pen();
+			p.setColor(Qt::black);
+			painter->setPen(p);
+			painter->drawText(r, Qt::AlignHCenter, m_label);
+		}
+	}
 }
 
 

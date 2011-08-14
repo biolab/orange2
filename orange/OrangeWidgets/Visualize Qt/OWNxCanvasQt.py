@@ -328,7 +328,7 @@ class OWNxCanvas(OWPlot):
             
         weights = [[] for ex in edges]
         if self.show_weights:
-            weights = [[str(self.graph[u][v])] for u,v in edges]
+            weights = [["%.2f" % self.graph[u][v].get('weight', 1)] for u,v in edges]
             
         self.networkCurve.set_edge_labels([', '.join(weights[i] + \
                            [str(self.links[i][att]) for att in \
