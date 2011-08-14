@@ -201,10 +201,12 @@ class Graph(BaseGraph, nx.Graph):
     
     def subgraph(self, nbunch):
         G = nx.Graph.subgraph(self, nbunch)
-        nodes = set(nbunch).intersection(self.nodes())
+        items = self.items().get_items(G.nodes())
+        G = G.to_orange_network()
+        G.set_items(items)
         
         return G
-        # TODO: _items, _links
+        # TODO: _links
     
     __doc__ += _get_doc(nx.Graph.__doc__)
     __init__.__doc__ = _get_doc(nx.Graph.__init__.__doc__)
