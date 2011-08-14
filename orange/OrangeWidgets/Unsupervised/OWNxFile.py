@@ -312,10 +312,7 @@ class OWNxFile(OWWidget):
         
     def readEdgesFile(self, fn):
         table = ExampleTable(fn)
-        if self.graph.is_directed():
-            nEdges = len(self.graph.getEdges())
-        else:
-            nEdges = len(self.graph.getEdges()) / 2
+        nEdges = len(self.graph.edges())
             
         if len(table) != nEdges:
             self.infod.setText("Edges data length does not match number of edges")
