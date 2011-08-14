@@ -1128,7 +1128,7 @@ class OWPlot(orangeqt.Plot):
         if a in [ZOOMING, SELECT] and self._current_rs_item:
             rect = self._current_rs_item.rect()
             if a == ZOOMING:
-                self.zoom_to_rect(rect)
+                self.zoom_to_rect(self.zoom_transform.inverted()[0].mapRect(rect))
             else:
                 self.add_selection(rect)
             self.scene().removeItem(self._current_rs_item)
