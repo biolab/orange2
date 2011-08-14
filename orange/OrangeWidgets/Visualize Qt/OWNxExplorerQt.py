@@ -34,7 +34,7 @@ class OWNxExplorerQt(OWWidget):
     "networkCanvas.animate_points", "networkCanvas.antialias_plot", 
     "networkCanvas.antialias_points", "networkCanvas.antialias_lines", 
     "networkCanvas.auto_adjust_performance", "invertSize", "optMethod", 
-    "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices",
+    "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices", "networkCanvas.show_weights",
     "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
     "showWeights", "showEdgeLabels", "colorSettings", 
     "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
@@ -168,41 +168,41 @@ class OWNxExplorerQt(OWWidget):
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.graph_layout, toggleButton=1)
         
         colorBox = OWGUI.widgetBox(self.verticesTab, "Node color attribute", orientation="horizontal", addSpace = False)
-        self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.setVertexColor)
+        self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.set_node_colors)
         self.colorCombo.addItem("(same color)")
         OWGUI.button(colorBox, self, "Set node color palette", self.setColors, tooltip = "Set node color palette", debuggingEnabled = 0)
         
         ib = OWGUI.widgetBox(self.verticesTab, "Node size attribute", orientation="vertical", addSpace = False)
         hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
-        OWGUI.checkBox(hb, self, "invertSize", "Invert size", callback = self.set_vertex_size)
-        OWGUI.spin(hb, self, "minVertexSize", 5, 200, 1, label="Min:", callback=self.set_vertex_size)
-        OWGUI.spin(hb, self, "maxVertexSize", 5, 200, 1, label="Max:", callback=self.set_vertex_size)
-        self.vertexSizeCombo = OWGUI.comboBox(ib, self, "vertexSize", callback=self.set_vertex_size)
+        OWGUI.checkBox(hb, self, "invertSize", "Invert size", callback = self.set_node_sizes)
+        OWGUI.spin(hb, self, "minVertexSize", 5, 200, 1, label="Min:", callback=self.set_node_sizes)
+        OWGUI.spin(hb, self, "maxVertexSize", 5, 200, 1, label="Max:", callback=self.set_node_sizes)
+        self.vertexSizeCombo = OWGUI.comboBox(ib, self, "vertexSize", callback=self.set_node_sizes)
         self.vertexSizeCombo.addItem("(none)")
         
         ib = OWGUI.widgetBox(self.verticesTab, "Node labels | tooltips", orientation="vertical", addSpace = False)
-        OWGUI.spin(ib, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.setFontSize)
+        OWGUI.spin(ib, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.set_font_size)
         hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
         self.attListBox = OWGUI.listBox(hb, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
         self.tooltipListBox = OWGUI.listBox(hb, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
         ib = OWGUI.widgetBox(self.edgesTab, "General", orientation="vertical")
-        OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback=(lambda: self._set_canvas_attr('showWeights', self.showWeights)))
-        OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback=(lambda: self._set_canvas_attr('showEdgeLabels', self.showEdgeLabels)))
-        OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.setMaxLinkSize)
+        OWGUI.checkBox(ib, self, 'networkCanvas.show_weights', 'Show weights', callback=self.networkCanvas.set_edge_labels)
+        #OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback=(lambda: self._set_canvas_attr('showEdgeLabels', self.showEdgeLabels)))
+        OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.set_edge_sizes)
         self.showDistancesCheckBox = OWGUI.checkBox(ib, self, 'showDistances', 'Explore node distances', callback=(lambda: self._set_canvas_attr('showDistances', self.showDistances)), disabled=1)
         
         colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
-        self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.setEdgeColor)
+        self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.set_edge_colors)
         self.edgeColorCombo.addItem("(same color)")
         OWGUI.button(colorBox, self, "Set edge color palette", self.setEdgeColorPalette, tooltip = "Set edge color palette", debuggingEnabled = 0)
         
         self.edgeLabelBox = OWGUI.widgetBox(self.edgesTab, "Edge labels", addSpace = False)
         self.edgeLabelListBox = OWGUI.listBox(self.edgeLabelBox, self, "edgeLabelAttributes", "edgeAttributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedEdgeLabelListBox)
-        self.edgeLabelBox.setEnabled(False)
+        #self.edgeLabelBox.setEnabled(False)
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
-        OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_label_attributes)
+        OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_node_labels)
         OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback=(lambda: self.networkCanvas.set_labels_on_marked_only(self.labelsOnMarkedOnly)))
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
@@ -348,7 +348,7 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.discEdgePalette = dlg.getDiscretePalette("discPalette")
         
         self.graph_layout_method()
-        self.setFontSize()
+        self.set_font_size()
         self.set_graph(None)
         self.setMinimumWidth(900)
         
@@ -384,7 +384,7 @@ class OWNxExplorerQt(OWWidget):
             if not self.comboAttSelection.currentText() in vars:
                 return
             att = str(self.comboAttSelection.currentText())
-            vertices = self.networkCanvas.networkCurve.get_selected_vertices()
+            vertices = self.networkCanvas.selected_nodes()
             
             if len(vertices) != 1:
                 return
@@ -402,19 +402,18 @@ class OWNxExplorerQt(OWWidget):
         if not self.editCombo.currentText() in vars:
             return
         att = str(self.editCombo.currentText())
-        vertices = self.networkCanvas.networkCurve.get_selected_vertices()
+        vertices = self.networkCanvas.selected_nodes()
         
         if len(vertices) == 0:
             return
         
-        if self.graph_base.items().domain[att].var_type == Orange.data.Type.Continuous:
+        items = self.graph_base.items()
+        if items.domain[att].var_type == Orange.data.Type.Continuous:
             for v in vertices:
-                self.graph_base.items()[v][att] = float(self.editValue)
+                items[v][att] = float(self.editValue)
         else:
             for v in vertices:
-                self.graph_base.items()[v][att] = str(self.editValue)
-        
-        self.setItems(self.graph_base.items())
+                items[v][att] = str(self.editValue)
         
     def drawForce(self):
 #        if self.btnForce.isChecked() and self.graph is not None:
@@ -1247,9 +1246,10 @@ class OWNxExplorerQt(OWWidget):
 #            self.optMethod = 0
 #            self.graph_layout_method()
         
-        self.set_vertex_size()
-        self.setVertexColor()
-        self.setEdgeColor()
+        self.set_node_sizes()
+        self.set_node_colors()
+        self.set_edge_sizes()
+        self.set_edge_colors()
             
         self.networkCanvas.setEdgesSize()
         self.clickedAttLstBox()
@@ -1355,9 +1355,10 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.networkCanvas.showWeights = self.showWeights
             
-        self.set_vertex_size()
-        self.setVertexColor()
-        self.setEdgeColor()
+        self.set_node_sizes()
+        self.set_node_colors()
+        self.set_edge_sizes()
+        self.set_edge_colors()
             
         self.networkCanvas.setEdgesSize()
         self.clickedAttLstBox()
@@ -1393,7 +1394,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.graph_base.set_items(items)
         
-        self.set_vertex_size()
+        self.set_node_sizes()
         self.networkCanvas.items = items
         self.networkCanvas.showWeights = self.showWeights
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
@@ -1477,7 +1478,7 @@ class OWNxExplorerQt(OWWidget):
             self.networkCanvas.contPalette = dlg.getContinuousPalette("contPalette")
             self.networkCanvas.discPalette = dlg.getDiscretePalette("discPalette")
             
-            self.setVertexColor()
+            self.set_node_colors()
             
     def setEdgeColorPalette(self):
         dlg = self.createColorDialog(self.edgeColorSettings, self.selectedEdgeSchemaIndex)
@@ -1487,7 +1488,7 @@ class OWNxExplorerQt(OWWidget):
             self.networkCanvas.contEdgePalette = dlg.getContinuousPalette("contPalette")
             self.networkCanvas.discEdgePalette = dlg.getDiscretePalette("discPalette")
             
-            self.setEdgeColor()
+            self.set_edge_colors()
     
     def createColorDialog(self, colorSettings, selectedSchemaIndex):
         c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
@@ -1652,7 +1653,7 @@ class OWNxExplorerQt(OWWidget):
             return
         
         self.lastLabelColumns = [self.attributes[i][0] for i in self.markerAttributes]
-        self.networkCanvas.set_label_attributes(self.lastLabelColumns)
+        self.networkCanvas.set_node_labels(self.lastLabelColumns)
         self.networkCanvas.replot()
   
     def clickedTooltipLstBox(self):
@@ -1668,40 +1669,31 @@ class OWNxExplorerQt(OWWidget):
             return
         
         self.lastEdgeLabelAttributes = set([self.edgeAttributes[i][0] for i in self.edgeLabelAttributes])
-        self.networkCanvas.setEdgeLabelText(self.lastEdgeLabelAttributes)
-        #self.networkCanvas.updateData()
+        self.networkCanvas.set_edge_labels(self.lastEdgeLabelAttributes)
         self.networkCanvas.replot()
 
-    def setVertexColor(self):
+    def set_node_colors(self):
         if self.graph is None:
             return
         
         self.networkCanvas.set_node_colors(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
         
-    def setEdgeColor(self):
+    def set_edge_colors(self):
         if self.graph is None:
             return
         
-        self.networkCanvas.set_edge_color(self.edgeColorCombo.currentText())
+        self.networkCanvas.set_edge_colors(self.edgeColorCombo.currentText())
         self.lastEdgeColorColumn = self.edgeColorCombo.currentText()
                   
-    def setGraphGrid(self):
-        self.networkCanvas.enableGridY(self.networkCanvasShowGrid)
-        self.networkCanvas.enableGridX(self.networkCanvasShowGrid)
-    
-    def selectAllConnectedNodes(self):
-        self.networkCanvas.selectConnectedNodes(1000000)
-                
-    def setMaxLinkSize(self):
+    def set_edge_sizes(self):
         if self.graph is None:
             return
         
-        self.networkCanvas.maxEdgeSize = self.maxLinkSize
-        self.networkCanvas.setEdgesSize()
+        self.networkCanvas.networkCurve.set_edge_sizes(self.maxLinkSize)
         self.networkCanvas.replot()
     
-    def set_vertex_size(self):
+    def set_node_sizes(self):
         if self.graph is None or self.networkCanvas is None:
             return
         
@@ -1736,7 +1728,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.replot()
         
-    def setFontSize(self):
+    def set_font_size(self):
         if self.networkCanvas is None:
             return
         

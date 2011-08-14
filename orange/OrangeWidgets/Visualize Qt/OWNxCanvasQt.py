@@ -84,7 +84,7 @@ class OWNxCanvas(OWPlot):
         self.labelsOnMarkedOnly = 0
 
         self.show_indices = False
-        self.showWeights = 0
+        self.show_weights = False
         
         self.showComponentAttribute = None
         self.forceVectors = None
@@ -102,6 +102,7 @@ class OWNxCanvas(OWPlot):
         self.links = None
         
         self.node_label_attributes = []
+        self.edge_label_attributes = []
         
         self.axis_margin = 0
         self.title_margin = 0
@@ -128,26 +129,16 @@ class OWNxCanvas(OWPlot):
       self.networkCurve.show_all_vertices()
       self.drawPlotItems()
     
-    def selectNeighbours(self, sel, nodes, depth, maxdepth):
-        #print "list: " + str(sel)
-        #print "nodes: " + str(nodes)
-        sel.update(nodes)
-        if depth < maxdepth:
-            for i in nodes:
-                neighbours = set(self.graph.neighbors(i))
-                #print "neighbours: " + str(neighbours)
-                self.selectNeighbours(sel, neighbours - sel, depth + 1, maxdepth)
-        
     def selected_nodes(self):
-        #return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_selected()]
-        return [p.index() for p in self.selected_points()]
+        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_selected()]
+        #return [p.index() for p in self.selected_points()]
         
     def not_selected_nodes(self):
         return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if not vertex.is_selected()]
         
     def marked_nodes(self):
-        #return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_marked()]
-        return [p.index() for p in self.marked_points()]
+        return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if vertex.is_marked()]
+        #return [p.index() for p in self.marked_points()]
         
     def not_marked_nodes(self):
         return [vertex.index() for vertex in self.networkCurve.nodes().itervalues() if not vertex.is_marked()]    
@@ -170,32 +161,6 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.clear_node_marks()
         self.networkCurve.set_node_marks(dict((i, True) for i in toMark))
         
-#    def updateData(self):
-#        if self.graph is None:
-#            return
-#        
-#        self.clear()
-#        self.tooltipData = []
-#        
-#        if self.forceVectors != None:
-#            for v in self.forceVectors:
-#                self.addCurve("force", Qt.white, Qt.green, 1, style=QwtPlotCurve.Lines, xData=v[0], yData=v[1], showFilledSymbols=False)
-#        
-#        for r in self.circles:
-#            step = 2 * pi / 64;
-#            fi = 0
-#            x = []
-#            y = []
-#            for i in range(65):
-#                x.append(r * cos(fi) + 5000)
-#                y.append(r * sin(fi) + 5000)
-#                fi += step
-#                
-#            self.addCurve("radius", Qt.white, Qt.green, 1, style=NetworkCurve.Lines, xData=x, yData=y, showFilledSymbols=False)
-#      
-#        #self.networkCurve.showEdgeLabels = self.showEdgeLabels
-#        self.networkCurve.attach(self)
-            
     def drawComponentKeywords(self):
         if self.showComponentAttribute == None:
             return
@@ -259,42 +224,6 @@ class OWNxCanvas(OWPlot):
             
         return colorIndices, colorIndex, minValue, maxValue
     
-    def set_edge_color(self, attribute):
-        if self.graph is None:
-            return
-        
-        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
-        colors = []
-        
-        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
-            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
-        
-        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
-            #colors.update((v, self.contPalette[(float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)]) 
-            #              if str(self.items[v][colorIndex].value) != '?' else 
-            #              (v, self.discPalette[0]) for v in nodes)
-            print "TODO set continuous color"
-        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
-            #colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
-            print "TODO set discrete color"
-        else:
-            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
-            
-        self.networkCurve.set_edge_color(colors)
-        self.replot()
-        
-#                 if self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
-#                    newColor = self.discEdgePalette[0]
-#                        else:
-#                            value = (float(self.links[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
-#                            newColor = self.contEdgePalette[value]
-#                elif self.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
-#                    newColor = self.discEdgePalette[colorIndices[self.links[links_index][colorIndex].value]]
-#                    if self.links[links_index][colorIndex].value == "0":
-#                      self.networkCurve.set_edge_color(index, newColor, nocolor=1)
-#                    else:
-#                      self.networkCurve.set_edge_color(index, newColor)
-    
     def set_node_colors(self, attribute, nodes=None):
         if self.graph is None:
             return
@@ -322,7 +251,7 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_node_colors(colors)
         self.replot()
         
-    def set_label_attributes(self, attributes=None):
+    def set_node_labels(self, attributes=None):
         if self.graph is None:
             return 
         
@@ -346,6 +275,67 @@ class OWNxCanvas(OWPlot):
         
         self.replot()
         
+    
+    def set_edge_colors(self, attribute):
+        if self.graph is None:
+            return
+        
+        colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.items, attribute, self.discPalette)
+        colors = []
+        
+        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
+            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
+        
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+            #colors.update((v, self.contPalette[(float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)]) 
+            #              if str(self.items[v][colorIndex].value) != '?' else 
+            #              (v, self.discPalette[0]) for v in nodes)
+            print "TODO set continuous color"
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+            #colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
+            print "TODO set discrete color"
+        else:
+            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
+            
+        self.networkCurve.set_edge_colors(colors)
+        self.replot()
+        
+#                 if self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
+#                    newColor = self.discEdgePalette[0]
+#                        else:
+#                            value = (float(self.links[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
+#                            newColor = self.contEdgePalette[value]
+#                elif self.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
+#                    newColor = self.discEdgePalette[colorIndices[self.links[links_index][colorIndex].value]]
+#                    if self.links[links_index][colorIndex].value == "0":
+#                      self.networkCurve.set_edge_color(index, newColor, nocolor=1)
+#                    else:
+#                      self.networkCurve.set_edge_color(index, newColor)
+        
+    def set_edge_labels(self, attributes=None):
+        if self.graph is None:
+            return 
+        
+        edges = self.networkCurve.edge_indices()
+        
+        if attributes is not None:
+            self.edge_label_attributes = attributes
+        
+        label_attributes = []
+        if self.links is not None and isinstance(self.links, orange.ExampleTable):
+            label_attributes = [self.links.domain[att] for att in \
+                self.edge_label_attributes if att in self.links.domain]
+            
+        weights = [[] for ex in edges]
+        if self.show_weights:
+            weights = [[str(self.graph[u][v])] for u,v in edges]
+            
+        self.networkCurve.set_edge_labels([', '.join(weights[i] + \
+                           [str(self.links[i][att]) for att in \
+                           label_attributes]) for i,edge in enumerate(edges)])
+        
+        self.replot()
+        
     def set_tooltip_attributes(self, attributes):
         if self.graph is None or self.items is None or \
            not isinstance(self.items, orange.ExampleTable):
@@ -356,11 +346,6 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_node_tooltips(dict((node, ', '.join(str( \
                    self.items[node][att]) for att in tooltip_attributes)) \
                                                         for node in self.graph))
-                        
-    def setEdgeLabelText(self, attributes):
-        self.edgeLabelText = []
-        if self.graph is None or self.items is None:
-            return
         
     def change_graph(self, newgraph):
         old_nodes = set(self.graph.nodes_iter())
@@ -494,31 +479,7 @@ class OWNxCanvas(OWPlot):
             
         self.networkCurve.set_edges(edges)
         self.networkCurve.update_properties()
-        self.replot()
-        
-    def setEdgesSize(self):
-#        if self.maxEdgeWeight > self.minEdgeWeight:
-#            #print 'maxEdgeSize',self.maxEdgeSize
-#            #print 'maxEdgeWeight',self.maxEdgeWeight
-#            #print 'minEdgeWeight',self.minEdgeWeight
-#            k = (self.maxEdgeSize - 1) / (self.maxEdgeWeight - self.minEdgeWeight)
-#            for edge in self.networkCurve.edges:
-#                if edge.weight == None:
-#                    size = 1
-#                    edge.pen = QPen(edge.pen.color(), size)
-#                    edge.pen.setCapStyle(Qt.RoundCap)
-#                else:
-#                    if self.invertEdgeSize:
-#                        size = (self.maxEdgeWeight - edge.weight - self.minEdgeWeight) * k + 1
-#                    else:
-#                        size = (edge.weight - self.minEdgeWeight) * k + 1
-#                    edge.pen = QPen(edge.pen.color(), size)
-#                    edge.pen.setCapStyle(Qt.RoundCap)
-#        else:
-#            for edge in self.networkCurve.edges:
-#                edge.pen = QPen(edge.pen.color(), 1)
-#                edge.pen.setCapStyle(Qt.RoundCap)
-        pass    
+        self.replot()  
     
     def update_animations(self, use_animations=None):
         OWPlot.update_animations(self, use_animations)
