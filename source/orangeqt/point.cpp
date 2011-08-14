@@ -55,7 +55,7 @@ bool operator==(const DataPoint& one, const DataPoint& other)
     return one.x == other.x && one.y == other.y;
 }
 
-DataPoint::operator QPointF()
+DataPoint::operator QPointF() const
 {
     return QPointF(x, y);
 }

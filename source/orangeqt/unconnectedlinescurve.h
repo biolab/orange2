@@ -23,15 +23,20 @@
 
 class UnconnectedLinesCurve : public Curve
 {
-
+    Q_OBJECT
+    
 public:
-    UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent = 0);
+    UnconnectedLinesCurve(QGraphicsItem* parent = 0);
     virtual ~UnconnectedLinesCurve();
     
-    virtual void update_properties();
+    virtual void update_properties();    
     
-private:
-     QGraphicsPathItem* m_path_item;
+private:    
+    QGraphicsPathItem* m_path_item;
+    QFutureWatcher< QPainterPath >* m_path_watcher;
+    
+public slots:
+    void path_calculated();
 };
 
 #endif // UNCONNECTEDLINESCURVE_H

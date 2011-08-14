@@ -28,6 +28,9 @@ const int yLeft = 0;
 PlotItem::PlotItem(QGraphicsItem* parent): QGraphicsObject(parent), 
     m_plot(0)
 {
+    // Most items have no paint() method, the drawing is done by their children
+    setFlag(ItemHasNoContents, true);
+    
     set_axes(xBottom, yLeft);
     set_auto_scale(true);
     set_in_background(false);
@@ -132,10 +135,7 @@ QRectF PlotItem::rect_from_data(const QList< double >& x_data, const QList< doub
 
 void PlotItem::move_item(QGraphicsObject* item, const QPointF& pos, bool animate, int duration)
 {
-    QPropertyAnimation* a = new QPropertyAnimation();
-    a->setTargetObject(item);
-    a->setPropertyName("pos");
-    a->setStartValue(item->pos());
+    QPropertyAnimation* a = new QPropertyAnimation(item, "pos", item);
     a->setEndValue(pos);
     a->setDuration(duration);
     a->start(QAbstractAnimation::DeleteWhenStopped);

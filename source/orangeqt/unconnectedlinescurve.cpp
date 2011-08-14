@@ -20,10 +20,44 @@
 #include <QtGui/QPen>
 #include <QtCore/QDebug>
 
-UnconnectedLinesCurve::UnconnectedLinesCurve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent): Curve(parent)
+struct PointMapper
+{
+    typedef QPointF result_type;
+    PointMapper(const QTransform& t) : t(t) {}
+    
+    QPointF operator()(const DataPoint& p)
+    {
+        return t.map(p);
+    }
+    
+    QTransform t;
+};
+
+struct PathReducer
+{
+    PathReducer() : closed(true) {}
+    void operator()(QPainterPath& path, const QPointF point)
+    {
+        if (closed)
+        {
+            path.moveTo(point);
+        }
+        else
+        {
+            path.lineTo(point);
+        }
+        closed = !closed;
+    }
+    
+    bool closed;
+};
+
+UnconnectedLinesCurve::UnconnectedLinesCurve(QGraphicsItem* parent): Curve(parent)
 {
     m_path_item = new QGraphicsPathItem(this);
-    set_data(x_data, y_data);
+    m_path_watcher = new QFutureWatcher<QPainterPath>(this);
+    connect(m_path_watcher, SIGNAL(finished()), SLOT(path_calculated()));
+    setFlag(ItemHasNoContents);
 }
 
 UnconnectedLinesCurve::~UnconnectedLinesCurve()
@@ -36,16 +70,7 @@ void UnconnectedLinesCurve::update_properties()
     cancelAllUpdates();
     if (needs_update() & UpdatePosition)
     {
-        const Data d = data();
-        const int n = d.size();
-        QPainterPath path;
-        for (int i = 0; i < n; ++i)
-        {
-            path.moveTo(d[i].x, d[i].y);
-            ++i;
-            path.lineTo(d[i].x, d[i].y);
-        }
-        m_path_item->setPath(graph_transform().map(path));
+        m_path_watcher->setFuture(QtConcurrent::mappedReduced<QPainterPath>(data(), PointMapper(graph_transform()), PathReducer(), QtConcurrent::OrderedReduce | QtConcurrent::SequentialReduce));
     }
     if (needs_update() & UpdatePen)
     {   
@@ -55,3 +80,10 @@ void UnconnectedLinesCurve::update_properties()
     }
     set_updated(Curve::UpdateAll);
 }
+
+void UnconnectedLinesCurve::path_calculated()
+{
+    m_path_item->setPath(m_path_watcher->result());
+}
+
+#include "unconnectedlinescurve.moc"

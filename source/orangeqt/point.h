@@ -28,7 +28,7 @@ struct DataPoint
   double x;
   double y;
   
-  operator QPointF();
+  operator QPointF() const;
 };
 
 Q_DECLARE_METATYPE(DataPoint)

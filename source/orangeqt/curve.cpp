@@ -73,50 +73,13 @@ void Curve::updateNumberOfItems()
     m_needsUpdate &= ~UpdateNumberOfItems;
     return;
   }
-  int n = m_data.size();
-  int m = m_pointItems.size();
-  if (m > n)
-  {
-      qDebug() << "Deleting" << (m-n) << "points";
-    qDeleteAll(m_pointItems.constBegin() + n, m_pointItems.constEnd());
-    m_pointItems.erase(m_pointItems.begin() + n, m_pointItems.end());
-  }
-  else if (m < n)
-  {  
-    qDebug() << "Creating" << (n-m) << "points";
-    m_pointItems.reserve(n);
-    Plot* p = plot();
-    int delta = n - m;
-    if (p && delta > 500)
-    {
-        int update_every = qMax(5, delta / 100);
-        p->start_progress();
-        for (int i = 0; i < delta; ++i)
-        {
-            m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
-        
-            if (i % update_every == 0)
-            {
-                qApp->processEvents();
-                p->set_progress(i, delta);
-            }
-        }
-        p->end_progress();
-        qApp->processEvents();
-    }
-    else
-    {
-      for (int i = 0; i < delta; ++i)
-      {
-        m_pointItems << new Point(m_symbol, m_color, m_pointSize, this);
-      }
-    }
-  }
+  resize_item_list<Point>(m_pointItems, m_data.size());
   Q_ASSERT(m_pointItems.size() == m_data.size());
 }
 
 void Curve::update_properties()
 {
+  cancelAllUpdates();
   set_continuous(m_style != Curve::NoCurve);
   
   if (m_needsUpdate & UpdateContinuous)
@@ -157,7 +120,6 @@ void Curve::update_properties()
   // Move, resize, reshape and/or recolor the items
   if (m_needsUpdate & UpdatePosition)
   {
-    cancelAllUpdates();
     update_point_coordinates();
   } 
   
@@ -481,11 +443,11 @@ void Curve::pointMapFinished()
         // The calculation that just finished is already out of date, ignore it
         return;
     }
-    QParallelAnimationGroup* group = new QParallelAnimationGroup;
+    QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
     int n = m_pointItems.size();
     for (int i = 0; i < n; ++i)
     {
-        QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos");
+        QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos", m_pointItems[i]);
         a->setEndValue(m_pos_watcher.resultAt(i));
         group->addAnimation(a);
     }
@@ -496,6 +458,7 @@ bool Curve::use_animations()
 {
     return plot() && plot()->animate_points;
 }
+
 void Curve::update_point_properties_same(const QByteArray& property, const QVariant& value) {
     int n = m_pointItems.size();
 

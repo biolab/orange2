@@ -204,6 +204,9 @@ public:
   void update_point_properties_threaded(const QByteArray& property, const QList<T>& values);
   
   void update_point_properties_same(const QByteArray& property, const QVariant& value);
+  
+  template <class T>
+  void resize_item_list(QList< T* >& list, int size);
 
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
@@ -314,6 +317,26 @@ void Curve::update_point_properties_threaded(const QByteArray& property, const Q
         m_pointItems[i]->setProperty(property, QVariant::fromValue<T>(values[i]));
     }
 }
+
+template <class T>
+void Curve::resize_item_list(QList< T* >& list, int size)
+{
+    int n = list.size();  
+    if (n > size)
+  {
+    qDeleteAll(list.constBegin() + size, list.constEnd());
+    list.erase(list.begin() + size, list.end());
+  }
+  else if (n < size)
+  {  
+    list.reserve(size);
+    for (int i = 0; i < (size-n); ++i)
+    {
+      list << new T(this);
+    }
+  }
+}
+
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Curve::UpdateFlags)
 
