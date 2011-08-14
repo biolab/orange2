@@ -722,6 +722,8 @@ class OWPlot(orangeqt.Plot):
                 shape_data = numpy.compress(valid_data, shape_data)
             if len(label_data) > 1:
                 label_data = numpy.compress(valid_data, label_data)
+            if len(marked_data) > 1:
+                marked_data = numpy.compress(valid_data, marked_data).tolist()
         
         c = self.main_curve
         c.set_data(x_data, y_data)
@@ -730,7 +732,7 @@ class OWPlot(orangeqt.Plot):
         c.set_point_labels(label_data)
         c.set_point_sizes(size_data)
         c.set_point_symbols(shape_data)
-        if marked_data:
+        if len(marked_data):
             c.set_points_marked(marked_data)
             self.marked_points_changed.emit()
         c.name = 'Main Curve'
@@ -1211,10 +1213,19 @@ class OWPlot(orangeqt.Plot):
         
     def get_selected_points(self, xData, yData, validData):
         if self.main_curve:
-            selected = [point.is_selected() for point in self.main_curve.points()]
+            selected = []
+            points = self.main_curve.points()
+            i = 0
+            for d in validData:
+                if d:
+                    selected.append(points[i].is_selected())
+                    i += 1
+                else:
+                    selected.append(False)
         else:
             selected = self.selected_points(xData, yData)
         unselected = [not i for i in selected]
+        qDebug('%d out of %d points selected' % (selected.count(True), len(selected)))
         return selected, unselected
         
     def add_selection(self, reg):

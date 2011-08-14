@@ -54,6 +54,8 @@ class Point : public QGraphicsObject
     Q_PROPERTY(int size READ size WRITE set_size)
     Q_PROPERTY(QString label READ label WRITE set_label)
     Q_PROPERTY(DataPoint coordinates READ coordinates WRITE set_coordinates)
+    Q_PROPERTY(bool marked READ is_marked WRITE set_marked STORED false)
+    Q_PROPERTY(bool selected READ is_selected WRITE set_selected STORED false)
     
 public:
     enum DisplayMode

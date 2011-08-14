@@ -459,10 +459,10 @@ bool Curve::use_animations()
     return plot() && plot()->animate_points;
 }
 
-void Curve::update_point_properties_same(const QByteArray& property, const QVariant& value) {
+void Curve::update_point_properties_same(const QByteArray& property, const QVariant& value, bool animate) {
     int n = m_pointItems.size();
 
-    if (use_animations())
+    if (animate && use_animations())
     {
         QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
         for (int i = 0; i < n; ++i)

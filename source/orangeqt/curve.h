@@ -203,7 +203,7 @@ public:
   template <class T>
   void update_point_properties_threaded(const QByteArray& property, const QList<T>& values);
   
-  void update_point_properties_same(const QByteArray& property, const QVariant& value);
+  void update_point_properties_same(const QByteArray& property, const QVariant& value, bool animate);
   
   template <class T>
   void resize_item_list(QList< T* >& list, int size);
@@ -275,17 +275,17 @@ void Curve::update_point_properties(const QByteArray& property, const QList< T >
         m_property_updates[property].cancel();
         m_property_updates[property].waitForFinished();
     }
-
+    
     int n = m_pointItems.size();
     if (n != values.size())
     {
         if (values.isEmpty())
         {
-            update_point_properties_same(property, T());
+            update_point_properties_same(property, T(), animate);
         }
         else
         {
-            update_point_properties_same(property, values.first());
+            update_point_properties_same(property, values.first(), animate);
         }
         
         return;
