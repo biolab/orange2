@@ -93,37 +93,47 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     {
         if (m_display_mode == DisplayPath)
         {
-        	QColor brush_color = m_color;
-
+            QBrush brush(m_color);
             QPixmap pixmap(ps, ps);
             pixmap.fill(Qt::transparent);
             QPainter p;
+            
+            QPen pen(m_color);
+            pen.setWidth(qMin(2, m_size/8));
+            
             p.begin(&pixmap);
-            p.setRenderHints(painter->renderHints());
-            p.setRenderHint(QPainter::Antialiasing, true);
+            p.setRenderHints(painter->renderHints() | QPainter::Antialiasing);
             if (m_state & Selected)
             {
-                p.setPen(Qt::yellow);
+                brush.setColor(m_color);
+                pen.setStyle(Qt::NoPen);
             }
             else if (m_state & Marked)
             {
-                //p.setBrush(m_color);
+                QRadialGradient g(0.5*ps, 0.5*ps, 0.5*m_size);
+                g.setColorAt(0, m_color);
+                g.setColorAt(0.5, Qt::transparent);
+                g.setColorAt(1, m_color);
+                brush = QBrush(g);
+                pen.setStyle(Qt::NoPen);
             }
             else
             {
-                brush_color.setAlpha(m_color.alpha()/8);
-                p.setPen(m_color);
+                QColor c = brush.color();
+                c.setAlpha(m_color.alpha()/8);
+                brush.setColor(c);
             }
-            const QPainterPath path = path_for_symbol(m_symbol, m_size);
+            const QPainterPath path = path_for_symbol(m_symbol, m_size).translated(0.5*ps, 0.5*ps);
 
             if (!m_transparent)
             {
             	p.setBrush(Qt::white);
-            	p.drawPath(path.translated(0.5*ps, 0.5*ps));
+            	p.drawPath(path);
             }
 
-            p.setBrush(brush_color);
-            p.drawPath(path.translated(0.5*ps, 0.5*ps));
+            p.setBrush(brush);
+            p.setPen(pen);
+            p.drawPath(path);
             pixmap_cache.insert(key, pixmap);
         } 
         else if (m_display_mode == DisplayPixmap)
