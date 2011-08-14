@@ -132,7 +132,7 @@ private:
     QTransform m_graph_transform;
 };
 
-class EdgeItem : public QGraphicsLineItem
+class EdgeItem : public QAbstractGraphicsShapeItem
 {
 public:
     enum Arrow
@@ -146,6 +146,8 @@ public:
     virtual ~EdgeItem();
 
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    virtual QRectF boundingRect() const;
+    virtual QPainterPath shape() const;
 
     void set_u(NodeItem* item);
     NodeItem* u();
@@ -173,24 +175,6 @@ private:
     int m_links_index;
     double m_weight;
     QString m_label;
-};
-
-class EdgeUpdater
-{
-public:
-    EdgeUpdater(const QTransform& t) : m_t(t) {}
-    void operator()(EdgeItem* item)
-    {
-    	NodeItem *u = item->u();
-    	NodeItem *v = item->v();
-
-        if (u && v)
-        {
-            item->setLine(QLineF(u->x(), u->y(), v->x(), v->y()) * m_t);
-        }
-    }
-private:
-    QTransform m_t;
 };
 
 class NetworkCurve : public Curve

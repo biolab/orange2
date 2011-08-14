@@ -176,7 +176,7 @@ QList<NodeItem*> NodeItem::neighbors()
 /* EdgeItem */
 /************/
 
-EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsScene* scene): QGraphicsLineItem(parent, scene),
+EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsScene* scene): QAbstractGraphicsShapeItem(parent, scene),
 m_u(0), m_v(0)
 {
     set_u(u);
@@ -204,8 +204,14 @@ EdgeItem::~EdgeItem()
 void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	painter->setRenderHint(QPainter::Antialiasing, false);
-	QGraphicsLineItem::paint(painter, option, widget);
-
+        painter->setPen(pen());
+        QLineF _line;
+        if (m_u && m_v)
+        {
+            _line.setPoints(m_u->pos(), m_v->pos());
+            painter->drawLine(_line);
+        }
+        
 	if (!m_label.isEmpty())
 	{
 		NetworkCurve *curve = (NetworkCurve*)parentItem();
@@ -214,7 +220,6 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 
 		if(!on_marked_only || (on_marked_only && is_marked))
 		{
-			QLineF _line = line();
 			double x = (_line.x1() + _line.x2()) / 2;
 			double y = (_line.y1() + _line.y2()) / 2;
 			QFontMetrics metrics = option->fontMetrics;
@@ -230,6 +235,18 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 	}
 }
 
+QRectF EdgeItem::boundingRect() const
+{
+    return QRectF(m_u->pos(), m_v->pos());
+}
+
+QPainterPath EdgeItem::shape() const
+{
+    QPainterPath path;
+    path.moveTo(m_u->pos());
+    path.lineTo(m_v->pos());
+    return path;
+}
 
 void EdgeItem::set_u(NodeItem* item)
 {
@@ -348,7 +365,6 @@ void NetworkCurve::update_properties()
 {
     const QTransform t = graph_transform();
     update_point_positions();
-    update_items(m_edges, EdgeUpdater(t), UpdatePen);
 }
 
 QRectF NetworkCurve::data_rect() const

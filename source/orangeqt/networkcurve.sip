@@ -33,7 +33,7 @@ public:
     void remove_connected_edge(EdgeItem* edge);
 };
 
-class EdgeItem : QGraphicsLineItem
+class EdgeItem : QAbstractGraphicsShapeItem
 {
 public:
     enum Arrow
@@ -47,6 +47,8 @@ public:
     virtual ~EdgeItem();
     
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    virtual QRectF boundingRect() const;
+    virtual QPainterPath shape() const;
     
     void set_u(NodeItem* item);
     NodeItem* u();
