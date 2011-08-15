@@ -27,7 +27,7 @@ from owtools import *
 SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap)
 SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
-from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
+from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion, QPalette
 from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty
 
 from OWDlgs import OWChooseImageSizeDlg
@@ -283,6 +283,7 @@ class OWPlot(orangeqt.Plot):
         self.parent_name = name
         self.show_legend = show_legend
         self.title_item = None
+        self._palette = QPalette()
         
         self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
         
@@ -312,8 +313,7 @@ class OWPlot(orangeqt.Plot):
         self.alpha_value = 255
         self.show_grid = False
         
-        self.palette = shared_palette()
-        self.curveSymbols = self.palette.curve_symbols
+        self.curveSymbols = range(13)
         self.tips = TooltipManager(self)
         self.setMouseTracking(True)
         
@@ -551,7 +551,9 @@ class OWPlot(orangeqt.Plot):
         self.replot()
 
     def setCanvasColor(self, c):
-        self.scene().setBackgroundBrush(c)
+        p = self.palette()
+        p.setColor(QPalette.Base, c)
+        p.set_palette(p)
         
     def setData(self, data):
         self.clear()
@@ -652,7 +654,7 @@ class OWPlot(orangeqt.Plot):
             curve.update_properties()
         return curve
         
-    def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
+    def add_curve(self, name, brushColor = None, penColor = None, size = 5, style = Qt.NoPen, 
                  symbol = OWPoint.Ellipse, enableLegend = False, xData = [], yData = [], showFilledSymbols = None,
                  lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255, 
                  x_axis_key = xBottom, y_axis_key = yLeft):
@@ -664,6 +666,11 @@ class OWPlot(orangeqt.Plot):
         c.set_zoom_transform(self._zoom_transform)
         c.name = name
         c.set_style(style)
+        
+        if not brushColor:
+            brushColor = self.color(QPalette.Text)
+        if not penColor:
+            penColor = self.color(QPalette.Text)
         
         c.set_color(penColor)
         
@@ -980,6 +987,7 @@ class OWPlot(orangeqt.Plot):
             
             This functions redraws everything on the graph, so it can be very slow
         '''
+        self.setBackgroundBrush(self.color(QPalette.Base))
         self._bounds_cache = {}
         self._transform_cache = {}
         self.set_clean()
@@ -1631,3 +1639,21 @@ class OWPlot(orangeqt.Plot):
             line = None
         return line
         
+    def palette(self):
+        """
+            Returns the palette used for this plot. 
+            
+            If it hasn't been modified yet, it will use the QApplication's palette. 
+            This way, Orange plots match the appearance of other applications. 
+        """
+        return self._palette
+        
+    def color(self, role, group = None):
+        if group:
+            return self.palette().color(group, role)
+        else:
+            return self.palette().color(role)
+            
+    def set_palette(self, p):
+        self._palette = p
+        self.replot()

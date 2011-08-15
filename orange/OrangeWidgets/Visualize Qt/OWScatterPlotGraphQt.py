@@ -162,23 +162,27 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         """
             Create a single curve with different points
         """
+        
+        def_color = self.color(QPalette.Text)
+        def_size = self.point_width
+        def_shape = self.curveSymbols[0]
 
         if colorIndex != -1:
             if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
                 colorData = [QColor(*self.contPalette.getRGB(i)) for i in self.noJitteringScaledData[colorIndex]]
             else:
                 colorData = [QColor(*self.discPalette.getRGB(i)) for i in self.originalData[colorIndex]]
-        else: colorData = [Qt.black]
+        else: colorData = [def_color]
 
         if sizeIndex != -1:
             sizeData = [MIN_SHAPE_SIZE + round(i * self.pointWidth) for i in self.noJitteringScaledData[sizeIndex]]
         else:
-            sizeData = [self.pointWidth]
+            sizeData = [def_size]
             
         if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete:
             shapeData = [self.curveSymbols[int(i)] for i in self.originalData[shapeIndex]]
         else:
-            shapeData = [self.curveSymbols[0]]
+            shapeData = [def_shape]
             
         if labelAttr and labelAttr in [self.rawData.domain.getmeta(mykey).name for mykey in self.rawData.domain.getmetas().keys()] + [var.name for var in self.rawData.domain]:
             if self.rawData[0][labelAttr].varType == orange.VarTypes.Continuous:
@@ -208,19 +212,19 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
             num = len(self.dataDomain[discColorIndex].values)
             varValues = getVariableValuesSorted(self.dataDomain[discColorIndex])
             for ind in range(num):
-                self.legend().add_item(self.dataDomain[discColorIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, self.discPalette[ind], self.pointWidth))
+                self.legend().add_item(self.dataDomain[discColorIndex].name, varValues[ind], OWPoint(def_shape, self.discPalette[ind], def_size))
 
         if discShapeIndex != -1:
             num = len(self.dataDomain[discShapeIndex].values)
             varValues = getVariableValuesSorted(self.dataDomain[discShapeIndex])
             for ind in range(num):
-                self.legend().add_item(self.dataDomain[discShapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], Qt.black, self.pointWidth))
+                self.legend().add_item(self.dataDomain[discShapeIndex].name, varValues[ind], OWPoint(self.curveSymbols[ind], def_color, def_size))
 
         if discSizeIndex != -1:
             num = len(self.dataDomain[discSizeIndex].values)
             varValues = getVariableValuesSorted(self.dataDomain[discSizeIndex])
             for ind in range(num):
-                self.legend().add_item(self.dataDomain[discSizeIndex].name, varValues[ind], OWPoint(OWPoint.Ellipse, Qt.black, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
+                self.legend().add_item(self.dataDomain[discSizeIndex].name, varValues[ind], OWPoint(def_shape, def_color, MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues))))
 
         # ##############################################################
         # draw color scale for continuous coloring attribute

@@ -448,6 +448,7 @@ class PlotGrid(orangeqt.PlotItem):
         self.set_in_background(True)
         if plot:
             self.attach(plot)
+            self._path_item.setPen(plot.color(QPalette.AlternateBase))
             
     def set_x_enabled(self, b):
         """

@@ -198,7 +198,10 @@ class OWLinProjQt(OWVisWidget):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
-        self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+        
+        p = self.graph.palette()
+        p.setColor(QPalette.Base, dlg.getColor("Canvas"))
+        self.graph.set_palette(p)
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
@@ -347,7 +350,7 @@ class OWLinProjQt(OWVisWidget):
         c.createDiscretePalette("discPalette", "Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous Palette")
         box = c.createBox("otherColors", "Other Colors")
-        c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
+        c.createColorButton(box, "Canvas", "Canvas color", self.graph.color(QPalette.Base))
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
