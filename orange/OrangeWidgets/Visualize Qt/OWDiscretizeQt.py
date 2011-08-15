@@ -9,6 +9,7 @@ import orange
 from OWWidget import *
 from plot.owplot import *
 from plot.owcurve import *
+from plot.owtools import UnconnectedLinesCurve
 import OWGUI
 import math
 
@@ -154,19 +155,14 @@ class DiscGraph(OWPlot):
 
             freqfac = maxf > 1e-6 and .1 / maxf or 1
             
-            self.block_update = True
+            xData = sum(([val, val] for val, freq in freqhigh), []) + sum(([val, val] for val, freq in freqlow), [])
+            yData = sum(([1.0, 1.0 - max(0.02, freqfac * freq)] for val, freq in freqhigh), []) + sum(([0.04, 0.04 + max(.02, freqfac * freq)] for val, freq in freqlow), [])
             
-            for val, freq in freqhigh:
-                c = self.addCurve("", Qt.gray, Qt.gray, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = [val, val], yData = [1.0, 1.0 - max(.02, freqfac * freq)], autoScale = 1)
-                c.setYAxis(yRight)
-                self.rugKeys.append(c)
-
-            for val, freq in freqlow:
-                c = self.addCurve("", Qt.gray, Qt.gray, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = [val, val], yData = [0.04, 0.04 + max(.02, freqfac * freq)], autoScale = 1)
-                c.setYAxis(yRight)
-                self.rugKeys.append(c)
-                
-            self.block_update = False
+            c = UnconnectedLinesCurve('rug', xData = xData, yData = yData)
+            c.set_auto_scale(True)
+            c.set_y_axis(yRight)
+            self.add_custom_curve(c)
+            self.rugKeys.append(c)
 
         if not noUpdate:
             self.replot()
@@ -181,8 +177,7 @@ class DiscGraph(OWPlot):
             if not self.baseCurveX:
                 self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
             
-            self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2, autoScale = 1)
-            self.baseCurveKey.setYAxis(yLeft)
+            self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2, autoScale = 1, y_axis_key = yLeft)
 
         if not noUpdate:
             self.replot()
@@ -194,9 +189,7 @@ class DiscGraph(OWPlot):
             self.lookaheadCurveKey = None
 
         if self.lookaheadCurveX and self.master.showLookaheadLine:
-            self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1, autoScale = 1)
-            self.lookaheadCurveKey.setYAxis(yLeft)
-            #self.lookaheadCurveKey.setVisible(1)
+            self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1, autoScale = 1, x_axis_key=yLeft)
 
         if not noUpdate:
             self.replot()
@@ -209,8 +202,7 @@ class DiscGraph(OWPlot):
 
         if self.contingency and self.condProb and self.master.showTargetClassProb:
             xData = self.contingency.keys()[1:-1]
-            self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2, autoScale = 1)
-            self.probCurveKey.setYAxis(yRight)
+            self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2, autoScale = 1, y_axis_key = yRight)
 
         if not noUpdate:
             self.replot()
@@ -225,8 +217,7 @@ class DiscGraph(OWPlot):
         self.clear_markers()
 
         for cut in self.curCutPoints:
-            c = self.addCurve("", Qt.blue, Qt.blue, 1, style = Qt.DashLine, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [.9, 0.1], autoScale = 1)
-            c.setYAxis(yRight)
+            c = self.addCurve("", Qt.blue, Qt.blue, 1, style = Qt.DashLine, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [.9, 0.1], autoScale = 1, y_axis_key = yRight)
             self.cutLineKeys.append(c)
 
             m = self.addMarker(str(attr(cut)), cut, .9, Qt.AlignCenter | Qt.AlignTop, bold=1, y_axis_key=yRight)
@@ -255,8 +246,7 @@ class DiscGraph(OWPlot):
 
     def addCutPoint(self, cut):
         self.curCutPoints.append(cut)
-        c = self.addCurve("", Qt.blue, Qt.blue, 1, style = Qt.DashLine, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [1.0, 0.015], autoScale = 1)
-        c.setYAxis(yRight)
+        c = self.addCurve("", Qt.blue, Qt.blue, 1, style = Qt.DashLine, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [1.0, 0.015], autoScale = 1, y_axis_key = yRight)
         self.cutLineKeys.append(c)
         c.curveInd = len(self.cutLineKeys) - 1
         return c

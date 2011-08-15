@@ -629,6 +629,8 @@ class OWPlot(orangeqt.Plot):
             :meth:`.OWCurve.point_item` and the ``curve``'s name
             :obj:`.OWCurve.name` is added to the legend. 
             
+            This function recalculates axis bounds and replots the plot if needed. 
+            
             :param curve: The curve to add
             :type curve: :obj:`.OWCurve`
         '''
@@ -642,8 +644,12 @@ class OWPlot(orangeqt.Plot):
         if hasattr(curve, 'tooltip'):
             curve.setToolTip(curve.tooltip)
         x,y = curve.axes()
-        curve.set_graph_transform(self.transform_for_axes(x,y))
-        curve.update_properties()
+        if curve.is_auto_scale() and (self.is_axis_auto_scale(x) or self.is_axis_auto_scale(y)):
+            self.set_dirty()
+            self.replot()
+        else:
+            curve.set_graph_transform(self.transform_for_axes(x,y))
+            curve.update_properties()
         return curve
         
     def add_curve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = Qt.NoPen, 
@@ -786,6 +792,7 @@ class OWPlot(orangeqt.Plot):
             Adds a custom ``axis`` with id ``axis_id`` to the plot
         '''
         self.axes[axis_id] = axis
+        self.replot()
         
     def add_marker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, 
                     x_axis_key = xBottom, y_axis_key = yLeft):
@@ -948,27 +955,18 @@ class OWPlot(orangeqt.Plot):
             if id in CartesianAxes:
                 ## This class only sets the lines for these four axes, widgets are responsible for the rest
                 if x in self.axes and y in self.axes:
-                    rect = self.data_rect_for_axes(x,y)
-                    if id == xBottom:
-                        line = QLineF(rect.topLeft(), rect.topRight())
-                    elif id == xTop:
-                        line = QLineF(rect.bottomLeft(), rect.bottomRight())
-                    elif id == yLeft:
-                        line = QLineF(rect.topLeft(), rect.bottomLeft())
-                    elif id == yRight:
-                        line = QLineF(rect.topRight(), rect.bottomRight())
-                    else:
-                        line = None
-                    item.data_line = line
-            if item.data_line:
+                    item.data_line = self.axis_line(self.data_rect_for_axes(x,y), id)
+            if id in CartesianAxes:
+                item.graph_line = self.axis_line(self.graph_area, id, invert_y = True)
+            elif item.data_line:
                 t = self.transform_for_axes(x, y)
-                graph_line = t.map(item.data_line)
-                if item.zoomable:
-                    item.graph_line = self._zoom_transform.map(graph_line)
-                else:
-                    item.graph_line = graph_line
+                item.graph_line = t.map(item.data_line)
+            
+            if item.graph_line and item.zoomable:
+                item.graph_line = self._zoom_transform.map(item.graph_line)
+                
             if not zoom_only:
-                if item.data_line and item.graph_line:
+                if item.graph_line:
                     item.show()
                 else:
                     item.hide()
@@ -982,10 +980,9 @@ class OWPlot(orangeqt.Plot):
             
             This functions redraws everything on the graph, so it can be very slow
         '''
-        if self.is_dirty():
-            self._bounds_cache = {}
-            self._transform_cache = {}
-            self.set_clean()
+        self._bounds_cache = {}
+        self._transform_cache = {}
+        self.set_clean()
         self.update_antialiasing()
         self.update_legend()
         self.update_layout()
@@ -1610,3 +1607,27 @@ class OWPlot(orangeqt.Plot):
     def end_progress(self):
         if self.widget:
             self.widget.progressBarFinished()
+            
+    def is_axis_auto_scale(self, axis_id):
+        if axis_id not in self.axes:
+            return axis_id not in self.data_range
+        return self.axes[axis_id].auto_scale
+
+    def axis_line(self, rect, id, invert_y = False):
+        if invert_y:
+            r = QRectF(rect)
+            r.setTop(rect.bottom())
+            r.setBottom(rect.top())
+            rect = r
+        if id == xBottom:
+            line = QLineF(rect.topLeft(), rect.topRight())
+        elif id == xTop:
+            line = QLineF(rect.bottomLeft(), rect.bottomRight())
+        elif id == yLeft:
+            line = QLineF(rect.topLeft(), rect.bottomLeft())
+        elif id == yRight:
+            line = QLineF(rect.topRight(), rect.bottomRight())
+        else:
+            line = None
+        return line
+        
