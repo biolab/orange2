@@ -22,29 +22,29 @@ from plot.owcurve import *
 from plot.owtools import *
 
 class distribErrorBarCurve(OWCurve):
+    DistributionCurve = OWCurve.UserCurve + 15
     def __init__(self, text = None):
-        self._items = []
-        OWCurve.__init__(self,xData=[], yData=[])
+        OWCurve.__init__(self)
+        self._item = QGraphicsPathItem(self)
         self._currently_updating = False
+        self.set_style(OWCurve.Lines)
         
     def update_properties(self):
-        if self._currently_updating:
-            OWCurve.update_properties(self)
-            self._currently_updating = False
-            return
-            
-        self._currently_updating = True
-        if self.style() != OWCurve.UserCurve:
-            resize_plot_item_list(self._items, 0, None, self)
-            self.items = []
-            self.set_dirty()
-        else:
-            t = self.graph_transform()
+        if self.style() != OWCurve.NoCurve:
+            self.set_points([])
+        
+        self._item.setVisible(self.style() != OWCurve.NoCurve)
+        
+        if self.style() == OWCurve.Lines:
+            self._item.setPath(self.continuous_path())
+        elif self.style() == OWCurve.NoCurve:
+            self.update_number_of_points()
+            self.update_point_coordinates()
+        elif self.style() == self.DistributionCurve:
             d = self.data()
             n = len(d)/3
-            resize_plot_item_list(self._items, n, QGraphicsPathItem, self)
+            p = QPainterPath()
             for i in range(n):
-                p = QPainterPath()
                 px, py1 = d[3*i]
                 _, py2 = d[3*i+1]
                 _, py3 = d[3*i+2]
@@ -56,9 +56,8 @@ class distribErrorBarCurve(OWCurve):
                 p.lineTo(pxr, py1)
                 p.moveTo(pxl, py3)
                 p.lineTo(pxr, py3)
-                self._items[i].setPath(t.map(p))
-                self._items[i].setPen(self.pen())
-        self._currently_updating = False
+            self._item.setPath(self.graph_transform().map(p))
+        
 
 class OWDistributionGraphQt(OWPlot):
     def __init__(self, settingsWidget = None, parent = None, name = None):
@@ -138,11 +137,9 @@ class OWDistributionGraphQt(OWPlot):
         else:
             labels = self.data.domain[self.attributeName].values.native()
             self.setXlabels(labels)
-            self.setAxisScale(xBottom, -0.5, len(labels) - 0.5, 1)
-
+            
         self.calcHistogramAndProbGraph()
         self.refreshVisibleOutcomes()
-
 
     def setNumberOfBars(self, n):
         self.numberOfBars = n
@@ -398,21 +395,16 @@ class OWDistributionGraphQt(OWPlot):
                     self.probCurveLowerCIKey.setData(xs, lps)
             else:
                 if self.showConfidenceIntervals:
-                    self.probCurveKey.set_style(OWCurve.UserCurve)
+                    self.probCurveKey.set_style(distribErrorBarCurve.DistributionCurve)
                 else:
                     self.probCurveKey.set_style(OWCurve.Dots)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
         
-
-        def enableIfExists(curve, en):
-            if curve:
-                curve.setVisible(en)
-
-        enableIfExists(self.probCurveKey, self.showProbabilities)
-        enableIfExists(self.probCurveUpperCIKey, self.showConfidenceIntervals and self.showProbabilities)
-        enableIfExists(self.probCurveLowerCIKey, self.showConfidenceIntervals and self.showProbabilities)
+        self.probCurveKey.setVisible(self.showProbabilities)
+        self.probCurveUpperCIKey.setVisible(self.showConfidenceIntervals and self.showProbabilities)
+        self.probCurveLowerCIKey.setVisible(self.showConfidenceIntervals and self.showProbabilities)
         self.replot()
 
 class OWDistributionsQt(OWWidget):

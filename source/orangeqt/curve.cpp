@@ -92,19 +92,7 @@ void Curve::update_properties()
     QPen p = m_pen;
     p.setWidthF(m_pen.widthF()/m_zoom_transform.determinant());
     m_lineItem->setPen(p);
-    m_line = QPainterPath();
-    if (!m_data.isEmpty())
-    {
-      m_line.moveTo(QPointF(m_data[0].x, m_data[0].y) * m_graphTransform);
-      int n = m_data.size();
-      QPointF p;
-      for (int i = 1; i < n; ++i)
-      {
-        p = QPointF(m_data[i].x, m_data[i].y);
-        m_line.lineTo(m_graphTransform.map(p));
-      }
-    }
-    m_lineItem->setPath(m_line);
+    m_lineItem->setPath(continuous_path());
     return;
   } 
   
@@ -320,7 +308,6 @@ void Curve::changeContinuous()
       m_lineItem = new QGraphicsPathItem(this);
     }
   } else {
-    m_line = QPainterPath();
     delete m_lineItem;
     m_lineItem = 0;
   }
@@ -479,8 +466,22 @@ void Curve::update_point_properties_same(const QByteArray& property, const QVari
     }
 }
 
-
-
+QPainterPath Curve::continuous_path()
+{
+    QPainterPath path;
+    if (m_data.isEmpty())
+    {
+        return path;
+    }
+    path.moveTo(m_data[0]);
+    int n = m_data.size();
+    QPointF p;
+    for (int i = 1; i < n; ++i)
+    {
+        path.lineTo(m_data[i]);
+    }
+    return m_graphTransform.map(path);
+}
 
 #include "curve.moc"
 

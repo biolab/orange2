@@ -172,10 +172,7 @@ public:
   QTransform zoom_transform();
   virtual void set_zoom_transform(const QTransform& transform);
   
-  double max_x_value() const;
-  double min_x_value() const;
-  double max_y_value() const;
-  double min_y_value() const;
+  QPainterPath continuous_path();
 
   enum UpdateFlag
   {
@@ -241,7 +238,6 @@ private:
   UpdateFlags m_needsUpdate;
   bool m_autoUpdate;
     QGraphicsPathItem* m_lineItem;
-    QPainterPath m_line;
     
   QPen m_pen;
   QBrush m_brush;

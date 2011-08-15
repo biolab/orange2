@@ -493,11 +493,11 @@ class PlotGrid(orangeqt.PlotItem):
         rect = p.data_rect_for_axes(x_id, y_id)
         path = QPainterPath()
         if self._x_enabled and x_id in p.axes:
-            for pos, label, size in p.axes[x_id].ticks():
+            for pos, label, size, _w in p.axes[x_id].ticks():
                 path.moveTo(pos, rect.bottom())
                 path.lineTo(pos, rect.top())
         if self._y_enabled and y_id in p.axes:
-            for pos, label, size in p.axes[y_id].ticks():
+            for pos, label, size, _w in p.axes[y_id].ticks():
                 path.moveTo(rect.left(), pos)
                 path.lineTo(rect.right(), pos)
         self._path_item.setPath(self.graph_transform().map(path))

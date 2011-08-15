@@ -60,6 +60,7 @@ name_map = {
     "getSelectedPoints" : "get_selected_points",
     "setAxisScale" : "set_axis_scale",
     "setAxisLabels" : "set_axis_labels", 
+    "setAxisAutoScale" : "set_axis_autoscale",
     "setTickLength" : "set_axis_tick_length",
     "updateCurves" : "update_curves",
     "itemList" : "plot_items",
@@ -561,6 +562,12 @@ class OWPlot(orangeqt.Plot):
             self.set_axis_labels(xBottom, labels)
         elif xTop in self.axes:
             self.set_axis_labels(xTop, labels)
+            
+    def set_axis_autoscale(self, axis_id):
+        if axis_id in self.axes:
+            self.axes[axis_id].auto_scale = True
+        elif axis_id in self.data_range:
+            del self.data_range[axis_id]
         
     def set_axis_labels(self, axis_id, labels):
         '''
@@ -751,7 +758,8 @@ class OWPlot(orangeqt.Plot):
         '''
             Creates an :obj:`OrangeWidgets.plot.OWAxis` with the specified ``axis_id`` and ``title``. 
         '''
-        a = OWAxis(axis_id, title, title_above, title_location, line, arrows, scene=self.scene())
+        a = OWAxis(axis_id, title, title_above, title_location, line, arrows, self)
+        self.scene().addItem(a)
         a.zoomable = zoomable
         a.update_callback = self.replot
         if axis_id in self._bounds_cache:
@@ -1251,10 +1259,11 @@ class OWPlot(orangeqt.Plot):
             Calculates the bounding rectangle in data coordinates for the axes ``x_axis`` and ``y_axis``. 
         """
         if x_axis in self.axes and y_axis in self.axes:
-            x_min, x_max = self.bounds_for_axis(x_axis, try_auto_scale=False)
-            y_min, y_max = self.bounds_for_axis(y_axis, try_auto_scale=False)
-            if x_min and x_max and y_min and y_max:
-                return QRectF(x_min, y_min, x_max-x_min, y_max-y_min)
+            x_min, x_max = self.bounds_for_axis(x_axis, try_auto_scale=True)
+            y_min, y_max = self.bounds_for_axis(y_axis, try_auto_scale=True)
+            if (x_min or x_max) and (y_min or y_max):
+                r = QRectF(x_min, y_min, x_max-x_min, y_max-y_min)
+                return r
         r = orangeqt.Plot.data_rect_for_axes(self, x_axis, y_axis)
         for id, axis in self.axes.iteritems():
             if id not in CartesianAxes and axis.data_line:
@@ -1316,12 +1325,8 @@ class OWPlot(orangeqt.Plot):
             return 0
         
     def bounds_for_axis(self, axis_id, try_auto_scale=True):
-        if axis_id in self.axes:
-            if self.axes[axis_id].scale:
-                m, M, t = self.axes[axis_id].scale
-                return m, M
-            elif self.axes[axis_id].labels:
-                return -0.2, len(self.axes[axis_id].labels) - 0.8
+        if axis_id in self.axes and not self.axes[axis_id].auto_scale:
+            return self.axes[axis_id].bounds()
         if try_auto_scale:
             return orangeqt.Plot.bounds_for_axis(self, axis_id)
         else:

@@ -43,14 +43,15 @@ from owconstants import *
 from owtools import resize_plot_item_list
 
 class OWAxis(QGraphicsItem):
-    def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, parent=None, scene=None):
-        QGraphicsItem.__init__(self, parent, scene)
+    def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, plot = None):
+        QGraphicsItem.__init__(self)
         self.setFlag(QGraphicsItem.ItemHasNoContents)
         self.setZValue(AxisZValue)
         self.id = id
         self.title = title
         self.title_location = title_location
         self.data_line = line
+        self.plot = plot
         self.graph_line = None
         self.size = None
         self.scale = None
@@ -77,6 +78,7 @@ class OWAxis(QGraphicsItem):
         self.zoom_transform = QTransform()
         self.labels = None
         self.auto_range = None
+        self.auto_scale = True
         
         self.zoomable = False
         self.update_callback = None
@@ -88,8 +90,8 @@ class OWAxis(QGraphicsItem):
         self._ticks = []
         major, medium, minor = self.tick_length
         if self.labels is not None:
-            for i in range(len(self.labels)):
-                self._ticks.append( ( i, self.labels[i], medium ) )
+            for i, text in enumerate(self.labels):
+                self._ticks.append( ( i, text, medium, 1 ) )
         else:
             if self.scale:
                 min, max, step = self.scale
@@ -116,7 +118,7 @@ class OWAxis(QGraphicsItem):
             step = first_place * pow(10, magnitude)
             val = ceil(min/step) * step
             while val <= max:
-                self._ticks.append( ( val, "%.4g" % val, medium ) )
+                self._ticks.append( ( val, "%.4g" % val, medium, step ) )
                 val = val + step
                 
     def update_graph(self):
@@ -184,12 +186,6 @@ class OWAxis(QGraphicsItem):
         resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
         resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
         
-        if self.scale:
-            _min, _max, step = self.scale
-        else:
-            step = 1
-        hs = 0.5 * step
-        
         test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
         test_rect.adjust(-1, -1, 1, 1)
         
@@ -201,7 +197,8 @@ class OWAxis(QGraphicsItem):
         l_v = self.graph_line.unitVector()
         l_p = l_v.p2() - l_v.p1()
         for i in range(n):
-            pos, text, size = self._ticks[i]
+            pos, text, size, step = self._ticks[i]
+            hs = 0.5 * step
             tick_pos = self.map_to_graph( pos )
             if not test_rect.contains(tick_pos):
                 self.tick_items[i].setVisible(False)
@@ -257,12 +254,14 @@ class OWAxis(QGraphicsItem):
     def set_labels(self, labels):
         self.labels = labels
         self.graph_line = None
+        self.auto_scale = False
         self.update_ticks()
         self.update_graph()
         
     def set_scale(self, min, max, step_size):
         self.scale = (min, max, step_size)
         self.graph_line = None
+        self.auto_scale = False
         self.update_ticks()
         self.update_graph()
     
@@ -271,12 +270,7 @@ class OWAxis(QGraphicsItem):
         self.update()
         
     def map_to_graph(self, x):
-        if self.scale:
-            min, max, _step = self.scale
-        elif self.auto_range:
-            min, max = self.auto_range
-        else:
-            return QPointF()
+        min, max = self.plot.bounds_for_axis(self.id)
         if min == max:
             return QPointF()
         line_point = self.graph_line.pointAt( (x-min)/(max-min) )
@@ -305,3 +299,15 @@ class OWAxis(QGraphicsItem):
         if not self._ticks:
             self.update_ticks()
         return self._ticks
+        
+    def bounds(self):
+        if self.labels:
+            return -0.2, len(self.labels) -0.8
+        elif self.scale:
+            min, max, _step = self.scale
+            return min, max
+        elif self.auto_range:
+            return self.auto_range
+        else:
+            return 0, 1
+        

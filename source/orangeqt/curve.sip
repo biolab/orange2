@@ -76,6 +76,8 @@ public:
 
   bool auto_update() const;
   void set_auto_update(bool auto_update);
+
+  QPainterPath continuous_path();
   
   enum UpdateFlag
   {
