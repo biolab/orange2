@@ -376,8 +376,7 @@ class OWPlot(orangeqt.Plot):
                 
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
-        self.set_palette(OWPalette.Light)
-
+        
         self.gui = OWPlotGUI(self)
 	"""
             An :obj:`.OWPlotGUI` object associated with this plot
@@ -1648,3 +1647,11 @@ class OWPlot(orangeqt.Plot):
     def set_palette(self, p):
         self.setPalette(p)
         self.replot()
+        
+    def update_theme(self):
+        if self.theme_name.lower() == 'default':
+            self.set_palette(OWPalette.System)
+        elif self.theme_name.lower() == 'light':
+            self.set_palette(OWPalette.Light)
+        elif self.theme_name.lower() == 'dark':
+            self.set_palette(OWPalette.Dark)

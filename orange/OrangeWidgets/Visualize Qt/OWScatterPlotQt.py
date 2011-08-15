@@ -145,8 +145,9 @@ class OWScatterPlotQt(OWWidget):
         OWGUI.checkBox(box, self, 'graph.sendSelectionOnUpdate', 'Moving/Resizing selection areas', tooltip = "Send selected data when a user moves or resizes an existing selection area")
         self.graph.selection_changed.connect(self.selectionChanged)
         
-        self.EffectsTab = OWGUI.createTabPage(self.tabs, "Performance")
+        self.EffectsTab = OWGUI.createTabPage(self.tabs, "Appearance")
         g.effects_box(self.EffectsTab)
+        g.theme_combo_box(self.EffectsTab)
 
         self.GeneralTab.layout().addStretch(100)
         self.SettingsTab.layout().addStretch(100)

@@ -461,3 +461,10 @@ class OWPlotGUI:
             self.AutoAdjustPerformance,
             self.DisableAnimationsThreshold], widget, "Visual effects")
         return b
+        
+    def theme_combo_box(self, widget):
+        c = OWGUI.comboBox(widget, self._plot, "theme_name", "Theme", callback = self._plot.update_theme, sendSelectedValue = 1, valueType = str)
+        c.addItem('Default')
+        c.addItem('Light')
+        c.addItem('Dark')
+        return c

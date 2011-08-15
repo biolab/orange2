@@ -55,7 +55,6 @@ class OWLegendItem(QGraphicsObject):
         self._rect = QRectF(0, 0, height + self.text_item.boundingRect().width(), height )
         self.rect_item = QGraphicsRectItem(self._rect, self)
         self.rect_item.setPen(QPen(Qt.NoPen))
-        self.rect_item.setBrush(parent.graph.color(QPalette.Base))
         self.rect_item.stackBefore(self.text_item)
         if self.point_item:
             self.rect_item.stackBefore(self.point_item)
@@ -76,6 +75,9 @@ class OWLegendTitle(QGraphicsObject):
         f = self.text_item.font()
         f.setBold(True)
         self.text_item.setFont(f)
+        self.rect_item = QGraphicsRectItem(self.text_item.boundingRect(), self)
+        self.rect_item.setPen(QPen(Qt.NoPen))
+        self.rect_item.stackBefore(self.text_item)
         
     def boundingRect(self):
         return self.text_item.boundingRect()
@@ -236,9 +238,8 @@ class OWLegend(QGraphicsObject):
         
         for lst in self.items.itervalues():
             for item in lst:
-                if hasattr(item, 'text_item'):
-                    item.text_item.setDefaultTextColor(self.graph.color(QPalette.Text))
-        
+                item.text_item.setDefaultTextColor(self.graph.color(QPalette.Text))
+                item.rect_item.setBrush(self.graph.color(QPalette.Base))
         if self._orientation == Qt.Vertical:
             for lst in self.items.itervalues():
                 for item in lst:
