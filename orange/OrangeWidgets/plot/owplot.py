@@ -283,7 +283,6 @@ class OWPlot(orangeqt.Plot):
         self.parent_name = name
         self.show_legend = show_legend
         self.title_item = None
-        self._palette = QPalette()
         
         self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
         
@@ -377,7 +376,8 @@ class OWPlot(orangeqt.Plot):
                 
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
-        
+        self.set_palette(OWPalette.Light)
+
         self.gui = OWPlotGUI(self)
 	"""
             An :obj:`.OWPlotGUI` object associated with this plot
@@ -553,7 +553,7 @@ class OWPlot(orangeqt.Plot):
     def setCanvasColor(self, c):
         p = self.palette()
         p.setColor(QPalette.Base, c)
-        p.set_palette(p)
+        self.set_palette(p)
         
     def setData(self, data):
         self.clear()
@@ -1639,15 +1639,6 @@ class OWPlot(orangeqt.Plot):
             line = None
         return line
         
-    def palette(self):
-        """
-            Returns the palette used for this plot. 
-            
-            If it hasn't been modified yet, it will use the QApplication's palette. 
-            This way, Orange plots match the appearance of other applications. 
-        """
-        return self._palette
-        
     def color(self, role, group = None):
         if group:
             return self.palette().color(group, role)
@@ -1655,5 +1646,5 @@ class OWPlot(orangeqt.Plot):
             return self.palette().color(role)
             
     def set_palette(self, p):
-        self._palette = p
+        self.setPalette(p)
         self.replot()

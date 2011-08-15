@@ -128,12 +128,14 @@ class OWAxis(QGraphicsItem):
             
 
     def update(self, zoom_only = False):
+        color = self.plot.color(OWAxis.Role)
         if not self.graph_line or not self.scene():
             return
         self.line_item.setLine(self.graph_line)
-        self.line_item.setPen(self.plot.color(self.Role))
+        self.line_item.setPen(color)
         if self.title:
             self.title_item.setHtml('<b>' + self.title + '</b>')
+            self.title_item.setDefaultTextColor(color)
         if self.title_location == AxisMiddle:
             title_p = 0.5
         elif self.title_location == AxisEnd:
@@ -171,15 +173,15 @@ class OWAxis(QGraphicsItem):
                 self.start_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.start_arrow_item.setPos(self.graph_line.p1())
             self.start_arrow_item.setRotation(-self.graph_line.angle() + 180)
-            self.start_arrow_item.setBrush(self.plot.color(self.Role))
-            self.start_arrow_item.setPen(self.plot.color(self.Role))
+            self.start_arrow_item.setBrush(color)
+            self.start_arrow_item.setPen(color)
         if self.arrows & AxisEnd:
             if not zoom_only or not self.end_arrow_item:
                 self.end_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.end_arrow_item.setPos(self.graph_line.p2())
             self.end_arrow_item.setRotation(-self.graph_line.angle())
-            self.end_arrow_item.setBrush(self.plot.color(self.Role))
-            self.end_arrow_item.setPen(self.plot.color(self.Role))
+            self.end_arrow_item.setBrush(color)
+            self.end_arrow_item.setPen(color)
             
         ## Labels
         
@@ -223,6 +225,7 @@ class OWAxis(QGraphicsItem):
                 label_pos = tick_pos + n_p * self.text_margin - l_p * w/2
             item.setPos(label_pos)
             item.setTextWidth(w)
+            item.setDefaultTextColor(color)
             
             item = self.tick_items[i]
             item.setVisible(True)
@@ -232,7 +235,7 @@ class OWAxis(QGraphicsItem):
             if self.title_above:
                 tick_line.setAngle(tick_line.angle() + 180)
             item.setLine( tick_line )
-            item.setPen(self.plot.color(self.Role))
+            item.setPen(color)
             item.setPos(self.map_to_graph(pos))
             
     @staticmethod

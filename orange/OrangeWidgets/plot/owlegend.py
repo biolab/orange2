@@ -234,6 +234,11 @@ class OWLegend(QGraphicsObject):
         self.box_rect = QRectF()
         x, y = 0, 0
         
+        for lst in self.items.itervalues():
+            for item in lst:
+                if hasattr(item, 'text_item'):
+                    item.text_item.setDefaultTextColor(self.graph.color(QPalette.Text))
+        
         if self._orientation == Qt.Vertical:
             for lst in self.items.itervalues():
                 for item in lst:
