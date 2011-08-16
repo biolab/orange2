@@ -365,7 +365,6 @@ void Plot::add_point(Point* point, PlotItem* parent)
     const DataPoint pos = point->coordinates();
     m_point_set[parent].insert(pos);
     m_point_hash[parent].insert(pos, point);
-    qDebug() << "Added point" << m_point_set[parent].size();
 }
 
 void Plot::add_points(const QList< Point* >& items, PlotItem* parent)

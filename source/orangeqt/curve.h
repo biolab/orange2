@@ -211,10 +211,11 @@ public:
 protected:
   Curve::UpdateFlags needs_update();
   void set_updated(Curve::UpdateFlags flags);
-  void cancelAllUpdates();
+  
+  void cancel_all_updates();
+  void update_number_of_items();
   
   void checkForUpdate();
-  void updateNumberOfItems();
   void changeContinuous();
   
   bool use_animations();

@@ -97,11 +97,16 @@ public:
 
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
-
-  void update_point_positions();
   
 protected:
   void set_updated(Curve::UpdateFlags flags);
   Curve::UpdateFlags needs_update();
-  
+
+  void cancel_all_updates();
+  void update_number_of_items();
+
+public slots:
+    void update_point_coordinates();
+    void update_point_positions();
+
 };

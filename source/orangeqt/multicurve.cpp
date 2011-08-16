@@ -33,37 +33,37 @@ MultiCurve::~MultiCurve()
 
 void MultiCurve::set_point_colors(const QList< QColor >& colors)
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_point_properties("color", colors);
 }
 
 void MultiCurve::set_point_labels(const QStringList& labels)
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_point_properties("label", labels, false);
 }
 
 void MultiCurve::set_point_sizes(const QList<int>& sizes)
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_point_properties("size", sizes);
 }
 
 void MultiCurve::set_point_symbols(const QList< int >& symbols)
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_point_properties("symbol", symbols, false);
 }
 
 void MultiCurve::update_properties()
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_point_coordinates();
 }
 
 void MultiCurve::shuffle_points()
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_items(points(), PointShuffler(), UpdateContinuous);
 }
 
@@ -74,7 +74,7 @@ void MultiCurve::set_alpha_value(int alpha)
 
 void MultiCurve::set_points_marked(const QList< bool >& marked)
 {
-    updateNumberOfItems();
+    update_number_of_items();
     update_point_properties("marked", marked, false);
 }
 

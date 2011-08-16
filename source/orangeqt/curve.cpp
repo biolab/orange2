@@ -62,12 +62,12 @@ Curve::Curve(QGraphicsItem* parent): PlotItem(parent)
 
 Curve::~Curve()
 {
-    cancelAllUpdates();
+    cancel_all_updates();
 }
 
-void Curve::updateNumberOfItems()
+void Curve::update_number_of_items()
 {
-  cancelAllUpdates();
+  cancel_all_updates();
   if (m_continuous || (m_data.size() == m_pointItems.size()))
   {
     m_needsUpdate &= ~UpdateNumberOfItems;
@@ -79,9 +79,14 @@ void Curve::updateNumberOfItems()
 
 void Curve::update_properties()
 {
-  cancelAllUpdates();
-  set_continuous(m_style != Curve::NoCurve);
-  
+  cancel_all_updates();
+    
+  if (m_style < UserCurve && m_continuous != (m_style != Curve::NoCurve))
+  {
+      m_continuous = (m_style != Curve::NoCurve);
+      m_needsUpdate |= UpdateContinuous;
+  }
+    
   if (m_needsUpdate & UpdateContinuous)
   {
       changeContinuous();
@@ -90,20 +95,16 @@ void Curve::update_properties()
   if (m_continuous)
   {
     QPen p = m_pen;
-    p.setWidthF(m_pen.widthF()/m_zoom_transform.determinant());
+    p.setCosmetic(true);
     m_lineItem->setPen(p);
     m_lineItem->setPath(continuous_path());
     return;
   } 
   
-  int n = m_data.size();
-  if (m_pointItems.size() != n)
+  if (m_pointItems.size() != m_data.size())
   {
-    updateNumberOfItems();
+    update_number_of_items();
   }
-  
-  Q_ASSERT(m_pointItems.size() == n);
-  
   
   // Move, resize, reshape and/or recolor the items
   if (m_needsUpdate & UpdatePosition)
@@ -270,7 +271,7 @@ int Curve::style() const
 void Curve::set_style(int style)
 {
     m_style = style;
-    m_needsUpdate |= UpdateSymbol;
+    m_needsUpdate |= UpdateAll;
     checkForUpdate();
 }
 
@@ -297,7 +298,7 @@ void Curve::checkForUpdate()
 
 void Curve::changeContinuous()
 {
-  cancelAllUpdates();
+  cancel_all_updates();
   if (m_continuous)
   {
     qDeleteAll(m_pointItems);
@@ -332,7 +333,7 @@ QTransform Curve::zoom_transform()
     return m_zoom_transform;
 }
 
-void Curve::cancelAllUpdates()
+void Curve::cancel_all_updates()
 {
     QMap<UpdateFlag, QFuture< void > >::iterator it = m_currentUpdate.begin();
     QMap<UpdateFlag, QFuture< void > >::iterator end = m_currentUpdate.end();
@@ -351,10 +352,16 @@ void Curve::cancelAllUpdates()
         }
     }
     m_currentUpdate.clear();
-    m_coords_watcher.future().cancel();
-    m_pos_watcher.future().cancel();
+    
+    m_coords_watcher.blockSignals(true);
+    m_coords_watcher.cancel();
     m_coords_watcher.waitForFinished();
+    m_coords_watcher.blockSignals(false);
+    
+    m_pos_watcher.blockSignals(true);
+    m_pos_watcher.cancel();
     m_pos_watcher.waitForFinished();
+    m_pos_watcher.blockSignals(false);
 }
 
 void Curve::register_points()
@@ -394,20 +401,24 @@ QList< Point* > Curve::points()
 
 void Curve::update_point_coordinates()
 {
-    if (m_coords_watcher.future().isRunning())
+    if (m_coords_watcher.isRunning())
     {
-        m_coords_watcher.future().cancel();
-        m_coords_watcher.future().waitForFinished();
+        m_coords_watcher.blockSignals(true);
+        m_coords_watcher.cancel();
+        m_coords_watcher.waitForFinished();
+        m_coords_watcher.blockSignals(false);
     }
     m_coords_watcher.setFuture(QtConcurrent::run(this, &Curve::update_point_properties_threaded<DataPoint>, QByteArray("coordinates"), m_data));
 }
 
 void Curve::update_point_positions()
 {
-    if (m_pos_watcher.future().isRunning())
+    if (m_pos_watcher.isRunning())
     {
-        m_pos_watcher.future().cancel();
-        m_pos_watcher.future().waitForFinished();
+        m_pos_watcher.blockSignals(true);
+        m_pos_watcher.cancel();
+        m_pos_watcher.waitForFinished();
+        m_pos_watcher.blockSignals(false);
     }
     if (m_pointItems.isEmpty())
     {

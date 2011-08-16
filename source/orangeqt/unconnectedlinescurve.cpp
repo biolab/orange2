@@ -67,7 +67,7 @@ UnconnectedLinesCurve::~UnconnectedLinesCurve()
 
 void UnconnectedLinesCurve::update_properties()
 {
-    cancelAllUpdates();
+    cancel_all_updates();
     if (needs_update() & UpdatePosition)
     {
         m_path_watcher->setFuture(QtConcurrent::mappedReduced<QPainterPath>(data(), PointMapper(graph_transform()), PathReducer(), QtConcurrent::OrderedReduce | QtConcurrent::SequentialReduce));

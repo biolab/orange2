@@ -26,21 +26,19 @@ class distribErrorBarCurve(OWCurve):
     def __init__(self, text = None):
         OWCurve.__init__(self)
         self._item = QGraphicsPathItem(self)
-        self._currently_updating = False
         self.set_style(OWCurve.Lines)
+        self.set_point_size(7)
         
     def update_properties(self):
-        if self.style() != OWCurve.NoCurve:
-            self.set_points([])
-        
-        self._item.setVisible(self.style() != OWCurve.NoCurve)
-        
-        if self.style() == OWCurve.Lines:
-            self._item.setPath(self.continuous_path())
-        elif self.style() == OWCurve.NoCurve:
-            self.update_number_of_points()
-            self.update_point_coordinates()
-        elif self.style() == self.DistributionCurve:
+        should_be_cont = (self.style() == OWCurve.Lines)
+        if self.is_continuous() != should_be_cont:
+            self.set_continuous(should_be_cont)
+            if self.auto_update():
+                return
+                
+        OWCurve.update_properties(self)
+    
+        if self.style() == self.DistributionCurve:
             d = self.data()
             n = len(d)/3
             p = QPainterPath()
@@ -57,7 +55,12 @@ class distribErrorBarCurve(OWCurve):
                 p.moveTo(pxl, py3)
                 p.lineTo(pxr, py3)
             self._item.setPath(self.graph_transform().map(p))
-        
+            self._item.setPen(self.pen())
+            self._item.show()
+        else:
+            self._item.hide()
+        self.set_updated(OWCurve.UpdateAll)
+
 
 class OWDistributionGraphQt(OWPlot):
     def __init__(self, settingsWidget = None, parent = None, name = None):
@@ -92,6 +95,7 @@ class OWDistributionGraphQt(OWPlot):
         curve = distribErrorBarCurve('')
         curve.setVisible(visible)
         curve.set_axes(xAxis, yAxis)
+        curve.set_color(self.color(QPalette.Text))
         return OWPlot.add_custom_curve(self, curve, enableLegend=0)
 
     def sizeHint(self):
@@ -238,7 +242,7 @@ class OWDistributionGraphQt(OWPlot):
         self.tips.removeAll()
         cn=0
         for key in keys:
-            ckey = PolygonCurve(pen=QPen(Qt.black), brush=QBrush(Qt.gray))
+            ckey = PolygonCurve(pen=self.color(QPalette.Base), brush=QBrush(Qt.gray))
             ckey.attach(self)
             if self.variableContinuous:
                 ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
@@ -256,7 +260,7 @@ class OWDistributionGraphQt(OWPlot):
 
         if self.dataHasClass and not self.dataHasDiscreteClass and self.showContinuousClassGraph:
             self.enableYRaxis(1)
-            self.setAxisAutoScale(yRight)
+#            self.setAxisAutoScale(yRight)
             self.setYRaxisTitle(str(self.data.domain.classVar.name))
             if self.variableContinuous:
                 equiDist = orange.EquiDistDiscretization(numberOfIntervals = self.numberOfBars)
@@ -270,12 +274,10 @@ class OWDistributionGraphQt(OWPlot):
                 XY=[(i, dist.average()) for i, dist in zip(range(len(d_data.values())), d_data.values()) if dist.cases]
             key = self.addCurve(xBottom, yRight)
             key.setData([a[0] for a in XY], [a[1] for a in XY])
-            if self.variableContinuous:
-                key.setPen(QPen(Qt.black))
-            else:
-                key.setColor(Qt.black)
+            key.set_color(self.color(QPalette.Text))
+            if not self.variableContinuous:
                 key.set_symbol(OWPoint.Diamond)
-                key.setPointSize(7)
+                key.set_point_size(7)
         else:
             self.enableYRaxis(0)
             self.setAxisScale(yRight, 0.0, 1.0, 0.1)
@@ -367,16 +369,15 @@ class OWDistributionGraphQt(OWPlot):
                     mps.append(ps[self.targetValue] + 0.0)
                     lps.append(ps[self.targetValue] - cis[self.targetValue])
                 else:
+                    ## We make 3x as many point in both cases. 
+                    ## This way animations look better when switching the ConfidenceIntervals on and off
+                    xs.extend([cn] * 3)
                     if self.showConfidenceIntervals:
-                        xs.append(cn)
                         mps.append(ps[self.targetValue] + cis[self.targetValue])
-
-                    xs.append(cn)
-                    mps.append(ps[self.targetValue] + 0.0)
-
-                    if self.showConfidenceIntervals:
-                        xs.append(cn)
+                        mps.append(ps[self.targetValue] + 0.0)
                         mps.append(ps[self.targetValue] - cis[self.targetValue])
+                    else:
+                        mps.extend([ps[self.targetValue]] * 3)
                 cn += 1.0
 
             ## (re)set the curves
@@ -397,7 +398,7 @@ class OWDistributionGraphQt(OWPlot):
                 if self.showConfidenceIntervals:
                     self.probCurveKey.set_style(distribErrorBarCurve.DistributionCurve)
                 else:
-                    self.probCurveKey.set_style(OWCurve.Dots)
+                    self.probCurveKey.set_style(OWCurve.NoCurve)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
@@ -446,7 +447,6 @@ class OWDistributionsQt(OWWidget):
 
         self.graph = OWDistributionGraphQt(self, self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
-        self.graph.setYRlabels(None)
         self.graph.setAxisScale(yRight, 0.0, 1.0, 0.1)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         
