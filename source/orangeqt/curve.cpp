@@ -40,8 +40,8 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
     
     m_style = NoCurve;
     m_continuous = false;
-    m_lineItem = 0;
     m_needsUpdate = UpdateAll;
+    m_lineItem = new QGraphicsPathItem(this);
     set_data(x_data, y_data);
     QObject::connect(&m_pos_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
     QObject::connect(&m_coords_watcher, SIGNAL(finished()), SLOT(update_point_positions()));
@@ -53,7 +53,7 @@ Curve::Curve(QGraphicsItem* parent): PlotItem(parent)
     m_continuous = false;
     m_autoUpdate = true;
     m_style = NoCurve;
-    m_lineItem = 0;
+    m_lineItem = new QGraphicsPathItem(this);
     m_needsUpdate = 0;
     QObject::connect(&m_pos_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));
     QObject::connect(&m_coords_watcher, SIGNAL(finished()), SLOT(update_point_positions()));
@@ -81,16 +81,8 @@ void Curve::update_properties()
 {
   cancel_all_updates();
     
-  if (m_style < UserCurve && m_continuous != (m_style != Curve::NoCurve))
-  {
-      m_continuous = (m_style != Curve::NoCurve);
-      m_needsUpdate |= UpdateContinuous;
-  }
-    
-  if (m_needsUpdate & UpdateContinuous)
-  {
-      changeContinuous();
-  }
+  m_continuous = (m_style == Curve::Lines);
+  m_lineItem->setVisible(m_continuous);
   
   if (m_continuous)
   {
@@ -98,7 +90,6 @@ void Curve::update_properties()
     p.setCosmetic(true);
     m_lineItem->setPen(p);
     m_lineItem->setPath(continuous_path());
-    return;
   } 
   
   if (m_pointItems.size() != m_data.size())

@@ -1332,7 +1332,11 @@ class OWPlot(orangeqt.Plot):
         if axis_id in self.axes and not self.axes[axis_id].auto_scale:
             return self.axes[axis_id].bounds()
         if try_auto_scale:
-            return orangeqt.Plot.bounds_for_axis(self, axis_id)
+            lower, upper = orangeqt.Plot.bounds_for_axis(self, axis_id)
+            if lower != upper:
+	      lower = lower - (upper-lower)/20.0
+	      upper = upper + (upper-lower)/20.0
+	    return lower, upper
         else:
             return None, None
             

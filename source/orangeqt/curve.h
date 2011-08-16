@@ -309,6 +309,10 @@ template < class T >
 void Curve::update_point_properties_threaded(const QByteArray& property, const QList< T >& values)
 {
     const int n = values.size();
+    if (n != m_pointItems.size())
+    {
+	return;
+    }
     for (int i = 0; i < n; ++i)
     {
         m_pointItems[i]->setProperty(property, QVariant::fromValue<T>(values[i]));
