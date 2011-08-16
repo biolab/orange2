@@ -95,7 +95,7 @@ class OWDistributionGraphQt(OWPlot):
         curve = distribErrorBarCurve('')
         curve.setVisible(visible)
         curve.set_axes(xAxis, yAxis)
-        curve.set_color(self.color(QPalette.Text))
+        curve.set_color(self.color(OWPalette.Data))
         return OWPlot.add_custom_curve(self, curve, enableLegend=0)
 
     def sizeHint(self):
@@ -242,7 +242,7 @@ class OWDistributionGraphQt(OWPlot):
         self.tips.removeAll()
         cn=0
         for key in keys:
-            ckey = PolygonCurve(pen=self.color(QPalette.Base), brush=QBrush(Qt.gray))
+            ckey = PolygonCurve(pen=self.color(OWPalette.Data), brush=QBrush(self.color(OWPalette.Grid)))
             ckey.attach(self)
             if self.variableContinuous:
                 ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
@@ -274,7 +274,7 @@ class OWDistributionGraphQt(OWPlot):
                 XY=[(i, dist.average()) for i, dist in zip(range(len(d_data.values())), d_data.values()) if dist.cases]
             key = self.addCurve(xBottom, yRight)
             key.setData([a[0] for a in XY], [a[1] for a in XY])
-            key.set_color(self.color(QPalette.Text))
+            key.set_color(self.color(OWPalette.Data))
             if not self.variableContinuous:
                 key.set_symbol(OWPoint.Diamond)
                 key.set_point_size(7)

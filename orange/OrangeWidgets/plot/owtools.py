@@ -38,6 +38,7 @@ from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPo
 from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug, QPropertyAnimation
 
 from owcurve import *
+from owpalette import OWPalette
 
 from Orange.preprocess.scaling import get_variable_values_sorted
 import orangeom
@@ -448,7 +449,7 @@ class PlotGrid(orangeqt.PlotItem):
         self.set_in_background(True)
         if plot:
             self.attach(plot)
-            self._path_item.setPen(plot.color(QPalette.AlternateBase))
+            self._path_item.setPen(plot.color(OWPalette.Grid))
             
     def set_x_enabled(self, b):
         """

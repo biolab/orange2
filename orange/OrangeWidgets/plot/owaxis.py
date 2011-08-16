@@ -35,15 +35,16 @@
 
 from math import *
 
-from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform, QPalette
+from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform
 from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF, Qt
 
 from owconstants import *
 from owtools import resize_plot_item_list
+from owpalette import OWPalette
 
 class OWAxis(QGraphicsItem):
     
-    Role = QPalette.Text
+    Role = OWPalette.Axis
     
     def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, plot = None):
         QGraphicsItem.__init__(self)
@@ -128,14 +129,15 @@ class OWAxis(QGraphicsItem):
             
 
     def update(self, zoom_only = False):
-        color = self.plot.color(OWAxis.Role)
+        line_color = self.plot.color(OWPalette.Axis)
+        text_color = self.plot.color(OWPalette.Text)
         if not self.graph_line or not self.scene():
             return
         self.line_item.setLine(self.graph_line)
-        self.line_item.setPen(color)
+        self.line_item.setPen(line_color)
         if self.title:
             self.title_item.setHtml('<b>' + self.title + '</b>')
-            self.title_item.setDefaultTextColor(color)
+            self.title_item.setDefaultTextColor(text_color)
         if self.title_location == AxisMiddle:
             title_p = 0.5
         elif self.title_location == AxisEnd:
@@ -173,15 +175,15 @@ class OWAxis(QGraphicsItem):
                 self.start_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.start_arrow_item.setPos(self.graph_line.p1())
             self.start_arrow_item.setRotation(-self.graph_line.angle() + 180)
-            self.start_arrow_item.setBrush(color)
-            self.start_arrow_item.setPen(color)
+            self.start_arrow_item.setBrush(line_color)
+            self.start_arrow_item.setPen(line_color)
         if self.arrows & AxisEnd:
             if not zoom_only or not self.end_arrow_item:
                 self.end_arrow_item = QGraphicsPathItem(self.arrow_path, self)
             self.end_arrow_item.setPos(self.graph_line.p2())
             self.end_arrow_item.setRotation(-self.graph_line.angle())
-            self.end_arrow_item.setBrush(color)
-            self.end_arrow_item.setPen(color)
+            self.end_arrow_item.setBrush(line_color)
+            self.end_arrow_item.setPen(line_color)
             
         ## Labels
         
@@ -225,7 +227,7 @@ class OWAxis(QGraphicsItem):
                 label_pos = tick_pos + n_p * self.text_margin - l_p * w/2
             item.setPos(label_pos)
             item.setTextWidth(w)
-            item.setDefaultTextColor(color)
+            item.setDefaultTextColor(text_color)
             
             item = self.tick_items[i]
             item.setVisible(True)
@@ -235,7 +237,7 @@ class OWAxis(QGraphicsItem):
             if self.title_above:
                 tick_line.setAngle(tick_line.angle() + 180)
             item.setLine( tick_line )
-            item.setPen(color)
+            item.setPen(line_color)
             item.setPos(self.map_to_graph(pos))
             
     @staticmethod

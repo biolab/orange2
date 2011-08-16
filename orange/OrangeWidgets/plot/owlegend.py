@@ -12,12 +12,13 @@ Plot legend (``owlegend``)
 
 """
 
-from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen, QLinearGradient, QPalette
+from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen, QLinearGradient
 from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF, qDebug
 
 from owpoint import *
 from owcurve import OWCurve
 from owtools import move_item_xy
+from owpalette import OWPalette
 
 PointColor = 1
 PointSize = 2
@@ -238,8 +239,8 @@ class OWLegend(QGraphicsObject):
         
         for lst in self.items.itervalues():
             for item in lst:
-                item.text_item.setDefaultTextColor(self.graph.color(QPalette.Text))
-                item.rect_item.setBrush(self.graph.color(QPalette.Base))
+                item.text_item.setDefaultTextColor(self.graph.color(OWPalette.Text))
+                item.rect_item.setBrush(self.graph.color(OWPalette.Canvas))
         if self._orientation == Qt.Vertical:
             for lst in self.items.itervalues():
                 for item in lst:

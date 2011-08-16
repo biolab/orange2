@@ -251,15 +251,17 @@ class OWPolyvizGraphQt(OWPlot, orngScalePolyvizData):
         elif self.dataHasContinuousClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                if useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[self.dataClassIndex][i]]
-                else:                   newColor = QColor(0,0,0)
+                if useDifferentColors:  
+                    newColor = self.contPalette[self.noJitteringScaledData[self.dataClassIndex][i]]
+                else:
+                    newColor = self.color(OWPalette.Data)
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], newColor, i)
                 self.addAnchorLine(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], (newColor.red(), newColor.green(), newColor.blue()), i, length)
 
         # DISCRETE class or no class at all
         else:
-            color = (0,0,0)
+            color = self.color(OWPalette.Data).getRgb()
             symbol = self.curveSymbols[0]
             for i in range(dataSize):
                 if not validData[i]: continue
@@ -288,30 +290,29 @@ class OWPolyvizGraphQt(OWPlot, orngScalePolyvizData):
         self.yLinesToAdd = {}
 
         # draw polygon
-        self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, OWCurve.Lines, symbol = OWPoint.NoSymbol, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
+        polygon_color = self.color(OWPalette.Axis)
+        self.addCurve("polygon", polygon_color, polygon_color, 0, OWCurve.Lines, symbol = OWPoint.NoSymbol, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
 
         #################
         # draw the legend
-        if self.showLegend and self.dataHasClass:
-            # show legend for discrete class
-            if self.dataHasDiscreteClass:
-                self.addMarker(self.dataDomain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
+        if self.dataHasDiscreteClass:
+            category = self.dataDomain.classVar.name
+            for index, value in enumerate(getVariableValuesSorted(self.dataDomain.classVar)):
+                if useDifferentColors: 
+                    color = self.discPalette[index]
+                else:
+                    color = self.color(OWPalette.Data)
+                
+                if self.useDifferentSymbols:  
+                    curveSymbol = self.curveSymbols[index]
+                else:                             
+                    curveSymbol = self.curveSymbols[0]
+                    
+                self.legend().add_item(category, str(value), OWPoint(curveSymbol, color, self.point_width))
 
-                classVariableValues = getVariableValuesSorted(self.dataDomain.classVar)
-                for index in range(len(classVariableValues)):
-                    if useDifferentColors: color = self.discPalette[index]
-                    else:                       color = QColor(0,0,0)
-                    y = 1.0 - index * 0.05
-
-                    if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
-                    else:                             curveSymbol = self.curveSymbols[index]
-
-                    self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
-                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft | Qt.AlignVCenter)
-
-            # show legend for continuous class
-            elif self.dataHasContinuousClass:
-                self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
+        # show legend for continuous class
+        elif self.dataHasContinuousClass:
+            self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
 
         self.replot()
 

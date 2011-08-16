@@ -27,7 +27,7 @@ from owtools import *
 SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap)
 SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
-from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion, QPalette
+from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
 from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty
 
 from OWDlgs import OWChooseImageSizeDlg
@@ -551,7 +551,7 @@ class OWPlot(orangeqt.Plot):
 
     def setCanvasColor(self, c):
         p = self.palette()
-        p.setColor(QPalette.Base, c)
+        p.setColor(OWPalette.Canvas, c)
         self.set_palette(p)
         
     def setData(self, data):
@@ -667,9 +667,9 @@ class OWPlot(orangeqt.Plot):
         c.set_style(style)
         
         if not brushColor:
-            brushColor = self.color(QPalette.Text)
+            brushColor = self.color(OWPalette.Data)
         if not penColor:
-            penColor = self.color(QPalette.Text)
+            penColor = self.color(OWPalette.Data)
         
         c.set_color(penColor)
         
@@ -986,7 +986,7 @@ class OWPlot(orangeqt.Plot):
             
             This functions redraws everything on the graph, so it can be very slow
         '''
-        self.setBackgroundBrush(self.color(QPalette.Base))
+        self.setBackgroundBrush(self.color(OWPalette.Canvas))
         self._bounds_cache = {}
         self._transform_cache = {}
         self.set_clean()

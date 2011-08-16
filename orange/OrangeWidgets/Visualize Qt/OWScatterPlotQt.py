@@ -162,8 +162,8 @@ class OWScatterPlotQt(OWWidget):
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         
         p = self.graph.palette()
-        p.setColor(QPalette.Base, dlg.getColor("Canvas"))
-        p.setColor(QPalette.AlternateBase, dlg.getColor("Grid"))
+        p.setColor(OWPalette.Canvas, dlg.getColor("Canvas"))
+        p.setColor(OWPalette.Grid, dlg.getColor("Grid"))
         self.graph.set_palette(p)
 
         self.graph.enableGridXB(self.showGridlines)
@@ -381,9 +381,9 @@ class OWScatterPlotQt(OWWidget):
         c.createDiscretePalette("discPalette", "Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous Palette")
         box = c.createBox("otherColors", "Other Colors")
-        c.createColorButton(box, "Canvas", "Canvas color", self.graph.color(QPalette.Base))
+        c.createColorButton(box, "Canvas", "Canvas color", self.graph.color(OWPalette.Canvas))
         box.layout().addSpacing(5)
-        c.createColorButton(box, "Grid", "Grid color", self.graph.color(QPalette.AlternateBase))
+        c.createColorButton(box, "Grid", "Grid color", self.graph.color(OWPalette.Grid))
         box.layout().addSpacing(5)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c

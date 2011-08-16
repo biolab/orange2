@@ -163,7 +163,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
             Create a single curve with different points
         """
         
-        def_color = self.color(QPalette.Text)
+        def_color = self.color(OWPalette.Data)
         def_size = self.point_width
         def_shape = self.curveSymbols[0]
 

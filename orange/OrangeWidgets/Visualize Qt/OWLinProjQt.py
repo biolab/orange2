@@ -89,10 +89,10 @@ class OWLinProjQt(OWVisWidget):
 ##        self.graph.clusterOptimization = self.clusterDlg
 
         # optimization dialog
-        if name.lower() == "radviz":
+        if "radviz" in name.lower():
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
-        elif name.lower() == "polyviz":
+        elif "polyviz" in name.lower():
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         else:
@@ -101,7 +101,7 @@ class OWLinProjQt(OWVisWidget):
 
         self.optimizationDlg = self.vizrank  # for backward compatibility
 
-        self.graph.normalizeExamples = (name.lower() == "radviz")       # ignore settings!! if we have radviz then normalize, otherwise not.
+        self.graph.normalizeExamples = ("radviz" in name.lower())       # ignore settings!! if we have radviz then normalize, otherwise not.
 
         #GUI
         # add a settings dialog and initialize its values
@@ -119,11 +119,11 @@ class OWLinProjQt(OWVisWidget):
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
-        if name.lower() in ["linear projection", "radviz"]:
+        if "radviz" in name.lower() or "linear projection" in name.lower():
             self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
             self.wdChildDialogs.append(self.freeVizDlg)
             self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
-            if name.lower() == "linear projection":
+            if "linear projection" in name.lower():
                 self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
                 self.send("FreeViz Learner", self.freeVizLearner)
 
@@ -200,7 +200,7 @@ class OWLinProjQt(OWVisWidget):
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         
         p = self.graph.palette()
-        p.setColor(QPalette.Base, dlg.getColor("Canvas"))
+        p.setColor(OWPalette.Canvas, dlg.getColor("Canvas"))
         self.graph.set_palette(p)
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
@@ -350,7 +350,7 @@ class OWLinProjQt(OWVisWidget):
         c.createDiscretePalette("discPalette", "Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous Palette")
         box = c.createBox("otherColors", "Other Colors")
-        c.createColorButton(box, "Canvas", "Canvas color", self.graph.color(QPalette.Base))
+        c.createColorButton(box, "Canvas", "Canvas color", self.graph.color(OWPalette.Canvas))
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
