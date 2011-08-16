@@ -47,6 +47,7 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         self.oldLegendKeys = {}
 
         self.enableWheelZoom = 1
+        self.potentialsCurve = None
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -138,6 +139,9 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
         # #######################################################
         # show probabilities
+        if self.potentialsCurve:
+            self.potentialsCurve.detach()
+            self.potentialsCurve = None
         if self.showProbabilities and colorIndex >= 0 and self.dataDomain[colorIndex].varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
             if self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete: domain = orange.Domain([self.dataDomain[xAttrIndex], self.dataDomain[yAttrIndex], orange.EnumVariable(self.attributeNames[colorIndex], values = getVariableValuesSorted(self.dataDomain[colorIndex]))])
             else:                                                               domain = orange.Domain([self.dataDomain[xAttrIndex], self.dataDomain[yAttrIndex], orange.FloatVariable(self.attributeNames[colorIndex])])
@@ -155,7 +159,8 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
             
             if probData.any():
                 self.potentialsClassifier = orange.P2NN(domain, probData, None, None, None, None)
-                ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, 1., self.spaceBetweenCells).attach(self)            
+                self.potentialsCurve = ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, 1., self.spaceBetweenCells)
+                self.potentialsCurve.attach(self)
             else:
                 self.potentialsClassifier = None
         

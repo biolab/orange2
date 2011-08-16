@@ -73,6 +73,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         self.point_hovered.connect(self.draw_tooltips)
         
         self.value_line_curves = []
+        self.potentialsCurve = None
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -175,6 +176,9 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         xPointsToAdd = {}
         yPointsToAdd = {}
 
+        if self.potentialsCurve:
+            self.potentialsCurve.detach()
+            self.potentialsCurve = None
         if self.showProbabilities and self.haveData and self.dataHasClass:
             # construct potentialsClassifier from unscaled positions
             domain = orange.Domain([self.dataDomain[i].name for i in indices]+[self.dataDomain.classVar.name], self.dataDomain)
@@ -185,8 +189,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             classData = numpy.compress(validData, self.originalData[self.dataClassIndex])
             if classData.any():
                 self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, self.unscaled_x_positions), numpy.compress(validData, self.unscaled_y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
-                c = ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells, QRectF(-1, -1, 2, 2))
-                c.attach(self)
+                self.potentialsCurve = ProbabilitiesItem(self.potentialsClassifier, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells, QRectF(-1, -1, 2, 2))
+                self.potentialsCurve.attach(self)
             else:
                 self.potentialsClassifier = None
             self.potentialsImage = None
