@@ -7,20 +7,20 @@
 import Orange
 
 data = Orange.data.Table("lenses")
-treeClassifier = Orange.classification.tree.TreeLearner(data)
+tree_classifier = Orange.classification.tree.TreeLearner(data)
 
-def treeSize(node):
+def tree_size(node):
     if not node:
         return 0
 
     size = 1
-    if node.branchSelector:
+    if node.branch_selector:
         for branch in node.branches:
-            size += treeSize(branch)
+            size += tree_size(branch)
 
     return size
 
-print "Tree size:", treeSize(treeClassifier.tree)
+print "Tree size:", tree_size(tree_classifier.tree)
 
 
 def printTree0(node, level):
@@ -28,40 +28,40 @@ def printTree0(node, level):
         print " "*level + "<null node>"
         return
 
-    if node.branchSelector:
-        nodeDesc = node.branchSelector.classVar.name
-        nodeCont = node.distribution
-        print "\n" + "   "*level + "%s (%s)" % (nodeDesc, nodeCont),
+    if node.branch_selector:
+        node_desc = node.branch_selector.class_var.name
+        node_cont = node.distribution
+        print "\n" + "   "*level + "%s (%s)" % (node_desc, node_cont),
         for i in range(len(node.branches)):
-            print "\n" + "   "*level + ": %s" % node.branchDescriptions[i],
+            print "\n" + "   "*level + ": %s" % node.branch_descriptions[i],
             printTree0(node.branches[i], level+1)
     else:
-        nodeCont = node.distribution
-        majorClass = node.nodeClassifier.defaultValue
-        print "--> %s (%s) " % (majorClass, nodeCont),
+        node_cont = node.distribution
+        major_class = node.node_classifier.default_value
+        print "--> %s (%s) " % (major_class, node_cont),
 
-def printTree(x):
+def print_tree(x):
     if isinstance(x, Orange.classification.tree.TreeClassifier):
-        printTree0(x.tree, 0)
+        print_tree0(x.tree, 0)
     elif isinstance(x, Orange.classification.tree.Node):
-        printTree0(x, 0)
+        print_tree0(x, 0)
     else:
         raise TypeError, "invalid parameter"
 
 print "\n\nUnpruned tree"
-print treeClassifier.dump()
+print tree_classifier.dump()
 
-def cutTree(node, level):
-    if node and node.branchSelector:
+def cut_tree(node, level):
+    if node and node.branch_selector:
         if level:
             for branch in node.branches:
-                cutTree(branch, level-1)
+                cut_tree(branch, level-1)
         else:
-            node.branchSelector = None
+            node.branch_selector = None
             node.branches = None
-            node.branchDescriptions = None
+            node.branch_descriptions = None
 
 print "\n\nPruned tree"
-cutTree(treeClassifier.tree, 2)
-print treeClassifier.dump()
+cut_tree(tree_classifier.tree, 2)
+print tree_classifier.dump()
 

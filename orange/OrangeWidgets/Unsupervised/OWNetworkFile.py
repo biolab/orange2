@@ -1,9 +1,5 @@
 """
-<name>Network File</name>
-<description>Reads data from a graf file (Pajek networks (.net) files and GML network files).</description>
-<icon>icons/NetworkFile.png</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>7410</priority>
+THIS WIDGET IS OBSOLETE; USE OWNxFile.py
 """
 
 #

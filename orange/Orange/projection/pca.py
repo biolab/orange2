@@ -10,7 +10,7 @@ class Pca(object):
     Orthogonal transformation of data into a set of uncorrelated variables called
     principal components. This transformation is defined in such a way that the
     first variable has as high variance as possible.
-    
+
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
 
@@ -42,7 +42,7 @@ class Pca(object):
     
     def __call__(self, dataset):
         """
-        Perform a pca analysis on a dataset and return classifer that maps data
+        Perform a pca analysis on a dataset and return a classifer that maps data
         into principal component subspace.
         """
         
@@ -146,7 +146,7 @@ class PcaClassifier(object):
     
     def __call__(self, dataset):
         if type(dataset) != Orange.data.Table:
-            dataset = Orange.data.Table(self.input_domain, [dataset])
+            dataset = Orange.data.Table([dataset])
 
         X = dataset.to_numpy_MA("a")[0]
         Xm, U = self.mean, self.eigen_vectors
@@ -187,7 +187,7 @@ class PcaClassifier(object):
         #    " ".join([a.name] + ["%10.3f" % b for b in self.eigen_vectors.T[i]])
         #          for i, a in enumerate(self.input_domain.attributes)
         #          ])
-        ]) if len(self.pc_domain) <= 16 else \
+        ]) if len(self.pc_domain) <= ncomponents else \
         "\n".join([
         "PCA SUMMARY",
         "",
@@ -363,4 +363,4 @@ class PcaClassifier(object):
             plt.savefig(filename)
         else:
             plt.show()
-            
+ 

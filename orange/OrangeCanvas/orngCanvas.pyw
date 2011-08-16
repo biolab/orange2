@@ -350,9 +350,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuHelp.addAction("Orange Online Widget Catalog", self.menuOpenOnlineOrangeHelp)
         #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
 
-        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
-            self.menuHelp.addSeparator()
-            self.menuHelp.addAction("Check for updates", self.menuCheckForUpdates)
+#        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
+#            self.menuHelp.addSeparator()
+#            self.menuHelp.addAction("Check for updates", self.menuCheckForUpdates)
             
         self.menuHelp.addSeparator()
         self.menuHelp.addAction("About Orange", self.menuItemAboutOrange)

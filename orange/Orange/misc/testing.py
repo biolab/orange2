@@ -111,7 +111,7 @@ def open_data(name, flags=0):
     return dataset
 
 CLASSIFICATION_DATASETS = ["iris", "brown-selected", "lenses", "monks-1"]
-REGRESSION_DATASETS = ["housing", "auto-mpg"]
+REGRESSION_DATASETS = ["housing", "auto-mpg", "servo"]
 CLASSLES_DATASETS =  ["water-treatment"]
 ALL_DATASETS  = CLASSIFICATION_DATASETS + REGRESSION_DATASETS + CLASSLES_DATASETS
 
@@ -406,12 +406,13 @@ class LearnerTestCase(DataTestCase):
         test = dataset.select(indices, 0)
         
         for ex in test:
-            if classifier(ex, orange.GetValue) != classifier_clone(ex, orange.GetValue):
-                print classifier(ex, orange.GetBoth) , classifier_clone(ex, orange.GetBoth)
-                print classifier(ex, orange.GetValue) , classifier_clone(ex, orange.GetValue)
-            self.assertEqual(classifier(ex, orange.GetValue), classifier_clone(ex, orange.GetValue), "Pickled and original classifier return a different value!")
-        self.assertTrue(all(classifier(ex, orange.GetValue) == classifier_clone(ex, orange.GetValue) for ex in test))
-
+            if isinstance(dataset.domain.class_var, Orange.data.variable.Continuous):
+                self.assertAlmostEqual(classifier(ex, orange.GetValue).native(),
+                                       classifier_clone(ex, orange.GetValue).native(),
+                                       dataset.domain.class_var.number_of_decimals + 3,
+                                       "Pickled and original classifier return a different value!")
+            else:
+                self.assertEqual(classifier(ex, orange.GetValue), classifier_clone(ex, orange.GetValue), "Pickled and original classifier return a different value!")
 
 class MeasureAttributeTestCase(DataTestCase):
     """ Test orange MeasureAttribute subclass.
@@ -423,6 +424,9 @@ class MeasureAttributeTestCase(DataTestCase):
     MEASURE = None
     """ MEASURE must be defined in the subclass
     """
+    
+    def setUp(self):
+        self.measure = self.MEASURE
             
     @test_on_data
     def test_measure_attribute_on(self, data):
@@ -430,7 +434,7 @@ class MeasureAttributeTestCase(DataTestCase):
         """
         scores = []
         for attr in data.domain.attributes:
-            score = self.MEASURE(attr, data)
+            score = self.measure(attr, data)
 #            self.assertTrue(score >= 0.0)
             scores.append(score)
         # any scores actually non zero
@@ -441,7 +445,7 @@ class MeasureAttributeTestCase(DataTestCase):
         """ Test attribute measure pickling support.
         """
         import cPickle
-        s = cPickle.dumps(self.MEASURE)
+        s = cPickle.dumps(self.measure)
         measure = cPickle.loads(s)
         # TODO: make sure measure computes the same scores as measure
          
@@ -451,25 +455,57 @@ class PreprocessorTestCase(DataTestCase):
     
     """ 
     PREPROCESSOR = None
+    
+    def setUp(self):
+        self.preprocessor = self.PREPROCESSOR
 
     @test_on_data
     def test_preprocessor_on(self, dataset):
         """ Test preprocessor on dataset 
         """
-        newdata = self.PREPROCESSOR(dataset)
+        newdata = self.preprocessor(dataset)
         
     def test_pickle(self):
         """ Test preprocessor pickling
         """
-        if isinstance(self.PREPROCESSOR, type):
-            prep = self.PREPROCESSOR() # Test the default constructed
+        if isinstance(self.preprocessor, type):
+            prep = self.preprocessor() # Test the default constructed
             s = cPickle.dumps(prep)
             prep = cPickle.loads(s)
                 
-        s = cPickle.dumps(self.PREPROCESSOR)
+        s = cPickle.dumps(self.preprocessor)
         prep = cPickle.loads(s)
         
-            
+        
+from Orange.distance.instances import distance_matrix
+from Orange.misc import member_set
+
+
+class DistanceTestCase(DataTestCase):
+    """ Test orange.ExamplesDistance/Constructor
+    """
+    DISTANCE_CONSTRUCTOR = None
+    
+    def setUp(self):
+        self.distance_constructor = self.DISTANCE_CONSTRUCTOR
+        
+    @test_on_data
+    def test_distance_on(self, dataset):
+        import numpy
+        indices = orange.MakeRandomIndices2(dataset, min(20, len(dataset)))
+        dataset = dataset.select(indices, 0)
+        with member_set(self.distance_constructor, "ignore_class", True):
+            mat = distance_matrix(dataset, self.distance_constructor)
+        
+        m = numpy.array(list(mat))
+        self.assertTrue((m >= 0.0).all())
+        
+        if dataset.domain.class_var:
+            with member_set(self.distance_constructor, "ignore_class", False):
+                mat = distance_matrix(dataset, self.distance_constructor)
+            m1 = numpy.array(list(mat))
+            self.assertTrue((m1 != m).all() or dataset, "%r does not seem to respect the 'ignore_class' flag")
+        
 def test_case_script(path):
     """ Return a TestCase instance from a script in `path`.
     The script will be run in the directory it is in.

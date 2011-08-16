@@ -1,4 +1,13 @@
-### Janez 03-02-14: Added weights
-### Inform Blaz and remove this comment
-
 from Orange.feature.scoring import *
+
+mergeAttrValues = merge_values
+
+MeasureAttribute_MDL = MDL
+MeasureAttribute_MDLClass = MDL
+
+MeasureAttribute_Distance = Distance
+MeasureAttribute_DistanceClass = Distance
+
+OrderAttributesByMeasure = OrderAttributes
+
+

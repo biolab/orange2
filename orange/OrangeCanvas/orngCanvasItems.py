@@ -8,11 +8,11 @@ import os, sys, math
 ERROR = 0
 WARNING = 1
 
-def _graphicsEffect(item):
-    if hasattr(item, "graphicsEffect"):
-        return item.graphicsEffect()
-    else:
-        return None
+#def _graphicsEffect(item):
+#    if hasattr(item, "graphicsEffect"):
+#        return item.graphicsEffect()
+#    else:
+#        return None
     
 class TempCanvasLine(QGraphicsPathItem):
     def __init__(self, canvasDlg, canvas):
@@ -25,11 +25,11 @@ class TempCanvasLine(QGraphicsPathItem):
 
         self.setPen(QPen(QColor(180, 180, 180), 3, Qt.SolidLine))
         
-        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
-            effect = QGraphicsDropShadowEffect(self.scene())
-            effect.setOffset(QPointF(0.0, 0.0))
-            effect.setBlurRadius(7)
-            self.setGraphicsEffect(effect)        
+#        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
+#            effect = QGraphicsDropShadowEffect(self.scene())
+#            effect.setOffset(QPointF(0.0, 0.0))
+#            effect.setBlurRadius(7)
+#            self.setGraphicsEffect(effect)        
         
     def setStartWidget(self, widget):
         self.startWidget = widget
@@ -119,11 +119,14 @@ class CanvasLine(QGraphicsPathItem):
         self.setPen(QPen(QColor(200, 200, 200), 20, Qt.SolidLine))
         self.setAcceptHoverEvents(True)
         self.hoverState = False
-        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
-            effect = QGraphicsDropShadowEffect(self.scene())
-            effect.setOffset(QPointF(0.0, 0.0))
-            effect.setBlurRadius(7)
-            self.setGraphicsEffect(effect)
+        
+#        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
+#            effect = QGraphicsDropShadowEffect(self.scene())
+#            effect.setOffset(QPointF(0.0, 0.0))
+#            effect.setBlurRadius(7)
+#            self.setGraphicsEffect(effect)
+#            self.prepareGeometryChange()
+            
         if scene is not None:
             scene.addItem(self)
             
@@ -189,14 +192,14 @@ class CanvasLine(QGraphicsPathItem):
         stroke.setWidth(6)
         return stroke.createStroke(self.path())
     
-    def boundingRect(self):
-        rect = QGraphicsPathItem.boundingRect(self)
-        if _graphicsEffect(self):
-            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
-            textRect.moveTo(self.captionItem.pos())
-            return rect.united(textRect)
-        else:
-            return rect
+#    def boundingRect(self):
+#        rect = QGraphicsPathItem.boundingRect(self)
+#        if _graphicsEffect(self):
+#            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+#            textRect.moveTo(self.captionItem.pos())
+#            return rect.united(textRect)
+#        else:
+#            return rect
 
     def paint(self, painter, option, widget = None):
         if self.isDynamic():
@@ -211,17 +214,18 @@ class CanvasLine(QGraphicsPathItem):
         painter.drawPath(self.path())
 
     def updateTooltip(self):
-        status = self.getEnabled() == 0 and " (Disabled)" or ""
-        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b>" + status + "</nobr><hr>Signals:<br>"
-        for (outSignal, inSignal) in self.getSignals():
-            string += "<nobr> &nbsp; &nbsp; - " + outSignal + " --> " + inSignal + "</nobr><br>"
-        string = string[:-4]
-        self.setToolTip(string)
-
-        # print the text with the signals
-        self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
-        self.captionItem.setHtml("<center>%s</center>" % self.caption.replace("\n", "<br/>"))
-        self.updatePainterPath()
+        if self.inWidget and self.outWidget:
+            status = self.getEnabled() == 0 and " (Disabled)" or ""
+            string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b>" + status + "</nobr><hr>Signals:<br>"
+            for (outSignal, inSignal) in self.getSignals():
+                string += "<nobr> &nbsp; &nbsp; - " + outSignal + " --> " + inSignal + "</nobr><br>"
+            string = string[:-4]
+            self.setToolTip(string)
+    
+            # print the text with the signals
+            self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
+            self.captionItem.setHtml("<center>%s</center>" % self.caption.replace("\n", "<br/>"))
+            self.updatePainterPath()
 
     def hoverEnterEvent(self, event):
         self.hoverState = True
@@ -304,11 +308,12 @@ class CanvasWidget(QGraphicsRectItem):
         self.hoverState = False
         self.setFlags(QGraphicsItem.ItemIsSelectable)# | QGraphicsItem.ItemIsMovable)
         
-        if qVersion() >= "4.6" and self.canvasDlg.settings["enableCanvasDropShadows"]:
-            effect = QGraphicsDropShadowEffect()
-            effect.setOffset(QPointF(1.1, 3.1))
-            effect.setBlurRadius(7)
-            self.setGraphicsEffect(effect)
+#        if qVersion() >= "4.6" and self.canvasDlg.settings["enableCanvasDropShadows"]:
+#            effect = QGraphicsDropShadowEffect()
+#            effect.setOffset(QPointF(1.1, 3.1))
+#            effect.setBlurRadius(7)
+#            self.setGraphicsEffect(effect)
+#            self.prepareGeometryChange()
             
         if scene is not None:
             scene.addItem(self)
@@ -430,12 +435,10 @@ class CanvasWidget(QGraphicsRectItem):
     def boundingRect(self):
         rect = QRectF(QPointF(0, 0), self.widgetSize).adjusted(-11, -6, 11, 6)#.adjusted(-100, -100, 100, 100) #(-10-width, -4, +10+width, +25)
         rect.setTop(rect.top() - 20 - 21) ## Room for progress bar and warning, error, info icons
-        if _graphicsEffect(self):
-            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
-            textRect.moveTo(self.captionItem.pos())
-            return rect.united(textRect)
-        else:
-            return rect 
+#        if _graphicsEffect(self):
+#            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+#            textRect.moveTo(self.captionItem.pos()) 
+        return rect
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):

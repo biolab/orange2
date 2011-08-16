@@ -82,7 +82,7 @@ class OWSave(OWWidget):
         if self.recentFiles:
             startfile = self.recentFiles[0]
         else:
-            startfile = "."
+            startfile = os.path.expanduser("~/")
 
 #        filename, selectedFilter = QFileDialog.getSaveFileNameAndFilter(self, 'Save Orange Data File', startfile,
 #                        self.dlgFormats, self.dlgFormats.split("\n")[0])

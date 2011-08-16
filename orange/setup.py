@@ -1,6 +1,8 @@
 from distutils.core import setup, Extension
 from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib
+from distutils.msvccompiler import MSVCCompiler
+from distutils.unixccompiler import UnixCCompiler
 
 import os, sys, re
 import glob
@@ -24,7 +26,7 @@ if sys.platform == "darwin":
     extra_compile_args = "-fPIC -fpermissive -fno-common -w -DDARWIN ".split()
     extra_link_args = "-headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -lorange_include".split()
 elif sys.platform == "win32":
-    extra_compile_args = []
+    extra_compile_args = ["/EHsc"]
     extra_link_args = []
 elif sys.platform == "linux2":
     extra_compile_args = "-fPIC -fpermissive -w -DLINUX".split()
@@ -89,20 +91,28 @@ class pyxtract_build_ext(build_ext):
             build_ext.build_extension(self, ext)
             
         if isinstance(ext, PyXtractSharedExtension):
-            # Make lib{name}.so link to {name}.so
-            ext_path = self.get_ext_fullpath(ext.name)
-            ext_path, ext_filename = os.path.split(ext_path)
-            realpath = os.path.realpath(os.curdir)
-            try:
-                os.chdir(ext_path)
-                # Get the shared library name
-                lib_filename = self.compiler.library_filename(ext.name, lib_type="shared")
-                # Create the link
-                copy_file(ext_filename, lib_filename, link="sym")
-            except OSError, ex:
-                log.info("failed to create shared library for %s: %s" % (ext.name, str(ex)))
-            finally:
-                os.chdir(realpath)
+            if isinstance(self.compiler, MSVCCompiler):
+                # Copy ${TEMP}/orange/orange.lib to ${BUILD}/orange.lib
+                ext_fullpath = self.get_ext_fullpath(ext.name)
+                lib = glob.glob(os.path.join(self.build_temp, "*", "*", ext.name + ".lib"))[0]
+                copy_file(lib, os.path.splitext(ext_fullpath)[0] + ".lib")
+                          
+                #self.get
+            else:
+                # Make lib{name}.so link to {name}.so
+                ext_path = self.get_ext_fullpath(ext.name)
+                ext_path, ext_filename = os.path.split(ext_path)
+                realpath = os.path.realpath(os.curdir)
+                try:
+                    os.chdir(ext_path)
+                    # Get the shared library name
+                    lib_filename = self.compiler.library_filename(ext.name, lib_type="shared")
+                    # Create the link
+                    copy_file(ext_filename, lib_filename, link="sym")
+                except OSError, ex:
+                    log.info("failed to create shared library for %s: %s" % (ext.name, str(ex)))
+                finally:
+                    os.chdir(realpath)
             
     def build_pyxtract(self, ext):
         ## mostly copied from build_extension
@@ -207,6 +217,8 @@ class pyxtract_build_ext(build_ext):
         
         ext_path = self.get_ext_fullpath(ext.name)
         output_dir, _ = os.path.split(ext_path)
+        if not os.path.exists(output_dir): #VSC fails if the dir does not exist
+            os.makedirs(output_dir)
         lib_filename = self.compiler.library_filename(ext.name, lib_type='static', output_dir=output_dir)
         
         depends = sources + ext.depends
@@ -345,9 +357,14 @@ def get_source_files(path, ext="cpp", exclude=[]):
 
 include_ext = LibStatic("orange_include", get_source_files("source/include/"), include_dirs=include_dirs)
 
-libraries = ["stdc++", "orange_include"]
+if sys.platform == "win32":
+    libraries = ["orange_include"]
+else:
+    libraries = ["stdc++", "orange_include"]
 
-orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + get_source_files("source/orange/blas/", "c"),
+orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + \
+                                               get_source_files("source/orange/blas/", "c") + \
+                                               get_source_files("source/orange/linpack/", "c"),
                                       include_dirs=include_dirs,
                                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
                                       extra_link_args = extra_link_args,
@@ -398,7 +415,7 @@ matches = []
 for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.py's
   for filename in fnmatch.filter(filenames, '__init__.py'):
       matches.append(os.path.join(root, filename))
-packages = [pkg.rpartition('/__init__.py')[0].replace('/','.') for pkg in matches]
+packages = [os.path.dirname(pkg).replace(os.path.sep, '.') for pkg in matches]
 
 setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       name ="Orange",

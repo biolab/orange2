@@ -1,5 +1,5 @@
 """
-<name>Nx File</name>
+<name>Net File</name>
 <description>Reads data from a graf file (Pajek networks (.net) files and GML network files).</description>
 <icon>icons/NetworkFile.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
@@ -338,7 +338,7 @@ class OWNxFile(OWWidget):
             import os
             try:
                 import orngConfiguration
-                startfile = orngConfiguration.datasetsPath
+                startfile = Orange.misc.environ.network_install_dir
             except:
                 startfile = ""
                 
@@ -379,7 +379,7 @@ class OWNxFile(OWWidget):
             else:
                 startfile = self.recentFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "NetworkX graph as Python pickle (*.gpickle)\nPajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "All network files (*.gpickle *.net *.gml)\nNetworkX graph as Python pickle (*.gpickle)\nPajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
         
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)

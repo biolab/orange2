@@ -241,15 +241,12 @@ class StampListDecorate(Transform):
     def apply(self):
         for node in self.document.traverse(nodes.Node):
             if isinstance(node,  nodes.Node) and not isinstance(node, nodes.Text):
-                try:
-                    if "stamp-list" in node["classes"][:]:
-                        self.decorate(node)
-                except Exception, ex:
-                    print ex
+                if "stamp-list" in node["classes"][:]:
+                    self.decorate(node)
                 
     def decorate(self, node):
         for ol in node.traverse(nodes.enumerated_list):
-            start = int(ol["start"])
+            start = int(ol["start"]) if "start" in ol else 1
             for i, list_item in enumerate(ol.traverse(nodes.list_item)):
                 list_item["classes"].append("list-item-%i" % (start + i))
                 

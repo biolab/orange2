@@ -295,7 +295,7 @@ specify the cutoff values for the heatmap (values below and above the interval w
 <xmp class=code>data = orange.ExampleTable("iris")
 sample = data.selectref(orange.MakeRandomIndices2(data, 20), 0)
 root = orngClustering.hierarchicalClustering(sample)
-dendrogram = orngClustering.dendrogram_draw("hclust-dendrogram.png", root, sample, labels=[str(d.getclass()) for d in sample])
+orngClustering.dendrogram_draw("hclust-dendrogram.png", root, data=sample, labels=[str(d.getclass()) for d in sample]) 
 </xmp>
 
 <p>The resulting dendrogram is shown below.</p>

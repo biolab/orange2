@@ -259,12 +259,12 @@ def loadLibSVM(filename, create_on_new=Orange.data.variable.Variable.MakeStatus.
     """Return class:`Orange.data.Table` containing data from file in LibSVM format"""
     attributeLoadStatus = {}
     def make_float(name):
-        attr, s = orange.Variable.make(name, orange.VarTypes.Continuous, [], [], createOnNew)
+        attr, s = Orange.data.variable.make(name, Orange.data.Type.Continuous, [], [], create_on_new)
         attributeLoadStatus[attr] = s
         return attr
     
     def make_disc(name, unordered):
-        attr, s = orange.Variable.make(name, orange.VarTypes.Discrete, [], unordered, createOnNew)
+        attr, s = Orange.data.variable.make(name, Orange.data.Type.Discrete, [], unordered, create_on_new)
         attributeLoadStatus[attr] = s
         return attr
     
@@ -278,8 +278,8 @@ def loadLibSVM(filename, create_on_new=Orange.data.variable.Variable.MakeStatus.
     classVar = make_disc("class", sorted(set(classes))) if disc else make_float("target")
     attributeLoadStatus = [attributeLoadStatus[attr] for attr in attributes] + \
                           [attributeLoadStatus[classVar]]
-    domain = orange.Domain(attributes, classVar)
-    table = orange.ExampleTable([orange.Example(domain, [ex.get(attr, attr("?")) for attr in attributes] + [c]) for ex, c in zip(values, classes)])
+    domain = Orange.data.Domain(attributes, classVar)
+    table = Orange.data.Table([Orange.data.Instance(domain, [ex.get(attr, attr("?")) for attr in attributes] + [c]) for ex, c in zip(values, classes)])
     table.attribute_load_status = attributeLoadStatus
     return table
 loadLibSVM = Orange.misc.deprecated_keywords(

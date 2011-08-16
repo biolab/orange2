@@ -1,9 +1,5 @@
 """
-<name>Network Clustering</name>
-<description>Orange widget for community detection in networks</description>
-<icon>icons/Network.png</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>7440</priority>
+THIS WIDGET IS OBSOLETE; USE OWNxClustering.py
 """
 
 import orange

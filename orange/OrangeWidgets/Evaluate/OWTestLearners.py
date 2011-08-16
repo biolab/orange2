@@ -38,6 +38,12 @@ class Score:
         self.f = f
         self.show = show
         self.cmBased = cmBased
+        
+def dispatch(score_desc, res, cm):
+    """ Dispatch the call to orngStat method.
+    """
+    return eval("orngStat." + score_desc.f)
+
 
 class OWTestLearners(OWWidget):
     settingsList = ["nFolds", "pLearning", "pRepeat", "precision",
@@ -375,8 +381,11 @@ class OWTestLearners(OWWidget):
             pb = OWGUI.ProgressBar(self, iterations=len(learners))
             res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata, storeExamples = True, callback=pb.advance)
             pb.finish()
+            
         if self.isclassification():
             cm = orngStat.computeConfusionMatrices(res, classIndex = self.targetClass)
+        else:
+            cm = None
 
         if self.preprocessor: # Unwrap learners 
             learners = [l.wrappedLearner for l in learners]
@@ -389,15 +398,31 @@ class OWTestLearners(OWWidget):
 
         self.error(range(len(self.stat)))
         scores = []
+        
+        
+        
         for i, s in enumerate(self.stat):
-            try:
-                scores.append(eval("orngStat." + s.f))
-            except Exception, ex:
-                self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
-                           (" ".join([l.name for l in learners]), ex.message))
-                scores.append([None] * len(self.learners))
+            if s.cmBased:
+                try:
+#                    scores.append(eval("orngStat." + s.f))
+                    scores.append(dispatch(s, res, cm))
+                except Exception, ex:
+                    self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
+                               (" ".join([l.name for l in learners]), ex.message))
+                    scores.append([None] * len(self.learners))
+            else:
+                scores_one = []
+                for res_one in orngStat.split_by_classifiers(res):
+                    try:
+#                        scores_one.append(eval("orngStat." + s.f)[0])
+                        scores_one.extend(dispatch(s, res_one, cm))
+                    except Exception, ex:
+                        self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
+                                   (res.classifierNames[0], ex.message))
+                        scores_one.append(None)
+                scores.append(scores_one)
                 
-        for (i, l) in enumerate(learners):
+        for i, l in enumerate(learners):
             self.learners[l.id].scores = [s[i] if s else None for s in scores]
             
         self.sendResults()

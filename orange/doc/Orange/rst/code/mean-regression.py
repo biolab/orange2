@@ -12,7 +12,7 @@ treeLearner = Orange.classification.tree.TreeLearner() #Orange.regression.TreeLe
 meanLearner = Orange.regression.mean.MeanLearner()
 learners = [treeLearner, meanLearner]
 
-res = Orange.evaluation.testing.crossValidation(learners, table)
+res = Orange.evaluation.testing.cross_validation(learners, table)
 MSEs = Orange.evaluation.scoring.MSE(res)
 
 print "Tree:    %5.3f" % MSEs[0]

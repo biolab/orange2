@@ -160,16 +160,20 @@ class Preprocessor_continuize(orange.Preprocessor):
     __new__ = _orange__new__(orange.Preprocessor)
     __reduce__ = _orange__reduce__
     
-    def __init__(self, zeroBased=True, multinomialTreatment=orange.DomainContinuizer.NValues, normalizeContinuous=False, **kwargs):
+    def __init__(self, zeroBased=True, multinomialTreatment=orange.DomainContinuizer.NValues,
+                 continuousTreatment=orange.DomainContinuizer.Leave,
+                 classTreatment=orange.DomainContinuizer.Ignore,
+                 **kwargs):
         self.zeroBased = zeroBased
         self.multinomialTreatment = multinomialTreatment
-        self.normalizeContinuous = normalizeContinuous
+        self.continuousTreatment = continuousTreatment
+        self.classTreatment = classTreatment
             
     def __call__(self, data, weightId=0):
         continuizer = orange.DomainContinuizer(zeroBased=self.zeroBased,
                                                multinomialTreatment=self.multinomialTreatment,
-                                               normalizeContinuous=self.normalizeContinuous,
-                                               classTreatment=orange.DomainContinuizer.Ignore)
+                                               continuousTreatment=self.continuousTreatment,
+                                               classTreatment=self.classTreatment)
         c_domain = continuizer(data, weightId)
         return data.translate(c_domain)
     

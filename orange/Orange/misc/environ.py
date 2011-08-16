@@ -59,6 +59,9 @@ The following variables are exposed as top level module members
 `dataset_install_dir`:
     Directory with example data sets.
 
+`network_install_dir`:
+    Directory with example networks.
+
 `add_ons_dir`:
     Directory where system-wide add-ons are installed 
     
@@ -131,6 +134,7 @@ def _get_default_env():
 
     doc_install_dir = os.path.join(install_dir, "doc") 
     dataset_install_dir = os.path.join(install_dir, "doc", "datasets") 
+    network_install_dir = os.path.join(install_dir, "doc", "networks")
 
     canvas_install_dir = os.path.join(install_dir, "OrangeCanvas")
     widget_install_dir = os.path.join(install_dir, "OrangeWidgets")
@@ -174,7 +178,8 @@ _ALL_ENV_OPTIONS = ["version", "version_display", "is_canvas_installed",
 
 _ALL_DIR_OPTIONS = ["install_dir", "canvas_install_dir",
                     "widget_install_dir", "icons_install_dir",
-                    "doc_install_dir", "dataset_install_dir", "add_ons_dir", "add_ons_dir_user",
+                    "doc_install_dir", "dataset_install_dir", 
+                    "network_install_dir", "add_ons_dir", "add_ons_dir_user",
                     "application_dir", "output_dir", "default_reports_dir",
                     "orange_settings_dir", "canvas_settings_dir",
                     "widget_settings_dir", "buffer_dir"]

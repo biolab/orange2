@@ -162,9 +162,10 @@ class SchemaView(QGraphicsView):
 
     def resetLineSignals(self):
         if self.selectedLine:
-            self.doc.resetActiveSignals(self.selectedLine.outWidget, self.selectedLine.inWidget, enabled = self.doc.signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance))
-            self.selectedLine.inWidget.updateTooltip()
-            self.selectedLine.outWidget.updateTooltip()
+            outWidget, inWidget = self.selectedLine.outWidget, self.selectedLine.inWidget
+            self.doc.resetActiveSignals(outWidget, inWidget, enabled = self.doc.signalManager.getLinkEnabled(outWidget.instance, inWidget.instance))
+            inWidget.updateTooltip()
+            outWidget.updateTooltip()
             self.selectedLine.updateTooltip()
 
     def unselectAllWidgets(self):
@@ -390,9 +391,10 @@ class SchemaView(QGraphicsView):
             if self.doc.signalManager.signalProcessingInProgress:
                 QMessageBox.information( self, "Orange Canvas", "Please wait until Orange finishes processing signals.")
                 return
-            self.doc.resetActiveSignals(activeItem.outWidget, activeItem.inWidget, enabled = self.doc.signalManager.getLinkEnabled(activeItem.outWidget.instance, activeItem.inWidget.instance))
-            activeItem.inWidget.updateTooltip()
-            activeItem.outWidget.updateTooltip()
+            inWidget, outWidget = activeItem.inWidget, activeItem.outWidget
+            self.doc.resetActiveSignals(outWidget, inWidget, enabled = self.doc.signalManager.getLinkEnabled(outWidget.instance, inWidget.instance))
+            inWidget.updateTooltip()
+            outWidget.updateTooltip()
             activeItem.updateTooltip()
             
         return QGraphicsView.mouseDoubleClickEvent(self, ev)

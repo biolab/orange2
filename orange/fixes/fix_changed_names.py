@@ -54,7 +54,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ContingencyClassAttr": "Orange.statistics.contingency.ClassVar",
            "orange.DomainContingency": "Orange.statistics.contingency.Domain",
           
-           "orange.MeasureAttribute": "Orange.feature.scoring.Measure", 
+           "orange.MeasureAttribute": "Orange.feature.scoring.Score", 
+           "orange.MeasureAttributeFromProbabilities": "Orange.feature.scoring.ScoreFromProbabilities", 
            "orange.MeasureAttribute_gainRatio": "Orange.feature.scoring.GainRatio",
            "orange.MeasureAttribute_relief": "Orange.feature.scoring.Relief",
            "orange.MeasureAttribute_info": "Orange.feature.scoring.InfoGain",
@@ -64,7 +65,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.MeasureAttribute_cost": "Orange.feature.scoring.Cost",
            "orange.MeasureAttribute_MSE": "Orange.feature.scoring.MSE",
 
-           "orngFSS.attMeasure": "Orange.feature.scoring.attMeasure",
+           "orngFSS.attMeasure": "Orange.feature.scoring.score_all",
            "orngFSS.bestNAtts": "Orange.feature.selection.bestNAtts",
            "orngFSS.attsAbovethreshold": "Orange.feature.selection.attsAbovethreshold",
            "orngFSS.selectBestNAtts": "Orange.feature.selection.selectBestNAtts",
@@ -483,6 +484,14 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngScaleLinProjData.orngScaleLinProjData": "Orange.preprocess.scaling.ScaleLinProjData",
            "orngScalePolyvizData.orngScalePolyvizData": "Orange.preprocess.scaling.ScalePolyvizData",
            "orngScaleScatterPlotData.orngScaleScatterPlotData": "Orange.preprocess.scaling.ScaleScatterPlotData",
+
+           "orngEvalAttr.mergeAttrValues": "Orange.feature.scoring.merge_values",
+           "orngEvalAttr.MeasureAttribute_MDL": "Orange.feature.scoring.MDL",
+           "orngEvalAttr.MeasureAttribute_MDLClass": "Orange.feature.scoring.MDL",
+           "orngEvalAttr.MeasureAttribute_Distance": "Orange.feature.scoring.Distance",
+           "orngEvalAttr.MeasureAttribute_DistanceClass": "Orange.feature.scoring.Distance",
+           "orngEvalAttr.OrderAttributesByMeasure": "Orange.feature.scoring.OrderAttributes",
+
            }
 
 for k, v in MAPPING.items():

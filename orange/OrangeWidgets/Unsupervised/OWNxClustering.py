@@ -1,9 +1,9 @@
 """
-<name>Nx Clustering</name>
+<name>Net Clustering</name>
 <description>Orange widget for community detection in networks</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>6440</priority>
+<priority>6430</priority>
 """
 
 import Orange

@@ -1,9 +1,9 @@
 """
-<name>Nx from Distances</name>
+<name>Net from Distances</name>
 <description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is between given threshold.</description>
 <icon>icons/NetworkFromDistances.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>6420</priority>
+<priority>6440</priority>
 """
 
 #
