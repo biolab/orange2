@@ -260,7 +260,9 @@ QList< bool > Plot::selected_points(const QList< double > x_data, const QList< d
     Q_ASSERT(x_data.size() == y_data.size());
     const int n = qMin(x_data.size(), y_data.size());
     QList<bool> selected;
+#if QT_VERSION >= 0x040700
     selected.reserve(n);
+#endif
     DataPoint p;
     for (int i = 0; i < n; ++i)
     {

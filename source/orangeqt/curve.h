@@ -330,7 +330,9 @@ void Curve::resize_item_list(QList< T* >& list, int size)
   }
   else if (n < size)
   {  
+#if QT_VERSION >= 0x040700
     list.reserve(size);
+#endif
     for (int i = 0; i < (size-n); ++i)
     {
       list << new T(this);

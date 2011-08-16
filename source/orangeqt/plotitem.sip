@@ -1,3 +1,5 @@
+%Module PlatItem
+
 class PlotItem : QGraphicsObject {
 
 %TypeHeaderCode
@@ -24,10 +26,10 @@ public:
     
     void attach(Plot* graph /TransferThis/);
     void detach();
-    %MethodCode
+%MethodCode
         sipTransferBack(sipGetPyObject(sipCpp, sipType_PlotItem));
         sipCpp->detach();
-    %End
+%End
 
     Plot* plot();
     
