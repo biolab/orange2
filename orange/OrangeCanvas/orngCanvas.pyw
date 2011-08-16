@@ -31,7 +31,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.originalPalette = QApplication.palette()
 
         self.__dict__.update(orngEnviron.directoryNames)
-               
+            
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
         self.defaultBackground = os.path.join(self.picsDir, "frame.png")
         canvasPicsDir = os.path.join(self.canvasDir, "icons")
@@ -66,7 +66,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         # output window
         self.output = orngOutput.OutputWindow(self)
-        self.output.catchException(1)
+#        self.output.catchException(1)
         self.output.catchOutput(1)
         
         self.updateWidgetRegistry()
@@ -86,11 +86,34 @@ class OrangeCanvasDlg(QMainWindow):
             self.informationIcon = None
             self.widgetIcons = None
             print "Unable to load all necessary icons. Please reinstall Orange."
-
+        
+        #########
+        # Actions
+        #########
+        self.showMainToolbarAction = QAction("Main Toolbar", self)
+        self.showMainToolbarAction.setCheckable(True)
+        self.showMainToolbarAction.setChecked(self.settings.get("showToolbar", True))
+        self.connect(self.showMainToolbarAction,
+                     SIGNAL("triggered(bool)"),
+                     self.menuItemShowToolbar)
+        
+        self.showWidgetToolbarAction = QAction("Widget Toolbar", self)
+        self.showWidgetToolbarAction.setCheckable(True)
+        self.showWidgetToolbarAction.setChecked(self.settings.get("showWidgetToolbar", True))
+        self.connect(self.showWidgetToolbarAction,
+                     SIGNAL("triggered(bool)"),
+                     self.menuItemShowWidgetToolbar)
+        
+        # TODO: Move other actions currently defined elsewhere
+        
         self.setStatusBar(MyStatusBar(self))
+        self.statusBar().setVisible(self.settings.get("showStatusBar", True))
+        self.sizeGrip = SizeGrip(self)
+        self.sizeGrip.setVisible(not self.settings.get("showStatusBar", True))
         
         self.updateStyle()
         
+        self.eventNotifier = EventNotifier(parent=self)
         # create toolbar
         self.toolbar = self.addToolBar("Toolbar")
         self.toolbar.setOrientation(Qt.Horizontal)
@@ -100,6 +123,10 @@ class OrangeCanvasDlg(QMainWindow):
         
         # create a schema
         self.schema = orngDoc.SchemaDoc(self)
+        # A corner widget to reserve space for the size grip when
+        # the status bar is hidden
+        self.schema.canvasView.setCornerWidget(QWidget())
+        
         self.setCentralWidget(self.schema)
         self.schema.setFocus()
 
@@ -112,25 +139,47 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
         self.toolbar.addSeparator()
-        w = QWidget()
-        w.setLayout(QHBoxLayout())
         
-        items = ["Tool box", "Tree view", "Tree view (no icons)", "Tabs without labels", "Tabs with labels"]
-        ind = max(len(items) - 1, self.settings["widgetListType"])
-        self.widgetListTypeCB = OWGUI.comboBox(w, self.settings, "widgetListType", label="Style:", orientation="horizontal", items=items, callback=self.createWidgetsToolbar, debuggingEnabled=0)
-        self.widgetListTypeCB.setFocusPolicy(Qt.TabFocus)
-        self.toolbar.addWidget(w)
-        
-        self.toolbar.addSeparator()
-
-        w = QWidget()
-        w.setLayout(QHBoxLayout())
-        items = ["%d x %d" % (v, v) for v in self.toolbarIconSizeList]
-        self.settings["toolbarIconSize"] = min(len(items) - 1, self.settings["toolbarIconSize"])
-        cb = OWGUI.comboBoxWithCaption(w, self.settings, "toolbarIconSize", "Icon size:", items=items, tooltip="Set the size of the widget icons in the toolbar, tool box, and tree view area", callback=self.createWidgetsToolbar, debuggingEnabled=0)
-        cb.setFocusPolicy(Qt.TabFocus)
-        
-        self.toolbar.addWidget(w)
+        # Create the controls for widget list type in the main toolbar
+        # Commented out because this duplicates the entries in the View menu.
+#        def updateWidgetListType():
+#            self.createWidgetsToolbar()
+#            ind = min(len(self.widgetListTypeActions) - 1, self.settings["widgetListType"])
+#            self.widgetListTypeActions[ind].setChecked(True)
+#            
+#        def updateToolbarIconSize():
+#            self.createWidgetsToolbar()
+#            ind = min(len(self.iconSizeActions) - 1, self.settings["toolbarIconSize"])
+#            self.iconSizeActions[ind].setChecked(True)
+#            
+#        w = QWidget()
+#        w.setLayout(QHBoxLayout())
+#        
+#        items = ["Tool box", "Tree view", "Tree view (no icons)", "Tabs without labels", "Tabs with labels"]
+#        ind = max(len(items) - 1, self.settings["widgetListType"])
+#        self.widgetListTypeCB = OWGUI.comboBox(w, self.settings, "widgetListType",
+#                                    label="Style:", orientation="horizontal",
+#                                    items=items,
+#                                    callback=updateWidgetListType,
+#                                    debuggingEnabled=0)
+#        
+#        self.widgetListTypeCB.setFocusPolicy(Qt.TabFocus)
+#        self.toolbar.addWidget(w)
+#        
+#        self.toolbar.addSeparator()
+#
+#        w = QWidget()
+#        w.setLayout(QHBoxLayout())
+#        items = ["%d x %d" % (v, v) for v in self.toolbarIconSizeList]
+#        self.settings["toolbarIconSize"] = min(len(items) - 1, self.settings["toolbarIconSize"])
+#        cb = OWGUI.comboBoxWithCaption(w, self.settings, "toolbarIconSize", "Icon size:",
+#                                       items=items,
+#                                       tooltip="Set the size of the widget icons in the toolbar, tool box, and tree view area",
+#                                       callback=updateToolbarIconSize,
+#                                       debuggingEnabled=0)
+#        cb.setFocusPolicy(Qt.TabFocus)
+#        
+#        self.toolbar.addWidget(w)
         
         self.freezeAction = self.toolbar.addAction("Freeze signals")
         self.freezeAction.setCheckable(True)
@@ -140,7 +189,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.freezeAction.setIcon(QIcon(self.style().standardIcon(QStyle.SP_MediaPlay if freeze else QStyle.SP_MediaPause))) #self.schema_pause))
             self.schema.setFreeze(freeze)
             
-        self.connect(self.freezeAction, SIGNAL("toggled(bool)"), toogleSchemaFreeze) #lambda bool: self.schema.setFreeze(bool))
+        self.connect(self.freezeAction, SIGNAL("toggled(bool)"), toogleSchemaFreeze)
         
         # Restore geometry before calling createWidgetsToolbar.
         # On Mac OSX with unified title bar the canvas can move up on restarts
@@ -153,7 +202,7 @@ class OrangeCanvasDlg(QMainWindow):
             width, height = self.settings.get("canvasWidth", 700), self.settings.get("canvasHeight", 600)
 
         # center window in the desktop
-        # on multiheaded desktops it it does not fit
+        # on multiheaded desktops if it does not fit
         
         desktop = qApp.desktop()
         space = desktop.availableGeometry(self)
@@ -179,8 +228,6 @@ class OrangeCanvasDlg(QMainWindow):
         # create menu
         self.initMenu()
         self.readRecentFiles()
-
-        
         
         #move to center if frame not fully contained in space
         if not space.contains(self.frameGeometry()):
@@ -195,7 +242,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.reportWindow.saveDir = self.settings["reportsDir"]
         
 
-        # did Orange crash the last time we used it? If yes, you will find a temSchema.tmp file
+        # did Orange crash the last time we used it? If yes, you will find a tempSchema.tmp file
         if not RedR:
             if os.path.exists(os.path.join(self.canvasSettingsDir, "tempSchema.tmp")):
                 mb = QMessageBox('%s Canvas' % product, "Your previous %s Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links." % product, QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
@@ -207,14 +254,23 @@ class OrangeCanvasDlg(QMainWindow):
         if self.schema.widgets == [] and len(sys.argv) > 1 and os.path.exists(sys.argv[-1]) and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
             self.schema.loadDocument(sys.argv[-1])
         
+        # Raise the size grip so it is above all other widgets
+        self.sizeGrip.raise_()
+        
         # show message box if no numpy
         qApp.processEvents()
         try:
             import numpy
-        except:
+        except ImportError:
             if QMessageBox.warning(self, '%s Canvas' % product, 'Several widgets now use numpy module, \nthat is not yet installed on this computer. \nDo you wish to download it?', QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
                 import webbrowser
                 webbrowser.open("http://sourceforge.net/projects/numpy/")
+                
+        # On Mac if the user clicks the Toolbar button in the title bar
+        if sys.platform == "darwin":
+            self.eventNotifier.attach(self, QEvent.ToolBarChange, self.toogleToolbarState)
+            
+        self.output.catchException(1)
 
     def updateWidgetRegistry(self):
         """ Update the widget registry and add new category tabs to the
@@ -262,7 +318,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
         else:
             if sys.platform == "darwin":
-                self.setUnifiedTitleAndToolBarOnMac(False)   
+                self.setUnifiedTitleAndToolBarOnMac(False)
             self.widgetsToolBar = self.addToolBar("Widgets")
             self.insertToolBarBreak(self.widgetsToolBar)
             self.tabs = orngTabs.WidgetTabs(self, self.widgetRegistry, self.widgetsToolBar)
@@ -290,7 +346,6 @@ class OrangeCanvasDlg(QMainWindow):
                 if self.widgetRegistry.has_key(cat) and self.widgetRegistry[cat].has_key(widgetName):
                     self.widgetShortcuts[key] = self.widgetRegistry[cat][widgetName]
 
-
     def initMenu(self):
         self.menuRecent = QMenu("Recent Schemas", self)
 
@@ -317,6 +372,65 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile.addMenu(self.menuRecent)
         self.menuFile.addSeparator()
         self.menuFile.addAction("E&xit", self.close, Qt.CTRL + Qt.Key_Q)
+        
+        self.menuView = QMenu("&View", self)
+        # Show Toolbars menu
+        toolbars = self.createPopupMenu()
+        self.menuView.addMenu(toolbars)
+        self.menuView.addSeparator()
+        
+        
+        # Widget list type menu
+        actions = ["Toolbox", "Tree View", "Tree View (no icons)",
+                   "Tabs Without Labels", "Tabs With Labels"]
+        style = QMenu("Widget Toolbar Style", self)
+        styleGroup = QActionGroup(style)
+        styleGroup.setExclusive(True)
+        
+        def setListType(id):
+            self.settings["widgetListType"] = id
+            self.createWidgetsToolbar()
+            
+        for id, action in enumerate(actions):
+            action = style.addAction(action, lambda id=id: setListType(id))
+            action.setCheckable(True)
+            styleGroup.addAction(action)
+            style.addAction(action)
+            
+        styleActions = list(styleGroup.actions()) 
+        ind = min(len(styleActions) -1 , self.settings.get("widgetListType", -1))
+        styleActions[ind].setChecked(True)
+        self.widgetListTypeActions = styleActions
+        
+        self.menuView.addMenu(style)
+        
+        # Widget toobox icon size menu
+        iconSize = QMenu("Widget Icon Size", self)
+        sizes = ["%i x %i" % (s, s) for s in self.toolbarIconSizeList]
+        sizeGroup = QActionGroup(iconSize)
+        
+        def setIconSize(id):
+            self.settings["toolbarIconSize"] = id
+            self.createWidgetsToolbar()
+            
+        for id, size in enumerate(sizes):
+            action = iconSize.addAction(size, lambda id=id: setIconSize(id))
+            action.setCheckable(True)
+            sizeGroup.addAction(action)
+            iconSize.addAction(action)
+            
+        sizeActions = list(sizeGroup.actions())
+        ind = min(len(sizeActions) - 1, self.settings.get("toolbarIconSize", -1))
+        sizeActions[ind].setChecked(True)
+        self.iconSizeActions = sizeActions
+        
+        self.menuView.addMenu(iconSize)
+        
+        self.menuView.addSeparator()
+        self.showStatusBarAction = self.menuView.addAction("Show Status Bar",
+                                                self.menuItemShowStatusBar)
+        self.showStatusBarAction.setCheckable(True)
+        self.showStatusBarAction.setChecked(self.settings.get("showStatusBar", True))
 
         self.menuOptions = QMenu("&Options", self)
         self.menuOptions.addAction("Enable All Links", self.menuItemEnableAll, Qt.CTRL + Qt.Key_E)
@@ -378,6 +492,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.menuBar = QMenuBar(self)
         self.menuBar.addMenu(self.menuFile)
+        self.menuBar.addMenu(self.menuView)
         self.menuBar.addMenu(self.menuOptions)
         self.menuBar.addMenu(self.widgetPopup)
         
@@ -554,17 +669,32 @@ class OrangeCanvasDlg(QMainWindow):
         file.write(text)
         file.close()
 
+    def menuItemShowToolbar(self, show=True):
+        self.toolbar.setVisible(show)
+        self.settings["showToolbar"] = show
+        self.showMainToolbarAction.setChecked(show)
 
-    def menuItemShowToolbar(self):
-        self.settings["showToolbar"] = not self.settings.get("showToolbar", True)
-        if self.settings["showToolbar"]: self.toolbar.show()
-        else: self.toolbar.hide()
-
-    def menuItemShowWidgetToolbar(self):
-        self.settings["showWidgetToolbar"] = not self.settings.get("showWidgetToolbar", True)
-        if self.settings["showWidgetToolbar"]: self.widgetsToolBar.show()
-        else: self.widgetsToolBar.hide()
-
+    def menuItemShowWidgetToolbar(self, show=True):
+        self.widgetsToolBar.setVisible(show)
+        self.settings["showWidgetToolbar"] = show
+        self.showWidgetToolbarAction.setChecked(show)
+        
+    def createPopupMenu(self):
+        """ Create a menu with show toolbar entries.
+        """
+        toolbars = QMenu("Show Toolbars", self)
+        toolbars.addAction(self.showMainToolbarAction)
+        toolbars.addAction(self.showWidgetToolbarAction)
+        return toolbars
+        
+    def toogleToolbarState(self):
+        """ Toogle the toolbar state (Mac OSX specific). This gets called when
+        the toolbar button in the unified title bar was clicked.
+        """
+        state = not self.settings["showToolbar"]
+        self.settings["showToolbar"] = state
+        self.showMainToolbarAction.setChecked(state)
+        
 
     def menuItemEditWidgetShortcuts(self):
         dlg = orngDlgs.WidgetShortcutDlg(self, self)
@@ -737,7 +867,12 @@ class OrangeCanvasDlg(QMainWindow):
             if len(dlg.addOnsToAdd)+len(dlg.addOnsToRemove)>0:
                 Orange.misc.addons.refresh_addons(reload_path=True)
                 
-                    
+    def menuItemShowStatusBar(self):
+        state = self.showStatusBarAction.isChecked()
+        self.statusBar().setVisible(state)
+        self.sizeGrip.setVisible(not state)
+        self.sizeGrip.raise_()
+        self.settings["showStatusBar"] = state
 
     def updateStyle(self):
         QApplication.setStyle(QStyleFactory.create(self.settings["style"]))
@@ -907,6 +1042,77 @@ class MyStatusBar(QStatusBar):
     def mouseDoubleClickEvent(self, ev):
         self.parentWidget.menuItemShowOutputWindow()
         
+class SizeGrip(QSizeGrip):
+    def __init__(self, mainwindow):
+        QSizeGrip.__init__(self, mainwindow)
+        mainwindow.installEventFilter(self)
+        self.updateMyPos(mainwindow)
+        
+    def eventFilter(self, obj, event):
+        if obj is self.parent() and isinstance(event, QResizeEvent):
+            self.updateMyPos(obj)
+            
+        return QSizeGrip.eventFilter(self, obj, event)
+    
+    def updateMyPos(self, mainwindow):
+        window_size = mainwindow.size()
+        mysize = self.size()
+        self.move(window_size.width() - mysize.width(),
+                  window_size.height() - mysize.height())
+            
+from collections import defaultdict
+class EventNotifier(QObject):
+    """ An Qt event notifier.
+    """
+    def __init__(self, parent=None):
+        QObject.__init__(self, parent)
+        self._filtering = set()
+        self._attached = defaultdict(list)
+        
+    def attach(self, obj, event, slot):
+        if hasattr(event, "__iter__"):
+            events = list(event)
+        else:
+            events = [event]
+        for e in events:
+            self._attached[obj, e].append(slot)
+        
+        if obj not in self._filtering:
+            self._filtering.add(obj)
+            obj.installEventFilter(self)
+            
+    def detach(self, obj, event, slot=None):
+        if hasattr(event, "__iter__"):
+            events = list(event)
+        else:
+            events = [event]
+        for e in events:
+            slots = self._attached.get((obj, e), [])
+            if slot is None:
+                slots_to_remove = slots
+            else:
+                slots_to_remove = [slot]
+            for s in slots_to_remove: 
+                if s in slots:
+                    slots.remove(s)
+            if not slots:
+                del self._attached[obj, e]
+        
+        if not any([s for (obj_, _), s in self._attached.items() \
+                    if obj_ == obj]):
+            # If obj has no more slots
+            self._filtering.remove(obj)
+            obj.removeEventFilter(self)
+            
+    def eventFilter(self, obj, event):
+        if obj in self._filtering:
+            if (obj, type(event)) in self._attached or (obj, event.type()) in self._attached:
+                slots = self._attached.get((obj, type(event)), []) + \
+                        self._attached.get((obj, event.type()), [])
+                for slot in slots:
+                    slot()
+        return False
+    
         
 class OrangeQApplication(QApplication):
     def __init__(self, *args):
