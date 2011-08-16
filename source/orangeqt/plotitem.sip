@@ -1,5 +1,3 @@
-%Module PlatItem
-
 class PlotItem : QGraphicsObject {
 
 %TypeHeaderCode
