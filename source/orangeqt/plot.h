@@ -100,7 +100,7 @@ public:
     
     bool animate_points;
     
-Q_SIGNALS:
+signals:
     void selection_changed();
     void marked_points_changed();
     void point_hovered(Point* point);

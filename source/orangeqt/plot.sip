@@ -90,7 +90,7 @@ public:
     
     bool animate_points;
 
-Q_SIGNALS:
+signals:
     void selection_changed();
     
 protected:
