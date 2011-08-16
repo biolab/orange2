@@ -1,4 +1,4 @@
-%Module(name=orangeqt, keyword_arguments="Optional", version=1)
+%Module orangeqt 1
 
 %Import QtGui/QtGuimod.sip
 
