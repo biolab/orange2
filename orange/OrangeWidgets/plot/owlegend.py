@@ -239,8 +239,10 @@ class OWLegend(QGraphicsObject):
         
         for lst in self.items.itervalues():
             for item in lst:
-                item.text_item.setDefaultTextColor(self.graph.color(OWPalette.Text))
-                item.rect_item.setBrush(self.graph.color(OWPalette.Canvas))
+                if hasattr(item, 'text_item'):
+                    item.text_item.setDefaultTextColor(self.graph.color(OWPalette.Text))
+                if hasattr(item, 'rect_item'):
+                    item.rect_item.setBrush(self.graph.color(OWPalette.Canvas))
         if self._orientation == Qt.Vertical:
             for lst in self.items.itervalues():
                 for item in lst:
