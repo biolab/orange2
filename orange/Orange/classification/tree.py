@@ -9,7 +9,7 @@
 Classification trees (``tree``)
 *******************************
 
-To build a small tree (:obj:`TreeClassifier`) from the iris data set
+To build a :obj:`TreeClassifier` from the Iris data set
 (with the depth limited to three levels), use (part of `orngTree1.py`_,
 uses `iris.tab`_):
 
@@ -18,6 +18,9 @@ uses `iris.tab`_):
 
 .. _orngTree1.py: code/orngTree1.py
 
+See `Decision tree learning
+<http://en.wikipedia.org/wiki/Decision_tree_learning>`_ on Wikipedia
+for introduction to classification trees.
 
 This page first describes the learner and the classifier, and then
 defines the base classes (individual components) of the trees and the
@@ -28,6 +31,12 @@ tree-building process.
 
 .. autoclass:: TreeClassifier
     :members:
+
+    .. attribute:: tree
+
+        The root of the tree, represented as a :class:`Node`.
+
+
 
 ========
 Examples
@@ -254,61 +263,50 @@ Learner and Classifier Components
 Classification trees are represented as a tree-like hierarchy of
 :obj:`Node` classes.
 
-Several classes described above are already functional and can
-(and mostly will) be used as they are: :obj:`Node`, :obj:`_TreeLearner`
-and :obj:`TreeClassifier`.  Classes :obj:`SplitConstructor`,
-:obj:`StopCriteria`, :obj:`ExampleSplitter`, :obj:`Descender` are among
-the Orange (C++ implemented) classes that can be subtyped in Python. You
-can thus program your own components based on these classes.
+Classes :obj:`SplitConstructor`, :obj:`StopCriteria`,
+:obj:`ExampleSplitter`, :obj:`Descender` can be subtyped in Python. You
+can thus program your own components based on these classes (TODO).
 
 .. class:: Node
 
-    Node stores information about the learning examples belonging to
-    the node, a branch selector, a list of branches (if the node is not
-    a leaf) with their descriptions and strengths, and a classifier.
+    Node stores the instances belonging to the node, a branch selector,
+    a list of branches (if the node is not a leaf) with their descriptions
+    and strengths, and a classifier.
 
     .. attribute:: distribution
     
-        Stores a distribution for learning examples belonging to the
-        node.  Storing distributions can be disabled by setting the
-        :obj:`_TreeLearner`'s store_distributions flag to false.
+        A distribution for learning instances in the
+        node.
 
     .. attribute:: contingency
 
-        Stores complete contingency matrices for the learning examples
-        belonging to the node. Storing contingencies can be enabled by
-        setting :obj:`_TreeLearner`'s :obj:`store_contingencies` flag to
-        true. Note that even when the flag is not set, the contingencies
-        get computed and stored to :obj:`Node`, but are removed shortly
-        afterwards.  The details are given in the description of the
-        :obj:`_TreeLearner` object.
+        Complete contingency matrices for the learning instances
+        in the node.
 
     .. attribute:: examples, weightID
 
-        Store a set of learning examples for the node and the
-        corresponding ID of /weight meta attribute. The root of the
-        tree stores a "master table" of examples, while other nodes'
-        :obj:`Orange.data.Table` contain reference to examples in the
-        root's :obj:`Orange.data.Table`. Examples are only stored if
-        a corresponding flag (:obj:`store_examples`) has been set while
-        building the tree; to conserve the space, storing is disabled
-        by default.
+        Learning instancess for the node and the corresponding ID
+        of weight meta attribute. The root of the tree stores all
+        instances, while other nodes store only reference to instances
+        in the root node.
 
     .. attribute:: node_classifier
 
-        A classifier (usually, but not necessarily, a
-        :obj:`DefaultClassifier`) that can be used to classify examples
-        coming to the node. If the node is a leaf, this is used to
-        decide the final class (or class distribution) of an example. If
-        it's an internal node, it is stored if :obj:`Node`'s flag
-        :obj:`store_node_classifier` is set. Since the :obj:`node_classifier`
-        is needed by :obj:`Descender` and for pruning (see far below),
-        this is the default behaviour; space consumption of the default
-        :obj:`DefaultClassifier` is rather small. You should never
-        disable this if you intend to prune the tree later.
+        A classifier (usually a :obj:`DefaultClassifier`) that can be used
+        to classify instances coming to the node. If the node is a leaf,
+        this is used to decide the final class (or class distribution)
+        of an instance. If it's an internal node, it is stored if
+        :obj:`Node`'s flag :obj:`store_node_classifier` is set. Since
+        the :obj:`node_classifier` is needed by :obj:`Descender` and
+        for pruning (see far below), this is the default behaviour;
+        space consumption of the default :obj:`DefaultClassifier` is
+        rather small. You should never disable this if you intend to
+        prune the tree later.
 
-    If the node is a leaf, the remaining fields are None.  If it's an
-    internal node, there are several additional fields.
+    If the node is a leaf, the remaining fields are None. If it's
+    an internal node, there are several additional fields. The lists
+    :obj:`branches`, :obj:`branch_descriptions` and :obj:`branch_sizes`
+    are of the same length.
 
     .. attribute:: branches
 
@@ -323,29 +321,25 @@ can thus program your own components based on these classes.
 
     .. attribute:: branch_sizes
 
-        Gives a (weighted) number of training examples that went into
+        Gives a (weighted) number of training instances that went into
         each branch. This can be used later, for instance, for modeling
-        probabilities when classifying examples with unknown values.
+        probabilities when classifying instances with unknown values.
 
     .. attribute:: branch_selector
 
-        Gives a branch for each example. The same object is used
+        Gives a branch for each instance. The same object is used
         during learning and classifying. The :obj:`branch_selector`
         is of type :obj:`Orange.classification.Classifier`, since its job is
-        similar to that of a classifier: it gets an example and
+        similar to that of a classifier: it gets an instance and
         returns discrete :obj:`Orange.data.Value` in range :samp:`[0,
-        len(branches)-1]`.  When an example cannot be classified to
+        len(branches)-1]`.  When an instance cannot be classified to
         any branch, the selector can return a :obj:`Orange.data.Value`
         containing a special value (sVal) which should be a discrete
         distribution (DiscDistribution). This should represent a
-        :obj:`branch_selector`'s opinion of how to divide the example
+        :obj:`branch_selector`'s opinion of how to divide the instance
         between the branches. Whether the proposition will be used or not
         depends upon the chosen :obj:`ExampleSplitter` (when learning)
         or :obj:`Descender` (when classifying).
-
-    The lists :obj:`branches`, :obj:`branch_descriptions` and
-    :obj:`branch_sizes` are of the same length; all of them are
-    defined if the node is internal and none if it is a leaf.
 
     .. method:: tree_size()
         
@@ -356,8 +350,8 @@ can thus program your own components based on these classes.
 .. class:: _TreeClassifier
 
     Classifies examples according to a tree stored in :obj:`tree`.
-    Not meant to be used directly. The :class:`TreeLearner` class
-    constructs :class:`TreeClassifier`.
+    This class in not to be used directly. The :class:`TreeLearner`
+    constructs a :class:`TreeClassifier`, which uses this class.
 
     .. attribute:: tree
 
@@ -1985,8 +1979,8 @@ class C45Classifier(Orange.classification.Classifier):
         C4.5 tree stored as a tree of :obj:`C45Node`.
     """
 
-    def __init__(self, baseClassifier):
-        self.nativeClassifier = baseClassifier
+    def __init__(self, base_classifier):
+        self.nativeClassifier = base_classifier
         for k, v in self.nativeClassifier.__dict__.items():
             self.__dict__[k] = v
   
@@ -2111,42 +2105,37 @@ import Orange.feature.scoring as fscoring
 
 class TreeLearner(Orange.core.Learner):
     """
-    Assembles the generic classification or regression tree learner 
-    (from Orange's objects for induction of decision trees). 
-    :class:`TreeLearner` is essentially a wrapper
-    around :class:`_TreeLearner`, provided for easier use of the latter.
-    It sets a number of parameters used in induction that
-    can also be set after the creation of the object, most often through
-    the object's attributes. If upon initialization
-    :class:`TreeLearner` is given a set of examples, then an instance
-    of :class:`TreeClassifier` object is returned instead.
+    Assembles the classification or regression tree learner.  Essentially,
+    :class:`TreeLearner` is a wrapper around :class:`_TreeLearner` and
+    provides easier use of the latter.  It sets parameters for tree
+    induction, that are controlled through the object's attributes.
+    the object's attributes. If upon initialization :class:`TreeLearner`
+    is given a set of instances, then an :class:`TreeClassifier` object
+    is built and returned instead.
 
-    Attributes can be also be set in the constructor. 
+    Attributes can be also be set on initialization. 
 
     .. attribute:: node_learner
 
-        Induces a classifier from examples belonging to a node. The
-        same learner is used for internal nodes and for leaves. The
-        default is :obj:`Orange.classification.majority.MajorityLearner`.
+        Induces a classifier from instances in a node, both
+        used for internal nodes and leaves. The default is
+        :obj:`Orange.classification.majority.MajorityLearner`.
 
     **Split construction**
 
     .. attribute:: split
         
-        Defines a function that will be used in place of
-        :obj:`SplitConstructor`. 
-        Useful when prototyping new tree induction
-        algorithms. When this parameter is defined, other parameters that
-        affect the procedures for growing of the tree are ignored. These
-        include :obj:`binarization`, :obj:`measure`,
-        :obj:`worst_acceptable` and :obj:`min_subset` (Default:
-        :class:SplitConstructor_Combined 
-        with separate constructors for discrete and continuous attributes.
-        Discrete attributes are used as they are, while 
-        continuous attributes are binarized.
-        Gain ratio is used to select attributes. 
-        A minimum of two examples in a leaf is required for 
-        discrete and five examples in a leaf for continuous attributes.)
+        A :obj:`SplitConstructor` or a function with the same signature as
+        :obj:`SplitConstructor.__call__`. It is useful for prototyping
+        new tree induction algorithms. When defined, other parameters
+        that affect  the split construction are ignored. These include
+        :obj:`binarization`, :obj:`measure`, :obj:`worst_acceptable` and
+        :obj:`min_subset`. Default: :class:`SplitConstructor_Combined`
+        with separate constructors for discrete and continuous
+        attributes.  Discrete attributes are used as they are, while
+        continuous attributes are binarized.  Gain ratio is used to select
+        attributes.  A minimum of two instances in a leaf is required for
+        discrete and five instances in a leaf for continuous attributes.
 
     .. attribute:: binarization
 
@@ -2168,13 +2157,14 @@ class TreeLearner(Orange.core.Learner):
 
     .. attribute:: relief_m, relief_k
 
-        Sem `m` and `k` to given values if the :obj:`measure` is relief.
+        Set `m` and `k` for Relief, if chosen.
 
     .. attribute:: splitter
 
-        Object of type :class:`ExampleSplitter`. The default splitter
-        is :class:`ExampleSplitter_UnknownsAsSelector` that splits
-        the learning examples according to distributions given by the
+        :class:`ExampleSplitter`  or a function with the same
+        signature as :obj:`ExampleSplitter.__call__`. The default is
+        :class:`ExampleSplitter_UnknownsAsSelector` that splits the
+        learning examples according to distributions given by the
         selector.
 
     **Pruning**
@@ -2190,13 +2180,13 @@ class TreeLearner(Orange.core.Learner):
 
     .. attribute:: min_subset
 
-        Minimal number of examples in non-null leaves (default: 0).
+        The smalles number of instances in non-null leaves (default: 0).
 
     .. attribute:: min_examples
 
         Data subsets with less than :obj:`min_examples`
-        examples are not split any further, that is, all leaves in the tree
-        will contain at least that many of examples (default: 0).
+        instances are not split any further, that is, all leaves in the tree
+        will contain at least that many instances (default: 0).
 
     .. attribute:: max_depth
 
@@ -2206,12 +2196,14 @@ class TreeLearner(Orange.core.Learner):
     .. attribute:: max_majority
 
         Induction stops when the proportion of majority class in the
-        node exceeds the value set by this parameter(default: 1.0). 
+        node exceeds the value set by this parameter (default: 1.0). 
         To stop the induction as soon as the majority class reaches 70%,
-        you should use :samp:`max_majority=0.7`, as in the following
+        use :samp:`max_majority=0.7`, as in the following
         example. The numbers show the majority class 
         proportion at each node. The script `tree2.py`_ induces and 
         prints this tree.
+
+        FIXME
 
         .. _tree2.py: code/tree2.py
 
@@ -2225,14 +2217,12 @@ class TreeLearner(Orange.core.Learner):
    
     .. attribute:: stop
 
-        Used for passing a function which is used in place of
-        :class:`StopCriteria`. Useful when prototyping new
-        tree induction algorithms. See a documentation on 
-        :class:`StopCriteria` for more info on this function. 
-        When used, parameters  :obj:`max_majority` and :obj:`min_examples` 
-        will not be  considered (default: None). 
-        The default stopping criterion stops induction when all examples 
-        in a node belong to the same class.
+        :class:`StopCriteria` or a function with the same signature as
+        :obj:`StopCriteria.__call__`. Useful for prototyping new tree
+        induction algorithms.  When used, parameters  :obj:`max_majority`
+        and :obj:`min_examples` will not be  considered.  The default
+        stopping criterion stops induction when all examples in a node
+        belong to the same class.
 
     .. attribute:: m_pruning
 
@@ -2252,12 +2242,11 @@ class TreeLearner(Orange.core.Learner):
 
         Determines whether to store class distributions, contingencies and
         examples in :class:`Node`, and whether the :obj:`node_classifier`
-        should be build for internal nodes. By default everything except 
-        :obj:`store_examples` is enabled. You won't save any memory by not storing 
-        distributions but storing contingencies, since distributions actually points to
-        the same distribution that is stored in
-        :obj:`contingency.classes`. (default: True except for
-        store_examples, which defaults to False).
+        should be build for internal nodes.  You won't save any memory
+        by not storing distributions but storing contingencies, since
+        distributions actually points to the same distribution that is
+        stored in :obj:`contingency.classes`.  By default everything
+        except :obj:`store_examples` is enabled.
     
     """
     def __new__(cls, examples = None, weightID = 0, **argkw):
@@ -2288,9 +2277,9 @@ class TreeLearner(Orange.core.Learner):
         for k,v in kw.items():
             self.__setattr__(k,v)
       
-    def __call__(self, examples, weight=0):
+    def __call__(self, instances, weight=0):
         """
-        Return a classifier from the given examples.
+        Return a classifier from the given instances.
         """
         bl = self._base_learner()
 
@@ -2298,7 +2287,7 @@ class TreeLearner(Orange.core.Learner):
         #set by the user
         if not self._handset_split and not self.measure:
             measure = fscoring.GainRatio() \
-                if examples.domain.class_var.var_type == Orange.data.Type.Discrete \
+                if instances.domain.class_var.var_type == Orange.data.Type.Discrete \
                 else fscoring.MSE()
             bl.split.continuous_split_constructor.measure = measure
             bl.split.discrete_split_constructor.measure = measure
@@ -2307,13 +2296,13 @@ class TreeLearner(Orange.core.Learner):
             bl.splitter = self.splitter
 
         #post pruning
-        tree = bl(examples, weight)
+        tree = bl(instances, weight)
         if getattr(self, "same_majority_pruning", 0):
             tree = Pruner_SameMajority(tree)
         if getattr(self, "m_pruning", 0):
             tree = Pruner_m(tree, m=self.m_pruning)
 
-        return TreeClassifier(baseClassifier=tree) 
+        return TreeClassifier(base_classifier=tree) 
 
     def __setattr__(self, name, value):
         self.__dict__[name] = value
@@ -2955,9 +2944,9 @@ class TreeClassifier(Orange.classification.Classifier):
     Wraps :class:`_TreeClassifier`.
     """
     
-    def __init__(self, baseClassifier=None):
-        if not baseClassifier: baseClassifier = _TreeClassifier()
-        self.nativeClassifier = baseClassifier
+    def __init__(self, base_classifier=None):
+        if not base_classifier: base_classifier = _TreeClassifier()
+        self.nativeClassifier = base_classifier
         for k, v in self.nativeClassifier.__dict__.items():
             self.__dict__[k] = v
   
@@ -2998,11 +2987,11 @@ class TreeClassifier(Orange.classification.Classifier):
         """
         Return a string representation of a tree.
 
-        :arg leaf_str: The format string for printing the tree leaves. If 
+        :arg leaf_str: The format string for the tree leaves. If 
           left empty, "%V (%^.2m%)" will be used for classification trees
           and "%V" for regression trees.
         :type leaf_str: string
-        :arg node_str: The format string for printing out the internal nodes.
+        :arg node_str: The format string for the internal nodes.
           If left empty (as it is by default), no data is printed out for
           internal nodes. If set to :samp:`"."`, the same string is
           used as for leaves.
@@ -3035,11 +3024,10 @@ class TreeClassifier(Orange.classification.Classifier):
             leaf_shape="plaintext", node_shape="plaintext", \
             user_formats=[], min_examples=0, max_depth=1e10, \
             simple_first=True):
-        """ Print the tree to a file in a format used by 
-        `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
-        Uses the same parameters as :meth:`dump` defined above
-        plus two parameters which define the shape used for internal
-        nodes and leaves of the tree:
+        """ Print the tree to a file in a format used by `GraphViz
+        <http://www.research.att.com/sw/tools/graphviz>`_.  Uses the
+        same parameters as :meth:`dump` plus two which define the shape
+        of internal nodes and leaves of the tree:
 
         :param leaf_shape: Shape of the outline around leaves of the tree. 
             If "plaintext", no outline is used (default: "plaintext").
