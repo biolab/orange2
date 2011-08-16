@@ -3,7 +3,7 @@
 Curve (``owcurve``)
 ##############################
 
-.. class:: orangeqt.PlotItem
+.. class:: OWPlotItem
 
     This class represents a base for any item than can be added to a plot. 
     
@@ -84,9 +84,53 @@ Curve (``owcurve``)
     
         Returns if item is in the background, set with :meth:`set_in_background`. 
         
+    **Subclassing**
+    
+        Often you will want to create a custom curve class that inherits from OWCurve. 
+        For this purpose, OWPlotItem provides two virtual methods: :meth:`paint` and :meth:`update_properties`. 
+        
+        * ``update_properties()`` is called whenever a curve or the plot is changed and needs to be updated. 
+          In this method, child items and other members should be recalculated and updated. 
+          The OWCurve even provides a number of methods for asynchronous (threaded) updating. 
+          
+        * `paint()` is called whenever the item needs to be painted on the scene. 
+          This method is called more often, so it's advisable to avoid long operation in the method. 
+          
+        Most provided plot items, including :obj:`OWCurve`, :obj:`OWMultiCurve` and utility curves in :mod:`.owtools`
+        only reimplement the first method, because they are optimized for performance with large data sets. 
+        
 .. autoclass:: OWCurve
-    :members:
-    :show-inheritance:
+    
+.. class:: OWMultiCurve
+
+    A multi-curve is a curve in which each point can have its own properties. 
+    The point coordinates can be set by calling :meth:`.OWCurve.set_data`, just like in a normal curve. 
+    
+    In addition, OWMultiCurve provides methods for setting properties for individual points. 
+    Each of this methods take a list as a parameter. If the list has less elements that the curve's data, 
+    the first element is used for all points. 
+    
+    .. method:: set_point_colors(lst)
+        
+        :param lst: The list of colors to assign to points
+        :type lst: list of QColor
+        
+        .. seealso:: :meth:`.OWPoint.set_color`
+        
+    .. method:: set_point_sizes(lst)
+        
+        :param lst: The list of sizes to assign to points
+        :type lst: list of int
+        
+        .. seealso:: :meth:`.OWPoint.set_size`
+    
+    .. method:: set_point_symbols(lst)
+        
+        :param lst: The list of symbols to assign to points
+        :type lst: list of int
+        
+        .. seealso:: :meth:`.OWPoint.set_symbol`
+    
 '''
 
 from OWBaseWidget import *
@@ -94,29 +138,38 @@ from owconstants import *
 import orangeqt
 from Orange.misc import deprecated_members
 
+OWPlotItem = orangeqt.PlotItem
+
 @deprecated_members({
     "setYAxis" : "set_y_axis",
     "setData" : "set_data"
 })
 class OWCurve(orangeqt.Curve):
     """ 
-        This class represents a curve on a plot.
+        This class represents a curve on a plot. 
+        It is essentially a plot item with a series of data points or a continuous line. 
         
-       :param xData: list of x coordinates
-       :type xData: list of float
-       
-       :param yData: list of y coordinates
-       :type yData: list of float
-       
-       :param x_axis_key: The x axis of this curve
-       :type x_axis_key: int
-       
-       :param y_axis_key: The y axis of this curve
-       :type y_axis_key: int
-       
-       :param tooltip: The curve's tooltip
-       :type tooltip: str
+        :param xData: list of x coordinates
+        :type xData: list of float
         
+        :param yData: list of y coordinates
+        :type yData: list of float
+        
+        :param x_axis_key: The x axis of this curve
+        :type x_axis_key: int
+        
+        :param y_axis_key: The y axis of this curve
+        :type y_axis_key: int
+        
+        :param tooltip: The curve's tooltip
+        :type tooltip: str
+        
+        .. note::
+            
+            All the points or line segments in an OWCurve have the same properties. 
+            Different points in one curve are supported by the :obj:`.OWMultiCurve` class. 
+        
+            
         .. method:: point_item(x, y, size=0, parent=None)
         
             Returns a single point with this curve's properties. 
@@ -128,7 +181,8 @@ class OWCurve(orangeqt.Curve):
             :param y: The y coordinate of the point.
             :type y: float
             
-            :param size: If nonzero, this argument determines the size of the resulting point. Otherwise, the point is created with the curve's :meth:`OWCurve.point_size`
+            :param size: If nonzero, this argument determines the size of the resulting point. 
+                         Otherwise, the point is created with the curve's :meth:`OWCurve.point_size`
             :type size: int
                          
             :param parent: An optional parent for the returned item.
@@ -146,6 +200,54 @@ class OWCurve(orangeqt.Curve):
             
             :returns: The curve's data as a list of data points.
             :rtype: list of tuple of float float
+            
+        .. method:: set_style(style)
+        
+            Sets the curve's style to ``style``. 
+            
+            The curve's style specified how its lines are drawn. If the style is OWCurve.Lines, then 
+            data points are connected with a continuous line with the curve's :meth:`pen`. Otherwise, 
+            no such lines are drawn. 
+            
+            Points are drawn regardless of this setting, so it's possible to have both lines and points
+            on the same curve. 
+            
+            Curve subclasses can use this value for different drawing modes. 
+            Values up to OWCurve.UserCurve are reserved, so use only higher numbers, like the following example::
+            
+                class MyCurve(OWCurve):
+                    PonyStyle = OWCurve.UserCurve + 42
+                    
+                    def draw_ponies()
+                        # Draw type-specific things here
+                    
+                    def update_properties(self):
+                        if self.style() == PonyStyle:
+                            self.draw_ponies()
+                        else:
+                            OWCurve.update_properties(self)
+            
+        .. method:: style()
+        
+            :return: The curve's style, set with :meth:`set_style`
+            :rtype: int
+            
+        .. method:: cancel_all_updates()
+        
+            Cancel all pending threaded updates and block until they are finished. 
+            This is usually called before starting a new round of updates.
+            
+        .. method:: update_number_of_items()
+        
+            Resizes the point list so that it matches the number of data points in :meth:`data`
+            
+        .. method:: update_point_coordinates()
+        
+            Sets the coordinates of each point to match :meth:`data`. 
+            
+        .. method:: update_point_positions()
+        
+            Sets the scene positions of the points to match their data coordinates. 
     """
     def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None):
         orangeqt.Curve.__init__(self, xData, yData)
