@@ -1,7 +1,7 @@
 import os
 from OWBaseWidget import *
 import OWGUI
-from PyQt4.Qwt5 import *
+from plot.owplot import *
 from PyQt4.QtSvg import *
 from ColorPalette import *
 import OWQCanvasFuncts
@@ -28,7 +28,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         #self.layout().addWidget(self.space)
 
         box = OWGUI.widgetBox(self.space, "Image Size")
-        if isinstance(graph, QwtPlot):
+        if isinstance(graph, OWPlot):
             size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
             self.customXEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customX", "Width: ", orientation = "horizontal", valueType = int)
             self.customYEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customY", "Height:", orientation = "horizontal", valueType = int)
@@ -76,8 +76,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         if not filename.lower().endswith(".svg"):
             painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
 
-        # qwt plot
-        if isinstance(self.graph, QwtPlot):
+        if isinstance(self.graph, OWPlot):
             if self.penWidthFactor != 1:
                 for curve in self.graph.itemList():
                     pen = curve.pen(); pen.setWidth(self.penWidthFactor*pen.width()); curve.setPen(pen)
@@ -110,7 +109,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     def saveToMatplotlib(self):
         filename = self.getFileName(self.defaultName, "Python Script (*.py)", ".py")
         if filename:
-            if isinstance(self.graph, QwtPlot):
+            if isinstance(self.graph, OWPlot):
                 self.graph.saveToMatplotlib(filename, self.getSize())
             else:
                 rect = self.getSceneBoundingRect()
@@ -187,7 +186,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         return size
 
     def updateGUI(self):
-        if isinstance(self.graph, QwtPlot):
+        if isinstance(self.graph, OWPlot):
             self.customXEdit.setEnabled(self.selectedSize == 4)
             self.customYEdit.setEnabled(self.selectedSize == 4)
 

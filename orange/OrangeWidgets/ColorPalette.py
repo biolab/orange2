@@ -1,6 +1,5 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import PyQt4.Qwt5 as qwt
 import math
 from OWWidget import *
 import OWGUI
