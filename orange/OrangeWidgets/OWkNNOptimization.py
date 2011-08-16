@@ -3,6 +3,13 @@ import OWGUI, OWDlgs, numpy, user, sys
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
 
+_graph_dialogs = True
+try:
+    from OWGraph import *
+except ImportError:
+    _graph_dialogs = False
+
+
 class OWVizRank(VizRank, OWWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "qualityMeasureCluster", "qualityMeasureContClass", "testingMethod",
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
@@ -174,14 +181,8 @@ class OWVizRank(VizRank, OWWidget):
         self.classesBox = OWGUI.widgetBox(self.ManageTab, "Class Values You Wish to See Separated")
         self.classesBox.setFixedHeight(130)
         self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
-        
-        try:
-            from OWGraph import *
-            self.graphDialogs = True
-        except ImportError:
-            self.graphDialogs = False
             
-        if self.graphDialogs:
+        if _graph_dialogs:
             self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
 
             self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
@@ -373,7 +374,7 @@ class OWVizRank(VizRank, OWWidget):
         self.showKNNCorrectButton.setEnabled(self.graph.dataHasDiscreteClass)
         self.showKNNWrongButton.setEnabled(self.graph.dataHasDiscreteClass)
         
-        if self.graphDialogs:
+        if _graph_dialogs:
             self.attributeRankingButton.setEnabled(self.graph.dataHasDiscreteClass)
             self.attributeInteractionsButton.setEnabled(self.graph.dataHasDiscreteClass)
             self.projectionScoresButton.setEnabled(self.graph.dataHasDiscreteClass)

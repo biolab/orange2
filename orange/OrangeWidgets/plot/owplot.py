@@ -28,7 +28,7 @@ SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.Round
 SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
-from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty
+from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
@@ -753,7 +753,7 @@ class OWPlot(orangeqt.Plot):
         c.set_point_symbols(shape_data)
         if len(marked_data):
             c.set_points_marked(marked_data)
-            self.marked_points_changed.emit()
+            self.emit(SIGNAL('marked_points_changed()'))
         c.name = 'Main Curve'
         
     def remove_curve(self, item):
@@ -930,7 +930,7 @@ class OWPlot(orangeqt.Plot):
         '''
             Updates the zoom transformation of the plot items. 
         '''
-        zt = self.zoom_transform
+        zt = self.zoom_transform()
         self._zoom_transform = zt
         self.set_zoom_transform(zt)
         
@@ -1089,7 +1089,7 @@ class OWPlot(orangeqt.Plot):
         
         point = self.mapToScene(event.pos())
         if not self._pressed_mouse_button:
-            self.point_hovered.emit(self.nearest_point(point))
+            self.emit(SIGNAL('point_hovered(Point*)'), self.nearest_point(point))
         
         ## We implement a workaround here, because sometimes mouseMoveEvents are not fast enough
         ## so the moving legend gets left behind while dragging, and it's left in a pressed state
@@ -1171,7 +1171,7 @@ class OWPlot(orangeqt.Plot):
                 b = self.AddSelection
             if point_item:
                 point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
-            self.selection_changed.emit()
+            self.emit(SIGNAL('selection_changed()'))
         else:
             return False
             
@@ -1440,15 +1440,15 @@ class OWPlot(orangeqt.Plot):
             self._legend.set_orientation(orientation)
             self.animate(self, 'legend_margin', rect, duration=100)
 
-    @pyqtProperty(QRectF)
-    def legend_margin(self):
+    def get_legend_margin(self):
         return self._legend_margin
         
-    @legend_margin.setter
-    def legend_margin(self, value):
+    def set_legend_margin(self, value):
         self._legend_margin = value
         self.update_layout()
         self.update_axes()
+
+    legend_margin = pyqtProperty(QRectF, get_legend_margin, set_legend_margin)
         
     def update_curves(self):
         if self.main_curve:
@@ -1550,7 +1550,6 @@ class OWPlot(orangeqt.Plot):
         self._zoom_rect = None
         self.update_zoom()
         
-    @pyqtProperty(QTransform)
     def zoom_transform(self):
         return self.transform_from_rects(self.zoom_rect, self.graph_area)
         
@@ -1571,15 +1570,15 @@ class OWPlot(orangeqt.Plot):
         self.ensure_inside(r, self.graph_area)
         self.zoom_to_rect(r)
         
-    @pyqtProperty(QRectF)
-    def zoom_rect(self):
+    def get_zoom_rect(self):
         return self._zoom_rect if self._zoom_rect else self.graph_area
         
-    @zoom_rect.setter
-    def zoom_rect(self, rect):
+    def set_zoom_rect(self, rect):
         self._zoom_rect = rect
         self._zoom_transform = self.transform_from_rects(rect, self.graph_area)
         self.update_zoom()
+
+    zoom_rect = pyqtProperty(QRectF, get_zoom_rect, set_zoom_rect)
         
     @staticmethod
     def ensure_inside(small_rect, big_rect):
