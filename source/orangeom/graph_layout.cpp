@@ -637,17 +637,33 @@ int TGraphLayout::set_graph(PyObject *graph)
 	disp[0].resize(nVertices, 0);
 	disp[1].resize(nVertices, 0);
 
+	// iterate all nodes
+	PyObject *key, *value;
+	Py_ssize_t pos = 0;
+	vector<int> nodes_vec;
+	while (PyDict_Next(nodes, &pos, &key, &value)) {
+		int node = PyInt_AS_LONG(key);
+		nodes_vec.push_back(node);
+	}
+
+	// create a dict of node id | node index
+	sort(nodes_vec.begin(), nodes_vec.end());
+	map<int, int> nodes_map;
+	for (i = 0; i < nodes_vec.size(); i++) {
+		nodes_map[nodes_vec[i]] = i;
+	}
+
+	// iterate all edges
 	PyObject *key_u, *value_u, *key_v, *value_v;
 	Py_ssize_t pos_u = 0;
-
 	while (PyDict_Next(adj, &pos_u, &key_u, &value_u)) {
 		int u = PyInt_AS_LONG(key_u);
 
 		Py_ssize_t pos_v = 0;
 		while (PyDict_Next(value_u, &pos_v, &key_v, &value_v)) {
 			int v = PyInt_AS_LONG(key_v);
-			links[0].push_back(u);
-			links[1].push_back(v);
+			links[0].push_back(nodes_map[u]);
+			links[1].push_back(nodes_map[v]);
 			weights.push_back(1); // TODO: compute weight
 			nLinks++;
 		}
