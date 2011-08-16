@@ -2038,8 +2038,6 @@ class FloatSlider(QSlider):
         QSlider.__init__(self, orientation, parent)
         self.setScale(min_value, max_value, step)
         QObject.connect(self, SIGNAL("valueChanged(int)"), self.sendValue)
-    
-    valueChangedFloat = pyqtSignal(['double'])
         
     def update(self):
         self.setSingleStep(1)
@@ -2052,7 +2050,7 @@ class FloatSlider(QSlider):
     
     def sendValue(self, slider_value):
         value = min(max(slider_value * self.step, self.min_value), self.max_value)
-        self.valueChangedFloat.emit(value)
+        self.emit(SIGNAL("valueChangedFloat(double)"), value)
         
     def setValue(self, value):
         QSlider.setValue(self, int(value/self.step))
