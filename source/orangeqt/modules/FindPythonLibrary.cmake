@@ -29,7 +29,7 @@
 
 
 
-include(CMakeFindFrameworks)
+#include(CMakeFindFrameworks)
 
 if(EXISTS PYTHON_LIBRARY)
   # Already in cache, be silent
@@ -37,7 +37,12 @@ if(EXISTS PYTHON_LIBRARY)
 else(EXISTS PYTHON_LIBRARY)
 
   find_package(PythonInterp)
-
+  find_package(PythonLibs)
+  
+  if(PYTHONLIBS_FOUND)
+  	set(PYTHONLIBRARY_FOUND TRUE)
+  endif(PYTHONLIBS_FOUND)
+  
   if(PYTHONINTERP_FOUND)
 
     # get the directory of the current file, used later on in the file
@@ -63,39 +68,39 @@ else(EXISTS PYTHON_LIBRARY)
       set(PYTHON_SITE_PACKAGES_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/python${PYTHON_SHORT_VERSION}/site-packages CACHE PATH "The directory where python modules will be installed to.")
 
       string(REGEX REPLACE "([0-9]+).([0-9]+)" "\\1\\2" PYTHON_SHORT_VERSION_NO_DOT ${PYTHON_SHORT_VERSION})
-      set(PYTHON_LIBRARY_NAMES python${PYTHON_SHORT_VERSION} python${PYTHON_SHORT_VERSION_NO_DOT})
+#      set(PYTHON_LIBRARY_NAMES python${PYTHON_SHORT_VERSION} python${PYTHON_SHORT_VERSION_NO_DOT})
       if(WIN32)
           string(REPLACE "\\" "/" PYTHON_SITE_PACKAGES_DIR ${PYTHON_SITE_PACKAGES_DIR})
-      endif(WIN32)
-      find_library(PYTHON_LIBRARY NAMES ${PYTHON_LIBRARY_NAMES} PATHS ${PYTHON_PREFIX}/lib ${PYTHON_PREFIX}/libs NO_DEFAULT_PATH)
-      set(PYTHONLIBRARY_FOUND TRUE)
+#      endif(WIN32)
+#      find_library(PYTHON_LIBRARY NAMES ${PYTHON_LIBRARY_NAMES} PATHS ${PYTHON_PREFIX}/lib ${PYTHON_PREFIX}/libs NO_DEFAULT_PATH)
+#      set(PYTHONLIBRARY_FOUND TRUE)
     endif(python_config)
 
     # adapted from cmake's builtin FindPythonLibs
-    if(APPLE)
-      cmake_find_frameworks(Python)
-      set(PYTHON_FRAMEWORK_INCLUDES)
-      if(Python_FRAMEWORKS)
-        # If a framework has been selected for the include path,
-        # make sure "-framework" is used to link it.
-        if("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
-          set(PYTHON_LIBRARY "")
-          set(PYTHON_DEBUG_LIBRARY "")
-        endif("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
-        if(NOT PYTHON_LIBRARY)
-          set (PYTHON_LIBRARY "-framework Python" CACHE FILEPATH "Python Framework" FORCE)
-        endif(NOT PYTHON_LIBRARY)
-        set(PYTHONLIBRARY_FOUND TRUE)
-      endif(Python_FRAMEWORKS)
-    endif(APPLE)
+#    if(APPLE)
+#      cmake_find_frameworks(Python)
+#      set(PYTHON_FRAMEWORK_INCLUDES)
+#      if(Python_FRAMEWORKS)
+#        # If a framework has been selected for the include path,
+#        # make sure "-framework" is used to link it.
+#        if("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
+#          set(PYTHON_LIBRARY "")
+#          set(PYTHON_DEBUG_LIBRARY "")
+#        endif("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
+#        if(NOT PYTHON_LIBRARY)
+#          set (PYTHON_LIBRARY "-framework Python" CACHE FILEPATH "Python Framework" FORCE)
+#        endif(NOT PYTHON_LIBRARY)
+#        set(PYTHONLIBRARY_FOUND TRUE)
+#      endif(Python_FRAMEWORKS)
+#    endif(APPLE)
   endif(PYTHONINTERP_FOUND)
 
   if(PYTHONLIBRARY_FOUND)
-    set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
+#    set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
     if(NOT PYTHONLIBRARY_FIND_QUIETLY)
       message(STATUS "Found Python executable: ${PYTHON_EXECUTABLE}")
       message(STATUS "Found Python version: ${PYTHON_LONG_VERSION}")
-      message(STATUS "Found Python library: ${PYTHON_LIBRARY}")
+      message(STATUS "Found Python library: ${PYTHON_LIBRARIES}")
     endif(NOT PYTHONLIBRARY_FIND_QUIETLY)
   else(PYTHONLIBRARY_FOUND)
     if(PYTHONLIBRARY_FIND_REQUIRED)
