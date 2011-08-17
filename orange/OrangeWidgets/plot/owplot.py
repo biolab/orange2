@@ -1118,7 +1118,7 @@ class OWPlot(orangeqt.Plot):
             if type(text) == int: 
                 text = self.buildTooltip(text)
             if text and x is not None and y is not None:
-                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform)
+                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform())
                 self.showTip(tp.x(), tp.y(), text)
             else:
                 orangeqt.Plot.mouseMoveEvent(self, event)
@@ -1560,7 +1560,7 @@ class OWPlot(orangeqt.Plot):
         self.zoom(point, scale = 0.5)
         
     def zoom(self, point, scale):
-        t, ok = self.zoom_transform.inverted()
+        t, ok = self.zoom_transform().inverted()
         point = point * t
         r = QRectF(self.zoom_rect)
         i = 1.0/scale
