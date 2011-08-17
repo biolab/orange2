@@ -143,7 +143,7 @@ class OWPolyvizGraphQt(OWPlot, orngScalePolyvizData):
         if self.dataHasClass: useDifferentColors = self.useDifferentColors   # don't use colors if we don't have a class
         else:                 useDifferentColors = 0
 
-        self.setAxisScale(xBottom, -1.20, 1.20 + 0.05 * self.showLegend, 1)
+        self.setAxisScale(xBottom, -1.20, 1.20, 1)
 
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]

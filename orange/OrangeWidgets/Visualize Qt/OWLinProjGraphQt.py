@@ -338,21 +338,20 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         # ##############################################################
         # draw the legend
         # ##############################################################
-        if self.showLegend:
-            # show legend for discrete class
-            if self.dataHasDiscreteClass:
-                classVariableValues = getVariableValuesSorted(self.dataDomain.classVar)
-                for index in range(len(classVariableValues)):
-                    if self.useDifferentColors: color = QColor(self.discPalette[index])
-                    else:                       color = QColor(Qt.black)
+        # show legend for discrete class
+        if self.dataHasDiscreteClass:
+            classVariableValues = getVariableValuesSorted(self.dataDomain.classVar)
+            for index in range(len(classVariableValues)):
+                if self.useDifferentColors: color = QColor(self.discPalette[index])
+                else:                       color = QColor(Qt.black)
 
-                    if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
-                    else:                             curveSymbol = self.curveSymbols[index]
+                if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
+                else:                             curveSymbol = self.curveSymbols[index]
 
-                    self.legend().add_item(self.dataDomain.classVar.name, classVariableValues[index], OWPoint(curveSymbol, color, self.pointWidth))
-            # show legend for continuous class
-            elif self.dataHasContinuousClass:
-                self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
+                self.legend().add_item(self.dataDomain.classVar.name, classVariableValues[index], OWPoint(curveSymbol, color, self.pointWidth))
+        # show legend for continuous class
+        elif self.dataHasContinuousClass:
+            self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
         self.replot()
 
 
