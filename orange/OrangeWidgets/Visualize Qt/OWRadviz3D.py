@@ -1,7 +1,7 @@
 """
-<name>Sphereviz 3D</name>
+<name>RadViz 3D</name>
 <icon>icons/Radviz.png</icon>
-<priority>320</priority>
+<priority>2000</priority>
 """
 
 import os
@@ -12,7 +12,7 @@ from plot.owplotgui import OWPlotGUI
 from OWLinProjQt import *
 
 class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
-    def __init__(self, widget, parent=None, name='Sphereviz 3D'):
+    def __init__(self, widget, parent=None, name='None'):
         OWPlot3D.__init__(self, parent)
         orngScaleLinProjData3D.__init__(self)
 
