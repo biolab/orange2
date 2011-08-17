@@ -19,14 +19,16 @@ Example ::
 
     >>> from Orange.regression import earth
     >>> data = Orange.data.Table("housing")
-    >>> c = earth.EarthLearner(data, degree=2, terms=5)
+    >>> c = earth.EarthLearner(data, degree=2)
     >>> c.print_model()
     MEDV =
-       23.710
-       +9.379 * max(0, RM - 6.431)
-       +1.714 * max(0, 6.431 - RM)
-       -0.656 * max(0, LSTAT - 6.120)
-       +2.748 * max(0, 6.120 - LSTAT)
+       23.587
+       +11.896 * max(0, RM - 6.431)
+       +1.142 * max(0, 6.431 - RM)
+       -0.612 * max(0, LSTAT - 6.120)
+       -228.795 * max(0, NOX - 0.647) * max(0, RM - 6.431)
+       +0.023 * max(0, TAX - 307.000) * max(0, 6.120 - LSTAT)
+       +0.029 * max(0, 307.000 - TAX) * max(0, 6.120 - LSTAT)
        
     >>> 
 
@@ -37,6 +39,7 @@ Example ::
 .. autoclass:: EarthClassifier
     :members:
 
+
 Utility functions
 -----------------
 
@@ -45,6 +48,8 @@ Utility functions
 .. autofunction:: plot_evimp
 
 .. autofunction:: bagged_evimp
+
+.. autoclass:: ScoreEarthImportance
 
 """
 
@@ -65,6 +70,11 @@ def is_continuous(var):
     return isinstance(var, Continuous)
 
 def expand_discrete(var):
+    """ Expand a discrete variable ``var`` returning one continuous indicator
+    variable for each value of ``var`` (if the number of values is grater
+    then 2 else return only one indicator variable).
+    
+    """
     if len(var.values) > 2:
         values = var.values
     elif len(var.values) == 2:
@@ -82,7 +92,13 @@ def expand_discrete(var):
     return new_vars
     
 class EarthLearner(Orange.core.LearnerFD):
-    """ Earth learner class.
+    """ Earth learner class. Supports both regression and classification
+    problems. In case of classification the class values are expanded into 
+    continuous indicator columns (one for each value unless the number of 
+    values is grater then 2), and a multi response model is learned on these
+    new columns. The resulting classifier will then use the computed response
+    values on new examples to select the final predicted class. 
+     
     """
     def __new__(cls, examples=None, weight_id=None, **kwargs):
         self = Orange.core.LearnerFD.__new__(cls)
@@ -119,14 +135,17 @@ class EarthLearner(Orange.core.LearnerFD):
         :param pruned_terms: Maximum number if terms in the model after
             pruning (default None - no limit).
         :type pruned_terms: int
-        :param scale_resp: Scale responses prior to forward pass.
+        :param scale_resp: Scale responses prior to forward pass (default
+            True - ignored for multi response models).
         :type scale_resp: bool
-        :param store_examples: Store training examples in the model (default True).
+        :param store_examples: Store training examples in the model
+            (default True).
         :type store_examples: bool
         :param multi_label: If True build a multi label model (default False).
         :type multi_label: bool  
          
-        .. todo:: min_span, prunning_method
+        .. todo:: min_span, prunning_method (need Leaps like functionality,
+            currently only eval_subsets_using_xtx is implemented). 
         
         """
         self.degree = degree
@@ -146,7 +165,8 @@ class EarthLearner(Orange.core.LearnerFD):
         self.__dict__.update(kwds)
         
         impute = Preprocessor_impute()
-        cont = Preprocessor_continuize(multinomialTreatment=DomainContinuizer.AsOrdinal)
+        cont = Preprocessor_continuize(multinomialTreatment=
+                                       DomainContinuizer.AsOrdinal)
         self.preproc = Preprocessor_preprocessorList(preprocessors=\
                                                      [impute, cont])
         
@@ -284,6 +304,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
         """Return the base matrix (bx) of the Earth model for the table.
         If table is not supplied the base matrix of the training examples 
         is returned.
+        Base matrix is a len(examples) x num_terms matrix of computed values
+        of terms in the model (not multiplied by beta) for each example.
         
         :param examples: Input examples for the base matrix.
         :type examples: :class:`Orange.data.Table` 
@@ -331,6 +353,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
         """ Return the estimated variable importances.
         
         :param used_only: if True return only used attributes
+        
+
          
         """  
         return evimp(self, used_only)
@@ -611,7 +635,7 @@ def subset_selection_xtx(X, Y):
 def pruning_pass(bx, y, penalty, pruned_terms=-1):
     """ Do pruning pass
     
-    .. todo:: leaps
+    .. todo:: pruned_terms, Leaps
     
     """
     subsets, rss_vec = subset_selection_xtx(bx, y)
@@ -628,6 +652,78 @@ def pruning_pass(bx, y, penalty, pruned_terms=-1):
     used[subsets[min_i, :min_i + 1]] = True
     
     return used, subsets, rss_vec, gcv_vec
+
+"""
+Printing functions.
+"""
+
+def print_model(model, percision=3, indent=3):
+    """ Print model to stdout.
+    """
+    print format_model(model, percision, indent)
+    
+def format_model(model, percision=3, indent=3):
+    """ Return a formated string representation of the model.
+    """
+    mask = model.label_mask
+    if model.multi_flag:
+        r_vars = [v for v, m in zip(model.domain.variables,
+                                    model.label_mask)
+                  if m]
+    elif is_discrete(model.class_var):
+        r_vars = model.expanded_class
+    else:
+        r_vars = [model.class_var]
+        
+    r_names = [v.name for v in r_vars]
+    betas = model.betas
+        
+    resp = []
+    for name, betas in zip(r_names, betas):
+        resp.append(_format_response(model, name, betas,
+                                     percision, indent))
+    return "\n\n".join(resp)
+
+def _format_response(model, resp_name, betas, percision=3, indent=3):
+    header = "%s =" % resp_name
+    indent = " " * indent
+    fmt = "%." + str(percision) + "f"
+    terms = [([], fmt % betas[0])]
+    beta_i = 0
+    for i, used in enumerate(model.best_set[1:], 1):
+        if used:
+            beta_i += 1
+            beta = fmt % abs(betas[beta_i])
+            knots = [_format_knot(model, attr.name, d, c) for d, c, attr in \
+                     zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
+                     if d != 0]
+            term_attrs = [a for a, d in zip(model.domain.attributes, model.dirs[i]) \
+                          if d != 0]
+            term_attrs = sorted(term_attrs)
+            sign = "-" if betas[beta_i] < 0 else "+"
+            if knots:
+                terms.append((term_attrs,
+                              sign + " * ".join([beta] + knots)))
+            else:
+                terms.append((term_attrs, sign + beta))
+    # Sort by len(term_attrs), then by term_attrs
+    terms = sorted(terms, key=lambda t: (len(t[0]), t[0]))
+    return "\n".join([header] + [indent + t for _, t in terms])
+        
+def _format_knot(model, name, dir, cut):
+    if dir == 1:
+        txt = "max(0, %s - %.3f)" % (name, cut)
+    elif dir == -1:
+        txt = "max(0, %.3f - %s)" % (cut, name)
+    elif dir == 2:
+        txt = name
+    return txt
+
+def _format_term(model, i, attr_name):
+    knots = [_format_knot(model, attr, d, c) for d, c, attr in \
+             zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
+             if d != 0]
+    return " * ".join(knots)
     
 """\
 Variable importance estimation
@@ -721,8 +817,26 @@ def evimp(model, used_only=True):
 
 
 def plot_evimp(evimp):
-    """ Plot the return value from :obj:`EarthClassifier.evimp` call.
+    """ Plot the variable importances as returned from
+    :obj:`EarthClassifier.evimp` call.
+    
+    ::
+        >>> data = Orange.data.Table("housing")
+        >>> c = EarthLearner(data, degree=3)
+        >>> plot_evimp(c.evimp())
+        
+    .. image:: files/earth-evimp.png
+     
+    The left axis is the nsubsets measure an on the right are the normalized
+    RSS and GCV.
+    
     """
+    from Orange.ensemble.bagging import BaggedClassifier
+    if isinstance(evimp, EarthClassifier):
+        evimp = evimp.evimp()
+    elif isinstance(evimp, BaggedClassifier):
+        evimp = bagged_evimp(evimp)
+        
     import pylab
     fig = pylab.figure()
     axes1 = fig.add_subplot(111)
@@ -788,79 +902,6 @@ def bagged_evimp(classifier, used_only=True):
     return bagged_imp
 
 """
-Printing functions.
-"""
-
-def print_model(model, percision=3, indent=3):
-    """ Print model to stdout.
-    """
-    print format_model(model, percision, indent)
-    
-def format_model(model, percision=3, indent=3):
-    """ Return a formated string representation of the model.
-    """
-    mask = model.label_mask
-    if model.multi_flag:
-        r_vars = [v for v, m in zip(model.domain.variables,
-                                    model.label_mask)
-                  if m]
-    elif is_discrete(model.class_var):
-        r_vars = model.expanded_class
-    else:
-        r_vars = [model.class_var]
-        
-    r_names = [v.name for v in r_vars]
-    betas = model.betas
-        
-    resp = []
-    for name, betas in zip(r_names, betas):
-        resp.append(_format_response(model, name, betas,
-                                     percision, indent))
-    return "\n\n".join(resp)
-
-def _format_response(model, resp_name, betas, percision=3, indent=3):
-    header = "%s =" % resp_name
-    indent = " " * indent
-    fmt = "%." + str(percision) + "f"
-    terms = [([], fmt % betas[0])]
-    beta_i = 0
-    for i, used in enumerate(model.best_set[1:], 1):
-        if used:
-            beta_i += 1
-            beta = fmt % abs(betas[beta_i])
-            knots = [_format_knot(model, attr.name, d, c) for d, c, attr in \
-                     zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
-                     if d != 0]
-            term_attrs = [a for a, d in zip(model.domain.attributes, model.dirs[i]) \
-                          if d != 0]
-            term_attrs = sorted(term_attrs)
-            sign = "-" if betas[beta_i] < 0 else "+"
-            if knots:
-                terms.append((term_attrs,
-                              sign + " * ".join([beta] + knots)))
-            else:
-                terms.append((term_attrs, sign + beta))
-    # Sort by len(term_attrs), then by term_attrs
-    terms = sorted(terms, key=lambda t: (len(t[0]), t[0]))
-    return "\n".join([header] + [indent + t for _, t in terms])
-        
-def _format_knot(model, name, dir, cut):
-    if dir == 1:
-        txt = "max(0, %s - %.3f)" % (name, cut)
-    elif dir == -1:
-        txt = "max(0, %.3f - %s)" % (cut, name)
-    elif dir == 2:
-        txt = name
-    return txt
-
-def _format_term(model, i, attr_name):
-    knots = [_format_knot(model, attr, d, c) for d, c, attr in \
-             zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
-             if d != 0]
-    return " * ".join(knots)
-
-
-"""
 High level interface for measuring variable importance
 (compatible with Orange.feature.scoring module).
 
@@ -869,8 +910,10 @@ from Orange.feature import scoring
 from Orange.misc import _orange__new__
             
 class ScoreEarthImportance(scoring.Score):
-    """ Score features based on their importance in the Earth model using
-    ``bagged_evimp``'s function return value.
+    """ An :class:`Orange.feature.scoring.Score` subclass.
+    Scores features based on their importance in the Earth
+    model using ``bagged_evimp``'s function return value.
+    
     """
     # Return types  
     NSUBSETS = 0
@@ -878,6 +921,9 @@ class ScoreEarthImportance(scoring.Score):
     GCV = 2
     
     __new__ = _orange__new__(scoring.Score)
+    handles_discrete = True
+    handles_continuous = True
+    computes_thresholds = False
         
     def __init__(self, t=10, degree=2, terms=10, score_what="nsubsets", cached=True):
         """
