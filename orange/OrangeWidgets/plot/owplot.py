@@ -1118,7 +1118,7 @@ class OWPlot(orangeqt.Plot):
             if type(text) == int: 
                 text = self.buildTooltip(text)
             if text and x is not None and y is not None:
-                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform())
+                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self._zoom_transform)
                 self.showTip(tp.x(), tp.y(), text)
             else:
                 orangeqt.Plot.mouseMoveEvent(self, event)
@@ -1140,7 +1140,7 @@ class OWPlot(orangeqt.Plot):
         if a in [ZOOMING, SELECT] and self._current_rs_item:
             rect = self._current_rs_item.rect()
             if a == ZOOMING:
-                self.zoom_to_rect(self.zoom_transform.inverted()[0].mapRect(rect))
+                self.zoom_to_rect(self._zoom_transform.inverted()[0].mapRect(rect))
             else:
                 self.add_selection(rect)
             self.scene().removeItem(self._current_rs_item)
@@ -1560,7 +1560,7 @@ class OWPlot(orangeqt.Plot):
         self.zoom(point, scale = 0.5)
         
     def zoom(self, point, scale):
-        t, ok = self.zoom_transform().inverted()
+        t, ok = self._zoom_transform.inverted()
         point = point * t
         r = QRectF(self.zoom_rect)
         i = 1.0/scale
