@@ -42,7 +42,7 @@ class Pca(object):
     
     def __call__(self, dataset):
         """
-        Perform a pca analysis on a dataset and return a classifer that maps data
+        Perform a pca analysis on a dataset and return a classifier that maps data
         into principal component subspace.
         """
         
@@ -134,7 +134,7 @@ class PcaClassifier(object):
         
     .. attribute:: eigen_values
     
-        Array containg standard deviations of pricipal components.
+        Array containing standard deviations of principal components.
     
     .. attribute:: variance_sum
     
@@ -225,7 +225,7 @@ class PcaClassifier(object):
 
         
     
-    ################ Ploting functions ###################
+    ################ Plotting functions ###################
     
     def scree_plot(self, filename = None, title = 'Scree plot'):
         """
