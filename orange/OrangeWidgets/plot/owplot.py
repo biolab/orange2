@@ -919,7 +919,12 @@ class OWPlot(orangeqt.Plot):
             self.graph_area = QRectF(graph_rect)
             self.set_graph_rect(self.graph_area)
             self._transform_cache = {}
-            self.map_transform = self.transform_for_axes()
+            if self._zoom_rect:
+                data_zoom_rect = self.map_transform.inverted()[0].mapRect(self._zoom_rect)
+                self.map_transform = self.transform_for_axes()
+                self.set_zoom_rect(self.map_transform.mapRect(data_zoom_rect))
+            else:
+                self.map_transform = self.transform_for_axes()
         
         for c in self.plot_items():
             x,y = c.axes()
