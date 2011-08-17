@@ -47,12 +47,16 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.show_chassis = True
 
     def set_data(self, data, subset_data=None, **args):
+        if data == None:
+            return
         orngScaleScatterPlotData.set_data(self, data, subset_data, **args)
         OWPlot3D.set_data(self, self.no_jittering_scaled_data, self.no_jittering_scaled_subset_data)
         # TODO: wire jitter settings (actual jittering done in geometry shader)
 
     def update_data(self, x_attr, y_attr, z_attr,
                     color_attr, symbol_attr, size_attr, label_attr):
+        if self.data == None:
+            return
         self.before_draw_callback = self.before_draw
 
         color_discrete = symbol_discrete = size_discrete = False

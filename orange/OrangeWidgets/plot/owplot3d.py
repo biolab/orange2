@@ -403,9 +403,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.build_axes()
 
     def __del__(self):
-        # TODO: check if anything needs deleting
-        # TODO: yes it does!
-        pass
+        # TODO: never reached!
+        glDeleteVertexArrays(1, self.dummy_vao)
+        glDeleteVertexArrays(1, self.feedback_vao)
+        glDeleteBuffers(1, self.symbol_buffer)
+        if hasattr(self, 'data_buffer'):
+            glDeleteBuffers(1, self.data_buffer)
 
     def initializeGL(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
