@@ -1527,7 +1527,7 @@ class OWPlot(orangeqt.Plot):
             x, y = delta
         else:
             x, y = delta.x(), delta.y()
-        t = self.zoom_transform
+        t = self.zoom_transform()
         x = x / t.m11()
         y = y / t.m22()
         r = QRectF(self.zoom_rect)
