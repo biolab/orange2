@@ -1,6 +1,26 @@
 import os
 import re
-from owplot3d import Symbol, normal_from_points
+from owplot3d import Symbol
+import numpy
+
+def normalize(vec):
+    return vec / numpy.sqrt(numpy.sum(vec**2))
+
+def clamp(value, min, max):
+    if value < min:
+        return min
+    if value > max:
+        return max
+    return value
+
+def normal_from_points(p1, p2, p3):
+    if isinstance(p1, (list, tuple)):
+        v1 = [p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]]
+        v2 = [p3[0]-p1[0], p3[1]-p1[1], p3[2]-p1[2]]
+    else:
+        v1 = p2 - p1
+        v2 = p3 - p1
+    return normalize(numpy.cross(v1, v2))
 
 symbol_map = {
     Symbol.RECT:      'primitives/cube.obj',

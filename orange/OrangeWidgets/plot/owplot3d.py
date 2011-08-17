@@ -8,36 +8,15 @@
     .. attribute:: use_ortho
         If False, perspective projection is used instead.
 
-    .. method:: set_x_axis_title(title)
-        Sets ``title`` as the current title (label) of x axis.
-
-    .. method:: set_y_axis_title(title)
-        Sets ``title`` as the current title (label) of y axis.
-
-    .. method:: set_z_axis_title(title)
-        Sets ``title`` as the current title (label) of z axis.
-
-    .. method:: set_show_x_axis_title(show)
-        Determines whether to show the title of x axis or not.
-
-    .. method:: set_show_y_axis_title(show)
-        Determines whether to show the title of y axis or not.
-
-    .. method:: set_show_z_axis_title(show)
-        Determines whether to show the title of z axis or not.
-
-    .. method:: scatter(X, Y, Z, c, s)
-        Adds scatter data to command buffer. ``X``, ``Y`` and ``Z`
-        should be arrays (of equal length) with example data.
-        ``c`` is optional, can be an array as well (setting
-        colors of each example) or string ('r', 'g' or 'b'). ``s``
-        optionally sets sizes of individual examples.
-
     .. method:: clear()
         Removes everything from the graph.
 """
 
-# TODO: docs!
+import os
+import sys
+import time
+from math import sin, cos, pi, floor, ceil, log10
+import struct
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -47,47 +26,26 @@ from OWDlgs import OWChooseImageSizeDlg
 import orange
 
 import OpenGL
-OpenGL.ERROR_CHECKING = False # Turned off for performance improvement.
-OpenGL.ERROR_LOGGING = False
-OpenGL.FULL_LOGGING = False
-#OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
+OpenGL.ERROR_CHECKING = True # Turned off for performance improvement.
+OpenGL.ERROR_LOGGING = True
+OpenGL.FULL_LOGGING = True
+OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
 from OpenGL.GL import *
-from OpenGL.GLU import *
 from OpenGL.GL.ARB.vertex_array_object import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
-from ctypes import c_void_p
+from ctypes import c_void_p, c_char, c_char_p, POINTER
 
-import sys
-from math import sin, cos, pi, floor, ceil, log10
-import time
-import struct
 import numpy
+from numpy import array, maximum
 #numpy.seterr(all='raise') # Raises exceptions on invalid numerical operations.
 
 try:
     from itertools import izip as zip # Python 3 zip == izip in Python 2.x
+    from itertools import chain
 except:
     pass
 
-def normalize(vec):
-    return vec / numpy.sqrt(numpy.sum(vec**2))
-
-def clamp(value, min, max):
-    if value < min:
-        return min
-    if value > max:
-        return max
-    return value
-
-def normal_from_points(p1, p2, p3):
-    if isinstance(p1, (list, tuple)):
-        v1 = [p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]]
-        v2 = [p3[0]-p1[0], p3[1]-p1[1], p3[2]-p1[2]]
-    else:
-        v1 = p2 - p1
-        v2 = p3 - p1
-    return normalize(numpy.cross(v1, v2))
-
+# TODO: modern opengl renderer
 def draw_triangle(x0, y0, x1, y1, x2, y2):
     glBegin(GL_TRIANGLES)
     glVertex2f(x0, y0)
@@ -100,6 +58,13 @@ def draw_line(x0, y0, x1, y1):
     glVertex2f(x0, y0)
     glVertex2f(x1, y1)
     glEnd()
+
+def plane_visible(plane, location):
+    normal = normal_from_points(*plane[:3])
+    loc_plane = normalize(plane[0] - location)
+    if numpy.dot(normal, loc_plane) > 0:
+        return False
+    return True
 
 def nicenum(x, round):
     expv = floor(log10(x))
@@ -150,7 +115,9 @@ Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
 
 SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
 
-from owprimitives3d import get_symbol_data, get_2d_symbol_data, get_2d_symbol_edges
+Axis = enum('X', 'Y', 'Z', 'CUSTOM')
+
+from owprimitives3d import *
 
 class Legend(object):
     def __init__(self, plot):
@@ -351,41 +318,24 @@ class PolygonSelection(object):
 class PlotTheme(object):
     def __init__(self):
         self.labels_font = QFont('Helvetice', 8)
+        self.helper_font = self.labels_font
+        self.helpers_color = [0., 0., 0., 1.]        # Color used for helping arrows when scaling.
+        self.background_color = [1., 1., 1., 1.]     # Color in the background.
         self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
         self.axis_font = QFont('Helvetica', 9)
-        self.helper_font = self.labels_font
-        self.grid_color = [0.8, 0.8, 0.8, 1.]        # Color of the cube grid.
-        self.labels_color = [0., 0., 0., 1.]         # Color used for example labels.
-        self.helpers_color = [0., 0., 0., 1.]        # Color used for helping arrows when scaling.
-        self.axis_color = [0.1, 0.1, 0.1, 1.]        # Color of the axis lines.
+        self.labels_color = [0., 0., 0., 1.]
+        self.axis_color = [0.1, 0.1, 0.1, 1.]
         self.axis_values_color = [0.1, 0.1, 0.1, 1.]
-        self.background_color = [1., 1., 1., 1.]     # Color in the background.
-
-class LightTheme(PlotTheme):
-    pass
-
-class DarkTheme(PlotTheme):
-    def __init__(self):
-        super(DarkTheme, self).__init__()
-        self.grid_color = [0.3, 0.3, 0.3, 1.]
-        self.labels_color = [0.9, 0.9, 0.9, 1.]
-        self.helpers_color = [0.9, 0.9, 0.9, 1.]
-        self.axis_values_color = [0.7, 0.7, 0.7, 1.]
-        self.axis_color = [0.8, 0.8, 0.8, 1.]
-        self.background_color = [0., 0., 0., 1.]
 
 class OWPlot3D(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
-        self.commands = []
-        self.minx = self.miny = self.minz = 0
-        self.maxx = self.maxy = self.maxz = 0
-        self.view_cube_edge = 10
-        self.camera_distance = 30
+        self.camera_distance = 3.
 
         self.yaw = self.pitch = -pi / 4.
         self.rotation_factor = 0.3
+        self.panning_factor = 0.4
         self.update_camera()
 
         self.ortho_scale = 100.
@@ -395,16 +345,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.perspective_far = 2000
         self.camera_fov = 30.
         self.zoom_factor = 2000.
-        self.move_factor = 100.
-
-        self.x_axis_title = ''
-        self.y_axis_title = ''
-        self.z_axis_title = ''
-        self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
-
-        self.vertex_buffers = []
-        self.index_buffers = []
-        self.vaos = []
 
         self.use_ortho = False
         self.show_legend = True
@@ -413,20 +353,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.use_2d_symbols = False
         self.symbol_scale = 1.
         self.transparency = 255
-        self.show_grid = True
-        self.scale = numpy.array([1., 1., 1.])
-        self.additional_scale = [0, 0, 0]
-        self.scale_x_axis = True
-        self.scale_factor = 0.05
-        self.data_scale = numpy.array([1., 1., 1.])
-        self.data_center = numpy.array([0., 0., 0.])
-        self.zoomed_size = [self.view_cube_edge,
-                            self.view_cube_edge,
-                            self.view_cube_edge]
+        self.zoomed_size = [1., 1., 1.]
 
         self.state = PlotState.IDLE
 
-        self.build_axes()
         self.selections = []
         self.selection_changed_callback = None
         self.selection_updated_callback = None
@@ -435,27 +365,44 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.setMouseTracking(True)
         self.mouseover_callback = None
+        self.before_draw_callback = None
+        self.after_draw_callback = None
 
-        self.x_axis_map = None
-        self.y_axis_map = None
-        self.z_axis_map = None
+        self.x_axis_labels = None
+        self.y_axis_labels = None
+        self.z_axis_labels = None
+
+        self.x_axis_title = ''
+        self.y_axis_title = ''
+        self.z_axis_title = ''
+
+        self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
+
+        self.scale_factor = 0.05
+        self.additional_scale = array([0., 0., 0.])
+        self.data_scale = array([1., 1., 1.])
+        self.data_translation = array([0., 0., 0.])
+        self.plot_scale = array([1., 1., 1.])
+        self.plot_translation = -array([0.5, 0.5, 0.5])
 
         self.zoom_stack = []
-        self.translation = numpy.array([0., 0., 0.])
 
-        self._theme = LightTheme()
+        self._theme = PlotTheme()
         self.show_axes = True
-        self.show_chassis = True
 
         self.tooltip_fbo_dirty = True
         self.selection_fbo_dirty = True
-        self.use_fbos = True
 
-        self.draw_point_cloud = False
+        self.use_fbos = True
+        self.use_geometry_shader = True
+
         self.hide_outside = False
+
+        self.build_axes()
 
     def __del__(self):
         # TODO: check if anything needs deleting
+        # TODO: yes it does!
         pass
 
     def initializeGL(self):
@@ -466,138 +413,121 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glEnable(GL_LINE_SMOOTH)
         glDisable(GL_CULL_FACE)
         glEnable(GL_MULTISAMPLE)
-        glEnable(GL_VERTEX_PROGRAM_POINT_SIZE)
 
-        self.symbol_shader = QtOpenGL.QGLShaderProgram()
-        vertex_shader_source = '''
-            #extension GL_EXT_gpu_shader4 : enable
+        self.feedback_generated = False
 
-            attribute vec4 position;
-            attribute vec3 offset;
-            attribute vec4 color;
-            attribute vec3 normal;
+        # Build shader program which will generate triangle data to be outputed
+        # to the screen in subsequent frames. Geometry shader is the heart
+        # of the process - it will produce actual symbol geometry out of dummy points.
+        self.generating_program = QtOpenGL.QGLShaderProgram()
+        self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Geometry,
+            os.path.join(os.path.dirname(__file__), 'generator.gs'))
+        self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+            os.path.join(os.path.dirname(__file__), 'generator.vs'))
+        varyings = (c_char_p * 5)()
+        varyings[:] = ['out_position', 'out_offset', 'out_color', 'out_normal', 'out_index']
+        glTransformFeedbackVaryings(self.generating_program.programId(), 5, 
+            ctypes.cast(varyings, POINTER(POINTER(c_char))), GL_INTERLEAVED_ATTRIBS)
 
-            uniform bool use_2d_symbols;
-            uniform bool shrink_symbols;
-            uniform bool encode_color;
-            uniform bool hide_outside;
-            uniform vec4 force_color;
-            uniform vec2 transparency; // vec2 instead of float, fixing a bug on windows
-                                       // (setUniformValue with float crashes)
-			uniform vec2 symbol_scale;
-            uniform vec2 view_edge;
+        self.generating_program.bindAttributeLocation('index', 0)
 
-            uniform vec3 scale;
-            uniform vec3 translation;
+        if not self.generating_program.link():
+            print('Failed to link generating shader! Attribute changes may be slow.')
+            self.use_geometry_shader = False
+        else:
+            print('Generating shader linked.')
 
-            varying vec4 var_color;
+        self.symbol_program = QtOpenGL.QGLShaderProgram()
+        self.symbol_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+            os.path.join(os.path.dirname(__file__), 'symbol.vs'))
+        self.symbol_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Fragment,
+            os.path.join(os.path.dirname(__file__), 'symbol.fs'))
 
-            void main(void) {
-              vec3 offset_rotated = offset;
-              offset_rotated.x *= symbol_scale.x;
-              offset_rotated.y *= symbol_scale.x;
-              offset_rotated.z *= symbol_scale.x;
+        self.symbol_program.bindAttributeLocation('position', 0)
+        self.symbol_program.bindAttributeLocation('offset',   1)
+        self.symbol_program.bindAttributeLocation('color',    2)
+        self.symbol_program.bindAttributeLocation('normal',   3)
+        self.symbol_program.bindAttributeLocation('index',    4)
 
-              if (use_2d_symbols) {
-                  // Calculate inverse of rotations (in this case, inverse
-                  // is actually just transpose), so that polygons face
-                  // camera all the time.
-                  mat3 invs;
-
-                  invs[0][0] = gl_ModelViewMatrix[0][0];
-                  invs[0][1] = gl_ModelViewMatrix[1][0];
-                  invs[0][2] = gl_ModelViewMatrix[2][0];
-
-                  invs[1][0] = gl_ModelViewMatrix[0][1];
-                  invs[1][1] = gl_ModelViewMatrix[1][1];
-                  invs[1][2] = gl_ModelViewMatrix[2][1];
-
-                  invs[2][0] = gl_ModelViewMatrix[0][2];
-                  invs[2][1] = gl_ModelViewMatrix[1][2];
-                  invs[2][2] = gl_ModelViewMatrix[2][2];
-
-                  offset_rotated = invs * offset_rotated;
-              }
-
-              vec3 pos = position.xyz;
-              pos += translation;
-              pos *= scale;
-              vec4 off_pos = vec4(pos, 1.);
-
-              if (shrink_symbols) {
-                  // Shrink symbols into points by ignoring offsets.
-                  gl_PointSize = 2.;
-              }
-              else {
-                  off_pos = vec4(pos+offset_rotated, 1.);
-              }
-
-              gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * off_pos;
-
-              if (force_color.a > 0.) {
-                var_color = force_color;
-              }
-              else if (encode_color) {
-                // We've packed example index into .w component of this vertex,
-                // to output it to the screen, it has to be broken down into RGBA.
-                uint index = uint(position.w);
-                var_color = vec4(float((index & 0xFF)) / 255.,
-                                 float((index & 0xFF00) >> 8) / 255.,
-                                 float((index & 0xFF0000) >> 16) / 255.,
-                                 float((index & 0xFF000000) >> 24) / 255.);
-              }
-              else {
-                pos = abs(pos);
-                float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
-                float a = min(pow(min(1., view_edge.x / manhattan_distance), 5.), transparency.x);
-                if (use_2d_symbols) {
-                    var_color = vec4(color.rgb, a);
-                }
-                else {
-                    // Calculate the amount of lighting this triangle receives (diffuse component only).
-                    // The calculations are physically wrong, but look better. TODO: make them look better
-                    vec3 light_direction = normalize(vec3(1., 1., 0.5));
-                    float diffuse = max(0.,
-                        dot(normalize((gl_ModelViewMatrix * vec4(normal, 0.)).xyz), light_direction));
-                    var_color = vec4(color.rgb+diffuse*0.7, a);
-                }
-                if (manhattan_distance > view_edge.x && hide_outside)
-                    var_color.a = 0.;
-              }
-            }
-            '''
-
-        fragment_shader_source = '''
-            varying vec4 var_color;
-
-            void main(void) {
-              gl_FragColor = var_color;
-            }
-            '''
-
-        self.symbol_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
-        self.symbol_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
-
-        self.symbol_shader.bindAttributeLocation('position', 0)
-        self.symbol_shader.bindAttributeLocation('offset',   1)
-        self.symbol_shader.bindAttributeLocation('color',    2)
-        self.symbol_shader.bindAttributeLocation('normal',   3)
-
-        if not self.symbol_shader.link():
+        if not self.symbol_program.link():
             print('Failed to link symbol shader!')
         else:
             print('Symbol shader linked.')
-        self.symbol_shader_use_2d_symbols = self.symbol_shader.uniformLocation('use_2d_symbols')
-        self.symbol_shader_symbol_scale   = self.symbol_shader.uniformLocation('symbol_scale')
-        self.symbol_shader_transparency   = self.symbol_shader.uniformLocation('transparency')
-        self.symbol_shader_view_edge      = self.symbol_shader.uniformLocation('view_edge')
-        self.symbol_shader_scale          = self.symbol_shader.uniformLocation('scale')
-        self.symbol_shader_translation    = self.symbol_shader.uniformLocation('translation')
-        self.symbol_shader_shrink_symbols = self.symbol_shader.uniformLocation('shrink_symbols')
-        self.symbol_shader_encode_color   = self.symbol_shader.uniformLocation('encode_color')
-        self.symbol_shader_hide_outside   = self.symbol_shader.uniformLocation('hide_outside')
-        self.symbol_shader_force_color    = self.symbol_shader.uniformLocation('force_color')
 
+        self.symbol_program_use_2d_symbols = self.symbol_program.uniformLocation('use_2d_symbols')
+        self.symbol_program_symbol_scale   = self.symbol_program.uniformLocation('symbol_scale')
+        self.symbol_program_transparency   = self.symbol_program.uniformLocation('transparency')
+        self.symbol_program_scale          = self.symbol_program.uniformLocation('scale')
+        self.symbol_program_translation    = self.symbol_program.uniformLocation('translation')
+        self.symbol_program_hide_outside   = self.symbol_program.uniformLocation('hide_outside')
+        self.symbol_program_force_color    = self.symbol_program.uniformLocation('force_color')
+
+        # TODO: if not self.use_geometry_shader
+
+        # Upload all symbol geometry into a TBO (texture buffer object), so that generating
+        # geometry shader will have access to it. (TBO is easier to use than a texture in this use case).
+        geometry_data = []
+        symbols_indices = []
+        symbols_sizes = []
+        for symbol in range(len(Symbol)):
+            triangles = get_2d_symbol_data(symbol)
+            symbols_indices.append(len(geometry_data) / 3)
+            symbols_sizes.append(len(triangles))
+            for tri in triangles:
+                geometry_data.extend(chain(*tri))
+
+        for symbol in range(len(Symbol)):
+            triangles = get_symbol_data(symbol)
+            symbols_indices.append(len(geometry_data) / 3)
+            symbols_sizes.append(len(triangles))
+            for tri in triangles:
+                geometry_data.extend(chain(*tri))
+
+        self.symbols_indices = symbols_indices
+        self.symbols_sizes = symbols_sizes
+
+        tbo = glGenBuffers(1)
+        glBindBuffer(GL_TEXTURE_BUFFER, tbo)
+        glBufferData(GL_TEXTURE_BUFFER, len(geometry_data)*4, numpy.array(geometry_data, 'f'), GL_STATIC_DRAW)
+        glBindBuffer(GL_TEXTURE_BUFFER, 0)
+        self.symbol_buffer = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_BUFFER, self.symbol_buffer)
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, tbo) # 3 floating-point components
+        glBindTexture(GL_TEXTURE_BUFFER, 0)
+
+        # Generate dummy vertex buffer (points which will be fed to the geometry shader).
+        self.dummy_vao = GLuint(0)
+        glGenVertexArrays(1, self.dummy_vao)
+        glBindVertexArray(self.dummy_vao)
+        vertex_buffer_id = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+        glBufferData(GL_ARRAY_BUFFER, numpy.arange(50*1000, dtype=numpy.float32), GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 4, c_void_p(0))
+        glEnableVertexAttribArray(0)
+        glBindVertexArray(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+        # Specify an output VBO (and VAO)
+        self.feedback_vao = feedback_vao = GLuint(0)
+        glGenVertexArrays(1, feedback_vao)
+        glBindVertexArray(feedback_vao)
+        self.feedback_bid = feedback_bid = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, feedback_bid)
+        vertex_size = (3+3+3+3+1)*4
+        glBufferData(GL_ARRAY_BUFFER, 20*1000*144*vertex_size, c_void_p(0), GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(6*4))
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(9*4))
+        glVertexAttribPointer(4, 1, GL_INT,   GL_FALSE, vertex_size, c_void_p(12*4))
+        glEnableVertexAttribArray(0)
+        glEnableVertexAttribArray(1)
+        glEnableVertexAttribArray(2)
+        glEnableVertexAttribArray(3)
+        glEnableVertexAttribArray(4)
+        glBindVertexArray(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+           
         # Create two FBOs (framebuffer objects):
         # - one will be used together with stencil mask to find out which
         #   examples have been selected (in an efficient way)
@@ -611,7 +541,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         else:
             print('Failed to create selection FBO! Selections may be slow.')
             self.use_fbos = False
-        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024, format)
+
+        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(256, 256, format)
         if self.tooltip_fbo.isValid():
             print('Tooltip FBO created.')
         else:
@@ -628,169 +559,134 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             cos(self.pitch),
             sin(self.pitch)*sin(self.yaw)]
 
+    def get_mvp(self):
+        projection = QMatrix4x4()
+        width, height = self.width(), self.height()
+        if self.use_ortho:
+            projection.ortho(-width / self.ortho_scale,
+                              width / self.ortho_scale,
+                             -height / self.ortho_scale,
+                              height / self.ortho_scale,
+                             self.ortho_near,
+                             self.ortho_far)
+        else:
+            aspect = float(width) / height if height != 0 else 1
+            projection.perspective(self.camera_fov, aspect, self.perspective_near, self.perspective_far)
+
+        modelview = QMatrix4x4()
+        modelview.lookAt(
+            QVector3D(self.camera[0]*self.camera_distance,
+                      self.camera[1]*self.camera_distance,
+                      self.camera[2]*self.camera_distance),
+            QVector3D(0,-0.1, 0),
+            QVector3D(0, 1, 0))
+
+        return modelview, projection
+
     def paintGL(self):
+        if not self.feedback_generated:
+            return
+
         glClearColor(*self._theme.background_color)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        if len(self.commands) == 0:
-            return
+        modelview, projection = self.get_mvp()
+        self.modelview = modelview
+        self.projection = projection
 
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        width, height = self.width(), self.height()
-        if self.use_ortho:
-            glOrtho(-width / self.ortho_scale,
-                     width / self.ortho_scale,
-                    -height / self.ortho_scale,
-                     height / self.ortho_scale,
-                     self.ortho_near,
-                     self.ortho_far)
-        else:
-            aspect = float(width) / height if height != 0 else 1
-            gluPerspective(self.camera_fov, aspect, self.perspective_near, self.perspective_far)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(
-            self.camera[0]*self.camera_distance,
-            self.camera[1]*self.camera_distance,
-            self.camera[2]*self.camera_distance,
-            0,-1, 0,
-            0, 1, 0)
+        if self.before_draw_callback:
+            self.before_draw_callback()
 
-        if self.show_chassis:
-            self.draw_chassis()
-        self.draw_grid_and_axes()
+        if self.show_axes:
+            self.draw_axes()
 
-        for (cmd, params) in self.commands:
-            if cmd == 'scatter':
-                vao_id, (X, Y, Z), labels = params
-                scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
+        self.symbol_program.bind()
+        self.symbol_program.setUniformValue('modelview', modelview)
+        self.symbol_program.setUniformValue('projection', projection)
+        self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
+        self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
+        # Specifying float uniforms with vec2 because of a weird bug in PyQt
+        self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_transparency,   self.transparency / 255., self.transparency / 255.)
+        plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5],                          self.plot_scale+self.additional_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
+        self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
-                self.symbol_shader.bind()
-                self.symbol_shader.setUniformValue(self.symbol_shader_use_2d_symbols, self.use_2d_symbols)
-                self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, self.draw_point_cloud)
-                self.symbol_shader.setUniformValue(self.symbol_shader_encode_color,   False)
-                self.symbol_shader.setUniformValue(self.symbol_shader_hide_outside,   self.hide_outside)
-				# Specifying float uniforms with vec2 because of a weird bug in PyQt
-                self.symbol_shader.setUniformValue(self.symbol_shader_view_edge,      self.view_cube_edge, self.view_cube_edge)
-                self.symbol_shader.setUniformValue(self.symbol_shader_symbol_scale,   self.symbol_scale, self.symbol_scale)
-                self.symbol_shader.setUniformValue(self.symbol_shader_transparency,   self.transparency / 255., self.transparency / 255.)
-                self.symbol_shader.setUniformValue(self.symbol_shader_scale,          *scale)
-                self.symbol_shader.setUniformValue(self.symbol_shader_translation,    *self.translation)
-                self.symbol_shader.setUniformValue(self.symbol_shader_force_color,    0., 0., 0., 0.)
+        glEnable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
+        glBindVertexArray(self.feedback_vao)
+        glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
+        glBindVertexArray(0)
 
-                glBindVertexArray(vao_id)
-                if self.draw_point_cloud:
-                    glDisable(GL_DEPTH_TEST)
-                    glDisable(GL_BLEND)
-                    glDrawArrays(GL_POINTS, 0, vao_id.num_3d_vertices)
-                else:
-                    glEnable(GL_DEPTH_TEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-                    if self.use_2d_symbols:
-                        glDrawArrays(GL_TRIANGLES, vao_id.num_3d_vertices, vao_id.num_2d_vertices)
-                        # Draw outlines (somewhat dark, discuss)
-                        #self.symbol_shader.setUniformValue(self.symbol_shader_force_color,
-                            #0., 0., 0., self.transparency / 255. + 0.01)
-                        #glDisable(GL_DEPTH_TEST)
-                        #glDrawArrays(GL_LINES, vao_id.num_3d_vertices+vao_id.num_2d_vertices, vao_id.num_edge_vertices)
-                        #self.symbol_shader.setUniformValue(self.symbol_shader_force_color, 0., 0., 0., 0.)
-                    else:
-                        glDrawArrays(GL_TRIANGLES, 0, vao_id.num_3d_vertices)
-                glBindVertexArray(0)
+        self.symbol_program.release()
 
-                self.symbol_shader.release()
+        self.draw_labels()
 
-                if labels != None:
-                    glColor4f(*self._theme.labels_color)
-                    for x, y, z, label in zip(X, Y, Z, labels):
-                        x, y, z = self.transform_data_to_plot((x, y, z))
-                        if isinstance(label, str):
-                            self.renderText(x,y,z, label, font=self._theme.labels_font)
-                        else:
-                            self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'),
-                                            font=self._theme.labels_font)
-            elif cmd == 'custom':
-                callback = params
-                callback()
-
-        if self.selection_fbo_dirty:
-            self.selection_fbo.bind()
-            glClearColor(1, 1, 1, 1)
-            glClearStencil(0)
-            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
-            self.selection_fbo.release()
+        if self.after_draw_callback:
+            self.after_draw_callback()
 
         if self.tooltip_fbo_dirty:
             self.tooltip_fbo.bind()
             glClearColor(1, 1, 1, 1)
             glClearDepth(1)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            # Draw data the same as to the screen, but with
+            # disabled blending and enabled depth testing.
+            glDisable(GL_BLEND)
+            glEnable(GL_DEPTH_TEST)
+
+            # TODO: scissors
+
+            self.symbol_program.bind()
+            # Most uniforms retain their values.
+            #self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
+            #self.symbol_program.setUniformValue(self.symbol_program_shrink_symbols, False)
+            #glBindVertexArray(vao_id)
+            #glDrawArrays(GL_TRIANGLES, 0, vao_id.num_3d_vertices)
+            #glBindVertexArray(0)
+            self.symbol_program.release()
             self.tooltip_fbo.release()
+            self.tooltip_fbo_dirty = False
 
-        for (cmd, params) in self.commands:
-            if cmd == 'scatter':
-                # Don't draw auxiliary info when rotating or selecting
-                # (but make sure these are drawn the very first frame
-                # plot returns to state idle because the user might want to
-                # get tooltips or has just selected a bunch of stuff).
-                vao_id, _, _ = params
+        if self.selection_fbo_dirty:
+            self.selection_fbo.bind()
+            glClearColor(1, 1, 1, 1)
+            glClearStencil(0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
 
-                if self.tooltip_fbo_dirty:
-                    # Draw data the same as to the screen, but with
-                    # disabled blending and enabled depth testing.
-                    self.tooltip_fbo.bind()
-                    glDisable(GL_BLEND)
-                    glEnable(GL_DEPTH_TEST)
+            #self.symbol_program.bind()
+            ##self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
+            ##self.symbol_program.setUniformValue(self.symbol_program_shrink_symbols, True)
+            #glDisable(GL_DEPTH_TEST)
+            #glDisable(GL_BLEND)
+            ##glBindVertexArray(vao_id)
+            ##glDrawArrays(GL_POINTS, 0, vao_id.num_3d_vertices)
+            ##glBindVertexArray(0)
+            #self.symbol_program.release()
 
-                    self.symbol_shader.bind()
-                    # Most uniforms retain their values.
-                    self.symbol_shader.setUniformValue(self.symbol_shader_encode_color, True)
-                    self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, False)
-                    glBindVertexArray(vao_id)
-                    glDrawArrays(GL_TRIANGLES, 0, vao_id.num_3d_vertices)
-                    glBindVertexArray(0)
-                    self.symbol_shader.release()
-                    self.tooltip_fbo.release()
-                    self.tooltip_fbo_dirty = False
+            ## Also draw stencil masks to the screen. No need to
+            ## write color or depth information as well, so we
+            ## disable those.
+            #glMatrixMode(GL_PROJECTION)
+            #glLoadIdentity()
+            #glOrtho(0, self.width(), self.height(), 0, -1, 1)
+            #glMatrixMode(GL_MODELVIEW)
+            #glLoadIdentity()
 
-                if self.selection_fbo_dirty:
-                    # Draw data as points instead, this means that examples farther away
-                    # will still have a good chance at being visible (not covered).
-                    self.selection_fbo.bind()
-                    self.symbol_shader.bind()
-                    self.symbol_shader.setUniformValue(self.symbol_shader_encode_color, True)
-                    self.symbol_shader.setUniformValue(self.symbol_shader_shrink_symbols, True)
-                    glDisable(GL_DEPTH_TEST)
-                    glDisable(GL_BLEND)
-                    glBindVertexArray(vao_id)
-                    glDrawArrays(GL_POINTS, 0, vao_id.num_3d_vertices)
-                    glBindVertexArray(0)
-                    self.symbol_shader.release()
-
-                    # Also draw stencil masks to the screen. No need to
-                    # write color or depth information as well, so we
-                    # disable those.
-                    glMatrixMode(GL_PROJECTION)
-                    glLoadIdentity()
-                    glOrtho(0, self.width(), self.height(), 0, -1, 1)
-                    glMatrixMode(GL_MODELVIEW)
-                    glLoadIdentity()
-
-                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
-                    glDepthMask(GL_FALSE)
-                    glStencilMask(0x01)
-                    glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT)
-                    glStencilFunc(GL_ALWAYS, 0, ~0)
-                    glEnable(GL_STENCIL_TEST)
-                    for selection in self.selections:
-                        selection.draw_mask()
-                    glDisable(GL_STENCIL_TEST)
-                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
-                    glDepthMask(GL_TRUE)
-                    self.selection_fbo.release()
-                    self.selection_fbo_dirty = False
+            #glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
+            #glDepthMask(GL_FALSE)
+            #glStencilMask(0x01)
+            #glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT)
+            #glStencilFunc(GL_ALWAYS, 0, ~0)
+            #glEnable(GL_STENCIL_TEST)
+            #for selection in self.selections:
+                #selection.draw_mask()
+            #glDisable(GL_STENCIL_TEST)
+            #glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
+            #glDepthMask(GL_TRUE)
+            self.selection_fbo.release()
+            self.selection_fbo_dirty = False
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
@@ -804,6 +700,30 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.draw_helpers()
 
+    def draw_labels(self):
+        if self.label_index < 0:
+            return
+
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glMultMatrixd(array(self.projection.data(), dtype=float))
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glMultMatrixd(array(self.modelview.data(), dtype=float))
+
+        glColor4f(*self._theme.labels_color)
+        for example in self.data.transpose():
+            x = example[self.x_index]
+            y = example[self.y_index]
+            z = example[self.z_index]
+            label = example[self.label_index]
+            x, y, z = self.map_to_plot(array([x, y, z]), original=False)
+            #if isinstance(label, str):
+                #self.renderText(x,y,z, label, font=self._theme.labels_font)
+            #else:
+            self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'),
+                            font=self._theme.labels_font)
+
     def draw_helpers(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -813,6 +733,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.state == PlotState.SCALING:
             x, y = self.mouse_pos.x(), self.mouse_pos.y()
+            #TODO: replace with an image
             glColor4f(*self._theme.helpers_color)
             draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
             draw_line(x, y, x, y-30)
@@ -823,71 +744,52 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             draw_triangle(x+50, y, x+40, y-5, x+40, y+5)
 
             self.renderText(x, y-50, 'Scale y axis', font=self._theme.labels_font)
-            self.renderText(x+60, y+3,
-                            'Scale {0} axis'.format(['z', 'x'][self.scale_x_axis]),
-                            font=self._theme.labels_font)
+            self.renderText(x+60, y+3, 'Scale x and z axes', font=self._theme.labels_font)
         elif self.state == PlotState.SELECTING and self.new_selection != None:
             self.new_selection.draw()
 
         for selection in self.selections:
             selection.draw()
 
-    def set_x_axis_title(self, title):
-        self.x_axis_title = title
-        self.updateGL()
+    def build_axes(self):
+        edge_half = 1. / 2.
+        x_axis = [[-edge_half, -edge_half, -edge_half], [edge_half, -edge_half, -edge_half]]
+        y_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, edge_half, -edge_half]]
+        z_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, -edge_half, edge_half]]
 
-    def set_show_x_axis_title(self, show):
-        self.show_x_axis_title = show
-        self.updateGL()
+        self.x_axis = x_axis = numpy.array(x_axis)
+        self.y_axis = y_axis = numpy.array(y_axis)
+        self.z_axis = z_axis = numpy.array(z_axis)
 
-    def set_y_axis_title(self, title):
-        self.y_axis_title = title
-        self.updateGL()
+        self.unit_x = unit_x = numpy.array([1., 0., 0.])
+        self.unit_y = unit_y = numpy.array([0., 1., 0.])
+        self.unit_z = unit_z = numpy.array([0., 0., 1.])
+ 
+        A = y_axis[1]
+        B = y_axis[1] + unit_x
+        C = x_axis[1]
+        D = x_axis[0]
 
-    def set_show_y_axis_title(self, show):
-        self.show_y_axis_title = show
-        self.updateGL()
+        E = A + unit_z
+        F = B + unit_z
+        G = C + unit_z
+        H = D + unit_z
 
-    def set_z_axis_title(self, title):
-        self.z_axis_title = title
-        self.updateGL()
+        self.axis_plane_xy = [A, B, C, D]
+        self.axis_plane_yz = [A, D, H, E]
+        self.axis_plane_xz = [D, C, G, H]
 
-    def set_show_z_axis_title(self, show):
-        self.show_z_axis_title = show
-        self.updateGL()
+        self.axis_plane_xy_back = [H, G, F, E]
+        self.axis_plane_yz_right = [B, F, G, C]
+        self.axis_plane_xz_top = [E, F, B, A]
 
-    def draw_chassis(self):
-        glColor4f(*self._theme.axis_values_color)
-        glEnable(GL_LINE_STIPPLE)
-        glLineStipple(1, 0x00FF)
-        edges = [self.x_axis, self.y_axis, self.z_axis,
-                 self.x_axis+self.unit_z, self.x_axis+self.unit_y,
-                 self.x_axis+self.unit_z+self.unit_y,
-                 self.y_axis+self.unit_x, self.y_axis+self.unit_z,
-                 self.y_axis+self.unit_x+self.unit_z,
-                 self.z_axis+self.unit_x, self.z_axis+self.unit_y,
-                 self.z_axis+self.unit_x+self.unit_y]
-        glBegin(GL_LINES)
-        for edge in edges:
-            start, end = edge
-            glVertex3f(*start)
-            glVertex3f(*end)
-        glEnd()
-        glDisable(GL_LINE_STIPPLE)
-
-    def draw_grid_and_axes(self):
-        cam_in_space = numpy.array([
-          self.camera[0]*self.camera_distance,
-          self.camera[1]*self.camera_distance,
-          self.camera[2]*self.camera_distance
-        ])
-
-        def plane_visible(plane):
-            normal = normal_from_points(*plane[:3])
-            cam_plane = normalize(plane[0] - cam_in_space)
-            if numpy.dot(normal, cam_plane) > 0:
-                return False
-            return True
+    def draw_axes(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
 
         def draw_axis(line):
             glColor4f(*self._theme.axis_color)
@@ -897,130 +799,97 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glVertex3f(*line[1])
             glEnd()
 
-        def draw_discrete_axis_values(axis, coord_index, normal, axis_map):
-            start, end = axis
-            start_value = self.transform_plot_to_data(numpy.copy(start))[coord_index]
-            end_value = self.transform_plot_to_data(numpy.copy(end))[coord_index]
+        def draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
+            start, end = axis.copy()
+            start_value = self.map_to_data(start.copy())[coord_index]
+            end_value = self.map_to_data(end.copy())[coord_index]
             length = end_value - start_value
-            offset = normal*0.8
-            for key in axis_map.keys():
-                if start_value <= key <= end_value:
-                    position = start + (end-start)*((key-start_value) / length)
+            for i, label in enumerate(axis_labels):
+                value = (i + 1) * 2
+                if start_value <= value <= end_value:
+                    position = start + (end-start)*((value-start_value) / length)
                     glBegin(GL_LINES)
                     glVertex3f(*(position))
-                    glVertex3f(*(position+normal*0.2))
+                    glVertex3f(*(position+normal*0.03))
                     glEnd()
-                    position += offset
+                    position += normal * 0.1
                     self.renderText(position[0],
                                     position[1],
                                     position[2],
-                                    axis_map[key], font=self._theme.labels_font)
+                                    label, font=self._theme.labels_font)
 
-        def draw_values(axis, coord_index, normal, axis_map):
+        def draw_values(axis, coord_index, normal, axis_labels):
             glColor4f(*self._theme.axis_values_color)
             glLineWidth(1)
-            if axis_map != None:
-                draw_discrete_axis_values(axis, coord_index, normal, axis_map)
+            if axis_labels != None:
+                draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
                 return
-            start, end = axis
-            start_value = self.transform_plot_to_data(numpy.copy(start))[coord_index]
-            end_value = self.transform_plot_to_data(numpy.copy(end))[coord_index]
+            start, end = axis.copy()
+            start_value = self.map_to_data(start.copy())[coord_index]
+            end_value = self.map_to_data(end.copy())[coord_index]
             values, num_frac = loose_label(start_value, end_value, 7)
-            format = '%%.%df' % num_frac
-            offset = normal*0.8
             for value in values:
                 if not (start_value <= value <= end_value):
                     continue
                 position = start + (end-start)*((value-start_value) / float(end_value-start_value))
+                text = ('%%.%df' % num_frac) % value
                 glBegin(GL_LINES)
                 glVertex3f(*(position))
-                glVertex3f(*(position+normal*0.2))
+                glVertex3f(*(position+normal*0.03))
                 glEnd()
-                value = self.transform_plot_to_data(numpy.copy(position))[coord_index]
-                position += offset
+                position += normal * 0.1
                 self.renderText(position[0],
                                 position[1],
                                 position[2],
-                                format % value)
+                                text, font=self._theme.axis_font)
 
         def draw_axis_title(axis, title, normal):
             middle = (axis[0] + axis[1]) / 2.
-            middle += normal * 1. if axis[0][1] != axis[1][1] else normal * 2.
+            middle += normal * 0.1 if axis[0][1] != axis[1][1] else normal * 0.2
             self.renderText(middle[0], middle[1], middle[2],
                             title,
                             font=self._theme.axis_title_font)
-
-        def draw_grid(axis0, axis1, normal0, normal1, i, j):
-            glColor4f(*self._theme.grid_color)
-            for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
-                start, end = axis
-                start_value = self.transform_plot_to_data(numpy.copy(start))[coord_index]
-                end_value = self.transform_plot_to_data(numpy.copy(end))[coord_index]
-                values, _ = loose_label(start_value, end_value, 7)
-                for value in values:
-                    if not (start_value <= value <= end_value):
-                        continue
-                    position = start + (end-start)*((value-start_value) / float(end_value-start_value))
-                    glBegin(GL_LINES)
-                    glVertex3f(*position)
-                    glVertex3f(*(position-normal*10.))
-                    glEnd()
 
         glDisable(GL_DEPTH_TEST)
         glLineWidth(1)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+        cam_in_space = numpy.array([
+          self.camera[0]*self.camera_distance,
+          self.camera[1]*self.camera_distance,
+          self.camera[2]*self.camera_distance
+        ])
+
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
-        axes = [[self.x_axis, self.y_axis],
-                [self.y_axis, self.z_axis],
-                [self.x_axis+self.unit_z, self.y_axis+self.unit_z],
-                [self.z_axis+self.unit_x, self.y_axis+self.unit_x]]
         normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
                    [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
                    [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
                    [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
-        coords = [[0, 1],
-                  [1, 2],
-                  [0, 1],
-                  [2, 1]]
-        visible_planes = map(plane_visible, planes)
-        xz_visible = not plane_visible(self.axis_plane_xz)
-        if self.show_grid:
-            if xz_visible:
-                draw_grid(self.x_axis, self.z_axis, numpy.array([0,0,-1]), numpy.array([-1,0,0]), 0, 2)
-            for visible, (axis0, axis1), (normal0, normal1), (i, j) in\
-                 zip(visible_planes, axes, normals, coords):
-                if not visible:
-                    draw_grid(axis0, axis1, normal0, normal1, i, j)
-
-        glEnable(GL_DEPTH_TEST)
-        glDisable(GL_BLEND)
-
-        if not self.show_axes:
-            return
+        visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
+        xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
 
         if visible_planes[0 if xz_visible else 2]:
             draw_axis(self.x_axis)
-            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_map)
+            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_labels)
             if self.show_x_axis_title:
                 draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
         elif visible_planes[2 if xz_visible else 0]:
             draw_axis(self.x_axis + self.unit_z)
-            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_map)
+            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_labels)
             if self.show_x_axis_title:
                 draw_axis_title(self.x_axis + self.unit_z,
                                 self.x_axis_title, numpy.array([0, 0, 1]))
 
         if visible_planes[1 if xz_visible else 3]:
             draw_axis(self.z_axis)
-            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_map)
+            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_labels)
             if self.show_z_axis_title:
                 draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
         elif visible_planes[3 if xz_visible else 1]:
             draw_axis(self.z_axis + self.unit_x)
-            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_map)
+            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_labels)
             if self.show_z_axis_title:
                 draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
 
@@ -1041,223 +910,157 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         axis = y_axis_translated[rightmost_visible]
         normal = normals[rightmost_visible]
         draw_axis(axis)
-        draw_values(axis, 1, normal, self.y_axis_map)
+        draw_values(axis, 1, normal, self.y_axis_labels)
         if self.show_y_axis_title:
             draw_axis_title(axis, self.y_axis_title, normal)
 
-        # Remember which axis to scale when dragging mouse horizontally.
-        self.scale_x_axis = False if rightmost_visible % 2 == 0 else True
+    def set_shown_attributes_indices(self, x_index, y_index, z_index,
+            color_index, symbol_index, size_index, label_index,
+            colors, num_symbols_used,
+            data_scale=array([1., 1., 1.]), data_translation=array([0., 0., 0.])):
+        start = time.time()
+        self.makeCurrent()
+        self.data_scale = data_scale
+        self.data_translation = data_translation
+        self.x_index = x_index
+        self.y_index = y_index
+        self.z_index = z_index
+        self.label_index = label_index
 
-    def build_axes(self):
-        edge_half = self.view_cube_edge / 2.
-        x_axis = [[-edge_half,-edge_half,-edge_half], [edge_half,-edge_half,-edge_half]]
-        y_axis = [[-edge_half,-edge_half,-edge_half], [-edge_half,edge_half,-edge_half]]
-        z_axis = [[-edge_half,-edge_half,-edge_half], [-edge_half,-edge_half,edge_half]]
+        # If color is a discrete attribute, colors should be a list of colors
+        # each specified with vec3 (RGB).
 
-        self.x_axis = x_axis = numpy.array(x_axis)
-        self.y_axis = y_axis = numpy.array(y_axis)
-        self.z_axis = z_axis = numpy.array(z_axis)
+        # Re-run generating program (geometry shader), store
+        # results through transform feedback into a VBO on the GPU.
+        self.generating_program.bind()
+        self.generating_program.setUniformValue('x_index', x_index)
+        self.generating_program.setUniformValue('y_index', y_index)
+        self.generating_program.setUniformValue('z_index', z_index)
+        self.generating_program.setUniformValue('color_index', color_index)
+        self.generating_program.setUniformValue('symbol_index', symbol_index)
+        self.generating_program.setUniformValue('size_index', size_index)
+        self.generating_program.setUniformValue('use_2d_symbols', self.use_2d_symbols)
+        self.generating_program.setUniformValue('example_size', self.example_size)
+        self.generating_program.setUniformValue('num_colors', len(colors))
+        self.generating_program.setUniformValue('num_symbols_used', num_symbols_used)
+        glUniform3fv(glGetUniformLocation(self.generating_program.programId(), 'colors'),
+            len(colors), numpy.array(colors, 'f').ravel())
+        glUniform1iv(glGetUniformLocation(self.generating_program.programId(), 'symbols_sizes'),
+            len(Symbol)*2, numpy.array(self.symbols_sizes, dtype='i'))
+        glUniform1iv(glGetUniformLocation(self.generating_program.programId(), 'symbols_indices'),
+            len(Symbol)*2, numpy.array(self.symbols_indices, dtype='i'))
 
-        self.unit_x = unit_x = numpy.array([self.view_cube_edge,0,0])
-        self.unit_y = unit_y = numpy.array([0,self.view_cube_edge,0])
-        self.unit_z = unit_z = numpy.array([0,0,self.view_cube_edge])
- 
-        A = y_axis[1]
-        B = y_axis[1] + unit_x
-        C = x_axis[1]
-        D = x_axis[0]
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_BUFFER, self.symbol_buffer)
+        self.generating_program.setUniformValue('symbol_buffer', 0)
+        glActiveTexture(GL_TEXTURE1)
+        glBindTexture(GL_TEXTURE_BUFFER, self.data_buffer)
+        self.generating_program.setUniformValue('data_buffer', 1)
 
-        E = A + unit_z
-        F = B + unit_z
-        G = C + unit_z
-        H = D + unit_z
+        qid = glGenQueries(1)
+        glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, qid)
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, self.feedback_bid)
+        glEnable(GL_RASTERIZER_DISCARD)
+        glBeginTransformFeedback(GL_TRIANGLES)
 
-        self.axis_plane_xy = [A, B, C, D]
-        self.axis_plane_yz = [A, D, H, E]
-        self.axis_plane_xz = [D, C, G, H]
+        glBindVertexArray(self.dummy_vao)
+        glDrawArrays(GL_POINTS, 0, self.num_examples)
 
-        self.axis_plane_xy_back = [H, G, F, E]
-        self.axis_plane_yz_right = [B, F, G, C]
-        self.axis_plane_xz_top = [E, F, B, A]
+        glEndTransformFeedback()
+        glDisable(GL_RASTERIZER_DISCARD)
 
-    def scatter(self, X, Y, Z, colors='b', sizes=5, symbols=None, labels=None, **kwargs):
-        if len(X) != len(Y) != len(Z):
-            raise ValueError('Axis data arrays must be of equal length')
-        num_points = len(X)
-
-        if isinstance(colors, str):
-            color_map = {'r': [1.0, 0.0, 0.0, 1.0],
-                         'g': [0.0, 1.0, 0.0, 1.0],
-                         'b': [0.0, 0.0, 1.0, 1.0]}
-            default = [0.0, 0.0, 1.0, 1.0]
-            colors = [color_map.get(colors, default) for _ in range(num_points)]
- 
-        if isinstance(sizes, (int, float)):
-            sizes = [sizes for _ in range(num_points)]
-
-        # Scale sizes to 0..1
-        self.max_size = float(numpy.max(sizes))
-        sizes = [size / self.max_size for size in sizes]
-
-        if symbols == None:
-            symbols = [Symbol.RECT for _ in range(num_points)]
-
-        # We scale and translate data into almost-unit cube centered around (0,0,0) in plot-space.
-        # It's almost-unit because the length of its edge is specified with view_cube_edge.
-        # This transform is done to ease later calculations and for presentation purposes.
-        min = self.min_x, self.min_y, self.min_z = numpy.min(X), numpy.min(Y), numpy.min(Z)
-        max = self.max_x, self.max_y, self.max_z = numpy.max(X), numpy.max(Y), numpy.max(Z)
-        min = numpy.array(min)
-        max = numpy.array(max)
-        range_x, range_y, range_z = max-min
-        self.data_center = (min + max) / 2 
-
-        scale_x = self.view_cube_edge / range_x
-        scale_y = self.view_cube_edge / range_y
-        scale_z = self.view_cube_edge / range_z
-
-        self.data_scale = numpy.array([scale_x, scale_y, scale_z])
-
-        # TODO: if self.use_2d_symbols
-
-        num_3d_vertices = 0
-        num_2d_vertices = 0
-        num_edge_vertices = 0
-        vertices = []
-        ai = -1 # Array index (used in color-picking).
-        for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
-            x -= self.data_center[0]
-            y -= self.data_center[1]
-            z -= self.data_center[2]
-            x *= scale_x
-            y *= scale_y
-            z *= scale_z
-            triangles = get_symbol_data(symbol)
-            ss = size*0.02
-            ai += 1
-            for v0, v1, v2, n0, n1, n2 in triangles:
-                num_3d_vertices += 3
-                vertices.extend([x,y,z, ai, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, n0[0],n0[1],n0[2],
-                                 x,y,z, ai, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, n1[0],n1[1],n1[2],
-                                 x,y,z, ai, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, n2[0],n2[1],n2[2]])
-
-        for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
-            x -= self.data_center[0]
-            y -= self.data_center[1]
-            z -= self.data_center[2]
-            x *= scale_x
-            y *= scale_y
-            z *= scale_z
-            triangles = get_2d_symbol_data(symbol)
-            ss = size*0.02
-            for v0, v1, v2, _, _, _ in triangles:
-                num_2d_vertices += 3
-                vertices.extend([x,y,z, 0, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, 0,0,0,
-                                 x,y,z, 0, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, 0,0,0,
-                                 x,y,z, 0, ss*v2[0],ss*v2[1],ss*v2[2], r,g,b,a, 0,0,0])
-
-        for x, y, z, (r,g,b,a), size, symbol in zip(X, Y, Z, colors, sizes, symbols):
-            x -= self.data_center[0]
-            y -= self.data_center[1]
-            z -= self.data_center[2]
-            x *= scale_x
-            y *= scale_y
-            z *= scale_z
-            edges = get_2d_symbol_edges(symbol)
-            ss = size*0.02
-            for v0, v1 in edges:
-                num_edge_vertices += 2
-                vertices.extend([x,y,z, 0, ss*v0[0],ss*v0[1],ss*v0[2], r,g,b,a, 0,0,0,
-                                 x,y,z, 0, ss*v1[0],ss*v1[1],ss*v1[2], r,g,b,a, 0,0,0])
-
-        # Build Vertex Buffer + Vertex Array Object.
-        vao_id = GLuint(0)
-        glGenVertexArrays(1, vao_id)
-        glBindVertexArray(vao_id)
-
-        vertex_buffer_id = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
-        glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
-
-        vertex_size = (4+3+3+4)*4
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))    # position
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(4*4))  # offset
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(7*4))  # color
-        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(11*4)) # normal
-        glEnableVertexAttribArray(0)
-        glEnableVertexAttribArray(1)
-        glEnableVertexAttribArray(2)
-        glEnableVertexAttribArray(3)
-
+        glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
+        self.num_primitives_generated = glGetQueryObjectuiv(qid, GL_QUERY_RESULT)
         glBindVertexArray(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        self.feedback_generated = True
+        print('Num generated primitives: ' + str(self.num_primitives_generated))
 
-        vao_id.num_3d_vertices = num_3d_vertices
-        vao_id.num_2d_vertices = num_2d_vertices
-        vao_id.num_edge_vertices = num_edge_vertices
-        self.vertex_buffers.append(vertex_buffer_id)
-        self.vaos.append(vao_id)
-        self.commands.append(("scatter", [vao_id, (X,Y,Z), labels]))
+        self.generating_program.release()
+        glActiveTexture(GL_TEXTURE0)
+        print('Generation took ' + str(time.time()-start) + ' seconds')
         self.updateGL()
 
-    def set_x_axis_map(self, map):
-        self.x_axis_map = map
-        self.updateGL()
+    def set_data(self, data, subset_data=None):
+        self.makeCurrent()
+        start = time.time()
 
-    def set_y_axis_map(self, map):
-        self.y_axis_map = map
-        self.updateGL()
+        data_array = numpy.array(data.transpose().flatten(), dtype='f')
+        self.example_size = len(data)
+        self.num_examples = len(data[0])
+        self.data = data
 
-    def set_z_axis_map(self, map):
-        self.z_axis_map = map
-        self.updateGL()
+        tbo = glGenBuffers(1)
+        glBindBuffer(GL_TEXTURE_BUFFER, tbo)
+        glBufferData(GL_TEXTURE_BUFFER, len(data_array)*4, data_array, GL_STATIC_DRAW)
+        glBindBuffer(GL_TEXTURE_BUFFER, 0)
+
+        self.data_buffer = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_BUFFER, self.data_buffer)
+        GL_R32F = 0x822E
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, tbo)
+        glBindTexture(GL_TEXTURE_BUFFER, 0)
+
+        print('Uploading data to GPU took ' + str(time.time()-start) + ' seconds')
+
+    def set_axis_labels(self, axis_id, labels):
+        '''labels should be a list of strings'''
+        if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
+            setattr(self, Axis.to_str(axis_id).lower() + '_axis_labels', labels)
+
+    def set_axis_title(self, axis_id, title):
+        if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
+            setattr(self, Axis.to_str(axis_id).lower() + '_axis_title', title)
+
+    def set_show_axis_title(self, axis_id, show):
+        if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
+            setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', title)
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
+        '''Specifies new zoom in data coordinates.'''
         self.selections = []
-        self.zoom_stack.append((self.scale, self.translation))
+        self.zoom_stack.append((self.plot_scale, self.plot_translation))
 
-        max = numpy.array([x_max, y_max, z_max])
-        min = numpy.array([x_min, y_min, z_min])
-        min, max = map(numpy.copy, [min, max])
-        min -= self.data_center
+        max = array([x_max, y_max, z_max]).copy()
+        min = array([x_min, y_min, z_min]).copy()
+        min -= self.data_translation
         min *= self.data_scale
-        max -= self.data_center
+        max -= self.data_translation
         max *= self.data_scale
         center = (max + min) / 2.
-        new_translation = -numpy.array(center)
+        new_translation = -array(center)
         # Avoid division by zero by adding a small value (this happens when zooming in
         # on elements with the same value of an attribute).
-        self.zoomed_size = numpy.array(map(lambda i: i+0.001 if i == 0 else i, max-min))
-        new_scale = self.view_cube_edge / self.zoomed_size
+        self.zoomed_size = array(map(lambda i: i+1e-5 if i == 0 else i, max-min))
+        new_scale = 1. / self.zoomed_size
         self._animate_new_scale_translation(new_scale, new_translation)
 
     def _animate_new_scale_translation(self, new_scale, new_translation, num_steps=10):
-        translation_step = (new_translation - self.translation) / float(num_steps)
-        scale_step = (new_scale - self.scale) / float(num_steps)
+        translation_step = (new_translation - self.plot_translation) / float(num_steps)
+        scale_step = (new_scale - self.plot_scale) / float(num_steps)
         # Animate zooming: translate first for a number of steps,
         # then scale. Make sure it doesn't take too long.
         start = time.time()
         for i in range(num_steps):
             if time.time() - start > 1.:
-                self.translation = new_translation
+                self.plot_translation = new_translation
                 break
-            self.translation = self.translation + translation_step
+            self.plot_translation = self.plot_translation + translation_step
             self.updateGL()
         for i in range(num_steps):
             if time.time() - start > 1.:
-                self.scale = new_scale
+                self.plot_scale = new_scale
                 break
-            self.scale = self.scale + scale_step
+            self.plot_scale = self.plot_scale + scale_step
             self.updateGL()
 
-    def pop_zoom(self):
+    def zoom_out(self):
         if len(self.zoom_stack) < 1:
-            new_translation = numpy.array([0., 0., 0.])
-            new_scale = numpy.array([1., 1., 1.])
+            new_translation = -array([0.5, 0.5, 0.5])
+            new_scale = array([1., 1., 1.])
         else:
             new_scale, new_translation = self.zoom_stack.pop()
         self._animate_new_scale_translation(new_scale, new_translation)
-        self.zoomed_size = self.view_cube_edge / new_scale
+        self.zoomed_size = 1. / new_scale
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
@@ -1269,28 +1072,30 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             img = img.scaled(size)
         return img.save(file_name)
 
-    def transform_data_to_plot(self, vertex):
-        vertex -= self.data_center
-        vertex *= self.data_scale
-        vertex += self.translation
-        vertex *= numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
-        return vertex
+    def map_to_plot(self, point, original=True):
+        if original:
+            point -= self.data_translation
+            point *= self.data_scale
+        point += self.plot_translation
+        plot_scale = maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
+        point *= plot_scale
+        return point
 
-    def transform_plot_to_data(self, vertex):
-        denominator = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
-        denominator = numpy.array(map(lambda v: v+0.00001 if v == 0. else v, denominator))
-        vertex /= denominator
-        vertex -= self.translation
-        vertex /= self.data_scale
-        vertex += self.data_center
-        return vertex
+    def map_to_data(self, point, original=True):
+        plot_scale = maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
+        point /= plot_scale
+        point -= self.plot_translation
+        if original:
+            point /= self.data_scale
+            point += self.data_translation
+        return point
 
     def get_selection_indices(self):
         if len(self.selections) == 0:
             return []
 
         width, height = self.width(), self.height()
-        if self.use_fbos and width <= 1024 and height <= 1024:
+        if False and self.use_fbos and width <= 1024 and height <= 1024:
             self.selection_fbo_dirty = True
             self.updateGL()
 
@@ -1314,22 +1119,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             return indices
         else:
             # Slower method (projects points manually and checks containments).
-            projection = QMatrix4x4()
-            if self.use_ortho:
-                projection.ortho(-width / self.ortho_scale, width / self.ortho_scale,
-                                 -height / self.ortho_scale, height / self.ortho_scale,
-                                 self.ortho_near, self.ortho_far)
-            else:
-                projection.perspective(self.camera_fov, float(width) / height,
-                                       self.perspective_near, self.perspective_far)
-
-            modelview = QMatrix4x4()
-            modelview.lookAt(QVector3D(self.camera[0]*self.camera_distance,
-                                       self.camera[1]*self.camera_distance,
-                                       self.camera[2]*self.camera_distance),
-                             QVector3D(0,-1, 0),
-                             QVector3D(0, 1, 0))
-
+            modelview, projection = self.get_mvp()
             proj_model = projection * modelview
             viewport = [0, 0, width, height]
 
@@ -1342,14 +1132,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 return winx, winy
 
             indices = []
-            for (cmd, params) in self.commands:
-                if cmd == 'scatter':
-                    _, (X, Y, Z), _ = params
-                    for i, (x, y, z) in enumerate(zip(X, Y, Z)):
-                        x, y, z = self.transform_data_to_plot((x,y,z))
-                        x_win, y_win = project(x, y, z)
-                        if any(sel.contains(x_win, y_win) for sel in self.selections):
-                            indices.append(i)
+            for i, example in enumerate(self.data.transpose()):
+                x = example[self.x_index]
+                y = example[self.y_index]
+                z = example[self.z_index]
+                x, y, z = self.map_to_plot(array([x,y,z]).copy(), original=False)
+                x_win, y_win = project(x, y, z)
+                if any(sel.contains(x_win, y_win) for sel in self.selections):
+                    indices.append(i)
 
             return indices
 
@@ -1383,9 +1173,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
                 self.new_selection = None
                 self.state = PlotState.SCALING
                 self.scaling_init_pos = self.mouse_pos
-                self.additional_scale = [0., 0., 0.]
+                self.additional_scale = array([0., 0., 0.])
             else:
-                self.pop_zoom()
+                self.zoom_out()
             self.updateGL()
         elif buttons & Qt.MiddleButton:
             self.state = PlotState.ROTATING
@@ -1431,10 +1221,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
                 up_vec = normalize(numpy.cross(right_vec, self.camera))
-                right_scale = self.width()*max(self.scale[0], self.scale[2])*0.1
-                up_scale = self.height()*self.scale[1]*0.1
-                self.translation -= right_vec*(dx / right_scale) +\
-                                    up_vec*(dy / up_scale)
+                right_vec[0] *= dx / (self.width() * self.plot_scale[0] * self.panning_factor)
+                right_vec[2] *= dx / (self.width() * self.plot_scale[2] * self.panning_factor)
+                up_scale = self.height()*self.plot_scale[1]*self.panning_factor
+                self.plot_translation -= right_vec + up_vec*(dy / up_scale)
             else:
                 self.yaw += dx / (self.rotation_factor*self.width())
                 self.pitch += dy / (self.rotation_factor*self.height())
@@ -1442,11 +1232,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
-            dx /= float(self.zoomed_size[0 if self.scale_x_axis else 2])
+            dx /= float(self.zoomed_size[0]) # TODO
             dy /= float(self.zoomed_size[1])
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
-            self.additional_scale = [dx, dy, 0] if self.scale_x_axis else [0, dy, dx]
+            self.additional_scale = [dx, dy, 0]
         elif self.state == PlotState.PANNING:
             self.dragged_selection.move(dx, dy)
 
@@ -1459,8 +1249,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             return
 
         if self.state == PlotState.SCALING:
-            self.scale = numpy.maximum([0., 0., 0.], self.scale + self.additional_scale)
-            self.additional_scale = [0., 0., 0.]
+            self.plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
+            self.additional_scale = array([0., 0., 0.])
             self.state = PlotState.IDLE
         elif self.state == PlotState.SELECTING:
             if self.selection_type == SelectionType.POLYGON:
@@ -1489,7 +1279,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if event.orientation() == Qt.Vertical:
             self.selections = []
             delta = 1 + event.delta() / self.zoom_factor
-            self.scale *= delta
+            self.plot_scale *= delta
             self.tooltip_fbo_dirty = True
             self.updateGL()
 
@@ -1501,7 +1291,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def remove_all_selections(self):
         self.selections = []
-        self.selection_changed_callback() if self.selection_changed_callback else None
+        if self.selection_changed_callback and self.selection_type != SelectionType.ZOOM:
+            self.selection_changed_callback()
         self.updateGL()
 
     @pyqtProperty(PlotTheme)
@@ -1518,22 +1309,20 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
 
     def clear(self):
-        self.commands = []
         self.selections = []
         self.legend.clear()
         self.zoom_stack = []
-        self.zoomed_size = [self.view_cube_edge,
-                            self.view_cube_edge,
-                            self.view_cube_edge]
-        self.translation = numpy.array([0., 0., 0.])
-        self.scale = numpy.array([1., 1., 1.])
-        self.additional_scale = numpy.array([0., 0., 0.])
-        self.x_axis_title = self.y_axis_title = self.z_axis_title = ''
-        self.x_axis_map = self.y_axis_map = self.z_axis_map = None
+        self.zoomed_size = [1., 1., 1.]
+        self.plot_translation = -array([0.5, 0.5, 0.5])
+        self.plot_scale = array([1., 1., 1.])
+        self.additional_scale = array([0., 0., 0.])
+        self.data_scale = array([1., 1., 1.])
+        self.data_translation = array([0., 0., 0.])
+        self.x_axis_labels = None
+        self.y_axis_labels = None
+        self.z_axis_labels = None
         self.tooltip_fbo_dirty = True
         self.selection_fbo_dirty = True
-        self.updateGL()
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
