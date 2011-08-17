@@ -49,15 +49,38 @@ Utility functions
 """
 
 import Orange
-from Orange.core import EarthLearner as BaseEarthLearner, \
-                        EarthClassifier as BaseEarthClassifier
+from Orange.data.variable import Discrete, Continuous
+from Orange.data import Table, Domain
 from Orange.preprocess import Preprocessor_continuize, \
                               Preprocessor_impute, \
                               Preprocessor_preprocessorList, \
                               DomainContinuizer
-            
+
 import numpy
 
+def is_discrete(var):
+    return isinstance(var, Discrete)
+
+def is_continuous(var):
+    return isinstance(var, Continuous)
+
+def expand_discrete(var):
+    if len(var.values) > 2:
+        values = var.values
+    elif len(var.values) == 2:
+        values = var.values[-1:]
+    else:
+        values = var.values[:1]
+    new_vars = []
+    for value in values:
+        new = Continuous("{0}={1}".format(var.name, value))
+        new.get_value_from = cls = Orange.core.ClassifierFromVar(whichVar=var)
+        cls.transformer = Orange.core.Discrete2Continuous()
+        cls.transformer.value = int(Orange.core.Value(var, value))
+        new.source_variable = var
+        new_vars.append(new)
+    return new_vars
+    
 class EarthLearner(Orange.core.LearnerFD):
     """ Earth learner class.
     """
@@ -123,30 +146,38 @@ class EarthLearner(Orange.core.LearnerFD):
         self.__dict__.update(kwds)
         
         impute = Preprocessor_impute()
-        cont = Preprocessor_continuize(multinomialTreatment=
-                                       DomainContinuizer.AsOrdinal)
-        
+        cont = Preprocessor_continuize(multinomialTreatment=DomainContinuizer.AsOrdinal)
         self.preproc = Preprocessor_preprocessorList(preprocessors=\
                                                      [impute, cont])
         
     def __call__(self, examples, weight_id=None):
+        original_domain = examples.domain # Needed by classifier and evimp
         examples = self.preproc(examples)
-        
+        expanded_class = None
         if self.multi_label:
             label_mask = data_label_mask(examples.domain)
+            data = examples.to_numpy_MA("Ac")[0]
+            y = data[:, label_mask]
+            x = data[:, ~ label_mask]
         else:
-            label_mask = numpy.zeros(len(examples.domain.variables),
-                                     dtype=bool)
-            label_mask[-1] = bool(examples.domain.class_var)
-            
-        if not any(label_mask):
-            raise ValueError("The domain has no response variable.")
-         
-        data = examples.to_numpy_MA("Ac")[0]
-        y = data[:, label_mask]
-        x = data[:, ~ label_mask]
+            # Expand a discrete class with indicator columns
+            if is_discrete(examples.domain.class_var):
+                expanded_class = expand_discrete(examples.domain.class_var)
+                y = Table(Domain(expanded_class, None), examples)
+                y = y.to_numpy_MA("A")[0]
+                x = examples.to_numpy_MA("A")[0]
+                label_mask = [False] * x.shape[1] + [True] * y.shape[1]
+                label_mask = numpy.array(label_mask)
+            elif is_continuous(examples.domain.class_var):
+                label_mask = numpy.zeros(len(examples.domain.variables),
+                                         dtype=bool)
+                label_mask[-1] = True
+                x, y, _ = examples.to_numpy_MA()
+                y = y.reshape((-1, 1))
+            else:
+                raise ValueError("Cannot handle the response.")
         
-        if self.scale_resp:
+        if self.scale_resp and y.shape[1] == 1:
             sy = y - numpy.mean(y, axis=0)
             sy = sy / numpy.std(sy, axis=1)
         else:
@@ -174,7 +205,8 @@ class EarthLearner(Orange.core.LearnerFD):
         return EarthClassifier(examples.domain, used, dirs, cuts, betas.T,
                                subsets, rss_per_subset, gcv_per_subset,
                                examples=examples if self.store_examples else None,
-                               label_mask=label_mask, multi_flag=self.multi_label)
+                               label_mask=label_mask, multi_flag=self.multi_label,
+                               expanded_class=expanded_class)
     
 
 class EarthClassifier(Orange.core.ClassifierFD):
@@ -182,7 +214,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
     """
     def __init__(self, domain, best_set, dirs, cuts, betas, subsets=None,
                  rss_per_subset=None, gcv_per_subset=None, examples=None,
-                 label_mask=None, multi_flag=False, **kwargs):
+                 label_mask=None, multi_flag=False, expanded_class=None,
+                 original_domain=None, **kwargs):
         self.multi_flag = multi_flag
         self.domain = domain
         self.class_var = domain.class_var
@@ -195,19 +228,37 @@ class EarthClassifier(Orange.core.ClassifierFD):
         self.gcv_per_subset = gcv_per_subset
         self.examples = examples
         self.label_mask = label_mask
+        self.expanded_class = expanded_class
+        self.original_domain = original_domain
         self.__dict__.update(kwargs)
         
     def __call__(self, example, result_type=Orange.core.GetValue):
-        resp_vars = [v for v, m in zip(self.domain.variables, self.label_mask)\
-                     if m]
+        if self.multi_flag:
+            resp_vars = [v for v, m in zip(self.domain.variables,
+                                           self.label_mask) if m]
+        elif is_discrete(self.class_var):
+            resp_vars = self.expanded_class
+        else:
+            resp_vars = [self.class_var]
+            
         vals = self.predict(example)
         vals = [var(val) for var, val in zip(resp_vars, vals)]
         
-        probs = []
-        for var, val in zip(resp_vars, vals):
-            dist = Orange.statistics.distribution.Distribution(var)
-            dist[val] = 1.0
-            probs.append(dist)
+        from Orange.statistics.distribution import Distribution
+        
+        if is_discrete(self.class_var):
+            winner = max(vals) #TODO: Handle ties.
+            value = winner.variable.get_value_from.transformer.value
+            value = self.class_var(value)
+            dist = Distribution(self.class_var)
+            dist[value] = 1.0
+            vals, probs = [value], [dist]
+        else:
+            probs = []
+            for var, val in zip(resp_vars, vals):
+                dist = Distribution(var)
+                dist[val] = 1.0
+                probs.append(dist)
             
         if not self.multi_flag:
             vals, probs = vals[0], probs[0]
@@ -421,15 +472,15 @@ _c_forward_pass_ = _c_orange_lib.EarthForwardPass
 
 _c_forward_pass_.argtypes = \
     [ctypes.POINTER(ctypes.c_int),  #pnTerms:
-     ctypeslib.ndpointer(dtype=numpy.bool, ndim=1),  #FullSet
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #bx
-     ctypeslib.ndpointer(dtype=numpy.int, ndim=2, flags="F_CONTIGUOUS"),    #Dirs
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #Cuts
-     ctypeslib.ndpointer(dtype=numpy.int, ndim=1),  #nFactorsInTerms
-     ctypeslib.ndpointer(dtype=numpy.int, ndim=1),  #nUses
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #x
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"), #y
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=1), # Weights
+     ctypeslib.ndpointer(dtype=ctypes.c_bool, ndim=1),  #FullSet
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"), #bx
+     ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=2, flags="F_CONTIGUOUS"),    #Dirs
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"), #Cuts
+     ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1),  #nFactorsInTerms
+     ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1),  #nUses
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"), #x
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"), #y
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=1), # Weights
      ctypes.c_int,  #nCases
      ctypes.c_int,  #nResp
      ctypes.c_int,  #nPred
@@ -440,7 +491,7 @@ _c_forward_pass_.argtypes = \
      ctypes.c_int,  #nFastK
      ctypes.c_double,   #FastBeta
      ctypes.c_double,   #NewVarPenalty
-     ctypeslib.ndpointer(dtype=numpy.int, ndim=1),  #LinPreds
+     ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1),  #LinPreds
      ctypes.c_bool, #UseBetaCache
      ctypes.c_char_p    #sPredNames
      ]
@@ -450,8 +501,8 @@ def forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
     """ Do earth forward pass.
     """
     import ctypes, orange
-    x = numpy.asfortranarray(x, dtype="d")
-    y = numpy.asfortranarray(y, dtype="d")
+    x = numpy.asfortranarray(x, dtype=ctypes.c_double)
+    y = numpy.asfortranarray(y, dtype=ctypes.c_double)
     if x.shape[0] != y.shape[0]:
         raise ValueError("First dimensions of x and y must be the same.")
     if y.ndim == 1:
@@ -465,14 +516,14 @@ def forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
     
     # Output variables
     n_term = ctypes.c_int()
-    full_set = numpy.zeros((terms,), dtype=numpy.bool, order="F")
-    bx = numpy.zeros((n_cases, terms), dtype=numpy.double, order="F")
-    dirs = numpy.zeros((terms, n_preds), dtype=numpy.int, order="F")
-    cuts = numpy.zeros((terms, n_preds), dtype=numpy.double, order="F")
-    n_factors_in_terms = numpy.zeros((terms,), dtype=numpy.int, order="F")
-    n_uses = numpy.zeros((n_preds,), dtype=numpy.int, order="F")
-    weights = numpy.ones((n_cases,), dtype=numpy.double, order="F")
-    lin_preds = numpy.zeros((n_preds,), dtype=numpy.int, order="F")
+    full_set = numpy.zeros((terms,), dtype=ctypes.c_bool, order="F")
+    bx = numpy.zeros((n_cases, terms), dtype=ctypes.c_double, order="F")
+    dirs = numpy.zeros((terms, n_preds), dtype=ctypes.c_int, order="F")
+    cuts = numpy.zeros((terms, n_preds), dtype=ctypes.c_double, order="F")
+    n_factors_in_terms = numpy.zeros((terms,), dtype=ctypes.c_int, order="F")
+    n_uses = numpy.zeros((n_preds,), dtype=ctypes.c_int, order="F")
+    weights = numpy.ones((n_cases,), dtype=ctypes.c_double, order="F")
+    lin_preds = numpy.zeros((n_preds,), dtype=ctypes.c_int, order="F")
     use_beta_cache = True
     
     # These tests are performed in ForwardPass, and if they fail the function
@@ -518,21 +569,21 @@ def forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
 _c_eval_subsets_xtx = _c_orange_lib.EarthEvalSubsetsUsingXtx
 
 _c_eval_subsets_xtx.argtypes = \
-    [ctypeslib.ndpointer(dtype=numpy.bool, ndim=2, flags="F_CONTIGUOUS"),   #PruneTerms
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=1),   #RssVec
+    [ctypeslib.ndpointer(dtype=ctypes.c_bool, ndim=2, flags="F_CONTIGUOUS"),   #PruneTerms
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=1),   #RssVec
      ctypes.c_int,  #nCases
      ctypes.c_int,  #nResp
      ctypes.c_int,  #nMaxTerms
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"),   #bx
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=2, flags="F_CONTIGUOUS"),   #y
-     ctypeslib.ndpointer(dtype=numpy.double, ndim=1)  #WeightsArg
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"),   #bx
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"),   #y
+     ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=1)  #WeightsArg
      ]
 
 def subset_selection_xtx(X, Y):
     """ Subsets selection using EvalSubsetsUsingXtx in the Earth package.
     """
-    X = numpy.asfortranarray(X, dtype=numpy.double)
-    Y = numpy.asfortranarray(Y, dtype=numpy.double)
+    X = numpy.asfortranarray(X, dtype=ctypes.c_double)
+    Y = numpy.asfortranarray(Y, dtype=ctypes.c_double)
     if Y.ndim == 1:
         Y = Y.reshape((-1, 1), order="F")
         
@@ -542,10 +593,10 @@ def subset_selection_xtx(X, Y):
     var_count = X.shape[1]
     resp_count = Y.shape[1]
     cases = X.shape[0]
-    subsets = numpy.zeros((var_count, var_count), dtype=numpy.bool,
+    subsets = numpy.zeros((var_count, var_count), dtype=ctypes.c_bool,
                               order="F")
-    rss_vec = numpy.zeros((var_count,), dtype=numpy.double, order="F")
-    weights = numpy.ones((cases,), dtype=numpy.double, order="F")
+    rss_vec = numpy.zeros((var_count,), dtype=ctypes.c_double, order="F")
+    weights = numpy.ones((cases,), dtype=ctypes.c_double, order="F")
     
     _c_eval_subsets_xtx(subsets, rss_vec, cases, resp_count, var_count,
                         X, Y, weights)
@@ -578,6 +629,47 @@ def pruning_pass(bx, y, penalty, pruned_terms=-1):
     
     return used, subsets, rss_vec, gcv_vec
     
+"""\
+Variable importance estimation
+------------------------------
+"""
+
+from collections import defaultdict
+
+def collect_source(vars):
+    """ Given a list of variables ``var``, return a mapping from source
+    variables (``source_variable`` or ``get_value_from.variable`` members)
+    back to the variables in ``vars`` (assumes the default preprocessor in
+    EarthLearner).
+    
+    """
+    source = defaultdict(list)
+    for var in vars:
+        svar = None
+        if var.source_variable:
+            source[var.source_variable].append(var)
+        elif isinstance(var.get_value_from, Orange.core.ClassifierFromVar):
+            source[var.get_value_from.variable].append(var)
+        elif isinstance(var.get_value_from, Orange.core.ImputeClassifier):
+            source[var.get_value_from.classifier_from_var.variable].append(var)
+        else:
+            source[var].append(var)
+    return dict(source)
+
+def map_to_source_var(var, sources):
+    """ 
+    """
+    if var in sources:
+        return var
+    elif var.source_variable in sources:
+        return var.source_variable
+    elif isinstance(var.get_value_from, Orange.core.ClassifierFromVar):
+        return map_to_source_var(var.get_value_from.variable, sources)
+    elif isinstance(var.get_value_from, Orange.core.ImputeClassifier):
+        var = var.get_value_from.classifier_from_var.variable
+        return map_to_source_var(var, sources)
+    else:
+        return None
     
 def evimp(model, used_only=True):
     """ Return the estimated variable importance for the model.
@@ -646,7 +738,7 @@ def plot_evimp(evimp):
     
     x_axis = axes1.xaxis
     x_axis.set_ticks(X)
-    x_axis.set_ticklabels([a.name for a in attrs], rotation=45)
+    x_axis.set_ticklabels([a.name for a in attrs], rotation=90)
     
     axes1.yaxis.set_label_text("nsubsets")
     axes2.yaxis.set_label_text("normalized gcv or rss")
@@ -654,6 +746,7 @@ def plot_evimp(evimp):
     axes1.legend([l1, l2, l3], ["nsubsets", "gcv", "rss"])
     axes1.set_title("Variable importance")
     fig.show()
+
     
 def bagged_evimp(classifier, used_only=True):
     """ Extract combined (average) evimp from an instance of BaggedClassifier
@@ -672,19 +765,24 @@ def bagged_evimp(classifier, used_only=True):
     
     assert_type(classifier, BaggedClassifier)
     bagged_imp = defaultdict(list)
-    
+    attrs_by_name = defaultdict(list)
     for c in classifier.classifiers:
         assert_type(c, EarthClassifier)
-        imp = evimp(c, used_only=False)
+        imp = evimp(c, used_only=used_only)
         for attr, score in imp:
-            bagged_imp[attr].append(score)
+            bagged_imp[attr.name].append(score) # map by name
+            attrs_by_name[attr.name].append(attr)
             
     for attr, scores in bagged_imp.items():
         scores = numpy.average(scores, axis=0)
         bagged_imp[attr] = tuple(scores)
     
+    
     bagged_imp = sorted(bagged_imp.items(), key=lambda t: (t[1][0],t[1][1]),
-                        reverse=True)    
+                        reverse=True)
+    
+    bagged_imp = [(attrs_by_name[name][0], scores) for name, scores in bagged_imp]
+    
     if used_only:
         bagged_imp = [(a, r) for a, r in bagged_imp if r[0] > 0]
     return bagged_imp
@@ -702,9 +800,15 @@ def format_model(model, percision=3, indent=3):
     """ Return a formated string representation of the model.
     """
     mask = model.label_mask
-    r_vars = [v for v, m in zip(model.domain.variables,
-                                model.label_mask)
-              if m]
+    if model.multi_flag:
+        r_vars = [v for v, m in zip(model.domain.variables,
+                                    model.label_mask)
+                  if m]
+    elif is_discrete(model.class_var):
+        r_vars = model.expanded_class
+    else:
+        r_vars = [model.class_var]
+        
     r_names = [v.name for v in r_vars]
     betas = model.betas
         
@@ -763,9 +867,9 @@ High level interface for measuring variable importance
 """
 from Orange.feature import scoring
 from Orange.misc import _orange__new__
-
+            
 class ScoreEarthImportance(scoring.Score):
-    """ Score features based on there importance in the Earth model using
+    """ Score features based on their importance in the Earth model using
     ``bagged_evimp``'s function return value.
     """
     # Return types  
@@ -773,10 +877,9 @@ class ScoreEarthImportance(scoring.Score):
     RSS = 1
     GCV = 2
     
-#    _cache = weakref.WeakKeyDictionary()
     __new__ = _orange__new__(scoring.Score)
         
-    def __init__(self, t=10, score_what="nsubsets", cached=True):
+    def __init__(self, t=10, degree=2, terms=10, score_what="nsubsets", cached=True):
         """
         :param t: Number of earth models to train on the data
             (using BaggedLearner).
@@ -787,6 +890,8 @@ class ScoreEarthImportance(scoring.Score):
             
         """
         self.t = t
+        self.degree = degree
+        self.terms = terms
         if isinstance(score_what, basestring):
             score_what = {"nsubsets":self.NSUBSETS, "rss":self.RSS,
                           "gcv":self.GCV}.get(score_what, None)
@@ -804,46 +909,55 @@ class ScoreEarthImportance(scoring.Score):
             evimp = self._cached_evimp
         else:
             from Orange.ensemble.bagging import BaggedLearner
-            bc = BaggedLearner(EarthLearner(degree=2, terms=10))(data, weight_id)
+            bc = BaggedLearner(EarthLearner(degree=self.degree,
+                            terms=self.terms))(data, weight_id)
             evimp = bagged_evimp(bc, used_only=False)
-            self._cache_ref = data #weakref.ref(data)
+            self._cache_ref = data
             self._cached_evimp = evimp
-            
+        
         evimp = dict(evimp)
         score = evimp.get(attr, None)
         
         if score is None:
-            raise ValueError("Attribute %r not in the domain." % attr)
+            source = collect_source(evimp.keys())
+            if attr in source:
+                # Return average of source var scores
+                return numpy.average([evimp[v][self.score_what] \
+                                      for v in source[attr]])
+            else:
+                raise ValueError("Attribute %r not in the domain." % attr)
         else:
             return score[self.score_what]
     
     
-class ScoreRSS(scoring.Score):
-    __new__ = _orange__new__(scoring.Score)
-    def __init__(self):
-        self._cache_data = None
-        self._cache_rss = None
+#class ScoreRSS(scoring.Score):
+#    __new__ = _orange__new__(scoring.Score)
+#    def __init__(self):
+#        self._cache_data = None
+#        self._cache_rss = None
+#        
+#    def __call__(self, attr, data, weight_id=None):
+#        ref = self._cache_data
+#        if ref is not None and ref is data:
+#            rss = self._cache_rss
+#        else:
+#            x, y = data.to_numpy_MA("1A/c")
+#            subsets, rss = subsets_selection_xtx_numpy(x, y)
+#            rss_diff = -numpy.diff(rss)
+#            rss = numpy.zeros_like(rss)
+#            for s_size in range(1, subsets.shape[0]):
+#                subset = subsets[s_size, :s_size + 1]
+#                rss[subset] += rss_diff[s_size - 1]
+#            rss = rss[1:] #Drop the intercept
+#            self._cache_data = data
+#            self._cache_rss = rss
+##        print sorted(zip(rss, data.domain.attributes))
+#        index = list(data.domain.attributes).index(attr)
+#        return rss[index]
         
-    def __call__(self, attr, data, weight_id=None):
-        ref = self._cache_data
-        if ref is not None and ref is data:
-            rss = self._cache_rss
-        else:
-            x, y = data.to_numpy_MA("1A/c")
-            subsets, rss = subsets_selection_xtx_numpy(x, y)
-            rss_diff = -numpy.diff(rss)
-            rss = numpy.zeros_like(rss)
-            for s_size in range(1, subsets.shape[0]):
-                subset = subsets[s_size, :s_size + 1]
-                rss[subset] += rss_diff[s_size - 1]
-            rss = rss[1:] #Drop the intercept
-            self._cache_data = data
-            self._cache_rss = rss
-#        print sorted(zip(rss, data.domain.attributes))
-        index = list(data.domain.attributes).index(attr)
-        return rss[index]
-        
-    
+
+#from Orange.core import EarthLearner as BaseEarthLearner, \
+#                        EarthClassifier as BaseEarthClassifier
 #from Orange.misc import member_set
 # 
 #class _EarthLearner(BaseEarthLearner):
