@@ -365,6 +365,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.setMouseTracking(True)
         self.mouseover_callback = None
+        self.mouse_pos = QPoint(0, 0)
         self.before_draw_callback = None
         self.after_draw_callback = None
 
@@ -391,6 +392,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.show_axes = True
 
         self.tooltip_fbo_dirty = True
+        self.tooltip_win_center = [0, 0]
         self.selection_fbo_dirty = True
 
         self.use_fbos = True
@@ -461,6 +463,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_program_translation    = self.symbol_program.uniformLocation('translation')
         self.symbol_program_hide_outside   = self.symbol_program.uniformLocation('hide_outside')
         self.symbol_program_force_color    = self.symbol_program.uniformLocation('force_color')
+        self.symbol_program_encode_color   = self.symbol_program.uniformLocation('encode_color')
 
         # TODO: if not self.use_geometry_shader
 
@@ -519,7 +522,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(6*4))
         glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(9*4))
-        glVertexAttribPointer(4, 1, GL_INT,   GL_FALSE, vertex_size, c_void_p(12*4))
+        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(12*4))
         glEnableVertexAttribArray(0)
         glEnableVertexAttribArray(1)
         glEnableVertexAttribArray(2)
@@ -550,7 +553,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.use_fbos = False
 
     def resizeGL(self, width, height):
-        glViewport(0, 0, width, height)
+        pass
 
     def update_camera(self):
         self.pitch = clamp(self.pitch, -3., -0.1)
@@ -587,6 +590,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if not self.feedback_generated:
             return
 
+        glViewport(0, 0, self.width(), self.height())
         glClearColor(*self._theme.background_color)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -605,6 +609,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_program.setUniformValue('projection', projection)
         self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
         self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
+        self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
         # Specifying float uniforms with vec2 because of a weird bug in PyQt
         self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
         self.symbol_program.setUniformValue(self.symbol_program_transparency,   self.transparency / 255., self.transparency / 255.)
@@ -631,23 +636,21 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glClearColor(1, 1, 1, 1)
             glClearDepth(1)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            # Draw data the same as to the screen, but with
-            # disabled blending and enabled depth testing.
             glDisable(GL_BLEND)
             glEnable(GL_DEPTH_TEST)
 
-            # TODO: scissors
+            glViewport(-self.mouse_pos.x()+128, -(self.height()-self.mouse_pos.y())+128, self.width(), self.height())
+            self.tooltip_win_center = [self.mouse_pos.x(), self.mouse_pos.y()]
 
             self.symbol_program.bind()
-            # Most uniforms retain their values.
-            #self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
-            #self.symbol_program.setUniformValue(self.symbol_program_shrink_symbols, False)
-            #glBindVertexArray(vao_id)
-            #glDrawArrays(GL_TRIANGLES, 0, vao_id.num_3d_vertices)
-            #glBindVertexArray(0)
+            self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
+            glBindVertexArray(self.feedback_vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
+            glBindVertexArray(0)
             self.symbol_program.release()
             self.tooltip_fbo.release()
             self.tooltip_fbo_dirty = False
+            glViewport(0, 0, self.width(), self.height())
 
         if self.selection_fbo_dirty:
             self.selection_fbo.bind()
@@ -1187,9 +1190,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.mouseover_callback != None and self.state == PlotState.IDLE and\
             (not self.show_legend or not self.legend.contains(pos.x(), pos.y())):
+            if abs(pos.x() - self.tooltip_win_center[0]) > 100 or\
+               abs(pos.y() - self.tooltip_win_center[1]) > 100:
+                self.tooltip_fbo_dirty = True
+                self.updateGL()
             # Use pixel-color-picking to read example index under mouse cursor.
             self.tooltip_fbo.bind()
-            value = glReadPixels(pos.x(), self.height() - pos.y(),
+            value = glReadPixels(pos.x() - self.tooltip_win_center[0] + 128,
+                                 self.tooltip_win_center[1] - pos.y() + 128,
                                  1, 1,
                                  GL_RGBA,
                                  GL_UNSIGNED_BYTE)

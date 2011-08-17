@@ -473,7 +473,7 @@ class OWScatterPlot3D(OWWidget):
 
         text = '<b>Attributes:</b><br>'
         for index in indices[:max_indices]:
-            attr = self.attribute_names[index]
+            attr = self.plot.data_domain[index].name
             if attr not in example.domain:  text += '&nbsp;'*4 + '%s = ?<br>' % (attr)
             elif example[attr].isSpecial(): text += '&nbsp;'*4 + '%s = ?<br>' % (attr)
             else:                           text += '&nbsp;'*4 + '%s = %s<br>' % (attr, str(example[attr]))

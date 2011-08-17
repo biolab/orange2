@@ -8,13 +8,10 @@ in vec3 position;
 in vec3 offset;
 in vec3 color;
 in vec3 normal;
-in int index;
+in float index;
 
 uniform bool use_2d_symbols;
-//uniform bool encode_color;
-//uniform bool selection_check;
-//uniform sampler2D stencil_mask;
-//out int out_index;
+uniform bool encode_color;
 uniform bool hide_outside;
 uniform vec4 force_color;
 uniform vec2 transparency; // vec2 instead of float, fixing a bug on windows
@@ -67,13 +64,13 @@ void main(void) {
     {
         var_color = force_color;
     }
-    /*else if (encode_color)
+    else if (encode_color)
     {
-        var_color = vec4(float((index & 0xFF)) / 255.,
-                         float((index & 0xFF00) >> 8) / 255.,
-                         float((index & 0xFF0000) >> 16) / 255.,
-                         float((index & 0xFF000000) >> 24) / 255.);
-    }*/
+        var_color = vec4(float((int(index) & 0xFF)) / 255.,
+                         float((int(index) & 0xFF00) >> 8) / 255.,
+                         float((int(index) & 0xFF0000) >> 16) / 255.,
+                         float((int(index) & 0xFF000000) >> 24) / 255.);
+    }
     else
     {
         pos = abs(pos);

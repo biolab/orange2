@@ -28,15 +28,15 @@ out vec3 out_position;
 out vec3 out_offset;
 out vec3 out_color;
 out vec3 out_normal;
-out int out_index;
+out float out_index;
 
 void main()
 {
     vec4 position = gl_in[0].gl_Position;
     const float scale = 0.003;
 
-    out_index = int(position.x);
-    int index = out_index * example_size;
+    out_index = position.x;
+    int index = int(out_index * example_size);
 
     out_position = vec3(texelFetch(data_buffer, index+x_index).x,
                         texelFetch(data_buffer, index+y_index).x,
