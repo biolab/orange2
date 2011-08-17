@@ -653,41 +653,41 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glViewport(0, 0, self.width(), self.height())
 
         if self.selection_fbo_dirty:
+            # TODO: use transform feedback instead
             self.selection_fbo.bind()
             glClearColor(1, 1, 1, 1)
             glClearStencil(0)
             glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
 
-            #self.symbol_program.bind()
-            ##self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
-            ##self.symbol_program.setUniformValue(self.symbol_program_shrink_symbols, True)
-            #glDisable(GL_DEPTH_TEST)
-            #glDisable(GL_BLEND)
-            ##glBindVertexArray(vao_id)
-            ##glDrawArrays(GL_POINTS, 0, vao_id.num_3d_vertices)
-            ##glBindVertexArray(0)
-            #self.symbol_program.release()
+            self.symbol_program.bind()
+            self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
+            glDisable(GL_DEPTH_TEST)
+            glDisable(GL_BLEND)
+            glBindVertexArray(self.feedback_vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
+            glBindVertexArray(0)
+            self.symbol_program.release()
 
-            ## Also draw stencil masks to the screen. No need to
-            ## write color or depth information as well, so we
-            ## disable those.
-            #glMatrixMode(GL_PROJECTION)
-            #glLoadIdentity()
-            #glOrtho(0, self.width(), self.height(), 0, -1, 1)
-            #glMatrixMode(GL_MODELVIEW)
-            #glLoadIdentity()
+            # Also draw stencil masks to the screen. No need to
+            # write color or depth information as well, so we
+            # disable those.
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, self.width(), self.height(), 0, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
 
-            #glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
-            #glDepthMask(GL_FALSE)
-            #glStencilMask(0x01)
-            #glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT)
-            #glStencilFunc(GL_ALWAYS, 0, ~0)
-            #glEnable(GL_STENCIL_TEST)
-            #for selection in self.selections:
-                #selection.draw_mask()
-            #glDisable(GL_STENCIL_TEST)
-            #glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
-            #glDepthMask(GL_TRUE)
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
+            glDepthMask(GL_FALSE)
+            glStencilMask(0x01)
+            glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT)
+            glStencilFunc(GL_ALWAYS, 0, ~0)
+            glEnable(GL_STENCIL_TEST)
+            for selection in self.selections:
+                selection.draw_mask()
+            glDisable(GL_STENCIL_TEST)
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
+            glDepthMask(GL_TRUE)
             self.selection_fbo.release()
             self.selection_fbo_dirty = False
 
@@ -1098,7 +1098,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             return []
 
         width, height = self.width(), self.height()
-        if False and self.use_fbos and width <= 1024 and height <= 1024:
+        if self.use_fbos and width <= 1024 and height <= 1024:
             self.selection_fbo_dirty = True
             self.updateGL()
 
