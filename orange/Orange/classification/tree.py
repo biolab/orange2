@@ -32,10 +32,6 @@ tree-building process.
 .. autoclass:: TreeClassifier
     :members:
 
-    .. attribute:: tree
-
-        The root of the tree, represented as a :class:`Node`.
-
 
 
 ========
@@ -118,7 +114,7 @@ branches; for each we print a branch description and iteratively call the
 
 Finally, if the node is a leaf, we print out the distribution of learning
 examples in the node and the class to which the examples in the node
-would be classified. We again assume that the :obj:`node_classifier` is
+would be classified. We again assume that the :obj:`~Node.node_classifier` is
 the default one - a :obj:`DefaultClassifier`. A better print function
 should be aware of possible alternatives.
 
@@ -346,92 +342,6 @@ can thus program your own components based on these classes (TODO).
         Return the number of nodes in the subtrees (including the node,
         excluding null-nodes).
 
-
-.. class:: _TreeClassifier
-
-    Classifies examples according to a tree stored in :obj:`tree`.
-    This class in not to be used directly. The :class:`TreeLearner`
-    constructs a :class:`TreeClassifier`, which uses this class.
-
-    .. attribute:: tree
-
-        The root of the tree, represented as a :class:`Node`.
-    
-    Classification would be straightforward if there were no unknown
-    values or, in general, examples that cannot be placed into a single
-    branch. The response in such cases is determined by a component
-    :obj:`descender`.
-
-    :obj:`Descender` is an abstract object which is given an example
-    and whose basic job is to descend as far down the tree as possible,
-    according to the values of example's attributes. The :obj:`Descender`:
-    calls the node's :obj:`branch_selector` to get the branch index. If
-    it's a simple index, the corresponding branch is followed. If not,
-    it's up to descender to decide what to do, and that's where descenders
-    differ. A :obj:`descender` can choose a single branch (for instance,
-    the one that is the most recommended by the :obj:`branch_selector`)
-    or it can let the branches vote.
-
-    In general there are three possible outcomes of a descent.
-
-    #. Descender reaches a leaf. This happens when nothing went wrong
-       (there are no unknown or out-of-range values in the example)
-       or when things went wrong, but the descender smoothed them by
-       selecting a single branch and continued the descend. In this case,
-       the descender returns the reached :obj:`Node`.
-    #. :obj:`branch_selector` returned a distribution and the
-       :obj:`Descender` decided to stop the descend at this (internal)
-       node.  Again, descender returns the current :obj:`Node` and
-       nothing else.
-    #. :obj:`branch_selector` returned a distribution and the
-       :obj:`Node` wants to split the example (i.e., to decide the class
-       by voting).
-
-    It returns a :obj:`Node` and the vote-weights for the branches.
-    The weights can correspond to the distribution returned by
-    :obj:`branch_selector`, to the number of learning examples that were
-    assigned to each branch, or to something else.
-
-    :obj:`TreeClassifier` uses the descender to descend from the root.
-    If it returns only a :obj:`Node` and no distribution, the descend
-    should stop; it does not matter whether it's a leaf (the first
-    case above) or an internal node (the second case). The node's
-    :obj:`node_classifier` is used to decide the class. If the descender
-    returns a :obj:`Node` and a distribution, the :obj:`TreeClassifier`
-    recursively calls itself for each of the subtrees and the predictions
-    are weighted as requested by the descender.
-
-    When voting, subtrees do not predict the class but probabilities of
-    classes. The predictions are multiplied by weights, summed and the
-    most probable class is returned.
-
-    .. method:: vote()
-
-        It gets a :obj:`Node`, an :obj:`Orange.data.Instance` and a
-        distribution of vote weights. For each node, it calls the
-        :obj:`class_distribution` and then multiplies and sums the
-        distribution. :obj:`vote` returns a normalized distribution
-        of predictions.
-
-    .. method:: class_distribution()
-
-        Gets an additional parameter, a :obj:`Node` (default tree root).
-        :obj:`class_distribution` uses :obj:`descender`. If descender
-        reaches a leaf, it calls :obj:`node_classifier`, otherwise it
-        calls :obj:`vote`.
-
-        Thus, the :obj:`vote` and :obj:`class_distribution` are written
-        in a form of double recursion. The recursive calls do not happen
-        at each node of the tree but only at nodes where a vote is needed
-        (that is, at nodes where the descender halts).
-
-    .. method:: __call__
-
-        Calls the descender. If it reaches a leaf, the class is
-        predicted by the leaf's :obj:`node_classifier`. Otherwise, it calls
-        :obj:`vote`. From now on, :obj:`vote` and :obj:`class_distribution`
-        interweave down the tree and return a distribution of
-        predictions. This method simply chooses the most probable class.
 
 Split constructors
 =====================
@@ -822,9 +732,35 @@ This is a classifier's counterpart for :class:`ExampleSplitter`. It
 decides the destiny of examples that need to be classified and cannot
 be unambiguously put in a branch.
 
+
 .. class:: Descender
 
     An abstract base object for tree descenders.
+
+    It descends a given instance as far deep as possible,
+    according to the values of instance's attributes. The :obj:`Descender`:
+    calls the node's :obj:`Node.branch_selector` to get the branch index. If
+    it's a simple index, the corresponding branch is followed. If not,
+    it's up to descender to decide what to do, and that's where descenders
+    differ. A descender can choose a single branch (for instance,
+    the one that is the most recommended by the :obj:`Node.branch_selector`)
+    or it can let the branches vote.
+
+    Three are possible outcomes of a descent:
+
+    #. Descender reaches a leaf. This happens when
+       there were no unknown or out-of-range values, or when the descender
+       selected a single branch and continued the descend despite them. In
+       this case, the descender returns the reached :obj:`Node`.
+    #. Node's :obj:`~Node.branch_selector` returned a distribution and the
+       :obj:`Descender` decided to stop the descend at this (internal)
+       node.  The descender returns the current :obj:`Node`.
+    #. Node's :obj:`~Node.branch_selector` returned a distribution and the
+       :obj:`Node` wants to split the instance (i.e., to decide the class
+       by voting). It returns a :obj:`Node` and the vote-weights for the
+       branches.  The weights can correspond to the distribution returned
+       by node's :obj:`~Node.branch_selector`, to the number of learning
+       instances that were assigned to each branch, or to something else.
 
     .. method:: __call__(node, example)
 
@@ -903,15 +839,15 @@ The pruners construct only a shallow copy of a tree.  The pruned tree's
 :obj:`Node` contain references to the same contingency matrices, node
 classifiers, branch selectors, ...  as the original tree. Thus, you may
 modify a pruned tree structure (manually cut it, add new nodes, replace
-components) but modifying, for instance, some node's :obj:`node_classifier`
-(a :obj:`node_classifier` itself, not a reference to it!) would modify
-the node's :obj:`node_classifier` in the corresponding node of the
+components) but modifying, for instance, some node's :obj:`~Node.node_classifier`
+(a :obj:`~Node.node_classifier` itself, not a reference to it!) would modify
+the node's :obj:`~Node.node_classifier` in the corresponding node of the
 original tree.
 
-Pruners cannot construct a :obj:`node_classifier` nor merge
-:obj:`node_classifier` of the pruned subtrees into classifiers for new
+Pruners cannot construct a :obj:`~Node.node_classifier` nor merge
+:obj:`~Node.node_classifier` of the pruned subtrees into classifiers for new
 leaves. Thus, if you want to build a prunable tree, internal nodes
-must have their :obj:`node_classifier` defined. Fortunately, this is
+must have their :obj:`~Node.node_classifier` defined. Fortunately, this is
 the default.
 
 .. class:: Pruner
@@ -1977,15 +1913,15 @@ class TreeLearner(Orange.core.Learner):
     #. The contingency matrix is computed.  
     #. A :obj:`stop` is called
        to see whether it is worth to continue. If not, a
-       :obj:`node_classifier` is built and the :obj:`Node` is
-       returned. Otherwise, a :obj:`node_classifier` is only built if
-       :obj:`store_node_classifier` is `True`.  The :obj:`node_classifier`
+       :obj:`~Node.node_classifier` is built and the :obj:`Node` is
+       returned. Otherwise, a :obj:`~Node.node_classifier` is only built if
+       :obj:`store_node_classifier` is `True`.  The :obj:`~Node.node_classifier`
        is build by calling :obj:`node_learner`'s :obj:`smart_learn`
        function with the given instances, weight ID and the just computed
        matrix. If the learner can use the matrix (and the default,
        :obj:`~Orange.classification.majority.MajorityLearner`, can), it
        won't touch the instances. Therefore a :obj:`contingency_computer`
-       will, in many cases, affect the :obj:`node_classifier`. The
+       will, in many cases, affect the :obj:`~Node.node_classifier`. The
        :obj:`node_learner` can return no classifier; if so and
        if the classifier would be needed for classification, the
        :obj:`TreeClassifier`'s function returns DK or an empty
@@ -2156,7 +2092,7 @@ class TreeLearner(Orange.core.Learner):
     .. attribute:: store_node_classifier
 
         Determines whether to store class distributions, contingencies and
-        examples in :class:`Node`, and whether the :obj:`node_classifier`
+        examples in :class:`Node`, and whether the :obj:`Node.node_classifier`
         should be build for internal nodes.  No memory will be saved 
         by not storing distributions but storing contingencies, since
         distributions actually points to the same distribution that is
@@ -2856,7 +2792,46 @@ def _quoteName(x):
 
 class TreeClassifier(Orange.classification.Classifier):
     """
-    Wraps :class:`_TreeClassifier`.
+
+    Classifies instances according to the tree stored in :obj:`tree`.
+
+    **The classification process**
+
+    :obj:`TreeClassifier` uses the :obj:`descender` to descend from
+    the root.  If it returns only a :obj:`Node` and no distribution,
+    the descend should stop; it does not matter whether it's a leaf
+    (the first case above) or an internal node (the second case). The
+    node's :obj:`~Node.node_classifier` is used to decide the class.
+
+    If the descender returns a :obj:`Node` and a distribution,
+    the :obj:`TreeClassifier` recursively calls itself for each of
+    the subtrees and the predictions are weighted as requested by
+    the descender. From now on, ``vote`` and ``class_distribution``
+    (private methods) interweave down the tree.
+
+    ``vote`` returns a normalized distribution  of predictions: for each
+    node, it calls the  :obj:`class_distribution` and then multiplies
+    and sums the distribution.  ``class_distribution`` gets an additional 
+    parameter, a default
+    tree root.  If :obj:`descender` reaches a leaf, it calls
+    :obj:`~Node.node_classifier`, otherwise it calls ``vote``. Thus,
+    ``vote`` and ``class_distribution`` form a double recursion. The
+    recursive calls only happen at nodes where a vote is needed (that is,
+    at nodes where the descender halts).
+
+    **Attributes**
+
+    .. attribute:: tree
+
+        The root of the tree, represented as a :class:`Node`.
+
+    .. attribute:: descender
+
+        A :obj:`Descender`. It is used to descend an instance from the
+        root of the tree (:obj:`tree`) as deeply as possible according
+        to the instance's feature values.
+
+
     """
     
     def __init__(self, base_classifier=None):
@@ -2868,7 +2843,8 @@ class TreeClassifier(Orange.classification.Classifier):
     def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
                  *args, **kwdargs):
         """Classify a new instance.
-        
+
+      
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
         :param result_type: 
