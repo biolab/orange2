@@ -433,154 +433,6 @@ can thus program your own components based on these classes (TODO).
         interweave down the tree and return a distribution of
         predictions. This method simply chooses the most probable class.
 
-.. class:: _TreeLearner
-
-    The main learning object is :obj:`_TreeLearner`. It is basically a
-    skeleton into which the user must plug the components for particular
-    functions. This class is not meant to be used directly. You should
-    rather use :class:`TreeLearner`.
-
-    Components that govern the structure of the tree are
-    :obj:`split` (of type :obj:`SplitConstructor`), :obj:`stop`
-    (of type :obj:`StopCriteria` and :obj:`example_splitter` (of type
-    :obj:`ExampleSplitter`).
-
-    .. attribute:: split
-
-        Object of type :obj:`SplitConstructor`. Default value, provided
-        by :obj:`_TreeLearner`, is :obj:`SplitConstructor_Combined` with
-        separate constructors for discrete and continuous attributes.
-        Discrete attributes are used as are, while continuous attributes
-        are binarized. Gain ratio is used to select attributes.  A minimum
-        of two examples in a leaf is required for discreter and five
-        examples in a leaf for continuous attributes.
-
-    .. attribute:: stop
-
-        Object of type :obj:`StopCriteria`. The default stopping
-        criterion stops induction when all examples in a node belong to
-        the same class.
-
-    .. attribute:: example_splitter
-
-        Object of type :obj:`ExampleSplitter`. The default splitter is
-        :obj:`ExampleSplitter_UnknownsAsSelector` that splits the learning
-        examples according to distributions given by the selector.
-
-    .. attribute:: contingency_computer
-    
-        By default, this slot is left empty and ordinary contingency
-        matrices are computed for examples at each node. If need
-        arises, one can change the way the matrices are computed. This
-        can be used to change the way that unknown values are treated
-        when assessing qualities of attributes. As mentioned earlier,
-        the computed matrices can be used by split constructor and by
-        stopping criteria. On the other hand, they can be (and are)
-        ignored by some splitting constructors.
-
-    .. attribute:: node_learner
-
-        Induces a classifier from examples belonging to a
-        node. The same learner is used for internal nodes
-        and for leaves. The default :obj:`node_learner` is
-        :obj:`Orange.classification.majority.MajorityLearner`.
-
-    .. attribute:: descender
-
-        Descending component that the induces :obj:`TreeClassifier` will
-        use. Default descender is :obj:`Descender_UnknownMergeAsSelector`
-        which votes using the :obj:`branch_selector`'s distribution for
-        vote weights.
-
-    .. attribute:: max_depth
-
-        Gives maximal tree depth; 0 means that only root is generated.
-        The default is 100 to prevent any infinite tree induction due to
-        missettings in stop criteria. If you are sure you need larger
-        trees, increase it. If you, on the other hand, want to lower
-        this hard limit, you can do so as well.
-
-    .. attribute:: store_distributions, store_contingencies, store_examples, store_node_classifier
-
-        Decides whether to store class distributions, contingencies and
-        examples in :obj:`Node`, and whether the :obj:`node_classifier`
-        should be build for internal nodes.  By default, distributions and
-        node classifiers are stored, while contingencies and examples are
-        not. You won't save any memory by not storing distributions but
-        storing contingencies, since distributions actually points to the
-        same distribution that is stored in :obj:`contingency.classes`.
-
-    The :obj:`_TreeLearner` first sets the defaults for missing
-    components. Although stored in the actual :obj:`_TreeLearner`'s
-    fields, they are removed when the induction is finished.
-
-    Then it ensures that examples are stored in a table. This is
-    needed because the algorithm juggles with pointers to examples. If
-    examples are in a file or are fed through a filter, they are copied
-    to a table. Even if they are already in a table, they are copied if
-    :obj:`store_examples` is set. This is to assure that pointers remain
-    pointing to examples even if the user later changes the example
-    table. If they are in the table and the :obj:`store_examples` flag
-    is clear, we just use them as they are. This will obviously crash
-    in a multi-threaded system if one changes the table during the tree
-    induction. Well... don't do it.
-
-    Apriori class probabilities are computed. At this point we check
-    the sum of example weights; if it's zero, there are no examples and
-    we cannot proceed. A list of candidate attributes is set; in the
-    beginning, all attributes are candidates for the split criterion.
-
-    Now comes the recursive part of the :obj:`_TreeLearner`. Its arguments
-    are a set of examples, a weight meta-attribute ID (a tricky thing,
-    it can be always the same as the original or can change to accomodate
-    splitting of examples among branches), apriori class distribution
-    and a list of candidates (represented as a vector of Boolean values).
-
-    The contingency matrix is computed next. This happens even if the flag
-    :obj:`store_contingencies` is false.  If the :obj:`contingency_computer`
-    is given we use it, otherwise we construct just an ordinary
-    contingency matrix.
-
-    A :obj:`stop` is called to see whether it's worth to continue. If
-    not, a :obj:`node_classifier` is built and the :obj:`Node` is
-    returned. Otherwise, a :obj:`node_classifier` is only built if
-    :obj:`forceNodeClassifier` flag is set.
-
-    To get a :obj:`Node`'s :obj:`node_classifier`, the
-    :obj:`node_learner`'s :obj:`smart_learn` function is called
-    with the given examples, weight ID and the just computed
-    matrix. If the learner can use the matrix (and the default,
-    :obj:`Orange.classification.majority.MajorityLearner`, can), it won't
-    touch the examples. Thus, a choice of :obj:`contingency_computer`
-    will, in many cases, affect the :obj:`node_classifier`. The
-    :obj:`node_learner` can return no classifier; if so and
-    if the classifier would be needed for classification,
-    the :obj:`TreeClassifier`'s function returns DK or an empty
-    distribution. If you're writing your own tree classifier - pay
-    attention.
-
-    If the induction is to continue, a :obj:`split` component is called.
-    If it fails to return a branch selector, induction stops and the
-    :obj:`Node` is returned.
-
-    :obj:`_TreeLearner` than uses :obj:`ExampleSplitter` to divide the
-    examples as described above.
-
-    The contingency gets removed at this point if it is not to be
-    stored. Thus, the :obj:`split`, :obj:`stop` and :obj:`example_splitter`
-    can use the contingency matrices if they will.
-
-    The :obj:`_TreeLearner` then recursively calls itself for each of
-    the non-empty subsets. If the splitter returnes a list of weights,
-    a corresponding weight is used for each branch. Besides, the attribute
-    spent by the splitter (if any) is removed from the list of candidates
-    for the subtree.
-
-    A subset of examples is stored in its corresponding tree node,
-    if so requested. If not, the new weight attributes are removed
-    (if any were created).
-
-
 Split constructors
 =====================
 
@@ -627,7 +479,7 @@ is the 'measure' attribute for the :obj:`SplitConstructor_Measure` class
     descriptions and a list with the number of examples that go into
     each branch. Just what we need for the :obj:`Node`.  It can return
     an empty list for the number of examples in branches; in this case,
-    the :obj:`_TreeLearner` will find the number itself after splitting
+    the :obj:`TreeLearner` will find the number itself after splitting
     the example set into subsets. However, if a split constructors can
     provide the numbers at no extra computational cost, it should do so.
 
@@ -844,8 +696,6 @@ obj:`StopCriteria` determines when to stop the induction of subtrees.
         they are available, but otherwise compute them only when they
         really need them.
 
-
-
 .. class:: StopCriteria_common
 
     :obj:`StopCriteria` contains additional criteria for pre-pruning:
@@ -863,9 +713,6 @@ obj:`StopCriteria` determines when to stop the induction of subtrees.
         less than :obj:`min_examples` examples are not split any further.
         Example count is weighed.
 
-.. class:: StopCriteria_Python
-
-    Undocumented.
 
 Example Splitters
 =================
@@ -2105,21 +1952,74 @@ import Orange.feature.scoring as fscoring
 
 class TreeLearner(Orange.core.Learner):
     """
-    Assembles the classification or regression tree learner.  Essentially,
-    :class:`TreeLearner` is a wrapper around :class:`_TreeLearner` and
-    provides easier use of the latter.  It sets parameters for tree
-    induction, that are controlled through the object's attributes.
-    the object's attributes. If upon initialization :class:`TreeLearner`
+    A classification or regression tree learner.
+    If upon initialization :class:`TreeLearner`
     is given a set of instances, then an :class:`TreeClassifier` object
-    is built and returned instead.
+    is built and returned instead. Attributes can be also be set on initialization. 
 
-    Attributes can be also be set on initialization. 
+    **The tree building process**
+
+    #. The learning instances are stored in a table,
+       because the algorithm works with pointers to instances. If instances
+       are in a file or are fed through a filter, they are copied to a
+       table. Even if they are already in a table, they are copied if
+       :obj:`store_examples` is `True`.
+    #. Apriori class probabilities are computed. If the sum
+       of instance weights is zero, there are no instances so the process
+       stops. A list of candidate attributes for the split is compiled;
+       in the beginning, all attributes are candidates.
+    #. The recursive part. Its
+       arguments are a set of instances, a weight meta-attribute ID
+       (it can be always the same as the original or can change to
+       accomodate splitting of instances among branches), apriori class
+       distribution and a list of candidates (represented as a vector
+       of Boolean values).
+    #. The contingency matrix is computed.  
+    #. A :obj:`stop` is called
+       to see whether it is worth to continue. If not, a
+       :obj:`node_classifier` is built and the :obj:`Node` is
+       returned. Otherwise, a :obj:`node_classifier` is only built if
+       :obj:`store_node_classifier` is `True`.  The :obj:`node_classifier`
+       is build by calling :obj:`node_learner`'s :obj:`smart_learn`
+       function with the given instances, weight ID and the just computed
+       matrix. If the learner can use the matrix (and the default,
+       :obj:`~Orange.classification.majority.MajorityLearner`, can), it
+       won't touch the instances. Therefore a :obj:`contingency_computer`
+       will, in many cases, affect the :obj:`node_classifier`. The
+       :obj:`node_learner` can return no classifier; if so and
+       if the classifier would be needed for classification, the
+       :obj:`TreeClassifier`'s function returns DK or an empty
+       distribution.
+    #. If the induction is to continue, a :obj:`split` is called.
+       If it fails to return a branch selector, induction stops and the
+       :obj:`Node` is returned.
+    #. Instances are divided (into child nodes) with :obj:`splitter`.
+    #. The contingency gets removed if :obj:`store_contingencies` is
+       `False`.  Thus, :obj:`split`, :obj:`stop` and :obj:`splitter`
+       can use the contingency matrices.
+    #. The object recursively calls itself (see step 3) for each of
+       the non-empty subsets. If the splitter returnes a list of weights,
+       a corresponding weight is used for each branch. The attribute spent
+       by the splitter (if any) is removed from the list of candidates
+       for the subtree.
+    #. A subset of instances is stored in its corresponding tree node,
+       if :obj:`store_examples` is `True`. If not, the new weight
+       attributes are removed (if any were created).
+
+    **Attributes**
 
     .. attribute:: node_learner
 
         Induces a classifier from instances in a node, both
         used for internal nodes and leaves. The default is
         :obj:`Orange.classification.majority.MajorityLearner`.
+
+    .. attribute:: descender
+
+        Descending component that the induces :obj:`TreeClassifier` will
+        use. Default descender is :obj:`Descender_UnknownMergeAsSelector`
+        which votes using the :obj:`branch_selector`'s distribution for
+        vote weights.
 
     **Split construction**
 
@@ -2147,7 +2047,7 @@ class TreeLearner(Orange.core.Learner):
     .. attribute:: measure
     
         Measure for scoring of the attributes when deciding which of the
-        attributes will be used for splitting of the example set in the node.
+        attributes will be used for splitting of the instances in a node.
         Can be either a :class:`Orange.feature.scoring.Measure` or one of
         "infoGain" (:class:`Orange.feature.scoring.InfoGain`), 
         "gainRatio" (:class:`Orange.feature.scoring.GainRatio`), 
@@ -2164,8 +2064,17 @@ class TreeLearner(Orange.core.Learner):
         :class:`ExampleSplitter`  or a function with the same
         signature as :obj:`ExampleSplitter.__call__`. The default is
         :class:`ExampleSplitter_UnknownsAsSelector` that splits the
-        learning examples according to distributions given by the
+        learning instances according to distributions given by the
         selector.
+
+    .. attribute:: contingency_computer
+    
+        By default, this slot is left empty and ordinary contingency
+        matrices are computed for instances at each node. If need
+        arises, one can change the way the matrices are computed,
+        for example to change the treatment of unknown values. The
+        computed matrices can be used by split constructor and by
+        stopping criteria.
 
     **Pruning**
 
@@ -2221,7 +2130,7 @@ class TreeLearner(Orange.core.Learner):
         :obj:`StopCriteria.__call__`. Useful for prototyping new tree
         induction algorithms.  When used, parameters  :obj:`max_majority`
         and :obj:`min_examples` will not be  considered.  The default
-        stopping criterion stops induction when all examples in a node
+        stopping criterion stops induction when all instances in a node
         belong to the same class.
 
     .. attribute:: m_pruning
@@ -2238,16 +2147,22 @@ class TreeLearner(Orange.core.Learner):
 
     **Record keeping**
 
-    .. attribute:: store_distributions, store_contingencies, store_examples, store_node_classifier
+    .. attribute:: store_distributions 
+    
+    .. attribute:: store_contingencies
+    
+    .. attribute:: store_examples
+    
+    .. attribute:: store_node_classifier
 
         Determines whether to store class distributions, contingencies and
         examples in :class:`Node`, and whether the :obj:`node_classifier`
-        should be build for internal nodes.  You won't save any memory
+        should be build for internal nodes.  No memory will be saved 
         by not storing distributions but storing contingencies, since
         distributions actually points to the same distribution that is
         stored in :obj:`contingency.classes`.  By default everything
-        except :obj:`store_examples` is enabled.
-    
+        except :obj:`store_examples` is enabled. 
+
     """
     def __new__(cls, examples = None, weightID = 0, **argkw):
         self = Orange.core.Learner.__new__(cls, **argkw)
@@ -2293,7 +2208,7 @@ class TreeLearner(Orange.core.Learner):
             bl.split.discrete_split_constructor.measure = measure
          
         if self.splitter != None:
-            bl.splitter = self.splitter
+            bl.example_splitter = self.splitter
 
         #post pruning
         tree = bl(instances, weight)
@@ -2409,7 +2324,7 @@ class TreeLearner(Orange.core.Learner):
         learner.stop = self.stop
 
         for a in ["store_distributions", "store_contingencies", "store_examples", 
-            "store_node_classifier", "node_learner", "max_depth"]:
+            "store_node_classifier", "node_learner", "max_depth", "contingency_computer", "descender" ]:
             if hasattr(self, a):
                 setattr(learner, a, getattr(self, a))
 
