@@ -621,8 +621,10 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
         self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
-        glEnable(GL_DEPTH_TEST)
-        glDisable(GL_BLEND)
+        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         glBindVertexArray(self.feedback_vao)
         glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
         glBindVertexArray(0)

@@ -74,7 +74,7 @@ void main(void) {
     else
     {
         pos = abs(pos);
-        float manhattan_distance = max(max(pos.x, pos.y), pos.z)+5.;
+        float manhattan_distance = max(max(pos.x, pos.y), pos.z)+0.5;
         float a = min(pow(min(1., 1. / manhattan_distance), 5.), transparency.x);
 
         if (use_2d_symbols)
