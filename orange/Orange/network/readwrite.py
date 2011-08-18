@@ -168,7 +168,7 @@ def write_gpickle(G, path):
 
 _add_doc(write_gpickle, rwgpickle.write_gpickle)
 
-def read_pajek(path, encoding='UTF-8'):
+def read_pajek(path, encoding='UTF-8', project=False):
     """A completely reimplemented method for reading Pajek files. Written in 
     C++ for maximum performance.  
     
@@ -196,22 +196,31 @@ def read_pajek(path, encoding='UTF-8'):
     
     """
     
-    edges, arcs, items = orangeom.GraphLayout().readPajek(path)
-    if len(arcs) > 0:
-        # directed graph
-        G = Orange.network.DiGraph()
-        G.add_nodes_from(range(len(items)))
-        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
-        G.add_edges_from(((v,u,{'weight':d}) for u,v,d in edges))
-        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in arcs))
-        G.set_items(items)
-    else:
-        G = Orange.network.Graph()
-        G.add_nodes_from(range(len(items)))
-        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
-        G.set_items(items)
+    input = orangeom.GraphLayout().readPajek(path, project)
+    result = []
+    for g in input if project else [input]:
+        graphname, edges, arcs, items = g
+        if len(arcs) > 0:
+            # directed graph
+            G = Orange.network.DiGraph()
+            G.add_nodes_from(range(len(items)))
+            G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
+            G.add_edges_from(((v,u,{'weight':d}) for u,v,d in edges))
+            G.add_edges_from(((u,v,{'weight':d}) for u,v,d in arcs))
+            G.set_items(items)
+        else:
+            G = Orange.network.Graph()
+            G.add_nodes_from(range(len(items)))
+            G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
+            G.set_items(items)
+        G.name = graphname
         
-    return G
+        result.append(G)
+        
+    if not project:
+        result = result[0]
+        
+    return result
     #fh=_get_fh(path, 'rb')
     #lines = (line.decode(encoding) for line in fh)
     #return parse_pajek(lines)

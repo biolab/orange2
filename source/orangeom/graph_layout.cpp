@@ -1238,19 +1238,17 @@ int getWords1(string const& s, vector<string> &container)
     return n;
 }
 
-PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Edge List")
+PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn, project) -> Edge List")
 {
   PyTRY
 	TDomain *domain = new TDomain();
 	PDomain wdomain = domain;
-	TExampleTable *table;
-	PExampleTable wtable;
-	PyObject *edgeList = PyList_New(0);
-	PyObject *arcList = PyList_New(0);
 	char *fn;
+	unsigned char project = 0;
+	bool hasGraph = 0;
 
-	if (!PyArg_ParseTuple(args, "s:GraphLayout.readPajek", &fn))
-		PYERROR(PyExc_TypeError, "invalid arguments (string expected)", PYNULL);
+	if (!PyArg_ParseTuple(args, "s|b:GraphLayout.readPajek", &fn, &project))
+		PYERROR(PyExc_TypeError, "invalid arguments (a string and optionally a boolean expected)", PYNULL);
 
 	string line;
 	
@@ -1286,25 +1284,61 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	domain->addVariable(new TStringVariable("vertex color"));
 	domain->addVariable(new TStringVariable("boundary color"));
 	domain->addVariable(new TFloatVariable("boundary width"));
-	table = new TExampleTable(domain);
-	wtable = table;
+
 	vector<string> words;
 
+	PyObject *networks;
+	TExampleTable *table;
+	PExampleTable wtable;
+	PyObject *edgeList;
+	PyObject *arcList;
+	if (project)
+		networks = PyList_New(0);
+
 	// read head
+	bool hasLine = 0;
+	int n;
 	while (!stream->eof()) {
-		getline(*stream, line);
-		int n = getWords1(line, words);
+		if (!hasLine) {
+			getline(*stream, line);
+			n = getWords1(line, words);
+		}
+		hasLine = 0;
+
 		if (n > 0) 	{
 			std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
 			if (words[0].compare("*network") == 0) {
+				if (hasGraph && !project)
+					PYERROR(PyExc_SystemError, "Invalid file format. More than one network in a non-project file (parameter project is set to FALSE).", PYNULL);
+
+				hasGraph = 1;
+				edgeList = PyList_New(0);
+				arcList = PyList_New(0);
+				table = new TExampleTable(domain);
+				wtable = table;
+
 				if (n > 1) {
 					graphName = words[1];
+				} else {
+					graphName = "";
 				}
-			} else if (words[0].compare("*description") == 0) {
+
+				if (project) {
+					PyObject *net = Py_BuildValue("sNNN", graphName.c_str(), edgeList, arcList, WrapOrange(wtable));
+					PyList_Append(networks, net);
+				}
+
+				continue;
+			}
+
+			if (hasGraph && (words[0].compare("*description") == 0)) {
 				if (n > 1) {
 					description = words[1];
 				}
-			} else if (words[0].compare("*vertices") == 0) {
+				continue;
+			}
+
+			if (hasGraph && (words[0].compare("*vertices") == 0)) {
 				if (n > 1) {
 					nVertices = atoi(words[1].c_str());
 					if (nVertices < 1) {
@@ -1324,9 +1358,10 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				while (!stream->eof()) {
 					getline(*stream, line);
 					int n = getWords1(line, words);
+					hasLine = 1;
 					if (n > 0) {
 						std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
-						if (words[0].compare("*arcs") == 0 || words[0].compare("*edges") == 0)
+						if (words[0][0] == '*')
 							break;
 
 						TExample *example = new TExample(domain);
@@ -1404,16 +1439,18 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 					}
 					row++;
 				}
+				continue;
 			}
-			if (words[0].compare("*arcs") == 0) {
+
+			if (hasGraph && (words[0].compare("*arcs") == 0)) {
 				// read arcs
 				while (!stream->eof()) {
 					getline(*stream, line);
-					//vector<string> words;
 					int n = getWords1(line, words);
+					hasLine = 1;
 					if (n > 0) {
 						std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
-						if (words[0].compare("*edges") == 0) {
+						if (words[0][0]=='*') {
 							break;
 						}
 						if (n > 1) {
@@ -1440,12 +1477,21 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 						}
 					}
 				}
+				continue;
 			}
-			if (words[0].compare("*edges") == 0) {
+
+			if (hasGraph && (words[0].compare("*edges") == 0)) {
 				// read edges
 				while (!stream->eof()) {
 					getline(*stream, line);
 					int n = getWords1(line, words);
+					hasLine = 1;
+					if (n > 0) {
+						std::transform(words[0].begin(), words[0].end(), words[0].begin(), ::tolower);
+						if (words[0][0]=='*') {
+							break;
+						}
+					}
 					if (n > 1) {
 						int i1 = -1; istringstream strI1(words[0]); strI1 >> i1;
 						int i2 = -1; istringstream strI2(words[1]); strI2 >> i2;
@@ -1469,11 +1515,22 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 						}
 					}
 				}
+				continue;
 			}
+
+			if ((words[0][0]=='*') && project)
+				hasGraph = 0;
+			else
+				PYERROR(PyExc_SystemError, "Invalid file format. Invalid keyword.", PYNULL);
 		}
 	}
 	file.close();
-	return Py_BuildValue("NNN", edgeList, arcList, WrapOrange(wtable));
+	if (project)
+		return Py_BuildValue("N", networks);
+	else if (hasGraph)
+		return Py_BuildValue("sNNN", graphName.c_str(), edgeList, arcList, WrapOrange(wtable));
+	else
+		return Py_BuildValue("");
   PyCATCH
 }
 
