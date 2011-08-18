@@ -172,6 +172,7 @@ class OWLegend(QGraphicsObject):
         self.max_size = QSizeF()
         self._floating = True
         self._floating_animation = None
+        self._mouse_down_pos = QPointF()
 
     def clear(self):
         """

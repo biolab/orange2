@@ -372,6 +372,7 @@ class OWPlot(orangeqt.Plot):
         self._zoom_rect = None
         self._zoom_transform = QTransform()
         self.zoom_stack = []
+        self.old_legend_margin = None
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
@@ -842,6 +843,7 @@ class OWPlot(orangeqt.Plot):
         self.clear_markers()
         self.tips.removeAll()
         self.legend().clear()
+        self.old_legend_margin = None
         self.update_grid()
         
     def clear_markers(self):
@@ -1021,11 +1023,21 @@ class OWPlot(orangeqt.Plot):
         self.viewport().update()
         
     def update_legend(self):
+        if (self._legend.isVisible() == self.show_legend):
+            return
+            
         self._legend.setVisible(self.show_legend)
         if self.show_legend:
-            r = self.legend_rect()
-            self.ensure_inside(r, self.contentsRect())
-            self._legend.setPos(r.topLeft())
+            if self.old_legend_margin is not None:
+                self.animate(self, 'legend_margin', self.old_legend_margin, duration = 100)
+            else:
+                r = self.legend_rect()
+                self.ensure_inside(r, self.contentsRect())
+                self._legend.setPos(r.topLeft())
+                self.notify_legend_moved(r.topLeft())
+        else:
+            self.old_legend_margin = self.legend_margin
+            self.animate(self, 'legend_margin', QRectF(), duration=100)
         
     def update_filled_symbols(self):
         ## TODO: Implement this in Curve.cpp
