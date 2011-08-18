@@ -119,7 +119,7 @@ class StateButtonContainer(OrientedWidget):
         self._clicked_button = None
         for i in buttons:
             b = gui.tool_button(i, self)
-            QObject.connect(self, SIGNAL("clicked(bool)"), self.button_clicked)
+            QObject.connect(b, SIGNAL("clicked(bool)"), self.button_clicked)
             self.buttons[i] = b
             self.layout().addWidget(b)
             
