@@ -336,13 +336,9 @@ Point* Plot::nearest_point(const QPointF& pos)
     closest_point.first = std::numeric_limits<double>::max();
     closest_point.second = 0;
     
-    foreach (PlotItem* item, plot_items())
+    foreach (const PointHash hash, m_point_hash)
     {
-        if (!m_point_set.contains(item))
-        {
-            continue;
-        }
-        foreach (Point* p, m_point_hash[item])
+        foreach (Point* p, hash)
         {
             const double d = distance(p->pos(), pos);
             if (d < closest_point.first)
@@ -352,6 +348,7 @@ Point* Plot::nearest_point(const QPointF& pos)
             }
         }
     }
+        
     if(closest_point.second && closest_point.first <= closest_point.second->size())
     {
         return closest_point.second;

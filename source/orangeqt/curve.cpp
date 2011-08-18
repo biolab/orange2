@@ -73,7 +73,11 @@ void Curve::update_number_of_items()
     m_needsUpdate &= ~UpdateNumberOfItems;
     return;
   }
-  resize_item_list<Point>(m_pointItems, m_data.size());
+  if (m_pointItems.size() != m_data.size())
+  {
+    resize_item_list<Point>(m_pointItems, m_data.size());
+    register_points();
+  }
   Q_ASSERT(m_pointItems.size() == m_data.size());
 }
 
