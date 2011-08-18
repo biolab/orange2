@@ -1888,10 +1888,10 @@ import Orange.feature.scoring as fscoring
 
 class TreeLearner(Orange.core.Learner):
     """
-    A classification or regression tree learner.
-    If upon initialization :class:`TreeLearner`
-    is given a set of instances, then an :class:`TreeClassifier` object
-    is built and returned instead. Attributes can be also be set on initialization. 
+    A classification or regression tree learner.  If upon
+    initialization :class:`TreeLearner` is given a set of instances,
+    then an :class:`TreeClassifier` object is built and returned
+    instead. Attributes can be also be set on initialization.
 
     **The tree building process**
 
@@ -1899,7 +1899,7 @@ class TreeLearner(Orange.core.Learner):
        because the algorithm works with pointers to instances. If instances
        are in a file or are fed through a filter, they are copied to a
        table. Even if they are already in a table, they are copied if
-       :obj:`store_examples` is `True`.
+       :obj:`store_instances` is `True`.
     #. Apriori class probabilities are computed. If the sum
        of instance weights is zero, there are no instances so the process
        stops. A list of candidate attributes for the split is compiled;
@@ -1939,7 +1939,7 @@ class TreeLearner(Orange.core.Learner):
        by the splitter (if any) is removed from the list of candidates
        for the subtree.
     #. A subset of instances is stored in its corresponding tree node,
-       if :obj:`store_examples` is `True`. If not, the new weight
+       if :obj:`store_instances` is `True`. If not, the new weight
        attributes are removed (if any were created).
 
     **Attributes**
@@ -2027,9 +2027,9 @@ class TreeLearner(Orange.core.Learner):
 
         The smalles number of instances in non-null leaves (default: 0).
 
-    .. attribute:: min_examples
+    .. attribute:: min_instances
 
-        Data subsets with less than :obj:`min_examples`
+        Data subsets with less than :obj:`min_instances`
         instances are not split any further, that is, all leaves in the tree
         will contain at least that many instances (default: 0).
 
@@ -2065,7 +2065,7 @@ class TreeLearner(Orange.core.Learner):
         :class:`StopCriteria` or a function with the same signature as
         :obj:`StopCriteria.__call__`. Useful for prototyping new tree
         induction algorithms.  When used, parameters  :obj:`max_majority`
-        and :obj:`min_examples` will not be  considered.  The default
+        and :obj:`min_instances` will not be  considered.  The default
         stopping criterion stops induction when all instances in a node
         belong to the same class.
 
@@ -2087,7 +2087,7 @@ class TreeLearner(Orange.core.Learner):
     
     .. attribute:: store_contingencies
     
-    .. attribute:: store_examples
+    .. attribute:: store_instances
     
     .. attribute:: store_node_classifier
 
@@ -2097,7 +2097,7 @@ class TreeLearner(Orange.core.Learner):
         by not storing distributions but storing contingencies, since
         distributions actually points to the same distribution that is
         stored in :obj:`contingency.classes`.  By default everything
-        except :obj:`store_examples` is enabled. 
+        except :obj:`store_instances` is enabled. 
 
     """
     def __new__(cls, examples = None, weightID = 0, **argkw):
@@ -2248,9 +2248,9 @@ class TreeLearner(Orange.core.Learner):
         mm = getattr(self, "max_majority", 1.0)
         if mm < 1.0:
             stop.max_majority = self.max_majority
-        me = getattr(self, "min_examples", 0)
+        me = getattr(self, "min_instances", 0)
         if me:
-            stop.min_examples = self.min_examples
+            stop.min_examples = self.min_instances
         return stop
 
     def _base_learner(self):
@@ -2259,16 +2259,19 @@ class TreeLearner(Orange.core.Learner):
         learner.split = self.split
         learner.stop = self.stop
 
-        for a in ["store_distributions", "store_contingencies", "store_examples", 
+        for a in ["store_distributions", "store_contingencies",
             "store_node_classifier", "node_learner", "max_depth", "contingency_computer", "descender" ]:
             if hasattr(self, a):
                 setattr(learner, a, getattr(self, a))
+
+        if hasattr(self, "store_instances"):
+            learner.store_examples = self.store_instances
 
         return learner
 
     _built_fn = { 
             "split": [ _build_split, [ "binarization", "measure", "relief_m", "relief_k", "worst_acceptable", "min_subset" ] ], \
-            "stop": [ _build_stop, ["max_majority", "min_examples" ] ] 
+            "stop": [ _build_stop, ["max_majority", "min_instances" ] ] 
         }
 
 
@@ -2280,14 +2283,16 @@ TreeLearner = Orange.misc.deprecated_members({
           "reliefK": "relief_k",
           "storeDistributions": "store_distributions",
           "storeContingencies": "store_contingencies",
-          "storeExamples": "store_examples",
+          "storeExamples": "store_instances",
+          "store_examples": "store_instances",
           "storeNodeClassifier": "store_node_classifier",
           "worstAcceptable": "worst_acceptable",
           "minSubset": "min_subset",
           "maxMajority": "max_majority",
-          "minExamples": "min_examples",
+          "minExamples": "min_instances",
           "maxDepth": "max_depth",
-          "nodeLearner": "node_learner"
+          "nodeLearner": "node_learner",
+          "min_examples": "min_instances"
 }, wrap_methods=[])(TreeLearner)
 
 #
