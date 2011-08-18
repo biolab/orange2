@@ -94,10 +94,10 @@ def expand_discrete(var):
 class EarthLearner(Orange.core.LearnerFD):
     """ Earth learner class. Supports both regression and classification
     problems. In case of classification the class values are expanded into 
-    continuous indicator columns (one for each value unless the number of 
+    continuous indicator columns (one for each value if the number of 
     values is grater then 2), and a multi response model is learned on these
     new columns. The resulting classifier will then use the computed response
-    values on new instances to select the final predicted class. 
+    values on new instances to select the final predicted class.
      
     """
     def __new__(cls, instances=None, weight_id=None, **kwargs):
@@ -819,7 +819,6 @@ def evimp(model, used_only=True):
 def plot_evimp(evimp):
     """ Plot the variable importances as returned from
     :obj:`EarthClassifier.evimp` call.
-    
     ::
         >>> data = Orange.data.Table("housing")
         >>> c = EarthLearner(data, degree=3)
@@ -865,7 +864,8 @@ def plot_evimp(evimp):
 def bagged_evimp(classifier, used_only=True):
     """ Extract combined (average) evimp from an instance of BaggedClassifier
     
-    Example: ::
+    Example ::
+    
         >>> from Orange.ensemble.bagging import BaggedLearner
         >>> bc = BaggedLearner(EarthLearner(degree=3, terms=10), data)
         >>> bagged_evimp(bc)
