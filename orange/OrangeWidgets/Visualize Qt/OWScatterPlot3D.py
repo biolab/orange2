@@ -16,7 +16,7 @@ from orngScaleScatterPlotData import *
 
 import numpy
 
-TooltipKind = enum('NONE', 'VISIBLE', 'ALL') # Which attributes should be displayed in tooltips?
+TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
 
 class ScatterPlotTheme(PlotTheme):
     def __init__(self):
@@ -121,7 +121,9 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.clear()
         self.set_shown_attributes_indices(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
-            colors, num_symbols_used, data_scale, data_translation)
+            colors, num_symbols_used,
+            x_discrete, y_discrete, z_discrete, self.jitter_size, self.jitter_continuous,
+            data_scale, data_translation)
 
         if self.show_legend:
             legend_keys = {}

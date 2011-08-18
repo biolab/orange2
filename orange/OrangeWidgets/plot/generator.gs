@@ -12,6 +12,13 @@ uniform int size_index;
 
 uniform bool use_2d_symbols;
 
+uniform float seed;
+uniform float jitter_size;
+uniform bool jitter_continuous;
+uniform bool x_discrete;
+uniform bool y_discrete;
+uniform bool z_discrete;
+
 uniform samplerBuffer symbol_buffer;
 uniform samplerBuffer data_buffer;
 
@@ -30,6 +37,12 @@ out vec3 out_color;
 out vec3 out_normal;
 out float out_index;
 
+// http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+// Should return pseudo-random value [-0.5, 0.5]
+float rand(vec3 co){
+    return fract(sin(dot(co.xyz, vec3(12.9898, 78.233, 42.42))) * 43758.5453) - 0.5;
+}
+
 void main()
 {
     vec4 position = gl_in[0].gl_Position;
@@ -41,6 +54,13 @@ void main()
     out_position = vec3(texelFetch(data_buffer, index+x_index).x,
                         texelFetch(data_buffer, index+y_index).x,
                         texelFetch(data_buffer, index+z_index).x);
+
+	if (x_discrete || jitter_continuous)
+		out_position.x += rand(out_position * out_index) * jitter_size / 100.;
+	if (y_discrete || jitter_continuous)
+		out_position.y += rand(out_position * out_index) * jitter_size / 100.;
+	if (z_discrete || jitter_continuous)
+		out_position.z += rand(out_position * out_index) * jitter_size / 100.;
 
     int symbol = 0;
     if (num_symbols_used > 1 && symbol_index > -1)

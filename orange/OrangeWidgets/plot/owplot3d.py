@@ -40,7 +40,7 @@ from numpy import array, maximum
 #numpy.seterr(all='raise') # Raises exceptions on invalid numerical operations.
 
 try:
-    from itertools import izip as zip # Python 3 zip == izip in Python 2.x
+    from itertools import izip as zip
     from itertools import chain
 except:
     pass
@@ -925,6 +925,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
     def set_shown_attributes_indices(self, x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
+            x_discrete, y_discrete, z_discrete, jitter_size, jitter_continuous,
             data_scale=array([1., 1., 1.]), data_translation=array([0., 0., 0.])):
         start = time.time()
         self.makeCurrent()
@@ -944,6 +945,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.generating_program.setUniformValue('x_index', x_index)
         self.generating_program.setUniformValue('y_index', y_index)
         self.generating_program.setUniformValue('z_index', z_index)
+        self.generating_program.setUniformValue('seed', time.time())
+        self.generating_program.setUniformValue('jitter_size', jitter_size)
+        self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
+        self.generating_program.setUniformValue('x_discrete', x_discrete)
+        self.generating_program.setUniformValue('y_discrete', y_discrete)
+        self.generating_program.setUniformValue('z_discrete', z_discrete)
         self.generating_program.setUniformValue('color_index', color_index)
         self.generating_program.setUniformValue('symbol_index', symbol_index)
         self.generating_program.setUniformValue('size_index', size_index)
@@ -1021,7 +1028,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def set_show_axis_title(self, axis_id, show):
         if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
-            setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', title)
+            setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', show)
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
         '''Specifies new zoom in data coordinates.'''
