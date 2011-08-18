@@ -273,6 +273,8 @@ void Curve::update_point_properties(const QByteArray& property, const QList< T >
         m_property_updates[property].waitForFinished();
     }
     
+    update_number_of_items();
+    
     int n = m_pointItems.size();
     if (n != values.size())
     {

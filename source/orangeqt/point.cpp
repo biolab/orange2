@@ -170,6 +170,7 @@ QColor Point::color() const
 void Point::set_color(const QColor& color)
 {
     m_color = color;
+    update();
 }
 
 Point::DisplayMode Point::display_mode() const
@@ -180,6 +181,7 @@ Point::DisplayMode Point::display_mode() const
 void Point::set_display_mode(Point::DisplayMode mode)
 {
     m_display_mode = mode;
+    update();
 }
 
 int Point::size() const
@@ -190,6 +192,7 @@ int Point::size() const
 void Point::set_size(int size)
 {
     m_size = size;
+    update();
 }
 
 int Point::symbol() const
@@ -200,6 +203,7 @@ int Point::symbol() const
 void Point::set_symbol(int symbol)
 {
     m_symbol = symbol;
+    update();
 }
 
 QPainterPath Point::path_for_symbol(int symbol, int size)
