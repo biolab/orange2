@@ -25,12 +25,13 @@ class Curve : PlotItem {
 
 public:
   enum Style {
-    NoCurve = Qt::NoPen,
+    Points = Qt::NoPen,
     Lines = Qt::SolidLine,
-    Sticks,
-    Steps,
     Dots = Qt::DotLine,
-    UserCurve
+    Sticks = 20,
+    Steps,
+    LinesPoints,
+    UserCurve = 100
   };
 
   Curve(const QList< double >& x_data, const QList< double >& y_data, QGraphicsItem* parent /TransferThis/ = 0);

@@ -99,11 +99,10 @@ class Curve : public PlotItem
   
 public:
   enum Style {
-    NoCurve = Qt::NoPen,
-    Points = NoCurve,
+    Points = Qt::NoPen,
     Lines = Qt::SolidLine,
     Dots = Qt::DotLine,
-    Sticks,
+    Sticks = 20,
     Steps,
     LinesPoints,
     UserCurve = 100

@@ -38,7 +38,7 @@ Curve::Curve(const QList< double >& x_data, const QList< double >& y_data, QGrap
     // Otherwise, the program hangs if this is called from a subclass constructor
     m_autoUpdate = false; 
     
-    m_style = NoCurve;
+    m_style = Points;
     m_continuous = false;
     m_needsUpdate = UpdateAll;
     m_lineItem = new QGraphicsPathItem(this);
@@ -52,7 +52,7 @@ Curve::Curve(QGraphicsItem* parent): PlotItem(parent)
 {
     m_continuous = false;
     m_autoUpdate = true;
-    m_style = NoCurve;
+    m_style = Points;
     m_lineItem = new QGraphicsPathItem(this);
     m_needsUpdate = 0;
     QObject::connect(&m_pos_watcher, SIGNAL(finished()), SLOT(pointMapFinished()));

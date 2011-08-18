@@ -30,12 +30,6 @@ class distribErrorBarCurve(OWCurve):
         self.set_point_size(7)
         
     def update_properties(self):
-        should_be_cont = (self.style() == OWCurve.Lines)
-        if self.is_continuous() != should_be_cont:
-            self.set_continuous(should_be_cont)
-            if self.auto_update():
-                return
-                
         OWCurve.update_properties(self)
     
         if self.style() == self.DistributionCurve:
@@ -393,12 +387,14 @@ class OWDistributionGraphQt(OWPlot):
                 self.probCurveKey.set_style(OWCurve.Lines)
                 if self.showConfidenceIntervals:
                     self.probCurveUpperCIKey.setData(xs, ups)
+                    self.probCurveUpperCIKey.set_style(OWCurve.Dots)
                     self.probCurveLowerCIKey.setData(xs, lps)
+                    self.probCurveLowerCIKey.set_style(OWCurve.Dots)
             else:
                 if self.showConfidenceIntervals:
                     self.probCurveKey.set_style(distribErrorBarCurve.DistributionCurve)
                 else:
-                    self.probCurveKey.set_style(OWCurve.NoCurve)
+                    self.probCurveKey.set_style(OWCurve.Points)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
