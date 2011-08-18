@@ -97,20 +97,20 @@ class EarthLearner(Orange.core.LearnerFD):
     continuous indicator columns (one for each value unless the number of 
     values is grater then 2), and a multi response model is learned on these
     new columns. The resulting classifier will then use the computed response
-    values on new examples to select the final predicted class. 
+    values on new instances to select the final predicted class. 
      
     """
-    def __new__(cls, examples=None, weight_id=None, **kwargs):
+    def __new__(cls, instances=None, weight_id=None, **kwargs):
         self = Orange.core.LearnerFD.__new__(cls)
-        if examples is not None:
+        if instances is not None:
             self.__init__(**kwargs)
-            return self.__call__(examples, weight_id)
+            return self.__call__(instances, weight_id)
         else:
             return self
         
     def __init__(self, degree=1, terms=21, penalty= None, thresh=1e-3,
                  min_span=0, new_var_penalty=0, fast_k=20, fast_beta=1,
-                 pruned_terms=None, scale_resp=True, store_examples=True,
+                 pruned_terms=None, scale_resp=True, store_instances=True,
                  multi_label=False, **kwds):
         """ Initialize the learner instance.
         
@@ -138,9 +138,9 @@ class EarthLearner(Orange.core.LearnerFD):
         :param scale_resp: Scale responses prior to forward pass (default
             True - ignored for multi response models).
         :type scale_resp: bool
-        :param store_examples: Store training examples in the model
+        :param store_instances: Store training instances in the model
             (default True).
-        :type store_examples: bool
+        :type store_instances: bool
         :param multi_label: If True build a multi label model (default False).
         :type multi_label: bool  
          
@@ -160,7 +160,7 @@ class EarthLearner(Orange.core.LearnerFD):
         self.fast_beta = fast_beta
         self.pruned_terms = pruned_terms
         self.scale_resp = scale_resp
-        self.store_examples = store_examples
+        self.store_instances = store_instances
         self.multi_label = multi_label
         self.__dict__.update(kwds)
         
@@ -170,29 +170,29 @@ class EarthLearner(Orange.core.LearnerFD):
         self.preproc = Preprocessor_preprocessorList(preprocessors=\
                                                      [impute, cont])
         
-    def __call__(self, examples, weight_id=None):
-        original_domain = examples.domain # Needed by classifier and evimp
-        examples = self.preproc(examples)
+    def __call__(self, instances, weight_id=None):
+        original_domain = instances.domain # Needed by classifier and evimp
+        instances = self.preproc(instances)
         expanded_class = None
         if self.multi_label:
-            label_mask = data_label_mask(examples.domain)
-            data = examples.to_numpy_MA("Ac")[0]
+            label_mask = data_label_mask(instances.domain)
+            data = instances.to_numpy_MA("Ac")[0]
             y = data[:, label_mask]
             x = data[:, ~ label_mask]
         else:
             # Expand a discrete class with indicator columns
-            if is_discrete(examples.domain.class_var):
-                expanded_class = expand_discrete(examples.domain.class_var)
-                y = Table(Domain(expanded_class, None), examples)
+            if is_discrete(instances.domain.class_var):
+                expanded_class = expand_discrete(instances.domain.class_var)
+                y = Table(Domain(expanded_class, None), instances)
                 y = y.to_numpy_MA("A")[0]
-                x = examples.to_numpy_MA("A")[0]
+                x = instances.to_numpy_MA("A")[0]
                 label_mask = [False] * x.shape[1] + [True] * y.shape[1]
                 label_mask = numpy.array(label_mask)
-            elif is_continuous(examples.domain.class_var):
-                label_mask = numpy.zeros(len(examples.domain.variables),
+            elif is_continuous(instances.domain.class_var):
+                label_mask = numpy.zeros(len(instances.domain.variables),
                                          dtype=bool)
                 label_mask[-1] = True
-                x, y, _ = examples.to_numpy_MA()
+                x, y, _ = instances.to_numpy_MA()
                 y = y.reshape((-1, 1))
             else:
                 raise ValueError("Cannot handle the response.")
@@ -222,9 +222,9 @@ class EarthLearner(Orange.core.LearnerFD):
         bx_used = bx[:, used]
         betas, res, rank, s = numpy.linalg.lstsq(bx_used, y)
         
-        return EarthClassifier(examples.domain, used, dirs, cuts, betas.T,
+        return EarthClassifier(instances.domain, used, dirs, cuts, betas.T,
                                subsets, rss_per_subset, gcv_per_subset,
-                               examples=examples if self.store_examples else None,
+                               instances=instances if self.store_instances else None,
                                label_mask=label_mask, multi_flag=self.multi_label,
                                expanded_class=expanded_class)
     
@@ -233,7 +233,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
     """ Earth classifier.
     """
     def __init__(self, domain, best_set, dirs, cuts, betas, subsets=None,
-                 rss_per_subset=None, gcv_per_subset=None, examples=None,
+                 rss_per_subset=None, gcv_per_subset=None, instances=None,
                  label_mask=None, multi_flag=False, expanded_class=None,
                  original_domain=None, **kwargs):
         self.multi_flag = multi_flag
@@ -246,13 +246,13 @@ class EarthClassifier(Orange.core.ClassifierFD):
         self.subsets = subsets
         self.rss_per_subset = rss_per_subset
         self.gcv_per_subset = gcv_per_subset
-        self.examples = examples
+        self.instances = instances
         self.label_mask = label_mask
         self.expanded_class = expanded_class
         self.original_domain = original_domain
         self.__dict__.update(kwargs)
         
-    def __call__(self, example, result_type=Orange.core.GetValue):
+    def __call__(self, instance, result_type=Orange.core.GetValue):
         if self.multi_flag:
             resp_vars = [v for v, m in zip(self.domain.variables,
                                            self.label_mask) if m]
@@ -261,7 +261,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         else:
             resp_vars = [self.class_var]
             
-        vals = self.predict(example)
+        vals = self.predict(instance)
         vals = [var(val) for var, val in zip(resp_vars, vals)]
         
         from Orange.statistics.distribution import Distribution
@@ -300,32 +300,32 @@ class EarthClassifier(Orange.core.ClassifierFD):
         """
         print self.format_model(percision, indent)
         
-    def base_matrix(self, examples=None):
+    def base_matrix(self, instances=None):
         """Return the base matrix (bx) of the Earth model for the table.
-        If table is not supplied the base matrix of the training examples 
+        If table is not supplied the base matrix of the training instances 
         is returned.
-        Base matrix is a len(examples) x num_terms matrix of computed values
-        of terms in the model (not multiplied by beta) for each example.
+        Base matrix is a len(instances) x num_terms matrix of computed values
+        of terms in the model (not multiplied by beta) for each instance.
         
-        :param examples: Input examples for the base matrix.
-        :type examples: :class:`Orange.data.Table` 
+        :param instances: Input instances for the base matrix.
+        :type instances: :class:`Orange.data.Table` 
         
         """
-        if examples is None:
-            examples = self.examples
-        (data,) = examples.to_numpy_MA("Ac")
+        if instances is None:
+            instances = self.instances
+        (data,) = instances.to_numpy_MA("Ac")
         data = data[:, ~ self.label_mask]
         bx = base_matrix(data, self.best_set, self.dirs, self.cuts)
         return bx
     
-    def predict(self, example):
-        """ Predict the response values for the example
+    def predict(self, instance):
+        """ Predict the response values for the instance
         
-        :param example: example instance
-        :type example: :class:`Orange.data.Example`
+        :param instance: Data instance
+        :type instance: :class:`Orange.data.Instance`
         
         """
-        data = Orange.data.Table(self.domain, [example])
+        data = Orange.data.Table(self.domain, [instance])
         bx = self.base_matrix(data)
         bx_used = bx[:, self.best_set]
         vals = numpy.dot(bx_used, self.betas.T).ravel()
@@ -420,7 +420,7 @@ def gcv(rss, n, n_effective_params):
     .. math:: gcv = rss / (n * (1 - NumEffectiveParams / n) ^ 2)
     
     :param rss: Residual sum of squares.
-    :param n: Number of training examples.
+    :param n: Number of training instances.
     :param n_effective_params: Number of effective paramaters.
      
     """
