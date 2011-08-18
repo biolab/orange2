@@ -456,8 +456,8 @@ class OWPlotGUI:
             self.AnimatePlot, 
             self.AnimatePoints,
             self.AntialiasPlot,
-            self.AntialiasPoints,
-            self.AntialiasLines,
+        #    self.AntialiasPoints,
+        #    self.AntialiasLines,
             self.AutoAdjustPerformance,
             self.DisableAnimationsThreshold], widget, "Visual effects")
         return b

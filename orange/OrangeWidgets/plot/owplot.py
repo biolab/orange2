@@ -271,6 +271,14 @@ class OWPlot(orangeqt.Plot):
         
     
     """
+    
+    point_settings = ["point_width", "alpha_value"]
+    plot_settings = ["show_legend", "show_grid"]
+    appearance_settings = ["antialias_plot", "animate_plot", "animate_points", "disable_animations_threshold", "auto_adjust_performance"]
+    
+    def settings_list(self, graph_name, settings):
+        return [graph_name + '.' + setting for setting in settings]
+    
     def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft], widget = None ):
         """
             Creates a new graph

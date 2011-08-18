@@ -21,9 +21,10 @@ from plot.owcurve import *
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
 class OWScatterPlotQt(OWWidget):
-    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale", "graph.useAntialiasing",
+    settingsList = ["graph." + s for s in OWPlot.point_settings + OWPlot.appearance_settings] + [
+                    "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
-                    "graph.alphaValue", "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
+                    "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
                     "colorSettings", "selectedSchemaIndex", "VizRankLearnerName"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 

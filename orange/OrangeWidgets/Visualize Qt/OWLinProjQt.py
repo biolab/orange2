@@ -21,9 +21,10 @@ import orngVizRank
 ##### WIDGET : Linear Projection
 ###########################################################################################
 class OWLinProjQt(OWVisWidget):
-    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
+    settingsList = ["graph." + s for s in OWPlot.point_settings + OWPlot.appearance_settings] + [
+                    "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
-                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.alphaValue",
+                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection",
                     "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing"
                     "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
