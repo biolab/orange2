@@ -95,6 +95,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             c.detach()
         self.value_line_curves = []
         self.legend().clear()
+        self.clear_markers()
 
         self.__dict__.update(args)
         if labels == None: labels = [anchor[2] for anchor in self.anchorData]
