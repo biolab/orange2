@@ -57,6 +57,7 @@ name_map = {
     "activateSelection" : "activate_selection", 
     "activateRectangleSelection" : "activate_rectangle_selection", 
     "activatePolygonSelection" : "activate_polygon_selection", 
+    "activatePanning" : "activate_panning",
     "getSelectedPoints" : "get_selected_points",
     "setAxisScale" : "set_axis_scale",
     "setAxisLabels" : "set_axis_labels", 
@@ -505,6 +506,12 @@ class OWPlot(orangeqt.Plot):
         '''
         self.state = SELECT_POLYGON
         
+    def activate_panning(self):
+        '''
+            Activates the panning mode, where the user can move the zoom projection by dragging the mouse
+        '''
+        self.state = PANNING
+        
     def set_show_main_title(self, b):
         '''
             Shows the main title if ``b`` is ``True``, and hides it otherwise. 
@@ -780,6 +787,7 @@ class OWPlot(orangeqt.Plot):
         self.axes[axis_id] = a
         if not axis_id in CartesianAxes:
             self.setShowAxisTitle(axis_id, True)
+        return a
         
     def remove_all_axes(self, user_only = True):
         '''
@@ -1006,6 +1014,12 @@ class OWPlot(orangeqt.Plot):
         
     def update_legend(self):
         self._legend.setVisible(self.show_legend)
+        if self.show_legend:
+            r = self._legend.boundingRect()
+            qDebug('Moving legend from ' + repr(r))
+            self.ensure_inside(r, self.contentsRect())
+            qDebug('to ' + repr(r))
+            self._legend.setPos(r.topLeft())
         
     def update_filled_symbols(self):
         ## TODO: Implement this in Curve.cpp

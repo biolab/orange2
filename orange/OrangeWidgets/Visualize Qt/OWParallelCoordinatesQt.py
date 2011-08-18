@@ -92,7 +92,8 @@ class OWParallelCoordinatesQt(OWVisWidget):
 
         OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateGraph, tooltip  = "Show lines using splines")
-        OWGUI.checkBox(box, self, 'graph.show_legend', 'Show legend', callback = self.updateGraph)
+        
+        self.graph.gui.show_legend_check_box(box)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Axis Distance")
         resizeColsBox = OWGUI.widgetBox(box, 0, "horizontal", 0)

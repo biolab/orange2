@@ -38,6 +38,7 @@ class OWParallelGraph(OWPlot, orngScaleData):
         self.unselectedExamples = []
         self.bottomPixmap = QPixmap(os.path.join(orngEnviron.directoryNames["widgetDir"], "icons/upgreenarrow.png"))
         self.topPixmap = QPixmap(os.path.join(orngEnviron.directoryNames["widgetDir"], "icons/downgreenarrow.png"))
+        self.update_antialiasing(False)
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -188,8 +189,9 @@ class OWParallelGraph(OWPlot, orngScaleData):
         self.remove_all_axes()
         for i in range(len(attributes)):
             id = UserAxis + i
-	    self.add_axis(UserAxis + i, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd)
-	    self.axes[id].always_horizontal_text = True
+	    a = self.add_axis(id, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd, zoomable = True)
+	    a.always_horizontal_text = True
+	    a.max_text_width = 100
             if self.showAttrValues == 1:
                 attr = self.dataDomain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
@@ -282,17 +284,10 @@ class OWParallelGraph(OWPlot, orngScaleData):
         # show the legend
         if self.dataHasClass:
             if self.dataDomain.classVar.varType == orange.VarTypes.Discrete:
-                legendKeys = []
+                self.legend().clear()
                 varValues = getVariableValuesSorted(self.dataDomain.classVar)
-                #self.addCurve("<b>" + self.dataDomain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = OWPoint.NoSymbol, enableLegend = 1)
                 for ind in range(len(varValues)):
-                    #self.addCurve(varValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = OWPoint.Rect, enableLegend = 1)
-                    legendKeys.append((varValues[ind], self.discPalette[ind]))
-                if legendKeys != self.oldLegendKeys:
-                    self.oldLegendKeys = legendKeys
-                    self.legend().clear()
-                    for (name, color) in legendKeys:
-                        self.legend().add_item(self.dataDomain.classVar.name, name, OWPoint(OWPoint.Rect, color, self.point_width))
+                    self.legend().add_item(self.dataDomain.classVar.name, varValues[ind], OWPoint(OWPoint.Rect, self.discPalette[ind], self.point_width))
             else:
                 values = self.attrValues[self.dataDomain.classVar.name]
                 decimals = self.dataDomain.classVar.numberOfDecimals

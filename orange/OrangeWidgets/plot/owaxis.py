@@ -35,7 +35,7 @@
 
 from math import *
 
-from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform
+from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform, QGraphicsRectItem, QPen
 from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF, Qt
 
 from owconstants import *
@@ -75,6 +75,7 @@ class OWAxis(QGraphicsItem):
         path.closeSubpath()
         self.arrow_path = path
         self.label_items = []
+        self.label_bg_items = []
         self.tick_items = []
         self._ticks = []
         self.zoom_transform = QTransform()
@@ -191,6 +192,7 @@ class OWAxis(QGraphicsItem):
         
         n = len(self._ticks)
         resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
+        resize_plot_item_list(self.label_bg_items, n, QGraphicsRectItem, self)
         resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
         
         test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
@@ -228,6 +230,10 @@ class OWAxis(QGraphicsItem):
             item.setPos(label_pos)
             item.setTextWidth(w)
             item.setDefaultTextColor(text_color)
+            
+            self.label_bg_items[i].setRect(item.boundingRect())
+            self.label_bg_items[i].setPen(QPen(Qt.NoPen))
+            self.label_bg_items[i].setBrush(self.plot.color(OWPalette.Canvas))
             
             item = self.tick_items[i]
             item.setVisible(True)
