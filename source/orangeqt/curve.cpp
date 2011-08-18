@@ -440,9 +440,22 @@ void Curve::pointMapFinished()
     int n = m_pointItems.size();
     for (int i = 0; i < n; ++i)
     {
-        QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos", m_pointItems[i]);
-        a->setEndValue(m_pos_watcher.resultAt(i));
-        group->addAnimation(a);
+        /* 
+         * If a point was just created, its position is (0,0)
+         * In this case, animating it would create more confusion that good
+         * So we just move it without an animation. 
+         * This is the case (for example) for the anchor curve in RadViz
+         */
+        if (m_pointItems[i]->pos().isNull())
+        {
+            m_pointItems[i]->setPos(m_pos_watcher.resultAt(i));
+        }
+        else
+        {
+            QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos", m_pointItems[i]);
+            a->setEndValue(m_pos_watcher.resultAt(i));
+            group->addAnimation(a);
+        }
     }
     group->start(QAbstractAnimation::DeleteWhenStopped);
 }
