@@ -182,7 +182,7 @@ class OWLegend(QGraphicsObject):
                 i.setParentItem(None)
                 self.scene().removeItem(i)
         self.items = {}
-        self.update()
+        self.update_items()
         
 
     def add_curve(self, curve):
@@ -208,7 +208,7 @@ class OWLegend(QGraphicsObject):
         if category not in self.items:
             self.items[category] = [OWLegendTitle(category, self)]
         self.items[category].append(OWLegendItem(str(value), point, self))
-        self.update()
+        self.update_items()
         
     def add_color_gradient(self, title, values):
         if len(values) < 2:
@@ -218,7 +218,7 @@ class OWLegend(QGraphicsObject):
             self.remove_category(title)
         item = OWLegendGradient(self.graph.contPalette, [str(v) for v in values], self)
         self.items[title] = [OWLegendTitle(title, self), item]
-        self.update()
+        self.update_items()
         
     def remove_category(self, category):
         """
@@ -230,12 +230,12 @@ class OWLegend(QGraphicsObject):
             self.scene().removeItem(item)
         del self.items[category]
         
-    def update(self):
+    def update_items(self):
         """
             Updates the legend, repositioning the items according to the legend's orientation. 
         """
         self.box_rect = QRectF()
-        x, y = 0, 0
+        x = y = 0
         
         for lst in self.items.itervalues():
             for item in lst:
@@ -243,32 +243,31 @@ class OWLegend(QGraphicsObject):
                     item.text_item.setDefaultTextColor(self.graph.color(OWPalette.Text))
                 if hasattr(item, 'rect_item'):
                     item.rect_item.setBrush(self.graph.color(OWPalette.Canvas))
+                if hasattr(item, 'set_orientation'):
+                    item.set_orientation(self._orientation)
+                    
         if self._orientation == Qt.Vertical:
             for lst in self.items.itervalues():
                 for item in lst:
-                    if isinstance(item, OWLegendGradient):
-                        item.set_orientation(self._orientation)
                     if self.max_size.height() and y and y + item.boundingRect().height() > self.max_size.height():
                         y = 0
                         x = x + item.boundingRect().width()
-                    self.box_rect = self.box_rect | item.boundingRect().translated(0, y)
+                    self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
                     move_item_xy(item, x, y, self.graph.animate_plot)
                     y = y + item.boundingRect().height()
         elif self._orientation == Qt.Horizontal:
             for lst in self.items.itervalues():
                 max_h = max(item.boundingRect().height() for item in lst)
-                if lst:
-                    x = 0
-                    y = y + max_h
                 for item in lst:
-                    if isinstance(item, OWLegendGradient):
-                        item.set_orientation(self._orientation)
                     if self.max_size.width() and x and x + item.boundingRect().width() > self.max_size.width():
                         x = 0
                         y = y + max_h
                     self.box_rect = self.box_rect | item.boundingRect().translated(x, y)
                     move_item_xy(item, x, y, self.graph.animate_plot)
                     x = x + item.boundingRect().width()                
+                if lst:
+                    x = 0
+                    y = y + max_h
         else:
             qDebug('A bad orientation of the legend')
     
@@ -304,9 +303,8 @@ class OWLegend(QGraphicsObject):
         """
             Sets the legend's orientation to ``orientation``. 
         """
-        if self._orientation != orientation:
-            self._orientation = orientation
-            self.update()
+        self._orientation = orientation
+        self.update_items()
             
     def orientation(self):
         return self._orientation
@@ -320,7 +318,6 @@ class OWLegend(QGraphicsObject):
                 t = t - self._floating_animation.currentTime()
                 self._floating_animation.stop()
             self._floating_animation = QPropertyAnimation(self, 'pos')
-            self._floating_animation.setStartValue(self.pos())
             self._floating_animation.setEndValue(pos)
             self._floating_animation.setDuration(t)
             self._floating_animation.start(QPropertyAnimation.KeepWhenStopped)
@@ -340,3 +337,4 @@ class OWLegend(QGraphicsObject):
                 self.set_pos_animated(pos - self._mouse_down_pos)
             else:
                 self.set_pos_animated(pos)
+        
