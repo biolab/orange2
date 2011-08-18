@@ -69,9 +69,9 @@ class OWAxis(QGraphicsItem):
         self.scale = None
         path = QPainterPath()
         path.setFillRule(Qt.WindingFill)
-        path.moveTo(0, 5)
-        path.lineTo(0, -5)
-        path.lineTo(10, 0)
+        path.moveTo(0, 3)
+        path.lineTo(0, -3)
+        path.lineTo(5, 0)
         path.closeSubpath()
         self.arrow_path = path
         self.label_items = []
