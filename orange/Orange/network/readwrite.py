@@ -174,9 +174,18 @@ def read_pajek(path, encoding='UTF-8', project=False):
     
     :param path: File or filename to write.
     :type path: string
+    
+    :param encoding: Encoding of input text file, default 'UTF-8'.
+    :type encoding: string
+    
+    :param project: Determines whether the input file is a Pajek project file,
+        possibly containing multiple networks and other data. If :obj:`True`,
+        a list of networks is returned instead of just a network. Default is
+        :obj:`False`.
+    :type project: boolean.
         
-    Return the network of type :obj:`Orange.network.Graph` or 
-    :obj:`Orange.network.DiGraph`.
+    Return the network (or a list of networks if project=:obj:`True`) of type
+    :obj:`Orange.network.Graph` or :obj:`Orange.network.DiGraph`.
 
 
     Examples
@@ -199,20 +208,22 @@ def read_pajek(path, encoding='UTF-8', project=False):
     input = orangeom.GraphLayout().readPajek(path, project)
     result = []
     for g in input if project else [input]:
-        graphname, edges, arcs, items = g
+        graphname, vertices, edges, arcs, items = g
         if len(arcs) > 0:
             # directed graph
             G = Orange.network.DiGraph()
             G.add_nodes_from(range(len(items)))
-            G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
-            G.add_edges_from(((v,u,{'weight':d}) for u,v,d in edges))
-            G.add_edges_from(((u,v,{'weight':d}) for u,v,d in arcs))
+            G.add_edges_from(((u,v,dict(d.items()+[('weight',w)])) for u,v,w,d in edges))
+            G.add_edges_from(((v,u,dict(d.items()+[('weight',w)])) for u,v,w,d in edges))
+            G.add_edges_from(((u,v,dict(d.items()+[('weight',w)])) for u,v,w,d in arcs))
             G.set_items(items)
         else:
             G = Orange.network.Graph()
             G.add_nodes_from(range(len(items)))
-            G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
+            G.add_edges_from(((u,v,dict(d.items()+[('weight',w)])) for u,v,w,d in edges))
             G.set_items(items)
+        for i, vdata in zip(range(len(G.node)), vertices):
+            G.node[i].update(vdata)
         G.name = graphname
         
         result.append(G)

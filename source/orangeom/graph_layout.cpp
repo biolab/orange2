@@ -1290,6 +1290,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	PyObject *networks;
 	TExampleTable *table;
 	PExampleTable wtable;
+	PyObject *vertexList;
 	PyObject *edgeList;
 	PyObject *arcList;
 	if (project)
@@ -1312,6 +1313,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 					PYERROR(PyExc_SystemError, "Invalid file format. More than one network in a non-project file (parameter project is set to FALSE).", PYNULL);
 
 				hasGraph = 1;
+				vertexList = PyList_New(0);
 				edgeList = PyList_New(0);
 				arcList = PyList_New(0);
 				table = new TExampleTable(domain);
@@ -1324,7 +1326,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				}
 
 				if (project) {
-					PyObject *net = Py_BuildValue("sNNN", graphName.c_str(), edgeList, arcList, WrapOrange(wtable));
+					PyObject *net = Py_BuildValue("sNNNN", graphName.c_str(), vertexList, edgeList, arcList, WrapOrange(wtable));
 					PyList_Append(networks, net);
 				}
 
@@ -1366,7 +1368,10 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 
 						TExample *example = new TExample(domain);
 						float index = -1; istringstream strIndex(words[0]); strIndex >> index;
-							
+
+						PyObject *vData = PyDict_New();
+						PyList_Append(vertexList, vData);
+
 						if ((index <= 0) || (index > nVertices)) {
 							file.close();
 							PYERROR(PyExc_SystemError, "Invalid file format. Invalid vertex index.", PYNULL);
@@ -1393,45 +1398,22 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 								i++;
 							}
 							// read attributes
-							while (i < n) {
+							while (i+1 < n) {
 								if (stricmp(words[i].c_str(), "s_size") == 0) {
-									if (i + 1 < n) {
-										i++;
-									} else {
-										file.close();
-										PYERROR(PyExc_SystemError, "invalid file format. Error reading vertex size.", PYNULL);
-									}
-									float size = -1; istringstream strSize(words[i]); strSize >> size;
+									float size = -1; istringstream strSize(words[i+1]); strSize >> size;
 									(*example)[6] = TValue(size);
-
 								} else if (stricmp(words[i].c_str(), "ic") == 0) {
-									if (i + 1 < n) {
-										i++;
-									} else {
-										file.close();
-										PYERROR(PyExc_SystemError, "invalid file format. Error reading vertex color.", PYNULL);
-									}
-									(*example)[7] = TValue(new TStringValue(words[i]), STRINGVAR);
-
+									(*example)[7] = TValue(new TStringValue(words[i+1]), STRINGVAR);
 								} else if (stricmp(words[i].c_str(), "bc") == 0) {
-									if (i + 1 < n) {
-										i++;
-									} else {
-										file.close();
-										PYERROR(PyExc_SystemError, "invalid file format. Error reading boundary color.", PYNULL);
-									}
-									(*example)[8] = TValue(new TStringValue(words[i]), STRINGVAR);
+									(*example)[8] = TValue(new TStringValue(words[i+1]), STRINGVAR);
 								} else if (stricmp(words[i].c_str(), "bw") == 0) {
-									if (i + 1 < n) {
-										i++;
-									} else {
-										file.close();
-										PYERROR(PyExc_SystemError, "invalid file format. Error reading boundary width.", PYNULL);
-									}
 									float bwidth = -1; istringstream strBWidth(words[i]); strBWidth >> bwidth;
 									(*example)[9] = TValue(bwidth);
 								}
-								i++;
+
+								PyDict_SetItemString(vData, words[i].c_str(),
+										PyUnicode_FromString(words[i+1].c_str()));
+								i += 2;
 							}
 						}
 						example->id = getExampleId();
@@ -1463,13 +1445,24 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 							}
 
 							if (i1 == i2) continue;
+
+							// read attributes
+							PyObject *aData = PyDict_New();
+							int i = 3;
+							while(i+1<n) {
+								PyDict_SetItemString(aData, words[i].c_str(),
+										PyUnicode_FromString(words[i+1].c_str()));
+								i += 2;
+							}
+
+							// read weights
 							if (n > 2) {
 								vector<string> weights;
 								int m = getWords1(words[2], weights);
 								int i;
 								for (i=0; i < m; i++) {
 									double i3 = 0; istringstream strI3(weights[i]); strI3 >> i3;
-									PyObject *nel = Py_BuildValue("iid", i1 - 1, i2 - 1, i3);
+									PyObject *nel = Py_BuildValue("iidN", i1 - 1, i2 - 1, i3, aData);
 									PyList_Append(arcList, nel);
 									Py_DECREF(nel);
 								}
@@ -1502,13 +1495,24 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 						}
 
 						if (i1 == i2) continue;
+
+						// read attributes
+						PyObject *eData = PyDict_New();
+						int i = 3;
+						while(i+1<n) {
+							PyDict_SetItemString(eData, words[i].c_str(),
+									PyUnicode_FromString(words[i+1].c_str()));
+							i += 2;
+						}
+
+						// read weights
 						if (n > 2) {
 							vector<string> weights;
 							int m = getWords1(words[2], weights);
 							int i;
 							for (i=0; i < m; i++) {
 								double i3 = 0; istringstream strI3(weights[i]); strI3 >> i3;
-								PyObject *nel = Py_BuildValue("iid", i1 - 1, i2 - 1, i3);
+								PyObject *nel = Py_BuildValue("iidN", i1 - 1, i2 - 1, i3, eData);
 								PyList_Append(edgeList, nel);
 								Py_DECREF(nel);
 							}
@@ -1528,7 +1532,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	if (project)
 		return Py_BuildValue("N", networks);
 	else if (hasGraph)
-		return Py_BuildValue("sNNN", graphName.c_str(), edgeList, arcList, WrapOrange(wtable));
+		return Py_BuildValue("sNNNN", graphName.c_str(), vertexList, edgeList, arcList, WrapOrange(wtable));
 	else
 		return Py_BuildValue("");
   PyCATCH
