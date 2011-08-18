@@ -27,11 +27,13 @@ set PYTHONBASE=e:\Python
 set PYTHONVERSIONS=25 26 27
 REM # text mining can not be compiled for Python 23
 set PYTHONVERSIONS_ADDONs=25 26 27
-alias python="%PYTHONBASE%25\python.exe"
+alias python="%PYTHONBASE%27\python.exe"
 set .py="%PYTHONBASE%25\python.exe"
 
 alias nsis="c:\program files\nsis\makensis.exe"
 alias winrar="c:\program files\winrar\winrar.exe"
 alias upx="c:\program files\upx.exe"
+alias cmake="c:\program files\cmake 2.8\bin\cmake.exe"
+set QTVARS="e:\Qt\4.7.3\bin\qtvars.bat"
 call "c:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vcvars32.bat"
 REM alias vcexpress="c:\Program Files\Microsoft Visual Studio 8\Common7\IDE\devenv.exe"
