@@ -8,6 +8,7 @@ try:
 except ImportError:
     _have_qwt = False
 
+from PyQt4.QtGui import QGraphicsScene, QGraphicsView
 from PyQt4.QtSvg import *
 from ColorPalette import *
 import OWQCanvasFuncts
@@ -89,7 +90,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         painter.begin(buffer)
         painter.setRenderHint(QPainter.Antialiasing)
         if not filename.lower().endswith(".svg"):
-            if isinstance(self.graph, QGraphicsScene) or isinstance(self.graph, QGraphicsViev):
+            if isinstance(self.graph, QGraphicsScene) or isinstance(self.graph, QGraphicsView):
                 # make background same color as the widget's background
                 brush = self.graph.backgroundBrush()
                 if brush.style() == Qt.NoBrush:
