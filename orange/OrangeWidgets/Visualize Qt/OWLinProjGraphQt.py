@@ -70,7 +70,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         
         self._extra_curves = []
         self.current_tooltip_point = None
-        self.point_hovered.connect(self.draw_tooltips)
+        self.connect(self, SIGNAL("point_hovered()"), self.draw_tooltips)
         
         self.value_line_curves = []
         self.potentialsCurve = None

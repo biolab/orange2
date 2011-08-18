@@ -31,7 +31,7 @@ import OWGUI
 from owconstants import *
 
 from PyQt4.QtGui import QWidget, QToolButton, QGroupBox, QVBoxLayout, QHBoxLayout, QIcon
-from PyQt4.QtCore import Qt, pyqtSignal, qDebug
+from PyQt4.QtCore import Qt, pyqtSignal, qDebug, QObject, SIGNAL
 
 
 class OrientedWidget(QWidget):
@@ -119,7 +119,7 @@ class StateButtonContainer(OrientedWidget):
         self._clicked_button = None
         for i in buttons:
             b = gui.tool_button(i, self)
-            b.clicked.connect(self.button_clicked)
+            QObject.connect(self, SIGNAL("clicked(bool)"), self.button_clicked)
             self.buttons[i] = b
             self.layout().addWidget(b)
             
@@ -151,19 +151,17 @@ class OWButton(QToolButton):
         if type(callback) == str:
             callback = getattr(plot, callback, None)
         if callback:
-            self.clicked.connect(callback)
+            QObject.connect(self, SIGNAL("clicked(bool)"), callback)
         if attr_name:
             self.attr_name = attr_name
             self.attr_value = attr_value
-            self.clicked.connect(self.set_attribute)
+            QObject.connect(self, SIGNAL("clicked(bool)"), self.set_attribute)
         
     def set_attribute(self, clicked):
         setattr(self.plot, self.attr_name, self.attr_value)
-    
-    downChanged = pyqtSignal('bool')
-    
+        
     def setDown(self, down):
-        self.downChanged.emit(down)
+        self.emit(SIGNAL("downChanged(bool)"), down)
         QToolButton.setDown(self, down)
                     
 class OWPlotGUI:
@@ -446,7 +444,7 @@ class OWPlotGUI:
     def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons):
         t = self.toolbar(widget, text, orientation, buttons)
         t.groups[self.SelectionOne].setEnabled(t.buttons[self.Select].isDown())
-        t.buttons[self.Select].downChanged.connect(t.groups[self.SelectionOne].setEnabled)
+        QObject.connect(t.buttons[self.Select], SIGNAL("downChanged(bool)"), t.groups[self.SelectionOne].setEnabled)
         t.buttons[self.Select].click()
         t.buttons[self.SelectionOne].click()
         return t    

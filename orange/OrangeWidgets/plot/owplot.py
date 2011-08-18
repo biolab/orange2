@@ -1023,10 +1023,8 @@ class OWPlot(orangeqt.Plot):
     def update_legend(self):
         self._legend.setVisible(self.show_legend)
         if self.show_legend:
-            r = self._legend.boundingRect()
-            qDebug('Moving legend from ' + repr(r))
+            r = self.legend_rect()
             self.ensure_inside(r, self.contentsRect())
-            qDebug('to ' + repr(r))
             self._legend.setPos(r.topLeft())
         
     def update_filled_symbols(self):

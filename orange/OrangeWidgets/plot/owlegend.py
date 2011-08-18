@@ -283,7 +283,7 @@ class OWLegend(QGraphicsObject):
         event.accept()
             
     def mousePressEvent(self, event):
-        self.setCursor(Qt.DragMoveCursor)
+        self.setCursor(Qt.ClosedHandCursor)
         self.mouse_down = True
         self._mouse_down_pos = event.scenePos() - self.pos()
         event.accept()
