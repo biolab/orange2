@@ -205,12 +205,16 @@ class OWCurve(orangeqt.Curve):
         
             Sets the curve's style to ``style``. 
             
-            The curve's style specified how its lines are drawn. If the style is OWCurve.Lines, then 
-            data points are connected with a continuous line with the curve's :meth:`pen`. Otherwise, 
-            no such lines are drawn. 
+            The following values are recognized by OWCurve:
             
-            Points are drawn regardless of this setting, so it's possible to have both lines and points
-            on the same curve. 
+            ===================  ===============================================
+            Value                Result
+            ===================  ===============================================
+            OWCurve.Points       Only points are shown, no lines
+            OWCurve.Lines        A continuous line is shown, no points
+            OWCurve.LinesPoints  Both points and lines between them are shown
+            OWCurve.Dots         A dotted line is shown, no points
+            ===================  ===============================================
             
             Curve subclasses can use this value for different drawing modes. 
             Values up to OWCurve.UserCurve are reserved, so use only higher numbers, like the following example::

@@ -245,9 +245,9 @@ class OWLearningCurveC(OWWidget):
     def setGraphStyle(self, learner):
         curve = learner.curve
         if self.graphDrawLines:
-            curve.set_style(OWCurve.Lines)
+            curve.set_style(OWCurve.LinesPoints)
         else:
-            curve.set_style(OWCurve.NoCurve)
+            curve.set_style(OWCurve.Points)
         curve.set_symbol(OWPoint.Ellipse)
         curve.set_point_size(self.graphPointSize)
         curve.set_color(self.graph.color(OWPalette.Data))

@@ -80,34 +80,68 @@ void Curve::update_number_of_items()
 void Curve::update_properties()
 {
   cancel_all_updates();
-    
-  m_continuous = (m_style == Curve::Lines);
-  m_lineItem->setVisible(m_continuous);
   
-  if (m_continuous)
+  bool lines = false;
+  bool points = false;
+  
+  switch (m_style)
+  {
+      case Points:
+          points = true;
+          break;
+          
+      case Lines:
+      case Dots:
+          lines = true;
+          break;
+          
+      case LinesPoints:
+          lines = true;
+          points = true;
+          break;
+          
+      default:
+          lines = m_continuous;
+          points = !m_continuous;
+          break;
+  }
+  
+  m_lineItem->setVisible(lines);
+  
+  if (lines)
   {
     QPen p = m_pen;
     p.setCosmetic(true);
+    p.setStyle((Qt::PenStyle)m_style);
     m_lineItem->setPen(p);
     m_lineItem->setPath(continuous_path());
   } 
   
-  if (m_pointItems.size() != m_data.size())
+  if (points)
   {
-    update_number_of_items();
+    
+    if (m_pointItems.size() != m_data.size())
+    {
+        update_number_of_items();
+    }
+    
+    // Move, resize, reshape and/or recolor the items
+    if (m_needsUpdate & UpdatePosition)
+    {
+        update_point_coordinates();
+    } 
+    
+    if (m_needsUpdate & (UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
+    {
+        update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath), UpdateSymbol);
+    }
+    m_needsUpdate = 0;
   }
-  
-  // Move, resize, reshape and/or recolor the items
-  if (m_needsUpdate & UpdatePosition)
+  else
   {
-    update_point_coordinates();
-  } 
-  
-  if (m_needsUpdate & (UpdateBrush | UpdatePen | UpdateSize | UpdateSymbol) )
-  {
-    update_items(m_pointItems, PointUpdater(m_symbol, m_color, m_pointSize, Point::DisplayPath), UpdateSymbol);
+      qDeleteAll(m_pointItems);
+      m_pointItems.clear();
   }
-  m_needsUpdate = 0;
 }
 
 Point* Curve::point_item(double x, double y, int size, QGraphicsItem* parent)
