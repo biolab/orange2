@@ -26,10 +26,10 @@ from OWDlgs import OWChooseImageSizeDlg
 import orange
 
 import OpenGL
-OpenGL.ERROR_CHECKING = True # Turned off for performance improvement.
-OpenGL.ERROR_LOGGING = True
-OpenGL.FULL_LOGGING = True
-OpenGL.ERROR_ON_COPY = True  # TODO: enable this to check for unwanted copying (wrappers)
+OpenGL.ERROR_CHECKING = False # Turned off for performance improvement.
+OpenGL.ERROR_LOGGING = False
+OpenGL.FULL_LOGGING = False
+OpenGL.ERROR_ON_COPY = False  # TODO: enable this to check for unwanted copying (wrappers)
 from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_array_object import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
@@ -621,7 +621,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
         self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
-        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 

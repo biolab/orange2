@@ -20,6 +20,12 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
         self.show_axes = self.show_chassis = self.show_grid = False
 
         self.point_width = 5
+        self.animate_plot = False
+        self.animate_points = False
+        self.antialias_plot = False
+        self.antialias_points = False
+        self.antialias_lines = False
+        self.auto_adjust_performance = False
         self.alpha_value = 255
         self.show_filled_symbols = True
         self.use_antialiasing = True
@@ -30,16 +36,8 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
 
     def setData(self, data, subsetData=None, **args):
         orngScaleLinProjData3D.setData(self, data, subsetData, **args)
+        OWPlot3D.set_data(self, self.no_jittering_scaled_data, self.no_jittering_scaled_subset_data)
 
-    def updateData(self, labels=None, setAnchors=0, **args):
-        self.clear()
-
-        if not self.haveData or len(labels) < 3:
-            self.anchor_data = []
-            self.updateLayout()
-            return
-
-        # TODO: do this once (in constructor?)
         sphere_data = parse_obj(os.path.join(os.path.dirname(__file__), '../plot/primitives/sphere_hq.obj'))
         vertices = []
         for v0, v1, v2, n0, n1, n2 in sphere_data:
@@ -102,25 +100,34 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
         else:
             print('Sphere shader linked.')
 
-        if setAnchors:
-            self.setAnchors(args.get('XAnchors'), args.get('YAnchors'), args.get('ZAnchors'), labels)
+    def updateData(self, labels=None, setAnchors=0, **args):
+        print('updateData')
+        self.clear()
 
-        data_size = len(self.rawData)
-        indices = [self.attributeNameIndex[anchor[3]] for anchor in self.anchor_data]
-        valid_data = self.getValidList(indices)
-        trans_proj_data = self.createProjectionAsNumericArray(indices, validData=valid_data,
-            scaleFactor=self.scaleFactor, normalize=self.normalizeExamples, jitterSize=-1,
-            useAnchorData=1, removeMissingData=0)
-        if trans_proj_data == None:
-            return
-        proj_data = trans_proj_data.T
-        x_positions = proj_data[0]
-        y_positions = proj_data[1]
-        z_positions = proj_data[2]
+        #if not self.have_data or len(labels) < 3:
+            #self.anchor_data = []
+            #self.updateLayout()
+            #return
 
-        self.scatter(x_positions, y_positions, z_positions)
+        #if setAnchors:
+            #self.setAnchors(args.get('XAnchors'), args.get('YAnchors'), args.get('ZAnchors'), labels)
 
-        self.commands.append(('custom', self.draw_sphere_callback))
+        #data_size = len(self.rawData)
+        #indices = [self.attributeNameIndex[anchor[3]] for anchor in self.anchor_data]
+        #valid_data = self.getValidList(indices)
+        #trans_proj_data = self.createProjectionAsNumericArray(indices, validData=valid_data,
+            #scaleFactor=self.scaleFactor, normalize=self.normalizeExamples, jitterSize=-1,
+            #useAnchorData=1, removeMissingData=0)
+        #if trans_proj_data == None:
+            #return
+        #proj_data = trans_proj_data.T
+        #x_positions = proj_data[0]
+        #y_positions = proj_data[1]
+        #z_positions = proj_data[2]
+
+        #self.scatter(x_positions, y_positions, z_positions)
+
+        self.after_draw_callback = self.draw_sphere_callback
         self.updateGL()
 
     def updateGraph(self, attrList=None, setAnchors=0, insideColors=None, **args):
@@ -159,6 +166,16 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
 
     def setCanvasColor(self, c):
         pass
+
+    def color(self, role, group = None):
+        return None
+        #if group:
+            #return self.palette().color(group, role)
+        #else:
+            #return self.palette().color(role)
+
+    def set_palette(self, palette):
+        self.palette = palette
 
     def getSelectionsAsExampleTables(self, attrList, useAnchorData=1, addProjectedPositions=0):
         return (None, None)

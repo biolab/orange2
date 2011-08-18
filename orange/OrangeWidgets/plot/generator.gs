@@ -33,7 +33,7 @@ out float out_index;
 void main()
 {
     vec4 position = gl_in[0].gl_Position;
-    const float scale = 0.003;
+    const float scale = 0.001;
 
     out_index = position.x;
     int index = int(out_index * example_size);
