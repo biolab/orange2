@@ -689,14 +689,11 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
 #            painter.drawImage(self.transform(xBottom, -1), self.transform(yLeft, 1), self.potentialsImage)
         OWPlot.drawCanvas(self, painter)
         
-    def updateCurves(self):
-        for c in self.itemList():
-            if isinstance(c, OWCurve) and c not in self._extra_curves:
-                c.setPointSize(self.pointWidth)
-                color = c.color()
-                color.setAlpha(self.alphaValue)
-                c.setColor(color)
-                c.updateProperties()
+    def update_point_size(self):
+        if self.main_curve:
+            # We never have different sizes in LinProj
+            self.main_curve.set_point_sizes([self.pointWidth])
+        
 
 
 if __name__== "__main__":
