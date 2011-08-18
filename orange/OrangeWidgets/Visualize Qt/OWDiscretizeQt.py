@@ -29,7 +29,7 @@ class DiscGraph(OWPlot):
         self.baseCurveKey = None
         self.lookaheadCurveKey = None
         
-        self.add_axis(xBottom)
+        self.add_axis(xBottom, arrows=0)
         self.add_axis(yLeft, title_above=1)
         self.add_axis(yRight)
 

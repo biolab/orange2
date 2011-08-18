@@ -84,6 +84,8 @@ class OWDistributionGraphQt(OWPlot):
         self.probCurveKey = self.addCurve(xBottom, yRight, 0)
         self.probCurveUpperCIKey = self.addCurve(xBottom, yRight, 0)
         self.probCurveLowerCIKey = self.addCurve(xBottom, yRight, 0)
+        
+        self.axes[xBottom].arrows = 0
 
     def addCurve(self, xAxis = xBottom, yAxis = yLeft, visible = 1):
         curve = distribErrorBarCurve('')
