@@ -17,6 +17,8 @@ class OWParallelGraph(OWPlot, orngScaleData):
     def __init__(self, parallelDlg, parent = None, name = None):
         OWPlot.__init__(self, parent, name, axes = [], widget=parallelDlg)
         orngScaleData.__init__(self)
+        
+        self.update_antialiasing(False)
 
         self.parallelDlg = parallelDlg
         self.showDistributions = 0
@@ -38,7 +40,6 @@ class OWParallelGraph(OWPlot, orngScaleData):
         self.unselectedExamples = []
         self.bottomPixmap = QPixmap(os.path.join(orngEnviron.directoryNames["widgetDir"], "icons/upgreenarrow.png"))
         self.topPixmap = QPixmap(os.path.join(orngEnviron.directoryNames["widgetDir"], "icons/downgreenarrow.png"))
-        self.update_antialiasing(False)
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -543,8 +544,4 @@ class ParallelCoordinatesCurve(OWCurve):
                 x2, y2 = segment[i + 1]
                 path.moveTo(x1, y1)
                 path.cubicTo(QPointF(x1 + 0.5, y1), QPointF(x2 - 0.5, y2), QPointF(x2, y2))
-        return path        
-                
-                
-            
-
+        return path

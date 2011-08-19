@@ -28,7 +28,6 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         self.pointWidth = 8
         self.jitterContinuous = 0
         self.jitterSize = 5
-        self.showAxisScale = 1
         self.showXaxisTitle = 1
         self.showYLaxisTitle = 1
         self.showLegend = 1
@@ -66,7 +65,8 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
         self.shownYAttribute = yAttr
 
         if self.scaledData == None or len(self.scaledData) == 0:
-           # self.setAxisScale(xBottom, 0, 1, 1); self.setAxisScale(yLeft, 0, 1, 1)
+            self.setAxisScale(xBottom, 0, 1, 1); 
+            self.setAxisScale(yLeft, 0, 1, 1)
             self.setXaxisTitle(""); self.setYLaxisTitle("")
             self.oldLegendKeys = {}
             return

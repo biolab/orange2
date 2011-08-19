@@ -536,18 +536,24 @@ class OWPlot(orangeqt.Plot):
         self.replot()
 
     def setShowXaxisTitle(self, b = -1):
+        if b == -1 and hasattr(self, 'showXaxisTitle'):
+            b = self.showXaxisTitle
         self.setShowAxisTitle(xBottom, b)
         
     def setXaxisTitle(self, title):
         self.setAxisTitle(xBottom, title)
 
     def setShowYLaxisTitle(self, b = -1):
+        if b == -1 and hasattr(self, 'showYLaxisTitle'):
+            b = self.showYLaxisTitle
         self.setShowAxisTitle(yLeft, b)
 
     def setYLaxisTitle(self, title):
         self.setAxisTitle(yLeft, title)
 
     def setShowYRaxisTitle(self, b = -1):
+        if b == -1 and hasattr(self, 'showYRaxisTitle'):
+            b = self.showYRaxisTitle
         self.setShowAxisTitle(yRight, b)
 
     def setYRaxisTitle(self, title):
@@ -1508,10 +1514,9 @@ class OWPlot(orangeqt.Plot):
             
     def update_antialiasing(self, use_antialiasing=None):
         if use_antialiasing is not None:
-            self.use_antialiasing= use_antialiasing
+            self.antialias_plot = use_antialiasing
             
         self.setRenderHint(QPainter.Antialiasing, self.antialias_plot)
-        orangeqt.Point.clear_cache()
         
     def update_animations(self, use_animations=None):
         if use_animations is not None:

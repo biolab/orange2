@@ -22,7 +22,7 @@ from plot.owcurve import *
 ###########################################################################################
 class OWScatterPlotQt(OWWidget):
     settingsList = ["graph." + s for s in OWPlot.point_settings + OWPlot.appearance_settings] + [
-                    "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
+                    "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines",
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
                     "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
                     "colorSettings", "selectedSchemaIndex", "VizRankLearnerName"]
@@ -58,6 +58,8 @@ class OWScatterPlotQt(OWWidget):
 
         #load settings
         self.loadSettings()
+        self.graph.setShowXaxisTitle()
+        self.graph.setShowYLaxisTitle()
 
         #GUI
         self.tabs = OWGUI.tabWidget(self.controlArea)
@@ -118,7 +120,6 @@ class OWScatterPlotQt(OWWidget):
         box4 = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
-        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         
         g.add_widgets([g.ShowLegend, g.ShowFilledSymbols, g.ShowGridLines], box4)
         

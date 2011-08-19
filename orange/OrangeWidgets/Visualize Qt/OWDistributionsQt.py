@@ -449,6 +449,9 @@ class OWDistributionsQt(OWWidget):
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         
         self.loadSettings()
+        self.setShowXaxisTitle()
+        self.setShowYaxisTitle()
+        self.setShowYPaxisTitle()
 
         self.barSize = 50
 
