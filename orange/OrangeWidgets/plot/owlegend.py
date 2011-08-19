@@ -96,6 +96,11 @@ class OWLegendGradient(QGraphicsObject):
         self.values = values
         self.legend = parent
         self.label_items = [QGraphicsTextItem(text, self) for text in values]
+        for i in self.label_items:
+            i.setTextWidth(50)
+            
+        self.rect = QRectF()
+            
         self.gradient_item = QGraphicsRectItem(self)
         self.gradient = QLinearGradient()
         self.gradient.setStops([(v*0.1, self.palette[v*0.1]) for v in range(11) ])
@@ -108,10 +113,10 @@ class OWLegendGradient(QGraphicsObject):
             
         self.orientation = orientation
         
-        if orientation == Qt.Vertical or True: ## TODO: Implement a horizontal version
-            height = self.label_items[0].boundingRect().height()
+        if self.orientation == Qt.Vertical:
+            height = max([item.boundingRect().height() for item in self.label_items])
             total_height = height * max(5, len(self.label_items))
-            interval = (total_height - self.label_items[0].boundingRect().height()) / (len(self.label_items) -1)
+            interval = (total_height - self.label_items[-1].boundingRect().height()) / (len(self.label_items) -1)
             self.gradient_item.setRect(10, 0, self.gradient_width, total_height)
             self.gradient.setStart(10, 0)
             self.gradient.setFinalStop(10, total_height)
@@ -122,12 +127,27 @@ class OWLegendGradient(QGraphicsObject):
             for item in self.label_items:
                 move_item_xy(item, x, y)
                 y += interval
-                
-    def boundingRect(self):
-        if self.orientation == Qt.Vertical:
-            return QRectF(10, 0, self.gradient_width + max([item.boundingRect().width() for item in self.label_items]), self.label_items[0].boundingRect().height() * max(5, len(self.label_items)))
+            self.rect = QRectF(10, 0, self.gradient_width + max([item.boundingRect().width() for item in self.label_items]), self.label_items[0].boundingRect().height() * max(5, len(self.label_items)))
         else:
-            return QRectF()
+            width = 50
+            height = max([item.boundingRect().height() for item in self.label_items])
+            total_width = width * max(5, len(self.label_items))
+            interval = (total_width - self.label_items[-1].boundingRect().width()) / (len(self.label_items) -1)
+            
+            self.gradient_item.setRect(0, 0, total_width, self.gradient_width)
+            self.gradient.setStart(0, 0)
+            self.gradient.setFinalStop(total_width, 0)
+            self.gradient_item.setBrush(QBrush(self.gradient))
+            self.gradient_item.setPen(QPen(Qt.NoPen))
+            x = 0
+            y = 30
+            for item in self.label_items:
+                move_item_xy(item, x, y)
+                x += interval
+            self.rect = QRectF(0, 0, total_width, self.gradient_width + height)
+  
+    def boundingRect(self):
+        return getattr(self, 'rect', QRectF())
         
     def paint(self, painter, option, widget):
         pass
