@@ -1536,14 +1536,16 @@ class OWPlot(orangeqt.Plot):
                 self.antialias_lines = True
             qDebug(repr(self.animate_points))
         
-    def animate(self, target, prop_name, end_val, duration = None):
+    def animate(self, target, prop_name, end_val, duration = None, start_val = None):
         for a in self._animations:
             if a.state() == QPropertyAnimation.Stopped:
                 self._animations.remove(a)
         if self.animate_plot:
             a = QPropertyAnimation(target, prop_name)
-            a.setStartValue(target.property(prop_name))
             a.setEndValue(end_val)
+            if start_val is not None:
+                a.setStartValue(start_val)
+            qDebug('Animating %s from %s to %s' % (prop_name, repr(a.startValue()), repr(a.endValue())))
             if duration:
                 a.setDuration(duration)
             self._animations.append(a)
@@ -1575,12 +1577,12 @@ class OWPlot(orangeqt.Plot):
     def zoom_to_rect(self, rect):
         self.ensure_inside(rect, self.graph_area)
         self.zoom_stack.append(self.zoom_rect)
-        self.animate(self, 'zoom_rect', rect)
+        self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
         
     def zoom_back(self):
         if self.zoom_stack:
             rect = self.zoom_stack.pop()
-            self.animate(self, 'zoom_rect', rect)
+            self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
 
     def reset_zoom(self):
         qDebug('Resetting zoom')
@@ -1608,9 +1610,13 @@ class OWPlot(orangeqt.Plot):
         self.zoom_to_rect(r)
         
     def get_zoom_rect(self):
-        return self._zoom_rect if self._zoom_rect else self.graph_area
+        if self._zoom_rect:
+            return self._zoom_rect
+        else:
+            return self.graph_area
         
     def set_zoom_rect(self, rect):
+	qDebug('Set zoom rect to ' + repr(rect))
         self._zoom_rect = rect
         self._zoom_transform = self.transform_from_rects(rect, self.graph_area)
         self.update_zoom()
