@@ -1,5 +1,5 @@
 """
-<name>RadViz 3D</name>
+<name>Sphereviz 3D</name>
 <icon>icons/Radviz.png</icon>
 <priority>2000</priority>
 """
@@ -12,7 +12,7 @@ from plot.owprimitives3d import parse_obj
 from plot.owplotgui import OWPlotGUI
 from OWLinProjQt import *
 
-class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
+class OWSphereviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
     def __init__(self, widget, parent=None, name='None'):
         OWPlot3D.__init__(self, parent)
         orngScaleLinProjData3D.__init__(self)
@@ -250,7 +250,7 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
 
         def before_draw_callback():
             # Override modelview (scatterplot points camera somewhat below the center, which doesn't
-            # look good with radviz sphere)
+            # look good with sphere)
             modelview = QMatrix4x4()
             modelview.lookAt(
                 QVector3D(self.camera[0]*self.camera_distance,
@@ -407,11 +407,11 @@ class OWRadviz3DPlot(OWPlot3D, orngScaleLinProjData3D):
 
     # TODO: catch mouseEvents
 
-class OWRadviz3D(OWLinProjQt):
+class OWSphereviz3D(OWLinProjQt):
     settingsList = ['showAllAttributes']
 
     def __init__(self, parent=None, signalManager=None):
-        OWLinProjQt.__init__(self, parent, signalManager, "Radviz", graphClass=OWRadviz3DPlot)
+        OWLinProjQt.__init__(self, parent, signalManager, "Sphereviz 3D", graphClass=OWSphereviz3DPlot)
 
         self.inputs = [("Examples", ExampleTable, self.setData, Default),
                        ("Example Subset", ExampleTable, self.setSubsetData),
@@ -425,9 +425,9 @@ class OWRadviz3D(OWLinProjQt):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    radviz = OWRadviz3D()
-    radviz.show()
+    viz = OWSphereviz3D()
+    viz.show()
     data = orange.ExampleTable('../../doc/datasets/iris')
-    radviz.setData(data)
-    radviz.handleNewSignals()
+    viz.setData(data)
+    viz.handleNewSignals()
     app.exec_()

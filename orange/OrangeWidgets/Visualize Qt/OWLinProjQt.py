@@ -89,7 +89,7 @@ class OWLinProjQt(OWVisWidget):
 ##        self.graph.clusterOptimization = self.clusterDlg
 
         # optimization dialog
-        if "radviz" in name.lower():
+        if "radviz" in name.lower() or "sphereviz" in name.lower():
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
         elif "polyviz" in name.lower():
@@ -101,7 +101,7 @@ class OWLinProjQt(OWVisWidget):
 
         self.optimizationDlg = self.vizrank  # for backward compatibility
 
-        self.graph.normalizeExamples = ("radviz" in name.lower())       # ignore settings!! if we have radviz then normalize, otherwise not.
+        self.graph.normalizeExamples = ("radviz" in name.lower() or "sphereviz" in name.lower())       # ignore settings!! if we have radviz then normalize, otherwise not.
 
         #GUI
         # add a settings dialog and initialize its values
@@ -119,7 +119,7 @@ class OWLinProjQt(OWVisWidget):
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
-        if "radviz" in name.lower() or "linear projection" in name.lower():
+        if "radviz" in name.lower() "sphereviz" in name.lower() or "linear projection" in name.lower():
             self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
             self.wdChildDialogs.append(self.freeVizDlg)
             self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
