@@ -2,10 +2,10 @@
 # a vfat file-system (not common, but I need it)
 # (This is needed because vfat doesn't support symbolic links)
 ifndef ORANGE_LIBDIR
-  ORANGE_LIBDIR=../..
+  ORANGE_LIBDIR=..
 endif
 
-MODULES=include orange orangeom orangene corn statc
+MODULES=include orange orangeom orangene corn statc orangeqt
 ACTIONS=all clean cleantemp
 
 $(ACTIONS):
