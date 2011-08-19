@@ -1412,7 +1412,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 								}
 
 								PyDict_SetItemString(vData, words[i].c_str(),
-										PyUnicode_FromString(words[i+1].c_str()));
+										PyString_FromString(words[i+1].c_str()));
 								i += 2;
 							}
 						}
@@ -1451,7 +1451,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 							int i = 3;
 							while(i+1<n) {
 								PyDict_SetItemString(aData, words[i].c_str(),
-										PyUnicode_FromString(words[i+1].c_str()));
+										PyString_FromString(words[i+1].c_str()));
 								i += 2;
 							}
 
@@ -1501,7 +1501,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 						int i = 3;
 						while(i+1<n) {
 							PyDict_SetItemString(eData, words[i].c_str(),
-									PyUnicode_FromString(words[i+1].c_str()));
+									PyString_FromString(words[i+1].c_str()));
 							i += 2;
 						}
 
