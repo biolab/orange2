@@ -1102,6 +1102,9 @@ class OWPlot(orangeqt.Plot):
     def resizeEvent(self, event):
         self.replot()
 
+    def showEvent(self, event):
+        self.replot()
+
     def mousePressEvent(self, event):
         self.static_click = True
         self._pressed_mouse_button = event.button()
