@@ -14,7 +14,7 @@ import Orange
 import Orange.multilabel.label as label
 
 class OWMLkNN(OWWidget):
-    settingsList = ["name","k"]
+    settingsList = ["name", "k", "smooth"]
 
     def __init__(self, parent=None, signalManager = None, name='ML-kNN'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
@@ -29,6 +29,7 @@ class OWMLkNN(OWWidget):
         # Settings
         self.name = 'ML-kNN'
         self.k = 1
+        self.smooth = 1.0
         
         self.loadSettings()
 
@@ -45,6 +46,14 @@ class OWMLkNN(OWWidget):
         wbN = OWGUI.widgetBox(self.controlArea, "Neighbours")
         OWGUI.spin(wbN, self, "k", 1, 100, 1, None, "Number of neighbours", orientation="horizontal")
         
+        OWGUI.separator(self.controlArea)
+        OWGUI.widgetLabel(self.controlArea, 'Smoothing parameter')
+        kernelSizeValid = QDoubleValidator(self.controlArea)
+        kernelSizeValid.setRange(0,10,3)
+        OWGUI.lineEdit(self.controlArea, self, 'smooth',
+                       tooltip='Smoothing parameter controlling the strength of uniform prior (Default value is set to 1 which yields the Laplace smoothing).',
+                       valueType = float, validator = kernelSizeValid)
+                       
         OWGUI.separator(self.controlArea)
 
         OWGUI.button(self.controlArea, self, "&Apply", callback=self.set_learner, disabled=0, default=True)
@@ -73,7 +82,7 @@ class OWMLkNN(OWWidget):
         self.set_learner()
          
     def set_learner(self):
-        self.learner = Orange.multilabel.MLkNNLearner(k = self.k)
+        self.learner = Orange.multilabel.MLkNNLearner(k = self.k, smooth = self.smooth)
         if self.preprocessor:
             self.learner = self.preprocessor.wrapLearner(self.learner)
         self.learner.name = self.name
