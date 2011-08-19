@@ -12,7 +12,6 @@ uniform int size_index;
 
 uniform bool use_2d_symbols;
 
-uniform float seed;
 uniform float jitter_size;
 uniform bool jitter_continuous;
 uniform bool x_discrete;

@@ -401,6 +401,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.hide_outside = False
 
         self.build_axes()
+        
+        self.data = None
 
     def __del__(self):
         # TODO: never reached!
@@ -411,6 +413,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             glDeleteBuffers(1, self.data_buffer)
 
     def initializeGL(self):
+        if hasattr(self, 'generating_program'):
+            return
+        self.makeCurrent()
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glClearDepth(1.0)
         glDepthFunc(GL_LESS)
@@ -590,12 +595,12 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         return modelview, projection
 
     def paintGL(self):
-        if not self.feedback_generated:
-            return
-
         glViewport(0, 0, self.width(), self.height())
         glClearColor(*self._theme.background_color)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        if not self.feedback_generated:
+            return
 
         modelview, projection = self.get_mvp()
         self.modelview = modelview
@@ -945,7 +950,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.generating_program.setUniformValue('x_index', x_index)
         self.generating_program.setUniformValue('y_index', y_index)
         self.generating_program.setUniformValue('z_index', z_index)
-        self.generating_program.setUniformValue('seed', time.time())
         self.generating_program.setUniformValue('jitter_size', jitter_size)
         self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
         self.generating_program.setUniformValue('x_discrete', x_discrete)
@@ -997,6 +1001,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
     def set_data(self, data, subset_data=None):
         self.makeCurrent()
+        #if self.data != None:
+            #TODO: glDeleteBuffers(1, self.data_buffer)
         start = time.time()
 
         data_array = numpy.array(data.transpose().flatten(), dtype='f')
