@@ -108,7 +108,7 @@ class OWLegendGradient(QGraphicsObject):
             
         self.orientation = orientation
         
-        if orientation == Qt.Vertical:
+        if orientation == Qt.Vertical or True: ## TODO: Implement a horizontal version
             height = self.label_items[0].boundingRect().height()
             total_height = height * max(5, len(self.label_items))
             interval = (total_height - self.label_items[0].boundingRect().height()) / (len(self.label_items) -1)
@@ -127,7 +127,7 @@ class OWLegendGradient(QGraphicsObject):
         if self.orientation == Qt.Vertical:
             return QRectF(10, 0, self.gradient_width + max([item.boundingRect().width() for item in self.label_items]), self.label_items[0].boundingRect().height() * max(5, len(self.label_items)))
         else:
-            return QRectF(0, 0, )
+            return QRectF()
         
     def paint(self, painter, option, widget):
         pass

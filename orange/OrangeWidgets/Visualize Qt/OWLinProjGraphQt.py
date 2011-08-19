@@ -75,6 +75,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         self.value_line_curves = []
         self.potentialsCurve = None
 
+        self.warn_unused_attributes = True
+
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
         orngScaleLinProjData.setData(self, data, subsetData, **args)

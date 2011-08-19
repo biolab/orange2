@@ -351,6 +351,8 @@ class OWPlot(orangeqt.Plot):
         self.auto_adjust_performance = True
         self.disable_animations_threshold = 5000
      #   self.setInteractive(False)
+
+        self.warn_unused_attributes = False
         
         self._bounds_cache = {}
         self._transform_cache = {}
@@ -885,26 +887,13 @@ class OWPlot(orangeqt.Plot):
             self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
             graph_rect.setTop(graph_rect.top() + self.title_margin)
         
-        self._legend_outside_area = QRectF(graph_rect)
-        self._legend.max_size = self._legend_outside_area.size()
-        
         if self.show_legend:
-            self._legend.show()
-            if not self._legend_moved:
-                ## If the legend hasn't been moved it, we set it outside, in the top right corner
-                w = self._legend.boundingRect().width()
-                self._legend_margin = QRectF(0, 0, w, 0)
-                self._legend.setPos(graph_rect.topRight() + QPointF(-w, 0))
-                self._legend.set_floating(False)
-                self._legend.set_orientation(Qt.Vertical)
-            
-            ## Adjust for possible external legend:
+            self._legend_outside_area = QRectF(graph_rect)
+            self._legend.max_size = self._legend_outside_area.size()
             r = self._legend_margin
             graph_rect.adjust(r.left(), r.top(), -r.right(), -r.bottom())
-        else:
-            self._legend.hide()
             
-        self._legend.update()
+        self._legend.update_items()
             
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
@@ -973,7 +962,7 @@ class OWPlot(orangeqt.Plot):
             If ``zoom_only`` is ``True``, only the positions of the axes and their labels are recalculated. 
             Otherwise, all their labels are updated. 
         """
-        if not zoom_only:
+        if self.warn_unused_attributes and not zoom_only:
             self._legend.remove_category(UNUSED_ATTRIBUTES_STR)
             
         for id, item in self.axes.iteritems():
@@ -1005,7 +994,8 @@ class OWPlot(orangeqt.Plot):
                     item.show()
                 else:
                     item.hide()
-                    self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
+                    if self.warn_unused_attributes:
+                        self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
             item.zoom_transform = self._zoom_transform
             item.update(zoom_only)
         
@@ -1029,6 +1019,20 @@ class OWPlot(orangeqt.Plot):
         self.viewport().update()
         
     def update_legend(self):
+        if self.show_legend and not self._legend_moved:
+            ## If the legend hasn't been moved it, we set it outside, in the top right corner
+            m = self.graph_margin
+            r = QRectF(self.contentsRect())
+            r.adjust(m, m, -m, -m)
+            self._legend.max_size = r.size()
+            self._legend.update_items()
+            w = self._legend.boundingRect().width()
+            self._legend_margin = QRectF(0, 0, w, 0)
+            self._legend.set_floating(False)
+            self._legend.set_orientation(Qt.Vertical)
+            self._legend.setPos(QRectF(self.contentsRect()).topRight() + QPointF(-w, 0))
+            
+        
         if (self._legend.isVisible() == self.show_legend):
             return
             
@@ -1097,7 +1101,7 @@ class OWPlot(orangeqt.Plot):
     ## Event handling
     def resizeEvent(self, event):
         self.replot()
-        
+
     def mousePressEvent(self, event):
         self.static_click = True
         self._pressed_mouse_button = event.button()
@@ -1539,7 +1543,6 @@ class OWPlot(orangeqt.Plot):
                 self.animate_points = True
                 self.animate_plot = True
                 self.antialias_lines = True
-            qDebug(repr(self.animate_points))
         
     def animate(self, target, prop_name, end_val, duration = None, start_val = None):
         for a in self._animations:
@@ -1550,7 +1553,6 @@ class OWPlot(orangeqt.Plot):
             a.setEndValue(end_val)
             if start_val is not None:
                 a.setStartValue(start_val)
-            qDebug('Animating %s from %s to %s' % (prop_name, repr(a.startValue()), repr(a.endValue())))
             if duration:
                 a.setDuration(duration)
             self._animations.append(a)
@@ -1621,7 +1623,6 @@ class OWPlot(orangeqt.Plot):
             return self.graph_area
         
     def set_zoom_rect(self, rect):
-	qDebug('Set zoom rect to ' + repr(rect))
         self._zoom_rect = rect
         self._zoom_transform = self.transform_from_rects(rect, self.graph_area)
         self.update_zoom()
