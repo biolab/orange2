@@ -32,6 +32,88 @@ tree-building process.
 .. autoclass:: TreeClassifier
     :members:
 
+.. class:: Node
+
+    Classification trees are represented as a tree-like hierarchy of
+    :obj:`Node` classes.
+
+    Node stores the instances belonging to the node, a branch selector,
+    a list of branches (if the node is not a leaf) with their descriptions
+    and strengths, and a classifier.
+
+    .. attribute:: distribution
+    
+        A distribution for learning instances in the
+        node.
+
+    .. attribute:: contingency
+
+        Complete contingency matrices for the learning instances
+        in the node.
+
+    .. attribute:: examples, weightID
+
+        Learning instancess for the node and the corresponding ID
+        of weight meta attribute. The root of the tree stores all
+        instances, while other nodes store only reference to instances
+        in the root node.
+
+    .. attribute:: node_classifier
+
+        A classifier (usually a :obj:`DefaultClassifier`) that can be used
+        to classify instances coming to the node. If the node is a leaf,
+        this is used to decide the final class (or class distribution)
+        of an instance. If it's an internal node, it is stored if
+        :obj:`Node`'s flag :obj:`store_node_classifier` is set. Since
+        the :obj:`node_classifier` is needed by :obj:`Descender` and
+        for pruning (see far below), this is the default behaviour;
+        space consumption of the default :obj:`DefaultClassifier` is
+        rather small. You should never disable this if you intend to
+        prune the tree later.
+
+    If the node is a leaf, the remaining fields are None. If it's
+    an internal node, there are several additional fields. The lists
+    :obj:`branches`, :obj:`branch_descriptions` and :obj:`branch_sizes`
+    are of the same length.
+
+    .. attribute:: branches
+
+        Stores a list of subtrees, given as :obj:`Node`.  An element
+        can be None; in this case the node is empty.
+
+    .. attribute:: branch_descriptions
+
+        A list with string descriptions for branches, constructed by
+        :obj:`SplitConstructor`. It can contain different kinds of
+        descriptions, but basically, expect things like 'red' or '>12.3'.
+
+    .. attribute:: branch_sizes
+
+        Gives a (weighted) number of training instances that went into
+        each branch. This can be used later, for instance, for modeling
+        probabilities when classifying instances with unknown values.
+
+    .. attribute:: branch_selector
+
+        Gives a branch for each instance. The same object is used
+        during learning and classifying. The :obj:`branch_selector`
+        is of type :obj:`Orange.classification.Classifier`, since its job is
+        similar to that of a classifier: it gets an instance and
+        returns discrete :obj:`Orange.data.Value` in range :samp:`[0,
+        len(branches)-1]`.  When an instance cannot be classified to
+        any branch, the selector can return a :obj:`Orange.data.Value`
+        containing a special value (sVal) which should be a discrete
+        distribution (DiscDistribution). This should represent a
+        :obj:`branch_selector`'s opinion of how to divide the instance
+        between the branches. Whether the proposition will be used or not
+        depends upon the chosen :obj:`Splitter` (when learning)
+        or :obj:`Descender` (when classifying).
+
+    .. method:: tree_size()
+        
+        Return the number of nodes in the subtrees (including the node,
+        excluding null-nodes).
+
 
 
 ========
@@ -96,12 +178,12 @@ uses `lenses.tab`_).
 Don't waste time on studying formatting tricks (\n's etc.), this is just
 for nicer output. What matters is everything but the print statements.
 As first, we check whether the node is a null-node (a node to which no
-learning examples were classified). If this is so, we just print out
+learning instances were classified). If this is so, we just print out
 "<null node>" and return.
 
 After handling null nodes, remaining nodes are internal nodes and
 leaves.  For internal nodes, we print a node description consisting
-of the attribute's name and distribution of classes. :obj:`Node`'s
+of the feature's name and distribution of classes. :obj:`Node`'s
 branch description is, for all currently defined splits, an instance
 of a class derived from :obj:`Orange.classification.Classifier` 
 (in fact, it is
@@ -113,7 +195,7 @@ branches; for each we print a branch description and iteratively call the
 :obj:`printTree0` with a level increased by 1 (to increase the indent).
 
 Finally, if the node is a leaf, we print out the distribution of learning
-examples in the node and the class to which the examples in the node
+instances in the node and the class to which the instances in the node
 would be classified. We again assume that the :obj:`~Node.node_classifier` is
 the default one - a :obj:`DefaultClassifier`. A better print function
 should be aware of possible alternatives.
@@ -225,12 +307,12 @@ We can now examine the default stopping parameters.
     >>> print learner.stop.max_majority, learner.stop.min_examples
     1.0 0.0
 
-Not very restrictive. This keeps splitting the examples until there's
-nothing left to split or all the examples are in the same class. Let us
-set the minimal subset that we allow to be split to five examples and
+Not very restrictive. This keeps splitting the instances until there's
+nothing left to split or all the instances are in the same class. Let us
+set the minimal subset that we allow to be split to five instances and
 see what comes out.
 
-    >>> learner.stop.min_examples = 5.0
+    >>> learner.stop.min_instances = 5.0
     >>> tree = learner(data)
     >>> print tree.dump()
     tear_rate=reduced: none (100.00%)
@@ -256,207 +338,98 @@ the maximal proportion of majority class.
 Learner and Classifier Components
 =================================
 
-Classification trees are represented as a tree-like hierarchy of
-:obj:`Node` classes.
-
-Classes :obj:`SplitConstructor`, :obj:`StopCriteria`,
-:obj:`ExampleSplitter`, :obj:`Descender` can be subtyped in Python. You
-can thus program your own components based on these classes (TODO).
-
-.. class:: Node
-
-    Node stores the instances belonging to the node, a branch selector,
-    a list of branches (if the node is not a leaf) with their descriptions
-    and strengths, and a classifier.
-
-    .. attribute:: distribution
-    
-        A distribution for learning instances in the
-        node.
-
-    .. attribute:: contingency
-
-        Complete contingency matrices for the learning instances
-        in the node.
-
-    .. attribute:: examples, weightID
-
-        Learning instancess for the node and the corresponding ID
-        of weight meta attribute. The root of the tree stores all
-        instances, while other nodes store only reference to instances
-        in the root node.
-
-    .. attribute:: node_classifier
-
-        A classifier (usually a :obj:`DefaultClassifier`) that can be used
-        to classify instances coming to the node. If the node is a leaf,
-        this is used to decide the final class (or class distribution)
-        of an instance. If it's an internal node, it is stored if
-        :obj:`Node`'s flag :obj:`store_node_classifier` is set. Since
-        the :obj:`node_classifier` is needed by :obj:`Descender` and
-        for pruning (see far below), this is the default behaviour;
-        space consumption of the default :obj:`DefaultClassifier` is
-        rather small. You should never disable this if you intend to
-        prune the tree later.
-
-    If the node is a leaf, the remaining fields are None. If it's
-    an internal node, there are several additional fields. The lists
-    :obj:`branches`, :obj:`branch_descriptions` and :obj:`branch_sizes`
-    are of the same length.
-
-    .. attribute:: branches
-
-        Stores a list of subtrees, given as :obj:`Node`.  An element
-        can be None; in this case the node is empty.
-
-    .. attribute:: branch_descriptions
-
-        A list with string descriptions for branches, constructed by
-        :obj:`SplitConstructor`. It can contain different kinds of
-        descriptions, but basically, expect things like 'red' or '>12.3'.
-
-    .. attribute:: branch_sizes
-
-        Gives a (weighted) number of training instances that went into
-        each branch. This can be used later, for instance, for modeling
-        probabilities when classifying instances with unknown values.
-
-    .. attribute:: branch_selector
-
-        Gives a branch for each instance. The same object is used
-        during learning and classifying. The :obj:`branch_selector`
-        is of type :obj:`Orange.classification.Classifier`, since its job is
-        similar to that of a classifier: it gets an instance and
-        returns discrete :obj:`Orange.data.Value` in range :samp:`[0,
-        len(branches)-1]`.  When an instance cannot be classified to
-        any branch, the selector can return a :obj:`Orange.data.Value`
-        containing a special value (sVal) which should be a discrete
-        distribution (DiscDistribution). This should represent a
-        :obj:`branch_selector`'s opinion of how to divide the instance
-        between the branches. Whether the proposition will be used or not
-        depends upon the chosen :obj:`ExampleSplitter` (when learning)
-        or :obj:`Descender` (when classifying).
-
-    .. method:: tree_size()
-        
-        Return the number of nodes in the subtrees (including the node,
-        excluding null-nodes).
-
-
 Split constructors
 =====================
 
-Split construction is almost as exciting as waiting for a delayed flight.
-Boring, that is. Split constructors juggle with contingency matrices,
-with separate cases for discrete and continuous classes... Most split
-constructors work either for discrete or for continuous attributes. We
-suggest to use a :obj:`SplitConstructor_Combined` that delegates
-attributes to specialized split constructors.
-
-Split constructors that cannot handle attributes of particular
-type (discrete, continuous) do not report an error or a warning but
-simply skip the attribute. It is your responsibility to use a correct
-split constructor for your dataset. (May we again suggest using
-:obj:`SplitConstructor_Combined`?)
+Split constructors that cannot handle features of particular type
+(discrete, continuous) quitely skip them. Therefore use
+a correct split constructor for your dataset. We suggest a
+:obj:`SplitConstructor_Combined` that delegates features to specialized
+split constructors.
 
 The same components can be used either for inducing classification and
 regression trees. The only component that needs to be chosen accordingly
-is the 'measure' attribute for the :obj:`SplitConstructor_Measure` class
+is the 'measure' attribute for the :obj:`SplitConstructor_Score` class
 (and derived classes).
 
 .. class:: SplitConstructor
 
     Finds a suitable criteria for dividing the learning (and later
-    testing) examples coming to the node. The data it gets is a set of
-    examples (and, optionally, an ID of weight meta-attribute), a domain
-    contingency computed from examples, apriori class probabilities, a
-    list of candidate attributes it should consider and a node classifier
-    (if it was constructed, that is, if :obj:`store_node_classifier`
-    is left true).
+    testing) instances. 
+    
+    The :obj:`SplitConstructor` should use the domain contingency when
+    possible, both because it's faster and because the contingency
+    matrices are not necessarily constructed by simply counting the
+    instances. There are, however, cases when domain contingency does not
+    suffice; for example if ReliefF is used to score features.
 
-    The :obj:`SplitConstructor` should use the domain contingency
-    when possible. The reasons are two-fold; one is that it's faster
-    and the other is that the contingency matrices are not necessarily
-    constructed by simply counting the examples. Why and how is
-    explained later. There are, however, cases, when domain contingency
-    does not suffice, for examples, when ReliefF is used as a measure
-    of quality of attributes. In this case, there's no other way but to
-    use the examples and ignore the precomputed contingencies.
+    :obj:`SplitConstructor` returns a classifier to be used as
+    :obj:`Node`'s :obj:`~Node.branch_selector`, a list of branch descriptions
+    a list with the number of instances that go into each branch
+    (if empty, the :obj:`TreeLearner` will find the number itself after
+    splitting the instances into subsets), a split quality (a number without
+    any fixed meaning except that higher numbers mean better splits).
 
-    :obj:`SplitConstructor` returns most of the data we talked
-    about when describing the :obj:`Node`. It returns a classifier
-    to be used as :obj:`Node`'s :obj:`branch_selector`, a list of branch
-    descriptions and a list with the number of examples that go into
-    each branch. Just what we need for the :obj:`Node`.  It can return
-    an empty list for the number of examples in branches; in this case,
-    the :obj:`TreeLearner` will find the number itself after splitting
-    the example set into subsets. However, if a split constructors can
-    provide the numbers at no extra computational cost, it should do so.
-
-    In addition, it returns a quality of the split; a number without
-    any fixed meaning except that higher numbers mean better splits.
-
-    If the constructed splitting criterion uses an attribute in such
-    a way that the attribute is 'completely spent' and should not be
+    If the constructed splitting criterion uses a feature in such
+    a way that the feature will be useless in the future and should not be
     considered as a split criterion in any of the subtrees (the typical
-    case of this are discrete attributes that are used as-they-are, that
-    is, without any binarization or subsetting), then it should report
-    the index of this attribute. Some splits do not spend any attribute;
+    case of this are discrete features that are used as-they-are,
+    without any binarization or subsetting), then it should report
+    the index of this feature. Some splits do not spend any features;
     this is indicated by returning a negative index.
 
     A :obj:`SplitConstructor` can veto the further tree induction
     by returning no classifier. This can happen for many reasons.
-    A general one is related to number of examples in the branches.
+    A general one is related to number of instances in the branches.
     :obj:`SplitConstructor` has a field :obj:`min_subset`, which sets
-    the minimal number of examples in a branch; null nodes, however,
+    the minimal number of instances in a branch; null nodes
     are allowed. If there is no split where this condition is met,
     :obj:`SplitConstructor` stops the induction.
 
     .. attribute:: min_subset
 
-        Sets the minimal number of examples in non-null leaves. As
-        always in Orange (where not specified otherwise), "number of 
-        examples" refers to the weighted number of examples.
-    
-    .. method:: __call__(examples, [weightID=0, apriori_distribution, candidates]) 
+        The minimal number of (weighted) in non-null leaves.
 
-        Construct a split. Returns a tuple (:obj:`branch_selector`,
-        :obj:`branch_descriptions`, :obj:`subsetSizes`, :obj:`quality`,
-        :obj:`spentAttribute`). :obj:`spentAttribute` is -1 if no
-        attribute is completely spent by the split criterion. If no
-        split is constructed, the :obj:`selector`, :obj:`branch_descriptions`
-        and :obj:`subsetSizes` are None, while :obj:`quality` is 0.0 and
-        :obj:`spentAttribute` is -1.
+    .. method:: __call__(instances, [ weightID, contingency, apriori_distribution, candidates, clsfr]) 
 
-        :param examples:  Examples can be given in any acceptable form
+        :param instances:  Examples can be given in any acceptable form
             (an :obj:`ExampleGenerator`, such as :obj:`ExampleTable`, or a
-            list of examples).
+            list of instances).
         :param weightID: Optional; the default of 0 means that all
-            examples have a weight of 1.0. 
-        :param apriori-distribution: Should be of type 
-            :obj:`Orange.statistics.distribution.Distribution` and candidates should be a Python 
-            list of objects which are interpreted as booleans.
+            instances have a weight of 1.0. 
+        :param contingency: a domain contingency
+        :param apriori_distribution: apriori class probabilities.
+        :type apriori_distribution: :obj:`Orange.statistics.distribution.Distribution`
         :param candidates: The split constructor should consider only 
-            the attributes in the candidate list (one boolean for each
-            attribute).
+            the features in the candidate list (one boolean for each
+            feature).
+        :param clsfr: a node classifier (if it was constructed, that is, 
+            if :obj:`store_node_classifier` is True) 
 
+        Construct a split. Return a tuple (:obj:`branch_selector`,
+        :obj:`branch_descriptions`, :obj:`subset_sizes`, :obj:`quality`,
+        :obj:`spent_feature`). :obj:`spent_feature` is -1 if no
+        feature is completely spent by the split criterion. If no
+        split is constructed, the :obj:`selector`, :obj:`branch_descriptions`
+        and :obj:`subset_sizes` are None, while :obj:`quality` is 0.0 and
+        :obj:`spent_feature` is -1. 
 
-.. class:: SplitConstructor_Measure
+.. class:: SplitConstructor_Score
 
     Bases: :class:`SplitConstructor`
 
     An abstract base class for split constructors that employ
-    a :class:`Orange.feature.scoring.Measure` to assess a
+    a :class:`Orange.feature.scoring.Score` to assess a
     quality of a split.  All split constructors except for
     :obj:`SplitConstructor_Combined` are derived from this class.
 
     .. attribute:: measure
 
-        A component of type :class:`Orange.feature.scoring.Measure`
+        A component of type :class:`Orange.feature.scoring.Score`
         used for split evaluation. You must select a
-        :class:`Orange.feature.scoring.Measure` capable of
+        :class:`Orange.feature.scoring.Score` capable of
         handling your class type - for example, you cannot use
-        :class:`Orange.feature.scoring.GainRatio` for building regression
+        :class:`Orange.feature.scoring.GainRatio` for regression
         trees or :class:`Orange.feature.scoring.MSE` for classification
         trees.
 
@@ -466,64 +439,58 @@ is the 'measure' attribute for the :obj:`SplitConstructor_Measure` class
         Note that this value make sense only in connection with a
         :obj:`measure` component. Default is 0.0.
 
-.. class:: SplitConstructor_Attribute
+.. class:: SplitConstructor_Feature
 
-    Bases: :class:`SplitConstructor_Measure`
+    Bases: :class:`SplitConstructor_Score`
 
-    Attempts to use a discrete attribute as a split; each value of
-    the attribute corresponds to a branch in the tree. Attributes are
-    evaluated with the :obj:`measure` and the one with the highest score
-    is used for a split. If there is more than one attribute with the
-    highest score, one of them is selected by random.
+    Each value of a discrete feature corresponds to a branch
+    in the tree. The features with with the highest score
+    (:obj:`~Measure.measure`) is used for a split. If multiple features
+    are tied for highest score, select a random one.
 
     The constructed :obj:`branch_selector` is an instance of
-    :obj:`orange.ClassifierFromVarFD` that returns a value of the selected
-    attribute. If the attribute is :obj:`Orange.data.variable.Discrete`,
-    :obj:`branch_description`'s are the attribute's values. The attribute
-    is marked as spent, so that it cannot reappear in the node's subtrees.
+    :obj:`orange.ClassifierFromVarFD` that returns a value of the
+    selected feature. :obj:`branch_description` contains the feature's
+    values. The feature is marked as spent, so that it cannot reappear
+    in the node's subtrees.
 
 .. class:: SplitConstructor_ExhaustiveBinary
 
-    Bases: :class:`SplitConstructor_Measure`
+    Bases: :class:`SplitConstructor_Score`
 
-    Works on discrete attributes. For each attribute, it determines
-    which binarization of the attribute gives the split with the
-    highest score. If more than one split has the highest score, one
-    of them is selected by random. After trying all the attributes,
-    it returns one of those with the highest score.
+    Works on discrete features. For each feature it determines which
+    binarization gives the the highest score. In case of ties, a random
+    feature is selected.
 
-    The constructed :obj:`branch_selector` is again an instance
-    :obj:`orange.ClassifierFromVarFD` that returns a value of the
-    selected attribute. This time, however, its :obj:`transformer`
-    contains an instance of :obj:`MapIntValue` that maps the values of
-    the attribute into a binary attribute. Branch descriptions are of
-    form "[<val1>, <val2>, ...<valn>]" for branches corresponding to
-    more than one value of the attribute. Branches that correspond to a
-    single value of the attribute are described with this value. If the
-    attribute was originally binary, it is spent and cannot be used in
-    the node's subtrees. Otherwise, it can reappear in the subtrees.
+    The constructed :obj:`branch_selector` is an instance
+    :obj:`orange.ClassifierFromVarFD` that returns a value of the selected
+    feature. Its :obj:`transformer` contains a :obj:`MapIntValue`
+    that maps values of the feature into a binary feature. Branch
+    descriptions are of form ``[<val1>, <val2>, ...<valn>]`` for branches
+    with more than one feature value. Branches with a single feature
+    value are described with that value. If the feature was binary,
+    it is spent and cannot be used in the node's subtrees. Otherwise,
+    it can reappear in the subtrees.
 
 
 .. class:: SplitConstructor_Threshold
 
-    Bases: :class:`SplitConstructor_Measure`
+    Bases: :class:`SplitConstructor_Score`
 
-    This is currently the only constructor for splits with continuous 
-    attributes. It divides the range of attributes values with a threshold 
-    that maximizes the split's quality. As always, if there is more than
-    one split with the highest score, a random threshold is selected.
-    The attribute that yields the highest binary split is returned.
+    Currently the only one for continuous features.  It divides the
+    range of feature values with a threshold that maximizes the split's
+    quality. In case of ties, a random feature is selected.  The feature
+    that yields the best binary split is returned.
 
-    The constructed :obj:`branch_selector` is again an instance
-    of :obj:`orange.ClassifierFromVarFD` with an attached
-    :obj:`transformer`. This time, :obj:`transformer` is of type
-    :obj:`Orange.feature.discretization.ThresholdDiscretizer`. The branch
-    descriptions are "<threshold" and ">=threshold". The attribute is
-    not spent.
+    The constructed :obj:`branch_selector` is an instance of
+    :obj:`orange.ClassifierFromVarFD` with an attached :obj:`transformer`,
+    of type :obj:`Orange.feature.discretization.ThresholdDiscretizer`. The
+    branch descriptions are "<threshold" and ">=threshold". The feature
+    is not spent.
 
 .. class:: SplitConstructor_OneAgainstOthers
     
-    Bases: :class:`SplitConstructor_Measure`
+    Bases: :class:`SplitConstructor_Score`
 
     Undocumented.
 
@@ -533,125 +500,114 @@ is the 'measure' attribute for the :obj:`SplitConstructor_Measure` class
 
     This constructor delegates the task of finding the optimal split 
     to separate split constructors for discrete and for continuous
-    attributes. Each split constructor is called, given only attributes
-    of appropriate types as candidates. Both construct a candidate for
+    features. Each split constructor is called given only features
+    of appropriate type. Both construct a candidate for
     a split; the better of them is selected.
 
-    (Note that there is a problem when more candidates have the same
-    score. Let there be are nine discrete attributes with the highest
-    score; the split constructor for discrete attributes will select
+    Note that there is a problem when more candidates have the same
+    score. Let there be are nine discrete features with the highest
+    score; the split constructor for discrete features will select
     one of them. Now, let us suppose that there is a single continuous
-    attribute with the same score. :obj:`SplitConstructor_Combined`
-    would randomly select between the proposed discrete attribute and
-    the continuous attribute, not aware of the fact that the discrete
-    has already competed with eight other discrete attributes. So, he
-    probability for selecting (each) discrete attribute would be 1/18
+    feature with the same score. :obj:`SplitConstructor_Combined`
+    would randomly select between the proposed discrete feature and
+    the continuous feature, not aware of the fact that the discrete
+    has already competed with eight other discrete features. So, the
+    probability for selecting (each) discrete feature would be 1/18
     instead of 1/10. Although not really correct, we doubt that this would
-    affect the tree's performance; many other machine learning systems
-    simply choose the first attribute with the highest score anyway.)
+    affect the tree's performance.
 
     The :obj:`branch_selector`, :obj:`branch_descriptions` and whether
-    the attribute is spent is decided by the winning split constructor.
+    the feature is spent is decided by the winning split constructor.
 
     .. attribute: discrete_split_constructor
 
-        Split constructor for discrete attributes; can be,
-        for instance, :obj:`SplitConstructor_Attribute` or
+        Split constructor for discrete features; 
+        for instance, :obj:`SplitConstructor_Feature` or
         :obj:`SplitConstructor_ExhaustiveBinary`.
 
     .. attribute: continuous_split_constructor
 
-        Split constructor for continuous attributes; at the moment, it 
+        Split constructor for continuous features; it 
         can be either :obj:`SplitConstructor_Threshold` or a 
         split constructor you programmed in Python.
-
-    .. attribute: continuous_split_constructor
-    
-        Split constructor for continuous attributes; at the moment,
-        it can be either :obj:`SplitConstructor_Threshold` or a split
-        constructor you programmed in Python.
 
 
 StopCriteria and StopCriteria_common
 ============================================
 
-obj:`StopCriteria` determines when to stop the induction of subtrees. 
+:obj:`StopCriteria` determines when to stop the induction of subtrees. 
 
 .. class:: StopCriteria
 
-    Given a set of examples, weight ID and contingency matrices, decide
+    Decide
     whether to continue the induction or not. The basic criterion checks
-    whether there are any examples and whether they belong to at least
+    if there are any instances and if they belong to at least
     two different classes (if the class is discrete). Derived components
-    check things like the number of examples and the proportion of
+    check things like the number of instances and the proportion of
     majority classes.
 
-    As opposed to :obj:`SplitConstructor` and similar basic classes,
     :obj:`StopCriteria` is not an abstract but a fully functional
     class that provides the basic stopping criteria. That is, the tree
-    induction stops when there is at most one example left; in this case,
-    it is not the weighted but the actual number of examples that counts.
-    Besides that, the induction stops when all examples are in the same
-    class (for discrete problems) or have the same value of the outcome
+    induction stops when there is at most one instance left; 
+    it is not the weighted but the actual number of instances that counts.
+    The induction also stops when all instances are in the same
+    class (for discrete problems) or have the same outcome value 
     (for regression problems).
 
-    .. method:: __call__(examples[, weightID, domain contingencies])
+    .. method:: __call__(instances[, weightID, domain contingencies])
 
-        Decides whether to stop (true) or continue (false) the induction.
+        Retunr True (stop) of False (continue the induction).
         If contingencies are given, they are used for checking whether
-        the examples are in the same class (but not for counting the
-        examples). Derived classes should use the contingencies whenever
-        possible. If contingencies are not given, :obj:`StopCriteria`
-        will work without them. Derived classes should also use them if
-        they are available, but otherwise compute them only when they
-        really need them.
+        the instances are in the same classm (but not for
+        instance counting). Derived classes should use the contingencies
+        whenever possible.
 
 .. class:: StopCriteria_common
 
-    :obj:`StopCriteria` contains additional criteria for pre-pruning:
-    it checks the proportion of majority class and the number of weighted
-    examples.
+    Additional criteria for pre-pruning:
+    the proportion of majority class and the number of weighted
+    instances.
 
     .. attribute:: max_majority
 
-        Maximal proportion of majority class. When this is exceeded,
+        Maximal proportion of majority class. When exceeded,
         induction stops.
 
-    .. attribute:: min_examples
+    .. attribute:: min_instances
 
-        Minimal number of examples in internal leaves. Subsets with
-        less than :obj:`min_examples` examples are not split any further.
-        Example count is weighed.
+        Minimal number of instances in internal leaves. Subsets with
+        less than :obj:`min_instances` instances are not split any further.
+        The sample count is weighed.
 
 
-Example Splitters
+Splitters
 =================
 
 Just like the :obj:`Descender` decides the branch for an
-example during classification, the :obj:`ExampleSplitter`
-sorts the learning examples into branches.
+instance during classification, the :obj:`Splitter`
+sorts the learning instances into branches.
 
-:obj:`ExampleSplitter` is given a :obj:`Node` (from which 
+:obj:`Splitter` is given a :obj:`Node` (from which 
 it can use different stuff, but most of splitters only use the 
-:obj:`branch_selector`), a set of examples to be divided, and 
-the weight ID. The result is a list of subsets of examples
+:obj:`branch_selector`), a set of instances to be divided, and 
+the weight ID. The result is a list of subsets of instances
 and, optionally, a list of new weight ID's.
 
-Most :obj:`ExampleSplitter` classes simply call the node's
-:obj:`branch_selector` and assign examples to corresponding branches. When
+Most :obj:`Splitter` classes simply call the node's
+:obj:`branch_selector` and assign instances to corresponding branches. When
 the value is unknown they choose a particular branch or simply skip
-the example.
+the instance.
 
-Some enhanced splitters can split examples. An example (actually, a
+Some enhanced splitters can split instances. An instance (actually, a
 pointer to it) is copied to more than one subset. To facilitate real
 splitting, weights are needed. Each branch is assigned a weight ID (each
-would usually have its own ID) and all examples that are in that branch
+would usually have its own ID) and all instances that are in that branch
 (either completely or partially) should have this meta attribute. If an
-example hasn't been split, it has only one additional attribute - with
+instance hasn't been split, it has only one additional attribute - with
 weight ID corresponding to the subset to which it went. Example that
 is split between, say, three subsets, has three new meta attributes,
 one for each subset. ID's of weight meta attributes are returned by
-the :obj:`ExampleSplitter` to be used at induction of the corresponding
+the :obj:`Splitter` to be used at induction of the corresponding
 subtrees.
 
 Note that weights are used only when needed. When no splitting occured -
@@ -659,77 +615,77 @@ because the splitter is not able to do it or becauser there was no need
 for splitting - no weight ID's are returned.
 
 
-.. class:: ExampleSplitter
+.. class:: Splitter
 
-    An abstract base class for objects that split sets of examples
-    into subsets. The derived classes treat examples which cannot be
+    An abstract base class for objects that split sets of instances
+    into subsets. The derived classes treat instances which cannot be
     unambiguously placed into a single branch (usually due to unknown
     value of the crucial attribute) differently.
 
-    .. method:: __call__(node, examples[, weightID])
+    .. method:: __call__(node, instances[, weightID])
         
         Use the information in :obj:`node` (particularly the
-        :obj:`branch_selector`) to split the given set of examples into
-        subsets.  Return a tuple with a list of example generators and
+        :obj:`branch_selector`) to split the given set of instances into
+        subsets.  Return a tuple with a list of instance generators and
         a list of weights.  The list of weights is either an ordinary
-        python list of integers or a None when no splitting of examples
+        python list of integers or a None when no splitting of instances
         occurs and thus no weights are needed.
 
 
-.. class:: ExampleSplitter_IgnoreUnknowns
+.. class:: Splitter_IgnoreUnknowns
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Simply ignores the examples for which no single branch can be
+    Simply ignores the instances for which no single branch can be
     determined.
 
-.. class:: ExampleSplitter_UnknownsToCommon
+.. class:: Splitter_UnknownsToCommon
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Places all such examples to a branch with the highest number of
-    examples. If there is more than one such branch, one is selected at
-    random and then used for all examples.
+    Places all such instances to a branch with the highest number of
+    instances. If there is more than one such branch, one is selected at
+    random and then used for all instances.
 
-.. class:: ExampleSplitter_UnknownsToAll
+.. class:: Splitter_UnknownsToAll
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Places examples with unknown value of the attribute into all branches.
+    Places instances with unknown value of the attribute into all branches.
 
-.. class:: ExampleSplitter_UnknownsToRandom
+.. class:: Splitter_UnknownsToRandom
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Selects a random branch for such examples.
+    Selects a random branch for such instances.
 
-.. class:: ExampleSplitter_UnknownsToBranch
+.. class:: Splitter_UnknownsToBranch
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Constructs an additional branch to contain all such examples. 
+    Constructs an additional branch to contain all such instances. 
     The branch's description is "unknown".
 
-.. class:: ExampleSplitter_UnknownsAsBranchSizes
+.. class:: Splitter_UnknownsAsBranchSizes
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Splits examples with unknown value of the attribute according to
-    proportions of examples in each branch.
+    Splits instances with unknown value of the attribute according to
+    proportions of instances in each branch.
 
-.. class:: ExampleSplitter_UnknownsAsSelector
+.. class:: Splitter_UnknownsAsSelector
 
-    Bases: :class:`ExampleSplitter`
+    Bases: :class:`Splitter`
 
-    Splits examples with unknown value of the attribute according to
+    Splits instances with unknown value of the attribute according to
     distribution proposed by selector (which is in most cases the same
-    as proportions of examples in branches).
+    as proportions of instances in branches).
 
 Descenders
 =============================
 
-This is a classifier's counterpart for :class:`ExampleSplitter`. It
-decides the destiny of examples that need to be classified and cannot
+This is a classifier's counterpart for :class:`Splitter`. It
+decides the destiny of instances that need to be classified and cannot
 be unambiguously put in a branch.
 
 
@@ -762,7 +718,7 @@ be unambiguously put in a branch.
        by node's :obj:`~Node.branch_selector`, to the number of learning
        instances that were assigned to each branch, or to something else.
 
-    .. method:: __call__(node, example)
+    .. method:: __call__(node, instance)
 
         Descends down the tree until it reaches a leaf or a node in
         which a vote of subtrees is required. In both cases, a tuple
@@ -770,17 +726,17 @@ be unambiguously put in a branch.
         the reached node and None, in the latter in contains a node and
         weights of votes for subtrees (a list of floats).
 
-        :obj:`Descender`'s that never split examples always descend to a
-        leaf, but they differ in the treatment of examples with unknown
-        values (or, in general, examples for which a branch cannot be
+        :obj:`Descender`'s that never split instances always descend to a
+        leaf, but they differ in the treatment of instances with unknown
+        values (or, in general, instances for which a branch cannot be
         determined at some node(s) the tree).  :obj:`Descender`'s that
-        do split examples differ in returned vote weights.
+        do split instances differ in returned vote weights.
 
 .. class:: Descender_UnknownsToNode
 
     Bases: :obj:`Descender`
 
-    When example cannot be classified into a single branch, the current
+    When instance cannot be classified into a single branch, the current
     node is returned. Thus, the node's :obj:`NodeClassifier` will be used
     to make a decision. It is your responsibility to see that even the
     internal nodes have their :obj:`NodeClassifier` (i.e., don't disable
@@ -791,37 +747,37 @@ be unambiguously put in a branch.
 
     Bases: :obj:`Descender`
 
-    Classifies examples with unknown value to a special branch. This
+    Classifies instances with unknown value to a special branch. This
     makes sense only if the tree itself was constructed with
-    :obj:`ExampleSplitter_UnknownsToBranch`.
+    :obj:`Splitter_UnknownsToBranch`.
 
 .. class:: Descender_UnknownsToCommonBranch
 
     Bases: :obj:`Descender`
 
-    Classifies examples with unknown values to the branch with the
-    highest number of examples. If there is more than one such branch,
-    random branch is chosen for each example that is to be classified.
+    Classifies instances with unknown values to the branch with the
+    highest number of instances. If there is more than one such branch,
+    random branch is chosen for each instance that is to be classified.
 
 .. class:: Descender_UnknownsToCommonSelector
 
     Bases: :obj:`Descender`
 
-    Classifies examples with unknown values to the branch which received
+    Classifies instances with unknown values to the branch which received
     the highest recommendation by the selector.
 
 .. class:: Descender_MergeAsBranchSizes
 
     Bases: :obj:`Descender`
 
-    Makes the subtrees vote for the example's class; the vote is weighted
+    Makes the subtrees vote for the instance's class; the vote is weighted
     according to the sizes of the branches.
 
 .. class:: Descender_MergeAsSelector
 
     Bases: :obj:`Descender`
 
-    Makes the subtrees vote for the example's class; the vote is weighted
+    Makes the subtrees vote for the instance's class; the vote is weighted
     according to the selectors proposal.
 
 Pruning
@@ -897,9 +853,9 @@ Printing the tree
 =================
 
 The included printing functions can print out practically anything you'd
-like to know, from the number of examples, proportion of examples of
+like to know, from the number of instances, proportion of instances of
 majority class in nodes and similar, to more complex statistics like the
-proportion of examples in a particular class divided by the proportion
+proportion of instances in a particular class divided by the proportion
 of examples of this class in a parent node. And even more, you can define
 your own callback functions to be used for printing.
 
@@ -1647,7 +1603,7 @@ from Orange.core import \
               TreePruner_m as Pruner_m, \
          TreeSplitConstructor as SplitConstructor, \
               TreeSplitConstructor_Combined as SplitConstructor_Combined, \
-              TreeSplitConstructor_Measure as SplitConstructor_Measure, \
+              TreeSplitConstructor_Measure as SplitConstructor_Score, \
                    TreeSplitConstructor_Attribute as SplitConstructor_Feature, \
                    TreeSplitConstructor_ExhaustiveBinary as SplitConstructor_ExhaustiveBinary, \
                    TreeSplitConstructor_OneAgainstOthers as SplitConstructor_OneAgainstOthers, \
@@ -1977,7 +1933,7 @@ class TreeLearner(Orange.core.Learner):
 
         If 1, :class:`SplitConstructor_ExhaustiveBinary` is used.
         If 2, use :class:`SplitConstructor_OneAgainstOthers`. If
-        0, do not use binarization (use :class:`SplitConstructor_Attribute`).
+        0, do not use binarization (use :class:`SplitConstructor_Feature`).
         Default: 0.
 
     .. attribute:: measure
@@ -1997,9 +1953,9 @@ class TreeLearner(Orange.core.Learner):
 
     .. attribute:: splitter
 
-        :class:`ExampleSplitter`  or a function with the same
-        signature as :obj:`ExampleSplitter.__call__`. The default is
-        :class:`ExampleSplitter_UnknownsAsSelector` that splits the
+        :class:`Splitter`  or a function with the same
+        signature as :obj:`Splitter.__call__`. The default is
+        :class:`Splitter_UnknownsAsSelector` that splits the
         learning instances according to distributions given by the
         selector.
 
