@@ -135,10 +135,17 @@ QRectF PlotItem::rect_from_data(const QList< double >& x_data, const QList< doub
 
 void PlotItem::move_item(QGraphicsObject* item, const QPointF& pos, bool animate, int duration)
 {
-    QPropertyAnimation* a = new QPropertyAnimation(item, "pos", item);
-    a->setEndValue(pos);
-    a->setDuration(duration);
-    a->start(QAbstractAnimation::DeleteWhenStopped);
+    if (animate)
+    {
+        QPropertyAnimation* a = new QPropertyAnimation(item, "pos", item);
+        a->setEndValue(pos);
+        a->setDuration(duration);
+        a->start(QAbstractAnimation::DeleteWhenStopped);
+    }
+    else
+    {
+        item->setPos(pos);
+    }
 }
 
 void PlotItem::set_data_rect(const QRectF& dataRect) {
