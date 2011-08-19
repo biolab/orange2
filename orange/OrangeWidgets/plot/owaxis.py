@@ -71,7 +71,7 @@ class OWAxis(QGraphicsItem):
         path.setFillRule(Qt.WindingFill)
         path.moveTo(0, 3.09)
         path.lineTo(0, -3.09)
-        path.lineTo(10, 0)
+        path.lineTo(9.51, 0)
         path.closeSubpath()
         self.arrow_path = path
         self.label_items = []
