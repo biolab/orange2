@@ -1066,6 +1066,8 @@ class ABCN2(RuleLearner):
     :param analyse_argument: index of argument to analyse; -1 to learn normally
        (default)
     :type analyse_argument: int
+    :param debug: sets debug mode - prints some info during execution; False (default)
+    :type debug: boolean
     
     The following evaluator related arguments are supported:
     
@@ -1111,12 +1113,13 @@ class ABCN2(RuleLearner):
     :type set_prefix_rules: boolean
     :param alternative_learner: use rule-learner as a correction method for
        other machine learning methods (default None).
+
     """
     
     def __init__(self, argument_id=0, width=5, m=2, opt_reduction=2, nsampling=100, max_rule_complexity=5,
                  rule_sig=1.0, att_sig=1.0, postpruning=None, min_quality=0., min_coverage=1, min_improved=1, min_improved_perc=0.0,
                  learn_for_class = None, learn_one_rule = False, evd=None, evd_arguments=None, prune_arguments=False, analyse_argument=-1,
-                 alternative_learner = None, min_cl_sig = 0.5, min_beta = 0.0, set_prefix_rules = False, add_sub_rules = False,
+                 alternative_learner = None, min_cl_sig = 0.5, min_beta = 0.0, set_prefix_rules = False, add_sub_rules = False, debug=False,
                  **kwds):
         
         # argument ID which is passed to abcn2 learner
@@ -1158,6 +1161,7 @@ class ABCN2(RuleLearner):
         # classifier
         self.add_sub_rules = add_sub_rules
         self.classifier = PILAR(alternative_learner = alternative_learner, min_cl_sig = min_cl_sig, min_beta = min_beta, set_prefix_rules = set_prefix_rules)
+        self.debug = debug
         # arbitrary parameters
         self.__dict__.update(kwds)
 
@@ -1186,7 +1190,7 @@ class ABCN2(RuleLearner):
                 continue
 
             # rules for this class only
-            rules, arg_rules = RuleList(), RuleList()
+            rules = RuleList()
 
             # create dichotomous class
             dich_data = self.create_dich_class(examples, cl)
@@ -1207,26 +1211,32 @@ class ABCN2(RuleLearner):
             aes = self.get_argumented_examples(dich_data)
             aes = self.sort_arguments(aes, dich_data)
             while aes:
-                if self.analyse_argument > -1 and not dich_data[self.analyse_argument] == aes[0]:
+                if self.analyse_argument > -1 and \
+                   (isinstance(self.analyse_argument, Orange.core.Example) and not Orange.core.Example(dich_data.domain, self.analyse_argument) == aes[0] or \
+                    isinstance(self.analyse_argument, int) and not dich_data[self.analyse_argument] == aes[0]):
                     aes = aes[1:]
                     continue
                 ae = aes[0]
                 rule = self.learn_argumented_rule(ae, dich_data, weight_id) # target class is always first class (0)
-                if not progress:
-                    print "learned rule", Orange.classification.rules.rule_to_string(rule)
+                if debug and rule:
+                    print "learned arg rule", Orange.classification.rules.rule_to_string(rule)
+                elif debug:
+                    print "no rule came out of ", ae
                 if rule:
-                    arg_rules.append(rule)
+                    rules.append(rule)
                     aes = filter(lambda x: not rule(x), aes)
                 else:
                     aes = aes[1:]
+                aes = aes[1:]
+
             if not progress:
                 print " arguments finished ... "                    
                    
             # remove all examples covered by rules
-##            for rule in rules:
-##                dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
-##            if progress:
-##                progress(self.remaining_probability(dich_data),None)
+            for rule in rules:
+                dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
+            if progress:
+                progress(self.remaining_probability(dich_data),None)
 
             # learn normal rules on remaining examples
             if self.analyse_argument == -1:
@@ -1236,7 +1246,7 @@ class ABCN2(RuleLearner):
                     rule = self.learn_normal_rule(dich_data, weight_id, self.apriori)
                     if not rule:
                         break
-                    if not progress:
+                    if self.debug:
                         print "rule learned: ", Orange.classification.rules.rule_to_string(rule), rule.quality
                     dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
                     if progress:
@@ -1244,10 +1254,6 @@ class ABCN2(RuleLearner):
                     rules.append(rule)
                     if self.learn_one_rule:
                         break
-
-            for r in arg_rules:
-                dich_data = self.remove_covered_examples(r, dich_data, weight_id)
-                rules.append(r)
 
             # prune unnecessary rules
             rules = self.prune_unnecessary_rules(rules, dich_data, weight_id)
@@ -1282,7 +1288,6 @@ class ABCN2(RuleLearner):
         self.rule_finder.evaluator.bestRule = None
         self.rule_finder.evaluator.returnBestFuture = True
         self.rule_finder(examples,weight_id,0,positive_args)
-##        self.rule_finder.evaluator.bestRule.quality = 0.8
         
         # return best rule
         return self.rule_finder.evaluator.bestRule
@@ -1380,15 +1385,11 @@ class ABCN2(RuleLearner):
         return self.cover_and_remove.getBestRules(rules,examples,weight_id)
 
     def change_domain(self, rule, cl, examples, weight_id):
-        rule.examples = rule.examples.select(examples.domain)
-        rule.class_distribution = Orange.statistics.distribution.Distribution(
-                     rule.examples.domain.class_var,rule.examples,weight_id) # adapt distribution
-        rule.classifier = Orange.classification.ConstantClassifier(cl) # adapt classifier
         rule.filter = Orange.core.Filter_values(domain = examples.domain,
                                         conditions = rule.filter.conditions)
+        rule.filterAndStore(examples, weightID, cl)        
         if hasattr(rule, "learner") and hasattr(rule.learner, "arg_example"):
-            rule.learner.arg_example = Orange.data.Instance(
-                          examples.domain, rule.learner.arg_example)
+            rule.learner.arg_example = Orange.data.Instance(examples.domain, rule.learner.arg_example)
         return rule
 
     def create_classifier(self, rules, examples, weight_id):
@@ -1418,6 +1419,10 @@ class ABCN2(RuleLearner):
                     self.rule_finder.evaluator.returnExpectedProb = False
                     tmpRule.quality = self.rule_finder.evaluator(tmpRule,examples,weight_id,r.classifier.default_val,apriori)
                     self.rule_finder.evaluator.returnExpectedProb = oldREP
+                tmpList.sort(lambda x,y: -cmp(x.quality, y.quality))
+                tmpList = tmpList[:self.rule_filter.width]
+                    
+                for tmpRule in tmpList:
                     # if rule not in rules already, add it to the list
                     if not True in [Orange.classification.rules.rules_equal(ri,tmpRule) for ri in new_rules] and len(tmpRule.filter.conditions)>0 and tmpRule.quality > apriori[r.classifier.default_val]/apriori.abs:
                         new_rules.append(tmpRule)
@@ -1434,13 +1439,13 @@ class ABCN2(RuleLearner):
                 tmpList = tmpList2
         return new_rules
 
-
     def init_pos_args(self, ae, examples, weight_id):
         pos_args = RuleList()
         # prepare arguments
         for p in ae[self.argument_id].value.positiveArguments:
             new_arg = Rule(filter=ArgFilter(argument_id = self.argument_id,
-                                                   filter = self.newFilter_values(p.filter)),
+                                                   filter = self.newFilter_values(p.filter),
+                                                   arg_example = ae),
                                                    complexity = 0)
             new_arg.valuesFilter = new_arg.filter.filter
             pos_args.append(new_arg)
@@ -1454,6 +1459,8 @@ class ABCN2(RuleLearner):
         # if pruning is chosen, then prune arguments if possible
         for p in pos_args:
             p.filterAndStore(examples, weight_id, 0)
+            if not p.learner:
+                p.learner = DefaultLearner(defaultValue=ae.getclass())
             # pruning on: we check on all conditions and take only best
             if self.prune_arguments:
                 allowed_conditions = [c for c in p.filter.conditions]
@@ -1473,21 +1480,19 @@ class ABCN2(RuleLearner):
                 for u in unspec_conditions:
                     if not (u.position, u.oper) in at_oper_pairs:
                         # find minimum value
-                        u.ref = min([float(e[u.position])-10. for e in p.examples])
+                        if u.oper == Orange.core.ValueFilter_continuous.Greater or u.oper == Orange.core.ValueFilter_continuous.GreaterEqual:
+                            u.ref = min([float(e[u.position])-10. for e in p.examples])
+                        else:
+                            u.ref = max([float(e[u.position])+10. for e in p.examples])
                         p.filter.conditions.append(u)
                         p.filter.filter.conditions.append(u)
                 
-
         # set parameters to arguments
         for p_i,p in enumerate(pos_args):
             p.filterAndStore(examples,weight_id,0)
             p.filter.domain = examples.domain
-            if not p.learner:
-                p.learner = DefaultLearner(default_value=ae.getclass())
             p.classifier = p.learner(p.examples, p.weight_id)
-            p.baseDist = p.class_distribution
             p.requiredConditions = len(p.filter.conditions)
-            p.learner.setattr("arg_length", len(p.filter.conditions))
             p.learner.setattr("arg_example", ae)
             p.complexity = len(p.filter.conditions)
             
