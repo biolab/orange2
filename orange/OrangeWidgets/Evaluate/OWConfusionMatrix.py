@@ -106,6 +106,12 @@ class OWConfusionMatrix(OWWidget):
             self.table.setColumnCount(0)
             return
 
+        self.warning(0)
+        if len(res.results) > 0 and res.results[0].multilabel_flag == 1:
+            text = "there is no consensus on how to apply it in multi-class problems"
+            self.warning(0, text)
+            return
+        
         self.matrix = orngStat.confusionMatrices(res, -2)
 
         dim = len(res.classValues)

@@ -342,7 +342,13 @@ class OWLiftCurve(OWROC):
             self.targetClass = None
             self.openContext("", dres)
             return
-
+        
+        self.warning(0)
+        if len(dres.results) > 0 and dres.results[0].multilabel_flag == 1:
+            text = "there is no consensus on how to apply it in multi-class problems"
+            self.warning(0, text)
+            return
+        
         self.defaultPerfLinePValues = []
         if self.dres <> None:
             ## classQLB

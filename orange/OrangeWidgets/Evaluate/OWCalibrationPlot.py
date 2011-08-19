@@ -329,7 +329,13 @@ class OWCalibrationPlot(OWWidget):
         self.classCombo.clear()
 
         self.dres = dres
-
+        
+        self.warning(0)
+        if self.dres and len(dres.results) > 0 and dres.results[0].multilabel_flag == 1:
+            text = "there is no consensus on how to apply it in multi-class problems"
+            self.warning(0, text)
+            return
+        
         self.graphs = []
         if self.dres <> None:
             self.numberOfClasses = len(self.dres.classValues)
