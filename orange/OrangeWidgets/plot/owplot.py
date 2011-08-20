@@ -782,6 +782,8 @@ class OWPlot(orangeqt.Plot):
             c.set_points_marked(marked_data)
             self.emit(SIGNAL('marked_points_changed()'))
         c.name = 'Main Curve'
+	
+        self.replot()
         
     def remove_curve(self, item):
         '''
