@@ -92,11 +92,11 @@ class OWAxis(QGraphicsItem):
     def update_ticks(self):
         self._ticks = []
         major, medium, minor = self.tick_length
-        if self.labels is not None:
+        if self.labels is not None and not self.auto_scale:
             for i, text in enumerate(self.labels):
                 self._ticks.append( ( i, text, medium, 1 ) )
         else:
-            if self.scale:
+            if self.scale and not self.auto_scale:
                 min, max, step = self.scale
             elif self.auto_range:
                 min, max = self.auto_range

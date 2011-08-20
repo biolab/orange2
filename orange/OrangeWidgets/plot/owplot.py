@@ -270,8 +270,48 @@ class OWPlot(orangeqt.Plot):
             
             :rtype: list of int
             
-        
+    **Color schemes**
     
+        By default, OWPlot uses the application's system palette for drawing everything
+        except data curves and points. This way, it maintains consistency with other application
+        with regards to the user interface. 
+        
+        If data is plotted with no color specified, it will use a system color as well, 
+        so that a good contrast with the background in guaranteed. 
+        
+        OWPlot uses the :meth:`.OWidget.palette` to determine its color scheme, so it can be 
+        changed using :meth:`.QWidget.setPalette`. There are also two predefined color schemes:
+        ``OWPalette.Dark`` and ``OWPalette.Light``, which provides a dark and a light scheme
+        respectively. 
+        
+        .. attribute:: theme_name
+        
+            A string attribute with three possible values:
+            ==============  ===========================
+            Value           Meaning
+            --------------  ---------------------------
+            "default"       The system palette is used
+            "dark"          The dark theme is used
+            "light"         The light theme is used 
+            ==============  ===========================
+            
+            To apply the settings, first set this attribute's value, and then call :meth:`update_theme`
+            
+        .. automethod:: update_theme
+            
+        On the other hand, curves with a specified color will use colors from Orange's palette, 
+        which can be configured within Orange. Each plot contains two separate palettes: 
+        one for continuous attributes, and one for discrete ones. Both are created by
+        :obj:`.OWColorPalette.ColorPaletteGenerator`
+        
+        .. attribute:: continuous_palette
+        
+            The palette used when point color represents a continuous attribute
+        
+        .. attribute:: discrete_palette
+        
+            The palette used when point color represents a discrete attribute
+
     """
     
     point_settings = ["point_width", "alpha_value"]
@@ -321,7 +361,7 @@ class OWPlot(orangeqt.Plot):
         self.point_width = 5
         self.show_filled_symbols = True
         self.alpha_value = 255
-        self.show_grid = False
+        self.show_grid = True
         
         self.curveSymbols = range(13)
         self.tips = TooltipManager(self)
@@ -388,8 +428,8 @@ class OWPlot(orangeqt.Plot):
             else:
                 self.add_axis(key)
                 
-        self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
-        self.discPalette = ColorPaletteGenerator()
+        self.continuous_palette = ColorPaletteGenerator(numberOfColors = -1)
+        self.discrete_palette = ColorPaletteGenerator()
         
         self.gui = OWPlotGUI(self)
 	"""
@@ -412,6 +452,8 @@ class OWPlot(orangeqt.Plot):
     mainTitle = deprecated_attribute("mainTitle", "main_title")
     showMainTitle = deprecated_attribute("showMainTitle", "show_main_title")
     gridCurve = deprecated_attribute("gridCurve", "grid_curve")
+    contPalette = deprecated_attribute("contPalette", "continuous_palette")
+    discPalette = deprecated_attribute("discPalette", "discrete_palette")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -1019,6 +1061,7 @@ class OWPlot(orangeqt.Plot):
         self.update_layout()
         self.update_zoom()
         self.update_axes()
+        self.update_grid()
         self.update_filled_symbols()
         self.setSceneRect(QRectF(self.contentsRect()))
         self.viewport().update()
@@ -1705,10 +1748,19 @@ class OWPlot(orangeqt.Plot):
             return self.palette().color(role)
             
     def set_palette(self, p):
+        '''
+            Sets the plot palette to ``p``. 
+            
+            :param p: The new color palette
+            :type p: :obj:`.QPalette`
+        '''
         self.setPalette(p)
         self.replot()
         
     def update_theme(self):
+        '''
+            Updates the current color theme, depending on the value of :attr:`theme_name`.
+        '''
         if self.theme_name.lower() == 'default':
             self.set_palette(OWPalette.System)
         elif self.theme_name.lower() == 'light':
