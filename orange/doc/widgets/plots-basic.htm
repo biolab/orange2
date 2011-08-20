@@ -14,9 +14,36 @@ Orange, so it contains methods more suitable to its data structures. It also pro
 most methods also found in the Qwt-based OWGraph, so switching from one base
 to another is quite easy. </p>
 
-<p>In the other example (<a href="">plots</a>) we showed how little modification 
+<p>In the other example (<a href="plots.htm">plots</a>) we showed how little modification 
 is used to replace OWGraph with OWPlot. 
 On the other hand, this example shows that using OWPlot from the start can be much easier. 
 We will implement the simplest graph: a series of points with x and y coordinates, 
 and different colors, sizes and shapes. 
 </p>
+
+<p>The central method for plotting a series of points is
+<code>set_main_curve_data()</code>. It creates a curve and adds it to the plot, or
+just updates it if one already exists. Because it doesn't recreate the curve every time
+it's called, it can animate the transition from one data set to another. </p>
+
+<p>To use this method, we must first convert the data to lists, one list for every property: 
+X coordinates, Y coordinates, point colors, sizes and shapes. 
+Each list except the coordinates can be empty, in which case the default value is used for all points. 
+You can convert the data directly from your inputs, or use the classes in the
+<code>preprocess.scaling</code> module.</p>
+
+<xmp class="code">
+for e in data:
+    x_data.append(e[x_i])
+    y_data.append(e[y_i])
+    color = QColor(*palette.getRGB(e[c_i]))
+    c_data.append(color)
+    size = 5 + round(e[s_i])
+    s_data.append(size)
+</xmp>
+
+<p>Once we have the data lists, it's time to plot them:</p>
+
+<xmp class="code">
+self.plot.set_main_curve_data(x_data, y_data, color_data=c_data, size_data=s_data)
+</xmp>

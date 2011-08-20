@@ -67,7 +67,9 @@ name_map = {
     "itemList" : "plot_items",
     "setShowMainTitle" : "set_show_main_title",
     "setMainTitle" : "set_main_title",
-    "invTransform" : "inv_transform"
+    "invTransform" : "inv_transform",
+    "setAxisTitle" : "set_axis_title",
+    "setShowAxisTitle" : "set_show_axis_title"
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
@@ -626,11 +628,12 @@ class OWPlot(orangeqt.Plot):
             self.axes[axis_id].set_scale(min, max, step_size)
         else:
             self.data_range[axis_id] = (min, max)
-    def setAxisTitle(self, axis_id, title):
+            
+    def set_axis_title(self, axis_id, title):
         if axis_id in self.axes:
             self.axes[axis_id].set_title(title)
             
-    def setShowAxisTitle(self, axis_id, b):
+    def set_show_axis_title(self, axis_id, b):
         if axis_id in self.axes:
             if b == -1:
                 b = not self.axes[axis_id].show_title
