@@ -135,9 +135,11 @@ class OWLinProjQt(OWVisWidget):
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
-        self.graph.autoSendSelectionCallback = self.selectionChanged
-        self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
+        g = self.graph.gui
+
+        # zooming / selection
+        self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons = g.default_zoom_select_buttons + [g.Spacing, g.ShufflePoints])
+        self.connect(self.zoomSelectToolbar.buttons[g.SendSelection], SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
         # SETTINGS TAB
@@ -203,8 +205,6 @@ class OWLinProjQt(OWVisWidget):
         p = self.graph.palette()
         p.setColor(OWPalette.Canvas, dlg.getColor("Canvas"))
         self.graph.set_palette(p)
-
-        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.cbShowAllAttributes()      # update list boxes based on the check box value
 
@@ -332,7 +332,7 @@ class OWLinProjQt(OWVisWidget):
         self.updateGraph()
 
     def selectionChanged(self):
-        self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
+        self.zoomSelectToolbar.buttons[OWPlotGUI.SendSelection].setEnabled(not self.autoSendSelection)
         if self.autoSendSelection:
             self.sendSelections()
 
