@@ -1,0 +1,22 @@
+<html>
+<head>
+<title>Orange Widgets: Simple plot</title>
+<link rel=stylesheet HREF="../style.css" type="text/css">
+<link rel=stylesheet href="style-print.css" type="text/css" media=print>
+</head>
+<body>
+
+<H1>Using the new 'plot' module</H1>
+
+<p>Orange has a new plotting interface via the <code>OrangeWidgets.plot</code>
+module. The OWPlot class use Qt's graphics framework and was written specifically for
+Orange, so it contains methods more suitable to its data structures. It also provides
+most methods also found in the Qwt-based OWGraph, so switching from one base
+to another is quite easy. </p>
+
+<p>In the other example (<a href="">plots</a>) we showed how little modification 
+is used to replace OWGraph with OWPlot. 
+On the other hand, this example shows that using OWPlot from the start can be much easier. 
+We will implement the simplest graph: a series of points with x and y coordinates, 
+and different colors, sizes and shapes. 
+</p>
