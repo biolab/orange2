@@ -116,8 +116,10 @@ class OWFile(OWWidget):
         self.setFileList()
 
         if len(self.recentFiles) > 0 and exists(self.recentFiles[0]):
-            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
-
+            try:
+                self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
+            except:
+                pass
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
     def adjustSize0(self):
