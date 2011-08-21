@@ -7,7 +7,7 @@ from Orange.classification.rules import ABCN2
 from Orange.classification.rules import ABCN2Ordered
 from Orange.classification.rules import ABCN2M
 from Orange.classification.rules import ABBeamFilter
-from Orange.classification.rules import ruleCoversArguments
+from Orange.classification.rules import RuleCoversArguments
 from Orange.classification.rules import SelectorAdder
 from Orange.classification.rules import ArgFilter
 from Orange.classification.rules import SelectorArgConditions

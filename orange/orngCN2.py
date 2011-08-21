@@ -17,14 +17,5 @@ from Orange.classification.rules import rules_equal
 from Orange.classification.rules import NoDuplicatesValidator as noDuplicates_validator
 from Orange.classification.rules import RuleStopping_SetRules as ruleSt_setRules
 from Orange.classification.rules import CN2SDUnorderedLearner
-from Orange.classification.rules import avg
-from Orange.classification.rules import var
-from Orange.classification.rules import median
-from Orange.classification.rules import perc
-from Orange.classification.rules import createRandomDataSet
-from Orange.classification.rules import compParameters
-from Orange.classification.rules import computeDists
-from Orange.classification.rules import createEVDistList
 from Orange.classification.rules import CovererAndRemover_Prob
-from Orange.classification.rules import add_sub_rules
 from Orange.classification.rules import CN2EVCUnorderedLearner

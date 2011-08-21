@@ -7,6 +7,7 @@ import warnings
 
 import Orange.classification.rules
 import numpy
+import math
 
 # regular expressions
 # exppression for testing validity of a set of arguments:
@@ -61,41 +62,41 @@ class Argumentation:
     """ Class that describes a set of positive and negative arguments
     this class is used as a value for ArgumentationVariable. """
     def __init__(self):
-        self.positiveArguments = Orange.core.RuleList()
-        self.negativeArguments = Orange.core.RuleList()
-        self.notYetComputedArguments = [] # Arguments that need the whole data set
+        self.positive_arguments = Orange.core.RuleList()
+        self.negative_arguments = Orange.core.RuleList()
+        self.not_yet_computed_arguments = [] # Arguments that need the whole data set
                                           # when processing are stored here 
     
     # add an argument that supports the class of the example
     def addPositive(self, argument):
-        self.positiveArguments.append(argument)
+        self.positive_arguments.append(argument)
 
     # add an argument that opposes the class of the example
     def addNegative(self, argument):
-        self.negativeArguments.append(argument)
+        self.negative_arguments.append(argument)
 
     def addNotYetComputed(self, argument, notyet, positive):
-        self.notYetComputedArguments.append((argument,notyet,positive))
+        self.not_yet_computed_arguments.append((argument,notyet,positive))
 
     def __str__(self):
         retValue = ""
         # iterate through positive arguments (rules) and
         # write them down as a text list
-        if len(self.positiveArguments)>0:
-            for (i,pos) in enumerate(self.positiveArguments[:-1]):
+        if len(self.positive_arguments)>0:
+            for (i,pos) in enumerate(self.positive_arguments[:-1]):
                 retValue+="{"+listOfAttributeNames(pos)+"}"
                 retValue+=","
-            retValue+="{"+listOfAttributeNames(self.positiveArguments[-1])+"}"
+            retValue+="{"+listOfAttributeNames(self.positive_arguments[-1])+"}"
             # do the same thing for negative argument,
             # just that this time use sign "~" in front of the list
-        if len(self.negativeArguments)>0:
+        if len(self.negative_arguments)>0:
             if len(retValue)>0:
                 retValue += ","
-            for (i,neg) in enumerate(self.negativeArguments[:-1]):
+            for (i,neg) in enumerate(self.negative_arguments[:-1]):
                 retValue+="~"
                 retValue+="{"+listOfAttributeNames(neg,leave_ref=True)+"}"
                 retValue+=","
-            retValue+="~{"+listOfAttributeNames(self.negativeArguments[-1],leave_ref=True)+"}"
+            retValue+="~{"+listOfAttributeNames(self.negative_arguments[-1],leave_ref=True)+"}"
         return retValue
 
 POSITIVE = True
@@ -224,14 +225,14 @@ class ArgumentVariable(Orange.core.PythonVariable):
 
     
 class ArgumentFilter_hasSpecial:
-    def __call__(self, examples, attribute, targetClass=-1, negate=0):
+    def __call__(self, examples, attribute, target_class=-1, negate=0):
         indices = [0]*len(examples)
         for i in range(len(examples)):
             if examples[i][attribute].isSpecial():
                 indices[i]=1
-            elif targetClass>-1 and not int(examples[i].getclass()) == targetClass:
+            elif target_class>-1 and not int(examples[i].getclass()) == target_class:
                 indices[i]=1
-            elif len(examples[i][attribute].value.positiveArguments) == 0:
+            elif len(examples[i][attribute].value.positive_arguments) == 0:
                 indices[i]=1
         return examples.select(indices,0,negate=negate)
 
@@ -244,10 +245,10 @@ def evaluateAndSortArguments(examples, argAtt, evaluateFunction = None, apriori 
         
     for e in examples:
         if not e[argAtt].isSpecial():
-            for r in e[argAtt].value.positiveArguments:
+            for r in e[argAtt].value.positive_arguments:
                 r.filterAndStore(examples, 0, e[examples.domain.classVar])
                 r.quality = evaluateFunction(r,examples,0,int(e[examples.domain.classVar]),apriori)
-            e[argAtt].value.positiveArguments.sort(lambda x,y: -cmp(x.quality, y.quality))
+            e[argAtt].value.positive_arguments.sort(lambda x,y: -cmp(x.quality, y.quality))
 
 def isGreater(oper):
     if oper == Orange.core.ValueFilter_continuous.Greater or \
@@ -310,3 +311,110 @@ class ConvertCont:
                 return Orange.core.Value(self.newAtt, self.value)
             else:
                 return Orange.core.Value(self.newAtt, float(example[self.position]))
+
+
+def addErrors(test_data, classifier):
+    """ Main task of this function is to add probabilistic errors to examples. Function
+        also computes classification accuracy as a by product."""
+    correct        = 0.0
+    clDistribution = orange.Distribution(test_data.domain.classVar)
+    for ex_i, ex in enumerate(test_data):
+        (cl,prob) = classifier(ex,orange.GetBoth)
+        # add prob difference to ProbError
+        if prob[ex.getclass()] < 0.01:
+            print prob
+        ex.setmeta("ProbError", ex.getmeta("ProbError") + 1.-prob[ex.getclass()]) 
+        ex.setmeta("ProbErrorSD", ex.getmeta("ProbErrorSD") + math.pow(1.-prob[ex.getclass()],2))
+        if test_data.domain.hasmeta("CoveredRules"):
+            for r_i,r in enumerate(classifier.rules):
+                if r(ex) and (not hasattr(cl, "ruleBetas") or cl.ruleBetas[r_i]):
+                    ex.setmeta("CoveredRules", ex.getmeta("CoveredRules")+orngCN2.ruleToString(r)+";")
+        if cl == ex.getclass(): # compute classification accuracy (just for fun)
+            correct += 1.
+            clDistribution[ex.getclass()] += 1.
+    apriori = orange.Distribution(test_data.domain.classVar,test_data)
+    correct /= len(test_data)
+    for cl_v in test_data.domain.classVar:
+        clDistribution[cl_v] /= max(apriori[cl_v],1)
+    # add space between different test set in "covered rules"
+    for ex in test_data:
+        ex.setmeta("CoveredRules", ex.getmeta("CoveredRules")+";      ;")
+    return (correct,clDistribution)
+
+
+def nCrossValidation(data,learner,weightID=0,folds=5,n=4,gen=0):
+    """ Function performs n x fold crossvalidation. For each classifier
+        test set is updated by calling function addErrors. """
+    acc = 0.0
+    dist = orange.Distribution(data.domain.classVar)    
+    pick = orange.MakeRandomIndicesCV(folds=folds, randseed=gen, stratified = orange.MakeRandomIndices.StratifiedIfPossible)    
+    for d in data:
+        d.setmeta("ProbError",0.)
+        d.setmeta("ProbErrorSD",0.)
+##        d.setmeta("Rules","")
+    for n_i in range(n):
+        pick.randseed = gen+10*n_i
+        selection = pick(data)
+        for folds_i in range(folds):
+            for data_i,e in enumerate(data):
+                try:
+                    if e["Arguments"]: # examples with arguments do not need to be tested
+                        selection[data_i]=folds_i+1
+                except:
+                    pass
+            train_data = data.selectref(selection, folds_i,negate=1)
+            test_data = data.selectref(selection, folds_i,negate=0)
+            classifier = learner(train_data,weightID)
+            classifier.setattr("data", train_data)
+            acc1,dist1 = addErrors(test_data, classifier)
+
+            print "N=%d, Folds=%d: %s %s" % (n_i+1, folds_i, acc1, dist1)
+            acc += acc1
+            for cl_i in range(len(data.domain.classVar.values)):
+                dist[cl_i] += dist1[cl_i]
+
+    for e in data:
+        avgProb = e.getmeta("ProbError")/n
+        sumSq = e.getmeta("ProbErrorSD")
+        sumProb = e.getmeta("ProbError")
+        if n>1 and (sumSq-2*avgProb*sumProb+n*math.pow(avgProb,2))/(n-1) > 0.:
+            e.setmeta("ProbErrorSD", math.sqrt((sumSq-2*avgProb*sumProb+n*math.pow(avgProb,2))/(n-1)))
+        else:
+            e.setmeta("ProbErrorSD", 0.)
+        e.setmeta("ProbError", avgProb)
+    acc = acc/n/folds
+    for cl_v in test_data.domain.classVar:
+        dist[cl_v] /= n*folds
+    return (acc,dist)
+
+
+def findProb(learner,examples,weightID=0,folds=5,n=4,gen=0):
+    """ General method for calling to find problematic example.
+        It returns all examples along with average probabilistic errors.
+        Taking the one with highest error is the same as taking the most
+        problematic example. """
+    newDomain = orange.Domain(examples.domain.attributes, examples.domain.classVar)
+    newDomain.addmetas(examples.domain.getmetas())
+    newExamples = orange.ExampleTable(newDomain, examples)
+    if not newExamples.domain.hasmeta("ProbError"):
+        newId = orange.newmetaid()
+        newDomain.addmeta(newId, orange.FloatVariable("ProbError"))
+        newExamples = orange.ExampleTable(newDomain, examples)
+    if not newExamples.domain.hasmeta("ProbErrorSD"):
+        newId = orange.newmetaid()
+        newDomain.addmeta(newId, orange.FloatVariable("ProbErrorSD"))
+        newExamples = orange.ExampleTable(newDomain, examples)
+    if not newExamples.domain.hasmeta("CoveredRules"):
+        newId = orange.newmetaid()
+        newDomain.addmeta(newId, orange.StringVariable("CoveredRules"))
+        newExamples = orange.ExampleTable(newDomain, examples)        
+    if not newExamples.domain.hasmeta("SerialNumberPE"):
+        newId = orange.newmetaid()
+        newDomain.addmeta(newId, orange.FloatVariable("SerialNumberPE"))
+        newExamples = orange.ExampleTable(newDomain, examples)
+##        newExamples.domain.addmeta(newId, orange.FloatVariable("SerialNumberPE"))
+##        newExamples.addMetaAttribute("SerialNumberPE", 0.)
+        for i in range(len(newExamples)):
+            newExamples[i]["SerialNumberPE"] = float(i)
+    trs = nCrossValidation(newExamples,learner,weightID=weightID, folds=folds, n=n, gen=gen)
+    return newExamples            
