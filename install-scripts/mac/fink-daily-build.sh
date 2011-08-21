@@ -277,6 +277,9 @@ if [ $PACKAGE_SOURCE ]; then
 	done
 fi
 
+# Configures any pending packages from possible interrupted past sessions
+dpkg --configure -a
+
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."
 fink $FINK_SELFUPDATE_ARGS selfupdate --method=rsync
