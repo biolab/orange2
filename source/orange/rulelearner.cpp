@@ -73,7 +73,7 @@ TRule::TRule(PFilter af, PClassifier cl, PLearner lr, PDistribution dist, PExamp
 
 
 TRule::TRule(const TRule &other, bool copyData)
-: filter(other.filter? other.filter->deepCopy() : PFilter()),
+: filter(other.filter? other.filter->deepCopy() : PFilter()), // 
   valuesFilter(other.valuesFilter? other.valuesFilter->deepCopy() : PFilter()),
   classifier(other.classifier),
   learner(other.learner),
@@ -468,13 +468,15 @@ float TRuleEvaluator_LRS::operator()(PRule rule, PExampleTable, const int &, con
   if (p<=(p+n)*P/(P+N))
 	return 0.0;
 
-  float ep = obs_dist.abs*P/(exp_dist.abs);
-  float lrs = 2 * (p*log(p/ep) + n*log(n/obs_dist.abs) +
-                   (P-p)*log((P-p)/(exp_dist.abs-obs_dist.abs)) + (N-n)*log((N-n)/(exp_dist.abs-obs_dist.abs)) -
-                   (P-p)*log(P/exp_dist.abs)-N*log(N/exp_dist.abs));
+  float ep = (p+n)*P/(P+N);
+  float lrs = 2 * (p*log(p/ep) + n*log(n/(p+n))+(P-p)*log((P-p)/(P+N-p-n))+(N-n)*log((N-n)/(P+N-p-n))-(P-p)*log(P/(P+N))-N*log(N/(P+N)));
   if (storeRules) {
+	TFilter_values *filter;
+    filter = rule->filter.AS(TFilter_values);
+	int ncond = filter->conditions->size();
     TRuleList &rlist = rules.getReference();
-    rlist.push_back(rule);
+	if (!rlist.at(ncond) || rlist.at(ncond)->quality < lrs)
+		rlist.at(ncond) = rule;
   }
   return lrs;
 }
@@ -495,18 +497,24 @@ TEVDist::TEVDist()
   step = (float)0.1;
 }
 
+// compute cumulative probability with extreme value distribution 
 double TEVDist::getProb(const float & chi)
-{
+{  
+  // percentiles are not computed
   if (!percentiles || percentiles->size()==0 || percentiles->at(percentiles->size()-1)<chi)
     return 1.0-exp(-exp((double)(mu-chi)/beta));
-  if (chi < percentiles->at(0))
-    return 1.0;
+  // low chi
+  if (chi < percentiles->at(0)-1e-6)
+    return 1.0 - 0.05 * chi / percentiles->at(0);
   TFloatList::const_iterator pi(percentiles->begin()), pe(percentiles->end());
   for (int i=0; (pi+1)!=pe; pi++,i++) {
     float a = *pi;
     float b = *(pi+1);
-    if (chi>=a && chi <=b)
-      return (maxPercentile-i*step)-step*(chi-a)/(b-a);
+    if (chi>=(a-1e-6) && chi <= (b+1e-6))
+      if (b - a <= 0.0)
+        return maxPercentile-i*step;
+      else
+        return (maxPercentile-i*step)-step*(chi-a)/(b-a);
   }
   return 1.0;
 }
@@ -550,7 +558,7 @@ float getChi(float p, float n, float P, float N)
   return 2*(p*log(p/ep)+n*log(n/(p+n))+(P-p)*log((P-p)/(P+N-p-n))+(N-n)*log((N-n)/(P+N-p-n))-(P-p)*log(P/(P+N))-N*log(N/(P+N)));
 }
 
-LNLNChiSq::LNLNChiSq(PEVDist evd, const float & chi)
+LNLNChiSq::LNLNChiSq(PEVDist evd, const float & chi, const float & priorProb)
 : evd(evd),
   chi(chi)
 {
@@ -559,18 +567,29 @@ LNLNChiSq::LNLNChiSq(PEVDist evd, const float & chi)
   if (extremeAlpha < 1.0-evd->maxPercentile)
     extremeAlpha = -1.0;
   // exponent used in FT cumulative function (min because it is negative)
-  exponent = min(float(log(log(1/evd->maxPercentile))),(evd->mu-chi)/evd->beta);
+  exponent = min(float(log(log(1/evd->maxPercentile))),(evd->mu-chi)/evd->beta); //(evd->mu-chi)/evd->beta; //min(float(log(log(1/evd->maxPercentile))),(evd->mu-chi)/evd->beta);
+  pp = priorProb;
 }
 
 double LNLNChiSq::operator()(float chix) {
+  if (chix > 1400)
+    return -1000.0;
+
+  double chip;
   if (chix<=0.0)
-    return 100.0;
-  double chip = chisqprob((double)chix,1.0)/2; // in statc
+    chip = 0.5;
+  else
+    chip = chisqprob((double)chix,1.0)*0.5;//pp; // in statc
+
+  //chip = chisqprob((double)chix,1.0); // in statc
+/*  if (chi > 5.2 && chi < 5.3)
+  printf("chip = %f, chip-e = %f\n", chip, chip-extremeAlpha); */
+
   if (extremeAlpha > 0.0)
     return chip-extremeAlpha;
 
   if (chip<=0.0)
-    return -100.0;
+    return -1000.0;
 
   if (chip < 1e-6)
     return log(chip)-exponent;
@@ -616,15 +635,15 @@ double LRInvE::operator()(float P){
 }
 
 // Implementation of Brent's root finding method.
-float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFunc * func)
+float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFunc * func, float threshold)
 {
   float a = minv;
   float b = maxv;
   float fa = func->call(a);
   float fb = func->call(b);
 
-  float threshold = 0.01 * (maxv - minv);
 
+ // float threshold = 0.01 * (maxv - minv);
   if (fb>0 && fa>0 && fb>fa || fb<0 && fa<0 && fb<fa)
     return a;
 	if (fb>0 && fa>0 && fb<fa || fb<0 && fa<0 && fb>fa)
@@ -658,10 +677,13 @@ float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFu
     b = e;
     fb = fe;
 
-    if (counter>maxsteps)
-      return 0.0;
-    if ((b>0.1 && fb*func->call(b-0.1)<=0) || fb*func->call(b+0.1)<=0)
+/*    if (counter<maxsteps)
+		printf("a = %f, b=%f, fa=%f, fb=%f, maxv=%f, minv=%f\n",a,b,fa,fb,maxv,minv); */
+    //  return 0.0;
+    if ((b>threshold && fb*func->call(b-threshold)<=0) || fb*func->call(b+threshold)<=0)
+    {
       return b;
+    }
     if (abs(a-b)<threshold && fa*fb<0)
       return (a+b)/2.;
     if (fb*fa>0 || b>maxv || b<minv)
@@ -753,8 +775,8 @@ bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples,
                    wnewRule->classDistribution->abs - wnewRule->classDistribution->atint(targetClass));
       // correct lrs with evc
       if (!useClassicLRS) {
-        LNLNChiSq *diffFunc = new LNLNChiSq(evd,chi);
-		    chi = brent(0.0,chi,100, diffFunc);
+        LNLNChiSq *diffFunc = new LNLNChiSq(evd,chi,aprioriProb);
+		    chi = brent(0.0,chi,100, diffFunc, 0.1f);
         delete diffFunc;
       }
       // check significance
@@ -811,7 +833,7 @@ float TRuleEvaluator_mEVC::evaluateRulePessimistic(PRule rule, PExampleTable exa
   else {
       // compute ePos
       LRInvE *diffFunc = new LRInvE(rule, rule->parentRule, targetClass, median);
-      ePos = brent(rule->parentRule->classDistribution->atint(targetClass)/rule->parentRule->classDistribution->abs*rule->classDistribution->atint(targetClass), rule->classDistribution->atint(targetClass), 100, diffFunc);
+      ePos = brent(rule->parentRule->classDistribution->atint(targetClass)/rule->parentRule->classDistribution->abs*rule->classDistribution->atint(targetClass), rule->classDistribution->atint(targetClass), 100, diffFunc, 0.1f);
       delete diffFunc;
 
   }
@@ -854,12 +876,12 @@ float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, c
   if (!evd || evd->mu < 0.0)
     return -10e+6;
   //printf("mu=%f, beta=%f\n",evd->mu,evd->beta);
-  if (evd->mu == 0.0)
+  if (evd->mu < 1.0001)
   {
     // return as if rule distribution is not optimistic
     rule->chi = getChi(rule->classDistribution->atint(targetClass), rule->classDistribution->abs - rule->classDistribution->atint(targetClass),
                 apriori->atint(targetClass), apriori->abs - apriori->atint(targetClass));
-	  rule->estRF = rule->classDistribution->atint(targetClass)/rule->classDistribution->abs;
+	rule->estRF = rule->classDistribution->atint(targetClass)/rule->classDistribution->abs;
     rule->distP = rule->classDistribution->atint(targetClass);
     return (rule->classDistribution->atint(targetClass)+m*aprioriProb)/(rule->classDistribution->abs+m);
   }
@@ -871,19 +893,18 @@ float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, c
   float median = evd->median();
   float rule_acc = rule->classDistribution->atint(targetClass)/rule->classDistribution->abs;
 
-  if ((evd->mu-chi)/evd->beta < -100)
+  if ((evd->mu-chi)/evd->beta < -500)
     ePos = rule->classDistribution->atint(targetClass);
-  else if (rule_acc < baseProb)
+  if (rule_acc < baseProb)
     ePos = rule->classDistribution->atint(targetClass);
-  else if (chi<=median)
-    ePos = rule->classDistribution->abs * baseProb;
+  else if (chi <= median+1e-6)
+      ePos = rule->classDistribution->abs * baseProb;
   else {
       // correct chi
-      LNLNChiSq *diffFunc = new LNLNChiSq(evd,chi);
-      rule->chi = brent(0.0,chi,100, diffFunc); // this is only the correction of one step chi
+      LNLNChiSq *diffFunc = new LNLNChiSq(evd,chi,aprioriProb);
+      rule->chi = brent(0.0,chi,100, diffFunc, 0.1f); // this is only the correction of one step chi
       delete diffFunc;
 
-      //printf("rule chi = %4.3f\n",rule->chi);
       // compute expected number of positive examples relatively to base rule
       if (rule->chi > 0.0)
       {
@@ -891,29 +912,41 @@ float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, c
 
         float baseTarget = base->atint(targetClass);
         LRInv *diffFunc = new LRInv(rule->classDistribution->abs, baseTarget, base->abs, rule->chi); //-0.45);
-        ePos = brent(base->atint(targetClass)/base->abs*rule->classDistribution->abs, rule->classDistribution->atint(targetClass), 100, diffFunc);
+        ePos = brent(base->atint(targetClass)/base->abs*rule->classDistribution->abs, rule->classDistribution->atint(targetClass), 100, diffFunc, 0.1f);
         //printf("epos = %4.3f\n",ePos);
         delete diffFunc;
+        if (rule->classDistribution->abs == rule->classDistribution->atint(targetClass))
+        {
+            if (rule->parentRule)
+            {
+                float parentOpt = rule->parentRule->estRF / (rule->parentRule->classDistribution->atint(targetClass) / rule->parentRule->classDistribution->abs);
+                float ruleOpt = ePos / rule->classDistribution->atint(targetClass);
+                if (ruleOpt < parentOpt)
+                    ePos = (ruleOpt + (parentOpt - ruleOpt) * 0.366) * rule->classDistribution->atint(targetClass);
+            }
+            else
+                ePos = (0.634 * ePos/rule->classDistribution->atint(targetClass) + 0.366) * rule->classDistribution->atint(targetClass);
+        }
       }
       else
         ePos = rule->classDistribution->abs * baseProb;
+
   }
 
+  //
   rule->chi = getChi(ePos, rule->classDistribution->abs - ePos,
                 apriori->atint(targetClass), apriori->abs - apriori->atint(targetClass));
 
   rule->estRF = ePos/rule->classDistribution->abs;
+
   float quality = (ePos + m*aprioriProb)/(rule->classDistribution->abs+m);
-  //printf("quality = %4.3f, rf = %4.3f\n",quality, rule->estRF);
- // if (rule->classDistribution->atint(targetClass) >= 38 || rule->parentRule->classDistribution->atint(targetClass) >= 38)
- //   printf("child: all %4.4f %4.4f %4.4f\n", rule->distP, quality, aprioriProb);
+
   if (quality > aprioriProb)
     return quality;
   if (rule_acc < aprioriProb)
-    return rule_acc;
-  return aprioriProb; //-0.01+0.01*rule_acc;
+    return rule_acc-0.01;
+  return aprioriProb-0.01+0.01*chi/median; 
 }
-
 
 float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori)
 {
@@ -933,8 +966,6 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
   else if (optimismReduction == 2)
     quality = evaluateRuleEVC(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
 
-/*  if (optimismReduction == 2)
-	printf("rule: %f, %f, %f\n",rule->classDistribution->atint(targetClass), rule->classDistribution->abs, quality); */
   if (quality < 0.0)
     return quality;
   if (!probVar || !returnExpectedProb)
@@ -951,6 +982,11 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
   float futureQuality = 0.0;
   if (rule->classDistribution->atint(targetClass) == rule->classDistribution->abs)
     futureQuality = -1.0;
+  else if (improved >= min_improved &&
+	       improved/rule->classDistribution->atint(targetClass) > min_improved_perc*0.01 &&
+           quality > (aprioriProb + 1e-3))
+    futureQuality = quality;
+//    futureQuality = 1.0 + quality;
   else {
     PDistribution oldRuleDist = rule->classDistribution;
     float rulesTrueChi = rule->chi;
@@ -983,10 +1019,6 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
       PEITERATE(ei, rule->examples) {
         if ((*ei).getClass().intV != targetClass)
           continue;
-      /*  if (quality >= (*ei)[probVar].floatV) {
-          futureQuality += 1.0;
-          continue;
-        } */
         if (bestQuality <= (*ei)[probVar].floatV) {
           continue;
         }
@@ -994,13 +1026,9 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
         if ((*ei)[probVar].floatV > quality)
           x *= (1.0-quality)/(bestQuality-quality);
         x /= sqrt(quality*(1.0-quality)); // rule->classDistribution->abs*
- //       if (max(1e-12,1.0-zprob(x)) > futureQuality)
- //           futureQuality = max(1e-12,1.0-zprob(x));
- //           futureQuality += max(1e-12,1.0-zprob(x));
         futureQuality += log(1.0-max(1e-12,1.0-2*zprob(x)));
       }
       futureQuality = 1.0 - exp(futureQuality);
-      //futureQuality /= rule->classDistribution->atint(targetClass); //apriori->abs; //rule->classDistribution->atint(targetClass);//rule->classDistribution->abs;
     }
   }
 
@@ -1196,7 +1224,8 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
     }
 
     else if (((*vi)->varType == TValue::FLOATVAR)) {
-      if (discretization) {
+
+        if (discretization) {
         PVariable discretized;
         try {
           discretized = discretization->call(rule.examples, *vi, weightID);
@@ -1257,6 +1286,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
         raiseWarning("discretizer not given, continuous attributes will be skipped");
     }
   }
+
   if (!discretization)
     discretization = PDiscretization();
   return wRuleList;
@@ -1297,12 +1327,14 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   if (tempRuleFilter)
     ruleFilter = mlnew TRuleBeamFilter_Width;
 
+  // create an entropy evaluator to detect rules with pure distributions
+  PRuleEvaluator entropy_evaluator = mlnew TRuleEvaluator_Entropy;
+
   checkProperty(initializer);
   checkProperty(candidateSelector);
   checkProperty(refiner);
   checkProperty(evaluator);
   checkProperty(ruleFilter);
-
   PDistribution apriori = getClassDistribution(data, weightID);
 
   TRandomGenerator rgen(data->numberOfExamples());
@@ -1311,13 +1343,11 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   PRule bestRule;
   PRuleList ruleList = initializer->call(data, weightID, targetClass, baseRules, evaluator, apriori, bestRule);
 
-  {
   PITERATE(TRuleList, ri, ruleList) {
     if (!(*ri)->examples)
       (*ri)->filterAndStore(data, weightID,targetClass);
     if ((*ri)->quality == ILLEGAL_FLOAT)
       (*ri)->quality = evaluator->call(*ri, data, weightID, targetClass, apriori);
-  }
   }
 
   if (!bestRule->examples)
@@ -1331,9 +1361,15 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     PITERATE(TRuleList, ri, candidateRules) {
       PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);
       PITERATE(TRuleList, ni, newRules) {
+        // evaluate rule
         (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
         if ((*ni)->quality > bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
           _selectBestRule(*ni, bestRule, wins, rgen);
+        // if rule covers only one class or has less than 2 examples, do not add it for further specialization
+        if (entropy_evaluator->call(*ni, data, weightID, targetClass, apriori) > -0.01 ||
+            (*ni)->classDistribution->abs < 2)
+            continue;
+        // is the rule a good candidate for further specialization?
         if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, (*ri)->examples, weightID, targetClass, (*ri)->classDistribution)) {
           ruleList->push_back(*ni);
         }
@@ -2053,7 +2089,7 @@ bool TRuleClassifier_logit::setBestPrefixRule()
 
   for (int i=0; i<rules->size(); i++) {
     // compute new coverage
-	new_positive = 0.0; new_covered = 0.0;
+    new_positive = 0.0; new_covered = 0.0;
     for (int j=0; j<examples->numberOfExamples(); j++)
         if (rules->at(i)->call(examples->at(j)) && !tempState->isExampleFixed[j])
         {
@@ -2061,38 +2097,38 @@ bool TRuleClassifier_logit::setBestPrefixRule()
                 new_positive ++;
             new_covered ++;
         }
-	if (new_covered < 1)
-		continue;
+    if (new_covered < 1)
+        continue;
 
 /*	// rule should cover at least 50% of its own examples (so that conditions still make some sense)
     if (new_covered < rules->at(i)->classDistribution->abs / 2)
       continue; */
 
-	apriori_prob = apriori->atint(getClassIndex(rules->at(i))) / apriori->abs;
+    apriori_prob = apriori->atint(getClassIndex(rules->at(i))) / apriori->abs;
     new_rf_rule = new_positive / new_covered;
-	if (new_rf_rule <= apriori_prob)
-		continue;
+    if (new_rf_rule <= apriori_prob)
+        continue;
 
-	// corrected quality of the rule (due to rules in the prefix set already)
+    // corrected quality of the rule (due to rules in the prefix set already)
     oldQuality = rules->at(i)->quality;
-	rf_rule = rules->at(i)->classDistribution->atint(getClassIndex(rules->at(i)));
-	rf_rule /= rules->at(i) -> classDistribution->abs;
-	newQuality = oldQuality * (new_positive + 2*rf_rule) / (new_covered + 2) / rf_rule;
+    rf_rule = rules->at(i)->classDistribution->atint(getClassIndex(rules->at(i)));
+    rf_rule /= rules->at(i) -> classDistribution->abs;
+    newQuality = oldQuality * (new_positive + 2*rf_rule) / (new_covered + 2) / rf_rule;
 
     // check if improvement is good
     rules->at(i)->quality = newQuality;
     currentState->setPrefixRule(i);
     rules->at(i)->quality = oldQuality;
 
-	brier_improvement = (current_brier - currentState->getBrierScore()) / new_covered;
+    brier_improvement = (current_brier - currentState->getBrierScore()) / new_covered;
 
-	if (currentState->getAUC() >= current_auc && 
-	    brier_improvement > best_brier_improvement)
-	{
-		best_brier_improvement = brier_improvement;
-		bestRuleI = i;
-		bestNewQuality = newQuality;
-	}
+    if (currentState->getAUC() >= current_auc && 
+        brier_improvement > best_brier_improvement)
+    {
+        best_brier_improvement = brier_improvement;
+        bestRuleI = i;
+        bestNewQuality = newQuality;
+    }
     tempState->copyTo(currentState);
   }
   if (bestRuleI > -1)
@@ -2194,7 +2230,8 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
   wSatQ = satQ;
   if (minSignificance >= 0.5 || minSignificance <= 0.0)
     PITERATE(TRuleList, ri, rules)
-      wSatQ->push_back((*ri)->quality);
+      //wSatQ->push_back((*ri)->quality);
+      wSatQ->push_back(1);
   else
   {
     float n,a,b,error,high,low,av,avf;
@@ -2271,6 +2308,56 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
 
 void TRuleClassifier_logit::updateRuleBetas(float step_)
 {
+    PLogitClassifierState finalState;
+    currentState->copyTo(finalState);
+
+    float step = 0.1f;
+    float gamma = 0.01f;
+    float error = 1e+20f;
+    float old_error = 1e+21f;
+
+    while (old_error > error || step > 0.00001)
+    {
+        // reduce step if improvement failed
+        if (old_error < error)
+        {
+            step /= 10;
+            finalState->copyTo(currentState);
+        }
+        else
+            currentState->copyTo(finalState);
+
+        old_error = error;
+        // update betas
+        for (int i=0; i<rules->size(); i++) {
+            if (skipRule[i])
+                continue;
+
+            float der = 0.0;
+            if (currentState->avgProb->at(i) < rules->at(i)->quality)
+                der -= rules->at(i)->quality - currentState->avgProb->at(i);
+            der += 2*gamma*currentState->betas[i];
+            currentState->newBeta(i,max(0.0f, currentState->betas[i]-step*der));
+        }
+        // estimate new error
+        error = 0;
+        for (int i=0; i<rules->size(); i++) {
+            if (currentState->avgProb->at(i) < rules->at(i)->quality)
+                error += rules->at(i)->quality - currentState->avgProb->at(i);
+            error += gamma*pow(currentState->betas[i],2);
+        }
+        //printf("error = %4.4f\n", error);
+        // print betas
+        //for (int i=0; i<rules->size(); i++)
+        //    printf("%4.2f,",currentState->betas[i]);
+        //printf("\n"); 
+    }
+    finalState->copyTo(currentState);
+}
+
+/*
+void TRuleClassifier_logit::updateRuleBetas2(float step_)
+{
 
   stabilizeAndEvaluate(step_,-1);
   PLogitClassifierState finalState, tempState;
@@ -2341,7 +2428,7 @@ void TRuleClassifier_logit::updateRuleBetas(float step_)
   }
   finalState->copyTo(currentState);
 }
-
+*/
 
 void TRuleClassifier_logit::stabilizeAndEvaluate(float & step, int last_changed_rule_index)
 {

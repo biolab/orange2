@@ -188,10 +188,10 @@ public:
 class LNLNChiSq: public DiffFunc {
 public:
   PEVDist evd;
-  float chi, exponent;
+  float chi, exponent, pp;
   double extremeAlpha;
 
-  LNLNChiSq(PEVDist evd, const float & chi);
+  LNLNChiSq(PEVDist evd, const float & chi, const float & aprioriProb);
   double operator()(float chix);
 };
 
