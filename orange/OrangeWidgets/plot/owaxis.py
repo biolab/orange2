@@ -147,7 +147,9 @@ class OWAxis(QGraphicsItem):
             title_p = 0.05
         title_pos = self.graph_line.pointAt(title_p)
         v = self.graph_line.normalVector().unitVector()
-        if self._ticks:
+        if hasattr(self, 'title_margin'):
+            offset = self.title_margin
+        elif self._ticks:
             offset = 50
         else:
             offset = 20
@@ -216,19 +218,27 @@ class OWAxis(QGraphicsItem):
             item = self.label_items[i]
             item.setVisible(True)
             if not zoom_only:
-                item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
+                if self.id in XAxes or getattr(self, 'is_horizontal', False):
+                    item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
+                else:
+                    item.setHtml(Qt.escape(text.strip()))
             if self.id not in CartesianAxes and not self.always_horizontal_text:
                 item.setRotation(-self.graph_line.angle())
             
             item.setTextWidth(-1)
             if self.id in YAxes or self.always_horizontal_text:
                 w = min(item.boundingRect().width(), self.max_text_width)
-                label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
+                item.setTextWidth(w)
+                if self.title_above:
+                    label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
+                else:
+                    label_pos = tick_pos + n_p * (self.text_margin) + l_p * item.boundingRect().height()/2
             else:
                 w = min(item.boundingRect().width(), QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length())
                 label_pos = tick_pos + n_p * self.text_margin - l_p * w/2
+                item.setTextWidth(w)
+
             item.setPos(label_pos)
-            item.setTextWidth(w)
             item.setDefaultTextColor(text_color)
             
             self.label_bg_items[i].setRect(item.boundingRect())

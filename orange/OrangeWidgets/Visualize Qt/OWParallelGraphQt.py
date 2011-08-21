@@ -71,15 +71,6 @@ class OWParallelGraph(OWPlot, orngScaleData):
         self.xPanningInfo = (1, 0, len(attributes)-1)
         self.yPanningInfo = (0, 0, 0)   # we don't enable panning in y direction so it doesn't matter what values we put in for the limits
 
-        if updateAxisScale:
-            if self.showAttrValues: self.setAxisScale(yLeft, -0.04, 1.04, 1)
-            else:                   self.setAxisScale(yLeft, -0.02, 1.02, 1)
-
-            if self.autoUpdateAxes:
-                self.setAxisScale(xBottom, 0, len(attributes)-1, 1)
-            else:
-		self.setAxisScale(xBottom, 0, len(attributes)-1, 1)
-
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
 
@@ -193,10 +184,15 @@ class OWParallelGraph(OWPlot, orngScaleData):
 	    a = self.add_axis(id, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd, zoomable = True)
 	    a.always_horizontal_text = True
 	    a.max_text_width = 100
+	    a.title_margin = -10
+	    a.text_margin = 0
+	    a.setZValue(5)
+	    self.set_axis_title(id, self.dataDomain[attributes[i]].name)
+	    self.set_show_axis_title(id, self.showAttrValues)
             if self.showAttrValues == 1:
                 attr = self.dataDomain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
-		    self.set_axis_scale(id, 0.0-0.01, 1.0+0.01)
+		    self.set_axis_scale(id, self.attrValues[attr.name][0], self.attrValues[attr.name][1])
                 elif attr.varType == orange.VarTypes.Discrete:
 		    attrVals = getVariableValuesSorted(self.dataDomain[attributes[i]])
 		    self.set_axis_labels(id, attrVals)
