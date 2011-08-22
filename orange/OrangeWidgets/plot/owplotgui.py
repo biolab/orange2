@@ -314,7 +314,7 @@ class OWPlotGUI:
             When the checkbox is toggled, the attribute ``value`` of the plot object is set to the checkbox' check state,
             and the callback ``cb_name`` is called. 
         '''
-        OWGUI.checkBox(widget, self._plot, value, label, callback=self._get_callback(cb_name))    
+        OWGUI.checkBox(widget, self._plot, value, label, callback=self._get_callback(cb_name))
         
     def antialiasing_check_box(self, widget):
         '''

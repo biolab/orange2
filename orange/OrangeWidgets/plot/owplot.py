@@ -1575,7 +1575,8 @@ class OWPlot(orangeqt.Plot):
         
     def update_animations(self, use_animations=None):
         if use_animations is not None:
-            self.use_animations = use_animations
+            self.animate_plot = use_animations
+            self.animate_points = use_animations
             
     def update_performance(self, num_points = None):
         if self.auto_adjust_performance:
@@ -1585,15 +1586,24 @@ class OWPlot(orangeqt.Plot):
                 else:
                     num_points = sum( len(c.points()) for c in self.curves )
             if num_points > self.disable_animations_threshold:
-                qDebug('Disabling animations')
+                self.disabled_animate_points = self.animate_points
                 self.animate_points = False
+                
+                self.disabled_animate_plot = self.animate_plot
                 self.animate_plot = False
+                
+                self.disabled_antialias_lines = self.animate_points
                 self.antialias_lines = False
-            else:
-                qDebug('Enabling animations')
-                self.animate_points = True
-                self.animate_plot = True
-                self.antialias_lines = True
+            
+            elif hasattr(self, 'disabled_animate_points'):
+                self.animate_points = self.disabled_animate_points
+                del self.disabled_animate_points
+                
+                self.animate_plot = self.disabled_animate_plot
+                del self.disabled_animate_plot
+                
+                self.antialias_lines = self.disabled_antialias_lines
+                del self.disabled_antialias_lines
         
     def animate(self, target, prop_name, end_val, duration = None, start_val = None):
         for a in self._animations:

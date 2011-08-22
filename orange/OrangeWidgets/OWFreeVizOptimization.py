@@ -255,6 +255,10 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.stopButton.show()
         self.cancelOptimization = 0
         #qApp.processEvents()
+        
+        if hasattr(self.graph, 'animate_points'):
+            self.graph_is_animated = self.graph.animate_points
+            self.graph.animate_points = False
 
         ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep, self.parentWidget.distances)
 
@@ -266,6 +270,8 @@ class FreeVizOptimization(OWWidget, FreeViz):
 
     def stopOptimization(self):
         self.cancelOptimization = 1
+        if hasattr(self, 'graph_is_animated'):
+            self.graph.animate_points = self.graph_is_animated
 
 #    # #############################################################
 #    # DIFFERENTIAL EVOLUTION
@@ -421,3 +427,4 @@ if __name__=="__main__":
     ow=FreeVizOptimization()
     ow.show()
     a.exec_()
+
