@@ -133,10 +133,10 @@ class OWDistributionGraphQt(OWPlot):
             self.variableContinuous = FALSE
 
         if self.variableContinuous:
-            self.setXlabels(None)
+            self.set_axis_labels(xBottom, None)
         else:
             labels = self.data.domain[self.attributeName].values.native()
-            self.setXlabels(labels)
+            self.set_axis_labels(xBottom, labels)
             
         self.calcHistogramAndProbGraph()
         self.refreshVisibleOutcomes()
@@ -351,6 +351,8 @@ class OWDistributionGraphQt(OWPlot):
         if not self.data or self.targetValue == None: return
         if self.showProbabilities:
             self.enableYRaxis(1)
+            if self.variableContinuous:
+                self.set_axis_scale(xBottom, self.probGraphValues[0][0], self.probGraphValues[-1][0])
           #  self.setShowYRaxisTitle(self.showYRaxisTitle)
           #  self.setYRaxisTitle(self.YRaxisTitle)
             xs = []
@@ -365,7 +367,7 @@ class OWDistributionGraphQt(OWPlot):
                     mps.append(ps[self.targetValue] + 0.0)
                     lps.append(ps[self.targetValue] - cis[self.targetValue])
                 else:
-                    ## We make 3x as many point in both cases. 
+                    ## We make 3x as many points in both cases. 
                     ## This way animations look better when switching the ConfidenceIntervals on and off
                     xs.extend([cn] * 3)
                     if self.showConfidenceIntervals:
