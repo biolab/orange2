@@ -41,10 +41,11 @@ for %pyver in (%PYTHONVERSIONS) do (
 
   if %pyver% == 27 (
   	REM # compile orangeqt.pyd file (for Python 2.7 only)
+  	echo *** Compiling orangeqt for Python 2.7 only ***
     cdd %TMPDIR\source\orangeqt
     if not direxist build mkdir /s build
-    del /q build\*
-    cd build
+    del /q /s build\*
+    cdd  %TMPDIR\source\orangeqt\build
     %QTVARS
     cmake -DCMAKE_BUILD_TYPE=Release -G "NMake Makefiles" ..
     nmake
