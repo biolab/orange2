@@ -888,7 +888,7 @@ class ScaleLinProjData3D(ScaleData):
                           "useAnchorData": "use_anchor_data"})
     def save_projection_as_tab_data(self, filename, attrlist, use_anchor_data=0):
         """
-        Save projection (xattr, yattr, classval) into a filename filename.
+        Save projection (xattr, yattr, zattr, classval) into a filename filename.
         
         """
         Orange.core.saveTabDelimited(filename,

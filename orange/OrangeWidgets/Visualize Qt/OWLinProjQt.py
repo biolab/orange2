@@ -119,7 +119,7 @@ class OWLinProjQt(OWVisWidget):
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
-        if "radviz" in name.lower() "sphereviz" in name.lower() or "linear projection" in name.lower():
+        if "radviz" in name.lower() or "sphereviz" in name.lower() or "linear projection" in name.lower():
             self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
             self.wdChildDialogs.append(self.freeVizDlg)
             self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
