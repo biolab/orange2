@@ -1150,7 +1150,12 @@ class OWPlot(orangeqt.Plot):
     ## Event handling
     def resizeEvent(self, event):
         self.replot()
-
+        s = event.size() - event.oldSize()
+        if self.legend_margin.right() > 0:
+            self._legend.setPos(self._legend.pos() + QPointF(s.width(), 0))
+        if self.legend_margin.bottom() > 0:
+            self._legend.setPos(self._legend.pos() + QPointF(0, s.height()))
+        
     def showEvent(self, event):
         self.replot()
 
