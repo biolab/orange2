@@ -418,49 +418,43 @@ is the 'measure' attribute for the :obj:`SplitConstructor_Score` class
 
     Bases: :class:`SplitConstructor`
 
-    An abstract base class for split constructors that employ
-    a :class:`Orange.feature.scoring.Score` to assess a
-    quality of a split.  All split constructors except for
-    :obj:`SplitConstructor_Combined` are derived from this class.
+    An abstract base class for split constructors that compare splits
+    with a :class:`Orange.feature.scoring.Score`.  All split
+    constructors except for :obj:`SplitConstructor_Combined` are derived
+    from this class.
 
     .. attribute:: measure
 
-        A component of type :class:`Orange.feature.scoring.Score`
-        used for split evaluation. You must select a
-        :class:`Orange.feature.scoring.Score` capable of
-        handling your class type - for example, you cannot use
-        :class:`Orange.feature.scoring.GainRatio` for regression
-        trees or :class:`Orange.feature.scoring.MSE` for classification
-        trees.
+        A :class:`Orange.feature.scoring.Score` for split evaluation. It
+        has to handle the class type - for example, you cannot use
+        :class:`~Orange.feature.scoring.GainRatio` for regression or
+        :class:`~Orange.feature.scoring.MSE` for classification.
 
     .. attribute:: worst_acceptable
 
-        The lowest required split quality for a split to be acceptable.
-        Note that this value make sense only in connection with a
-        :obj:`measure` component. Default is 0.0.
+        The lowest allowed split quality.  The value strongly depends
+        on chosen :obj:`measure` component. Default is 0.0.
 
 .. class:: SplitConstructor_Feature
 
     Bases: :class:`SplitConstructor_Score`
 
-    Each value of a discrete feature corresponds to a branch
-    in the tree. The features with with the highest score
-    (:obj:`~Measure.measure`) is used for a split. If multiple features
-    are tied for highest score, select a random one.
+    Each value of a discrete feature corresponds to a branch.  The feature
+    with the highest score (:obj:`~Measure.measure`) is selected. When
+    tied, a random feature is selected.
 
     The constructed :obj:`branch_selector` is an instance of
-    :obj:`orange.ClassifierFromVarFD` that returns a value of the
-    selected feature. :obj:`branch_description` contains the feature's
-    values. The feature is marked as spent, so that it cannot reappear
-    in the node's subtrees.
+    :obj:`orange.ClassifierFromVarFD` that returns a value of the selected
+    feature. :obj:`branch_description` contains the feature's
+    values. The feature is marked as spent (it cannot reappear in the
+    node's subtrees).
 
 .. class:: SplitConstructor_ExhaustiveBinary
 
     Bases: :class:`SplitConstructor_Score`
 
-    Works on discrete features. For each feature it determines which
-    binarization gives the the highest score. In case of ties, a random
-    feature is selected.
+    For each discrete feature it determines which binarization gives
+    the the highest score. In case of ties, a random feature is selected.
 
     The constructed :obj:`branch_selector` is an instance
     :obj:`orange.ClassifierFromVarFD` that returns a value of the selected
@@ -469,15 +463,15 @@ is the 'measure' attribute for the :obj:`SplitConstructor_Score` class
     descriptions are of form ``[<val1>, <val2>, ...<valn>]`` for branches
     with more than one feature value. Branches with a single feature
     value are described with that value. If the feature was binary,
-    it is spent and cannot be used in the node's subtrees. Otherwise,
-    it can reappear in the subtrees.
+    it is spent and cannot be used in the node's subtrees. Otherwise
+    it is not spent.
 
 
 .. class:: SplitConstructor_Threshold
 
     Bases: :class:`SplitConstructor_Score`
 
-    Currently the only one for continuous features.  It divides the
+    The only split constructor for continuous features.  It divides the
     range of feature values with a threshold that maximizes the split's
     quality. In case of ties, a random feature is selected.  The feature
     that yields the best binary split is returned.
@@ -498,23 +492,21 @@ is the 'measure' attribute for the :obj:`SplitConstructor_Score` class
 
     Bases: :class:`SplitConstructor`
 
-    This constructor delegates the task of finding the optimal split 
-    to separate split constructors for discrete and for continuous
-    features. Each split constructor is called given only features
-    of appropriate type. Both construct a candidate for
-    a split; the better of them is selected.
+    This split constructor uses different split constructors for
+    discrete and continuous features. Each split constructor is called
+    with features of appropriate type only. Both construct a candidate
+    for a split; the better of them is selected.
 
-    Note that there is a problem when more candidates have the same
-    score. Let there be are nine discrete features with the highest
-    score; the split constructor for discrete features will select
-    one of them. Now, let us suppose that there is a single continuous
-    feature with the same score. :obj:`SplitConstructor_Combined`
-    would randomly select between the proposed discrete feature and
-    the continuous feature, not aware of the fact that the discrete
-    has already competed with eight other discrete features. So, the
-    probability for selecting (each) discrete feature would be 1/18
-    instead of 1/10. Although not really correct, we doubt that this would
-    affect the tree's performance.
+    There is a problem when multiple candidates have the same score. Let
+    there be nine discrete features with the highest score; the split
+    constructor for discrete features will select one of them. Now,
+    if there is a single continuous feature with the same score,
+    :obj:`SplitConstructor_Combined` would randomly select between the
+    proposed discrete feature and the continuous feature. It is not aware
+    of that the discrete has already competed with eight other discrete
+    features. So, the probability for selecting (each) discrete feature
+    would be 1/18 instead of 1/10. Although incorrect, we doubt that
+    this would affect the tree's performance.
 
     The :obj:`branch_selector`, :obj:`branch_descriptions` and whether
     the feature is spent is decided by the winning split constructor.
@@ -539,34 +531,23 @@ StopCriteria and StopCriteria_common
 
 .. class:: StopCriteria
 
-    Decide
-    whether to continue the induction or not. The basic criterion checks
-    if there are any instances and if they belong to at least
-    two different classes (if the class is discrete). Derived components
-    check things like the number of instances and the proportion of
-    majority classes.
-
-    :obj:`StopCriteria` is not an abstract but a fully functional
-    class that provides the basic stopping criteria. That is, the tree
-    induction stops when there is at most one instance left; 
-    it is not the weighted but the actual number of instances that counts.
-    The induction also stops when all instances are in the same
-    class (for discrete problems) or have the same outcome value 
+    Provides the basic stopping criteria: the tree induction stops
+    when there is at most one instance left (the actual, not weighted,
+    number). The induction also stops when all instances are in the
+    same class (for discrete problems) or have the same outcome value
     (for regression problems).
 
     .. method:: __call__(instances[, weightID, domain contingencies])
 
-        Retunr True (stop) of False (continue the induction).
+        Return True (stop) of False (continue the induction).
         If contingencies are given, they are used for checking whether
-        the instances are in the same classm (but not for
-        instance counting). Derived classes should use the contingencies
-        whenever possible.
+        classes but not for counting. Derived classes should use the
+        contingencies whenever possible.
 
 .. class:: StopCriteria_common
 
-    Additional criteria for pre-pruning:
-    the proportion of majority class and the number of weighted
-    instances.
+    Additional criteria for pre-pruning: the proportion of majority
+    class and the number of weighted instances.
 
     .. attribute:: max_majority
 
@@ -575,8 +556,8 @@ StopCriteria and StopCriteria_common
 
     .. attribute:: min_instances
 
-        Minimal number of instances in internal leaves. Subsets with
-        less than :obj:`min_instances` instances are not split any further.
+        Minimal number of instances in internal leaves. Subsets with less
+        than :obj:`min_instances` instances are not split further.
         The sample count is weighed.
 
 
@@ -1573,6 +1554,13 @@ Murray Hill NJ, U.S.A., October 1993.
 `Graphviz - open source graph drawing software <http://www.research.att.com/sw/tools/graphviz/>`_
 A home page of AT&T's dot and similar software packages.
 
+"""
+
+"""
+TODO C++ aliases
+
+SplitConstructor.discrete/continuous_split_constructor -> SplitConstructor.discrete 
+Node.examples -> Node.instances
 """
 
 from Orange.core import \
