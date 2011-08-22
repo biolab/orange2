@@ -276,7 +276,7 @@ class OWDistributionGraphQt(OWPlot):
                 key.set_point_size(7)
         else:
             self.enableYRaxis(0)
-            self.setAxisScale(yRight, 0.0, 1.0, 0.1)
+            self.setAxisScale(yRight, -0.05, 1.05, 0.1)
 
         self.probCurveKey = self.addCurve(xBottom, yRight)
         self.probCurveUpperCIKey = self.addCurve(xBottom, yRight)
@@ -291,7 +291,7 @@ class OWDistributionGraphQt(OWPlot):
             self.refreshPureVisibleOutcomes()
             return
         self.enableYRaxis(0)
-        self.setAxisScale(yRight, 0.0, 1.0, 0.1)
+        self.setAxisScale(yRight, -0.05, 1.05, 0.1)
         self.setYRaxisTitle("")
         keys = self.hdata.keys()
         if self.variableContinuous:
@@ -445,7 +445,7 @@ class OWDistributionsQt(OWWidget):
 
         self.graph = OWDistributionGraphQt(self, self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
-        self.graph.setAxisScale(yRight, 0.0, 1.0, 0.1)
+        self.graph.setAxisScale(yRight, -0.05, 1.05, 0.1)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         
         self.loadSettings()
