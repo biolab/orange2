@@ -174,10 +174,15 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
 
         if colorIndex != -1:
             if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
-                colorData = [QColor(*self.contPalette.getRGB(i)) for i in self.noJitteringScaledData[colorIndex]]
+                c_data = self.noJitteringScaledData[colorIndex]
+                palette = self.continuous_palette
             else:
-                colorData = [QColor(*self.discPalette.getRGB(i)) for i in self.originalData[colorIndex]]
-        else: colorData = [def_color]
+                c_data = self.originalData[colorIndex]
+                palette = self.discrete_palette
+            checked_color_data = [(c_data[i] if validData[i] else 0) for i in range(len(c_data))]
+            colorData = [QColor(*palette.getRGB(i)) for i in checked_color_data]
+        else:
+            colorData = [def_color]
 
         if sizeIndex != -1:
             sizeData = [MIN_SHAPE_SIZE + round(i * self.pointWidth) for i in self.noJitteringScaledData[sizeIndex]]
