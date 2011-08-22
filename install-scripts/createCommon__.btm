@@ -39,19 +39,24 @@ for %pyver in (%PYTHONVERSIONS) do (
   vcexpress orange.sln /build Release /out %COMPILELOG
   break_on_error
 
-  if %pyver% == 27 (
-  	REM # compile orangeqt.pyd file (for Python 2.7 only)
-  	echo *** Compiling orangeqt for Python 2.7 only ***
-    cdd %TMPDIR\source\orangeqt
-    if not direxist build mkdir /s build
-    del /q /s build\*
-    cdd  %TMPDIR\source\orangeqt\build
-    %QTVARS
-    cmake -DCMAKE_BUILD_TYPE=Release -G "NMake Makefiles" ..
-    nmake
-    if exist %PYORANGEDIR\orangeqt.pyd del /q %PYORANGEDIR\orangeqt.pyd
-    copy orangeqt.pyd %PYORANGEDIR
-  )
+REM #  if %pyver% == 27 (
+REM #  	REM # compile orangeqt.pyd file (for Python 2.7 only)
+REM #  	echo *** Compiling orangeqt for Python 2.7 only ***
+REM #    cdd %TMPDIR\source\orangeqt
+REM #	echo *deleting build directory*
+REM #    if direxist build rd /q/s build
+REM #    mkdir build
+REM #    cdd  %TMPDIR\source\orangeqt\build
+REM #    %QTVARS
+REM #	echo *running cmake*
+REM #    cmake -DCMAKE_BUILD_TYPE=Release -G "NMake Makefiles" ..
+REM #    break_on_error
+REM #	echo *running nmake*
+REM #	nmake
+REM #	break_on_error
+REM #    if exist %PYORANGEDIR\orangeqt.pyd del /q %PYORANGEDIR\orangeqt.pyd
+REM #    copy orangeqt.pyd %PYORANGEDIR
+REM #  )
   
   REM # compress pyd and create stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)
   set TMPBINDIR=%TMPDIR\binaries\%pyver
