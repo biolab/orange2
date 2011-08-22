@@ -18,8 +18,7 @@ from sys import getrecursionlimit, setrecursionlimit
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinatesQt(OWVisWidget):
-    settingsList = ["graph." + s for s in OWPlot.appearance_settings] + [
-                    "graph.jitterSize", "graph.showDistributions",
+    settingsList = ["graph.jitterSize", "graph.showDistributions",
                     "graph.showAttrValues",
                     "graph.useSplines", "graph.alphaValue", "graph.alphaValue2", "graph.show_legend", "autoSendSelection",
                     "toolbarSelection", "graph.showStatistics", "colorSettings", "selectedSchemaIndex", "showAllAttributes"]
