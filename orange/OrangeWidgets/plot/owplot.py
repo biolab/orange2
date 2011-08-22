@@ -344,8 +344,9 @@ class OWPlot(orangeqt.Plot):
         self.axes = dict()
 
         self.axis_margin = 50
+        self.y_axis_extra_margin = 30
         self.title_margin = 40
-        self.graph_margin = 20
+        self.graph_margin = 10
         
         self.mainTitle = None
         self.showMainTitle = False
@@ -956,7 +957,7 @@ class OWPlot(orangeqt.Plot):
             graph_rect.setTop(graph_rect.top() + margin)
         if yLeft in self.axes and self.axes[yLeft].isVisible():
             left_rect = QRectF(graph_rect)
-            left = graph_rect.left() + margin
+            left = graph_rect.left() + margin + self.y_axis_extra_margin
             left_rect.setRight(left)
             graph_rect.setLeft(left)
             axis_rects[yLeft] = left_rect
@@ -966,7 +967,7 @@ class OWPlot(orangeqt.Plot):
                 axis_rects[xTop].setLeft(left)
         if yRight in self.axes and self.axes[yRight].isVisible():
             right_rect = QRectF(graph_rect)
-            right = graph_rect.right() - margin
+            right = graph_rect.right() - margin - self.y_axis_extra_margin
             right_rect.setLeft(right)
             graph_rect.setRight(right)
             axis_rects[yRight] = right_rect

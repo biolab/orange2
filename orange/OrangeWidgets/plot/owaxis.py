@@ -35,7 +35,7 @@
 
 from math import *
 
-from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform, QGraphicsRectItem, QPen
+from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform, QGraphicsRectItem, QPen, QFontMetrics
 from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF, Qt
 
 from owconstants import *
@@ -150,11 +150,14 @@ class OWAxis(QGraphicsItem):
         if hasattr(self, 'title_margin'):
             offset = self.title_margin
         elif self._ticks:
-            offset = 50
+            if self.id in YAxes or self.always_horizontal_text:
+                offset = 50
+            else:
+                offset = 35
         else:
-            offset = 20
+            offset = 10
         if self.title_above:
-            title_pos = title_pos + (v.p2() - v.p1())*(offset)
+            title_pos = title_pos + (v.p2() - v.p1())*(offset + QFontMetrics(self.title_item.font()).height())
         else:
             title_pos = title_pos - (v.p2() - v.p1())*offset
         ## TODO: Move it according to self.label_pos
