@@ -23,7 +23,7 @@ def trans_mulan_data(xml_name,arff_name):
         labels.append( node.getAttribute("name").__str__() )
         
     #load ARFF file
-    arff_table = Orange.data.Table(arff_name)
+    arff_table = Orange.data.io.loadARFF_Weka(arff_name)
     domain = arff_table.domain
     
     #remove class tag

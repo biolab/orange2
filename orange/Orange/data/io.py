@@ -7,8 +7,17 @@ from Orange.core import \
      BasketFeeder, FileExampleGenerator, BasketExampleGenerator, \
      C45ExampleGenerator, TabDelimExampleGenerator, registerFileType
 
-
 def loadARFF(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
+    if filename[-5:] == ".arff":
+        filename = filename[:-5]
+    if os.path.exists(filename + ".xml") and os.path.exists(filename + ".arff"):
+        xml_name = filename + ".xml" 
+        arff_name = filename + ".arff" 
+        return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name)
+    else:
+        return loadARFF_Weka(filename, create_on_new)
+        
+def loadARFF_Weka(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
     """Return class:`Orange.data.Table` containing data from file in Weka ARFF format"""
     if not os.path.exists(filename) and os.path.exists(filename + ".arff"):
         filename = filename + ".arff" 
@@ -150,6 +159,20 @@ def toARFF(filename,table,try_numericize=0):
             f.write('%s,'%i)
         f.write('%s\n'%x[-1])
 
+def loadMULAN(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
+    """Return class:`Orange.data.Table` containing data from file in Mulan ARFF and XML format"""
+    if filename[-4:] == ".xml":
+        filename = filename[:-4]
+    if os.path.exists(filename + ".xml") and os.path.exists(filename + ".arff"):
+        xml_name = filename + ".xml" 
+        arff_name = filename + ".arff" 
+        return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name)
+    else:
+        return None
+loadARFF = Orange.misc.deprecated_keywords(
+{"createOnNew": "create_on_new"}
+)(loadARFF)
+
 def toC50(filename,table):
     """Save class:`Orange.data.Table` to file in C50 format"""
     t = table
@@ -288,5 +311,6 @@ loadLibSVM = Orange.misc.deprecated_keywords(
 
 registerFileType("R", None, toR, ".R")
 registerFileType("Weka", loadARFF, toARFF, ".arff")
+registerFileType("Mulan", loadMULAN, None, ".xml")
 registerFileType("C50", None, toC50, [".names", ".data", ".test"])
 registerFileType("libSVM", loadLibSVM, toLibSVM, ".svm")
