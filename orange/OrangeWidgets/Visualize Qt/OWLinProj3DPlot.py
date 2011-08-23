@@ -242,6 +242,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         ZAnchors = [anchor[2] for anchor in self.anchor_data]
         data_size = len(self.raw_data)
 
+        # TODO: build VBO out of this data
         for i in range(data_size):
             if not valid_data[i]:
                 continue

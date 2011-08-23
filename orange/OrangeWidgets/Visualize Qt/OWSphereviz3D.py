@@ -216,6 +216,8 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                         glVertex3f(*normalize(a0 + difference*(j+1)/float(num_parts)))
                     glEnd(GL_LINES)
 
+        self._draw_value_lines()
+
     def draw_sphere(self):
         glDisable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
