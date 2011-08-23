@@ -38,6 +38,7 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.setCanvasBackground = self.setCanvasColor
 
         self._point_width_to_symbol_scale = 1.5
+        self.camera_in_center = False
 
         self.gui = OWPlotGUI(self)
 
@@ -163,6 +164,7 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
             in float transparency;
             noperspective in vec3 dist;
 
+            uniform bool invert_transparency;
             const vec4 wire_color = vec4(0.5, 0.5, 0.5, 0.5);
             const vec4 fill_color = vec4(1., 1., 1., 0.5);
 
@@ -170,7 +172,10 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
             {
                 float d = min(dist[0], min(dist[1], dist[2]));
                 gl_FragColor = mix(wire_color, fill_color, 1. - exp2(-1*d*d));
-                gl_FragColor.a = 1. - transparency - 0.6;
+                if (invert_transparency)
+                    gl_FragColor.a = transparency;
+                else
+                    gl_FragColor.a = 1. - transparency - 0.6;
             }
             '''
 
@@ -287,12 +292,24 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
             # Override modelview (scatterplot points camera somewhat below the center, which doesn't
             # look good with sphere)
             modelview = QMatrix4x4()
-            modelview.lookAt(
-                QVector3D(self.camera[0]*self.camera_distance,
-                          self.camera[1]*self.camera_distance,
-                          self.camera[2]*self.camera_distance),
-                QVector3D(0, 0, 0),
-                QVector3D(0, 1, 0))
+            if self.camera_in_center:
+                modelview.lookAt(
+                    QVector3D(0, 0, 0),
+                    QVector3D(self.camera[0]*self.camera_distance,
+                              self.camera[1]*self.camera_distance,
+                              self.camera[2]*self.camera_distance),
+                    QVector3D(0, 1, 0))
+                projection = QMatrix4x4()
+                projection.perspective(90., float(self.width()) / self.height(),
+                                       self.perspective_near, self.perspective_far)
+                self.projection = projection
+            else:
+                modelview.lookAt(
+                    QVector3D(self.camera[0]*self.camera_distance,
+                              self.camera[1]*self.camera_distance,
+                              self.camera[2]*self.camera_distance),
+                    QVector3D(0, 0, 0),
+                    QVector3D(0, 1, 0))
             self.modelview = modelview
             self.draw_sphere()
 
@@ -312,6 +329,7 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.sphere_shader.setUniformValue('projection', self.projection)
         self.sphere_shader.setUniformValue('modelview', self.modelview)
         self.sphere_shader.setUniformValue('cam_position', QVector3D(*self.camera)*self.camera_distance)
+        self.sphere_shader.setUniformValue('invert_transparency', self.camera_in_center)
         glBindVertexArray(self.sphere_vao_id)
 
         glEnable(GL_CULL_FACE)
@@ -446,7 +464,9 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
     def replot(self):
         pass
 
-    # TODO: catch mouseEvents
+    def mouseMoveEvent(self, event):
+        self.invert_mouse_x = self.camera_in_center
+        OWPlot3D.mouseMoveEvent(self, event)
 
 class OWSphereviz3D(OWLinProjQt):
     settingsList = ['showAllAttributes']

@@ -365,6 +365,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.setMouseTracking(True)
         self.mouseover_callback = None
         self.mouse_pos = QPoint(0, 0)
+        self.invert_mouse_x = False
         self.before_draw_callback = None
         self.after_draw_callback = None
 
@@ -614,8 +615,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         if self.feedback_generated:
             self.symbol_program.bind()
-            self.symbol_program.setUniformValue('modelview', modelview)
-            self.symbol_program.setUniformValue('projection', projection)
+            self.symbol_program.setUniformValue('modelview', self.modelview)
+            self.symbol_program.setUniformValue('projection', self.projection)
             self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
             self.symbol_program.setUniformValue(self.symbol_program_fade_outside,   self.fade_outside)
             self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
@@ -1240,6 +1241,9 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         dx = pos.x() - self.mouse_pos.x()
         dy = pos.y() - self.mouse_pos.y()
+
+        if self.invert_mouse_x:
+            dx = -dx
 
         if self.state == PlotState.SELECTING and self.new_selection != None:
             self.new_selection.current_vertex = [pos.x(), pos.y()]

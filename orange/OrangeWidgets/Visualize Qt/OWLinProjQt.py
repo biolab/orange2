@@ -179,6 +179,8 @@ class OWLinProjQt(OWVisWidget):
 
             box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
             OWGUI.checkBox(box, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
+        else:
+            OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
 
         box = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(box, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring variables", debuggingEnabled = 0)
