@@ -150,11 +150,13 @@ def toARFF(filename,table,try_numericize=0):
             f.write('%s,'%i)
         f.write('%s\n'%x[-1])
 
-def toC50(filename,table):
+def toC50(filename, table, try_numericize=0):
     """Save class:`Orange.data.Table` to file in C50 format"""
     t = table
     # export names
-    f = open('%s.names' % filename,'w')
+#    basename = os.path.basename(filename)
+    filename_prefix, ext = os.path.splitext(filename)
+    f = open('%s.names' % filename_prefix, 'w')
     f.write('%s.\n\n' % t.domain.class_var.name)
     # attributes
     ats = [i for i in t.domain.attributes]
@@ -162,35 +164,38 @@ def toC50(filename,table):
     for i in ats:
         real = 1
         # try if real
-        if i.varType == 1 and try_numericize:
-            # try if all values numeric
-            for j in i.values:
-                try:
-                    x = float(j)
-                except:
-                    real = 0 # failed
-                    break
+        if i.varType == Orange.core.VarTypes.Discrete:
+            if try_numericize:
+                # try if all values numeric
+                for j in i.values:
+                    try:
+                        x = float(j)
+                    except Exception:
+                        real = 0 # failed
+                        break
+            else:
+                real = 0
         if real==1:
-            f.write('%s: continuous.\n'%i.name)
+            f.write('%s: continuous.\n' % i.name)
         else:
-            f.write('%s: '%i.name)
+            f.write('%s: ' % i.name)
             x = []
             for j in i.values:
-                x.append('%s'%j)
+                x.append('%s' % j)
             for j in x[:-1]:
-                f.write('%s,'%j)
-            f.write('%s.\n'%x[-1])
+                f.write('%s,' % j)
+            f.write('%s.\n' % x[-1])
     # examples
     f.close()
     
-    f = open('%s.data'%n,'w')
+    f = open('%s.data' % filename_prefix, 'w')
     for j in t:
         x = []
         for i in range(len(ats)):
-            x.append('%s'%j[i])
+            x.append('%s' % j[i])
         for i in x[:-1]:
-            f.write('%s,'%i)
-        f.write('%s\n'%x[-1])
+            f.write('%s,' % i)
+        f.write('%s\n' % x[-1])
 
 def toR(filename,t):
     """Save class:`Orange.data.Table` to file in R format"""
@@ -288,5 +293,5 @@ loadLibSVM = Orange.misc.deprecated_keywords(
 
 registerFileType("R", None, toR, ".R")
 registerFileType("Weka", loadARFF, toARFF, ".arff")
-registerFileType("C50", None, toC50, [".names", ".data", ".test"])
+#registerFileType("C50", None, toC50, [".names", ".data", ".test"])
 registerFileType("libSVM", loadLibSVM, toLibSVM, ".svm")
