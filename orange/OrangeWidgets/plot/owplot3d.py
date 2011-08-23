@@ -396,8 +396,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
 
         self.use_fbos = True
         self.use_geometry_shader = True
+        # TODO: self.cpu_code_path
 
         self.hide_outside = False
+        self.fade_outside = True
+        self.label_index = -1
 
         self.build_axes()
         
@@ -469,6 +472,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.symbol_program_scale          = self.symbol_program.uniformLocation('scale')
         self.symbol_program_translation    = self.symbol_program.uniformLocation('translation')
         self.symbol_program_hide_outside   = self.symbol_program.uniformLocation('hide_outside')
+        self.symbol_program_fade_outside   = self.symbol_program.uniformLocation('fade_outside')
         self.symbol_program_force_color    = self.symbol_program.uniformLocation('force_color')
         self.symbol_program_encode_color   = self.symbol_program.uniformLocation('encode_color')
 
@@ -598,9 +602,6 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         glClearColor(*self._theme.background_color)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        if not self.feedback_generated:
-            return
-
         modelview, projection = self.get_mvp()
         self.modelview = modelview
         self.projection = projection
@@ -611,36 +612,38 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         if self.show_axes:
             self.draw_axes()
 
-        self.symbol_program.bind()
-        self.symbol_program.setUniformValue('modelview', modelview)
-        self.symbol_program.setUniformValue('projection', projection)
-        self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
-        self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
-        self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
-        # Specifying float uniforms with vec2 because of a weird bug in PyQt
-        self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
-        self.symbol_program.setUniformValue(self.symbol_program_alpha_value,    self.alpha_value / 255., self.alpha_value / 255.)
-        plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5],                          self.plot_scale+self.additional_scale)
-        self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
-        self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
-        self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
+        if self.feedback_generated:
+            self.symbol_program.bind()
+            self.symbol_program.setUniformValue('modelview', modelview)
+            self.symbol_program.setUniformValue('projection', projection)
+            self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
+            self.symbol_program.setUniformValue(self.symbol_program_fade_outside,   self.fade_outside)
+            self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
+            self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
+            # Specifying float uniforms with vec2 because of a weird bug in PyQt
+            self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
+            self.symbol_program.setUniformValue(self.symbol_program_alpha_value,    self.alpha_value / 255., self.alpha_value / 255.)
+            plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5],                          self.plot_scale+self.additional_scale)
+            self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
+            self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
+            self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glEnable(GL_DEPTH_TEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        glBindVertexArray(self.feedback_vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
-        glBindVertexArray(0)
+            glBindVertexArray(self.feedback_vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
+            glBindVertexArray(0)
 
-        self.symbol_program.release()
+            self.symbol_program.release()
 
         self.draw_labels()
 
         if self.after_draw_callback:
             self.after_draw_callback()
 
-        if self.tooltip_fbo_dirty:
+        if self.tooltip_fbo_dirty and self.feedback_generated:
             self.tooltip_fbo.bind()
             glClearColor(1, 1, 1, 1)
             glClearDepth(1)
@@ -661,7 +664,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.tooltip_fbo_dirty = False
             glViewport(0, 0, self.width(), self.height())
 
-        if self.selection_fbo_dirty:
+        if self.selection_fbo_dirty and self.feedback_generated:
             # TODO: use transform feedback instead
             self.selection_fbo.bind()
             glClearColor(1, 1, 1, 1)
@@ -998,7 +1001,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         print('Generation took ' + str(time.time()-start) + ' seconds')
         self.updateGL()
 
-    def set_data(self, data, subset_data=None):
+    def set_plot_data(self, data, subset_data=None):
         self.makeCurrent()
         #if self.data != None:
             #TODO: glDeleteBuffers(1, self.data_buffer)
@@ -1348,6 +1351,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.z_axis_labels = None
         self.tooltip_fbo_dirty = True
         self.selection_fbo_dirty = True
+        self.feedback_generated = False
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

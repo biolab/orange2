@@ -57,7 +57,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         if data == None:
             return
         orngScaleScatterPlotData.set_data(self, data, subset_data, **args)
-        OWPlot3D.set_data(self, self.no_jittering_scaled_data, self.no_jittering_scaled_subset_data)
+        OWPlot3D.set_plot_data(self, self.no_jittering_scaled_data, self.no_jittering_scaled_subset_data)
         # TODO: wire jitter settings (actual jittering done in geometry shader)
 
     def update_data(self, x_attr, y_attr, z_attr,
@@ -298,7 +298,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
                     'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols',
-                    'plot.transparency', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
+                    'plot.alpha_value', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
                     'plot.show_chassis', 'plot.show_axes',
                     'auto_send_selection', 'auto_send_selection_update',
                     'plot.jitter_size', 'plot.jitter_continuous']
@@ -394,7 +394,7 @@ class OWScatterPlot3D(OWWidget):
             callback=self.on_checkbox_update)
         ss.setValue(4)
 
-        OWGUI.hSlider(box, self, 'plot.transparency', label='Transparency',
+        OWGUI.hSlider(box, self, 'plot.alpha_value', label='Transparency',
             minValue=10, maxValue=255,
             tooltip='Point transparency value',
             callback=self.on_checkbox_update)
@@ -631,7 +631,7 @@ class OWScatterPlot3D(OWWidget):
                              self.size_attr  and ('Size', self.size_attr)])
         self.reportSettings('Settings',
                             [('Symbol size', self.plot.symbol_scale),
-                             ('Transparency', self.plot.transparency),
+                             ('Transparency', self.plot.alpha_value),
                              ('Jittering', self.jitter_size),
                              ('Jitter continuous attributes', OWGUI.YesNo[self.jitter_continuous])
                              ])

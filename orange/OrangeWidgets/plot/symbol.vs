@@ -13,6 +13,7 @@ in float index;
 uniform bool use_2d_symbols;
 uniform bool encode_color;
 uniform bool hide_outside;
+uniform bool fade_outside;
 uniform vec4 force_color;
 uniform vec2 alpha_value; // vec2 instead of float, fixing a bug on windows
                            // (setUniformValue with float crashes)
@@ -75,7 +76,10 @@ void main(void) {
     {
         pos = abs(pos);
         float manhattan_distance = max(max(pos.x, pos.y), pos.z)+0.5;
-        float a = min(pow(min(1., 1. / manhattan_distance), 5.), alpha_value.x);
+        float a = alpha_value.x;
+
+        if (fade_outside)
+            a = min(pow(min(1., 1. / manhattan_distance), 5.), a);
 
         if (use_2d_symbols)
         {
