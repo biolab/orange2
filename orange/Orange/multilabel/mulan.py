@@ -2,7 +2,7 @@ import Orange
 import xml.dom.minidom
 from xml.dom.minidom import Node
 
-def trans_mulan_data(xml_name,arff_name):
+def trans_mulan_data(xml_name,arff_name, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
     """ transform the mulan data format to Tab file
     
         :param xml: a text file in XML format, specifying the labels and any hierarchical relationship among them. 
@@ -23,7 +23,7 @@ def trans_mulan_data(xml_name,arff_name):
         labels.append( node.getAttribute("name").__str__() )
         
     #load ARFF file
-    arff_table = Orange.data.io.loadARFF_Weka(arff_name)
+    arff_table = Orange.data.io.loadARFF_Weka(arff_name,create_on_new)
     domain = arff_table.domain
     
     #remove class tag

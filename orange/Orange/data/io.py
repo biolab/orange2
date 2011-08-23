@@ -13,9 +13,9 @@ def loadARFF(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.
     if os.path.exists(filename + ".xml") and os.path.exists(filename + ".arff"):
         xml_name = filename + ".xml" 
         arff_name = filename + ".arff" 
-        return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name)
+        return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name,create_on_new)
     else:
-        return loadARFF_Weka(filename, create_on_new)
+        return loadARFF_Weka(filename, create_on_new, kwargs)
         
 def loadARFF_Weka(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
     """Return class:`Orange.data.Table` containing data from file in Weka ARFF format"""
