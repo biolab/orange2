@@ -4,48 +4,23 @@
 <priority>2000</priority>
 '''
 
-import os
-
 from plot.owplot3d import *
 from plot.primitives import parse_obj
-from plot.owplotgui import OWPlotGUI
 from OWLinProjQt import *
-
-from Orange.preprocess.scaling import ScaleLinProjData3D
+from OWLinProj3DPlot import OWLinProj3DPlot
 
 import orange
 Discrete = orange.VarTypes.Discrete
 Continuous = orange.VarTypes.Continuous
 
-class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
+class OWSphereviz3DPlot(OWLinProj3DPlot):
     def __init__(self, widget, parent=None, name='None'):
-        OWPlot3D.__init__(self, parent)
-        ScaleLinProjData3D.__init__(self)
+        OWLinProj3DPlot.__init__(self, widget, parent, name)
 
-        self.camera_fov = 50.
-        self.show_axes = self.show_chassis = self.show_grid = False
-
-        self.point_width = 6
-        self.animate_plot = False
-        self.animate_points = False
-        self.antialias_plot = False
-        self.antialias_points = False
-        self.antialias_lines = False
-        self.auto_adjust_performance = False
-        self.show_filled_symbols = True
-        self.use_antialiasing = True
-        self.sendSelectionOnUpdate = False
-        self.setCanvasBackground = self.setCanvasColor
-
-        self._point_width_to_symbol_scale = 1.5
         self.camera_in_center = False
 
-        self.gui = OWPlotGUI(self)
-
     def setData(self, data, subsetData=None, **args):
-        ScaleLinProjData3D.setData(self, data, subsetData, **args)
-        self.initializeGL() # Apparently this is not called already
-        self.makeCurrent()
+        OWLinProj3DPlot.setData(self, data, subsetData, **args)
 
         if hasattr(self, 'sphere_vao_id'):
             return
@@ -226,98 +201,32 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
         if not self.cone_shader.link():
             print('Failed to link cone shader!')
 
-    def updateData(self, labels=None, setAnchors=0, **args):
-        self.clear()
+        self.before_draw_callback = lambda: self.before_draw()
 
-        if not self.have_data or len(labels) < 3:
-            self.anchor_data = []
-            self.updateGL()
-            return
-
-        if setAnchors:
-            self.setAnchors(args.get('XAnchors'), args.get('YAnchors'), args.get('ZAnchors'), labels)
-
-        indices = [self.attribute_name_index[anchor[3]] for anchor in self.anchor_data]
-        valid_data = self.getValidList(indices)
-        trans_proj_data = self.create_projection_as_numeric_array(indices, validData=valid_data,
-            scaleFactor=1.0, normalize=self.normalizeExamples, jitterSize=-1,
-            useAnchorData=1, removeMissingData=0)
-        if trans_proj_data == None:
-            return
-
-        proj_data = trans_proj_data.T
-        proj_data[0:3] += 0.5 # Geometry shader offsets positions by -0.5; leave class unmodified
-        if self.data_has_discrete_class:
-            proj_data[3] = self.no_jittering_scaled_data[self.attribute_name_index[self.data_domain.classVar.name]]
-        self.set_plot_data(proj_data, None)
-        self.symbol_scale = self.point_width*self._point_width_to_symbol_scale
-        self.hide_outside = False
-        self.fade_outside = False
-
-        color_index = symbol_index = size_index = label_index = -1
-        color_discrete = False
-        x_discrete = self.data_domain[self.anchor_data[0][3]].varType == Discrete
-        y_discrete = self.data_domain[self.anchor_data[1][3]].varType == Discrete
-        z_discrete = self.data_domain[self.anchor_data[2][3]].varType == Discrete
-
-        if self.data_has_discrete_class:
-            self.discPalette.setNumberOfColors(len(self.dataDomain.classVar.values))
-
-        use_different_symbols = self.useDifferentSymbols and self.data_has_discrete_class and\
-            len(self.data_domain.classVar.values) < len(Symbol)
-
-        if use_different_symbols:
-            symbol_index = 3
-            num_symbols_used = len(self.data_domain.classVar.values)
+    def before_draw(self):
+        # Override modelview (scatterplot points camera somewhat below the center, which doesn't
+        # look good with sphere)
+        modelview = QMatrix4x4()
+        if self.camera_in_center:
+            modelview.lookAt(
+                QVector3D(0, 0, 0),
+                QVector3D(self.camera[0]*self.camera_distance,
+                          self.camera[1]*self.camera_distance,
+                          self.camera[2]*self.camera_distance),
+                QVector3D(0, 1, 0))
+            projection = QMatrix4x4()
+            projection.perspective(90., float(self.width()) / self.height(),
+                                   self.perspective_near, self.perspective_far)
+            self.projection = projection
         else:
-            num_symbols_used = -1
-
-        if self.useDifferentColors and self.data_has_discrete_class:
-            color_discrete = True
-            color_index = 3
-
-        colors = []
-        if color_discrete:
-            for i in range(len(self.data_domain.classVar.values)):
-                c = self.discPalette[i]
-                colors.append([c.red()/255., c.green()/255., c.blue()/255.])
-
-        self.set_shown_attributes_indices(0, 1, 2, color_index, symbol_index, size_index, label_index,
-                                          colors, num_symbols_used,
-                                          x_discrete, y_discrete, z_discrete,
-                                          self.jitter_size, self.jitter_continuous,
-                                          numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
-
-        def before_draw_callback():
-            # Override modelview (scatterplot points camera somewhat below the center, which doesn't
-            # look good with sphere)
-            modelview = QMatrix4x4()
-            if self.camera_in_center:
-                modelview.lookAt(
-                    QVector3D(0, 0, 0),
-                    QVector3D(self.camera[0]*self.camera_distance,
-                              self.camera[1]*self.camera_distance,
-                              self.camera[2]*self.camera_distance),
-                    QVector3D(0, 1, 0))
-                projection = QMatrix4x4()
-                projection.perspective(90., float(self.width()) / self.height(),
-                                       self.perspective_near, self.perspective_far)
-                self.projection = projection
-            else:
-                modelview.lookAt(
-                    QVector3D(self.camera[0]*self.camera_distance,
-                              self.camera[1]*self.camera_distance,
-                              self.camera[2]*self.camera_distance),
-                    QVector3D(0, 0, 0),
-                    QVector3D(0, 1, 0))
-            self.modelview = modelview
-            self.draw_sphere()
-
-        self.before_draw_callback = before_draw_callback
-        self.updateGL()
-
-    def updateGraph(self, attrList=None, setAnchors=0, insideColors=None, **args):
-        print('updateGraph')
+            modelview.lookAt(
+                QVector3D(self.camera[0]*self.camera_distance,
+                          self.camera[1]*self.camera_distance,
+                          self.camera[2]*self.camera_distance),
+                QVector3D(0, 0, 0),
+                QVector3D(0, 1, 0))
+        self.modelview = modelview
+        self.draw_sphere()
 
     def draw_sphere(self):
         glDisable(GL_DEPTH_TEST)
@@ -436,37 +345,9 @@ class OWSphereviz3DPlot(OWPlot3D, ScaleLinProjData3D):
                         glVertex3f(*normalize(a0 + difference*(j+1)/float(num_parts)))
                     glEnd(GL_LINES)
 
-    def setCanvasColor(self, c):
-        pass
-
-    def color(self, role, group=None):
-        if group:
-            return self.palette().color(group, role)
-        else:
-            return self.palette().color(role)
-
-    def set_palette(self, palette):
-        self.updateGL()
-
-    def getSelectionsAsExampleTables(self, attrList, useAnchorData=1, addProjectedPositions=0):
-        return (None, None)
-
-    def removeAllSelections(self):
-        pass
-
-    def update_point_size(self):
-        self.symbol_scale = self.point_width*self._point_width_to_symbol_scale
-        self.updateGL()
-
-    def update_alpha_value(self):
-        self.updateGL()
-
-    def replot(self):
-        pass
-
     def mouseMoveEvent(self, event):
         self.invert_mouse_x = self.camera_in_center
-        OWPlot3D.mouseMoveEvent(self, event)
+        OWLinProj3DPlot.mouseMoveEvent(self, event)
 
 class OWSphereviz3D(OWLinProjQt):
     settingsList = ['showAllAttributes']
