@@ -616,7 +616,6 @@ from Orange.misc import deprecated_members
 
 from orngABML import *
 
-
 class LaplaceEvaluator(RuleEvaluator):
     """
     Laplace's rule of succession.
@@ -1338,7 +1337,7 @@ class ABCN2(RuleLearner):
         if not self.argument_id:
             return None
         
-        # get argumentated examples
+        # get argumented examples
         return ArgumentFilter_hasSpecial()(examples, self.argument_id, target_class = 0)
 
     def sort_arguments(self, arg_examples, examples):
@@ -1526,7 +1525,7 @@ class ABCN2(RuleLearner):
         cn2_learner = Orange.classification.rules.CN2UnorderedLearner()
         cn2_learner.rule_finder = RuleBeamFinder()
         cn2_learner.rule_finder.refiner = SelectorArgConditions(crit_example, allowed_conditions)
-        cn2_learner.rule_finder.evaluator = Orange.classification.rules.MEstimate(self.rule_finder.evaluator.m)
+        cn2_learner.rule_finder.evaluator = Orange.classification.rules.MEstimateEvaluator(self.rule_finder.evaluator.m)
         rule = cn2_learner.rule_finder(examples,weight_id,0,RuleList())
         return rule.filter.conditions
 
