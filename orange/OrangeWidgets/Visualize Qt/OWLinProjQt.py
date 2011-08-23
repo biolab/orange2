@@ -162,8 +162,12 @@ class OWLinProjQt(OWVisWidget):
         #OWGUI.checkBox(box, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
         self.graph.gui.show_legend_check_box(box)
         bbox = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
-        OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
+        if "3d" in name.lower():
+            OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.graph.updateGL)
+            OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.graph.updateGL, showValueLabel = 0)
+        else:
+            OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
+            OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
         OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         if not "sphereviz" in name.lower():

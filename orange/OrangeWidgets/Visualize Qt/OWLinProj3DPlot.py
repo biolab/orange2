@@ -157,8 +157,23 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 glVertex3f(x, y, z)
                 glEnd()
 
+        self._draw_value_lines()
+
+    def _draw_value_lines(self):
+        if self.showValueLines:
+            for line in self.value_lines:
+                x, y, z, xn, yn, zn, color = line
+                glColor3f(*color)
+                glBegin(GL_LINES)
+                glVertex3f(x, y, z)
+                glVertex3f(x+self.valueLineLength*xn,
+                           y+self.valueLineLength*yn,
+                           z+self.valueLineLength*zn)
+                glEnd()
+
     def updateData(self, labels=None, setAnchors=0, **args):
         self.clear()
+        self.value_lines = []
 
         if not self.have_data or len(labels) < 3:
             self.anchor_data = []
@@ -218,6 +233,39 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                                           x_discrete, y_discrete, z_discrete,
                                           self.jitter_size, self.jitter_continuous,
                                           numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
+
+        x_positions = proj_data[0]-0.5
+        y_positions = proj_data[1]-0.5
+        z_positions = proj_data[2]-0.5
+        XAnchors = [anchor[0] for anchor in self.anchor_data]
+        YAnchors = [anchor[1] for anchor in self.anchor_data]
+        ZAnchors = [anchor[2] for anchor in self.anchor_data]
+        data_size = len(self.raw_data)
+
+        for i in range(data_size):
+            if not valid_data[i]:
+                continue
+            if self.useDifferentColors:
+                color = self.discPalette.getRGB(self.original_data[self.data_class_index][i])
+            else:
+                color = (0, 0, 0)
+
+            len_anchor_data = len(self.anchor_data)
+            x = array([x_positions[i]] * len_anchor_data)
+            y = array([y_positions[i]] * len_anchor_data)
+            z = array([z_positions[i]] * len_anchor_data)
+            dists = numpy.sqrt((XAnchors - x)**2 + (YAnchors - y)**2 + (ZAnchors - z)**2)
+            x_directions = 0.03 * (XAnchors - x) / dists
+            y_directions = 0.03 * (YAnchors - y) / dists
+            z_directions = 0.03 * (ZAnchors - z) / dists
+            example_values = [self.no_jittering_scaled_data[attr_ind, i] for attr_ind in indices]
+
+            for j in range(len_anchor_data):
+                self.value_lines.append([x_positions[i], y_positions[i], z_positions[i],
+                                         x_directions[j]*example_values[j],
+                                         y_directions[j]*example_values[j],
+                                         z_directions[j]*example_values[j],
+                                         color])
 
         self.updateGL()
 
