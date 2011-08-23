@@ -1735,7 +1735,13 @@ import orange
 TableValueRole = OrangeUserRole.next() # Role to retrieve orange.Value 
 TableClassValueRole = OrangeUserRole.next() # Role to retrieve the class value for the row's example
 TableDistribution = OrangeUserRole.next() # Role to retrieve the distribution of the column's attribute
-TableVariable = OrangeUserRole.next()
+TableVariable = OrangeUserRole.next() # Role to retrieve the column's variable
+
+BarRatioRole = OrangeUserRole.next() # Ratio for drawing distribution bars
+BarBrushRole = OrangeUserRole.next() # Brush for distribution bar
+
+SortOrderRole = OrangeUserRole.next() # Used for sorting
+
 
 class TableBarItem(QItemDelegate):
     BarRole = OrangeUserRole.next()
