@@ -340,8 +340,8 @@ class OWPlot3D(QtOpenGL.QGLWidget):
         self.ortho_scale = 900.
         self.ortho_near = -1
         self.ortho_far = 2000
-        self.perspective_near = 0.1
-        self.perspective_far = 2000
+        self.perspective_near = 0.01
+        self.perspective_far = 5.
         self.camera_fov = 30.
         self.zoom_factor = 2000.
 

@@ -1,5 +1,6 @@
 from plot.owplot3d import *
 from plot.owplotgui import *
+from plot.primitives import parse_obj
 
 from Orange.preprocess.scaling import ScaleLinProjData3D
 import orange
@@ -32,8 +33,72 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
     def setData(self, data, subsetData=None, **args):
         ScaleLinProjData3D.setData(self, data, subsetData, **args)
-        #self.initializeGL() # Apparently this is not called already
         self.makeCurrent()
+        self.state = PlotState.IDLE # Override for now, apparently this is modified by OWPlotGUI
+
+        cone_data = parse_obj('cone_hq.obj')
+        vertices = []
+        for v0, v1, v2, n0, n1, n2 in cone_data:
+            vertices.extend([v0[0],v0[1],v0[2], n0[0],n0[1],n0[2],
+                             v1[0],v1[1],v1[2], n1[0],n1[1],n1[2],
+                             v2[0],v2[1],v2[2], n2[0],n2[1],n2[2]])
+
+        self.cone_vao_id = GLuint(0)
+        glGenVertexArrays(1, self.cone_vao_id)
+        glBindVertexArray(self.cone_vao_id)
+
+        vertex_buffer_id = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+        glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
+
+        vertex_size = (3+3)*4
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
+        glEnableVertexAttribArray(0)
+        glEnableVertexAttribArray(1)
+
+        glBindVertexArray(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+        self.cone_vao_id.num_vertices = len(vertices) / (vertex_size / 4)
+
+        vertex_shader_source = '''#version 150
+            in vec3 position;
+            in vec3 normal;
+
+            out vec4 color;
+
+            uniform mat4 projection;
+            uniform mat4 modelview;
+
+            const vec3 light_direction = normalize(vec3(-0.7, 0.42, 0.21));
+
+            void main(void)
+            {
+                gl_Position = projection * modelview * vec4(position, 1.);
+                float diffuse = clamp(dot(light_direction, normalize((modelview * vec4(normal, 0.)).xyz)), 0., 1.);
+                color = vec4(vec3(0., 1., 0.) * diffuse, 1.);
+            }
+            '''
+
+        fragment_shader_source = '''#version 150
+            in vec4 color;
+
+            void main(void)
+            {
+                gl_FragColor = color;
+            }
+            '''
+
+        self.cone_shader = QtOpenGL.QGLShaderProgram()
+        self.cone_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
+        self.cone_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
+
+        self.cone_shader.bindAttributeLocation('position', 0)
+        self.cone_shader.bindAttributeLocation('normal', 1)
+
+        if not self.cone_shader.link():
+            print('Failed to link cone shader!')
 
     def updateData(self, labels=None, setAnchors=0, **args):
         self.clear()

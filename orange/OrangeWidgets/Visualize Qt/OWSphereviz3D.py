@@ -51,32 +51,6 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         self.sphere_vao_id.num_vertices = len(vertices) / (vertex_size / 4)
 
-        cone_data = parse_obj('cone_hq.obj')
-        vertices = []
-        for v0, v1, v2, n0, n1, n2 in cone_data:
-            vertices.extend([v0[0],v0[1],v0[2], n0[0],n0[1],n0[2],
-                             v1[0],v1[1],v1[2], n1[0],n1[1],n1[2],
-                             v2[0],v2[1],v2[2], n2[0],n2[1],n2[2]])
-
-        self.cone_vao_id = GLuint(0)
-        glGenVertexArrays(1, self.cone_vao_id)
-        glBindVertexArray(self.cone_vao_id)
-
-        vertex_buffer_id = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
-        glBufferData(GL_ARRAY_BUFFER, numpy.array(vertices, 'f'), GL_STATIC_DRAW)
-
-        vertex_size = (3+3)*4
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
-        glEnableVertexAttribArray(0)
-        glEnableVertexAttribArray(1)
-
-        glBindVertexArray(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-        self.cone_vao_id.num_vertices = len(vertices) / (vertex_size / 4)
-
         # Geometry shader-based wireframe rendering
         # (http://cgg-journal.com/2008-2/06/index.html)
         self.sphere_shader = QtOpenGL.QGLShaderProgram()
@@ -164,43 +138,6 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         if not self.sphere_shader.link():
             print('Failed to link sphere shader!')
 
-        vertex_shader_source = '''#version 150
-            in vec3 position;
-            in vec3 normal;
-
-            out vec4 color;
-
-            uniform mat4 projection;
-            uniform mat4 modelview;
-
-            const vec3 light_direction = normalize(vec3(-0.7, 0.42, 0.21));
-
-            void main(void)
-            {
-                gl_Position = projection * modelview * vec4(position, 1.);
-                float diffuse = clamp(dot(light_direction, normalize((modelview * vec4(normal, 0.)).xyz)), 0., 1.);
-                color = vec4(vec3(0., 1., 0.) * diffuse, 1.);
-            }
-            '''
-        fragment_shader_source = '''#version 150
-            in vec4 color;
-
-            void main(void)
-            {
-                gl_FragColor = color;
-            }
-            '''
-
-        self.cone_shader = QtOpenGL.QGLShaderProgram()
-        self.cone_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
-        self.cone_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
-
-        self.cone_shader.bindAttributeLocation('position', 0)
-        self.cone_shader.bindAttributeLocation('normal', 1)
-
-        if not self.cone_shader.link():
-            print('Failed to link cone shader!')
-
         self.before_draw_callback = lambda: self.before_draw()
 
     def before_draw(self):
@@ -226,7 +163,58 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 QVector3D(0, 0, 0),
                 QVector3D(0, 1, 0))
         self.modelview = modelview
+
         self.draw_sphere()
+
+        glEnable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
+
+        if self.showAnchors:
+            for anchor in self.anchor_data:
+                x, y, z, label = anchor
+
+                direction = QVector3D(x, y, z)
+                up = QVector3D(0, 1, 0)
+                right = QVector3D.crossProduct(direction, up).normalized()
+                up = QVector3D.crossProduct(right, direction)
+                rotation = QMatrix4x4()
+                rotation.setColumn(0, QVector4D(right, 0))
+                rotation.setColumn(1, QVector4D(up, 0))
+                rotation.setColumn(2, QVector4D(direction, 0))
+
+                self.cone_shader.bind()
+                self.cone_shader.setUniformValue('projection', self.projection)
+                modelview = QMatrix4x4(self.modelview)
+                modelview.translate(x, y, z)
+                modelview = modelview * rotation
+                modelview.rotate(-90, 1, 0, 0)
+                modelview.translate(0, -0.03, 0)
+                modelview.scale(-0.03, -0.03, -0.03)
+                self.cone_shader.setUniformValue('modelview', modelview)
+
+                glBindVertexArray(self.cone_vao_id)
+                glDrawArrays(GL_TRIANGLES, 0, self.cone_vao_id.num_vertices)
+                glBindVertexArray(0)
+
+                self.cone_shader.release()
+
+                glColor4f(0, 0, 0, 1)
+                self.renderText(x*1.2, y*1.2, z*1.2, label)
+
+            num_parts = 30
+            anchors = array([a[:3] for a in self.anchor_data])
+            for anchor in self.anchor_data:
+                a0 = array(anchor[:3])
+                neighbours = anchors.copy()
+                neighbours = [(((n-a0)**2).sum(), n)  for n in neighbours]
+                neighbours.sort(key=lambda e: e[0])
+                for i in range(1, min(len(anchors), 4)): 
+                    difference = neighbours[i][1]-a0
+                    glBegin(GL_LINES)
+                    for j in range(num_parts):
+                        glVertex3f(*normalize(a0 + difference*j/float(num_parts)))
+                        glVertex3f(*normalize(a0 + difference*(j+1)/float(num_parts)))
+                    glEnd(GL_LINES)
 
     def draw_sphere(self):
         glDisable(GL_DEPTH_TEST)
@@ -293,57 +281,6 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                            #r * cos(angle_x_1),
                            #r * sin(angle_x_1) * sin(angle_y))
             #glEnd()
-
-        glEnable(GL_DEPTH_TEST)
-        glDisable(GL_BLEND)
-        radius = 1.
-
-        if self.showAnchors:
-            for anchor in self.anchor_data:
-                x, y, z, label = anchor
-
-                direction = QVector3D(x, y, z)
-                up = QVector3D(0, 1, 0)
-                right = QVector3D.crossProduct(direction, up).normalized()
-                up = QVector3D.crossProduct(right, direction)
-                rotation = QMatrix4x4()
-                rotation.setColumn(0, QVector4D(right, 0))
-                rotation.setColumn(1, QVector4D(up, 0))
-                rotation.setColumn(2, QVector4D(direction, 0))
-
-                self.cone_shader.bind()
-                self.cone_shader.setUniformValue('projection', self.projection)
-                modelview = QMatrix4x4(self.modelview)
-                modelview.translate(x, y, z)
-                modelview = modelview * rotation
-                modelview.rotate(-90, 1, 0, 0)
-                modelview.translate(0, -0.03, 0)
-                modelview.scale(-0.03, -0.03, -0.03)
-                self.cone_shader.setUniformValue('modelview', modelview)
-
-                glBindVertexArray(self.cone_vao_id)
-                glDrawArrays(GL_TRIANGLES, 0, self.cone_vao_id.num_vertices)
-                glBindVertexArray(0)
-
-                self.cone_shader.release()
-
-                glColor4f(0, 0, 0, 1)
-                self.renderText(x*1.2*radius, y*1.2*radius, z*1.2*radius, label)
-
-            num_parts = 30
-            anchors = array([a[:3] for a in self.anchor_data])
-            for anchor in self.anchor_data:
-                a0 = array(anchor[:3])
-                neighbours = anchors.copy()
-                neighbours = [(((n-a0)**2).sum(), n)  for n in neighbours]
-                neighbours.sort(key=lambda e: e[0])
-                for i in range(1, min(len(anchors), 4)): 
-                    difference = neighbours[i][1]-a0
-                    glBegin(GL_LINES)
-                    for j in range(num_parts):
-                        glVertex3f(*normalize(a0 + difference*j/float(num_parts)))
-                        glVertex3f(*normalize(a0 + difference*(j+1)/float(num_parts)))
-                    glEnd(GL_LINES)
 
     def mouseMoveEvent(self, event):
         self.invert_mouse_x = self.camera_in_center
