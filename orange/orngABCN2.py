@@ -20,3 +20,5 @@ from Orange.classification.rules import CrossValidation
 from Orange.classification.rules import PILAR
 from Orange.classification.rules import CN2UnorderedClassifier
 from orngABML import *
+
+print createDichotomousClass

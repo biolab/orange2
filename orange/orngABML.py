@@ -5,7 +5,6 @@ import re
 import string
 import warnings
 
-import Orange.classification.rules
 import numpy
 import math
 
@@ -274,7 +273,7 @@ class ConvertClass:
             return Orange.core.Value(self.newClassAtt, self.classValue+"_")
         else:
             return Orange.core.Value(self.newClassAtt, "not " + self.classValue)
-    
+
 def createDichotomousClass(domain, att, value, negate, removeAtt = None):
     # create new variable
     newClass = Orange.core.EnumVariable(att.name+"_", values = [str(value)+"_", "not " + str(value)])
@@ -314,107 +313,65 @@ class ConvertCont:
 
 
 def addErrors(test_data, classifier):
-    """ Main task of this function is to add probabilistic errors to examples. Function
-        also computes classification accuracy as a by product."""
-    correct        = 0.0
-    clDistribution = orange.Distribution(test_data.domain.classVar)
+    """ Main task of this function is to add probabilistic errors to examples."""
     for ex_i, ex in enumerate(test_data):
-        (cl,prob) = classifier(ex,orange.GetBoth)
-        # add prob difference to ProbError
-        if prob[ex.getclass()] < 0.01:
-            print prob
-        ex.setmeta("ProbError", ex.getmeta("ProbError") + 1.-prob[ex.getclass()]) 
-        ex.setmeta("ProbErrorSD", ex.getmeta("ProbErrorSD") + math.pow(1.-prob[ex.getclass()],2))
-        if test_data.domain.hasmeta("CoveredRules"):
-            for r_i,r in enumerate(classifier.rules):
-                if r(ex) and (not hasattr(cl, "ruleBetas") or cl.ruleBetas[r_i]):
-                    ex.setmeta("CoveredRules", ex.getmeta("CoveredRules")+orngCN2.ruleToString(r)+";")
-        if cl == ex.getclass(): # compute classification accuracy (just for fun)
-            correct += 1.
-            clDistribution[ex.getclass()] += 1.
-    apriori = orange.Distribution(test_data.domain.classVar,test_data)
-    correct /= len(test_data)
-    for cl_v in test_data.domain.classVar:
-        clDistribution[cl_v] /= max(apriori[cl_v],1)
-    # add space between different test set in "covered rules"
-    for ex in test_data:
-        ex.setmeta("CoveredRules", ex.getmeta("CoveredRules")+";      ;")
-    return (correct,clDistribution)
+        (cl,prob) = classifier(ex,Orange.core.GetBoth)
+        ex.setmeta("ProbError", float(ex.getmeta("ProbError")) + 1.-prob[ex.getclass()]) 
 
-
-def nCrossValidation(data,learner,weightID=0,folds=5,n=4,gen=0):
+def nCrossValidation(data,learner,weightID=0,folds=5,n=4,gen=0,argument_id="Arguments"):
     """ Function performs n x fold crossvalidation. For each classifier
         test set is updated by calling function addErrors. """
     acc = 0.0
-    dist = orange.Distribution(data.domain.classVar)    
-    pick = orange.MakeRandomIndicesCV(folds=folds, randseed=gen, stratified = orange.MakeRandomIndices.StratifiedIfPossible)    
+    rules = {}
     for d in data:
-        d.setmeta("ProbError",0.)
-        d.setmeta("ProbErrorSD",0.)
-##        d.setmeta("Rules","")
+        rules[float(d["SerialNumberPE"])] = []
+    pick = Orange.core.MakeRandomIndicesCV(folds=folds, randseed=gen, stratified = Orange.core.MakeRandomIndices.StratifiedIfPossible)    
     for n_i in range(n):
         pick.randseed = gen+10*n_i
         selection = pick(data)
         for folds_i in range(folds):
             for data_i,e in enumerate(data):
                 try:
-                    if e["Arguments"]: # examples with arguments do not need to be tested
+                    if e[argument_id]: # examples with arguments do not need to be tested
                         selection[data_i]=folds_i+1
                 except:
                     pass
             train_data = data.selectref(selection, folds_i,negate=1)
             test_data = data.selectref(selection, folds_i,negate=0)
             classifier = learner(train_data,weightID)
-            classifier.setattr("data", train_data)
-            acc1,dist1 = addErrors(test_data, classifier)
+            addErrors(test_data, classifier)
+            # add rules
+            for d in test_data:
+                for r in classifier.rules:
+                    if r(d):
+                        rules[float(d["SerialNumberPE"])].append(r)
+    # normalize prob errors
+    for d in data:
+        d["ProbError"]=d["ProbError"]/n
+    return rules
 
-            print "N=%d, Folds=%d: %s %s" % (n_i+1, folds_i, acc1, dist1)
-            acc += acc1
-            for cl_i in range(len(data.domain.classVar.values)):
-                dist[cl_i] += dist1[cl_i]
-
-    for e in data:
-        avgProb = e.getmeta("ProbError")/n
-        sumSq = e.getmeta("ProbErrorSD")
-        sumProb = e.getmeta("ProbError")
-        if n>1 and (sumSq-2*avgProb*sumProb+n*math.pow(avgProb,2))/(n-1) > 0.:
-            e.setmeta("ProbErrorSD", math.sqrt((sumSq-2*avgProb*sumProb+n*math.pow(avgProb,2))/(n-1)))
-        else:
-            e.setmeta("ProbErrorSD", 0.)
-        e.setmeta("ProbError", avgProb)
-    acc = acc/n/folds
-    for cl_v in test_data.domain.classVar:
-        dist[cl_v] /= n*folds
-    return (acc,dist)
-
-
-def findProb(learner,examples,weightID=0,folds=5,n=4,gen=0):
+def findProb(learner,examples,weightID=0,folds=5,n=4,gen=0,thr=0.5,argument_id="Arguments"):
     """ General method for calling to find problematic example.
-        It returns all examples along with average probabilistic errors.
+        It returns all critial examples along with average probabilistic errors that ought to be higher then thr.
         Taking the one with highest error is the same as taking the most
         problematic example. """
-    newDomain = orange.Domain(examples.domain.attributes, examples.domain.classVar)
+
+    newDomain = Orange.core.Domain(examples.domain.attributes, examples.domain.classVar)
     newDomain.addmetas(examples.domain.getmetas())
-    newExamples = orange.ExampleTable(newDomain, examples)
+    newExamples = Orange.core.ExampleTable(newDomain, examples)
     if not newExamples.domain.hasmeta("ProbError"):
-        newId = orange.newmetaid()
-        newDomain.addmeta(newId, orange.FloatVariable("ProbError"))
-        newExamples = orange.ExampleTable(newDomain, examples)
-    if not newExamples.domain.hasmeta("ProbErrorSD"):
-        newId = orange.newmetaid()
-        newDomain.addmeta(newId, orange.FloatVariable("ProbErrorSD"))
-        newExamples = orange.ExampleTable(newDomain, examples)
-    if not newExamples.domain.hasmeta("CoveredRules"):
-        newId = orange.newmetaid()
-        newDomain.addmeta(newId, orange.StringVariable("CoveredRules"))
-        newExamples = orange.ExampleTable(newDomain, examples)        
+        newId = Orange.core.newmetaid()
+        newDomain.addmeta(newId, Orange.core.FloatVariable("ProbError"))
+        newExamples = Orange.core.ExampleTable(newDomain, examples)
     if not newExamples.domain.hasmeta("SerialNumberPE"):
-        newId = orange.newmetaid()
-        newDomain.addmeta(newId, orange.FloatVariable("SerialNumberPE"))
-        newExamples = orange.ExampleTable(newDomain, examples)
-##        newExamples.domain.addmeta(newId, orange.FloatVariable("SerialNumberPE"))
-##        newExamples.addMetaAttribute("SerialNumberPE", 0.)
-        for i in range(len(newExamples)):
-            newExamples[i]["SerialNumberPE"] = float(i)
-    trs = nCrossValidation(newExamples,learner,weightID=weightID, folds=folds, n=n, gen=gen)
-    return newExamples            
+        newId = Orange.core.newmetaid()
+        newDomain.addmeta(newId, Orange.core.FloatVariable("SerialNumberPE"))
+        newExamples = Orange.core.ExampleTable(newDomain, examples)
+    for i in range(len(newExamples)):
+        newExamples[i]["SerialNumberPE"] = float(i)
+        newExamples[i]["ProbError"] = 0.
+
+    # it returns a list of examples now: (index of example-starting with 0, example, prob error, rules covering example
+    rules = nCrossValidation(newExamples,learner,weightID=weightID, folds=folds, n=n, gen=gen, argument_id=argument_id)
+    return [(ei, examples[ei], float(e["ProbError"]), rules[float(e["SerialNumberPE"])]) for ei, e in enumerate(newExamples) if e["ProbError"] > thr]
+  
