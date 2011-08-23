@@ -85,6 +85,7 @@ SCATTERPLOT = 1
 RADVIZ = 2
 LINEAR_PROJECTION = 3
 POLYVIZ = 4
+SCATTERPLOT3D = 5
 KNN_IN_ORIGINAL_SPACE = 10
 
 # optimization type
@@ -890,6 +891,37 @@ class VizRank:
                             return self.evaluatedProjectionsCount
 
                     permutations = self.getNextPermutations()
+        elif self.visualizationMethod == SCATTERPLOT3D:
+            evaluatedAttributes = self.getEvaluatedAttributes()
+            contVars = [orange.FloatVariable(attr.name) for attr in self.graph.data_domain.attributes]
+            attrCount = len(self.graph.data_domain.attributes)
+
+            leva = len(evaluatedAttributes)
+            count = leva*(leva-1)*(leva-2) / 6
+            strCount = orngVisFuncts.createStringFromNumber(count)
+            
+            for i in range(len(evaluatedAttributes)):
+                attr1 = self.graph.attribute_name_index[evaluatedAttributes[i]]
+                for j in range(i):
+                    attr2 = self.graph.attribute_name_index[evaluatedAttributes[j]]
+                    for k in range(j):
+                        attr3 = self.graph.attribute_name_index[evaluatedAttributes[k]]
+                        self.evaluatedProjectionsCount += 1
+                        if self.isEvaluationCanceled():
+                            return self.evaluatedProjectionsCount
+
+                        table = self.graph.create_projection_as_example_table_3D([attr1, attr2, attr3])
+                        if len(table) < self.minNumOfExamples: continue
+                        accuracy, other_results = self.evaluateProjection(table)
+                        generalDict = {"Results": self.evaluationResults} if self.saveEvaluationResults else {}
+                        self.addResult(accuracy, other_results, len(table),
+                            [self.graph.data_domain[attr1].name, self.graph.data_domain[attr2].name, self.graph.data_domain[attr3].name],
+                            self.evaluatedProjectionsCount, generalDict=generalDict)
+
+                        if self.__class__ != VizRank:
+                            self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
+                            self.parentWidget.progressBarSet(100.0*self.evaluatedProjectionsCount/max(1,float(count)))
+
         else:
             print "unknown visualization method"
 
