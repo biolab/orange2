@@ -341,16 +341,15 @@ Learner and Classifier Components
 Split constructors
 =====================
 
-Split constructors that cannot handle features of particular type
-(discrete, continuous) quitely skip them. Therefore use
-a correct split constructor for your dataset. We suggest a
-:obj:`SplitConstructor_Combined` that delegates features to specialized
-split constructors.
+Split constructor find a suitable criteria for dividing the learning (and
+later testing) instances. Those that cannot handle a particular feature
+type (discrete, continuous) quitely skip them. Therefore use a correct
+split constructor for your dataset, or :obj:`SplitConstructor_Combined`
+that delegates features to specialized split constructors.
 
-The same components can be used either for inducing classification and
-regression trees. The only component that needs to be chosen accordingly
-is the 'measure' attribute for the :obj:`SplitConstructor_Score` class
-(and derived classes).
+The same split constructors can be both for classification and regression
+trees, if the 'measure' attribute for the :obj:`SplitConstructor_Score`
+class (and derived classes) is set accordingly.
 
 .. class:: SplitConstructor
 
@@ -564,35 +563,28 @@ StopCriteria and StopCriteria_common
 Splitters
 =================
 
-Just like the :obj:`Descender` decides the branch for an
-instance during classification, the :obj:`Splitter`
-sorts the learning instances into branches.
+Splitters sort learning instances info brances (the branches are selected
+with a :obj:`SplitConstructor`, while a :obj:`Descender` decides the
+branch for an instance during classification.
 
-:obj:`Splitter` is given a :obj:`Node` (from which 
-it can use different stuff, but most of splitters only use the 
-:obj:`branch_selector`), a set of instances to be divided, and 
-the weight ID. The result is a list of subsets of instances
-and, optionally, a list of new weight ID's.
+Most splitters simply call :obj:`Node.branch_selector` and assign
+instances to correspondingly. When the value is unknown they choose a
+particular branch or simply skip the instance.
 
-Most :obj:`Splitter` classes simply call the node's
-:obj:`branch_selector` and assign instances to corresponding branches. When
-the value is unknown they choose a particular branch or simply skip
-the instance.
 
-Some enhanced splitters can split instances. An instance (actually, a
-pointer to it) is copied to more than one subset. To facilitate real
-splitting, weights are needed. Each branch is assigned a weight ID (each
-would usually have its own ID) and all instances that are in that branch
-(either completely or partially) should have this meta attribute. If an
-instance hasn't been split, it has only one additional attribute - with
-weight ID corresponding to the subset to which it went. Example that
-is split between, say, three subsets, has three new meta attributes,
-one for each subset. ID's of weight meta attributes are returned by
-the :obj:`Splitter` to be used at induction of the corresponding
-subtrees.
+Some enhanced splitters can split instances. An instance (actually,
+a pointer to it) is copied to more than one subset. To facilitate
+real splitting, weights are needed. Each branch has a weight ID (each
+would usually have its own ID) and all instances in that branch (either
+completely or partially) should have this meta attribute. If an instance
+hasn't been split, it has only one additional attribute - with weight
+ID corresponding to the subset to which it went. Instance that is split
+between, say, three subsets, has three new meta attributes, one for each
+subset. ID's of weight meta attributes returned by the :obj:`Splitter`
+are used for the induction of the corresponding subtrees.
 
-Note that weights are used only when needed. When no splitting occured -
-because the splitter is not able to do it or becauser there was no need
+The weights are used only when needed. When no splitting occured -
+because the splitter is was unable to do it or because there was no need
 for splitting - no weight ID's are returned.
 
 
@@ -604,6 +596,11 @@ for splitting - no weight ID's are returned.
     value of the crucial attribute) differently.
 
     .. method:: __call__(node, instances[, weightID])
+
+        :param node: a node.
+        :type node: :obj:`Node`
+        :param instances: a set of instances
+        :param weightID: weight ID. 
         
         Use the information in :obj:`node` (particularly the
         :obj:`branch_selector`) to split the given set of instances into
@@ -612,19 +609,20 @@ for splitting - no weight ID's are returned.
         python list of integers or a None when no splitting of instances
         occurs and thus no weights are needed.
 
+        Return a list of subsets of instances and, optionally, a list
+        of new weight ID's.
 
 .. class:: Splitter_IgnoreUnknowns
 
     Bases: :class:`Splitter`
 
-    Simply ignores the instances for which no single branch can be
-    determined.
+    Ignores the instances for which no single branch can be determined.
 
 .. class:: Splitter_UnknownsToCommon
 
     Bases: :class:`Splitter`
 
-    Places all such instances to a branch with the highest number of
+    Places all ambiguous instances to a branch with the highest number of
     instances. If there is more than one such branch, one is selected at
     random and then used for all instances.
 
@@ -632,66 +630,65 @@ for splitting - no weight ID's are returned.
 
     Bases: :class:`Splitter`
 
-    Places instances with unknown value of the attribute into all branches.
+    Places instances with an unknown value of the feature into all branches.
 
 .. class:: Splitter_UnknownsToRandom
 
     Bases: :class:`Splitter`
 
-    Selects a random branch for such instances.
+    Selects a random branch for ambiguous instances.
 
 .. class:: Splitter_UnknownsToBranch
 
     Bases: :class:`Splitter`
 
-    Constructs an additional branch to contain all such instances. 
+    Constructs an additional branch to contain all ambiguous instances. 
     The branch's description is "unknown".
 
 .. class:: Splitter_UnknownsAsBranchSizes
 
     Bases: :class:`Splitter`
 
-    Splits instances with unknown value of the attribute according to
+    Splits instances with unknown value of the feature according to
     proportions of instances in each branch.
 
 .. class:: Splitter_UnknownsAsSelector
 
     Bases: :class:`Splitter`
 
-    Splits instances with unknown value of the attribute according to
-    distribution proposed by selector (which is in most cases the same
-    as proportions of instances in branches).
+    Splits instances with unknown value of the feature according to
+    distribution proposed by selector (usually the same as proportions
+    of instances in branches).
 
 Descenders
 =============================
 
-This is a classifier's counterpart for :class:`Splitter`. It
-decides the destiny of instances that need to be classified and cannot
-be unambiguously put in a branch.
 
+Descenders decide the where should the instances that cannot be
+unambiguously put in a branch be sorted to (the branches are selected
+with a :obj:`SplitConstructor`, while a :obj:`Splitter` sorts instances
+during learning).
 
 .. class:: Descender
 
-    An abstract base object for tree descenders.
-
-    It descends a given instance as far deep as possible,
-    according to the values of instance's attributes. The :obj:`Descender`:
-    calls the node's :obj:`Node.branch_selector` to get the branch index. If
-    it's a simple index, the corresponding branch is followed. If not,
-    it's up to descender to decide what to do, and that's where descenders
-    differ. A descender can choose a single branch (for instance,
-    the one that is the most recommended by the :obj:`Node.branch_selector`)
-    or it can let the branches vote.
+    An abstract base object for tree descenders. It descends a
+    given instance as far deep as possible, according to the values
+    of instance's features. The :obj:`Descender`: calls the node's
+    :obj:`~Node.branch_selector` to get the branch index. If it's a
+    simple index, the corresponding branch is followed. If not, it's up
+    to descender to decide what to do. A descender can choose a single
+    branch (for instance, the one that is the most recommended by the
+    :obj:`~Node.branch_selector`) or it can let the branches vote.
 
     Three are possible outcomes of a descent:
 
-    #. Descender reaches a leaf. This happens when
-       there were no unknown or out-of-range values, or when the descender
-       selected a single branch and continued the descend despite them. In
-       this case, the descender returns the reached :obj:`Node`.
+    #. The descender reaches a leaf. This happens when
+       there were no unknown or out-of-range values, or when the
+       descender selected a single branch and continued the descend
+       despite them. The descender returns the reached :obj:`Node`.
     #. Node's :obj:`~Node.branch_selector` returned a distribution and the
        :obj:`Descender` decided to stop the descend at this (internal)
-       node.  The descender returns the current :obj:`Node`.
+       node. It returns the current :obj:`Node`.
     #. Node's :obj:`~Node.branch_selector` returned a distribution and the
        :obj:`Node` wants to split the instance (i.e., to decide the class
        by voting). It returns a :obj:`Node` and the vote-weights for the
@@ -707,10 +704,10 @@ be unambiguously put in a branch.
         the reached node and None, in the latter in contains a node and
         weights of votes for subtrees (a list of floats).
 
-        :obj:`Descender`'s that never split instances always descend to a
-        leaf, but they differ in the treatment of instances with unknown
+        Descenders that never split instances always descend to a
+        leaf. They differ in the treatment of instances with unknown
         values (or, in general, instances for which a branch cannot be
-        determined at some node(s) the tree).  :obj:`Descender`'s that
+        determined at some node the tree). Descenders that
         do split instances differ in returned vote weights.
 
 .. class:: Descender_UnknownsToNode
@@ -718,11 +715,10 @@ be unambiguously put in a branch.
     Bases: :obj:`Descender`
 
     When instance cannot be classified into a single branch, the current
-    node is returned. Thus, the node's :obj:`NodeClassifier` will be used
-    to make a decision. It is your responsibility to see that even the
-    internal nodes have their :obj:`NodeClassifier` (i.e., don't disable
-    creating node classifier or manually remove them after the induction,
-    that's all)
+    node is returned. Thus, the node's :obj:`~Node.node_classifier`
+    will be used to make a decision. In such case the internal nodes
+    need to have their :obj:`Node.node_classifier` (i.e., don't disable
+    creating node classifier or manually remove them after the induction).
 
 .. class:: Descender_UnknownsToBranch
 
@@ -751,14 +747,14 @@ be unambiguously put in a branch.
 
     Bases: :obj:`Descender`
 
-    Makes the subtrees vote for the instance's class; the vote is weighted
+    The subtrees vote for the instance's class; the vote is weighted
     according to the sizes of the branches.
 
 .. class:: Descender_MergeAsSelector
 
     Bases: :obj:`Descender`
 
-    Makes the subtrees vote for the instance's class; the vote is weighted
+    The subtrees vote for the instance's class; the vote is weighted
     according to the selectors proposal.
 
 Pruning
@@ -767,19 +763,14 @@ Pruning
 .. index::
     pair: classification trees; pruning
 
-Tree pruners derived from :obj:`Pruner` can be given either a :obj:`Node`
-(presumably, but not necessarily a root) or a :obj:`_TreeClassifier`. The
-result is a new :obj:`Node` or a :obj:`_TreeClassifier` with a pruned
-tree. The original tree remains intact.
-
-The pruners construct only a shallow copy of a tree.  The pruned tree's
-:obj:`Node` contain references to the same contingency matrices, node
-classifiers, branch selectors, ...  as the original tree. Thus, you may
-modify a pruned tree structure (manually cut it, add new nodes, replace
-components) but modifying, for instance, some node's :obj:`~Node.node_classifier`
-(a :obj:`~Node.node_classifier` itself, not a reference to it!) would modify
-the node's :obj:`~Node.node_classifier` in the corresponding node of the
-original tree.
+The pruners construct a shallow copy of a tree.  The pruned tree's
+:obj:`Node` contain references to the same contingency matrices,
+node classifiers, branch selectors, ...  as the original tree. Thus,
+you may modify a pruned tree structure (manually cut it, add new
+nodes, replace components) but modifying, for instance, some node's
+:obj:`~Node.node_classifier` (a :obj:`~Node.node_classifier` itself, not
+a reference to it!) would modify the node's :obj:`~Node.node_classifier`
+in the corresponding node of the original tree.
 
 Pruners cannot construct a :obj:`~Node.node_classifier` nor merge
 :obj:`~Node.node_classifier` of the pruned subtrees into classifiers for new
@@ -789,13 +780,19 @@ the default.
 
 .. class:: Pruner
 
-    This is an abstract base class which defines nothing useful, only
-    a pure virtual call operator.
+    An abstract base class for a tree pruner which defines nothing useful, 
+    only a pure virtual call operator.
 
     .. method:: __call__(tree)
 
+        :param tree: either
+            a :obj:`Node` (presumably, but not necessarily a root) or a
+            :obj:`_TreeClassifier` (the C++ version of the classifier,
+            saved in :obj:`TreeClassfier.base_classifier`).
+
         Prunes a tree. The argument can be either a tree classifier or
         a tree node; the result is of the same type as the argument.
+        The original tree remains intact.
 
 .. class:: Pruner_SameMajority
 
@@ -803,19 +800,19 @@ the default.
 
     In Orange, a tree can have a non-trivial subtrees (i.e. subtrees with
     more than one leaf) in which all the leaves have the same majority
-    class. (This is allowed because those leaves can still have different
-    distributions of classes and thus predict different probabilities.)
+    class. This is allowed because those leaves can still have different
+    distributions of classes and thus predict different probabilities.
     However, this can be undesired when we're only interested
     in the class prediction or a simple tree interpretation. The
     :obj:`Pruner_SameMajority` prunes the tree so that there is no
     subtree in which all the nodes would have the same majority class.
 
-    This pruner will only prune the nodes in which the node classifier 
-    is of class :obj:`Orange.classification.ConstantClassifier` 
-    (or from a derived class).
+    This pruner will only prune the nodes in which the node classifier
+    is a :obj:`~Orange.classification.majority.ConstantClassifier`
+    (or a derived class).
 
-    Note that the leaves with more than one majority class require some 
-    special handling. The pruning goes backwards, from leaves to the root.
+    The leaves with more than one majority class require some special
+    handling. The pruning goes backwards, from leaves to the root.
     When siblings are compared, the algorithm checks whether they have
     (at least one) common majority class. If so, they can be pruned.
 
@@ -934,9 +931,7 @@ Possible quantities are
     You can add more, if you will. Instructions and examples are given at
     the end of this section.
 
-
-Examples
---------
+.. rubric:: Examples
 
 We shall build a small tree from the iris data set - we shall limit the
 depth to three levels (part of `orngTree1.py`_, uses `iris.tab`_):
@@ -1183,7 +1178,7 @@ the 90% confidence intervals in the leaves::
 What's the difference between :samp:`%V`, the predicted value and 
 :samp:`%A` the average? Doesn't a regression tree always predict the
 leaf average anyway? Not necessarily, the tree predict whatever the
-:attr:`TreeClassifier.node_classifier` in a leaf returns. 
+:obj:`~Node.node_classifier` in a leaf returns. 
 As :samp:`%V` uses the :obj:`Orange.data.variable.Continuous`' function
 for printing out the value, therefore the printed number has the same
 number of decimals as in the data file.
