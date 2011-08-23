@@ -188,8 +188,8 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 modelview.translate(x, y, z)
                 modelview = modelview * rotation
                 modelview.rotate(-90, 1, 0, 0)
-                modelview.translate(0, -0.03, 0)
-                modelview.scale(-0.03, -0.03, -0.03)
+                modelview.translate(0, -0.02, 0)
+                modelview.scale(-0.02, -0.02, -0.02)
                 self.cone_shader.setUniformValue('modelview', modelview)
 
                 glBindVertexArray(self.cone_vao_id)

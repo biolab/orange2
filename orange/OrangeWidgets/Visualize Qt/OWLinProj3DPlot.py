@@ -35,6 +35,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         ScaleLinProjData3D.setData(self, data, subsetData, **args)
         self.makeCurrent()
         self.state = PlotState.IDLE # Override for now, apparently this is modified by OWPlotGUI
+        self.before_draw_callback = lambda: self.before_draw()
 
         cone_data = parse_obj('cone_hq.obj')
         vertices = []
@@ -77,7 +78,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             {
                 gl_Position = projection * modelview * vec4(position, 1.);
                 float diffuse = clamp(dot(light_direction, normalize((modelview * vec4(normal, 0.)).xyz)), 0., 1.);
-                color = vec4(vec3(0., 1., 0.) * diffuse, 1.);
+                color = vec4(vec3(1., 1., 1.) * diffuse + 0.1, 1.);
             }
             '''
 
@@ -99,6 +100,62 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
         if not self.cone_shader.link():
             print('Failed to link cone shader!')
+
+    def before_draw(self):
+        modelview = QMatrix4x4()
+        modelview.lookAt(
+            QVector3D(self.camera[0]*self.camera_distance,
+                      self.camera[1]*self.camera_distance,
+                      self.camera[2]*self.camera_distance),
+            QVector3D(0, 0, 0),
+            QVector3D(0, 1, 0))
+        self.modelview = modelview
+
+        glEnable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+
+        if self.showAnchors:
+            for anchor in self.anchor_data:
+                x, y, z, label = anchor
+
+                direction = QVector3D(x, y, z)
+                up = QVector3D(0, 1, 0)
+                right = QVector3D.crossProduct(direction, up).normalized()
+                up = QVector3D.crossProduct(right, direction)
+                rotation = QMatrix4x4()
+                rotation.setColumn(0, QVector4D(right, 0))
+                rotation.setColumn(1, QVector4D(up, 0))
+                rotation.setColumn(2, QVector4D(direction, 0))
+
+                self.cone_shader.bind()
+                self.cone_shader.setUniformValue('projection', self.projection)
+                modelview = QMatrix4x4(self.modelview)
+                modelview.translate(x, y, z)
+                modelview = modelview * rotation
+                modelview.rotate(-90, 1, 0, 0)
+                modelview.translate(0, -0.02, 0)
+                modelview.scale(-0.02, -0.02, -0.02)
+                self.cone_shader.setUniformValue('modelview', modelview)
+
+                glBindVertexArray(self.cone_vao_id)
+                glDrawArrays(GL_TRIANGLES, 0, self.cone_vao_id.num_vertices)
+                glBindVertexArray(0)
+
+                self.cone_shader.release()
+
+                glColor4f(0, 0, 0, 1)
+                self.renderText(x*1.2, y*1.2, z*1.2, label)
+
+                glBegin(GL_LINES)
+                glVertex3f(0, 0, 0)
+                glVertex3f(x, y, z)
+                glEnd()
 
     def updateData(self, labels=None, setAnchors=0, **args):
         self.clear()

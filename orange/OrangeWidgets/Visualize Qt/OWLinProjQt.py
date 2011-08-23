@@ -102,7 +102,7 @@ class OWLinProjQt(OWVisWidget):
 
         self.optimizationDlg = self.vizrank  # for backward compatibility
 
-        self.graph.normalizeExamples = ("radviz" in name.lower())       # ignore settings!! if we have radviz then normalize, otherwise not.
+        self.graph.normalizeExamples = ("radviz" in name.lower() or "sphereviz" in name.lower())       # ignore settings!! if we have radviz then normalize, otherwise not.
 
         #GUI
         # add a settings dialog and initialize its values
