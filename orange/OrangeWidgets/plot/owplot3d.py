@@ -564,6 +564,13 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             print('Failed to create tooltip FBO! Tooltips disabled.')
             self.use_fbos = False
 
+        img = QImage(os.path.join(os.path.dirname(__file__), 'noise.jpg'))
+        self.fractal_texture = self.bindTexture(img)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT)
+
     def resizeGL(self, width, height):
         pass
 
@@ -628,6 +635,14 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
             self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
             self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
+            if self.use_2d_symbols:
+                self.symbol_program.setUniformValue('texture', 0)
+                self.symbol_program.setUniformValue('apply_texture', True)
+                self.symbol_program.setUniformValue('screen_size', self.width(), self.height())
+                glActiveTexture(GL_TEXTURE0)
+                glBindTexture(GL_TEXTURE_2D, self.fractal_texture)
+            else:
+                self.symbol_program.setUniformValue('apply_texture', False)
 
             glEnable(GL_DEPTH_TEST)
             glEnable(GL_BLEND)
