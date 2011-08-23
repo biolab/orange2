@@ -94,7 +94,7 @@ loadARFF = Orange.misc.deprecated_keywords(
 )(loadARFF)
 
 
-def toARFF(filename,table,try_numericize=0):
+def toARFF(filename, table, try_numericize=0):
     """Save class:`Orange.data.Table` to file in Weka's ARFF format"""
     t = table
     if filename[-5:] == ".arff":
@@ -207,9 +207,9 @@ def toR(filename,t):
     aord = []
     labels = []
     as0 = []
-    for a in t.domain.attributes:
+    for a in t.domain.variables:
         as0.append(a)
-    as0.append(t.domain.class_var)
+#    as0.append(t.domain.class_var)
     for a in as0:
         labels.append(str(a.name))
         atyp.append(a.var_type)
