@@ -160,9 +160,11 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self._draw_value_lines()
 
     def _draw_value_lines(self):
+        # TODO: performance (VBO)
         if self.showValueLines:
             for line in self.value_lines:
                 x, y, z, xn, yn, zn, color = line
+                x, y, z = self.plot_scale * [x, y, z]
                 glColor3f(*color)
                 glBegin(GL_LINES)
                 glVertex3f(x, y, z)
