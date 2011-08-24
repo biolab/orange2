@@ -141,6 +141,7 @@ class OWLinProjQt(OWVisWidget):
                 # Patch a method in Freeviz
                 get_shown_attribute_list = lambda: [anchor[3] for anchor in self.graph.anchorData]
                 self.freeVizDlg.get_shown_attribute_list = get_shown_attribute_list
+                self.freeVizDlg.getShownAttributeList = get_shown_attribute_list
                 self.freeVizDlg._use_3D = True
 
 ##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)

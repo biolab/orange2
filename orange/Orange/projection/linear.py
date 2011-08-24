@@ -213,7 +213,11 @@ class FreeViz:
         
         """
         attr_list = self.get_shown_attribute_list()
-        if not attr_list: return
+        if not attr_list:
+            return
+        if "3d" in self.parentName.lower():
+            self.graph.anchor_data = self.graph.create_anchors(len(attr_list), attr_list)
+            return
         phi = 2*math.pi/len(attr_list)
         self.graph.anchorData = [(math.cos(i*phi), math.sin(i*phi), a)
                                  for i, a in enumerate(attr_list)]
@@ -225,9 +229,47 @@ class FreeViz:
         Set the projection to a random one.
         
         """
-        if not self.graph.haveData: return
+        if not self.graph.haveData:
+            return
         attr_list = self.get_shown_attribute_list()
-        if not attr_list: return
+        if not attr_list:
+            return
+        if "3d" in self.parentName.lower():
+            if self.restrain == 0:
+                def ranch(i, label):
+                    r = 0.3+0.7*random.random()
+                    phi = 2*math.pi*random.random()
+                    theta = math.pi*random.random()
+                    return (r*math.sin(theta)*math.cos(phi),
+                            r*math.sin(theta)*math.sin(phi),
+                            r*math.cos(theta),
+                            label)
+            elif self.restrain == 1:
+                def ranch(i, label):
+                    phi = 2*math.pi*random.random()
+                    theta = math.pi*random.random()
+                    r = 1.
+                    return (r*math.sin(theta)*math.cos(phi),
+                            r*math.sin(theta)*math.sin(phi),
+                            r*math.cos(theta),
+                            label)
+            else:
+                self.graph.anchor_data = self.graph.create_anchors(len(attr_list), attr_list)
+                def ranch(i, label):
+                    r = 0.3+0.7*random.random()
+                    return (r*self.graph.anchor_data[i][0],
+                            r*self.graph.anchor_data[i][1],
+                            r*self.graph.anchor_data[i][2],
+                            label)
+
+            anchors = [ranch(*a) for a in enumerate(attr_list)]
+
+            if not self.restrain == 1:
+                maxdist = math.sqrt(max([x[0]**2+x[1]**2+x[2]**2 for x in anchors]))
+                anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]/maxdist, x[3]) for x in anchors]
+
+            self.graph.anchorData = anchors
+            return
 
         if self.restrain == 0:
             def ranch(i, label):
