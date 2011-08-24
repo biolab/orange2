@@ -163,9 +163,8 @@ class OWPubmedView(OWWidget):
         #str_input = str_input.replace(' ', '').strip(' .').lower()
         #self.titles = sorted([self.inside_view._network.node[n]['title'] for n in self.inside_view._network.nodes() if str_input in self.inside_view._network.node[n]['title'].encode().replace(' ', '').strip(' .').lower()]) # [(id,title)]
         str_input = str_input.strip(' .').lower().split(' ')
-        str_input = [w.strip('.,;:-/\\()') for w in str_input]
-        titles2 = [(n, str.lower(self.inside_view._network.node[n]['title'].encode().strip(' .')).split(' ')) for n in self.inside_view._network.nodes()] # [(id,title)]
-        titles2 = sorted(titles2, key = lambda x: sum(i.strip('.,;:-/\\()') in str_input for i in x[1]), reverse=True)
+        titles2 = [(n, str.lower(self.inside_view._network.node[n]['title'].encode('utf-8').strip(' .')).split(' ')) for n in self.inside_view._network.nodes()] # [(id,title)]
+        titles2 = sorted(titles2, key = lambda x: sum(i in str_input for i in x[1]), reverse=True)
         self.titles = [self.inside_view._network.node[x[0]]['title'] for x in titles2]
         self.ids = [x[0] for x in titles2]
         
