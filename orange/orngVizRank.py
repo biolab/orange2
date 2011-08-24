@@ -86,6 +86,8 @@ RADVIZ = 2
 LINEAR_PROJECTION = 3
 POLYVIZ = 4
 SCATTERPLOT3D = 5
+SPHEREVIZ3D = 6
+LINEAR_PROJECTION3D = 7
 KNN_IN_ORIGINAL_SPACE = 10
 
 # optimization type
@@ -891,6 +893,106 @@ class VizRank:
                             return self.evaluatedProjectionsCount
 
                     permutations = self.getNextPermutations()
+
+        elif self.visualizationMethod in (SPHEREVIZ3D, LINEAR_PROJECTION3D):
+            if self.projOptimizationMethod != 0:
+                self.freeviz.useGeneralizedEigenvectors = 1
+                self.graph.normalize_examples = 0
+
+            # variables and domain for the table
+            domain = orange.Domain([orange.FloatVariable("xVar"),
+                                    orange.FloatVariable("yVar"),
+                                    orange.FloatVariable("zVar"),
+                                    orange.EnumVariable(self.graph.data_domain.classVar.name, values = getVariableValuesSorted(self.graph.data_domain.classVar))])
+            minLength = (self.optimizationType == EXACT_NUMBER_OF_ATTRS and self.attributeCount) or 3
+            maxLength = self.attributeCount
+            classListFull = self.graph.original_data[self.graph.data_class_index]
+
+            # each call to selectNextAttributeSubset gets a new combination of attributes in a range from minLength to maxLength. if we return None for a given number of attributes this
+            # doesn't mean yet that there are no more possible combinations. it may be just that we wanted a combination of 6 attributes in a domain with 4 attributes. therefore we have
+            # to try maxLength-minLength+1 times and if we fail every time then there are no more valid projections
+
+            newProjectionsExist = 1
+            while newProjectionsExist:
+                for experiment in range(maxLength-minLength+1):
+                    if self.selectNextAttributeSubset(minLength, maxLength): break
+                    newProjectionsExist = 0
+                permutations = self.getNextPermutations()
+                while permutations:
+                    attrIndices = permutations[0]
+
+                    # if we use SPCA, PLS
+                    if self.projOptimizationMethod != 0:
+                        projections = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, set_anchors = 0, percentDataUsed = self.percentDataUsed)
+                        if projections != None:
+                            xanchors, yanchors, zanchors, (attrNames, newIndices) = projections
+                            table = self.graph.create_projection_as_example_table(newIndices,
+                                                                                  domain = domain,
+                                                                                  XAnchors = xanchors,
+                                                                                  YAnchors = yanchors,
+                                                                                  ZAnchors = zanchors)
+                        if len(table) < self.minNumOfExamples: continue
+                        self.evaluatedProjectionsCount += 1
+                        accuracy, other_results = self.evaluateProjection(table)
+                        generalDict = {"XAnchors": list(xanchors),
+                                       "YAnchors": list(yanchors),
+                                       "ZAnchors": list(zanchors),
+                                       "Results": self.evaluationResults} if self.saveEvaluationResults else {"XAnchors": list(xanchors),
+                                                                                                              "YAnchors": list(yanchors),
+                                                                                                              "ZAnchors": list(zanchors)}
+                        self.addResult(accuracy, other_results, len(table), attrNames, self.evaluatedProjectionsCount, generalDict = generalDict)
+                        if self.isEvaluationCanceled(): return self.evaluatedProjectionsCount
+                        if self.__class__ != VizRank:
+                            self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount)))
+                    else:
+                        XAnchors = self.graph.create_xanchors(len(attrIndices))
+                        YAnchors = self.graph.create_yanchors(len(attrIndices))
+                        ZAnchors = self.graph.create_zanchors(len(attrIndices))
+                        validData = self.graph.get_valid_list(attrIndices)
+                        if numpy.sum(validData) >= self.minNumOfExamples:
+                            classList = numpy.compress(validData, classListFull)
+                            selectedData = numpy.compress(validData, numpy.take(self.graph.no_jittering_scaled_data, attrIndices, axis = 0), axis = 1)
+                            sum_i = self.graph._getSum_i(selectedData)
+
+                            tempList = []
+
+                            # for every permutation compute how good it separates different classes
+                            for permutation in permutations:
+                                if self.evaluatedProjectionsCount % 10 == 0 and self.isEvaluationCanceled():
+                                    continue
+
+                                table = self.graph.create_projection_as_example_table(permutation,
+                                                                                      validData = validData,
+                                                                                      classList = classList,
+                                                                                      sum_i = sum_i,
+                                                                                      XAnchors = XAnchors,
+                                                                                      YAnchors = YAnchors,
+                                                                                      ZAnchors = ZAnchors,
+                                                                                      domain = domain)
+                                accuracy, other_results = self.evaluateProjection(table)
+
+                                # save the permutation
+                                if self.storeEachPermutation:
+                                    generalDict = {"Results": self.evaluationResults} if self.saveEvaluationResults else {}
+                                    self.addResult(accuracy, other_results, len(table), [self.graph.attribute_names[i] for i in permutation], self.evaluatedProjectionsCount, generalDict)
+                                else:
+                                    tempList.append((accuracy, other_results, len(table), [self.graph.attribute_names[i] for i in permutation]))
+
+                                self.evaluatedProjectionsCount += 1
+                                if self.__class__ != VizRank:
+                                    self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount)))
+                                    qApp.processEvents()        # allow processing of other events
+
+                            if not self.storeEachPermutation and len(tempList) > 0:   # return only the best attribute placements
+                                (acc, other_results, lenTable, attrList) = maxFunct(tempList)
+                                generalDict = {"Results": self.evaluationResults} if self.saveEvaluationResults else {}
+                                self.addResult(acc, other_results, lenTable, attrList, self.evaluatedProjectionsCount, generalDict=generalDict)
+
+                        if self.isEvaluationCanceled():
+                            return self.evaluatedProjectionsCount
+
+                    permutations = self.getNextPermutations()
+
         elif self.visualizationMethod == SCATTERPLOT3D:
             evaluatedAttributes = self.getEvaluatedAttributes()
             contVars = [orange.FloatVariable(attr.name) for attr in self.graph.data_domain.attributes]
@@ -993,6 +1095,42 @@ class VizRank:
 
                     for testProj in testProjections:
                         table = self.graph.create_projection_as_example_table(testProj, domain = domain)
+                        if len(table) < self.minNumOfExamples: continue
+                        acc, other_results = self.evaluateProjection(table)
+                        if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:
+                            self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
+                        if acc > accuracy:
+                            self.addResult(acc, other_results, len(table), [self.graph.attribute_names[i] for i in testProj], projIndex)
+                            self.insertTempProjection(projections, acc, testProj)
+                            tempDict[tuple(testProj)] = 1
+                            if min(acc, accuracy) != 0 and max(acc, accuracy) > 1.005 *min(acc, accuracy):  significantImprovement = 1
+
+                        self.optimizedProjectionsCount += 1
+                        if self.__class__ != VizRank:
+                            qApp.processEvents()        # allow processing of other events
+                        if self.optimizedProjectionsCount % 10 == 0 and self.isOptimizationCanceled():
+                            return self.optimizedProjectionsCount
+                    if significantImprovement: break
+
+        elif self.visualizationMethod == SCATTERPLOT3D:
+            classListFull = self.graph.original_data[self.graph.data_class_index]
+
+            tempDict = {}
+            projIndex = 0
+            while len(projections) > 0:
+                (accuracy, projection) = projections.pop(0)
+                projIndex -= 1
+
+                significantImprovement = 0
+                strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
+                for (attrIndex, attr) in enumerate(attributes):
+                    if attr in projection: continue
+                    testProjections = []
+                    if not tempDict.has_key((projection[0], attr)) and not tempDict.has_key((attr, projection[0])): testProjections.append([projection[0], attr])
+                    if not tempDict.has_key((projection[1], attr)) and not tempDict.has_key((attr, projection[1])): testProjections.append([attr, projection[1]])
+
+                    for testProj in testProjections:
+                        table = self.graph.create_projection_as_example_table_3D(testProj, domain = domain)
                         if len(table) < self.minNumOfExamples: continue
                         acc, other_results = self.evaluateProjection(table)
                         if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:

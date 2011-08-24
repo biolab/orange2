@@ -853,14 +853,14 @@ class ScaleLinProjData3D(ScaleData):
     setAnchors = set_anchors
 
     @deprecated_keywords({"numOfAttr": "num_of_attr"})
-    def create_anchors(self, num_of_attr, labels=None):
+    def create_anchors(self, num_of_attrs, labels=None):
         """
         Create anchors on the sphere.
         
         """
         # Golden Section Spiral algorithm approximates even distribution of points on a sphere
         # (read more here http://www.softimageblog.com/archives/115)
-        n = num_of_attr
+        n = num_of_attrs
         xanchors = []
         yanchors = []
         zanchors = []
@@ -874,14 +874,39 @@ class ScaleLinProjData3D(ScaleData):
             xanchors.append(math.cos(phi)*r)
             yanchors.append(y)
             zanchors.append(math.sin(phi)*r)
-        r = numpy.ones(len(xanchors), numpy.float)
 
+        self.anchor_dict[num_of_attrs] = [xanchors, yanchors, zanchors]
+ 
         if labels:
-            return [(xanchors[i], yanchors[i], zanchors[i], labels[i]) for i in range(num_of_attr)]
+            return [(xanchors[i], yanchors[i], zanchors[i], labels[i]) for i in range(num_of_attrs)]
         else:
-            return [(xanchors[i], yanchors[i], zanchors[i]) for i in range(num_of_attr)]
+            return [(xanchors[i], yanchors[i], zanchors[i]) for i in range(num_of_attrs)]
 
     createAnchors = create_anchors
+
+    @deprecated_keywords({"numOfAttrs": "num_of_attrs"})
+    def create_xanchors(self, num_of_attrs):
+        if not self.anchor_dict.has_key(num_of_attrs):
+            self.create_anchors(num_of_attrs)
+        return self.anchor_dict[num_of_attrs][0]
+
+    createXAnchors = create_xanchors
+
+    @deprecated_keywords({"numOfAttrs": "num_of_attrs"})
+    def create_yanchors(self, num_of_attrs):
+        if not self.anchor_dict.has_key(num_of_attrs):
+            self.create_anchors(num_of_attrs)
+        return self.anchor_dict[num_of_attrs][1]
+
+    createYAnchors = create_yanchors
+
+    @deprecated_keywords({"numOfAttrs": "num_of_attrs"})
+    def create_zanchors(self, num_of_attrs):
+        if not self.anchor_dict.has_key(num_of_attrs):
+            self.create_anchors(num_of_attrs)
+        return self.anchor_dict[num_of_attrs][2]
+
+    createZAnchors = create_zanchors
 
     @deprecated_keywords({"fileName": "filename", "attrList": "attrlist",
                           "useAnchorData": "use_anchor_data"})

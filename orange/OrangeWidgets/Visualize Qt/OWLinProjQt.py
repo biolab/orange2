@@ -98,6 +98,12 @@ class OWLinProjQt(OWVisWidget):
         elif "polyviz" in name_lower:
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        elif "sphereviz" in name_lower:
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SPHEREVIZ3D, name)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        elif "3d" in name_lower:
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION3D, name)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         else:
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)

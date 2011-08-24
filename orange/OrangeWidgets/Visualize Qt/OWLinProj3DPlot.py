@@ -301,6 +301,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     def replot(self):
         pass
 
+    def saveToFile(self):
+        pass
+
     # Mouse events overrides
 
     def mousePressEvent(self, event):
