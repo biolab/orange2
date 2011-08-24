@@ -46,8 +46,8 @@ Values (``Value``)
     .. attribute:: value_type
 
         Tells whether the value is known or not. Can be
-       ``Orange.data.Value.Regular``, ``Orange.data.Value.DC``,
-       ``Orange.data.Value.DK``.
+        ``Orange.data.Value.Regular``, ``Orange.data.Value.DC``,
+        ``Orange.data.Value.DK``.
 
     .. method:: __init__(variable[, value])
 

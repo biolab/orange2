@@ -229,8 +229,8 @@ above calling the HierarchicalClustering.
 
 .. note:: This code will actually trigger a warning;
     to avoid it, use matrix.setattr("objects", ["Ann", "Bob"....
-    Why this is needed is explained in the page on `Orange peculiarities`_.
-    
+..    Why this is needed is explained in the page on `Orange peculiarities`_. TODO: Create page on Orange Peculiarities.
+
 If we've forgotten to store the objects into matrix prior to clustering,
 nothing is lost. We can add it into clustering later, by
 ::

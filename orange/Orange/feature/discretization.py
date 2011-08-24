@@ -140,7 +140,7 @@ for discretizations induced by :class:`BiModalDiscretization`.
 
         Constructs a new attribute descriptor; the new attribute is discretized
         ``attribute``. The new attribute's name equal ``attribute.name`` 
-        prefixed  by "D_", and its symbolic values are discretizer specific.
+        prefixed  by "D\_", and its symbolic values are discretizer specific.
         The above example shows what comes out form :class:`IntervalDiscretizer`. 
         Discretization algorithms actually first construct a discretizer and
         then call its :class:`construct_variable` to construct an attribute

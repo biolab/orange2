@@ -819,7 +819,7 @@ def evimp(model, used_only=True):
 def plot_evimp(evimp):
     """ Plot the variable importances as returned from
     :obj:`EarthClassifier.evimp` call.
-    ::
+    
         >>> data = Orange.data.Table("housing")
         >>> c = EarthLearner(data, degree=3)
         >>> plot_evimp(c.evimp())
