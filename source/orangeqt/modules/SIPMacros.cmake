@@ -122,9 +122,17 @@ MACRO(ADD_SIP_PYTHON_MODULE MODULE_NAME MODULE_SIP)
     ELSE (CYGWIN)
         ADD_LIBRARY(${_logical_name} SHARED ${SIP_EXTRA_SOURCES} ${_sip_output_files} )
     ENDIF (CYGWIN)
-	IF (WIN32)
-		SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES SUFFIX ".pyd")
-	ENDIF (WIN32)
+    
+#	IF (WIN32)
+#		SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES SUFFIX ".pyd") 
+#	ENDIF (WIN32)
+
+#	Use sysconfig to get the python module extension
+	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print distutils.sysconfig.get_config_var('SO')" 
+					RESULT_VARIABLE PYTHON_SOPY_PROCESS 
+					OUTPUT_VARIABLE PY_SO_SUFFIX 
+					OUTPUT_STRIP_TRAILING_WHITESPACE)
+	SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES SUFFIX ${PY_SO_SUFFIX})
     TARGET_LINK_LIBRARIES(${_logical_name} ${PYTHON_LIBRARY} ${SIP_EXTRA_LINK_LIBRARIES} ${EXTRA_LINK_LIBRARIES})
     SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES PREFIX "" OUTPUT_NAME ${_child_module_name})
 
