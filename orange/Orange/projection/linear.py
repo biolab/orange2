@@ -325,7 +325,7 @@ class FreeViz:
         attr_indices = [ai[label] for label in self.get_shown_attribute_list()]
         if not attr_indices: return
 
-        if self.implementation == FAST_IMPLEMENTATION and not hasattr(self, '_use_3d'): # TODO
+        if self.implementation == FAST_IMPLEMENTATION and not hasattr(self, '_use_3D'): # TODO
             return self.optimize_fast_separation(steps, single_step, distances)
 
         if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
@@ -983,18 +983,19 @@ class FreeViz:
             if self.graph.dataHasClass:
                 class_array = numpy.compress(indices, class_array)
 
+        ncomps = 3 if hasattr(self, '_use_3D') else 2
         vectors = None
         if method == DR_PCA:
-            vals, vectors = create_pca_projection(data_matrix, ncomps = 2,
+            vals, vectors = create_pca_projection(data_matrix, ncomps = ncomps,
                                                   use_generalized_eigenvectors = self.use_generalized_eigenvectors)
         elif method == DR_SPCA and self.graph.dataHasClass:
             vals, vectors = create_pca_projection(data_matrix, class_array,
-                                                  ncomps = 2,
+                                                  ncomps = ncomps,
                                                   use_generalized_eigenvectors = self.use_generalized_eigenvectors)
         elif method == DR_PLS and self.graph.dataHasClass:
             data_matrix = data_matrix.transpose()
             class_matrix = numpy.transpose(numpy.matrix(class_array))
-            vectors = create_pls_projection(data_matrix, class_matrix, 2)
+            vectors = create_pls_projection(data_matrix, class_matrix, ncomps)
             vectors = vectors.T
 
         # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
@@ -1005,8 +1006,13 @@ class FreeViz:
 
         xanchors = vectors[0]
         yanchors = vectors[1]
-
-        m = math.sqrt(max(xanchors**2 + yanchors**2))
+        
+        if ncomps == 3:
+            zanchors = vectors[2]
+            m = math.sqrt(max(xanchors**2 + yanchors**2 + zanchors**2))
+            zanchors /= m
+        else:
+            m = math.sqrt(max(xanchors**2 + yanchors**2))
 
         xanchors /= m
         yanchors /= m
@@ -1014,10 +1020,17 @@ class FreeViz:
         attributes = [names[attr_indices[i]] for i in range(len(attr_indices))]
 
         if set_anchors:
-            self.graph.setAnchors(list(xanchors), list(yanchors), attributes)
+            if ncomps == 3:
+                self.graph.setAnchors(list(xanchors), list(yanchors), list(zanchors), attributes)
+            else:
+                self.graph.setAnchors(list(xanchors), list(yanchors), attributes)
             self.graph.updateData()
             self.graph.repaint()
-        return xanchors, yanchors, (attributes, attr_indices)
+
+        if ncomps == 3:
+            return xanchors, yanchors, zanchors, (attributes, attr_indices)
+        else:
+            return xanchors, yanchors, (attributes, attr_indices)
 
     findProjection = find_projection
 
