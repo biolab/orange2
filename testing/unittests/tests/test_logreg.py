@@ -46,5 +46,12 @@ class TestStepWiseFSS(unittest.TestCase):
         self.assertTrue([a1 == a2 for a1, a2 in zip(attrs, new_dataset.domain.attributes)])
         
 if __name__ == "__main__":
-    unittest.main()
+    import Orange, os
+    import Orange.misc.environ
+    data = Orange.data.Table(os.path.expanduser("~/Development/orange/doc/datasets/titanic.tab"))
+    c = LogRegLearner(data)
+    import pickle
+    var = c.continuized_domain[0]
+    pickle.dumps(var)
+#    unittest.main()
     

@@ -30,7 +30,8 @@ class TestMeasureAttr_MDL(testing.MeasureAttributeTestCase):
     MEASURE = scoring.MDL()
 
 
-@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS +\
+                 testing.REGRESSION_DATASETS)
 class TestMeasureAttr_Relief(testing.MeasureAttributeTestCase):
     MEASURE = scoring.Relief()
 

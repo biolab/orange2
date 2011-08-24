@@ -32,9 +32,40 @@ class TestLoading(unittest.TestCase):
         table = Orange.data.Table(name)
         s = cPickle.dumps(table)
         table_clone = cPickle.loads(s)
-        self.assertEqual(list(table.domain), list(table_clone.domain))
-        self.assertEqual(table.domain.class_var, table_clone.domain.class_var)
-        self.assertEqual(native(table), native(table_clone), "Native representation does is not equal!")
+#        self.assertEqual(table.domain, table_clone.domain)
+#        self.assertEqual(table.domain.class_var, table_clone.domain.class_var)
+        self.assertEqual(native(table), native(table_clone), "Native representation is not equal!")
+        
+        
+import tempfile
+
+@testing.datasets_driven
+class TestSaving(unittest.TestCase):
+    @testing.test_on_data
+    def test_R_on(self, name):
+        data = Orange.data.Table(name)
+        with tempfile.NamedTemporaryFile(suffix=".R") as f:
+            data.save(f.name)
+    
+#    @testing.test_on_data
+#    def test_toC50(self, name):
+#        data = Orange.data.Table(name)
+
+    @testing.test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS +\
+                              testing.REGRESSION_DATASETS)
+    def test_arff_on(self, data):
+        with tempfile.NamedTemporaryFile(suffix=".arff") as f:
+            data.save(f.name)
+            f.flush()
+            data_arff = Orange.data.Table(f.name)
+    @testing.test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS +\
+                              testing.REGRESSION_DATASETS)
+    def test_svm_on(self, data):
+        with tempfile.NamedTemporaryFile(suffix=".svm") as f:
+            data.save(f.name)
+            f.flush()
+            data_svm = Orange.data.Table(f.name)
+            
         
 if __name__ == "__main__":
     unittest.main()
