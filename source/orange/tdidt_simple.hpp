@@ -26,13 +26,12 @@
 #include "learn.hpp"
 
 struct SimpleTreeNode {
-    int type, children_size, split_attr, *dist;
+    int type, children_size, split_attr;
     float split;
     SimpleTreeNode **children;
-};
 
-struct Split {
-    float score, split;
+    float *dist;  /* classification */
+    float n, sum; /* regression */
 };
 
 class ORANGE_API TSimpleTreeLearner : public TLearner {
@@ -49,13 +48,14 @@ public:
 
 class ORANGE_API TSimpleTreeClassifier : public TClassifier {
 private:
+    int type;
 	struct SimpleTreeNode *tree;
 
 public:
 	__REGISTER_CLASS 
 
 	TSimpleTreeClassifier();
-	TSimpleTreeClassifier(const PVariable &, struct SimpleTreeNode *tree);
+	TSimpleTreeClassifier(const PVariable &, struct SimpleTreeNode *tree, int type);
     ~TSimpleTreeClassifier();
 
 	TValue operator()(const TExample &);

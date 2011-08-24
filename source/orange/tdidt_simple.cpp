@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -33,119 +33,135 @@
 #include "tdidt_simple.ppp"
 
 #ifndef _MSC_VER
-	#include "err.h"
-	#define ASSERT(x) if (!(x)) err(1, "%s:%d", __FILE__, __LINE__)
+    #include "err.h"
+    #define ASSERT(x) if (!(x)) err(1, "%s:%d", __FILE__, __LINE__)
 #else
-	#define ASSERT(x) if(!(x)) exit(1)
+    #define ASSERT(x) if(!(x)) exit(1)
 #endif // _MSC_VER
 
 #ifndef INFINITY
-	#include <limits>
-	#define INFINITY numeric_limits<float>::infinity()
+    #include <limits>
+    #define INFINITY numeric_limits<float>::infinity()
 #endif // INFINITY
-
-#define LOG2(x) log((double) (x)) / log(2.0)
-
-enum { DiscreteNode, ContinuousNode, PredictorNode };
 
 struct Args {
     int minExamples, maxDepth;
     float maxMajority, skipProb;
 
-    int *attr_split_so_far;
+    int type, *attr_split_so_far;
     PDomain domain;
 };
+
+struct Example {
+    TExample *example;
+    float weight;
+};
+
+enum { DiscreteNode, ContinuousNode, PredictorNode };
+enum { Classification, Regression };
 
 int compar_attr;
 
 /* This function uses the global variable compar_attr.
- * Examples with unknowns are larger so that when sorted, appear at the bottom.
+ * Examples with unknowns are larger so that, when sorted, they appear at the bottom.
  */
 int
 compar_examples(const void *ptr1, const void *ptr2)
 {
-	TExample **e1 = (TExample **) ptr1;
-	TExample **e2 = (TExample **) ptr2;
-    if ((*e1)->values[compar_attr].isSpecial())
+    struct Example *e1, *e2;
+
+    e1 = (struct Example *)ptr1;
+    e2 = (struct Example *)ptr2;
+    if (e1->example->values[compar_attr].isSpecial())
         return 1;
-    if ((*e2)->values[compar_attr].isSpecial())
+    if (e2->example->values[compar_attr].isSpecial())
         return -1;
-    return (*e1)->values[compar_attr].compare((*e2)->values[compar_attr]);
+    return e1->example->values[compar_attr].compare(e2->example->values[compar_attr]);
 }
 
-float
-entropy(int *xs, int size)
-{
-	int *ip, *end, sum;
-	float e, p;
 
-    for (ip = xs, end = xs + size, e = 0, sum = 0; ip != end; ip++)
-        if (*ip) {
-            e -= *ip * LOG2(*ip);
+float
+entropy(float *xs, int size)
+{
+    float *ip, *end, sum, e;
+
+    for (ip = xs, end = xs + size, e = 0.0, sum = 0.0; ip != end; ip++)
+        if (*ip > 0.0) {
+            e -= *ip * log2f(*ip);
             sum += *ip;
         }
 
-	return sum == 0 ? 0.0 : e / sum + LOG2(sum);
+    return sum == 0.0 ? 0.0 : e / sum + log2f(sum);
 }
 
+int
+test_min_examples(float *attr_dist, int attr_vals, struct Args *args)
+{
+    int i;
+
+    for (i = 0; i < attr_vals; i++)
+        if (attr_dist[i] > 0.0 && attr_dist[i] < args->minExamples)
+            return 0;
+    return 1;
+}
 
 float
-score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, int *rank, struct Args *args)
+gain_ratio_c(struct Example *examples, int size, int attr, float cls_entropy, struct Args *args, float *best_split)
 {
-    TExample **ex, **ex_end, **ex_next;
-    int i, cls_vals, *attr_dist, *dist_lt, *dist_ge, minExamples;
-    float best_score;
-
-    assert(size > 0);
+    struct Example *ex, *ex_end, *ex_next;
+    int i, cls, cls_vals, minExamples, size_known;
+    float score, *dist_lt, *dist_ge, *attr_dist, best_score, size_weight;
 
     cls_vals = args->domain->classVar->noOfValues();
 
+    /* minExamples should be at least 1, otherwise there is no point in splitting */
+    minExamples = args->minExamples < 1 ? 1 : args->minExamples;
+
     /* allocate space */
-    ASSERT(dist_lt = (int*) calloc(cls_vals, sizeof *dist_lt));
-    ASSERT(dist_ge = (int*) calloc(cls_vals, sizeof *dist_ge));
-    ASSERT(attr_dist = (int*) calloc(2, sizeof *attr_dist));
+    ASSERT(dist_lt = (float *)calloc(cls_vals, sizeof *dist_lt));
+    ASSERT(dist_ge = (float *)calloc(cls_vals, sizeof *dist_ge));
+    ASSERT(attr_dist = (float *)calloc(2, sizeof *attr_dist));
 
     /* sort */
     compar_attr = attr;
-    qsort(examples, size, sizeof(TExample *), compar_examples);
+    qsort(examples, size, sizeof(struct Example), compar_examples);
 
     /* compute gain ratio for every split */
-    for (ex = examples, ex_end = examples + size; ex != ex_end; ex++) {
-        if (!(*ex)->getClass().isSpecial())
-            dist_ge[(*ex)->getClass().intV]++;
-        if ((*ex)->values[attr].isSpecial())
-            size--;
+    size_known = size;
+    size_weight = 0.0;
+    for (ex = examples, ex_end = examples + size; ex < ex_end; ex++) {
+        if (ex->example->values[attr].isSpecial()) {
+            size_known = ex - examples;
+            break;
+        }
+        if (!ex->example->getClass().isSpecial())
+            dist_ge[ex->example->getClass().intV] += ex->weight;
+        size_weight += ex->weight;
     }
 
+    attr_dist[1] = size_weight;
     best_score = -INFINITY;
-    attr_dist[1] = size;
 
-    /* minExamples should be at least 1, otherwise there is no point in splitting */
-    minExamples = minExamples < 1 ? 1 : minExamples;
-    ex = examples + minExamples - 1;
-    ex_end = examples + size - (minExamples - 1);
-    for (ex_next = ex + 1, i = 0; ex_next < ex_end; ex++, ex_next++, i++) {
-        int cls;
-        float score;
-
-        if (!(*ex)->getClass().isSpecial()) {
-            cls = (*ex)->getClass().intV;
-            dist_lt[cls]++;
-            dist_ge[cls]--;
+    for (ex = examples, ex_end = ex + size_known - minExamples, ex_next = ex + 1, i = 0; ex < ex_end; ex++, ex_next++, i++) {
+        if (!ex->example->getClass().isSpecial()) {
+            cls = ex->example->getClass().intV;
+            dist_lt[cls] += ex->weight;
+            dist_ge[cls] -= ex->weight;
         }
-        attr_dist[0]++;
-        attr_dist[1]--;
+        attr_dist[0] += ex->weight;
+        attr_dist[1] -= ex->weight;
 
-        if ((*ex)->values[attr] == (*ex_next)->values[attr])
+        if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minExamples)
             continue;
 
         /* gain ratio */
-        score = (attr_dist[0] * entropy(dist_lt, cls_vals) + attr_dist[1] * entropy(dist_ge, cls_vals)) / size;
+        score = (attr_dist[0] * entropy(dist_lt, cls_vals) + attr_dist[1] * entropy(dist_ge, cls_vals)) / size_weight;
         score = (cls_entropy - score) / entropy(attr_dist, 2);
+
 
         if (score > best_score) {
             best_score = score;
-            *rank = i;
+            *best_split = (ex->example->values[attr].floatV + ex_next->example->values[attr].floatV) / 2.0;
         }
     }
 
@@ -159,201 +175,416 @@ score_attribute_c(TExample **examples, int size, int attr, float cls_entropy, in
     return best_score;
 }
 
+
 float
-score_attribute_d(TExample **examples, int size, int attr, float cls_entropy, struct Args *args)
+gain_ratio_d(struct Example *examples, int size, int attr, float cls_entropy, struct Args *args)
 {
-	TExample **ex, **ex_end;
-	int i, j, cls_vals, attr_vals, *cont, *attr_dist, *attr_dist_cls_known, min, size_attr_known, size_attr_cls_known;
-	float score;
+    struct Example *ex, *ex_end;
+    int i, cls_vals, attr_vals, attr_val, cls_val;
+    float score, size_weight, size_attr_known, size_attr_cls_known, attr_entropy, *cont, *attr_dist, *attr_dist_cls_known;
 
-	assert(size > 0);
+    cls_vals = args->domain->classVar->noOfValues();
+    attr_vals = args->domain->attributes->at(attr)->noOfValues();
 
-	cls_vals = args->domain->classVar->noOfValues();
-	attr_vals = args->domain->attributes->at(attr)->noOfValues();
+    /* allocate space */
+    ASSERT(cont = (float *)calloc(cls_vals * attr_vals, sizeof(float *)));
+    ASSERT(attr_dist = (float *)calloc(attr_vals, sizeof(float *)));
+    ASSERT(attr_dist_cls_known = (float *)calloc(attr_vals, sizeof(float *)));
 
-	/* allocate space */
-    ASSERT(cont = (int *) calloc(cls_vals * attr_vals, sizeof *cont));
-    ASSERT(attr_dist = (int *) calloc(attr_vals, sizeof *attr_dist));
-    ASSERT(attr_dist_cls_known = (int *) calloc(attr_vals, sizeof *attr_dist));
-
-	/* contingency matrix */
-    size_attr_known = 0;
-    size_attr_cls_known = 0;
-	for (ex = examples, ex_end = examples + size; ex != ex_end; ex++) {
-        if (!(*ex)->values[attr].isSpecial()) {
-            int attr_val = (*ex)->values[attr].intV;
-
-            attr_dist[attr_val]++;
-            size_attr_known++;
-            if (!(*ex)->getClass().isSpecial()) {
-                int cls_val = (*ex)->getClass().intV;
-
-                size_attr_cls_known++;
-                attr_dist_cls_known[attr_val]++;
-                cont[attr_val * cls_vals + cls_val]++;
+    /* contingency matrix */
+    size_weight = 0.0;
+    for (ex = examples, ex_end = examples + size; ex < ex_end; ex++) {
+        if (!ex->example->values[attr].isSpecial()) {
+            attr_val = ex->example->values[attr].intV;
+            attr_dist[attr_val] += ex->weight;
+            if (!ex->example->getClass().isSpecial()) {
+                cls_val = ex->example->getClass().intV;
+                attr_dist_cls_known[attr_val] += ex->weight;
+                cont[attr_val * cls_vals + cls_val] += ex->weight;
             }
         }
+        size_weight += ex->weight;
     }
 
-	/* minimum examples in leaves */
-	for (i = 0; i < attr_vals; i++)
-		if (attr_dist[i] < args->minExamples) {
-            score = -INFINITY;
-            goto finish;
-        }
+    /* min examples in leaves */
+    if (!test_min_examples(attr_dist, attr_vals, args)) {
+        score = -INFINITY;
+        goto finish;
+    }
 
-	/* gain ratio */
-	score = 0;
-	for (i = 0; i < attr_vals; i++)
-		score += attr_dist_cls_known[i] * entropy(cont + i * cls_vals, cls_vals);
-	score = (cls_entropy - score / size_attr_cls_known) / entropy(attr_dist, attr_vals) * ((float)size_attr_known / size);
+    size_attr_known = size_attr_cls_known = 0.0;
+    for (i = 0; i < attr_vals; i++) {
+        size_attr_known += attr_dist[i];
+        size_attr_cls_known += attr_dist_cls_known[i];
+    }
+
+    /* gain ratio */
+    score = 0.0;
+    for (i = 0; i < attr_vals; i++)
+        score += attr_dist_cls_known[i] * entropy(cont + i * cls_vals, cls_vals);
+    attr_entropy = entropy(attr_dist, attr_vals);
+
+    if (size_attr_cls_known == 0.0 || attr_entropy == 0.0 || size_weight == 0.0) {
+        score = -INFINITY;
+        goto finish;
+    }
+
+    score = (cls_entropy - score / size_attr_cls_known) / attr_entropy * ((float)size_attr_known / size_weight);
 
     /* printf("D %s %f\n", args->domain->attributes->at(attr)->get_name().c_str(), score); */
 
 finish:
-	free(cont);
+    free(cont);
     free(attr_dist);
     free(attr_dist_cls_known);
-	return score;
+    return score;
 }
 
-struct SimpleTreeNode *
-build_tree(TExample **examples, int size, int depth, struct SimpleTreeNode *parent, struct Args *args)
+
+float
+mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *args, float *best_split)
 {
-	TExample **ex, **ex_top, **ex_end;
-	TVarList::const_iterator it;
-	struct SimpleTreeNode *node;
-	float score, best_score, cls_entropy;
-	int i, best_attr, best_rank, sum, best_val, finish, cls_vals;
+    struct Example *ex, *ex_end, *ex_next;
+    int i, cls_vals, minExamples, size_known;
+    float size_attr_known, size_weight, cls_val, cls_score, best_score, size_attr_cls_known, score;
 
-	ASSERT(node = (SimpleTreeNode *) malloc(sizeof(*node)));
+    struct Variance {
+        float n, sum, sum2;
+    } var_lt = {0.0, 0.0, 0.0}, var_ge = {0.0, 0.0, 0.0};
+
     cls_vals = args->domain->classVar->noOfValues();
-    ASSERT(node->dist = (int *) calloc(cls_vals, sizeof *node->dist));
 
-    if (size == 0) {
-        assert(parent);
-		node->type = PredictorNode;
-        memcpy(node->dist, parent->dist, cls_vals * sizeof *node->dist);
-        return node;
+    /* minExamples should be at least 1, otherwise there is no point in splitting */
+    minExamples = args->minExamples < 1 ? 1 : args->minExamples;
+
+    /* sort */
+    compar_attr = attr;
+    qsort(examples, size, sizeof(struct Example), compar_examples);
+
+    /* compute mse for every split */
+    size_known = size;
+    size_attr_known = 0.0;
+    for (ex = examples, ex_end = examples + size; ex < ex_end; ex++) {
+        if (ex->example->values[attr].isSpecial()) {
+            size_known = ex - examples;
+            break;
+        }
+        if (!ex->example->getClass().isSpecial()) {
+            cls_val = ex->example->getClass().floatV;
+            var_ge.n += ex->weight;
+            var_ge.sum += ex->weight * cls_val;
+            var_ge.sum2 += ex->weight * cls_val * cls_val;
+        }
+        size_attr_known += ex->weight;
     }
 
-	/* class distribution */
-	for (ex = examples, ex_end = examples + size; ex != ex_end; ex++)
-        if (!(*ex)->getClass().isSpecial())
-            node->dist[(*ex)->getClass().intV]++;
+    /* count the remaining examples with unknown values */
+    size_weight = size_attr_known;
+    for (ex_end = examples + size; ex < ex_end; ex++)
+        size_weight += ex->weight;
 
-	/* stop splitting with majority class or depth exceeds limit */
-	best_val = 0;
-	for (i = 0; i < cls_vals; i++)
-		if (node->dist[i] > node->dist[best_val])
-			best_val = i;
-	finish = depth == args->maxDepth || node->dist[best_val] >= args->maxMajority * size;
+    size_attr_cls_known = var_ge.n;
+    best_score = -INFINITY;
+
+    for (ex = examples, ex_end = ex + size_known - minExamples, ex_next = ex + 1, i = 0; ex < ex_end; ex++, ex_next++, i++) {
+        if (!ex->example->getClass().isSpecial()) {
+            cls_val = ex->example->getClass();
+            var_lt.n += ex->weight;
+            var_lt.sum += ex->weight * cls_val;
+            var_lt.sum2 += ex->weight * cls_val * cls_val;
+
+            var_ge.n -= ex->weight;
+            var_ge.sum -= ex->weight * cls_val;
+            var_ge.sum2 -= ex->weight * cls_val * cls_val;
+        }
+
+        if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minExamples)
+            continue;
+
+        /* compute mse */
+        score = var_lt.sum2 - var_lt.sum * var_lt.sum / var_lt.n;
+        score += var_ge.sum2 - var_ge.sum * var_ge.sum / var_ge.n;
+        score = (cls_mse - score / size_attr_cls_known) / cls_mse * (size_attr_known / size_weight);
+
+        if (score > best_score) {
+            best_score = score;
+            *best_split = (ex->example->values[attr].floatV + ex_next->example->values[attr].floatV) / 2.0;
+        }
+    }
+
+    /* printf("C %s %f\n", args->domain->attributes->at(attr)->get_name().c_str(), best_score); */
+    return best_score;
+}
+
+
+float
+mse_d(struct Example *examples, int size, int attr, float cls_mse, struct Args *args)
+{
+    int i, attr_vals, attr_val;
+    float *attr_dist, d, score, cls_val, size_attr_cls_known, size_attr_known, size_weight;
+    struct Example *ex, *ex_end;
+
+    struct Variance {
+        float n, sum, sum2;
+    } *variances, *v, *v_end;
+
+    attr_vals = args->domain->attributes->at(attr)->noOfValues();
+
+    ASSERT(variances = (struct Variance *)calloc(attr_vals, sizeof *variances));
+    ASSERT(attr_dist = (float *)calloc(attr_vals, sizeof *attr_dist));
+
+    size_weight = size_attr_cls_known = size_attr_known = 0.0;
+    for (ex = examples, ex_end = examples + size; ex < ex_end; ex++) {
+        if (!ex->example->values[attr].isSpecial()) {
+            attr_dist[ex->example->values[attr].intV] += ex->weight;
+            size_attr_known += ex->weight;
+
+            if (!ex->example->getClass().isSpecial()) {
+                    cls_val = ex->example->getClass().floatV;
+                    v = variances + ex->example->values[attr].intV;
+                    v->n += ex->weight;
+                    v->sum += ex->weight * cls_val;
+                    v->sum2 += ex->weight * cls_val * cls_val;
+                    size_attr_cls_known += ex->weight;
+            }
+        }
+        size_weight += ex->weight;
+    }
+
+    /* minimum examples in leaves */
+    if (!test_min_examples(attr_dist, attr_vals, args)) {
+        score = -INFINITY;
+        goto finish;
+    }
+
+    score = 0.0;
+    for (v = variances, v_end = variances + attr_vals; v < v_end; v++)
+        if (v->n > 0.0)
+            score += v->sum2 - v->sum * v->sum / v->n;
+    score = (cls_mse - score / size_attr_cls_known) / cls_mse * (size_attr_known / size_weight);
+
+    if (size_attr_cls_known <= 0.0 || cls_mse <= 0.0 || size_weight <= 0.0)
+        score = 0.0;
+
+finish:
+    free(attr_dist);
+    free(variances);
+
+    return score;
+}
+
+
+struct SimpleTreeNode *
+make_predictor(struct SimpleTreeNode *node, struct Example *examples, int size, struct Args *args)
+{
+    struct Example *ex, *ex_end;
+
+    node->type = PredictorNode;
+    if (args->type == Regression) {
+        node->n = node->sum = 0.0;
+        for (ex = examples, ex_end = examples + size; ex < ex_end; ex++)
+            if (!ex->example->getClass().isSpecial()) {
+                node->sum += ex->weight * ex->example->getClass().floatV;
+                node->n += ex->weight;
+            }
+
+    }
+
+    return node;
+}
+
+
+struct SimpleTreeNode *
+build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode *parent, struct Args *args)
+{
+    int i, cls_vals, best_attr;
+    float cls_entropy, cls_mse, best_score, score, size_weight, best_split, split;
+    struct SimpleTreeNode *node;
+    struct Example *ex, *ex_end;
+    TVarList::const_iterator it;
+
+    cls_vals = args->domain->classVar->noOfValues();
+
+    ASSERT(node = (SimpleTreeNode *)malloc(sizeof *node));
+
+    if (args->type == Classification) {
+        ASSERT(node->dist = (float *)calloc(cls_vals, sizeof(float *)));
+
+        if (size == 0) {
+            assert(parent);
+            node->type = PredictorNode;
+            memcpy(node->dist, parent->dist, cls_vals * sizeof *node->dist);
+            return node;
+        }
+
+        /* class distribution */
+        size_weight = 0.0;
+        for (ex = examples, ex_end = examples + size; ex < ex_end; ex++)
+            if (!ex->example->getClass().isSpecial()) {
+                node->dist[ex->example->getClass().intV] += ex->weight;
+                size_weight += ex->weight;
+            }
+
+        /* stopping criterion: majority class */
+        for (i = 0; i < cls_vals; i++)
+            if (node->dist[i] / size_weight >= args->maxMajority)
+                return make_predictor(node, examples, size, args);
+
+        cls_entropy = entropy(node->dist, cls_vals);
+    } else {
+        float n, sum, sum2, cls_val;
+
+        assert(args->type == Regression);
+        if (size == 0) {
+            assert(parent);
+            node->type = PredictorNode;
+            node->n = parent->n;
+            node->sum = parent->sum;
+            return node;
+        }
+
+        n = sum = sum2 = 0.0;
+        for (ex = examples, ex_end = examples + size; ex < ex_end; ex++)
+            if (!ex->example->getClass().isSpecial()) {
+                cls_val = ex->example->getClass().floatV;
+                n += ex->weight;
+                sum += ex->weight * cls_val;
+                sum2 += ex->weight * cls_val * cls_val;
+            }
+
+        cls_mse = (sum2 - sum * sum / n) / n;
+    }
+
+    /* stopping criterion: depth exceeds limit */
+    if (depth == args->maxDepth)
+        return make_predictor(node, examples, size, args);
 
     /* score attributes */
-	if (!finish) {
-        cls_entropy = entropy(node->dist, cls_vals);
-		best_score = -INFINITY;
-		for (i = 0, it = args->domain->attributes->begin(); it != args->domain->attributes->end(); it++, i++)
-			if (!args->attr_split_so_far[i]) {
+    best_score = -INFINITY;
 
-                /* select random subset of attributes - CHANGE ME */
-                if ((double)rand() / RAND_MAX < args->skipProb)
-                    continue;
-            
-                if ((*it)->varType == TValue::INTVAR) {
-                    score = score_attribute_d(examples, size, i, cls_entropy, args);
-                    if (score > best_score) {
-                        best_score = score;
-                        best_attr = i;
-                    }
-                } else {
-                    int rank;
-                    assert((*it)->varType == TValue::FLOATVAR);
+    for (i = 0, it = args->domain->attributes->begin(); it != args->domain->attributes->end(); it++, i++) {
+        if (!args->attr_split_so_far[i]) {
+            /* select random subset of attributes */
+            if ((double)rand() / RAND_MAX < args->skipProb)
+                continue;
 
-                    score = score_attribute_c(examples, size, i, cls_entropy, &rank, args);
-                    if (score > best_score) {
-                        best_score = score;
-                        best_rank = rank;
-                        best_attr = i;
-                    }
+            if ((*it)->varType == TValue::INTVAR) {
+                score = args->type == Classification ?
+                  gain_ratio_d(examples, size, i, cls_entropy, args) :
+                  mse_d(examples, size, i, cls_mse, args);
+                if (score > best_score) {
+                    best_score = score;
+                    best_attr = i;
                 }
-			}
-		finish = best_score == -INFINITY;
-	}
-
-    /* stop splitting - produce predictor node */
-	if (finish) {
-		node->type = PredictorNode;
-        return node;
+            } else if ((*it)->varType == TValue::FLOATVAR) {
+                score = args->type == Classification ?
+                  gain_ratio_c(examples, size, i, cls_entropy, args, &split) :
+                  mse_c(examples, size, i, cls_mse, args, &split);
+                if (score > best_score) {
+                    best_score = score;
+                    best_split = split;
+                    best_attr = i;
+                }
+            }
+        }
     }
-    free(node->dist);
 
-    /* remove examples with unknown values */
-    for (ex = examples, ex_top = examples, ex_end = examples + size; ex != ex_end; ex++)
-        if (!(*ex)->values[best_attr].isSpecial())
-            *ex_top++ = *ex;
-    size = ex_top - examples;
+    if (best_score == -INFINITY)
+        return make_predictor(node, examples, size, args);
 
     if (args->domain->attributes->at(best_attr)->varType == TValue::INTVAR) {
-		TExample **tmp;
-		int *cnt, no_of_values;
+        struct Example *child_examples, *child_ex;
+        int attr_vals;
+        float size_known, *attr_dist;
 
-		/* printf("* %2d %3s %3d %f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), size, best_score); */
+        /* printf("* %2d %3s %3d %f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), size, best_score); */
 
-		node->type = DiscreteNode;
-		node->split_attr = best_attr;
-		
-		/* counting sort */
-		no_of_values = args->domain->attributes->at(best_attr)->noOfValues();
+        attr_vals = args->domain->attributes->at(best_attr)->noOfValues(); 
 
-		ASSERT(tmp = (TExample **) calloc(size, sizeof *tmp));
-		ASSERT(cnt = (int *) calloc(no_of_values, sizeof *cnt));
-		
-		for (ex = examples, ex_end = examples + size; ex != ex_end; ex++)
-			cnt[(*ex)->values[best_attr].intV]++;
+        node->type = DiscreteNode;
+        node->split_attr = best_attr;
+        node->children_size = attr_vals;
 
-		for (i = 1; i < no_of_values; i++)
-			cnt[i] += cnt[i - 1];
+        ASSERT(child_examples = (struct Example *)calloc(size, sizeof *child_examples));
+        ASSERT(node->children = (SimpleTreeNode **)calloc(attr_vals, sizeof *node->children));
+        ASSERT(attr_dist = (float *)calloc(attr_vals, sizeof *attr_dist));
 
-		for (ex = examples, ex_end = examples + size; ex != ex_end; ex++)
-			tmp[--cnt[(*ex)->values[best_attr].intV]] = *ex;
+        /* attribute distribution */
+        size_known = 0;
+        for (ex = examples, ex_end = examples + size; ex < ex_end; ex++)
+            if (!ex->example->values[best_attr].isSpecial()) {
+                attr_dist[ex->example->values[best_attr].intV] += ex->weight;
+                size_known += ex->weight;
+            }
 
-		memcpy(examples, tmp, size * sizeof(TExample **));
+        args->attr_split_so_far[best_attr] = 1;
 
-		/* recursively build subtrees */
-		node->children_size = no_of_values;
-		ASSERT(node->children = (SimpleTreeNode **) calloc(no_of_values, sizeof *node->children));
+        for (i = 0; i < attr_vals; i++) {
+            /* create a new example table */
+            for (ex = examples, ex_end = examples + size, child_ex = child_examples; ex < ex_end; ex++) {
+                if (ex->example->values[best_attr].isSpecial()) {
+                    *child_ex = *ex;
+                    child_ex->weight *= attr_dist[i] / size_known;
+                    child_ex++;
+                } else if (ex->example->values[best_attr].intV == i) {
+                    *child_ex++ = *ex;
+                }
+            }
 
-		args->attr_split_so_far[best_attr] = 1;
-		for (i = 0; i < no_of_values; i++) {
-			int new_size;
+            node->children[i] = build_tree(child_examples, child_ex - child_examples, depth + 1, node, args);
+        }
+                    
+        args->attr_split_so_far[best_attr] = 0;
 
-			new_size = (i == no_of_values - 1) ? size - cnt[i] : cnt[i + 1] - cnt[i];
-			node->children[i] = build_tree(examples + cnt[i], new_size, depth + 1, node, args);
-		}
-		args->attr_split_so_far[best_attr] = 0;
+        free(attr_dist);
+        free(child_examples);
+    } else {
+        struct Example *examples_lt, *examples_ge, *ex_lt, *ex_ge;
+        float size_lt, size_ge;
 
-		free(tmp);
-		free(cnt);
-    } else if (args->domain->attributes->at(best_attr)->varType == TValue::FLOATVAR) {
-        compar_attr = best_attr;
-        qsort(examples, size, sizeof(TExample *), compar_examples);
+        /* printf("* %2d %3s %3d %f %f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), size, best_split, best_score); */
+
+        assert(args->domain->attributes->at(best_attr)->varType == TValue::FLOATVAR);
+
+        ASSERT(examples_lt = (struct Example *)calloc(size, sizeof *examples));
+        ASSERT(examples_ge = (struct Example *)calloc(size, sizeof *examples));
+
+        size_lt = size_ge = 0.0;
+        for (ex = examples, ex_end = examples + size; ex < ex_end; ex++)
+            if (!ex->example->values[best_attr].isSpecial())
+                if (ex->example->values[best_attr].floatV < best_split)
+                    size_lt += ex->weight;
+                else
+                    size_ge += ex->weight;
+
+        for (ex = examples, ex_end = examples + size, ex_lt = examples_lt, ex_ge = examples_ge; ex < ex_end; ex++)
+            if (ex->example->values[best_attr].isSpecial()) {
+                *ex_lt = *ex;
+                *ex_ge = *ex;
+                ex_lt->weight *= size_lt / (size_lt + size_ge);
+                ex_ge->weight *= size_ge / (size_lt + size_ge);
+                ex_lt++;
+                ex_ge++;
+            } else if (ex->example->values[best_attr].floatV < best_split) {
+                *ex_lt++ = *ex;
+            } else {
+                *ex_ge++ = *ex;
+            }
 
         node->type = ContinuousNode;
         node->split_attr = best_attr;
-        node->split = (examples[best_rank]->values[best_attr].floatV + examples[best_rank + 1]->values[best_attr].floatV) / 2.0;
-
-		/* printf("%2d %3s %.4f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), node->split); */
-
-        /* recursively build subtrees */
+        node->split = best_split;
         node->children_size = 2;
-        ASSERT(node->children = (SimpleTreeNode **) calloc(2, sizeof *node->children));
-        
-        node->children[0] = build_tree(examples, best_rank + 1, depth + 1, node, args);
-        node->children[1] = build_tree(examples + best_rank + 1, size - (best_rank + 1), depth + 1, node, args);
+        ASSERT(node->children = (SimpleTreeNode **)calloc(2, sizeof *node->children));
+
+        node->children[0] = build_tree(examples_lt, ex_lt - examples_lt, depth + 1, node, args);
+        node->children[1] = build_tree(examples_ge, ex_ge - examples_ge, depth + 1, node, args);
+
+        free(examples_lt);
+        free(examples_ge);
     }
 
-	return node;
+    return node;
 }
 
 TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minExamples, int maxDepth, float skipProb) :
@@ -364,36 +595,39 @@ TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int
 {
 }
 
-PClassifier 
+PClassifier
 TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
-{ 
-	int i, *attr_split_so_far;
-	TExample **examples, **ex;
-	struct SimpleTreeNode *tree;
+{
+    struct Example *examples, *ex;
+    struct SimpleTreeNode *tree;
     struct Args args;
 
-	if (!ogen->domain->classVar)
-    	raiseError("class-less domain");
-	
-	/* create a tabel with pointers to examples */
-	ASSERT(examples = (TExample **) calloc(ogen->numberOfExamples(), sizeof(TExample**)));
-	ex = examples;
-	PEITERATE(ei, ogen)
-        *(ex++) = &(*ei);
+    if (!ogen->domain->classVar)
+        raiseError("class-less domain");
 
-	ASSERT(args.attr_split_so_far = (int *) calloc(ogen->domain->attributes->size(), sizeof(int)));
+    /* create a tabel with pointers to examples */
+    ASSERT(examples = (struct Example *)calloc(ogen->numberOfExamples(), sizeof *examples));
+    ex = examples;
+    PEITERATE(ei, ogen) {
+        ex->example = &(*ei);
+        ex->weight = 1.0;
+        ex++;
+    }
+
+    ASSERT(args.attr_split_so_far = (int *)calloc(ogen->domain->attributes->size(), sizeof(int)));
     args.minExamples = minExamples;
     args.maxMajority = maxMajority;
     args.maxDepth = maxDepth;
     args.skipProb = skipProb;
     args.domain = ogen->domain;
+    args.type = ogen->domain->classVar->varType == TValue::INTVAR ? Classification : Regression;
 
-	tree = build_tree(examples, ogen->numberOfExamples(), 0, NULL, &args);
+    tree = build_tree(examples, ogen->numberOfExamples(), 0, NULL, &args);
 
-	free(examples);
-	free(args.attr_split_so_far);
+    free(examples);
+    free(args.attr_split_so_far);
 
-	return new TSimpleTreeClassifier(ogen->domain->classVar, tree);
+    return new TSimpleTreeClassifier(ogen->domain->classVar, tree, args.type);
 }
 
 
@@ -402,43 +636,48 @@ TSimpleTreeClassifier::TSimpleTreeClassifier()
 {
 }
 
-TSimpleTreeClassifier::TSimpleTreeClassifier(const PVariable &classVar, struct SimpleTreeNode *t) 
-	: TClassifier(classVar, true)
+TSimpleTreeClassifier::TSimpleTreeClassifier(const PVariable &classVar, struct SimpleTreeNode *tree, int type) : 
+    TClassifier(classVar, true),
+    tree(tree),
+    type(type)
 {
-	tree = t;
 }
 
+
 void
-destroy_tree(struct SimpleTreeNode *node)
+destroy_tree(struct SimpleTreeNode *node, int type)
 {
     int i;
 
     if (node->type != PredictorNode) {
         for (i = 0; i < node->children_size; i++)
-            destroy_tree(node->children[i]);
+            destroy_tree(node->children[i], type);
         free(node->children);
-    } else {
-        free(node->dist);
     }
+    if (type == Classification)
+        free(node->dist);
     free(node);
 }
 
+
 TSimpleTreeClassifier::~TSimpleTreeClassifier()
 {
-    destroy_tree(tree);
+    destroy_tree(tree, type);
 }
 
-int *
-classify(const TExample &ex, struct SimpleTreeNode *node, int *free_dist)
-{
-	while (node->type != PredictorNode) {
-        if (ex.values[node->split_attr].isSpecial()) {
-            int i, j, cls_vals, *dist, *child_dist;
 
+float *
+predict_classification(const TExample &ex, struct SimpleTreeNode *node, int *free_dist)
+{
+    int i, j, cls_vals;
+    float *dist, *child_dist;
+
+    while (node->type != PredictorNode)
+        if (ex.values[node->split_attr].isSpecial()) {
             cls_vals = ex.domain->classVar->noOfValues();
-            ASSERT(dist = (int *) calloc(cls_vals, sizeof *dist));
+            ASSERT(dist = (float *)calloc(cls_vals, sizeof *dist));
             for (i = 0; i < node->children_size; i++) {
-                child_dist = classify(ex, node->children[i], free_dist);
+                child_dist = predict_classification(ex, node->children[i], free_dist);
                 for (j = 0; j < cls_vals; j++)
                     dist[j] += child_dist[j];
                 if (*free_dist)
@@ -452,47 +691,90 @@ classify(const TExample &ex, struct SimpleTreeNode *node, int *free_dist)
             assert(node->type == ContinuousNode);
             node = node->children[ex.values[node->split_attr].floatV >= node->split];
         }
-    }
+
     *free_dist = 0;
-	return node->dist;
+    return node->dist;
 }
 
-TValue 
+
+void
+predict_regression(const TExample &ex, struct SimpleTreeNode *node, float *sum, float *n)
+{
+    int i;
+    float local_sum, local_n;
+
+    while (node->type != PredictorNode)
+        if (ex.values[node->split_attr].isSpecial()) {
+            *sum = *n = 0;
+            for (i = 0; i < node->children_size; i++) {
+                predict_regression(ex, node->children[i], &local_sum, &local_n);
+                *sum += local_sum;
+                *n += local_n;
+            }
+            return;
+        } else if (node->type == DiscreteNode) {
+            node = node->children[ex.values[node->split_attr].intV];
+        } else {
+            assert(node->type == ContinuousNode);
+            node = node->children[ex.values[node->split_attr].floatV > node->split];
+        }
+
+    *sum = node->sum;
+    *n = node->n;
+}
+
+
+TValue
 TSimpleTreeClassifier::operator()(const TExample &ex)
 {
-    int i, *dist, free_dist, best_val;
+    if (type == Classification) {
+        int i, free_dist, best_val;
+        float *dist;
 
-    dist = classify(ex, tree, &free_dist);
-    best_val = 0;
-    for (i = 1; i < ex.domain->classVar->noOfValues(); i++)
-        if (dist[i] > dist[best_val])
-            best_val = i;
+        dist = predict_classification(ex, tree, &free_dist);
+        best_val = 0;
+        for (i = 1; i < ex.domain->classVar->noOfValues(); i++)
+            if (dist[i] > dist[best_val])
+                best_val = i;
 
-    if (free_dist)
-        free(dist);
-    return TValue(best_val);
+        if (free_dist)
+            free(dist);
+        return TValue(best_val);
+    } else {
+        float sum, n;
+
+        assert(type == Regression);
+
+        predict_regression(ex, tree, &sum, &n);
+        return TValue(sum / n);
+    }
 }
 
 PDistribution
 TSimpleTreeClassifier::classDistribution(const TExample &ex)
 {
-    int i, *dist, free_dist;
+    if (type == Classification) {
+        int i, free_dist;
+        float *dist;
 
-    dist = classify(ex, tree, &free_dist);
+        dist = predict_classification(ex, tree, &free_dist);
 
-	PDistribution pdist = TDistribution::create(ex.domain->classVar);
-    for (i = 0; i < ex.domain->classVar->noOfValues(); i++)
-        pdist->setint(i, dist[i]);
-    pdist->normalize();
+        PDistribution pdist = TDistribution::create(ex.domain->classVar);
+        for (i = 0; i < ex.domain->classVar->noOfValues(); i++)
+            pdist->setint(i, dist[i]);
+        pdist->normalize();
 
-    if (free_dist)
-        free(dist);
-    return pdist;
+        if (free_dist)
+            free(dist);
+        return pdist;
+    } else {
+        return NULL;
+    }
 }
 
 void
 TSimpleTreeClassifier::predictionAndDistribution(const TExample &ex, TValue &value, PDistribution &dist)
 {
-	value = operator()(ex);
-	dist = classDistribution(ex);
+    value = operator()(ex);
+    dist = classDistribution(ex);
 }
