@@ -124,10 +124,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             for anchor in self.anchor_data:
                 x, y, z, label = anchor
 
-                direction = QVector3D(x, y, z)
+                direction = QVector3D(x, y, z).normalized()
                 up = QVector3D(0, 1, 0)
                 right = QVector3D.crossProduct(direction, up).normalized()
-                up = QVector3D.crossProduct(right, direction)
+                up = QVector3D.crossProduct(right, direction).normalized()
                 rotation = QMatrix4x4()
                 rotation.setColumn(0, QVector4D(right, 0))
                 rotation.setColumn(1, QVector4D(up, 0))
@@ -175,7 +175,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.clear()
         self.value_lines = []
 
-        if not self.have_data or len(labels) < 3:
+        if not self.have_data or (setAnchors and labels == None):
             self.anchor_data = []
             self.updateGL()
             return

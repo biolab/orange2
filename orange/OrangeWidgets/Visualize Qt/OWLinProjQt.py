@@ -130,13 +130,18 @@ class OWLinProjQt(OWVisWidget):
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
-        if "radviz" in name_lower or "linear projection" in name_lower:
+        if "radviz" in name_lower or "linear projection" in name_lower or "sphereviz" in name_lower:
             self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
             self.wdChildDialogs.append(self.freeVizDlg)
             self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
             if "linear projection" in name_lower:
                 self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
                 self.send("FreeViz Learner", self.freeVizLearner)
+            if "3d" in name_lower:
+                # Patch a method in Freeviz
+                get_shown_attribute_list = lambda: [anchor[3] for anchor in self.graph.anchorData]
+                self.freeVizDlg.get_shown_attribute_list = get_shown_attribute_list
+                self.freeVizDlg._use_3D = True
 
 ##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.vizrankButton.setMaximumWidth(63)
