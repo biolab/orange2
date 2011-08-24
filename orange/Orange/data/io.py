@@ -38,21 +38,32 @@ def loadARFF_Weka(filename, create_on_new = Orange.data.variable.Variable.MakeSt
         if state == 0 and x[0] != '@':
             print "ARFF import ignoring:",x
         if state == 1:
-            dd = x.split(',')
-            r = []
-            for xs in dd:
-                y = xs.strip(" ")
-                if len(y) > 0:
-                    if y[0]=="'" or y[0]=='"':
-                        r.append(xs.strip("'\""))
+            if x[0] == '{':#sparse data format, begin with '{', ends with '}'
+                r = [None]*len(attributes)
+                dd = x[1:-1]
+                dd = dd.split(',')
+                for xs in dd:
+                    y = xs.split(" ")
+                    if len(y) <> 2:
+                        raise ValueError("the format of the data is error")
+                    r[int(y[0])] = y[1]
+                data.append(r)
+            else:#normal data format, split by ','
+                dd = x.split(',')
+                r = []
+                for xs in dd:
+                    y = xs.strip(" ")
+                    if len(y) > 0:
+                        if y[0]=="'" or y[0]=='"':
+                            r.append(xs.strip("'\""))
+                        else:
+                            ns = xs.split()
+                            for ls in ns:
+                                if len(ls) > 0:
+                                    r.append(ls)
                     else:
-                        ns = xs.split()
-                        for ls in ns:
-                            if len(ls) > 0:
-                                r.append(ls)
-                else:
-                    r.append('?')
-            data.append(r[:len(attributes)])
+                        r.append('?')
+                data.append(r[:len(attributes)])
         else:
             y = []
             for cy in x.split(' '):
