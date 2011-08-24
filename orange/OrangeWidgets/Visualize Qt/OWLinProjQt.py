@@ -188,8 +188,9 @@ class OWLinProjQt(OWVisWidget):
 
         if "sphereviz" in name_lower:
             OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
-        elif "3d" in name_lower:
-            pass
+
+        if "3d" in name_lower:
+            OWGUI.checkBox(box, self, 'graph.use_2d_symbols', '2D symbols', callback = self.updateGraph, tooltip = "Use 2D symbols")
         else:
             self.graph.gui.filled_symbols_check_box(box)
             wbox = OWGUI.widgetBox(box, orientation = "horizontal")
