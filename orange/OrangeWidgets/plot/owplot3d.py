@@ -1221,9 +1221,7 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             self.selections = []
             self.new_selection = None
 
-    def mouseMoveEvent(self, event):
-        pos = event.pos()
-
+    def _check_mouseover(self, pos):
         if self.mouseover_callback != None and self.state == PlotState.IDLE and\
             (not self.show_legend or not self.legend.contains(pos.x(), pos.y())):
             if abs(pos.x() - self.tooltip_win_center[0]) > 100 or\
@@ -1244,6 +1242,11 @@ class OWPlot3D(QtOpenGL.QGLWidget):
             # corresponds to white background in color-picking buffer.
             if value < 4294967295:
                 self.mouseover_callback(value)
+
+    def mouseMoveEvent(self, event):
+        pos = event.pos()
+
+        self._check_mouseover(pos)
 
         if self.state == PlotState.IDLE:
             if any(sel.contains(pos.x(), pos.y()) for sel in self.selections) or\
