@@ -24,7 +24,7 @@ are available at the end of this page.
 .. note:: Orange has been "de-randomized". Running the same script twice
     will generally give the same results, unless special care is taken to
     randomize it. This is opposed to the previous versions where special
-    care needed to be taken to make experiments repeatable. See arguments
+    care needed to be taken to make experiments repeatable. See arguments \
     :obj:`randseed` and :obj:`randomGenerator` for the explanation.
 
 Example scripts in this section suppose that the data is loaded and a

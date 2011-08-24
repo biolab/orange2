@@ -137,9 +137,9 @@ different ways.
 
 .. _classification:
 
-===========================
+==========================================
 Feature scoring in classification problems
-===========================
+==========================================
 
 .. Undocumented: MeasureAttribute_IM, MeasureAttribute_chiSquare, MeasureAttribute_gainRatioA, MeasureAttribute_logOddsRatio, MeasureAttribute_splitGain.
 
@@ -260,9 +260,9 @@ Feature scoring in classification problems
 
 .. _regression:
 
-=======================
+======================================
 Feature scoring in regression problems
-=======================
+======================================
 
 You can also use :obj:`Relief` for regression.
 

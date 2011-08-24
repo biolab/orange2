@@ -280,8 +280,8 @@ def deprecated_members(name_map, wrap_methods="all", in_place=True):
         >>> a.setFooBar("FooBar!")
         __main__:1: DeprecationWarning: 'setFooBar' is deprecated. Use 'set_foo_bar' instead!
         
-    .. note:: This decorator does nothing if
-        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment
+    .. note:: This decorator does nothing if \
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment \
         variable is set to `True`.
         
     """
@@ -341,8 +341,8 @@ def deprecated_keywords(name_map):
         __main__:1: DeprecationWarning: 'myArg' is deprecated. Use 'my_arg' instead!
         Arg
         
-    .. note:: This decorator does nothing if
-        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment
+    .. note:: This decorator does nothing if \
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment \
         variable is set to `True`.
         
     """
@@ -379,8 +379,8 @@ def deprecated_attribute(old_name, new_name):
         __main__:1: DeprecationWarning: 'myAttr' is deprecated. Use 'my_attr' instead!
         123
         
-    .. note:: This decorator does nothing and returns None if
-        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment
+    .. note:: This decorator does nothing and returns None if \
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment \
         variable is set to `True`.
         
     """
