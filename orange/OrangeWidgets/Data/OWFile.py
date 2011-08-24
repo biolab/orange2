@@ -302,8 +302,10 @@ class OWFile(OWWidget):
                 message = messageNotUsed
             if not message:
                 continue
-            attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
-                  + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
+            attrs = []
+            if hasattr(data, "attribute_load_status"):
+                attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
+                      + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
             if attrs:
                 jattrs = ", ".join(attrs)
                 if len(jattrs) > 80:

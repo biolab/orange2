@@ -15,7 +15,7 @@ def loadARFF(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.
         arff_name = filename + ".arff" 
         return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name,create_on_new)
     else:
-        return loadARFF_Weka(filename, create_on_new, kwargs)
+        return loadARFF_Weka(filename, create_on_new)
         
 def loadARFF_Weka(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
     """Return class:`Orange.data.Table` containing data from file in Weka ARFF format"""
@@ -96,7 +96,9 @@ def loadARFF_Weka(filename, create_on_new = Orange.data.variable.Variable.MakeSt
         lex.append(e)
     t = Orange.data.Table(d,lex)
     t.name = name
-    t.attribute_load_status = attributeLoadStatus
+    
+    if hasattr(t, "attribute_load_status"):
+        t.attribute_load_status = attributeLoadStatus
     return t
 loadARFF = Orange.misc.deprecated_keywords(
 {"createOnNew": "create_on_new"}
