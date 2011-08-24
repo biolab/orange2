@@ -14,7 +14,7 @@ Discrete = orange.VarTypes.Discrete
 Continuous = orange.VarTypes.Continuous
 
 class OWSphereviz3DPlot(OWLinProj3DPlot):
-    def __init__(self, widget, parent=None, name='None'):
+    def __init__(self, widget, parent=None, name='SpherevizPlot'):
         OWLinProj3DPlot.__init__(self, widget, parent, name)
 
         self.camera_in_center = False

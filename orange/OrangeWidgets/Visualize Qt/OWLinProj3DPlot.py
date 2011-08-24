@@ -9,6 +9,7 @@ Continuous = orange.VarTypes.Continuous
 
 class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     def __init__(self, widget, parent=None, name='None'):
+        self.name = name
         OWPlot3D.__init__(self, parent)
         ScaleLinProjData3D.__init__(self)
 
@@ -28,6 +29,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.setCanvasBackground = self.setCanvasColor
 
         self._point_width_to_symbol_scale = 1.5
+
+        if 'linear' in self.name.lower():
+            self._arrow_lines = []
+            self.mouseover_callback = self._update_arrow_values
 
         self.gui = OWPlotGUI(self)
 
@@ -143,6 +148,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 modelview.scale(-0.02, -0.02, -0.02)
                 self.cone_shader.setUniformValue('modelview', modelview)
 
+                glDepthMask(GL_TRUE)
                 glBindVertexArray(self.cone_vao_id)
                 glDrawArrays(GL_TRIANGLES, 0, self.cone_vao_id.num_vertices)
                 glBindVertexArray(0)
@@ -152,10 +158,29 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 glColor4f(0, 0, 0, 1)
                 self.renderText(x*1.2, y*1.2, z*1.2, label)
 
+                glDepthMask(GL_FALSE)
                 glBegin(GL_LINES)
                 glVertex3f(0, 0, 0)
                 glVertex3f(x, y, z)
                 glEnd()
+
+        glDepthMask(GL_TRUE)
+        glEnable(GL_DEPTH_TEST)
+        if self._arrow_lines:
+            glLineWidth(2)
+            for x, y, z, value, color in self._arrow_lines:
+                glColor3f(*color)
+                glBegin(GL_LINES)
+                glVertex3f(0, 0, 0)
+                glVertex3f(x, y, z)
+                glEnd()
+
+                glColor3f(0, 0, 0)
+                # TODO: discrete
+                self.renderText(x,y,z, ('%f' % value).rstrip('0').rstrip('.'),
+                                font=self._theme.labels_font)
+
+            glLineWidth(1)
 
         self._draw_value_lines()
 
@@ -336,10 +361,35 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             self.selections = []
             self.new_selection = None
 
+    def _update_arrow_values(self, index):
+        if index == self._last_index:
+            return
+        self._last_index = index
+        self._arrow_lines = []
+        example = self.original_data.T[index]
+        for x, y, z, attribute in self.anchor_data:
+            value = example[self.attribute_name_index[attribute]]
+            max_value = self.attr_values[attribute][1]
+            factor = value / max_value
+            if self.useDifferentColors:
+                color = self.discPalette.getRGB(example[self.data_class_index])
+            else:
+                color = (0, 0, 0)
+            self._arrow_lines.append([x*factor, y*factor, z*factor, value, color])
+        self._mouseover_called = True
+        self.updateGL()
+
     def mouseMoveEvent(self, event):
         pos = event.pos()
 
+        self._last_index = -1
+        self._mouseover_called = False
         self._check_mouseover(pos)
+        if not self._mouseover_called and 'linear' in self.name.lower():
+            before = len(self._arrow_lines)
+            self._arrow_lines = []
+            if before > 0:
+                self.updateGL()
 
         if self.state == PlotState.IDLE:
             if any(sel.contains(pos.x(), pos.y()) for sel in self.selections) or\
