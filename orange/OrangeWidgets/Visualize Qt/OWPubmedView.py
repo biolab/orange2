@@ -84,6 +84,7 @@ class PubmedNetworkView(Orange.network.NxView):
         self._center_nodes = c_nodes
     
     def node_selection_changed(self):
+    
         selection = self._nx_explorer.networkCanvas.selected_nodes()
         if len(selection) == 1:
             self._center_node = selection[0]
