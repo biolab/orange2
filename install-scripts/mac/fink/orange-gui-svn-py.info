@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 26
+Revision: 27
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -15,7 +15,13 @@ Depends: <<
 	orange-svn-py%type_pkg[python] (>= %v),
 	pyqt4-mac-py%type_pkg[python] (>= 4.4),
 	pyqwt-qt4mac-py%type_pkg[python] (>= 5.1),
+	sip-py%type_pkg[python],
 	graphviz
+<<
+BuildDepends: <<
+	qt4-mac,
+	sip-py%type_pkg[python]-bin,
+	cmake
 <<
 # Conflicts other versions because of app bundle
 Conflicts: orange, orange-svn
@@ -30,6 +36,9 @@ DescDetail: <<
 	This package provides a graphical user interface.
 <<
 AppBundles: ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange-%type_pkg[python].app
+Shlibs: <<
+	%p/lib/python%type_raw[python]/site-packages/orange/orangeqt.so 0.0.0 %n (>= 0.0.0-1)
+<<
 SplitOff: <<
 	Package: orange-svn-py%type_pkg[python]
 	Depends: <<
@@ -58,7 +67,12 @@ SplitOff: <<
 		%p/lib/python%type_raw[python]/site-packages/orange/_orngCRS.so 0.0.0 %n (>= 0.0.0-1)
 	<<
 	Files: <<
-		lib/python%type_raw[python]/site-packages/orange/*.so
+		lib/python%type_raw[python]/site-packages/orange/orange.so
+		lib/python%type_raw[python]/site-packages/orange/orangeom.so
+		lib/python%type_raw[python]/site-packages/orange/corn.so
+		lib/python%type_raw[python]/site-packages/orange/statc.so
+		lib/python%type_raw[python]/site-packages/orange/orangene.so
+		lib/python%type_raw[python]/site-packages/orange/_orngCRS.so
 		lib/python%type_raw[python]/site-packages/orange/orng*.py
 		lib/python%type_raw[python]/site-packages/orange/mathutil.py
 		lib/python%type_raw[python]/site-packages/orange/urllib2_file.py
