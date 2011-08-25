@@ -12,5 +12,5 @@ Plot tools (``plot``)
    OrangeWidgets.plot.owtools
    OrangeWidgets.plot.owcurve
    OrangeWidgets.plot.owpoint
-   OrangeWidgets.plot.owaxis
    OrangeWidgets.plot.owlegend
+..   OrangeWidgets.plot.owaxis TODO: add file

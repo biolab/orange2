@@ -181,7 +181,7 @@ class PolygonCurve(OWCurve):
         :type pen: :obj:`.QPen`
         
         :param brush: The brush used to paint the polygon's inside
-        :type brush: :obj:`.QBrush
+        :type brush: :obj:`.QBrush`
         
         :param xData: The list of x coordinates
         :type xData: list of float
