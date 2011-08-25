@@ -16,17 +16,18 @@ class PubmedNetworkView(Orange.network.NxView):
     
     """
     
-    def __init__(self, parent, nhops, edge_threshold, algorithm, n_max_neighbors):
+    def __init__(self, parent):#, nhops, edge_threshold, algorithm, n_max_neighbors, k):
         Orange.network.NxView.__init__(self)
         
-        self._nhops = nhops
-        self._edge_threshold = edge_threshold
-        self.algorithm = algorithm # 0 without clustering, 1 with clustering
-        self._n_max_neighbors = n_max_neighbors
-        #self._center_node = None
+        self._nhops = 2
+        self._edge_threshold = 0.5
+        self.algorithm = 1 # 0 without clustering, 1 with clustering
+        self._n_max_neighbors = 10
         self._center_nodes = []
         self.parent = parent
-		
+        self._hidden_nodes = []
+        self._k_algorithm = 0.3
+        
     def init_network(self, graph):
         self._network = graph
         
@@ -63,7 +64,10 @@ class PubmedNetworkView(Orange.network.NxView):
             i = nodes.pop()
             neig = [x for x in self._network.neighbors(i) if x in nodes] #if net.edge[i][x]['weight'] > 0.5]
             subnet.add_weighted_edges_from([(i,x,w) for x,w in zip(neig, [self._network.edge[i][y]['weight'] for y in neig])])
-    
+        
+        subnet.remove_nodes_from(self._hidden_nodes)
+        subnet = self._propagate(subnet)
+        
         if self._nx_explorer is not None:
             self._nx_explorer.change_graph(subnet)
         
@@ -82,15 +86,29 @@ class PubmedNetworkView(Orange.network.NxView):
         
     def set_center_nodes(self, c_nodes):
         self._center_nodes = c_nodes
+        
+    def set_k(self, k):
+        self._k_algorithm = k
     
     def node_selection_changed(self):
-    
+        # selection --> delete_node/delete_node_and_neig/expand/set_score ?
+        
         selection = self._nx_explorer.networkCanvas.selected_nodes()
-        if len(selection) == 1:
-            self._center_node = selection[0]
-            self.update_network()
+        # case "set_score"  - input = input_score, to be provided
+                #self._center_nodes.extend(selection)  # Non servira'
+        for i in selection:
+            self._network.node[i]['user_score'] = 1
+            self._network.node[i]['score'] = 1 # input_score
+        # case "expand_node" - with the settings already set
+        self._center_nodes.expand(selection)
+        # case "delete_node"
+        self._hidden_nodes.append(selection)
+        # delete_node_and_neig --> ???? 
+        
+        self.update_network()  #chiama propagate
         
     def _get_neighbors(self):
+    #TO DELETE?
         nodes = set([self._center_node])
         for n in range(self._nhops):
             neighbors = set()
@@ -98,6 +116,9 @@ class PubmedNetworkView(Orange.network.NxView):
                 neighbors.update(self._network.neighbors(node))
             nodes.update(neighbors)
         return nodes
+        
+    def _propagate(self, net):
+        return
         
 class OWPubmedView(OWWidget):
     
@@ -118,6 +139,7 @@ class OWPubmedView(OWWidget):
         self.ids = []
         self._selected_nodes = []
         self._algorithm = 0
+        self._k_algorithm = 0.3
         
         self.loadSettings()
         
@@ -125,14 +147,18 @@ class OWPubmedView(OWWidget):
         OWGUI.lineEdit(box, self, "filter", callback=self.filter_list, callbackOnType=True)
         self.list_titles = OWGUI.listBox(box, self, "selected_titles", "titles", selectionMode=QListWidget.MultiSelection, callback=self.update_view)
         OWGUI.separator(self.controlArea)
-        ib = OWGUI.widgetBox(self.controlArea, "Preferences", orientation="vertical")
-        OWGUI.spin(ib, self, "_nhops", 1, 6, 1, label="Number of hops: ", callback=self.update_view)
-        OWGUI.spin(ib, self, "_n_max_neighbors", 1, 100, 1, label="Max number of neighbors: ", callback=self.update_view)
-        OWGUI.doubleSpin(ib, self, "_edge_threshold", 0, 1, step=0.01, label="Edge threshold: ", callback=self.update_view)
+        box_pref = OWGUI.widgetBox(self.controlArea, "Preferences", orientation="vertical")
+        OWGUI.spin(box_pref, self, "_nhops", 1, 6, 1, label="Number of hops: ", callback=self.update_view)
+        OWGUI.spin(box_pref, self, "_n_max_neighbors", 1, 100, 1, label="Max number of neighbors: ", callback=self.update_view)
+        OWGUI.doubleSpin(box_pref, self, "_edge_threshold", 0, 1, step=0.01, label="Edge threshold: ", callback=self.update_view)
         OWGUI.separator(self.controlArea)
-        OWGUI.radioButtonsInBox(self.controlArea, self, "_algorithm", box = "Interest Propagation Algorithm", btnLabels = ["Without clustering", "With clustering"], callback=self.update_view)
+        box_alg = OWGUI.widgetBox(self.controlArea, "Interest Propagation Algorithm", orientation="vertical")
+        radio_box = OWGUI.radioButtonsInBox(box_alg, self, "_algorithm", [], callback=self.update_view)
+        OWGUI.appendRadioButton(radio_box, self, "_algorithm", "Without Clustering", callback=self.update_view)
+        OWGUI.doubleSpin(OWGUI.indentedBox(radio_box), self, "_k_algorithm", 0, 1, step=0.01, label="Parameter k: ", callback=self.update_view)
+        OWGUI.appendRadioButton(radio_box, self, "_algorithm", "With Clustering", callback=self.update_view)
         
-        self.inside_view = PubmedNetworkView(self, self._nhops, self._edge_threshold, self._algorithm, self._n_max_neighbors)
+        self.inside_view = PubmedNetworkView(self)
         self.send("Nx View", self.inside_view)
         
     
@@ -150,6 +176,7 @@ class OWPubmedView(OWWidget):
         self.inside_view.set_edge_threshold(self._edge_threshold)
         self.inside_view.set_n_max_neighbors(self._n_max_neighbors)
         self.inside_view.set_algorithm(self._algorithm)
+        self.inside_view.set_k(self._k_algorithm)
         self._selected_nodes = [self.ids[row] for row in self.selected_titles]
         self.inside_view.set_center_nodes(self._selected_nodes)
         self.inside_view.update_network()
