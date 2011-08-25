@@ -1522,6 +1522,10 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				continue;
 			}
 
+			if  (hasGraph && (words[0].compare("*date") == 0)) {
+				continue;
+			}
+
 			if ((words[0][0]=='*') && project)
 				hasGraph = 0;
 			else
