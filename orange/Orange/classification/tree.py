@@ -1537,6 +1537,49 @@ the corresponding values that go into each branch to inset, turn
 the values into strings and print them out, separately treating the
 case when only a single value goes into the branch.
 
+=================
+SimpleTreeLearner
+=================
+
+:obj:`SimpleTreeLearner` is an implementation of regression and classification
+trees. It is faster than :obj:`TreeLearner` at the expense of flexibility.
+It uses gain ratio for classification and mse for regression.
+
+:obj:`SimpleTreeLearner` was developed for speeding up the construction
+of random forests, but can also be used as a standalone tree.
+
+.. class:: SimpleTreeLearner
+
+    .. attribute:: maxMajority
+
+        Maximal proportion of majority class. When this is exceeded,
+        induction stops.
+
+    .. attribute:: minExamples
+
+        Minimal number of examples in leaves. Subsets with less than
+        ``minExamples`` examples are not split any further. Example count
+        is weighed.
+
+    .. attribute:: maxDepth
+
+        Maximal depth of tree.
+
+    .. attribute:: skipProb
+        
+        At every split an attribute will be skipped with probability ``skipProb``.
+        Useful for building random forests.
+        
+Examples
+========
+
+:obj:`SimpleTreeLearner` is used in much the same way as :obj:`TreeLearner`.
+A typical example of using :obj:`SimpleTreeLearner` would be to build a random
+forest (uses`iris.tab`_):
+
+.. literalinclude:: code/simple_tree_random_forest.py
+
+
 References
 ==========
 
@@ -1561,6 +1604,8 @@ Node.examples -> Node.instances
 from Orange.core import \
      TreeLearner as _TreeLearner, \
          TreeClassifier as _TreeClassifier, \
+         SimpleTreeLearner, \
+         SimpleTreeClassifier, \
          C45Learner as _C45Learner, \
          C45Classifier as _C45Classifier, \
          C45TreeNode as C45Node, \
