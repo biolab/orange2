@@ -106,7 +106,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         if color_discrete:
             for i in range(len(self.data_domain[color_attr].values)):
                 c = self.disc_palette[i]
-                colors.append([c.red()/255., c.green()/255., c.blue()/255.])
+                colors.append(c)
 
         data_scale = [self.attr_values[x_attr][1] - self.attr_values[x_attr][0],
                       self.attr_values[y_attr][1] - self.attr_values[y_attr][0],
@@ -516,7 +516,7 @@ class OWScatterPlot3D(OWWidget):
                 return
             selected_indices = [1 if i in indices else 0
                                 for i in range(len(self.data))]
-            selected = self.plot.rawData.selectref(selected_indices)
+            selected = self.plot.raw_data.selectref(selected_indices)
             x_min = y_min = z_min = 1e100
             x_max = y_max = z_max = -1e100
             x_index = self.plot.attribute_name_index[self.x_attr]

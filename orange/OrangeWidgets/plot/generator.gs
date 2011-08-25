@@ -68,7 +68,7 @@ void main()
         symbol += 10;
 
     float size = texelFetch(data_buffer, index+size_index).x;
-    if (size_index < 0 || size <= 0.)
+    if (size_index < 0 || size < 0.)
         size = 1.;
 
     float color = texelFetch(data_buffer, index+color_index).x;

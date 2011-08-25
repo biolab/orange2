@@ -10,6 +10,8 @@ in vec3 color;
 in vec3 normal;
 in float index;
 
+out vec4 var_color;
+
 uniform bool use_2d_symbols;
 uniform bool encode_color;
 uniform bool hide_outside;
@@ -24,8 +26,6 @@ uniform vec3 translation;
 
 uniform mat4 modelview;
 uniform mat4 projection;
-
-out vec4 var_color;
 
 void main(void) {
     vec3 offset_rotated = offset;

@@ -398,8 +398,10 @@ class OWPlot3D(orangeqt.Plot3D):
         self.selection_fbo_dirty = True
 
         self.use_fbos = True
-        self.use_geometry_shader = True
-        # TODO: self.cpu_code_path
+
+        # If True, do drawing using instancing + geometry shader processing,
+        # if False, build VBO every time set_plot_data is called.
+        self._use_opengl_3 = False
 
         self.hide_outside = False
         self.fade_outside = True
@@ -410,12 +412,13 @@ class OWPlot3D(orangeqt.Plot3D):
         self.data = None
 
     def __del__(self):
+        pass
         # TODO: never reached!
-        glDeleteVertexArrays(1, self.dummy_vao)
-        glDeleteVertexArrays(1, self.feedback_vao)
-        glDeleteBuffers(1, self.symbol_buffer)
-        if hasattr(self, 'data_buffer'):
-            glDeleteBuffers(1, self.data_buffer)
+        #glDeleteVertexArrays(1, self.dummy_vao)
+        #glDeleteVertexArrays(1, self.feedback_vao)
+        #glDeleteBuffers(1, self.symbol_buffer)
+        #if hasattr(self, 'data_buffer'):
+        #    glDeleteBuffers(1, self.data_buffer)
 
     def initializeGL(self):
         if hasattr(self, 'generating_program'):
@@ -429,28 +432,102 @@ class OWPlot3D(orangeqt.Plot3D):
         glDisable(GL_CULL_FACE)
         glEnable(GL_MULTISAMPLE)
 
-        self.feedback_generated = False
+        # TODO: check hardware for OpenGL 3.x+ support
 
-        # Build shader program which will generate triangle data to be outputed
-        # to the screen in subsequent frames. Geometry shader is the heart
-        # of the process - it will produce actual symbol geometry out of dummy points.
-        self.generating_program = QtOpenGL.QGLShaderProgram()
-        self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Geometry,
-            os.path.join(os.path.dirname(__file__), 'generator.gs'))
-        self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
-            os.path.join(os.path.dirname(__file__), 'generator.vs'))
-        varyings = (c_char_p * 5)()
-        varyings[:] = ['out_position', 'out_offset', 'out_color', 'out_normal', 'out_index']
-        glTransformFeedbackVaryings(self.generating_program.programId(), 5, 
-            ctypes.cast(varyings, POINTER(POINTER(c_char))), GL_INTERLEAVED_ATTRIBS)
+        if self._use_opengl_3:
+            self.feedback_generated = False
 
-        self.generating_program.bindAttributeLocation('index', 0)
+            self.generating_program = QtOpenGL.QGLShaderProgram()
+            self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Geometry,
+                os.path.join(os.path.dirname(__file__), 'generator.gs'))
+            self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+                os.path.join(os.path.dirname(__file__), 'generator.vs'))
+            varyings = (c_char_p * 5)()
+            varyings[:] = ['out_position', 'out_offset', 'out_color', 'out_normal', 'out_index']
+            glTransformFeedbackVaryings(self.generating_program.programId(), 5, 
+                ctypes.cast(varyings, POINTER(POINTER(c_char))), GL_INTERLEAVED_ATTRIBS)
 
-        if not self.generating_program.link():
-            print('Failed to link generating shader! Attribute changes may be slow.')
-            self.use_geometry_shader = False
+            self.generating_program.bindAttributeLocation('index', 0)
+
+            if not self.generating_program.link():
+                print('Failed to link generating shader! Attribute changes may be slow.')
+            else:
+                print('Generating shader linked.')
+
+            # Upload all symbol geometry into a TBO (texture buffer object), so that generating
+            # geometry shader will have access to it. (TBO is easier to use than a texture in this use case).
+            geometry_data = []
+            symbols_indices = []
+            symbols_sizes = []
+            for symbol in range(len(Symbol)):
+                triangles = get_2d_symbol_data(symbol)
+                symbols_indices.append(len(geometry_data) / 3)
+                symbols_sizes.append(len(triangles))
+                for tri in triangles:
+                    geometry_data.extend(chain(*tri))
+
+            for symbol in range(len(Symbol)):
+                triangles = get_symbol_data(symbol)
+                symbols_indices.append(len(geometry_data) / 3)
+                symbols_sizes.append(len(triangles))
+                for tri in triangles:
+                    geometry_data.extend(chain(*tri))
+
+            self.symbols_indices = symbols_indices
+            self.symbols_sizes = symbols_sizes
+
+            tbo = glGenBuffers(1)
+            glBindBuffer(GL_TEXTURE_BUFFER, tbo)
+            glBufferData(GL_TEXTURE_BUFFER, len(geometry_data)*4, numpy.array(geometry_data, 'f'), GL_STATIC_DRAW)
+            glBindBuffer(GL_TEXTURE_BUFFER, 0)
+            self.symbol_buffer = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_BUFFER, self.symbol_buffer)
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, tbo) # 3 floating-point components
+            glBindTexture(GL_TEXTURE_BUFFER, 0)
+
+            # Generate dummy vertex buffer (points which will be fed to the geometry shader).
+            self.dummy_vao = GLuint(0)
+            glGenVertexArrays(1, self.dummy_vao)
+            glBindVertexArray(self.dummy_vao)
+            vertex_buffer_id = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+            glBufferData(GL_ARRAY_BUFFER, numpy.arange(50*1000, dtype=numpy.float32), GL_STATIC_DRAW)
+            glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 4, c_void_p(0))
+            glEnableVertexAttribArray(0)
+            glBindVertexArray(0)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+            # Specify an output VBO (and VAO)
+            self.feedback_vao = feedback_vao = GLuint(0)
+            glGenVertexArrays(1, feedback_vao)
+            glBindVertexArray(feedback_vao)
+            self.feedback_bid = feedback_bid = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, feedback_bid)
+            vertex_size = (3+3+3+3+1)*4
+            glBufferData(GL_ARRAY_BUFFER, 20*1000*144*vertex_size, c_void_p(0), GL_STATIC_DRAW)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(6*4))
+            glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(9*4))
+            glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(12*4))
+            glEnableVertexAttribArray(0)
+            glEnableVertexAttribArray(1)
+            glEnableVertexAttribArray(2)
+            glEnableVertexAttribArray(3)
+            glEnableVertexAttribArray(4)
+            glBindVertexArray(0)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
         else:
-            print('Generating shader linked.')
+            # Load symbol geometry and send it to the C++ parent.
+            geometry_data = []
+            for symbol in range(len(Symbol)):
+                triangles = get_2d_symbol_data(symbol)
+                triangles = [QVector3D(*v) for triangle in triangles for v in triangle]
+                orangeqt.Plot3D.set_symbol_geometry(self, symbol, 0, triangles)
+
+                triangles = get_symbol_data(symbol)
+                triangles = [QVector3D(*v) for triangle in triangles for v in triangle]
+                orangeqt.Plot3D.set_symbol_geometry(self, symbol, 1, triangles)
 
         self.symbol_program = QtOpenGL.QGLShaderProgram()
         self.symbol_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
@@ -479,77 +556,12 @@ class OWPlot3D(orangeqt.Plot3D):
         self.symbol_program_force_color    = self.symbol_program.uniformLocation('force_color')
         self.symbol_program_encode_color   = self.symbol_program.uniformLocation('encode_color')
 
-        # TODO: if not self.use_geometry_shader
-
-        # Upload all symbol geometry into a TBO (texture buffer object), so that generating
-        # geometry shader will have access to it. (TBO is easier to use than a texture in this use case).
-        geometry_data = []
-        symbols_indices = []
-        symbols_sizes = []
-        for symbol in range(len(Symbol)):
-            triangles = get_2d_symbol_data(symbol)
-            symbols_indices.append(len(geometry_data) / 3)
-            symbols_sizes.append(len(triangles))
-            for tri in triangles:
-                geometry_data.extend(chain(*tri))
-
-        for symbol in range(len(Symbol)):
-            triangles = get_symbol_data(symbol)
-            symbols_indices.append(len(geometry_data) / 3)
-            symbols_sizes.append(len(triangles))
-            for tri in triangles:
-                geometry_data.extend(chain(*tri))
-
-        self.symbols_indices = symbols_indices
-        self.symbols_sizes = symbols_sizes
-
-        tbo = glGenBuffers(1)
-        glBindBuffer(GL_TEXTURE_BUFFER, tbo)
-        glBufferData(GL_TEXTURE_BUFFER, len(geometry_data)*4, numpy.array(geometry_data, 'f'), GL_STATIC_DRAW)
-        glBindBuffer(GL_TEXTURE_BUFFER, 0)
-        self.symbol_buffer = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_BUFFER, self.symbol_buffer)
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, tbo) # 3 floating-point components
-        glBindTexture(GL_TEXTURE_BUFFER, 0)
-
-        # Generate dummy vertex buffer (points which will be fed to the geometry shader).
-        self.dummy_vao = GLuint(0)
-        glGenVertexArrays(1, self.dummy_vao)
-        glBindVertexArray(self.dummy_vao)
-        vertex_buffer_id = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
-        glBufferData(GL_ARRAY_BUFFER, numpy.arange(50*1000, dtype=numpy.float32), GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 4, c_void_p(0))
-        glEnableVertexAttribArray(0)
-        glBindVertexArray(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-        # Specify an output VBO (and VAO)
-        self.feedback_vao = feedback_vao = GLuint(0)
-        glGenVertexArrays(1, feedback_vao)
-        glBindVertexArray(feedback_vao)
-        self.feedback_bid = feedback_bid = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, feedback_bid)
-        vertex_size = (3+3+3+3+1)*4
-        glBufferData(GL_ARRAY_BUFFER, 20*1000*144*vertex_size, c_void_p(0), GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(6*4))
-        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(9*4))
-        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(12*4))
-        glEnableVertexAttribArray(0)
-        glEnableVertexAttribArray(1)
-        glEnableVertexAttribArray(2)
-        glEnableVertexAttribArray(3)
-        glEnableVertexAttribArray(4)
-        glBindVertexArray(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-           
         # Create two FBOs (framebuffer objects):
+
         # - one will be used together with stencil mask to find out which
         #   examples have been selected (in an efficient way)
-        # - the other one will be used for tooltips (data rendered will have
-        #   larger screen coverage so it will be easily pointed at)
+
+        # - the smaller one will be used for tooltips
         format = QtOpenGL.QGLFramebufferObjectFormat()
         format.setAttachment(QtOpenGL.QGLFramebufferObject.CombinedDepthStencil)
         self.selection_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024, format)
@@ -565,13 +577,6 @@ class OWPlot3D(orangeqt.Plot3D):
         else:
             print('Failed to create tooltip FBO! Tooltips disabled.')
             self.use_fbos = False
-
-        img = QImage(os.path.join(os.path.dirname(__file__), 'noise.jpg'))
-        self.fractal_texture = self.bindTexture(img)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT)
 
     def resizeGL(self, width, height):
         pass
@@ -622,30 +627,22 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.show_axes:
             self.draw_axes()
 
-        if self.feedback_generated:
-            self.symbol_program.bind()
-            self.symbol_program.setUniformValue('modelview', self.modelview)
-            self.symbol_program.setUniformValue('projection', self.projection)
-            self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
-            self.symbol_program.setUniformValue(self.symbol_program_fade_outside,   self.fade_outside)
-            self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
-            self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
-            # Specifying float uniforms with vec2 because of a weird bug in PyQt
-            self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
-            self.symbol_program.setUniformValue(self.symbol_program_alpha_value,    self.alpha_value / 255., self.alpha_value / 255.)
-            plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5],                          self.plot_scale+self.additional_scale)
-            self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
-            self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
-            self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
-            if self.use_2d_symbols:
-                self.symbol_program.setUniformValue('texture', 0)
-                self.symbol_program.setUniformValue('apply_texture', True)
-                self.symbol_program.setUniformValue('screen_size', self.width(), self.height())
-                glActiveTexture(GL_TEXTURE0)
-                glBindTexture(GL_TEXTURE_2D, self.fractal_texture)
-            else:
-                self.symbol_program.setUniformValue('apply_texture', False)
+        self.symbol_program.bind()
+        self.symbol_program.setUniformValue('modelview', self.modelview)
+        self.symbol_program.setUniformValue('projection', self.projection)
+        self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
+        self.symbol_program.setUniformValue(self.symbol_program_fade_outside,   self.fade_outside)
+        self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
+        self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
+        # Specifying float uniforms with vec2 because of a weird bug in PyQt
+        self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_alpha_value,    self.alpha_value / 255., self.alpha_value / 255.)
+        plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5],                          self.plot_scale+self.additional_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
+        self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
+        if self._use_opengl_3 and self.feedback_generated:
             glEnable(GL_DEPTH_TEST)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -653,15 +650,19 @@ class OWPlot3D(orangeqt.Plot3D):
             glBindVertexArray(self.feedback_vao)
             glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
             glBindVertexArray(0)
+        else:
+            glDisable(GL_CULL_FACE)
+            glEnable(GL_DEPTH_TEST)
+            orangeqt.Plot3D.draw_data(self)
 
-            self.symbol_program.release()
+        self.symbol_program.release()
 
         self.draw_labels()
 
         if self.after_draw_callback:
             self.after_draw_callback()
 
-        if self.tooltip_fbo_dirty and self.feedback_generated:
+        if self.tooltip_fbo_dirty:
             self.tooltip_fbo.bind()
             glClearColor(1, 1, 1, 1)
             glClearDepth(1)
@@ -674,15 +675,19 @@ class OWPlot3D(orangeqt.Plot3D):
 
             self.symbol_program.bind()
             self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
-            glBindVertexArray(self.feedback_vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
-            glBindVertexArray(0)
+
+            if self._use_opengl_3 and self.feedback_generated:
+                glBindVertexArray(self.feedback_vao)
+                glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
+                glBindVertexArray(0)
+            else:
+                orangeqt.Plot3D.draw_data(self)
             self.symbol_program.release()
             self.tooltip_fbo.release()
             self.tooltip_fbo_dirty = False
             glViewport(0, 0, self.width(), self.height())
 
-        if self.selection_fbo_dirty and self.feedback_generated:
+        if self.selection_fbo_dirty:
             # TODO: use transform feedback instead
             self.selection_fbo.bind()
             glClearColor(1, 1, 1, 1)
@@ -693,9 +698,13 @@ class OWPlot3D(orangeqt.Plot3D):
             self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
             glDisable(GL_DEPTH_TEST)
             glDisable(GL_BLEND)
-            glBindVertexArray(self.feedback_vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
-            glBindVertexArray(0)
+            
+            if self._use_opengl_3:
+                glBindVertexArray(self.feedback_vao)
+                glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
+                glBindVertexArray(0)
+            else:
+                orangeqt.Plot3D.draw_data(self)
             self.symbol_program.release()
 
             # Also draw stencil masks to the screen. No need to
@@ -961,87 +970,95 @@ class OWPlot3D(orangeqt.Plot3D):
         self.z_index = z_index
         self.label_index = label_index
 
-        # If color is a discrete attribute, colors should be a list of colors
-        # each specified with vec3 (RGB).
+        # If color is a discrete attribute, colors should be a list of QColor
 
-        # Re-run generating program (geometry shader), store
-        # results through transform feedback into a VBO on the GPU.
-        self.generating_program.bind()
-        self.generating_program.setUniformValue('x_index', x_index)
-        self.generating_program.setUniformValue('y_index', y_index)
-        self.generating_program.setUniformValue('z_index', z_index)
-        self.generating_program.setUniformValue('jitter_size', jitter_size)
-        self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
-        self.generating_program.setUniformValue('x_discrete', x_discrete)
-        self.generating_program.setUniformValue('y_discrete', y_discrete)
-        self.generating_program.setUniformValue('z_discrete', z_discrete)
-        self.generating_program.setUniformValue('color_index', color_index)
-        self.generating_program.setUniformValue('symbol_index', symbol_index)
-        self.generating_program.setUniformValue('size_index', size_index)
-        self.generating_program.setUniformValue('use_2d_symbols', self.use_2d_symbols)
-        self.generating_program.setUniformValue('example_size', self.example_size)
-        self.generating_program.setUniformValue('num_colors', len(colors))
-        self.generating_program.setUniformValue('num_symbols_used', num_symbols_used)
-        glUniform3fv(glGetUniformLocation(self.generating_program.programId(), 'colors'),
-            len(colors), numpy.array(colors, 'f').ravel())
-        glUniform1iv(glGetUniformLocation(self.generating_program.programId(), 'symbols_sizes'),
-            len(Symbol)*2, numpy.array(self.symbols_sizes, dtype='i'))
-        glUniform1iv(glGetUniformLocation(self.generating_program.programId(), 'symbols_indices'),
-            len(Symbol)*2, numpy.array(self.symbols_indices, dtype='i'))
+        if self._use_opengl_3:
+            # Re-run generating program (geometry shader), store
+            # results through transform feedback into a VBO on the GPU.
+            self.generating_program.bind()
+            self.generating_program.setUniformValue('x_index', x_index)
+            self.generating_program.setUniformValue('y_index', y_index)
+            self.generating_program.setUniformValue('z_index', z_index)
+            self.generating_program.setUniformValue('jitter_size', jitter_size)
+            self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
+            self.generating_program.setUniformValue('x_discrete', x_discrete)
+            self.generating_program.setUniformValue('y_discrete', y_discrete)
+            self.generating_program.setUniformValue('z_discrete', z_discrete)
+            self.generating_program.setUniformValue('color_index', color_index)
+            self.generating_program.setUniformValue('symbol_index', symbol_index)
+            self.generating_program.setUniformValue('size_index', size_index)
+            self.generating_program.setUniformValue('use_2d_symbols', self.use_2d_symbols)
+            self.generating_program.setUniformValue('example_size', self.example_size)
+            self.generating_program.setUniformValue('num_colors', len(colors))
+            self.generating_program.setUniformValue('num_symbols_used', num_symbols_used)
+            # TODO: colors is list of QColor
+            glUniform3fv(glGetUniformLocation(self.generating_program.programId(), 'colors'),
+                len(colors), numpy.array(colors, 'f').ravel())
+            glUniform1iv(glGetUniformLocation(self.generating_program.programId(), 'symbols_sizes'),
+                len(Symbol)*2, numpy.array(self.symbols_sizes, dtype='i'))
+            glUniform1iv(glGetUniformLocation(self.generating_program.programId(), 'symbols_indices'),
+                len(Symbol)*2, numpy.array(self.symbols_indices, dtype='i'))
 
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_BUFFER, self.symbol_buffer)
-        self.generating_program.setUniformValue('symbol_buffer', 0)
-        glActiveTexture(GL_TEXTURE1)
-        glBindTexture(GL_TEXTURE_BUFFER, self.data_buffer)
-        self.generating_program.setUniformValue('data_buffer', 1)
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(GL_TEXTURE_BUFFER, self.symbol_buffer)
+            self.generating_program.setUniformValue('symbol_buffer', 0)
+            glActiveTexture(GL_TEXTURE1)
+            glBindTexture(GL_TEXTURE_BUFFER, self.data_buffer)
+            self.generating_program.setUniformValue('data_buffer', 1)
 
-        qid = glGenQueries(1)
-        glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, qid)
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, self.feedback_bid)
-        glEnable(GL_RASTERIZER_DISCARD)
-        glBeginTransformFeedback(GL_TRIANGLES)
+            qid = glGenQueries(1)
+            glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, qid)
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, self.feedback_bid)
+            glEnable(GL_RASTERIZER_DISCARD)
+            glBeginTransformFeedback(GL_TRIANGLES)
 
-        glBindVertexArray(self.dummy_vao)
-        glDrawArrays(GL_POINTS, 0, self.num_examples)
+            glBindVertexArray(self.dummy_vao)
+            glDrawArrays(GL_POINTS, 0, self.num_examples)
 
-        glEndTransformFeedback()
-        glDisable(GL_RASTERIZER_DISCARD)
+            glEndTransformFeedback()
+            glDisable(GL_RASTERIZER_DISCARD)
 
-        glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
-        self.num_primitives_generated = glGetQueryObjectuiv(qid, GL_QUERY_RESULT)
-        glBindVertexArray(0)
-        self.feedback_generated = True
-        print('Num generated primitives: ' + str(self.num_primitives_generated))
+            glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
+            self.num_primitives_generated = glGetQueryObjectuiv(qid, GL_QUERY_RESULT)
+            glBindVertexArray(0)
+            self.feedback_generated = True
+            print('Num generated primitives: ' + str(self.num_primitives_generated))
 
-        self.generating_program.release()
-        glActiveTexture(GL_TEXTURE0)
-        print('Generation took ' + str(time.time()-start) + ' seconds')
+            self.generating_program.release()
+            glActiveTexture(GL_TEXTURE0)
+            print('Generation took ' + str(time.time()-start) + ' seconds')
+        else:
+            start = time.time()
+            orangeqt.Plot3D.update_data(self, x_index, y_index, z_index,
+                color_index, symbol_index, size_index, label_index,
+                colors, num_symbols_used,
+                x_discrete, y_discrete, z_discrete, self.use_2d_symbols)
+            print('Data processing took ' + str(time.time() - start) + ' seconds')
+
         self.updateGL()
 
     def set_plot_data(self, data, subset_data=None):
         self.makeCurrent()
-        #if self.data != None:
-            #TODO: glDeleteBuffers(1, self.data_buffer)
-        start = time.time()
-
-        data_array = numpy.array(data.transpose().flatten(), dtype='f')
+        self.data = data
+        self.data_array = numpy.array(data.transpose().flatten(), dtype=numpy.float32)
         self.example_size = len(data)
         self.num_examples = len(data[0])
-        self.data = data
 
-        tbo = glGenBuffers(1)
-        glBindBuffer(GL_TEXTURE_BUFFER, tbo)
-        glBufferData(GL_TEXTURE_BUFFER, len(data_array)*4, data_array, GL_STATIC_DRAW)
-        glBindBuffer(GL_TEXTURE_BUFFER, 0)
+        if self._use_opengl_3:
+            tbo = glGenBuffers(1)
+            glBindBuffer(GL_TEXTURE_BUFFER, tbo)
+            glBufferData(GL_TEXTURE_BUFFER, len(self.data_array)*4, self.data_array, GL_STATIC_DRAW)
+            glBindBuffer(GL_TEXTURE_BUFFER, 0)
 
-        self.data_buffer = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_BUFFER, self.data_buffer)
-        GL_R32F = 0x822E
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, tbo)
-        glBindTexture(GL_TEXTURE_BUFFER, 0)
-
-        print('Uploading data to GPU took ' + str(time.time()-start) + ' seconds')
+            self.data_buffer = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_BUFFER, self.data_buffer)
+            GL_R32F = 0x822E
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, tbo)
+            glBindTexture(GL_TEXTURE_BUFFER, 0)
+        else:
+            orangeqt.Plot3D.set_data(self, long(self.data_array.ctypes.data),
+                                     self.num_examples,
+                                     self.example_size)
 
     def set_axis_labels(self, axis_id, labels):
         '''labels should be a list of strings'''

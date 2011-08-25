@@ -1,4 +1,11 @@
 
+class VAO:
+    def __init__(self, data, format_description):
+        '''
+        Sample usage: geometry = VAO(data, size, [(3, GL_FLOAT), (4, GL_FLOAT)], GL_STATIC_DRAW)
+        '''
+        pass
+
 class OWOpenGLRenderer:
     '''OpenGL 3 deprecated a lot of old (1.x) functions, particulary, it removed
        immediate mode (glBegin, glEnd, glVertex paradigm). Vertex buffer objects and similar
