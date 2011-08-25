@@ -348,7 +348,9 @@ class CanvasWidget(QGraphicsRectItem):
 
         # save settings
         if (self.instance != None):
-            if self.canvasDlg.menuSaveSettings == 1:        # save settings only if checked in the main menu
+            if self.canvasDlg.menuSaveSettings == 1 and not self.instance._settingsFromSchema:       
+                # save settings only if checked in the main menu, and the widget settings were not loaded from
+                # a schema file (i.e it is a new widget, this prevents the overriding of the the global .ini file)
                 try:
                     self.instance.saveSettings()
                 except:
