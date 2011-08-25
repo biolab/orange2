@@ -24,6 +24,7 @@ from PyQt4 import QtOpenGL
 from OWDlgs import OWChooseImageSizeDlg
 
 import orange
+import orangeqt
 
 import OpenGL
 OpenGL.ERROR_CHECKING = False
@@ -326,9 +327,10 @@ class PlotTheme(object):
         self.axis_color = [0.1, 0.1, 0.1, 1.]
         self.axis_values_color = [0.1, 0.1, 0.1, 1.]
 
-class OWPlot3D(QtOpenGL.QGLWidget):
+class OWPlot3D(orangeqt.Plot3D):
     def __init__(self, parent=None):
-        QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
+        orangeqt.Plot3D.__init__(self, parent)
+        #QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
         self.camera_distance = 3.
 
