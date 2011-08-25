@@ -18,7 +18,7 @@ from OWWidget import *
 
 class OWNxFile(OWWidget):
     
-    settingsList=["recentFiles", "recentDataFiles", "recentEdgesFiles"]
+    settingsList=["recentFiles", "recentDataFiles", "recentEdgesFiles", "auto_table"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Nx File", wantMainArea=False)
@@ -30,20 +30,25 @@ class OWNxFile(OWWidget):
         self.recentFiles = ["(none)"]
         self.recentDataFiles = ["(none)"]
         self.recentEdgesFiles = ["(none)"]
+        self.auto_table = False
         
         self.domain = None
         self.graph = None
+        self.auto_items = None
+        
         #get settings from the ini file, if they exist
         self.loadSettings()
 
         #GUI
         self.controlArea.layout().setMargin(4)
-        self.box = OWGUI.widgetBox(self.controlArea, box = "Graph File", orientation = "horizontal")
-        self.filecombo = OWGUI.comboBox(self.box, self, "filename")
+        self.box = OWGUI.widgetBox(self.controlArea, box = "Graph File", orientation = "vertical")
+        hb = OWGUI.widgetBox(self.box, orientation = "horizontal")        
+        self.filecombo = OWGUI.comboBox(hb, self, "filename")
         self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseNetFile, disabled=0)
+        button = OWGUI.button(hb, self, '...', callback = self.browseNetFile, disabled=0)
         button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
         button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        OWGUI.checkBox(self.box, self, "auto_table", "Build graph data table automatically", callback=lambda: self.selectNetFile(self.filecombo.currentIndex()))
         
         self.databox = OWGUI.widgetBox(self.controlArea, box = "Vertices Data File", orientation = "horizontal")
         self.datacombo = OWGUI.comboBox(self.databox, self, "dataname")
@@ -192,9 +197,8 @@ class OWNxFile(OWWidget):
             return
         
         #try:
-        net = Orange.network.readwrite.read(fn)
-        if fileExt == ".net":
-            self.infoc.setText("Vertices data generated and added automatically")
+        net = Orange.network.readwrite.read(fn, auto_table=self.auto_table)
+        
         #except:
         #    self.readingFailed(infob='Could not read file')
         #    return
@@ -203,6 +207,12 @@ class OWNxFile(OWWidget):
             self.readingFailed(infob='Error reading file')
             return
 
+        if self.auto_table:
+            self.infoc.setText("Vertices data generated and added automatically")
+            self.auto_items = net.items()
+        else:
+            self.auto_items = None
+        
         self.infoa.setText("%d nodes" % net.number_of_nodes())
         
         if net.is_directed():
@@ -259,10 +269,16 @@ class OWNxFile(OWWidget):
         
     def addDataFile(self, fn):
         if fn == "(none)" or self.graph == None:
-            self.infoc.setText("No vertices data file specified")
-            self.graph.set_items(None)
+            
+            if self.auto_items is not None:
+                self.infoc.setText("Vertices data generated and added automatically")
+                self.graph.set_items(self.auto_items)
+            else:
+                self.infoc.setText("No vertices data file specified")
+                self.graph.set_items(None)
+                
             self.send("Network", self.graph)
-            self.send("Items", None)
+            self.send("Items", self.graph.items())
             return
          
         self.readDataFile(fn)
