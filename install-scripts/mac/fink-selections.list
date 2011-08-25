@@ -7,6 +7,7 @@ bzip2						install
 bzip2-dev					install
 bzip2-shlibs					install
 ca-bundle					install
+cmake					install
 daemonic					install
 debianutils					install
 dpkg						install
