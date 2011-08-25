@@ -155,32 +155,34 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
                 self.cone_shader.release()
 
+                glDepthMask(GL_FALSE)
                 glColor4f(0, 0, 0, 1)
                 self.renderText(x*1.2, y*1.2, z*1.2, label)
 
-                glDepthMask(GL_FALSE)
                 glBegin(GL_LINES)
                 glVertex3f(0, 0, 0)
                 glVertex3f(x, y, z)
                 glEnd()
 
         glDepthMask(GL_TRUE)
-        glEnable(GL_DEPTH_TEST)
-        if self._arrow_lines:
-            glLineWidth(2)
-            for x, y, z, value, color in self._arrow_lines:
-                glColor3f(*color)
-                glBegin(GL_LINES)
-                glVertex3f(0, 0, 0)
-                glVertex3f(x, y, z)
-                glEnd()
 
-                glColor3f(0, 0, 0)
-                # TODO: discrete
-                self.renderText(x,y,z, ('%f' % value).rstrip('0').rstrip('.'),
-                                font=self._theme.labels_font)
+        if self.tooltipKind == 0:
+            glEnable(GL_DEPTH_TEST)
+            if self._arrow_lines:
+                glLineWidth(2)
+                for x, y, z, value, factor, color in self._arrow_lines:
+                    glColor3f(*color)
+                    glBegin(GL_LINES)
+                    glVertex3f(0, 0, 0)
+                    glVertex3f(x, y, z)
+                    glEnd()
 
-            glLineWidth(1)
+                    glColor3f(0, 0, 0)
+                    # TODO: discrete
+                    self.renderText(x,y,z, ('%f' % (value if self.tooltipValue == 0 else factor)).rstrip('0').rstrip('.'),
+                                    font=self._theme.labels_font)
+
+                glLineWidth(1)
 
         self._draw_value_lines()
 
@@ -362,6 +364,14 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             self.new_selection = None
 
     def _update_arrow_values(self, index):
+        if self.tooltipKind == 1:
+            shown_attrs = [anchor[3] for anchor in self.anchor_data]
+            self.show_tooltip(self.get_example_tooltip_text(self.raw_data[index], shown_attrs))
+            return
+        elif self.tooltipKind == 2:
+            self.show_tooltip(self.get_example_tooltip_text(self.raw_data[index]))
+            return
+
         if index == self._last_index:
             return
         self._last_index = index
@@ -375,9 +385,45 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 color = self.discPalette.getRGB(example[self.data_class_index])
             else:
                 color = (0, 0, 0)
-            self._arrow_lines.append([x*factor, y*factor, z*factor, value, color])
+            self._arrow_lines.append([x*factor, y*factor, z*factor, value, factor, color])
         self._mouseover_called = True
         self.updateGL()
+
+    def get_example_tooltip_text(self, example, indices=None, maxIndices=20):
+        if indices and type(indices[0]) == str:
+            indices = [self.attributeNameIndex[i] for i in indices]
+        if not indices: 
+            indices = range(len(self.dataDomain.attributes))
+        
+        # don't show the class value twice
+        if example.domain.classVar:
+            classIndex = self.attributeNameIndex[example.domain.classVar.name]
+            while classIndex in indices:
+                indices.remove(classIndex)      
+      
+        text = "<b>Attributes:</b><br>"
+        for index in indices[:maxIndices]:
+            attr = self.attributeNames[index]
+            if attr not in example.domain:  text += "&nbsp;"*4 + "%s = ?<br>" % (Qt.escape(attr))
+            elif example[attr].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (Qt.escape(attr))
+            else:                           text += "&nbsp;"*4 + "%s = %s<br>" % (Qt.escape(attr), Qt.escape(str(example[attr])))
+        if len(indices) > maxIndices:
+            text += "&nbsp;"*4 + " ... <br>"
+
+        if example.domain.classVar:
+            text = text[:-4]
+            text += "<hr><b>Class:</b><br>"
+            if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (Qt.escape(example.domain.classVar.name))
+            else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (Qt.escape(example.domain.classVar.name), Qt.escape(str(example.getclass())))
+
+        if len(example.domain.getmetas()) != 0:
+            text = text[:-4]
+            text += "<hr><b>Meta attributes:</b><br>"
+            # show values of meta attributes
+            for key in example.domain.getmetas():
+                try: text += "&nbsp;"*4 + "%s = %s<br>" % (Qt.escape(example.domain[key].name), Qt.escape(str(example[key])))
+                except: pass
+        return text[:-4]        # remove the last <br>
 
     def mouseMoveEvent(self, event):
         pos = event.pos()
