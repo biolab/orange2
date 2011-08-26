@@ -106,6 +106,8 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if not self.cone_shader.link():
             print('Failed to link cone shader!')
 
+    set_data = setData
+
     def before_draw(self):
         modelview = QMatrix4x4()
         modelview.lookAt(

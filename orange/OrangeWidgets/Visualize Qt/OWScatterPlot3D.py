@@ -56,9 +56,9 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
     def set_data(self, data, subset_data=None, **args):
         if data == None:
             return
+        args['skipIfSame'] = False
         orngScaleScatterPlotData.set_data(self, data, subset_data, **args)
-        OWPlot3D.set_plot_data(self, self.no_jittering_scaled_data, self.no_jittering_scaled_subset_data)
-        # TODO: wire jitter settings (actual jittering done in geometry shader)
+        OWPlot3D.set_plot_data(self, self.scaled_data, self.scaled_subset_data)
 
     def update_data(self, x_attr, y_attr, z_attr,
                     color_attr, symbol_attr, size_attr, label_attr):
@@ -403,12 +403,12 @@ class OWScatterPlot3D(OWWidget):
         box = OWGUI.widgetBox(self.settings_tab, 'Jittering Options')
         self.jitter_size_combo = OWGUI.comboBox(box, self, 'plot.jitter_size', label='Jittering size (% of size)'+'  ',
             orientation='horizontal',
-            callback=self.update_plot,
+            callback=self.handleNewSignals,
             items=self.jitter_sizes,
             sendSelectedValue=1,
             valueType=float)
         OWGUI.checkBox(box, self, 'plot.jitter_continuous', 'Jitter continuous attributes',
-            callback=self.update_plot,
+            callback=self.handleNewSignals,
             tooltip='Does jittering apply also on continuous attributes?')
 
         self.dark_theme = False
