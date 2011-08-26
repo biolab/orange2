@@ -1,4 +1,5 @@
-
+#version 150
+#
 // Each example is drawn using a symbol constructed out
 // of triangles. Each vertex is specified by its offset
 // from the center point, example's position, color, normal
