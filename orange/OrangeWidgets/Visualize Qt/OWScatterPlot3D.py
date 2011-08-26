@@ -389,7 +389,7 @@ class OWScatterPlot3D(OWWidget):
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
         ss = OWGUI.hSlider(box, self, 'plot.symbol_scale', label='Symbol scale',
-            minValue=0, maxValue=20,
+            minValue=1, maxValue=20,
             tooltip='Scale symbol size',
             callback=self.on_checkbox_update)
         ss.setValue(4)
