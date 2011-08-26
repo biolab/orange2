@@ -245,7 +245,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             self.discPalette.setNumberOfColors(len(self.data_domain.classVar.values))
 
         use_different_symbols = self.useDifferentSymbols and self.data_has_discrete_class and\
-            len(self.data_domain.classVar.values) < len(Symbol)
+            len(self.data_domain.classVar.values) <= len(Symbol)
 
         if use_different_symbols:
             symbol_index = 3
