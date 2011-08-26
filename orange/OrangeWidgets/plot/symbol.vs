@@ -1,4 +1,5 @@
-#extension GL_EXT_gpu_shader4 : enable
+#version 150
+
 
 // Each example is drawn using a symbol constructed out
 // of triangles. Each vertex is specified by its offset
@@ -67,10 +68,10 @@ void main(void) {
     }
     else if (encode_color)
     {
-        var_color = vec4(float((uint(index) & 0xFF)) / 255.,
-                         float((uint(index) & 0xFF00) >> 8) / 255.,
-                         float((uint(index) & 0xFF0000) >> 16) / 255.,
-                         float((uint(index) & 0xFF000000) >> 24) / 255.);
+        var_color = vec4(float((uint(index) & uint(0xFF))) / 255.,
+                         float((uint(index) & uint(0xFF00)) >> uint(8)) / 255.,
+                         float((uint(index) & uint(0xFF0000)) >> uint(16)) / 255.,
+                         float((uint(index) & uint(0xFF000000)) >> uint(24)) / 255.);
     }
     else
     {
