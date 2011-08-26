@@ -90,7 +90,7 @@ def graph_to_table(G):
     """Builds a Data Table from node values."""
     if G.number_of_nodes() > 0:
         features = list(set(itertools.chain.from_iterable(node.iterkeys() for node in G.node.itervalues())))
-        data = [[node.get(f).replace('\t', ' ') if type(node.get(f, 1)) == str else str(node.get(f, '?')) for f in features] for node in G.node.itervalues()]
+        data = [[node.get(f).encode('utf-8').replace('\t', ' ') if type(node.get(f, 1)) == str or type(node.get(f, 1)) == unicode else str(node.get(f, '?')) for f in features] for node in G.node.itervalues()]
         fp = tempfile.NamedTemporaryFile('wt', suffix='.txt', delete=False)
         fp.write('\n'.join('\t'.join(line) for line in [features] + data))
         fp.close()
