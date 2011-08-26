@@ -101,9 +101,9 @@ class PubmedNetworkView(Orange.network.NxView):
             self._network.node[i]['user_score'] = 1
             self._network.node[i]['score'] = 1 # input_score
         # case "expand_node" - with the settings already set
-        self._center_nodes.expand(selection)
+        self._center_nodes.extend(selection)
         # case "delete_node"
-        self._hidden_nodes.append(selection)
+        self._hidden_nodes.extend(selection)
         # delete_node_and_neig --> ???? 
         
         self.update_network()  #chiama propagate
@@ -152,7 +152,7 @@ class PubmedNetworkView(Orange.network.NxView):
                 
     def compute_k(id, centers, net):
         import networkx as nx #VEDERE SE C'E' IN ORANGENET 
-        if self._algorithm == 0 #no clustering
+        if self._algorithm == 0: #no clustering
             return self._algorithm
         else:   #clustering
             paths = []
