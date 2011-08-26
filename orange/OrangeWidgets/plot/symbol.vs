@@ -1,4 +1,4 @@
-#version 150
+#extension GL_EXT_gpu_shader4 : enable
 
 // Each example is drawn using a symbol constructed out
 // of triangles. Each vertex is specified by its offset

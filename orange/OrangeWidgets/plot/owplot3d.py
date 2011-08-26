@@ -117,7 +117,7 @@ SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
 
 Axis = enum('X', 'Y', 'Z', 'CUSTOM')
 
-from plot.primitives import normal_from_points, get_2d_symbol_data, get_symbol_data, clamp, normalize
+from plot.primitives import normal_from_points, get_symbol_geometry, clamp, normalize, GeometryType
 
 class Legend(object):
     def __init__(self, plot):
@@ -176,7 +176,7 @@ class Legend(object):
 
         for symbol, color, size, text in self.items:
             glColor4f(*color)
-            triangles = get_2d_symbol_data(symbol)
+            triangles = get_symbol_geometry(symbol, GeometryType.SOLID_2D)
             glBegin(GL_TRIANGLES)
             for v0, v1, v2, _, _, _ in triangles:
                 glVertex2f(x+v0[0]*self.symbol_scale*size+10, item_pos_y+v0[1]*self.symbol_scale*size-5)
@@ -460,14 +460,14 @@ class OWPlot3D(orangeqt.Plot3D):
             symbols_indices = []
             symbols_sizes = []
             for symbol in range(len(Symbol)):
-                triangles = get_2d_symbol_data(symbol)
+                triangles = get_symbol_geometry(symbol, GeometryType.SOLID_3D)
                 symbols_indices.append(len(geometry_data) / 3)
                 symbols_sizes.append(len(triangles))
                 for tri in triangles:
                     geometry_data.extend(chain(*tri))
 
             for symbol in range(len(Symbol)):
-                triangles = get_symbol_data(symbol)
+                triangles = get_symbol_geometry(symbol, GeometryType.SOLID_2D)
                 symbols_indices.append(len(geometry_data) / 3)
                 symbols_sizes.append(len(triangles))
                 for tri in triangles:
@@ -521,13 +521,21 @@ class OWPlot3D(orangeqt.Plot3D):
             # Load symbol geometry and send it to the C++ parent.
             geometry_data = []
             for symbol in range(len(Symbol)):
-                triangles = get_2d_symbol_data(symbol)
+                triangles = get_symbol_geometry(symbol, GeometryType.SOLID_2D)
                 triangles = [QVector3D(*v) for triangle in triangles for v in triangle]
                 orangeqt.Plot3D.set_symbol_geometry(self, symbol, 0, triangles)
 
-                triangles = get_symbol_data(symbol)
+                triangles = get_symbol_geometry(symbol, GeometryType.SOLID_3D)
                 triangles = [QVector3D(*v) for triangle in triangles for v in triangle]
                 orangeqt.Plot3D.set_symbol_geometry(self, symbol, 1, triangles)
+
+                edges = get_symbol_geometry(symbol, GeometryType.EDGE_2D)
+                edges = [QVector3D(*v) for edge in edges for v in edge]
+                orangeqt.Plot3D.set_symbol_geometry(self, symbol, 2, edges)
+
+                edges = get_symbol_geometry(symbol, GeometryType.EDGE_3D)
+                edges = [QVector3D(*v) for edge in edges for v in edge]
+                orangeqt.Plot3D.set_symbol_geometry(self, symbol, 3, edges)
 
         self.symbol_program = QtOpenGL.QGLShaderProgram()
         self.symbol_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
@@ -653,7 +661,9 @@ class OWPlot3D(orangeqt.Plot3D):
         else:
             glDisable(GL_CULL_FACE)
             glEnable(GL_DEPTH_TEST)
-            orangeqt.Plot3D.draw_data(self)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            orangeqt.Plot3D.draw_data(self, self.symbol_program.programId(), self.alpha_value / 255.)
 
         self.symbol_program.release()
 
@@ -681,7 +691,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
                 glBindVertexArray(0)
             else:
-                orangeqt.Plot3D.draw_data(self)
+                orangeqt.Plot3D.draw_data(self, self.symbol_program.programId(), self.alpha_value / 255.)
             self.symbol_program.release()
             self.tooltip_fbo.release()
             self.tooltip_fbo_dirty = False
@@ -704,7 +714,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
                 glBindVertexArray(0)
             else:
-                orangeqt.Plot3D.draw_data(self)
+                orangeqt.Plot3D.draw_data(self, self.symbol_program.programId(), self.alpha_value / 255.)
             self.symbol_program.release()
 
             # Also draw stencil masks to the screen. No need to
