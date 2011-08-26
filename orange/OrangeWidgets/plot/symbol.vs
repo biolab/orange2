@@ -66,10 +66,10 @@ void main(void) {
     }
     else if (encode_color)
     {
-        var_color = vec4(float((int(index) & 0xFF)) / 255.,
-                         float((int(index) & 0xFF00) >> 8) / 255.,
-                         float((int(index) & 0xFF0000) >> 16) / 255.,
-                         float((int(index) & 0xFF000000) >> 24) / 255.);
+        var_color = vec4(float((uint(index) & 0xFF)) / 255.,
+                         float((uint(index) & 0xFF00) >> 8) / 255.,
+                         float((uint(index) & 0xFF0000) >> 16) / 255.,
+                         float((uint(index) & 0xFF000000) >> 24) / 255.);
     }
     else
     {
