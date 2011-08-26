@@ -385,9 +385,9 @@ class LearnerTestCase(DataTestCase):
             self.assertGreater(dist_sum, 0.0)
             self.assertLess(abs(dist_sum - 1.0), 1e-3)
             
-#            # just for fun also test this
-#            self.assertLess(abs(dist_sum - dist.abs), 1e-3)
-#            # not fun because it fails
+            # just for fun also test this
+            self.assertLess(abs(dist_sum - dist.abs), 1e-3)
+            # not fun because it fails
 
         # Store classifier for possible use in subclasses
         self.classifier = classifier
@@ -407,12 +407,16 @@ class LearnerTestCase(DataTestCase):
         
         for ex in test:
             if isinstance(dataset.domain.class_var, Orange.data.variable.Continuous):
+                # Test to third digit after the decimal point
                 self.assertAlmostEqual(classifier(ex, orange.GetValue).native(),
                                        classifier_clone(ex, orange.GetValue).native(),
-                                       dataset.domain.class_var.number_of_decimals + 3,
+                                       min(3, dataset.domain.class_var.number_of_decimals),
                                        "Pickled and original classifier return a different value!")
             else:
-                self.assertEqual(classifier(ex, orange.GetValue), classifier_clone(ex, orange.GetValue), "Pickled and original classifier return a different value!")
+                self.assertEqual(classifier(ex, orange.GetValue),
+                                 classifier_clone(ex, orange.GetValue),
+                                 "Pickled and original classifier return a different value!")
+                
 
 class MeasureAttributeTestCase(DataTestCase):
     """ Test orange MeasureAttribute subclass.
@@ -502,7 +506,13 @@ class DistanceTestCase(DataTestCase):
         
         if dataset.domain.class_var:
             with member_set(self.distance_constructor, "ignore_class", False):
-                mat = distance_matrix(dataset, self.distance_constructor)
+                try:
+                    mat = distance_matrix(dataset, self.distance_constructor)
+                except orange.KernelException, ex:
+                    if "not supported" in ex.message:
+                        return
+                    else:
+                        raise
             m1 = numpy.array(list(mat))
             self.assertTrue((m1 != m).all() or dataset, "%r does not seem to respect the 'ignore_class' flag")
         

@@ -10,3 +10,4 @@ Data description (``data``)
     Orange.data.instance
     Orange.data.table
     Orange.data.sample
+    Orange.data.formats

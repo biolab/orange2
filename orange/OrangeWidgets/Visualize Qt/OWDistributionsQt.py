@@ -30,12 +30,6 @@ class distribErrorBarCurve(OWCurve):
         self.set_point_size(7)
         
     def update_properties(self):
-        should_be_cont = (self.style() == OWCurve.Lines)
-        if self.is_continuous() != should_be_cont:
-            self.set_continuous(should_be_cont)
-            if self.auto_update():
-                return
-                
         OWCurve.update_properties(self)
     
         if self.style() == self.DistributionCurve:
@@ -90,6 +84,8 @@ class OWDistributionGraphQt(OWPlot):
         self.probCurveKey = self.addCurve(xBottom, yRight, 0)
         self.probCurveUpperCIKey = self.addCurve(xBottom, yRight, 0)
         self.probCurveLowerCIKey = self.addCurve(xBottom, yRight, 0)
+        
+        self.axes[xBottom].arrows = 0
 
     def addCurve(self, xAxis = xBottom, yAxis = yLeft, visible = 1):
         curve = distribErrorBarCurve('')
@@ -137,10 +133,10 @@ class OWDistributionGraphQt(OWPlot):
             self.variableContinuous = FALSE
 
         if self.variableContinuous:
-            self.setXlabels(None)
+            self.set_axis_labels(xBottom, None)
         else:
             labels = self.data.domain[self.attributeName].values.native()
-            self.setXlabels(labels)
+            self.set_axis_labels(xBottom, labels)
             
         self.calcHistogramAndProbGraph()
         self.refreshVisibleOutcomes()
@@ -280,7 +276,7 @@ class OWDistributionGraphQt(OWPlot):
                 key.set_point_size(7)
         else:
             self.enableYRaxis(0)
-            self.setAxisScale(yRight, 0.0, 1.0, 0.1)
+            self.setAxisScale(yRight, -0.05, 1.05, 0.1)
 
         self.probCurveKey = self.addCurve(xBottom, yRight)
         self.probCurveUpperCIKey = self.addCurve(xBottom, yRight)
@@ -295,7 +291,7 @@ class OWDistributionGraphQt(OWPlot):
             self.refreshPureVisibleOutcomes()
             return
         self.enableYRaxis(0)
-        self.setAxisScale(yRight, 0.0, 1.0, 0.1)
+        self.setAxisScale(yRight, -0.05, 1.05, 0.1)
         self.setYRaxisTitle("")
         keys = self.hdata.keys()
         if self.variableContinuous:
@@ -355,6 +351,8 @@ class OWDistributionGraphQt(OWPlot):
         if not self.data or self.targetValue == None: return
         if self.showProbabilities:
             self.enableYRaxis(1)
+            if self.variableContinuous:
+                self.set_axis_scale(xBottom, self.probGraphValues[0][0], self.probGraphValues[-1][0])
           #  self.setShowYRaxisTitle(self.showYRaxisTitle)
           #  self.setYRaxisTitle(self.YRaxisTitle)
             xs = []
@@ -369,7 +367,7 @@ class OWDistributionGraphQt(OWPlot):
                     mps.append(ps[self.targetValue] + 0.0)
                     lps.append(ps[self.targetValue] - cis[self.targetValue])
                 else:
-                    ## We make 3x as many point in both cases. 
+                    ## We make 3x as many points in both cases. 
                     ## This way animations look better when switching the ConfidenceIntervals on and off
                     xs.extend([cn] * 3)
                     if self.showConfidenceIntervals:
@@ -393,12 +391,14 @@ class OWDistributionGraphQt(OWPlot):
                 self.probCurveKey.set_style(OWCurve.Lines)
                 if self.showConfidenceIntervals:
                     self.probCurveUpperCIKey.setData(xs, ups)
+                    self.probCurveUpperCIKey.set_style(OWCurve.Dots)
                     self.probCurveLowerCIKey.setData(xs, lps)
+                    self.probCurveLowerCIKey.set_style(OWCurve.Dots)
             else:
                 if self.showConfidenceIntervals:
                     self.probCurveKey.set_style(distribErrorBarCurve.DistributionCurve)
                 else:
-                    self.probCurveKey.set_style(OWCurve.NoCurve)
+                    self.probCurveKey.set_style(OWCurve.Points)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
@@ -447,10 +447,13 @@ class OWDistributionsQt(OWWidget):
 
         self.graph = OWDistributionGraphQt(self, self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
-        self.graph.setAxisScale(yRight, 0.0, 1.0, 0.1)
+        self.graph.setAxisScale(yRight, -0.05, 1.05, 0.1)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         
         self.loadSettings()
+        self.setShowXaxisTitle()
+        self.setShowYaxisTitle()
+        self.setShowYPaxisTitle()
 
         self.barSize = 50
 

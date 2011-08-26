@@ -21,9 +21,10 @@ from plot.owcurve import *
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
 class OWScatterPlotQt(OWWidget):
-    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale", "graph.useAntialiasing",
+    settingsList = ["graph." + s for s in OWPlot.point_settings + OWPlot.appearance_settings] + [
+                    "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines",
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
-                    "graph.alphaValue", "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
+                    "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
                     "colorSettings", "selectedSchemaIndex", "VizRankLearnerName"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -57,6 +58,8 @@ class OWScatterPlotQt(OWWidget):
 
         #load settings
         self.loadSettings()
+        self.graph.setShowXaxisTitle()
+        self.graph.setShowYLaxisTitle()
 
         #GUI
         self.tabs = OWGUI.tabWidget(self.controlArea)
@@ -100,7 +103,7 @@ class OWScatterPlotQt(OWWidget):
 
         # zooming / selection
         self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons = g.default_zoom_select_buttons + [g.Spacing, g.ShufflePoints])
-        self.zoomSelectToolbar.buttons[g.SendSelection].clicked.connect(self.sendSelections)
+        self.connect(self.zoomSelectToolbar.buttons[g.SendSelection], SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
         # SETTINGS TAB
@@ -117,7 +120,6 @@ class OWScatterPlotQt(OWWidget):
         box4 = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
-        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         
         g.add_widgets([g.ShowLegend, g.ShowFilledSymbols, g.ShowGridLines], box4)
         

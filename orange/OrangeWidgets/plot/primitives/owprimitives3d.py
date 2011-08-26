@@ -1,44 +1,64 @@
 import os
 import re
-from owplot3d import Symbol, normal_from_points
+from plot.owplot3d import Symbol
+import numpy
+
+def normalize(vec):
+    return vec / numpy.sqrt(numpy.sum(vec**2))
+
+def clamp(value, min, max):
+    if value < min:
+        return min
+    if value > max:
+        return max
+    return value
+
+def normal_from_points(p1, p2, p3):
+    if isinstance(p1, (list, tuple)):
+        v1 = [p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]]
+        v2 = [p3[0]-p1[0], p3[1]-p1[1], p3[2]-p1[2]]
+    else:
+        v1 = p2 - p1
+        v2 = p3 - p1
+    return normalize(numpy.cross(v1, v2))
 
 symbol_map = {
-    Symbol.RECT:      'primitives/cube.obj',
-    Symbol.TRIANGLE:  'primitives/pyramid.obj',
-    Symbol.DTRIANGLE: 'primitives/dpyramid.obj',
-    Symbol.CIRCLE:    'primitives/sphere.obj',
-    Symbol.LTRIANGLE: 'primitives/lpyramid.obj',
-    Symbol.DIAMOND:   'primitives/diamond.obj',
-    Symbol.WEDGE:     'primitives/wedge.obj',
-    Symbol.LWEDGE:    'primitives/lwedge.obj',
-    Symbol.CROSS:     'primitives/cross.obj',
-    Symbol.XCROSS:    'primitives/xcross.obj'
+    Symbol.RECT:      'cube.obj',
+    Symbol.TRIANGLE:  'pyramid.obj',
+    Symbol.DTRIANGLE: 'dpyramid.obj',
+    Symbol.CIRCLE:    'sphere.obj',
+    Symbol.LTRIANGLE: 'lpyramid.obj',
+    Symbol.DIAMOND:   'diamond.obj',
+    Symbol.WEDGE:     'wedge.obj',
+    Symbol.LWEDGE:    'lwedge.obj',
+    Symbol.CROSS:     'cross.obj',
+    Symbol.XCROSS:    'xcross.obj'
 }
 
 symbol_map_2d = {
-    Symbol.RECT:      'primitives/rect.obj',
-    Symbol.TRIANGLE:  'primitives/triangle.obj',
-    Symbol.DTRIANGLE: 'primitives/dtriangle.obj',
-    Symbol.CIRCLE:    'primitives/circle.obj',
-    Symbol.LTRIANGLE: 'primitives/ltriangle.obj',
-    Symbol.DIAMOND:   'primitives/diamond_2d.obj',
-    Symbol.WEDGE:     'primitives/wedge_2d.obj',
-    Symbol.LWEDGE:    'primitives/lwedge_2d.obj',
-    Symbol.CROSS:     'primitives/cross_2d.obj',
-    Symbol.XCROSS:    'primitives/xcross_2d.obj'
+    Symbol.RECT:      'rect.obj',
+    Symbol.TRIANGLE:  'triangle.obj',
+    Symbol.DTRIANGLE: 'dtriangle.obj',
+    Symbol.CIRCLE:    'circle.obj',
+    Symbol.LTRIANGLE: 'ltriangle.obj',
+    Symbol.DIAMOND:   'diamond_2d.obj',
+    Symbol.WEDGE:     'wedge_2d.obj',
+    Symbol.LWEDGE:    'lwedge_2d.obj',
+    Symbol.CROSS:     'cross_2d.obj',
+    Symbol.XCROSS:    'xcross_2d.obj'
 }
 
 symbol_edge_map = {
-    Symbol.RECT:      'primitives/rect_edges.obj',
-    Symbol.TRIANGLE:  'primitives/triangle_edges.obj',
-    Symbol.DTRIANGLE: 'primitives/dtriangle_edges.obj',
-    Symbol.CIRCLE:    'primitives/circle_edges.obj',
-    Symbol.LTRIANGLE: 'primitives/ltriangle_edges.obj',
-    Symbol.DIAMOND:   'primitives/diamond_edges.obj',
-    Symbol.WEDGE:     'primitives/wedge_edges.obj',
-    Symbol.LWEDGE:    'primitives/lwedge_edges.obj',
-    Symbol.CROSS:     'primitives/cross_edges.obj',
-    Symbol.XCROSS:    'primitives/xcross_edges.obj'
+    Symbol.RECT:      'rect_edges.obj',
+    Symbol.TRIANGLE:  'triangle_edges.obj',
+    Symbol.DTRIANGLE: 'dtriangle_edges.obj',
+    Symbol.CIRCLE:    'circle_edges.obj',
+    Symbol.LTRIANGLE: 'ltriangle_edges.obj',
+    Symbol.DIAMOND:   'diamond_edges.obj',
+    Symbol.WEDGE:     'wedge_edges.obj',
+    Symbol.LWEDGE:    'lwedge_edges.obj',
+    Symbol.CROSS:     'cross_edges.obj',
+    Symbol.XCROSS:    'xcross_edges.obj'
 }
 
 _symbol_data = {} # Cache: contains triangles + their normals for each needed symbol.
@@ -46,6 +66,9 @@ _symbol_data_2d = {}
 _symbol_edges = {}
 
 def parse_obj(file_name):
+    if not os.path.exists(file_name):
+        # Try to load the file from primitives/ folder if given only name (path missing).
+        file_name = os.path.join(os.path.dirname(__file__), file_name)
     lines = open(file_name).readlines()
     normals_lines =  filter(lambda line: line.startswith('vn'), lines)
     vertices_lines = filter(lambda line: line.startswith('v'), lines)

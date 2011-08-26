@@ -62,7 +62,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
 
         vbox = OWGUI.widgetBox(self.MainTab, "Set anchor positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
-        OWGUI.button(hbox1, self, "Circle", callback = self.radialAnchors)
+        OWGUI.button(hbox1, self, "Sphere" if "3d" in self.parentName.lower() else "Circle", callback = self.radialAnchors)
         OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
         self.manualPositioningButton.setCheckable(1)
@@ -95,7 +95,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
         OWGUI.qwtHSlider(box, self, "graph.hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.parentWidget.updateGraph)
         self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.removeHidden)
 
-        if parentName.lower() != "radviz":
+        if parentName.lower() != "radviz" and parentName.lower() != "sphereviz":
             pcaBox = OWGUI.widgetBox(self.ProjectionsTab, "Principal Component Analysis")
             OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
             OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
@@ -188,10 +188,23 @@ class FreeVizOptimization(OWWidget, FreeViz):
 
     def setRestraints(self):
         if self.restrain:
-            positions = numpy.array([x[:2] for x in self.graph.anchorData])
             attrList = self.getShownAttributeList()
             if not attrList:
                 return
+
+            if "3d" in self.parentName.lower():
+                positions = numpy.array([x[:3] for x in self.graph.anchorData])
+                if self.restrain == 1:
+                    positions = numpy.transpose(positions) * numpy.sum(positions**2, 1)**-0.5
+                    self.graph.anchorData = [(positions[0][i], positions[1][i], positions[2][i], a) for i, a in enumerate(attrList)]
+                else:
+                    self.graph.create_anchors(len(attrList), attrList)
+
+                self.graph.updateData()
+                self.graph.repaint()
+                return
+
+            positions = numpy.array([x[:2] for x in self.graph.anchorData])
 
             if self.restrain == 1:
                 positions = numpy.transpose(positions) * numpy.sum(positions**2,1)**-0.5
@@ -255,6 +268,10 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.stopButton.show()
         self.cancelOptimization = 0
         #qApp.processEvents()
+        
+        if hasattr(self.graph, 'animate_points'):
+            self.graph_is_animated = self.graph.animate_points
+            self.graph.animate_points = False
 
         ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep, self.parentWidget.distances)
 
@@ -266,6 +283,8 @@ class FreeVizOptimization(OWWidget, FreeViz):
 
     def stopOptimization(self):
         self.cancelOptimization = 1
+        if hasattr(self, 'graph_is_animated'):
+            self.graph.animate_points = self.graph_is_animated
 
 #    # #############################################################
 #    # DIFFERENTIAL EVOLUTION
@@ -421,3 +440,4 @@ if __name__=="__main__":
     ow=FreeVizOptimization()
     ow.show()
     a.exec_()
+

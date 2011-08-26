@@ -538,13 +538,13 @@ class ColorPaletteGenerator:
     def __getitem__(self, index, brightness = None):
         if type(index) == tuple:
             index, brightness = index
-        index = int(index)
         
         if self.numberOfColors == -1:     # is this color for continuous attribute?
             col = QColor()
             col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
             return col
         else:
+            index = int(index)
             if index < len(self.rgbColors):
                 if brightness == None:
                     return self.rgbQColors[index]

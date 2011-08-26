@@ -70,10 +70,12 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         
         self._extra_curves = []
         self.current_tooltip_point = None
-        self.point_hovered.connect(self.draw_tooltips)
+        self.connect(self, SIGNAL("point_hovered(Point*)"), self.draw_tooltips)
         
         self.value_line_curves = []
         self.potentialsCurve = None
+
+        self.warn_unused_attributes = True
 
     def setData(self, data, subsetData = None, **args):
         OWPlot.setData(self, data)
@@ -95,6 +97,7 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
             c.detach()
         self.value_line_curves = []
         self.legend().clear()
+        self.clear_markers()
 
         self.__dict__.update(args)
         if labels == None: labels = [anchor[2] for anchor in self.anchorData]
@@ -338,21 +341,20 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         # ##############################################################
         # draw the legend
         # ##############################################################
-        if self.showLegend:
-            # show legend for discrete class
-            if self.dataHasDiscreteClass:
-                classVariableValues = getVariableValuesSorted(self.dataDomain.classVar)
-                for index in range(len(classVariableValues)):
-                    if self.useDifferentColors: color = QColor(self.discPalette[index])
-                    else:                       color = QColor(Qt.black)
+        # show legend for discrete class
+        if self.dataHasDiscreteClass:
+            classVariableValues = getVariableValuesSorted(self.dataDomain.classVar)
+            for index in range(len(classVariableValues)):
+                if self.useDifferentColors: color = QColor(self.discPalette[index])
+                else:                       color = QColor(Qt.black)
 
-                    if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
-                    else:                             curveSymbol = self.curveSymbols[index]
+                if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
+                else:                             curveSymbol = self.curveSymbols[index]
 
-                    self.legend().add_item(self.dataDomain.classVar.name, classVariableValues[index], OWPoint(curveSymbol, color, self.pointWidth))
-            # show legend for continuous class
-            elif self.dataHasContinuousClass:
-                self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
+                self.legend().add_item(self.dataDomain.classVar.name, classVariableValues[index], OWPoint(curveSymbol, color, self.pointWidth))
+        # show legend for continuous class
+        elif self.dataHasContinuousClass:
+            self.legend().add_color_gradient(self.dataDomain.classVar.name, [("%%.%df" % self.dataDomain.classVar.numberOfDecimals % v) for v in self.attrValues[self.dataDomain.classVar.name]])
         self.replot()
 
 
@@ -690,14 +692,11 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
 #            painter.drawImage(self.transform(xBottom, -1), self.transform(yLeft, 1), self.potentialsImage)
         OWPlot.drawCanvas(self, painter)
         
-    def updateCurves(self):
-        for c in self.itemList():
-            if isinstance(c, OWCurve) and c not in self._extra_curves:
-                c.setPointSize(self.pointWidth)
-                color = c.color()
-                color.setAlpha(self.alphaValue)
-                c.setColor(color)
-                c.updateProperties()
+    def update_point_size(self):
+        if self.main_curve:
+            # We never have different sizes in LinProj
+            self.main_curve.set_point_sizes([self.pointWidth])
+        
 
 
 if __name__== "__main__":

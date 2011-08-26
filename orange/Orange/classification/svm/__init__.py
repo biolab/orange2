@@ -16,7 +16,7 @@ plugged-in into LibSVM implementations.
 .. note:: On some data-sets SVM can perform very poorly. SVM can be very
           sensitive to the proper choice of the parameters. If you are having
           problems with the learner's accuracy try scaling the data and using
-          different parameters or choose an easier approach and use the
+          different parameters or choose an easier approach and use the \
           :obj:`SVMLearnerEasy` class which does this automatically (it is
           similar to the `svm-easy.py`_ script in the LibSVM distribution).
           
@@ -480,7 +480,7 @@ class LinearLearner(Orange.core.LinearLearner):
 def getLinearSVMWeights(classifier, sum=True):
     """Extract attribute weights from the linear svm classifier.
     
-    .. note:: For multi class classification the weights are square-summed 
+    .. note:: For multi class classification the weights are square-summed
         over all binary one vs. one classifiers. If you want weights for
         each binary classifier pass `sum=False` flag (In this case the order
         of reported weights are for class1 vs class2, class1 vs class3 ... 

@@ -213,7 +213,11 @@ class FreeViz:
         
         """
         attr_list = self.get_shown_attribute_list()
-        if not attr_list: return
+        if not attr_list:
+            return
+        if "3d" in self.parentName.lower():
+            self.graph.anchor_data = self.graph.create_anchors(len(attr_list), attr_list)
+            return
         phi = 2*math.pi/len(attr_list)
         self.graph.anchorData = [(math.cos(i*phi), math.sin(i*phi), a)
                                  for i, a in enumerate(attr_list)]
@@ -225,9 +229,47 @@ class FreeViz:
         Set the projection to a random one.
         
         """
-        if not self.graph.haveData: return
+        if not self.graph.haveData:
+            return
         attr_list = self.get_shown_attribute_list()
-        if not attr_list: return
+        if not attr_list:
+            return
+        if "3d" in self.parentName.lower():
+            if self.restrain == 0:
+                def ranch(i, label):
+                    r = 0.3+0.7*random.random()
+                    phi = 2*math.pi*random.random()
+                    theta = math.pi*random.random()
+                    return (r*math.sin(theta)*math.cos(phi),
+                            r*math.sin(theta)*math.sin(phi),
+                            r*math.cos(theta),
+                            label)
+            elif self.restrain == 1:
+                def ranch(i, label):
+                    phi = 2*math.pi*random.random()
+                    theta = math.pi*random.random()
+                    r = 1.
+                    return (r*math.sin(theta)*math.cos(phi),
+                            r*math.sin(theta)*math.sin(phi),
+                            r*math.cos(theta),
+                            label)
+            else:
+                self.graph.anchor_data = self.graph.create_anchors(len(attr_list), attr_list)
+                def ranch(i, label):
+                    r = 0.3+0.7*random.random()
+                    return (r*self.graph.anchor_data[i][0],
+                            r*self.graph.anchor_data[i][1],
+                            r*self.graph.anchor_data[i][2],
+                            label)
+
+            anchors = [ranch(*a) for a in enumerate(attr_list)]
+
+            if not self.restrain == 1:
+                maxdist = math.sqrt(max([x[0]**2+x[1]**2+x[2]**2 for x in anchors]))
+                anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]/maxdist, x[3]) for x in anchors]
+
+            self.graph.anchorData = anchors
+            return
 
         if self.restrain == 0:
             def ranch(i, label):
@@ -283,7 +325,7 @@ class FreeViz:
         attr_indices = [ai[label] for label in self.get_shown_attribute_list()]
         if not attr_indices: return
 
-        if self.implementation == FAST_IMPLEMENTATION:
+        if self.implementation == FAST_IMPLEMENTATION and not hasattr(self, '_use_3D'): # TODO
             return self.optimize_fast_separation(steps, single_step, distances)
 
         if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
@@ -292,19 +334,41 @@ class FreeViz:
             impl = self.optimize_slow_separation
         elif self.implementation == LDA_IMPLEMENTATION:
             impl = self.optimize_lda_separation
-        xanchors = None; yanchors = None
+        xanchors = None
+        yanchors = None
+        zanchors = None
 
-        for c in range((single_step and 1) or 50):
-            for i in range(steps):
-                if self.__class__ != FreeViz and self.cancel_optimization == 1:
-                    return
-                self.graph.anchorData, (xanchors, yanchors) = impl(attr_indices,
-                                                                   self.graph.anchorData,
-                                                                   xanchors,
-                                                                   yanchors)
-            if self.__class__ != FreeViz: qApp.processEvents()
-            if hasattr(self.graph, "updateGraph"): self.graph.updateData()
-            #self.recomputeEnergy()
+        if hasattr(self, '_use_3D'):
+            if self.implementation == SLOW_IMPLEMENTATION:
+                impl = self.optimize_slow_separation_3D
+            elif self.implementation == LDA_IMPLEMENTATION:
+                impl = self.optimize_lda_separation_3D
+            else:
+                print('Unimplemented method!')
+                return
+
+            for c in range((single_step and 1) or 50):
+                for i in range(steps):
+                    if self.__class__ != FreeViz and self.cancel_optimization == 1:
+                        return
+                    self.graph.anchorData, (xanchors, yanchors, zanchors) = impl(attr_indices,
+                                                                                 self.graph.anchorData,
+                                                                                 xanchors,
+                                                                                 yanchors,
+                                                                                 zanchors)
+                if self.__class__ != FreeViz: qApp.processEvents()
+                if hasattr(self.graph, "updateGraph"): self.graph.updateData()
+        else:
+            for c in range((single_step and 1) or 50):
+                for i in range(steps):
+                    if self.__class__ != FreeViz and self.cancel_optimization == 1:
+                        return
+                    self.graph.anchorData, (xanchors, yanchors) = impl(attr_indices,
+                                                                       self.graph.anchorData,
+                                                                       xanchors,
+                                                                       yanchors)
+                if self.__class__ != FreeViz: qApp.processEvents()
+                if hasattr(self.graph, "updateGraph"): self.graph.updateData()
 
     optimizeSeparation = optimize_separation
 
@@ -589,6 +653,239 @@ class FreeViz:
 
     optimize_SLOW_Separation = optimize_slow_separation
 
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "anchorData": "anchor_data",
+                          "XAnchors": "xanchors",
+                          "YAnchors": "yanchors"})
+    def optimize_lda_separation_3D(self, attr_indices, anchor_data, xanchors = None, yanchors = None, zanchors = None):
+        if (not self.graph.haveData or len(self.graph.rawData) == 0
+            or not self.graph.dataHasDiscreteClass): 
+            return anchor_data, (xanchors, yanchors, zanchors)
+        class_count = len(self.graph.dataDomain.classVar.values)
+        valid_data = self.graph.getValidList(attr_indices)
+        selected_data = numpy.compress(valid_data,
+                                       numpy.take(self.graph.noJitteringScaledData,
+                                                  attr_indices, axis = 0),
+                                       axis = 1)
+
+        if xanchors == None:
+            xanchors = numpy.array([a[0] for a in anchor_data], numpy.float)
+        if yanchors == None:
+            yanchors = numpy.array([a[1] for a in anchor_data], numpy.float)
+        if zanchors == None:
+            zanchors = numpy.array([a[2] for a in anchor_data], numpy.float)
+
+        trans_proj_data = self.graph.createProjectionAsNumericArray(attr_indices,
+                                                                    valid_data = valid_data,
+                                                                    xanchors = xanchors,
+                                                                    yanchors = yanchors,
+                                                                    zanchors = zanchors,
+                                                                    scaleFactor = self.graph.scaleFactor,
+                                                                    normalize = self.graph.normalizeExamples,
+                                                                    useAnchorData = 1)
+        if trans_proj_data == None:
+            return anchor_data, (xanchors, yanchors, zanchors)
+
+        proj_data = numpy.transpose(trans_proj_data)
+        x_positions, y_positions, z_positions, classData = (proj_data[0],
+                                                            proj_data[1],
+                                                            proj_data[2],
+                                                            proj_data[3])
+
+        averages = []
+        for i in range(class_count):
+            ind = classData == i
+            xpos = numpy.compress(ind, x_positions)
+            ypos = numpy.compress(ind, y_positions)
+            zpos = numpy.compress(ind, z_positions)
+            xave = numpy.sum(xpos)/len(xpos)
+            yave = numpy.sum(ypos)/len(ypos)
+            zave = numpy.sum(zpos)/len(zpos)
+            averages.append((xave, yave, zave))
+
+        # compute the positions of all the points. we will try to move all points so that the center will be in the (0,0)
+        x_center_vector = -numpy.sum(x_positions) / len(x_positions)
+        y_center_vector = -numpy.sum(y_positions) / len(y_positions)
+        z_center_vector = -numpy.sum(z_positions) / len(z_positions)
+        center_vector_length = math.sqrt(x_center_vector*x_center_vector +
+                                         y_center_vector*y_center_vector +
+                                         z_center_vector*z_center_vector)
+
+        mean_destination_vectors = []
+
+        for i in range(class_count):
+            xdir = 0.0; ydir = 0.0; zdir = 0.0; rs = 0.0
+            for j in range(class_count):
+                if i==j: continue
+                r = math.sqrt((averages[i][0] - averages[j][0])**2 +
+                              (averages[i][1] - averages[j][1])**2)
+                if r == 0.0:
+                    xdir += math.cos((i/float(class_count))*2*math.pi)
+                    ydir += math.sin((i/float(class_count))*2*math.pi)
+                    r = 0.0001
+                else:
+                    xdir += (1/r**3) * ((averages[i][0] - averages[j][0]))
+                    ydir += (1/r**3) * ((averages[i][1] - averages[j][1]))
+                #rs += 1/r
+            #actualDirAmpl = math.sqrt(xDir**2 + yDir**2)
+            #s = abs(xDir)+abs(yDir)
+            #xDir = rs * (xDir/s)
+            #yDir = rs * (yDir/s)
+            mean_destination_vectors.append((xdir, ydir))
+
+
+        maxlength = math.sqrt(max([x**2 + y**2 for (x,y)
+                                   in mean_destination_vectors]))
+        mean_destination_vectors = [(x/(2*maxlength), y/(2*maxlength)) for (x,y)
+                                    in mean_destination_vectors]     # normalize destination vectors to some normal values
+        mean_destination_vectors = [(mean_destination_vectors[i][0]+averages[i][0],
+                                     mean_destination_vectors[i][1]+averages[i][1])
+                                    for i in range(len(mean_destination_vectors))]    # add destination vectors to the class averages
+        #mean_destination_vectors = [(x + x_center_vector/5, y + y_center_vector/5) for (x,y) in mean_destination_vectors]   # center mean values
+        mean_destination_vectors = [(x + x_center_vector, y + y_center_vector)
+                                    for (x,y) in mean_destination_vectors]   # center mean values
+
+        fxs = numpy.zeros(len(x_positions), numpy.float)        # forces
+        fys = numpy.zeros(len(x_positions), numpy.float)
+
+        for c in range(class_count):
+            ind = (classData == c)
+            numpy.putmask(fxs, ind, mean_destination_vectors[c][0]-x_positions)
+            numpy.putmask(fys, ind, mean_destination_vectors[c][1]-y_positions)
+
+        # compute gradient for all anchors
+        gxs = numpy.array([sum(fxs * selected_data[i])
+                           for i in range(len(anchor_data))], numpy.float)
+        gys = numpy.array([sum(fys * selected_data[i])
+                           for i in range(len(anchor_data))], numpy.float)
+
+        m = max(max(abs(gxs)), max(abs(gys)))
+        gxs /= (20*m); gys /= (20*m)
+
+        newxanchors = xanchors + gxs
+        newyanchors = yanchors + gys
+
+        # normalize so that the anchor most far away will lie on the circle
+        m = math.sqrt(max(newxanchors**2 + newyanchors**2))
+        newxanchors /= m
+        newyanchors /= m
+
+        #self.parentWidget.updateGraph()
+
+        """
+        for a in range(len(anchor_data)):
+            x = anchor_data[a][0]; y = anchor_data[a][1];
+            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x, x+gxs[a]], yData = [y, y+gys[a]], forceFilledSymbols = 1, lineWidth=3)
+
+        for i in range(class_count):
+            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [averages[i][0], mean_destination_vectors[i][0]], yData = [averages[i][1], mean_destination_vectors[i][1]], forceFilledSymbols = 1, lineWidth=3)
+            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, xData = [averages[i][0], averages[i][0]], yData = [averages[i][1], averages[i][1]], forceFilledSymbols = 1, lineWidth=5)
+        """
+        #self.parentWidget.graph.repaint()
+        #self.graph.anchor_data = [(newxanchors[i], newyanchors[i], anchor_data[i][2]) for i in range(len(anchor_data))]
+        #self.graph.updateData(attrs, 0)
+        return [(newxanchors[i], newyanchors[i], anchor_data[i][2])
+                for i in range(len(anchor_data))], (newxanchors, newyanchors)
+
+    optimize_LDA_Separation_3D = optimize_lda_separation_3D
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "anchorData": "anchor_data",
+                          "XAnchors": "xanchors",
+                          "YAnchors": "yanchors"})
+    def optimize_slow_separation_3D(self, attr_indices, anchor_data, xanchors = None, yanchors = None, zanchors = None):
+        if (not self.graph.haveData or len(self.graph.rawData) == 0
+            or not self.graph.dataHasDiscreteClass): 
+            return anchor_data, (xanchors, yanchors, zanchors)
+        valid_data = self.graph.getValidList(attr_indices)
+        selected_data = numpy.compress(valid_data, numpy.take(self.graph.noJitteringScaledData,
+                                                              attr_indices,
+                                                              axis = 0),
+                                       axis = 1)
+
+        if xanchors == None:
+            xanchors = numpy.array([a[0] for a in anchor_data], numpy.float)
+        if yanchors == None:
+            yanchors = numpy.array([a[1] for a in anchor_data], numpy.float)
+        if zanchors == None:
+            zanchors = numpy.array([a[2] for a in anchor_data], numpy.float)
+
+        trans_proj_data = self.graph.createProjectionAsNumericArray(attr_indices,
+                                                                    valid_data = valid_data,
+                                                                    XAnchors = xanchors,
+                                                                    YAnchors = yanchors,
+                                                                    ZAnchors = zanchors,
+                                                                    scaleFactor = self.graph.scaleFactor,
+                                                                    normalize = self.graph.normalizeExamples,
+                                                                    useAnchorData = 1)
+        if trans_proj_data == None:
+            return anchor_data, (xanchors, yanchors, zanchors)
+
+        proj_data = numpy.transpose(trans_proj_data)
+        x_positions = proj_data[0]; x_positions2 = numpy.array(x_positions)
+        y_positions = proj_data[1]; y_positions2 = numpy.array(y_positions)
+        z_positions = proj_data[2]; z_positions2 = numpy.array(z_positions)
+        class_data = proj_data[3];  class_data2 = numpy.array(class_data)
+
+        fxs = numpy.zeros(len(x_positions), numpy.float)        # forces
+        fys = numpy.zeros(len(x_positions), numpy.float)
+        fzs = numpy.zeros(len(x_positions), numpy.float)
+        gxs = numpy.zeros(len(anchor_data), numpy.float)        # gradients
+        gys = numpy.zeros(len(anchor_data), numpy.float)
+        gzs = numpy.zeros(len(anchor_data), numpy.float)
+
+        rotate_array = range(len(x_positions))
+        rotate_array = rotate_array[1:] + [0]
+        for i in range(len(x_positions)-1):
+            x_positions2 = numpy.take(x_positions2, rotate_array)
+            y_positions2 = numpy.take(y_positions2, rotate_array)
+            z_positions2 = numpy.take(z_positions2, rotate_array)
+            class_data2 = numpy.take(class_data2, rotate_array)
+            dx = x_positions2 - x_positions
+            dy = y_positions2 - y_positions
+            dz = z_positions2 - z_positions
+            rs2 = dx**2 + dy**2 + dz**2
+            rs2 += numpy.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
+            rs = numpy.sqrt(rs2)
+
+            F = numpy.zeros(len(x_positions), numpy.float)
+            classDiff = numpy.where(class_data == class_data2, 1, 0)
+            numpy.putmask(F, classDiff, 150*self.attract_g*rs2)
+            numpy.putmask(F, 1-classDiff, -self.repel_g/rs2)
+            fxs += F * dx / rs
+            fys += F * dy / rs
+            fzs += F * dz / rs
+
+        # compute gradient for all anchors
+        gxs = numpy.array([sum(fxs * selected_data[i])
+                           for i in range(len(anchor_data))], numpy.float)
+        gys = numpy.array([sum(fys * selected_data[i])
+                           for i in range(len(anchor_data))], numpy.float)
+        gzs = numpy.array([sum(fzs * selected_data[i])
+                           for i in range(len(anchor_data))], numpy.float)
+
+        m = max(max(abs(gxs)), max(abs(gys)), max(abs(gzs)))
+        gxs /= (20*m)
+        gys /= (20*m)
+        gzs /= (20*m)
+
+        newxanchors = xanchors + gxs
+        newyanchors = yanchors + gys
+        newzanchors = zanchors + gzs
+
+        # normalize so that the anchor most far away will lie on the circle
+        m = math.sqrt(max(newxanchors**2 + newyanchors**2 + newzanchors**2))
+        newxanchors /= m
+        newyanchors /= m
+        newzanchors /= m
+        return [(newxanchors[i], newyanchors[i], newzanchors[i], anchor_data[i][3])
+                for i in range(len(anchor_data))], (newxanchors, newyanchors, newzanchors)
+
+    optimize_SLOW_Separation_3D = optimize_slow_separation_3D
+
+
+
     # ###############################################################
     # S2N HEURISTIC FUNCTIONS
     # ###############################################################
@@ -686,18 +983,19 @@ class FreeViz:
             if self.graph.dataHasClass:
                 class_array = numpy.compress(indices, class_array)
 
+        ncomps = 3 if hasattr(self, '_use_3D') else 2
         vectors = None
         if method == DR_PCA:
-            vals, vectors = create_pca_projection(data_matrix, ncomps = 2,
+            vals, vectors = create_pca_projection(data_matrix, ncomps = ncomps,
                                                   use_generalized_eigenvectors = self.use_generalized_eigenvectors)
         elif method == DR_SPCA and self.graph.dataHasClass:
             vals, vectors = create_pca_projection(data_matrix, class_array,
-                                                  ncomps = 2,
+                                                  ncomps = ncomps,
                                                   use_generalized_eigenvectors = self.use_generalized_eigenvectors)
         elif method == DR_PLS and self.graph.dataHasClass:
             data_matrix = data_matrix.transpose()
             class_matrix = numpy.transpose(numpy.matrix(class_array))
-            vectors = create_pls_projection(data_matrix, class_matrix, 2)
+            vectors = create_pls_projection(data_matrix, class_matrix, ncomps)
             vectors = vectors.T
 
         # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
@@ -708,8 +1006,13 @@ class FreeViz:
 
         xanchors = vectors[0]
         yanchors = vectors[1]
-
-        m = math.sqrt(max(xanchors**2 + yanchors**2))
+        
+        if ncomps == 3:
+            zanchors = vectors[2]
+            m = math.sqrt(max(xanchors**2 + yanchors**2 + zanchors**2))
+            zanchors /= m
+        else:
+            m = math.sqrt(max(xanchors**2 + yanchors**2))
 
         xanchors /= m
         yanchors /= m
@@ -717,10 +1020,17 @@ class FreeViz:
         attributes = [names[attr_indices[i]] for i in range(len(attr_indices))]
 
         if set_anchors:
-            self.graph.setAnchors(list(xanchors), list(yanchors), attributes)
+            if ncomps == 3:
+                self.graph.setAnchors(list(xanchors), list(yanchors), list(zanchors), attributes)
+            else:
+                self.graph.setAnchors(list(xanchors), list(yanchors), attributes)
             self.graph.updateData()
             self.graph.repaint()
-        return xanchors, yanchors, (attributes, attr_indices)
+
+        if ncomps == 3:
+            return xanchors, yanchors, zanchors, (attributes, attr_indices)
+        else:
+            return xanchors, yanchors, (attributes, attr_indices)
 
     findProjection = find_projection
 

@@ -33,6 +33,14 @@ os.environ["orange_no_deprecated_members"] = "1"
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig', 'numpydoc']
 
+
+# Numpydoc generates autosummary directives for all undocumented members. Orange documentation only includes documented
+# member, so _str_member_list is modified to return [] where a list of undocumented members is originally returned.
+import numpydoc
+numpydoc.docscrape_sphinx.SphinxDocString._str_member_list # if numpydoc changes, this line will cause an error
+numpydoc.docscrape_sphinx.SphinxDocString._str_member_list = lambda x, y : []
+
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

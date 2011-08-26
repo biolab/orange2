@@ -217,11 +217,11 @@ Should ouput this::
     With imputation: 0.899
 
 .. note:: 
-   Note that we constructed just one instance of
+   Note that we constructed just one instance of \
    :obj:`Orange.classification.bayes.NaiveLearner`, but this same instance is
    used twice in each fold, once it is given the examples as they are (and 
    returns an instance of :obj:`Orange.classification.bayes.NaiveClassifier`.
-   The second time it is called by :obj:`imba` and the 
+   The second time it is called by :obj:`imba` and the \
    :obj:`Orange.classification.bayes.NaiveClassifier` it returns is wrapped
    into :obj:`Orange.feature.imputation.Classifier`. We thus have only one
    learner, but which produces two different classifiers in each round of
@@ -288,9 +288,9 @@ impute all the data and then use it for cross-validation. As warned at the top
 of this page, see the instructions for actual `use of
 imputers <#using-imputers>`_.
 
-.. note:: :obj:`ImputerConstructor` are another class with schizophrenic
-  constructor: if you give the constructor the data, it will return an
-  :obj:`Imputer` - the above call is equivalent to calling
+.. note:: The :obj:`ImputerConstructor` are another class with schizophrenic
+  constructor: if you give the constructor the data, it will return an \
+  :obj:`Imputer` - the above call is equivalent to calling \
   :obj:`Orange.feature.imputation.ImputerConstructor_minimal()(data)`.
 
 You can also construct the :obj:`Orange.feature.imputation.Imputer_defaults`

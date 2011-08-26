@@ -122,7 +122,7 @@ Orange also supports argument-based CN2 learning.
    :show-inheritance:
    :exclude-members: baseRules, beamWidth, coverAndRemove, dataStopping,
       ruleFinder, ruleStopping, storeInstances, targetClass, weightID,
-      argumentID
+      argument_id
    
    This class has many more undocumented methods; see the source code for
    reference.
@@ -616,7 +616,6 @@ from Orange.misc import deprecated_members
 
 from orngABML import *
 
-
 class LaplaceEvaluator(RuleEvaluator):
     """
     Laplace's rule of succession.
@@ -807,6 +806,7 @@ class CN2Classifier(RuleClassifier):
                 self.prior.modus())
             classifier.defaultDistribution = self.prior
 
+        classifier.defaultDistribution.normalize()
         if result_type == Orange.classification.Classifier.GetValue:
           return classifier(instance)
         if result_type == Orange.classification.Classifier.GetProbabilities:
@@ -1066,6 +1066,8 @@ class ABCN2(RuleLearner):
     :param analyse_argument: index of argument to analyse; -1 to learn normally
        (default)
     :type analyse_argument: int
+    :param debug: sets debug mode - prints some info during execution; False (default)
+    :type debug: boolean
     
     The following evaluator related arguments are supported:
     
@@ -1111,12 +1113,13 @@ class ABCN2(RuleLearner):
     :type set_prefix_rules: boolean
     :param alternative_learner: use rule-learner as a correction method for
        other machine learning methods (default None).
+
     """
     
     def __init__(self, argument_id=0, width=5, m=2, opt_reduction=2, nsampling=100, max_rule_complexity=5,
                  rule_sig=1.0, att_sig=1.0, postpruning=None, min_quality=0., min_coverage=1, min_improved=1, min_improved_perc=0.0,
                  learn_for_class = None, learn_one_rule = False, evd=None, evd_arguments=None, prune_arguments=False, analyse_argument=-1,
-                 alternative_learner = None, min_cl_sig = 0.5, min_beta = 0.0, set_prefix_rules = False, add_sub_rules = False,
+                 alternative_learner = None, min_cl_sig = 0.5, min_beta = 0.0, set_prefix_rules = False, add_sub_rules = False, debug=False,
                  **kwds):
         
         # argument ID which is passed to abcn2 learner
@@ -1158,6 +1161,7 @@ class ABCN2(RuleLearner):
         # classifier
         self.add_sub_rules = add_sub_rules
         self.classifier = PILAR(alternative_learner = alternative_learner, min_cl_sig = min_cl_sig, min_beta = min_beta, set_prefix_rules = set_prefix_rules)
+        self.debug = debug
         # arbitrary parameters
         self.__dict__.update(kwds)
 
@@ -1186,7 +1190,7 @@ class ABCN2(RuleLearner):
                 continue
 
             # rules for this class only
-            rules, arg_rules = RuleList(), RuleList()
+            rules = RuleList()
 
             # create dichotomous class
             dich_data = self.create_dich_class(examples, cl)
@@ -1207,26 +1211,32 @@ class ABCN2(RuleLearner):
             aes = self.get_argumented_examples(dich_data)
             aes = self.sort_arguments(aes, dich_data)
             while aes:
-                if self.analyse_argument > -1 and not dich_data[self.analyse_argument] == aes[0]:
+                if self.analyse_argument > -1 and \
+                   (isinstance(self.analyse_argument, Orange.core.Example) and not Orange.core.Example(dich_data.domain, self.analyse_argument) == aes[0] or \
+                    isinstance(self.analyse_argument, int) and not dich_data[self.analyse_argument] == aes[0]):
                     aes = aes[1:]
                     continue
                 ae = aes[0]
                 rule = self.learn_argumented_rule(ae, dich_data, weight_id) # target class is always first class (0)
-                if not progress:
-                    print "learned rule", Orange.classification.rules.rule_to_string(rule)
+                if self.debug and rule:
+                    print "learned arg rule", Orange.classification.rules.rule_to_string(rule)
+                elif self.debug:
+                    print "no rule came out of ", ae
                 if rule:
-                    arg_rules.append(rule)
+                    rules.append(rule)
                     aes = filter(lambda x: not rule(x), aes)
                 else:
                     aes = aes[1:]
-            if not progress:
+                aes = aes[1:]
+
+            if not progress and self.debug:
                 print " arguments finished ... "                    
                    
             # remove all examples covered by rules
-##            for rule in rules:
-##                dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
-##            if progress:
-##                progress(self.remaining_probability(dich_data),None)
+            for rule in rules:
+                dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
+            if progress:
+                progress(self.remaining_probability(dich_data),None)
 
             # learn normal rules on remaining examples
             if self.analyse_argument == -1:
@@ -1236,7 +1246,7 @@ class ABCN2(RuleLearner):
                     rule = self.learn_normal_rule(dich_data, weight_id, self.apriori)
                     if not rule:
                         break
-                    if not progress:
+                    if self.debug:
                         print "rule learned: ", Orange.classification.rules.rule_to_string(rule), rule.quality
                     dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
                     if progress:
@@ -1244,10 +1254,6 @@ class ABCN2(RuleLearner):
                     rules.append(rule)
                     if self.learn_one_rule:
                         break
-
-            for r in arg_rules:
-                dich_data = self.remove_covered_examples(r, dich_data, weight_id)
-                rules.append(r)
 
             # prune unnecessary rules
             rules = self.prune_unnecessary_rules(rules, dich_data, weight_id)
@@ -1280,9 +1286,7 @@ class ABCN2(RuleLearner):
 
         # learn a rule
         self.rule_finder.evaluator.bestRule = None
-        self.rule_finder.evaluator.returnBestFuture = True
-        self.rule_finder(examples,weight_id,0,positive_args)
-##        self.rule_finder.evaluator.bestRule.quality = 0.8
+        self.rule_finder(examples,weight_id, 0, positive_args)
         
         # return best rule
         return self.rule_finder.evaluator.bestRule
@@ -1293,7 +1297,7 @@ class ABCN2(RuleLearner):
                                 examples.domain.class_var,examples,weight_id)
         
         # prepare covering mechanism
-        self.cover_and_remove = CovererAndRemover_Prob(examples, weight_id, 0, self.apriori)
+        self.coverAndRemove = CovererAndRemover_Prob(examples, weight_id, 0, self.apriori, self.argument_id)
         self.rule_finder.evaluator.probVar = examples.domain.getmeta(self.cover_and_remove.probAttribute)
 
         # compute extreme distributions
@@ -1333,7 +1337,7 @@ class ABCN2(RuleLearner):
         if not self.argument_id:
             return None
         
-        # get argumentated examples
+        # get argumented examples
         return ArgumentFilter_hasSpecial()(examples, self.argument_id, target_class = 0)
 
     def sort_arguments(self, arg_examples, examples):
@@ -1343,8 +1347,8 @@ class ABCN2(RuleLearner):
         if len(arg_examples)>0:
             # sort examples by their arguments quality (using first argument as it has already been sorted)
             sorted = arg_examples.native()
-            sorted.sort(lambda x,y: -cmp(x[self.argument_id].value.positiveArguments[0].quality,
-                                         y[self.argument_id].value.positiveArguments[0].quality))
+            sorted.sort(lambda x,y: -cmp(x[self.argument_id].value.positive_arguments[0].quality,
+                                         y[self.argument_id].value.positive_arguments[0].quality))
             return Orange.data.Table(examples.domain, sorted)
         else:
             return None
@@ -1380,15 +1384,11 @@ class ABCN2(RuleLearner):
         return self.cover_and_remove.getBestRules(rules,examples,weight_id)
 
     def change_domain(self, rule, cl, examples, weight_id):
-        rule.examples = rule.examples.select(examples.domain)
-        rule.class_distribution = Orange.statistics.distribution.Distribution(
-                     rule.examples.domain.class_var,rule.examples,weight_id) # adapt distribution
-        rule.classifier = Orange.classification.ConstantClassifier(cl) # adapt classifier
         rule.filter = Orange.core.Filter_values(domain = examples.domain,
                                         conditions = rule.filter.conditions)
+        rule.filterAndStore(examples, weight_id, cl)        
         if hasattr(rule, "learner") and hasattr(rule.learner, "arg_example"):
-            rule.learner.arg_example = Orange.data.Instance(
-                          examples.domain, rule.learner.arg_example)
+            rule.learner.arg_example = Orange.data.Instance(examples.domain, rule.learner.arg_example)
         return rule
 
     def create_classifier(self, rules, examples, weight_id):
@@ -1418,6 +1418,10 @@ class ABCN2(RuleLearner):
                     self.rule_finder.evaluator.returnExpectedProb = False
                     tmpRule.quality = self.rule_finder.evaluator(tmpRule,examples,weight_id,r.classifier.default_val,apriori)
                     self.rule_finder.evaluator.returnExpectedProb = oldREP
+                tmpList.sort(lambda x,y: -cmp(x.quality, y.quality))
+                tmpList = tmpList[:self.rule_filter.width]
+                    
+                for tmpRule in tmpList:
                     # if rule not in rules already, add it to the list
                     if not True in [Orange.classification.rules.rules_equal(ri,tmpRule) for ri in new_rules] and len(tmpRule.filter.conditions)>0 and tmpRule.quality > apriori[r.classifier.default_val]/apriori.abs:
                         new_rules.append(tmpRule)
@@ -1434,13 +1438,13 @@ class ABCN2(RuleLearner):
                 tmpList = tmpList2
         return new_rules
 
-
     def init_pos_args(self, ae, examples, weight_id):
         pos_args = RuleList()
         # prepare arguments
-        for p in ae[self.argument_id].value.positiveArguments:
+        for p in ae[self.argument_id].value.positive_arguments:
             new_arg = Rule(filter=ArgFilter(argument_id = self.argument_id,
-                                                   filter = self.newFilter_values(p.filter)),
+                                                   filter = self.newFilter_values(p.filter),
+                                                   arg_example = ae),
                                                    complexity = 0)
             new_arg.valuesFilter = new_arg.filter.filter
             pos_args.append(new_arg)
@@ -1454,18 +1458,25 @@ class ABCN2(RuleLearner):
         # if pruning is chosen, then prune arguments if possible
         for p in pos_args:
             p.filterAndStore(examples, weight_id, 0)
+            if not p.learner:
+                p.learner = DefaultLearner(default_value=ae.getclass())
             # pruning on: we check on all conditions and take only best
             if self.prune_arguments:
                 allowed_conditions = [c for c in p.filter.conditions]
                 pruned_conditions = self.prune_arg_conditions(ae, allowed_conditions, examples, weight_id)
+                p.baseDist = orange.Distribution(examples.domain.classVar, examples, weight_id)
                 p.filter.conditions = pruned_conditions
+                p.learner.setattr("arg_length", 0)
+                
             else: # prune only unspecified conditions
                 spec_conditions = [c for c in p.filter.conditions if not c.unspecialized_condition]
                 unspec_conditions = [c for c in p.filter.conditions if c.unspecialized_condition]
                 # let rule cover now all examples filtered by specified conditions
                 p.filter.conditions = spec_conditions
                 p.filterAndStore(examples, weight_id, 0)
-                pruned_conditions = self.prune_arg_conditions(ae, unspec_conditions, p.examples, p.weight_id)
+                p.baseDist = p.classDistribution
+                p.learner.setattr("arg_length", len(p.filter.conditions))
+                pruned_conditions = self.prune_arg_conditions(ae, unspec_conditions, p.examples, p.weightID)
                 p.filter.conditions.extend(pruned_conditions)
                 p.filter.filter.conditions.extend(pruned_conditions)
                 # if argument does not contain all unspecialized reasons, add those reasons with minimum values
@@ -1473,21 +1484,19 @@ class ABCN2(RuleLearner):
                 for u in unspec_conditions:
                     if not (u.position, u.oper) in at_oper_pairs:
                         # find minimum value
-                        u.ref = min([float(e[u.position])-10. for e in p.examples])
+                        if u.oper == Orange.core.ValueFilter_continuous.Greater or u.oper == Orange.core.ValueFilter_continuous.GreaterEqual:
+                            u.ref = min([float(e[u.position])-10. for e in p.examples])
+                        else:
+                            u.ref = max([float(e[u.position])+10. for e in p.examples])
                         p.filter.conditions.append(u)
                         p.filter.filter.conditions.append(u)
                 
-
         # set parameters to arguments
         for p_i,p in enumerate(pos_args):
             p.filterAndStore(examples,weight_id,0)
             p.filter.domain = examples.domain
-            if not p.learner:
-                p.learner = DefaultLearner(default_value=ae.getclass())
-            p.classifier = p.learner(p.examples, p.weight_id)
-            p.baseDist = p.class_distribution
+            p.classifier = p.learner(p.examples, p.weightID)
             p.requiredConditions = len(p.filter.conditions)
-            p.learner.setattr("arg_length", len(p.filter.conditions))
             p.learner.setattr("arg_example", ae)
             p.complexity = len(p.filter.conditions)
             
@@ -1505,7 +1514,7 @@ class ABCN2(RuleLearner):
         return newFilter
 
     def init_neg_args(self, ae, examples, weight_id):
-        return ae[self.argument_id].value.negativeArguments
+        return ae[self.argument_id].value.negative_arguments
 
     def remaining_probability(self, examples):
         return self.cover_and_remove.covered_percentage(examples)
@@ -1516,7 +1525,7 @@ class ABCN2(RuleLearner):
         cn2_learner = Orange.classification.rules.CN2UnorderedLearner()
         cn2_learner.rule_finder = RuleBeamFinder()
         cn2_learner.rule_finder.refiner = SelectorArgConditions(crit_example, allowed_conditions)
-        cn2_learner.rule_finder.evaluator = Orange.classification.rules.MEstimate(self.rule_finder.evaluator.m)
+        cn2_learner.rule_finder.evaluator = Orange.classification.rules.MEstimateEvaluator(self.rule_finder.evaluator.m)
         rule = cn2_learner.rule_finder(examples,weight_id,0,RuleList())
         return rule.filter.conditions
 
@@ -1561,6 +1570,51 @@ class CN2EVCUnorderedLearner(ABCN2):
         ABCN2.__init__(self, width=width, nsampling=nsampling,
             rule_sig=rule_sig, att_sig=att_sig, min_coverage=int(min_coverage),
             max_rule_complexity = int(max_rule_complexity))
+
+class DefaultLearner(Orange.core.Learner):
+    """
+    Default lerner - returns default classifier with predefined output class.
+    """
+    def __init__(self,default_value = None):
+        self.default_value = default_value
+    def __call__(self,examples,weight_id=0):
+        return Orange.classification.majority.ConstantClassifier(self.default_value,defaultDistribution = Orange.core.Distribution(examples.domain.class_var,examples,weight_id))
+
+class ABCN2Ordered(ABCN2):
+    """
+    Rules learned by ABCN2 are ordered and used as a decision list.
+    """
+    def __init__(self, argument_id=0, **kwds):
+        ABCN2.__init__(self, argument_id=argument_id, **kwds)
+        self.classifier.set_prefix_rules = True
+        self.classifier.optimize_betas = False
+
+class ABCN2M(ABCN2):
+    """
+    Argument based rule learning with m-estimate as evaluation function.
+    """
+    def __init__(self, argument_id=0, **kwds):
+        ABCN2.__init__(self, argument_id=argument_id, **kwds)
+        self.opt_reduction = 0
+        self.rule_finder.evaluator.optimismReduction = self.opt_reduction        
+        self.classifier = CN2UnorderedClassifier
+
+class ABCN2MLRC(ABCN2):
+    """
+    Argument based rule learning with m-estimate as evaluation function. LRC is used as a classification method.
+    """
+    def __init__(self, argument_id=0, **kwds):
+        ABCN2.__init__(self, argument_id=argument_id, **kwds)
+        self.opt_reduction = 0
+        self.rule_finder.evaluator.optimismReduction = self.opt_reduction        
+
+class ABCN2_StandardClassification(ABCN2):
+    """
+    Argument based rule learning with the original classification technique.
+    """
+    def __init__(self, argument_id=0, **kwds):
+        ABCN2.__init__(self, argument_id=argument_id, **kwds)
+        self.classifier = CN2UnorderedClassifier        
 
 
 class RuleStopping_Apriori(RuleStoppingCriteria):
@@ -1722,56 +1776,77 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
 
 class CovererAndRemover_Prob(RuleCovererAndRemover):
     """ This class impements probabilistic covering. """
-    def __init__(self, probAttribute=None, sigAttribute=None):
-        self.indices = None
-        self.probAttribute = probAttribute
-        self.bestRule = []
-
-    def initialize(self, instances, weight_id, target_class, apriori):
-        self.bestRule = [None]*len(instances)
-        self.probAttribute = Orange.core.newmetaid()
-        instances.addMetaAttribute(self.probAttribute,-1.e-6)
-        instances.domain.addmeta(self.probAttribute, \
+    def __init__(self, examples, weight_id, target_class, apriori, argument_id):
+        self.best_rule = [None]*len(examples)
+        self.prob_attribute = Orange.core.newmetaid()
+        self.apriori_prob = apriori[target_class]/apriori.abs
+        examples.addMetaAttribute(self.prob_attribute, self.apriori_prob)
+        examples.domain.addmeta(self.prob_attribute, 
             Orange.data.variable.Continuous("Probs"))
-        for instance in instances:
-##            if target_class<0 or (instance.getclass() == target_class):
-            instance[self.probAttribute] = apriori[target_class]/apriori.abs
-        return instances
+        self.argument_id = argument_id
 
-    def getBestRules(self, currentRules, instances, weight_id):
+    def getBestRules(self, current_rules, examples, weight_id):
         best_rules = RuleList()
-        for r in currentRules:
-            if hasattr(r.learner, "argumentRule") and not orngCN2.rule_in_set(r,best_rules):
-                best_rules.append(r)
-        for r_i,r in enumerate(self.bestRule):
-            if r and not rule_in_set(r,best_rules) and instances[r_i].\
-                getclass()==r.classifier.default_value:
+        for r_i,r in enumerate(self.best_rule):
+            if r and not rule_in_set(r,best_rules) and int(examples[r_i].getclass())==int(r.classifier.default_value):
+                if hasattr(r.learner, "arg_example"):
+                    setattr(r, "best_example", r.learner.arg_example)
+                else:
+                    setattr(r, "best_example", examples[r_i])
                 best_rules.append(r)
         return best_rules
+        
+    def __call__(self, rule, examples, weights, target_class):
+        """ if example has an argument, then the rule must be consistent with the argument. """
+        example = getattr(rule.learner, "arg_example", None)
+        for ei, e in enumerate(examples):
+            if e == example:
+                e[self.prob_attribute] = 1.0
+                self.best_rule[ei] = rule
+            elif rule(e) and rule.quality>e[self.prob_attribute]:
+                e[self.prob_attribute] = rule.quality+0.001 # 0.001 is added to avoid numerical errors
+                self.best_rule[ei]=rule
+        return (examples,weights)
 
-    def remainingInstancesP(self, instances, target_class):
-        pSum, pAll = 0.0, 0.0
-        for ex in instances:
-            if ex.getclass() == target_class:
-                pSum += ex[self.probAttribute]
-                pAll += 1.0
-        return pSum/pAll
+    def filter_covers_example(self, example, filter):
+        filter_indices = RuleCoversArguments.filterIndices(filter)
+        if filter(example):
+            try:
+                if example[self.argument_id].value and len(example[self.argument_id].value.positive_arguments)>0: # example has positive arguments
+                    # conditions should cover at least one of the positive arguments
+                    one_arg_covered = False
+                    for pA in example[self.argument_id].value.positive_arguments:
+                        arg_covered = [self.condIn(c,filter_indices) for c in pA.filter.conditions]
+                        one_arg_covered = one_arg_covered or len(arg_covered) == sum(arg_covered) #arg_covered
+                        if one_arg_covered:
+                            break
+                    if not one_arg_covered:
+                        return False
+                if example[self.argument_id].value and len(example[self.argument_id].value.negative_arguments)>0: # example has negative arguments
+                    # condition should not cover neither of negative arguments
+                    for pN in example[self.argument_id].value.negative_arguments:
+                        arg_covered = [self.condIn(c, filter_indices) for c in pN.filter.conditions]
+                        if len(arg_covered)==sum(arg_covered):
+                            return False
+            except:
+                return True
+            return True
+        return False
 
-    def __call__(self, rule, instances, weights, target_class):
-        if target_class<0:
-            for instance_i, instance in enumerate(instances):
-                if rule(instance) and rule.quality>instance[self.probAttribute]-0.01:
-                    instance[self.probAttribute] = rule.quality+0.01
-                    self.bestRule[instance_i]=rule
-        else:
-            for instance_i, instance in enumerate(instances): #rule.classifier.default_val == instance.getclass() and
-                if rule(instance) and rule.quality>instance[self.probAttribute]:
-                    instance[self.probAttribute] = rule.quality+0.001
-                    self.bestRule[instance_i]=rule
-##                if rule.classifier.default_val == instance.getclass():
-##                    print instance[self.probAttribute]
-        # compute factor
-        return (instances,weights)
+    def condIn(self, cond, filter_indices): # is condition in the filter?
+        condInd = RuleCoversArguments.conditionIndex(cond)
+        if operator.or_(condInd,filter_indices[cond.position]) == filter_indices[cond.position]:
+            return True
+        return False        
+
+
+    def covered_percentage(self, examples):
+        p = 0.0
+        for ei, e in enumerate(examples):
+            p += (e[self.prob_attribute] - self.apriori_prob)/(1.0-self.apriori_prob)
+        return p/len(examples)
+
+
 
 
 @deprecated_keywords({"showDistribution": "show_distribution"})
@@ -1892,145 +1967,138 @@ def perc(l,p):
     l.sort()
     return l[int(math.floor(p*len(l)))]
 
-def createRandomDataSet(data):
-    newData = Orange.data.Table(data)
-    # shuffle data
-    cl_num = newData.toNumeric("C")
-    random.shuffle(cl_num[0][:,0])
-    clData = Orange.data.Table(Orange.data.Domain([newData.domain.class_var]),cl_num[0])
-    for d_i,d in enumerate(newData):
-        d[newData.domain.class_var] = clData[d_i][newData.domain.class_var]
-    return newData
+class EVDFitter:
+    """ Randomizes a dataset and fits an extreme value distribution onto it. """
 
-# estimated fisher tippett parameters for a set of values given in vals list (+ deciles)
-def compParameters(vals,oldMi=0.5,oldBeta=1.1):                    
-    # compute percentiles
-    vals.sort()
-    N = len(vals)
-    percs = [avg(vals[int(float(N)*i/10):int(float(N)*(i+1)/10)]) for i in range(10)]            
-    if N<10:
-        return oldMi, oldBeta, percs
-    beta = math.sqrt(6*var(vals)/math.pow(math.pi,2))
-    beta = min(2.0,max(oldBeta, beta))
-    mi = max(oldMi, avg(vals) - 0.57721*beta)
-    return mi, beta, percs
+    def __init__(self, learner, n=200, randomseed=100):
+        self.learner = learner
+        self.n = n
+        self.randomseed = randomseed
+        # initialize random seed to make experiments repeatable
+        random.seed(self.randomseed)
+        
+        
+    def createRandomDataSet(self, data):
+        newData = Orange.core.ExampleTable(data)
+        # shuffle data
+        cl_num = newData.toNumpy("C")
+        random.shuffle(cl_num[0][:,0])
+        clData = Orange.core.ExampleTable(Orange.core.Domain([newData.domain.classVar]),cl_num[0])
+        for d_i,d in enumerate(newData):
+            d[newData.domain.classVar] = clData[d_i][newData.domain.classVar]
+        return newData
 
-def computeDists(data, weight=0, target_class=0, N=100, learner=None):
-    """ Compute distributions of likelihood ratio statistics of extreme (best) rules."""
-    if not learner:
-        learner = createLearner()
-
-    #########################
-    ## Learner preparation ##
-    #########################
-    oldStopper = learner.rule_finder.rule_stoppingValidator
-    evaluator = learner.rule_finder.evaluator
-    learner.rule_finder.evaluator = RuleEvaluator_LRS()
-    learner.rule_finder.evaluator.storeRules = True
-    learner.rule_finder.rule_stoppingValidator = RuleValidator_LRS(alpha=1.0)
-    learner.rule_finder.rule_stoppingValidator.max_rule_complexity = 0  
-
-    # loop through N (sampling repetitions)
-    maxVals = []
-    for d_i in range(N):
-        # create data set (remove and randomize)
-        tempData = createRandomDataSet(data)
-        learner.rule_finder.evaluator.rules = RuleList()
-        # Next, learn a rule
-        bestRule = learner.rule_finder(tempData,weight,target_class,RuleList())
-        maxVals.append(bestRule.quality)
-    extreme_dists=[compParameters(maxVals,1.0,1.0)]
-
-    #####################
-    ## Restore learner ##
-    #####################
-    learner.rule_finder.evaluator = evaluator
-    learner.rule_finder.rule_stoppingValidator = oldStopper
-    return extreme_dists
-
-def createEVDistList(evdList):
-    l = Orange.core.EVDistList()
-    for el in evdList:
-        l.append(Orange.core.EVDist(mu=el[0],beta=el[1],percentiles=el[2]))
-    return l
-
-def add_sub_rules(rules, instances, weight, learner, dists):
-    apriori = Orange.core.Distribution(instances.domain.class_var,instances,weight)
-    new_rules = RuleList()
-    for r in rules:
-        new_rules.append(r)
-
-    # loop through rules
-    for r in rules:
-        tmpList = RuleList()
-        tmpRle = r.clone()
-        tmpRle.filter.conditions = []
-        tmpRle.parentRule = None
-        tmpRle.filterAndStore(instances,weight,r.classifier.default_val)
-        tmpList.append(tmpRle)
-        while tmpList and len(tmpList[0].filter.conditions) <= len(r.filter.conditions):
-            tmpList2 = RuleList()
-            for tmpRule in tmpList:
-                # evaluate tmpRule
-                oldREP = learner.rule_finder.evaluator.returnExpectedProb
-                learner.rule_finder.evaluator.returnExpectedProb = False
-                learner.rule_finder.evaluator.evDistGetter.dists = createEVDistList(\
-                        dists[int(r.classifier.default_val)])
-                tmpRule.quality = learner.rule_finder.evaluator(tmpRule,
-                        instances,weight,r.classifier.default_val,apriori)
-                learner.rule_finder.evaluator.returnExpectedProb = oldREP
-                # if rule not in rules already, add it to the list
-                if not True in [rules_equal(ri,tmpRule) for ri in new_rules] and\
-                        len(tmpRule.filter.conditions)>0 and tmpRule.quality >\
-                            apriori[r.classifier.default_val]/apriori.abs:
-                    new_rules.append(tmpRule)
-                # create new tmpRules, set parent Rule, append them to tmpList2
-                if not True in [rules_equal(ri,tmpRule) for ri in new_rules]:
-                    for c in r.filter.conditions:
-                        tmpRule2 = tmpRule.clone()
-                        tmpRule2.parentRule = tmpRule
-                        tmpRule2.filter.conditions.append(c)
-                        tmpRule2.filterAndStore(instances,weight,r.classifier.default_val)
-                        if tmpRule2.class_distribution.abs < tmprule.class_distribution.abs:
-                            tmpList2.append(tmpRule2)
-            tmpList = tmpList2
-    for cl in instances.domain.class_var:
-        tmpRle = Rule()
-        tmpRle.filter = Orange.core.Filter_values(domain = instances.domain)
-        tmpRle.parentRule = None
-        tmpRle.filterAndStore(instances,weight,int(cl))
-        tmpRle.quality = tmpRle.class_distribution[int(cl)]/tmpRle.class_distribution.abs
-        new_rules.append(tmpRle)
-    return new_rules
+    def createEVDistList(self, evdList):
+        l = Orange.core.EVDistList()
+        for el in evdList:
+            l.append(Orange.core.EVDist(mu=el[0],beta=el[1],percentiles=el[2]))
+        return l
 
 
-class DefaultLearner(Orange.core.Learner):
-    """
-    Default lerner - returns default classifier with predefined output class.
-    """
-    def __init__(self,default_value = None):
-        self.default_value = default_value
-    def __call__(self,examples,weight_id=0):
-        return Orange.classification.majority.ConstantClassifier(self.default_value,defaultDistribution = Orange.core.Distribution(examples.domain.class_var,examples,weight_id))
-
-class ABCN2Ordered(ABCN2):
-    """
-    Rules learned by ABCN2 are ordered and used as a decision list.
-    """
-    def __init__(self, argument_id=0, **kwds):
-        ABCN2.__init__(self, argument_id=argument_id, **kwds)
-        self.classifier.set_prefix_rules = True
-        self.classifier.optimize_betas = False
-
-class ABCN2M(ABCN2):
-    """
-    Argument based rule learning with m-estimate as evaluation function.
-    """
-    def __init__(self, argument_id=0, **kwds):
-        ABCN2.__init__(self, argument_id=argument_id, **kwds)
-        self.opt_reduction = 0
+    # estimated fisher tippett parameters for a set of values given in vals list (+ deciles)
+    def compParameters(self, vals, oldMi, oldBeta, oldPercs, fixedBeta=False):                    
+        # compute percentiles
+        vals.sort()
+        N = len(vals)
+        percs = [avg(vals[int(float(N)*i/10):int(float(N)*(i+1)/10)]) for i in range(10)]
+        if N<10:
+            return oldMi, oldBeta, percs
+        if not fixedBeta:
+            beta = min(2.0, math.sqrt(6*var(vals)/math.pow(math.pi,2)))#min(2.0, max(oldBeta, math.sqrt(6*var(vals)/math.pow(math.pi,2))))
+        else:
+            beta = oldBeta
+        mi = max(oldMi,percs[-1]+beta*math.log(-math.log(0.95)))
+        mi = percs[-1]+beta*math.log(-math.log(0.95))
+        return max(oldMi, numpy.average(vals)-beta*0.5772156649), beta, None
     
+    def prepare_learner(self):
+        self.oldStopper = self.learner.ruleFinder.ruleStoppingValidator
+        self.evaluator = self.learner.ruleFinder.evaluator
+        self.refiner = self.learner.ruleFinder.refiner
+        self.validator = self.learner.ruleFinder.validator
+        self.ruleFilter = self.learner.ruleFinder.ruleFilter
+        self.learner.ruleFinder.validator = None
+        self.learner.ruleFinder.evaluator = Orange.core.RuleEvaluator_LRS()
+        self.learner.ruleFinder.evaluator.storeRules = True
+        self.learner.ruleFinder.ruleStoppingValidator = Orange.core.RuleValidator_LRS(alpha=1.0)
+        self.learner.ruleFinder.ruleStoppingValidator.max_rule_complexity = 0
+        self.learner.ruleFinder.refiner = Orange.core.RuleBeamRefiner_Selector()
+        self.learner.ruleFinder.ruleFilter = Orange.core.RuleBeamFilter_Width(width = 5)
 
+
+    def restore_learner(self):
+        self.learner.ruleFinder.evaluator = self.evaluator
+        self.learner.ruleFinder.ruleStoppingValidator = self.oldStopper
+        self.learner.ruleFinder.refiner = self.refiner
+        self.learner.ruleFinder.validator = self.validator
+        self.learner.ruleFinder.ruleFilter = self.ruleFilter
+
+    def computeEVD(self, data, weightID=0, target_class=0, progress=None):
+        import time
+        # prepare learned for distribution computation        
+        self.prepare_learner()
+
+        # loop through N (sampling repetitions)
+        extremeDists=[(0, 1, [])]
+        self.learner.ruleFinder.ruleStoppingValidator.max_rule_complexity = self.oldStopper.max_rule_complexity
+        maxVals = [[] for l in range(self.oldStopper.max_rule_complexity+1)]
+        for d_i in range(self.n):
+            if not progress:
+                if self.learner.debug:
+                    print d_i,
+            else:
+                progress(float(d_i)/self.n, None)                
+            # create data set (remove and randomize)
+            a = time.time()
+            tempData = self.createRandomDataSet(data)
+            a = time.time()
+            self.learner.ruleFinder.evaluator.rules = RuleList()
+            a = time.time()
+            for l in range(self.oldStopper.max_rule_complexity+2):
+               self.learner.ruleFinder.evaluator.rules.append(None)
+            a = time.time()
+            # Next, learn a rule
+            self.learner.ruleFinder(tempData,weightID,target_class, RuleList())
+            a = time.time()
+            for l in range(self.oldStopper.max_rule_complexity+1):
+                if self.learner.ruleFinder.evaluator.rules[l]:
+                    maxVals[l].append(self.learner.ruleFinder.evaluator.rules[l].quality)
+                else:
+                    maxVals[l].append(0)
+##                qs = [r.quality for r in self.learner.ruleFinder.evaluator.rules if r.complexity == l+1]
+####                if qs:
+####                    for r in self.learner.ruleFinder.evaluator.rules:
+####                        if r.quality == max(qs) and r.classDistribution.abs == 16 and r.classDistribution[0] == 16:
+####                            print "best rule", orngCN2.ruleToString(r), r.quality
+##                if qs:
+##                    maxVals[l].append(max(qs))
+##                else:
+##                    maxVals[l].append(0)
+            a = time.time()
+
+        # longer rule should always be better than shorter rule 
+        for l in range(self.oldStopper.max_rule_complexity):
+            for i in range(len(maxVals[l])):
+                if maxVals[l+1][i] < maxVals[l][i]:
+                    maxVals[l+1][i] = maxVals[l][i]
+##        print
+##        for mi, m in enumerate(maxVals):
+##            print "mi=",mi,m
+
+        mu, beta, perc = 1.0, 2.0, [0.0]*10
+        for mi,m in enumerate(maxVals):
+##            if mi == 0:
+##                mu, beta, perc = self.compParameters(m, mu, beta, perc)
+##            else:
+            mu, beta, perc = self.compParameters(m, mu, beta, perc, fixedBeta=True)
+            extremeDists.append((mu, beta, perc))
+            extremeDists.extend([(0,1,[])]*(mi))
+            if self.learner.debug:
+                print mi, mu, beta, perc
+
+        self.restore_learner()
+        return self.createEVDistList(extremeDists)
+        
 class ABBeamFilter(Orange.core.RuleBeamFilter):
     """
     ABBeamFilter: Filters beam;
@@ -2054,8 +2122,8 @@ class ABBeamFilter(Orange.core.RuleBeamFilter):
                     argsNum+=1
         return newStar                
 
-    def setArguments(self,domain,positiveArguments):
-        self.pArgs = positiveArguments
+    def setArguments(self,domain,positive_arguments):
+        self.pArgs = positive_arguments
         self.domain = domain
         self.argTab = [0]*len(self.domain.attributes)
         for arg in self.pArgs:
@@ -2072,7 +2140,7 @@ class ABBeamFilter(Orange.core.RuleBeamFilter):
         return map(operator.or_,ruleTab,self.argTab)==self.argTab
 
 
-class ruleCoversArguments:
+class RuleCoversArguments:
     """
     Class determines if rule covers one out of a set of arguments.
     """
@@ -2082,14 +2150,14 @@ class ruleCoversArguments:
         for a in self.arguments:
             indNA = getattr(a.filter,"indices",None)
             if not indNA:
-                a.filter.setattr("indices", ruleCoversArguments.filterIndices(a.filter))
+                a.filter.setattr("indices", RuleCoversArguments.filterIndices(a.filter))
             self.indices.append(a.filter.indices)
 
     def __call__(self, rule):
         if not self.indices:
             return False
         if not getattr(rule.filter,"indices",None):
-            rule.filter.indices = ruleCoversArguments.filterIndices(rule.filter)
+            rule.filter.indices = RuleCoversArguments.filterIndices(rule.filter)
         for index in self.indices:
             if map(operator.or_,rule.filter.indices,index) == rule.filter.indices:
                 return True
@@ -2101,7 +2169,7 @@ class ruleCoversArguments:
         ind = [0]*len(filter.domain.attributes)
         for c in filter.conditions:
             ind[c.position]=operator.or_(ind[c.position],
-                                         ruleCoversArguments.conditionIndex(c))
+                                         RuleCoversArguments.conditionIndex(c))
         return ind
     filterIndices = staticmethod(filterIndices)
 
@@ -2152,20 +2220,20 @@ class SelectorAdder(Orange.core.RuleBeamRefiner):
         self.discretizer = discretizer
         
     def __call__(self, oldRule, data, weight_id, target_class=-1):
-        inNotAllowedSelectors = ruleCoversArguments(self.not_allowed_selectors)
+        inNotAllowedSelectors = RuleCoversArguments(self.not_allowed_selectors)
         new_rules = Orange.core.RuleList()
 
         # get positive indices (selectors already in the rule)
         indices = getattr(oldRule.filter,"indices",None)
         if not indices:
-            indices = ruleCoversArguments.filterIndices(oldRule.filter)
+            indices = RuleCoversArguments.filterIndices(oldRule.filter)
             oldRule.filter.setattr("indices",indices)
 
         # get negative indices (selectors that should not be in the rule)
         negative_indices = [0]*len(data.domain.attributes)
         for nA in self.not_allowed_selectors:
             #print indices, nA.filter.indices
-            at_i,type_na = ruleCoversArguments.oneSelectorToCover(indices, nA.filter.indices)
+            at_i,type_na = RuleCoversArguments.oneSelectorToCover(indices, nA.filter.indices)
             if at_i>-1:
                 negative_indices[at_i] = operator.or_(negative_indices[at_i],type_na)
 
@@ -2186,8 +2254,8 @@ class SelectorAdder(Orange.core.RuleBeamRefiner):
                                                                                   values = [Orange.core.Value(data.domain[i],v)],
                                                                                   acceptSpecial=0))
                     tempRule.complexity += 1
-                    tempRule.filter.indices[i] = 1 # 1 stands for discrete attribute (see ruleCoversArguments.conditionIndex)
-                    tempRule.filterAndStore(oldRule.examples, oldRule.weight_id, target_class)
+                    tempRule.filter.indices[i] = 1 # 1 stands for discrete attribute (see RuleCoversArguments.conditionIndex)
+                    tempRule.filterAndStore(oldRule.examples, oldRule.weightID, target_class)
                     if len(tempRule.examples)<len(oldRule.examples):
                         new_rules.append(tempRule)
             elif data.domain[i].varType == Orange.core.VarTypes.Continuous and not negative_indices[i]==7: # CONTINUOUS attribute
@@ -2222,15 +2290,15 @@ class SelectorAdder(Orange.core.RuleBeamRefiner):
                                                                         ref=ref,
                                                                         acceptSpecial=0))
         tempRule.complexity += 1
-        tempRule.filter.indices[pos] = operator.or_(tempRule.filter.indices[pos],atIndex) # from ruleCoversArguments.conditionIndex
-        tempRule.filterAndStore(oldRule.examples,tempRule.weight_id,target_class)
+        tempRule.filter.indices[pos] = operator.or_(tempRule.filter.indices[pos],atIndex) # from RuleCoversArguments.conditionIndex
+        tempRule.filterAndStore(oldRule.examples,tempRule.weightID,target_class)
         return tempRule
 
     def setCondition(self, oldRule, target_class, ci, condition):
         tempRule = oldRule.clone()
         tempRule.filter.conditions[ci] = condition
         tempRule.filter.conditions[ci].setattr("specialized",1)
-        tempRule.filterAndStore(oldRule.examples,oldRule.weight_id,target_class)
+        tempRule.filterAndStore(oldRule.examples,oldRule.weightID,target_class)
         return tempRule
 
 SelectorAdder = deprecated_members({"notAllowedSelectors": "not_allowed_selectors",
@@ -2239,18 +2307,16 @@ SelectorAdder = deprecated_members({"notAllowedSelectors": "not_allowed_selector
 # This filter is the ugliest code ever! Problem is with Orange, I had some problems with inheriting deepCopy
 # I should take another look at it.
 class ArgFilter(Orange.core.Filter):
-    """
-    This class implements AB-covering principle.
-    """
-    def __init__(self, argument_id=None, filter = Orange.core.Filter_values()):
+    """ This class implements AB-covering principle. """
+    def __init__(self, argument_id=None, filter = Orange.core.Filter_values(), arg_example = None):
         self.filter = filter
         self.indices = getattr(filter,"indices",[])
         if not self.indices and len(filter.conditions)>0:
-            self.indices = ruleCoversArguments.filterIndices(filter)
+            self.indices = RuleCoversArguments.filterIndices(filter)
         self.argument_id = argument_id
-        self.debug = 0
         self.domain = self.filter.domain
         self.conditions = filter.conditions
+        self.arg_example = arg_example
         
     def condIn(self,cond): # is condition in the filter?
         condInd = ruleCoversArguments.conditionIndex(cond)
@@ -2259,9 +2325,11 @@ class ArgFilter(Orange.core.Filter):
         return False
     
     def __call__(self,example):
-##        print "in", self.filter(example), self.filter.conditions[0](example)
+##        print "in", self.filter(example)#, self.filter.conditions[0](example)
 ##        print self.filter.conditions[1].values
-        if self.filter(example):
+        if self.filter(example) and example != self.arg_example:
+            return True
+        elif self.filter(example):
             try:
                 if example[self.argument_id].value and len(example[self.argument_id].value.positiveArguments)>0: # example has positive arguments
                     # conditions should cover at least one of the positive arguments
@@ -2289,7 +2357,7 @@ class ArgFilter(Orange.core.Filter):
         self.__dict__[name]=obj
         self.filter.setattr(name,obj)
 
-    def deepCopy(self):
+    def deep_copy(self):
         newFilter = ArgFilter(argument_id=self.argument_id)
         newFilter.filter = Orange.core.Filter_values() #self.filter.deepCopy()
         newFilter.filter.conditions = self.filter.conditions[:]
@@ -2299,8 +2367,6 @@ class ArgFilter(Orange.core.Filter):
         newFilter.domain = self.filter.domain
         newFilter.conditions = newFilter.filter.conditions
         newFilter.indices = self.indices[:]
-        if getattr(self,"candidateValues",None):
-            newFilter.candidateValues = self.candidateValues[:]
         return newFilter
 
 ArgFilter = deprecated_members({"argumentID": "argument_id"})(ArgFilter)
@@ -2324,7 +2390,7 @@ class SelectorArgConditions(Orange.core.RuleBeamRefiner):
             if not c.unspecialized_condition:
                 tempRule = oldRule.clone()
                 tempRule.filter.conditions.append(c)
-                tempRule.filterAndStore(oldRule.examples, oldRule.weight_id, target_class)
+                tempRule.filterAndStore(oldRule.examples, oldRule.weightID, target_class)
                 if len(tempRule.examples)<len(oldRule.examples):
                     new_rules.append(tempRule)
             # unspecified condition
@@ -2343,7 +2409,7 @@ class SelectorArgConditions(Orange.core.RuleBeamRefiner):
                                                                                     ref=float(v),
                                                                                     acceptSpecial=0))
                     if tempRule(self.example):
-                        tempRule.filterAndStore(oldRule.examples, oldRule.weight_id, target_class)
+                        tempRule.filterAndStore(oldRule.examples, oldRule.weightID, target_class)
                         if len(tempRule.examples)<len(oldRule.examples):
                             new_rules.append(tempRule)
 ##        print " NEW RULES "
@@ -2354,150 +2420,6 @@ class SelectorArgConditions(Orange.core.RuleBeamRefiner):
 ##            print Orange.classification.rules.rule_to_string(r)
         return new_rules
 
-
-class CovererAndRemover_Prob(Orange.core.RuleCovererAndRemover):
-    """
-    This class impements probabilistic covering.
-    """
-    def __init__(self, examples, weight_id, target_class, apriori):
-        self.bestRule = [None]*len(examples)
-        self.probAttribute = Orange.core.newmetaid()
-        self.apriori_prob = apriori[target_class]/apriori.abs
-        examples.addMetaAttribute(self.probAttribute, self.apriori_prob)
-        examples.domain.addmeta(self.probAttribute, Orange.core.FloatVariable("Probs"))
-
-    def getBestRules(self, currentRules, examples, weight_id):
-        best_rules = Orange.core.RuleList()
-##        for r in currentRules:
-##            if hasattr(r.learner, "argumentRule") and not Orange.classification.rules.rule_in_set(r,best_rules):
-##                best_rules.append(r)
-        for r_i,r in enumerate(self.bestRule):
-            if r and not Orange.classification.rules.rule_in_set(r,best_rules) and int(examples[r_i].getclass())==int(r.classifier.default_value):
-                best_rules.append(r)
-        return best_rules
-
-    def __call__(self, rule, examples, weights, target_class):
-        if hasattr(rule, "learner") and hasattr(rule.learner, "arg_example"):
-            example = rule.learner.arg_example
-        else:
-            example = None
-        for ei, e in enumerate(examples):
-##            if e == example:
-##                e[self.probAttribute] = 1.0
-##                self.bestRule[ei]=rule
-            if example and not (hasattr(self.bestRule[ei], "learner") and hasattr(self.bestRule[ei].learner, "arg_example")):
-                can_be_worst = True
-            else:
-                can_be_worst = False
-            if can_be_worst and rule(e) and rule.quality>(e[self.probAttribute]-0.01):
-                e[self.probAttribute] = rule.quality+0.001 # 0.001 is added to avoid numerical errors
-                self.bestRule[ei]=rule
-            elif rule(e) and rule.quality>e[self.probAttribute]:
-                e[self.probAttribute] = rule.quality+0.001 # 0.001 is added to avoid numerical errors
-                self.bestRule[ei]=rule
-        return (examples,weights)
-
-    def covered_percentage(self, examples):
-        p = 0.0
-        for ei, e in enumerate(examples):
-            p += (e[self.probAttribute] - self.apriori_prob)/(1.0-self.apriori_prob)
-        return p/len(examples)
-
-class EVDFitter:
-    """
-    Randomizes a dataset and fits an extreme value distribution onto it.
-    """
-    def __init__(self, learner, n=200, randomseed=100):
-        self.learner = learner
-        self.n = n
-        self.randomseed = randomseed
-        
-    def createRandomDataSet(self, data):
-        newData = Orange.core.ExampleTable(data)
-        # shuffle data
-        cl_num = newData.toNumpy("C")
-        random.shuffle(cl_num[0][:,0])
-        clData = Orange.core.ExampleTable(Orange.core.Domain([newData.domain.class_var]),cl_num[0])
-        for d_i,d in enumerate(newData):
-            d[newData.domain.class_var] = clData[d_i][newData.domain.class_var]
-        return newData
-
-    def createEVDistList(self, evdList):
-        l = Orange.core.EVDistList()
-        for el in evdList:
-            l.append(Orange.core.EVDist(mu=el[0],beta=el[1],percentiles=el[2]))
-        return l
-
-    # estimated fisher tippett parameters for a set of values given in vals list (+ deciles)
-    def compParameters(self, vals, oldMi=0.5,oldBeta=1.1):                    
-        # compute percentiles
-        vals.sort()
-        N = len(vals)
-        percs = [avg(vals[int(float(N)*i/10):int(float(N)*(i+1)/10)]) for i in range(10)]            
-        if N<10:
-            return oldMi, oldBeta, percs
-        beta = min(2.0, max(oldBeta, math.sqrt(6*var(vals)/math.pow(math.pi,2))))
-        mi = max(oldMi,percs[-1]+beta*math.log(-math.log(0.95)))
-        return mi, beta, percs
-
-    def prepare_learner(self):
-        self.oldStopper = self.learner.rule_finder.rule_stoppingValidator
-        self.evaluator = self.learner.rule_finder.evaluator
-        self.refiner = self.learner.rule_finder.refiner
-        self.validator = self.learner.rule_finder.validator
-        self.ruleFilter = self.learner.rule_finder.ruleFilter
-        self.learner.rule_finder.validator = None
-        self.learner.rule_finder.evaluator = Orange.core.RuleEvaluator_LRS()
-        self.learner.rule_finder.evaluator.storeRules = True
-        self.learner.rule_finder.rule_stoppingValidator = Orange.core.RuleValidator_LRS(alpha=1.0)
-        self.learner.rule_finder.rule_stoppingValidator.max_rule_complexity = 0
-        self.learner.rule_finder.refiner = Orange.core.RuleBeamRefiner_Selector()
-        self.learner.rule_finder.ruleFilter = Orange.core.RuleBeamFilter_Width(width = 1)
-
-
-    def restore_learner(self):
-        self.learner.rule_finder.evaluator = self.evaluator
-        self.learner.rule_finder.rule_stoppingValidator = self.oldStopper
-        self.learner.rule_finder.refiner = self.refiner
-        self.learner.rule_finder.validator = self.validator
-        self.learner.rule_finder.ruleFilter = self.ruleFilter
-
-    def computeEVD(self, data, weight_id=0, target_class=0, progress=None):
-        # initialize random seed to make experiments repeatable
-        random.seed(self.randomseed)
-
-        # prepare learned for distribution computation        
-        self.prepare_learner()
-
-        # loop through N (sampling repetitions)
-        extreme_dists=[(0, 1, [])]
-        self.learner.rule_finder.rule_stoppingValidator.max_rule_complexity = self.oldStopper.max_rule_complexity
-        maxVals = [[] for l in range(self.oldStopper.max_rule_complexity)]
-        for d_i in range(self.n):
-            if not progress:
-                print d_i,
-            else:
-                progress(float(d_i)/self.n, None)                
-            # create data set (remove and randomize)
-            tempData = self.createRandomDataSet(data)
-            self.learner.rule_finder.evaluator.rules = Orange.core.RuleList()
-            # Next, learn a rule
-            self.learner.rule_finder(tempData,weight_id,target_class, Orange.core.RuleList())
-            for l in range(self.oldStopper.max_rule_complexity):
-                qs = [r.quality for r in self.learner.rule_finder.evaluator.rules if r.complexity == l+1]
-                if qs:
-                    maxVals[l].append(max(qs))
-                else:
-                    maxVals[l].append(0)
-
-        mu, beta = 1.0, 1.0
-        for mi,m in enumerate(maxVals):
-            mu, beta, perc = self.compParameters(m,mu,beta)
-            extreme_dists.append((mu, beta, perc))
-            extreme_dists.extend([(0,1,[])]*(mi))
-
-        self.restore_learner()
-        return self.createEVDistList(extreme_dists)
 
 class CrossValidation:
     def __init__(self, folds=5, random_generator = 150):

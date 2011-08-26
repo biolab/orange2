@@ -17,6 +17,8 @@ class OWParallelGraph(OWPlot, orngScaleData):
     def __init__(self, parallelDlg, parent = None, name = None):
         OWPlot.__init__(self, parent, name, axes = [], widget=parallelDlg)
         orngScaleData.__init__(self)
+        
+        self.update_antialiasing(False)
 
         self.parallelDlg = parallelDlg
         self.showDistributions = 0
@@ -68,15 +70,6 @@ class OWParallelGraph(OWPlot, orngScaleData):
         # set the limits for panning
         self.xPanningInfo = (1, 0, len(attributes)-1)
         self.yPanningInfo = (0, 0, 0)   # we don't enable panning in y direction so it doesn't matter what values we put in for the limits
-
-        if updateAxisScale:
-            if self.showAttrValues: self.setAxisScale(yLeft, -0.04, 1.04, 1)
-            else:                   self.setAxisScale(yLeft, -0.02, 1.02, 1)
-
-            if self.autoUpdateAxes:
-                self.setAxisScale(xBottom, 0, len(attributes)-1, 1)
-            else:
-		self.setAxisScale(xBottom, 0, len(attributes)-1, 1)
 
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
@@ -188,12 +181,18 @@ class OWParallelGraph(OWPlot, orngScaleData):
         self.remove_all_axes()
         for i in range(len(attributes)):
             id = UserAxis + i
-	    self.add_axis(UserAxis + i, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd)
-	    self.axes[id].always_horizontal_text = True
+	    a = self.add_axis(id, line = QLineF(i, 0, i, 1), arrows = AxisStart | AxisEnd, zoomable = True)
+	    a.always_horizontal_text = True
+	    a.max_text_width = 100
+	    a.title_margin = -10
+	    a.text_margin = 0
+	    a.setZValue(5)
+	    self.set_axis_title(id, self.dataDomain[attributes[i]].name)
+	    self.set_show_axis_title(id, self.showAttrValues)
             if self.showAttrValues == 1:
                 attr = self.dataDomain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
-		    self.set_axis_scale(id, 0.0-0.01, 1.0+0.01)
+		    self.set_axis_scale(id, self.attrValues[attr.name][0], self.attrValues[attr.name][1])
                 elif attr.varType == orange.VarTypes.Discrete:
 		    attrVals = getVariableValuesSorted(self.dataDomain[attributes[i]])
 		    self.set_axis_labels(id, attrVals)
@@ -282,17 +281,10 @@ class OWParallelGraph(OWPlot, orngScaleData):
         # show the legend
         if self.dataHasClass:
             if self.dataDomain.classVar.varType == orange.VarTypes.Discrete:
-                legendKeys = []
+                self.legend().clear()
                 varValues = getVariableValuesSorted(self.dataDomain.classVar)
-                #self.addCurve("<b>" + self.dataDomain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = OWPoint.NoSymbol, enableLegend = 1)
                 for ind in range(len(varValues)):
-                    #self.addCurve(varValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = OWPoint.Rect, enableLegend = 1)
-                    legendKeys.append((varValues[ind], self.discPalette[ind]))
-                if legendKeys != self.oldLegendKeys:
-                    self.oldLegendKeys = legendKeys
-                    self.legend().clear()
-                    for (name, color) in legendKeys:
-                        self.legend().add_item(self.dataDomain.classVar.name, name, OWPoint(OWPoint.Rect, color, self.point_width))
+                    self.legend().add_item(self.dataDomain.classVar.name, varValues[ind], OWPoint(OWPoint.Rect, self.discPalette[ind], self.point_width))
             else:
                 values = self.attrValues[self.dataDomain.classVar.name]
                 decimals = self.dataDomain.classVar.numberOfDecimals
@@ -548,8 +540,4 @@ class ParallelCoordinatesCurve(OWCurve):
                 x2, y2 = segment[i + 1]
                 path.moveTo(x1, y1)
                 path.cubicTo(QPointF(x1 + 0.5, y1), QPointF(x2 - 0.5, y2), QPointF(x2, y2))
-        return path        
-                
-                
-            
-
+        return path

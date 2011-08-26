@@ -16,9 +16,11 @@ Orange.network.readwrite._wrap method).
 
 """
 
+import os
 import os.path
 import warnings
 import itertools
+import tempfile
 
 import networkx as nx
 import networkx.readwrite.pajek as rwpajek
@@ -84,7 +86,20 @@ def _make_str(t):
     if _is_string_like(t): return t
     return str(t)
 
-def read(path, encoding='UTF-8'):
+def graph_to_table(G):
+    """Builds a Data Table from node values."""
+    if G.number_of_nodes() > 0:
+        features = list(set(itertools.chain.from_iterable(node.iterkeys() for node in G.node.itervalues())))
+        data = [[node.get(f).replace('\t', ' ') if type(node.get(f, 1)) == str else str(node.get(f, '?')) for f in features] for node in G.node.itervalues()]
+        fp = tempfile.NamedTemporaryFile('wt', suffix='.txt', delete=False)
+        fp.write('\n'.join('\t'.join(line) for line in [features] + data))
+        fp.close()
+        table = Orange.data.Table(fp.name)
+        os.unlink(fp.name)
+        
+    return table
+
+def read(path, encoding='UTF-8', auto_table=0):
     """Read graph in any of the supported file formats (.gpickle, .net, .gml).
     The parser is chosen based on the file extension.
     
@@ -108,13 +123,13 @@ def read(path, encoding='UTF-8'):
         raise ValueError('Extension %s is not supported.' % ext)
     
     if ext == '.net':
-        return read_pajek(path, encoding)
+        return read_pajek(path, encoding, auto_table=auto_table)
     
     if ext == '.gml':
-        return read_gml(path, encoding)
+        return read_gml(path, encoding, auto_table=auto_table)
     
     if ext == '.gpickle':
-        return read_gpickle(path)
+        return read_gpickle(path, auto_table=auto_table)
 
 def write(G, path, encoding='UTF-8'):
     """Write graph in any of the supported file formats (.gpickle, .net, .gml).
@@ -150,12 +165,15 @@ def write(G, path, encoding='UTF-8'):
     if G.links() is not None:
         G.links().save(root + '_links.tab')
 
-def read_gpickle(path):
+def read_gpickle(path, auto_table=False):
     """NetworkX read_gpickle method and wrap graph to Orange network.
     
     """
     
-    return _wrap(rwgpickle.read_gpickle(path))
+    G = _wrap(rwgpickle.read_gpickle(path))
+    if auto_table:
+        G.set_items(graph_to_table(G))
+    return G
 
 _add_doc(read_gpickle, rwgpickle.read_gpickle)
 
@@ -168,15 +186,37 @@ def write_gpickle(G, path):
 
 _add_doc(write_gpickle, rwgpickle.write_gpickle)
 
-def read_pajek(path, encoding='UTF-8'):
-    """A completely reimplemented method for reading Pajek files. Written in 
+def read_pajek(path, encoding='UTF-8', project=False, auto_table=False):
+    """A completely reimplemented Unhandled exception of type KeyError occured at 13:45:31:
+Traceback:
+  File: orngSignalManager.py, line 555 in processNewSignals
+  Code: self.widgets[i].processSignals()
+    File: OWBaseWidget.py, line 686 in processSignals
+    Code: self.handleNewSignals()
+      File: OWScatterPlot3D.py, line 616 in handleNewSignals
+      Code: self.update_plot()
+        File: OWScatterPlot3D.py, line 671 in update_plot
+        Code: self.label_attr)
+          File: OWScatterPlot3D.py, line 97 in update_data
+          Code: x_index = self.attribute_name_index[x_attr]
+            KeyError: 8 
+method for reading Pajek files. Written in 
     C++ for maximum performance.  
     
     :param path: File or filename to write.
     :type path: string
+    
+    :param encoding: Encoding of input text file, default 'UTF-8'.
+    :type encoding: string
+    
+    :param project: Determines whether the input file is a Pajek project file,
+        possibly containing multiple networks and other data. If :obj:`True`,
+        a list of networks is returned instead of just a network. Default is
+        :obj:`False`.
+    :type project: boolean.
         
-    Return the network of type :obj:`Orange.network.Graph` or 
-    :obj:`Orange.network.DiGraph`.
+    Return the network (or a list of networks if project=:obj:`True`) of type
+    :obj:`Orange.network.Graph` or :obj:`Orange.network.DiGraph`.
 
 
     Examples
@@ -196,22 +236,35 @@ def read_pajek(path, encoding='UTF-8'):
     
     """
     
-    edges, arcs, items = orangeom.GraphLayout().readPajek(path)
-    if len(arcs) > 0:
-        # directed graph
-        G = Orange.network.DiGraph()
-        G.add_nodes_from(range(len(items)))
-        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
-        G.add_edges_from(((v,u,{'weight':d}) for u,v,d in edges))
-        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in arcs))
-        G.set_items(items)
-    else:
-        G = Orange.network.Graph()
-        G.add_nodes_from(range(len(items)))
-        G.add_edges_from(((u,v,{'weight':d}) for u,v,d in edges))
-        G.set_items(items)
+    input = orangeom.GraphLayout().readPajek(path, project)
+    result = []
+    for g in input if project else [input]:
+        graphname, vertices, edges, arcs, items = g
+        if len(arcs) > 0:
+            # directed graph
+            G = Orange.network.DiGraph()
+            G.add_nodes_from(range(len(items)))
+            G.add_edges_from(((u,v,dict(d.items()+[('weight',w)])) for u,v,w,d in edges))
+            G.add_edges_from(((v,u,dict(d.items()+[('weight',w)])) for u,v,w,d in edges))
+            G.add_edges_from(((u,v,dict(d.items()+[('weight',w)])) for u,v,w,d in arcs))
+            if auto_table:
+                G.set_items(items)
+        else:
+            G = Orange.network.Graph()
+            G.add_nodes_from(range(len(items)))
+            G.add_edges_from(((u,v,dict(d.items()+[('weight',w)])) for u,v,w,d in edges))
+            if auto_table:
+                G.set_items(items)
+        for i, vdata in zip(range(len(G.node)), vertices):
+            G.node[i].update(vdata)
+        G.name = graphname
         
-    return G
+        result.append(G)
+        
+    if not project:
+        result = result[0]
+        
+    return result
     #fh=_get_fh(path, 'rb')
     #lines = (line.decode(encoding) for line in fh)
     #return parse_pajek(lines)
@@ -302,12 +355,14 @@ def generate_pajek(G):
 
 #_add_doc(generate_pajek, rwpajek.generate_pajek)
         
-def read_gml(path, encoding='latin-1', relabel=False):
+def read_gml(path, encoding='latin-1', relabel=False, auto_table=False):
     """NetworkX read_gml method and wrap graph to Orange network.
     
     """
-    
-    return _wrap(rwgml.read_gml(path, encoding, relabel))
+    G = _wrap(rwgml.read_gml(path, encoding, relabel))
+    if auto_table:
+        G.set_items(graph_to_table(G))
+    return G
 
 _add_doc(read_gml, rwgml.read_gml)
 

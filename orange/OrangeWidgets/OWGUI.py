@@ -675,7 +675,7 @@ def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = Non
 #    return w
 
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, label=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1, tooltip = None, width = None):
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, label=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1, tooltip = None, width = None, intOnly = 1):
     sliderBox = widgetBox(widget, box, orientation = "horizontal")
     if label:
         lbl = widgetLabel(sliderBox, label)
@@ -684,14 +684,20 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
         sliderOrient = Qt.Vertical
     else:
         sliderOrient = Qt.Horizontal
-
-    slider = QSlider(sliderOrient, sliderBox)
-    slider.setRange(minValue, maxValue)
-    slider.setSingleStep(step)
-    slider.setPageStep(step)
-    slider.setTickInterval(step)
+        
+    if intOnly:
+        slider = QSlider(sliderOrient, sliderBox)
+        slider.setRange(minValue, maxValue)
+        if step != 0:
+            slider.setSingleStep(step)
+            slider.setPageStep(step)
+            slider.setTickInterval(step)
+        signal_signature = "valueChanged(int)"
+    else:
+        slider = FloatSlider(sliderOrient, minValue, maxValue, step)
+        signal_signature = "valueChangedFloat(double)"
     slider.setValue(getdeepattr(master, value))
-
+    
     if tooltip:
         slider.setToolTip(tooltip)
 
@@ -717,9 +723,9 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
         txt = labelFormat % (getdeepattr(master, value)/divideFactor)
         label.setText(txt)
         label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
-        QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
+        QObject.connect(slider, SIGNAL(signal_signature), label.setLbl)
 
-    connectControl(slider, master, value, callback, "valueChanged(int)", CallFrontHSlider(slider))
+    connectControl(slider, master, value, callback, signal_signature, CallFrontHSlider(slider))
 
     if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
@@ -727,6 +733,16 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
 
 
 def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, showValueLabel = 1, debuggingEnabled = 1, addSpace=False, orientation=0):
+    if not logarithmic:
+        if type(precision) == str:
+            format = precision
+        elif precision == 0:
+            format = " %d"
+        else:
+            format = " %s.%df" % ("%", precision)
+
+        return hSlider(widget, master, value, box, minValue, maxValue, step, callback, labelFormat=format, width=maxWidth, intOnly=0)
+
     import PyQt4.Qwt5 as qwt
 
     init = getdeepattr(master, value)
@@ -1719,7 +1735,13 @@ import orange
 TableValueRole = OrangeUserRole.next() # Role to retrieve orange.Value 
 TableClassValueRole = OrangeUserRole.next() # Role to retrieve the class value for the row's example
 TableDistribution = OrangeUserRole.next() # Role to retrieve the distribution of the column's attribute
-TableVariable = OrangeUserRole.next()
+TableVariable = OrangeUserRole.next() # Role to retrieve the column's variable
+
+BarRatioRole = OrangeUserRole.next() # Ratio for drawing distribution bars
+BarBrushRole = OrangeUserRole.next() # Brush for distribution bar
+
+SortOrderRole = OrangeUserRole.next() # Used for sorting
+
 
 class TableBarItem(QItemDelegate):
     BarRole = OrangeUserRole.next()
@@ -2016,4 +2038,40 @@ def checkButtonOffsetHint(button, style=None):
     width = style.pixelMetric(pm_indicator_width, option, button)
     style_correction = {"macintosh (aqua)": -2, "macintosh(aqua)": -2, "plastique": 1, "cde": 1, "motif": 1} #TODO: add other styles (Maybe load corrections from .cfg file?)
     return space + width + style_correction.get(str(qApp.style().objectName()).lower(), 0)
-                
+    
+class FloatSlider(QSlider):
+    def __init__(self, orientation, min_value, max_value, step, parent=None):
+        QSlider.__init__(self, orientation, parent)
+        self.setScale(min_value, max_value, step)
+        QObject.connect(self, SIGNAL("valueChanged(int)"), self.sendValue)
+        
+    def update(self):
+        self.setSingleStep(1)
+        if self.min_value != self.max_value:
+            self.setEnabled(True)
+            self.setMinimum(int(self.min_value/self.step))
+            self.setMaximum(int(self.max_value/self.step))
+        else:
+            self.setEnabled(False)
+    
+    def sendValue(self, slider_value):
+        value = min(max(slider_value * self.step, self.min_value), self.max_value)
+        self.emit(SIGNAL("valueChangedFloat(double)"), value)
+        
+    def setValue(self, value):
+        QSlider.setValue(self, int(value/self.step))
+        
+    def setScale(self, minValue, maxValue, step=0):
+        if minValue >= maxValue:
+            ## It would be more logical to disable the slider in this case (self.setEnabled(False))
+            ## However, we do nothing to keep consistency with Qwt
+            return
+        if step <= 0 or step > (maxValue-minValue):
+            if type(maxValue) == int and type(minValue) == int:
+                step = 1
+            else:
+                step = float(minValue-maxValue)/100.0
+        self.min_value = float(minValue)
+        self.max_value = float(maxValue)
+        self.step = step
+        self.update()

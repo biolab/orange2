@@ -29,7 +29,7 @@ class DiscGraph(OWPlot):
         self.baseCurveKey = None
         self.lookaheadCurveKey = None
         
-        self.add_axis(xBottom)
+        self.add_axis(xBottom, arrows=0)
         self.add_axis(yLeft, title_above=1)
         self.add_axis(yRight)
 
@@ -189,7 +189,7 @@ class DiscGraph(OWPlot):
             self.lookaheadCurveKey = None
 
         if self.lookaheadCurveX and self.master.showLookaheadLine:
-            self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = Qt.SolidLine, symbol = OWPoint.NoSymbol, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1, autoScale = 1, x_axis_key=yLeft)
+            self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = OWCurve.Lines, symbol = OWPoint.NoSymbol, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1, autoScale = 1, y_axis_key=yLeft)
 
         if not noUpdate:
             self.replot()
@@ -217,7 +217,7 @@ class DiscGraph(OWPlot):
         self.clear_markers()
 
         for cut in self.curCutPoints:
-            c = self.addCurve("", Qt.blue, Qt.blue, 1, style = Qt.DashLine, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [.9, 0.1], autoScale = 1, y_axis_key = yRight)
+            c = self.addCurve("", Qt.blue, Qt.blue, 1, style = OWCurve.Lines, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [.9, 0.1], autoScale = 1, y_axis_key = yRight)
             self.cutLineKeys.append(c)
 
             m = self.addMarker(str(attr(cut)), cut, .9, Qt.AlignCenter | Qt.AlignTop, bold=1, y_axis_key=yRight)
@@ -246,7 +246,7 @@ class DiscGraph(OWPlot):
 
     def addCutPoint(self, cut):
         self.curCutPoints.append(cut)
-        c = self.addCurve("", Qt.blue, Qt.blue, 1, style = Qt.DashLine, symbol = OWPoint.NoSymbol, xData = [cut, cut], yData = [1.0, 0.015], autoScale = 1, y_axis_key = yRight)
+        c = self.addCurve("", Qt.blue, Qt.blue, 1, style = OWCurve.Lines, lineWidth = 2, xData = [cut, cut], yData = [0.1, 0.9], autoScale = 1, y_axis_key = yRight)
         self.cutLineKeys.append(c)
         c.curveInd = len(self.cutLineKeys) - 1
         return c

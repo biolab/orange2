@@ -48,4 +48,5 @@ Scree plot can be used when deciding, how many components to keep (`pca-scree.py
 
 
 .. _pca-run.py: code/pca-run.py
+.. _pca-scree.py: code/pca-scree.py
 .. _iris.tab: code/iris.tab

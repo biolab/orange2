@@ -21,9 +21,10 @@ import orngVizRank
 ##### WIDGET : Linear Projection
 ###########################################################################################
 class OWLinProjQt(OWVisWidget):
-    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
+    settingsList = ["graph." + s for s in OWPlot.point_settings + OWPlot.appearance_settings] + [
+                    "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
-                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.alphaValue",
+                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection",
                     "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing"
                     "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
@@ -40,6 +41,8 @@ class OWLinProjQt(OWVisWidget):
                        ("VizRank Learner", orange.Learner, self.setVizRankLearner),
                        ("Distances btw. Instances", orange.SymMatrix, self.setDistances)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("FreeViz Learner", orange.Learner)]
+
+        name_lower = name.lower()
 
         # local variables
         self.showAllAttributes = 0
@@ -89,11 +92,17 @@ class OWLinProjQt(OWVisWidget):
 ##        self.graph.clusterOptimization = self.clusterDlg
 
         # optimization dialog
-        if "radviz" in name.lower():
+        if "radviz" in name_lower:
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
-        elif "polyviz" in name.lower():
+        elif "polyviz" in name_lower:
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        elif "sphereviz" in name_lower:
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SPHEREVIZ3D, name)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        elif "3d" in name_lower:
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION3D, name)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         else:
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
@@ -101,7 +110,8 @@ class OWLinProjQt(OWVisWidget):
 
         self.optimizationDlg = self.vizrank  # for backward compatibility
 
-        self.graph.normalizeExamples = ("radviz" in name.lower())       # ignore settings!! if we have radviz then normalize, otherwise not.
+        # ignore settings!! if we have radviz then normalize, otherwise not.
+        self.graph.normalizeExamples = ("radviz" in name_lower or "sphereviz" in name_lower)
 
         #GUI
         # add a settings dialog and initialize its values
@@ -109,7 +119,8 @@ class OWLinProjQt(OWVisWidget):
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
         self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings", canScroll = 1)
-        self.PerformanceTab = OWGUI.createTabPage(self.tabs, "Performance")
+        if not "3d" in name_lower:
+            self.PerformanceTab = OWGUI.createTabPage(self.tabs, "Performance")
         
         #add controls to self.controlArea widget
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
@@ -119,13 +130,19 @@ class OWLinProjQt(OWVisWidget):
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
-        if "radviz" in name.lower() or "linear projection" in name.lower():
+        if "radviz" in name_lower or "linear projection" in name_lower or "sphereviz" in name_lower:
             self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
             self.wdChildDialogs.append(self.freeVizDlg)
             self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
-            if "linear projection" in name.lower():
+            if "linear projection" in name_lower:
                 self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
                 self.send("FreeViz Learner", self.freeVizLearner)
+            if "3d" in name_lower:
+                # Patch a method in Freeviz
+                get_shown_attribute_list = lambda: [anchor[3] for anchor in self.graph.anchorData]
+                self.freeVizDlg.get_shown_attribute_list = get_shown_attribute_list
+                self.freeVizDlg.getShownAttributeList = get_shown_attribute_list
+                self.freeVizDlg._use_3D = True
 
 ##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.vizrankButton.setMaximumWidth(63)
@@ -134,9 +151,11 @@ class OWLinProjQt(OWVisWidget):
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
-        self.graph.autoSendSelectionCallback = self.selectionChanged
-        self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
+        g = self.graph.gui
+
+        # zooming / selection
+        self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons = g.default_zoom_select_buttons + [g.Spacing, g.ShufflePoints])
+        self.connect(self.zoomSelectToolbar.buttons[g.SendSelection], SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
         # SETTINGS TAB
@@ -150,29 +169,49 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of range):', callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
-        box = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
-        OWGUI.qwtHSlider(box, self, "graph.scaleFactor", label = 'Inflate points by: ', minValue=1.0, maxValue= 10.0, step=0.1, callback = self.updateGraph, tooltip="If points lie too much together you can expand their position to improve perception", maxWidth = 90)
+        if not "3d" in name_lower:
+            box = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
+            OWGUI.qwtHSlider(box, self, "graph.scaleFactor", label = 'Inflate points by: ', minValue=1.0, maxValue= 10.0, step=0.1, callback = self.updateGraph, tooltip="If points lie too much together you can expand their position to improve perception", maxWidth = 90)
 
         box = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
         #OWGUI.checkBox(box, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
         self.graph.gui.show_legend_check_box(box)
         bbox = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
-        OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
+        if "3d" in name_lower:
+            OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.graph.updateGL)
+            OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.graph.updateGL, showValueLabel = 0)
+        else:
+            OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
+            OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
         OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
-        self.graph.gui.filled_symbols_check_box(box)
-        wbox = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(wbox, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
-        smallWidget = OWGUI.SmallWidgetLabel(wbox, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
-        OWGUI.rubber(wbox)
+
+        if "sphereviz" in name_lower:
+            OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
+
+        if "3d" in name_lower:
+            OWGUI.checkBox(box, self, 'graph.use_2d_symbols', '2D symbols', callback = self.updateGraph, tooltip = "Use 2D symbols")
+        else:
+            self.graph.gui.filled_symbols_check_box(box)
+            wbox = OWGUI.widgetBox(box, orientation = "horizontal")
+            OWGUI.checkBox(wbox, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+            smallWidget = OWGUI.SmallWidgetLabel(wbox, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
+            OWGUI.rubber(wbox)
+
+            box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
+            OWGUI.widgetLabel(box, "Granularity:  ")
+            OWGUI.hSlider(box, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
+
+            box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
+            OWGUI.checkBox(box, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(box, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring variables", debuggingEnabled = 0)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Tooltips Settings")
-        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
-        OWGUI.comboBox(box, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
+        callback = self.graph.updateGL if "3d" in name_lower else self.updateGraph
+        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = callback)
+        OWGUI.comboBox(box, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = callback, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
         box = OWGUI.widgetBox(self.SettingsTab, "Auto Send Selected Data When...")
         OWGUI.checkBox(box, self, 'autoSendSelection', 'Adding/Removing selection areas', callback = self.selectionChanged, tooltip = "Send selected data whenever a selection area is added or removed")
@@ -180,17 +219,11 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.comboBox(box, self, "addProjectedPositions", items = ["Do not modify the domain", "Append projection as attributes", "Append projection as meta attributes"], callback = self.sendSelections)
         self.selectionChanged()
 
-        box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
-        OWGUI.widgetLabel(box, "Granularity:  ")
-        OWGUI.hSlider(box, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
-
-        box = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
-        OWGUI.checkBox(box, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
-
         self.SettingsTab.layout().addStretch(100)
         
-        self.graph.gui.effects_box(self.PerformanceTab, )
-        self.PerformanceTab.layout().addStretch(100)
+        if not "3d" in name_lower:
+            self.graph.gui.effects_box(self.PerformanceTab, )
+            self.PerformanceTab.layout().addStretch(100)
 
         self.icons = self.createAttributeIconDict()
         self.debugSettings = ["hiddenAttributes", "shownAttributes"]
@@ -202,8 +235,6 @@ class OWLinProjQt(OWVisWidget):
         p = self.graph.palette()
         p.setColor(OWPalette.Canvas, dlg.getColor("Canvas"))
         self.graph.set_palette(p)
-
-        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.cbShowAllAttributes()      # update list boxes based on the check box value
 
@@ -331,7 +362,7 @@ class OWLinProjQt(OWVisWidget):
         self.updateGraph()
 
     def selectionChanged(self):
-        self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
+        self.zoomSelectToolbar.buttons[OWPlotGUI.SendSelection].setEnabled(not self.autoSendSelection)
         if self.autoSendSelection:
             self.sendSelections()
 

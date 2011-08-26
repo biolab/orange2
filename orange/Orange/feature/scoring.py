@@ -59,8 +59,7 @@ The output::
     0.255 el-salvador-aid
     0.228 synfuels-corporation-cutback
 
-.. comment::
-
+.. comment
     The next script uses :obj:`GainRatio` and :obj:`Relief`.
 
     .. literalinclude:: code/scoring-relief-gainRatio.py
@@ -137,9 +136,9 @@ different ways.
 
 .. _classification:
 
-===========================
+==========================================
 Feature scoring in classification problems
-===========================
+==========================================
 
 .. Undocumented: MeasureAttribute_IM, MeasureAttribute_chiSquare, MeasureAttribute_gainRatioA, MeasureAttribute_logOddsRatio, MeasureAttribute_splitGain.
 
@@ -202,7 +201,7 @@ Feature scoring in classification problems
     Knowing the value of feature 3 would decrease the
     classification cost for approximately 0.083 per instance.
 
-    .. comment:: opposite error - is this term correct? TODO
+    .. comment   opposite error - is this term correct? TODO
 
 .. index:: 
    single: feature scoring; ReliefF
@@ -260,9 +259,9 @@ Feature scoring in classification problems
 
 .. _regression:
 
-=======================
+======================================
 Feature scoring in regression problems
-=======================
+======================================
 
 You can also use :obj:`Relief` for regression.
 
@@ -434,7 +433,7 @@ Other
 
 .. autofunction:: Orange.feature.scoring.score_all
 
-.. comment .. rubric:: References
+..  .. rubric:: References
 
 .. [Kononenko2007] Igor Kononenko, Matjaz Kukar: Machine Learning and Data Mining, 
   Woodhead Publishing, 2007.

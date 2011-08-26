@@ -9,7 +9,7 @@ Data Scaling (``scaling``)
 **************************
 
 This module is a conglomerate of Orange 2.0 modules orngScaleData,
-orngScaleLinProjData, orngScalePolyvizData and orngScaleScatterPlotData. The
+orngScaleLinProjData, orngScaleLinProjData3D, orngScalePolyvizData and orngScaleScatterPlotData. The
 documentation is poor and has to be improved in the future.
 
 .. autoclass:: Orange.preprocess.scaling.ScaleData
@@ -17,6 +17,10 @@ documentation is poor and has to be improved in the future.
    :show-inheritance:
 
 .. autoclass:: Orange.preprocess.scaling.ScaleLinProjData
+   :members:
+   :show-inheritance:
+
+.. autoclass:: Orange.preprocess.scaling.ScaleLinProjData3D
    :members:
    :show-inheritance:
 
@@ -829,6 +833,346 @@ ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
                                        "anchorDict": "anchor_dict",
                                       })(ScaleLinProjData)
 
+class ScaleLinProjData3D(ScaleData):
+    def __init__(self):
+        ScaleData.__init__(self)
+        self.normalize_examples = 1
+        self.anchor_data = []        # form: [(anchor1x, anchor1y, anchor1z, label1),(anchor2x, anchor2y, anchor2z, label2), ...]
+        self.last_attr_indices = None
+        self.anchor_dict = {}
+
+    @deprecated_keywords({"xAnchors": "xanchors", "yAnchors": "yanchors"})
+    def set_anchors(self, xanchors, yanchors, zanchors, attributes):
+        if attributes:
+            if xanchors != None and yanchors != None and zanchors != None:
+                self.anchor_data = [(xanchors[i], yanchors[i], zanchors[i], attributes[i])
+                                    for i in range(len(attributes))]
+            else:
+                self.anchor_data = self.create_anchors(len(attributes), attributes)
+
+    setAnchors = set_anchors
+
+    @deprecated_keywords({"numOfAttr": "num_of_attr"})
+    def create_anchors(self, num_of_attrs, labels=None):
+        """
+        Create anchors on the sphere.
+        
+        """
+        # Golden Section Spiral algorithm approximates even distribution of points on a sphere
+        # (read more here http://www.softimageblog.com/archives/115)
+        n = num_of_attrs
+        xanchors = []
+        yanchors = []
+        zanchors = []
+
+        inc = math.pi * (3 - math.sqrt(5))
+        off = 2. / n
+        for k in range(n):
+            y = k * off - 1 + (off / 2)
+            r = math.sqrt(1 - y*y)
+            phi = k * inc
+            xanchors.append(math.cos(phi)*r)
+            yanchors.append(y)
+            zanchors.append(math.sin(phi)*r)
+
+        self.anchor_dict[num_of_attrs] = [xanchors, yanchors, zanchors]
+ 
+        if labels:
+            return [(xanchors[i], yanchors[i], zanchors[i], labels[i]) for i in range(num_of_attrs)]
+        else:
+            return [(xanchors[i], yanchors[i], zanchors[i]) for i in range(num_of_attrs)]
+
+    createAnchors = create_anchors
+
+    @deprecated_keywords({"numOfAttrs": "num_of_attrs"})
+    def create_xanchors(self, num_of_attrs):
+        if not self.anchor_dict.has_key(num_of_attrs):
+            self.create_anchors(num_of_attrs)
+        return self.anchor_dict[num_of_attrs][0]
+
+    createXAnchors = create_xanchors
+
+    @deprecated_keywords({"numOfAttrs": "num_of_attrs"})
+    def create_yanchors(self, num_of_attrs):
+        if not self.anchor_dict.has_key(num_of_attrs):
+            self.create_anchors(num_of_attrs)
+        return self.anchor_dict[num_of_attrs][1]
+
+    createYAnchors = create_yanchors
+
+    @deprecated_keywords({"numOfAttrs": "num_of_attrs"})
+    def create_zanchors(self, num_of_attrs):
+        if not self.anchor_dict.has_key(num_of_attrs):
+            self.create_anchors(num_of_attrs)
+        return self.anchor_dict[num_of_attrs][2]
+
+    createZAnchors = create_zanchors
+
+    @deprecated_keywords({"fileName": "filename", "attrList": "attrlist",
+                          "useAnchorData": "use_anchor_data"})
+    def save_projection_as_tab_data(self, filename, attrlist, use_anchor_data=0):
+        """
+        Save projection (xattr, yattr, zattr, classval) into a filename filename.
+        
+        """
+        Orange.core.saveTabDelimited(filename,
+            self.create_projection_as_example_table([self.attribute_name_index[i]
+                                                     for i in attrlist],
+                                                    use_anchor_data=use_anchor_data))
+    
+    saveProjectionAsTabData = save_projection_as_tab_data
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def get_projected_point_position(self, attr_indices, values, **settings_dict):
+        """
+        For attributes in attr_indices and values of these attributes in values
+        compute point positions. This function has more sense in radviz and
+        polyviz methods.
+    
+        """
+        # load the elements from the settings dict
+        use_anchor_data = settings_dict.get("useAnchorData")
+        xanchors = settings_dict.get('xAnchors')
+        yanchors = settings_dict.get('yAnchors')
+        zanchors = settings_dict.get('zAnchors')
+        anchor_radius = settings_dict.get("anchorRadius")
+        normalize_example = settings_dict.get("normalizeExample")
+
+        if attr_indices != self.last_attr_indices:
+            print "get_projected_point_position. Warning: Possible bug. The "+\
+                  "set of attributes is not the same as when computing the "+\
+                  "whole projection"
+
+        if xanchors != None and yanchors != None and zanchors != None:
+            xanchors = numpy.array(xanchors)
+            yanchors = numpy.array(yanchors)
+            zanchors = numpy.array(zanchors)
+            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
+                                                                 yanchors*yanchors +
+                                                                 zanchors*zanchors)
+        elif use_anchor_data and self.anchor_data:
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            zanchors = numpy.array([val[2] for val in self.anchor_data])
+            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
+                                                                 yanchors*yanchors +
+                                                                 zanchors*zanchors)
+        else:
+            self.create_anchors(len(attr_indices))
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            zanchors = numpy.array([val[2] for val in self.anchor_data])
+            anchor_radius = numpy.ones(len(attr_indices), numpy.float)
+
+        if normalize_example == 1 or (normalize_example == None
+                                      and self.normalize_examples):
+            m = min(values); M = max(values)
+            if m < 0.0 or M > 1.0: 
+                # we have to do rescaling of values so that all the values will
+                # be in the 0-1 interval
+                #print "example values are not in the 0-1 interval"
+                values = [max(0.0, min(val, 1.0)) for val in values]
+                #m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
+                #values = [(val-m) / float(diff) for val in values]
+
+            s = sum(numpy.array(values)*anchor_radius)
+            if s == 0: return [0.0, 0.0]
+            x = self.trueScaleFactor * numpy.dot(xanchors*anchor_radius,
+                                                 values) / float(s)
+            y = self.trueScaleFactor * numpy.dot(yanchors*anchor_radius,
+                                                 values) / float(s)
+            z = self.trueScaleFactor * numpy.dot(zanchors*anchor_radius,
+                                                 values) / float(s)
+        else:
+            x = self.trueScaleFactor * numpy.dot(xanchors, values)
+            y = self.trueScaleFactor * numpy.dot(yanchors, values)
+            z = self.trueScaleFactor * numpy.dot(zanchors, values)
+
+        return [x, y, z]
+
+    getProjectedPointPosition = get_projected_point_position
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_example_table(self, attr_indices, **settings_dict):
+        """
+        Create the projection of attribute indices given in attr_indices and
+        create an example table with it.
+        """
+        if self.data_domain.class_var:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
+                                         Orange.data.variable.Continuous("yVar"),
+                                         Orange.data.variable.Continuous("zVar"),
+                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                                                                       values=get_variable_values_sorted(self.data_domain.class_var))])
+        else:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
+                                         Orange.data.variable.Continuous("yVar"),
+                                         Orange.data.variable.Continuous("zVar")])
+        data = self.create_projection_as_numeric_array(attr_indices,
+                                                       **settings_dict)
+        if data != None:
+            return Orange.data.Table(domain, data)
+        else:
+            return Orange.data.Table(domain)
+
+    createProjectionAsExampleTable = create_projection_as_example_table
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
+        # load the elements from the settings dict
+        validData = settings_dict.get("validData")
+        classList = settings_dict.get("classList")
+        sum_i     = settings_dict.get("sum_i")
+        XAnchors = settings_dict.get("XAnchors")
+        YAnchors = settings_dict.get("YAnchors")
+        ZAnchors = settings_dict.get("ZAnchors")
+        scaleFactor = settings_dict.get("scaleFactor", 1.0)
+        normalize = settings_dict.get("normalize")
+        jitterSize = settings_dict.get("jitterSize", 0.0)
+        useAnchorData = settings_dict.get("useAnchorData", 0)
+        removeMissingData = settings_dict.get("removeMissingData", 1)
+        useSubsetData = settings_dict.get("useSubsetData", 0)        # use the data or subsetData?
+        #minmaxVals = settings_dict.get("minmaxVals", None)
+
+        # if we want to use anchor data we can get attr_indices from the anchor_data
+        if useAnchorData and self.anchor_data:
+            attr_indices = [self.attribute_name_index[val[3]] for val in self.anchor_data]
+
+        if validData == None:
+            if useSubsetData: validData = self.get_valid_subset_list(attr_indices)
+            else:             validData = self.get_valid_list(attr_indices)
+        if sum(validData) == 0:
+            return None
+
+        if classList == None and self.data_domain.class_var:
+            if useSubsetData: classList = self.original_subset_data[self.data_class_index]
+            else:             classList = self.original_data[self.data_class_index]
+
+        # if jitterSize is set below zero we use scaled_data that has already jittered data
+        if useSubsetData:
+            if jitterSize < 0.0: data = self.scaled_subset_data
+            else:                data = self.no_jittering_scaled_subset_data
+        else:
+            if jitterSize < 0.0: data = self.scaled_data
+            else:                data = self.no_jittering_scaled_data
+
+        selectedData = numpy.take(data, attr_indices, axis=0)
+        if removeMissingData:
+            selectedData = numpy.compress(validData, selectedData, axis=1)
+            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
+                classList = numpy.compress(validData, classList)
+
+        if useAnchorData and self.anchor_data:
+            XAnchors = numpy.array([val[0] for val in self.anchor_data])
+            YAnchors = numpy.array([val[1] for val in self.anchor_data])
+            ZAnchors = numpy.array([val[2] for val in self.anchor_data])
+            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
+            if normalize == 1 or (normalize == None and self.normalize_examples):
+                XAnchors *= r
+                YAnchors *= r
+                ZAnchors *= r
+        elif (XAnchors != None and YAnchors != None and ZAnchors != None):
+            XAnchors = numpy.array(XAnchors)
+            YAnchors = numpy.array(YAnchors)
+            ZAnchors = numpy.array(ZAnchors)
+            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
+        else:
+            self.create_anchors(len(attr_indices))
+            XAnchors = numpy.array([val[0] for val in self.anchor_data])
+            YAnchors = numpy.array([val[1] for val in self.anchor_data])
+            ZAnchors = numpy.array([val[2] for val in self.anchor_data])
+            r = numpy.ones(len(XAnchors), numpy.float)
+
+        x_positions = numpy.dot(XAnchors, selectedData)
+        y_positions = numpy.dot(YAnchors, selectedData)
+        z_positions = numpy.dot(ZAnchors, selectedData)
+
+        if normalize == 1 or (normalize == None and self.normalize_examples):
+            if sum_i == None:
+                sum_i = self._getSum_i(selectedData, useAnchorData, r)
+            x_positions /= sum_i
+            y_positions /= sum_i
+            z_positions /= sum_i
+            self.trueScaleFactor = scaleFactor
+        else:
+            if not removeMissingData:
+                try:
+                    x_validData = numpy.compress(validData, x_positions)
+                    y_validData = numpy.compress(validData, y_positions)
+                    z_validData = numpy.compress(validData, z_positions)
+                except:
+                    print validData
+                    print x_positions
+                    print numpy.shape(validData)
+                    print numpy.shape(x_positions)
+            else:
+                x_validData = x_positions
+                y_validData = y_positions
+                z_validData = z_positions
+
+            dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData + z_validData*z_validData)) or 1
+            self.trueScaleFactor = scaleFactor / dist
+
+        self.unscaled_x_positions = numpy.array(x_positions)
+        self.unscaled_y_positions = numpy.array(y_positions)
+        self.unscaled_z_positions = numpy.array(z_positions)
+
+        if self.trueScaleFactor != 1.0:
+            x_positions *= self.trueScaleFactor
+            y_positions *= self.trueScaleFactor
+            z_positions *= self.trueScaleFactor
+
+        if jitterSize > 0.0:
+            x_positions += numpy.random.uniform(-jitterSize, jitterSize, len(x_positions))
+            y_positions += numpy.random.uniform(-jitterSize, jitterSize, len(y_positions))
+            z_positions += numpy.random.uniform(-jitterSize, jitterSize, len(z_positions))
+
+        self.last_attr_indices = attr_indices
+        if classList != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, z_positions, classList)))
+        else:
+            return numpy.transpose(numpy.array((x_positions, y_positions, z_positions)))
+
+    createProjectionAsNumericArray = create_projection_as_numeric_array
+
+    @deprecated_keywords({"useAnchorData": "use_anchor_data",
+                          "anchorRadius": "anchor_radius"})
+    def _getsum_i(self, data, use_anchor_data=0, anchor_radius=None):
+        """
+        Function to compute the sum of all values for each element in the data.
+        Used to normalize.
+        
+        """
+        if use_anchor_data:
+            if anchor_radius == None:
+                anchor_radius = numpy.sqrt([a[0]**2+a[1]**2+a[2]**2 for a in self.anchor_data])
+            sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchor_radius))
+        else:
+            sum_i = numpy.add.reduce(data)
+        if len(numpy.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
+            sum_i += numpy.where(sum_i == 0, 1.0, 0.0)
+        return sum_i
+    
+    _getSum_i = _getsum_i
+
+ScaleLinProjData3D = deprecated_members({"setAnchors": "set_anchors",
+                                       "createAnchors": "create_anchors",
+                                       "saveProjectionAsTabData": "save_projection_as_tab_data",
+                                       "get_projected_point_position": "get_projected_point_position",
+                                       "create_projection_as_example_table": "create_projection_as_example_table",
+                                       "create_projection_as_numeric_array": "create_projection_as_numeric_array",
+                                       "_getSum_i": "_getsum_i",
+                                       "normalizeExamples": "normalize_examples",
+                                       "anchorData": "anchor_data",
+                                       "lastAttrIndices": "last_attr_indices",
+                                       "anchorDict": "anchor_dict",
+                                      })(ScaleLinProjData3D)
+
 class ScalePolyvizData(ScaleLinProjData):
     def __init__(self):
         ScaleLinProjData.__init__(self)
@@ -1088,6 +1432,36 @@ class ScaleScatterPlotData(ScaleData):
 
     @deprecated_keywords({"attrIndices": "attr_indices",
                           "settingsDict": "settings_dict"})
+    def create_projection_as_example_table_3D(self, attr_indices, **settings_dict):
+        """
+        Create the projection of attribute indices given in attr_indices and
+        create an example table with it.
+        
+        """
+        if self.data_has_class:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[2]].name),
+                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                                                                       values = get_variable_values_sorted(self.data_domain.class_var))])
+        else:
+            domain = settings_dict.get("domain") or \
+                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[2]].name)])
+
+        data = self.create_projection_as_numeric_array_3D(attr_indices,
+                                                          **settings_dict)
+        if data != None:
+            return Orange.data.Table(domain, data)
+        else:
+            return Orange.data.Table(domain)
+
+    createProjectionAsExampleTable3D = create_projection_as_example_table_3D
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
         validData = settings_dict.get("validData")
         classList = settings_dict.get("classList")
@@ -1114,6 +1488,37 @@ class ScaleScatterPlotData(ScaleData):
         return data
 
     createProjectionAsNumericArray = create_projection_as_numeric_array
+
+    @deprecated_keywords({"attrIndices": "attr_indices",
+                          "settingsDict": "settings_dict"})
+    def create_projection_as_numeric_array_3D(self, attr_indices, **settings_dict):
+        validData = settings_dict.get("validData")
+        classList = settings_dict.get("classList")
+        jitterSize = settings_dict.get("jitter_size", 0.0)
+
+        if validData == None:
+            validData = self.get_valid_list(attr_indices)
+        if sum(validData) == 0:
+            return None
+
+        if classList == None and self.data_has_class:
+            classList = self.original_data[self.data_class_index]
+
+        xArray = self.no_jittering_scaled_data[attr_indices[0]]
+        yArray = self.no_jittering_scaled_data[attr_indices[1]]
+        zArray = self.no_jittering_scaled_data[attr_indices[2]]
+        if jitterSize > 0.0:
+            xArray += (numpy.random.random(len(xArray))-0.5)*jitterSize
+            yArray += (numpy.random.random(len(yArray))-0.5)*jitterSize
+            zArray += (numpy.random.random(len(zArray))-0.5)*jitterSize
+        if classList != None:
+            data = numpy.compress(validData, numpy.array((xArray, yArray, zArray, classList)), axis = 1)
+        else:
+            data = numpy.compress(validData, numpy.array((xArray, yArray, zArray)), axis = 1)
+        data = numpy.transpose(data)
+        return data
+
+    createProjectionAsNumericArray3D = create_projection_as_numeric_array_3D
 
     @deprecated_keywords({"attributeNameOrder": "attribute_name_order",
                           "addResultFunct": "add_result_funct"})
@@ -1185,6 +1590,8 @@ ScaleScatterPlotData = deprecated_members({"getOriginalData": "get_original_data
                                            "getXYSubsetDataPositions": "get_xy_subset_data_positions",
                                            "getProjectedPointPosition": "get_projected_point_position",
                                            "createProjectionAsExampleTable": "create_projection_as_example_table",
+                                           "createProjectionAsExampleTable3D": "create_projection_as_example_table_3D",
                                            "createProjectionAsNumericArray": "create_projection_as_numeric_array",
+                                           "createProjectionAsNumericArray3D": "create_projection_as_numeric_array_3D",
                                            "getOptimalClusters": "get_optimal_clusters"
                                            })(ScaleScatterPlotData)

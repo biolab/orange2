@@ -35,7 +35,7 @@
 
 from math import *
 
-from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform
+from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform, QGraphicsRectItem, QPen, QFontMetrics
 from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF, Qt
 
 from owconstants import *
@@ -69,12 +69,13 @@ class OWAxis(QGraphicsItem):
         self.scale = None
         path = QPainterPath()
         path.setFillRule(Qt.WindingFill)
-        path.moveTo(0, 5)
-        path.lineTo(0, -5)
-        path.lineTo(10, 0)
+        path.moveTo(0, 3.09)
+        path.lineTo(0, -3.09)
+        path.lineTo(9.51, 0)
         path.closeSubpath()
         self.arrow_path = path
         self.label_items = []
+        self.label_bg_items = []
         self.tick_items = []
         self._ticks = []
         self.zoom_transform = QTransform()
@@ -91,11 +92,11 @@ class OWAxis(QGraphicsItem):
     def update_ticks(self):
         self._ticks = []
         major, medium, minor = self.tick_length
-        if self.labels is not None:
+        if self.labels is not None and not self.auto_scale:
             for i, text in enumerate(self.labels):
                 self._ticks.append( ( i, text, medium, 1 ) )
         else:
-            if self.scale:
+            if self.scale and not self.auto_scale:
                 min, max, step = self.scale
             elif self.auto_range:
                 min, max = self.auto_range
@@ -146,12 +147,17 @@ class OWAxis(QGraphicsItem):
             title_p = 0.05
         title_pos = self.graph_line.pointAt(title_p)
         v = self.graph_line.normalVector().unitVector()
-        if self._ticks:
-            offset = 50
+        if hasattr(self, 'title_margin'):
+            offset = self.title_margin
+        elif self._ticks:
+            if self.id in YAxes or self.always_horizontal_text:
+                offset = 50
+            else:
+                offset = 35
         else:
-            offset = 20
+            offset = 10
         if self.title_above:
-            title_pos = title_pos + (v.p2() - v.p1())*(offset)
+            title_pos = title_pos + (v.p2() - v.p1())*(offset + QFontMetrics(self.title_item.font()).height())
         else:
             title_pos = title_pos - (v.p2() - v.p1())*offset
         ## TODO: Move it according to self.label_pos
@@ -191,6 +197,7 @@ class OWAxis(QGraphicsItem):
         
         n = len(self._ticks)
         resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
+        resize_plot_item_list(self.label_bg_items, n, QGraphicsRectItem, self)
         resize_plot_item_list(self.tick_items, n, QGraphicsLineItem, self)
         
         test_rect = QRectF(self.graph_line.p1(),  self.graph_line.p2()).normalized()
@@ -214,20 +221,32 @@ class OWAxis(QGraphicsItem):
             item = self.label_items[i]
             item.setVisible(True)
             if not zoom_only:
-                item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
+                if self.id in XAxes or getattr(self, 'is_horizontal', False):
+                    item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
+                else:
+                    item.setHtml(Qt.escape(text.strip()))
             if self.id not in CartesianAxes and not self.always_horizontal_text:
                 item.setRotation(-self.graph_line.angle())
             
             item.setTextWidth(-1)
             if self.id in YAxes or self.always_horizontal_text:
                 w = min(item.boundingRect().width(), self.max_text_width)
-                label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
+                item.setTextWidth(w)
+                if self.title_above:
+                    label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
+                else:
+                    label_pos = tick_pos + n_p * (self.text_margin) + l_p * item.boundingRect().height()/2
             else:
                 w = min(item.boundingRect().width(), QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length())
                 label_pos = tick_pos + n_p * self.text_margin - l_p * w/2
+                item.setTextWidth(w)
+
             item.setPos(label_pos)
-            item.setTextWidth(w)
             item.setDefaultTextColor(text_color)
+            
+            self.label_bg_items[i].setRect(item.boundingRect())
+            self.label_bg_items[i].setPen(QPen(Qt.NoPen))
+            self.label_bg_items[i].setBrush(self.plot.color(OWPalette.Canvas))
             
             item = self.tick_items[i]
             item.setVisible(True)

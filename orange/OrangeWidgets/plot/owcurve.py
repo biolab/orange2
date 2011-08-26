@@ -205,12 +205,17 @@ class OWCurve(orangeqt.Curve):
         
             Sets the curve's style to ``style``. 
             
-            The curve's style specified how its lines are drawn. If the style is OWCurve.Lines, then 
-            data points are connected with a continuous line with the curve's :meth:`pen`. Otherwise, 
-            no such lines are drawn. 
+            The following values are recognized by OWCurve:
             
-            Points are drawn regardless of this setting, so it's possible to have both lines and points
-            on the same curve. 
+            ===================  ===============================================
+            Value                Result
+            ===================  ===============================================
+            OWCurve.Points       Only points are shown, no lines
+            OWCurve.Lines        A continuous line is shown, no points
+            OWCurve.LinesPoints  Both points and lines between them are shown
+            OWCurve.Dots         A dotted line is shown, no points
+            OWCurve.NoCurve      Deprecated, same as ``OWCurve.Points``
+            ===================  ===============================================
             
             Curve subclasses can use this value for different drawing modes. 
             Values up to OWCurve.UserCurve are reserved, so use only higher numbers, like the following example::
@@ -249,6 +254,8 @@ class OWCurve(orangeqt.Curve):
         
             Sets the scene positions of the points to match their data coordinates. 
     """
+    NoCurve = orangeqt.Curve.Points
+    
     def __init__(self, xData=[], yData=[], x_axis_key=xBottom, y_axis_key=yLeft, tooltip=None):
         orangeqt.Curve.__init__(self, xData, yData)
         self.set_axes(x_axis_key, y_axis_key)

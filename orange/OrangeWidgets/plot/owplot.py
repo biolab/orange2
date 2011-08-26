@@ -28,7 +28,7 @@ SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.Round
 SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
-from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty
+from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
@@ -57,6 +57,7 @@ name_map = {
     "activateSelection" : "activate_selection", 
     "activateRectangleSelection" : "activate_rectangle_selection", 
     "activatePolygonSelection" : "activate_polygon_selection", 
+    "activatePanning" : "activate_panning",
     "getSelectedPoints" : "get_selected_points",
     "setAxisScale" : "set_axis_scale",
     "setAxisLabels" : "set_axis_labels", 
@@ -66,7 +67,9 @@ name_map = {
     "itemList" : "plot_items",
     "setShowMainTitle" : "set_show_main_title",
     "setMainTitle" : "set_main_title",
-    "invTransform" : "inv_transform"
+    "invTransform" : "inv_transform",
+    "setAxisTitle" : "set_axis_title",
+    "setShowAxisTitle" : "set_show_axis_title"
 }
 
 @deprecated_members(name_map, wrap_methods=name_map.keys())
@@ -267,9 +270,57 @@ class OWPlot(orangeqt.Plot):
             
             :rtype: list of int
             
-        
+    **Color schemes**
     
+        By default, OWPlot uses the application's system palette for drawing everything
+        except data curves and points. This way, it maintains consistency with other application
+        with regards to the user interface. 
+        
+        If data is plotted with no color specified, it will use a system color as well, 
+        so that a good contrast with the background in guaranteed. 
+        
+        OWPlot uses the :meth:`.OWidget.palette` to determine its color scheme, so it can be 
+        changed using :meth:`.QWidget.setPalette`. There are also two predefined color schemes:
+        ``OWPalette.Dark`` and ``OWPalette.Light``, which provides a dark and a light scheme
+        respectively. 
+        
+        .. attribute:: theme_name
+        
+            A string attribute with three possible values:
+            ==============  ===========================
+            Value           Meaning
+            --------------  ---------------------------
+            "default"       The system palette is used
+            "dark"          The dark theme is used
+            "light"         The light theme is used 
+            ==============  ===========================
+            
+            To apply the settings, first set this attribute's value, and then call :meth:`update_theme`
+            
+        .. automethod:: update_theme
+            
+        On the other hand, curves with a specified color will use colors from Orange's palette, 
+        which can be configured within Orange. Each plot contains two separate palettes: 
+        one for continuous attributes, and one for discrete ones. Both are created by
+        :obj:`.OWColorPalette.ColorPaletteGenerator`
+        
+        .. attribute:: continuous_palette
+        
+            The palette used when point color represents a continuous attribute
+        
+        .. attribute:: discrete_palette
+        
+            The palette used when point color represents a discrete attribute
+
     """
+    
+    point_settings = ["point_width", "alpha_value"]
+    plot_settings = ["show_legend", "show_grid"]
+    appearance_settings = ["antialias_plot", "animate_plot", "animate_points", "disable_animations_threshold", "auto_adjust_performance"]
+    
+    def settings_list(self, graph_name, settings):
+        return [graph_name + '.' + setting for setting in settings]
+    
     def __init__(self, parent = None,  name = "None",  show_legend = 1, axes = [xBottom, yLeft], widget = None ):
         """
             Creates a new graph
@@ -293,8 +344,9 @@ class OWPlot(orangeqt.Plot):
         self.axes = dict()
 
         self.axis_margin = 50
+        self.y_axis_extra_margin = 30
         self.title_margin = 40
-        self.graph_margin = 20
+        self.graph_margin = 10
         
         self.mainTitle = None
         self.showMainTitle = False
@@ -310,7 +362,7 @@ class OWPlot(orangeqt.Plot):
         self.point_width = 5
         self.show_filled_symbols = True
         self.alpha_value = 255
-        self.show_grid = False
+        self.show_grid = True
         
         self.curveSymbols = range(13)
         self.tips = TooltipManager(self)
@@ -342,6 +394,8 @@ class OWPlot(orangeqt.Plot):
         self.auto_adjust_performance = True
         self.disable_animations_threshold = 5000
      #   self.setInteractive(False)
+
+        self.warn_unused_attributes = False
         
         self._bounds_cache = {}
         self._transform_cache = {}
@@ -363,6 +417,7 @@ class OWPlot(orangeqt.Plot):
         self._zoom_rect = None
         self._zoom_transform = QTransform()
         self.zoom_stack = []
+        self.old_legend_margin = None
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
@@ -374,8 +429,8 @@ class OWPlot(orangeqt.Plot):
             else:
                 self.add_axis(key)
                 
-        self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
-        self.discPalette = ColorPaletteGenerator()
+        self.continuous_palette = ColorPaletteGenerator(numberOfColors = -1)
+        self.discrete_palette = ColorPaletteGenerator()
         
         self.gui = OWPlotGUI(self)
 	"""
@@ -398,6 +453,8 @@ class OWPlot(orangeqt.Plot):
     mainTitle = deprecated_attribute("mainTitle", "main_title")
     showMainTitle = deprecated_attribute("showMainTitle", "show_main_title")
     gridCurve = deprecated_attribute("gridCurve", "grid_curve")
+    contPalette = deprecated_attribute("contPalette", "continuous_palette")
+    discPalette = deprecated_attribute("discPalette", "discrete_palette")
     
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QGraphicsView)
@@ -505,6 +562,12 @@ class OWPlot(orangeqt.Plot):
         '''
         self.state = SELECT_POLYGON
         
+    def activate_panning(self):
+        '''
+            Activates the panning mode, where the user can move the zoom projection by dragging the mouse
+        '''
+        self.state = PANNING
+        
     def set_show_main_title(self, b):
         '''
             Shows the main title if ``b`` is ``True``, and hides it otherwise. 
@@ -520,18 +583,24 @@ class OWPlot(orangeqt.Plot):
         self.replot()
 
     def setShowXaxisTitle(self, b = -1):
+        if b == -1 and hasattr(self, 'showXaxisTitle'):
+            b = self.showXaxisTitle
         self.setShowAxisTitle(xBottom, b)
         
     def setXaxisTitle(self, title):
         self.setAxisTitle(xBottom, title)
 
     def setShowYLaxisTitle(self, b = -1):
+        if b == -1 and hasattr(self, 'showYLaxisTitle'):
+            b = self.showYLaxisTitle
         self.setShowAxisTitle(yLeft, b)
 
     def setYLaxisTitle(self, title):
         self.setAxisTitle(yLeft, title)
 
     def setShowYRaxisTitle(self, b = -1):
+        if b == -1 and hasattr(self, 'showYRaxisTitle'):
+            b = self.showYRaxisTitle
         self.setShowAxisTitle(yRight, b)
 
     def setYRaxisTitle(self, title):
@@ -602,11 +671,12 @@ class OWPlot(orangeqt.Plot):
             self.axes[axis_id].set_scale(min, max, step_size)
         else:
             self.data_range[axis_id] = (min, max)
-    def setAxisTitle(self, axis_id, title):
+            
+    def set_axis_title(self, axis_id, title):
         if axis_id in self.axes:
             self.axes[axis_id].set_title(title)
             
-    def setShowAxisTitle(self, axis_id, b):
+    def set_show_axis_title(self, axis_id, b):
         if axis_id in self.axes:
             if b == -1:
                 b = not self.axes[axis_id].show_title
@@ -753,8 +823,10 @@ class OWPlot(orangeqt.Plot):
         c.set_point_symbols(shape_data)
         if len(marked_data):
             c.set_points_marked(marked_data)
-            self.marked_points_changed.emit()
+            self.emit(SIGNAL('marked_points_changed()'))
         c.name = 'Main Curve'
+	
+        self.replot()
         
     def remove_curve(self, item):
         '''
@@ -780,6 +852,7 @@ class OWPlot(orangeqt.Plot):
         self.axes[axis_id] = a
         if not axis_id in CartesianAxes:
             self.setShowAxisTitle(axis_id, True)
+        return a
         
     def remove_all_axes(self, user_only = True):
         '''
@@ -826,6 +899,7 @@ class OWPlot(orangeqt.Plot):
         self.clear_markers()
         self.tips.removeAll()
         self.legend().clear()
+        self.old_legend_margin = None
         self.update_grid()
         
     def clear_markers(self):
@@ -861,26 +935,13 @@ class OWPlot(orangeqt.Plot):
             self.title_item.setPos( graph_rect.width()/2 - title_size.width()/2, self.title_margin/2 - title_size.height()/2 )
             graph_rect.setTop(graph_rect.top() + self.title_margin)
         
-        self._legend_outside_area = QRectF(graph_rect)
-        self._legend.max_size = self._legend_outside_area.size()
-        
         if self.show_legend:
-            self._legend.show()
-            if not self._legend_moved:
-                ## If the legend hasn't been moved it, we set it outside, in the top right corner
-                w = self._legend.boundingRect().width()
-                self._legend_margin = QRectF(0, 0, w, 0)
-                self._legend.setPos(graph_rect.topRight() + QPointF(-w, 0))
-                self._legend.set_floating(False)
-                self._legend.set_orientation(Qt.Vertical)
-            
-            ## Adjust for possible external legend:
+            self._legend_outside_area = QRectF(graph_rect)
+            self._legend.max_size = self._legend_outside_area.size()
             r = self._legend_margin
             graph_rect.adjust(r.left(), r.top(), -r.right(), -r.bottom())
-        else:
-            self._legend.hide()
             
-        self._legend.update()
+        self._legend.update_items()
             
         axis_rects = dict()
         margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
@@ -896,7 +957,7 @@ class OWPlot(orangeqt.Plot):
             graph_rect.setTop(graph_rect.top() + margin)
         if yLeft in self.axes and self.axes[yLeft].isVisible():
             left_rect = QRectF(graph_rect)
-            left = graph_rect.left() + margin
+            left = graph_rect.left() + margin + self.y_axis_extra_margin
             left_rect.setRight(left)
             graph_rect.setLeft(left)
             axis_rects[yLeft] = left_rect
@@ -906,7 +967,7 @@ class OWPlot(orangeqt.Plot):
                 axis_rects[xTop].setLeft(left)
         if yRight in self.axes and self.axes[yRight].isVisible():
             right_rect = QRectF(graph_rect)
-            right = graph_rect.right() - margin
+            right = graph_rect.right() - margin - self.y_axis_extra_margin
             right_rect.setLeft(right)
             graph_rect.setRight(right)
             axis_rects[yRight] = right_rect
@@ -919,7 +980,12 @@ class OWPlot(orangeqt.Plot):
             self.graph_area = QRectF(graph_rect)
             self.set_graph_rect(self.graph_area)
             self._transform_cache = {}
-            self.map_transform = self.transform_for_axes()
+            if self._zoom_rect:
+                data_zoom_rect = self.map_transform.inverted()[0].mapRect(self._zoom_rect)
+                self.map_transform = self.transform_for_axes()
+                self.set_zoom_rect(self.map_transform.mapRect(data_zoom_rect))
+            else:
+                self.map_transform = self.transform_for_axes()
         
         for c in self.plot_items():
             x,y = c.axes()
@@ -930,7 +996,7 @@ class OWPlot(orangeqt.Plot):
         '''
             Updates the zoom transformation of the plot items. 
         '''
-        zt = self.zoom_transform
+        zt = self.zoom_transform()
         self._zoom_transform = zt
         self.set_zoom_transform(zt)
         
@@ -944,7 +1010,7 @@ class OWPlot(orangeqt.Plot):
             If ``zoom_only`` is ``True``, only the positions of the axes and their labels are recalculated. 
             Otherwise, all their labels are updated. 
         """
-        if not zoom_only:
+        if self.warn_unused_attributes and not zoom_only:
             self._legend.remove_category(UNUSED_ATTRIBUTES_STR)
             
         for id, item in self.axes.iteritems():
@@ -976,7 +1042,8 @@ class OWPlot(orangeqt.Plot):
                     item.show()
                 else:
                     item.hide()
-                    self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
+                    if self.warn_unused_attributes:
+                        self._legend.add_item(UNUSED_ATTRIBUTES_STR, item.title, None)
             item.zoom_transform = self._zoom_transform
             item.update(zoom_only)
         
@@ -995,12 +1062,41 @@ class OWPlot(orangeqt.Plot):
         self.update_layout()
         self.update_zoom()
         self.update_axes()
+        self.update_grid()
         self.update_filled_symbols()
         self.setSceneRect(QRectF(self.contentsRect()))
         self.viewport().update()
         
     def update_legend(self):
+        if self.show_legend and not self._legend_moved:
+            ## If the legend hasn't been moved it, we set it outside, in the top right corner
+            m = self.graph_margin
+            r = QRectF(self.contentsRect())
+            r.adjust(m, m, -m, -m)
+            self._legend.max_size = r.size()
+            self._legend.update_items()
+            w = self._legend.boundingRect().width()
+            self._legend_margin = QRectF(0, 0, w, 0)
+            self._legend.set_floating(False)
+            self._legend.set_orientation(Qt.Vertical)
+            self._legend.setPos(QRectF(self.contentsRect()).topRight() + QPointF(-w, 0))
+            
+        
+        if (self._legend.isVisible() == self.show_legend):
+            return
+            
         self._legend.setVisible(self.show_legend)
+        if self.show_legend:
+            if self.old_legend_margin is not None:
+                self.animate(self, 'legend_margin', self.old_legend_margin, duration = 100)
+            else:
+                r = self.legend_rect()
+                self.ensure_inside(r, self.contentsRect())
+                self._legend.setPos(r.topLeft())
+                self.notify_legend_moved(r.topLeft())
+        else:
+            self.old_legend_margin = self.legend_margin
+            self.animate(self, 'legend_margin', QRectF(), duration=100)
         
     def update_filled_symbols(self):
         ## TODO: Implement this in Curve.cpp
@@ -1054,7 +1150,15 @@ class OWPlot(orangeqt.Plot):
     ## Event handling
     def resizeEvent(self, event):
         self.replot()
+        s = event.size() - event.oldSize()
+        if self.legend_margin.right() > 0:
+            self._legend.setPos(self._legend.pos() + QPointF(s.width(), 0))
+        if self.legend_margin.bottom() > 0:
+            self._legend.setPos(self._legend.pos() + QPointF(0, s.height()))
         
+    def showEvent(self, event):
+        self.replot()
+
     def mousePressEvent(self, event):
         self.static_click = True
         self._pressed_mouse_button = event.button()
@@ -1089,7 +1193,7 @@ class OWPlot(orangeqt.Plot):
         
         point = self.mapToScene(event.pos())
         if not self._pressed_mouse_button:
-            self.point_hovered.emit(self.nearest_point(point))
+            self.emit(SIGNAL('point_hovered(Point*)'), self.nearest_point(point))
         
         ## We implement a workaround here, because sometimes mouseMoveEvents are not fast enough
         ## so the moving legend gets left behind while dragging, and it's left in a pressed state
@@ -1118,7 +1222,7 @@ class OWPlot(orangeqt.Plot):
             if type(text) == int: 
                 text = self.buildTooltip(text)
             if text and x is not None and y is not None:
-                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self.zoom_transform)
+                tp = self.mapFromScene(QPointF(x,y) * self.map_transform * self._zoom_transform)
                 self.showTip(tp.x(), tp.y(), text)
             else:
                 orangeqt.Plot.mouseMoveEvent(self, event)
@@ -1140,7 +1244,7 @@ class OWPlot(orangeqt.Plot):
         if a in [ZOOMING, SELECT] and self._current_rs_item:
             rect = self._current_rs_item.rect()
             if a == ZOOMING:
-                self.zoom_to_rect(self.zoom_transform.inverted()[0].mapRect(rect))
+                self.zoom_to_rect(self._zoom_transform.inverted()[0].mapRect(rect))
             else:
                 self.add_selection(rect)
             self.scene().removeItem(self._current_rs_item)
@@ -1171,7 +1275,7 @@ class OWPlot(orangeqt.Plot):
                 b = self.AddSelection
             if point_item:
                 point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
-            self.selection_changed.emit()
+            self.emit(SIGNAL('selection_changed()'))
         else:
             return False
             
@@ -1440,15 +1544,15 @@ class OWPlot(orangeqt.Plot):
             self._legend.set_orientation(orientation)
             self.animate(self, 'legend_margin', rect, duration=100)
 
-    @pyqtProperty(QRectF)
-    def legend_margin(self):
+    def get_legend_margin(self):
         return self._legend_margin
         
-    @legend_margin.setter
-    def legend_margin(self, value):
+    def set_legend_margin(self, value):
         self._legend_margin = value
         self.update_layout()
         self.update_axes()
+
+    legend_margin = pyqtProperty(QRectF, get_legend_margin, set_legend_margin)
         
     def update_curves(self):
         if self.main_curve:
@@ -1471,14 +1575,14 @@ class OWPlot(orangeqt.Plot):
             
     def update_antialiasing(self, use_antialiasing=None):
         if use_antialiasing is not None:
-            self.use_antialiasing= use_antialiasing
+            self.antialias_plot = use_antialiasing
             
         self.setRenderHint(QPainter.Antialiasing, self.antialias_plot)
-        orangeqt.Point.clear_cache()
         
     def update_animations(self, use_animations=None):
         if use_animations is not None:
-            self.use_animations = use_animations
+            self.animate_plot = use_animations
+            self.animate_points = use_animations
             
     def update_performance(self, num_points = None):
         if self.auto_adjust_performance:
@@ -1488,25 +1592,34 @@ class OWPlot(orangeqt.Plot):
                 else:
                     num_points = sum( len(c.points()) for c in self.curves )
             if num_points > self.disable_animations_threshold:
-                qDebug('Disabling animations')
+                self.disabled_animate_points = self.animate_points
                 self.animate_points = False
+                
+                self.disabled_animate_plot = self.animate_plot
                 self.animate_plot = False
+                
+                self.disabled_antialias_lines = self.animate_points
                 self.antialias_lines = False
-            else:
-                qDebug('Enabling animations')
-                self.animate_points = True
-                self.animate_plot = True
-                self.antialias_lines = True
-            qDebug(repr(self.animate_points))
+            
+            elif hasattr(self, 'disabled_animate_points'):
+                self.animate_points = self.disabled_animate_points
+                del self.disabled_animate_points
+                
+                self.animate_plot = self.disabled_animate_plot
+                del self.disabled_animate_plot
+                
+                self.antialias_lines = self.disabled_antialias_lines
+                del self.disabled_antialias_lines
         
-    def animate(self, target, prop_name, end_val, duration = None):
+    def animate(self, target, prop_name, end_val, duration = None, start_val = None):
         for a in self._animations:
             if a.state() == QPropertyAnimation.Stopped:
                 self._animations.remove(a)
         if self.animate_plot:
             a = QPropertyAnimation(target, prop_name)
-            a.setStartValue(target.property(prop_name))
             a.setEndValue(end_val)
+            if start_val is not None:
+                a.setStartValue(start_val)
             if duration:
                 a.setDuration(duration)
             self._animations.append(a)
@@ -1527,7 +1640,7 @@ class OWPlot(orangeqt.Plot):
             x, y = delta
         else:
             x, y = delta.x(), delta.y()
-        t = self.zoom_transform
+        t = self.zoom_transform()
         x = x / t.m11()
         y = y / t.m22()
         r = QRectF(self.zoom_rect)
@@ -1538,19 +1651,18 @@ class OWPlot(orangeqt.Plot):
     def zoom_to_rect(self, rect):
         self.ensure_inside(rect, self.graph_area)
         self.zoom_stack.append(self.zoom_rect)
-        self.animate(self, 'zoom_rect', rect)
+        self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
         
     def zoom_back(self):
         if self.zoom_stack:
             rect = self.zoom_stack.pop()
-            self.animate(self, 'zoom_rect', rect)
+            self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
 
     def reset_zoom(self):
         qDebug('Resetting zoom')
         self._zoom_rect = None
         self.update_zoom()
         
-    @pyqtProperty(QTransform)
     def zoom_transform(self):
         return self.transform_from_rects(self.zoom_rect, self.graph_area)
         
@@ -1561,7 +1673,7 @@ class OWPlot(orangeqt.Plot):
         self.zoom(point, scale = 0.5)
         
     def zoom(self, point, scale):
-        t, ok = self.zoom_transform.inverted()
+        t, ok = self._zoom_transform.inverted()
         point = point * t
         r = QRectF(self.zoom_rect)
         i = 1.0/scale
@@ -1571,15 +1683,18 @@ class OWPlot(orangeqt.Plot):
         self.ensure_inside(r, self.graph_area)
         self.zoom_to_rect(r)
         
-    @pyqtProperty(QRectF)
-    def zoom_rect(self):
-        return self._zoom_rect if self._zoom_rect else self.graph_area
+    def get_zoom_rect(self):
+        if self._zoom_rect:
+            return self._zoom_rect
+        else:
+            return self.graph_area
         
-    @zoom_rect.setter
-    def zoom_rect(self, rect):
+    def set_zoom_rect(self, rect):
         self._zoom_rect = rect
         self._zoom_transform = self.transform_from_rects(rect, self.graph_area)
         self.update_zoom()
+
+    zoom_rect = pyqtProperty(QRectF, get_zoom_rect, set_zoom_rect)
         
     @staticmethod
     def ensure_inside(small_rect, big_rect):
@@ -1649,10 +1764,19 @@ class OWPlot(orangeqt.Plot):
             return self.palette().color(role)
             
     def set_palette(self, p):
+        '''
+            Sets the plot palette to ``p``. 
+            
+            :param p: The new color palette
+            :type p: :obj:`.QPalette`
+        '''
         self.setPalette(p)
         self.replot()
         
     def update_theme(self):
+        '''
+            Updates the current color theme, depending on the value of :attr:`theme_name`.
+        '''
         if self.theme_name.lower() == 'default':
             self.set_palette(OWPalette.System)
         elif self.theme_name.lower() == 'light':

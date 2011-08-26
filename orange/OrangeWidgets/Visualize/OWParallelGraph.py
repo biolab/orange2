@@ -78,7 +78,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
             else:                   self.setAxisScale(QwtPlot.yLeft, -0.02, 1.02, 1)
 
             if self.autoUpdateAxes:
-                self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)
+                if attributes and isinstance(self.dataDomain[attributes[-1]], orange.EnumVariable):
+                    self.setAxisScale(QwtPlot.xBottom, -0.1, len(attributes) - 0.4, 1)
+                else:
+                    self.setAxisScale(QwtPlot.xBottom, -0.1, len(attributes) - 0.9, 1)
             else:
                 m = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
                 M = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()

@@ -1,8 +1,14 @@
 from OWWidget import *
-import OWGUI, OWDlgs, OWGraphTools, numpy, user, sys
-from OWGraph import *
+import OWGUI, OWDlgs, numpy, user, sys
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
+
+_graph_dialogs = True
+try:
+    from OWGraph import *
+except ImportError:
+    _graph_dialogs = False
+
 
 class OWVizRank(VizRank, OWWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "qualityMeasureCluster", "qualityMeasureContClass", "testingMethod",
@@ -175,7 +181,18 @@ class OWVizRank(VizRank, OWWidget):
         self.classesBox = OWGUI.widgetBox(self.ManageTab, "Class Values You Wish to See Separated")
         self.classesBox.setFixedHeight(130)
         self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
-        self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
+            
+        if _graph_dialogs:
+            self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
+
+            self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
+            self.attributeRankingButton = OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
+            self.attributeInteractionsButton = OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis, debuggingEnabled = 0)
+
+            self.buttonBox8 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
+            self.projectionScoresButton = OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality, debuggingEnabled = 0)
+            self.outlierIdentificationButton = OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
+        
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage Projections")
 
         self.classesList = OWGUI.listBox(self.classesBox, self, selectionMode = QListWidget.MultiSelection, callback = self.classesListChanged)
@@ -186,15 +203,7 @@ class OWVizRank(VizRank, OWWidget):
 
         #self.removeSelectedButton = OWGUI.button(self.buttonBox5, self, "Remove selection", self.removeSelected)
         #self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
-
-        self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
-        self.attributeRankingButton = OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
-        self.attributeInteractionsButton = OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis, debuggingEnabled = 0)
-
-        self.buttonBox8 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
-        self.projectionScoresButton = OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality, debuggingEnabled = 0)
-        self.outlierIdentificationButton = OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
-
+        
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.loadProjections, debuggingEnabled = 0)
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.saveProjections, debuggingEnabled = 0)
@@ -364,10 +373,12 @@ class OWVizRank(VizRank, OWWidget):
         #self.evaluateProjectionButton.setEnabled(self.graph.dataHasDiscreteClass)
         self.showKNNCorrectButton.setEnabled(self.graph.dataHasDiscreteClass)
         self.showKNNWrongButton.setEnabled(self.graph.dataHasDiscreteClass)
-        self.attributeRankingButton.setEnabled(self.graph.dataHasDiscreteClass)
-        self.attributeInteractionsButton.setEnabled(self.graph.dataHasDiscreteClass)
-        self.projectionScoresButton.setEnabled(self.graph.dataHasDiscreteClass)
-        self.outlierIdentificationButton.setEnabled(self.graph.dataHasDiscreteClass)
+        
+        if _graph_dialogs:
+            self.attributeRankingButton.setEnabled(self.graph.dataHasDiscreteClass)
+            self.attributeInteractionsButton.setEnabled(self.graph.dataHasDiscreteClass)
+            self.projectionScoresButton.setEnabled(self.graph.dataHasDiscreteClass)
+            self.outlierIdentificationButton.setEnabled(self.graph.dataHasDiscreteClass)
         #self.findArgumentsButton.setEnabled(self.graph.dataHasDiscreteClass)
         
         self.optimizationSettingsDiscClassBox.setVisible(self.graph.dataHasDiscreteClass)

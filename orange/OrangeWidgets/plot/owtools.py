@@ -181,7 +181,7 @@ class PolygonCurve(OWCurve):
         :type pen: :obj:`.QPen`
         
         :param brush: The brush used to paint the polygon's inside
-        :type brush: :obj:`.QBrush
+        :type brush: :obj:`.QBrush`
         
         :param xData: The list of x coordinates
         :type xData: list of float
@@ -335,9 +335,13 @@ class Marker(orangeqt.PlotItem):
         
         :param size: Font size
         :type size: int
+        
+        Markers have the QGraphicsItem.ItemIgnoresTransformations flag set by default,
+        so text remains the same size when zooming. There is no need to scale the manually. 
     """
     def __init__(self, text, x, y, align, bold = 0, color = None, brushColor = None, size=None):
         orangeqt.PlotItem.__init__(self)
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         self._item = QGraphicsTextItem(text, parent=self)
         self._data_point = QPointF(x,y)
         f = self._item.font()

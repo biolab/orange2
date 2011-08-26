@@ -1,7 +1,14 @@
 import os
 from OWBaseWidget import *
 import OWGUI
-from PyQt4.Qwt5 import *
+
+_have_qwt = True
+try:
+    from PyQt4.Qwt5 import *
+except ImportError:
+    _have_qwt = False
+
+from PyQt4.QtGui import QGraphicsScene, QGraphicsView
 from PyQt4.QtSvg import *
 from ColorPalette import *
 import OWQCanvasFuncts
@@ -28,12 +35,14 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         #self.layout().addWidget(self.space)
 
         box = OWGUI.widgetBox(self.space, "Image Size")
-        if isinstance(graph, QwtPlot):
+
+        global _have_qwt
+        if _have_qwt and isinstance(graph, QwtPlot):
             size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
             self.customXEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customX", "Width: ", orientation = "horizontal", valueType = int)
             self.customYEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customY", "Height:", orientation = "horizontal", valueType = int)
             OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:   ', box = " Pen width multiplication factor ",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
-        elif isinstance(graph, QGraphicsScene):
+        elif isinstance(graph, QGraphicsScene) or isinstance(graph, QGraphicsView):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
 
         box = OWGUI.widgetBox(self.space, 1)
@@ -57,9 +66,16 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         if ext.lower() not in [".bmp", ".gif", ".png", ".svg"] :
             ext = ".png"                                        # if no format was specified, we choose png
         filename = fil + ext
+        
+        real_graph = self.graph if isinstance(self.graph, QGraphicsView) else None
+        if real_graph:
+            self.graph = self.graph.scene()            
 
         if isinstance(self.graph, QGraphicsScene):
             source = self.getSceneBoundingRect().adjusted(-15, -15, 15, 15)
+            size = source.size()
+        elif isinstance(self.graph, QGraphicsView):
+            source = self.graph.sceneRect()
             size = source.size()
         elif not size:
             size = self.getSize()
@@ -74,10 +90,19 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         painter.begin(buffer)
         painter.setRenderHint(QPainter.Antialiasing)
         if not filename.lower().endswith(".svg"):
-            painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+            if isinstance(self.graph, QGraphicsScene) or isinstance(self.graph, QGraphicsView):
+                # make background same color as the widget's background
+                brush = self.graph.backgroundBrush()
+                if brush.style() == Qt.NoBrush:
+                    brush = QBrush(self.graph.palette().color(QPalette.Base))
+                painter.fillRect(buffer.rect(), brush)
+            else:
+                painter.fillRect(buffer.rect(), QBrush(Qt.white))
 
         # qwt plot
-        if isinstance(self.graph, QwtPlot):
+        global _have_qwt
+        if _have_qwt and isinstance(self.graph, QwtPlot):
+
             if self.penWidthFactor != 1:
                 for curve in self.graph.itemList():
                     pen = curve.pen(); pen.setWidth(self.penWidthFactor*pen.width()); curve.setPen(pen)
@@ -89,7 +114,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                     pen = curve.pen(); pen.setWidth(pen.width()/self.penWidthFactor); curve.setPen(pen)
 
         # QGraphicsScene
-        elif isinstance(self.graph, QGraphicsScene):
+        elif isinstance(self.graph, QGraphicsScene) or isinstance(self.graph, QGraphicsView):
             target = QRectF(0,0, source.width(), source.height())
             self.graph.render(painter, target, source)
 
@@ -98,7 +123,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         if closeDialog:
             QDialog.accept(self)
-
 
     def getSceneBoundingRect(self):
         source = QRectF()
@@ -110,7 +134,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     def saveToMatplotlib(self):
         filename = self.getFileName(self.defaultName, "Python Script (*.py)", ".py")
         if filename:
-            if isinstance(self.graph, QwtPlot):
+            global _have_qwt
+            if _have_qwt and isinstance(self.graph, QwtPlot):
                 self.graph.saveToMatplotlib(filename, self.getSize())
             else:
                 rect = self.getSceneBoundingRect()
@@ -118,8 +143,13 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                 f = open(filename, "wt")
                 f.write("# This Python file uses the following encoding: utf-8\n")
                 f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\n#constants\nx1 = %f; x2 = %f\ny1 = 0.0; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = 0.01\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\na = gca()\nhold(True)\n" % (minx, maxx, maxy, maxx-minx, maxy-miny))
-
-                sortedList = [(item.zValue(), item) for item in self.graph.items()]
+                
+                if isinstance(self.graph, QGraphicsView):
+                    scene = self.graph.scene()
+                else:
+                    scene = self.graph
+                
+                sortedList = [(item.zValue(), item) for item in scene.items()]
                 sortedList.sort()   # sort items by z value
 
                 for (z, item) in sortedList:
@@ -187,7 +217,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         return size
 
     def updateGUI(self):
-        if isinstance(self.graph, QwtPlot):
+        global _have_qwt
+        if _have_qwt and isinstance(self.graph, QwtPlot):
             self.customXEdit.setEnabled(self.selectedSize == 4)
             self.customYEdit.setEnabled(self.selectedSize == 4)
 
@@ -197,7 +228,3 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         col = [obj.color().red(), obj.color().green(), obj.color().blue()];
         col = tuple([v/float(255) for v in col])
         return col, obj.color().alpha()/float(255)
-
-
-
-
