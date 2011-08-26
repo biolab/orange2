@@ -1,6 +1,9 @@
-#include <iostream>
-#include <assert.h>
 #include "plot3d.h"
+#include <iostream>
+#include <QGLFormat>
+#include <GL/glx.h>
+#include <GL/glxext.h> // TODO: Windows?
+#include <GL/glext.h>
 
 PFNGLGENBUFFERSARBPROC glGenBuffers = NULL;
 PFNGLBINDBUFFERPROC glBindBuffer = NULL;
@@ -12,7 +15,7 @@ PFNGLGETVERTEXATTRIBPOINTERPROC glVertexAttribPointer = NULL;
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
-Plot3D::Plot3D(QWidget* parent)
+Plot3D::Plot3D(QWidget* parent) : QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
 {
     vbo_generated = false;
 }

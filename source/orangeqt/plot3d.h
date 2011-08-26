@@ -4,9 +4,6 @@
 #include <QtOpenGL/QGLWidget>
 #include <QVector3D>
 #include <GL/gl.h>
-#include <GL/glx.h>
-#include <GL/glxext.h> // TODO: Windows?
-#include <GL/glext.h>
 
 class Plot3D : public QGLWidget {
   Q_OBJECT
