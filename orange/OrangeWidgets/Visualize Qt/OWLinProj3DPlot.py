@@ -38,6 +38,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
     def setData(self, data, subsetData=None, **args):
         ScaleLinProjData3D.setData(self, data, subsetData, **args)
+
+        if hasattr(self, 'cone_vao_id'):
+            return
+
         self.makeCurrent()
         self.state = PlotState.IDLE # Override for now, apparently this is modified by OWPlotGUI
         self.before_draw_callback = lambda: self.before_draw()
