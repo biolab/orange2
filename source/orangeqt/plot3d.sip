@@ -16,5 +16,5 @@ public:
                 int color_index, int symbol_index, int size_index, int label_index,
                 const QList<QColor>& colors, int num_symbols_used,
                 bool x_discrete, bool y_discrete, bool z_discrete, bool use_2d_symbols);
-    void draw_data();
+    void draw_data(GLuint shader_id, float alpha_value);
 };

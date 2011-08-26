@@ -19,19 +19,22 @@ public:
                 int color_index, int symbol_index, int size_index, int label_index,
                 const QList<QColor>& colors, int num_symbols_used,
                 bool x_discrete, bool y_discrete, bool z_discrete, bool use_2d_symbols);
-    void draw_data();
+    void draw_data(GLuint shader_id, float alpha_value);
 
 private:
     float* data_array;
     int num_examples;
     int example_size;
     int num_vertices;
+    int num_edges_vertices;
     GLuint vbo_id;
+    GLuint vbo_edges_id;
     bool vbo_generated;
 
     QMap<int, QList<QVector3D> > geometry_data_2d;
     QMap<int, QList<QVector3D> > geometry_data_3d;
-    QMap<int, QList<QVector3D> > geometry_data_edges;
+    QMap<int, QList<QVector3D> > geometry_data_edges_2d;
+    QMap<int, QList<QVector3D> > geometry_data_edges_3d;
 };
 
 #endif

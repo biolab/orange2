@@ -12,6 +12,10 @@ PFNGLENABLEVERTEXATTRIBARRAYARBPROC glEnableVertexAttribArray = NULL;
 PFNGLDISABLEVERTEXATTRIBARRAYARBPROC glDisableVertexAttribArray = NULL;
 typedef void (APIENTRYP PFNGLGETVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
 PFNGLGETVERTEXATTRIBPOINTERPROC glVertexAttribPointer = NULL;
+typedef GLint (APIENTRYP PFNGLGETUNIFORMLOCATIONPROC) (GLuint program, const GLchar *name);
+PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = NULL;
+//typedef void (APIENTRYP PFNGLUNIFORM2FPROC) (GLint location, GLfloat v0, GLfloat v1);
+PFNGLUNIFORM2FPROC glUniform2f = NULL;
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -36,12 +40,23 @@ inline T clamp(T value, T min, T max)
 
 void Plot3D::set_symbol_geometry(int symbol, int type, const QList<QVector3D>& geometry)
 {
-    if (type == 0)
-        geometry_data_2d[symbol] = geometry;
-    else if (type == 1)
-        geometry_data_3d[symbol] = geometry;
-    else
-        geometry_data_edges[symbol] = geometry;
+    switch (type)
+    {
+        case 0:
+            geometry_data_2d[symbol] = geometry;
+            break;
+        case 1:
+            geometry_data_3d[symbol] = geometry;
+            break;
+        case 2:
+            geometry_data_edges_2d[symbol] = geometry;
+            break;
+        case 3:
+            geometry_data_edges_3d[symbol] = geometry;
+            break;
+        default:
+            std::cout << "Wrong geometry type!" << std::endl;
+    }
 }
 
 void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
@@ -60,6 +75,8 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
     glVertexAttribPointer = (PFNGLGETVERTEXATTRIBPOINTERPROC)glXGetProcAddress((const GLubyte*)"glVertexAttribPointer");
     glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYARBPROC)glXGetProcAddress((const GLubyte*)"glEnableVertexAttribArray");
     glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYARBPROC)glXGetProcAddress((const GLubyte*)"glDisableVertexAttribArray");
+    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)glXGetProcAddress((const GLubyte*)"glGetUniformLocation");
+    glUniform2f = (PFNGLUNIFORM2FPROC)glXGetProcAddress((const GLubyte*)"glUniform2f");
 #endif
 }
 
@@ -70,9 +87,13 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 {
     const float scale = 0.001;
     float* vbo_data = new float[num_examples * 144 * 13];
+    float* vbo_edges_data = new float[num_examples * 144 * 13];
     float* dest = vbo_data;
+    float* dest_edges = vbo_edges_data;
     int size_in_bytes = 0;
+    int size_in_bytes_edges = 0;
     QMap<int, QList<QVector3D> >& geometry = use_2d_symbols ? geometry_data_2d : geometry_data_3d;
+    QMap<int, QList<QVector3D> >& geometry_edges = use_2d_symbols ? geometry_data_edges_2d : geometry_data_edges_3d;
 
     for (int index = 0; index < num_examples; ++index)
     {
@@ -129,6 +150,32 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
                 *dest = index; dest++;
             }
         }
+
+        for (int i = 0; i < geometry_edges[symbol].count(); i += 2) {
+            size_in_bytes_edges += 2*13*4;
+
+            for (int j = 0; j < 2; ++j)
+            {
+                *dest_edges = x_pos; dest_edges++; 
+                *dest_edges = y_pos; dest_edges++; 
+                *dest_edges = z_pos; dest_edges++; 
+
+                *dest_edges = geometry_edges[symbol][i+j].x()*size*scale; dest_edges++;
+                *dest_edges = geometry_edges[symbol][i+j].y()*size*scale; dest_edges++;
+                *dest_edges = geometry_edges[symbol][i+j].z()*size*scale; dest_edges++;
+
+                *dest_edges = color.redF(); dest_edges++;
+                *dest_edges = color.greenF(); dest_edges++;
+                *dest_edges = color.blueF(); dest_edges++;
+
+                // Just use offset
+                *dest_edges = geometry_edges[symbol][i+j].x(); dest_edges++;
+                *dest_edges = geometry_edges[symbol][i+j].y(); dest_edges++;
+                *dest_edges = geometry_edges[symbol][i+j].z(); dest_edges++;
+
+                *dest_edges = index; dest_edges++;
+            }
+        }
     }
 
     glGenBuffers(1, &vbo_id);
@@ -138,14 +185,24 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
     delete [] vbo_data;
 
+    glGenBuffers(1, &vbo_edges_id);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_edges_id);
+    glBufferData(GL_ARRAY_BUFFER, size_in_bytes_edges, vbo_edges_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    delete [] vbo_edges_data;
+
     num_vertices = size_in_bytes / (13*4);
+    num_edges_vertices = size_in_bytes_edges / (13*4);
     vbo_generated = true;
 }
 
-void Plot3D::draw_data()
+void Plot3D::draw_data(GLuint shader_id, float alpha_value)
 {
     if (!vbo_generated)
         return;
+
+    glUniform2f(glGetUniformLocation(shader_id, "alpha_value"), alpha_value-0.4, alpha_value-0.4);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_id);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
@@ -160,6 +217,29 @@ void Plot3D::draw_data()
     glEnableVertexAttribArray(4);
 
     glDrawArrays(GL_TRIANGLES, 0, num_vertices);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glDisableVertexAttribArray(3);
+    glDisableVertexAttribArray(4);
+
+    glUniform2f(glGetUniformLocation(shader_id, "alpha_value"), alpha_value, alpha_value);
+
+    // Edges
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_edges_id);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(4);
+
+    glDrawArrays(GL_LINES, 0, num_edges_vertices);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
