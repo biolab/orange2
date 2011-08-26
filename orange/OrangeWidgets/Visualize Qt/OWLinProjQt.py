@@ -16,6 +16,22 @@ from OWFreeVizOptimization import *
 import OWToolbars, OWGUI, orngTest
 import orngVisFuncts, OWColorPalette
 import orngVizRank
+from plot.owtheme import PlotTheme
+
+class LinProjTheme(PlotTheme):
+    def __init__(self):
+        super(LinProjTheme, self).__init__()
+
+class LightTheme(LinProjTheme):
+    pass
+
+class DarkTheme(LinProjTheme):
+    def __init__(self):
+        super(DarkTheme, self).__init__()
+        self.labels_color = QColor(230, 230, 230, 255)
+        self.axis_values_color = QColor(170, 170, 170, 255)
+        self.axis_color = QColor(230, 230, 230, 255)
+        self.background_color = QColor(0, 0, 0, 255)
 
 ###########################################################################################
 ##### WIDGET : Linear Projection
@@ -186,10 +202,10 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
 
-        if "sphereviz" in name_lower:
-            OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
-
         if "3d" in name_lower:
+            self.dark_theme = False
+            OWGUI.checkBox(box, self, 'dark_theme', 'Dark theme', callback=self.on_theme_change)
+            OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
             OWGUI.checkBox(box, self, 'graph.use_2d_symbols', '2D symbols', callback = self.updateGraph, tooltip = "Use 2D symbols")
         else:
             self.graph.gui.filled_symbols_check_box(box)
@@ -397,9 +413,15 @@ class OWLinProjQt(OWVisWidget):
             self.freeVizDlg.hide()
         OWVisWidget.hideEvent(self, ev)
         
-
     def sendReport(self):
         self.reportImage(self.graph.saveToFileDirect, QSize(500, 500))
+
+    def on_theme_change(self):
+        if self.dark_theme:
+            self.graph.theme = DarkTheme()
+        else:
+            self.graph.theme = LightTheme()
+
         
 #test widget appearance
 if __name__=="__main__":

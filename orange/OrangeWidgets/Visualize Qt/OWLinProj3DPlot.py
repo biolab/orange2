@@ -14,6 +14,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         ScaleLinProjData3D.__init__(self)
 
         self.camera_fov = 50.
+        self.camera_in_center = False
         self.show_axes = self.show_chassis = self.show_grid = False
 
         self.point_width = 6
@@ -162,9 +163,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 self.cone_shader.release()
 
                 glDepthMask(GL_FALSE)
-                glColor4f(0, 0, 0, 1)
+                self.qglColor(self._theme.axis_values_color)
                 self.renderText(x*1.2, y*1.2, z*1.2, label)
 
+                self.qglColor(self._theme.axis_color)
                 glBegin(GL_LINES)
                 glVertex3f(0, 0, 0)
                 glVertex3f(x, y, z)
@@ -175,7 +177,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if self.tooltipKind == 0:
             glEnable(GL_DEPTH_TEST)
             if self._arrow_lines:
-                glLineWidth(2)
+                glLineWidth(3)
                 for x, y, z, value, factor, color in self._arrow_lines:
                     glColor3f(*color)
                     glBegin(GL_LINES)
@@ -183,7 +185,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                     glVertex3f(x, y, z)
                     glEnd()
 
-                    glColor3f(0, 0, 0)
+                    self.qglColor(self._theme.axis_color)
                     # TODO: discrete
                     self.renderText(x,y,z, ('%f' % (value if self.tooltipValue == 0 else factor)).rstrip('0').rstrip('.'),
                                     font=self._theme.labels_font)

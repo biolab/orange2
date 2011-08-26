@@ -25,6 +25,7 @@ from OWDlgs import OWChooseImageSizeDlg
 
 import orange
 import orangeqt
+from owtheme import PlotTheme
 
 import OpenGL
 OpenGL.ERROR_CHECKING = False
@@ -41,8 +42,8 @@ from numpy import array, maximum
 #numpy.seterr(all='raise')
 
 try:
-    from itertools import izip as zip
     from itertools import chain
+    from itertools import izip as zip
 except:
     pass
 
@@ -217,7 +218,7 @@ class RectangleSelection(object):
     def draw(self):
         v1, v2 = self.first_vertex, self.current_vertex
         glLineWidth(1)
-        glColor4f(*self.plot.theme.helpers_color)
+        self.plot.qglColor(self.plot._theme.helpers_color)
         draw_line(v1[0], v1[1], v1[0], v2[1])
         draw_line(v1[0], v2[1], v2[0], v2[1])
         draw_line(v2[0], v2[1], v2[0], v1[1])
@@ -290,7 +291,7 @@ class PolygonSelection(object):
 
     def draw(self):
         glLineWidth(1)
-        glColor4f(*self.plot.theme.helpers_color)
+        self.plot.qglColor(self.plot._theme.helpers_color)
         if len(self.vertices) == 1:
             v1, v2 = self.vertices[0], self.current_vertex
             draw_line(v1[0], v1[1], v2[0], v2[1])
@@ -314,18 +315,6 @@ class PolygonSelection(object):
             draw_triangle(v0[0], v0[1],
                           vi[0], vi[1],
                           vj[0], vj[1])
-
-class PlotTheme(object):
-    def __init__(self):
-        self.labels_font = QFont('Helvetice', 8)
-        self.helper_font = self.labels_font
-        self.helpers_color = [0., 0., 0., 1.]        # Color used for helping arrows when scaling.
-        self.background_color = [1., 1., 1., 1.]     # Color in the background.
-        self.axis_title_font = QFont('Helvetica', 10, QFont.Bold)
-        self.axis_font = QFont('Helvetica', 9)
-        self.labels_color = [0., 0., 0., 1.]
-        self.axis_color = [0.1, 0.1, 0.1, 1.]
-        self.axis_values_color = [0.1, 0.1, 0.1, 1.]
 
 class OWPlot3D(orangeqt.Plot3D):
     def __init__(self, parent=None):
@@ -622,7 +611,8 @@ class OWPlot3D(orangeqt.Plot3D):
 
     def paintGL(self):
         glViewport(0, 0, self.width(), self.height())
-        glClearColor(*self._theme.background_color)
+        self.qglClearColor(self._theme.background_color)
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         modelview, projection = self.get_mvp()
@@ -763,7 +753,7 @@ class OWPlot3D(orangeqt.Plot3D):
         glLoadIdentity()
         glMultMatrixd(array(self.modelview.data(), dtype=float))
 
-        glColor4f(*self._theme.labels_color)
+        self.qglColor(self._theme.labels_color)
         for example in self.data.transpose():
             x = example[self.x_index]
             y = example[self.y_index]
@@ -786,7 +776,7 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.state == PlotState.SCALING:
             x, y = self.mouse_pos.x(), self.mouse_pos.y()
             #TODO: replace with an image
-            glColor4f(*self._theme.helpers_color)
+            self.qglColor(self._theme.helpers_color)
             draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
             draw_line(x, y, x, y-30)
             draw_triangle(x-5, y-10, x+5, y-10, x, y)
@@ -844,7 +834,7 @@ class OWPlot3D(orangeqt.Plot3D):
         glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
 
         def draw_axis(line):
-            glColor4f(*self._theme.axis_color)
+            self.qglColor(self._theme.axis_color)
             glLineWidth(2)
             glBegin(GL_LINES)
             glVertex3f(*line[0])
@@ -871,7 +861,7 @@ class OWPlot3D(orangeqt.Plot3D):
                                     label, font=self._theme.labels_font)
 
         def draw_values(axis, coord_index, normal, axis_labels):
-            glColor4f(*self._theme.axis_values_color)
+            self.qglColor(self._theme.axis_values_color)
             glLineWidth(1)
             if axis_labels != None:
                 draw_discrete_axis_values(axis, coord_index, normal, axis_labels)

@@ -25,7 +25,7 @@ TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
 class ScatterPlotTheme(PlotTheme):
     def __init__(self):
         super(ScatterPlotTheme, self).__init__()
-        self.grid_color = [0.8, 0.8, 0.8, 1.]
+        self.grid_color = QColor(200, 200, 200, 255)
 
 class LightTheme(ScatterPlotTheme):
     pass
@@ -33,12 +33,12 @@ class LightTheme(ScatterPlotTheme):
 class DarkTheme(ScatterPlotTheme):
     def __init__(self):
         super(DarkTheme, self).__init__()
-        self.grid_color = [0.3, 0.3, 0.3, 1.]
-        self.labels_color = [0.9, 0.9, 0.9, 1.]
-        self.helpers_color = [0.9, 0.9, 0.9, 1.]
-        self.axis_values_color = [0.7, 0.7, 0.7, 1.]
-        self.axis_color = [0.8, 0.8, 0.8, 1.]
-        self.background_color = [0., 0., 0., 1.]
+        self.grid_color = QColor(80, 80, 80, 255)
+        self.labels_color = QColor(230, 230, 230, 255)
+        self.helpers_color = QColor(230, 230, 230, 255)
+        self.axis_values_color = QColor(180, 180, 180, 255)
+        self.axis_color = QColor(200, 200, 200, 255)
+        self.background_color = QColor(0, 0, 0, 255)
 
 class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
     def __init__(self, parent=None):
@@ -217,7 +217,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             self.draw_chassis()
 
     def draw_chassis(self):
-        glColor4f(*self._theme.axis_values_color)
+        self.qglColor(self._theme.axis_values_color)
         glEnable(GL_LINE_STIPPLE)
         glLineStipple(1, 0x00FF)
         glDisable(GL_DEPTH_TEST)
@@ -249,7 +249,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         ])
 
         def _draw_grid(axis0, axis1, normal0, normal1, i, j):
-            glColor4f(*self._theme.grid_color)
+            self.qglColor(self._theme.grid_color)
             for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
                 start, end = axis.copy()
                 start_value = self.map_to_data(start.copy())[coord_index]
