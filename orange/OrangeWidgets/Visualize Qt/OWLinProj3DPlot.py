@@ -215,7 +215,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         indices = [self.attribute_name_index[anchor[3]] for anchor in self.anchor_data]
         valid_data = self.getValidList(indices)
         trans_proj_data = self.create_projection_as_numeric_array(indices, validData=valid_data,
-            scaleFactor=1.0, normalize=self.normalizeExamples, jitterSize=-1,
+            scaleFactor=1.0, normalize=self.normalize_examples, jitterSize=-1,
             useAnchorData=1, removeMissingData=0)
         if trans_proj_data == None:
             return
@@ -236,7 +236,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         z_discrete = self.data_domain[self.anchor_data[2][3]].varType == Discrete
 
         if self.data_has_discrete_class:
-            self.discPalette.setNumberOfColors(len(self.dataDomain.classVar.values))
+            self.discPalette.setNumberOfColors(len(self.data_domain.classVar.values))
 
         use_different_symbols = self.useDifferentSymbols and self.data_has_discrete_class and\
             len(self.data_domain.classVar.values) < len(Symbol)
@@ -255,7 +255,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if color_discrete:
             for i in range(len(self.data_domain.classVar.values)):
                 c = self.discPalette[i]
-                colors.append([c.red()/255., c.green()/255., c.blue()/255.])
+                colors.append(c)
 
         self.set_shown_attributes_indices(0, 1, 2, color_index, symbol_index, size_index, label_index,
                                           colors, num_symbols_used,
