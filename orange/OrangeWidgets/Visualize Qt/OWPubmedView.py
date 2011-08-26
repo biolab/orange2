@@ -16,17 +16,18 @@ class PubmedNetworkView(Orange.network.NxView):
     
     """
     
-    def __init__(self, parent):#, nhops, edge_threshold, algorithm, n_max_neighbors, k):
+    def __init__(self, parent):
         Orange.network.NxView.__init__(self)
         
         self._nhops = 2
         self._edge_threshold = 0.5
-        self.algorithm = 1 # 0 without clustering, 1 with clustering
+        self._algorithm = 0 # 0 without clustering, 1 with clustering
         self._n_max_neighbors = 10
         self._center_nodes = []
         self.parent = parent
         self._hidden_nodes = []
         self._k_algorithm = 0.3
+        self._delta_score = {}
         
     def init_network(self, graph):
         self._network = graph
@@ -66,7 +67,7 @@ class PubmedNetworkView(Orange.network.NxView):
             subnet.add_weighted_edges_from([(i,x,w) for x,w in zip(neig, [self._network.edge[i][y]['weight'] for y in neig])])
         
         subnet.remove_nodes_from(self._hidden_nodes)
-        subnet = self._propagate(subnet)
+        #subnet = self._propagate(subnet)
         
         if self._nx_explorer is not None:
             self._nx_explorer.change_graph(subnet)
@@ -95,7 +96,7 @@ class PubmedNetworkView(Orange.network.NxView):
         
         selection = self._nx_explorer.networkCanvas.selected_nodes()
         # case "set_score"  - input = input_score, to be provided
-                #self._center_nodes.extend(selection)  # Non servira'
+                #self._delta_scores(selection) = to update!!!! 
         for i in selection:
             self._network.node[i]['user_score'] = 1
             self._network.node[i]['score'] = 1 # input_score
@@ -118,7 +119,60 @@ class PubmedNetworkView(Orange.network.NxView):
         return nodes
         
     def _propagate(self, net):
-        return
+        central_nodes = [i for i in net.nodes() if net.node[i]['user_score'] == 1]
+        central_delta_score = [delta_score[id] for id in central_nodes]
+        cluster_centers = [net.node[x]['cluster'] for x in central_nodes if net.node[x]['cluster'] != '']
+        updated = central_nodes[:]
+        L = 0
+        while True:
+            to_update = []
+            for i in central_nodes:
+                to_update.extend(net.neighbors(i))
+            to_update = set(to_update) - set(updated)
+            if to_update:
+                for i in to_update:
+                    if not net.node[i]['user_score']:
+                        predec = [j for j in net.neighbors(i) if j in central_nodes]
+                        predec_delta_score = [central_delta_score[central_nodes.index(x)] for x in predec]
+                        self._k_algortihm = compute_k(i, cluster_centers, net)
+                        if self._k_algortihm: #else the node is isolated and the score doesn't change
+                            net.node[i]['score'] = _prop(predec, predec_delta_score, i, L, net)
+                        net.node[i]['level'] = L
+                updated.extend(to_update)
+                central_nodes = list(to_update)
+                central_delta_score = []
+                for id in central_nodes:
+                    if delta_score.get(id, []):
+                        central_delta_score.append(delta_score[id])
+                    else:
+                        central_delta_score.append(net.node[id]['score'] - 0.5)
+                L += 1
+            else:
+                return net
+                
+    def compute_k(id, centers, net):
+        import networkx as nx #VEDERE SE C'E' IN ORANGENET 
+        if self._algorithm == 0 #no clustering
+            return self._algorithm
+        else:   #clustering
+            paths = []
+            for c in centers:
+                try:
+                    paths.append(nx.algorithms.shortest_paths.generic.shortest_path_length(net, id, c))
+                except nx.exception.NetworkXNoPath:
+                    return None #isolated node
+                    
+            return float(min(paths))/10
+            #if paths:
+            #    return float(min(paths))/10
+            #else:
+            #    return None # Isolated node
+                
+    def _prop(self, predec, predec_delta_score, node, L, net): 
+        edges_weight = [net[i][node]['weight'] for i in predecessors]
+        x = [(delta * w + 0.5)/(1 + level*self._k_algorithm) for delta, w in zip(predec_delta_score, edges_weight)]    
+        return max(x)    
+        
         
 class OWPubmedView(OWWidget):
     
@@ -186,9 +240,7 @@ class OWPubmedView(OWWidget):
     def filter_list(self):
         """Given a query for similar titles sets titles and ids"""
         
-        str_input = self.filter
-        #str_input = str_input.replace(' ', '').strip(' .').lower()
-        #self.titles = sorted([self.inside_view._network.node[n]['title'] for n in self.inside_view._network.nodes() if str_input in self.inside_view._network.node[n]['title'].encode().replace(' ', '').strip(' .').lower()]) # [(id,title)]
+        str_input = self.filter 
         str_input = str_input.strip(' .').lower().split(' ')
         titles2 = [(n, str.lower(self.inside_view._network.node[n]['title'].encode('utf-8').strip(' .')).split(' ')) for n in self.inside_view._network.nodes()] # [(id,title)]
         titles2 = sorted(titles2, key = lambda x: sum(i in str_input for i in x[1]), reverse=True)
