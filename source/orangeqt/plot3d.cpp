@@ -13,9 +13,9 @@ PFNGLENABLEVERTEXATTRIBARRAYARBPROC glEnableVertexAttribArray = NULL;
 PFNGLDISABLEVERTEXATTRIBARRAYARBPROC glDisableVertexAttribArray = NULL;
 typedef void (APIENTRYP PFNGLGETVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
 PFNGLGETVERTEXATTRIBPOINTERPROC glVertexAttribPointer = NULL;
-typedef GLint (APIENTRYP PFNGLGETUNIFORMLOCATIONPROC) (GLuint program, const GLchar *name);
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = NULL;
 PFNGLUNIFORM2FPROC glUniform2f = NULL;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers = NULL;
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -26,7 +26,12 @@ Plot3D::Plot3D(QWidget* parent) : QGLWidget(QGLFormat(QGL::SampleBuffers), paren
 
 Plot3D::~Plot3D()
 {
-    // TODO: delete vbos
+    if (vbos_generated)
+    {
+        glDeleteBuffers(1, &vbo_selected_id);
+        glDeleteBuffers(1, &vbo_unselected_id);
+        glDeleteBuffers(1, &vbo_edges_id);
+    }
 }
 
 template<class T>
@@ -62,10 +67,10 @@ void Plot3D::set_symbol_geometry(int symbol, int type, const QList<QVector3D>& g
 
 void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 {
-    this->data_array = reinterpret_cast<float*>(array_address); // 32-bit systems, endianness?
+    data_array = reinterpret_cast<float*>(array_address); // 32-bit systems, endianness?
     this->num_examples = num_examples;
     this->example_size = example_size;
-    this->selected_indices = QVector<bool>(num_examples);
+    selected_indices = QVector<bool>(num_examples);
 
     // Load required extensions (OpenGL context should be up by now).
 #ifdef _WIN32
@@ -79,6 +84,7 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
     glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYARBPROC)glXGetProcAddress((const GLubyte*)"glDisableVertexAttribArray");
     glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)glXGetProcAddress((const GLubyte*)"glGetUniformLocation");
     glUniform2f = (PFNGLUNIFORM2FPROC)glXGetProcAddress((const GLubyte*)"glUniform2f");
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)glXGetProcAddress((const GLubyte*)"glDeleteBuffers");
 #endif
 }
 
@@ -87,14 +93,20 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
                          const QList<QColor>& colors, int num_symbols_used,
                          bool x_discrete, bool y_discrete, bool z_discrete, bool use_2d_symbols)
 {
-    // TODO: delete vbos
+    if (vbos_generated)
+    {
+        glDeleteBuffers(1, &vbo_selected_id);
+        glDeleteBuffers(1, &vbo_unselected_id);
+        glDeleteBuffers(1, &vbo_edges_id);
+    }
+
     this->x_index = x_index;
     this->y_index = y_index;
     this->z_index = z_index;
 
     const float scale = 0.001;
 
-    float* vbo_selected_data   = new float[num_examples * 144 * 13]; // TODO: better size approximation
+    float* vbo_selected_data   = new float[num_examples * 144 * 13];
     float* vbo_unselected_data = new float[num_examples * 144 * 13];
     float* vbo_edges_data      = new float[num_examples * 144 * 13];
     float* dests = vbo_selected_data;
@@ -171,7 +183,7 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
         }
 
         // No need for edges in selected examples (those are drawn fully opaque)
-        if (this->selected_indices[index])
+        if (selected_indices[index])
             continue;
 
         for (int i = 0; i < geometry_edges[symbol].count(); i += 2) {
@@ -310,10 +322,10 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
 }
 
 QList<double> Plot3D::get_min_max_selected(const QList<int>& area,
-                                          const QMatrix4x4& mvp,
-                                          const QList<int>& viewport,
-                                          const QVector3D& plot_scale,
-                                          const QVector3D& plot_translation)
+                                           const QMatrix4x4& mvp,
+                                           const QList<int>& viewport,
+                                           const QVector3D& plot_scale,
+                                           const QVector3D& plot_translation)
 {
     float x_min = std::numeric_limits<float>::max();
     float x_max = std::numeric_limits<float>::min();
@@ -381,7 +393,7 @@ void Plot3D::select_points(const QList<int>& area,
                            Plot::SelectionBehavior behavior)
 {
     if (behavior == Plot::ReplaceSelection)
-        selected_indices.fill(false);//selected_indices = QVector<bool>(num_examples);
+        selected_indices.fill(false);
 
     for (int index = 0; index < num_examples; ++index)
     {
@@ -414,12 +426,13 @@ void Plot3D::select_points(const QList<int>& area,
 
 void Plot3D::unselect_all_points()
 {
-    this->selected_indices = QVector<bool>(num_examples);
+    selected_indices = QVector<bool>(num_examples);
 }
 
 QList<bool> Plot3D::get_selected_indices()
 {
-    return this->selected_indices.toList();
+    //return selected_indices.toList(); // TODO: this crashes on adult.tab
+    return QList<bool>();
 }
 
 #include "plot3d.moc"
