@@ -5,6 +5,8 @@
 
 from OWWidget import *
 from plot.owplot3d import *
+from plot.owplotgui import OWPlotGUI
+from plot.owplot import OWPlot
 
 import orange
 Discrete = orange.VarTypes.Discrete
@@ -22,6 +24,7 @@ import numpy
 
 TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
 
+# TODO: move themes to owtheme.py
 class ScatterPlotTheme(PlotTheme):
     def __init__(self):
         super(ScatterPlotTheme, self).__init__()
@@ -45,13 +48,13 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         OWPlot3D.__init__(self, parent)
         orngScaleScatterPlotData.__init__(self)
 
-        null = lambda: None
-        self.activateZooming = null
-
         self.disc_palette = ColorPaletteGenerator()
         self._theme = LightTheme()
         self.show_grid = True
         self.show_chassis = True
+
+    def activate_zooming(self):
+        print('activate_zooming')
 
     def set_data(self, data, subset_data=None, **args):
         if data == None:
@@ -129,7 +132,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.set_shown_attributes_indices(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
-            x_discrete, y_discrete, z_discrete, self.jitter_size, self.jitter_continuous,
+            x_discrete, y_discrete, z_discrete,
             data_scale, data_translation)
 
         if self.show_legend:
@@ -427,25 +430,14 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.hide_outside',        'Hide outside',   callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
-        self.auto_send_selection = True
-        self.auto_send_selection_update = False
-        self.plot.selection_changed_callback = self.selection_changed_callback
-        self.plot.selection_updated_callback = self.selection_updated_callback
-        box = OWGUI.widgetBox(self.settings_tab, 'Auto Send Selected Data When...')
-        OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
-            callback = self.on_checkbox_update, tooltip='Send selected data whenever a selection area is added or removed')
-        OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving selection areas',
-            callback = self.on_checkbox_update, tooltip='Send selected data when a user moves or resizes an existing selection area')
-
-        self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection,
-            buttons=(1, 4, 5, 0, 6, 7, 8))
-        self.connect(self.zoom_select_toolbar.buttonSendSelections, SIGNAL('clicked()'), self.send_selections)
-        self.connect(self.zoom_select_toolbar.buttonSelectRect, SIGNAL('clicked()'), self.change_selection_type)
-        self.connect(self.zoom_select_toolbar.buttonSelectPoly, SIGNAL('clicked()'), self.change_selection_type)
-        self.connect(self.zoom_select_toolbar.buttonZoom, SIGNAL('clicked()'), self.change_selection_type)
-        self.connect(self.zoom_select_toolbar.buttonRemoveLastSelection, SIGNAL('clicked()'), self.plot.remove_last_selection)
-        self.connect(self.zoom_select_toolbar.buttonRemoveAllSelections, SIGNAL('clicked()'), self.plot.remove_all_selections)
-        self.toolbarSelection = None
+        self.gui = OWPlotGUI(self)
+        gui = self.gui
+        self.zoom_select_toolbar = gui.zoom_select_toolbar(self.main_tab, buttons=gui.default_zoom_select_buttons)
+        self.connect(self.zoom_select_toolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.send_selection)
+        self.connect(self.zoom_select_toolbar.buttons[gui.Zoom], SIGNAL("clicked()"), self._set_behavior_zoom)
+        self.connect(self.zoom_select_toolbar.buttons[gui.SelectionOne], SIGNAL("clicked()"), self._set_behavior_replace)
+        self.connect(self.zoom_select_toolbar.buttons[gui.SelectionAdd], SIGNAL("clicked()"), self._set_behavior_add)
+        self.connect(self.zoom_select_toolbar.buttons[gui.SelectionRemove], SIGNAL("clicked()"), self._set_behavior_remove)
 
         self.tooltip_kind = TooltipKind.NONE
         box = OWGUI.widgetBox(self.settings_tab, 'Tooltips Settings')
@@ -463,9 +455,24 @@ class OWScatterPlot3D(OWWidget):
         self.loadSettings()
         self.plot.update_camera()
 
+        self._set_behavior_replace()
+
         self.data = None
         self.subset_data = None
         self.resize(1100, 600)
+
+    def _set_behavior_zoom(self):
+        self.plot.unselect_all_points()
+        self.plot.zoom_into_selection = True
+
+    def _set_behavior_add(self):
+        self.plot.set_selection_behavior(OWPlot.AddSelection)
+
+    def _set_behavior_replace(self):
+        self.plot.set_selection_behavior(OWPlot.ReplaceSelection)
+
+    def _set_behavior_remove(self):
+        self.plot.set_selection_behavior(OWPlot.RemoveSelection)
 
     def mouseover_callback(self, index):
         if self.tooltip_kind == TooltipKind.VISIBLE:
@@ -508,41 +515,41 @@ class OWScatterPlot3D(OWWidget):
                 except: pass
         return text[:-4]
 
-    def selection_changed_callback(self):
-        if self.plot.selection_type == SelectionType.ZOOM:
-            indices = self.plot.get_selection_indices()
-            if len(indices) < 1:
-                self.plot.remove_all_selections()
-                return
-            selected_indices = [1 if i in indices else 0
-                                for i in range(len(self.data))]
-            selected = self.plot.raw_data.selectref(selected_indices)
-            x_min = y_min = z_min = 1e100
-            x_max = y_max = z_max = -1e100
-            x_index = self.plot.attribute_name_index[self.x_attr]
-            y_index = self.plot.attribute_name_index[self.y_attr]
-            z_index = self.plot.attribute_name_index[self.z_attr]
-            # TODO: there has to be a faster way
-            for example in selected:
-                x_min = min(example[x_index], x_min)
-                y_min = min(example[y_index], y_min)
-                z_min = min(example[z_index], z_min)
-                x_max = max(example[x_index], x_max)
-                y_max = max(example[y_index], y_max)
-                z_max = max(example[z_index], z_max)
-            self.plot.set_new_zoom(x_min, x_max, y_min, y_max, z_min, z_max)
-        else:
-            if self.auto_send_selection:
-                self.send_selections()
+    #def selection_changed_callback(self):
+    #    if self.plot.selection_type == SelectionType.ZOOM:
+    #        indices = self.plot.get_selection_indices()
+    #        if len(indices) < 1:
+    #            self.plot.remove_all_selections()
+    #            return
+    #        selected_indices = [1 if i in indices else 0
+    #                            for i in range(len(self.data))]
+    #        selected = self.plot.raw_data.selectref(selected_indices)
+    #        x_min = y_min = z_min = 1e100
+    #        x_max = y_max = z_max = -1e100
+    #        x_index = self.plot.attribute_name_index[self.x_attr]
+    #        y_index = self.plot.attribute_name_index[self.y_attr]
+    #        z_index = self.plot.attribute_name_index[self.z_attr]
+    #        # TODO: there has to be a faster way
+    #        for example in selected:
+    #            x_min = min(example[x_index], x_min)
+    #            y_min = min(example[y_index], y_min)
+    #            z_min = min(example[z_index], z_min)
+    #            x_max = max(example[x_index], x_max)
+    #            y_max = max(example[y_index], y_max)
+    #            z_max = max(example[z_index], z_max)
+    #        self.plot.set_new_zoom(x_min, x_max, y_min, y_max, z_min, z_max)
+    #    else:
+    #        if self.auto_send_selection:
+    #            self.send_selection()
 
-    def selection_updated_callback(self):
-        if self.plot.selection_type != SelectionType.ZOOM and self.auto_send_selection_update:
-            self.send_selections()
+    #def selection_updated_callback(self):
+    #    if self.plot.selection_type != SelectionType.ZOOM and self.auto_send_selection_update:
+    #        self.send_selection()
 
-    def change_selection_type(self):
-        if self.toolbarSelection < 3:
-            selection_type = [SelectionType.ZOOM, SelectionType.RECTANGLE, SelectionType.POLYGON][self.toolbarSelection]
-            self.plot.set_selection_type(selection_type)
+    #def change_selection_type(self):
+    #    if self.toolbarSelection < 3:
+    #        selection_type = [SelectionType.ZOOM, SelectionType.RECTANGLE, SelectionType.POLYGON][self.toolbarSelection]
+    #        self.plot.set_selection_type(selection_type)
 
     def set_data(self, data=None):
         self.closeContext()
@@ -614,7 +621,7 @@ class OWScatterPlot3D(OWWidget):
         self.vizrank.resetDialog()
         self.plot.set_data(self.data, self.subset_data)
         self.update_plot()
-        self.send_selections()
+        self.send_selection()
 
     def saveSettings(self):
         OWWidget.saveSettings(self)
@@ -638,14 +645,13 @@ class OWScatterPlot3D(OWWidget):
         self.reportSection('Plot')
         self.reportImage(self.plot.save_to_file_direct, QSize(400, 400))
 
-    def send_selections(self):
+    def send_selection(self):
         if self.data == None:
             return
-        indices = self.plot.get_selection_indices()
-        selected = [1 if i in indices else 0 for i in range(len(self.data))]
-        unselected = map(lambda n: 1-n, selected)
-        selected = self.data.selectref(selected)
-        unselected = self.data.selectref(unselected)
+        selected = self.plot.get_selected_indices()
+        unselected = numpy.logical_not(selected)
+        selected = self.data.selectref(list(selected))
+        unselected = self.data.selectref(list(unselected))
         self.send('Selected Examples', selected)
         self.send('Unselected Examples', unselected)
 

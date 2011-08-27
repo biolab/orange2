@@ -268,7 +268,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.set_shown_attributes_indices(0, 1, 2, color_index, symbol_index, size_index, label_index,
                                           colors, num_symbols_used,
                                           x_discrete, y_discrete, z_discrete,
-                                          self.jitter_size, self.jitter_continuous,
                                           numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
 
         x_positions = proj_data[0]-0.5
@@ -341,36 +340,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     def saveToFile(self):
         pass
 
-    # Mouse events overrides
-
-    def mousePressEvent(self, event):
-        pos = self.mouse_pos = event.pos()
-        buttons = event.buttons()
-
-        if buttons & Qt.LeftButton:
-            if self.show_legend and self.legend.contains(pos.x(), pos.y()):
-                self.state = PlotState.DRAGGING_LEGEND
-                self.new_selection = None
-            else:
-                if self.state == PlotState.SELECTING:
-                    return
-                for selection in self.selections:
-                    if selection.contains(pos.x(), pos.y()):
-                        self.state = PlotState.PANNING
-                        self.dragged_selection = selection
-                        return
-                self.state = PlotState.SELECTING
-                if self.selection_type == SelectionType.RECTANGLE or\
-                   self.selection_type == SelectionType.ZOOM:
-                    self.new_selection = RectangleSelection(self, [pos.x(), pos.y()])
-        elif buttons & Qt.RightButton:
-            self.zoom_out()
-            self.updateGL()
-        elif buttons & Qt.MiddleButton:
-            self.state = PlotState.ROTATING
-            self.selections = []
-            self.new_selection = None
-
     def _update_arrow_values(self, index):
         if self.tooltipKind == 1:
             shown_attrs = [anchor[3] for anchor in self.anchor_data]
@@ -433,6 +402,13 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 except: pass
         return text[:-4]        # remove the last <br>
 
+    def mousePressEvent(self, event):
+        # Filter events (no panning or scaling)
+        if event.buttons() & Qt.LeftButton or\
+           (event.buttons() & Qt.RightButton and not QApplication.keyboardModifiers() & Qt.ShiftModifier) or\
+           (event.buttons() & Qt.MiddleButton and not QApplication.keyboardModifiers() & Qt.ShiftModifier):
+            OWPlot3D.mousePressEvent(self, event)
+
     def mouseMoveEvent(self, event):
         pos = event.pos()
 
@@ -445,59 +421,4 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             if before > 0:
                 self.updateGL()
 
-        if self.state == PlotState.IDLE:
-            if any(sel.contains(pos.x(), pos.y()) for sel in self.selections) or\
-               (self.show_legend and self.legend.contains(pos.x(), pos.y())):
-                self.setCursor(Qt.OpenHandCursor)
-            else:
-                self.setCursor(Qt.ArrowCursor)
-            self.mouse_pos = pos
-            return
-
-        dx = pos.x() - self.mouse_pos.x()
-        dy = pos.y() - self.mouse_pos.y()
-
-        if self.invert_mouse_x:
-            dx = -dx
-
-        if self.state == PlotState.SELECTING and self.new_selection != None:
-            self.new_selection.current_vertex = [pos.x(), pos.y()]
-        elif self.state == PlotState.DRAGGING_LEGEND:
-            self.legend.move(dx, dy)
-        elif self.state == PlotState.ROTATING:
-            self.yaw += dx / (self.rotation_factor*self.width())
-            self.pitch += dy / (self.rotation_factor*self.height())
-            self.update_camera()
-        elif self.state == PlotState.PANNING:
-            self.dragged_selection.move(dx, dy)
-
-        self.mouse_pos = pos
-        self.updateGL()
-
-    def mouseReleaseEvent(self, event):
-        if self.state == PlotState.SELECTING and self.new_selection == None:
-            self.new_selection = PolygonSelection(self, [event.pos().x(), event.pos().y()])
-            return
-
-        if self.state == PlotState.SELECTING:
-            if self.selection_type == SelectionType.POLYGON:
-                last = self.new_selection.add_current_vertex()
-                if last:
-                    self.selections.append(self.new_selection)
-                    self.selection_changed_callback() if self.selection_changed_callback else None
-                    self.state = PlotState.IDLE
-                    self.new_selection = None
-            else:
-                if self.new_selection.valid():
-                    self.selections.append(self.new_selection)
-                    self.updateGL()
-                    self.selection_changed_callback() if self.selection_changed_callback else None
-        elif self.state == PlotState.PANNING:
-            self.selection_updated_callback() if self.selection_updated_callback else None
-
-        if not (self.state == PlotState.SELECTING and self.selection_type == SelectionType.POLYGON):
-            self.state = PlotState.IDLE
-            self.tooltip_fbo_dirty = True
-            self.new_selection = None
-
-        self.updateGL()
+        OWPlot3D.mouseMoveEvent(self, event)

@@ -26,6 +26,7 @@ from OWDlgs import OWChooseImageSizeDlg
 import orange
 import orangeqt
 from owtheme import PlotTheme
+from owplot import OWPlot
 
 import OpenGL
 OpenGL.ERROR_CHECKING = False
@@ -102,19 +103,10 @@ def enum(*sequential):
     enums['__len__'] = lambda self: len(sequential)
     return type('Enum', (), enums)()
 
-# States the plot can be in:
-# * idle: mostly doing nothing, rotations are not considered special
-# * dragging legend: user has pressed left mouse button and is now dragging legend
-#   to a more suitable location
-# * scaling: user has pressed right mouse button, dragging it up and down
-#   scales data in y-coordinate, dragging it right and left scales data
-#   in current horizontal coordinate (x or z, depends on rotation)
 PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 'PANNING')
 
 Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
               'DIAMOND', 'WEDGE', 'LWEDGE', 'CROSS', 'XCROSS')
-
-SelectionType = enum('ZOOM', 'RECTANGLE', 'POLYGON')
 
 Axis = enum('X', 'Y', 'Z', 'CUSTOM')
 
@@ -195,136 +187,17 @@ class Legend(object):
         self.position[0] += dx
         self.position[1] += dy
 
-class RectangleSelection(object):
-    def __init__(self, plot, first_vertex):
-        self.plot = plot
-        self.first_vertex = first_vertex
-        self.current_vertex = first_vertex
-
-    def contains(self, x, y):
-        x1, x2 = sorted([self.first_vertex[0], self.current_vertex[0]])
-        y1, y2 = sorted([self.first_vertex[1], self.current_vertex[1]])
-        if x1 <= x <= x2 and\
-           y1 <= y <= y2:
-            return True
-        return False
-
-    def move(self, dx, dy):
-        self.first_vertex[0] += dx
-        self.first_vertex[1] += dy
-        self.current_vertex[0] += dx
-        self.current_vertex[1] += dy
-
-    def draw(self):
-        v1, v2 = self.first_vertex, self.current_vertex
-        glLineWidth(1)
-        self.plot.qglColor(self.plot._theme.helpers_color)
-        draw_line(v1[0], v1[1], v1[0], v2[1])
-        draw_line(v1[0], v2[1], v2[0], v2[1])
-        draw_line(v2[0], v2[1], v2[0], v1[1])
-        draw_line(v2[0], v1[1], v1[0], v1[1])
-
-    def draw_mask(self):
-        v1, v2 = self.first_vertex, self.current_vertex
-        glBegin(GL_QUADS)
-        glVertex2f(v1[0], v1[1])
-        glVertex2f(v1[0], v2[1])
-        glVertex2f(v2[0], v2[1])
-        glVertex2f(v2[0], v1[1])
-        glEnd()
-
-    def valid(self):
-        return self.first_vertex != self.current_vertex
-        # TODO: drop if too small
-
-class PolygonSelection(object):
-    def __init__(self, plot, first_vertex):
-        self.plot = plot
-        self.vertices = [first_vertex]
-        self.current_vertex = first_vertex
-        self.first_vertex = first_vertex
-        self.polygon = None
-
-    def add_current_vertex(self):
-        distance = (self.current_vertex[0]-self.first_vertex[0])**2
-        distance += (self.current_vertex[1]-self.first_vertex[1])**2
-        if distance < 10**2:
-            self.vertices.append(self.first_vertex)
-            self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
-            return True
-        else:
-            if self.check_intersections():
-                return True
-            self.vertices.append(self.current_vertex)
-            return False
-
-    def check_intersections(self):
-        if len(self.vertices) < 3:
-            return False
-
-        current_line = QLineF(self.current_vertex[0], self.current_vertex[1],
-                              self.vertices[-1][0], self.vertices[-1][1])
-        intersection = QPointF()
-        v1 = self.vertices[0]
-        for i, v2 in enumerate(self.vertices[1:-1]):
-            line = QLineF(v1[0], v1[1],
-                          v2[0], v2[1])
-            if current_line.intersect(line, intersection) == QLineF.BoundedIntersection:
-                self.current_vertex = [intersection.x(), intersection.y()]
-                self.vertices = [self.current_vertex] + self.vertices[i+1:]
-                self.vertices.append(self.current_vertex)
-                self.polygon = QPolygon([QPoint(x, y) for (x, y) in self.vertices])
-                return True
-            v1 = v2
-        return False
-
-    def contains(self, x, y):
-        if self.polygon == None:
-            return False
-        return self.polygon.containsPoint(QPoint(x, y), Qt.OddEvenFill)
-
-    def move(self, dx, dy):
-        self.vertices = [[x+dx, y+dy] for x,y in self.vertices]
-        self.current_vertex[0] += dx
-        self.current_vertex[1] += dy
-        self.polygon.translate(dx, dy)
-
-    def draw(self):
-        glLineWidth(1)
-        self.plot.qglColor(self.plot._theme.helpers_color)
-        if len(self.vertices) == 1:
-            v1, v2 = self.vertices[0], self.current_vertex
-            draw_line(v1[0], v1[1], v2[0], v2[1])
-            return
-        last_vertex = self.vertices[0]
-        for vertex in self.vertices[1:]:
-            v1, v2 = vertex, last_vertex
-            draw_line(v1[0], v1[1], v2[0], v2[1])
-            last_vertex = vertex
-
-        v1, v2 = last_vertex, self.current_vertex
-        draw_line(v1[0], v1[1], v2[0], v2[1])
-
-    def draw_mask(self):
-        if len(self.vertices) < 3:
-            return
-        v0 = self.vertices[0]
-        for i in range(1, len(self.vertices)-1):
-            vi = self.vertices[i]
-            vj = self.vertices[i+1]
-            draw_triangle(v0[0], v0[1],
-                          vi[0], vi[1],
-                          vj[0], vj[1])
-
 class OWPlot3D(orangeqt.Plot3D):
     def __init__(self, parent=None):
         orangeqt.Plot3D.__init__(self, parent)
-        #QtOpenGL.QGLWidget.__init__(self, QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers), parent)
 
         self.camera_distance = 3.
 
-        self.yaw = self.pitch = -pi / 4.
+        self.scale_factor = 0.05
         self.rotation_factor = 0.3
+        self.zoom_factor = 2000.
+
+        self.yaw = self.pitch = -pi / 4.
         self.panning_factor = 0.4
         self.update_camera()
 
@@ -332,9 +205,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.ortho_near = -1
         self.ortho_far = 2000
         self.perspective_near = 0.01
-        self.perspective_far = 5.
+        self.perspective_far = 10.
         self.camera_fov = 30.
-        self.zoom_factor = 2000.
 
         self.use_ortho = False
         self.show_legend = True
@@ -347,19 +219,20 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.state = PlotState.IDLE
 
-        self.selections = []
-        self.selection_changed_callback = None
-        self.selection_updated_callback = None
-        self.selection_type = SelectionType.ZOOM
-        self.new_selection = None
+        self._selection = None
+        self._selection_behavior = OWPlot.AddSelection
 
-        self.setMouseTracking(True)
+        ## Callbacks
+        self.auto_send_selection_callback = None
         self.mouseover_callback = None
-        self.mouse_pos = QPoint(0, 0)
-        self.invert_mouse_x = False
         self.before_draw_callback = None
         self.after_draw_callback = None
 
+        self.setMouseTracking(True)
+        self.mouse_position = QPoint(0, 0)
+        self.invert_mouse_x = False
+
+        # TODO: these should be moved down to Scatterplot3D
         self.x_axis_labels = None
         self.y_axis_labels = None
         self.z_axis_labels = None
@@ -370,7 +243,6 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
 
-        self.scale_factor = 0.05
         self.additional_scale = array([0., 0., 0.])
         self.data_scale = array([1., 1., 1.])
         self.data_translation = array([0., 0., 0.])
@@ -378,15 +250,15 @@ class OWPlot3D(orangeqt.Plot3D):
         self.plot_translation = -array([0.5, 0.5, 0.5])
 
         self.zoom_stack = []
+        self.zoom_into_selection = True # If True, zoom is done after selection, else SelectionBehavior is considered
 
         self._theme = PlotTheme()
         self.show_axes = True
 
         self.tooltip_fbo_dirty = True
         self.tooltip_win_center = [0, 0]
-        self.selection_fbo_dirty = True
 
-        self.use_fbos = True
+        self._use_fbos = True
 
         # If True, do drawing using instancing + geometry shader processing,
         # if False, build VBO every time set_plot_data is called.
@@ -397,7 +269,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.label_index = -1
 
         self.build_axes()
-        
+
         self.data = None
 
     def __del__(self):
@@ -553,27 +425,14 @@ class OWPlot3D(orangeqt.Plot3D):
         self.symbol_program_force_color    = self.symbol_program.uniformLocation('force_color')
         self.symbol_program_encode_color   = self.symbol_program.uniformLocation('encode_color')
 
-        # Create two FBOs (framebuffer objects):
-
-        # - one will be used together with stencil mask to find out which
-        #   examples have been selected (in an efficient way)
-
-        # - the smaller one will be used for tooltips
         format = QtOpenGL.QGLFramebufferObjectFormat()
-        format.setAttachment(QtOpenGL.QGLFramebufferObject.CombinedDepthStencil)
-        self.selection_fbo = QtOpenGL.QGLFramebufferObject(1024, 1024, format)
-        if self.selection_fbo.isValid():
-            print('Selection FBO created.')
-        else:
-            print('Failed to create selection FBO! Selections may be slow.')
-            self.use_fbos = False
-
+        format.setAttachment(QtOpenGL.QGLFramebufferObject.Depth)
         self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(256, 256, format)
         if self.tooltip_fbo.isValid():
             print('Tooltip FBO created.')
         else:
             print('Failed to create tooltip FBO! Tooltips disabled.')
-            self.use_fbos = False
+            self._use_fbos = False
 
     def resizeGL(self, width, height):
         pass
@@ -625,6 +484,8 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.show_axes:
             self.draw_axes()
 
+        plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
+
         self.symbol_program.bind()
         self.symbol_program.setUniformValue('modelview', self.modelview)
         self.symbol_program.setUniformValue('projection', self.projection)
@@ -632,10 +493,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.symbol_program.setUniformValue(self.symbol_program_fade_outside,   self.fade_outside)
         self.symbol_program.setUniformValue(self.symbol_program_hide_outside,   self.hide_outside)
         self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
-        # Specifying float uniforms with vec2 because of a weird bug in PyQt
         self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
         self.symbol_program.setUniformValue(self.symbol_program_alpha_value,    self.alpha_value / 255., self.alpha_value / 255.)
-        plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5],                          self.plot_scale+self.additional_scale)
         self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
         self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
         self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
@@ -670,8 +529,8 @@ class OWPlot3D(orangeqt.Plot3D):
             glDisable(GL_BLEND)
             glEnable(GL_DEPTH_TEST)
 
-            glViewport(-self.mouse_pos.x()+128, -(self.height()-self.mouse_pos.y())+128, self.width(), self.height())
-            self.tooltip_win_center = [self.mouse_pos.x(), self.mouse_pos.y()]
+            glViewport(-self.mouse_position.x()+128, -(self.height()-self.mouse_position.y())+128, self.width(), self.height())
+            self.tooltip_win_center = [self.mouse_position.x(), self.mouse_position.y()]
 
             self.symbol_program.bind()
             self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
@@ -687,58 +546,15 @@ class OWPlot3D(orangeqt.Plot3D):
             self.tooltip_fbo_dirty = False
             glViewport(0, 0, self.width(), self.height())
 
-        if self.selection_fbo_dirty:
-            # TODO: use transform feedback instead
-            self.selection_fbo.bind()
-            glClearColor(1, 1, 1, 1)
-            glClearStencil(0)
-            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
-
-            self.symbol_program.bind()
-            self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
-            glDisable(GL_DEPTH_TEST)
-            glDisable(GL_BLEND)
-            
-            if self._use_opengl_3:
-                glBindVertexArray(self.feedback_vao)
-                glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
-                glBindVertexArray(0)
-            else:
-                orangeqt.Plot3D.draw_data(self, self.symbol_program.programId(), self.alpha_value / 255.)
-            self.symbol_program.release()
-
-            # Also draw stencil masks to the screen. No need to
-            # write color or depth information as well, so we
-            # disable those.
-            glMatrixMode(GL_PROJECTION)
-            glLoadIdentity()
-            glOrtho(0, self.width(), self.height(), 0, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glLoadIdentity()
-
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
-            glDepthMask(GL_FALSE)
-            glStencilMask(0x01)
-            glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT)
-            glStencilFunc(GL_ALWAYS, 0, ~0)
-            glEnable(GL_STENCIL_TEST)
-            for selection in self.selections:
-                selection.draw_mask()
-            glDisable(GL_STENCIL_TEST)
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
-            glDepthMask(GL_TRUE)
-            self.selection_fbo.release()
-            self.selection_fbo_dirty = False
-
-        glDisable(GL_DEPTH_TEST)
-        glDisable(GL_BLEND)
-        if self.show_legend:
-            glMatrixMode(GL_PROJECTION)
-            glLoadIdentity()
-            glOrtho(0, self.width(), self.height(), 0, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glLoadIdentity()
-            self.legend.draw()
+        #glDisable(GL_DEPTH_TEST)
+        #glDisable(GL_BLEND)
+        #if self.show_legend:
+        #    glMatrixMode(GL_PROJECTION)
+        #    glLoadIdentity()
+        #    glOrtho(0, self.width(), self.height(), 0, -1, 1)
+        #    glMatrixMode(GL_MODELVIEW)
+        #    glLoadIdentity()
+        #    self.legend.draw()
 
         self.draw_helpers()
 
@@ -767,14 +583,16 @@ class OWPlot3D(orangeqt.Plot3D):
                             font=self._theme.labels_font)
 
     def draw_helpers(self):
+        # TODO: use owopenglrenderer
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(0, self.width(), self.height(), 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+        glEnable(GL_BLEND)
 
         if self.state == PlotState.SCALING:
-            x, y = self.mouse_pos.x(), self.mouse_pos.y()
+            x, y = self.mouse_position.x(), self.mouse_position.y()
             #TODO: replace with an image
             self.qglColor(self._theme.helpers_color)
             draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
@@ -787,11 +605,24 @@ class OWPlot3D(orangeqt.Plot3D):
 
             self.renderText(x, y-50, 'Scale y axis', font=self._theme.labels_font)
             self.renderText(x+60, y+3, 'Scale x and z axes', font=self._theme.labels_font)
-        elif self.state == PlotState.SELECTING and self.new_selection != None:
-            self.new_selection.draw()
+        elif self.state == PlotState.SELECTING:
+            self.qglColor(QColor(168, 202, 236, 50))
+            glBegin(GL_QUADS)
+            glVertex2f(self._selection.left(), self._selection.top())
+            glVertex2f(self._selection.right(), self._selection.top())
+            glVertex2f(self._selection.right(), self._selection.bottom())
+            glVertex2f(self._selection.left(), self._selection.bottom())
+            glEnd()
 
-        for selection in self.selections:
-            selection.draw()
+            self.qglColor(QColor(51, 153, 255, 192))
+            draw_line(self._selection.left(), self._selection.top(),
+                      self._selection.right(), self._selection.top())
+            draw_line(self._selection.right(), self._selection.top(),
+                      self._selection.right(), self._selection.bottom())
+            draw_line(self._selection.right(), self._selection.bottom(),
+                      self._selection.left(), self._selection.bottom())
+            draw_line(self._selection.left(), self._selection.bottom(),
+                      self._selection.left(), self._selection.top())
 
     def build_axes(self):
         edge_half = 1. / 2.
@@ -956,11 +787,13 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.show_y_axis_title:
             draw_axis_title(axis, self.y_axis_title, normal)
 
-    def set_shown_attributes_indices(self, x_index, y_index, z_index,
+    def set_shown_attributes_indices(self,
+            x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
-            x_discrete, y_discrete, z_discrete, jitter_size, jitter_continuous,
-            data_scale=array([1., 1., 1.]), data_translation=array([0., 0., 0.])):
+            x_discrete, y_discrete, z_discrete,
+            data_scale=array([1., 1., 1.]),
+            data_translation=array([0., 0., 0.])):
         start = time.time()
         self.makeCurrent()
         self.data_scale = data_scale
@@ -968,6 +801,14 @@ class OWPlot3D(orangeqt.Plot3D):
         self.x_index = x_index
         self.y_index = y_index
         self.z_index = z_index
+        self.color_index = color_index
+        self.symbol_index = symbol_index
+        self.size_index = size_index
+        self.colors = colors
+        self.num_symbols_used = num_symbols_used
+        self.x_discrete = x_discrete
+        self.y_discrete = y_discrete
+        self.z_discrete = z_discrete
         self.label_index = label_index
 
         # If color is a discrete attribute, colors should be a list of QColor
@@ -979,8 +820,8 @@ class OWPlot3D(orangeqt.Plot3D):
             self.generating_program.setUniformValue('x_index', x_index)
             self.generating_program.setUniformValue('y_index', y_index)
             self.generating_program.setUniformValue('z_index', z_index)
-            self.generating_program.setUniformValue('jitter_size', jitter_size)
-            self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
+            #self.generating_program.setUniformValue('jitter_size', jitter_size)
+            #self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
             self.generating_program.setUniformValue('x_discrete', x_discrete)
             self.generating_program.setUniformValue('y_discrete', y_discrete)
             self.generating_program.setUniformValue('z_discrete', z_discrete)
@@ -1073,17 +914,17 @@ class OWPlot3D(orangeqt.Plot3D):
         if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
             setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', show)
 
-    def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max):
+    def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max, plot_coordinates=False):
         '''Specifies new zoom in data coordinates.'''
-        self.selections = []
         self.zoom_stack.append((self.plot_scale, self.plot_translation))
 
         max = array([x_max, y_max, z_max]).copy()
         min = array([x_min, y_min, z_min]).copy()
-        min -= self.data_translation
-        min *= self.data_scale
-        max -= self.data_translation
-        max *= self.data_scale
+        if not plot_coordinates:
+            min -= self.data_translation
+            min *= self.data_scale
+            max -= self.data_translation
+            max *= self.data_scale
         center = (max + min) / 2.
         new_translation = -array(center)
         # Avoid division by zero by adding a small value (this happens when zooming in
@@ -1148,97 +989,82 @@ class OWPlot3D(orangeqt.Plot3D):
             point += self.data_translation
         return point
 
-    def get_selection_indices(self):
-        if len(self.selections) == 0:
-            return []
+    def _get_frustum_planes(self, area):
+        '''Generates 4 frustum planes (no near or far plane) for an area (rectangular) on screen.'''
+        #http://forums.create.msdn.com/forums/p/6690/35401.aspx , by "The Friggm"
+        #http://ghoshehsoft.wordpress.com/2010/12/09/xna-picking-tutorial-part-ii/
+        #
+        # Warning: work in progress
+        #
+        center = area.center()
+        m = self.projection.data()
+        m[0*4 + 0] /= float(area.width()) / self.width()
+        m[1*4 + 1] /= float(area.height()) / self.height()
+        m[2*4 + 0] = (center.x() - (self.width() / 2.)) / (self.width() / 2.) 
+        m[2*4 + 1] = -(center.y() - (self.height() / 2.)) / (self.height() / 2.)
+        region_projection = QMatrix4x4(*m)
 
-        width, height = self.width(), self.height()
-        if self.use_fbos and width <= 1024 and height <= 1024:
-            self.selection_fbo_dirty = True
-            self.updateGL()
+        transform = region_projection * self.modelview# * region_projection
+        self.tt = transform.transposed()
+        data = self.tt.data()
 
-            self.selection_fbo.bind()
-            color_pixels = glReadPixels(0, 0,
-                                        width, height,
-                                        GL_RGBA,
-                                        GL_UNSIGNED_BYTE)
-            stencil_pixels = glReadPixels(0, 0,
-                                          width, height,
-                                          GL_STENCIL_INDEX,
-                                          GL_FLOAT)
-            self.selection_fbo.release()
-            stencils = struct.unpack('f'*width*height, stencil_pixels)
-            colors = struct.unpack('I'*width*height, color_pixels)
-            indices = set([])
-            for stencil, color in zip(stencils, colors):
-                if stencil > 0. and color < 4294967295:
-                    indices.add(color)
+        planes = []
+        planes.append((QVector3D(data[12] - data[0], data[13] - data[1], data[14] - data[2]), data[15] - data[3])) # normal + offset
+        planes.append((QVector3D(data[12] + data[0], data[13] + data[1], data[14] + data[2]), data[15] + data[3]))
+        planes.append((QVector3D(data[12] - data[4], data[13] - data[5], data[14] - data[6]), data[15] - data[7]))
+        planes.append((QVector3D(data[12] + data[4], data[13] + data[5], data[14] + data[6]), data[15] + data[7]))
 
-            return indices
-        else:
-            # Slower method (projects points manually and checks containments).
-            modelview, projection = self.get_mvp()
-            proj_model = projection * modelview
-            viewport = [0, 0, width, height]
+        planes = [(normal / normal.length(), offset / normal.length()) for normal, offset in planes]
+        return planes
 
-            def project(x, y, z):
-                projected = proj_model * QVector4D(x, y, z, 1)
-                projected /= projected.z()
-                winx = viewport[0] + (1 + projected.x()) * viewport[2] / 2
-                winy = viewport[1] + (1 + projected.y()) * viewport[3] / 2
-                winy = height - winy
-                return winx, winy
+    def get_min_max_selected(self, area):
+        viewport = [0, 0, self.width(), self.height()]
+        area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
+        min_max = orangeqt.Plot3D.get_min_max_selected(self, area, self.projection * self.modelview,
+                                                       viewport,
+                                                       QVector3D(*self.plot_scale), QVector3D(*self.plot_translation))
+        return min_max
 
-            indices = []
-            for i, example in enumerate(self.data.transpose()):
-                x = example[self.x_index]
-                y = example[self.y_index]
-                z = example[self.z_index]
-                x, y, z = self.map_to_plot(array([x,y,z]).copy(), original=False)
-                x_win, y_win = project(x, y, z)
-                if any(sel.contains(x_win, y_win) for sel in self.selections):
-                    indices.append(i)
+    def get_selected_indices(self):
+        return orangeqt.Plot3D.get_selected_indices(self)
 
-            return indices
+    def unselect_all_points(self):
+        orangeqt.Plot3D.unselect_all_points(self)
+        orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
+                                    self.color_index, self.symbol_index, self.size_index, self.label_index,
+                                    self.colors, self.num_symbols_used,
+                                    self.x_discrete, self.y_discrete, self.z_discrete, self.use_2d_symbols)
+        self.updateGL()
 
-    def set_selection_type(self, type):
-        if SelectionType.is_valid(type):
-            self.selection_type = type
+    def set_selection_behavior(self, behavior):
+        self.zoom_into_selection = False
+        self._selection_behavior = behavior
 
     def mousePressEvent(self, event):
-        pos = self.mouse_pos = event.pos()
+        pos = self.mouse_position = event.pos()
         buttons = event.buttons()
+
+        self._selection = None
 
         if buttons & Qt.LeftButton:
             if self.show_legend and self.legend.contains(pos.x(), pos.y()):
                 self.state = PlotState.DRAGGING_LEGEND
-                self.new_selection = None
             else:
-                if self.state == PlotState.SELECTING:
-                    return
-                for selection in self.selections:
-                    if selection.contains(pos.x(), pos.y()):
-                        self.state = PlotState.PANNING
-                        self.dragged_selection = selection
-                        return
                 self.state = PlotState.SELECTING
-                if self.selection_type == SelectionType.RECTANGLE or\
-                   self.selection_type == SelectionType.ZOOM:
-                    self.new_selection = RectangleSelection(self, [pos.x(), pos.y()])
+                self._selection = QRect(pos.x(), pos.y(), 0, 0)
         elif buttons & Qt.RightButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-                self.selections = []
-                self.new_selection = None
                 self.state = PlotState.SCALING
-                self.scaling_init_pos = self.mouse_pos
+                self.scaling_init_pos = self.mouse_position
                 self.additional_scale = array([0., 0., 0.])
             else:
                 self.zoom_out()
             self.updateGL()
         elif buttons & Qt.MiddleButton:
-            self.state = PlotState.ROTATING
-            self.selections = []
-            self.new_selection = None
+            if QApplication.keyboardModifiers() & Qt.ShiftModifier:
+                self.state = PlotState.PANNING
+            else:
+                self.state = PlotState.ROTATING
 
     def _check_mouseover(self, pos):
         if self.mouseover_callback != None and self.state == PlotState.IDLE and\
@@ -1247,7 +1073,7 @@ class OWPlot3D(orangeqt.Plot3D):
                abs(pos.y() - self.tooltip_win_center[1]) > 100:
                 self.tooltip_fbo_dirty = True
                 self.updateGL()
-            # Use pixel-color-picking to read example index under mouse cursor.
+            # Use pixel-color-picking to read example index under mouse cursor (also called ID rendering).
             self.tooltip_fbo.bind()
             value = glReadPixels(pos.x() - self.tooltip_win_center[0] + 128,
                                  self.tooltip_win_center[1] - pos.y() + 128,
@@ -1267,37 +1093,27 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self._check_mouseover(pos)
 
-        if self.state == PlotState.IDLE:
-            if any(sel.contains(pos.x(), pos.y()) for sel in self.selections) or\
-               (self.show_legend and self.legend.contains(pos.x(), pos.y())):
-                self.setCursor(Qt.OpenHandCursor)
-            else:
-                self.setCursor(Qt.ArrowCursor)
-            self.mouse_pos = pos
-            return
-
-        dx = pos.x() - self.mouse_pos.x()
-        dy = pos.y() - self.mouse_pos.y()
+        dx = pos.x() - self.mouse_position.x()
+        dy = pos.y() - self.mouse_position.y()
 
         if self.invert_mouse_x:
             dx = -dx
 
-        if self.state == PlotState.SELECTING and self.new_selection != None:
-            self.new_selection.current_vertex = [pos.x(), pos.y()]
+        if self.state == PlotState.SELECTING:
+            self._selection.setBottomRight(pos)
         elif self.state == PlotState.DRAGGING_LEGEND:
             self.legend.move(dx, dy)
         elif self.state == PlotState.ROTATING:
-            if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-                right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
-                up_vec = normalize(numpy.cross(right_vec, self.camera))
-                right_vec[0] *= dx / (self.width() * self.plot_scale[0] * self.panning_factor)
-                right_vec[2] *= dx / (self.width() * self.plot_scale[2] * self.panning_factor)
-                up_scale = self.height()*self.plot_scale[1]*self.panning_factor
-                self.plot_translation -= right_vec + up_vec*(dy / up_scale)
-            else:
-                self.yaw += dx / (self.rotation_factor*self.width())
-                self.pitch += dy / (self.rotation_factor*self.height())
-                self.update_camera()
+            self.yaw += dx / (self.rotation_factor*self.width())
+            self.pitch += dy / (self.rotation_factor*self.height())
+            self.update_camera()
+        elif self.state == PlotState.PANNING:
+            right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
+            up_vec = normalize(numpy.cross(right_vec, self.camera))
+            right_vec[0] *= dx / (self.width() * self.plot_scale[0] * self.panning_factor)
+            right_vec[2] *= dx / (self.width() * self.plot_scale[2] * self.panning_factor)
+            up_scale = self.height()*self.plot_scale[1]*self.panning_factor
+            self.plot_translation -= right_vec + up_vec*(dy / up_scale)
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
@@ -1306,79 +1122,61 @@ class OWPlot3D(orangeqt.Plot3D):
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
             self.additional_scale = [dx, dy, 0]
-        elif self.state == PlotState.PANNING:
-            self.dragged_selection.move(dx, dy)
 
-        self.mouse_pos = pos
+        self.mouse_position = pos
         self.updateGL()
 
     def mouseReleaseEvent(self, event):
-        if self.state == PlotState.SELECTING and self.new_selection == None:
-            self.new_selection = PolygonSelection(self, [event.pos().x(), event.pos().y()])
-            return
-
         if self.state == PlotState.SCALING:
             self.plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
             self.additional_scale = array([0., 0., 0.])
             self.state = PlotState.IDLE
         elif self.state == PlotState.SELECTING:
-            if self.selection_type == SelectionType.POLYGON:
-                last = self.new_selection.add_current_vertex()
-                if last:
-                    self.selections.append(self.new_selection)
-                    self.selection_changed_callback() if self.selection_changed_callback else None
-                    self.state = PlotState.IDLE
-                    self.new_selection = None
+            self._selection.setBottomRight(event.pos())
+            if self.zoom_into_selection:
+                min_max = self.get_min_max_selected(self._selection)
+                self.set_new_zoom(*min_max, plot_coordinates=True)
             else:
-                if self.new_selection.valid():
-                    self.selections.append(self.new_selection)
-                    self.updateGL()
-                    self.selection_changed_callback() if self.selection_changed_callback else None
-        elif self.state == PlotState.PANNING:
-            self.selection_updated_callback() if self.selection_updated_callback else None
+                area = self._selection
+                viewport = [0, 0, self.width(), self.height()]
+                area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
+                orangeqt.Plot3D.select_points(self, area, self.projection * self.modelview,
+                                              viewport,
+                                              QVector3D(*self.plot_scale), QVector3D(*self.plot_translation),
+                                              self._selection_behavior)
+                self.makeCurrent()
+                orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
+                                            self.color_index, self.symbol_index, self.size_index, self.label_index,
+                                            self.colors, self.num_symbols_used,
+                                            self.x_discrete, self.y_discrete, self.z_discrete, self.use_2d_symbols)
 
-        if not (self.state == PlotState.SELECTING and self.selection_type == SelectionType.POLYGON):
-            self.state = PlotState.IDLE
-            self.tooltip_fbo_dirty = True
-            self.new_selection = None
+                if self.auto_send_selection_callback:
+                    self.auto_send_selection_callback()
 
+        self.state = PlotState.IDLE
         self.updateGL()
 
     def wheelEvent(self, event):
         if event.orientation() == Qt.Vertical:
-            self.selections = []
             delta = 1 + event.delta() / self.zoom_factor
             self.plot_scale *= delta
             self.tooltip_fbo_dirty = True
             self.updateGL()
 
-    def remove_last_selection(self):
-        if len(self.selections) > 0:
-            self.selections.pop()
-            self.updateGL()
-            self.selection_changed_callback() if self.selection_changed_callback else None
-
-    def remove_all_selections(self):
-        self.selections = []
-        if self.selection_changed_callback and self.selection_type != SelectionType.ZOOM:
-            self.selection_changed_callback()
-        self.updateGL()
-
-    @pyqtProperty(PlotTheme)
-    def theme(self):
+    def get_theme(self):
         return self._theme
 
-    @theme.setter
-    def theme(self, theme):
-        self._theme = theme
+    def set_theme(self, value):
+        self._theme = value
         self.updateGL()
 
+    theme = pyqtProperty(PlotTheme, get_theme, set_theme)
+
     def show_tooltip(self, text):
-        x, y = self.mouse_pos.x(), self.mouse_pos.y()
+        x, y = self.mouse_position.x(), self.mouse_position.y()
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
 
     def clear(self):
-        self.selections = []
         self.legend.clear()
         self.zoom_stack = []
         self.zoomed_size = [1., 1., 1.]
@@ -1391,25 +1189,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.y_axis_labels = None
         self.z_axis_labels = None
         self.tooltip_fbo_dirty = True
-        self.selection_fbo_dirty = True
         self.feedback_generated = False
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    w = OWPlot3D()
-    w.show()
- 
-    from random import random
-    rand = lambda: random() - 0.5
-    N = 100
-    data = orange.ExampleTable("../doc/datasets/iris.tab")
-    array, c, _ = data.toNumpyMA()
-    import OWColorPalette
-    palette = OWColorPalette.ColorPaletteHSV(len(data.domain.classVar.values))
-    x = array[:, 0]
-    y = array[:, 1]
-    z = array[:, 2]
-    colors = [palette[int(ex.getclass())] for ex in data]
-    colors = [[c.red()/255., c.green()/255., c.blue()/255., 0.8] for c in colors]
-    w.scatter(x, y, z, colors=colors)
-    app.exec_()
+    # TODO
+    pass
