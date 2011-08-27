@@ -614,6 +614,8 @@ class OWScatterPlot3D(OWWidget):
         if self.data == None:
             return
         selected = self.plot.get_selected_indices()
+        if len(selected) != len(self.data):
+            return
         unselected = numpy.logical_not(selected)
         selected = self.data.selectref(list(selected))
         unselected = self.data.selectref(list(unselected))
