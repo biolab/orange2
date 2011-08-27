@@ -1,5 +1,6 @@
 '''
 <name>Scatterplot 3D</name>
+<icon>icons/ScatterPlot.png</icon>
 <priority>2001</priority>
 '''
 
@@ -514,42 +515,6 @@ class OWScatterPlot3D(OWWidget):
                 try: text += '&nbsp;'*4 + '%s = %s<br>' % (example.domain[key].name, str(example[key]))
                 except: pass
         return text[:-4]
-
-    #def selection_changed_callback(self):
-    #    if self.plot.selection_type == SelectionType.ZOOM:
-    #        indices = self.plot.get_selection_indices()
-    #        if len(indices) < 1:
-    #            self.plot.remove_all_selections()
-    #            return
-    #        selected_indices = [1 if i in indices else 0
-    #                            for i in range(len(self.data))]
-    #        selected = self.plot.raw_data.selectref(selected_indices)
-    #        x_min = y_min = z_min = 1e100
-    #        x_max = y_max = z_max = -1e100
-    #        x_index = self.plot.attribute_name_index[self.x_attr]
-    #        y_index = self.plot.attribute_name_index[self.y_attr]
-    #        z_index = self.plot.attribute_name_index[self.z_attr]
-    #        # TODO: there has to be a faster way
-    #        for example in selected:
-    #            x_min = min(example[x_index], x_min)
-    #            y_min = min(example[y_index], y_min)
-    #            z_min = min(example[z_index], z_min)
-    #            x_max = max(example[x_index], x_max)
-    #            y_max = max(example[y_index], y_max)
-    #            z_max = max(example[z_index], z_max)
-    #        self.plot.set_new_zoom(x_min, x_max, y_min, y_max, z_min, z_max)
-    #    else:
-    #        if self.auto_send_selection:
-    #            self.send_selection()
-
-    #def selection_updated_callback(self):
-    #    if self.plot.selection_type != SelectionType.ZOOM and self.auto_send_selection_update:
-    #        self.send_selection()
-
-    #def change_selection_type(self):
-    #    if self.toolbarSelection < 3:
-    #        selection_type = [SelectionType.ZOOM, SelectionType.RECTANGLE, SelectionType.POLYGON][self.toolbarSelection]
-    #        self.plot.set_selection_type(selection_type)
 
     def set_data(self, data=None):
         self.closeContext()
