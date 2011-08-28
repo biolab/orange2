@@ -243,7 +243,50 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
 void Plot3D::draw_data_solid()
 {
-    // TODO
+    if (!vbos_generated)
+        return;
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_selected_id);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(4);
+
+    glDrawArrays(GL_TRIANGLES, 0, num_selected_vertices);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glDisableVertexAttribArray(3);
+    glDisableVertexAttribArray(4);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_unselected_id);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(4);
+
+    glDrawArrays(GL_TRIANGLES, 0, num_unselected_vertices);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glDisableVertexAttribArray(3);
+    glDisableVertexAttribArray(4);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Plot3D::draw_data(GLuint shader_id, float alpha_value)
@@ -252,6 +295,8 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
         return;
 
     // Draw opaque selected examples first.
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_selected_id);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
@@ -275,6 +320,7 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
     // Draw transparent unselected examples (triangles and then edges).
     glUniform2f(glGetUniformLocation(shader_id, "alpha_value"), alpha_value-0.6, alpha_value-0.6);
 
+    glDepthMask(GL_FALSE);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_unselected_id);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
@@ -296,6 +342,7 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
     glDisableVertexAttribArray(4);
 
     // Edges
+    glDepthMask(GL_TRUE);
     glUniform2f(glGetUniformLocation(shader_id, "alpha_value"), alpha_value, alpha_value);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_edges_id);
