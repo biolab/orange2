@@ -71,6 +71,8 @@ def plane_visible(plane, location):
     return True
 
 def nicenum(x, round):
+    if x <= 0.:
+        return x # TODO: what to do in such cases?
     expv = floor(log10(x))
     f = x / pow(10., expv)
     if round:
@@ -93,6 +95,8 @@ def loose_label(min_value, max_value, num_ticks):
     '''
     range = nicenum(max_value-min_value, False)
     d = nicenum(range / float(num_ticks-1), True)
+    if d <= 0.: # TODO
+        return numpy.arange(min_value, max_value, (max_value-min_value)/num_ticks), 1
     plot_min = floor(min_value / d) * d
     plot_max = ceil(max_value / d) * d
     num_frac = int(max(-floor(log10(d)), 0))
@@ -182,12 +186,12 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.camera_distance = 6.
 
-        self.scale_factor = 0.05
+        self.scale_factor = 0.30
         self.rotation_factor = 0.3
         self.zoom_factor = 2000.
 
         self.yaw = self.pitch = -pi / 4.
-        self.panning_factor = 0.4
+        self.panning_factor = 0.8
         self.update_camera()
 
         self.ortho_scale = 900.
@@ -205,8 +209,6 @@ class OWPlot3D(orangeqt.Plot3D):
         self._legend_moved = False
         self._legend.set_floating(True)
         self._legend.set_orientation(Qt.Vertical)
-
-        #self._legend.update_items()
 
         self.use_2d_symbols = False
         self.symbol_scale = 1.
@@ -281,7 +283,7 @@ class OWPlot3D(orangeqt.Plot3D):
         return self._legend
 
     def initializeGL(self):
-        if hasattr(self, 'generating_program'):
+        if hasattr(self, '_init_done'):
             return
         self.makeCurrent()
         glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -434,6 +436,8 @@ class OWPlot3D(orangeqt.Plot3D):
             print('Failed to create tooltip FBO! Tooltips disabled.')
             self._use_fbos = False
 
+        self._init_done = True
+
     def resizeGL(self, width, height):
         pass
 
@@ -578,6 +582,7 @@ class OWPlot3D(orangeqt.Plot3D):
             z = example[self.z_index]
             label = example[self.label_index]
             x, y, z = self.map_to_plot(array([x, y, z]), original=False)
+            # TODO
             #if isinstance(label, str):
                 #self.renderText(x,y,z, label, font=self._theme.labels_font)
             #else:

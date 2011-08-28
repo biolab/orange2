@@ -39,7 +39,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.gui = OWPlotGUI(self)
 
     def setData(self, data, subsetData=None, **args):
+        if data == None:
+            return
         ScaleLinProjData3D.setData(self, data, subsetData, **args)
+        OWPlot3D.initializeGL(self)
 
         if hasattr(self, 'cone_vao_id'):
             return
@@ -233,6 +236,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
                 glLineWidth(1)
 
+        self._draw_value_lines()
+
+    def _draw_value_lines(self):
         if self.showValueLines:
             self.value_lines_shader.bind()
             self.value_lines_shader.setUniformValue('projection', self.projection)
