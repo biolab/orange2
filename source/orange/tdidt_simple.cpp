@@ -37,6 +37,7 @@
     #define ASSERT(x) if (!(x)) err(1, "%s:%d", __FILE__, __LINE__)
 #else
     #define ASSERT(x) if(!(x)) exit(1)
+    #define log2f(x) log((double) (x)) / log(2.0)
 #endif // _MSC_VER
 
 #ifndef INFINITY
