@@ -142,9 +142,9 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
         if (num_colors > 0)
             color = colors[clamp(int(color_value * num_colors), 0, num_colors-1)]; // TODO: garbage values sometimes?
         else if (color_index > -1)
-            color = QColor(0., 0., color_value);
+            color = QColor(0., 0., color_value*255);
         else
-            color = QColor(0., 0., 0.8);
+            color = QColor(0., 0., 0);
 
         float*& dest = selected_indices[index] ? dests : destu;
 
