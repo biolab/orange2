@@ -201,7 +201,8 @@ class OWLegend(QGraphicsObject):
         for lst in self.items.itervalues():
             for i in lst:
                 i.setParentItem(None)
-                self.scene().removeItem(i)
+                if self.scene():
+                    self.scene().removeItem(i)
         self.items = {}
         self.update_items()
         
@@ -247,8 +248,9 @@ class OWLegend(QGraphicsObject):
         """
         if category not in self.items:
             return
-        for item in self.items[category]:
-            self.scene().removeItem(item)
+        if self.scene():
+            for item in self.items[category]:
+                self.scene().removeItem(item)
         del self.items[category]
         
     def update_items(self):

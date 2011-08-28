@@ -118,7 +118,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
             }
             '''
 
-        fragment_shader_source = '''#version 150
+        fragment_shader_source = '''
             in float transparency;
             uniform bool invert_transparency;
 
@@ -152,7 +152,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
             }
             '''
 
-        fragment_shader_source = '''#version 150
+        fragment_shader_source = '''
             uniform vec4 color;
 
             void main(void)

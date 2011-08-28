@@ -1,8 +1,9 @@
 from plot.owplot3d import *
 from plot.owplotgui import *
 from plot.primitives import parse_obj
+from plot import OWPoint
 
-from Orange.preprocess.scaling import ScaleLinProjData3D
+from Orange.preprocess.scaling import ScaleLinProjData3D, get_variable_values_sorted
 import orange
 Discrete = orange.VarTypes.Discrete
 Continuous = orange.VarTypes.Continuous
@@ -13,7 +14,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         OWPlot3D.__init__(self, parent)
         ScaleLinProjData3D.__init__(self)
 
-        self.camera_fov = 50.
+        self.camera_fov = 22.
         self.camera_in_center = False
         self.show_axes = self.show_chassis = self.show_grid = False
 
@@ -73,7 +74,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
         self.cone_vao_id.num_vertices = len(vertices) / (vertex_size / 4)
 
-        vertex_shader_source = '''#version 150
+        vertex_shader_source = '''
             in vec3 position;
             in vec3 normal;
 
@@ -92,7 +93,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             }
             '''
 
-        fragment_shader_source = '''#version 150
+        fragment_shader_source = '''
             in vec4 color;
 
             void main(void)
@@ -110,6 +111,46 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
         if not self.cone_shader.link():
             print('Failed to link cone shader!')
+
+        ## Value lines shader
+        vertex_shader_source = '''
+            in vec3 position;
+            in vec3 color;
+            in vec3 normal;
+
+            out vec4 var_color;
+
+            uniform mat4 projection;
+            uniform mat4 modelview;
+            uniform float value_line_length;
+            uniform vec3 plot_scale;
+
+            void main(void)
+            {
+                gl_Position = projection * modelview * vec4(position*plot_scale + normal*value_line_length, 1.);
+                var_color = vec4(color, 1.);
+            }
+            '''
+
+        fragment_shader_source = '''
+            in vec4 var_color;
+
+            void main(void)
+            {
+                gl_FragColor = var_color;
+            }
+            '''
+
+        self.value_lines_shader = QtOpenGL.QGLShaderProgram()
+        self.value_lines_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
+        self.value_lines_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
+
+        self.value_lines_shader.bindAttributeLocation('position', 0)
+        self.value_lines_shader.bindAttributeLocation('color', 1)
+        self.value_lines_shader.bindAttributeLocation('normal', 2)
+
+        if not self.value_lines_shader.link():
+            print('Failed to link value-lines shader!')
 
     set_data = setData
 
@@ -192,29 +233,27 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
                 glLineWidth(1)
 
-        self._draw_value_lines()
-
-    def _draw_value_lines(self):
-        # TODO: performance (VBO)
         if self.showValueLines:
-            for line in self.value_lines:
-                x, y, z, xn, yn, zn, color = line
-                x, y, z = self.plot_scale * [x, y, z]
-                glColor3f(*color)
-                glBegin(GL_LINES)
-                glVertex3f(x, y, z)
-                glVertex3f(x+self.valueLineLength*xn,
-                           y+self.valueLineLength*yn,
-                           z+self.valueLineLength*zn)
-                glEnd()
+            self.value_lines_shader.bind()
+            self.value_lines_shader.setUniformValue('projection', self.projection)
+            self.value_lines_shader.setUniformValue('modelview', self.modelview)
+            self.value_lines_shader.setUniformValue('value_line_length', float(self.valueLineLength))
+            self.value_lines_shader.setUniformValue('plot_scale', self.plot_scale[0], self.plot_scale[1], self.plot_scale[2])
+
+            glBindVertexArray(self.value_lines_vao)
+            glDrawArrays(GL_LINES, 0, self.value_lines_vao.num_vertices)
+            glBindVertexArray(0)
+
+            self.value_lines_shader.release()
 
     def updateData(self, labels=None, setAnchors=0, **args):
         self.clear()
+        self.clear_plot_transformations()
         self.value_lines = []
 
         if not self.have_data or (setAnchors and labels == None):
             self.anchor_data = []
-            self.updateGL()
+            self.update()
             return
 
         if setAnchors:
@@ -229,7 +268,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             return
 
         proj_data = trans_proj_data.T
-        proj_data[0:3] += 0.5 # Geometry shader offsets positions by -0.5; leave class unmodified
+        proj_data[0:3] += 0.5
         if self.data_has_discrete_class:
             proj_data[3] = self.no_jittering_scaled_data[self.attribute_name_index[self.data_domain.classVar.name]]
         self.set_plot_data(proj_data, None)
@@ -265,10 +304,33 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 c = self.discPalette[i]
                 colors.append(c)
 
-        self.set_shown_attributes_indices(0, 1, 2, color_index, symbol_index, size_index, label_index,
-                                          colors, num_symbols_used,
-                                          x_discrete, y_discrete, z_discrete,
-                                          numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
+        self.set_shown_attributes(0, 1, 2, color_index, symbol_index, size_index, label_index,
+                                  colors, num_symbols_used,
+                                  x_discrete, y_discrete, z_discrete,
+                                  numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
+
+        def_color = QColor(150, 150, 150)
+        def_symbol = 0
+        def_size = 10
+
+        if color_discrete:
+            num = len(self.data_domain.classVar.values)
+            values = get_variable_values_sorted(self.data_domain.classVar)
+            for ind in range(num):
+                symbol = ind if use_different_symbols else def_symbol
+                self.legend().add_item(self.data_domain.classVar.name, values[ind], OWPoint(symbol, self.discPalette[ind], def_size))
+
+        if use_different_symbols and not color_discrete:
+            num = len(self.data_domain.classVar.values)
+            values = get_variable_values_sorted(self.data_domain.classVar)
+            for ind in range(num):
+                self.legend().add_item(self.data_domain.classVar.name, values[ind], OWPoint(ind, def_color, def_size))
+
+        self.legend().set_orientation(Qt.Vertical)
+        self.legend().max_size = QSize(400, 400)
+        if self.legend().pos().x() == 0:
+            self.legend().setPos(QPointF(100, 100))
+        self.legend().update_items()
 
         x_positions = proj_data[0]-0.5
         y_positions = proj_data[1]-0.5
@@ -278,7 +340,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         ZAnchors = [anchor[2] for anchor in self.anchor_data]
         data_size = len(self.raw_data)
 
-        # TODO: build VBO out of this data
         for i in range(data_size):
             if not valid_data[i]:
                 continue
@@ -298,13 +359,41 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             example_values = [self.no_jittering_scaled_data[attr_ind, i] for attr_ind in indices]
 
             for j in range(len_anchor_data):
-                self.value_lines.append([x_positions[i], y_positions[i], z_positions[i],
+                self.value_lines.extend([x_positions[i], y_positions[i], z_positions[i],
+                                         color[0]/255.,
+                                         color[1]/255.,
+                                         color[2]/255.,
+                                         0., 0., 0.,
+                                         x_positions[i], y_positions[i], z_positions[i],
+                                         color[0]/255.,
+                                         color[1]/255.,
+                                         color[2]/255.,
                                          x_directions[j]*example_values[j],
                                          y_directions[j]*example_values[j],
-                                         z_directions[j]*example_values[j],
-                                         color])
+                                         z_directions[j]*example_values[j]])
 
-        self.updateGL()
+        self.value_lines_vao = GLuint(0)
+        glGenVertexArrays(1, self.value_lines_vao)
+        glBindVertexArray(self.value_lines_vao)
+
+        vertex_buffer_id = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+        glBufferData(GL_ARRAY_BUFFER, numpy.array(self.value_lines, 'f'), GL_STATIC_DRAW)
+
+        vertex_size = (3+3+3)*4
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(3*4))
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(6*4))
+        glEnableVertexAttribArray(0)
+        glEnableVertexAttribArray(1)
+        glEnableVertexAttribArray(2)
+
+        glBindVertexArray(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+        self.value_lines_vao.num_vertices = len(self.value_lines) / (vertex_size / 4)
+
+        self.update()
 
     def updateGraph(self, attrList=None, setAnchors=0, insideColors=None, **args):
         print('updateGraph')
@@ -319,7 +408,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             return self.palette().color(role)
 
     def set_palette(self, palette):
-        self.updateGL()
+        self.update()
 
     def getSelectionsAsExampleTables(self, attrList, useAnchorData=1, addProjectedPositions=0):
         return (None, None)
@@ -329,10 +418,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
     def update_point_size(self):
         self.symbol_scale = self.point_width*self._point_width_to_symbol_scale
-        self.updateGL()
+        self.update()
 
     def update_alpha_value(self):
-        self.updateGL()
+        self.update()
 
     def replot(self):
         pass
@@ -356,6 +445,8 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         example = self.original_data.T[index]
         for x, y, z, attribute in self.anchor_data:
             value = example[self.attribute_name_index[attribute]]
+            if value < 0:
+                x = y = z = 0
             max_value = self.attr_values[attribute][1]
             factor = value / max_value
             if self.useDifferentColors:
@@ -364,20 +455,20 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 color = (0, 0, 0)
             self._arrow_lines.append([x*factor, y*factor, z*factor, value, factor, color])
         self._mouseover_called = True
-        self.updateGL()
+        self.update()
 
     def get_example_tooltip_text(self, example, indices=None, maxIndices=20):
         if indices and type(indices[0]) == str:
             indices = [self.attributeNameIndex[i] for i in indices]
         if not indices: 
             indices = range(len(self.dataDomain.attributes))
-        
+
         # don't show the class value twice
         if example.domain.classVar:
             classIndex = self.attributeNameIndex[example.domain.classVar.name]
             while classIndex in indices:
                 indices.remove(classIndex)      
-      
+
         text = "<b>Attributes:</b><br>"
         for index in indices[:maxIndices]:
             attr = self.attributeNames[index]
@@ -419,6 +510,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             before = len(self._arrow_lines)
             self._arrow_lines = []
             if before > 0:
-                self.updateGL()
+                self.update()
 
         OWPlot3D.mouseMoveEvent(self, event)

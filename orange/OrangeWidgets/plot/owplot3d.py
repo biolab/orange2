@@ -27,6 +27,7 @@ import orange
 import orangeqt
 from owtheme import PlotTheme
 from owplot import OWPlot
+from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
 
 import OpenGL
 OpenGL.ERROR_CHECKING = False
@@ -48,6 +49,7 @@ try:
 except:
     pass
 
+# TODO: move to owopenglrenderer
 def draw_triangle(x0, y0, x1, y1, x2, y2):
     glBegin(GL_TRIANGLES)
     glVertex2f(x0, y0)
@@ -108,90 +110,77 @@ PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 
 Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
               'DIAMOND', 'WEDGE', 'LWEDGE', 'CROSS', 'XCROSS')
 
+# TODO: move to scatterplot
 Axis = enum('X', 'Y', 'Z', 'CUSTOM')
 
 from plot.primitives import normal_from_points, get_symbol_geometry, clamp, normalize, GeometryType
 
-class Legend(object):
-    def __init__(self, plot):
-        self.border_color = [0.5, 0.5, 0.5, 1]
-        self.border_thickness = 2
-        self.position = [0, 0]
-        self.size = [0, 0]
-        self.items = []
-        self.plot = plot
-        self.symbol_scale = 6
-        self.font = QFont('Helvetica', 9)
-        self.metrics = QFontMetrics(self.font)
+class OWLegend3D(OWLegend):
+    def set_symbol_geometry(self, symbol, geometry):
+        if not hasattr(self, '_symbol_geometry'):
+            self._symbol_geometry = {}
+        self._symbol_geometry[symbol] = geometry
 
-    def add_item(self, symbol, color, size, title):
-        '''Adds an item to the legend.
-           Symbol can be integer value or enum Symbol.
-           Color should be RGBA. Size should be between 0 and 1.
-        '''
-        if not Symbol.is_valid(symbol):
-            print('Legend: invalid symbol')
-            return
-        self.items.append([symbol, color, size, title])
-        self.size[0] = max(self.metrics.width(item[3]) for item in self.items) + 40
-        self.size[1] = len(self.items) * self.metrics.height() + 4
-
-    def clear(self):
-        self.items = []
-
-    def draw(self):
-        if not self.items:
-            return
-
-        x, y = self.position
-        w, h = self.size
-        t = self.border_thickness
-
-        # Draw legend outline first.
-        glDisable(GL_DEPTH_TEST)
-        glColor4f(*self.border_color)
+    def _draw_item_background(self, pos, item):
+        rect = item.rect().normalized().adjusted(pos.x(), pos.y(), pos.x(), pos.y())
         glBegin(GL_QUADS)
-        glVertex2f(x,   y)
-        glVertex2f(x+w, y)
-        glVertex2f(x+w, y+h)
-        glVertex2f(x,   y+h)
+        glVertex2f(rect.left(), rect.top())
+        glVertex2f(rect.left(), rect.bottom())
+        glVertex2f(rect.right(), rect.bottom())
+        glVertex2f(rect.right(), rect.top())
         glEnd()
 
-        glColor4f(1, 1, 1, 1)
-        glBegin(GL_QUADS)
-        glVertex2f(x+t,   y+t)
-        glVertex2f(x+w-t, y+t)
-        glVertex2f(x+w-t, y+h-t)
-        glVertex2f(x+t,   y+h-t)
-        glEnd()
-
-        item_pos_y = y + t + 13
-
-        for symbol, color, size, text in self.items:
-            glColor4f(*color)
-            triangles = get_symbol_geometry(symbol, GeometryType.SOLID_2D)
-            glBegin(GL_TRIANGLES)
-            for v0, v1, v2, _, _, _ in triangles:
-                glVertex2f(x+v0[0]*self.symbol_scale*size+10, item_pos_y+v0[1]*self.symbol_scale*size-5)
-                glVertex2f(x+v1[0]*self.symbol_scale*size+10, item_pos_y+v1[1]*self.symbol_scale*size-5)
-                glVertex2f(x+v2[0]*self.symbol_scale*size+10, item_pos_y+v2[1]*self.symbol_scale*size-5)
+    def _draw_symbol(self, pos, symbol):
+        edges = self._symbol_geometry[symbol.symbol()]
+        color = symbol.color()
+        size = symbol.size() / 2
+        glColor3f(color.red()/255., color.green()/255., color.blue()/255.)
+        for v0, v1 in zip(edges[::2], edges[1::2]):
+            x0, y0 = v0.x(), v0.y()
+            x1, y1 = v1.x(), v1.y()
+            glBegin(GL_LINES)
+            glVertex2f(x0*size + pos.x(), -y0*size + pos.y())
+            glVertex2f(x1*size + pos.x(), -y1*size + pos.y())
             glEnd()
-            self.plot.renderText(x+t+30, item_pos_y, text, font=self.font)
-            item_pos_y += self.metrics.height()
 
-    def contains(self, x, y):
-        return self.position[0] <= x <= self.position[0]+self.size[0] and\
-               self.position[1] <= y <= self.position[1]+self.size[1]
+    def _paint(self, widget):
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
+        offset = QPointF(0, 15) # TODO
 
-    def move(self, dx, dy):
-        self.position[0] += dx
-        self.position[1] += dy
+        for category in self.items:
+            items = self.items[category]
+            for item in items:
+                if isinstance(item, OWLegendTitle):
+                    widget.qglColor(widget._theme.background_color)
+                    pos = self.pos() + item.pos()
+                    self._draw_item_background(pos, item.rect_item)
+
+                    widget.qglColor(widget._theme.labels_color)
+                    pos = self.pos() + item.pos() + item.text_item.pos() + offset
+                    widget.renderText(pos.x(), pos.y(), item.text_item.toPlainText(), item.text_item.font())
+                elif isinstance(item, OWLegendItem):
+                    widget.qglColor(widget._theme.background_color)
+                    pos = self.pos() + item.pos()
+                    self._draw_item_background(pos, item.rect_item)
+
+                    widget.qglColor(widget._theme.labels_color)
+                    pos = self.pos() + item.pos() + item.text_item.pos() + offset
+                    widget.renderText(pos.x(), pos.y(), item.text_item.toPlainText(), item.text_item.font())
+
+                    symbol = item.point_item
+                    pos = self.pos() + item.pos() + symbol.pos()
+                    self._draw_symbol(pos, symbol)
+                # TODO: gradient
 
 class OWPlot3D(orangeqt.Plot3D):
     def __init__(self, parent=None):
         orangeqt.Plot3D.__init__(self, parent)
 
-        self.camera_distance = 3.
+        # Don't clear background when using QPainter
+        self.setAutoFillBackground(False)
+
+        self.camera_distance = 6.
 
         self.scale_factor = 0.05
         self.rotation_factor = 0.3
@@ -204,13 +193,20 @@ class OWPlot3D(orangeqt.Plot3D):
         self.ortho_scale = 900.
         self.ortho_near = -1
         self.ortho_far = 2000
-        self.perspective_near = 0.01
+        self.perspective_near = 0.5
         self.perspective_far = 10.
-        self.camera_fov = 30.
+        self.camera_fov = 14.
 
         self.use_ortho = False
+
         self.show_legend = True
-        self.legend = Legend(self)
+        self._legend = OWLegend3D(self, None)
+        self._legend_margin = QRectF(0, 0, 100, 0)
+        self._legend_moved = False
+        self._legend.set_floating(True)
+        self._legend.set_orientation(Qt.Vertical)
+
+        #self._legend.update_items()
 
         self.use_2d_symbols = False
         self.symbol_scale = 1.
@@ -280,6 +276,9 @@ class OWPlot3D(orangeqt.Plot3D):
         #glDeleteBuffers(1, self.symbol_buffer)
         #if hasattr(self, 'data_buffer'):
         #    glDeleteBuffers(1, self.data_buffer)
+
+    def legend(self):
+        return self._legend
 
     def initializeGL(self):
         if hasattr(self, 'generating_program'):
@@ -393,6 +392,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 edges = get_symbol_geometry(symbol, GeometryType.EDGE_2D)
                 edges = [QVector3D(*v) for edge in edges for v in edge]
                 orangeqt.Plot3D.set_symbol_geometry(self, symbol, 2, edges)
+                self._legend.set_symbol_geometry(symbol, edges)
 
                 edges = get_symbol_geometry(symbol, GeometryType.EDGE_3D)
                 edges = [QVector3D(*v) for edge in edges for v in edge]
@@ -468,7 +468,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
         return modelview, projection
 
-    def paintGL(self):
+    def paintEvent(self, event):
         glViewport(0, 0, self.width(), self.height())
         self.qglClearColor(self._theme.background_color)
 
@@ -540,23 +540,25 @@ class OWPlot3D(orangeqt.Plot3D):
                 glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
                 glBindVertexArray(0)
             else:
-                orangeqt.Plot3D.draw_data(self, self.symbol_program.programId(), self.alpha_value / 255.)
+                orangeqt.Plot3D.draw_data_solid(self)
             self.symbol_program.release()
             self.tooltip_fbo.release()
             self.tooltip_fbo_dirty = False
             glViewport(0, 0, self.width(), self.height())
 
-        #glDisable(GL_DEPTH_TEST)
-        #glDisable(GL_BLEND)
-        #if self.show_legend:
-        #    glMatrixMode(GL_PROJECTION)
-        #    glLoadIdentity()
-        #    glOrtho(0, self.width(), self.height(), 0, -1, 1)
-        #    glMatrixMode(GL_MODELVIEW)
-        #    glLoadIdentity()
-        #    self.legend.draw()
-
         self.draw_helpers()
+
+        if self.show_legend:
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, self.width(), self.height(), 0, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
+            glDisable(GL_BLEND)
+
+            self._legend._paint(self)
+
+        self.swapBuffers()
 
     def draw_labels(self):
         if self.label_index < 0:
@@ -787,7 +789,7 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.show_y_axis_title:
             draw_axis_title(axis, self.y_axis_title, normal)
 
-    def set_shown_attributes_indices(self,
+    def set_shown_attributes(self,
             x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
@@ -876,7 +878,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 x_discrete, y_discrete, z_discrete, self.use_2d_symbols)
             print('Data processing took ' + str(time.time() - start) + ' seconds')
 
-        self.updateGL()
+        self.update()
 
     def set_plot_data(self, data, subset_data=None):
         self.makeCurrent()
@@ -901,6 +903,7 @@ class OWPlot3D(orangeqt.Plot3D):
                                      self.num_examples,
                                      self.example_size)
 
+    # TODO: to scatterplot
     def set_axis_labels(self, axis_id, labels):
         '''labels should be a list of strings'''
         if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
@@ -944,13 +947,13 @@ class OWPlot3D(orangeqt.Plot3D):
                 self.plot_translation = new_translation
                 break
             self.plot_translation = self.plot_translation + translation_step
-            self.updateGL()
+            self.update()
         for i in range(num_steps):
             if time.time() - start > 1.:
                 self.plot_scale = new_scale
                 break
             self.plot_scale = self.plot_scale + scale_step
-            self.updateGL()
+            self.update()
 
     def zoom_out(self):
         if len(self.zoom_stack) < 1:
@@ -989,34 +992,6 @@ class OWPlot3D(orangeqt.Plot3D):
             point += self.data_translation
         return point
 
-    def _get_frustum_planes(self, area):
-        '''Generates 4 frustum planes (no near or far plane) for an area (rectangular) on screen.'''
-        #http://forums.create.msdn.com/forums/p/6690/35401.aspx , by "The Friggm"
-        #http://ghoshehsoft.wordpress.com/2010/12/09/xna-picking-tutorial-part-ii/
-        #
-        # Warning: work in progress
-        #
-        center = area.center()
-        m = self.projection.data()
-        m[0*4 + 0] /= float(area.width()) / self.width()
-        m[1*4 + 1] /= float(area.height()) / self.height()
-        m[2*4 + 0] = (center.x() - (self.width() / 2.)) / (self.width() / 2.) 
-        m[2*4 + 1] = -(center.y() - (self.height() / 2.)) / (self.height() / 2.)
-        region_projection = QMatrix4x4(*m)
-
-        transform = region_projection * self.modelview# * region_projection
-        self.tt = transform.transposed()
-        data = self.tt.data()
-
-        planes = []
-        planes.append((QVector3D(data[12] - data[0], data[13] - data[1], data[14] - data[2]), data[15] - data[3])) # normal + offset
-        planes.append((QVector3D(data[12] + data[0], data[13] + data[1], data[14] + data[2]), data[15] + data[3]))
-        planes.append((QVector3D(data[12] - data[4], data[13] - data[5], data[14] - data[6]), data[15] - data[7]))
-        planes.append((QVector3D(data[12] + data[4], data[13] + data[5], data[14] + data[6]), data[15] + data[7]))
-
-        planes = [(normal / normal.length(), offset / normal.length()) for normal, offset in planes]
-        return planes
-
     def get_min_max_selected(self, area):
         viewport = [0, 0, self.width(), self.height()]
         area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
@@ -1034,7 +1009,7 @@ class OWPlot3D(orangeqt.Plot3D):
                                     self.color_index, self.symbol_index, self.size_index, self.label_index,
                                     self.colors, self.num_symbols_used,
                                     self.x_discrete, self.y_discrete, self.z_discrete, self.use_2d_symbols)
-        self.updateGL()
+        self.update()
 
     def set_selection_behavior(self, behavior):
         self.zoom_into_selection = False
@@ -1047,7 +1022,12 @@ class OWPlot3D(orangeqt.Plot3D):
         self._selection = None
 
         if buttons & Qt.LeftButton:
-            if self.show_legend and self.legend.contains(pos.x(), pos.y()):
+            legend_pos = self._legend.pos()
+            lx, ly = legend_pos.x(), legend_pos.y()
+            if self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
+                event.scenePos = lambda: QPointF(pos)
+                self._legend.mousePressEvent(event)
+                self.setCursor(Qt.ClosedHandCursor)
                 self.state = PlotState.DRAGGING_LEGEND
             else:
                 self.state = PlotState.SELECTING
@@ -1059,7 +1039,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 self.additional_scale = array([0., 0., 0.])
             else:
                 self.zoom_out()
-            self.updateGL()
+            self.update()
         elif buttons & Qt.MiddleButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 self.state = PlotState.PANNING
@@ -1067,12 +1047,12 @@ class OWPlot3D(orangeqt.Plot3D):
                 self.state = PlotState.ROTATING
 
     def _check_mouseover(self, pos):
-        if self.mouseover_callback != None and self.state == PlotState.IDLE and\
-            (not self.show_legend or not self.legend.contains(pos.x(), pos.y())):
+        if self.mouseover_callback != None and self.state == PlotState.IDLE:# and\
+            #(not self.show_legend or not self.legend.contains(pos.x(), pos.y())):
             if abs(pos.x() - self.tooltip_win_center[0]) > 100 or\
                abs(pos.y() - self.tooltip_win_center[1]) > 100:
                 self.tooltip_fbo_dirty = True
-                self.updateGL()
+                self.update()
             # Use pixel-color-picking to read example index under mouse cursor (also called ID rendering).
             self.tooltip_fbo.bind()
             value = glReadPixels(pos.x() - self.tooltip_win_center[0] + 128,
@@ -1102,7 +1082,8 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.state == PlotState.SELECTING:
             self._selection.setBottomRight(pos)
         elif self.state == PlotState.DRAGGING_LEGEND:
-            self.legend.move(dx, dy)
+            event.scenePos = lambda: QPointF(pos)
+            self._legend.mouseMoveEvent(event)
         elif self.state == PlotState.ROTATING:
             self.yaw += dx / (self.rotation_factor*self.width())
             self.pitch += dy / (self.rotation_factor*self.height())
@@ -1122,11 +1103,20 @@ class OWPlot3D(orangeqt.Plot3D):
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
             self.additional_scale = [dx, dy, 0]
+        elif self.state == PlotState.IDLE:
+            legend_pos = self._legend.pos()
+            lx, ly = legend_pos.x(), legend_pos.y()
+            if self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
+                self.setCursor(Qt.PointingHandCursor)
+            else:
+                self.unsetCursor()
 
         self.mouse_position = pos
-        self.updateGL()
+        self.update()
 
     def mouseReleaseEvent(self, event):
+        if self.state == PlotState.DRAGGING_LEGEND:
+            self._legend.mouseReleaseEvent(event)
         if self.state == PlotState.SCALING:
             self.plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
             self.additional_scale = array([0., 0., 0.])
@@ -1153,22 +1143,27 @@ class OWPlot3D(orangeqt.Plot3D):
                 if self.auto_send_selection_callback:
                     self.auto_send_selection_callback()
 
+        self.unsetCursor()
         self.state = PlotState.IDLE
-        self.updateGL()
+        self.update()
 
     def wheelEvent(self, event):
         if event.orientation() == Qt.Vertical:
             delta = 1 + event.delta() / self.zoom_factor
             self.plot_scale *= delta
             self.tooltip_fbo_dirty = True
-            self.updateGL()
+            self.update()
+
+    def notify_legend_moved(self, pos):
+        self._legend.set_floating(True, pos)
+        self._legend.set_orientation(Qt.Vertical)
 
     def get_theme(self):
         return self._theme
 
     def set_theme(self, value):
         self._theme = value
-        self.updateGL()
+        self.update()
 
     theme = pyqtProperty(PlotTheme, get_theme, set_theme)
 
@@ -1177,12 +1172,7 @@ class OWPlot3D(orangeqt.Plot3D):
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
 
     def clear(self):
-        self.legend.clear()
-        self.zoom_stack = []
-        self.zoomed_size = [1., 1., 1.]
-        self.plot_translation = -array([0.5, 0.5, 0.5])
-        self.plot_scale = array([1., 1., 1.])
-        self.additional_scale = array([0., 0., 0.])
+        self._legend.clear()
         self.data_scale = array([1., 1., 1.])
         self.data_translation = array([0., 0., 0.])
         self.x_axis_labels = None
@@ -1190,6 +1180,14 @@ class OWPlot3D(orangeqt.Plot3D):
         self.z_axis_labels = None
         self.tooltip_fbo_dirty = True
         self.feedback_generated = False
+
+    def clear_plot_transformations(self):
+        self.zoom_stack = []
+        self.zoomed_size = [1., 1., 1.]
+        self.plot_translation = -array([0.5, 0.5, 0.5])
+        self.plot_scale = array([1., 1., 1.])
+        self.additional_scale = array([0., 0., 0.])
+
 
 if __name__ == "__main__":
     # TODO

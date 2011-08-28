@@ -8,6 +8,7 @@ from OWWidget import *
 from plot.owplot3d import *
 from plot.owplotgui import OWPlotGUI
 from plot.owplot import OWPlot
+from plot import OWPoint
 
 import orange
 Discrete = orange.VarTypes.Discrete
@@ -46,6 +47,7 @@ class DarkTheme(ScatterPlotTheme):
 
 class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
     def __init__(self, parent=None):
+        self.parent = parent
         OWPlot3D.__init__(self, parent)
         orngScaleScatterPlotData.__init__(self)
 
@@ -53,6 +55,8 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self._theme = LightTheme()
         self.show_grid = True
         self.show_chassis = True
+        
+        self.animate_plot = False
 
     def activate_zooming(self):
         print('activate_zooming')
@@ -63,6 +67,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         args['skipIfSame'] = False
         orngScaleScatterPlotData.set_data(self, data, subset_data, **args)
         OWPlot3D.set_plot_data(self, self.scaled_data, self.scaled_subset_data)
+        OWPlot3D.initializeGL(self)
 
     def update_data(self, x_attr, y_attr, z_attr,
                     color_attr, symbol_attr, size_attr, label_attr):
@@ -82,11 +87,11 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         symbol_index = -1
         num_symbols_used = -1
         if symbol_attr != '' and symbol_attr != 'Same symbol)' and\
-           len(self.data_domain[symbol_attr].values) < len(Symbol):
+           len(self.data_domain[symbol_attr].values) < len(Symbol) and\
+           self.data_domain[symbol_attr].varType == Discrete:
             symbol_index = self.attribute_name_index[symbol_attr]
-            if self.data_domain[symbol_attr].varType == Discrete:
-                symbol_discrete = True
-                num_symbols_used = len(self.data_domain[symbol_attr].values)
+            symbol_discrete = True
+            num_symbols_used = len(self.data_domain[symbol_attr].values)
 
         size_index = -1
         if size_attr != '' and size_attr != '(Same size)':
@@ -129,70 +134,47 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             data_scale[2] = 0.5 / float(len(self.data_domain[z_attr].values))
             data_translation[2] = 1.
 
+        # TODO: valid_data!
+        #validData = self.getValidList(attrIndices)      # get examples that have valid data for each used attribute
+
         self.clear()
-        self.set_shown_attributes_indices(x_index, y_index, z_index,
+        self.set_shown_attributes(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
             x_discrete, y_discrete, z_discrete,
             data_scale, data_translation)
 
-        if self.show_legend:
-            legend_keys = {}
-            color_index = color_index if color_index != -1 and color_discrete else -1
-            size_index = size_index if size_index != -1 and size_discrete else -1
-            symbol_index = symbol_index if symbol_index != -1 and symbol_discrete else -1
+        def_color = QColor(150, 150, 150)
+        def_symbol = 0
+        def_size = 10
 
-            single_legend = [color_index, size_index, symbol_index].count(-1) == 2
-            if single_legend:
-                legend_join = lambda name, val: val
-            else:
-                legend_join = lambda name, val: name + '=' + val 
+        if color_discrete:
+            num = len(self.data_domain[color_attr].values)
+            values = get_variable_values_sorted(self.data_domain[color_attr])
+            for ind in range(num):
+                self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, self.disc_palette[ind], def_size))
 
-            color_attr = self.data_domain[color_attr] if color_index != -1 else None
-            symbol_attr = self.data_domain[symbol_attr] if symbol_index != -1 else None
-            size_attr = self.data_domain[size_attr] if size_index != -1 else None
+        if symbol_index != -1:
+            num = len(self.data_domain[symbol_attr].values)
+            values = get_variable_values_sorted(self.data_domain[symbol_attr])
+            for ind in range(num):
+                self.legend().add_item(symbol_attr, values[ind], OWPoint(ind, def_color, def_size))
 
-            if color_index != -1:
-                num = len(color_attr.values)
-                val = [[], [], [1.]*num, [Symbol.RECT]*num]
-                var_values = get_variable_values_sorted(color_attr)
-                for i in range(num):
-                    val[0].append(legend_join(color_attr.name, var_values[i]))
-                    c = self.disc_palette[i]
-                    val[1].append([c.red()/255., c.green()/255., c.blue()/255., 1.])
-                legend_keys[color_attr] = val
+        if size_discrete:
+            num = len(self.data_domain[size_attr].values)
+            values = get_variable_values_sorted(self.data_domain[size_attr])
+            for ind in range(num):
+                self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, def_color, 6 + round(ind * 5 / len(values))))
 
-            if symbol_index != -1:
-                num = len(symbol_attr.values)
-                if legend_keys.has_key(symbol_attr):
-                    val = legend_keys[symbol_attr]
-                else:
-                    val = [[], [(0, 0, 0, 1)]*num, [1.]*num, []]
-                var_values = get_variable_values_sorted(symbol_attr)
-                val[3] = []
-                val[0] = []
-                for i in range(num):
-                    val[3].append(i)
-                    val[0].append(legend_join(symbol_attr.name, var_values[i]))
-                legend_keys[symbol_attr] = val
+        # Draw color scale for continuous coloring attribute
+        if color_index != -1 and self.data_domain[color_attr].varType == Continuous:
+            self.legend().add_color_gradient(color_attr, [("%%.%df" % self.data_domain[color_attr].numberOfDecimals % v) for v in self.attr_values[color_attr]])
 
-            if size_index != -1:
-                num = len(size_attr.values)
-                if legend_keys.has_key(size_attr):
-                    val = legend_keys[size_attr]
-                else:
-                    val = [[], [(0, 0, 0, 1)]*num, [], [Symbol.RECT]*num]
-                val[2] = []
-                val[0] = []
-                var_values = get_variable_values_sorted(size_attr)
-                for i in range(num):
-                    val[0].append(legend_join(size_attr.name, var_values[i]))
-                    val[2].append(0.1 + float(i) / len(var_values))
-                legend_keys[size_attr] = val
-
-            for val in legend_keys.values():
-                for i in range(len(val[1])):
-                    self.legend.add_item(val[3][i], val[1][i], val[2][i], val[0][i])
+        self.legend().set_orientation(Qt.Vertical)
+        self.legend().max_size = QSize(400, 400)
+        if self.legend().pos().x() == 0:
+            self.legend().setPos(QPointF(100, 100))
+        self.legend().update_items()
 
         self.set_axis_title(Axis.X, x_attr)
         self.set_axis_title(Axis.Y, y_attr)
@@ -205,7 +187,15 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         if z_discrete:
             self.set_axis_labels(Axis.Z, get_variable_values_sorted(self.data_domain[z_attr]))
 
-        self.updateGL()
+        self.update()
+
+    # TODO
+    def color(self, role, group=None):
+        return QColor(200, 50, 50)
+        #if group:
+        #    return self.palette().color(group, role)
+        #else:
+        #    return self.palette().color(role)
 
     def before_draw(self):
         glMatrixMode(GL_PROJECTION)
@@ -396,7 +386,7 @@ class OWScatterPlot3D(OWWidget):
             minValue=1, maxValue=20,
             tooltip='Scale symbol size',
             callback=self.on_checkbox_update)
-        ss.setValue(4)
+        ss.setValue(8)
 
         OWGUI.hSlider(box, self, 'plot.alpha_value', label='Transparency',
             minValue=10, maxValue=255,
@@ -556,7 +546,7 @@ class OWScatterPlot3D(OWWidget):
                 self.z_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.color_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.size_attr_cb.addItem(icons[attr.varType], attr.name)
-            if attr.varType == Discrete: 
+            if attr.varType == Discrete and len(attr.values) < len(Symbol):
                 self.symbol_attr_cb.addItem(icons[attr.varType], attr.name)
             self.label_attr_cb.addItem(icons[attr.varType], attr.name)
 
@@ -633,7 +623,7 @@ class OWScatterPlot3D(OWWidget):
             self.plot.theme = LightTheme()
 
     def on_checkbox_update(self):
-        self.plot.updateGL()
+        self.plot.update()
 
     def update_plot(self):
         if self.data is None:
