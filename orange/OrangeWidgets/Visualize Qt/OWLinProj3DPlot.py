@@ -257,12 +257,15 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.clear_plot_transformations()
         self.value_lines = []
 
-        if not self.have_data or (setAnchors and labels == None):
+        if labels == None:
+            labels = [anchor[3] for anchor in self.anchor_data]
+
+        if not self.have_data or len(labels) < 3:
             self.anchor_data = []
             self.update()
             return
 
-        if setAnchors:
+        if setAnchors or (args.has_key('XAnchors') and args.has_key('YAnchors') and args.has_key('ZAnchors')):
             self.setAnchors(args.get('XAnchors'), args.get('YAnchors'), args.get('ZAnchors'), labels)
 
         indices = [self.attribute_name_index[anchor[3]] for anchor in self.anchor_data]

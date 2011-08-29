@@ -573,8 +573,8 @@ class OWScatterPlot3D(OWWidget):
         self.subset_data = data
 
     def handleNewSignals(self):
-        self.vizrank.resetDialog()
         self.plot.set_data(self.data, self.subset_data)
+        self.vizrank.resetDialog()
         self.update_plot()
         self.send_selection()
 

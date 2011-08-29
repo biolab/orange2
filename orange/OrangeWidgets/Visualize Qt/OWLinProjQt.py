@@ -59,6 +59,7 @@ class OWLinProjQt(OWVisWidget):
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("FreeViz Learner", orange.Learner)]
 
         name_lower = name.lower()
+        self._name_lower = name_lower
 
         # local variables
         self.showAllAttributes = 0
@@ -320,7 +321,10 @@ class OWLinProjQt(OWVisWidget):
         val = self.vizrank.getSelectedProjection()
         if val:
             (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
-            self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
+            if "3d" in self._name_lower:
+                self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"), ZAnchors = generalDict.get("ZAnchors"))
+            else:
+                self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
             self.graph.removeAllSelections()
 
 
