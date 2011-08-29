@@ -131,7 +131,9 @@ class LabelPowersetClassifier(_multibase.MultiLabelClassifier):
                 labels.append(Orange.data.Value(domain[self.label_indices[i]],'1'))
                 prob.append(1.0)
             else:
-                raise ValueError, "invalid label value: 'the label value in instances should be only 0 or 1' "
+                #raise ValueError, "invalid label value: 'the label value in instances should be only 0 or 1' "
+                labels.append(Orange.data.Value(domain[self.label_indices[i]],'?'))
+                prob.append(0.0)
         
         disc = Orange.statistics.distribution.Discrete(prob)
         disc.variable = Orange.core.EnumVariable(values = [domain[val].name for index,val in enumerate(self.label_indices)])
