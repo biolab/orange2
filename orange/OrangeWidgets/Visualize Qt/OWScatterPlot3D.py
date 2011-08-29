@@ -51,15 +51,11 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         OWPlot3D.__init__(self, parent)
         orngScaleScatterPlotData.__init__(self)
 
-        self.disc_palette = ColorPaletteGenerator()
         self._theme = LightTheme()
         self.show_grid = True
         self.show_chassis = True
-        
-        self.animate_plot = False
 
-    def activate_zooming(self):
-        print('activate_zooming')
+        self.animate_plot = False
 
     def set_data(self, data, subset_data=None, **args):
         if data == None:
@@ -82,7 +78,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             color_index = self.attribute_name_index[color_attr]
             if self.data_domain[color_attr].varType == Discrete:
                 color_discrete = True
-                self.disc_palette.setNumberOfColors(len(self.data_domain[color_attr].values))
+                self.discrete_palette.setNumberOfColors(len(self.data_domain[color_attr].values))
 
         symbol_index = -1
         num_symbols_used = -1
@@ -114,7 +110,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         colors = []
         if color_discrete:
             for i in range(len(self.data_domain[color_attr].values)):
-                c = self.disc_palette[i]
+                c = self.discrete_palette[i]
                 colors.append(c)
 
         data_scale = [self.attr_values[x_attr][1] - self.attr_values[x_attr][0],
@@ -164,7 +160,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             num = len(self.data_domain[color_attr].values)
             values = get_variable_values_sorted(self.data_domain[color_attr])
             for ind in range(num):
-                self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, self.disc_palette[ind], def_size))
+                self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, self.discrete_palette[ind], def_size))
 
         if symbol_index != -1:
             num = len(self.data_domain[symbol_attr].values)
@@ -176,16 +172,18 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             num = len(self.data_domain[size_attr].values)
             values = get_variable_values_sorted(self.data_domain[size_attr])
             for ind in range(num):
-                self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, def_color, 6 + round(ind * 5 / len(values))))
+                self.legend().add_item(size_attr, values[ind], OWPoint(def_symbol, def_color, 6 + round(ind * 5 / len(values))))
 
         if color_index != -1 and self.data_domain[color_attr].varType == Continuous:
             self.legend().add_color_gradient(color_attr, [("%%.%df" % self.data_domain[color_attr].numberOfDecimals % v) for v in self.attr_values[color_attr]])
 
-        self.legend().set_orientation(Qt.Vertical)
         self.legend().max_size = QSize(400, 400)
+        self.legend().set_floating(True)
+        self.legend().set_orientation(Qt.Vertical)
         if self.legend().pos().x() == 0:
             self.legend().setPos(QPointF(100, 100))
         self.legend().update_items()
+        self.legend().setVisible(self.show_legend)
 
         ## Axes
         self.set_axis_title(Axis.X, x_attr)
@@ -200,14 +198,6 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             self.set_axis_labels(Axis.Z, get_variable_values_sorted(self.data_domain[z_attr]))
 
         self.update()
-
-    # TODO
-    def color(self, role, group=None):
-        return QColor(200, 50, 50)
-        #if group:
-        #    return self.palette().color(group, role)
-        #else:
-        #    return self.palette().color(role)
 
     def before_draw(self):
         glMatrixMode(GL_PROJECTION)

@@ -21,13 +21,17 @@ import struct
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4 import QtOpenGL
+
 from OWDlgs import OWChooseImageSizeDlg
+from Orange.misc import deprecated_attribute
 
 import orange
 import orangeqt
 from owtheme import PlotTheme
 from owplot import OWPlot
 from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
+
+from OWColorPalette import ColorPaletteGenerator
 
 import OpenGL
 OpenGL.ERROR_CHECKING = False
@@ -148,6 +152,7 @@ class OWLegend3D(OWLegend):
             glEnd()
 
     def _paint(self, widget):
+        '''Does all the drawing itself.'''
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         offset = QPointF(0, 15) # TODO
@@ -175,7 +180,29 @@ class OWLegend3D(OWLegend):
                     symbol = item.point_item
                     pos = self.pos() + item.pos() + symbol.pos()
                     self._draw_symbol(pos, symbol)
-                # TODO: gradient
+                elif isinstance(item, OWLegendGradient):
+                    widget.qglColor(widget._theme.background_color)
+                    pos = self.pos() + item.pos()
+                    proxy = lambda: None
+                    proxy.rect = lambda: item.rect
+                    self._draw_item_background(pos, proxy)
+
+                    widget.qglColor(widget._theme.labels_color)
+                    for label in item.label_items:
+                        pos = self.pos() + item.pos() + label.pos() + offset + QPointF(5, 0)
+                        widget.renderText(pos.x(), pos.y(), label.toPlainText(), label.font())
+
+                    pos = self.pos() + item.pos() + item.gradient_item.pos()
+                    rect = item.gradient_item.rect().normalized().adjusted(pos.x(), pos.y(), pos.x(), pos.y())
+                    glBegin(GL_QUADS)
+                    glColor3f(0, 0, 0)
+                    glVertex2f(rect.left(), rect.top())
+                    glColor3f(0, 0, 1)
+                    glVertex2f(rect.left(), rect.bottom())
+                    glVertex2f(rect.right(), rect.bottom())
+                    glColor3f(0, 0, 0)
+                    glVertex2f(rect.right(), rect.top())
+                    glEnd()
 
 class OWPlot3D(orangeqt.Plot3D):
     def __init__(self, parent=None):
@@ -269,6 +296,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self.build_axes()
 
         self.data = None
+
+        self.continuous_palette = ColorPaletteGenerator(numberOfColors=-1)
+        self.discrete_palette = ColorPaletteGenerator()
 
     def __del__(self):
         pass
@@ -1176,6 +1206,16 @@ class OWPlot3D(orangeqt.Plot3D):
 
     theme = pyqtProperty(PlotTheme, get_theme, set_theme)
 
+    def color(self, role, group = None):
+        if group:
+            return self.palette().color(group, role)
+        else:
+            return self.palette().color(role)
+
+    def set_palette(self, p):
+        self.setPalette(p)
+        self.update()
+
     def show_tooltip(self, text):
         x, y = self.mouse_position.x(), self.mouse_position.y()
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
@@ -1197,6 +1237,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.plot_scale = array([1., 1., 1.])
         self.additional_scale = array([0., 0., 0.])
 
+    contPalette = deprecated_attribute("contPalette", "continuous_palette")
+    discPalette = deprecated_attribute("discPalette", "discrete_palette")
 
 if __name__ == "__main__":
     # TODO

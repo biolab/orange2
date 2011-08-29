@@ -185,7 +185,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 QVector3D(0, 1, 0))
             projection = QMatrix4x4()
             projection.perspective(90., float(self.width()) / self.height(),
-                                   self.perspective_near, self.perspective_far)
+                                   0.01, 5.)
             self.projection = projection
         else:
             modelview.lookAt(

@@ -292,7 +292,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         z_discrete = self.data_domain[self.anchor_data[2][3]].varType == Discrete
 
         if self.data_has_discrete_class:
-            self.discPalette.setNumberOfColors(len(self.data_domain.classVar.values))
+            self.discrete_palette.setNumberOfColors(len(self.data_domain.classVar.values))
 
         use_different_symbols = self.useDifferentSymbols and self.data_has_discrete_class and\
             len(self.data_domain.classVar.values) <= len(Symbol)
@@ -310,7 +310,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         colors = []
         if color_discrete:
             for i in range(len(self.data_domain.classVar.values)):
-                c = self.discPalette[i]
+                c = self.discrete_palette[i]
                 colors.append(c)
 
         self.set_shown_attributes(0, 1, 2, color_index, symbol_index, size_index, label_index,
@@ -327,7 +327,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             values = get_variable_values_sorted(self.data_domain.classVar)
             for ind in range(num):
                 symbol = ind if use_different_symbols else def_symbol
-                self.legend().add_item(self.data_domain.classVar.name, values[ind], OWPoint(symbol, self.discPalette[ind], def_size))
+                self.legend().add_item(self.data_domain.classVar.name, values[ind], OWPoint(symbol, self.discrete_palette[ind], def_size))
 
         if use_different_symbols and not color_discrete:
             num = len(self.data_domain.classVar.values)
@@ -353,7 +353,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             if not valid_data[i]:
                 continue
             if self.useDifferentColors:
-                color = self.discPalette.getRGB(self.original_data[self.data_class_index][i])
+                color = self.discrete_palette.getRGB(self.original_data[self.data_class_index][i])
             else:
                 color = (0, 0, 0)
 
@@ -410,15 +410,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     def setCanvasColor(self, c):
         pass
 
-    def color(self, role, group=None):
-        if group:
-            return self.palette().color(group, role)
-        else:
-            return self.palette().color(role)
-
-    def set_palette(self, palette):
-        self.update()
-
     def getSelectionsAsExampleTables(self, attrList, useAnchorData=1, addProjectedPositions=0):
         return (None, None)
 
@@ -459,7 +450,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             max_value = self.attr_values[attribute][1]
             factor = value / max_value
             if self.useDifferentColors:
-                color = self.discPalette.getRGB(example[self.data_class_index])
+                color = self.discrete_palette.getRGB(example[self.data_class_index])
             else:
                 color = (0, 0, 0)
             self._arrow_lines.append([x*factor, y*factor, z*factor, value, factor, color])
