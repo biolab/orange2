@@ -36,16 +36,6 @@ Plot3D::~Plot3D()
     }
 }
 
-template<class T>
-inline T clamp(T value, T min, T max)
-{
-    if (value > max)
-        return max;
-    if (value < min)
-        return min;
-    return value;
-}
-
 void Plot3D::set_symbol_geometry(int symbol, int type, const QList<QVector3D>& geometry)
 {
     switch (type)
@@ -69,7 +59,7 @@ void Plot3D::set_symbol_geometry(int symbol, int type, const QList<QVector3D>& g
 
 void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 {
-    data_array = reinterpret_cast<float*>(array_address); // 32-bit systems, endianness?
+    data_array = reinterpret_cast<float*>(array_address); // TODO: this is dangerous, make a numpy.array type or something instead
     this->num_examples = num_examples;
     this->example_size = example_size;
     selected_indices = QVector<bool>(num_examples);
@@ -92,7 +82,7 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 
 void Plot3D::set_valid_data(quint64 valid_data_address)
 {
-    valid_data = reinterpret_cast<bool*>(valid_data_address);
+    valid_data = reinterpret_cast<bool*>(valid_data_address); // TODO: the same as the TODO above
 }
 
 void Plot3D::update_data(int x_index, int y_index, int z_index,
@@ -150,15 +140,14 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
         QColor color;
 
         if (num_colors > 0)
-            color = colors[clamp(int(color_value * num_colors), 0, num_colors-1)]; // TODO: garbage values sometimes?
+            color = colors[int(color_value * num_colors)];
         else if (color_index > -1)
-            color = QColor(0., 0., clamp(int(color_value*255), 0, 255));
+            color = QColor(0., 0., int(color_value*255));
         else
             color = QColor(0., 0., 0);
 
         float*& dest = selected_indices[index] ? dests : destu;
 
-        // TODO: make sure symbol is in geometry map
         for (int i = 0; i < geometry[symbol].count(); i += 6) {
             if (selected_indices[index])
                 sib_selected += 3*13*4;
