@@ -908,6 +908,10 @@ class OWPlot3D(orangeqt.Plot3D):
                                      self.num_examples,
                                      self.example_size)
 
+    def set_valid_data(self, valid_data):
+        self.valid_data = numpy.array(valid_data, dtype=bool) # QList<bool> is being a PITA
+        orangeqt.Plot3D.set_valid_data(self, long(self.valid_data.ctypes.data))
+
     # TODO: to scatterplot
     def set_axis_labels(self, axis_id, labels):
         '''labels should be a list of strings'''

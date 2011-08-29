@@ -134,16 +134,28 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             data_scale[2] = 0.5 / float(len(self.data_domain[z_attr].values))
             data_translation[2] = 1.
 
-        # TODO: valid_data!
-        #validData = self.getValidList(attrIndices)      # get examples that have valid data for each used attribute
-
         self.clear()
+
+        attr_indices = [x_index, y_index, z_index]
+        if color_index > -1:
+            attr_indices.append(color_index)
+        if size_index > -1:
+            attr_indices.append(size_index)
+        if symbol_index > -1:
+            attr_indices.append(symbol_index)
+        if label_index > -1:
+            attr_indices.append(label_index)
+
+        valid_data = self.getValidList(attr_indices)
+        self.set_valid_data(valid_data)
+
         self.set_shown_attributes(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
             x_discrete, y_discrete, z_discrete,
             data_scale, data_translation)
 
+        ## Legend
         def_color = QColor(150, 150, 150)
         def_symbol = 0
         def_size = 10
@@ -166,7 +178,6 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             for ind in range(num):
                 self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, def_color, 6 + round(ind * 5 / len(values))))
 
-        # Draw color scale for continuous coloring attribute
         if color_index != -1 and self.data_domain[color_attr].varType == Continuous:
             self.legend().add_color_gradient(color_attr, [("%%.%df" % self.data_domain[color_attr].numberOfDecimals % v) for v in self.attr_values[color_attr]])
 
@@ -176,6 +187,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             self.legend().setPos(QPointF(100, 100))
         self.legend().update_items()
 
+        ## Axes
         self.set_axis_title(Axis.X, x_attr)
         self.set_axis_title(Axis.Y, y_attr)
         self.set_axis_title(Axis.Z, z_attr)
@@ -467,7 +479,7 @@ class OWScatterPlot3D(OWWidget):
 
     def mouseover_callback(self, index):
         if self.tooltip_kind == TooltipKind.VISIBLE:
-            self.plot.show_tooltip(self.get_example_tooltip(self.data[index], self.shown_attr_indices))
+            self.plot.show_tooltip(self.get_example_tooltip(self.data[index], self.shown_attrs))
         elif self.tooltip_kind == TooltipKind.ALL:
             self.plot.show_tooltip(self.get_example_tooltip(self.data[index]))
 
@@ -567,7 +579,7 @@ class OWScatterPlot3D(OWWidget):
             self.color_attr = ''
 
         self.symbol_attr = self.size_attr = self.label_attr = ''
-        self.shown_attr_indices = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
+        self.shown_attrs = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
 
     def set_subset_data(self, data=None):
         self.subset_data = data
@@ -604,7 +616,7 @@ class OWScatterPlot3D(OWWidget):
         if self.data == None:
             return
         selected = self.plot.get_selected_indices()
-        if len(selected) != len(self.data):
+        if selected == None or len(selected) != len(self.data):
             return
         unselected = numpy.logical_not(selected)
         selected = self.data.selectref(list(selected))
