@@ -22,12 +22,15 @@ public:
     void set_data(quint64 array_address,
                   int num_examples,
                   int example_size);
+
+    void set_valid_data(quint64 valid_data_address); // Until I get QList<bool> to work, address of numpy array will have to do
+
     void update_data(int x_index, int y_index, int z_index,
                      int color_index, int symbol_index, int size_index, int label_index,
                      const QList<QColor>& colors, int num_symbols_used,
                      bool x_discrete, bool y_discrete, bool z_discrete, bool use_2d_symbols);
-    void draw_data(GLuint shader_id,
-                   float alpha_value);
+
+    void draw_data(GLuint shader_id, float alpha_value);
     void draw_data_solid(); // (only draws solid geometry as a performance optimization)
 
     QList<double> get_min_max_selected(const QList<int>& area,
@@ -49,6 +52,7 @@ public:
 
 private:
     float* data_array;
+    bool* valid_data;
     QVector<bool> selected_indices; // Array of length num_examples
     int num_examples;
     int example_size;

@@ -22,6 +22,8 @@ PFNGLDELETEBUFFERSPROC glDeleteBuffers = NULL;
 Plot3D::Plot3D(QWidget* parent) : QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
 {
     vbos_generated = false;
+    data_array = NULL;
+    valid_data = NULL;
 }
 
 Plot3D::~Plot3D()
@@ -88,6 +90,11 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 #endif
 }
 
+void Plot3D::set_valid_data(quint64 valid_data_address)
+{
+    valid_data = reinterpret_cast<bool*>(valid_data_address);
+}
+
 void Plot3D::update_data(int x_index, int y_index, int z_index,
                          int color_index, int symbol_index, int size_index, int label_index,
                          const QList<QColor>& colors, int num_symbols_used,
@@ -122,6 +129,9 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
     for (int index = 0; index < num_examples; ++index)
     {
+        if (valid_data != NULL and !valid_data[index]) // Skip invalid examples
+            continue;
+
         float* example = data_array + index*example_size;
         float x_pos = *(example + x_index);
         float y_pos = *(example + y_index);
@@ -142,7 +152,7 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
         if (num_colors > 0)
             color = colors[clamp(int(color_value * num_colors), 0, num_colors-1)]; // TODO: garbage values sometimes?
         else if (color_index > -1)
-            color = QColor(0., 0., color_value*255);
+            color = QColor(0., 0., clamp(int(color_value*255), 0, 255));
         else
             color = QColor(0., 0., 0);
 
