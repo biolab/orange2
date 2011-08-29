@@ -77,7 +77,7 @@ class OWVizRank(VizRank, OWWidget):
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")    
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
 
-        if visualizationMethod != SCATTERPLOT:
+        if visualizationMethod != SCATTERPLOT and visualizationMethod != SCATTERPLOT3D:
             self.label1 = OWGUI.widgetLabel(self.buttonBox, 'Projections with ' )
             self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
             self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 20), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
@@ -104,10 +104,10 @@ class OWVizRank(VizRank, OWWidget):
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsDiscClassBox, self, "percentDataUsed", "Percent of data used: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
         self.testingCombo = OWGUI.comboBox(self.optimizationSettingsDiscClassBox, self, "testingMethod", label = "Testing method:                             ", orientation = "horizontal", items = ["Leave one out (slowest)", "10 fold cross validation", "Test on learning set (fastest)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
         OWGUI.checkBox(self.optimizationSettingsDiscClassBox, self, 'useExampleWeighting', 'Use example weighting', tooltip = "For datasets where we have uneven class distribution we can weight examples")
-        if visualizationMethod != SCATTERPLOT:
+        if visualizationMethod != SCATTERPLOT and visualizationMethod != SCATTERPLOT3D:
             OWGUI.checkBox(self.optimizationSettingsDiscClassBox, self, 'storeEachPermutation', 'Save all projections for each permutation of attributes', tooltip = "Do you want to see in the projection list all evaluated projections or only the best projection for each attribute permutation.\nUsually this value is unchecked.")
 
-        if visualizationMethod == LINEAR_PROJECTION:
+        if visualizationMethod == LINEAR_PROJECTION or visualizationMethod == LINEAR_PROJECTION3D:
             OWGUI.comboBox(self.SettingsTab, self, "projOptimizationMethod", "Projection Optimization Method", items = ["None", "Supervised projection pursuit", "Partial least square"], sendSelectedValue = 0, tooltip = "What method do you want to use to find an interesting projection with good class separation?")
         else:
             self.projOptimizationMethod = 0
@@ -705,7 +705,7 @@ class OWVizRank(VizRank, OWWidget):
 
     def evaluateProjections(self):
         if str(self.startOptimizationButton.text()) == "Start Evaluating Projections":
-            if self.attributeCount >= 10 and self.projOptimizationMethod == 0 and self.visualizationMethod != SCATTERPLOT and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
+            if self.attributeCount >= 10 and self.projOptimizationMethod == 0 and self.visualizationMethod not in [SCATTERPLOT, SCATTERPLOT3D] and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
                 return
             if not self.graph.dataHasDiscreteClass:
                 if not orngDebugging.orngDebuggingEnabled:
@@ -825,6 +825,11 @@ class OWVizRank(VizRank, OWWidget):
         if self.visualizationMethod == SCATTERPLOT:
             attrs = self.arguments[classInd][ind][2]
             self.graph.updateData(attrs[0], attrs[1], self.graph.dataDomain.classVar.name)
+        elif self.visualizationMethod == SCATTERPLOT3D:
+            attrs = self.arguments[classInd][ind][2]
+            self.graph.updateData(attrs[0], attrs[1], attrs[3], self.graph.dataDomain.classVar.name)
+        elif self.visulizationMethod == LINEAR_PROJECTION3D or self.visualizationMethod == SPHEREVIZ3D:
+            self.graph.updateData(self.arguments[classInd][ind][2], setAnchors = 1, XAnchors = generalDict.getX("XAnchors"), YAnchors = generalDict.get("YAnchors"), ZAnchors = generalDict.get("ZAnchors"))
         else:
             self.graph.updateData(self.arguments[classInd][ind][2], setAnchors = 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
         self.graph.repaint()
