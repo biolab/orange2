@@ -53,7 +53,7 @@ for %pyver in (%PYTHONVERSIONS) do (
 	call nmake
     if exist %PYORANGEDIR\orangeqt.pyd del /q %PYORANGEDIR\orangeqt.pyd
     copy orangeqt.pyd %PYORANGEDIR
-    break_on_error
+    REM #break_on_error
   )
   
   REM # compress pyd and create stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)
