@@ -1,4 +1,6 @@
-from distutils.core import setup, Extension
+import distutils.core
+from distutils.core import setup
+from distutils.core import Extension
 from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib
 from distutils.msvccompiler import MSVCCompiler
@@ -417,9 +419,19 @@ for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.
       matches.append(os.path.join(root, filename))
 packages = [os.path.dirname(pkg).replace(os.path.sep, '.') for pkg in matches]
 
+have_setuptools = getattr(distutils.core, "have_setuptools", False)
+
+if have_setuptools:
+    setuptools_args = {"zip_safe": False,
+                       "install_requires": ["numpy"],
+                       "extra_requires": ["networkx", "PyQt4", "PyQwt"]
+                       }
+else:
+    setuptools_args = {}
+
 setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       name ="Orange",
-      version = "2.0.0b",
+      version = "2.5a1.dev-r",
       description = "Orange data mining library for python.",
       author = "Bioinformatics Laboratory, FRI UL",
       author_email = "orange@fri.uni-lj.si",
@@ -483,7 +495,7 @@ decision trees, attribute subset, bagging and boosting, and alike.
 Orange also includes a set of graphical widgets that use methods from core
 library and Orange modules. Through visual programming, widgets can be assembled
 together into an application by a visual programming tool called Orange Canvas.
-"""
-      )
+""",
+      **setuptools_args)
       
 
