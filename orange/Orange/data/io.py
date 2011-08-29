@@ -581,7 +581,7 @@ def load_csv(filename, create_new_on=MakeStatus.Incompatible, **kwargs):
     
     return table
 
-def save_csv(filename, table, delimiter=",", include_orange):
+def save_csv(filename, table):
     pass
 
 
