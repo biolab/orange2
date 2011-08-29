@@ -6,6 +6,7 @@
 
 from OWWidget import *
 from plot.owplot3d import *
+from plot.owtheme import ScatterLightTheme, ScatterDarkTheme
 from plot.owplotgui import OWPlotGUI
 from plot.owplot import OWPlot
 from plot import OWPoint
@@ -26,32 +27,13 @@ import numpy
 
 TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
 
-# TODO: move themes to owtheme.py
-class ScatterPlotTheme(PlotTheme):
-    def __init__(self):
-        super(ScatterPlotTheme, self).__init__()
-        self.grid_color = QColor(200, 200, 200, 255)
-
-class LightTheme(ScatterPlotTheme):
-    pass
-
-class DarkTheme(ScatterPlotTheme):
-    def __init__(self):
-        super(DarkTheme, self).__init__()
-        self.grid_color = QColor(80, 80, 80, 255)
-        self.labels_color = QColor(230, 230, 230, 255)
-        self.helpers_color = QColor(230, 230, 230, 255)
-        self.axis_values_color = QColor(180, 180, 180, 255)
-        self.axis_color = QColor(200, 200, 200, 255)
-        self.background_color = QColor(0, 0, 0, 255)
-
 class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
     def __init__(self, parent=None):
         self.parent = parent
         OWPlot3D.__init__(self, parent)
         orngScaleScatterPlotData.__init__(self)
 
-        self._theme = LightTheme()
+        self._theme = ScatterLightTheme()
         self.show_grid = True
         self.show_chassis = True
 
@@ -620,9 +602,9 @@ class OWScatterPlot3D(OWWidget):
 
     def on_theme_change(self):
         if self.dark_theme:
-            self.plot.theme = DarkTheme()
+            self.plot.theme = ScatterDarkTheme()
         else:
-            self.plot.theme = LightTheme()
+            self.plot.theme = ScatterLightTheme()
 
     def on_checkbox_update(self):
         self.plot.update()
