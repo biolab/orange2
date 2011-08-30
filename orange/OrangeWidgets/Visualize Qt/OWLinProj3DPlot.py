@@ -492,6 +492,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     def update_alpha_value(self):
         self.update()
 
+    def update_legend(self):
+        self.update()
+
     def replot(self):
         pass
 
