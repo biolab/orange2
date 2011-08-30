@@ -405,13 +405,80 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.update()
 
     def updateGraph(self, attrList=None, setAnchors=0, insideColors=None, **args):
-        print('updateGraph')
+        pass
 
     def setCanvasColor(self, c):
         pass
 
     def getSelectionsAsExampleTables(self, attrList, useAnchorData=1, addProjectedPositions=0):
-        return (None, None)
+        return (None, None) # TODO: this is disabled for now
+
+        if not self.have_data:
+            return (None, None)
+
+        selected = self.get_selected_indices()
+
+        if addProjectedPositions == 0 and not numpy.any(selected):
+            return (None, self.raw_data)
+        if (useAnchorData and len(self.anchor_data) < 3) or len(attrList) < 3:
+            return (None, None)
+
+        x_attr = orange.FloatVariable("X Positions")
+        y_attr = orange.FloatVariable("Y Positions")
+        z_attr = orange.FloatVariable("Z Positions")
+
+        if addProjectedPositions == 1:
+            domain = orange.Domain([x_attr, y_attr, z_attr] + [v for v in self.data_domain.variables])
+        elif addProjectedPositions == 2:
+            domain = orange.Domain(self.data_domain)
+            domain.addmeta(orange.newmetaid(), x_attr)
+            domain.addmeta(orange.newmetaid(), y_attr)
+            domain.addmeta(orange.newmetaid(), z_attr)
+        else:
+            domain = orange.Domain(self.data_domain)
+
+        domain.addmetas(self.data_domain.getmetas())
+
+        if useAnchorData:
+            indices = [self.attribute_name_index[val[3]] for val in self.anchor_data]
+        else:
+            indices = [self.attribute_name_index[label] for label in attrList]
+        valid_data = self.getValidList(indices)
+        if len(valid_data) == 0:
+            return (None, None)
+
+        array = self.create_projection_as_numeric_array(attrList, scaleFactor=self.scaleFactor, useAnchorData=useAnchorData, removeMissingData=0)
+        if array == None:
+            return (None, None)
+
+        unselected = numpy.logical_not(selected)
+        selected_indices, unselected_indices = list(selected), list(unselected)
+
+        if addProjectedPositions:
+            selected = orange.ExampleTable(domain, self.raw_data.selectref(selected_indices))
+            unselected = orange.ExampleTable(domain, self.raw_data.selectref(unselected_indices))
+            selected_index = 0
+            unselected_index = 0
+            for i in range(len(selected_indices)):
+                if selected_indices[i]:
+                    selected[selected_index][x_attr] = array[i][0]
+                    selected[selected_index][y_attr] = array[i][1]
+                    selected[selected_index][z_attr] = array[i][2]
+                    selected_index += 1
+                else:
+                    unselected[unselected_index][x_attr] = array[i][0]
+                    unselected[unselected_index][y_attr] = array[i][1]
+                    unselected[unselected_index][z_attr] = array[i][2]
+                    unselIndex += 1
+        else:
+            selected = self.raw_data.selectref(selected_indices)
+            unselected = self.raw_data.selectref(unselected_indices)
+
+        if len(selected) == 0:
+            selected = None
+        if len(unselected) == 0:
+            unselected = None
+        return (selected, unselected)
 
     def removeAllSelections(self):
         pass
@@ -430,6 +497,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         pass
 
     def _update_arrow_values(self, index):
+        if not self.have_data:
+            return
+
         if self.tooltipKind == 1:
             shown_attrs = [anchor[3] for anchor in self.anchor_data]
             self.show_tooltip(self.get_example_tooltip_text(self.raw_data[index], shown_attrs))
@@ -494,6 +564,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         return text[:-4]        # remove the last <br>
 
     def mousePressEvent(self, event):
+        if not self.have_data:
+            return
+
         # Filter events (no panning or scaling)
         if event.buttons() & Qt.LeftButton or\
            (event.buttons() & Qt.RightButton and not QApplication.keyboardModifiers() & Qt.ShiftModifier) or\
@@ -501,6 +574,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             OWPlot3D.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
+        if not self.have_data:
+            return
+
         pos = event.pos()
 
         self._last_index = -1
@@ -513,3 +589,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 self.update()
 
         OWPlot3D.mouseMoveEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        if not self.have_data:
+            return
+
+        OWPlot3D.mouseReleaseEvent(self, event)

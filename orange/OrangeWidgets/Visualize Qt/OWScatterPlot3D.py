@@ -275,7 +275,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
 
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
-                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols',
+                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols', 'plot.symbol_scale',
                     'plot.alpha_value', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
                     'plot.show_chassis', 'plot.show_axes',
                     'auto_send_selection', 'auto_send_selection_update',
@@ -283,7 +283,7 @@ class OWScatterPlot3D(OWWidget):
     contextHandlers = {'': DomainContextHandler('', ['x_attr', 'y_attr', 'z_attr'])}
     jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
-    def __init__(self, parent=None, signalManager=None, name='Scatter Plot 3D'):
+    def __init__(self, parent=None, signalManager=None, name='ScatterPlot 3D'):
         OWWidget.__init__(self, parent, signalManager, name, True)
 
         self.inputs = [('Examples', ExampleTable, self.set_data, Default), ('Subset Examples', ExampleTable, self.set_subset_data)]
@@ -370,7 +370,6 @@ class OWScatterPlot3D(OWWidget):
             minValue=1, maxValue=20,
             tooltip='Scale symbol size',
             callback=self.on_checkbox_update)
-        ss.setValue(8)
 
         OWGUI.hSlider(box, self, 'plot.alpha_value', label='Transparency',
             minValue=10, maxValue=255,
@@ -588,9 +587,11 @@ class OWScatterPlot3D(OWWidget):
     def send_selection(self):
         if self.data == None:
             return
-        selected = self.plot.get_selected_indices()
+
+        selected = None#selected = self.plot.get_selected_indices() # TODO: crash
         if selected == None or len(selected) != len(self.data):
             return
+
         unselected = numpy.logical_not(selected)
         selected = self.data.selectref(list(selected))
         unselected = self.data.selectref(list(unselected))
