@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 28
+Revision: 29
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -18,7 +18,7 @@ Depends: <<
 	graphviz
 <<
 BuildDepends: <<
-	qt4-mac,
+	qt4-base-mac,
 	sip-py%type_pkg[python]-bin,
 	cmake
 <<
