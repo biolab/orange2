@@ -1,5 +1,5 @@
 """
-<name>Nx Explorer (Qt)</name>
+<name>Net Explorer (Qt)</name>
 <description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
@@ -41,9 +41,10 @@ class OWNxExplorerQt(OWWidget):
     "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
     "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
     "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
-    "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex"] 
+    "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex", 
+    "networkCanvas.trim_label_words", "opt_from_curr"] 
     
-    def __init__(self, parent=None, signalManager=None, name = 'Nx Explorer (qt)', 
+    def __init__(self, parent=None, signalManager=None, name = 'Net Explorer (qt)', 
                  NetworkCanvas=OWNxCanvas):
         OWWidget.__init__(self, parent, signalManager, name)
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
@@ -118,14 +119,18 @@ class OWNxExplorerQt(OWWidget):
         self.tabIndex = 0
         self.number_of_nodes_label = -1
         self.number_of_edges_label = -1
+        self.opt_from_curr = False
         
         self.loadSettings()
         
         self._network_view = None
-#        self.layout = Orange.network.GraphLayout()
         self.graph = None
         self.graph_base = None
         self.markInputItems = None
+        
+        # if optimization method is set to FragViz, set it to FR
+        if self.optMethod == 9:
+            self.optMethod = 3
         
         self.mainArea.layout().setContentsMargins(0,4,4,4)
         self.controlArea.layout().setContentsMargins(4,4,0,4)
@@ -144,7 +149,6 @@ class OWNxExplorerQt(OWWidget):
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
         self.performanceTab = OWGUI.createTabPage(self.tabs, "Performance")
-        #self.editTab = OWGUI.createTabPage(self.tabs, "Edit")
         
         self.tabs.setCurrentIndex(self.tabIndex)
         self.connect(self.tabs, SIGNAL("currentChanged(int)"), lambda index: setattr(self, 'tabIndex', index))
@@ -161,8 +165,12 @@ class OWNxExplorerQt(OWWidget):
         self.optCombo.addItem("Circular Original")
         self.optCombo.addItem("Circular Random")
         self.optCombo.addItem("Pivot MDS")
+        self.optCombo.addItem("FragViz")
+        self.optCombo.addItem("MDS")
         self.optCombo.setCurrentIndex(self.optMethod)
         self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 100000, 1, label="Iterations: ")
+        self.cb_opt_from_curr = OWGUI.checkBox(self.optimizeBox, self, "opt_from_curr", label="Optimize from current positions")
+        self.cb_opt_from_curr.setEnabled(False)
         self.stepsSpin.setEnabled(False)
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.graph_layout, toggleButton=1)
@@ -184,7 +192,8 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.spin(ib, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.set_font_size)
         hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
         self.attListBox = OWGUI.listBox(hb, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
-        self.tooltipListBox = OWGUI.listBox(hb, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
+        self.tooltipListBox = OWGUI.listBox(hb, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)        
+        OWGUI.spin(ib, self, "networkCanvas.trim_label_words", 0, 5, 1, label='Trim label words to', callback=self.clickedAttLstBox)
         
         ib = OWGUI.widgetBox(self.edgesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'networkCanvas.show_weights', 'Show weights', callback=self.networkCanvas.set_edge_labels)
@@ -274,9 +283,17 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.button(ib, self, "Save image", callback=self.networkCanvas.saveToFile, debuggingEnabled=False)
         
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
+        ib = OWGUI.widgetBox(self.infoTab, "Edit")
+        self.editAttribute = 0
+        self.editCombo = OWGUI.comboBox(ib, self, "editAttribute", label="Edit attribute:", orientation="horizontal")
+        self.editCombo.addItem("Select attribute")
+        self.editValue = ''
+        hb = OWGUI.widgetBox(ib, orientation="horizontal")
+        OWGUI.lineEdit(hb, self, "editValue", "Value:", orientation='horizontal')
+        OWGUI.button(hb, self, "Set", callback=self.edit)
         
         ib = OWGUI.widgetBox(self.infoTab, "Prototype")
-        ib.setVisible(False)
+        ib.setVisible(True)
         #ib = OWGUI.widgetBox(ibProto, "Name components")
         OWGUI.lineEdit(ib, self, "organism", "Organism:", orientation='horizontal')
         
@@ -290,28 +307,28 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.checkBox(ib, self, 'showTextMiningInfo', "Show text mining info")
         
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
-        ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mds_components, toggleButton=1)
-        self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=(lambda: self.mds_components(Orange.network.MdsType.exactSimulation)), toggleButton=1)
-        self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=(lambda: self.mds_components(Orange.network.MdsType.MDS)), toggleButton=1)
-        ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
-        self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
-        self.btnForce = OWGUI.button(ibs, self, "Draw Force", callback=self.drawForce, toggleButton=1)
-        self.scalingRatio = 0
-        OWGUI.spin(ib, self, "scalingRatio", 0, 9, 1, label="Set scalingRatio: ")
-        OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
-        OWGUI.spin(ib, self, "mdsSteps", 1, 100000, 1, label="MDS steps: ")
-        OWGUI.spin(ib, self, "mdsRefresh", 1, 100000, 1, label="MDS refresh steps: ")
-        ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        OWGUI.checkBox(ibs, self, 'mdsTorgerson', "Torgerson's approximation")
-        OWGUI.checkBox(ibs, self, 'mdsAvgLinkage', "Use average linkage")
-        OWGUI.checkBox(ib, self, 'mdsFromCurrentPos', "MDS from current positions")
-        self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
-        self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
-        self.rotateSteps = 100
+        #ibs = OWGUI.widgetBox(ib, orientation="horizontal")
+        #self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mds_components, toggleButton=1)
+        #self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=(lambda: self.mds_components(Orange.network.MdsType.exactSimulation)), toggleButton=1)
+        #self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=(lambda: self.mds_components(Orange.network.MdsType.MDS)), toggleButton=1)
+        #ibs = OWGUI.widgetBox(ib, orientation="horizontal")
+        #self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
+        #self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
+        #self.btnForce = OWGUI.button(ibs, self, "Draw Force", callback=self.drawForce, toggleButton=1)
+        #self.scalingRatio = 0
+        #OWGUI.spin(ib, self, "scalingRatio", 0, 9, 1, label="Set scalingRatio: ")
+        #OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
+        #OWGUI.spin(ib, self, "mdsSteps", 1, 100000, 1, label="MDS steps: ")
+        #OWGUI.spin(ib, self, "mdsRefresh", 1, 100000, 1, label="MDS refresh steps: ")
+        #ibs = OWGUI.widgetBox(ib, orientation="horizontal")
+        #OWGUI.checkBox(ibs, self, 'mdsTorgerson', "Torgerson's approximation")
+        #OWGUI.checkBox(ibs, self, 'mdsAvgLinkage', "Use average linkage")
+        #OWGUI.checkBox(ib, self, 'mdsFromCurrentPos', "MDS from current positions")
+        #self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
+        #self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
+        #self.rotateSteps = 100
         
-        OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
+        #OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
         OWGUI.spin(ib, self, "minComponentEdgeWidth", 0, 100, 1, label="Min component edge width: ", callback=(lambda changedMin=1: self.setComponentEdgeWidth(changedMin)))
         OWGUI.spin(ib, self, "maxComponentEdgeWidth", 0, 200, 1, label="Max component edge width: ", callback=(lambda changedMin=0: self.setComponentEdgeWidth(changedMin)))
         
@@ -323,13 +340,6 @@ class OWNxExplorerQt(OWWidget):
         
         self.icons = self.createAttributeIconDict()
         self.set_mark_mode()
-        
-        self.editAttribute = 0
-        self.editCombo = OWGUI.comboBox(self.infoTab, self, "editAttribute", label="Edit attribute:", orientation="horizontal")
-        self.editCombo.addItem("Select attribute")
-        self.editValue = ''
-        OWGUI.lineEdit(self.infoTab, self, "editValue", "Value:", orientation='horizontal')
-        OWGUI.button(self.infoTab, self, "Edit", callback=self.edit)
         
         self.networkCanvas.gui.effects_box(self.performanceTab)
         
@@ -351,9 +361,6 @@ class OWNxExplorerQt(OWWidget):
         self.set_font_size()
         self.set_graph(None)
         self.setMinimumWidth(900)
-        
-        #self.resize(1000, 600)
-        #self.controlArea.setEnabled(False)
         
     def setComponentEdgeWidth(self, changedMin=True):
         if self.networkCanvas is None:
@@ -493,61 +500,6 @@ class OWNxExplorerQt(OWWidget):
 #        self.btnRotate.setText("Rotate graph components")
 #        self.progressBarFinished()
         pass
-        
-    def mdsProgress(self, avgStress, stepCount):    
-        self.drawForce()
-
-        self.mdsInfoA.setText("Avg. Stress: %.20f" % avgStress)
-        self.mdsInfoB.setText("Num. steps: %i" % stepCount)
-        self.progressBarSet(int(stepCount * 100 / self.mdsSteps))
-        qApp.processEvents()
-        
-    def mds_components(self, mdsType=Orange.network.MdsType.componentMDS):
-#        if mdsType == Orange.network.MdsType.componentMDS:
-#            btn = self.btnMDS
-#        elif mdsType == Orange.network.MdsType.exactSimulation:
-#            btn = self.btnESIM
-#        elif mdsType == Orange.network.MdsType.MDS:
-#            btn = self.btnMDSv
-#        
-#        btnCaption = btn.text()
-#        
-#        if self.items_matrix is None:
-#            self.information('Set distance matrix to input signal')
-#            btn.setChecked(False)
-#            return
-#        
-#        if self.layout is None:
-#            self.information('No network found')
-#            btn.setChecked(False)
-#            return
-#        
-#        if self.items_matrix.dim != self.graph.number_of_nodes():
-#            self.error('Distance matrix dimensionality must equal number of vertices')
-#            btn.setChecked(False)
-#            return
-#        
-#        if not btn.isChecked():
-#            self.layout.stopMDS = 1
-#            btn.setChecked(False)
-#            btn.setText(btnCaption)
-#            return
-#        
-#        btn.setText("Stop")
-#        qApp.processEvents()
-#        
-#        self.layout.items_matrix = self.items_matrix
-#        self.progressBarInit()
-#        
-#        if self.mdsAvgLinkage:
-#            self.layout.mds_components_avg_linkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)
-#        else:
-#            self.layout.mds_components(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.networkCanvas.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)            
-#        
-#        btn.setChecked(False)
-#        btn.setText(btnCaption)
-#        self.progressBarFinished()
-        pass
     
     def set_items_distance_matrix(self, matrix):
         self.error('')
@@ -569,9 +521,12 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.items_matrix = matrix
         self.showDistancesCheckBox.setEnabled(1)
         
-        if self.optMethod == 8:
-            self.optButton.setChecked(True)
-            self.graph_layout()
+        if str(self.optMethod) in ['8', '9', '10']:
+            if self.items_matrix is not None and self.graph is not None and \
+            self.items_matrix.dim == self.graph.number_of_nodes():
+                self.optButton.setEnabled(True)
+                self.optButton.setChecked(True)
+                self.graph_layout()
     
     def send_marked_nodes(self):
         if self.checkSendMarkedNodes:
@@ -1262,7 +1217,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.networkCanvas.animate_points = animation_enabled
         qApp.processEvents()
-        self.networkCanvas.networkCurve.fr(100, weighted=False, smooth_cooling=True)
+        self.networkCanvas.networkCurve.layout_fr(100, weighted=False, smooth_cooling=True)
         self.networkCanvas.networkCurve.update_properties()
         self.networkCanvas.replot()
           
@@ -1509,7 +1464,7 @@ class OWNxExplorerQt(OWWidget):
             self.optButton.setChecked(False)
             return
         
-        if not self.optButton.isChecked() and not self.optMethod == 2:
+        if not self.optButton.isChecked() and not self.optMethod in [2, 9]:
             self.optButton.setChecked(False)
             return
         
@@ -1531,6 +1486,11 @@ class OWNxExplorerQt(OWWidget):
             self.networkCanvas.networkCurve.circular(NetworkCurve.circular_random)
         elif self.optMethod == 8:
             self.graph_layout_pivot_mds()
+        elif self.optMethod == 9:
+            self.graph_layout_fragviz()
+        elif self.optMethod == 10: 
+            print "TODO: MDS"
+            #self.mds_components(Orange.network.MdsType.MDS)
             
         self.optButton.setChecked(False)
 #        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
@@ -1542,6 +1502,8 @@ class OWNxExplorerQt(OWWidget):
     def graph_layout_method(self, method=None):
         self.information()
         self.stepsSpin.label.setText('Iterations: ')
+        self.optButton.setEnabled(True)
+        self.cb_opt_from_curr.setEnabled(False)
         
         if method is not None:
             self.optMethod = method
@@ -1553,30 +1515,86 @@ class OWNxExplorerQt(OWWidget):
             
         if str(self.optMethod) in ['2', '3', '4']:
             self.stepsSpin.setEnabled(True)
-        elif str(self.optMethod) == '8':
-            self.stepsSpin.label.setText('Pivots: ')
+            
+        elif str(self.optMethod) in ['8', '9', '10']:
+            if str(self.optMethod) == '8': 
+                self.stepsSpin.label.setText('Pivots: ')
+            
+            if str(self.optMethod) == '9': 
+                self.cb_opt_from_curr.setEnabled(True)
+                
             self.stepsSpin.setEnabled(True)
             
             if self.items_matrix is None:
                 self.information('Set distance matrix to input signal')
+                self.optButton.setEnabled(False)
                 return
             if self.graph is None:
                 self.information('No network found')
+                self.optButton.setEnabled(False)
                 return
             if self.items_matrix.dim != self.graph.number_of_nodes():
                 self.error('Distance matrix dimensionality must equal number of vertices')
+                self.optButton.setEnabled(False)
                 return
         else:
             self.stepsSpin.setEnabled(False)
             self.optButton.setChecked(True)
             self.graph_layout()
         
+    
+    def mdsProgress(self, avgStress, stepCount):    
+        #self.drawForce()
+
+        #self.mdsInfoA.setText("Avg. Stress: %.20f" % avgStress)
+        #self.mdsInfoB.setText("Num. steps: %i" % stepCount)
+        self.progressBarSet(int(stepCount * 100 / self.frSteps))
+        qApp.processEvents()
+        
+    def graph_layout_fragviz(self):
+        if self.items_matrix is None:
+            self.information('Set distance matrix to input signal')
+            self.optButton.setChecked(False)
+            return
+        
+        if self.layout is None:
+            self.information('No network found')
+            self.optButton.setChecked(False)
+            return
+        
+        if self.items_matrix.dim != self.graph.number_of_nodes():
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            self.optButton.setChecked(False)
+            return
+        
+        if not self.optButton.isChecked():
+            self.networkCanvas.networkCurve.stopMDS = True
+            self.optButton.setChecked(False)
+            self.optButton.setText("Optimize layout")
+            return
+        
+        self.optButton.setText("Stop")
+        
+        qApp.processEvents()
+
+        self.progressBarInit()
+
+        if self.graph.number_of_nodes() == self.graph_base.number_of_nodes():
+            matrix = self.items_matrix
+        else:
+            matrix = self.items_matrix.get_items(sorted(self.graph.nodes()))
+        
+        self.networkCanvas.networkCurve.layout_fragviz(self.frSteps, matrix, self.graph, self.mdsProgress, self.opt_from_curr)
+
+        self.optButton.setChecked(False)
+        self.optButton.setText("Optimize layout")
+        self.progressBarFinished()
+        
     def graph_layout_fr(self, weighted):
         if self.graph is None:
             return
               
         if not self.optButton.isChecked():
-            print 'stop opt'
             self.networkCanvas.networkCurve.stop_optimization()
             self.optButton.setChecked(False)
             self.optButton.setText("Optimize layout")
@@ -1584,7 +1602,7 @@ class OWNxExplorerQt(OWWidget):
         
         self.optButton.setText("Stop")
         qApp.processEvents()
-        self.networkCanvas.networkCurve.fr(self.frSteps, False)
+        self.networkCanvas.networkCurve.layout_fr(self.frSteps, False)
         self.networkCanvas.update_canvas()
         self.optButton.setChecked(False)
         self.optButton.setText("Optimize layout")
@@ -1650,7 +1668,6 @@ class OWNxExplorerQt(OWWidget):
     """
     Network Visualization
     """
-       
     def clickedAttLstBox(self):
         if self.graph is None:
             return

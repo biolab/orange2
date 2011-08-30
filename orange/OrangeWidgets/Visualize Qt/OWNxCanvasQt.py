@@ -36,12 +36,174 @@ class NetworkCurve(orangeqt.NetworkCurve):
         orangeqt.NetworkCurve.__init__(self, parent)
         self.name = "Network Curve"
         
-    def fr(self, steps, weighted=False, smooth_cooling=False):
+    def layout_fr(self, steps, weighted=False, smooth_cooling=False):
         orangeqt.NetworkCurve.fr(self, steps, weighted, smooth_cooling)
       
     def set_node_sizes(self, values={}, min_size=0, max_size=0):
         orangeqt.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
+    
+    def mds_callback(self, a, b, mds, mdsRefresh, components, progress_callback):
+        """Refresh the UI when running  MDS on network components."""
+        
+        if not self.mdsStep % mdsRefresh:
+            rotationOnly = False
+            component_props = []
+            x_mds = []
+            y_mds = []
+            phi = [None] * len(components)
+            nodes = self.nodes()
+            
+            for i, component in enumerate(components):    
+                
+                if len(mds.points) == len(components):  # if average linkage before
+                    x_avg_mds = mds.points[i][0]
+                    y_avg_mds = mds.points[i][1]
+                else:                                   # if not average linkage before
+                    x = [mds.points[u][0] for u in component]
+                    y = [mds.points[u][1] for u in component]
+            
+                    x_avg_mds = sum(x) / len(x) 
+                    y_avg_mds = sum(y) / len(y)
+                    # compute rotation angle
+#                    c = [numpy.linalg.norm(numpy.cross(mds.points[u], \
+#                                [nodes[u].x(), nodes[u].y()])) for u in component]
+#                    
+#                    n = [numpy.vdot([nodes[u].x(), nodes[u].y()], \
+#                                    [nodes[u].x(), nodes[u].y()]) for u in component]
+#                    phi[i] = sum(c) / sum(n)
+                    
+                
+                x = [nodes[i].x() for i in component]
+                y = [nodes[i].y() for i in component]
+                
+                x_avg_graph = sum(x) / len(x)
+                y_avg_graph = sum(y) / len(y)
+                
+                x_mds.append(x_avg_mds) 
+                y_mds.append(y_avg_mds)
+    
+                component_props.append((x_avg_graph, y_avg_graph, \
+                                        x_avg_mds, y_avg_mds, phi))
+
+            for i, component in enumerate(components):
+                x_avg_graph, y_avg_graph, x_avg_mds, \
+                y_avg_mds, phi = component_props[i]
+                
+    #            if phi[i]:  # rotate vertices
+    #                #print "rotate", i, phi[i]
+    #                r = numpy.array([[numpy.cos(phi[i]), -numpy.sin(phi[i])], [numpy.sin(phi[i]), numpy.cos(phi[i])]])  #rotation matrix
+    #                c = [x_avg_graph, y_avg_graph]  # center of mass in FR coordinate system
+    #                v = [numpy.dot(numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]]) - c, r) + c for u in component]
+    #                self.graph.coors[0][component] = [u[0] for u in v]
+    #                self.graph.coors[1][component] = [u[1] for u in v]
+                    
+                # translate vertices
+                if not rotationOnly:
+                    self.set_node_coordinates(dict(
+                       (i, ((nodes[i].x() - x_avg_graph) + x_avg_mds,  
+                            (nodes[i].y() - y_avg_graph) + y_avg_mds)) \
+                                  for i in component))
+                    
+            #if self.mdsType == MdsType.exactSimulation:
+            #    self.mds.points = [[self.graph.coors[0][i], \
+            #                        self.graph.coors[1][i]] \
+            #                        for i in range(len(self.graph.coors))]
+            #    self.mds.freshD = 0
+            
+            #self.update_properties()
+            self.plot().replot()
+            qApp.processEvents()
+            
+            if progress_callback is not None:
+                progress_callback(a, self.mdsStep) 
+            
+        self.mdsStep += 1
+        return 0 if self.stopMDS else 1
+            
+    def layout_fragviz(self, steps, distances, graph, progress_callback=None, opt_from_curr=False):
+        """Position the network components according to similarities among 
+        them.
+        
+        """
+
+        if distances == None or graph == None or distances.dim != graph.number_of_nodes():
+            self.information('invalid or no distance matrix')
+            return 1
+        
+        p = self.plot()
+        edges = self.edges()
+        nodes = self.nodes()
+        
+        avgLinkage = True
+        rotationOnly = False
+        minStressDelta = 0
+        mdsRefresh = int(steps / 20)
+        
+        self.mdsStep = 1
+        self.stopMDS = False
+        
+        components = Orange.network.nx.algorithms.components.connected.connected_components(graph)
+        distances.matrixType = Orange.core.SymMatrix.Symmetric
+        
+        # scale net coordinates
+        if avgLinkage:
+            distances = distances.avgLinkage(components)
+            
+        mds = Orange.projection.mds.MDS(distances)
+        mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
+        rect = self.data_rect()
+        w_fr = rect.width()
+        h_fr = rect.height()
+        d_fr = math.sqrt(w_fr**2 + h_fr**2)
       
+        x_mds = [mds.points[u][0] for u in range(len(mds.points))]
+        y_mds = [mds.points[u][1] for u in range(len(mds.points))]
+        w_mds = max(x_mds) - min(x_mds)
+        h_mds = max(y_mds) - min(y_mds)
+        d_mds = math.sqrt(w_mds**2 + h_mds**2)
+        
+        animate_points = p.animate_points
+        p.animate_points = False
+        
+        self.set_node_coordinates(dict(
+           (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
+        
+        #self.update_properties()
+        p.replot()
+        qApp.processEvents()
+                     
+        if opt_from_curr:
+            if avgLinkage:
+                for u, c in enumerate(components):
+                    x = sum([nodes[n].x() for n in c]) / len(c)
+                    y = sum([nodes[n].y() for n in c]) / len(c)
+                    mds.points[u][0] = x
+                    mds.points[u][1] = y
+            else:
+                for i,u in enumerate(nodes):
+                    mds.points[i][0] = u.x()
+                    mds.points[i][1] = u.y()
+        else:
+            mds.Torgerson() 
+
+        mds.optimize(steps, Orange.projection.mds.SgnRelStress, minStressDelta, 
+                     progressCallback=
+                         lambda a, 
+                                b=None, 
+                                mds=mds,
+                                mdsRefresh=mdsRefresh,
+                                components=components,
+                                progress_callback=progress_callback: 
+                                    self.mds_callback(a, b, mds, mdsRefresh, components, progress_callback))
+        
+        self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
+        
+        if progress_callback != None:
+            progress_callback(mds.avgStress, self.mdsStep)
+        
+        p.animate_points = animate_points
+        return 0
+    
 #    def move_selected_nodes(self, dx, dy):
 #        selected = self.get_selected_nodes()
 #        
@@ -85,6 +247,7 @@ class OWNxCanvas(OWPlot):
 
         self.show_indices = False
         self.show_weights = False
+        self.trim_label_words = 0
         
         self.showComponentAttribute = None
         self.forceVectors = None
@@ -270,7 +433,13 @@ class OWNxCanvas(OWPlot):
         if self.show_indices:
             indices = [[str(u)] for u in nodes]
             
-        self.networkCurve.set_node_labels(dict((node, ', '.join(indices[i] + \
+        if self.trim_label_words > 0:
+            self.networkCurve.set_node_labels(dict((node, 
+                ', '.join(indices[i] + 
+                          [' '.join(str(self.items[node][att]).split(' ')[:min(self.trim_label_words,len(str(self.items[node][att]).split(' ')))])
+                for att in label_attributes])) for i, node in enumerate(nodes)))
+        else:
+            self.networkCurve.set_node_labels(dict((node, ', '.join(indices[i]+\
                            [str(self.items[node][att]) for att in \
                            label_attributes])) for i, node in enumerate(nodes)))
         
