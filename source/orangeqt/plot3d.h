@@ -6,7 +6,12 @@
 #include <QVector3D>
 #include <QVector4D>
 #include <QMatrix4x4>
+
+#ifdef __APPLE__ // Apple OpenGL framework (What if we want to use X11 - then the include should be GL/gl.h)
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif //__APPLE__
 
 class Plot3D : public QGLWidget {
   Q_OBJECT

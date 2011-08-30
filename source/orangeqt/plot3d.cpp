@@ -2,6 +2,10 @@
 #include <iostream>
 #include <limits>
 #include <QGLFormat>
+
+#ifdef __APPLE__ // OpenGL framework
+#include <OpenGL/glext.h>
+#else
 #include <GL/glx.h>
 #include <GL/glxext.h> // TODO: Windows?
 #include <GL/glext.h>
@@ -16,6 +20,8 @@ PFNGLGETVERTEXATTRIBPOINTERPROC glVertexAttribPointer = NULL;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = NULL;
 PFNGLUNIFORM2FPROC glUniform2f = NULL;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers = NULL;
+
+#endif //__APPLE__
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -68,6 +74,9 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 #ifdef _WIN32
     // TODO: wglGetProcAddress
 #else
+#ifdef __APPLE__
+// Should check if the extensions are available.
+#else
     glGenBuffers = (PFNGLGENBUFFERSARBPROC)glXGetProcAddress((const GLubyte*)"glGenBuffers");
     glBindBuffer = (PFNGLBINDBUFFERPROC)glXGetProcAddress((const GLubyte*)"glBindBuffer");
     glBufferData = (PFNGLBUFFERDATAPROC)glXGetProcAddress((const GLubyte*)"glBufferData");
@@ -77,7 +86,8 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
     glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)glXGetProcAddress((const GLubyte*)"glGetUniformLocation");
     glUniform2f = (PFNGLUNIFORM2FPROC)glXGetProcAddress((const GLubyte*)"glUniform2f");
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)glXGetProcAddress((const GLubyte*)"glDeleteBuffers");
-#endif
+#endif // __APPLE__
+#endif // _WIN32
 }
 
 void Plot3D::set_valid_data(quint64 valid_data_address)
