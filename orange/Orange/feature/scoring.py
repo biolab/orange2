@@ -8,7 +8,7 @@ Scoring (``scoring``)
 .. index:: 
    single: feature; feature scoring
 
-Feature scoring is assessment of the usefulness of the feature for 
+Feature score is an assessment of the usefulness of the feature for 
 prediction of the dependant (class) variable.
 
 To compute the information gain of feature "tear_rate" in the Lenses data set (loaded into ``data``) use:
@@ -17,22 +17,21 @@ To compute the information gain of feature "tear_rate" in the Lenses data set (l
     >>> print meas("tear_rate", data)
     0.548794925213
 
-Apart from information gain you could also use other scoring methods;
-see :ref:`classification` and :ref:`regression`. Various
-ways to call them are described on :ref:`callingscore`.
+Other scoring methods are listed in :ref:`classification` and
+:ref:`regression`. Various ways to call them are described on
+:ref:`callingscore`.
 
-It is possible to construct the object and use
-it on-the-fly::
+Instead of first constructing the scoring object (e.g. ``InfoGain``) and
+then using it, it is usually more convenient to do both in a single step::
 
     >>> print Orange.feature.scoring.InfoGain("tear_rate", data)
     0.548794925213
 
-But constructing new instances for each feature is slow for
-scoring methods that use caching, such as :obj:`Relief`.
+This way is much slower for Relief that can efficiently compute scores
+for all features in parallel.
 
-Scoring features that are not in the domain is also possible. For
-instance, discretized features can be scored without producing a
-data table in advance (slow with :obj:`Relief`):
+It is also possible to score features that do not appear in the data
+but can be computed from it. A typical case are discretized features:
 
 .. literalinclude:: code/scoring-info-iris.py
     :lines: 7-11
@@ -83,24 +82,23 @@ Calling scoring methods
 
 To score a feature use :obj:`Score.__call__`. There are diferent
 function signatures, which enable optimization. For instance,
-if contingency matrix has already been computed, you can speed
-up the computation by passing it to the scoring method (if it supports
-that form - most do). Otherwise the scoring method will have to compute the
-contingency itself.
+most scoring methods first compute contingency tables from the
+data. If these are already computed, they can be passed to the scorer
+instead of the data.
 
 Not all classes accept all kinds of arguments. :obj:`Relief`,
 for instance, only supports the form with instances on the input.
 
-.. method:: Score.__call__(attribute, instances[, apriori_class_distribution][, weightID])
+.. method:: Score.__call__(attribute, data[, apriori_class_distribution][, weightID])
 
     :param attribute: the chosen feature, either as a descriptor, 
       index, or a name.
     :type attribute: :class:`Orange.data.variable.Variable` or int or string
-    :param instances: data.
-    :type instances: `Orange.data.Table`
+    :param data: data.
+    :type data: `Orange.data.Table`
     :param weightID: id for meta-feature with weight.
 
-    All scoring methods need to support these parameters.
+    All scoring methods support the first signature.
 
 .. method:: Score.__call__(attribute, domain_contingency[, apriori_class_distribution])
 
@@ -128,8 +126,8 @@ for instance, only supports the form with instances on the input.
       If the quality cannot be scored, return :obj:`Score.Rejected`.
     :rtype: float or :obj:`Score.Rejected`.
 
-The code below scores the same feature with :obj:`GainRatio` in
-different ways.
+The code below scores the same feature with :obj:`GainRatio` 
+using different calls.
 
 .. literalinclude:: code/scoring-calls.py
     :lines: 7-
@@ -147,7 +145,7 @@ Feature scoring in classification problems
 
 .. class:: InfoGain
 
-    Information gain - the expected decrease of entropy. See `page on wikipedia
+    Information gain; the expected decrease of entropy. See `page on wikipedia
     <http://en.wikipedia.org/wiki/Information_gain_ratio>`_.
 
 .. index:: 
@@ -155,7 +153,7 @@ Feature scoring in classification problems
 
 .. class:: GainRatio
 
-    Information gain ratio - information gain divided by the entropy of the feature's
+    Information gain ratio; information gain divided by the entropy of the feature's
     value. Introduced in [Quinlan1986]_ in order to avoid overestimation
     of multi-valued features. It has been shown, however, that it still
     overestimates features with multiple values. See `Wikipedia
@@ -209,26 +207,10 @@ Feature scoring in classification problems
 .. class:: Relief
 
     Assesses features' ability to distinguish between very similar
-    instances from different classes. This scoring method was
-    first developed by Kira and
-    Rendell and then improved by Kononenko. The class :obj:`Relief`
-    works on discrete and continuous classes and thus implements ReliefF
-    and RReliefF.
-
-    .. attribute:: k
-    
-       Number of neighbours for each instance. Default is 5.
-
-    .. attribute:: m
-    
-        Number of reference instances. Default is 100. Set to -1 to take all the
-        instances.
-
-    .. attribute:: check_cached_data
-    
-        Check if the cached data is changed with data checksum. Slow
-        on large tables.  Defaults to :obj:`True`. Disable it if you know that
-        the data will not change.
+    instances from different classes. This scoring method was first
+    developed by Kira and Rendell and then improved by Kononenko. The
+    class :obj:`Relief` works on discrete and continuous classes and
+    thus implements ReliefF and RReliefF.
 
     ReliefF is slow since it needs to find k nearest neighbours for
     each of m reference instances. As we normally compute ReliefF for
@@ -249,9 +231,21 @@ Feature scoring in classification problems
         for attr in table.domain.attributes:
             print meas(attr, data)
 
-    .. note::
-       Relief can also compute the threshold function, that is, the feature
-       quality at different thresholds for binarization.
+
+    .. attribute:: k
+    
+       Number of neighbours for each instance. Default is 5.
+
+    .. attribute:: m
+    
+        Number of reference instances. Default is 100. When -1, all
+        instances are used as reference.
+
+    .. attribute:: check_cached_data
+    
+        Check if the cached data is changed, which may be slow on large
+        tables.  Defaults to :obj:`True`, but should be disabled when it
+        is certain that the data will not change while the scorer is used.
 
 .. autoclass:: Orange.feature.scoring.Distance
    
@@ -263,7 +257,11 @@ Feature scoring in classification problems
 Feature scoring in regression problems
 ======================================
 
-You can also use :obj:`Relief` for regression.
+.. class:: Relief
+
+    Relief is used for regression in the same way as for
+    classification (see :class:`Relief` in classification
+    problems).
 
 .. index:: 
    single: feature scoring; mean square error
@@ -286,15 +284,15 @@ You can also use :obj:`Relief` for regression.
 Base Classes
 ============
 
-Implemented methods for scoring relevances of features to the class
-are subclasses of :obj:`Score`. Those that compute statistics on
-conditional distributions of class values given the feature values are
-derived from :obj:`ScoreFromProbabilities`.
+Implemented methods for scoring relevances of features are subclasses
+of :obj:`Score`. Those that compute statistics on conditional
+distributions of class values given the feature values are derived from
+:obj:`ScoreFromProbabilities`.
 
 .. class:: Score
 
     Abstract base class for feature scoring. Its attributes describe which
-    features it can handle and the required data.
+    types of features it can handle which kind of data it requires.
 
     **Capabilities**
 
@@ -314,52 +312,53 @@ derived from :obj:`ScoreFromProbabilities`.
 
     .. attribute:: needs
     
-        The type of data needed: :obj:`Generator`, :obj:`DomainContingency`,
-        or :obj:`Contingency_Class`.
+        The type of data needed indicated by one the constants
+        below. Classes with use :obj:`DomainContingency` will also handle
+        generators. Those based on :obj:`Contingency_Class` will be able
+        to take generators and domain contingencies.
 
-    .. attribute:: Generator
+        .. attribute:: Generator
 
-        Constant. Indicates that the scoring method needs an instance generator on the input (as, for example,
-        :obj:`Relief`).
+            Constant. Indicates that the scoring method needs an instance
+            generator on the input as, for example, :obj:`Relief`.
 
-    .. attribute:: DomainContingency
+        .. attribute:: DomainContingency
 
-        Constant. Indicates that the scoring method needs :obj:`Orange.statistics.contingency.Domain`.
+            Constant. Indicates that the scoring method needs
+            :obj:`Orange.statistics.contingency.Domain`.
 
-    .. attribute:: Contingency_Class
+        .. attribute:: Contingency_Class
 
-        Constant. Indicates, that the scoring method needs the contingency
-        (:obj:`Orange.statistics.contingency.VarClass`), feature
-        distribution and the apriori class distribution (as most
-        scoring methods).
+            Constant. Indicates, that the scoring method needs the contingency
+            (:obj:`Orange.statistics.contingency.VarClass`), feature
+            distribution and the apriori class distribution (as most
+            scoring methods).
 
     **Treatment of unknown values**
 
     .. attribute:: unknowns_treatment
 
-        Not defined in :obj:`Score` but defined in
-        classes that are able to treat unknown values. Either
-        :obj:`IgnoreUnknowns`, :obj:`ReduceByUnknown`.
-        :obj:`UnknownsToCommon`, or :obj:`UnknownsAsValue`.
+        Defined in classes that are able to treat unknown values. It
+        should be set to one of the values below.
 
-    .. attribute:: IgnoreUnknowns
+        .. attribute:: IgnoreUnknowns
 
-        Constant. Instances for which the feature value is unknown are removed.
+            Constant. Instances for which the feature value is unknown are removed.
 
-    .. attribute:: ReduceByUnknown
+        .. attribute:: ReduceByUnknown
 
-        Constant. Features with unknown values are 
-        punished. The feature quality is reduced by the proportion of
-        unknown values. For impurity scores the impurity decreases
-        only where the value is defined and stays the same otherwise.
+            Constant. Features with unknown values are 
+            punished. The feature quality is reduced by the proportion of
+            unknown values. For impurity scores the impurity decreases
+            only where the value is defined and stays the same otherwise.
 
-    .. attribute:: UnknownsToCommon
+        .. attribute:: UnknownsToCommon
 
-        Constant. Undefined values are replaced by the most common value.
+            Constant. Undefined values are replaced by the most common value.
 
-    .. attribute:: UnknownsAsValue
+        .. attribute:: UnknownsAsValue
 
-        Constant. Unknown values are treated as a separate value.
+            Constant. Unknown values are treated as a separate value.
 
     **Methods**
 
@@ -372,17 +371,17 @@ derived from :obj:`ScoreFromProbabilities`.
         Abstract. 
         
         Assess different binarizations of the continuous feature
-        :obj:`attribute`.  Return a list of tuples, where the first
-        element is a threshold (between two existing values), the second
-        is the quality of the corresponding binary feature, and the last
-        the distribution of instancs below and above the threshold. The
-        last element is optional.
+        :obj:`attribute`.  Return a list of tuples. The first element
+        is a threshold (between two existing values), the second is
+        the quality of the corresponding binary feature, and the third
+        the distribution of instances below and above the threshold.
+        Not all scorers return the third element.
 
-        To show the computation of thresholds, we shall use the Iris data set
-        (part of `scoring-info-iris.py`_, uses `iris.tab`_):
+        To show the computation of thresholds, we shall use the Iris
+        data set:
 
         .. literalinclude:: code/scoring-info-iris.py
-            :lines: 13-15
+            :lines: 13-16
 
     .. method:: best_threshold(attribute, instances)
 
@@ -391,36 +390,28 @@ derived from :obj:`ScoreFromProbabilities`.
         score.
 
         The script below prints out the best threshold for
-        binarization of an feature. ReliefF is used scoring: (part of
-        `scoring-info-iris.py`_, uses `iris.tab`_):
+        binarization of an feature. ReliefF is used scoring: 
 
         .. literalinclude:: code/scoring-info-iris.py
-            :lines: 17-18
+            :lines: 18-19
 
 .. class:: ScoreFromProbabilities
 
     Bases: :obj:`Score`
 
     Abstract base class for feature scoring method that can be
-    computed from contingency matrices only. It relieves the derived classes
-    from having to compute the contingency matrix by defining the first two
-    forms of call operator. (Well, that's not something you need to know if
-    you only work in Python.)
-
-    .. attribute:: unknowns_treatment
-     
-        See :obj:`Score.unknowns_treatment`.
+    computed from contingency matrices.
 
     .. attribute:: estimator_constructor
     .. attribute:: conditional_estimator_constructor
     
-        The classes that are used to estimate unconditional and
-        conditional probabilities of classes, respectively. You can set
-        this to, for instance, :obj:`ProbabilityEstimatorConstructor_m`
-        and :obj:`ConditionalProbabilityEstimatorConstructor_ByRows`
+        The classes that are used to estimate unconditional
+        and conditional probabilities of classes, respectively.
+        Defaults use relative frequencies; possible alternatives are,
+        for instance, :obj:`ProbabilityEstimatorConstructor_m` and
+        :obj:`ConditionalProbabilityEstimatorConstructor_ByRows`
         (with estimator constructor again set to
         :obj:`ProbabilityEstimatorConstructor_m`), respectively.
-        Both default to relative frequencies.
 
 ============
 Other
@@ -429,11 +420,9 @@ Other
 .. autoclass:: Orange.feature.scoring.OrderAttributes
    :members:
 
-.. autofunction:: Orange.feature.scoring.merge_values
-
 .. autofunction:: Orange.feature.scoring.score_all
 
-..  .. rubric:: References
+.. rubric:: Bibliography
 
 .. [Kononenko2007] Igor Kononenko, Matjaz Kukar: Machine Learning and Data Mining, 
   Woodhead Publishing, 2007.
@@ -481,7 +470,7 @@ class OrderAttributes:
     .. attribute::  score
     
         A scoring method derived from :obj:`~Orange.feature.scoring.Score`.
-        If :obj:`None`, :obj:`Relief` with m=5 and k=10 will be used.
+        If :obj:`None`, :obj:`Relief` with m=5 and k=10 is used.
     
     """
     def __init__(self, score=None):

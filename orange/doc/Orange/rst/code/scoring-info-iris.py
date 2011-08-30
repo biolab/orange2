@@ -10,6 +10,7 @@ table = Orange.data.Table("iris")
 d1 = Orange.feature.discretization.EntropyDiscretization("petal length", table)
 print Orange.feature.scoring.InfoGain(d1, table)
 
+table = Orange.data.Table("iris")
 meas = Orange.feature.scoring.Relief()
 for t in meas.threshold_function("petal length", table):
     print "%5.3f: %5.3f" % t
