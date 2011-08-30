@@ -4,6 +4,9 @@
 <priority>2000</priority>
 '''
 
+from math import pi
+from random import choice
+
 from plot.owplot3d import *
 from plot.primitives import parse_obj
 from OWLinProjQt import *
@@ -16,6 +19,9 @@ Continuous = orange.VarTypes.Continuous
 class OWSphereviz3DPlot(OWLinProj3DPlot):
     def __init__(self, widget, parent=None, name='SpherevizPlot'):
         OWLinProj3DPlot.__init__(self, widget, parent, name)
+
+        self.camera_angle = 90
+        self.camera_type = 0 # Default, center, attribute
 
     def _build_anchor_grid(self):
         lines = []
@@ -120,13 +126,13 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         fragment_shader_source = '''
             varying float transparency;
-            uniform bool invert_transparency;
+            uniform bool use_transparency;
 
             void main(void)
             {
                 gl_FragColor = vec4(0.5, 0.5, 0.5, 1. - transparency - 0.6);
-                if (invert_transparency)
-                    gl_FragColor.a = transparency;
+                if (!use_transparency)
+                    gl_FragColor.a = 1.;
             }
             '''
 
@@ -172,11 +178,25 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         self.before_draw_callback = lambda: self.before_draw()
 
+    def update_camera_type(self):
+        if self.camera_type == 2:
+            self._random_anchor = choice(self.anchor_data)
+        self.update()
+
     def before_draw(self):
-        # Override modelview (scatterplot points camera somewhat below the center, which doesn't
-        # look good with sphere)
         modelview = QMatrix4x4()
-        if self.camera_in_center:
+        if self.camera_type == 2:
+            modelview.lookAt(
+                QVector3D(self._random_anchor[0], self._random_anchor[1], self._random_anchor[2]),
+                QVector3D(self.camera[0],
+                          self.camera[1],
+                          self.camera[2]),
+                QVector3D(0, 1, 0))
+            projection = QMatrix4x4()
+            projection.perspective(self.camera_angle, float(self.width()) / self.height(),
+                                   0.01, 5.)
+            self.projection = projection
+        elif self.camera_type == 1:
             modelview.lookAt(
                 QVector3D(0, 0, 0),
                 QVector3D(self.camera[0]*self.camera_distance,
@@ -184,7 +204,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                           self.camera[2]*self.camera_distance),
                 QVector3D(0, 1, 0))
             projection = QMatrix4x4()
-            projection.perspective(90., float(self.width()) / self.height(),
+            projection.perspective(self.camera_angle, float(self.width()) / self.height(),
                                    0.01, 5.)
             self.projection = projection
         else:
@@ -227,8 +247,8 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 modelview.translate(x, y, z)
                 modelview = modelview * rotation
                 modelview.rotate(-90, 1, 0, 0)
-                modelview.translate(0, -0.02, 0)
-                modelview.scale(-0.02, -0.02, -0.02)
+                modelview.translate(0, -0.05, 0)
+                modelview.scale(0.02, 0.02, 0.02)
                 self.cone_shader.setUniformValue('modelview', modelview)
 
                 glBindVertexArray(self.cone_vao_id)
@@ -266,7 +286,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         self.sphere_shader.setUniformValue('projection', self.projection)
         self.sphere_shader.setUniformValue('modelview', self.modelview)
         self.sphere_shader.setUniformValue('cam_position', QVector3D(*self.camera)*self.camera_distance)
-        self.sphere_shader.setUniformValue('invert_transparency', self.camera_in_center)
+        self.sphere_shader.setUniformValue('use_transparency', self.camera_type == 0)
         glBindVertexArray(self.sphere_vao_id)
 
         glDrawArrays(GL_LINES, 0, self.sphere_vao_id.num_vertices)
@@ -275,12 +295,10 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         self.sphere_shader.release()
 
     def mouseMoveEvent(self, event):
-        self.invert_mouse_x = self.camera_in_center
+        self.invert_mouse_x = self.camera_type != 0
         OWLinProj3DPlot.mouseMoveEvent(self, event)
 
 class OWSphereviz3D(OWLinProjQt):
-    settingsList = ['showAllAttributes']
-
     def __init__(self, parent=None, signalManager=None):
         OWLinProjQt.__init__(self, parent, signalManager, "Sphereviz 3D", graphClass=OWSphereviz3DPlot)
 

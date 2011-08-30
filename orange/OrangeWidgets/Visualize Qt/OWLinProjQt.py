@@ -41,7 +41,7 @@ class OWLinProjQt(OWVisWidget):
                     "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection",
-                    "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing"
+                    "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing",
                     "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
 
@@ -100,6 +100,12 @@ class OWLinProjQt(OWVisWidget):
         self.graph.showAxisScale = 0
         self.graph.showValueLines = 0
         self.graph.valueLineLength = 5
+        self.dark_theme = False
+
+        if "3d" in name_lower:
+            self.settingsList.append("graph.use_2d_symbols")
+            self.settingsList.append("graph.mouse_sensitivity")
+            self.settingsList.append("dark_theme")
 
         #load settings
         self.loadSettings()
@@ -228,10 +234,18 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
 
         if "3d" in name_lower:
-            self.dark_theme = False
             OWGUI.checkBox(box, self, 'dark_theme', 'Dark theme', callback=self.on_theme_change)
-            OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
             OWGUI.checkBox(box, self, 'graph.use_2d_symbols', '2D symbols', callback = self.updateGraph, tooltip = "Use 2D symbols")
+            self.on_theme_change()
+            if "sphereviz" in name_lower:
+                box = OWGUI.widgetBox(self.SettingsTab, 'Camery type', orientation = "horizontal")
+                c = OWGUI.comboBox(box, self, 'graph.camera_type', callback=self.graph.update_camera_type, sendSelectedValue=0)
+                c.addItem('Default')
+                c.addItem('Center')
+                c.addItem('Random attribute')
+                OWGUI.hSlider(box, self, 'graph.camera_angle', label='FOV', minValue=45, maxValue=180, step=1, callback = self.graph.update, tooltip='Field of view angle')
+            box = OWGUI.widgetBox(self.SettingsTab, 'Mouse', orientation = "horizontal")
+            OWGUI.hSlider(box, self, 'graph.mouse_sensitivity', label='Sensitivity', minValue=1, maxValue=10, step=1, callback = self.graph.update, tooltip='Change mouse sensitivity')
         else:
             self.graph.gui.filled_symbols_check_box(box)
             wbox = OWGUI.widgetBox(box, orientation = "horizontal")

@@ -279,7 +279,7 @@ class OWScatterPlot3D(OWWidget):
                     'plot.alpha_value', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
                     'plot.show_chassis', 'plot.show_axes',
                     'auto_send_selection', 'auto_send_selection_update',
-                    'plot.jitter_size', 'plot.jitter_continuous']
+                    'plot.jitter_size', 'plot.jitter_continuous', 'dark_theme']
     contextHandlers = {'': DomainContextHandler('', ['x_attr', 'y_attr', 'z_attr'])}
     jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
@@ -429,6 +429,7 @@ class OWScatterPlot3D(OWWidget):
 
         self.loadSettings()
         self.plot.update_camera()
+        self.on_theme_change()
 
         self._set_behavior_replace()
 

@@ -240,7 +240,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.use_2d_symbols = False
         self.symbol_scale = 1.
         self.alpha_value = 255
-        self.zoomed_size = [1., 1., 1.]
+        self._zoomed_size = [1., 1., 1.]
 
         self.state = PlotState.IDLE
 
@@ -256,6 +256,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.setMouseTracking(True)
         self.mouse_position = QPoint(0, 0)
         self.invert_mouse_x = False
+        self.mouse_sensitivity = 5
 
         # TODO: these should be moved down to Scatterplot3D
         self.x_axis_labels = None
@@ -274,7 +275,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.plot_scale = array([1., 1., 1.])
         self.plot_translation = -array([0.5, 0.5, 0.5])
 
-        self.zoom_stack = []
+        self._zoom_stack = []
         self.zoom_into_selection = True # If True, zoom is done after selection, else SelectionBehavior is considered
 
         self._theme = PlotTheme()
@@ -957,8 +958,8 @@ class OWPlot3D(orangeqt.Plot3D):
             setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', show)
 
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max, plot_coordinates=False):
-        '''Specifies new zoom in data coordinates.'''
-        self.zoom_stack.append((self.plot_scale, self.plot_translation))
+        '''Specifies new zoom in data or plot coordinates.'''
+        self._zoom_stack.append((self.plot_scale, self.plot_translation))
 
         max = array([x_max, y_max, z_max]).copy()
         min = array([x_min, y_min, z_min]).copy()
@@ -971,8 +972,8 @@ class OWPlot3D(orangeqt.Plot3D):
         new_translation = -array(center)
         # Avoid division by zero by adding a small value (this happens when zooming in
         # on elements with the same value of an attribute).
-        self.zoomed_size = array(map(lambda i: i+1e-5 if i == 0 else i, max-min))
-        new_scale = 1. / self.zoomed_size
+        self._zoomed_size = array(map(lambda i: i+1e-5 if i == 0 else i, max-min))
+        new_scale = 1. / self._zoomed_size
         self._animate_new_scale_translation(new_scale, new_translation)
 
     def _animate_new_scale_translation(self, new_scale, new_translation, num_steps=10):
@@ -980,6 +981,7 @@ class OWPlot3D(orangeqt.Plot3D):
         scale_step = (new_scale - self.plot_scale) / float(num_steps)
         # Animate zooming: translate first for a number of steps,
         # then scale. Make sure it doesn't take too long.
+        print('animating')
         start = time.time()
         for i in range(num_steps):
             if time.time() - start > 1.:
@@ -995,13 +997,13 @@ class OWPlot3D(orangeqt.Plot3D):
             self.update()
 
     def zoom_out(self):
-        if len(self.zoom_stack) < 1:
+        if len(self._zoom_stack) < 1:
             new_translation = -array([0.5, 0.5, 0.5])
             new_scale = array([1., 1., 1.])
         else:
-            new_scale, new_translation = self.zoom_stack.pop()
+            new_scale, new_translation = self._zoom_stack.pop()
         self._animate_new_scale_translation(new_scale, new_translation)
-        self.zoomed_size = 1. / new_scale
+        self._zoomed_size = 1. / new_scale
 
     def save_to_file(self):
         size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
@@ -1086,8 +1088,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 self.state = PlotState.ROTATING
 
     def _check_mouseover(self, pos):
-        if self.mouseover_callback != None and self.state == PlotState.IDLE:# and\
-            #(not self.show_legend or not self.legend.contains(pos.x(), pos.y())):
+        if self.mouseover_callback != None and self.state == PlotState.IDLE:
             if abs(pos.x() - self.tooltip_win_center[0]) > 100 or\
                abs(pos.y() - self.tooltip_win_center[1]) > 100:
                 self.tooltip_fbo_dirty = True
@@ -1124,8 +1125,8 @@ class OWPlot3D(orangeqt.Plot3D):
             event.scenePos = lambda: QPointF(pos)
             self._legend.mouseMoveEvent(event)
         elif self.state == PlotState.ROTATING:
-            self.yaw += dx / (self.rotation_factor*self.width())
-            self.pitch += dy / (self.rotation_factor*self.height())
+            self.yaw += (self.mouse_sensitivity / 5.) * dx / (self.rotation_factor*self.width())
+            self.pitch += (self.mouse_sensitivity / 5.) * dy / (self.rotation_factor*self.height())
             self.update_camera()
         elif self.state == PlotState.PANNING:
             right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
@@ -1137,8 +1138,8 @@ class OWPlot3D(orangeqt.Plot3D):
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
-            dx /= float(self.zoomed_size[0]) # TODO
-            dy /= float(self.zoomed_size[1])
+            dx /= float(self._zoomed_size[0]) # TODO
+            dy /= float(self._zoomed_size[1])
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
             self.additional_scale = [dx, dy, 0]
@@ -1231,8 +1232,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.feedback_generated = False
 
     def clear_plot_transformations(self):
-        self.zoom_stack = []
-        self.zoomed_size = [1., 1., 1.]
+        self._zoom_stack = []
+        self._zoomed_size = [1., 1., 1.]
         self.plot_translation = -array([0.5, 0.5, 0.5])
         self.plot_scale = array([1., 1., 1.])
         self.additional_scale = array([0., 0., 0.])
