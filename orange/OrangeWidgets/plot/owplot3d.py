@@ -1142,6 +1142,8 @@ class OWPlot3D(orangeqt.Plot3D):
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
             dy /= float(self._zoomed_size[1])
+            dx *= self.mouse_sensitivity / 5.
+            dy *= self.mouse_sensitivity / 5.
             right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
             self.additional_scale = [-dx * abs(right_vec[0]) / float(self._zoomed_size[0]),
                                      dy,
