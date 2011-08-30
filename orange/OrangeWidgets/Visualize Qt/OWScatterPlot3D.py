@@ -404,6 +404,12 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.hide_outside',        'Hide outside',   callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
+        box = OWGUI.widgetBox(self.settings_tab, 'Mouse', orientation = "horizontal")
+        OWGUI.hSlider(box, self, 'plot.mouse_sensitivity', label='Sensitivity', minValue=1, maxValue=10,
+                      step=1,
+                      callback=self.plot.update,
+                      tooltip='Change mouse sensitivity')
+
         self.gui = OWPlotGUI(self)
         gui = self.gui
         self.zoom_select_toolbar = gui.zoom_select_toolbar(self.main_tab, buttons=gui.default_zoom_select_buttons)

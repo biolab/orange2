@@ -981,20 +981,19 @@ class OWPlot3D(orangeqt.Plot3D):
         scale_step = (new_scale - self.plot_scale) / float(num_steps)
         # Animate zooming: translate first for a number of steps,
         # then scale. Make sure it doesn't take too long.
-        print('animating')
         start = time.time()
         for i in range(num_steps):
             if time.time() - start > 1.:
                 self.plot_translation = new_translation
                 break
             self.plot_translation = self.plot_translation + translation_step
-            self.update()
+            self.repaint()
         for i in range(num_steps):
             if time.time() - start > 1.:
                 self.plot_scale = new_scale
                 break
             self.plot_scale = self.plot_scale + scale_step
-            self.update()
+            self.repaint()
 
     def zoom_out(self):
         if len(self._zoom_stack) < 1:
@@ -1133,16 +1132,20 @@ class OWPlot3D(orangeqt.Plot3D):
             up_vec = normalize(numpy.cross(right_vec, self.camera))
             right_vec[0] *= dx / (self.width() * self.plot_scale[0] * self.panning_factor)
             right_vec[2] *= dx / (self.width() * self.plot_scale[2] * self.panning_factor)
-            up_scale = self.height()*self.plot_scale[1]*self.panning_factor
-            self.plot_translation -= right_vec + up_vec*(dy / up_scale)
+            right_vec[0] *= (self.mouse_sensitivity / 5.)
+            right_vec[2] *= (self.mouse_sensitivity / 5.)
+            up_scale = self.height() * self.plot_scale[1] * self.panning_factor
+            self.plot_translation -= right_vec + up_vec * (dy / up_scale) * (self.mouse_sensitivity / 5.)
         elif self.state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
-            dx /= float(self._zoomed_size[0]) # TODO
-            dy /= float(self._zoomed_size[1])
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
-            self.additional_scale = [dx, dy, 0]
+            dy /= float(self._zoomed_size[1])
+            right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
+            self.additional_scale = [-dx * abs(right_vec[0]) / float(self._zoomed_size[0]),
+                                     dy,
+                                     -dx * abs(right_vec[2]) / float(self._zoomed_size[2])]
         elif self.state == PlotState.IDLE:
             legend_pos = self._legend.pos()
             lx, ly = legend_pos.x(), legend_pos.y()

@@ -27,7 +27,7 @@ class OWOpenGLRenderer:
         self._modelview = QMatrix4x4()
 
         vertex_shader_source = '''
-            in vec3 position; // TODO: research qualifiers
+            in vec3 position;
 
             uniform mat4 projection;
             uniform mat4 modelview;
