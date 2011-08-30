@@ -85,6 +85,8 @@ public:
     NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0);
     virtual ~NetworkCurve();
     
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    
     virtual void update_properties();
     virtual QRectF data_rect() const;
     
@@ -127,6 +129,8 @@ public:
     
     void set_labels_on_marked_only(bool labels_on_marked_only);
     bool labels_on_marked_only();
+    
+    void set_show_component_distances(bool show_component_distances);
     
     void stop_optimization();
 };

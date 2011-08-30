@@ -193,6 +193,8 @@ public:
     explicit NetworkCurve(QGraphicsItem* parent = 0);
     virtual ~NetworkCurve();
 
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+
     virtual void update_properties();
     virtual QRectF data_rect() const;
     virtual void register_points();
@@ -238,6 +240,8 @@ public:
     void set_labels_on_marked_only(bool labels_on_marked_only);
     bool labels_on_marked_only();
 
+    void set_show_component_distances(bool show_component_distances);
+
     void stop_optimization();
 
 private:
@@ -249,6 +253,7 @@ private:
     bool m_use_animations;
     bool m_stop_optimization;
     bool m_labels_on_marked_only;
+    bool m_show_component_distances;
 };
 
 #endif // NETWORKCURVE_H

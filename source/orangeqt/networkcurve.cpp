@@ -362,6 +362,18 @@ NetworkCurve::~NetworkCurve()
     m_nodes.clear();
 }
 
+
+void NetworkCurve::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+	NetworkCurve::paint(painter, option, widget);
+
+	if (m_show_component_distances)
+	{
+		// TODO: move code from Python to C++
+	}
+}
+
+
 void NetworkCurve::update_properties()
 {
     const QTransform t = graph_transform();
@@ -1192,6 +1204,11 @@ void NetworkCurve::set_labels_on_marked_only(bool labels_on_marked_only)
 bool NetworkCurve::labels_on_marked_only()
 {
 	return m_labels_on_marked_only;
+}
+
+void NetworkCurve::set_show_component_distances(bool show_component_distances)
+{
+	m_show_component_distances = show_component_distances;
 }
  
 void NetworkCurve::stop_optimization()
