@@ -30,6 +30,7 @@ import orangeqt
 from owtheme import PlotTheme
 from owplot import OWPlot
 from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
+from owopenglrenderer import OWOpenGLRenderer
 
 from OWColorPalette import ColorPaletteGenerator
 
@@ -52,20 +53,6 @@ try:
     from itertools import izip as zip
 except:
     pass
-
-# TODO: move to owopenglrenderer
-def draw_triangle(x0, y0, x1, y1, x2, y2):
-    glBegin(GL_TRIANGLES)
-    glVertex2f(x0, y0)
-    glVertex2f(x1, y1)
-    glVertex2f(x2, y2)
-    glEnd()
-
-def draw_line(x0, y0, x1, y1):
-    glBegin(GL_LINES)
-    glVertex2f(x0, y0)
-    glVertex2f(x1, y1)
-    glEnd()
 
 def plane_visible(plane, location):
     normal = normal_from_points(*plane[:3])
@@ -129,30 +116,30 @@ class OWLegend3D(OWLegend):
             self._symbol_geometry = {}
         self._symbol_geometry[symbol] = geometry
 
-    def _draw_item_background(self, pos, item):
+    def _draw_item_background(self, pos, item, color):
         rect = item.rect().normalized().adjusted(pos.x(), pos.y(), pos.x(), pos.y())
-        glBegin(GL_QUADS)
-        glVertex2f(rect.left(), rect.top())
-        glVertex2f(rect.left(), rect.bottom())
-        glVertex2f(rect.right(), rect.bottom())
-        glVertex2f(rect.right(), rect.top())
-        glEnd()
+        self.widget.renderer.draw_rectangle(
+            QVector3D(rect.left(), rect.top(), 0),
+            QVector3D(rect.left(), rect.bottom(), 0),
+            QVector3D(rect.right(), rect.bottom(), 0),
+            QVector3D(rect.right(), rect.top(), 0),
+            color=color)
 
     def _draw_symbol(self, pos, symbol):
         edges = self._symbol_geometry[symbol.symbol()]
         color = symbol.color()
         size = symbol.size() / 2
-        glColor3f(color.red()/255., color.green()/255., color.blue()/255.)
         for v0, v1 in zip(edges[::2], edges[1::2]):
             x0, y0 = v0.x(), v0.y()
             x1, y1 = v1.x(), v1.y()
-            glBegin(GL_LINES)
-            glVertex2f(x0*size + pos.x(), -y0*size + pos.y())
-            glVertex2f(x1*size + pos.x(), -y1*size + pos.y())
-            glEnd()
+            self.widget.renderer.draw_line(
+                QVector3D(x0*size + pos.x(), -y0*size + pos.y(), 0),
+                QVector3D(x1*size + pos.x(), -y1*size + pos.y(), 0),
+                color=color)
 
     def _paint(self, widget):
         '''Does all the drawing itself.'''
+        self.widget = widget
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         offset = QPointF(0, 15) # TODO
@@ -161,17 +148,15 @@ class OWLegend3D(OWLegend):
             items = self.items[category]
             for item in items:
                 if isinstance(item, OWLegendTitle):
-                    widget.qglColor(widget._theme.background_color)
                     pos = self.pos() + item.pos()
-                    self._draw_item_background(pos, item.rect_item)
+                    self._draw_item_background(pos, item.rect_item, widget._theme.background_color)
 
                     widget.qglColor(widget._theme.labels_color)
                     pos = self.pos() + item.pos() + item.text_item.pos() + offset
                     widget.renderText(pos.x(), pos.y(), item.text_item.toPlainText(), item.text_item.font())
                 elif isinstance(item, OWLegendItem):
-                    widget.qglColor(widget._theme.background_color)
                     pos = self.pos() + item.pos()
-                    self._draw_item_background(pos, item.rect_item)
+                    self._draw_item_background(pos, item.rect_item, widget._theme.background_color)
 
                     widget.qglColor(widget._theme.labels_color)
                     pos = self.pos() + item.pos() + item.text_item.pos() + offset
@@ -181,11 +166,10 @@ class OWLegend3D(OWLegend):
                     pos = self.pos() + item.pos() + symbol.pos()
                     self._draw_symbol(pos, symbol)
                 elif isinstance(item, OWLegendGradient):
-                    widget.qglColor(widget._theme.background_color)
                     pos = self.pos() + item.pos()
                     proxy = lambda: None
                     proxy.rect = lambda: item.rect
-                    self._draw_item_background(pos, proxy)
+                    self._draw_item_background(pos, proxy, widget._theme.background_color)
 
                     widget.qglColor(widget._theme.labels_color)
                     for label in item.label_items:
@@ -194,15 +178,15 @@ class OWLegend3D(OWLegend):
 
                     pos = self.pos() + item.pos() + item.gradient_item.pos()
                     rect = item.gradient_item.rect().normalized().adjusted(pos.x(), pos.y(), pos.x(), pos.y())
-                    glBegin(GL_QUADS)
-                    glColor3f(0, 0, 0)
-                    glVertex2f(rect.left(), rect.top())
-                    glColor3f(0, 0, 1)
-                    glVertex2f(rect.left(), rect.bottom())
-                    glVertex2f(rect.right(), rect.bottom())
-                    glColor3f(0, 0, 0)
-                    glVertex2f(rect.right(), rect.top())
-                    glEnd()
+                    widget.renderer.draw_rectangle(
+                        QVector3D(rect.left(), rect.top(), 0),
+                        QVector3D(rect.left(), rect.bottom(), 0),
+                        QVector3D(rect.right(), rect.bottom(), 0),
+                        QVector3D(rect.right(), rect.top(), 0),
+                        QColor(0, 0, 0),
+                        QColor(0, 0, 255),
+                        QColor(0, 0, 255),
+                        QColor(0, 0, 0))
 
 class OWPlot3D(orangeqt.Plot3D):
     def __init__(self, parent=None):
@@ -326,6 +310,8 @@ class OWPlot3D(orangeqt.Plot3D):
         glEnable(GL_MULTISAMPLE)
 
         # TODO: check hardware for OpenGL 3.x+ support
+
+        self.renderer = OWOpenGLRenderer()
 
         if self._use_opengl_3:
             self.feedback_generated = False
@@ -621,46 +607,73 @@ class OWPlot3D(orangeqt.Plot3D):
                             font=self._theme.labels_font)
 
     def draw_helpers(self):
-        # TODO: use owopenglrenderer
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0, self.width(), self.height(), 0, -1, 1)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
         glEnable(GL_BLEND)
+        glDisable(GL_DEPTH_TEST)
+
+        projection = QMatrix4x4()
+        projection.ortho(0, self.width(), self.height(), 0, -1, 1)
+        modelview = QMatrix4x4()
+
+        self.renderer.set_transform(projection, modelview)
 
         if self.state == PlotState.SCALING:
             x, y = self.mouse_position.x(), self.mouse_position.y()
-            #TODO: replace with an image
-            self.qglColor(self._theme.helpers_color)
-            draw_triangle(x-5, y-30, x+5, y-30, x, y-40)
-            draw_line(x, y, x, y-30)
-            draw_triangle(x-5, y-10, x+5, y-10, x, y)
+            self.renderer.draw_triangle(QVector3D(x-5, y-30, 0),
+                                        QVector3D(x+5, y-30, 0),
+                                        QVector3D(x, y-40, 0),
+                                        color=self._theme.helpers_color)
+            self.renderer.draw_line(QVector3D(x, y, 0),
+                                    QVector3D(x, y-30, 0),
+                                    color=self._theme.helpers_color)
+            self.renderer.draw_triangle(QVector3D(x-5, y-10, 0),
+                                        QVector3D(x+5, y-10, 0),
+                                        QVector3D(x, y, 0),
+                                        color=self._theme.helpers_color)
 
-            draw_triangle(x+10, y, x+20, y-5, x+20, y+5)
-            draw_line(x+10, y, x+40, y)
-            draw_triangle(x+50, y, x+40, y-5, x+40, y+5)
+            self.renderer.draw_triangle(QVector3D(x+10, y, 0),
+                                        QVector3D(x+20, y-5, 0),
+                                        QVector3D(x+20, y+5, 0),
+                                        color=self._theme.helpers_color)
+            self.renderer.draw_line(QVector3D(x+10, y, 0),
+                                    QVector3D(x+40, y, 0),
+                                    color=self._theme.helpers_color)
+            self.renderer.draw_triangle(QVector3D(x+50, y, 0),
+                                        QVector3D(x+40, y-5, 0),
+                                        QVector3D(x+40, y+5, 0),
+                                        color=self._theme.helpers_color)
+
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, self.width(), self.height(), 0, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
 
             self.renderText(x, y-50, 'Scale y axis', font=self._theme.labels_font)
             self.renderText(x+60, y+3, 'Scale x and z axes', font=self._theme.labels_font)
         elif self.state == PlotState.SELECTING:
-            self.qglColor(QColor(168, 202, 236, 50))
-            glBegin(GL_QUADS)
-            glVertex2f(self._selection.left(), self._selection.top())
-            glVertex2f(self._selection.right(), self._selection.top())
-            glVertex2f(self._selection.right(), self._selection.bottom())
-            glVertex2f(self._selection.left(), self._selection.bottom())
-            glEnd()
+            internal_color = QColor(168, 202, 236, 50)
+            self.renderer.draw_rectangle(QVector3D(self._selection.left(), self._selection.top(), 0),
+                                         QVector3D(self._selection.right(), self._selection.top(), 0),
+                                         QVector3D(self._selection.right(), self._selection.bottom(), 0),
+                                         QVector3D(self._selection.left(), self._selection.bottom(), 0),
+                                         internal_color,
+                                         internal_color,
+                                         internal_color,
+                                         internal_color)
 
-            self.qglColor(QColor(51, 153, 255, 192))
-            draw_line(self._selection.left(), self._selection.top(),
-                      self._selection.right(), self._selection.top())
-            draw_line(self._selection.right(), self._selection.top(),
-                      self._selection.right(), self._selection.bottom())
-            draw_line(self._selection.right(), self._selection.bottom(),
-                      self._selection.left(), self._selection.bottom())
-            draw_line(self._selection.left(), self._selection.bottom(),
-                      self._selection.left(), self._selection.top())
+            border_color = QColor(51, 153, 255, 192)
+            self.renderer.draw_line(QVector3D(self._selection.left(), self._selection.top(), 0),
+                                    QVector3D(self._selection.right(), self._selection.top(), 0),
+                                    border_color, border_color)
+            self.renderer.draw_line(QVector3D(self._selection.right(), self._selection.top(), 0),
+                                    QVector3D(self._selection.right(), self._selection.bottom(), 0),
+                                    border_color, border_color)
+            self.renderer.draw_line(QVector3D(self._selection.right(), self._selection.bottom(), 0),
+                                    QVector3D(self._selection.left(), self._selection.bottom(), 0),
+                                    border_color, border_color)
+            self.renderer.draw_line(QVector3D(self._selection.left(), self._selection.bottom(), 0),
+                                    QVector3D(self._selection.left(), self._selection.top(), 0),
+                                    border_color, border_color)
 
     def build_axes(self):
         edge_half = 1. / 2.
@@ -702,9 +715,11 @@ class OWPlot3D(orangeqt.Plot3D):
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
 
+        self.renderer.set_transform(self.projection, self.modelview)
+
         def draw_axis(line):
             self.qglColor(self._theme.axis_color)
-            glLineWidth(2)
+            glLineWidth(2) # TODO: how to draw thick lines?
             glBegin(GL_LINES)
             glVertex3f(*line[0])
             glVertex3f(*line[1])
@@ -719,10 +734,10 @@ class OWPlot3D(orangeqt.Plot3D):
                 value = (i + 1) * 2
                 if start_value <= value <= end_value:
                     position = start + (end-start)*((value-start_value) / length)
-                    glBegin(GL_LINES)
-                    glVertex3f(*(position))
-                    glVertex3f(*(position+normal*0.03))
-                    glEnd()
+                    self.renderer.draw_line(
+                        QVector3D(*position),
+                        QVector3D(*(position + normal*0.03)),
+                        color=self._theme.axis_values_color)
                     position += normal * 0.1
                     self.renderText(position[0],
                                     position[1],
@@ -730,7 +745,6 @@ class OWPlot3D(orangeqt.Plot3D):
                                     label, font=self._theme.labels_font)
 
         def draw_values(axis, coord_index, normal, axis_labels):
-            self.qglColor(self._theme.axis_values_color)
             glLineWidth(1)
             if axis_labels != None:
                 draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
@@ -744,10 +758,10 @@ class OWPlot3D(orangeqt.Plot3D):
                     continue
                 position = start + (end-start)*((value-start_value) / float(end_value-start_value))
                 text = ('%%.%df' % num_frac) % value
-                glBegin(GL_LINES)
-                glVertex3f(*(position))
-                glVertex3f(*(position+normal*0.03))
-                glEnd()
+                self.renderer.draw_line(
+                    QVector3D(*position),
+                    QVector3D(*(position+normal*0.03)),
+                    color=self._theme.axis_values_color)
                 position += normal * 0.1
                 self.renderText(position[0],
                                 position[1],
@@ -1188,6 +1202,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 if self.auto_send_selection_callback:
                     self.auto_send_selection_callback()
 
+        self.tooltip_fbo_dirty = True
         self.unsetCursor()
         self.state = PlotState.IDLE
         self.update()

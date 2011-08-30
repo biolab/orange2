@@ -182,6 +182,12 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.update()
 
     def before_draw(self):
+        if self.show_grid:
+            self.draw_grid()
+        if self.show_chassis:
+            self.draw_chassis()
+
+    def draw_chassis(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
@@ -189,12 +195,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
 
-        if self.show_grid:
-            self.draw_grid()
-        if self.show_chassis:
-            self.draw_chassis()
-
-    def draw_chassis(self):
+        # TODO: line stipple with shaders?
         self.qglColor(self._theme.axis_values_color)
         glEnable(GL_LINE_STIPPLE)
         glLineStipple(1, 0x00FF)
@@ -220,6 +221,8 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         glDisable(GL_BLEND)
 
     def draw_grid(self):
+        self.renderer.set_transform(self.projection, self.modelview)
+
         cam_in_space = numpy.array([
           self.camera[0]*self.camera_distance,
           self.camera[1]*self.camera_distance,
@@ -227,7 +230,6 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         ])
 
         def _draw_grid(axis0, axis1, normal0, normal1, i, j):
-            self.qglColor(self._theme.grid_color)
             for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
                 start, end = axis.copy()
                 start_value = self.map_to_data(start.copy())[coord_index]
@@ -237,13 +239,12 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                     if not (start_value <= value <= end_value):
                         continue
                     position = start + (end-start)*((value-start_value) / float(end_value-start_value))
-                    glBegin(GL_LINES)
-                    glVertex3f(*position)
-                    glVertex3f(*(position-normal*1.))
-                    glEnd()
+                    self.renderer.draw_line(
+                        QVector3D(*position),
+                        QVector3D(*(position-normal*1.)),
+                        color=self._theme.grid_color)
 
         glDisable(GL_DEPTH_TEST)
-        glLineWidth(1)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 

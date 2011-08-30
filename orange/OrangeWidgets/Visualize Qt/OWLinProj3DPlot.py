@@ -176,6 +176,8 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
 
+        self.renderer.set_transform(self.projection, self.modelview)
+
         if self.showAnchors:
             for anchor in self.anchor_data:
                 x, y, z, label = anchor
@@ -210,17 +212,17 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 self.qglColor(self._theme.axis_values_color)
                 self.renderText(x*1.2, y*1.2, z*1.2, label)
 
-                self.qglColor(self._theme.axis_color)
-                glBegin(GL_LINES)
-                glVertex3f(0, 0, 0)
-                glVertex3f(x, y, z)
-                glEnd()
+                self.renderer.draw_line(
+                    QVector3D(0, 0, 0),
+                    QVector3D(x, y, z),
+                    color=self._theme.axis_color)
 
         glDepthMask(GL_TRUE)
 
         if self.tooltipKind == 0:
             glEnable(GL_DEPTH_TEST)
             if self._arrow_lines:
+                # TODO: thick lines
                 glLineWidth(3)
                 for x, y, z, value, factor, color in self._arrow_lines:
                     glColor3f(*color)
