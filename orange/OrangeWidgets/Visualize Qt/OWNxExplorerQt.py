@@ -1464,7 +1464,7 @@ class OWNxExplorerQt(OWWidget):
             self.optButton.setChecked(False)
             return
         
-        if not self.optButton.isChecked() and not self.optMethod in [2, 9]:
+        if not self.optButton.isChecked() and not self.optMethod in [2,3,9,10]:
             self.optButton.setChecked(False)
             return
         
@@ -1489,12 +1489,9 @@ class OWNxExplorerQt(OWWidget):
         elif self.optMethod == 9:
             self.graph_layout_fragviz()
         elif self.optMethod == 10: 
-            print "TODO: MDS"
-            #self.mds_components(Orange.network.MdsType.MDS)
+            self.graph_layout_mds()
             
         self.optButton.setChecked(False)
-#        self.networkCanvas.networkCurve.coors = self.layout.map_to_graph(self.graph) 
-        #self.networkCanvas.updateCanvas()
         self.networkCanvas.networkCurve.update_properties()
         self.networkCanvas.replot()
         qApp.processEvents()
@@ -1520,7 +1517,7 @@ class OWNxExplorerQt(OWWidget):
             if str(self.optMethod) == '8': 
                 self.stepsSpin.label.setText('Pivots: ')
             
-            if str(self.optMethod) == '9': 
+            if str(self.optMethod) in ['9', '10']: 
                 self.cb_opt_from_curr.setEnabled(True)
                 
             self.stepsSpin.setEnabled(True)
@@ -1574,10 +1571,8 @@ class OWNxExplorerQt(OWWidget):
             return
         
         self.optButton.setText("Stop")
-        
-        qApp.processEvents()
-
         self.progressBarInit()
+        qApp.processEvents()
 
         if self.graph.number_of_nodes() == self.graph_base.number_of_nodes():
             matrix = self.items_matrix
@@ -1585,6 +1580,43 @@ class OWNxExplorerQt(OWWidget):
             matrix = self.items_matrix.get_items(sorted(self.graph.nodes()))
         
         self.networkCanvas.networkCurve.layout_fragviz(self.frSteps, matrix, self.graph, self.mdsProgress, self.opt_from_curr)
+
+        self.optButton.setChecked(False)
+        self.optButton.setText("Optimize layout")
+        self.progressBarFinished()
+        
+    def graph_layout_mds(self):
+        if self.items_matrix is None:
+            self.information('Set distance matrix to input signal')
+            self.optButton.setChecked(False)
+            return
+        
+        if self.layout is None:
+            self.information('No network found')
+            self.optButton.setChecked(False)
+            return
+        
+        if self.items_matrix.dim != self.graph.number_of_nodes():
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            self.optButton.setChecked(False)
+            return
+        
+        if not self.optButton.isChecked():
+            self.networkCanvas.networkCurve.stopMDS = True
+            self.optButton.setChecked(False)
+            self.optButton.setText("Optimize layout")
+            return
+        
+        self.optButton.setText("Stop")
+        self.progressBarInit()
+        qApp.processEvents()
+        
+        if self.graph.number_of_nodes() == self.graph_base.number_of_nodes():
+            matrix = self.items_matrix
+        else:
+            matrix = self.items_matrix.get_items(sorted(self.graph.nodes()))
+        
+        self.networkCanvas.networkCurve.layout_mds(self.frSteps, matrix, self.mdsProgress, self.opt_from_curr)
 
         self.optButton.setChecked(False)
         self.optButton.setText("Optimize layout")

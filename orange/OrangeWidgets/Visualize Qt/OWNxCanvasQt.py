@@ -42,7 +42,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
     def set_node_sizes(self, values={}, min_size=0, max_size=0):
         orangeqt.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
     
-    def mds_callback(self, a, b, mds, mdsRefresh, components, progress_callback):
+    def fragviz_callback(self, a, b, mds, mdsRefresh, components, progress_callback):
         """Refresh the UI when running  MDS on network components."""
         
         if not self.mdsStep % mdsRefresh:
@@ -180,9 +180,9 @@ class NetworkCurve(orangeqt.NetworkCurve):
                     mds.points[u][0] = x
                     mds.points[u][1] = y
             else:
-                for i,u in enumerate(nodes):
-                    mds.points[i][0] = u.x()
-                    mds.points[i][1] = u.y()
+                for i,u in enumerate(sorted(nodes.iterkeys())):
+                    mds.points[i][0] = nodes[u].x()
+                    mds.points[i][1] = nodes[u].y()
         else:
             mds.Torgerson() 
 
@@ -194,9 +194,92 @@ class NetworkCurve(orangeqt.NetworkCurve):
                                 mdsRefresh=mdsRefresh,
                                 components=components,
                                 progress_callback=progress_callback: 
-                                    self.mds_callback(a, b, mds, mdsRefresh, components, progress_callback))
+                                    self.fragviz_callback(a, b, mds, mdsRefresh, components, progress_callback))
         
         self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
+        
+        if progress_callback != None:
+            progress_callback(mds.avgStress, self.mdsStep)
+        
+        p.animate_points = animate_points
+        return 0
+    
+    def mds_callback(self, a, b, mds, mdsRefresh, progress_callback):
+        """Refresh the UI when running  MDS."""
+        
+        if not self.mdsStep % mdsRefresh:
+            
+            self.set_node_coordinates(dict((u, (mds.points[u][0], \
+                                                mds.points[u][1])) for u in \
+                                           range(len(mds.points))))
+            self.plot().replot()
+            qApp.processEvents()
+            
+            if progress_callback is not None:
+                progress_callback(a, self.mdsStep) 
+            
+        self.mdsStep += 1
+        return 0 if self.stopMDS else 1
+    
+    def layout_mds(self, steps, distances, progress_callback=None, opt_from_curr=False):
+        """Position the network components according to similarities among 
+        them.
+        
+        """
+        nodes = self.nodes()
+        
+        if distances == None or distances.dim != len(nodes):
+            self.information('invalid or no distance matrix')
+            return 1
+        
+        p = self.plot()
+        
+        minStressDelta = 0
+        mdsRefresh = int(steps / 20)
+        
+        self.mdsStep = 1
+        self.stopMDS = False
+        
+        distances.matrixType = Orange.core.SymMatrix.Symmetric
+        mds = Orange.projection.mds.MDS(distances)
+        mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
+        rect = self.data_rect()
+        w_fr = rect.width()
+        h_fr = rect.height()
+        d_fr = math.sqrt(w_fr**2 + h_fr**2)
+      
+        x_mds = [mds.points[u][0] for u in range(len(mds.points))]
+        y_mds = [mds.points[u][1] for u in range(len(mds.points))]
+        w_mds = max(x_mds) - min(x_mds)
+        h_mds = max(y_mds) - min(y_mds)
+        d_mds = math.sqrt(w_mds**2 + h_mds**2)
+        
+        animate_points = p.animate_points
+        p.animate_points = False
+        
+        self.set_node_coordinates(dict(
+           (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
+        
+        p.replot()
+        qApp.processEvents()
+                     
+        if opt_from_curr:
+            for i,u in enumerate(sorted(nodes.iterkeys())):
+                mds.points[i][0] = nodes[u].x()
+                mds.points[i][1] = nodes[u].y()
+        else:
+            mds.Torgerson() 
+
+        mds.optimize(steps, Orange.projection.mds.SgnRelStress, minStressDelta, 
+                     progressCallback=
+                         lambda a, 
+                                b=None, 
+                                mds=mds,
+                                mdsRefresh=mdsRefresh,
+                                progress_callback=progress_callback: 
+                                    self.mds_callback(a, b, mds, mdsRefresh, progress_callback))
+        
+        self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, progress_callback)
         
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
