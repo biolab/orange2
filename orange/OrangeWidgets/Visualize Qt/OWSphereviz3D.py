@@ -105,7 +105,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         vertex_shader_source = '''#version 150
             in vec3 position;
-            out float transparency;
+            varying float transparency;
 
             uniform mat4 projection;
             uniform mat4 modelview;
@@ -119,7 +119,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
             '''
 
         fragment_shader_source = '''
-            in float transparency;
+            varying float transparency;
             uniform bool invert_transparency;
 
             void main(void)
