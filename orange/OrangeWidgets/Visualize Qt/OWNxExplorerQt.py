@@ -1469,7 +1469,7 @@ class OWNxExplorerQt(OWWidget):
             return
         
         qApp.processEvents()
-            
+        
         if self.optMethod == 1:
             self.networkCanvas.networkCurve.random()
         elif self.optMethod == 2:
