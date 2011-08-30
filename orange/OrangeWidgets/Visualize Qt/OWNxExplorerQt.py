@@ -42,7 +42,8 @@ class OWNxExplorerQt(OWWidget):
     "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
     "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
     "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex", 
-    "networkCanvas.trim_label_words", "opt_from_curr"] 
+    "networkCanvas.trim_label_words", "opt_from_curr", "networkCanvas.explore_distances",
+    "networkCanvas.show_component_distances"] 
     
     def __init__(self, parent=None, signalManager=None, name = 'Net Explorer (qt)', 
                  NetworkCanvas=OWNxCanvas):
@@ -199,7 +200,8 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.checkBox(ib, self, 'networkCanvas.show_weights', 'Show weights', callback=self.networkCanvas.set_edge_labels)
         #OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback=(lambda: self._set_canvas_attr('showEdgeLabels', self.showEdgeLabels)))
         OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.set_edge_sizes)
-        self.showDistancesCheckBox = OWGUI.checkBox(ib, self, 'showDistances', 'Explore node distances', callback=(lambda: self._set_canvas_attr('showDistances', self.showDistances)), disabled=1)
+        self.cb_show_distances = OWGUI.checkBox(ib, self, 'networkCanvas.explore_distances', 'Explore node distances', callback=None, disabled=1)
+        self.cb_show_component_distances = OWGUI.checkBox(ib, self, 'networkCanvas.show_component_distances', 'Show component distances', callback=self.networkCanvas.set_show_component_distances, disabled=1)
         
         colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
         self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.set_edge_colors)
@@ -294,7 +296,7 @@ class OWNxExplorerQt(OWWidget):
         
         ib = OWGUI.widgetBox(self.infoTab, "Prototype")
         ib.setVisible(True)
-        #ib = OWGUI.widgetBox(ibProto, "Name components")
+        
         OWGUI.lineEdit(ib, self, "organism", "Organism:", orientation='horizontal')
         
         self.nameComponentAttribute = 0
@@ -305,28 +307,6 @@ class OWNxExplorerQt(OWWidget):
         self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents, label="Labels on components:", orientation="horizontal")
         self.showComponentCombo.addItem("Select attribute")
         OWGUI.checkBox(ib, self, 'showTextMiningInfo', "Show text mining info")
-        
-        #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
-        #ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        #self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mds_components, toggleButton=1)
-        #self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=(lambda: self.mds_components(Orange.network.MdsType.exactSimulation)), toggleButton=1)
-        #self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=(lambda: self.mds_components(Orange.network.MdsType.MDS)), toggleButton=1)
-        #ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        #self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
-        #self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
-        #self.btnForce = OWGUI.button(ibs, self, "Draw Force", callback=self.drawForce, toggleButton=1)
-        #self.scalingRatio = 0
-        #OWGUI.spin(ib, self, "scalingRatio", 0, 9, 1, label="Set scalingRatio: ")
-        #OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
-        #OWGUI.spin(ib, self, "mdsSteps", 1, 100000, 1, label="MDS steps: ")
-        #OWGUI.spin(ib, self, "mdsRefresh", 1, 100000, 1, label="MDS refresh steps: ")
-        #ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        #OWGUI.checkBox(ibs, self, 'mdsTorgerson', "Torgerson's approximation")
-        #OWGUI.checkBox(ibs, self, 'mdsAvgLinkage', "Use average linkage")
-        #OWGUI.checkBox(ib, self, 'mdsFromCurrentPos', "MDS from current positions")
-        #self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
-        #self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
-        #self.rotateSteps = 100
         
         #OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
         OWGUI.spin(ib, self, "minComponentEdgeWidth", 0, 100, 1, label="Min component edge width: ", callback=(lambda changedMin=1: self.setComponentEdgeWidth(changedMin)))
@@ -504,7 +484,8 @@ class OWNxExplorerQt(OWWidget):
     def set_items_distance_matrix(self, matrix):
         self.error('')
         self.information('')
-        self.showDistancesCheckBox.setEnabled(0)
+        self.cb_show_distances.setEnabled(0)
+        self.cb_show_component_distances.setEnabled(0)
         
         if matrix is None or self.graph_base is None:
             self.items_matrix = None
@@ -519,7 +500,8 @@ class OWNxExplorerQt(OWWidget):
         
         self.items_matrix = matrix
         self.networkCanvas.items_matrix = matrix
-        self.showDistancesCheckBox.setEnabled(1)
+        self.cb_show_distances.setEnabled(1)
+        self.cb_show_component_distances.setEnabled(1)
         
         if str(self.optMethod) in ['8', '9', '10']:
             if self.items_matrix is not None and self.graph is not None and \
@@ -557,8 +539,8 @@ class OWNxExplorerQt(OWWidget):
             self.lastNameComponentAttribute = ''
         else:
             self.networkCanvas.showComponentAttribute = self.showComponentCombo.currentText()     
-            
-#        self.networkCanvas.drawPlotItems()
+        
+        self.networkCanvas.drawComponentKeywords()
         
     def nameComponents(self):
         """Names connected components of genes according to GO terms."""
@@ -578,7 +560,7 @@ class OWNxExplorerQt(OWWidget):
             keyword_table = self.graph_base.items()
         else:
             keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variable.String('component name')), [[''] for i in range(len(self.graph_base.items()))]) 
-        
+            
         import obiGO 
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
         annotations = obiGO.Annotations.Load(self.organism, ontology=ontology, progressCallback=self.progressBarSet)
@@ -658,7 +640,7 @@ class OWNxExplorerQt(OWWidget):
                     
             res1 = annotations.GetEnrichedTerms(genes, aspect="P")
             res2 = annotations.GetEnrichedTerms(genes, aspect="F")
-            res = res1_base.items() + res2.items()
+            res = res1.items() + res2.items()
             #namingScore = [[(1-p_value) * (float(len(g)) / len(genes)) / (float(ref) / len(annotations.geneNames)), ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             #namingScore = [[(1-p_value) * len(g) / ref, ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             
@@ -1218,11 +1200,8 @@ class OWNxExplorerQt(OWWidget):
         self.networkCanvas.animate_points = animation_enabled
         qApp.processEvents()
         self.networkCanvas.networkCurve.layout_fr(100, weighted=False, smooth_cooling=True)
-        self.networkCanvas.networkCurve.update_properties()
-        self.networkCanvas.replot()
-          
-        
-        
+        self.networkCanvas.update_canvas()        
+
     def set_graph_none(self):
         self.graph = None
         self.graph_base = None
@@ -1258,19 +1237,18 @@ class OWNxExplorerQt(OWWidget):
         if self.items_matrix is not None and self.items_matrix.dim != self.graph_base.number_of_nodes():
             self.set_items_distance_matrix(None)
         
-#        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
-#            positions = [(self._items[node]['x'].value, self._items[node]['y'].value) \
-#                         for node in sorted(self.graph) if self._items[node]['x'].value != '?' \
-#                         and self._items[node]['y'].value != '?']
-#            self.layout.set_graph(self.graph, positions)
-#        else:
-#            self.layout.set_graph(self.graph)
-        
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
         
-        #self.networkCanvas.set_graph_layout(self.graph, self.layout, items=self.graph_base.items(), links=self.graph_base.links())
         self.networkCanvas.set_graph(self.graph, items=self.graph_base.items(), links=self.graph_base.links())
+        
+        if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
+            positions = dict((node, (self._items[node]['x'].value, self._items[node]['y'].value)) \
+                         for node in self.graph if self._items[node]['x'].value != '?' \
+                         and self._items[node]['y'].value != '?')
+            
+            self.networkCanvas.networkCurve.set_node_coordinates(positions)
+
         
         self.networkCanvas.showEdgeLabels = self.showEdgeLabels
         self.networkCanvas.maxEdgeSize = self.maxLinkSize
@@ -1492,8 +1470,7 @@ class OWNxExplorerQt(OWWidget):
             self.graph_layout_mds()
             
         self.optButton.setChecked(False)
-        self.networkCanvas.networkCurve.update_properties()
-        self.networkCanvas.replot()
+        self.networkCanvas.update_canvas()
         qApp.processEvents()
         
     def graph_layout_method(self, method=None):
@@ -1786,7 +1763,8 @@ class OWNxExplorerQt(OWWidget):
         
         font = self.networkCanvas.font()
         font.setPointSize(self.fontSize)
-        self.networkCanvas.setFont(font) 
+        self.networkCanvas.setFont(font)
+        self.networkCanvas.fontSize = font 
         
                 
     def sendReport(self):

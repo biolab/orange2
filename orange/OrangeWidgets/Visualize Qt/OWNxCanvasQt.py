@@ -14,6 +14,8 @@ import numpy
 
 from plot.owplot import *
 from plot.owpoint import *
+from plot.owtools import *  
+
 from orngScaleScatterPlotData import *
 import orangeqt
 
@@ -331,6 +333,8 @@ class OWNxCanvas(OWPlot):
         self.show_indices = False
         self.show_weights = False
         self.trim_label_words = 0
+        self.explore_distances = False
+        self.show_component_distances = False
         
         self.showComponentAttribute = None
         self.forceVectors = None
@@ -360,7 +364,9 @@ class OWNxCanvas(OWPlot):
         
     def update_canvas(self):
         self.networkCurve.update_properties()
-            
+        self.drawComponentKeywords()
+        self.networkCanvas.replot()
+        
     def set_hidden_nodes(self, nodes):
         self.networkCurve.set_hidden_nodes(nodes)
     
@@ -409,10 +415,8 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_node_marks(dict((i, True) for i in toMark))
         
     def drawComponentKeywords(self):
-        if self.showComponentAttribute == None:
-            return
-        
-        if self.graph is None or self.items is None:
+        self.clear_markers()
+        if self.showComponentAttribute == None or self.graph is None or self.items is None:
             return
         
         if str(self.showComponentAttribute) not in self.items.domain:
@@ -420,25 +424,19 @@ class OWNxCanvas(OWPlot):
             return
         
         components = Orange.network.nx.algorithms.components.connected_components(self.graph)
+        nodes = self.networkCurve.nodes()
         
-        for component in components:
-            if len(component) == 0:
+        for c in components:
+            if len(c) == 0:
                 continue
             
-            vertices = [vertex for vertex in component if self.networkCurve.vertices[vertex].show]
-    
-            if len(vertices) == 0:
-                continue
+            x1 = sum(nodes[n].x() for n in c) / len(c)
+            y1 = sum(nodes[n].y() for n in c) / len(c)
+            lbl = str(self.items[c[0]][str(self.showComponentAttribute)])
             
-            xes = [self.networkCurve.coors[vertex][0] for vertex in vertices]  
-            yes = [self.networkCurve.coors[vertex][1] for vertex in vertices]  
-                                  
-            x1 = sum(xes) / len(xes)
-            y1 = sum(yes) / len(yes)
+            self.add_marker(lbl, x1, y1, alignment=Qt.AlignCenter, size=self.fontSize)
             
-            lbl = str(self.items[component[0]][str(self.showComponentAttribute)])
-            
-            mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
+            #mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
                             
     def getColorIndeces(self, table, attribute, palette):
         colorIndices = {}
@@ -733,8 +731,15 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_labels_on_marked_only(labelsOnMarkedOnly)
         self.replot()
     
+    def set_show_component_distances(self):
+        self.networkCurve.set_show_component_distances(self.show_component_distances)
+        self.replot()
+        
     def replot(self):
+        
+                #, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, x_axis_key = xBottom, y_axis_key = yLeft):
         self.set_dirty()
         OWPlot.replot(self)
         if hasattr(self, 'networkCurve') and self.networkCurve is not None:
             self.networkCurve.update()
+            
