@@ -187,20 +187,7 @@ def write_gpickle(G, path):
 _add_doc(write_gpickle, rwgpickle.write_gpickle)
 
 def read_pajek(path, encoding='UTF-8', project=False, auto_table=False):
-    """A completely reimplemented Unhandled exception of type KeyError occured at 13:45:31:
-Traceback:
-  File: orngSignalManager.py, line 555 in processNewSignals
-  Code: self.widgets[i].processSignals()
-    File: OWBaseWidget.py, line 686 in processSignals
-    Code: self.handleNewSignals()
-      File: OWScatterPlot3D.py, line 616 in handleNewSignals
-      Code: self.update_plot()
-        File: OWScatterPlot3D.py, line 671 in update_plot
-        Code: self.label_attr)
-          File: OWScatterPlot3D.py, line 97 in update_data
-          Code: x_index = self.attribute_name_index[x_attr]
-            KeyError: 8 
-method for reading Pajek files. Written in 
+    """A completely reimplemented method for reading Pajek files. Written in
     C++ for maximum performance.  
     
     :param path: File or filename to write.
