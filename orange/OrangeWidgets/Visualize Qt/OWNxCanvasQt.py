@@ -365,7 +365,7 @@ class OWNxCanvas(OWPlot):
     def update_canvas(self):
         self.networkCurve.update_properties()
         self.drawComponentKeywords()
-        self.networkCanvas.replot()
+        self.replot()
         
     def set_hidden_nodes(self, nodes):
         self.networkCurve.set_hidden_nodes(nodes)
@@ -413,6 +413,13 @@ class OWNxCanvas(OWPlot):
         
         self.networkCurve.clear_node_marks()
         self.networkCurve.set_node_marks(dict((i, True) for i in toMark))
+    
+    def mark_on_focus_changed(self, node):
+        self.networkCurve.clear_node_marks()
+        
+        if node is not None:
+            toMark = set(self.get_neighbors_upto(node.index(), self.mark_neighbors))
+            self.networkCurve.set_node_marks(dict((i, True) for i in toMark))
         
     def drawComponentKeywords(self):
         self.clear_markers()

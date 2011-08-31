@@ -912,6 +912,7 @@ class OWNxExplorerQt(OWWidget):
             self.hubs = i
         
         QObject.disconnect(self.networkCanvas, SIGNAL('selection_changed()'), self.networkCanvas.mark_on_selection_changed)
+        QObject.disconnect(self.networkCanvas, SIGNAL('point_hovered(Point*)'), self.networkCanvas.mark_on_focus_changed)
         
         if self.graph is None:
             return
@@ -932,6 +933,7 @@ class OWNxExplorerQt(OWWidget):
             elif hubs == 2:
                 #print "mark on focus"
                 self.networkCanvas.mark_neighbors = self.markDistance
+                QObject.connect(self.networkCanvas, SIGNAL('point_hovered(Point*)'), self.networkCanvas.mark_on_focus_changed)
             elif hubs == 3:
                 #print "mark selected"
                 self.networkCanvas.mark_neighbors = self.markDistance
