@@ -102,12 +102,7 @@ NaiveLearner = Orange.misc.deprecated_members(
 
 class NaiveClassifier(Orange.classification.Classifier):
     """
-    Predictor based on calculated probabilities. It wraps an
-    :class:`Orange.core.BayesClassifier` that does the actual classification.
-    
-    :param base_classifier: an :class:`Orange.core.BayesLearner` to wrap. If
-            not set, a new :class:`Orange.core.BayesLearner` is created.
-    :type base_classifier: :class:`Orange.core.BayesLearner`
+    Predictor based on calculated probabilities.
     
     .. attribute:: distribution
     
