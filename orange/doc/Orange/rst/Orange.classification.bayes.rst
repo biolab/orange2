@@ -56,7 +56,7 @@ bayesian classifier, and one with an adjusted threshold::
     [0.7901746265516516, 0.8280138859667578]
 
 Probabilities for continuous features are estimated with \
-:class:`Orange.statistics.estimate.ProbabilityEstimatorConstructor_loess`.
+:class:`Orange.statistics.estimate.Loess`.
 (`bayes-plot-iris.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/bayes-plot-iris.py
