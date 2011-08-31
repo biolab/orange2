@@ -5,10 +5,10 @@
 # Classes:     Orange.classification.bayes.NaiveLearner, Orange.classification.bayes.NaiveClassifier
 
 import Orange
-table = Orange.data.Table("titanic.tab")
+titanic = Orange.data.Table("titanic.tab")
 
 learner = Orange.classification.bayes.NaiveLearner()
-classifier = learner(table)
+classifier = learner(titanic)
 
 for ex in table[:5]:
     print ex.getclass(), classifier(ex)
