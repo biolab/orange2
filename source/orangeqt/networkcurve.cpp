@@ -1184,6 +1184,7 @@ void NetworkCurve::register_points()
         list << node;
     }
     set_points(list);
+    Curve::register_points();
 }
 
 void NetworkCurve::set_use_animations(bool use_animations)

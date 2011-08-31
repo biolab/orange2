@@ -348,7 +348,7 @@ Point* Plot::nearest_point(const QPointF& pos)
             }
         }
     }
-        
+
     if(closest_point.second && closest_point.first <= closest_point.second->size())
     {
         return closest_point.second;
