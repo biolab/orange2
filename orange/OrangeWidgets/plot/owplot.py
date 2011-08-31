@@ -1132,7 +1132,7 @@ class OWPlot(orangeqt.Plot):
         if b == Qt.LeftButton | Qt.RightButton:
             b = Qt.MidButton
         if m & Qt.AltModifier and b == Qt.LeftButton:
-            m = m & ~AltModifier
+            m = m & ~Qt.AltModifier
             b = Qt.MidButton
         
         if b == Qt.LeftButton and not m:
@@ -1193,7 +1193,8 @@ class OWPlot(orangeqt.Plot):
         
         point = self.mapToScene(event.pos())
         if not self._pressed_mouse_button:
-            self.emit(SIGNAL('point_hovered(Point*)'), self.nearest_point(point))
+            if self.receivers(SIGNAL('point_hovered(Point*)')) > 0:
+                self.emit(SIGNAL('point_hovered(Point*)'), self.nearest_point(point))
         
         ## We implement a workaround here, because sometimes mouseMoveEvents are not fast enough
         ## so the moving legend gets left behind while dragging, and it's left in a pressed state
