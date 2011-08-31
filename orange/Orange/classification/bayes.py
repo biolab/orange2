@@ -7,14 +7,8 @@ from Orange.core import BayesLearner as _BayesLearner
 class NaiveLearner(Orange.classification.Learner):
     """
     Probabilistic classifier based on applying Bayes' theorem (from Bayesian
-    statistics) with strong (naive) independence assumptions.
-    If data instances are provided to the constructor, the learning algorithm
-    is called and the resulting classifier is returned instead of the learner.
-                
-    :rtype: :class:`Orange.classification.bayes.NaiveLearner` or
-            :class:`Orange.classification.bayes.NaiveClassifier`
-            
-    Constructor parameters set the corresponding attributes.
+    statistics) with strong (naive) independence assumptions. Constructor parameters
+    set the corresponding attributes.
     
     .. attribute:: adjust_threshold
     
@@ -27,15 +21,15 @@ class NaiveLearner(Orange.classification.Learner):
     .. attribute:: m
     
         m for m-estimate. If set, m-estimation of probabilities
-        will be used using :class:`Orange.statistics.estimate.ProbabilityEstimatorConstructor_m`.
-        This attribute is ignored if you also set estimator_constructor.
+        will be used using :class:`Orange.statistics.estimate.M`.
+        This attribute is ignored if you also set :obj:`estimator_constructor`.
         
     .. attribute:: estimator_constructor
     
         Probability estimator constructor for
         prior class probabilities. Defaults to
-        :class:`Orange.statistics.estimate.ProbabilityEstimatorConstructor_relative`.
-        Setting this attribute disables the above described attribute m.
+        :class:`Orange.statistics.estimate.RelativeFrequency`.
+        Setting this attribute disables the above described attribute :obj:`m`.
         
     .. attribute:: conditional_estimator_constructor
     
@@ -47,7 +41,7 @@ class NaiveLearner(Orange.classification.Learner):
     
         Probability estimator constructor for conditional probabilities for
         continuous features. Defaults to 
-        :class:`Orange.statistics.estimate.ProbabilityEstimatorConstructor_loess`.
+        :class:`Orange.statistics.estimate.Loess`.
     """
     
     def __new__(cls, data = None, weight_id = 0, **argkw):
