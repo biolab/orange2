@@ -43,7 +43,7 @@ class OWNxHist():
         OWGUI.appendRadioButton(ribg, self, "andor", "OR", callback = self.generateGraph)
         b = OWGUI.appendRadioButton(ribg, self, "andor", "AND", callback = self.generateGraph)
         b.setEnabled(False)
-        OWGUI.spin(boxGeneral, self, "kNN", 0, 1000, 1, label="kNN:", orientation='horizontal', callback=self.generateGraph)
+        OWGUI.spin(boxGeneral, self, "kNN", 0, 1000, 1, label="kNN:", orientation='horizontal', callback=self.generateGraph, callbackOnReturn=1)
         OWGUI.doubleSpin(boxGeneral, self, "percentil", 0, 100, 0.1, label="Percentil:", orientation='horizontal', callback=self.setPercentil, callbackOnReturn=1)
         
         # Options
@@ -191,8 +191,6 @@ class OWNxHist():
             else:
                 graph.add_edges_from(((u,v,{'weight':d}) for u,v,d in edge_list))
             
-            edges = graph.edges()
-            n = len(edges)
             # exclude unconnected
             if str(self.netOption) == '1':
                 components = [x for x in Orange.network.nx.algorithms.components.connected_components(graph) if len(x) > self.excludeLimit]
@@ -249,14 +247,14 @@ class OWNxHist():
             matrix.items  = self.graph.items()
             self.graph_matrix = matrix
             
-        self.pconnected = self.graph.number_of_edges()
-        self.nedges = n
+        self.pconnected = self.graph.number_of_nodes()
+        self.nedges = self.graph.number_of_edges()
         if hasattr(self, "infoa"):
-            self.infoa.setText("%d vertices" % self.matrix.dim)
+            self.infoa.setText("Matrix size: %d" % self.matrix.dim)
         if hasattr(self, "infob"):
-            self.infob.setText("%d connected (%3.1f%%)" % (self.graph.number_of_edges(), self.graph.number_of_edges() / float(self.matrix.dim) * 100))
+            self.infob.setText("Graph nodes: %d (%3.1f%%)" % (self.pconnected, self.pconnected / float(self.matrix.dim) * 100))
         if hasattr(self, "infoc"):
-            self.infoc.setText("%d edges (%d average)" % (n, n / float(self.matrix.dim)))
+            self.infoc.setText("Graph edges: %d (%.2f edges/node)" % (self.nedges, self.nedges / float(self.pconnected)))
         
         #print 'self.graph:',self.graph+
         if hasattr(self, "sendSignals"):
