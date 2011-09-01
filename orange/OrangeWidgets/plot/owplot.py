@@ -28,7 +28,7 @@ SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.Round
 SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
-from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL
+from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL, Qt, QEvent
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
@@ -367,6 +367,8 @@ class OWPlot(orangeqt.Plot):
         self.curveSymbols = range(13)
         self.tips = TooltipManager(self)
         self.setMouseTracking(True)
+        self.grabGesture(Qt.PinchGesture)
+        self.grabGesture(Qt.PanGesture)
         
         self.state = NOTHING
         self._pressed_mouse_button = Qt.NoButton
@@ -1149,6 +1151,25 @@ class OWPlot(orangeqt.Plot):
             return SELECT
     
     ## Event handling
+    
+    def event(self, event):
+        if event.type() == QEvent.Gesture:
+            qDebug('We have gesture!')
+            return self.gestureEvent(event)
+        else:
+            return orangeqt.Plot.event(self, event)
+            
+    def gestureEvent(self, event):
+        qDebug('Gesture event with %d gestures' % (len(event.gestures())))
+        for gesture in event.gestures():
+            if gesture.state() == Qt.GestureStarted:
+                event.accept(gesture)
+                continue
+            elif gesture.gestureType() == Qt.PinchGesture:
+                self.zoom(gesture.centerPoint(), gesture.scaleFactor())
+            elif gesture.gestureType() == Qt.PanGesture:
+                self.pan(gesture.delta())
+    
     def resizeEvent(self, event):
         self.replot()
         s = event.size() - event.oldSize()
