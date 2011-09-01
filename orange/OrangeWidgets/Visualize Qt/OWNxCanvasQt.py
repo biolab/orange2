@@ -28,10 +28,11 @@ class NodeItem(orangeqt.NodeItem):
             self.set_y(y)
         
 class EdgeItem(orangeqt.EdgeItem):
-    def __init__(self, u=None, v=None, weight=1, links_index=0, label='', parent=None):
+    def __init__(self, u=None, v=None, weight=1, links_index=0, arrows=None, label='', parent=None):
         orangeqt.EdgeItem.__init__(self, u, v, parent)
         self.set_weight(weight)
         self.set_links_index(links_index)
+        self.set_arrows(arrows)
 
 class NetworkCurve(orangeqt.NetworkCurve):
     def __init__(self, parent=None, pen=QPen(Qt.black), xData=None, yData=None):
@@ -641,7 +642,7 @@ class OWNxCanvas(OWPlot):
             
             if self.graph.is_directed():
                 edges = [EdgeItem(nodes[i], nodes[j],
-                    self.graph[i][j].get('weight', 1), 0, 1, links_index, \
+                    self.graph[i][j].get('weight', 1), links_index, arrows=EdgeItem.ArrowV, \
                     parent=self.networkCurve) for ((i, j), links_index) in \
                          zip(new_edges, links_indices)]
             else:
@@ -651,7 +652,7 @@ class OWNxCanvas(OWPlot):
                                         links_indices, parent=self.networkCurve)]
         elif self.graph.is_directed():
             edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
-                    0, 1, parent=self.networkCurve) for (i, j) in new_edges]
+                    arrows=EdgeItem.ArrowV, parent=self.networkCurve) for (i, j) in new_edges]
         else:
             edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
                     parent=self.networkCurve) for (i, j) in new_edges]
@@ -710,7 +711,7 @@ class OWNxCanvas(OWPlot):
             
             if self.graph.is_directed():
                 edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), 0, 1, links_index, \
+                    graph[i][j].get('weight', 1), links_index, arrows=EdgeItem.ArrowV, \
                     parent=self.networkCurve) for ((i, j), links_index) in \
                          zip(self.graph.edges(), links_indices)]
             else:
@@ -721,7 +722,7 @@ class OWNxCanvas(OWPlot):
                 
         elif self.graph.is_directed():
             edges = [EdgeItem(vertices[i], vertices[j],
-                                      graph[i][j].get('weight', 1), 0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges()]
+                                      graph[i][j].get('weight', 1), arrows=EdgeItem.ArrowV, parent=self.networkCurve) for (i, j) in self.graph.edges()]
         else:
             edges = [EdgeItem(vertices[i], vertices[j],
                                       graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges()]
