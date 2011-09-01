@@ -1522,14 +1522,17 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				continue;
 			}
 
-			if  (hasGraph && (words[0].compare("*date") == 0)) {
+			if  ((hasGraph && (words[0].compare("*date") == 0)) || words[0][0]=='#') {
 				continue;
 			}
 
 			if ((words[0][0]=='*') && project)
 				hasGraph = 0;
 			else
+			{
+				cout << words[0] << endl;
 				PYERROR(PyExc_SystemError, "Invalid file format. Invalid keyword.", PYNULL);
+			}
 		}
 	}
 	file.close();
