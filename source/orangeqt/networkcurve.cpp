@@ -33,6 +33,8 @@
 /* NodeItem */  
 /************/
 
+#define PI 3.14159265
+
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
 {
     set_index(index);
@@ -176,6 +178,22 @@ QList<NodeItem*> NodeItem::neighbors()
 /* EdgeItem */
 /************/
 
+QHash<ArrowData, QPixmap> EdgeItem::arrow_cache;
+
+uint qHash(const ArrowData& data)
+{
+    // uint has 32 bits:
+    uint ret = data.size;
+    // QRgb takes the full uins, so we just XOR by it
+    ret ^= data.color.rgba();
+    return ret;
+}
+
+bool operator==(const ArrowData& one, const ArrowData& other)
+{
+    return one.size == other.size && one.color == other.color;
+}
+
 EdgeItem::EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent, QGraphicsScene* scene): QAbstractGraphicsShapeItem(parent, scene),
 m_u(0), m_v(0)
 {
@@ -205,14 +223,70 @@ EdgeItem::~EdgeItem()
 void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	painter->setRenderHint(QPainter::Antialiasing, false);
-        painter->setPen(pen());
-        QLineF _line;
-        if (m_u && m_v)
-        {
-            _line.setPoints(m_u->pos(), m_v->pos());
-            painter->drawLine(_line);
-        }
-        
+	painter->setPen(pen());
+	QLineF _line;
+	if (m_u && m_v)
+	{
+		_line.setPoints(m_u->pos(), m_v->pos());
+		painter->drawLine(_line);
+
+		if ((m_arrows & (ArrowU | ArrowV)) && m_u->pos() != m_v->pos())
+		{
+			double size = 10;
+			double half_size = 0.5 * size;
+			const ArrowData key(1, pen().color());
+			if (!arrow_cache.contains(key))
+			{
+				QBrush brush(key.color);
+				QPixmap pixmap(size, size);
+				pixmap.fill(Qt::transparent);
+				QPainter p;
+
+				QPen pen(key.color);
+				//pen.setWidth(0);
+				pen.setStyle(Qt::NoPen);
+
+				p.begin(&pixmap);
+				p.setRenderHints(painter->renderHints() | QPainter::Antialiasing);
+
+				QPainterPath path;
+				path.moveTo(half_size, 0);
+				path.lineTo(size, size);
+				path.lineTo(0, size);
+
+				p.setBrush(brush);
+				p.setPen(pen);
+				p.drawPath(path);
+				arrow_cache.insert(key, pixmap);
+			}
+			double x1 = m_u->pos().x();
+			double y1 = m_u->pos().y();
+			double x2 = m_v->pos().x();
+			double y2 = m_v->pos().y();
+			if (m_arrows & ArrowU)
+			{
+				double phi = atan2(y1-y2, x1-x2) * 180 / PI + 90;
+				painter->save();
+				painter->translate(m_u->pos());
+				painter->rotate(phi);
+				//painter->setViewTransformEnabled(false);
+				painter->drawPixmap(-half_size, 0.5 * m_u->size(), arrow_cache.value(key));
+				painter->restore();
+			}
+
+			if (m_arrows & ArrowV)
+			{
+				double phi = atan2(y2-y1, x2-x1) * 180 / PI + 90;
+				painter->save();
+				painter->translate(m_v->pos());
+				painter->rotate(phi);
+				//painter->setViewTransformEnabled(false);
+				painter->drawPixmap(-half_size, 0.5 * m_v->size(), arrow_cache.value(key));
+				painter->restore();
+			}
+		}
+	}
+
 	if (!m_label.isEmpty())
 	{
 		NetworkCurve *curve = (NetworkCurve*)parentItem();

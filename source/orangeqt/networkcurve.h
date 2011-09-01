@@ -132,6 +132,14 @@ private:
     QTransform m_graph_transform;
 };
 
+struct ArrowData
+{
+	ArrowData(int size, const QColor& color) : size(size), color(color) {}
+
+	int size;
+    QColor color;
+};
+
 class EdgeItem : public QAbstractGraphicsShapeItem
 {
 public:
@@ -168,6 +176,8 @@ public:
     void set_arrow(Arrow arrow, bool enable);
     Arrows arrows();
     
+    static QHash<ArrowData, QPixmap> arrow_cache;
+
 private:
     Arrows m_arrows;
     NodeItem* m_u;
