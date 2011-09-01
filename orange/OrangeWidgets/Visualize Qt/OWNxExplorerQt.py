@@ -275,7 +275,7 @@ class OWNxExplorerQt(OWWidget):
         OWGUI.label(ib, self, "Number of edges: %(number_of_edges_label)i")
         OWGUI.label(ib, self, "Nodes per edge: %(verticesPerEdge).2f")
         OWGUI.label(ib, self, "Edges per node: %(edgesPerVertex).2f")
-        OWGUI.label(ib, self, "Diameter: %(diameter)i")
+        OWGUI.label(ib, self, "Diameter: %(diameter).0f")
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
         ib = OWGUI.widgetBox(self.infoTab, orientation="horizontal")
@@ -1143,9 +1143,15 @@ class OWNxExplorerQt(OWWidget):
         undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
         components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
         if len(components) > 1:
-            self.diameter = -1
+            self.diameter = float('nan')
         else:
-            self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
+            try:
+                self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
+            except Orange.network.nx.NetworkXError as err:
+                if 'infinite path length' in err.message:
+                    self.diameter = float('inf')
+                else:
+                    raise err
             
         if self.graph.is_multigraph():
             self.clustering_coefficient = -1
