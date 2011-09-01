@@ -1160,13 +1160,14 @@ class OWPlot(orangeqt.Plot):
             return orangeqt.Plot.event(self, event)
             
     def gestureEvent(self, event):
-        qDebug('Gesture event with %d gestures' % (len(event.gestures())))
         for gesture in event.gestures():
             if gesture.state() == Qt.GestureStarted:
+                self.current_gesture_scale = 1.
                 event.accept(gesture)
                 continue
             elif gesture.gestureType() == Qt.PinchGesture:
-                self.zoom(gesture.centerPoint(), gesture.scaleFactor())
+                self.zoom(gesture.centerPoint(), gesture.scaleFactor()/self.current_gesture_scale )
+                self.current_gesture_scale = gesture.scaleFactor()
             elif gesture.gestureType() == Qt.PanGesture:
                 self.pan(gesture.delta())
         return True
