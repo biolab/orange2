@@ -1166,8 +1166,11 @@ class OWPlot(orangeqt.Plot):
                 event.accept(gesture)
                 continue
             elif gesture.gestureType() == Qt.PinchGesture:
+                old_animate_plot = self.animate_plot
+                self.animate_plot = False
                 self.zoom(gesture.centerPoint(), gesture.scaleFactor()/self.current_gesture_scale )
                 self.current_gesture_scale = gesture.scaleFactor()
+                self.animate_plot = old_animate_plot
             elif gesture.gestureType() == Qt.PanGesture:
                 self.pan(gesture.delta())
         return True
