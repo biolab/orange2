@@ -370,6 +370,7 @@ class OWPlot(orangeqt.Plot):
         
         self.state = NOTHING
         self._pressed_mouse_button = Qt.NoButton
+        self._pressed_point = None
         self.selection_items = []
         self._current_rs_item = None
         self._current_ps_item = None
@@ -1174,6 +1175,12 @@ class OWPlot(orangeqt.Plot):
         point = self.mapToScene(event.pos())
         a = self.mouse_action(event)
 
+        if a == SELECT:
+            self._pressed_point = self.nearest_point(point)
+            self._pressed_point_coor = None 
+            if self._pressed_point is not None:
+                self._pressed_point_coor = self._pressed_point.coordinates()
+            
         if a == PANNING:
             self._last_pan_pos = point
             event.accept()
@@ -1204,7 +1211,19 @@ class OWPlot(orangeqt.Plot):
             
         a = self.mouse_action(event)
         
-        if a in [SELECT, ZOOMING] and self.graph_area.contains(point):
+        if a == SELECT and self._pressed_point is not None:
+            animate_points = self.animate_points
+            self.animate_points = False
+            x1, y1 = self._pressed_point_coor
+            x2, y2 = self.map_from_graph(point)
+            self.move_selected_points((x2 - x1, y2 - y1))
+            self.replot()
+            if self._pressed_point is not None:
+                self._pressed_point_coor = self._pressed_point.coordinates()
+                
+            self.animate_points = animate_points
+            
+        elif a in [SELECT, ZOOMING] and self.graph_area.contains(point):
             if not self._current_rs_item:
                 self._selection_start_point = self.mapToScene(self._pressed_mouse_pos)
                 self._current_rs_item = QGraphicsRectItem(scene=self.scene())
@@ -1242,6 +1261,8 @@ class OWPlot(orangeqt.Plot):
             return
         
         a = self.mouse_action(event)
+        if a == SELECT and self._pressed_point is not None:
+            self._pressed_point = None
         if a in [ZOOMING, SELECT] and self._current_rs_item:
             rect = self._current_rs_item.rect()
             if a == ZOOMING:
