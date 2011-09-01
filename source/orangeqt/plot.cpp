@@ -473,6 +473,20 @@ void Plot::select_points(const Data& data, Plot::SelectionBehavior behavior)
     }
 }
 
+void Plot::move_selected_points(const DataPoint& d)
+{
+	foreach (Point* p, all_points())
+	{
+		if (p->is_selected())
+		{
+			DataPoint c = p->coordinates();
+			c.x += d.x;
+			c.y += d.y;
+			p->set_coordinates(c);
+		}
+	}
+}
+
 QList< Point* > Plot::all_points()
 {
     QList<Point*> list;

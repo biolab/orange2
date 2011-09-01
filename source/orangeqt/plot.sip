@@ -88,6 +88,8 @@ public:
     void remove_point(Point* point, PlotItem* parent);
     void remove_all_points(PlotItem* parent);
     
+    void move_selected_points(const DataPoint& d);
+    
     bool animate_points;
 
 signals:

@@ -98,6 +98,8 @@ public:
     void selected_to_marked();
     void marked_to_selected();
     
+    void move_selected_points(const DataPoint& d);
+
     bool animate_points;
     
 signals:
