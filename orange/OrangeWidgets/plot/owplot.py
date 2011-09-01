@@ -1169,6 +1169,7 @@ class OWPlot(orangeqt.Plot):
                 self.zoom(gesture.centerPoint(), gesture.scaleFactor())
             elif gesture.gestureType() == Qt.PanGesture:
                 self.pan(gesture.delta())
+        return True
     
     def resizeEvent(self, event):
         self.replot()
