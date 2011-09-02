@@ -826,7 +826,9 @@ class RankItemDelegate(QStyledItemDelegate):
             
         painter.save()
         painter.setFont(option.font)
+        
         qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
         
         # TODO: Check ForegroundRole.
         if option.state & QStyle.State_Selected:
