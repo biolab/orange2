@@ -32,7 +32,8 @@ class EdgeItem(orangeqt.EdgeItem):
         orangeqt.EdgeItem.__init__(self, u, v, parent)
         self.set_weight(weight)
         self.set_links_index(links_index)
-        self.set_arrows(arrows)
+        if arrows is not None:
+            self.set_arrows(arrows)
 
 class NetworkCurve(orangeqt.NetworkCurve):
     def __init__(self, parent=None, pen=QPen(Qt.black), xData=None, yData=None):
