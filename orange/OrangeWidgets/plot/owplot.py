@@ -459,9 +459,6 @@ class OWPlot(orangeqt.Plot):
     contPalette = deprecated_attribute("contPalette", "continuous_palette")
     discPalette = deprecated_attribute("discPalette", "discrete_palette")
     
-    def __setattr__(self, name, value):
-        unisetattr(self, name, value, QGraphicsView)
-        
     def scrollContentsBy(self, dx, dy):
         # This is overriden here to prevent scrolling with mouse and keyboard
         # Instead of moving the contents, we simply do nothing
