@@ -1140,6 +1140,9 @@ class OWPlot(orangeqt.Plot):
         
         if b == Qt.LeftButton and not m:
             return self.state
+        
+        if b == Qt.RightButton and not m and self.state == SELECT:
+            return SELECT_RIGHTCLICK
             
         if b == Qt.MidButton:
             return PANNING
@@ -1306,7 +1309,8 @@ class OWPlot(orangeqt.Plot):
             return False
             
         a = self.mouse_action(event)
-            
+        b = event.buttons() | event.button()
+        
         if a == ZOOMING:
             if event.button() == Qt.LeftButton:
                 self.zoom_in(point)
@@ -1315,7 +1319,7 @@ class OWPlot(orangeqt.Plot):
             else:
                 return False
             return True
-        elif a == SELECT:
+        elif a == SELECT and b == Qt.LeftButton:
             point_item = self.nearest_point(point)
             b = self.selection_behavior
             if b == self.ReplaceSelection:
@@ -1324,6 +1328,10 @@ class OWPlot(orangeqt.Plot):
             if point_item:
                 point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
             self.emit(SIGNAL('selection_changed()'))
+        elif a == SELECT and b == Qt.RightButton:
+            point_item = self.nearest_point(point)
+            if point_item:
+                self.emit(SIGNAL('point_rightclicked(Point*)'), self.nearest_point(point))
         else:
             return False
             
