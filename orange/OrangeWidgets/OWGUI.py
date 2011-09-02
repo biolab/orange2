@@ -726,7 +726,8 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
         QObject.connect(slider, SIGNAL(signal_signature), label.setLbl)
 
     connectControl(slider, master, value, callback, signal_signature, CallFrontHSlider(slider))
-
+    # For compatibility with qwtSlider
+    slider.box = sliderBox
     if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
@@ -2075,3 +2076,7 @@ class FloatSlider(QSlider):
         self.max_value = float(maxValue)
         self.step = step
         self.update()
+        
+    def setRange(self, minValue, maxValue, step=1.0):
+        # For compatibility with qwtSlider
+        self.setScale(minValue, maxValue, step)
