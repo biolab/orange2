@@ -3,13 +3,17 @@
 #include <limits>
 #include <QGLFormat>
 
-#ifdef __APPLE__ // OpenGL framework
-#include <OpenGL/glext.h>
-#else
-#include <GL/glx.h>
-#include <GL/glxext.h> // TODO: Windows?
+#ifdef _WIN32 // Should be defined by most Windows compilers
 #include <GL/glext.h>
+#elif defined __APPLE__ // OpenGL framework
+#include <OpenGL/glext.h>
+#else // Linux
+#include <GL/glx.h>
+#include <GL/glxext.h>
+#include <GL/glext.h>
+#endif
 
+#if !defined __APPLE__ // Windows and Linux
 PFNGLGENBUFFERSARBPROC glGenBuffers = NULL;
 PFNGLBINDBUFFERPROC glBindBuffer = NULL;
 PFNGLBUFFERDATAPROC glBufferData = NULL;
@@ -20,8 +24,7 @@ PFNGLGETVERTEXATTRIBPOINTERPROC glVertexAttribPointer = NULL;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = NULL;
 PFNGLUNIFORM2FPROC glUniform2f = NULL;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers = NULL;
-
-#endif //__APPLE__
+#endif
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -72,9 +75,16 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 
     // Load required extensions (OpenGL context should be up by now).
 #ifdef _WIN32
-    // TODO: wglGetProcAddress
-#else
-#ifdef __APPLE__
+    glGenBuffers = (PFNGLGENBUFFERSARBPROC)wglGetProcAddress("glGenBuffers");
+    glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
+    glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
+    glVertexAttribPointer = (PFNGLGETVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
+    glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYARBPROC)wglGetProcAddress("glEnableVertexAttribArray");
+    glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYARBPROC)wglGetProcAddress("glDisableVertexAttribArray");
+    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
+    glUniform2f = (PFNGLUNIFORM2FPROC)wglGetProcAddress("glUniform2f");
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers");
+#elif defined __APPLE__
 // Should check if the extensions are available.
 #else
     glGenBuffers = (PFNGLGENBUFFERSARBPROC)glXGetProcAddress((const GLubyte*)"glGenBuffers");
@@ -86,8 +96,7 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
     glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)glXGetProcAddress((const GLubyte*)"glGetUniformLocation");
     glUniform2f = (PFNGLUNIFORM2FPROC)glXGetProcAddress((const GLubyte*)"glUniform2f");
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)glXGetProcAddress((const GLubyte*)"glDeleteBuffers");
-#endif // __APPLE__
-#endif // _WIN32
+#endif
 }
 
 void Plot3D::set_valid_data(quint64 valid_data_address)
@@ -111,7 +120,7 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
     this->y_index = y_index;
     this->z_index = z_index;
 
-    const float scale = 0.001;
+    const float scale = 0.001f;
 
     float* vbo_selected_data   = new float[num_examples * 144 * 13];
     float* vbo_unselected_data = new float[num_examples * 144 * 13];
@@ -129,7 +138,7 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
     for (int index = 0; index < num_examples; ++index)
     {
-        if (valid_data != NULL and !valid_data[index]) // Skip invalid examples
+        if (valid_data != NULL && !valid_data[index]) // Skip invalid examples
             continue;
 
         float* example = data_array + index*example_size;
@@ -383,8 +392,8 @@ QList<double> Plot3D::get_min_max_selected(const QList<int>& area,
                                            const QVector3D& plot_scale,
                                            const QVector3D& plot_translation)
 {
-    float x_min = std::numeric_limits<float>::max();
-    float x_max = std::numeric_limits<float>::min();
+    float x_min = std::numeric_limits<float>::infinity();
+    float x_max = -std::numeric_limits<float>::infinity();
     float y_min = x_min;
     float y_max = x_max;
     float z_min = x_min;
