@@ -9,7 +9,7 @@ BR-kNN Classification is an adaptation of the kNN algorithm for multi-label clas
 is conceptually equivalent to using the popular Binary Relevance problem transformation method 
 in conjunction with the kNN algorithm. It also implements two extensions of BR-kNN. 
 For more information, see E. Spyromitros, G. Tsoumakas, I. Vlahavas, 
-'An Empirical Study of Lazy Multilabel Classification Algorithms <http://mlkd.csd.auth.gr/multilabel.html>', 
+`An Empirical Study of Lazy Multilabel Classification Algorithms <http://mlkd.csd.auth.gr/multilabel.html>`_, 
 Proc. 5th Hellenic Conference on Artificial Intelligence (SETN 2008), Springer, Syros, Greece, 2008.  
 
 .. index:: BR-kNN Learner
