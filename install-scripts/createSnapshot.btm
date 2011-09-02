@@ -44,7 +44,7 @@ copy doc\COPYING source
 rem # build source distribution
 e:\Python26\python.exe setup.py sdist 
 del %DOWNLOADDIR\orange-source-snapshot-????-??-??.zip
-move /z dist\Orange-?.?.?b.zip %DOWNLOADDIR\%SOURCE_SNAPSHOT
+move /z dist\Orange-?.?.?.zip %DOWNLOADDIR\%SOURCE_SNAPSHOT
 
 rem # publish
 cdd %TMPDIR
