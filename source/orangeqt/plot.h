@@ -106,6 +106,7 @@ signals:
     void selection_changed();
     void marked_points_changed();
     void point_hovered(Point* point);
+    void point_rightclicked(Point* point);
     
 protected:
     void set_clean();
