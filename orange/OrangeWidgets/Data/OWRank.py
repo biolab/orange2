@@ -6,13 +6,6 @@
 <priority>1102</priority>
 """
 from OWWidget import *
-from PyQt4 import QtCore, QtGui
-
-if not hasattr(QtCore, "Signal"):
-    QtCore.Signal = QtCore.pyqtSignal
-    
-if not hasattr(QtCore, "Slot"):
-    QtCore.Signal = QtCore.pyqtSlot
     
 import OWGUI
 import orange
