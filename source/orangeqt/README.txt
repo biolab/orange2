@@ -47,7 +47,8 @@ If any step reports an error, it is mostly likely some of the dependencies liste
 	 * Qt libraries 4.7.3 for Windows (VS 2010): http://qt.nokia.com/downloads/
 	 * PyQt4 Windows installer: http://www.riverbankcomputing.co.uk/software/pyqt/download
 	 * CMake (Win32 installer): cmake-2.8.5-win32-x86.exe (put it in path)
-	 
+         * Make sure glext.h exists (in GL/ folder), download from http://www.opengl.org/registry/api/glext.h otherwise
+
 2.) In file c:\Qt\4.7.3\bin\qtvars.bat replace win32-msvc2008 with win32-msvc2010
 
 3.) Run Visual Studio Command Prompt
