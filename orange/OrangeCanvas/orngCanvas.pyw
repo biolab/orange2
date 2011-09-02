@@ -283,7 +283,7 @@ class OrangeCanvasDlg(QMainWindow):
             for i in xrange(len(defaultTabs)-1,0,-1):
                 if defaultTabs[i] in defaultTabs[0:i]:
                     del defaultTabs[i]
-            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Prototypes", Qt.Unchecked), ("Visualize Qt", Qt.Unchecked)]
+            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Visualize Qt", Qt.Unchecked), ("Prototypes", Qt.Unchecked)]
             
         widgetTabList = self.settings["WidgetTabs"]
         self.widgetRegistry = orngRegistry.readCategories()
@@ -292,7 +292,9 @@ class OrangeCanvasDlg(QMainWindow):
         extraTabs = sorted(extraTabs)
         
         # Keep Prototypes as last in list
-        if widgetTabList[-1][0] == "Prototypes":
+        if widgetTabList[-1][0] == "Prototypes" and widgetTabList[-2][0] == "Visualize Qt":
+            widgetTabList = widgetTabList[: -2] + extraTabs + widgetTabList[-2 :]
+        elif widgetTabList[-1][0] == "Prototypes":
             widgetTabList = widgetTabList[: -1] + extraTabs + widgetTabList[-1 :]
         else:
             widgetTabList = widgetTabList + extraTabs
