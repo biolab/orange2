@@ -224,6 +224,8 @@ class OWPubmedView(OWWidget):
         self.titles = [self.inside_view._network.node[node]['title'] for node in self.inside_view._network]
         self.ids = self.inside_view._network.nodes()
         
+        QObject.connect(self.inside_view._nx_explorer.networkCanvas, SIGNAL('point_rightclicked(Point*)'), self.node_menu_show)
+        
         
     def update_view(self):
         self.inside_view.set_nhops(self._nhops)
@@ -247,4 +249,15 @@ class OWPubmedView(OWWidget):
         self.titles = [self.inside_view._network.node[x[0]]['title'] for x in titles2]
         self.ids = [x[0] for x in titles2]
         
+    def node_menu_show(self, node):
+        menu = QMenu(self)
+        menu.addAction('It works!')
+        
+        self.connect(menu, SIGNAL("triggered(QAction*)"), lambda action, node=node: self.node_menu_triggered(action, node))
+        menu.popup(QCursor.pos())
+  
+    def node_menu_triggered(self, action, node):
+        if action.text() == 'It works!':
+            pass
+    
      
