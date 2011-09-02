@@ -907,7 +907,6 @@ High level interface for measuring variable importance
 
 """
 from Orange.feature import scoring
-from Orange.misc import _orange__new__
             
 class ScoreEarthImportance(scoring.Score):
     """ An :class:`Orange.feature.scoring.Score` subclass.
@@ -920,10 +919,21 @@ class ScoreEarthImportance(scoring.Score):
     RSS = 1
     GCV = 2
     
-    __new__ = _orange__new__(scoring.Score)
     handles_discrete = True
     handles_continuous = True
     computes_thresholds = False
+    needs = scoring.Score.Generator
+    
+    def __new__(cls, attr=None, data=None, weight_id=None, **kwargs):
+        self = scoring.Score.__new__(cls)
+        if attr is not None and data is not None:
+            self.__init__(**kwargs)
+            # TODO: Should raise a warning, about caching
+            return self.__call__(attr, data, weight_id)
+        elif not attr and not data:
+            return self
+        else:
+            raise ValueError("Both 'attr' and 'data' arguments expected.")
         
     def __init__(self, t=10, degree=2, terms=10, score_what="nsubsets", cached=True):
         """
@@ -956,7 +966,7 @@ class ScoreEarthImportance(scoring.Score):
         else:
             from Orange.ensemble.bagging import BaggedLearner
             bc = BaggedLearner(EarthLearner(degree=self.degree,
-                            terms=self.terms))(data, weight_id)
+                            terms=self.terms), t=self.t)(data, weight_id)
             evimp = bagged_evimp(bc, used_only=False)
             self._cache_ref = data
             self._cached_evimp = evimp
@@ -974,7 +984,6 @@ class ScoreEarthImportance(scoring.Score):
                 raise ValueError("Attribute %r not in the domain." % attr)
         else:
             return score[self.score_what]
-    
     
 #class ScoreRSS(scoring.Score):
 #    __new__ = _orange__new__(scoring.Score)
