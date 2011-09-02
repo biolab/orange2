@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 31
+Revision: 32
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -92,6 +92,8 @@ CompileScript: <<
 	export EXTRA_ORANGEQT_CMAKE_ARGS="-DPython_ADDITIONAL_VERSIONS=%type_raw[python] -DCMAKE_LIBRARY_PATH=%p/lib -DCMAKE_SYSTEM_IGNORE_PATH=/usr/lib"
 	# And cmake to find qmake
 	export PATH=%p/lib/qt4-mac/bin:$PATH
+	# And cmake to find PyQt4
+	export PYTHONPATH=%p/lib/qt4-mac/lib/python%type_raw[python]/site-packages/
 
 	# Compiles
 	cd source
