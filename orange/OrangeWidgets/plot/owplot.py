@@ -1201,7 +1201,7 @@ class OWPlot(orangeqt.Plot):
         point = self.mapToScene(event.pos())
         a = self.mouse_action(event)
 
-        if a == SELECT:
+        if a == SELECT and hasattr(self, 'move_selected_points'):
             self._pressed_point = self.nearest_point(point)
             self._pressed_point_coor = None 
             if self._pressed_point is not None:
@@ -1237,7 +1237,7 @@ class OWPlot(orangeqt.Plot):
             
         a = self.mouse_action(event)
         
-        if a == SELECT and self._pressed_point is not None:
+        if a == SELECT and self._pressed_point is not None and hasattr(self, 'move_selected_points'):
             animate_points = self.animate_points
             self.animate_points = False
             x1, y1 = self._pressed_point_coor
