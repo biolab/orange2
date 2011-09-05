@@ -78,6 +78,7 @@ _import("featureConstruction.functionDecomposition")
 _import("evaluation")
 _import("evaluation.scoring")
 _import("evaluation.testing")
+_import("evaluation.reliability")
 
 _import("clustering")
 _import("clustering.kmeans")
