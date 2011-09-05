@@ -11,7 +11,6 @@ all:
 	if ! $(MAKE) $@ -C $(ORANGEPLOT_BUILD_DIR); then exit 1; fi;
 ifeq ($(OS), Darwin)
 	install_name_tool -id $(DESTDIR)/orangeqt.so $(OLD)/orangeqt.so
-	echo "echo"
 endif
 	
 
