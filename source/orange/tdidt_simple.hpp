@@ -38,7 +38,7 @@ class ORANGE_API TSimpleTreeLearner : public TLearner {
 public:
 	__REGISTER_CLASS
     float maxMajority; //P
-    int minExamples; //P
+    int minInstances; //P
     int maxDepth; //P
     float skipProb; //P
 

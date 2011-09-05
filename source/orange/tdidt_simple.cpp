@@ -46,7 +46,7 @@
 #endif // INFINITY
 
 struct Args {
-    int minExamples, maxDepth;
+    int minInstances, maxDepth;
     float maxMajority, skipProb;
 
     int type, *attr_split_so_far;
@@ -101,7 +101,7 @@ test_min_examples(float *attr_dist, int attr_vals, struct Args *args)
     int i;
 
     for (i = 0; i < attr_vals; i++)
-        if (attr_dist[i] > 0.0 && attr_dist[i] < args->minExamples)
+        if (attr_dist[i] > 0.0 && attr_dist[i] < args->minInstances)
             return 0;
     return 1;
 }
@@ -110,13 +110,13 @@ float
 gain_ratio_c(struct Example *examples, int size, int attr, float cls_entropy, struct Args *args, float *best_split)
 {
     struct Example *ex, *ex_end, *ex_next;
-    int i, cls, cls_vals, minExamples, size_known;
+    int i, cls, cls_vals, minInstances, size_known;
     float score, *dist_lt, *dist_ge, *attr_dist, best_score, size_weight;
 
     cls_vals = args->domain->classVar->noOfValues();
 
-    /* minExamples should be at least 1, otherwise there is no point in splitting */
-    minExamples = args->minExamples < 1 ? 1 : args->minExamples;
+    /* minInstances should be at least 1, otherwise there is no point in splitting */
+    minInstances = args->minInstances < 1 ? 1 : args->minInstances;
 
     /* allocate space */
     ASSERT(dist_lt = (float *)calloc(cls_vals, sizeof *dist_lt));
@@ -143,7 +143,7 @@ gain_ratio_c(struct Example *examples, int size, int attr, float cls_entropy, st
     attr_dist[1] = size_weight;
     best_score = -INFINITY;
 
-    for (ex = examples, ex_end = ex + size_known - minExamples, ex_next = ex + 1, i = 0; ex < ex_end; ex++, ex_next++, i++) {
+    for (ex = examples, ex_end = ex + size_known - minInstances, ex_next = ex + 1, i = 0; ex < ex_end; ex++, ex_next++, i++) {
         if (!ex->example->getClass().isSpecial()) {
             cls = ex->example->getClass().intV;
             dist_lt[cls] += ex->weight;
@@ -152,7 +152,7 @@ gain_ratio_c(struct Example *examples, int size, int attr, float cls_entropy, st
         attr_dist[0] += ex->weight;
         attr_dist[1] -= ex->weight;
 
-        if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minExamples)
+        if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minInstances)
             continue;
 
         /* gain ratio */
@@ -246,7 +246,7 @@ float
 mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *args, float *best_split)
 {
     struct Example *ex, *ex_end, *ex_next;
-    int i, cls_vals, minExamples, size_known;
+    int i, cls_vals, minInstances, size_known;
     float size_attr_known, size_weight, cls_val, cls_score, best_score, size_attr_cls_known, score;
 
     struct Variance {
@@ -255,8 +255,8 @@ mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *
 
     cls_vals = args->domain->classVar->noOfValues();
 
-    /* minExamples should be at least 1, otherwise there is no point in splitting */
-    minExamples = args->minExamples < 1 ? 1 : args->minExamples;
+    /* minInstances should be at least 1, otherwise there is no point in splitting */
+    minInstances = args->minInstances < 1 ? 1 : args->minInstances;
 
     /* sort */
     compar_attr = attr;
@@ -287,7 +287,7 @@ mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *
     size_attr_cls_known = var_ge.n;
     best_score = -INFINITY;
 
-    for (ex = examples, ex_end = ex + size_known - minExamples, ex_next = ex + 1, i = 0; ex < ex_end; ex++, ex_next++, i++) {
+    for (ex = examples, ex_end = ex + size_known - minInstances, ex_next = ex + 1, i = 0; ex < ex_end; ex++, ex_next++, i++) {
         if (!ex->example->getClass().isSpecial()) {
             cls_val = ex->example->getClass();
             var_lt.n += ex->weight;
@@ -299,7 +299,7 @@ mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *
             var_ge.sum2 -= ex->weight * cls_val * cls_val;
         }
 
-        if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minExamples)
+        if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minInstances)
             continue;
 
         /* compute mse */
@@ -588,9 +588,9 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
     return node;
 }
 
-TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minExamples, int maxDepth, float skipProb) :
+TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minInstances, int maxDepth, float skipProb) :
     maxMajority(maxMajority),
-    minExamples(minExamples),
+    minInstances(minInstances),
     maxDepth(maxDepth),
     skipProb(skipProb)
 {
@@ -616,7 +616,7 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
     }
 
     ASSERT(args.attr_split_so_far = (int *)calloc(ogen->domain->attributes->size(), sizeof(int)));
-    args.minExamples = minExamples;
+    args.minInstances = minInstances;
     args.maxMajority = maxMajority;
     args.maxDepth = maxDepth;
     args.skipProb = skipProb;
