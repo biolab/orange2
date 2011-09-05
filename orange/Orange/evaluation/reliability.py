@@ -17,17 +17,31 @@ predicting reliability of single predictions. Most of the algorithm are taken
 from Comparison of approaches for estimating reliability of individual
 regression predictions, Zoran Bosnic 2008.
 
-The following example shows a basic usage of reliability estimates
+Next example shows basic reliability estimation usage 
+(`reliability_basic.py`_, uses `housing.tab`_):
+
+.. literalinclude:: code/reliability_basic.py
+
+First we load our desired data table and choose on learner we want to use 
+reliability estimation on. We also want to calculate only the Mahalanobis and 
+local cross validation estimates with desired parameters. We learn our 
+estimator on data, and estimate the reliability for first instance of data table.
+We output the estimates used and the numbers.
+
+We can also do reliability estimation on whole data table not only on single
+instance. Example shows us doing cross validation on the desired data table,
+using default reliability estimates, and at the ending output reliability
+estimates for the first instance of data table.
 (`reliability-run.py`_, uses `housing.tab`_):
 
 .. literalinclude:: code/reliability-run.py
 
-Reliability estimation methods are computationaly quite hard so it may take
+Reliability estimation methods are computationally quite hard so it may take
 a bit of time for this script to produce a result. In the above example we
 first create a learner that we're interested in, in this example
-k-nearest-neighbours, and use it inside reliability learner and do cross
+k-nearest-neighbors, and use it inside reliability learner and do cross
 validation to get the results. Now we output for the first example in the
-dataset all the reliability estimates and their names.
+data table all the reliability estimates and their names.
 
 Reliability Methods
 ===================
@@ -139,7 +153,7 @@ method do you want to use. You might want to do this to reduce computation time
 or because you think they don't perform good enough.
 
 .. literalinclude:: code/reliability-long.py
-    :lines: 30-43
+    :lines: 30-42
 
 In this part of the example we have a usual prediction problem, we have a 
 training part of dataset and testing part of dataset. We wrap out learner and
@@ -175,7 +189,6 @@ Bosnic Z, Kononenko I (2010) `Automatic selection of reliability estimates for i
 regression predictions.
 <http://journals.cambridge.org/abstract_S0269888909990154>`_
 *The Knowledge Engineering Review* 25(1), 27-47.
-
 """
 import Orange
 
@@ -183,6 +196,11 @@ import random
 import statc
 import math
 import warnings
+
+from collections import defaultdict
+from itertools import izip
+
+import Orange.regression.linear
 
 # Labels and final variables
 labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
@@ -205,6 +223,7 @@ CNK_ABSOLUTE = 5
 LCV_ABSOLUTE = 6
 BVCK_ABSOLUTE = 7
 MAHAL_ABSOLUTE = 8
+BLENDING_ABSOLUTE = 9
 ICV_METHOD = 10
 
 # Type of estimator constant
@@ -215,13 +234,19 @@ ABSOLUTE = 1
 METHOD_NAME = {0: "SAvar absolute", 1: "SAbias signed", 2: "SAbias absolute",
                3: "BAGV absolute", 4: "CNK signed", 5: "CNK absolute",
                6: "LCV absolute", 7: "BVCK_absolute", 8: "Mahalanobis absolute",
-               10: "ICV"}
+               9: "BLENDING absolute", 10: "ICV", 11: "RF Variance", 12: "RF Std"}
+
+select_with_repeat = Orange.core.MakeRandomIndicesMultiple()
+select_with_repeat.random_generator = Orange.core.RandomGenerator()
 
 def get_reliability_estimation_list(res, i):
     return [result.probabilities[0].reliability_estimate[i].estimate for result in res.results], res.results[0].probabilities[0].reliability_estimate[i].signed_or_absolute, res.results[0].probabilities[0].reliability_estimate[i].method
 
 def get_prediction_error_list(res):
     return [result.actualClass - result.classes[0] for result in res.results]
+
+def get_description_list(res, i):
+    return [result.probabilities[0].reliability_estimate[i].text_description for result in res.results]
 
 def get_pearson_r(res):
     """
@@ -238,6 +263,26 @@ def get_pearson_r(res):
                 r, p = statc.pearsonr(prediction_error, reliability_estimate)
             else:
                 r, p = statc.pearsonr([abs(pe) for pe in prediction_error], reliability_estimate)
+        except Exception:
+            r = p = float("NaN")
+        results.append((r, p, signed_or_absolute, method))
+    return results
+
+def get_spearman_r(res):
+    """
+    Returns Spearmans coefficient between the prediction error and each of the
+    used reliability estimates. Function also return the p-value of each of
+    the coefficients.
+    """
+    prediction_error = get_prediction_error_list(res)
+    results = []
+    for i in xrange(len(res.results[0].probabilities[0].reliability_estimate)):
+        reliability_estimate, signed_or_absolute, method = get_reliability_estimation_list(res, i)
+        try:
+            if signed_or_absolute == SIGNED:
+                r, p = statc.spearmanr(prediction_error, reliability_estimate)
+            else:
+                r, p = statc.spearmanr([abs(pe) for pe in prediction_error], reliability_estimate)
         except Exception:
             r = p = float("NaN")
         results.append((r, p, signed_or_absolute, method))
@@ -293,7 +338,53 @@ class Estimate:
         self.method_name = METHOD_NAME[method]
         self.icv_method = icv_method
         self.icv_method_name = METHOD_NAME[icv_method] if icv_method != -1 else ""
+        self.text_description = None
+
+class DescriptiveAnalysis:
+    def __init__(self, estimator, desc=["high", "medium", "low"], procentage=[0.00, 0.33, 0.66]):
+        self.desc = desc
+        self.procentage = procentage
+        self.estimator = estimator
+    
+    def __call__(self, examples, weight=None, **kwds):
         
+        # Calculate borders using cross validation
+        res = Orange.evaluation.testing.cross_validation([self.estimator], examples)
+        all_borders = []
+        for i in xrange(len(res.results[0].probabilities[0].reliability_estimate)):
+            estimates, signed_or_absolute, method = get_reliability_estimation_list(res, i)
+            sorted_estimates = sorted( abs(x) for x in estimates)
+            borders = [sorted_estimates[int(len(estimates)*p)-1]  for p in self.procentage]
+            all_borders.append(borders)
+        
+        # Learn on whole train data
+        estimator_classifier = self.estimator(examples)
+        
+        return DescriptiveAnalysisClassifier(estimator_classifier, all_borders, self.desc)
+
+class DescriptiveAnalysisClassifier:
+    def __init__(self, estimator_classifier, all_borders, desc):
+        self.estimator_classifier = estimator_classifier
+        self.all_borders = all_borders
+        self.desc = desc
+    
+    def __call__(self, example, result_type=Orange.core.GetValue):
+        predicted, probabilities = self.estimator_classifier(example, Orange.core.GetBoth)
+        
+        for borders, estimate in zip(self.all_borders, probabilities.reliability_estimate):
+            estimate.text_description = self.desc[0]
+            for lower_border, text_desc in zip(borders, self.desc):
+                if estimate.estimate >= lower_border:
+                    estimate.text_description = text_desc
+        
+        # Return the appropriate type of result
+        if result_type == Orange.core.GetValue:
+            return predicted
+        elif result_type == Orange.core.GetProbabilities:
+            return probabilities
+        else:
+            return predicted, probabilities
+
 class SensitivityAnalysis:
     """
     
@@ -329,7 +420,7 @@ class SensitivityAnalysis:
         return SensitivityAnalysisClassifier(self.e, examples, min_value, max_value, learner)
     
 class SensitivityAnalysisClassifier:
-    def __init__(self, e, examples, max_value, min_value, learner):
+    def __init__(self, e, examples, min_value, max_value, learner):
         self.e = e
         self.examples = examples
         self.max_value = max_value
@@ -401,8 +492,8 @@ class BaggingVariance:
         
         # Create bagged classifiers using sampling with replacement
         for _ in xrange(self.m):
-            selection = [random.randrange(len(examples)) for _ in xrange(len(examples))]
-            data = examples.getitems(selection)
+            selection = select_with_repeat(len(examples))
+            data = examples.select(selection)
             classifiers.append(learner(data))
         return BaggingVarianceClassifier(classifiers)
 
@@ -447,7 +538,7 @@ class LocalCrossValidation:
     3. :math:`LCV(x) = \\frac{ \sum_{(x_i, c_i) \in N} d(x_i, x) * E_i }{ \sum_{(x_i, c_i) \in N} d(x_i, x) }`
     
     """
-    def __init__(self, k=5):
+    def __init__(self, k=0):
         self.k = k
     
     def __call__(self, examples, learner):
@@ -456,6 +547,9 @@ class LocalCrossValidation:
         
         distance_id = Orange.core.newmetaid()
         nearest_neighbours = nearest_neighbours_constructor(examples, 0, distance_id)
+        
+        if self.k == 0:
+            self.k = max(5, len(examples)/20)
         
         return LocalCrossValidationClassifier(distance_id, nearest_neighbours, self.k, learner)
 
@@ -619,6 +713,36 @@ class BaggingVarianceCNeighboursClassifier:
         bvck_estimates.extend(cnk_estimates)
         return bvck_estimates
 
+class ErrorPredicting:
+    def __init__(self):
+        pass
+    
+    def __call__(self, examples, learner):
+        res = Orange.evaluation.testing.cross_validation([learner], examples)
+        prediction_errors = get_prediction_error_list(res)
+        
+        new_domain = Orange.data.Domain(examples.domain.attributes, Orange.core.FloatVariable("pe"))
+        new_dataset = Orange.data.Table(new_domain, examples)
+        
+        for example, prediction_error in izip(new_dataset, prediction_errors):
+            example.set_class(prediction_error)
+        
+        rf = Orange.ensemble.forest.RandomForestLearner()
+        rf_classifier = rf(new_dataset)
+        
+        return ErrorPredictingClassification(rf_classifier, new_domain)
+        
+class ErrorPredictingClassification:
+    def __init__(self, rf_classifier, new_domain):
+        self.rf_classifier = rf_classifier
+        self.new_domain = new_domain
+    
+    def __call__(self, example, predicted, probabilities):
+        new_example = Orange.data.Instance(self.new_domain, example)
+        value = self.rf_classifier(new_example, Orange.core.GetValue)
+        
+        return [Estimate(value.value, SIGNED, SABIAS_SIGNED)]
+
 class Learner:
     """
     Reliability estimation wrapper around a learner we want to test.
@@ -631,46 +755,30 @@ class Learner:
     Each reliability estimate consists of a tuple 
     (estimate, signed_or_absolute, method).
     
-    :param e: List of possible e value for SAvar and SAbias reliability estimate
-    :type e: list of floats
+    :param box_learner: Learner we want to wrap into reliability estimation
+    :type box_learner: learner
     
-    :param m: Number of bagged models to be used with BAGV estimate
-    :type m: int
+    :param estimators: List of different reliability estimation methods we
+                       want to use on the chosen learner.
+    :type estimators: list of reliability estimators
     
-    :param cnk_k: Number of nearest neighbours used in CNK estimate
-    :type cnk_k: int
-    
-    :param lcv_k: Number of nearest neighbours used in LCV estimate
-    :type cnk_k: int
-    
-    :param icv: Use internal cross-validation. Internal cross-validation calculates all
-                the reliability estimates on the training data using cross-validation.
-                Then it chooses the most successful estimate and uses it on the test
-                dataset.
-    :type icv: boolean
-    
-    :param use: List of booleans saying which reliability methods should be
-                used in our experiment and which not.
-    :type use: list of booleans
-    
-    :param use_with_icv: List of booleans saying which reliability methods
-                         should be used in inside cross validation and
-                         which not.
-    
-    :type use_with_icv: list of booleans
+    :param name: Name of this reliability learner
+    :type name: string
     
     :rtype: :class:`Orange.evaluation.reliability.Learner`
     """
     def __init__(self, box_learner, name="Reliability estimation",
                  estimators = [SensitivityAnalysis(),
-                               BaggingVariance(),
                                LocalCrossValidation(),
-                               CNeighbours(),
-                               Mahalanobis()], **kwds):
+                               BaggingVarianceCNeighbours(),
+                               Mahalanobis(),
+                               ],
+                 blending = False, **kwds):
         self.__dict__.update(kwds)
         self.name = name
         self.estimators = estimators
         self.box_learner = box_learner
+        self.blending = blending
         
     
     def __call__(self, examples, weight=None, **kwds):
@@ -682,7 +790,39 @@ class Learner:
         :type weight: integer
         :rtype: :class:`Orange.evaluation.reliability.Classifier`
         """
-        return Classifier(examples, self.box_learner, self.estimators)
+        
+        blending_classifier = None
+        new_domain = None
+        
+        # Perform blending of the reliability estimates
+        if self.blending:
+            # Do the internal cross validation to get the estimates on training set
+            self.blending = False
+            res = Orange.evaluation.testing.cross_validation([self], examples)
+            self.blending = True
+            
+            # Create new domain
+            new_domain = Orange.data.Domain([Orange.core.FloatVariable(estimate.method_name) for estimate in res.results[0].probabilities[0].reliability_estimate], Orange.core.FloatVariable("pe"))
+            
+            # Create dataset with this domain
+            new_dataset = Orange.data.Table(new_domain)
+            
+            for result in res.results:
+                values = [estimate.estimate for estimate in result.probabilities[0].reliability_estimate] + [abs(result.actualClass - result.classes[0])]
+                new_example = Orange.data.Instance(new_domain, values)
+                new_dataset.append(new_example)
+            
+            # Learn some learner on new dataset
+            #blender = Orange.classification.svm.SVMLearner()
+            #blender.svm_type = blender.Nu_SVR
+            blender = Orange.regression.linear.LinearRegressionLearner()
+            
+            blending_classifier = blender(new_dataset)
+            
+            print get_pearson_r(res)
+            print blending_classifier
+        
+        return Classifier(examples, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
     
     def internal_cross_validation(self, examples, folds=10):
         """ Performs internal cross validation (as in Automatic selection of
@@ -697,21 +837,25 @@ class Learner:
         
         for fold in xrange(folds):
             data = examples.select(cv_indices, fold)
-            res = Orange.evaluation.testing.crossValidation([self], data)
+            res = Orange.evaluation.testing.cross_validation([self], data)
             results = get_pearson_r(res)
             for r, _, _, method in results:
                 sum_of_rs[method] += r
         sorted_sum_of_rs = sorted(sum_of_rs.items(), key=lambda estimate: estimate[1], reverse=True)
+        print sorted_sum_of_rs
         return sorted_sum_of_rs[0][0]
     
     labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
 
 class Classifier:
-    def __init__(self, examples, box_learner, estimators, **kwds):
+    def __init__(self, examples, box_learner, estimators, blending, blending_domain, rf_classifier, **kwds):
         self.__dict__.update(kwds)
         self.examples = examples
         self.box_learner = box_learner
         self.estimators = estimators
+        self.blending = blending
+        self.blending_domain = blending_domain
+        self.rf_classifier = rf_classifier
         
         # Train the learner with original data
         self.classifier = box_learner(examples)
@@ -747,6 +891,14 @@ class Classifier:
         for estimate in self.estimation_classifiers:
             probabilities.reliability_estimate.extend(estimate(example, predicted, probabilities))
         
+        # Do the blending part
+        if self.blending:
+            # Create an example
+            values = [estimate.estimate for estimate in probabilities.reliability_estimate] + ["?"]
+            new_example = Orange.data.Instance(self.blending_domain, values)
+            blending_value = self.rf_classifier(new_example, Orange.core.GetValue)
+            probabilities.reliability_estimate.append(Estimate(blending_value.value, ABSOLUTE, BLENDING_ABSOLUTE))
+            
         # Return the appropriate type of result
         if result_type == Orange.core.GetValue:
             return predicted
