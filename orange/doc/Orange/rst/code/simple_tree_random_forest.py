@@ -15,11 +15,11 @@ class SimpleTreeLearnerSetProb():
         return self.wrapped(examples)
 
 #ordinary random forests
-tree = Orange.classification.tree.TreeLearner(minExamples=5, measure="gainRatio")
+tree = Orange.classification.tree.TreeLearner(min_instances=5, measure="gainRatio")
 rf_def = Orange.ensemble.forest.RandomForestLearner(trees=50, base_learner=tree, name="for_gain")
 
 #random forests with simple trees - simple trees do random attribute selection by themselves
-st = Orange.classification.tree.SimpleTreeLearner(min_examples=5)
+st = Orange.classification.tree.SimpleTreeLearner(min_instances=5)
 stp = SimpleTreeLearnerSetProb(st)
 rf_simple = Orange.ensemble.forest.RandomForestLearner(learner=stp, trees=50, name="for_simp")
 

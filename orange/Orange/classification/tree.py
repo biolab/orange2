@@ -1550,24 +1550,22 @@ of random forests, but can also be used as a standalone tree.
 
 .. class:: SimpleTreeLearner
 
-    .. attribute:: maxMajority
+    .. attribute:: max_majority
 
         Maximal proportion of majority class. When this is exceeded,
         induction stops.
 
-    .. attribute:: minExamples
+    .. attribute:: min_instances
 
-        Minimal number of examples in leaves. Subsets with less than
-        ``minExamples`` examples are not split any further. Example count
-        is weighed.
+        Minimal number of instances in leaves. Instance count is weighed.
 
-    .. attribute:: maxDepth
+    .. attribute:: max_depth
 
         Maximal depth of tree.
 
-    .. attribute:: skipProb
+    .. attribute:: skip_prob
         
-        At every split an attribute will be skipped with probability ``skipProb``.
+        At every split an attribute will be skipped with probability ``skip_prob``.
         Useful for building random forests.
         
 Examples
@@ -1575,7 +1573,7 @@ Examples
 
 :obj:`SimpleTreeLearner` is used in much the same way as :obj:`TreeLearner`.
 A typical example of using :obj:`SimpleTreeLearner` would be to build a random
-forest (uses`iris.tab`_):
+forest (uses `iris.tab`_):
 
 .. literalinclude:: code/simple_tree_random_forest.py
 
