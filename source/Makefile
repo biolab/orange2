@@ -5,7 +5,12 @@ ifndef ORANGE_LIBDIR
   ORANGE_LIBDIR=../..
 endif
 
-MODULES=include orange orangeom orangene corn statc orangeqt
+MODULES=include orange orangeom orangene corn statc
+
+ifndef EXCLUDE_ORANGEQT
+MODULES +=  orangeqt
+endif
+
 ACTIONS=all clean cleantemp
 
 $(ACTIONS):
