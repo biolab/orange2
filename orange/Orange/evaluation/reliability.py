@@ -176,8 +176,6 @@ import warnings
 from collections import defaultdict
 from itertools import izip
 
-import Orange.regression.linear
-
 # Labels and final variables
 labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
 
@@ -744,6 +742,10 @@ class Learner:
     :type name: string
     
     :rtype: :class:`Orange.evaluation.reliability.Learner`
+    
+    .. function:: internal_cross_validation
+    
+    .. function:: internal_cross_validation_testing
     """
     def __init__(self, box_learner, name="Reliability estimation",
                  estimators = [SensitivityAnalysis(),
@@ -751,12 +753,12 @@ class Learner:
                                BaggingVarianceCNeighbours(),
                                Mahalanobis(),
                                ],
-                 blending = False, **kwds):
+                 **kwds):
         self.__dict__.update(kwds)
         self.name = name
         self.estimators = estimators
         self.box_learner = box_learner
-        self.blending = blending
+        self.blending = False
         
     
     def __call__(self, examples, weight=None, **kwds):
@@ -772,37 +774,18 @@ class Learner:
         blending_classifier = None
         new_domain = None
         
-        # Perform blending of the reliability estimates
-        if self.blending:
-            # Do the internal cross validation to get the estimates on training set
-            self.blending = False
-            res = Orange.evaluation.testing.cross_validation([self], examples)
-            self.blending = True
-            
-            # Create new domain
-            new_domain = Orange.data.Domain([Orange.core.FloatVariable(estimate.method_name) for estimate in res.results[0].probabilities[0].reliability_estimate], Orange.core.FloatVariable("pe"))
-            
-            # Create dataset with this domain
-            new_dataset = Orange.data.Table(new_domain)
-            
-            for result in res.results:
-                values = [estimate.estimate for estimate in result.probabilities[0].reliability_estimate] + [abs(result.actualClass - result.classes[0])]
-                new_example = Orange.data.Instance(new_domain, values)
-                new_dataset.append(new_example)
-            
-            # Learn some learner on new dataset
-            #blender = Orange.classification.svm.SVMLearner()
-            #blender.svm_type = blender.Nu_SVR
-            blender = Orange.regression.linear.LinearRegressionLearner()
-            
-            blending_classifier = blender(new_dataset)
-            
-            print get_pearson_r(res)
-            print blending_classifier
-        
         return Classifier(examples, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
     
     def internal_cross_validation(self, examples, folds=10):
+        """ Performs the ususal internal cross validation for getting the best
+        reliability estimate. Returns the id of the method that scored the 
+        best. """
+        res = Orange.evaluation.testing.cross_validation([self], examples, folds=folds)
+        results = get_pearson_r(res)
+        sorted_results = sorted(results)
+        return sorted_results[-1][3]
+    
+    def internal_cross_validation_testing(self, examples, folds=10):
         """ Performs internal cross validation (as in Automatic selection of
         reliability estimates for individual regression predictions,
         Zoran Bosnic 2010) and return id of the method
@@ -869,14 +852,6 @@ class Classifier:
         for estimate in self.estimation_classifiers:
             probabilities.reliability_estimate.extend(estimate(example, predicted, probabilities))
         
-        # Do the blending part
-        if self.blending:
-            # Create an example
-            values = [estimate.estimate for estimate in probabilities.reliability_estimate] + ["?"]
-            new_example = Orange.data.Instance(self.blending_domain, values)
-            blending_value = self.rf_classifier(new_example, Orange.core.GetValue)
-            probabilities.reliability_estimate.append(Estimate(blending_value.value, ABSOLUTE, BLENDING_ABSOLUTE))
-            
         # Return the appropriate type of result
         if result_type == Orange.core.GetValue:
             return predicted
