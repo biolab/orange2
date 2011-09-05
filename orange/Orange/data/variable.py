@@ -39,7 +39,7 @@ retrieves an existing descriptor or constructs a new one.
 
     .. attribute:: get_value_from
 
-        A function (an instance of :obj:`Orange.core.Clasifier`) which computes
+        A function (an instance of :obj:`Orange.classification.Classifier`) which computes
         a value of the variable from values of one or more other variables. This
         is used, for instance, in discretization where the variables describing
         the discretized variable are computed from the original variable. 
@@ -66,7 +66,7 @@ retrieves an existing descriptor or constructs a new one.
         A proposed (but not guaranteed) meta id to be used for that variable.
         This is used, for instance, by the data loader for tab-delimited file
         format instead of assigning an arbitrary new value, or by
-        :obj:`Orange.core.newmetaid` if the variable is passed as an argument. 
+        :obj:`Orange.data.new_meta_id` if the variable is passed as an argument. 
         
     .. attribute:: attributes
         
@@ -350,12 +350,12 @@ in the page on `loading data`. !!TODO!!
 
 There are two functions for reusing the attributes instead of creating new ones.
 
-.. function:: Orange.data.variable.make(name, type, ordered_values, unordered_values[, createNewOn])
+.. function:: Orange.data.variable.make(name, type, ordered_values, unordered_values[, create_new_on])
 
     Find and return an existing variable or create a new one if none of the existing
     variables matches the given name, type and values.
     
-    The optional `create_on_new` specifies the status at which a new variable is
+    The optional `create_new_on` specifies the status at which a new variable is
     created. The status must be at most ``Incompatible`` since incompatible (or
     non-existing) variables cannot be reused. If it is set lower, for instance 
     to ``MissingValues``, a new variable is created even if there exists
@@ -363,7 +363,7 @@ There are two functions for reusing the attributes instead of creating new ones.
     always creates a new variable.
     
     The function returns a tuple containing a variable descriptor and the
-    status of the best matching variable. So, if ``create_on_new`` is set to
+    status of the best matching variable. So, if ``create_new_on`` is set to
     ``MissingValues``, and there exists a variable whose status is, say,
     ``UnrecognizedValues``, a variable would be created, while the second 
     element of the tuple would contain ``UnrecognizedValues``. If, on the other
@@ -388,7 +388,7 @@ There are two functions for reusing the attributes instead of creating new ones.
     
     :return_type: a tuple (:class:`Orange.data.variable.Variable`, int)
     
-.. function:: Orange.data.variable.retrieve(name, type, ordered_values, onordered_values[, createNewOn])
+.. function:: Orange.data.variable.retrieve(name, type, ordered_values, onordered_values[, create_new_on])
 
     Find and return an existing variable, or :obj:`None` if no match is found.
     
