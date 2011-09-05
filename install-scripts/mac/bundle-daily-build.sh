@@ -190,7 +190,7 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	
 	echo "Compiling."
 	cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/
-	make
+	make EXCLUDE_ORANGEQT=1
 	cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/crs/
 	make
 	mv _orngCRS.so ../../
