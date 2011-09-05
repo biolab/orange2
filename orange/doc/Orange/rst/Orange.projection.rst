@@ -8,6 +8,6 @@ Projections (``projection``)
    Orange.projection.linear
    Orange.projection.mds
    Orange.projection.pca
-   orange.projection.som
+   Orange.projection.som
    Orange.projection.correspondence
 
