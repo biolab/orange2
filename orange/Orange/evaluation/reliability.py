@@ -84,17 +84,7 @@ Reliability estimate learner
 Referencing
 ===========
 
-These methods can be referenced using constants inside the module. For setting,
-which methods to use after creating learner, like this::
-
-  reliability.use[Orange.evaluation.reliability.DO_SA] = False
-  reliability.use[Orange.evaluation.reliability.DO_BAGV] = True
-  reliability.use[Orange.evaluation.reliability.DO_CNK] = False
-  reliability.use[Orange.evaluation.reliability.DO_LCV] = True
-  reliability.use[Orange.evaluation.reliability.DO_BVCK] = False
-  reliability.use[Orange.evaluation.reliability.DO_MAHAL] = False
-
-There is also a dictionary named :data:`METHOD_NAME` which has stored names of
+There is a dictionary named :data:`METHOD_NAME` which has stored names of
 all the reliability estimates::
 
   METHOD_NAME = {0: "SAvar absolute", 1: "SAbias signed", 2: "SAbias absolute",
@@ -152,20 +142,6 @@ As you can see in the above code you can also chose with reliability estimation
 method do you want to use. You might want to do this to reduce computation time 
 or because you think they don't perform good enough.
 
-.. literalinclude:: code/reliability-long.py
-    :lines: 30-42
-
-In this part of the example we have a usual prediction problem, we have a 
-training part of dataset and testing part of dataset. We wrap out learner and
-choose to use internal cross validation and no other reliability estimate. 
-
-Internal cross validation is performed on the training part of dataset and it
-chooses the best method. Now this method is training on whole training dataset
-and used on test dataset to estimate the reliabiliy.
-
-We are interested in the most reliable examples in our testing dataset. We
-extract the estimates and id's, sort them and output them.
-
 .. _reliability-run.py: code/reliability-run.py
 .. _housing.tab: code/housing.tab
 
@@ -205,6 +181,7 @@ import Orange.regression.linear
 # Labels and final variables
 labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
 
+"""
 # All the estimators calculation constants
 DO_SA = 0
 DO_BAGV = 1
@@ -212,6 +189,7 @@ DO_CNK = 2
 DO_LCV = 3
 DO_BVCK = 4
 DO_MAHAL = 5
+"""
 
 # All the estimator method constants
 SAVAR_ABSOLUTE = 0
