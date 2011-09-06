@@ -7,15 +7,19 @@ endif
 
 MODULES=include orange orangeom orangene corn statc
 
-ifndef EXCLUDE_ORANGEQT
-MODULES +=  orangeqt
-endif
+# This is nedded for orangeqt on Mac
+ifndef DESTDIR
+DESTDIR = $(shell python -s -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")/site-packages
+endif # DESTDIR
 
 ACTIONS=all clean cleantemp
 
 $(ACTIONS):
 	(for MODULE in $(MODULES) ; \
 	   do if ! $(MAKE) $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); then exit 1; fi; done)
+ifndef EXCLUDE_ORANGEQT
+	if ! $(MAKE) $@ -C orangeqt OLD=$(ORANGE_LIBDIR) DESTDIR=$(DESTDIR); then exit 1; fi;
+endif	
 
 install: # all orange.pth canvas bininstall docinstall
 	@echo "Please use Python Distutils to install Orange."
