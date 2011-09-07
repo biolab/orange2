@@ -425,40 +425,6 @@ def gcv(rss, n, n_effective_params):
      
     """
     return  rss / (n * (1 - n_effective_params / n) ** 2)
-    
-
-def subsets_selection_xtx_numpy(X, Y):
-    """ A numpy implementation of EvalSubsetsUsingXtx in the Earth package. 
-    """
-    X = numpy.asarray(X)
-    Y = numpy.asarray(Y)
-    
-    var_count= X.shape[1]
-    rss_vec = numpy.zeros(var_count)
-    working_set = range(var_count)
-    subsets = numpy.zeros((var_count, var_count), dtype=int)
-    
-    for subset_size in reversed(range(var_count)):
-        subsets[subset_size, :subset_size + 1] = working_set
-        X_work = X[:, working_set]
-        b, res, rank, s = numpy.linalg.lstsq(X_work, Y)
-        if res.size > 0:
-            rss_vec[subset_size] = numpy.sum(res)
-        else:
-            rss_vec[subset_size] = numpy.sum((Y - numpy.dot(X_work, b)) ** 2)
-            
-        XtX = numpy.dot(X_work.T, X_work)
-        iXtX = numpy.linalg.pinv(XtX)
-        diag = numpy.diag(iXtX)
-        
-        if subset_size == 0:
-            break
-        
-        delta_rss = b ** 2 / diag
-        delete_i = numpy.argmin(delta_rss[1:]) + 1 # Keep the intercept
-        del working_set[delete_i]
-    return subsets, rss_vec
-
 
 """
 Multi-label utility functions
@@ -602,6 +568,8 @@ _c_eval_subsets_xtx.argtypes = \
      ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=2, flags="F_CONTIGUOUS"),   #y
      ctypeslib.ndpointer(dtype=ctypes.c_double, ndim=1)  #WeightsArg
      ]
+    
+_c_eval_subsets_xtx.restype = ctypes.c_int
 
 def subset_selection_xtx(X, Y):
     """ Subsets selection using EvalSubsetsUsingXtx in the Earth package.
@@ -622,14 +590,50 @@ def subset_selection_xtx(X, Y):
     rss_vec = numpy.zeros((var_count,), dtype=ctypes.c_double, order="F")
     weights = numpy.ones((cases,), dtype=ctypes.c_double, order="F")
     
-    _c_eval_subsets_xtx(subsets, rss_vec, cases, resp_count, var_count,
+    rval = _c_eval_subsets_xtx(subsets, rss_vec, cases, resp_count, var_count,
                         X, Y, weights)
+    if rval != 0:
+        raise numpy.linalg.LinAlgError("Lin. dep. terms in X")
     
     subsets_ind = numpy.zeros((var_count, var_count), dtype=int)
     for i, used in enumerate(subsets.T):
         subsets_ind[i, :i + 1] = numpy.where(used)[0]
         
     return subsets_ind, rss_vec
+    
+def subset_selection_xtx_numpy(X, Y):
+    """ A numpy implementation of EvalSubsetsUsingXtx in the Earth package.
+    Using numpy.linalg.lstsq
+    
+    """
+    X = numpy.asarray(X)
+    Y = numpy.asarray(Y)
+    
+    var_count= X.shape[1]
+    rss_vec = numpy.zeros(var_count)
+    working_set = range(var_count)
+    subsets = numpy.zeros((var_count, var_count), dtype=int)
+    
+    for subset_size in reversed(range(var_count)):
+        subsets[subset_size, :subset_size + 1] = working_set
+        X_work = X[:, working_set]
+        b, res, rank, s = numpy.linalg.lstsq(X_work, Y)
+        if res.size > 0:
+            rss_vec[subset_size] = numpy.sum(res)
+        else:
+            rss_vec[subset_size] = numpy.sum((Y - numpy.dot(X_work, b)) ** 2)
+            
+        XtX = numpy.dot(X_work.T, X_work)
+        iXtX = numpy.linalg.pinv(XtX)
+        diag = numpy.diag(iXtX)
+        
+        if subset_size == 0:
+            break
+        
+        delta_rss = b ** 2 / diag
+        delete_i = numpy.argmin(delta_rss[1:]) + 1 # Keep the intercept
+        del working_set[delete_i]
+    return subsets, rss_vec
     
     
 def pruning_pass(bx, y, penalty, pruned_terms=-1):
@@ -638,7 +642,10 @@ def pruning_pass(bx, y, penalty, pruned_terms=-1):
     .. todo:: pruned_terms, Leaps
     
     """
-    subsets, rss_vec = subset_selection_xtx(bx, y)
+    try:
+        subsets, rss_vec = subset_selection_xtx(bx, y)
+    except numpy.linalg.LinAlgError:
+        subsets, rss_vec = subset_selection_xtx_numpy(bx, y)
     
     cases, terms = bx.shape
     n_effective_params = numpy.arange(terms) + 1.0
@@ -985,30 +992,48 @@ class ScoreEarthImportance(scoring.Score):
         else:
             return score[self.score_what]
     
-#class ScoreRSS(scoring.Score):
-#    __new__ = _orange__new__(scoring.Score)
-#    def __init__(self):
-#        self._cache_data = None
-#        self._cache_rss = None
-#        
-#    def __call__(self, attr, data, weight_id=None):
-#        ref = self._cache_data
-#        if ref is not None and ref is data:
-#            rss = self._cache_rss
-#        else:
-#            x, y = data.to_numpy_MA("1A/c")
-#            subsets, rss = subsets_selection_xtx_numpy(x, y)
-#            rss_diff = -numpy.diff(rss)
-#            rss = numpy.zeros_like(rss)
-#            for s_size in range(1, subsets.shape[0]):
-#                subset = subsets[s_size, :s_size + 1]
-#                rss[subset] += rss_diff[s_size - 1]
-#            rss = rss[1:] #Drop the intercept
-#            self._cache_data = data
-#            self._cache_rss = rss
-##        print sorted(zip(rss, data.domain.attributes))
-#        index = list(data.domain.attributes).index(attr)
-#        return rss[index]
+class ScoreRSS(scoring.Score):
+    
+    handles_discrete = False
+    handles_continuous = True
+    computes_thresholds = False
+    
+    def __new__(cls, attr=None, data=None, weight_id=None, **kwargs):
+        self = scoring.Score.__new__(cls)
+        if attr is not None and data is not None:
+            self.__init__(**kwargs)
+            # TODO: Should raise a warning, about caching
+            return self.__call__(attr, data, weight_id)
+        elif not attr and not data:
+            return self
+        else:
+            raise ValueError("Both 'attr' and 'data' arguments expected.")
+        
+    def __init__(self):
+        self._cache_data = None
+        self._cache_rss = None
+        
+    def __call__(self, attr, data, weight_id=None):
+        ref = self._cache_data
+        if ref is not None and ref is data:
+            rss = self._cache_rss
+        else:
+            x, y = data.to_numpy_MA("1A/c")
+            try:
+                subsets, rss = subset_selection_xtx(x, y)
+            except numpy.linalg.LinAlgError:
+                subsets, rss = subset_selection_xtx_numpy(x, y)
+            rss_diff = -numpy.diff(rss)
+            rss = numpy.zeros_like(rss)
+            for s_size in range(1, subsets.shape[0]):
+                subset = subsets[s_size, :s_size + 1]
+                rss[subset] += rss_diff[s_size - 1]
+            rss = rss[1:] #Drop the intercept
+            self._cache_data = data
+            self._cache_rss = rss
+#        print sorted(zip(rss, data.domain.attributes))
+        index = list(data.domain.attributes).index(attr)
+        return rss[index]
         
 
 #from Orange.core import EarthLearner as BaseEarthLearner, \

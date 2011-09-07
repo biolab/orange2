@@ -72,6 +72,7 @@
  	 - Replaced POS_INF static global variable with numeric_limits<double>::infinity()
  	 - Added #include <limits>
  	 - Changed include of earth.h to earth.ppp and moved it before the module level defines
+ 	 - Changed EvalSubsetsUsingXtX to return an error code if lin. dep. terms in bx
 
 	- TODO: Move global vars inside the functions using them (most are local)
  */
@@ -2493,7 +2494,7 @@ void ForwardPassR(              // for use by R
 //
 // The "Xtx" in the name refers to the X'X matrix.
 
-static void EvalSubsetsUsingXtx(
+static int EvalSubsetsUsingXtx(
     bool   PruneTerms[],    // out: nMaxTerms x nMaxTerms
     double RssVec[],        // out: nMaxTerms x 1, RSS of each subset
     const int    nCases,    // in
@@ -2520,6 +2521,8 @@ static void EvalSubsetsUsingXtx(
 
     for (int i = 0; i < nMaxTerms; i++)
         WorkingSet[i] = true;
+
+    int error_code = 0;
     for (int nUsedCols = nMaxTerms; nUsedCols > 0; nUsedCols--) {
         int nRank;
         double Rss;
@@ -2527,9 +2530,13 @@ static void EvalSubsetsUsingXtx(
             bx, y, Weights, nCases, nResp, nMaxTerms, WorkingSet);
 
         if(nRank != nUsedCols)
-            error("nRank %d != nUsedCols %d "
-                "(probably because of lin dep terms in bx)\n",
-                nRank, nUsedCols);
+        {
+        	error_code = 1;
+        	break;
+        }
+//            error("nRank %d != nUsedCols %d "
+//                "(probably because of lin dep terms in bx)\n",
+//                nRank, nUsedCols);
 
         RssVec[nUsedCols-1] = Rss;
         memcpy(PruneTerms + (nUsedCols-1) * nMaxTerms, WorkingSet,
@@ -2563,6 +2570,8 @@ static void EvalSubsetsUsingXtx(
     free1(WorkingSet);
     free1(Diags);
     free1(Betas);
+
+    return error_code;
 }
 
 //-----------------------------------------------------------------------------
@@ -3018,7 +3027,7 @@ extern "C" void EarthForwardPass(
 			LinPreds, UseBetaCache, sPredNames);
 }
 
-extern "C" void EarthEvalSubsetsUsingXtx(
+extern "C" int EarthEvalSubsetsUsingXtx(
 	bool   PruneTerms[],    // out: nMaxTerms x nMaxTerms
 	double RssVec[],        // out: nMaxTerms x 1, RSS of each subset
 	const int    nCases,    // in
@@ -3028,7 +3037,7 @@ extern "C" void EarthEvalSubsetsUsingXtx(
 	const double y[],       // in: nCases * nResp
 	const double WeightsArg[]) // in: nCases x 1, can be NULL
 {
-	EvalSubsetsUsingXtx(PruneTerms, RssVec, nCases, nResp, nMaxTerms, bx, y, WeightsArg);
+	return EvalSubsetsUsingXtx(PruneTerms, RssVec, nCases, nResp, nMaxTerms, bx, y, WeightsArg);
 }
 
 /*

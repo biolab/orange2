@@ -37,6 +37,7 @@
  	 - Added defines for STANDALONE USING_R
  	 - Removed definition for bool
  	 - Added extern "C" definitions for ForwardPass and EvalSubsetsUsingXtX
+ 	 - Changed EvalSubsetsUsingXtX to return an error code if lin. dep. terms in bx
 
  */
 
@@ -203,7 +204,7 @@ EARTH_EXPORT void EarthForwardPass(
 	const bool UseBetaCache,    // in: true to use the beta cache, for speed
 	const char *sPredNames[]);   // in: predictor names, can be NULL
 
-EARTH_EXPORT void EarthEvalSubsetsUsingXtx(
+EARTH_EXPORT int EarthEvalSubsetsUsingXtx(
 	bool   PruneTerms[],    // out: nMaxTerms x nMaxTerms
 	double RssVec[],        // out: nMaxTerms x 1, RSS of each subset
 	const int    nCases,    // in
