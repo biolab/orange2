@@ -9,7 +9,7 @@ MODULES=include orange orangeom orangene corn statc
 
 # This is nedded for orangeqt on Mac
 ifndef DESTDIR
-DESTDIR = $(shell python -s -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")/site-packages
+DESTDIR = $(shell python -s -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")/site-packages/orange
 endif # DESTDIR
 
 ACTIONS=all clean cleantemp
