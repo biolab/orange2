@@ -119,7 +119,7 @@ class StateButtonContainer(OrientedWidget):
         self._clicked_button = None
         for i in buttons:
             b = gui.tool_button(i, self)
-            QObject.connect(b, SIGNAL("clicked(bool)"), self.button_clicked)
+            QObject.connect(b, SIGNAL("triggered(QAction*)"), self.button_clicked)
             self.buttons[i] = b
             self.layout().addWidget(b)
             
@@ -171,7 +171,8 @@ class OWButton(QToolButton):
             self.setDefaultAction(action)
         
     def setDown(self, down):
-        self.emit(SIGNAL("downChanged(bool)"), down)
+        if self.isDown() != down:
+            self.emit(SIGNAL("downChanged(bool)"), down)
         QToolButton.setDown(self, down)
     
 class OWPlotGUI:
@@ -440,7 +441,6 @@ class OWPlotGUI:
         m = QMenu(b)
         b.setMenu(m)
         QObject.connect(m, SIGNAL("triggered(QAction*)"), b, SLOT("setDefaultAction(QAction*)"))
-        QObject.connect(m, SIGNAL("triggered(QAction*)"), b.click)
 
         if main_action_id:
             main_action = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=b)
