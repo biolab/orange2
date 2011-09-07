@@ -405,7 +405,7 @@ class OWPlotGUI:
             The ``ids`` argument is a list of widget ID's that will be added to this box
         '''
         box = OWGUI.widgetBox(widget, name)
-        self.add_widgets(ids, widget)
+        self.add_widgets(ids, box)
         return box
         
     def _expand_id(self, id):
