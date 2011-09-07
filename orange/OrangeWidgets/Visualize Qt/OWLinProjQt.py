@@ -174,35 +174,23 @@ class OWLinProjQt(OWVisWidget):
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
-        g = self.graph.gui
+        gui = self.graph.gui
 
         if "3d" in name_lower:
             toolbar_buttons = [
-                OWPlotGUI.StateButtonsBegin,
-                    OWPlotGUI.Select,
-                OWPlotGUI.StateButtonsEnd,
-                OWPlotGUI.Spacing,
-                OWPlotGUI.StateButtonsBegin,
-                    OWPlotGUI.SelectionOne,
-                    OWPlotGUI.SelectionAdd, 
-                    OWPlotGUI.SelectionRemove,
-                OWPlotGUI.StateButtonsEnd,
-                OWPlotGUI.Spacing,
-                OWPlotGUI.SendSelection,
-                OWPlotGUI.ClearSelection
+                gui.Select,
+                gui.Spacing,
+                gui.SendSelection,
+                gui.ClearSelection
             ]
 
-            self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons=toolbar_buttons)
-            gui = g
-            self.connect(self.zoomSelectToolbar.buttons[gui.SelectionOne], SIGNAL("clicked()"), self._set_behavior_replace)
-            self.connect(self.zoomSelectToolbar.buttons[gui.SelectionAdd], SIGNAL("clicked()"), self._set_behavior_add)
-            self.connect(self.zoomSelectToolbar.buttons[gui.SelectionRemove], SIGNAL("clicked()"), self._set_behavior_remove)
-            self.connect(self.zoomSelectToolbar.buttons[gui.ClearSelection], SIGNAL("clicked()"), self.graph.unselect_all_points)
-            self._set_behavior_replace()
+            self.zoomSelectToolbar = gui.zoom_select_toolbar(self.GeneralTab, buttons = toolbar_buttons)
+            self.connect(self.zoomSelectToolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.sendSelections)
+            self.graph.set_selection_behavior(OWPlot.ReplaceSelection)
         else:
             # zooming / selection
-            self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons = g.default_zoom_select_buttons + [g.Spacing, g.ShufflePoints])
-            self.connect(self.zoomSelectToolbar.buttons[g.SendSelection], SIGNAL("clicked()"), self.sendSelections)
+            self.zoomSelectToolbar = gui.zoom_select_toolbar(self.GeneralTab, buttons = gui.default_zoom_select_buttons + [gui.Spacing, gui.ShufflePoints])
+            self.connect(self.zoomSelectToolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
         # SETTINGS TAB
@@ -294,15 +282,6 @@ class OWLinProjQt(OWVisWidget):
         self.cbShowAllAttributes()      # update list boxes based on the check box value
 
         self.resize(900, 700)
-
-    def _set_behavior_add(self):
-        self.graph.set_selection_behavior(OWPlot.AddSelection)
-
-    def _set_behavior_replace(self):
-        self.graph.set_selection_behavior(OWPlot.ReplaceSelection)
-
-    def _set_behavior_remove(self):
-        self.graph.set_selection_behavior(OWPlot.RemoveSelection)
 
     def saveToFile(self):
         self.graph.saveToFile([("Save PicTex", self.graph.savePicTeX)])

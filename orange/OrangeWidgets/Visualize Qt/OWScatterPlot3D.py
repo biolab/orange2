@@ -7,8 +7,6 @@
 from OWWidget import *
 from plot.owplot3d import *
 from plot.owtheme import ScatterLightTheme, ScatterDarkTheme
-from plot.owplotgui import OWPlotGUI
-from plot.owplot import OWPlot
 from plot import OWPoint
 
 import orange
@@ -367,7 +365,7 @@ class OWScatterPlot3D(OWWidget):
             debuggingEnabled=0)
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
-        ss = OWGUI.hSlider(box, self, 'plot.symbol_scale', label='Symbol scale',
+        OWGUI.hSlider(box, self, 'plot.symbol_scale', label='Symbol scale',
             minValue=1, maxValue=20,
             tooltip='Scale symbol size',
             callback=self.on_checkbox_update)
@@ -411,14 +409,11 @@ class OWScatterPlot3D(OWWidget):
                       callback=self.plot.update,
                       tooltip='Change mouse sensitivity')
 
-        self.gui = OWPlotGUI(self)
-        gui = self.gui
+        gui = self.plot.gui
         self.zoom_select_toolbar = gui.zoom_select_toolbar(self.main_tab, buttons=gui.default_zoom_select_buttons)
         self.connect(self.zoom_select_toolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.send_selection)
-        self.connect(self.zoom_select_toolbar.buttons[gui.Zoom], SIGNAL("clicked()"), self._set_behavior_zoom)
-        self.connect(self.zoom_select_toolbar.buttons[gui.SelectionOne], SIGNAL("clicked()"), self._set_behavior_replace)
-        self.connect(self.zoom_select_toolbar.buttons[gui.SelectionAdd], SIGNAL("clicked()"), self._set_behavior_add)
-        self.connect(self.zoom_select_toolbar.buttons[gui.SelectionRemove], SIGNAL("clicked()"), self._set_behavior_remove)
+        self.connect(self.zoom_select_toolbar.buttons[gui.Zoom], SIGNAL("clicked()"), self.plot.unselect_all_points)
+        self.plot.set_selection_behavior(OWPlot.ReplaceSelection)
 
         self.tooltip_kind = TooltipKind.NONE
         box = OWGUI.widgetBox(self.settings_tab, 'Tooltips Settings')
@@ -437,24 +432,9 @@ class OWScatterPlot3D(OWWidget):
         self.plot.update_camera()
         self.on_theme_change()
 
-        self._set_behavior_replace()
-
         self.data = None
         self.subset_data = None
         self.resize(1100, 600)
-
-    def _set_behavior_zoom(self):
-        self.plot.unselect_all_points()
-        self.plot.zoom_into_selection = True
-
-    def _set_behavior_add(self):
-        self.plot.set_selection_behavior(OWPlot.AddSelection)
-
-    def _set_behavior_replace(self):
-        self.plot.set_selection_behavior(OWPlot.ReplaceSelection)
-
-    def _set_behavior_remove(self):
-        self.plot.set_selection_behavior(OWPlot.RemoveSelection)
 
     def mouseover_callback(self, index):
         if self.tooltip_kind == TooltipKind.VISIBLE:

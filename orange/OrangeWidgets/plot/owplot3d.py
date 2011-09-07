@@ -13,7 +13,6 @@
 '''
 
 import os
-import sys
 import time
 from math import sin, cos, pi, floor, ceil, log10
 import struct
@@ -25,12 +24,13 @@ from PyQt4 import QtOpenGL
 from OWDlgs import OWChooseImageSizeDlg
 from Orange.misc import deprecated_attribute
 
-import orange
 import orangeqt
+from plot.owplotgui import OWPlotGUI
 from owtheme import PlotTheme
 from owplot import OWPlot
 from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
 from owopenglrenderer import OWOpenGLRenderer
+from owconstants import ZOOMING
 
 from OWColorPalette import ColorPaletteGenerator
 
@@ -226,10 +226,10 @@ class OWPlot3D(orangeqt.Plot3D):
         self.alpha_value = 255
         self._zoomed_size = [1., 1., 1.]
 
-        self.state = PlotState.IDLE
+        self._state = PlotState.IDLE
 
         self._selection = None
-        self._selection_behavior = OWPlot.AddSelection
+        self.selection_behavior = OWPlot.AddSelection
 
         ## Callbacks
         self.auto_send_selection_callback = None
@@ -260,7 +260,6 @@ class OWPlot3D(orangeqt.Plot3D):
         self.plot_translation = -array([0.5, 0.5, 0.5])
 
         self._zoom_stack = []
-        self.zoom_into_selection = True # If True, zoom is done after selection, else SelectionBehavior is considered
 
         self._theme = PlotTheme()
         self.show_axes = True
@@ -284,6 +283,8 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.continuous_palette = ColorPaletteGenerator(numberOfColors=-1)
         self.discrete_palette = ColorPaletteGenerator()
+
+        self.gui = OWPlotGUI(self)
 
     def __del__(self):
         pass
@@ -616,7 +617,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.renderer.set_transform(projection, modelview)
 
-        if self.state == PlotState.SCALING:
+        if self._state == PlotState.SCALING:
             x, y = self.mouse_position.x(), self.mouse_position.y()
             self.renderer.draw_triangle(QVector3D(x-5, y-30, 0),
                                         QVector3D(x+5, y-30, 0),
@@ -650,7 +651,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
             self.renderText(x, y-50, 'Scale y axis', font=self._theme.labels_font)
             self.renderText(x+60, y+3, 'Scale x and z axes', font=self._theme.labels_font)
-        elif self.state == PlotState.SELECTING:
+        elif self._state == PlotState.SELECTING:
             internal_color = QColor(168, 202, 236, 50)
             self.renderer.draw_rectangle(QVector3D(self._selection.left(), self._selection.top(), 0),
                                          QVector3D(self._selection.right(), self._selection.top(), 0),
@@ -1066,8 +1067,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.update()
 
     def set_selection_behavior(self, behavior):
-        self.zoom_into_selection = False
-        self._selection_behavior = behavior
+        self.selection_behavior = behavior
 
     def mousePressEvent(self, event):
         pos = self.mouse_position = event.pos()
@@ -1082,13 +1082,13 @@ class OWPlot3D(orangeqt.Plot3D):
                 event.scenePos = lambda: QPointF(pos)
                 self._legend.mousePressEvent(event)
                 self.setCursor(Qt.ClosedHandCursor)
-                self.state = PlotState.DRAGGING_LEGEND
+                self._state = PlotState.DRAGGING_LEGEND
             else:
-                self.state = PlotState.SELECTING
+                self._state = PlotState.SELECTING
                 self._selection = QRect(pos.x(), pos.y(), 0, 0)
         elif buttons & Qt.RightButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-                self.state = PlotState.SCALING
+                self._state = PlotState.SCALING
                 self.scaling_init_pos = self.mouse_position
                 self.additional_scale = array([0., 0., 0.])
             else:
@@ -1096,12 +1096,12 @@ class OWPlot3D(orangeqt.Plot3D):
             self.update()
         elif buttons & Qt.MiddleButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
-                self.state = PlotState.PANNING
+                self._state = PlotState.PANNING
             else:
-                self.state = PlotState.ROTATING
+                self._state = PlotState.ROTATING
 
     def _check_mouseover(self, pos):
-        if self.mouseover_callback != None and self.state == PlotState.IDLE:
+        if self.mouseover_callback != None and self._state == PlotState.IDLE:
             if abs(pos.x() - self.tooltip_win_center[0]) > 100 or\
                abs(pos.y() - self.tooltip_win_center[1]) > 100:
                 self.tooltip_fbo_dirty = True
@@ -1132,16 +1132,16 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.invert_mouse_x:
             dx = -dx
 
-        if self.state == PlotState.SELECTING:
+        if self._state == PlotState.SELECTING:
             self._selection.setBottomRight(pos)
-        elif self.state == PlotState.DRAGGING_LEGEND:
+        elif self._state == PlotState.DRAGGING_LEGEND:
             event.scenePos = lambda: QPointF(pos)
             self._legend.mouseMoveEvent(event)
-        elif self.state == PlotState.ROTATING:
+        elif self._state == PlotState.ROTATING:
             self.yaw += (self.mouse_sensitivity / 5.) * dx / (self.rotation_factor*self.width())
             self.pitch += (self.mouse_sensitivity / 5.) * dy / (self.rotation_factor*self.height())
             self.update_camera()
-        elif self.state == PlotState.PANNING:
+        elif self._state == PlotState.PANNING:
             right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
             up_vec = normalize(numpy.cross(right_vec, self.camera))
             right_vec[0] *= dx / (self.width() * self.plot_scale[0] * self.panning_factor)
@@ -1150,7 +1150,7 @@ class OWPlot3D(orangeqt.Plot3D):
             right_vec[2] *= (self.mouse_sensitivity / 5.)
             up_scale = self.height() * self.plot_scale[1] * self.panning_factor
             self.plot_translation -= right_vec + up_vec * (dy / up_scale) * (self.mouse_sensitivity / 5.)
-        elif self.state == PlotState.SCALING:
+        elif self._state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
             dx /= self.scale_factor * self.width()
@@ -1162,7 +1162,7 @@ class OWPlot3D(orangeqt.Plot3D):
             self.additional_scale = [-dx * abs(right_vec[0]) / float(self._zoomed_size[0]),
                                      dy,
                                      -dx * abs(right_vec[2]) / float(self._zoomed_size[2])]
-        elif self.state == PlotState.IDLE:
+        elif self._state == PlotState.IDLE:
             legend_pos = self._legend.pos()
             lx, ly = legend_pos.x(), legend_pos.y()
             if self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
@@ -1174,15 +1174,15 @@ class OWPlot3D(orangeqt.Plot3D):
         self.update()
 
     def mouseReleaseEvent(self, event):
-        if self.state == PlotState.DRAGGING_LEGEND:
+        if self._state == PlotState.DRAGGING_LEGEND:
             self._legend.mouseReleaseEvent(event)
-        if self.state == PlotState.SCALING:
+        if self._state == PlotState.SCALING:
             self.plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
             self.additional_scale = array([0., 0., 0.])
-            self.state = PlotState.IDLE
-        elif self.state == PlotState.SELECTING:
+            self._state = PlotState.IDLE
+        elif self._state == PlotState.SELECTING:
             self._selection.setBottomRight(event.pos())
-            if self.zoom_into_selection:
+            if self.state == ZOOMING: # self.state is actually set by OWPlotGUI (different from self._state!)
                 min_max = self.get_min_max_selected(self._selection)
                 self.set_new_zoom(*min_max, plot_coordinates=True)
             else:
@@ -1192,7 +1192,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 orangeqt.Plot3D.select_points(self, area, self.projection * self.modelview,
                                               viewport,
                                               QVector3D(*self.plot_scale), QVector3D(*self.plot_translation),
-                                              self._selection_behavior)
+                                              self.selection_behavior)
                 self.makeCurrent()
                 orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
                                             self.color_index, self.symbol_index, self.size_index, self.label_index,
@@ -1204,7 +1204,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.tooltip_fbo_dirty = True
         self.unsetCursor()
-        self.state = PlotState.IDLE
+        self._state = PlotState.IDLE
         self.update()
 
     def wheelEvent(self, event):

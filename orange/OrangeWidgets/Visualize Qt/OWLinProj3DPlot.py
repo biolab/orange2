@@ -1,5 +1,4 @@
 from plot.owplot3d import *
-from plot.owplotgui import *
 from plot.primitives import parse_obj
 from plot import OWPoint
 
@@ -36,8 +35,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             self._arrow_lines = []
             self.mouseover_callback = self._update_arrow_values
 
-        self.gui = OWPlotGUI(self)
-
     def setData(self, data, subsetData=None, **args):
         if data == None:
             return
@@ -48,7 +45,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             return
 
         self.makeCurrent()
-        self.state = PlotState.IDLE # Override for now, apparently this is modified by OWPlotGUI
         self.before_draw_callback = lambda: self.before_draw()
 
         cone_data = parse_obj('cone_hq.obj')
