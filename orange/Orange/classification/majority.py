@@ -32,9 +32,17 @@ constructs is an instance of :obj:`ConstantClassifier`.
 
 .. class:: ConstantClassifier
 
-    ConstantClassifier always classifies to the same class and reports
+    ConstantClassifier always classifies to the same class and reports the
     same class probabilities.
 
+    Its constructor can be called without arguments, with a variable (for
+    :obj:`class_var`), value (for :obj:`default_val`) or both. If the value
+    is given and is of type :obj:`Orange.data.Value` (alternatives are an
+    integer index of a discrete value or a continuous value), its attribute
+    :obj:`Orange.data.Value.variable` will either be used for initializing
+    :obj:`class_var` if variable is not given as an argument, or checked
+    against the variable argument, if it is given. 
+    
     .. attribute:: default_val
     
         Value that is returned by the classifier.
@@ -42,13 +50,11 @@ constructs is an instance of :obj:`ConstantClassifier`.
     .. attribute:: default_distribution
 
         Class probabilities returned by the classifier.
+    
+    .. attribute:: class_var
+    
+        Class variable that the classifier predicts.
 
-The ConstantClassifier's constructor can be called without arguments,
-with value (for default_val), variable (for class_var). If the value is
-given and is of type Orange.data.Value (alternatives are an integer index
-of a discrete value or a continuous value), its field variable will
-either be used for initializing class_var if variable is not given as
-an argument, or checked against the variable argument, if it is given. 
 
 Examples
 ========
