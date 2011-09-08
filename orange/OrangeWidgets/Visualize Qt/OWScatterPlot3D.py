@@ -4,10 +4,13 @@
 <priority>2001</priority>
 '''
 
+from math import log10, ceil, floor
+
 from OWWidget import *
 from plot.owplot3d import *
 from plot.owtheme import ScatterLightTheme, ScatterDarkTheme
 from plot import OWPoint
+from plot.primitives import normalize, normal_from_points
 
 import orange
 Discrete = orange.VarTypes.Discrete
@@ -16,7 +19,6 @@ Continuous = orange.VarTypes.Continuous
 from Orange.preprocess.scaling import get_variable_values_sorted
 
 import OWGUI
-import OWToolbars
 import orngVizRank
 from OWkNNOptimization import *
 from orngScaleScatterPlotData import *
@@ -24,6 +26,46 @@ from orngScaleScatterPlotData import *
 import numpy
 
 TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
+Axis = enum('X', 'Y', 'Z')
+
+def plane_visible(plane, location):
+    normal = normal_from_points(*plane[:3])
+    loc_plane = normalize(plane[0] - location)
+    if numpy.dot(normal, loc_plane) > 0:
+        return False
+    return True
+
+def nicenum(x, round):
+    if x <= 0.:
+        return x # TODO: what to do in such cases?
+    expv = floor(log10(x))
+    f = x / pow(10., expv)
+    if round:
+        if f < 1.5: nf = 1.
+        elif f < 3.: nf = 2.
+        elif f < 7.: nf = 5.
+        else: nf = 10.
+    else:
+        if f <= 1.: nf = 1.
+        elif f <= 2.: nf = 2.
+        elif f <= 5.: nf = 5.
+        else: nf = 10.
+    return nf * pow(10., expv)
+
+def loose_label(min_value, max_value, num_ticks):
+    '''Algorithm by Paul S. Heckbert (Graphics Gems).
+       Generates a list of "nice" values between min and max,
+       given the number of ticks. Also returns the number
+       of fractional digits to use.
+    '''
+    range = nicenum(max_value-min_value, False)
+    d = nicenum(range / float(num_ticks-1), True)
+    if d <= 0.: # TODO
+        return numpy.arange(min_value, max_value, (max_value-min_value)/num_ticks), 1
+    plot_min = floor(min_value / d) * d
+    plot_max = ceil(max_value / d) * d
+    num_frac = int(max(-floor(log10(d)), 0))
+    return numpy.arange(plot_min, plot_max + 0.5*d, d), num_frac
 
 class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
     def __init__(self, parent=None):
@@ -34,8 +76,33 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self._theme = ScatterLightTheme()
         self.show_grid = True
         self.show_chassis = True
+        self.show_axes = True
+        self.build_axes()
+
+        self.x_axis_labels = None
+        self.y_axis_labels = None
+        self.z_axis_labels = None
+
+        self.x_axis_title = ''
+        self.y_axis_title = ''
+        self.z_axis_title = ''
+
+        self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
 
         self.animate_plot = False
+
+    def set_axis_labels(self, axis_id, labels):
+        '''labels should be a list of strings'''
+        if Axis.is_valid(axis_id):
+            setattr(self, Axis.to_str(axis_id).lower() + '_axis_labels', labels)
+
+    def set_axis_title(self, axis_id, title):
+        if Axis.is_valid(axis_id):
+            setattr(self, Axis.to_str(axis_id).lower() + '_axis_title', title)
+
+    def set_show_axis_title(self, axis_id, show):
+        if Axis.is_valid(axis_id):
+            setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', show)
 
     def set_data(self, data, subset_data=None, **args):
         if data == None:
@@ -66,7 +133,6 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
            len(self.data_domain[symbol_attr].values) < len(Symbol) and\
            self.data_domain[symbol_attr].varType == Discrete:
             symbol_index = self.attribute_name_index[symbol_attr]
-            symbol_discrete = True
             num_symbols_used = len(self.data_domain[symbol_attr].values)
 
         size_index = -1
@@ -109,6 +175,10 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         if z_discrete:
             data_scale[2] = 0.5 / float(len(self.data_domain[z_attr].values))
             data_translation[2] = 1.
+
+        self.x_axis_labels = None
+        self.y_axis_labels = None
+        self.z_axis_labels = None
 
         self.clear()
 
@@ -184,6 +254,8 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             self.draw_grid()
         if self.show_chassis:
             self.draw_chassis()
+        if self.show_axes:
+            self.draw_axes()
 
     def draw_chassis(self):
         glMatrixMode(GL_PROJECTION)
@@ -271,6 +343,170 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
+
+    def build_axes(self):
+        edge_half = 1. / 2.
+        x_axis = [[-edge_half, -edge_half, -edge_half], [edge_half, -edge_half, -edge_half]]
+        y_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, edge_half, -edge_half]]
+        z_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, -edge_half, edge_half]]
+
+        self.x_axis = x_axis = numpy.array(x_axis)
+        self.y_axis = y_axis = numpy.array(y_axis)
+        self.z_axis = z_axis = numpy.array(z_axis)
+
+        self.unit_x = unit_x = numpy.array([1., 0., 0.])
+        self.unit_y = unit_y = numpy.array([0., 1., 0.])
+        self.unit_z = unit_z = numpy.array([0., 0., 1.])
+ 
+        A = y_axis[1]
+        B = y_axis[1] + unit_x
+        C = x_axis[1]
+        D = x_axis[0]
+
+        E = A + unit_z
+        F = B + unit_z
+        G = C + unit_z
+        H = D + unit_z
+
+        self.axis_plane_xy = [A, B, C, D]
+        self.axis_plane_yz = [A, D, H, E]
+        self.axis_plane_xz = [D, C, G, H]
+
+        self.axis_plane_xy_back = [H, G, F, E]
+        self.axis_plane_yz_right = [B, F, G, C]
+        self.axis_plane_xz_top = [E, F, B, A]
+
+    def draw_axes(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+
+        self.renderer.set_transform(self.projection, self.modelview)
+
+        def draw_axis(line):
+            self.qglColor(self._theme.axis_color)
+            glLineWidth(2) # TODO: how to draw thick lines?
+            glBegin(GL_LINES)
+            glVertex3f(*line[0])
+            glVertex3f(*line[1])
+            glEnd()
+
+        def draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
+            start, end = axis.copy()
+            start_value = self.map_to_data(start.copy())[coord_index]
+            end_value = self.map_to_data(end.copy())[coord_index]
+            length = end_value - start_value
+            for i, label in enumerate(axis_labels):
+                value = (i + 1) * 2
+                if start_value <= value <= end_value:
+                    position = start + (end-start)*((value-start_value) / length)
+                    self.renderer.draw_line(
+                        QVector3D(*position),
+                        QVector3D(*(position + normal*0.03)),
+                        color=self._theme.axis_values_color)
+                    position += normal * 0.1
+                    self.renderText(position[0],
+                                    position[1],
+                                    position[2],
+                                    label, font=self._theme.labels_font)
+
+        def draw_values(axis, coord_index, normal, axis_labels):
+            glLineWidth(1)
+            if axis_labels != None:
+                draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
+                return
+            start, end = axis.copy()
+            start_value = self.map_to_data(start.copy())[coord_index]
+            end_value = self.map_to_data(end.copy())[coord_index]
+            values, num_frac = loose_label(start_value, end_value, 7)
+            for value in values:
+                if not (start_value <= value <= end_value):
+                    continue
+                position = start + (end-start)*((value-start_value) / float(end_value-start_value))
+                text = ('%%.%df' % num_frac) % value
+                self.renderer.draw_line(
+                    QVector3D(*position),
+                    QVector3D(*(position+normal*0.03)),
+                    color=self._theme.axis_values_color)
+                position += normal * 0.1
+                self.renderText(position[0],
+                                position[1],
+                                position[2],
+                                text, font=self._theme.axis_font)
+
+        def draw_axis_title(axis, title, normal):
+            middle = (axis[0] + axis[1]) / 2.
+            middle += normal * 0.1 if axis[0][1] != axis[1][1] else normal * 0.2
+            self.renderText(middle[0], middle[1], middle[2],
+                            title,
+                            font=self._theme.axis_title_font)
+
+        glDisable(GL_DEPTH_TEST)
+        glLineWidth(1)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        cam_in_space = numpy.array([
+          self.camera[0]*self.camera_distance,
+          self.camera[1]*self.camera_distance,
+          self.camera[2]*self.camera_distance
+        ])
+
+        planes = [self.axis_plane_xy, self.axis_plane_yz,
+                  self.axis_plane_xy_back, self.axis_plane_yz_right]
+        normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
+                   [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
+                   [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
+                   [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
+        visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
+        xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
+
+        if visible_planes[0 if xz_visible else 2]:
+            draw_axis(self.x_axis)
+            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_labels)
+            if self.show_x_axis_title:
+                draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
+        elif visible_planes[2 if xz_visible else 0]:
+            draw_axis(self.x_axis + self.unit_z)
+            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_labels)
+            if self.show_x_axis_title:
+                draw_axis_title(self.x_axis + self.unit_z,
+                                self.x_axis_title, numpy.array([0, 0, 1]))
+
+        if visible_planes[1 if xz_visible else 3]:
+            draw_axis(self.z_axis)
+            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_labels)
+            if self.show_z_axis_title:
+                draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
+        elif visible_planes[3 if xz_visible else 1]:
+            draw_axis(self.z_axis + self.unit_x)
+            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_labels)
+            if self.show_z_axis_title:
+                draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
+
+        try:
+            rightmost_visible = visible_planes[::-1].index(True)
+        except ValueError:
+            return
+        if rightmost_visible == 0 and visible_planes[0] == True:
+            rightmost_visible = 3
+        y_axis_translated = [self.y_axis+self.unit_x,
+                             self.y_axis+self.unit_x+self.unit_z,
+                             self.y_axis+self.unit_z,
+                             self.y_axis]
+        normals = [numpy.array([1, 0, 0]),
+                   numpy.array([0, 0, 1]),
+                   numpy.array([-1,0, 0]),
+                   numpy.array([0, 0,-1])]
+        axis = y_axis_translated[rightmost_visible]
+        normal = normals[rightmost_visible]
+        draw_axis(axis)
+        draw_values(axis, 1, normal, self.y_axis_labels)
+        if self.show_y_axis_title:
+            draw_axis_title(axis, self.y_axis_title, normal)
 
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',

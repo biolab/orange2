@@ -14,7 +14,7 @@
 
 import os
 import time
-from math import sin, cos, pi, floor, ceil, log10
+from math import sin, cos, pi
 import struct
 
 from PyQt4.QtCore import *
@@ -30,7 +30,7 @@ from owtheme import PlotTheme
 from owplot import OWPlot
 from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
 from owopenglrenderer import OWOpenGLRenderer
-from owconstants import ZOOMING
+from owconstants import ZOOMING, PANNING
 
 from OWColorPalette import ColorPaletteGenerator
 
@@ -54,45 +54,6 @@ try:
 except:
     pass
 
-def plane_visible(plane, location):
-    normal = normal_from_points(*plane[:3])
-    loc_plane = normalize(plane[0] - location)
-    if numpy.dot(normal, loc_plane) > 0:
-        return False
-    return True
-
-def nicenum(x, round):
-    if x <= 0.:
-        return x # TODO: what to do in such cases?
-    expv = floor(log10(x))
-    f = x / pow(10., expv)
-    if round:
-        if f < 1.5: nf = 1.
-        elif f < 3.: nf = 2.
-        elif f < 7.: nf = 5.
-        else: nf = 10.
-    else:
-        if f <= 1.: nf = 1.
-        elif f <= 2.: nf = 2.
-        elif f <= 5.: nf = 5.
-        else: nf = 10.
-    return nf * pow(10., expv)
-
-def loose_label(min_value, max_value, num_ticks):
-    '''Algorithm by Paul S. Heckbert (Graphics Gems).
-       Generates a list of "nice" values between min and max,
-       given the number of ticks. Also returns the number
-       of fractional digits to use.
-    '''
-    range = nicenum(max_value-min_value, False)
-    d = nicenum(range / float(num_ticks-1), True)
-    if d <= 0.: # TODO
-        return numpy.arange(min_value, max_value, (max_value-min_value)/num_ticks), 1
-    plot_min = floor(min_value / d) * d
-    plot_max = ceil(max_value / d) * d
-    num_frac = int(max(-floor(log10(d)), 0))
-    return numpy.arange(plot_min, plot_max + 0.5*d, d), num_frac
-
 def enum(*sequential):
     enums = dict(zip(sequential, range(len(sequential))))
     enums['is_valid'] = lambda self, enum_value: enum_value < len(sequential)
@@ -105,10 +66,7 @@ PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 
 Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
               'DIAMOND', 'WEDGE', 'LWEDGE', 'CROSS', 'XCROSS')
 
-# TODO: move to scatterplot
-Axis = enum('X', 'Y', 'Z', 'CUSTOM')
-
-from plot.primitives import normal_from_points, get_symbol_geometry, clamp, normalize, GeometryType
+from plot.primitives import get_symbol_geometry, clamp, normalize, GeometryType
 
 class OWLegend3D(OWLegend):
     def set_symbol_geometry(self, symbol, geometry):
@@ -238,20 +196,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self.after_draw_callback = None
 
         self.setMouseTracking(True)
-        self.mouse_position = QPoint(0, 0)
+        self._mouse_position = QPoint(0, 0)
         self.invert_mouse_x = False
         self.mouse_sensitivity = 5
-
-        # TODO: these should be moved down to Scatterplot3D
-        self.x_axis_labels = None
-        self.y_axis_labels = None
-        self.z_axis_labels = None
-
-        self.x_axis_title = ''
-        self.y_axis_title = ''
-        self.z_axis_title = ''
-
-        self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
 
         self.additional_scale = array([0., 0., 0.])
         self.data_scale = array([1., 1., 1.])
@@ -262,10 +209,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self._zoom_stack = []
 
         self._theme = PlotTheme()
-        self.show_axes = True
 
-        self.tooltip_fbo_dirty = True
-        self.tooltip_win_center = [0, 0]
+        self._tooltip_fbo_dirty = True
+        self._tooltip_win_center = [0, 0]
 
         self._use_fbos = True
 
@@ -276,8 +222,6 @@ class OWPlot3D(orangeqt.Plot3D):
         self.hide_outside = False
         self.fade_outside = True
         self.label_index = -1
-
-        self.build_axes()
 
         self.data = None
 
@@ -447,8 +391,8 @@ class OWPlot3D(orangeqt.Plot3D):
 
         format = QtOpenGL.QGLFramebufferObjectFormat()
         format.setAttachment(QtOpenGL.QGLFramebufferObject.Depth)
-        self.tooltip_fbo = QtOpenGL.QGLFramebufferObject(256, 256, format)
-        if self.tooltip_fbo.isValid():
+        self._tooltip_fbo = QtOpenGL.QGLFramebufferObject(256, 256, format)
+        if self._tooltip_fbo.isValid():
             print('Tooltip FBO created.')
         else:
             print('Failed to create tooltip FBO! Tooltips disabled.')
@@ -503,9 +447,6 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.before_draw_callback:
             self.before_draw_callback()
 
-        if self.show_axes:
-            self.draw_axes()
-
         plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
 
         self.symbol_program.bind()
@@ -529,7 +470,7 @@ class OWPlot3D(orangeqt.Plot3D):
             glBindVertexArray(self.feedback_vao)
             glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
             glBindVertexArray(0)
-        else:
+        elif not self._use_opengl_3:
             glDisable(GL_CULL_FACE)
             glEnable(GL_DEPTH_TEST)
             glEnable(GL_BLEND)
@@ -543,16 +484,16 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.after_draw_callback:
             self.after_draw_callback()
 
-        if self.tooltip_fbo_dirty:
-            self.tooltip_fbo.bind()
+        if self._tooltip_fbo_dirty:
+            self._tooltip_fbo.bind()
             glClearColor(1, 1, 1, 1)
             glClearDepth(1)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glDisable(GL_BLEND)
             glEnable(GL_DEPTH_TEST)
 
-            glViewport(-self.mouse_position.x()+128, -(self.height()-self.mouse_position.y())+128, self.width(), self.height())
-            self.tooltip_win_center = [self.mouse_position.x(), self.mouse_position.y()]
+            glViewport(-self._mouse_position.x()+128, -(self.height()-self._mouse_position.y())+128, self.width(), self.height())
+            self._tooltip_win_center = [self._mouse_position.x(), self._mouse_position.y()]
 
             self.symbol_program.bind()
             self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
@@ -561,11 +502,11 @@ class OWPlot3D(orangeqt.Plot3D):
                 glBindVertexArray(self.feedback_vao)
                 glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
                 glBindVertexArray(0)
-            else:
+            elif not self._use_opengl_3:
                 orangeqt.Plot3D.draw_data_solid(self)
             self.symbol_program.release()
-            self.tooltip_fbo.release()
-            self.tooltip_fbo_dirty = False
+            self._tooltip_fbo.release()
+            self._tooltip_fbo_dirty = False
             glViewport(0, 0, self.width(), self.height())
 
         self.draw_helpers()
@@ -618,7 +559,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.renderer.set_transform(projection, modelview)
 
         if self._state == PlotState.SCALING:
-            x, y = self.mouse_position.x(), self.mouse_position.y()
+            x, y = self._mouse_position.x(), self._mouse_position.y()
             self.renderer.draw_triangle(QVector3D(x-5, y-30, 0),
                                         QVector3D(x+5, y-30, 0),
                                         QVector3D(x, y-40, 0),
@@ -675,170 +616,6 @@ class OWPlot3D(orangeqt.Plot3D):
             self.renderer.draw_line(QVector3D(self._selection.left(), self._selection.bottom(), 0),
                                     QVector3D(self._selection.left(), self._selection.top(), 0),
                                     border_color, border_color)
-
-    def build_axes(self):
-        edge_half = 1. / 2.
-        x_axis = [[-edge_half, -edge_half, -edge_half], [edge_half, -edge_half, -edge_half]]
-        y_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, edge_half, -edge_half]]
-        z_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, -edge_half, edge_half]]
-
-        self.x_axis = x_axis = numpy.array(x_axis)
-        self.y_axis = y_axis = numpy.array(y_axis)
-        self.z_axis = z_axis = numpy.array(z_axis)
-
-        self.unit_x = unit_x = numpy.array([1., 0., 0.])
-        self.unit_y = unit_y = numpy.array([0., 1., 0.])
-        self.unit_z = unit_z = numpy.array([0., 0., 1.])
- 
-        A = y_axis[1]
-        B = y_axis[1] + unit_x
-        C = x_axis[1]
-        D = x_axis[0]
-
-        E = A + unit_z
-        F = B + unit_z
-        G = C + unit_z
-        H = D + unit_z
-
-        self.axis_plane_xy = [A, B, C, D]
-        self.axis_plane_yz = [A, D, H, E]
-        self.axis_plane_xz = [D, C, G, H]
-
-        self.axis_plane_xy_back = [H, G, F, E]
-        self.axis_plane_yz_right = [B, F, G, C]
-        self.axis_plane_xz_top = [E, F, B, A]
-
-    def draw_axes(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
-
-        self.renderer.set_transform(self.projection, self.modelview)
-
-        def draw_axis(line):
-            self.qglColor(self._theme.axis_color)
-            glLineWidth(2) # TODO: how to draw thick lines?
-            glBegin(GL_LINES)
-            glVertex3f(*line[0])
-            glVertex3f(*line[1])
-            glEnd()
-
-        def draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
-            start, end = axis.copy()
-            start_value = self.map_to_data(start.copy())[coord_index]
-            end_value = self.map_to_data(end.copy())[coord_index]
-            length = end_value - start_value
-            for i, label in enumerate(axis_labels):
-                value = (i + 1) * 2
-                if start_value <= value <= end_value:
-                    position = start + (end-start)*((value-start_value) / length)
-                    self.renderer.draw_line(
-                        QVector3D(*position),
-                        QVector3D(*(position + normal*0.03)),
-                        color=self._theme.axis_values_color)
-                    position += normal * 0.1
-                    self.renderText(position[0],
-                                    position[1],
-                                    position[2],
-                                    label, font=self._theme.labels_font)
-
-        def draw_values(axis, coord_index, normal, axis_labels):
-            glLineWidth(1)
-            if axis_labels != None:
-                draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
-                return
-            start, end = axis.copy()
-            start_value = self.map_to_data(start.copy())[coord_index]
-            end_value = self.map_to_data(end.copy())[coord_index]
-            values, num_frac = loose_label(start_value, end_value, 7)
-            for value in values:
-                if not (start_value <= value <= end_value):
-                    continue
-                position = start + (end-start)*((value-start_value) / float(end_value-start_value))
-                text = ('%%.%df' % num_frac) % value
-                self.renderer.draw_line(
-                    QVector3D(*position),
-                    QVector3D(*(position+normal*0.03)),
-                    color=self._theme.axis_values_color)
-                position += normal * 0.1
-                self.renderText(position[0],
-                                position[1],
-                                position[2],
-                                text, font=self._theme.axis_font)
-
-        def draw_axis_title(axis, title, normal):
-            middle = (axis[0] + axis[1]) / 2.
-            middle += normal * 0.1 if axis[0][1] != axis[1][1] else normal * 0.2
-            self.renderText(middle[0], middle[1], middle[2],
-                            title,
-                            font=self._theme.axis_title_font)
-
-        glDisable(GL_DEPTH_TEST)
-        glLineWidth(1)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-        cam_in_space = numpy.array([
-          self.camera[0]*self.camera_distance,
-          self.camera[1]*self.camera_distance,
-          self.camera[2]*self.camera_distance
-        ])
-
-        planes = [self.axis_plane_xy, self.axis_plane_yz,
-                  self.axis_plane_xy_back, self.axis_plane_yz_right]
-        normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
-        visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
-        xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
-
-        if visible_planes[0 if xz_visible else 2]:
-            draw_axis(self.x_axis)
-            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_labels)
-            if self.show_x_axis_title:
-                draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
-        elif visible_planes[2 if xz_visible else 0]:
-            draw_axis(self.x_axis + self.unit_z)
-            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_labels)
-            if self.show_x_axis_title:
-                draw_axis_title(self.x_axis + self.unit_z,
-                                self.x_axis_title, numpy.array([0, 0, 1]))
-
-        if visible_planes[1 if xz_visible else 3]:
-            draw_axis(self.z_axis)
-            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_labels)
-            if self.show_z_axis_title:
-                draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
-        elif visible_planes[3 if xz_visible else 1]:
-            draw_axis(self.z_axis + self.unit_x)
-            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_labels)
-            if self.show_z_axis_title:
-                draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
-
-        try:
-            rightmost_visible = visible_planes[::-1].index(True)
-        except ValueError:
-            return
-        if rightmost_visible == 0 and visible_planes[0] == True:
-            rightmost_visible = 3
-        y_axis_translated = [self.y_axis+self.unit_x,
-                             self.y_axis+self.unit_x+self.unit_z,
-                             self.y_axis+self.unit_z,
-                             self.y_axis]
-        normals = [numpy.array([1, 0, 0]),
-                   numpy.array([0, 0, 1]),
-                   numpy.array([-1,0, 0]),
-                   numpy.array([0, 0,-1])]
-        axis = y_axis_translated[rightmost_visible]
-        normal = normals[rightmost_visible]
-        draw_axis(axis)
-        draw_values(axis, 1, normal, self.y_axis_labels)
-        if self.show_y_axis_title:
-            draw_axis_title(axis, self.y_axis_title, normal)
 
     def set_shown_attributes(self,
             x_index, y_index, z_index,
@@ -958,20 +735,6 @@ class OWPlot3D(orangeqt.Plot3D):
         self.valid_data = numpy.array(valid_data, dtype=bool) # QList<bool> is being a PITA
         orangeqt.Plot3D.set_valid_data(self, long(self.valid_data.ctypes.data))
 
-    # TODO: to scatterplot
-    def set_axis_labels(self, axis_id, labels):
-        '''labels should be a list of strings'''
-        if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
-            setattr(self, Axis.to_str(axis_id).lower() + '_axis_labels', labels)
-
-    def set_axis_title(self, axis_id, title):
-        if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
-            setattr(self, Axis.to_str(axis_id).lower() + '_axis_title', title)
-
-    def set_show_axis_title(self, axis_id, show):
-        if Axis.is_valid(axis_id) and axis_id != Axis.CUSTOM:
-            setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', show)
-
     def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max, plot_coordinates=False):
         '''Specifies new zoom in data or plot coordinates.'''
         self._zoom_stack.append((self.plot_scale, self.plot_translation))
@@ -1070,7 +833,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.selection_behavior = behavior
 
     def mousePressEvent(self, event):
-        pos = self.mouse_position = event.pos()
+        pos = self._mouse_position = event.pos()
         buttons = event.buttons()
 
         self._selection = None
@@ -1083,13 +846,15 @@ class OWPlot3D(orangeqt.Plot3D):
                 self._legend.mousePressEvent(event)
                 self.setCursor(Qt.ClosedHandCursor)
                 self._state = PlotState.DRAGGING_LEGEND
+            elif self.state == PANNING:
+                self._state = PlotState.PANNING
             else:
                 self._state = PlotState.SELECTING
                 self._selection = QRect(pos.x(), pos.y(), 0, 0)
         elif buttons & Qt.RightButton:
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 self._state = PlotState.SCALING
-                self.scaling_init_pos = self.mouse_position
+                self.scaling_init_pos = self._mouse_position
                 self.additional_scale = array([0., 0., 0.])
             else:
                 self.zoom_out()
@@ -1102,18 +867,18 @@ class OWPlot3D(orangeqt.Plot3D):
 
     def _check_mouseover(self, pos):
         if self.mouseover_callback != None and self._state == PlotState.IDLE:
-            if abs(pos.x() - self.tooltip_win_center[0]) > 100 or\
-               abs(pos.y() - self.tooltip_win_center[1]) > 100:
-                self.tooltip_fbo_dirty = True
+            if abs(pos.x() - self._tooltip_win_center[0]) > 100 or\
+               abs(pos.y() - self._tooltip_win_center[1]) > 100:
+                self._tooltip_fbo_dirty = True
                 self.update()
             # Use pixel-color-picking to read example index under mouse cursor (also called ID rendering).
-            self.tooltip_fbo.bind()
-            value = glReadPixels(pos.x() - self.tooltip_win_center[0] + 128,
-                                 self.tooltip_win_center[1] - pos.y() + 128,
+            self._tooltip_fbo.bind()
+            value = glReadPixels(pos.x() - self._tooltip_win_center[0] + 128,
+                                 self._tooltip_win_center[1] - pos.y() + 128,
                                  1, 1,
                                  GL_RGBA,
                                  GL_UNSIGNED_BYTE)
-            self.tooltip_fbo.release()
+            self._tooltip_fbo.release()
             value = struct.unpack('I', value)[0]
             # Check if value is less than 4294967295 (
             # the highest 32-bit unsigned integer) which
@@ -1126,8 +891,8 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self._check_mouseover(pos)
 
-        dx = pos.x() - self.mouse_position.x()
-        dy = pos.y() - self.mouse_position.y()
+        dx = pos.x() - self._mouse_position.x()
+        dy = pos.y() - self._mouse_position.y()
 
         if self.invert_mouse_x:
             dx = -dx
@@ -1170,7 +935,7 @@ class OWPlot3D(orangeqt.Plot3D):
             else:
                 self.unsetCursor()
 
-        self.mouse_position = pos
+        self._mouse_position = pos
         self.update()
 
     def mouseReleaseEvent(self, event):
@@ -1202,7 +967,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 if self.auto_send_selection_callback:
                     self.auto_send_selection_callback()
 
-        self.tooltip_fbo_dirty = True
+        self._tooltip_fbo_dirty = True
         self.unsetCursor()
         self._state = PlotState.IDLE
         self.update()
@@ -1211,7 +976,7 @@ class OWPlot3D(orangeqt.Plot3D):
         if event.orientation() == Qt.Vertical:
             delta = 1 + event.delta() / self.zoom_factor
             self.plot_scale *= delta
-            self.tooltip_fbo_dirty = True
+            self._tooltip_fbo_dirty = True
             self.update()
 
     def notify_legend_moved(self, pos):
@@ -1238,17 +1003,14 @@ class OWPlot3D(orangeqt.Plot3D):
         self.update()
 
     def show_tooltip(self, text):
-        x, y = self.mouse_position.x(), self.mouse_position.y()
+        x, y = self._mouse_position.x(), self._mouse_position.y()
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
 
     def clear(self):
         self._legend.clear()
         self.data_scale = array([1., 1., 1.])
         self.data_translation = array([0., 0., 0.])
-        self.x_axis_labels = None
-        self.y_axis_labels = None
-        self.z_axis_labels = None
-        self.tooltip_fbo_dirty = True
+        self._tooltip_fbo_dirty = True
         self.feedback_generated = False
 
     def clear_plot_transformations(self):
