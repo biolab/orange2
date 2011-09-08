@@ -65,6 +65,16 @@ class TestSaving(unittest.TestCase):
             data.save(f.name)
             f.flush()
             data_svm = Orange.data.Table(f.name)
+        
+    @testing.test_on_datasets
+    def test_csv_on(self, data):
+        with tempfile.NamedTemporaryFile(suffix=".csv") as f:
+            Orange.data.io.save_csv(f, data, dialect="excel-tab")
+            f.flush()
+            f.seek(0)
+            Orange.data.io.load_csv(f)
+            
+        
             
         
 if __name__ == "__main__":

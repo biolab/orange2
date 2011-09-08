@@ -296,12 +296,13 @@ loadLibSVM = Orange.misc.deprecated_keywords(
 
 
 """\
-CSV file reader.
-----------------
+A general CSV file reader.
+--------------------------
 
 Currently not yet documented and not registered (needs testing).
 
 """
+
 def split_escaped_str(str, split_str=" ", escape="\\"):
     res = []
     index = 0
@@ -335,10 +336,7 @@ def is_var_types_row(row):
     return all(map(is_standard_var_def, row))
         
 def var_type(cell):
-    """ Return variable type from a variable type definition in cell.
-    
-    .. todo:: discrete type definition by listing space separated values. 
-    
+    """ Return variable type from a variable type definition in cell. 
     """
     if cell in ["c", "continuous"]:
         return variable.Continuous
@@ -349,7 +347,9 @@ def var_type(cell):
     elif cell.startswith("pyhton"):
         return variable.Python
     elif cell == "":
-        return Variable
+        return variable.Variable
+    elif len(cell.split(",")) > 1:
+        return variable.Discrete, cell.split(",")
     else:
         raise ValueError("Unknown variable type definition %r." % cell)
 
@@ -366,7 +366,7 @@ def is_var_attributes_row(row):
     return all(map(is_var_attributes_def, row))
 
 def is_var_attributes_def(cell):
-    """ Is the cell a standard variables attributes definition. 
+    """ Is the cell a standard variable attributes definition. 
     """
     try:
         var_attribute(cell)
@@ -379,7 +379,7 @@ def _var_attribute_label_parse(cell):
     """ 
     """
     key_value = split_escaped_str(cell, "=")
-    if len(key_value):
+    if len(key_value) == 2:
         return tuple(key_value)
     else:
         raise ValueError("Invalid attribute label definition %r." % cell)
@@ -435,7 +435,7 @@ def is_variable_cont(values, n=None, cutoff=0.5):
     """
     cont = sum(map(is_val_cont, values)) or 1e-30
     if n is None:
-        n = len(values)
+        n = len(values) or 1
     return (float(cont) / n) > cutoff
     
     
@@ -449,11 +449,11 @@ def is_variable_string(values, n=None, cutuff=0.1):
     """
     return False
 
-def load_csv(filename, create_new_on=MakeStatus.Incompatible, **kwargs):
+def load_csv(file, create_new_on=MakeStatus.Incompatible, **kwargs):
     """ Load an Orange.data.Table from s csv file.
     """
-    import csv
-    file = open(filename, "rb")
+    import csv, numpy
+    file = as_open_file(file, "rb")
     snifer = csv.Sniffer()
     sample = file.read(5 * 2 ** 20) # max 5MB sample TODO: What if this is not enough. Try with a bigger sample
     dialect = snifer.sniff(sample)
@@ -491,7 +491,7 @@ def load_csv(filename, create_new_on=MakeStatus.Incompatible, **kwargs):
     file.seek(0)
     reader = csv.reader(file, dialect=dialect)
     for defined in [header, types, var_attrs]:
-        if defined: # skip definition rows if present
+        if any(defined): # skip definition rows if present in the file
             reader.next()
     
     variables = []
@@ -549,45 +549,105 @@ def load_csv(filename, create_new_on=MakeStatus.Incompatible, **kwargs):
     attributes = []
     class_var = []
     metas = {}
-    for (var, status), var_attr in zip(variables, var_attrs):
+    attribute_indices = []
+    variable_indices = []
+    class_indices = []
+    meta_indices = []
+    for i, ((var, status), var_attr) in enumerate(zip(variables, var_attrs)):
         if var_attr:
             flag, attrs = var_attr
             if flag == "class":
                 class_var.append(var)
                 class_var_load_status.append(status)
+                class_indices.append(i)
             elif flag == "meta":
                 mid = Orange.core.newmetaid()
                 metas[mid] = var
                 meta_attribute_load_status[mid] = status
+                meta_indices.append((i, var))
             else:
                 attributes.append(var)
                 attribute_load_status.append(status)
+                attribute_indices.append(i)
             var.attributes.update(attrs)
         else:
             attributes.append(var)
             attribute_load_status.append(status)
+            attribute_indices.append(i)
+            
     if len(class_var) > 1:
         raise ValueError("Multiple class variables defined")
     
     class_var = class_var[0] if class_var else None
     
     attribute_load_status += class_var_load_status
-    
+    variable_indices = attribute_indices + class_indices
     domain = Orange.data.Domain(attributes, class_var)
     domain.add_metas(metas)
-    table = Orange.data.Table(domain, data)
+    normal = [[row[i] for i in variable_indices] for row in data]
+    meta_part = [[row[i] for i,_ in meta_indices] for row in data]
+    table = Orange.data.Table(domain, normal)
+    for ex, m_part in zip(table, meta_part):
+        for (column, var), val in zip(meta_indices, m_part):
+            ex[var] = var(val)
+            
     table.metaAttributeLoadStatus = meta_attribute_load_status
     table.attributeLoadStatus = attribute_load_status
     
     return table
 
-def save_csv(filename, table):
-    pass
-
+def as_open_file(file, mode="rb"):
+    if isinstance(file, basestring):
+        file = open(file, mode)
+    else: # assuming it is file like with proper mode, could check for write, read
+        pass
+    return file
+        
+def save_csv(file, table, orange_specific=True, **kwargs):
+    import csv
+    file = as_open_file(file, "wb")
+    writer = csv.writer(file, **kwargs)
+    attrs = table.domain.attributes
+    class_var = table.domain.class_var
+    metas = [v for _, v in sorted(table.domain.get_metas().items(),
+                                  reverse=True)]
+    all_vars = attrs + ([class_var] if class_var else []) + metas
+    names = [v.name for v in all_vars]
+    writer.writerow(names)
+    
+    if orange_specific:
+        type_cells = []
+        for v in all_vars:
+            if isinstance(v, variable.Discrete):
+                type_cells.append(",".join(v.values))
+            elif isinstance(v, variable.Continuous):
+                type_cells.append("continuous")
+            elif isinstance(v, variable.String):
+                type_cells.append("string")
+            elif isinstance(v, variable.Python):
+                type_cells.append("python")
+            else:
+                raise TypeError("Unknown variable type")
+        writer.writerow(type_cells)
+        
+        var_attr_cells = []
+        for spec, var in [("", v) for v in attrs] + \
+                         ([("class", class_var)] if class_var else []) +\
+                         [("m", v) for v in metas]:
+            
+            labels = ["{0}={1}".format(*t) for t in var.attributes.items()] # TODO escape spaces
+            var_attr_cells.append(" ".join([spec] if spec else [] + labels))
+            
+        writer.writerow(var_attr_cells)
+        
+    for instance in table:
+        instance = list(instance) + [instance[m] for m in metas]
+        writer.writerow(instance)
+    
+        
 
 registerFileType("R", None, toR, ".R")
 registerFileType("Weka", loadARFF, toARFF, ".arff")
 #registerFileType("C50", None, toC50, [".names", ".data", ".test"])
 registerFileType("libSVM", loadLibSVM, toLibSVM, ".svm")
-
-#registerFileType("csv", load_csv, save_csv, ".csv") # Not yet fully tested, might conflict with builtin readers. 
+ 
