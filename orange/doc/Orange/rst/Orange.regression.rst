@@ -9,6 +9,7 @@ Regression (``regression``)
    Orange.regression.base
    Orange.regression.linear
    Orange.regression.lasso
+   Orange.regression.pls
    Orange.regression.earth
    Orange.regression.tree
 

@@ -7,7 +7,7 @@ Partial least sqaures regression (``PLS``)
 
 .. _`Parital Least Squares Regression`: http://en.wikipedia.org/wiki/Partial_least_squares_regression
 
-Implementation is based on _`Scikit learn python implementation`: https://github.com/scikit-learn/scikit-learn/blob/master/scikits/learn/pls.py
+Implementation is based on `Scikit learn python implementation`_
 
 Example ::
 
@@ -50,6 +50,8 @@ Utility functions
 
 .. autofunction:: svd_xy
 
+.. _`Scikit learn python implementation`: https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/pls.py
+
 """
 
 import Orange
@@ -61,7 +63,7 @@ from numpy import dot, zeros
 from numpy.linalg import svd, inv
 
 def normalize_matrix(X):
-    """Normalizes matrix, i.e. subtracts column means
+    """ Normalizes matrix, i.e. subtracts column means
     and divides them by column standard deviations.
     Returns the standardized matrix, sample mean and
     standard deviation
@@ -88,8 +90,8 @@ def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
     :type maxIter: int
 
     :param tol: tolerance parameter, if norm of difference
-    between two successive left singular vectors is less than tol,
-    iteration is stopped
+        between two successive left singular vectors is less than tol,
+        iteration is stopped
     :type tol: a not negative float
             
     """
@@ -131,7 +133,7 @@ def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
     return u, v
 
 def svd_xy(X, Y):
-    """Returns the first left and rigth singular
+    """ Returns the first left and rigth singular
     vectors of X'Y.
 
     :param X, Y: data matrix
@@ -144,11 +146,9 @@ def svd_xy(X, Y):
 
 
 class PLSRegressionLearner(base.BaseRegressionLearner):
-
-    """Fits the partial least squares regression model,
+    """ Fits the partial least squares regression model,
     i.e. learns the regression parameters. The implementation is based on
-    _`Scikit learn python implementation`:
-    https://github.com/scikit-learn/scikit-learn/blob/master/scikits/learn/pls.py
+    `Scikit learn python implementation`_
     
     The class is derived from
     :class:`Orange.regression.base.BaseRegressionLearner`
@@ -240,11 +240,11 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         :type table: :class:`Orange.data.Table`
 
         :param xVars, yVars: List of input and response variables
-        (`Orange.data.variable.Continuous` or `Orange.data.variable.Continuous`).
-        If None (default) it is assumed that data definition provides information
-        which variables are reponses and which not. If a variable var
-        has key "label" in dictionary Orange.data.Domain[var].attributes
-        it is treated as a response variable
+            (`Orange.data.variable.Continuous` or `Orange.data.variable.Continuous`).
+            If None (default) it is assumed that data definition provides information
+            which variables are reponses and which not. If a variable var
+            has key "label" in dictionary Orange.data.Domain[var].attributes
+            it is treated as a response variable
         :type xVars, yVars: list            
 
         """     
@@ -375,7 +375,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 
 
 class PLSRegression(Orange.classification.Classifier):
-    """PLSRegression predicts value of the response variables
+    """ PLSRegression predicts value of the response variables
     based on the values of independent variables.
     """
 
@@ -392,7 +392,7 @@ class PLSRegression(Orange.classification.Classifier):
     def __call__(self, instance, result_type=Orange.core.GetValue):
         """
         :param instance: data instance for which the value of the response
-        variable will be predicted
+            variable will be predicted
         :type instance: 
         """ 
         instance = Orange.data.Instance(self.domain, instance)
@@ -420,7 +420,7 @@ class PLSRegression(Orange.classification.Classifier):
                 return probs
             
     def print_pls_regression_coefficients(self):
-        """Pretty-prints the coefficient of the PLS regression model.
+        """ Pretty-prints the coefficient of the PLS regression model.
         """       
         xVars, yVars = [x.name for x in self.xVars], [y.name for y in self.yVars]
         print " " * 7 + "%-6s " * len(yVars) % tuple(yVars)
