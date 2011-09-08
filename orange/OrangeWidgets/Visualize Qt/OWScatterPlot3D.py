@@ -118,7 +118,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             return
         self.before_draw_callback = self.before_draw
 
-        color_discrete = symbol_discrete = size_discrete = False
+        color_discrete = size_discrete = False
 
         color_index = -1
         if color_attr != '' and color_attr != '(Same color)':

@@ -1,4 +1,4 @@
-from ctypes import c_void_p, c_char, c_char_p, POINTER
+from ctypes import c_void_p
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -34,6 +34,7 @@ class VertexBuffer:
             glBufferData(GL_ARRAY_BUFFER, data, usage)
 
             vertex_size = sum(attribute[0]*4 for attribute in format_description)
+            self._num_vertices = len(data) / (vertex_size / 4)
             current_size = 0
             for i, (num_components, type) in enumerate(format_description):
                 glVertexAttribPointer(i, num_components, type, GL_FALSE, vertex_size, c_void_p(current_size))
@@ -46,13 +47,15 @@ class VertexBuffer:
             self._vbo_id = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, self._vbo_id)
             glBufferData(GL_ARRAY_BUFFER, data, usage)
+            self._data_length = len(data)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-    def draw(self, primitives, first, count):
+    def draw(self, primitives=GL_TRIANGLES, first=0, count=-1):
         '''glDrawArrays'''
         if hasattr(self, '_vao'):
             glBindVertexArray(self._vao)
-            glDrawArrays(primitives, first, count)
+            glDrawArrays(primitives, first,
+                count if count != -1 else self._num_vertices - first)
             glBindVertexArray(0)
         else:
             glBindBuffer(GL_ARRAY_BUFFER, self._vbo_id)
@@ -64,7 +67,9 @@ class VertexBuffer:
                 glEnableVertexAttribArray(i)
                 current_size += num_components*4
 
-            glDrawArrays(primitives, first, count)
+            glDrawArrays(primitives, first,
+                count if count != -1 else self._data_length / (vertex_size / 4) - first)
+
             for i in range(len(self._format_description)):
                 glDisableVertexAttribArray(i)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -74,13 +79,16 @@ class OWOpenGLRenderer:
        immediate mode (glBegin, glEnd, glVertex paradigm). Vertex buffer objects and similar
        (through glDrawArrays for example) should be used instead. This class simplifies
        the usage of that functionality by providing methods which resemble immediate mode.'''
+
+    # TODO: research performance optimizations (maybe store primitives and all of them just once at the end?)
+
     def __init__(self):
         self._projection = QMatrix4x4()
         self._modelview = QMatrix4x4()
 
         ## Shader used to draw primitives. Position and color of vertices specified through uniforms. Nothing fancy.
         vertex_shader_source = '''
-            in float index;
+            attribute float index;
             varying vec4 color;
 
             uniform vec3 positions[6]; // 6 vertices for quad
@@ -98,7 +106,7 @@ class OWOpenGLRenderer:
             '''
 
         fragment_shader_source = '''
-            in vec4 color;
+            varying vec4 color;
 
             void main(void)
             {

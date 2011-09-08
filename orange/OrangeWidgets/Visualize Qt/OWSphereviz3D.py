@@ -4,10 +4,12 @@
 <priority>2000</priority>
 '''
 
+import os
 from math import pi
 from random import choice
 
 from plot.owplot3d import *
+from plot.owopenglrenderer import VertexBuffer
 from plot.primitives import parse_obj
 from OWLinProjQt import *
 from OWLinProj3DPlot import OWLinProj3DPlot
@@ -38,23 +40,9 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                     lines.extend(normalize(a0 + difference*j/float(num_parts)))
                     lines.extend(normalize(a0 + difference*(j+1)/float(num_parts)))
 
-        self.grid_vao_id = GLuint(0)
-        glGenVertexArrays(1, self.grid_vao_id)
-        glBindVertexArray(self.grid_vao_id)
+        self._grid_buffer = VertexBuffer(numpy.array(lines, numpy.float32), [(3, GL_FLOAT)])
 
-        vertex_buffer_id = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
-        glBufferData(GL_ARRAY_BUFFER, numpy.array(lines, numpy.float32), GL_STATIC_DRAW)
-
-        vertex_size = 3*4
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
-        glEnableVertexAttribArray(0)
-        glBindVertexArray(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-        self.grid_vao_id.num_vertices = len(lines) / 3
-
-    def updateData(self, labels=None, setAnchors=0, **args):
+    def update_data(self, labels=None, setAnchors=0, **args):
         OWLinProj3DPlot.updateData(self, labels, setAnchors, **args)
 
         if self.anchor_data:
@@ -62,12 +50,16 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         self.updateGL()
 
+    updateData = update_data
+
     def setData(self, data, subsetData=None, **args):
-        OWLinProj3DPlot.setData(self, data, subsetData, **args)
+        OWLinProj3DPlot.set_data(self, data, subsetData, **args)
 
         # No need to generate backgroud grid sphere geometry more than once
-        if hasattr(self, 'sphere_vao_id'):
+        if hasattr(self, '_sphere_buffer'):
             return
+
+        self.makeCurrent()
 
         lines = []
         num_parts = 30
@@ -93,87 +85,53 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 lines.extend([sin(theta_0)*cos(phi)*r, cos(theta_0)*r, sin(theta_0)*sin(phi)*r,
                               sin(theta_1)*cos(phi)*r, cos(theta_1)*r, sin(theta_1)*sin(phi)*r])
 
-        self.sphere_vao_id = GLuint(0)
-        glGenVertexArrays(1, self.sphere_vao_id)
-        glBindVertexArray(self.sphere_vao_id)
+        self._sphere_buffer = VertexBuffer(numpy.array(lines, numpy.float32), [(3, GL_FLOAT)])
 
-        vertex_buffer_id = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
-        glBufferData(GL_ARRAY_BUFFER, numpy.array(lines, numpy.float32), GL_STATIC_DRAW)
+        self._sphere_shader = QtOpenGL.QGLShaderProgram()
+        self._sphere_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+            os.path.join(os.path.dirname(__file__), 'sphere.vs'))
+        self._sphere_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Fragment,
+            os.path.join(os.path.dirname(__file__), 'sphere.fs'))
 
-        vertex_size = 3*4
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, c_void_p(0))
-        glEnableVertexAttribArray(0)
-        glBindVertexArray(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        self._sphere_shader.bindAttributeLocation('position', 0)
 
-        self.sphere_vao_id.num_vertices = len(lines) / 3
-
-        vertex_shader_source = '''#version 150
-            in vec3 position;
-            varying float transparency;
-
-            uniform mat4 projection;
-            uniform mat4 modelview;
-            uniform vec3 cam_position;
-
-            void main(void)
-            {
-                transparency = clamp(dot(normalize(cam_position-position), normalize(position)), 0., 1.);
-                gl_Position = projection * modelview * vec4(position, 1.);
-            }
-            '''
-
-        fragment_shader_source = '''
-            varying float transparency;
-            uniform bool use_transparency;
-
-            void main(void)
-            {
-                gl_FragColor = vec4(0.5, 0.5, 0.5, 1. - transparency - 0.6);
-                if (!use_transparency)
-                    gl_FragColor.a = 1.;
-            }
-            '''
-
-        self.sphere_shader = QtOpenGL.QGLShaderProgram()
-        self.sphere_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
-        self.sphere_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
-
-        self.sphere_shader.bindAttributeLocation('position', 0)
-
-        if not self.sphere_shader.link():
+        if not self._sphere_shader.link():
             print('Failed to link sphere shader!')
 
-        # Another dummy shader (anchor grid)
-        vertex_shader_source = '''#version 150
-            in vec3 position;
+        ## Cones
+        cone_data = parse_obj('cone_hq.obj')
+        vertices = []
+        for v0, v1, v2, n0, n1, n2 in cone_data:
+            vertices.extend([v0[0],v0[1],v0[2], n0[0],n0[1],n0[2],
+                             v1[0],v1[1],v1[2], n1[0],n1[1],n1[2],
+                             v2[0],v2[1],v2[2], n2[0],n2[1],n2[2]])
 
-            uniform mat4 projection;
-            uniform mat4 modelview;
+        self._cone_buffer = VertexBuffer(numpy.array(vertices, numpy.float32),
+            [(3, GL_FLOAT),
+             (3, GL_FLOAT)])
 
-            void main(void)
-            {
-                gl_Position = projection * modelview * vec4(position, 1.);
-            }
-            '''
+        self._cone_shader = QtOpenGL.QGLShaderProgram()
+        self._cone_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+            os.path.join(os.path.dirname(__file__), 'cone.vs'))
+        self._cone_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Fragment,
+            os.path.join(os.path.dirname(__file__), 'cone.fs'))
 
-        fragment_shader_source = '''
-            uniform vec4 color;
+        self._cone_shader.bindAttributeLocation('position', 0)
+        self._cone_shader.bindAttributeLocation('normal', 1)
 
-            void main(void)
-            {
-                gl_FragColor = color;
-            }
-            '''
+        if not self._cone_shader.link():
+            print('Failed to link cone shader!')
 
-        self.grid_shader = QtOpenGL.QGLShaderProgram()
-        self.grid_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Vertex, vertex_shader_source)
-        self.grid_shader.addShaderFromSourceCode(QtOpenGL.QGLShader.Fragment, fragment_shader_source)
+        ## Another dummy shader (anchor grid)
+        self._grid_shader = QtOpenGL.QGLShaderProgram()
+        self._grid_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+            os.path.join(os.path.dirname(__file__), 'grid.vs'))
+        self._grid_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Fragment,
+            os.path.join(os.path.dirname(__file__), 'grid.fs'))
 
-        self.grid_shader.bindAttributeLocation('position', 0)
+        self._grid_shader.bindAttributeLocation('position', 0)
 
-        if not self.grid_shader.link():
+        if not self._grid_shader.link():
             print('Failed to link grid shader!')
 
         self.before_draw_callback = lambda: self.before_draw()
@@ -216,7 +174,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 QVector3D(0, 1, 0))
         self.modelview = modelview
 
-        self.draw_sphere()
+        self._draw_sphere()
 
         # Qt text rendering classes still use deprecated OpenGL functionality
         glEnable(GL_DEPTH_TEST)
@@ -241,58 +199,47 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 rotation.setColumn(1, QVector4D(up, 0))
                 rotation.setColumn(2, QVector4D(direction, 0))
 
-                self.cone_shader.bind()
-                self.cone_shader.setUniformValue('projection', self.projection)
                 modelview = QMatrix4x4(self.modelview)
                 modelview.translate(x, y, z)
                 modelview = modelview * rotation
                 modelview.rotate(-90, 1, 0, 0)
                 modelview.translate(0, -0.05, 0)
                 modelview.scale(0.02, 0.02, 0.02)
-                self.cone_shader.setUniformValue('modelview', modelview)
 
-                glBindVertexArray(self.cone_vao_id)
-                glDrawArrays(GL_TRIANGLES, 0, self.cone_vao_id.num_vertices)
-                glBindVertexArray(0)
-
-                self.cone_shader.release()
+                self._cone_shader.bind()
+                self._cone_shader.setUniformValue('projection', self.projection)
+                self._cone_shader.setUniformValue('modelview', modelview)
+                self._cone_buffer.draw()
+                self._cone_shader.release()
 
                 self.qglColor(self._theme.axis_values_color)
                 self.renderText(x*1.2, y*1.2, z*1.2, label)
 
-            if self.anchor_data and not hasattr(self, 'grid_vao_id'):
+            if self.anchor_data and not hasattr(self, '_grid_buffer'):
                 self._build_anchor_grid()
 
             # Draw grid between anchors
-            self.grid_shader.bind()
-            self.grid_shader.setUniformValue('projection', self.projection)
-            self.grid_shader.setUniformValue('modelview', self.modelview)
-            self.grid_shader.setUniformValue('color', self._theme.axis_color)
-            glBindVertexArray(self.grid_vao_id)
-
-            glDrawArrays(GL_LINES, 0, self.grid_vao_id.num_vertices)
-
-            glBindVertexArray(0)
-            self.grid_shader.release()
+            self._grid_shader.bind()
+            self._grid_shader.setUniformValue('projection', self.projection)
+            self._grid_shader.setUniformValue('modelview', self.modelview)
+            self._grid_shader.setUniformValue('color', self._theme.axis_color)
+            self._grid_buffer.draw(GL_LINES)
+            self._grid_shader.release()
 
         self._draw_value_lines()
 
-    def draw_sphere(self):
+    def _draw_sphere(self):
         glDisable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        self.sphere_shader.bind()
-        self.sphere_shader.setUniformValue('projection', self.projection)
-        self.sphere_shader.setUniformValue('modelview', self.modelview)
-        self.sphere_shader.setUniformValue('cam_position', QVector3D(*self.camera)*self.camera_distance)
-        self.sphere_shader.setUniformValue('use_transparency', self.camera_type == 0)
-        glBindVertexArray(self.sphere_vao_id)
-
-        glDrawArrays(GL_LINES, 0, self.sphere_vao_id.num_vertices)
-
-        glBindVertexArray(0)
-        self.sphere_shader.release()
+        self._sphere_shader.bind()
+        self._sphere_shader.setUniformValue('projection', self.projection)
+        self._sphere_shader.setUniformValue('modelview', self.modelview)
+        self._sphere_shader.setUniformValue('cam_position', QVector3D(*self.camera)*self.camera_distance)
+        self._sphere_shader.setUniformValue('use_transparency', self.camera_type == 0)
+        self._sphere_buffer.draw(GL_LINES)
+        self._sphere_shader.release()
 
     def mouseMoveEvent(self, event):
         self.invert_mouse_x = self.camera_type != 0
