@@ -989,7 +989,7 @@ bool Value_pack(const TValue &value, TCharBuffer &buf, PyObject *&otherValues)
   }
 
   if (value.valueType) {
-    buf.writeChar(svalFlag | (value.valueType & 0x3f));
+    buf.writeChar(svalFlag | (value.valueType & 0x1f));
     return true;
   }
 
