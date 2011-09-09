@@ -145,6 +145,15 @@ def svd_xy(X, Y):
     return u, v
 
 
+def select_attrs(table, attributes, class_var=None, metas=None):
+    """ Select only ``attributes`` from the ``table``.
+    """
+    domain = Orange.data.Domain(attributes, class_var)
+    if metas:
+        domain.add_metas(metas)
+    return Orange.data.Table(domain, table)
+
+
 class PLSRegressionLearner(base.BaseRegressionLearner):
     """ Fits the partial least squares regression model,
     i.e. learns the regression parameters. The implementation is based on
@@ -240,7 +249,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         :type table: :class:`Orange.data.Table`
 
         :param xVars, yVars: List of input and response variables
-            (`Orange.data.variable.Continuous` or `Orange.data.variable.Continuous`).
+            (`Orange.data.variable.Continuous` or `Orange.data.variable.Discrete`).
             If None (default) it is assumed that data definition provides information
             which variables are reponses and which not. If a variable var
             has key "label" in dictionary Orange.data.Domain[var].attributes
@@ -248,40 +257,71 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         :type xVars, yVars: list            
 
         """     
-
+        domain = table.domain
+        if xVars is None and yVars is None:
+            # Response variables are defined in the table.
+            label_mask = data_label_mask(domain)
+            xVars = [v for v, label in zip(domain, label_mask) if not label]
+            yVars = [v for v, label in zip(domain, label_mask) if label]
+            x_table = select_attrs(table, xVars)
+            y_table = select_attrs(table, yVars)
+            
+        elif xVars and yVars:
+            # independent and response variables are passed by the caller
+            if domain.class_var and domain.class_var not in yVars:
+                # if the original table contains class variable
+                # add it to the yVars
+                yVars.append(domain.class_var)
+            label_mask = [v in yVars for v in domain.variables]
+            
+            x_table = select_attrs(table, xVars)
+            y_table = select_attrs(table, yVars)
+        else:
+            raise ValueError("Both xVars and yVars must be defined.")
+        
         # if independent and response variables are not listed in domain
-        if xVars is not None:
-            for var in xVars:
-                if table.domain[var].attributes.has_key("label"):
-                    del table.domain[var].attributes["label"]
-        if yVars is not None:
-            for var in yVars:
-                table.domain[var].attributes["label"] = True               
+#        if xVars is not None:
+#            for var in xVars:
+#                if table.domain[var].attributes.has_key("label"):
+#                    del table.domain[var].attributes["label"]
+#        if yVars is not None:
+#            for var in yVars:
+#                table.domain[var].attributes["label"] = True               
 
         # if the original table contains class variable        
-        if table.domain.class_var is not None:
-            oldClass = table.domain.class_var
-            newDomain = Orange.data.Domain(table.domain.variables, 0)
-            newDomain[oldClass].attributes["label"] = True
-            table = Orange.data.Table(newDomain, table)
+#        if table.domain.class_var is not None:
+#            oldClass = table.domain.class_var
+#            newDomain = Orange.data.Domain(table.domain.variables, 0)
+#            newDomain[oldClass].attributes["label"] = True
+#            table = Orange.data.Table(newDomain, table)
 
         # dicrete values are continuized        
-        table = self.continuize_table(table)
+        x_table = self.continuize_table(x_table)
+        y_table = self.continuize_table(y_table)
         # missing values are imputed
-        table = self.impute_table(table)
+        x_table = self.impute_table(x_table)
+        y_table = self.impute_table(y_table)
         
-        self.domain = table.domain
-        label_mask = data_label_mask(table.domain)
-        xy = table.toNumpy()[0]
-        y, x = xy[:, label_mask], xy[:, ~ label_mask]
-        self.yVars = [v for v, m in zip(self.domain.variables, label_mask) if m]
-        self.xVars = [v for v in self.domain.variables if v not in self.yVars]
+        # Collect the new transformed xVars/yVars 
+        xVars = list(x_table.domain.variables)
+        yVars = list(y_table.domain.variables)
+        
+        self.domain = Orange.data.Domain(xVars + yVars, False)
+        label_mask = [False for _ in xVars] + [True for _ in yVars]
+        
+#        label_mask = data_label_mask(table.domain)
+#        xy = table.toNumpy()[0]
+#        y, x = xy[:, label_mask], xy[:, ~ label_mask]
+#        self.yVars = [v for v, m in zip(self.domain.variables, label_mask) if m]
+#        self.xVars = [v for v in self.domain.variables if v not in self.yVars]
+        x = x_table.toNumpy()[0]
+        y = y_table.toNumpy()[0]
         
         self.fit(x, y)
         return PLSRegression(label_mask=label_mask, domain=self.domain, \
                              coefs=self.coefs, muX=self.muX, muY=self.muY, \
                              sigmaX=self.sigmaX, sigmaY=self.sigmaY, \
-                             xVars=self.xVars, yVars=self.yVars)
+                             xVars=xVars, yVars=yVars)
 
     def fit(self, X, Y):
         """ Fits all unknown parameters, i.e.
@@ -377,8 +417,8 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 class PLSRegression(Orange.classification.Classifier):
     """ PLSRegression predicts value of the response variables
     based on the values of independent variables.
+    
     """
-
     def __init__(self, label_mask=None, domain=None, \
                  coefs=None, muX=None, muY=None, sigmaX=None, sigmaY=None, \
                  xVars=None, yVars=None):
@@ -393,11 +433,12 @@ class PLSRegression(Orange.classification.Classifier):
         """
         :param instance: data instance for which the value of the response
             variable will be predicted
-        :type instance: 
+        :type instance: :class:`Orange.data.Instance` 
+        
         """ 
         instance = Orange.data.Instance(self.domain, instance)
-        ins = Orange.data.Instance(self.domain, instance)
         ins = [instance[v].native() for v in self.xVars]
+        
         if "?" in ins: # missing value -> corresponding coefficient omitted
             def miss_2_0(x): return x if x != "?" else 0
             ins = map(miss_2_0, ins)
@@ -440,5 +481,6 @@ if __name__ == "__main__":
     x = [var for var in table.domain if var.name[0]=="X"]
     y = [var for var in table.domain if var.name[0]=="Y"]
     print x, y
-    c = l(table, xVars=x, yVars=y)
+#    c = l(table, xVars=x, yVars=y)
+    c = l(table)
     c.print_pls_regression_coefficients()
