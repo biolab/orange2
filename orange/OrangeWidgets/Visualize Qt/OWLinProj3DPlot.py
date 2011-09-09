@@ -193,10 +193,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 c = self.discrete_palette[i]
                 colors.append(c)
 
-        self.set_shown_attributes(0, 1, 2, color_index, symbol_index, size_index, label_index,
-                                  colors, num_symbols_used,
-                                  x_discrete, y_discrete, z_discrete,
-                                  numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
+        self.set_features(0, 1, 2, color_index, symbol_index, size_index, label_index,
+                          colors, num_symbols_used,
+                          x_discrete, y_discrete, z_discrete,
+                          numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
 
         def_color = QColor(150, 150, 150)
         def_symbol = 0

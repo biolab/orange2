@@ -195,7 +195,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         valid_data = self.getValidList(attr_indices)
         self.set_valid_data(valid_data)
 
-        self.set_shown_attributes(x_index, y_index, z_index,
+        self.set_features(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
             x_discrete, y_discrete, z_discrete,

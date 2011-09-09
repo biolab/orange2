@@ -601,7 +601,7 @@ class OWPlot3D(orangeqt.Plot3D):
                                     QVector3D(self._selection.left(), self._selection.top(), 0),
                                     border_color, border_color)
 
-    def set_shown_attributes(self,
+    def set_features(self,
             x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
