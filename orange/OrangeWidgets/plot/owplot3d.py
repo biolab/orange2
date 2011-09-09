@@ -1,12 +1,11 @@
 ﻿'''
-    .. class:: OWPlot3D
-        Base class for 3D plots.
 
-    .. attribute:: show_legend
-        Determines whether to display the legend or not.
+#################
+Plot3D (``owplot3D``)
+#################
 
-    .. method:: clear()
-        Removes everything from the graph.
+.. autoclass:: OrangeWidgets.plot.OWPlot3D
+    
 '''
 
 import os
@@ -144,6 +143,76 @@ class OWLegend3D(OWLegend):
                         QColor(0, 0, 0))
 
 class OWPlot3D(orangeqt.Plot3D):
+    '''
+    The base class behind 3D plots in Orange. Uses OpenGL as its rendering platform.
+
+    **Plot layout**
+
+        .. attribute:: show_legend
+    
+            A boolean controlling whether the legend is displayed or not
+
+    **Settings**
+    
+	.. attribute:: gui
+	
+            An :obj:`.OWPlotGUI` object associated with this graph
+
+    **Data**
+        This is the most important part of the class API. :meth:`set_plot_data` is
+        used to (not surprisingly) set the data which will be drawn.
+        :meth:`set_features` tells Plot3D how to interpret the data (this method must
+        be called after :meth:`set_plot_data` and can be called multiple times).
+        :meth:`set_valid_data` optionally informs the plot which examples are invalid and
+        should not be drawn. It should be called after set_plot_data, but before set_features.
+
+        .. automethod:: set_plot_data
+
+        .. automethod:: set_valid_data
+
+        .. automethod:: set_features
+
+    **Selections**
+
+        .. method: get_selected_indices
+
+        .. method: get_min_max_selected
+
+        .. method: set_selection_behavior
+
+        .. method: unselect_all_points
+
+    **Callbacks**
+
+        Plot3D provides several callbacks which can be used to perform additional tasks (
+        such as drawing geometry before the data is drawn). Callback provided:
+
+        auto_send_selection_callback
+        mouseover_callback
+        before_draw_callback
+        after_draw_callback
+
+    **Coordinate transformations**
+
+        .. automethod:: map_to_plot
+
+        .. automethod:: map_to_data
+
+    **Colors**
+
+        Colors are specified with two palettes, one for continuous attributes, and one for
+        discrete ones.  Both are created by
+        :obj:`.OWColorPalette.ColorPaletteGenerator`
+        
+        .. attribute:: continuous_palette
+        
+            The palette used when point color represents a continuous attribute
+        
+        .. attribute:: discrete_palette
+        
+            The palette used when point color represents a discrete attribute
+
+    '''
     def __init__(self, parent=None):
         orangeqt.Plot3D.__init__(self, parent)
 
