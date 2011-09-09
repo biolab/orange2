@@ -37,9 +37,6 @@ elif sys.platform == "linux2":
 else:
     extra_compile_args = []
     extra_link_args = []
-    
-define_macros=[('NDEBUG', '1'),
-               ('HAVE_STRFTIME', None)]
         
 class LibStatic(Extension):
     pass
@@ -431,7 +428,7 @@ else:
 
 setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       name ="Orange",
-      version = "2.5a1.dev-r",
+      version = "2.5a1",
       description = "Orange data mining library for python.",
       author = "Bioinformatics Laboratory, FRI UL",
       author_email = "orange@fri.uni-lj.si",
@@ -439,7 +436,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       maintainer_email = "ales.erjavec@fri.uni-lj.si",
       url = "http://orange.biolab.si",
       download_url = "http://orange.biolab.si/svn/orange/trunk",
-      packages = packages + [".",
+      packages = packages + ["",
                              "OrangeCanvas", 
                              "OrangeWidgets", 
                              "OrangeWidgets.Associate",
@@ -453,6 +450,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                              "OrangeWidgets.Visualize Qt",
                              "doc",
                              ],
+      package_dir = {"": "."},
       package_data = {"OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
                       "OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],
                       "OrangeWidgets.Associate": ["icons/*.png"],
@@ -464,7 +462,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
                       "OrangeWidgets.Visualize": ["icons/*.png"],
                       "doc": ["datasets/*.tab", ],
-                      ".": ["orangerc.cfg"] 
+                      "": ["orangerc.cfg"] 
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
