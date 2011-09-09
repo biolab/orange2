@@ -1,7 +1,6 @@
 # Line below determines the directory with Python.h.
 # If this does not work, find Python.h yourself and enter
 # the directory below.
-PYTHON ?= python
 PYTHONINCLUDE = $(shell $(PYTHON) -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
 PYTHONLIB = $(shell $(PYTHON) -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 PYTHONSITEPKGS = $(PYTHONLIB)/site-packages

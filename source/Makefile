@@ -5,6 +5,8 @@ ifndef ORANGE_LIBDIR
   ORANGE_LIBDIR=../..
 endif
 
+PYTHON ?= python
+
 MODULES=include orange orangeom orangene corn statc
 
 # This is nedded for orangeqt on Mac
@@ -16,9 +18,9 @@ ACTIONS=all clean cleantemp
 
 $(ACTIONS):
 	(for MODULE in $(MODULES) ; \
-	   do if ! $(MAKE) $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); then exit 1; fi; done)
+	   do if ! $(MAKE) $@ -C $$MODULE OLD=$(ORANGE_LIBDIR) PYTHON=$(PYTHON); then exit 1; fi; done)
 ifndef EXCLUDE_ORANGEQT
-	if ! $(MAKE) $@ -C orangeqt OLD=$(ORANGE_LIBDIR) DESTDIR=$(DESTDIR); then exit 1; fi;
+	if ! $(MAKE) $@ -C orangeqt OLD=$(ORANGE_LIBDIR) PYTHON=$(PYTHON) DESTDIR=$(DESTDIR); then exit 1; fi;
 endif	
 
 install: # all orange.pth canvas bininstall docinstall

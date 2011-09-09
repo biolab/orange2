@@ -2,6 +2,9 @@ ORANGEPLOT_BUILD_DIR=build
 ifndef OLD
   OLD=..
 endif
+ifndef PYTHON
+  PYTHON=python
+endif
 
 OS = $(shell uname)
 
