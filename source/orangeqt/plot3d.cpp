@@ -122,9 +122,9 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
     const float scale = 0.001f;
 
-    float* vbo_selected_data   = new float[num_examples * 144 * 13];
-    float* vbo_unselected_data = new float[num_examples * 144 * 13];
-    float* vbo_edges_data      = new float[num_examples * 144 * 13];
+    float* vbo_selected_data   = new float[num_examples * 144 * 14];
+    float* vbo_unselected_data = new float[num_examples * 144 * 14];
+    float* vbo_edges_data      = new float[num_examples * 144 * 14];
     float* dests = vbo_selected_data;
     float* destu = vbo_unselected_data;
     float* deste = vbo_edges_data;
@@ -169,21 +169,23 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
         for (int i = 0; i < geometry[symbol].count(); i += 6) {
             if (selected_indices[index])
-                sib_selected += 3*13*4;
+                sib_selected += 3*14*4;
             else
-                sib_unselected += 3*13*4;
+                sib_unselected += 3*14*4;
 
             for (int j = 0; j < 3; ++j)
             {
-                // position
+                // position + first part of the index
                 *dest = x_pos; dest++; 
                 *dest = y_pos; dest++; 
                 *dest = z_pos; dest++; 
+                *dest = (float)(index & 0xFF) / 255.f; dest++;
 
-                // offset
+                // offset + second part of the index
                 *dest = geometry[symbol][i+j].x()*size*scale; dest++;
                 *dest = geometry[symbol][i+j].y()*size*scale; dest++;
                 *dest = geometry[symbol][i+j].z()*size*scale; dest++;
+                *dest = (float)((index & 0xFF00) >> 8) / 255.f; dest++;
 
                 // color
                 *dest = color.redF(); dest++;
@@ -194,9 +196,6 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
                 *dest = geometry[symbol][i+3+j].x(); dest++;
                 *dest = geometry[symbol][i+3+j].y(); dest++;
                 *dest = geometry[symbol][i+3+j].z(); dest++;
-
-                // index
-                *dest = index; dest++;
             }
         }
 
@@ -205,17 +204,19 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
             continue;
 
         for (int i = 0; i < geometry_edges[symbol].count(); i += 2) {
-            sib_edges += 2*13*4;
+            sib_edges += 2*14*4;
 
             for (int j = 0; j < 2; ++j)
             {
                 *deste = x_pos; deste++; 
                 *deste = y_pos; deste++; 
                 *deste = z_pos; deste++; 
+                *deste = (float)(index & 0xFF) / 255.f; deste++;
 
                 *deste = geometry_edges[symbol][i+j].x()*size*scale; deste++;
                 *deste = geometry_edges[symbol][i+j].y()*size*scale; deste++;
                 *deste = geometry_edges[symbol][i+j].z()*size*scale; deste++;
+                *deste = (float)((index & 0xFF00) >> 8) / 255.f; deste++;
 
                 *deste = color.redF(); deste++;
                 *deste = color.greenF(); deste++;
@@ -225,8 +226,6 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
                 *deste = geometry_edges[symbol][i+j].x(); deste++;
                 *deste = geometry_edges[symbol][i+j].y(); deste++;
                 *deste = geometry_edges[symbol][i+j].z(); deste++;
-
-                *deste = index; deste++;
             }
         }
     }
@@ -252,9 +251,9 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
 
     delete [] vbo_edges_data;
 
-    num_selected_vertices = sib_selected / (13*4);
-    num_unselected_vertices = sib_unselected / (13*4);
-    num_edges_vertices = sib_edges / (13*4);
+    num_selected_vertices = sib_selected / (14*4);
+    num_unselected_vertices = sib_unselected / (14*4);
+    num_edges_vertices = sib_edges / (14*4);
 
     vbos_generated = true;
 }
@@ -265,16 +264,15 @@ void Plot3D::draw_data_solid()
         return;
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_selected_id);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    int vertex_size = 14;
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(4*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(8*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(11*4));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
-    glEnableVertexAttribArray(4);
 
     glDrawArrays(GL_TRIANGLES, 0, num_selected_vertices);
 
@@ -282,19 +280,16 @@ void Plot3D::draw_data_solid()
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray(4);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_unselected_id);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(4*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(8*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(11*4));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
-    glEnableVertexAttribArray(4);
 
     glDrawArrays(GL_TRIANGLES, 0, num_unselected_vertices);
 
@@ -302,7 +297,6 @@ void Plot3D::draw_data_solid()
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray(4);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -316,16 +310,15 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_selected_id);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    int vertex_size = 14;
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(4*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(8*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(11*4));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
-    glEnableVertexAttribArray(4);
 
     glDrawArrays(GL_TRIANGLES, 0, num_selected_vertices);
 
@@ -333,23 +326,20 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray(4);
 
     // Draw transparent unselected examples (triangles and then edges).
     glUniform2f(glGetUniformLocation(shader_id, "alpha_value"), alpha_value-0.6, alpha_value-0.6);
 
     glDepthMask(GL_FALSE);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_unselected_id);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(4*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(8*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(11*4));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
-    glEnableVertexAttribArray(4);
 
     glDrawArrays(GL_TRIANGLES, 0, num_unselected_vertices);
 
@@ -357,23 +347,20 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray(4);
 
     // Edges
     glDepthMask(GL_TRUE);
     glUniform2f(glGetUniformLocation(shader_id, "alpha_value"), alpha_value, alpha_value);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_edges_id);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(3*4));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(6*4));
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(9*4));
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 13*4, BUFFER_OFFSET(12*4));
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(4*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(8*4));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(11*4));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
-    glEnableVertexAttribArray(4);
 
     glDrawArrays(GL_LINES, 0, num_edges_vertices);
 
@@ -381,7 +368,6 @@ void Plot3D::draw_data(GLuint shader_id, float alpha_value)
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray(4);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
