@@ -30,8 +30,8 @@ class TestHClustering(testing.DataTestCase):
             cluster_list = cluster_to_list(clust, 5)
             
     @testing.test_on_datasets(datasets=["iris"])
-    def test_pickling_on(self):
-        data = iter(self.datasets()).next()
+    def test_pickling_on(self, data):
+#        data = iter(self.datasets()).next()
         cluster = clustering(data, EuclideanConstructor, HierarchicalClustering.Single)
         import cPickle
         s = cPickle.dumps(cluster)

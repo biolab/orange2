@@ -35,5 +35,5 @@ class TestRandomForest(testing.LearnerTestCase):
         
 if __name__ == "__main__":
     import unittest
-    unittest.run()
+    unittest.main()
                 
