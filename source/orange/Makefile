@@ -6,9 +6,9 @@ include ../makefile.defs
 
 
 r_imports.jpp: r_imports.hpp
-	python ../pyxtract/jitlink_build.py R.so r_imports.hpp
+	$(PYTHON) ../pyxtract/jitlink_build.py R.so r_imports.hpp
 r_imports.ipp: r_imports.hpp
-	python ../pyxtract/jitlink_build.py R.so r_imports.hpp
+	$(PYTHON) ../pyxtract/jitlink_build.py R.so r_imports.hpp
 
 
 # TODO: Dont compile BLAS if we can link with system (or user

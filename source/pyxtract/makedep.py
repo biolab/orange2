@@ -139,11 +139,11 @@ makedepsfile.write("\n\n")
 
 if ppp_timestamp_dep:
   makedepsfile.write("../orange/ppp/lists: ../pyxtract/defvectors.py\n")
-  makedepsfile.write("\tpython ../pyxtract/defvectors.py\n")
+  makedepsfile.write("\t%s ../pyxtract/defvectors.py\n" % (sys.executable,))
   if modulename != "ORANGE":
     ppp_timestamp_dep.extend(["../orange/ppp/lists", "../orange/ppp/stamp"])
   makedepsfile.write("ppp/stamp: ../pyxtract/pyprops.py %s\n" % " ".join(ppp_timestamp_dep))
-  makedepsfile.write("\tpython ../pyxtract/pyprops.py -q -n %s" % modulename)
+  makedepsfile.write("\t%s ../pyxtract/pyprops.py -q -n %s" % (sys.executable, modulename))
   if modulename != "ORANGE":
     makedepsfile.write(" -l ../orange/ppp/stamp -l ../orange/ppp/lists")
   makedepsfile.write("\n\n")
@@ -151,7 +151,7 @@ if ppp_timestamp_dep:
 if px_timestamp_dep:
   makedepsfile.write("px/stamp: ../pyxtract/pyxtract.py %s | ppp/stamp\n" % " ".join(px_timestamp_dep))
   short = {"ORANGEOM": "-w OM", "ORANGENE": "-w OG"}.get(modulename, "")
-  makedepsfile.write("\tpython ../pyxtract/pyxtract.py -m -q -n %s %s %s" % (modulename, short, " ".join(px_timestamp_dep)))
+  makedepsfile.write("\t%s ../pyxtract/pyxtract.py -m -q -n %s %s %s" % (sys.executable, modulename, short, " ".join(px_timestamp_dep)))
   if modulename != "ORANGE":
     makedepsfile.write(" -l ../orange/px/stamp")
   makedepsfile.write("\n\n")
