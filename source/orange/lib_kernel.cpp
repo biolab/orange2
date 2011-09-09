@@ -517,9 +517,17 @@ PyObject *Variable__reduce__(PyObject *self)
 		PyObject *dict = packOrangeDictionary(self);
 		PyMapping_SetItemString(dict, "name", name);
 		Py_DECREF(name);
-	return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderVariable"), self->ob_type, dict); //packOrangeDictionary(self));
+		PyObject *state = PyDict_New();
+		PyObject *pygetvf = PyDict_GetItemString(dict, "get_value_from");
+		if (pygetvf) {
+			// get_value_from can contain a reference to this variable itself
+			PyDict_SetItemString(state, "get_value_from", pygetvf);
+			PyDict_DelItemString(dict, "get_value_from");
+		}
+		return Py_BuildValue("O(ON)N", getExportedFunction("__pickleLoaderVariable"), self->ob_type, dict, state); //packOrangeDictionary(self));
 	PyCATCH
 }
+
 
 PyObject *__pickleLoaderVariable(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, dictionary)")
 {
@@ -537,6 +545,7 @@ PyObject *__pickleLoaderVariable(PyObject *, PyObject *args) PYARGS(METH_VARARGS
 	PyCATCH
 }
 
+
 PyObject *EnumVariable__reduce__(PyObject *self)
 {
 	PyTRY
@@ -544,7 +553,14 @@ PyObject *EnumVariable__reduce__(PyObject *self)
 		PyObject *dict = packOrangeDictionary(self);
 		PyMapping_SetItemString(dict, "name", name);
 		Py_DECREF(name);
-		return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderEnumVariable"), self->ob_type, dict); //packOrangeDictionary(self));
+		PyObject *state = PyDict_New();
+		PyObject *pygetvf = PyDict_GetItemString(dict, "get_value_from");
+		if (pygetvf) {
+			// get_value_from can contain a reference to this variable itself
+			PyDict_SetItemString(state, "get_value_from", pygetvf);
+			PyDict_DelItemString(dict, "get_value_from");
+		}
+		return Py_BuildValue("O(ON)N", getExportedFunction("__pickleLoaderEnumVariable"), self->ob_type, dict, state); //packOrangeDictionary(self));
 	PyCATCH
 }
 
