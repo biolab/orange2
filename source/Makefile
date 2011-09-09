@@ -5,7 +5,7 @@ ifndef ORANGE_LIBDIR
   ORANGE_LIBDIR=../..
 endif
 
-PYTHON ?= python
+PYTHON ?= $(shell which python)
 
 MODULES=include orange orangeom orangene corn statc
 
