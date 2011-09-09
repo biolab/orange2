@@ -5,9 +5,6 @@
     .. attribute:: show_legend
         Determines whether to display the legend or not.
 
-    .. attribute:: use_ortho
-        If False, perspective projection is used instead.
-
     .. method:: clear()
         Removes everything from the graph.
 '''
@@ -163,14 +160,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self.panning_factor = 0.8
         self.update_camera()
 
-        self.ortho_scale = 900.
-        self.ortho_near = -1
-        self.ortho_far = 2000
         self.perspective_near = 0.5
         self.perspective_far = 10.
         self.camera_fov = 14.
-
-        self.use_ortho = False
 
         self.show_legend = True
         self._legend = OWLegend3D(self, None)
@@ -413,16 +405,8 @@ class OWPlot3D(orangeqt.Plot3D):
     def get_mvp(self):
         projection = QMatrix4x4()
         width, height = self.width(), self.height()
-        if self.use_ortho:
-            projection.ortho(-width / self.ortho_scale,
-                              width / self.ortho_scale,
-                             -height / self.ortho_scale,
-                              height / self.ortho_scale,
-                             self.ortho_near,
-                             self.ortho_far)
-        else:
-            aspect = float(width) / height if height != 0 else 1
-            projection.perspective(self.camera_fov, aspect, self.perspective_near, self.perspective_far)
+        aspect = float(width) / height if height != 0 else 1
+        projection.perspective(self.camera_fov, aspect, self.perspective_near, self.perspective_far)
 
         modelview = QMatrix4x4()
         modelview.lookAt(
