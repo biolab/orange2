@@ -290,6 +290,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self.discrete_palette = ColorPaletteGenerator()
 
         self.gui = OWPlotGUI(self)
+	'''
+            An :obj:`.OWPlotGUI` object associated with this plot
+	'''
 
     def __del__(self):
         pass
@@ -677,6 +680,17 @@ class OWPlot3D(orangeqt.Plot3D):
             x_discrete, y_discrete, z_discrete,
             data_scale=array([1., 1., 1.]),
             data_translation=array([0., 0., 0.])):
+        '''
+        Explains to the plot how to interpret the data set by :meth:`set_plot_data`. Its arguments
+        are indices (must be less than the size of an example) into the dataset (each one
+        specifies a column). Additionally, it accepts a list of colors (when color is a discrete
+        attribute), a value specifying how many different symbols are needed to display the data,
+        information whether or not positional data is discrete, and data transformations (scale and
+        translation).
+
+        .. note:: This function does not add items to the legend automatically. 
+                  You will have to add them yourself with :meth:`.OWLegend.add_item`. 
+        '''
         start = time.time()
         self.makeCurrent()
         self.data_scale = data_scale
@@ -762,6 +776,13 @@ class OWPlot3D(orangeqt.Plot3D):
         self.update()
 
     def set_plot_data(self, data, subset_data=None):
+        '''
+        Sets the data to be drawn.
+
+        :param data: Data
+        :type data: numpy array
+
+        '''
         self.makeCurrent()
         self.data = data
         self.data_array = numpy.array(data.transpose().flatten(), dtype=numpy.float32)
@@ -785,6 +806,12 @@ class OWPlot3D(orangeqt.Plot3D):
                                      self.example_size)
 
     def set_valid_data(self, valid_data):
+        '''
+        Specifies which examples are invalid and should not be displayed.
+
+        :param valid_data: List of booleans: true for valid indices, false otherwise
+        :type valid_data: list of bool
+        '''
         self.valid_data = numpy.array(valid_data, dtype=bool) # QList<bool> is being a PITA
         orangeqt.Plot3D.set_valid_data(self, long(self.valid_data.ctypes.data))
 
