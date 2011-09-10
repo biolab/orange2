@@ -67,7 +67,7 @@ obj/%.o : %.cpp
 export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include:$(PYTHONSITEPKGS)/numpy/core/include
 
 makefile.deps:
-	$(PYTHON) ../pyxtract/makedep.py -n $(MODULENAME)
+	PYTHON=$(PYTHON) $(PYTHON) ../pyxtract/makedep.py -n $(MODULENAME)
 	rm -f ppp/stamp
 	rm -f px/stamp
 
