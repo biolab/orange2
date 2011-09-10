@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 32
+Revision: 33
 Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -68,6 +68,8 @@ SplitOff: <<
 		%p/lib/python%type_raw[python]/site-packages/orange/_orngCRS.so 0.0.0 %n (>= 0.0.0-1)
 	<<
 	Files: <<
+		lib/python%type_raw[python]/site-packages/orange/fixes/*
+		lib/python%type_raw[python]/site-packages/orange/Orange/*
 		lib/python%type_raw[python]/site-packages/orange/orange.so
 		lib/python%type_raw[python]/site-packages/orange/orangeom.so
 		lib/python%type_raw[python]/site-packages/orange/corn.so
@@ -76,6 +78,7 @@ SplitOff: <<
 		lib/python%type_raw[python]/site-packages/orange/_orngCRS.so
 		lib/python%type_raw[python]/site-packages/orange/orng*.py
 		lib/python%type_raw[python]/site-packages/orange/mathutil.py
+		lib/python%type_raw[python]/site-packages/orange/orange2to25.py
 		lib/python%type_raw[python]/site-packages/orange/urllib2_file.py
 		lib/python%type_raw[python]/site-packages/orange.pth
 		share/doc/orange-svn-py%type_pkg[python]
