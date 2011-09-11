@@ -1,3 +1,11 @@
+python-orange (0.0.12035~svn-5) unreleased; urgency=low
+
+  * Removed postinst and prerm scripts
+  * Moved one additional file to python-orange
+  * Moved orangeqt to orange-canvas
+
+ -- Mitar <mitar@tnode.com>  Sun, 11 Sep 2011 02:48:45 +0200
+
 python-orange (0.0.12035~svn-4) unreleased; urgency=low
 
   * Packages were not split correctly anymore with Orange 2.5

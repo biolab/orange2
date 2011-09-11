@@ -117,6 +117,7 @@ binary-indep: build install
 # We have nothing to do by default.
 
 # Build architecture-dependent files here.
+# Order between orange-canvas and python-orange is important so that dh_install moves files correctly
 binary-arch: python-orange orange-canvas
 
 python-orange orange-canvas: build install
@@ -125,8 +126,22 @@ python-orange orange-canvas: build install
 	dh_installchangelogs -p$@
 	dh_installdocs -p$@
 #	dh_installexamples -p$@
+
+	# We temporary rename file so that it is left for orange-canvas
+	set -e -x ; \
+	if [ "$@" = "python-orange" ]; then \
+		rename 's/\.so$$/-so/' $(CURDIR)/debian/tmp/usr/lib/python*/*-packages/orange/orangeqt.so ; \
+	fi
+
 	dh_install -p$@ --sourcedir=debian/tmp --exclude=build-stamp --exclude=configure-stamp
 	cd debian/tmp ; rm -rf `cat ../$@.install`
+
+	# We rename it back
+	set -e -x ; \
+	if [ "$@" = "python-orange" ]; then \
+		rename 's/-so$$/.so/' $(CURDIR)/debian/tmp/usr/lib/python*/*-packages/orange/orangeqt-so ; \
+	fi
+
 	dh_installmenu -p$@
 #	dh_installdebconf -p$@
 #	dh_installlogrotate -p$@

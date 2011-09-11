@@ -3,16 +3,18 @@ Priority: optional
 Maintainer: Mitar <mitar@tnode.com>
 Build-Depends: debhelper (>= 7), python-all-dev (>= 2.6), python-numpy (>= 1:1.1), cmake (>= 2.8), qt4-qmake (>= 4:4.6), libqt4-dev (>= 4:4.6), libqt4-opengl-dev (>= 4:4.6), python-sip-dev (>= 4.10), python-qt4 (>= 4.7), python-qt4-dev (>= 4.7), perl
 X-Python-Version: >= 2.6
-Standards-Version: 3.9.1
+Standards-Version: 3.9.2
 Section: python
-Homepage: http://orange.biolab.si/
+Vcs-Svn: http://orange.biolab.si/svn/orange/trunk
+Vcs-Browser: http://orange.biolab.si/trac/browser/trunk
+Homepage: http://orange.biolab.si
 
 Package: orange-canvas
 Architecture: any
-Provides: ${python:Provides}, orange-svn
+Provides: orange-svn
 Replaces: orange-svn
 Conflicts: orange-svn
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-orange (= ${binary:Version}), python-qt4 (>= 4.7), python-qwt5-qt4 (>= 5.1), graphviz, bash
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-orange (= ${binary:Version}), python-qt4 (>= 4.7), python-qwt5-qt4 (>= 5.1), python-sip (>= 4.10), graphviz, bash
 Recommends: ${shlibs:Recommends}
 Section: science
 Description: data mining framework (GUI)
@@ -25,9 +27,10 @@ Description: data mining framework (GUI)
 
 Package: python-orange
 Architecture: any
-Provides: ${python:Provides}, python-orange-svn
+Provides: python-orange-svn
 Replaces: python-orange-svn
 Conflicts: python-orange-svn
+Suggests: orange-canvas
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-imaging (>= 1.1), python-networkx (>= 1.1)
 Recommends: ${shlibs:Recommends}
 Description: data mining framework (Python module)
