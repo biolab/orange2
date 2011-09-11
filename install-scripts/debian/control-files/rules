@@ -9,22 +9,27 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-DEFAULT_PYTHON := $(shell pyversions -vd)
+PYTHON_VERSIONS = $(shell pyversions -vr)
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Nothing to be done
-	touch configure-stamp
+	touch $@
 
 build: build-stamp
 build-stamp: configure-stamp  
 	dh_testdir
 
-	$(MAKE) -C source
-	$(MAKE) -C source/crs
-
-	mv source/crs/_orngCRS.so .
+	set -e -x ; \
+	for py in $(PYTHON_VERSIONS); do \
+		mkdir source-output$$py ; \
+		cp -r source source-output$$py/source ; \
+		PYTHON=`which python$$py` $(MAKE) -C source-output$$py/source ; \
+		PYTHON=`which python$$py` $(MAKE) -C source-output$$py/source/crs ; \
+		mv source-output$$py/source/crs/_orngCRS.so source-output$$py ; \
+		rm -rf source-output$$py/source ; \
+	done
 
 	touch $@
 
@@ -38,6 +43,11 @@ clean:
 	
 	rm -f _orngCRS.so
 
+	set -e -x ; \
+	for py in $(PYTHON_VERSIONS); do \
+		rm -rf source-output$$py ; \
+	done
+
 	dh_clean 
 
 install: build
@@ -48,53 +58,68 @@ install: build
 	rm -f COPYING doc/COPYING
 	rm -f INSTALL.linux.txt doc/INSTALL.linux.txt
 
-	# Documentation for orange-svn
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
-	cp LICENSES $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
-	cp doc/style.css $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
-	cp -r doc/widgets/ $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
+	# Documentation for orange-canvas
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/doc/orange-canvas/
+	cp LICENSES $(CURDIR)/debian/tmp/usr/share/doc/orange-canvas/
+	cp doc/style.css $(CURDIR)/debian/tmp/usr/share/doc/orange-canvas/
+	cp -r doc/widgets/ $(CURDIR)/debian/tmp/usr/share/doc/orange-canvas/
 
 	# Install icon
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/pixmaps/
-	mv $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/widgets/icon.xpm $(CURDIR)/debian/tmp/usr/share/pixmaps/orange.xpm
+	mv $(CURDIR)/debian/tmp/usr/share/doc/orange-canvas/widgets/icon.xpm $(CURDIR)/debian/tmp/usr/share/pixmaps/orange.xpm
 
-	# Documentation for python-orange-svn
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/
-	cp LICENSES $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/
-	cp -r doc/* $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/
-	rm -rf $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/widgets/
+	# Documentation for python-orange
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/doc/python-orange/
+	cp LICENSES $(CURDIR)/debian/tmp/usr/share/doc/python-orange/
+	cp -r doc/* $(CURDIR)/debian/tmp/usr/share/doc/python-orange/
+	rm -rf $(CURDIR)/debian/tmp/usr/share/doc/python-orange/widgets/
 
-	# Files for both orange-svn and python-orange-svn
-	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
-	find . -mindepth 1 -maxdepth 1 -not -name debian -exec cp -r {} $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/ ';'
+	# Files for both orange-canvas and python-orange
+	set -e -x ; \
+	for py in $(PYTHON_VERSIONS); do \
+		mkdir -p $(CURDIR)/debian/tmp/usr/lib/python$$py/dist-packages/orange/ ; \
+		find . -mindepth 1 -maxdepth 1 -not -name debian -not -name 'source-output*' -exec cp -r {} $(CURDIR)/debian/tmp/usr/lib/python$$py/dist-packages/orange/ ';' ; \
+		cp -r source-output$$py/* $(CURDIR)/debian/tmp/usr/lib/python$$py/dist-packages/orange/ ; \
+	done
 	
 	# Cleans up
-	cd $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/ ; \
-	rm -rf COPYING LICENSES doc/ source/ debian/ ; \
-	rm -rf c45.dll liborange_include.a updateOrange.py
+	set -e -x ; \
+	for py in $(PYTHON_VERSIONS); do \
+		cd $(CURDIR)/debian/tmp/usr/lib/python$$py/dist-packages/orange/ ; \
+		rm -rf COPYING LICENSES doc/ source/ debian/ ; \
+		rm -rf c45.dll liborange_include.a updateOrange.py ; \
+	done
 
 	# Installation registration
-	echo "orange" > $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange.pth
-	echo "datasetsPath=\"/usr/share/doc/python-orange-svn/datasets/\"" > $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/orngConfiguration.py
+	set -e -x ; \
+	for py in $(PYTHON_VERSIONS); do \
+		echo "orange" > $(CURDIR)/debian/tmp/usr/lib/python$$py/dist-packages/orange.pth ; \
+		echo "datasetsPath=\"/usr/share/doc/python-orange/datasets/\"" > $(CURDIR)/debian/tmp/usr/lib/python$$py/dist-packages/orange/orngConfiguration.py ; \
+	done
 
 	# Generates executable
 	mkdir -p $(CURDIR)/debian/tmp/usr/bin/
-	echo "#!/bin/bash" > $(CURDIR)/debian/tmp/usr/bin/orange
-	echo "exec -a \"\$$0\" /usr/bin/python" /usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/OrangeCanvas/orngCanvas.pyw "\"\$$@\"" >> $(CURDIR)/debian/tmp/usr/bin/orange
-	chmod +x $(CURDIR)/debian/tmp/usr/bin/orange
+	set -e -x ; \
+	for py in $(PYTHON_VERSIONS); do \
+		echo "#!/bin/bash" > $(CURDIR)/debian/tmp/usr/bin/orange-py$$py ; \
+		echo "exec -a \"\$$0\" /usr/bin/python$$py" /usr/lib/python$$py/dist-packages/orange/OrangeCanvas/orngCanvas.pyw "\"\$$@\"" >> $(CURDIR)/debian/tmp/usr/bin/orange-py$$py ; \
+		chmod +x $(CURDIR)/debian/tmp/usr/bin/orange-py$$py ; \
+	done
 
-	# Generates ld.so.conf file
-	mkdir -p $(CURDIR)/debian/tmp/etc/ld.so.conf.d/
-	echo "/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/" > $(CURDIR)/debian/tmp/etc/ld.so.conf.d/orange.conf
+	echo "#!/bin/bash" > $(CURDIR)/debian/tmp/usr/bin/orange
+	echo "PYVER=\`pyversions -vd\`" >> $(CURDIR)/debian/tmp/usr/bin/orange
+	echo "PYEXE=\$$(which \`pyversions -d\`)" >> $(CURDIR)/debian/tmp/usr/bin/orange
+	echo "exec -a \"\$$0\" \$$PYEXE /usr/lib/python\$$PYVER/dist-packages/orange/OrangeCanvas/orngCanvas.pyw \"\$$@\"" >> $(CURDIR)/debian/tmp/usr/bin/orange
+	chmod +x $(CURDIR)/debian/tmp/usr/bin/orange
 
 # Build architecture-independent files here.
 binary-indep: build install
 # We have nothing to do by default.
 
 # Build architecture-dependent files here.
-binary-arch: python-orange-svn orange-svn
+binary-arch: python-orange orange-canvas
 
-python-orange-svn orange-svn: build install
+python-orange orange-canvas: build install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs -p$@
@@ -117,13 +142,22 @@ python-orange-svn orange-svn: build install
 	dh_compress -p$@ -X.tab -X.csv
 	dh_fixperms -p$@
 #	dh_perl -p$@
-	dh_python -p$@ /usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
+	dh_python2 -p$@
 	dh_makeshlibs -p$@
 	dh_installdeb -p$@
-	dh_shlibdeps -p$@ -l$(CURDIR)/debian/python-orange-svn/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
+	dh_shlibdeps -p$@
+
+	# We make dependencies less strict
+	perl -i -p -e 's/(, )?python \(>= ([^.\)]+\.[^.)]+)\.[^)]+\)/$$1python (>= $$2)/g' $(CURDIR)/debian/$@.substvars
+
+	# Require at least one version of libpython, not all of them; we move all of them to Recommends
+	perl -n -e 'if (/^shlibs:Depends=.*?(libpython[^,]+(?:, libpython[^,]+)*)/) { print "shlibs:Recommends=$$1\n" }' $(CURDIR)/debian/$@.substvars >> $(CURDIR)/debian/$@.substvars
+	perl -i -p -e '1 while s/^(shlibs:Depends=.*?)(libpython[^,]+), (libpython[^,]+)/$$1$$2 | $$3/g' $(CURDIR)/debian/$@.substvars
+
 	dh_gencontrol -p$@
 	dh_md5sums -p$@
 	dh_builddeb -p$@
 
 binary: binary-indep binary-arch
+
 .PHONY: build clean binary-indep binary-arch binary install configure

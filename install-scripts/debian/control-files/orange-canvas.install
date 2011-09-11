@@ -1,4 +1,4 @@
 usr/bin
-usr/lib/python*/site-packages
-usr/share/doc/orange-svn
+usr/lib/python*/*-packages
+usr/share/doc/orange-canvas
 usr/share/pixmaps/orange.xpm

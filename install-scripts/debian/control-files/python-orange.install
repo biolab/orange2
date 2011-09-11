@@ -1,7 +1,9 @@
-etc/ld.so.conf.d/orange.conf
-usr/lib/python*/site-packages/orange/*.so
-usr/lib/python*/site-packages/orange/orng*.py
-usr/lib/python*/site-packages/orange/mathutil.py
-usr/lib/python*/site-packages/orange/urllib2_file.py
-usr/lib/python*/site-packages/orange.pth
-usr/share/doc/python-orange-svn
+usr/lib/python*/*-packages/orange/fixes/*
+usr/lib/python*/*-packages/orange/Orange/*
+usr/lib/python*/*-packages/orange/*.so
+usr/lib/python*/*-packages/orange/orng*.py
+usr/lib/python*/*-packages/orange/mathutil.py
+usr/lib/python*/*-packages/orange/orange2to25.py
+usr/lib/python*/*-packages/orange/urllib2_file.py
+usr/lib/python*/*-packages/orange.pth
+usr/share/doc/python-orange
