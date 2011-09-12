@@ -27,11 +27,11 @@ DAILY_SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-
 # We would like to build all those so that it does not need to compile anything whichever packages he or she chooses
 # The problem is that they are often mutually conflicting so we cannot have them simply installed (so that update-all
 # would update them) but have to build them explicitly
-# Temporary removed from a list because packages and/or dependencies are broken: jadetex docbook-utils
-OTHER_PACKAGES="db47 db47-aes db44 db44-aes giflib libungif ghostscript ghostscript-esp ghostscript6 ghostscript-nox ghostscript6-nox ptex-base ptex-nox-base tetex-base tetex-nox-base texlive-base texlive-nox-base lynx links w3m elinks matplotlib-py25 matplotlib-py26 matplotlib-py27"
+OTHER_PACKAGES="ghostscript ghostscript-esp ghostscript6 ghostscript-nox ghostscript6-nox fltk-backend-aqua-oct324 fltk-backend-x11-oct324 gnuplot gnuplot-nox gnuplot-nogtk tetex-base tetex-nox-base texlive-nox-base texlive-base"
 
-# Miscellaneous extra packages which are not really needed for Orange but are useful for CS research
-EXTRA_PACKAGES="fuse gcc42 gcc43 gcc44 gnuplot gnuplot-nox gnuplot-nogtk octave db48 db48-aes git imagemagick-nox rrdtool maxima nmap wireshark openssl pstree python26 python27 python3 rdiff-backup svn swi-prolog"
+# Miscellaneous extra packages which are maybe not really needed for Orange but are useful for CS research
+EXTRA_PACKAGES="fuse gcc42 gcc43 gcc44 gnuplot gnuplot-nox gnuplot-nogtk octave db48 db48-aes git imagemagick-nox rrdtool maxima nmap wireshark openssl pstree python26 python27 python3 rdiff-backup svn swi-prolog lynx links w3m elinks matplotlib-py2
+5 matplotlib-py26 matplotlib-py27"
 
 FINK_ARGS="--yes --build-as-nobody"
 FINK_SELFUPDATE_ARGS="--yes"
