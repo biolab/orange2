@@ -118,7 +118,7 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
         defaultCategory = "Prototypes"
     
     for filename in glob.iglob(os.path.join(directory, "*.py")):
-        if os.path.isdir(filename) or os.path.islink(filename):
+        if os.path.isdir(filename):
             continue
         
         datetime = str(os.stat(filename)[stat.ST_MTIME])

@@ -663,7 +663,7 @@ function setElColors(t, id, color) {
                                       glob.iglob(os.path.join(wdir, "*.py"))] +\
                                      [(True, filename) for filename in
                                       glob.iglob(os.path.join(pdir, "*.py"))]:
-            if os.path.isdir(filename) or os.path.islink(filename):
+            if os.path.isdir(filename):
                 continue
             try:
                 meta = widgetParser.WidgetMetaData(file(filename).read(),
