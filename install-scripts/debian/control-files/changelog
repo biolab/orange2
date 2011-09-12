@@ -1,3 +1,27 @@
+python-orange (0.0.12046~svn-2) unreleased; urgency=low
+
+  * Added fileutil.py to Python library package
+
+ -- Mitar <mitar@tnode.com>  Mon, 12 Sep 2011 17:42:43 +0200
+
+python-orange (0.0.12046~svn-1) unreleased; urgency=low
+
+  * New upstream release
+
+ -- Mitar <mitar@tnode.com>  Mon, 12 Sep 2011 15:41:20 +0200
+
+python-orange (0.0.12045~svn-1) unreleased; urgency=low
+
+  * New upstream release
+
+ -- Mitar <mitar@tnode.com>  Mon, 12 Sep 2011 12:35:29 +0200
+
+python-orange (0.0.12043~svn-1) unreleased; urgency=low
+
+  * New upstream release
+
+ -- Mitar <mitar@tnode.com>  Mon, 12 Sep 2011 10:44:36 +0200
+
 python-orange (0.0.12035~svn-5) unreleased; urgency=low
 
   * Removed postinst and prerm scripts

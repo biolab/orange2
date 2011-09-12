@@ -2,6 +2,7 @@ usr/lib/python*/*-packages/orange/fixes/*
 usr/lib/python*/*-packages/orange/Orange/*
 usr/lib/python*/*-packages/orange/*.so
 usr/lib/python*/*-packages/orange/orng*.py
+usr/lib/python*/*-packages/orange/fileutil.py
 usr/lib/python*/*-packages/orange/mathutil.py
 usr/lib/python*/*-packages/orange/orange2to25.py
 usr/lib/python*/*-packages/orange/urllib2_file.py
