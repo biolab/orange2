@@ -727,12 +727,12 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://www.ailab.si/orange/doc/catalog")
+        webbrowser.open("http://orange.biolab.si/doc/catalog")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser
-        #webbrowser.open("http://www.ailab.si/orange/orangeCanvas") # to be added on the web
-        webbrowser.open("http://www.ailab.si/orange")
+        #webbrowser.open("http://orange.biolab.si/orangeCanvas") # to be added on the web
+        webbrowser.open("http://orange.biolab.si")
 
     def menuCheckForUpdates(self):
         import updateOrange

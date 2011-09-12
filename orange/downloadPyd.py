@@ -7,7 +7,7 @@ if sys.version_info[:2] == (2, 7):
 	# orangeqt is build only for 2.7
 	files = files + ("orangeqt",)
 	
-baseurl = "http://www.ailab.si/orange/download/binaries/%i%i/" % sys.version_info[:2]
+baseurl = "http://orange.biolab.si/download/binaries/%i%i/" % sys.version_info[:2]
 fleurl = baseurl + "%s.pyd"
 
 op = filter(lambda x:x[-7:].lower() in ["\\orange", "/orange"], sys.path)

@@ -5,7 +5,7 @@ be modified accordingly for other distributions.
 1. OBTAINING SOURCES
 
 You can download the Orange's nightly packed sources from  
-http://www.ailab.si/orange/nightly_builds.html and extract the archive.
+http://orange.biolab.si/nightly_builds.html and extract the archive.
 
 An alternative is to check out the newest revision directly from SVN 
 repository. In latter case, the following should do the job:
