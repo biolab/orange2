@@ -90,7 +90,6 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             for anchor in self.anchor_data:
                 x, y, z, label = anchor
 
-                glDepthMask(GL_TRUE)
                 self.qglColor(self._theme.axis_values_color)
                 self.renderText(x*1.2, y*1.2, z*1.2, label)
 
@@ -99,25 +98,23 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                     QVector3D(0, 0, 0),
                     QVector3D(x, y, z),
                     color=self._theme.axis_color)
+                glDepthMask(GL_TRUE)
 
-        glDepthMask(GL_TRUE)
-
-        if self.tooltipKind == 0:
+        if self.tooltipKind == 0 and self._arrow_lines:
             glEnable(GL_DEPTH_TEST)
-            if self._arrow_lines:
-                glLineWidth(3)
-                for x, y, z, value, factor, color in self._arrow_lines:
-                    self.renderer.draw_line(
-                        QVector3D(0, 0, 0),
-                        QVector3D(x, y, z),
-                        color=color)
-
-                    self.qglColor(self._theme.axis_color)
-                    # TODO: discrete
-                    self.renderText(x,y,z, ('%f' % (value if self.tooltipValue == 0 else factor)).rstrip('0').rstrip('.'),
-                                    font=self._theme.labels_font)
-
-                glLineWidth(1)
+            glLineWidth(2)
+            for x, y, z, value, factor, color in self._arrow_lines:
+                self.renderer.draw_line(
+                    QVector3D(0, 0, 0),
+                    QVector3D(x*factor, y*factor, z*factor),
+                    color=color)
+                if not isinstance(value, str):
+                    value = ('%.3f' % (value if self.tooltipValue == 0 else factor)).rstrip('0').rstrip('.')
+                self.renderText(
+                    x * 1.1, y * 1.1, z * 1.1,
+                    value,
+                    font=self._theme.labels_font)
+            glLineWidth(1)
 
         self._draw_value_lines()
 
@@ -384,11 +381,13 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 x = y = z = 0
             max_value = self.attr_values[attribute][1]
             factor = value / max_value
+            if self.data_domain[attribute].varType == Discrete:
+                value = get_variable_values_sorted(self.data_domain[attribute])[int(value)]
             if self.useDifferentColors and self.data_has_discrete_class:
                 color = self.discrete_palette.getColor(example[self.data_class_index])
             else:
                 color = QColor(0, 0, 0)
-            self._arrow_lines.append([x*factor, y*factor, z*factor, value, factor, color])
+            self._arrow_lines.append([x, y, z, value, factor, color])
         self._mouseover_called = True
         self.update()
 
