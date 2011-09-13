@@ -30,8 +30,7 @@ DAILY_SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-
 OTHER_PACKAGES="ghostscript ghostscript-esp ghostscript6 ghostscript-nox ghostscript6-nox fltk-backend-aqua-oct324 fltk-backend-x11-oct324 gnuplot gnuplot-nox gnuplot-nogtk tetex-base tetex-nox-base texlive-nox-base texlive-base"
 
 # Miscellaneous extra packages which are maybe not really needed for Orange but are useful for CS research
-EXTRA_PACKAGES="fuse gcc42 gcc43 gcc44 gnuplot gnuplot-nox gnuplot-nogtk octave db48 db48-aes git imagemagick-nox rrdtool maxima nmap wireshark openssl pstree python26 python27 python3 rdiff-backup svn swi-prolog lynx links w3m elinks matplotlib-py2
-5 matplotlib-py26 matplotlib-py27"
+EXTRA_PACKAGES="fuse gcc42 gcc43 gcc44 gnuplot gnuplot-nox gnuplot-nogtk octave db48 db48-aes git imagemagick-nox rrdtool maxima nmap wireshark openssl pstree python26 python27 python3 rdiff-backup svn swi-prolog lynx links w3m elinks matplotlib-py25 matplotlib-py26 matplotlib-py27"
 
 FINK_ARGS="--yes --build-as-nobody"
 FINK_SELFUPDATE_ARGS="--yes"
