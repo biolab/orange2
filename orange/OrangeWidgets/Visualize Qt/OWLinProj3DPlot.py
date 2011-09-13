@@ -105,14 +105,12 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if self.tooltipKind == 0:
             glEnable(GL_DEPTH_TEST)
             if self._arrow_lines:
-                # TODO: thick lines
                 glLineWidth(3)
                 for x, y, z, value, factor, color in self._arrow_lines:
-                    glColor3f(*color)
-                    glBegin(GL_LINES)
-                    glVertex3f(0, 0, 0)
-                    glVertex3f(x, y, z)
-                    glEnd()
+                    self.renderer.draw_line(
+                        QVector3D(0, 0, 0),
+                        QVector3D(x, y, z),
+                        color=color)
 
                     self.qglColor(self._theme.axis_color)
                     # TODO: discrete
@@ -233,7 +231,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         for i in range(data_size):
             if not valid_data[i]:
                 continue
-            if self.useDifferentColors:
+            if self.useDifferentColors and self.data_has_discrete_class:
                 color = self.discrete_palette.getRGB(self.original_data[self.data_class_index][i])
             else:
                 color = (0, 0, 0)
@@ -386,10 +384,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 x = y = z = 0
             max_value = self.attr_values[attribute][1]
             factor = value / max_value
-            if self.useDifferentColors:
-                color = self.discrete_palette.getRGB(example[self.data_class_index])
+            if self.useDifferentColors and self.data_has_discrete_class:
+                color = self.discrete_palette.getColor(example[self.data_class_index])
             else:
-                color = (0, 0, 0)
+                color = QColor(0, 0, 0)
             self._arrow_lines.append([x*factor, y*factor, z*factor, value, factor, color])
         self._mouseover_called = True
         self.update()

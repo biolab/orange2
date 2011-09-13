@@ -16,22 +16,7 @@ from OWFreeVizOptimization import *
 import OWToolbars, OWGUI, orngTest
 import orngVisFuncts, OWColorPalette
 import orngVizRank
-from plot.owtheme import PlotTheme
-
-class LinProjTheme(PlotTheme):
-    def __init__(self):
-        super(LinProjTheme, self).__init__()
-
-class LightTheme(LinProjTheme):
-    pass
-
-class DarkTheme(LinProjTheme):
-    def __init__(self):
-        super(DarkTheme, self).__init__()
-        self.labels_color = QColor(230, 230, 230, 255)
-        self.axis_values_color = QColor(170, 170, 170, 255)
-        self.axis_color = QColor(230, 230, 230, 255)
-        self.background_color = QColor(0, 0, 0, 255)
+from plot.owtheme import LinProjDarkTheme, LinProjLightTheme
 
 ###########################################################################################
 ##### WIDGET : Linear Projection
@@ -448,9 +433,9 @@ class OWLinProjQt(OWVisWidget):
 
     def on_theme_change(self):
         if self.dark_theme:
-            self.graph.theme = DarkTheme()
+            self.graph.theme = LinProjDarkTheme()
         else:
-            self.graph.theme = LightTheme()
+            self.graph.theme = LinProjLightTheme()
 
         
 #test widget appearance

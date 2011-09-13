@@ -32,3 +32,17 @@ class ScatterDarkTheme(ScatterPlotTheme):
         self.axis_color = QColor(200, 200, 200, 255)
         self.background_color = QColor(0, 0, 0, 255)
 
+class LinProjTheme(PlotTheme):
+    def __init__(self):
+        super(LinProjTheme, self).__init__()
+
+class LinProjLightTheme(LinProjTheme):
+    pass
+
+class LinProjDarkTheme(LinProjTheme):
+    def __init__(self):
+        super(LinProjDarkTheme, self).__init__()
+        self.labels_color = QColor(230, 230, 230, 255)
+        self.axis_values_color = QColor(170, 170, 170, 255)
+        self.axis_color = QColor(230, 230, 230, 255)
+        self.background_color = QColor(0, 0, 0, 255)
