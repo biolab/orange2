@@ -924,7 +924,7 @@ class OWPlot3D(orangeqt.Plot3D):
         if buttons & Qt.LeftButton:
             legend_pos = self._legend.pos()
             lx, ly = legend_pos.x(), legend_pos.y()
-            if self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
+            if self.show_legend and self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
                 event.scenePos = lambda: QPointF(pos)
                 self._legend.mousePressEvent(event)
                 self.setCursor(Qt.ClosedHandCursor)
@@ -1013,7 +1013,7 @@ class OWPlot3D(orangeqt.Plot3D):
         elif self._state == PlotState.IDLE:
             legend_pos = self._legend.pos()
             lx, ly = legend_pos.x(), legend_pos.y()
-            if self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
+            if self.show_legend and self._legend.boundingRect().adjusted(lx, ly, lx, ly).contains(pos.x(), pos.y()):
                 self.setCursor(Qt.PointingHandCursor)
             else:
                 self.unsetCursor()
