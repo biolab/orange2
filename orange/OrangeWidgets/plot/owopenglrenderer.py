@@ -26,7 +26,7 @@ import numpy
 
 class VertexBuffer:
     '''
-    An abstraction simplifying the usage of Vertex Buffer Objects (VBO). Warning: understanding what this class does
+    A thin abstraction simplifying the usage of Vertex Buffer Objects (VBO). Warning: understanding what this code does
     requires basic knowledge of OpenGL.
 
     VBOs are necessary in OpenGL 2+ world, since immediate mode (glBegin/glVertex/glEnd paradigm) has been deprecated
@@ -53,7 +53,8 @@ class VertexBuffer:
 
     def __init__(self, data, format_description, usage=GL_STATIC_DRAW):
         '''
-        Constructs VBO and prepares vertex attribute bindings.
+        Constructs VBO and prepares vertex attribute bindings. OpenGL context must be up already (initializeGL
+        has been called).
 
         :param data: Data array (vertices) to be sent to the GPU.
         :type numpy.array
@@ -110,7 +111,7 @@ class VertexBuffer:
         :param first: Specifies the starting index into data.
         :type int
 
-        :param count: The number of indices to be rendered.
+        :param count: The number of indices (not primitives) to be rendered.
         :type int
         '''
         if hasattr(self, '_vao'):
@@ -136,16 +137,46 @@ class VertexBuffer:
             glBindBuffer(GL_ARRAY_BUFFER, 0)
 
 class OWOpenGLRenderer:
-    '''OpenGL 3 deprecated a lot of old (1.x) functions, particulary, it removed
-       immediate mode (glBegin, glEnd, glVertex paradigm). Vertex buffer objects and similar
-       (through glDrawArrays for example) should be used instead. This class simplifies
-       the usage of that functionality by providing methods which resemble immediate mode.'''
+    '''
+    OpenGL 3 deprecated a lot of old (1.x) functions, particulary, it removed
+    immediate mode (glBegin, glEnd, glVertex paradigm). Vertex buffer objects and similar
+    (through glDrawArrays for example) should be used instead. This class simplifies
+    the usage of that functionality by providing methods which resemble immediate mode.
 
-    # TODO: research performance optimizations (maybe store primitives and all of them just once at the end?)
+    Example usage::
+
+        renderer = OWOpenGLRenderer()
+        # Setup vanilla transforms
+        projection = QMatrix4x4()
+        projection.perspective(45., 1., 1., 50.)
+        model = view = QMatrix4x4()
+        renderer.set_transform(model, view, projection)
+        renderer.draw_line(QVector3D(0, 0, 0), QVector3D(1, 1, 1), color=QColor(0, 0, 255))
+
+    Note that usually you don't have to create an instance of the renderer, since it's available in Plot3D: ``OWPlot3D.renderer``.
+    Also, current projection and modelview transforms can be accessed (``OWPlot3D.projection`` and ``OWPlot3D.modelview``) in
+    OWPlot3D callbacks.
+
+    **2D drawing**
+
+        The API of this class is general enough to support drawing 2D shapes. An example setup::
+
+            projection = QMatrix4x4()
+            # Use ortho projection, specify width and height of the window
+            projection.ortho(0, self.width(), self.height(), 0, -1, 1)
+            model = view = QMatrix4x4()
+            renderer.set_transform(model, view, projection)
+            # Red triangle. Z-value is not important.
+            renderer.draw_triangle(QVector3D(1, 2, 0),
+                                   QVector3D(3, 2, 0),
+                                   QVector3D(2, 3, 0),
+                                   color=QColor(255, 0, 0))
+    '''
 
     def __init__(self):
         self._projection = QMatrix4x4()
-        self._modelview = QMatrix4x4()
+        self._model = QMatrix4x4()
+        self._view = QMatrix4x4()
 
         ## Shader used to draw primitives. Position and color of vertices specified through uniforms. Nothing fancy.
         vertex_shader_source = '''
@@ -155,13 +186,12 @@ class OWOpenGLRenderer:
             uniform vec3 positions[6]; // 6 vertices for quad
             uniform vec4 colors[6];
 
-            uniform mat4 projection;
-            uniform mat4 modelview;
+            uniform mat4 projection, model, view;
 
             void main(void)
             {
                 int i = int(index);
-                gl_Position = projection * modelview * vec4(positions[i], 1.);
+                gl_Position = projection * view * model * vec4(positions[i], 1.);
                 color = colors[i];
             }
             '''
@@ -187,18 +217,57 @@ class OWOpenGLRenderer:
         indices = numpy.array(range(6), dtype=numpy.float32) 
         self._vertex_buffer = VertexBuffer(indices, [(1, GL_FLOAT)])
 
-    def set_transform(self, projection, modelview, viewport=None):
-        self._projection = projection
-        self._modelview = modelview
+    def set_transform(self, model, view=None, projection=None, viewport=None):
+        '''
+        Sets current projection, model, view and viewport transforms. Only model parameter is required
+        since it's the one most likely to change. Passing None as a parameter value keeps the internal value
+        unmodified.
+
+        :param model: Model transform (usually translation, rotation, scale or a combination of these).
+        :type QMatrix4x4
+
+        :param view: View transform (camera transformation).
+        :type QMatrix4x4
+
+        :param projection: Projection transform (e.g. ortho, perspective).
+        :type QMatrix4x4
+
+        :param viewport: Viewport transform. A list of 4 ints specifying viewport rectangle (lower left corner + width and height).
+        :type list of 4 int
+        '''
+        if model != None:
+            self._model = model
+        if view != None:
+            self._view = view
+        if projection != None:
+            self._projection = projection
         if viewport:
             glViewport(*viewport)
         self._shader.bind()
-        self._shader.setUniformValue('projection', projection)
-        self._shader.setUniformValue('modelview', modelview)
+        self._shader.setUniformValue('projection', self._projection)
+        self._shader.setUniformValue('model', self._model)
+        self._shader.setUniformValue('view', self._view)
         self._shader.release()
 
     def draw_line(self, position0, position1, color0=QColor(0, 0, 0), color1=QColor(0, 0 ,0), color=None):
-        '''Draws a line. position0 and position1 must be instances of QVector3D. colors are specified with QColor'''
+        '''
+        Draws a line using current transform. 
+
+        :param position0: Beginning of line.
+        :type QVector3D
+
+        :param position1: End of line.
+        :type QVector3D
+
+        :param color0: Color of the beginning of the line.
+        :type QColor
+
+        :param color1: Color of the end of the line.
+        :type QColor
+
+        :param color: A convenience parameter. Overrides ``color0`` and ``color1``.
+        :type QColor
+        '''
 
         if color:
             colors = [color.redF(), color.greenF(), color.blueF(), color.alphaF()] * 2
@@ -217,6 +286,37 @@ class OWOpenGLRenderer:
 
     def draw_rectangle(self, position0, position1, position2, position3,
                        color0=QColor(0, 0, 0), color1=QColor(0, 0, 0), color2=QColor(0, 0, 0), color3=QColor(0, 0, 0), color=None):
+        '''
+        Draws a rectangle using current transform. Vertices must specified in clockwise or counter-clockwise order (otherwise nothing
+        might be drawn).
+
+        :param position0: First vertex position.
+        :type QVector3D
+
+        :param position1: Second vertex position.
+        :type QVector3D
+
+        :param position2: Third vertex position.
+        :type QVector3D
+
+        :param position3: Fourth vertex position.
+        :type QVector3D
+
+        :param color0: First vertex color.
+        :type QColor
+
+        :param color1: Second vertex color.
+        :type QColor
+
+        :param color2: Third vertex color.
+        :type QColor
+
+        :param color3: Fourth vertex color.
+        :type QColor
+
+        :param color: A convenience parameter: Overrides color values.
+        :type QColor
+        '''
         if color:
             colors = [color.redF(), color.greenF(), color.blueF(), color.alphaF()] * 6
         else:
@@ -244,6 +344,30 @@ class OWOpenGLRenderer:
 
     def draw_triangle(self, position0, position1, position2,
                        color0=QColor(0, 0, 0), color1=QColor(0, 0, 0), color2=QColor(0, 0, 0), color=None):
+        '''
+        Draws a triangle using current transform.
+
+        :param position0: First vertex position.
+        :type QVector3D
+
+        :param position1: Second vertex position.
+        :type QVector3D
+
+        :param position2: Third vertex position.
+        :type QVector3D
+
+        :param color0: First vertex color.
+        :type QColor
+
+        :param color1: Second vertex color.
+        :type QColor
+
+        :param color2: Third vertex color.
+        :type QColor
+
+        :param color: A convenience parameter: Overrides color values.
+        :type QColor
+        '''
         if color:
             colors = [color.redF(), color.greenF(), color.blueF(), color.alphaF()] * 3
         else:
