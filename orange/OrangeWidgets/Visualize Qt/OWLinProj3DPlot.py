@@ -26,10 +26,11 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         self.antialias_points = False
         self.antialias_lines = False
         self.auto_adjust_performance = False
-        self.show_filled_symbols = True
-        self.use_antialiasing = True
+        self.show_filled_symbols = False
+        self.use_antialiasing = False
         self.sendSelectionOnUpdate = False
         self.setCanvasBackground = self.setCanvasColor
+        self.showValueLines = 0
 
         self._point_width_to_symbol_scale = 1.5
 
@@ -216,6 +217,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if self.legend().pos().x() == 0:
             self.legend().setPos(QPointF(100, 100))
         self.legend().update_items()
+        self.legend().setVisible(self.show_legend)
 
         x_positions = proj_data[0]-0.5
         y_positions = proj_data[1]-0.5

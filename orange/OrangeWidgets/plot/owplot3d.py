@@ -1103,8 +1103,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self.plot_scale = array([1., 1., 1.])
         self.additional_scale = array([0., 0., 0.])
 
-    contPalette = deprecated_attribute("contPalette", "continuous_palette")
-    discPalette = deprecated_attribute("discPalette", "discrete_palette")
+    contPalette = deprecated_attribute('contPalette', 'continuous_palette')
+    discPalette = deprecated_attribute('discPalette', 'discrete_palette')
+    showLegend = deprecated_attribute('showLegend', 'show_legend')
 
 if __name__ == "__main__":
     # TODO

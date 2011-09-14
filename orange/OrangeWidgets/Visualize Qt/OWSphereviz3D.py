@@ -134,7 +134,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         if not self._grid_shader.link():
             print('Failed to link grid shader!')
 
-        self.before_draw_callback = lambda: self.before_draw()
+        self.before_draw_callback = self.before_draw
 
     def update_camera_type(self):
         if self.camera_type == 2:
