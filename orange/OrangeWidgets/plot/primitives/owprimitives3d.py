@@ -86,9 +86,9 @@ def parse_obj(file_name):
         # Try to load the file from primitives/ folder if given only name (path missing).
         file_name = os.path.join(os.path.dirname(__file__), file_name)
     lines = open(file_name).readlines()
-    normals_lines =  filter(lambda line: line.startswith('vn'), lines)
-    vertices_lines = filter(lambda line: line.startswith('v'), lines)
-    faces_lines =    filter(lambda line: line.startswith('f'), lines)
+    normals_lines =  filter(lambda line: line.startswith('vn '), lines)
+    vertices_lines = filter(lambda line: line.startswith('v '), lines)
+    faces_lines =    filter(lambda line: line.startswith('f '), lines)
     normals =  [map(float, line.split()[1:]) for line in normals_lines]
     vertices = [map(float, line.split()[1:]) for line in vertices_lines]
     if len(normals) > 0:
@@ -143,8 +143,8 @@ def get_symbol_geometry(symbol, geometry_type):
         return triangles
 
     lines = open(file_name).readlines()
-    vertices_lines = filter(lambda line: line.startswith('v'), lines)
-    edges_lines =    filter(lambda line: line.startswith('f'), lines)
+    vertices_lines = filter(lambda line: line.startswith('v '), lines)
+    edges_lines =    filter(lambda line: line.startswith('f '), lines)
     vertices = [map(float, line.split()[1:]) for line in vertices_lines]
     edges_indices = [map(int, line.split()[1:]) for line in edges_lines]
     edges = []

@@ -601,7 +601,7 @@ class OWPlot3D(orangeqt.Plot3D):
             #if isinstance(label, str):
                 #self.renderText(x,y,z, label, font=self._theme.labels_font)
             #else:
-            self.renderText(x,y,z, ('%f' % label).rstrip('0').rstrip('.'),
+            self.renderText(x,y,z, ('%.3f' % label).rstrip('0').rstrip('.'),
                             font=self._theme.labels_font)
 
     def draw_helpers(self):
