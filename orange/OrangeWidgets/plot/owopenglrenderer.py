@@ -1,3 +1,13 @@
+'''
+
+#################
+OpenGL Renderer (``owopenglrenderer``)
+#################
+
+.. autoclass:: OrangeWidgets.plot.OWOpenGLRenderer
+
+'''
+
 from ctypes import c_void_p
 
 from PyQt4.QtCore import *
@@ -15,14 +25,51 @@ from OpenGL.GL.ARB.vertex_buffer_object import *
 import numpy
 
 class VertexBuffer:
+    '''
+    An abstraction simplifying the usage of Vertex Buffer Objects (VBO). Warning: understanding what this class does
+    requires basic knowledge of OpenGL.
+
+    VBOs are necessary in OpenGL 2+ world, since immediate mode (glBegin/glVertex/glEnd paradigm) has been deprecated
+    and is slow (even more so using it through PyOpenGL). Vertex Array Objects (VAO) were introduced in OpenGL version 3.0; they
+    reduce the amount of function calls that need to be made by storing the set of bindings between vertex attributes
+    and vertex data. VAOs are used only if the underlying hardware supports them. This class provides a simple usage pattern
+    which is suitable for many applications::
+
+        data = numpy.array([1.3, 5.1, 42.,   0.,
+                            3.3, 4.3, 5.1,   1.], dtype=numpy.float32)
+        buffer = VertexBuffer(data, [(3, GL_FLOAT), (1, GL_FLOAT)])
+        # ... Later when drawing:
+        buffer.draw(GL_LINES)
+        # Possible setup in a vertex shader:
+        # 
+        # attribute vec3 position;
+        # attribute float index;
+        # ...
+
+    What the example above does depends on the rest of the vertex shader (left to your imagination). VertexBuffer constructor
+    takes data and data format description as its parameters. Format specifies mapping between data values and vertex attributes.
+    See the constructor for more info.
+    '''
+
     def __init__(self, data, format_description, usage=GL_STATIC_DRAW):
         '''
-        Sample usage: geometry = VertexBuffer(data, size, [(3, GL_FLOAT), (4, GL_FLOAT)], GL_STATIC_DRAW)
+        Constructs VBO and prepares vertex attribute bindings.
 
-        Currently available attribute types: GL_FLOAT # TODO
+        :param data: Data array (vertices) to be sent to the GPU.
+        :type numpy.array
 
-        Uses Vertex Arrays Object (OpenGL 3.0) if possible. Vertex Buffer Objects were introduced in 1.5 (2003).
+        :param format_description: Describes vertex attribute bindings. This parameter must be an iterable
+            of tuples. Each tuple specifies a generic vertex attribute (the order is important!) by specifying
+            the number of components (must be 1,2,3 or 4) and data type (e.g. GL_FLOAT, GL_INT). See the example
+            above. Normalization for fixed-point values is turned off.
+        :type an iterable of tuples
+
+        :param usage: Specifies the expected usage pattern. The symbolic constant must be GL_STREAM_DRAW,
+            GL_STREAM_READ, GL_STREAM_COPY, GL_STATIC_DRAW, GL_STATIC_READ, GL_STATIC_COPY,
+            GL_DYNAMIC_DRAW, GL_DYNAMIC_READ, or GL_DYNAMIC_COPY. Default is GL_STATIC_DRAW.
+        :type GLenum 
         '''
+
         self._format_description = format_description
 
         if glGenVertexArrays:
@@ -33,7 +80,7 @@ class VertexBuffer:
             glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
             glBufferData(GL_ARRAY_BUFFER, data, usage)
 
-            vertex_size = sum(attribute[0]*4 for attribute in format_description)
+            vertex_size = sum(attribute[0]*4 for attribute in format_description) # TODO: sizeof(type)
             self._num_vertices = len(data) / (vertex_size / 4)
             current_size = 0
             for i, (num_components, type) in enumerate(format_description):
@@ -51,7 +98,21 @@ class VertexBuffer:
             glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def draw(self, primitives=GL_TRIANGLES, first=0, count=-1):
-        '''glDrawArrays'''
+        '''
+        Renders primitives from data array. By default it renders triangles using all the data. Consult
+        OpenGL documentation (specifically ``glDrawArrays``) for detail info.
+
+        :param primitives: What kind of primitives to render. Symbolic constants GL_POINTS, GL_LINE_STRIP,
+            GL_LINE_LOOP, GL_LINES, GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_TRIANGLES, GL_QUAD_STRIP,
+            GL_QUADS, and GL_POLYGON are accepted.
+        :type GLenum
+
+        :param first: Specifies the starting index into data.
+        :type int
+
+        :param count: The number of indices to be rendered.
+        :type int
+        '''
         if hasattr(self, '_vao'):
             glBindVertexArray(self._vao)
             glDrawArrays(primitives, first,

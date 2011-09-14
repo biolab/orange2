@@ -314,7 +314,7 @@ class OWPlot3D(orangeqt.Plot3D):
         glClearDepth(1.0)
         glDepthFunc(GL_LESS)
         glEnable(GL_DEPTH_TEST)
-        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_LINE_SMOOTH) # TODO
         glDisable(GL_CULL_FACE)
         glEnable(GL_MULTISAMPLE)
 
