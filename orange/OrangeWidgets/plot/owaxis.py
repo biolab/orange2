@@ -346,5 +346,5 @@ class OWAxis(QGraphicsItem):
             
     def should_be_expanded(self):
         self.update_ticks()
-        return self.id in YAxes or self.always_horizontal_text or sum(len(t[1]) for t in self._ticks) > 60
+        return self.id in YAxes or self.always_horizontal_text or sum(len(t[1]) for t in self._ticks) * 12 > self.plot.width()
 
