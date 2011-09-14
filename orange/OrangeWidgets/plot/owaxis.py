@@ -130,6 +130,7 @@ class OWAxis(QGraphicsItem):
             
 
     def update(self, zoom_only = False):
+        self.update_ticks()
         line_color = self.plot.color(OWPalette.Axis)
         text_color = self.plot.color(OWPalette.Text)
         if not self.graph_line or not self.scene():
@@ -147,15 +148,19 @@ class OWAxis(QGraphicsItem):
             title_p = 0.05
         title_pos = self.graph_line.pointAt(title_p)
         v = self.graph_line.normalVector().unitVector()
+        
+        dense_text = False
         if hasattr(self, 'title_margin'):
             offset = self.title_margin
         elif self._ticks:
-            if self.id in YAxes or self.always_horizontal_text:
+            if self.id in YAxes or self.always_horizontal_text or sum(len(t[1]) for t in self._ticks) > 60:
                 offset = 50
+                dense_text = True
             else:
                 offset = 35
         else:
             offset = 10
+
         if self.title_above:
             title_pos = title_pos + (v.p2() - v.p1())*(offset + QFontMetrics(self.title_item.font()).height())
         else:
@@ -192,9 +197,7 @@ class OWAxis(QGraphicsItem):
             self.end_arrow_item.setPen(line_color)
             
         ## Labels
-        
-        self.update_ticks()
-        
+                
         n = len(self._ticks)
         resize_plot_item_list(self.label_items, n, QGraphicsTextItem, self)
         resize_plot_item_list(self.label_bg_items, n, QGraphicsRectItem, self)
@@ -225,21 +228,24 @@ class OWAxis(QGraphicsItem):
                     item.setHtml( '<center>' + Qt.escape(text.strip()) + '</center>')
                 else:
                     item.setHtml(Qt.escape(text.strip()))
-            if self.id not in CartesianAxes and not self.always_horizontal_text:
-                item.setRotation(-self.graph_line.angle())
             
             item.setTextWidth(-1)
-            if self.id in YAxes or self.always_horizontal_text:
+            text_angle = 0
+            if dense_text:
                 w = min(item.boundingRect().width(), self.max_text_width)
                 item.setTextWidth(w)
                 if self.title_above:
                     label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
                 else:
-                    label_pos = tick_pos + n_p * (self.text_margin) + l_p * item.boundingRect().height()/2
+                    label_pos = tick_pos + n_p * (w + self.text_margin) - l_p * item.boundingRect().height()/2
+                text_angle = -90 if self.title_above else 90
             else:
                 w = min(item.boundingRect().width(), QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length())
                 label_pos = tick_pos + n_p * self.text_margin - l_p * w/2
                 item.setTextWidth(w)
+                
+            if not self.always_horizontal_text:
+                item.setRotation(-self.graph_line.angle() - text_angle)
 
             item.setPos(label_pos)
             item.setDefaultTextColor(text_color)
