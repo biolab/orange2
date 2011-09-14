@@ -142,9 +142,9 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         self.update()
 
     def before_draw(self):
-        modelview = QMatrix4x4()
+        view = QMatrix4x4()
         if self.camera_type == 2:
-            modelview.lookAt(
+            view.lookAt(
                 QVector3D(self._random_anchor[0], self._random_anchor[1], self._random_anchor[2]),
                 QVector3D(self.camera[0],
                           self.camera[1],
@@ -155,7 +155,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                                    0.01, 5.)
             self.projection = projection
         elif self.camera_type == 1:
-            modelview.lookAt(
+            view.lookAt(
                 QVector3D(0, 0, 0),
                 QVector3D(self.camera[0]*self.camera_distance,
                           self.camera[1]*self.camera_distance,
@@ -166,13 +166,13 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                                    0.01, 5.)
             self.projection = projection
         else:
-            modelview.lookAt(
+            view.lookAt(
                 QVector3D(self.camera[0]*self.camera_distance,
                           self.camera[1]*self.camera_distance,
                           self.camera[2]*self.camera_distance),
                 QVector3D(0, 0, 0),
                 QVector3D(0, 1, 0))
-        self.modelview = modelview
+        self.view = view
 
         self._draw_sphere()
 
@@ -184,7 +184,8 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
 
         if self.showAnchors:
             for anchor in self.anchor_data:
@@ -199,16 +200,16 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 rotation.setColumn(1, QVector4D(up, 0))
                 rotation.setColumn(2, QVector4D(direction, 0))
 
-                modelview = QMatrix4x4(self.modelview)
-                modelview.translate(x, y, z)
-                modelview = modelview * rotation
-                modelview.rotate(-90, 1, 0, 0)
-                modelview.translate(0, -0.05, 0)
-                modelview.scale(0.02, 0.02, 0.02)
+                model = QMatrix4x4()
+                model.translate(x, y, z)
+                model = model * rotation
+                model.rotate(-90, 1, 0, 0)
+                model.translate(0, -0.05, 0)
+                model.scale(0.02, 0.02, 0.02)
 
                 self._cone_shader.bind()
                 self._cone_shader.setUniformValue('projection', self.projection)
-                self._cone_shader.setUniformValue('modelview', modelview)
+                self._cone_shader.setUniformValue('modelview', self.view * model)
                 self._cone_buffer.draw()
                 self._cone_shader.release()
 
@@ -221,7 +222,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
             # Draw grid between anchors
             self._grid_shader.bind()
             self._grid_shader.setUniformValue('projection', self.projection)
-            self._grid_shader.setUniformValue('modelview', self.modelview)
+            self._grid_shader.setUniformValue('modelview', self.view * self.model)
             self._grid_shader.setUniformValue('color', self._theme.axis_color)
             self._grid_buffer.draw(GL_LINES)
             self._grid_shader.release()
@@ -235,7 +236,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         self._sphere_shader.bind()
         self._sphere_shader.setUniformValue('projection', self.projection)
-        self._sphere_shader.setUniformValue('modelview', self.modelview)
+        self._sphere_shader.setUniformValue('modelview', self.view * self.model)
         self._sphere_shader.setUniformValue('cam_position', QVector3D(*self.camera)*self.camera_distance)
         self._sphere_shader.setUniformValue('use_transparency', self.camera_type == 0)
         self._sphere_buffer.draw(GL_LINES)

@@ -323,7 +323,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.renderer = OWOpenGLRenderer()
 
         if self._use_opengl_3:
-            self.feedback_generated = False
+            self._feedback_generated = False
 
             self.generating_program = QtOpenGL.QGLShaderProgram()
             self.generating_program.addShaderFromSourceFile(QtOpenGL.QGLShader.Geometry,
@@ -475,20 +475,24 @@ class OWPlot3D(orangeqt.Plot3D):
             sin(self.pitch)*sin(self.yaw)]
 
     def get_mvp(self):
+        '''
+        Return current model, view and projection transforms.
+        '''
         projection = QMatrix4x4()
         width, height = self.width(), self.height()
         aspect = float(width) / height if height != 0 else 1
         projection.perspective(self.camera_fov, aspect, self.perspective_near, self.perspective_far)
 
-        modelview = QMatrix4x4()
-        modelview.lookAt(
+        view = QMatrix4x4()
+        view.lookAt(
             QVector3D(self.camera[0]*self.camera_distance,
                       self.camera[1]*self.camera_distance,
                       self.camera[2]*self.camera_distance),
             QVector3D(0,-0.1, 0),
             QVector3D(0, 1, 0))
 
-        return modelview, projection
+        model = QMatrix4x4()
+        return model, view, projection
 
     def paintEvent(self, event):
         glViewport(0, 0, self.width(), self.height())
@@ -496,8 +500,9 @@ class OWPlot3D(orangeqt.Plot3D):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        modelview, projection = self.get_mvp()
-        self.modelview = modelview
+        model, view, projection = self.get_mvp()
+        self.model = model
+        self.view = view
         self.projection = projection
 
         if self.before_draw_callback:
@@ -506,7 +511,7 @@ class OWPlot3D(orangeqt.Plot3D):
         plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
 
         self.symbol_program.bind()
-        self.symbol_program.setUniformValue('modelview', self.modelview)
+        self.symbol_program.setUniformValue('modelview', self.view * self.model)
         self.symbol_program.setUniformValue('projection', self.projection)
         self.symbol_program.setUniformValue(self.symbol_program_use_2d_symbols, self.use_2d_symbols)
         self.symbol_program.setUniformValue(self.symbol_program_fade_outside,   self.fade_outside)
@@ -518,7 +523,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
         self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
-        if self._use_opengl_3 and self.feedback_generated:
+        if self._use_opengl_3 and self._feedback_generated:
             glEnable(GL_DEPTH_TEST)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -554,7 +559,7 @@ class OWPlot3D(orangeqt.Plot3D):
             self.symbol_program.bind()
             self.symbol_program.setUniformValue(self.symbol_program_encode_color, True)
 
-            if self._use_opengl_3 and self.feedback_generated:
+            if self._use_opengl_3 and self._feedback_generated:
                 glBindVertexArray(self.feedback_vao)
                 glDrawArrays(GL_TRIANGLES, 0, self.num_primitives_generated*3)
                 glBindVertexArray(0)
@@ -588,7 +593,8 @@ class OWPlot3D(orangeqt.Plot3D):
         glMultMatrixd(array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(array(self.modelview.data(), dtype=float))
+        glMultMatrixd(array(self.view.data(), dtype=float))
+        glMultMatrixd(array(self.model.data(), dtype=float))
 
         self.qglColor(self._theme.labels_color)
         for example in self.data.transpose():
@@ -610,9 +616,9 @@ class OWPlot3D(orangeqt.Plot3D):
 
         projection = QMatrix4x4()
         projection.ortho(0, self.width(), self.height(), 0, -1, 1)
-        modelview = QMatrix4x4()
+        model = view = QMatrix4x4()
 
-        self.renderer.set_transform(projection, modelview)
+        self.renderer.set_transform(model, view, projection)
 
         if self._state == PlotState.SCALING:
             x, y = self._mouse_position.x(), self._mouse_position.y()
@@ -654,10 +660,7 @@ class OWPlot3D(orangeqt.Plot3D):
                                          QVector3D(self._selection.right(), self._selection.top(), 0),
                                          QVector3D(self._selection.right(), self._selection.bottom(), 0),
                                          QVector3D(self._selection.left(), self._selection.bottom(), 0),
-                                         internal_color,
-                                         internal_color,
-                                         internal_color,
-                                         internal_color)
+                                         color=internal_color)
 
             border_color = QColor(51, 153, 255, 192)
             self.renderer.draw_line(QVector3D(self._selection.left(), self._selection.top(), 0),
@@ -759,7 +762,7 @@ class OWPlot3D(orangeqt.Plot3D):
             glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
             self.num_primitives_generated = glGetQueryObjectuiv(qid, GL_QUERY_RESULT)
             glBindVertexArray(0)
-            self.feedback_generated = True
+            self._feedback_generated = True
             print('Num generated primitives: ' + str(self.num_primitives_generated))
 
             self.generating_program.release()
@@ -893,7 +896,7 @@ class OWPlot3D(orangeqt.Plot3D):
     def get_min_max_selected(self, area):
         viewport = [0, 0, self.width(), self.height()]
         area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
-        min_max = orangeqt.Plot3D.get_min_max_selected(self, area, self.projection * self.modelview,
+        min_max = orangeqt.Plot3D.get_min_max_selected(self, area, self.projection * self.view * self.model,
                                                        viewport,
                                                        QVector3D(*self.plot_scale), QVector3D(*self.plot_translation))
         return min_max
@@ -1034,7 +1037,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 area = self._selection
                 viewport = [0, 0, self.width(), self.height()]
                 area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
-                orangeqt.Plot3D.select_points(self, area, self.projection * self.modelview,
+                orangeqt.Plot3D.select_points(self, area, self.projection * self.view * self.model,
                                               viewport,
                                               QVector3D(*self.plot_scale), QVector3D(*self.plot_translation),
                                               self.selection_behavior)
@@ -1091,7 +1094,7 @@ class OWPlot3D(orangeqt.Plot3D):
         self.data_scale = array([1., 1., 1.])
         self.data_translation = array([0., 0., 0.])
         self._tooltip_fbo_dirty = True
-        self.feedback_generated = False
+        self._feedback_generated = False
 
     def clear_plot_transformations(self):
         self._zoom_stack = []

@@ -47,7 +47,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             return
 
         self.makeCurrent()
-        self.before_draw_callback = lambda: self.before_draw()
+        self.before_draw_callback = self.before_draw
 
         ## Value lines shader
         self._value_lines_shader = QtOpenGL.QGLShaderProgram()
@@ -66,14 +66,14 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     setData = set_data 
 
     def before_draw(self):
-        modelview = QMatrix4x4()
-        modelview.lookAt(
+        view = QMatrix4x4()
+        view.lookAt(
             QVector3D(self.camera[0]*self.camera_distance,
                       self.camera[1]*self.camera_distance,
                       self.camera[2]*self.camera_distance),
             QVector3D(0, 0, 0),
             QVector3D(0, 1, 0))
-        self.modelview = modelview
+        self.view = view
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
@@ -82,9 +82,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
 
-        self.renderer.set_transform(self.projection, self.modelview)
+        self.renderer.set_transform(self.model, self.view, self.projection)
 
         if self.showAnchors:
             for anchor in self.anchor_data:
@@ -122,7 +123,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if self.showValueLines:
             self._value_lines_shader.bind()
             self._value_lines_shader.setUniformValue('projection', self.projection)
-            self._value_lines_shader.setUniformValue('modelview', self.modelview)
+            self._value_lines_shader.setUniformValue('modelview', self.view * self.model)
             self._value_lines_shader.setUniformValue('value_line_length', float(self.valueLineLength))
             self._value_lines_shader.setUniformValue('plot_scale', self.plot_scale[0], self.plot_scale[1], self.plot_scale[2])
             self._value_lines_buffer.draw(GL_LINES)

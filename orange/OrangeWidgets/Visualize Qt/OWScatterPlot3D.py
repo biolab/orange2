@@ -77,32 +77,20 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.show_grid = True
         self.show_chassis = True
         self.show_axes = True
-        self.build_axes()
+        self._build_axes()
 
-        self.x_axis_labels = None
-        self.y_axis_labels = None
-        self.z_axis_labels = None
+        self._x_axis_labels = None
+        self._y_axis_labels = None
+        self._z_axis_labels = None
 
-        self.x_axis_title = ''
-        self.y_axis_title = ''
-        self.z_axis_title = ''
+        self._x_axis_title = ''
+        self._y_axis_title = ''
+        self._z_axis_title = ''
 
+        # These are public
         self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
 
         self.animate_plot = False
-
-    def set_axis_labels(self, axis_id, labels):
-        '''labels should be a list of strings'''
-        if Axis.is_valid(axis_id):
-            setattr(self, Axis.to_str(axis_id).lower() + '_axis_labels', labels)
-
-    def set_axis_title(self, axis_id, title):
-        if Axis.is_valid(axis_id):
-            setattr(self, Axis.to_str(axis_id).lower() + '_axis_title', title)
-
-    def set_show_axis_title(self, axis_id, show):
-        if Axis.is_valid(axis_id):
-            setattr(self, 'show_' + Axis.to_str(axis_id).lower() + '_axis_title', show)
 
     def set_data(self, data, subset_data=None, **args):
         if data == None:
@@ -176,9 +164,9 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             data_scale[2] = 0.5 / float(len(self.data_domain[z_attr].values))
             data_translation[2] = 1.
 
-        self.x_axis_labels = None
-        self.y_axis_labels = None
-        self.z_axis_labels = None
+        self._x_axis_labels = None
+        self._y_axis_labels = None
+        self._z_axis_labels = None
 
         self.clear()
 
@@ -236,34 +224,35 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.legend().setVisible(self.show_legend)
 
         ## Axes
-        self.set_axis_title(Axis.X, x_attr)
-        self.set_axis_title(Axis.Y, y_attr)
-        self.set_axis_title(Axis.Z, z_attr)
+        self._x_axis_title = x_attr
+        self._y_axis_title = y_attr
+        self._z_axis_title = z_attr
 
         if x_discrete:
-            self.set_axis_labels(Axis.X, get_variable_values_sorted(self.data_domain[x_attr]))
+            self._x_axis_labels = get_variable_values_sorted(self.data_domain[x_attr])
         if y_discrete:
-            self.set_axis_labels(Axis.Y, get_variable_values_sorted(self.data_domain[y_attr]))
+            self._y_axis_labels = get_variable_values_sorted(self.data_domain[y_attr])
         if z_discrete:
-            self.set_axis_labels(Axis.Z, get_variable_values_sorted(self.data_domain[z_attr]))
+            self._z_axis_labels = get_variable_values_sorted(self.data_domain[z_attr])
 
         self.update()
 
     def before_draw(self):
         if self.show_grid:
-            self.draw_grid()
+            self._draw_grid()
         if self.show_chassis:
-            self.draw_chassis()
+            self._draw_chassis()
         if self.show_axes:
-            self.draw_axes()
+            self._draw_axes()
 
-    def draw_chassis(self):
+    def _draw_chassis(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
 
         # TODO: line stipple with shaders?
         self.qglColor(self._theme.axis_values_color)
@@ -290,8 +279,8 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
-    def draw_grid(self):
-        self.renderer.set_transform(self.projection, self.modelview)
+    def _draw_grid(self):
+        self.renderer.set_transform(self.model, self.view, self.projection)
 
         cam_in_space = numpy.array([
           self.camera[0]*self.camera_distance,
@@ -299,7 +288,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
           self.camera[2]*self.camera_distance
         ])
 
-        def _draw_grid(axis0, axis1, normal0, normal1, i, j):
+        def _draw_grid_plane(axis0, axis1, normal0, normal1, i, j):
             for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
                 start, end = axis.copy()
                 start_value = self.map_to_data(start.copy())[coord_index]
@@ -335,16 +324,16 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
         xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
         if xz_visible:
-            _draw_grid(self.x_axis, self.z_axis, numpy.array([0,0,-1]), numpy.array([-1,0,0]), 0, 2)
+            _draw_grid_plane(self.x_axis, self.z_axis, numpy.array([0,0,-1]), numpy.array([-1,0,0]), 0, 2)
         for visible, (axis0, axis1), (normal0, normal1), (i, j) in\
              zip(visible_planes, axes, normals, coords):
             if not visible:
-                _draw_grid(axis0, axis1, normal0, normal1, i, j)
+                _draw_grid_plane(axis0, axis1, normal0, normal1, i, j)
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
-    def build_axes(self):
+    def _build_axes(self):
         edge_half = 1. / 2.
         x_axis = [[-edge_half, -edge_half, -edge_half], [edge_half, -edge_half, -edge_half]]
         y_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, edge_half, -edge_half]]
@@ -376,25 +365,25 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.axis_plane_yz_right = [B, F, G, C]
         self.axis_plane_xz_top = [E, F, B, A]
 
-    def draw_axes(self):
+    def _draw_axes(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
 
-        self.renderer.set_transform(self.projection, self.modelview)
+        self.renderer.set_transform(self.model, self.view, self.projection)
 
-        def draw_axis(line):
-            self.qglColor(self._theme.axis_color)
-            glLineWidth(2) # TODO: how to draw thick lines?
-            glBegin(GL_LINES)
-            glVertex3f(*line[0])
-            glVertex3f(*line[1])
-            glEnd()
+        def _draw_axis(line):
+            glLineWidth(2)
+            self.renderer.draw_line(QVector3D(*line[0]),
+                                    QVector3D(*line[1]),
+                                    color=self._theme.axis_color)
+            glLineWidth(1)
 
-        def draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
+        def _draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
             start, end = axis.copy()
             start_value = self.map_to_data(start.copy())[coord_index]
             end_value = self.map_to_data(end.copy())[coord_index]
@@ -413,10 +402,10 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                                     position[2],
                                     label, font=self._theme.labels_font)
 
-        def draw_values(axis, coord_index, normal, axis_labels):
+        def _draw_values(axis, coord_index, normal, axis_labels):
             glLineWidth(1)
             if axis_labels != None:
-                draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
+                _draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
                 return
             start, end = axis.copy()
             start_value = self.map_to_data(start.copy())[coord_index]
@@ -437,7 +426,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                                 position[2],
                                 text, font=self._theme.axis_font)
 
-        def draw_axis_title(axis, title, normal):
+        def _draw_axis_title(axis, title, normal):
             middle = (axis[0] + axis[1]) / 2.
             middle += normal * 0.1 if axis[0][1] != axis[1][1] else normal * 0.2
             self.renderText(middle[0], middle[1], middle[2],
@@ -455,6 +444,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
           self.camera[2]*self.camera_distance
         ])
 
+        # TODO: the code below is horrible and should be simplified
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
         normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
@@ -465,27 +455,27 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
 
         if visible_planes[0 if xz_visible else 2]:
-            draw_axis(self.x_axis)
-            draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self.x_axis_labels)
+            _draw_axis(self.x_axis)
+            _draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self._x_axis_labels)
             if self.show_x_axis_title:
-                draw_axis_title(self.x_axis, self.x_axis_title, numpy.array([0, 0, -1]))
+                _draw_axis_title(self.x_axis, self._x_axis_title, numpy.array([0, 0, -1]))
         elif visible_planes[2 if xz_visible else 0]:
-            draw_axis(self.x_axis + self.unit_z)
-            draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self.x_axis_labels)
+            _draw_axis(self.x_axis + self.unit_z)
+            _draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self._x_axis_labels)
             if self.show_x_axis_title:
-                draw_axis_title(self.x_axis + self.unit_z,
-                                self.x_axis_title, numpy.array([0, 0, 1]))
+                _draw_axis_title(self.x_axis + self.unit_z,
+                                self._x_axis_title, numpy.array([0, 0, 1]))
 
         if visible_planes[1 if xz_visible else 3]:
-            draw_axis(self.z_axis)
-            draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self.z_axis_labels)
+            _draw_axis(self.z_axis)
+            _draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self._z_axis_labels)
             if self.show_z_axis_title:
-                draw_axis_title(self.z_axis, self.z_axis_title, numpy.array([-1, 0, 0]))
+                _draw_axis_title(self.z_axis, self._z_axis_title, numpy.array([-1, 0, 0]))
         elif visible_planes[3 if xz_visible else 1]:
-            draw_axis(self.z_axis + self.unit_x)
-            draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self.z_axis_labels)
+            _draw_axis(self.z_axis + self.unit_x)
+            _draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self._z_axis_labels)
             if self.show_z_axis_title:
-                draw_axis_title(self.z_axis + self.unit_x, self.z_axis_title, numpy.array([1, 0, 0]))
+                _draw_axis_title(self.z_axis + self.unit_x, self._z_axis_title, numpy.array([1, 0, 0]))
 
         try:
             rightmost_visible = visible_planes[::-1].index(True)
@@ -503,10 +493,10 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                    numpy.array([0, 0,-1])]
         axis = y_axis_translated[rightmost_visible]
         normal = normals[rightmost_visible]
-        draw_axis(axis)
-        draw_values(axis, 1, normal, self.y_axis_labels)
+        _draw_axis(axis)
+        _draw_values(axis, 1, normal, self._y_axis_labels)
         if self.show_y_axis_title:
-            draw_axis_title(axis, self.y_axis_title, normal)
+            _draw_axis_title(axis, self._y_axis_title, normal)
 
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',

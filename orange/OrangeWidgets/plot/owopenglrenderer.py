@@ -219,8 +219,8 @@ class OWOpenGLRenderer:
 
     def set_transform(self, model, view=None, projection=None, viewport=None):
         '''
-        Sets current projection, model, view and viewport transforms. Only model parameter is required
-        since it's the one most likely to change. Passing None as a parameter value keeps the internal value
+        Sets current projection, model, view and viewport transforms. ``model`` parameter
+        is most often changed. Passing None as a parameter value keeps the internal value
         unmodified.
 
         :param model: Model transform (usually translation, rotation, scale or a combination of these).
