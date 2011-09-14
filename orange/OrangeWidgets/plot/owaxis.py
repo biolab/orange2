@@ -153,8 +153,8 @@ class OWAxis(QGraphicsItem):
         if hasattr(self, 'title_margin'):
             offset = self.title_margin
         elif self._ticks:
-            if self.id in YAxes or self.always_horizontal_text or sum(len(t[1]) for t in self._ticks) > 60:
-                offset = 50
+            if self.should_be_expanded():
+                offset = 55
                 dense_text = True
             else:
                 offset = 35
@@ -343,3 +343,8 @@ class OWAxis(QGraphicsItem):
             return self.auto_range
         else:
             return 0, 1
+            
+    def should_be_expanded(self):
+        self.update_ticks()
+        return self.id in YAxes or self.always_horizontal_text or sum(len(t[1]) for t in self._ticks) > 60
+

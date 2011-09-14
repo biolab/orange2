@@ -944,18 +944,27 @@ class OWPlot(orangeqt.Plot):
         self._legend.update_items()
             
         axis_rects = dict()
-        margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
+        base_margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
         if xBottom in self.axes and self.axes[xBottom].isVisible():
+            margin = base_margin
+            if self.axes[xBottom].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             bottom_rect = QRectF(graph_rect)
             bottom_rect.setTop( bottom_rect.bottom() - margin)
             axis_rects[xBottom] = bottom_rect
             graph_rect.setBottom( graph_rect.bottom() - margin)
         if xTop in self.axes and self.axes[xTop].isVisible():
+            margin = base_margin
+            if self.axes[xTop].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             top_rect = QRectF(graph_rect)
             top_rect.setBottom(top_rect.top() + margin)
             axis_rects[xTop] = top_rect
             graph_rect.setTop(graph_rect.top() + margin)
         if yLeft in self.axes and self.axes[yLeft].isVisible():
+            margin = base_margin
+            if self.axes[yLeft].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             left_rect = QRectF(graph_rect)
             left = graph_rect.left() + margin + self.y_axis_extra_margin
             left_rect.setRight(left)
@@ -966,6 +975,9 @@ class OWPlot(orangeqt.Plot):
             if xTop in axis_rects:
                 axis_rects[xTop].setLeft(left)
         if yRight in self.axes and self.axes[yRight].isVisible():
+            margin = base_margin
+            if self.axes[yRight].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             right_rect = QRectF(graph_rect)
             right = graph_rect.right() - margin - self.y_axis_extra_margin
             right_rect.setLeft(right)
