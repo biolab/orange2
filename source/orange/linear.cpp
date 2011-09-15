@@ -2597,7 +2597,18 @@ void TRON::set_print_string(void (*print_string) (const char *buf))
 The folowing load save functions are used for orange pickling
 */
 
+#include <iostream>
+#include <sstream>
+
 int linear_save_model_alt(string &buffer, struct model *model_)
+{
+	std::ostringstream strstream;
+	int ret = linear_save_model_alt(strstream, model_);
+	buffer = strstream.rdbuf()->str();
+	return ret;
+}
+
+int linear_save_model_alt(ostream &stream, struct model *model_)
 {
 	int i;
 	int nr_feature=model_->nr_feature;
@@ -2608,8 +2619,6 @@ int linear_save_model_alt(string &buffer, struct model *model_)
 		n=nr_feature+1;
 	else
 		n=nr_feature;
-	FILE *fp = tmpfile();
-	if(fp==NULL) return -1;
 
 	int nr_classifier;
 	if(model_->nr_class==2 && model_->param.solver_type != MCSVM_CS)
@@ -2617,44 +2626,42 @@ int linear_save_model_alt(string &buffer, struct model *model_)
 	else
 		nr_classifier=model_->nr_class;
 
-	fprintf(fp, "solver_type %s\n", solver_type_table[param.solver_type]);
-	fprintf(fp, "nr_class %d\n", model_->nr_class);
-	fprintf(fp, "label");
+	stream.precision(17);
+
+	stream << "solver_type " << solver_type_table[param.solver_type] << endl;
+	stream << "nr_class " << model_->nr_class << endl;
+	stream << "label";
 	for(i=0; i<model_->nr_class; i++)
-		fprintf(fp, " %d", model_->label[i]);
-	fprintf(fp, "\n");
+		stream << " " << model_->label[i];
+	stream << endl;
 
-	fprintf(fp, "nr_feature %d\n", nr_feature);
+	stream << "nr_feature " << nr_feature << endl;
 
-	fprintf(fp, "bias %.16g\n", model_->bias);
+	stream << "bias " << model_->bias << endl;
 
-	fprintf(fp, "w\n");
+	stream << "w" << endl;
 	for(i=0; i<n; i++)
 	{
 		int j;
 		for(j=0; j<nr_classifier; j++)
-			fprintf(fp, "%.16g ", model_->w[i*nr_classifier+j]);
-		fprintf(fp, "\n");
+			stream << model_->w[i*nr_classifier+j] << " ";
+		stream << endl;
 	}
 
-	fseek(fp, SEEK_SET, 0);
-	char str[512];
-	while(fgets(str, 512, fp)){
-		buffer+=str;
-	}
-
-	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
-	else return 0;
+	if (stream.good())
+		return 0;
+	else
+		return -1;
 }
 
 struct model *linear_load_model_alt(string &buffer)
 {
-	FILE *fp = tmpfile();
-	if(fp==NULL) return NULL;
+	std::istringstream str_stream(buffer);
+	return linear_load_model_alt(str_stream);
+}
 
-	fprintf(fp, buffer.c_str());
-	fseek(fp, SEEK_SET, 0);
-
+struct model *linear_load_model_alt(istream &stream)
+{
 	int i;
 	int nr_feature;
 	int n;
@@ -2666,12 +2673,13 @@ struct model *linear_load_model_alt(string &buffer)
 	model_->label = NULL;
 
 	char cmd[81];
-	while(1)
+	stream.width(80);
+	while(stream.good())
 	{
-		fscanf(fp,"%80s",cmd);
-		if(strcmp(cmd,"solver_type")==0)
+		stream >> cmd;
+		if(strcmp(cmd, "solver_type")==0)
 		{
-			fscanf(fp,"%80s",cmd);
+			stream >> cmd;
 			int i;
 			for(i=0;solver_type_table[i];i++)
 			{
@@ -2691,17 +2699,17 @@ struct model *linear_load_model_alt(string &buffer)
 		}
 		else if(strcmp(cmd,"nr_class")==0)
 		{
-			fscanf(fp,"%d",&nr_class);
+			stream >> nr_class;
 			model_->nr_class=nr_class;
 		}
 		else if(strcmp(cmd,"nr_feature")==0)
 		{
-			fscanf(fp,"%d",&nr_feature);
+			stream >> nr_feature;
 			model_->nr_feature=nr_feature;
 		}
 		else if(strcmp(cmd,"bias")==0)
 		{
-			fscanf(fp,"%lf",&bias);
+			stream >> bias;
 			model_->bias=bias;
 		}
 		else if(strcmp(cmd,"w")==0)
@@ -2713,11 +2721,12 @@ struct model *linear_load_model_alt(string &buffer)
 			int nr_class = model_->nr_class;
 			model_->label = Malloc(int,nr_class);
 			for(int i=0;i<nr_class;i++)
-				fscanf(fp,"%d",&model_->label[i]);
+				stream >> model_->label[i];
 		}
 		else
 		{
 			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
+			free(model_->label);
 			free(model_);
 			return NULL;
 		}
@@ -2740,12 +2749,12 @@ struct model *linear_load_model_alt(string &buffer)
 	{
 		int j;
 		for(j=0; j<nr_classifier; j++)
-			fscanf(fp, "%lf ", &model_->w[i*nr_classifier+j]);
-		fscanf(fp, "\n");
+			stream >> model_->w[i*nr_classifier+j];
 	}
-	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
-
-	return model_;
+	if (stream.fail())
+		return NULL;
+	else
+		return model_;
 }
 
 struct NodeSort{

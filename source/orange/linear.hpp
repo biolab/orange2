@@ -160,8 +160,11 @@ private:
 #include "table.hpp"
 #include "examples.hpp"
 
+#include <iostream>
 int linear_save_model_alt(string &, model *);
+int linear_save_model_alt(ostream &, model *);
 model *linear_load_model_alt(string &);
+model *linear_load_model_alt(istream &);
 
 WRAPPER(ExampleTable)
 

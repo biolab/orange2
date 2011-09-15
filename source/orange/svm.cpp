@@ -2953,7 +2953,7 @@ svm_model *svm_load_model(const char *model_file_name)
 	
 	if (ferror(fp) != 0 || fclose(fp) != 0)
 		return NULL;
-	
+		
 	model->free_sv = 1;	// XXX
 	return model;
 }
@@ -3142,124 +3142,117 @@ void svm_set_print_string_function(void (*print_func)(const char *))
 /*
 Save load functions for use with orange pickling.
 They are a copy of the standard libSVM save-load functions
-except that they read/write from/to a temp file that is deleted
-at the end with fclose
+except that they read/write from/to std::iostream objects.
 */
 #include "slist.hpp"
-int svm_save_model_alt(string& buffer, const svm_model *model){
-	FILE *fp = tmpfile();
 
-	if(fp==NULL)
-	{
-		perror("tmpfile");
-		return -1;
-	}
+#include <iostream>
+#include <sstream>
 
+int svm_save_model_alt(std::string& buffer, const svm_model *model){
+	std::ostringstream strstream;
+	int ret = svm_save_model_alt(strstream, model);
+	buffer = strstream.rdbuf()->str();
+	return ret;
+}
+
+int svm_save_model_alt(std::ostream& stream, const svm_model *model){
 	const svm_parameter& param = model->param;
+	stream.precision(17);
 
-	fprintf(fp,"svm_type %s\n", svm_type_table[param.svm_type]);
-	fprintf(fp,"kernel_type %s\n", kernel_type_table[param.kernel_type]);
+	stream << "svm_type " << svm_type_table[param.svm_type] << endl;
+	stream << "kernel_type " << kernel_type_table[param.kernel_type] << endl;
 
 	if(param.kernel_type == POLY)
-		fprintf(fp,"degree %d\n", param.degree);
+		stream << "degree " << param.degree << endl;
 
 	if(param.kernel_type == POLY || param.kernel_type == RBF || param.kernel_type == SIGMOID)
-		fprintf(fp,"gamma %g\n", param.gamma);
+		stream << "gamma " << param.gamma << endl;
 
 	if(param.kernel_type == POLY || param.kernel_type == SIGMOID)
-		fprintf(fp,"coef0 %g\n", param.coef0);
+		stream << "coef0 " << param.coef0 << endl;
 
 	int nr_class = model->nr_class;
 	int l = model->l;
-	fprintf(fp, "nr_class %d\n", nr_class);
-	fprintf(fp, "total_sv %d\n",l);
-
+	stream << "nr_class " << nr_class << endl;
+	stream << "total_sv " << l << endl;
 	{
-		fprintf(fp, "rho");
+		stream << "rho";
 		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
-			fprintf(fp," %g",model->rho[i]);
-		fprintf(fp, "\n");
+			stream << " " << model->rho[i];
+		stream << endl;
 	}
 
 	if(model->label)
 	{
-		fprintf(fp, "label");
+		stream << "label";
 		for(int i=0;i<nr_class;i++)
-			fprintf(fp," %d",model->label[i]);
-		fprintf(fp, "\n");
+			stream << " " << model->label[i];
+		stream << endl;
 	}
 
 	if(model->probA) // regression has probA only
 	{
-		fprintf(fp, "probA");
+		stream << "probA";
 		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
-			fprintf(fp," %g",model->probA[i]);
-		fprintf(fp, "\n");
+			stream << " " << model->probA[i];
+		stream << endl;
 	}
 	if(model->probB)
 	{
-		fprintf(fp, "probB");
+		stream << "probB";
 		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
-			fprintf(fp," %g",model->probB[i]);
-		fprintf(fp, "\n");
+			stream << " " << model->probB[i];
+		stream << endl;
 	}
 
 	if(model->nSV)
 	{
-		fprintf(fp, "nr_sv");
+		stream << "nr_sv";
 		for(int i=0;i<nr_class;i++)
-			fprintf(fp," %d",model->nSV[i]);
-		fprintf(fp, "\n");
+			stream << " " << model->nSV[i];
+		stream << endl;
 	}
 
-	fprintf(fp, "SV\n");
+	stream << "SV" << endl;
 	const double * const *sv_coef = model->sv_coef;
 	const svm_node * const *SV = model->SV;
 
 	for(int i=0;i<l;i++)
 	{
 		for(int j=0;j<nr_class-1;j++)
-			fprintf(fp, "%.16g ",sv_coef[j][i]);
+			stream << sv_coef[j][i] << " ";
 
 		const svm_node *p = SV[i];
 
 		if(param.kernel_type == PRECOMPUTED)
-			fprintf(fp,"0:%d ",(int)(p->value));
+			stream << (int)(p->value) << " ";
 		else
 			while(p->index != -1)
 			{
-				fprintf(fp,"%d:%.8g ",p->index,p->value);
+				stream << (int)(p->index) << ":" << p->value << " ";
 				p++;
 			}
-		fprintf(fp, "\n");
+		stream << endl;
 	}
 
-	fseek(fp, SEEK_SET, 0);
-
-	char str[512];
-	while(fgets(str, 512, fp)){
-		buffer+=str;
-	}
-
-	if (ferror(fp) != 0){
-		perror("fgets");
-		fclose(fp);
-		return -1;
-	}
-	fclose(fp);
-	return 0;
+	if (!stream.fail())
+		return 0;
+	else
+		return 1;
 }
 
-svm_model *svm_load_model_alt(string& buffer)
+
+svm_model *svm_load_model_alt(std::string& stream)
 {
-	FILE *fp = tmpfile();
-	if(fp==NULL) return NULL;
+	std::istringstream strstream(stream);
+	return svm_load_model_alt(strstream);
+}
 
-	fprintf(fp, buffer.c_str());
-	fseek(fp, SEEK_SET, 0);
+#include <algorithm>
 
-	// read parameters
-
+svm_model *svm_load_model_alt(std::istream& stream)
+{
 	svm_model *model = Malloc(svm_model,1);
 	svm_parameter& param = model->param;
 	model->rho = NULL;
@@ -3269,17 +3262,18 @@ svm_model *svm_load_model_alt(string& buffer)
 	model->nSV = NULL;
 
 	char cmd[81];
-	while(1)
+	stream.width(80);
+	while (stream.good())
 	{
-		fscanf(fp,"%80s",cmd);
+		stream >> cmd;
 
-		if(strcmp(cmd,"svm_type")==0)
+		if(strcmp(cmd, "svm_type") == 0)
 		{
-			fscanf(fp,"%80s",cmd);
+			stream >> cmd;
 			int i;
-			for(i=0;svm_type_table[i];i++)
+			for(i=0; svm_type_table[i]; i++)
 			{
-				if(strcmp(svm_type_table[i],cmd)==0)
+				if(strcmp(cmd, svm_type_table[i]) == 0)
 				{
 					param.svm_type=i;
 					break;
@@ -3287,7 +3281,7 @@ svm_model *svm_load_model_alt(string& buffer)
 			}
 			if(svm_type_table[i] == NULL)
 			{
-				fprintf(stderr,"unknown svm type.\n");
+				fprintf(stderr, "unknown svm type.\n");
 				free(model->rho);
 				free(model->label);
 				free(model->nSV);
@@ -3295,13 +3289,13 @@ svm_model *svm_load_model_alt(string& buffer)
 				return NULL;
 			}
 		}
-		else if(strcmp(cmd,"kernel_type")==0)
+		else if(strcmp(cmd, "kernel_type") == 0)
 		{
-			fscanf(fp,"%80s",cmd);
+			stream >> cmd;
 			int i;
 			for(i=0;kernel_type_table[i];i++)
 			{
-				if(strcmp(kernel_type_table[i],cmd)==0)
+				if(strcmp(kernel_type_table[i], cmd)==0)
 				{
 					param.kernel_type=i;
 					break;
@@ -3318,56 +3312,56 @@ svm_model *svm_load_model_alt(string& buffer)
 			}
 		}
 		else if(strcmp(cmd,"degree")==0)
-			fscanf(fp,"%d",&param.degree);
+			stream >> param.degree;
 		else if(strcmp(cmd,"gamma")==0)
-			fscanf(fp,"%lf",&param.gamma);
+			stream >> param.gamma;
 		else if(strcmp(cmd,"coef0")==0)
-			fscanf(fp,"%lf",&param.coef0);
+			stream >> param.coef0;
 		else if(strcmp(cmd,"nr_class")==0)
-			fscanf(fp,"%d",&model->nr_class);
+			stream >> model->nr_class;
 		else if(strcmp(cmd,"total_sv")==0)
-			fscanf(fp,"%d",&model->l);
+			stream >> model->l;
 		else if(strcmp(cmd,"rho")==0)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
 			model->rho = Malloc(double,n);
 			for(int i=0;i<n;i++)
-				fscanf(fp,"%lf",&model->rho[i]);
+				stream >> model->rho[i];
 		}
 		else if(strcmp(cmd,"label")==0)
 		{
 			int n = model->nr_class;
 			model->label = Malloc(int,n);
 			for(int i=0;i<n;i++)
-				fscanf(fp,"%d",&model->label[i]);
+				stream >> model->label[i];
 		}
 		else if(strcmp(cmd,"probA")==0)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
 			model->probA = Malloc(double,n);
 			for(int i=0;i<n;i++)
-				fscanf(fp,"%lf",&model->probA[i]);
+				stream >> model->probA[i];
 		}
 		else if(strcmp(cmd,"probB")==0)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
 			model->probB = Malloc(double,n);
 			for(int i=0;i<n;i++)
-				fscanf(fp,"%lf",&model->probB[i]);
+				stream >> model->probB[i];
 		}
 		else if(strcmp(cmd,"nr_sv")==0)
 		{
 			int n = model->nr_class;
 			model->nSV = Malloc(int,n);
 			for(int i=0;i<n;i++)
-				fscanf(fp,"%d",&model->nSV[i]);
+				stream >> model->nSV[i];
 		}
 		else if(strcmp(cmd,"SV")==0)
 		{
 			while(1)
 			{
-				int c = getc(fp);
-				if(c==EOF || c=='\n') break;
+				int c = stream.get();
+				if(stream.eof() || c=='\n') break;
 			}
 			break;
 		}
@@ -3381,30 +3375,32 @@ svm_model *svm_load_model_alt(string& buffer)
 			return NULL;
 		}
 	}
+	if (stream.fail()){
+		free(model->rho);
+		free(model->label);
+		free(model->nSV);
+		free(model);
+		return NULL;
+
+	}
 
 	// read sv_coef and SV
 
 	int elements = 0;
-	long pos = ftell(fp);
+	long pos = stream.tellg();
 
-	max_line_len = 1024;
-	line = Malloc(char,max_line_len);
 	char *p,*endptr,*idx,*val;
-
-	while(readline(fp)!=NULL)
+	string str_line;
+	while (!stream.eof() && !stream.fail())
 	{
-		p = strtok(line,":");
-		while(1)
-		{
-			p = strtok(NULL,":");
-			if(p == NULL)
-				break;
-			++elements;
-		}
+		getline(stream, str_line);
+		elements += std::count(str_line.begin(), str_line.end(), ':');
 	}
+
 	elements += model->l;
 
-	fseek(fp,pos,SEEK_SET);
+	stream.clear();
+	stream.seekg(pos, ios::beg);
 
 	int m = model->nr_class - 1;
 	int l = model->l;
@@ -3417,9 +3413,17 @@ svm_model *svm_load_model_alt(string& buffer)
 	if(l>0) x_space = Malloc(svm_node,elements);
 
 	int j=0;
+	char *line;
 	for(i=0;i<l;i++)
 	{
-		readline(fp);
+		getline(stream, str_line);
+		if (str_line.size() == 0)
+			continue;
+
+		line = (char *) Malloc(char, str_line.size() + 1);
+		// Copy the line for strtok.
+		strcpy(line, str_line.c_str());
+
 		model->SV[i] = &x_space[j];
 
 		p = strtok(line, " \t");
@@ -3443,16 +3447,11 @@ svm_model *svm_load_model_alt(string& buffer)
 			++j;
 		}
 		x_space[j++].index = -1;
+		free(line);
 	}
-	free(line);
 
-	if (ferror(fp) != 0){
-		perror("SVM Model loading failed");
-		fclose(fp);
+	if (stream.fail())
 		return NULL;
-	}
-
-	fclose(fp);
 
 	model->free_sv = 1;	// XXX
 	return model;

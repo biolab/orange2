@@ -1266,7 +1266,8 @@ PyObject *LinearClassifier__reduce__(PyObject *self){
   PyTRY
 	CAST_TO(TLinearClassifier, classifier);
 	string buff;
-	linear_save_model_alt(buff, classifier->getModel());
+	if (linear_save_model_alt(buff, classifier->getModel()) != 0)
+		raiseError("Could not save the model");
 	return Py_BuildValue("O(OOOs)N", getExportedFunction("__pickleLoaderLinearClassifier"),
 									self->ob_type,
 									WrapOrange(classifier->classVar),
@@ -1287,6 +1288,8 @@ PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH
 		return NULL;
 	string buff(pBuff);
 	model *model = linear_load_model_alt(buff);
+	if (!model)
+		raiseError("Could not load the model");
 	return WrapNewOrange(mlnew TLinearClassifier(var, examples, model), (PyTypeObject*)&PyOrLinearClassifier_Type);
   PyCATCH
 }
