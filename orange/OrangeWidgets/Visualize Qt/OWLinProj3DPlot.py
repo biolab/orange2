@@ -69,9 +69,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
     def before_draw(self):
         view = QMatrix4x4()
         view.lookAt(
-            QVector3D(self.camera[0]*self.camera_distance,
-                      self.camera[1]*self.camera_distance,
-                      self.camera[2]*self.camera_distance),
+            self.camera * self.camera_distance,
             QVector3D(0, 0, 0),
             QVector3D(0, 1, 0))
         self.view = view
@@ -126,7 +124,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             self._value_lines_shader.setUniformValue('projection', self.projection)
             self._value_lines_shader.setUniformValue('modelview', self.view * self.model)
             self._value_lines_shader.setUniformValue('value_line_length', float(self.valueLineLength))
-            self._value_lines_shader.setUniformValue('plot_scale', self.plot_scale[0], self.plot_scale[1], self.plot_scale[2])
+            self._value_lines_shader.setUniformValue('plot_scale', self.plot_scale)
             self._value_lines_buffer.draw(GL_LINES)
             self._value_lines_shader.release()
 
@@ -192,8 +190,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
 
         self.set_features(0, 1, 2, color_index, symbol_index, size_index, label_index,
                           colors, num_symbols_used,
-                          x_discrete, y_discrete, z_discrete,
-                          numpy.array([1., 1., 1.]), numpy.array([0., 0., 0.]))
+                          x_discrete, y_discrete, z_discrete)
 
         def_color = QColor(150, 150, 150)
         def_symbol = 0
@@ -237,9 +234,9 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
                 color = (0, 0, 0)
 
             len_anchor_data = len(self.anchor_data)
-            x = array([x_positions[i]] * len_anchor_data)
-            y = array([y_positions[i]] * len_anchor_data)
-            z = array([z_positions[i]] * len_anchor_data)
+            x = numpy.array([x_positions[i]] * len_anchor_data)
+            y = numpy.array([y_positions[i]] * len_anchor_data)
+            z = numpy.array([z_positions[i]] * len_anchor_data)
             dists = numpy.sqrt((XAnchors - x)**2 + (YAnchors - y)**2 + (ZAnchors - z)**2)
             x_directions = 0.03 * (XAnchors - x) / dists
             y_directions = 0.03 * (YAnchors - y) / dists

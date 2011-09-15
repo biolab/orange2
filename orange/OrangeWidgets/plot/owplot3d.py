@@ -41,14 +41,26 @@ from OpenGL.GL.ARB.vertex_buffer_object import *
 from ctypes import c_void_p, c_char, c_char_p, POINTER
 
 import numpy
-from numpy import array, maximum
-#numpy.seterr(all='raise')
 
 try:
     from itertools import chain
     from itertools import izip as zip
 except:
     pass
+
+def vec_div(v1, v2):
+    return QVector3D(v1.x() / v2.x(),
+                     v1.y() / v2.y(),
+                     v1.z() / v2.z())
+
+def lower_bound(value, vec):
+    if vec.x() < value:
+        vec.setX(value)
+    if vec.y() < value:
+        vec.setY(value)
+    if vec.z() < value:
+        vec.setZ(value)
+    return vec
 
 def enum(*sequential):
     enums = dict(zip(sequential, range(len(sequential))))
@@ -62,14 +74,8 @@ PlotState = enum('IDLE', 'DRAGGING_LEGEND', 'ROTATING', 'SCALING', 'SELECTING', 
 Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
               'DIAMOND', 'WEDGE', 'LWEDGE', 'CROSS', 'XCROSS')
 
-from plot.primitives import get_symbol_geometry, clamp, normalize, GeometryType
+from plot.primitives import get_symbol_geometry, clamp, GeometryType
 
-name_map = {
-    "saveToFileDirect": "save_to_file_direct",
-    "saveToFile" : "save_to_file",
-}
-
-@deprecated_members(name_map, wrap_methods=name_map.keys())
 class OWLegend3D(OWLegend):
     def set_symbol_geometry(self, symbol, geometry):
         if not hasattr(self, '_symbol_geometry'):
@@ -148,6 +154,12 @@ class OWLegend3D(OWLegend):
                         QColor(0, 0, 255),
                         QColor(0, 0, 0))
 
+name_map = {
+    "saveToFileDirect": "save_to_file_direct",
+    "saveToFile" : "save_to_file",
+}
+
+@deprecated_members(name_map, wrap_methods=name_map.keys())
 class OWPlot3D(orangeqt.Plot3D):
     '''
     The base class behind 3D plots in Orange. Uses OpenGL as its rendering platform.
@@ -164,13 +176,13 @@ class OWPlot3D(orangeqt.Plot3D):
 
     **Data**
         This is the most important part of the Plot3D API. :meth:`set_plot_data` is
-        used to (not surprisingly) set the data which will be drawn.
+        used to (not surprisingly) set the data to draw.
         :meth:`set_features` tells Plot3D how to interpret the data (this method must
         be called after :meth:`set_plot_data` and can be called multiple times).
         :meth:`set_valid_data` optionally informs the plot which examples are invalid and
         should not be drawn. It should be called after set_plot_data, but before set_features.
         This separation permits certain optimizations, e.g. ScatterPlot3D sets data once only (at
-        the beginning), later on it calls set_features and set_valid_data only.
+        the beginning), later on it calls solely set_features and set_valid_data.
 
         .. automethod:: set_plot_data
 
@@ -210,14 +222,26 @@ class OWPlot3D(orangeqt.Plot3D):
     **Callbacks**
 
         Plot3D provides several callbacks which can be used to perform additional tasks (
-        such as drawing geometry before/after the data is drawn). Callback provided:
+        such as drawing custom geometry before/after the data is drawn). For example usage
+        see ``OWScatterPlot3D``. Callbacks provided:
 
-        auto_send_selection_callback
-        mouseover_callback
-        before_draw_callback
-        after_draw_callback
+            ==============               ==================================================
+            Callback                     Event
+            --------------               --------------------------------------------------
+            auto_send_selection_callback Selection changed.
+            mouseover_callback           Mouse cursor moved over a point. Also send example's index.
+            before_draw_callback         Right before drawing points (but after
+                                         current camera transformations have been computed,
+                                         so it's safe to use ``projection``, ``view`` and
+                                         ``model``).
+            after_draw_callback          Right after points have been drawn.
+            ==============               ==================================================
 
     **Coordinate transformations**
+
+        Data set by ``set_plot_data`` is in what Plot3D calls
+        data coordinate system. Plot coordinate system takes into account plot translation
+        and scale (together effectively being zoom as well).
 
         .. automethod:: map_to_plot
 
@@ -244,18 +268,15 @@ class OWPlot3D(orangeqt.Plot3D):
         self.setAutoFillBackground(False)
 
         self.camera_distance = 6.
-
         self.scale_factor = 0.30
         self.rotation_factor = 0.3
         self.zoom_factor = 2000.
-
         self.yaw = self.pitch = -pi / 4.
         self.panning_factor = 0.8
-        self.update_camera()
-
         self.perspective_near = 0.5
         self.perspective_far = 10.
         self.camera_fov = 14.
+        self.update_camera()
 
         self.show_legend = True
         self._legend = OWLegend3D(self, None)
@@ -267,10 +288,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.use_2d_symbols = False
         self.symbol_scale = 1.
         self.alpha_value = 255
-        self._zoomed_size = [1., 1., 1.]
 
         self._state = PlotState.IDLE
-
         self._selection = None
         self.selection_behavior = OWPlot.AddSelection
 
@@ -285,30 +304,21 @@ class OWPlot3D(orangeqt.Plot3D):
         self.invert_mouse_x = False
         self.mouse_sensitivity = 5
 
-        self.additional_scale = array([0., 0., 0.])
-        self.data_scale = array([1., 1., 1.])
-        self.data_translation = array([0., 0., 0.])
-        self.plot_scale = array([1., 1., 1.])
-        self.plot_translation = -array([0.5, 0.5, 0.5])
-
-        self._zoom_stack = []
+        self.clear_plot_transformations()
 
         self._theme = PlotTheme()
-
         self._tooltip_fbo_dirty = True
         self._tooltip_win_center = [0, 0]
-
         self._use_fbos = True
 
         # If True, do drawing using instancing + geometry shader processing,
         # if False, build VBO every time set_plot_data is called.
         self._use_opengl_3 = False
-
         self.hide_outside = False
         self.fade_outside = True
         self.label_index = -1
 
-        self.data = None
+        self.data = self.data_array = None
 
         self.continuous_palette = ColorPaletteGenerator(numberOfColors=-1)
         self.discrete_palette = ColorPaletteGenerator()
@@ -317,15 +327,6 @@ class OWPlot3D(orangeqt.Plot3D):
 	'''
             An :obj:`.OWPlotGUI` object associated with this plot
 	'''
-
-    def __del__(self):
-        pass
-        # TODO: never reached!
-        #glDeleteVertexArrays(1, self.dummy_vao)
-        #glDeleteVertexArrays(1, self.feedback_vao)
-        #glDeleteBuffers(1, self.symbol_buffer)
-        #if hasattr(self, 'data_buffer'):
-        #    glDeleteBuffers(1, self.data_buffer)
 
     def legend(self):
         '''
@@ -496,10 +497,10 @@ class OWPlot3D(orangeqt.Plot3D):
 
     def update_camera(self):
         self.pitch = clamp(self.pitch, -3., -0.1)
-        self.camera = [
+        self.camera = QVector3D(
             sin(self.pitch)*cos(self.yaw),
             cos(self.pitch),
-            sin(self.pitch)*sin(self.yaw)]
+            sin(self.pitch)*sin(self.yaw))
 
     def get_mvp(self):
         '''
@@ -512,9 +513,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
         view = QMatrix4x4()
         view.lookAt(
-            QVector3D(self.camera[0]*self.camera_distance,
-                      self.camera[1]*self.camera_distance,
-                      self.camera[2]*self.camera_distance),
+            self.camera * self.camera_distance,
             QVector3D(0,-0.1, 0),
             QVector3D(0, 1, 0))
 
@@ -535,7 +534,7 @@ class OWPlot3D(orangeqt.Plot3D):
         if self.before_draw_callback:
             self.before_draw_callback()
 
-        plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
+        plot_scale = lower_bound(1e-5, self.plot_scale+self.additional_scale)
 
         self.symbol_program.bind()
         self.symbol_program.setUniformValue('modelview', self.view * self.model)
@@ -546,8 +545,8 @@ class OWPlot3D(orangeqt.Plot3D):
         self.symbol_program.setUniformValue(self.symbol_program_encode_color,   False)
         self.symbol_program.setUniformValue(self.symbol_program_symbol_scale,   self.symbol_scale, self.symbol_scale)
         self.symbol_program.setUniformValue(self.symbol_program_alpha_value,    self.alpha_value / 255., self.alpha_value / 255.)
-        self.symbol_program.setUniformValue(self.symbol_program_scale,          *plot_scale)
-        self.symbol_program.setUniformValue(self.symbol_program_translation,    *self.plot_translation)
+        self.symbol_program.setUniformValue(self.symbol_program_scale,          plot_scale)
+        self.symbol_program.setUniformValue(self.symbol_program_translation,    self.plot_translation)
         self.symbol_program.setUniformValue(self.symbol_program_force_color,    0., 0., 0., 0.)
 
         if self._use_opengl_3 and self._feedback_generated:
@@ -567,7 +566,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.symbol_program.release()
 
-        self.draw_labels()
+        self._draw_labels()
 
         if self.after_draw_callback:
             self.after_draw_callback()
@@ -597,7 +596,7 @@ class OWPlot3D(orangeqt.Plot3D):
             self._tooltip_fbo_dirty = False
             glViewport(0, 0, self.width(), self.height())
 
-        self.draw_helpers()
+        self._draw_helpers()
 
         if self.show_legend:
             glMatrixMode(GL_PROJECTION)
@@ -611,7 +610,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
         self.swapBuffers()
 
-    def draw_labels(self):
+    def _draw_labels(self):
         if self.label_index < 0:
             return
 
@@ -629,7 +628,7 @@ class OWPlot3D(orangeqt.Plot3D):
             y = example[self.y_index]
             z = example[self.z_index]
             label = example[self.label_index]
-            x, y, z = self.map_to_plot(array([x, y, z]), original=False)
+            x, y, z = self.map_to_plot(QVector3D(x, y, z))
             # TODO
             #if isinstance(label, str):
                 #self.renderText(x,y,z, label, font=self._theme.labels_font)
@@ -637,7 +636,7 @@ class OWPlot3D(orangeqt.Plot3D):
             self.renderText(x,y,z, ('%.3f' % label).rstrip('0').rstrip('.'),
                             font=self._theme.labels_font)
 
-    def draw_helpers(self):
+    def _draw_helpers(self):
         glEnable(GL_BLEND)
         glDisable(GL_DEPTH_TEST)
 
@@ -707,16 +706,13 @@ class OWPlot3D(orangeqt.Plot3D):
             x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
-            x_discrete, y_discrete, z_discrete,
-            data_scale=array([1., 1., 1.]),
-            data_translation=array([0., 0., 0.])):
+            x_discrete, y_discrete, z_discrete):
         '''
         Explains to the plot how to interpret the data set by :meth:`set_plot_data`. Its arguments
         are indices (must be less than the size of an example) into the dataset (each one
         specifies a column). Additionally, it accepts a list of colors (when color is a discrete
-        attribute), a value specifying how many different symbols are needed to display the data,
-        information whether or not positional data is discrete, and transformations (scale and
-        translation) that were applied to the data.
+        attribute), a value specifying how many different symbols are needed to display the data and
+        information whether or not positional data is discrete.
 
         .. note:: This function does not add items to the legend automatically. 
                   You will have to add them yourself with :meth:`.OWLegend.add_item`. 
@@ -759,22 +755,12 @@ class OWPlot3D(orangeqt.Plot3D):
 
         :param z_discrete: Specifies whether or not z coordinate is discrete.
         :type bool
-
-        :param data_scale: Specifies the scale that was applied to the data (set with set_plot_data).
-            Not required.
-        :type numpy.array
-
-        :param data_translation: Specifies the translation that was applied to the data (set with set_plot_data).
-            Not required.
-        :type numpy.array
         '''
         if self.data == None:
             print('set_plot_data has not been called yet!')
             return
         start = time.time()
         self.makeCurrent()
-        self.data_scale = data_scale
-        self.data_translation = data_translation
         self.x_index = x_index
         self.y_index = y_index
         self.z_index = z_index
@@ -787,8 +773,6 @@ class OWPlot3D(orangeqt.Plot3D):
         self.y_discrete = y_discrete
         self.z_discrete = z_discrete
         self.label_index = label_index
-
-        # If color is a discrete attribute, colors should be a list of QColor
 
         if self._use_opengl_3:
             # Re-run generating program (geometry shader), store
@@ -855,7 +839,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
     def set_plot_data(self, data, subset_data=None):
         '''
-        Sets the data to be drawn.
+        Sets the data to be drawn. Data is expected to be scaled already (see ``OWScatterPlot3D`` for example).
 
         :param data: Data
         :type data: numpy array
@@ -892,24 +876,37 @@ class OWPlot3D(orangeqt.Plot3D):
         self.valid_data = numpy.array(valid_data, dtype=bool) # QList<bool> is being a PITA
         orangeqt.Plot3D.set_valid_data(self, long(self.valid_data.ctypes.data))
 
-    def set_new_zoom(self, x_min, x_max, y_min, y_max, z_min, z_max, plot_coordinates=False):
-        '''Specifies new zoom in data or plot coordinates.'''
-        self._zoom_stack.append((self.plot_scale, self.plot_translation))
+    def set_new_zoom(self, min, max):
+        '''
+        Specifies new zoom in data coordinates. Zoom is provided in form of plot translation
+        and scale, not camera transformation. This might not be what you want (``OWLinProj3D``
+        disables this behavior for example). Plot3D remembers translation and scale.
+        ``zoom_out`` can be use to restore the previous zoom level.
 
-        max = array([x_max, y_max, z_max]).copy()
-        min = array([x_min, y_min, z_min]).copy()
-        if not plot_coordinates:
-            min -= self.data_translation
-            min *= self.data_scale
-            max -= self.data_translation
-            max *= self.data_scale
+        :param min: Lower left corner of the new zoom volume.
+        :type QVector3D
+
+        :param max: Upper right corner of the new zoom volume.
+        :type QVector3D
+        '''
+        self._zoom_stack.append((self.plot_scale, self.plot_translation))
         center = (max + min) / 2.
-        new_translation = -array(center)
-        # Avoid division by zero by adding a small value (this happens when zooming in
-        # on elements with the same value of an attribute).
-        self._zoomed_size = array(map(lambda i: i+1e-5 if i == 0 else i, max-min))
-        new_scale = 1. / self._zoomed_size
+        new_translation = -center
+        self._zoomed_size = max-min + QVector3D(1e-5, 1e-5, 1e-5)
+        new_scale = vec_div(QVector3D(1, 1, 1), self._zoomed_size)
         self._animate_new_scale_translation(new_scale, new_translation)
+
+    def zoom_out(self):
+        '''
+        Restores previous zoom level.
+        '''
+        if len(self._zoom_stack) < 1:
+            new_translation = QVector3D(-0.5, -0.5, -0.5)
+            new_scale = QVector3D(1, 1, 1)
+        else:
+            new_scale, new_translation = self._zoom_stack.pop()
+        self._animate_new_scale_translation(new_scale, new_translation)
+        self._zoomed_size = vec_div(QVector3D(1, 1, 1), new_scale)
 
     def _animate_new_scale_translation(self, new_scale, new_translation, num_steps=10):
         translation_step = (new_translation - self.plot_translation) / float(num_steps)
@@ -930,16 +927,8 @@ class OWPlot3D(orangeqt.Plot3D):
             self.plot_scale = self.plot_scale + scale_step
             self.repaint()
 
-    def zoom_out(self):
-        if len(self._zoom_stack) < 1:
-            new_translation = -array([0.5, 0.5, 0.5])
-            new_scale = array([1., 1., 1.])
-        else:
-            new_scale, new_translation = self._zoom_stack.pop()
-        self._animate_new_scale_translation(new_scale, new_translation)
-        self._zoomed_size = 1. / new_scale
-
     def save_to_file(self, extraButtons=[]):
+        print('Save to file called!')
         sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
         sizeDlg.exec_()
 
@@ -947,22 +936,28 @@ class OWPlot3D(orangeqt.Plot3D):
         sizeDlg = OWChooseImageSizeDlg(self)
         sizeDlg.saveImage(fileName, size)
 
-    def map_to_plot(self, point, original=True):
-        if original:
-            point -= self.data_translation
-            point *= self.data_scale
-        point += self.plot_translation
-        plot_scale = maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
-        point *= plot_scale
+    def map_to_plot(self, point):
+        '''
+        Maps ``point`` to plot coordinates (applies current translation and scale).
+        ``point`` is assumed to be in data coordinates.
+
+        :param point: Location in space
+        :type QVector3D
+        '''
+        plot_scale = lower_bound(1e-5, self.plot_scale+self.additional_scale)
+        point = (point + self.plot_translation) * plot_scale
         return point
 
-    def map_to_data(self, point, original=True):
-        plot_scale = maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
-        point /= plot_scale
-        point -= self.plot_translation
-        if original:
-            point /= self.data_scale
-            point += self.data_translation
+    def map_to_data(self, point):
+        '''
+        Maps ``point`` to data coordinates (applies inverse of the current translation and scale).
+        ``point`` is assumed to be in plot coordinates.
+
+        :param point: Location in space
+        :type QVector3D
+        '''
+        plot_scale = lower_bound(1e-5, self.plot_scale+self.additional_scale)
+        point = vec_div(point, plot_scale) - self.plot_translation
         return point
 
     def get_min_max_selected(self, area):
@@ -975,8 +970,7 @@ class OWPlot3D(orangeqt.Plot3D):
         viewport = [0, 0, self.width(), self.height()]
         area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
         min_max = orangeqt.Plot3D.get_min_max_selected(self, area, self.projection * self.view * self.model,
-                                                       viewport,
-                                                       QVector3D(*self.plot_scale), QVector3D(*self.plot_translation))
+                                                       viewport, self.plot_scale, self.plot_translation)
         return min_max
 
     def get_selected_indices(self):
@@ -999,8 +993,7 @@ class OWPlot3D(orangeqt.Plot3D):
         viewport = [0, 0, self.width(), self.height()]
         area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
         orangeqt.Plot3D.select_points(self, area, self.projection * self.view * self.model,
-                                      viewport,
-                                      QVector3D(*self.plot_scale), QVector3D(*self.plot_translation),
+                                      viewport, self.plot_scale, self.plot_translation,
                                       behavior)
         orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
                                     self.color_index, self.symbol_index, self.size_index, self.label_index,
@@ -1054,7 +1047,7 @@ class OWPlot3D(orangeqt.Plot3D):
             if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 self._state = PlotState.SCALING
                 self.scaling_init_pos = self._mouse_position
-                self.additional_scale = array([0., 0., 0.])
+                self.additional_scale = QVector3D(0, 0, 0)
             else:
                 self.zoom_out()
             self.update()
@@ -1106,26 +1099,26 @@ class OWPlot3D(orangeqt.Plot3D):
             self.pitch += (self.mouse_sensitivity / 5.) * dy / (self.rotation_factor*self.height())
             self.update_camera()
         elif self._state == PlotState.PANNING:
-            right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
-            up_vec = normalize(numpy.cross(right_vec, self.camera))
-            right_vec[0] *= dx / (self.width() * self.plot_scale[0] * self.panning_factor)
-            right_vec[2] *= dx / (self.width() * self.plot_scale[2] * self.panning_factor)
-            right_vec[0] *= (self.mouse_sensitivity / 5.)
-            right_vec[2] *= (self.mouse_sensitivity / 5.)
-            up_scale = self.height() * self.plot_scale[1] * self.panning_factor
+            right_vec = QVector3D.crossProduct(self.camera, QVector3D(0, 1, 0)).normalized()
+            up_vec = QVector3D.crossProduct(right_vec, self.camera).normalized()
+            right_vec.setX(right_vec.x() * dx / (self.width() * self.plot_scale.x() * self.panning_factor))
+            right_vec.setZ(right_vec.z() * dx / (self.width() * self.plot_scale.z() * self.panning_factor))
+            right_vec.setX(right_vec.x() * (self.mouse_sensitivity / 5.))
+            right_vec.setZ(right_vec.z() * (self.mouse_sensitivity / 5.))
+            up_scale = self.height() * self.plot_scale.y() * self.panning_factor
             self.plot_translation -= right_vec + up_vec * (dy / up_scale) * (self.mouse_sensitivity / 5.)
         elif self._state == PlotState.SCALING:
             dx = pos.x() - self.scaling_init_pos.x()
             dy = pos.y() - self.scaling_init_pos.y()
             dx /= self.scale_factor * self.width()
             dy /= self.scale_factor * self.height()
-            dy /= float(self._zoomed_size[1])
+            dy /= float(self._zoomed_size.y())
             dx *= self.mouse_sensitivity / 5.
             dy *= self.mouse_sensitivity / 5.
-            right_vec = normalize(numpy.cross(self.camera, [0, 1, 0]))
-            self.additional_scale = [-dx * abs(right_vec[0]) / float(self._zoomed_size[0]),
-                                     dy,
-                                     -dx * abs(right_vec[2]) / float(self._zoomed_size[2])]
+            right_vec = QVector3D.crossProduct(self.camera, QVector3D(0, 1, 0)).normalized()
+            self.additional_scale = QVector3D(-dx * abs(right_vec.x()) / float(self._zoomed_size.x()),
+                                               dy,
+                                              -dx * abs(right_vec.z()) / float(self._zoomed_size.z()))
         elif self._state == PlotState.IDLE:
             legend_pos = self._legend.pos()
             lx, ly = legend_pos.x(), legend_pos.y()
@@ -1141,17 +1134,18 @@ class OWPlot3D(orangeqt.Plot3D):
         if self._state == PlotState.DRAGGING_LEGEND:
             self._legend.mouseReleaseEvent(event)
         if self._state == PlotState.SCALING:
-            self.plot_scale = numpy.maximum([1e-5, 1e-5, 1e-5], self.plot_scale+self.additional_scale)
-            self.additional_scale = array([0., 0., 0.])
+            self.plot_scale = lower_bound(1e-5, self.plot_scale+self.additional_scale)
+            self.additional_scale = QVector3D(0, 0, 0)
             self._state = PlotState.IDLE
         elif self._state == PlotState.SELECTING:
             self._selection.setBottomRight(event.pos())
             if self.state == ZOOMING: # self.state is actually set by OWPlotGUI (different from self._state!)
                 min_max = self.get_min_max_selected(self._selection)
-                self.set_new_zoom(*min_max, plot_coordinates=True)
+                x_min, x_max, y_min, y_max, z_min, z_max = min_max
+                min, max = QVector3D(x_min, y_min, z_min), QVector3D(x_max, y_max, z_max)
+                self.set_new_zoom(min, max)
             else:
                 self.select_points(self._selection, self.selection_behavior)
-
                 if self.auto_send_selection_callback:
                     self.auto_send_selection_callback()
 
@@ -1205,8 +1199,6 @@ class OWPlot3D(orangeqt.Plot3D):
         Clears the plot (legend) but remembers plot transformations (zoom, scale, translation).
         '''
         self._legend.clear()
-        self.data_scale = array([1., 1., 1.])
-        self.data_translation = array([0., 0., 0.])
         self._tooltip_fbo_dirty = True
         self._feedback_generated = False
 
@@ -1215,10 +1207,10 @@ class OWPlot3D(orangeqt.Plot3D):
         Forgets plot transformations (zoom, scale, translation).
         '''
         self._zoom_stack = []
-        self._zoomed_size = [1., 1., 1.]
-        self.plot_translation = -array([0.5, 0.5, 0.5])
-        self.plot_scale = array([1., 1., 1.])
-        self.additional_scale = array([0., 0., 0.])
+        self._zoomed_size = QVector3D(1, 1, 1)
+        self.plot_translation = QVector3D(-0.5, -0.5, -0.5)
+        self.plot_scale = QVector3D(1, 1, 1)
+        self.additional_scale = QVector3D(0, 0, 0)
 
     contPalette = deprecated_attribute('contPalette', 'continuous_palette')
     discPalette = deprecated_attribute('discPalette', 'discrete_palette')

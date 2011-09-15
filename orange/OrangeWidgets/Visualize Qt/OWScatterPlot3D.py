@@ -28,12 +28,33 @@ import numpy
 TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
 Axis = enum('X', 'Y', 'Z')
 
-def plane_visible(plane, location):
-    normal = normal_from_points(*plane[:3])
-    loc_plane = normalize(plane[0] - location)
-    if numpy.dot(normal, loc_plane) > 0:
-        return False
-    return True
+class Plane:
+    '''Internal convenience class.'''
+    def __init__(self, A, B, C, D):
+        self.A = A
+        self.B = B
+        self.C = C
+        self.D = D
+
+    def normal(self):
+        v1 = self.A - self.B
+        v2 = self.A - self.C
+        return QVector3D.crossProduct(v1, v2).normalized()
+
+    def visible_from(self, location):
+        normal = self.normal()
+        loc_plane = (self.A - location).normalized()
+        if QVector3D.dotProduct(normal, loc_plane) > 0:
+            return False
+        return True
+
+class Edge:
+    def __init__(self, v0, v1):
+        self.v0 = v0
+        self.v1 = v1
+
+    def __add__(self, vec):
+        return Edge(self.v0 + vec, self.v1 + vec)
 
 def nicenum(x, round):
     if x <= 0.:
@@ -165,6 +186,9 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             data_scale[2] = 0.5 / float(len(self.data_domain[z_attr].values))
             data_translation[2] = 1.
 
+        self.data_scale = QVector3D(*data_scale)
+        self.data_translation = QVector3D(*data_translation)
+
         self._x_axis_labels = None
         self._y_axis_labels = None
         self._z_axis_labels = None
@@ -187,8 +211,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         self.set_features(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
-            x_discrete, y_discrete, z_discrete,
-            data_scale, data_translation)
+            x_discrete, y_discrete, z_discrete)
 
         ## Legend
         def_color = QColor(150, 150, 150)
@@ -272,36 +295,40 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                  self.z_axis+self.unit_x+self.unit_y]
         glBegin(GL_LINES)
         for edge in edges:
-            start, end = edge
-            glVertex3f(*start)
-            glVertex3f(*end)
+            start, end = edge.v0, edge.v1
+            glVertex3f(start.x(), start.y(), start.z())
+            glVertex3f(end.x(), end.y(), end.z())
         glEnd()
         glDisable(GL_LINE_STIPPLE)
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
+    def _map_to_original(self, point, coord_index):
+        v = vec_div(self.map_to_data(point), self.data_scale) + self.data_translation
+        if coord_index == 0:
+            return v.x()
+        elif coord_index == 1:
+            return v.y()
+        elif coord_index == 2:
+            return v.z()
+
     def _draw_grid(self):
         self.renderer.set_transform(self.model, self.view, self.projection)
-
-        cam_in_space = numpy.array([
-          self.camera[0]*self.camera_distance,
-          self.camera[1]*self.camera_distance,
-          self.camera[2]*self.camera_distance
-        ])
+        cam_in_space = self.camera * self.camera_distance
 
         def _draw_grid_plane(axis0, axis1, normal0, normal1, i, j):
             for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
-                start, end = axis.copy()
-                start_value = self.map_to_data(start.copy())[coord_index]
-                end_value = self.map_to_data(end.copy())[coord_index]
+                start, end = axis.v0, axis.v1
+                start_value = self._map_to_original(start, coord_index)
+                end_value = self._map_to_original(end, coord_index)
                 values, _ = loose_label(start_value, end_value, 7)
                 for value in values:
                     if not (start_value <= value <= end_value):
                         continue
                     position = start + (end-start)*((value-start_value) / float(end_value-start_value))
                     self.renderer.draw_line(
-                        QVector3D(*position),
-                        QVector3D(*(position-normal*1.)),
+                        position,
+                        position - normal*1,
                         color=self._theme.grid_color)
 
         glDisable(GL_DEPTH_TEST)
@@ -314,18 +341,18 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                 [self.y_axis, self.z_axis],
                 [self.x_axis+self.unit_z, self.y_axis+self.unit_z],
                 [self.z_axis+self.unit_x, self.y_axis+self.unit_x]]
-        normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
+        normals = [[QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0, 0,-1), QVector3D( 0,-1, 0)],
+                   [QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0,-1, 0), QVector3D( 0, 0,-1)]]
         coords = [[0, 1],
                   [1, 2],
                   [0, 1],
                   [2, 1]]
-        visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
-        xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
+        visible_planes = [plane.visible_from(cam_in_space) for plane in planes]
+        xz_visible = not self.axis_plane_xz.visible_from(cam_in_space)
         if xz_visible:
-            _draw_grid_plane(self.x_axis, self.z_axis, numpy.array([0,0,-1]), numpy.array([-1,0,0]), 0, 2)
+            _draw_grid_plane(self.x_axis, self.z_axis, QVector3D(0, 0, -1), QVector3D(-1, 0, 0), 0, 2)
         for visible, (axis0, axis1), (normal0, normal1), (i, j) in\
              zip(visible_planes, axes, normals, coords):
             if not visible:
@@ -336,71 +363,59 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
 
     def _build_axes(self):
         edge_half = 1. / 2.
-        x_axis = [[-edge_half, -edge_half, -edge_half], [edge_half, -edge_half, -edge_half]]
-        y_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, edge_half, -edge_half]]
-        z_axis = [[-edge_half, -edge_half, -edge_half], [-edge_half, -edge_half, edge_half]]
+        self.x_axis = Edge(QVector3D(-edge_half, -edge_half, -edge_half), QVector3D( edge_half, -edge_half, -edge_half))
+        self.y_axis = Edge(QVector3D(-edge_half, -edge_half, -edge_half), QVector3D(-edge_half,  edge_half, -edge_half))
+        self.z_axis = Edge(QVector3D(-edge_half, -edge_half, -edge_half), QVector3D(-edge_half, -edge_half,  edge_half))
 
-        self.x_axis = x_axis = numpy.array(x_axis)
-        self.y_axis = y_axis = numpy.array(y_axis)
-        self.z_axis = z_axis = numpy.array(z_axis)
-
-        self.unit_x = unit_x = numpy.array([1., 0., 0.])
-        self.unit_y = unit_y = numpy.array([0., 1., 0.])
-        self.unit_z = unit_z = numpy.array([0., 0., 1.])
+        self.unit_x = unit_x = QVector3D(1, 0, 0)
+        self.unit_y = unit_y = QVector3D(0, 1, 0)
+        self.unit_z = unit_z = QVector3D(0, 0, 1)
  
-        A = y_axis[1]
-        B = y_axis[1] + unit_x
-        C = x_axis[1]
-        D = x_axis[0]
+        A = self.y_axis.v1
+        B = self.y_axis.v1 + unit_x
+        C = self.x_axis.v1
+        D = self.x_axis.v0
 
         E = A + unit_z
         F = B + unit_z
         G = C + unit_z
         H = D + unit_z
 
-        self.axis_plane_xy = [A, B, C, D]
-        self.axis_plane_yz = [A, D, H, E]
-        self.axis_plane_xz = [D, C, G, H]
+        self.axis_plane_xy = Plane(A, B, C, D)
+        self.axis_plane_yz = Plane(A, D, H, E)
+        self.axis_plane_xz = Plane(D, C, G, H)
 
-        self.axis_plane_xy_back = [H, G, F, E]
-        self.axis_plane_yz_right = [B, F, G, C]
-        self.axis_plane_xz_top = [E, F, B, A]
+        self.axis_plane_xy_back = Plane(H, G, F, E)
+        self.axis_plane_yz_right = Plane(B, F, G, C)
+        self.axis_plane_xz_top = Plane(E, F, B, A)
 
     def _draw_axes(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
-        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
-
         self.renderer.set_transform(self.model, self.view, self.projection)
 
-        def _draw_axis(line):
+        def _draw_axis(axis):
             glLineWidth(2)
-            self.renderer.draw_line(QVector3D(*line[0]),
-                                    QVector3D(*line[1]),
+            self.renderer.draw_line(axis.v0,
+                                    axis.v1,
                                     color=self._theme.axis_color)
             glLineWidth(1)
 
         def _draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
-            start, end = axis.copy()
-            start_value = self.map_to_data(start.copy())[coord_index]
-            end_value = self.map_to_data(end.copy())[coord_index]
+            start, end = axis.v0, axis.v1
+            start_value = self._map_to_original(start, coord_index)
+            end_value = self._map_to_original(end, coord_index)
             length = end_value - start_value
             for i, label in enumerate(axis_labels):
                 value = (i + 1) * 2
                 if start_value <= value <= end_value:
                     position = start + (end-start)*((value-start_value) / length)
                     self.renderer.draw_line(
-                        QVector3D(*position),
-                        QVector3D(*(position + normal*0.03)),
+                        position,
+                        position + normal*0.03,
                         color=self._theme.axis_values_color)
                     position += normal * 0.1
-                    self.renderText(position[0],
-                                    position[1],
-                                    position[2],
+                    self.renderText(position.x(),
+                                    position.y(),
+                                    position.z(),
                                     label, font=self._theme.labels_font)
 
         def _draw_values(axis, coord_index, normal, axis_labels):
@@ -408,9 +423,9 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             if axis_labels != None:
                 _draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
                 return
-            start, end = axis.copy()
-            start_value = self.map_to_data(start.copy())[coord_index]
-            end_value = self.map_to_data(end.copy())[coord_index]
+            start, end = axis.v0, axis.v1
+            start_value = self._map_to_original(start, coord_index)
+            end_value = self._map_to_original(end, coord_index)
             values, num_frac = loose_label(start_value, end_value, 7)
             for value in values:
                 if not (start_value <= value <= end_value):
@@ -418,19 +433,19 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                 position = start + (end-start)*((value-start_value) / float(end_value-start_value))
                 text = ('%%.%df' % num_frac) % value
                 self.renderer.draw_line(
-                    QVector3D(*position),
-                    QVector3D(*(position+normal*0.03)),
+                    position,
+                    position+normal*0.03,
                     color=self._theme.axis_values_color)
                 position += normal * 0.1
-                self.renderText(position[0],
-                                position[1],
-                                position[2],
+                self.renderText(position.x(),
+                                position.y(),
+                                position.z(),
                                 text, font=self._theme.axis_font)
 
         def _draw_axis_title(axis, title, normal):
-            middle = (axis[0] + axis[1]) / 2.
-            middle += normal * 0.1 if axis[0][1] != axis[1][1] else normal * 0.2
-            self.renderText(middle[0], middle[1], middle[2],
+            middle = (axis.v0 + axis.v1) / 2.
+            middle += normal * 0.1 if axis.v0.y() != axis.v1.y() else normal * 0.2
+            self.renderText(middle.x(), middle.y(), middle.z(),
                             title,
                             font=self._theme.axis_title_font)
 
@@ -439,44 +454,40 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        cam_in_space = numpy.array([
-          self.camera[0]*self.camera_distance,
-          self.camera[1]*self.camera_distance,
-          self.camera[2]*self.camera_distance
-        ])
+        cam_in_space = self.camera * self.camera_distance
 
         # TODO: the code below is horrible and should be simplified
         planes = [self.axis_plane_xy, self.axis_plane_yz,
                   self.axis_plane_xy_back, self.axis_plane_yz_right]
-        normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
-        visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
-        xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
+        normals = [[QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0, 0,-1), QVector3D( 0,-1, 0)],
+                   [QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0,-1, 0), QVector3D( 0, 0,-1)]]
+        visible_planes = [plane.visible_from(cam_in_space) for plane in planes]
+        xz_visible = not self.axis_plane_xz.visible_from(cam_in_space)
 
         if visible_planes[0 if xz_visible else 2]:
             _draw_axis(self.x_axis)
-            _draw_values(self.x_axis, 0, numpy.array([0, 0, -1]), self._x_axis_labels)
+            _draw_values(self.x_axis, 0, QVector3D(0, 0, -1), self._x_axis_labels)
             if self.show_x_axis_title:
-                _draw_axis_title(self.x_axis, self._x_axis_title, numpy.array([0, 0, -1]))
+                _draw_axis_title(self.x_axis, self._x_axis_title, QVector3D(0, 0, -1))
         elif visible_planes[2 if xz_visible else 0]:
             _draw_axis(self.x_axis + self.unit_z)
-            _draw_values(self.x_axis + self.unit_z, 0, numpy.array([0, 0, 1]), self._x_axis_labels)
+            _draw_values(self.x_axis + self.unit_z, 0, QVector3D(0, 0, 1), self._x_axis_labels)
             if self.show_x_axis_title:
                 _draw_axis_title(self.x_axis + self.unit_z,
-                                self._x_axis_title, numpy.array([0, 0, 1]))
+                                self._x_axis_title, QVector3D(0, 0, 1))
 
         if visible_planes[1 if xz_visible else 3]:
             _draw_axis(self.z_axis)
-            _draw_values(self.z_axis, 2, numpy.array([-1, 0, 0]), self._z_axis_labels)
+            _draw_values(self.z_axis, 2, QVector3D(-1, 0, 0), self._z_axis_labels)
             if self.show_z_axis_title:
-                _draw_axis_title(self.z_axis, self._z_axis_title, numpy.array([-1, 0, 0]))
+                _draw_axis_title(self.z_axis, self._z_axis_title, QVector3D(-1, 0, 0))
         elif visible_planes[3 if xz_visible else 1]:
             _draw_axis(self.z_axis + self.unit_x)
-            _draw_values(self.z_axis + self.unit_x, 2, numpy.array([1, 0, 0]), self._z_axis_labels)
+            _draw_values(self.z_axis + self.unit_x, 2, QVector3D(1, 0, 0), self._z_axis_labels)
             if self.show_z_axis_title:
-                _draw_axis_title(self.z_axis + self.unit_x, self._z_axis_title, numpy.array([1, 0, 0]))
+                _draw_axis_title(self.z_axis + self.unit_x, self._z_axis_title, QVector3D(1, 0, 0))
 
         try:
             rightmost_visible = visible_planes[::-1].index(True)
@@ -488,10 +499,10 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                              self.y_axis+self.unit_x+self.unit_z,
                              self.y_axis+self.unit_z,
                              self.y_axis]
-        normals = [numpy.array([1, 0, 0]),
-                   numpy.array([0, 0, 1]),
-                   numpy.array([-1,0, 0]),
-                   numpy.array([0, 0,-1])]
+        normals = [QVector3D(1, 0, 0),
+                   QVector3D(0, 0, 1),
+                   QVector3D(-1,0, 0),
+                   QVector3D(0, 0,-1)]
         axis = y_axis_translated[rightmost_visible]
         normal = normals[rightmost_visible]
         _draw_axis(axis)

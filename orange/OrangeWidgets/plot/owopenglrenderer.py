@@ -4,7 +4,9 @@
 OpenGL Renderer (``owopenglrenderer``)
 #################
 
-.. autoclass:: OrangeWidgets.plot.OWOpenGLRenderer
+.. autoclass:: VertexBuffer
+
+.. autoclass:: OWOpenGLRenderer
 
 '''
 
@@ -97,6 +99,10 @@ class VertexBuffer:
             glBufferData(GL_ARRAY_BUFFER, data, usage)
             self._data_length = len(data)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+    def __del__(self):
+        # TODO
+        pass
 
     def draw(self, primitives=GL_TRIANGLES, first=0, count=-1):
         '''

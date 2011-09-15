@@ -28,9 +28,9 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
     def _build_anchor_grid(self):
         lines = []
         num_parts = 30
-        anchors = array([a[:3] for a in self.anchor_data])
+        anchors = numpy.array([a[:3] for a in self.anchor_data])
         for anchor in self.anchor_data:
-            a0 = array(anchor[:3])
+            a0 = numpy.array(anchor[:3])
             neighbours = anchors.copy()
             neighbours = [(((n-a0)**2).sum(), n)  for n in neighbours]
             neighbours.sort(key=lambda e: e[0])
@@ -146,9 +146,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         if self.camera_type == 2:
             view.lookAt(
                 QVector3D(self._random_anchor[0], self._random_anchor[1], self._random_anchor[2]),
-                QVector3D(self.camera[0],
-                          self.camera[1],
-                          self.camera[2]),
+                self.camera,
                 QVector3D(0, 1, 0))
             projection = QMatrix4x4()
             projection.perspective(self.camera_angle, float(self.width()) / self.height(),
@@ -157,9 +155,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         elif self.camera_type == 1:
             view.lookAt(
                 QVector3D(0, 0, 0),
-                QVector3D(self.camera[0]*self.camera_distance,
-                          self.camera[1]*self.camera_distance,
-                          self.camera[2]*self.camera_distance),
+                self.camera * self.camera_distance,
                 QVector3D(0, 1, 0))
             projection = QMatrix4x4()
             projection.perspective(self.camera_angle, float(self.width()) / self.height(),
@@ -167,9 +163,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
             self.projection = projection
         else:
             view.lookAt(
-                QVector3D(self.camera[0]*self.camera_distance,
-                          self.camera[1]*self.camera_distance,
-                          self.camera[2]*self.camera_distance),
+                self.camera * self.camera_distance,
                 QVector3D(0, 0, 0),
                 QVector3D(0, 1, 0))
         self.view = view
@@ -237,7 +231,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
         self._sphere_shader.bind()
         self._sphere_shader.setUniformValue('projection', self.projection)
         self._sphere_shader.setUniformValue('modelview', self.view * self.model)
-        self._sphere_shader.setUniformValue('cam_position', QVector3D(*self.camera)*self.camera_distance)
+        self._sphere_shader.setUniformValue('cam_position', self.camera * self.camera_distance)
         self._sphere_shader.setUniformValue('use_transparency', self.camera_type == 0)
         self._sphere_buffer.draw(GL_LINES)
         self._sphere_shader.release()
