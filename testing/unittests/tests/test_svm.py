@@ -1,3 +1,4 @@
+import Orange
 from Orange.classification.svm import SVMLearner, MeasureAttribute_SVMWeights, LinearLearner, RFE
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
 from Orange.misc import testing
@@ -25,10 +26,20 @@ class RBFSVMTestCase(testing.LearnerTestCase):
 class SigmoidSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-sig", kernel_type=SVMLearner.Sigmoid)
     
-    
-@datasets_driven(datasets=datasets)
-class BagOfWordsSVMTestCase(testing.LearnerTestCase):
-    LEARNER = SVMLearner(name="svm-bow", kernel_type=SVMLearner.Custom, kernelFunc=BagOfWords())
+
+#def to_sparse(data):
+#    domain = Orange.data.Domain([], data.domain.class_var)
+#    domain.add_metas(dict([(Orange.core.newmetaid(), v) for v in data.domain.attributes]))
+#    return Orange.data.Table(domain, data)
+#
+#def sparse_data_iter():
+#    for name, (data, ) in testing.datasets_iter(datasets):
+#        yield name, (to_sparse(data), )
+#    
+## This needs sparse datasets. 
+#@testing.data_driven(data_iter=sparse_data_iter())
+#class BagOfWordsSVMTestCase(testing.LearnerTestCase):
+#    LEARNER = SVMLearner(name="svm-bow", kernel_type=SVMLearner.Custom, kernelFunc=BagOfWords())
     
     
 @datasets_driven(datasets=datasets)
