@@ -21,7 +21,7 @@ from OWDlgs import OWChooseImageSizeDlg
 from Orange.misc import deprecated_attribute
 
 import orangeqt
-from plot.owplotgui import OWPlotGUI
+from owplotgui import OWPlotGUI
 from owtheme import PlotTheme
 from owplot import OWPlot
 from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
@@ -146,25 +146,25 @@ class OWPlot3D(orangeqt.Plot3D):
     '''
     The base class behind 3D plots in Orange. Uses OpenGL as its rendering platform.
 
-    **Plot layout**
+    **Settings**
 
         .. attribute:: show_legend
-    
+
             A boolean controlling whether the legend is displayed or not
 
-    **Settings**
-    
-	.. attribute:: gui
-	
+        .. attribute:: gui
+
             An :obj:`.OWPlotGUI` object associated with this graph
 
     **Data**
-        This is the most important part of the class API. :meth:`set_plot_data` is
+        This is the most important part of the Plot3D API. :meth:`set_plot_data` is
         used to (not surprisingly) set the data which will be drawn.
         :meth:`set_features` tells Plot3D how to interpret the data (this method must
         be called after :meth:`set_plot_data` and can be called multiple times).
         :meth:`set_valid_data` optionally informs the plot which examples are invalid and
         should not be drawn. It should be called after set_plot_data, but before set_features.
+        This separation permits certain optimizations, e.g. ScatterPlot3D sets data once only (at
+        the beginning), later on it calls set_features and set_valid_data only.
 
         .. automethod:: set_plot_data
 
@@ -173,19 +173,38 @@ class OWPlot3D(orangeqt.Plot3D):
         .. automethod:: set_features
 
     **Selections**
+        There are four possible selection behaviors used for selecting points in OWPlot3D. 
 
-        .. method: get_selected_indices
+        .. data:: AddSelection
 
-        .. method: get_min_max_selected
+            Points are added to the current selection, without affecting currently selected points.
 
-        .. method: set_selection_behavior
+        .. data:: RemoveSelection
 
-        .. method: unselect_all_points
+            Points are removed from the current selection.
+
+        .. data:: ToggleSelection
+
+            The points' selection state is toggled.
+
+        .. data:: ReplaceSelection
+
+            The current selection is replaced with new one.
+
+        .. automethod:: select_points
+
+        .. automethod:: unselect_all_points
+
+        .. automethod:: get_selected_indices
+
+        .. automethod:: get_min_max_selected
+
+        .. automethod:: set_selection_behavior
 
     **Callbacks**
 
         Plot3D provides several callbacks which can be used to perform additional tasks (
-        such as drawing geometry before the data is drawn). Callback provided:
+        such as drawing geometry before/after the data is drawn). Callback provided:
 
         auto_send_selection_callback
         mouseover_callback
@@ -894,6 +913,12 @@ class OWPlot3D(orangeqt.Plot3D):
         return point
 
     def get_min_max_selected(self, area):
+        '''
+        Returns min/max x/y/z coordinate values of currently selected points.
+
+        :param area: Rectangular area.
+        :type QRect
+        '''
         viewport = [0, 0, self.width(), self.height()]
         area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
         min_max = orangeqt.Plot3D.get_min_max_selected(self, area, self.projection * self.view * self.model,
@@ -902,9 +927,37 @@ class OWPlot3D(orangeqt.Plot3D):
         return min_max
 
     def get_selected_indices(self):
+        '''
+        Returns indices of currently selected points (examples).
+        '''
         return orangeqt.Plot3D.get_selected_indices(self)
 
+    def select_points(self, area, behavior):
+        '''
+        Selects all points inside volume specified by rectangular area and current camera transform
+        using selection ``behavior``.
+
+        :param area: Rectangular area.
+        :type QRect
+
+        :param behavior: :data:`AddSelection`, :data:`RemoveSelection`, :data:`ToggleSelection` or :data:`ReplaceSelection` 
+        :type behavior: int
+        '''
+        viewport = [0, 0, self.width(), self.height()]
+        area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
+        orangeqt.Plot3D.select_points(self, area, self.projection * self.view * self.model,
+                                      viewport,
+                                      QVector3D(*self.plot_scale), QVector3D(*self.plot_translation),
+                                      behavior)
+        orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
+                                    self.color_index, self.symbol_index, self.size_index, self.label_index,
+                                    self.colors, self.num_symbols_used,
+                                    self.x_discrete, self.y_discrete, self.z_discrete, self.use_2d_symbols)
+
     def unselect_all_points(self):
+        '''
+        Unselects everything.
+        '''
         orangeqt.Plot3D.unselect_all_points(self)
         orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
                                     self.color_index, self.symbol_index, self.size_index, self.label_index,
@@ -913,6 +966,12 @@ class OWPlot3D(orangeqt.Plot3D):
         self.update()
 
     def set_selection_behavior(self, behavior):
+        '''
+        Sets selection behavior.
+
+        :param behavior: :data:`AddSelection`, :data:`RemoveSelection`, :data:`ToggleSelection` or :data:`ReplaceSelection` 
+        :type behavior: int
+        '''
         self.selection_behavior = behavior
 
     def mousePressEvent(self, event):
@@ -1035,17 +1094,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 self.set_new_zoom(*min_max, plot_coordinates=True)
             else:
                 area = self._selection
-                viewport = [0, 0, self.width(), self.height()]
-                area = [min(area.left(), area.right()), min(area.top(), area.bottom()), abs(area.width()), abs(area.height())]
-                orangeqt.Plot3D.select_points(self, area, self.projection * self.view * self.model,
-                                              viewport,
-                                              QVector3D(*self.plot_scale), QVector3D(*self.plot_translation),
-                                              self.selection_behavior)
-                self.makeCurrent()
-                orangeqt.Plot3D.update_data(self, self.x_index, self.y_index, self.z_index,
-                                            self.color_index, self.symbol_index, self.size_index, self.label_index,
-                                            self.colors, self.num_symbols_used,
-                                            self.x_discrete, self.y_discrete, self.z_discrete, self.use_2d_symbols)
+                self.select_points(area, self.selection_behavior)
 
                 if self.auto_send_selection_callback:
                     self.auto_send_selection_callback()

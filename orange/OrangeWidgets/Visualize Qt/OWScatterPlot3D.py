@@ -97,6 +97,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             return
         args['skipIfSame'] = False
         orngScaleScatterPlotData.set_data(self, data, subset_data, **args)
+        # Optimization: calling set_plot_data here (and not in update_data) because data won't change.
         OWPlot3D.set_plot_data(self, self.scaled_data, self.scaled_subset_data)
         OWPlot3D.initializeGL(self)
 
