@@ -18,7 +18,7 @@ from PyQt4.QtGui import *
 from PyQt4 import QtOpenGL
 
 from OWDlgs import OWChooseImageSizeDlg
-from Orange.misc import deprecated_attribute
+from Orange.misc import deprecated_attribute, deprecated_members
 
 import orangeqt
 from owplotgui import OWPlotGUI
@@ -64,6 +64,12 @@ Symbol = enum('RECT', 'TRIANGLE', 'DTRIANGLE', 'CIRCLE', 'LTRIANGLE',
 
 from plot.primitives import get_symbol_geometry, clamp, normalize, GeometryType
 
+name_map = {
+    "saveToFileDirect": "save_to_file_direct",
+    "saveToFile" : "save_to_file",
+}
+
+@deprecated_members(name_map, wrap_methods=name_map.keys())
 class OWLegend3D(OWLegend):
     def set_symbol_geometry(self, symbol, geometry):
         if not hasattr(self, '_symbol_geometry'):
@@ -933,15 +939,13 @@ class OWPlot3D(orangeqt.Plot3D):
         self._animate_new_scale_translation(new_scale, new_translation)
         self._zoomed_size = 1. / new_scale
 
-    def save_to_file(self):
-        size_dlg = OWChooseImageSizeDlg(self, [], parent=self)
-        size_dlg.exec_()
+    def save_to_file(self, extraButtons=[]):
+        sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
+        sizeDlg.exec_()
 
-    def save_to_file_direct(self, file_name, size=None):
-        img = self.grabFrameBuffer()
-        if size != None:
-            img = img.scaled(size)
-        return img.save(file_name)
+    def save_to_file_direct(self, fileName, size=None):
+        sizeDlg = OWChooseImageSizeDlg(self)
+        sizeDlg.saveImage(fileName, size)
 
     def map_to_plot(self, point, original=True):
         if original:
@@ -1184,10 +1188,10 @@ class OWPlot3D(orangeqt.Plot3D):
 
     def set_palette(self, p):
         '''
-            Sets the plot palette to ``p``. 
-            
-            :param p: The new color palette
-            :type p: :obj:`.QPalette`
+        Sets the plot palette to ``p``. 
+
+        :param p: The new color palette
+        :type p: :obj:`.QPalette`
         '''
         self.setPalette(p)
         self.update()
@@ -1198,7 +1202,7 @@ class OWPlot3D(orangeqt.Plot3D):
 
     def clear(self):
         '''
-        Clears the plot (data, legend) but remembers plot transformations (zoom, scale, translation).
+        Clears the plot (legend) but remembers plot transformations (zoom, scale, translation).
         '''
         self._legend.clear()
         self.data_scale = array([1., 1., 1.])
