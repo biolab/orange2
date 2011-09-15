@@ -217,20 +217,19 @@ class OWPlot3D(orangeqt.Plot3D):
 
         .. automethod:: map_to_data
 
-    **Colors**
+    **Themes**
 
-        Colors are specified with two palettes, one for continuous attributes, and one for
+        Colors used for data points are specified with two palettes, one for continuous attributes, and one for
         discrete ones.  Both are created by
         :obj:`.OWColorPalette.ColorPaletteGenerator`
-        
-        .. attribute:: continuous_palette
-        
-            The palette used when point color represents a continuous attribute
-        
-        .. attribute:: discrete_palette
-        
-            The palette used when point color represents a discrete attribute
 
+        .. attribute:: continuous_palette
+
+            The palette used when point color represents a continuous attribute
+
+        .. attribute:: discrete_palette
+
+            The palette used when point color represents a discrete attribute
     '''
     def __init__(self, parent=None):
         orangeqt.Plot3D.__init__(self, parent)
@@ -323,6 +322,9 @@ class OWPlot3D(orangeqt.Plot3D):
         #    glDeleteBuffers(1, self.data_buffer)
 
     def legend(self):
+        '''
+            Returns the plot's legend, which is a :obj:`OrangeWidgets.plot.OWLegend`
+        '''
         return self._legend
 
     def initializeGL(self):
@@ -707,12 +709,62 @@ class OWPlot3D(orangeqt.Plot3D):
         are indices (must be less than the size of an example) into the dataset (each one
         specifies a column). Additionally, it accepts a list of colors (when color is a discrete
         attribute), a value specifying how many different symbols are needed to display the data,
-        information whether or not positional data is discrete, and data transformations (scale and
-        translation).
+        information whether or not positional data is discrete, and transformations (scale and
+        translation) that were applied to the data.
 
         .. note:: This function does not add items to the legend automatically. 
                   You will have to add them yourself with :meth:`.OWLegend.add_item`. 
+
+        :param x_index: Index (column) of the x coordinate.
+        :type int
+
+        :param y_index: Index (column) of the y coordinate.
+        :type int
+
+        :param z_index: Index (column) of the z coordinate.
+        :type int
+
+        :param color_index: Index (column) of the color attribute.
+        :type int
+
+        :param symbol_index: Index (column) of the symbol attribute.
+        :type int
+
+        :param size_index: Index (column) of the size attribute.
+        :type int
+
+        :param label_index: Index (column) of the label attribute.
+        :type int
+
+        :param colors: List of colors used for symbols. When color is a discrete attribute,
+            this list should be empty. You should make sure the number of colors in this list
+            equals the number of unique values in the color attribute.
+        :type list of QColor
+
+        :param num_symbols_used: Specifies the number of unique values in the symbol attribute.
+            Must be -1 if all points are to use the same symbol.
+        :type int
+
+        :param x_discrete: Specifies whether or not x coordinate is discrete.
+        :type bool
+
+        :param y_discrete: Specifies whether or not y coordinate is discrete.
+        :type bool
+
+        :param z_discrete: Specifies whether or not z coordinate is discrete.
+        :type bool
+
+        :param data_scale: Specifies the scale that was applied to the data (set with set_plot_data).
+            Not required.
+        :type numpy.array
+
+        :param data_translation: Specifies the translation that was applied to the data (set with set_plot_data).
+            Not required.
+        :type numpy.array
         '''
+        if self.data == None:
+            print('set_plot_data has not been called yet!')
+            return
         start = time.time()
         self.makeCurrent()
         self.data_scale = data_scale
@@ -739,8 +791,6 @@ class OWPlot3D(orangeqt.Plot3D):
             self.generating_program.setUniformValue('x_index', x_index)
             self.generating_program.setUniformValue('y_index', y_index)
             self.generating_program.setUniformValue('z_index', z_index)
-            #self.generating_program.setUniformValue('jitter_size', jitter_size)
-            #self.generating_program.setUniformValue('jitter_continuous', jitter_continuous)
             self.generating_program.setUniformValue('x_discrete', x_discrete)
             self.generating_program.setUniformValue('y_discrete', y_discrete)
             self.generating_program.setUniformValue('z_discrete', z_discrete)
@@ -803,7 +853,6 @@ class OWPlot3D(orangeqt.Plot3D):
 
         :param data: Data
         :type data: numpy array
-
         '''
         self.makeCurrent()
         self.data = data
@@ -974,6 +1023,10 @@ class OWPlot3D(orangeqt.Plot3D):
         '''
         self.selection_behavior = behavior
 
+    def send_selection(self):
+        if self.auto_send_selection_callback:
+            self.auto_send_selection_callback()
+
     def mousePressEvent(self, event):
         pos = self._mouse_position = event.pos()
         buttons = event.buttons()
@@ -1093,8 +1146,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 min_max = self.get_min_max_selected(self._selection)
                 self.set_new_zoom(*min_max, plot_coordinates=True)
             else:
-                area = self._selection
-                self.select_points(area, self.selection_behavior)
+                self.select_points(self._selection, self.selection_behavior)
 
                 if self.auto_send_selection_callback:
                     self.auto_send_selection_callback()
@@ -1131,6 +1183,12 @@ class OWPlot3D(orangeqt.Plot3D):
             return self.palette().color(role)
 
     def set_palette(self, p):
+        '''
+            Sets the plot palette to ``p``. 
+            
+            :param p: The new color palette
+            :type p: :obj:`.QPalette`
+        '''
         self.setPalette(p)
         self.update()
 
@@ -1139,6 +1197,9 @@ class OWPlot3D(orangeqt.Plot3D):
         QToolTip.showText(self.mapToGlobal(QPoint(x, y)), text, self, QRect(x-3, y-3, 6, 6))
 
     def clear(self):
+        '''
+        Clears the plot (data, legend) but remembers plot transformations (zoom, scale, translation).
+        '''
         self._legend.clear()
         self.data_scale = array([1., 1., 1.])
         self.data_translation = array([0., 0., 0.])
@@ -1146,6 +1207,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self._feedback_generated = False
 
     def clear_plot_transformations(self):
+        '''
+        Forgets plot transformations (zoom, scale, translation).
+        '''
         self._zoom_stack = []
         self._zoomed_size = [1., 1., 1.]
         self.plot_translation = -array([0.5, 0.5, 0.5])
