@@ -363,8 +363,10 @@ else:
 
 orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + \
                                                get_source_files("source/orange/blas/", "c") + \
-                                               get_source_files("source/orange/linpack/", "c"),
-                                      include_dirs=include_dirs,
+                                               get_source_files("source/orange/linpack/", "c") + \
+                                               get_source_files("source/orange/liblinear/", "cpp") +\
+                                               get_source_files("source/orange/libsvm/", "cpp"),
+                                      include_dirs=include_dirs + ["source/orange/liblinear"],
                                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
                                       extra_link_args = extra_link_args,
                                       libraries=libraries,
