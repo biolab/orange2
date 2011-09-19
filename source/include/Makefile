@@ -4,6 +4,10 @@ MODULENAME=INCLUDE
 include ../makefile.defs
 -include makefile.deps
 
+# Redifine the build rule to use STATICCOMPILEOPTIONS
+obj/%.o : %.cpp
+	$(COMPILER) $(STATICCOMPILEOPTIONS) -c $< -o $@
+	
 $(OLD)/liborange_include.a:	$(INCLUDE_OBJECTS)
 	ar -r $(OLD)/liborange_include.a $(INCLUDE_OBJECTS)
 # On Mac this makes invalid universal archive (archive of universal object files),
