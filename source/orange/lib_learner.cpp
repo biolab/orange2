@@ -1256,7 +1256,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 }
 
 /************ Linear **********/
-#include "linear.hpp"
+#include "liblinear_interface.hpp"
 C_CALL(LinearLearner - Orange.classification.svm.LinearLearner, Learner, "([examples] -/-> Classifier)")
 C_NAMED(LinearClassifier - Orange.classification.svm.LinearClassifier, ClassifierFD, " ")
 
@@ -1294,9 +1294,9 @@ PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH
   PyCATCH
 }
 
-/************* SVM ************/
+/************* LIBSVM ************/
 
-#include "svm.hpp"
+#include "libsvm_interface.hpp"
 C_CALL(SVMLearner - Orange.core.SVMLearner, Learner, "([examples] -/-> Classifier)")
 C_CALL(SVMLearnerSparse - Orange.core.SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
 C_NAMED(SVMClassifier - Orange.classification.svm.SVMClassifier, ClassifierFD," ")
@@ -1473,9 +1473,9 @@ PyObject * SVMClassifier_new(PyTypeObject* type, PyObject* args, PyObject* kwarg
 	svm_model* model = svm_load_model_alt(buffer);
 	if (!model)
 		raiseError("Error building LibSVM Model");
-	model->param.learner = NULL;
-	PSVMClassifier svm = mlnew TSVMClassifier(classVar, examples, model, NULL);
-	svm->kernelFunc = kernel;
+//	model->param.learner = NULL;
+	PSVMClassifier svm = mlnew TSVMClassifier(classVar, examples, model, NULL, kernel);
+//	svm->kernelFunc = kernel;
 	svm->supportVectors = supportVectors;
 	return WrapOrange(svm);
 PyCATCH
@@ -1500,9 +1500,9 @@ PyObject * SVMClassifierSparse_new(PyTypeObject* type, PyObject* args, PyObject*
 	svm_model* model = svm_load_model_alt(buffer);
 	if (!model)
 		raiseError("Error building LibSVM Model");
-	model->param.learner = NULL;
-	PSVMClassifier svm = mlnew TSVMClassifierSparse(classVar, examples, model, NULL, useNonMeta != 0);
-	svm->kernelFunc = kernel;
+//	model->param.learner = NULL;
+	PSVMClassifier svm = mlnew TSVMClassifierSparse(classVar, examples, model, NULL, useNonMeta != 0, kernel);
+//	svm->kernelFunc = kernel;
 	svm->supportVectors = supportVectors;
 	return WrapOrange(svm);
 	PyCATCH
