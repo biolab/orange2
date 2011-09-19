@@ -228,7 +228,7 @@ public:
   virtual PRuleClassifier operator ()(PRuleList, PExampleTable, const int &weightID);
 };
 
-#include "svm.hpp"
+#include "libsvm_interface.hpp"
 
 class ORANGE_API TKernelFunc_Python : public TKernelFunc{
 public:
