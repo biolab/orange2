@@ -169,11 +169,10 @@ extern "C" {
 #include "distance.hpp"
 #include "slist.hpp"
 
-#include <iostream>
 svm_model *svm_load_model_alt(string& buffer);
-svm_model *svm_load_model_alt(istream& stream);
+//svm_model *svm_load_model_alt(istream& stream);
 int svm_save_model_alt(string& buffer, const svm_model *model);
-int svm_save_model_alt(ostream& stream, const svm_model *model);
+//int svm_save_model_alt(ostream& stream, const svm_model *model);
 
 WRAPPER(ExampleGenerator)
 WRAPPER(KernelFunc)

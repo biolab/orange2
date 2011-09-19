@@ -50,6 +50,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*##########################################
 ##########################################*/
 
+#include <iostream>
+#include <sstream>
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -3146,16 +3149,6 @@ except that they read/write from/to std::iostream objects.
 */
 #include "slist.hpp"
 
-#include <iostream>
-#include <sstream>
-
-int svm_save_model_alt(std::string& buffer, const svm_model *model){
-	std::ostringstream strstream;
-	int ret = svm_save_model_alt(strstream, model);
-	buffer = strstream.rdbuf()->str();
-	return ret;
-}
-
 int svm_save_model_alt(std::ostream& stream, const svm_model *model){
 	const svm_parameter& param = model->param;
 	stream.precision(17);
@@ -3242,12 +3235,13 @@ int svm_save_model_alt(std::ostream& stream, const svm_model *model){
 		return 1;
 }
 
-
-svm_model *svm_load_model_alt(std::string& stream)
-{
-	std::istringstream strstream(stream);
-	return svm_load_model_alt(strstream);
+int svm_save_model_alt(std::string& buffer, const svm_model *model){
+	std::ostringstream strstream;
+	int ret = svm_save_model_alt(strstream, model);
+	buffer = strstream.rdbuf()->str();
+	return ret;
 }
+
 
 #include <algorithm>
 
@@ -3455,6 +3449,12 @@ svm_model *svm_load_model_alt(std::istream& stream)
 
 	model->free_sv = 1;	// XXX
 	return model;
+}
+
+svm_model *svm_load_model_alt(std::string& stream)
+{
+	std::istringstream strstream(stream);
+	return svm_load_model_alt(strstream);
 }
 
 svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0){

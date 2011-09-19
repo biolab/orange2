@@ -40,6 +40,9 @@ Changes to original linear.cpp v1.7:
 	- changed function to function1
 */
 
+#include <iostream>
+#include <sstream>
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2597,17 +2600,6 @@ void TRON::set_print_string(void (*print_string) (const char *buf))
 The folowing load save functions are used for orange pickling
 */
 
-#include <iostream>
-#include <sstream>
-
-int linear_save_model_alt(string &buffer, struct model *model_)
-{
-	std::ostringstream strstream;
-	int ret = linear_save_model_alt(strstream, model_);
-	buffer = strstream.rdbuf()->str();
-	return ret;
-}
-
 int linear_save_model_alt(ostream &stream, struct model *model_)
 {
 	int i;
@@ -2654,10 +2646,12 @@ int linear_save_model_alt(ostream &stream, struct model *model_)
 		return -1;
 }
 
-struct model *linear_load_model_alt(string &buffer)
+int linear_save_model_alt(string &buffer, struct model *model_)
 {
-	std::istringstream str_stream(buffer);
-	return linear_load_model_alt(str_stream);
+	std::ostringstream strstream;
+	int ret = linear_save_model_alt(strstream, model_);
+	buffer = strstream.rdbuf()->str();
+	return ret;
 }
 
 struct model *linear_load_model_alt(istream &stream)
@@ -2755,6 +2749,12 @@ struct model *linear_load_model_alt(istream &stream)
 		return NULL;
 	else
 		return model_;
+}
+
+struct model *linear_load_model_alt(string &buffer)
+{
+	std::istringstream str_stream(buffer);
+	return linear_load_model_alt(str_stream);
 }
 
 struct NodeSort{
