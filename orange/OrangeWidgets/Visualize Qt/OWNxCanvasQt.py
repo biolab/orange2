@@ -678,7 +678,7 @@ class OWNxCanvas(OWPlot):
             return
         
         self.graph = graph
-        self.networkCurve = NetworkCurve() if curve is None else curve
+        self.networkCurve = NetworkCurve() if curve is None else curve()
         self.add_custom_curve(self.networkCurve)
         
         self.items = items if items is not None else self.graph.items()

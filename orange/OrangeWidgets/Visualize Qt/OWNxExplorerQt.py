@@ -189,12 +189,12 @@ class OWNxExplorerQt(OWWidget):
         self.vertexSizeCombo = OWGUI.comboBox(ib, self, "vertexSize", callback=self.set_node_sizes)
         self.vertexSizeCombo.addItem("(none)")
         
-        ib = OWGUI.widgetBox(self.verticesTab, "Node labels | tooltips", orientation="vertical", addSpace = False)
-        OWGUI.spin(ib, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.set_font_size)
-        hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
+        self.attBox = OWGUI.widgetBox(self.verticesTab, "Node labels | tooltips", orientation="vertical", addSpace = False)
+        OWGUI.spin(self.attBox, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.set_font_size)
+        hb = OWGUI.widgetBox(self.attBox, orientation="horizontal", addSpace = False)
         self.attListBox = OWGUI.listBox(hb, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
         self.tooltipListBox = OWGUI.listBox(hb, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)        
-        OWGUI.spin(ib, self, "networkCanvas.trim_label_words", 0, 5, 1, label='Trim label words to', callback=self.clickedAttLstBox)
+        OWGUI.spin(self.attBox, self, "networkCanvas.trim_label_words", 0, 5, 1, label='Trim label words to', callback=self.clickedAttLstBox)
         
         ib = OWGUI.widgetBox(self.edgesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'networkCanvas.show_weights', 'Show weights', callback=self.networkCanvas.set_edge_labels)
@@ -926,7 +926,7 @@ class OWNxExplorerQt(OWWidget):
         self._links = None
         self.set_items_distance_matrix(None)
         
-    def set_graph(self, graph):
+    def set_graph(self, graph, curve=None):
         self.information()
         self.error()
         
@@ -954,7 +954,7 @@ class OWNxExplorerQt(OWWidget):
         self.number_of_nodes_label = self.graph.number_of_nodes()
         self.number_of_edges_label = self.graph.number_of_edges()
         
-        self.networkCanvas.set_graph(self.graph, items=self.graph_base.items(), links=self.graph_base.links())
+        self.networkCanvas.set_graph(self.graph, curve, items=self.graph_base.items(), links=self.graph_base.links())
         
         if self._items is not None and 'x' in self._items.domain and 'y' in self._items.domain:
             positions = dict((node, (self._items[node]['x'].value, self._items[node]['y'].value)) \
