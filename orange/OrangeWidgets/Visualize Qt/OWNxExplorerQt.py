@@ -403,14 +403,17 @@ class OWNxExplorerQt(OWWidget):
                 items[v][att] = str(self.editValue)
     
     def set_items_distance_matrix(self, matrix):
-        self.error('')
-        self.information('')
+        self.error()
+        self.warning()
+        self.information()
+        
         self.cb_show_distances.setEnabled(0)
         self.cb_show_component_distances.setEnabled(0)
         
         if matrix is None or self.graph_base is None:
             self.items_matrix = None
             self.networkCanvas.items_matrix = None
+            self.information('No graph found!')
             return
 
         if matrix.dim != self.graph_base.number_of_nodes():
@@ -931,6 +934,7 @@ class OWNxExplorerQt(OWWidget):
         
     def set_graph(self, graph, curve=None):
         self.information()
+        self.warning()
         self.error()
         
         if graph is None:
@@ -1027,6 +1031,13 @@ class OWNxExplorerQt(OWWidget):
         self.graph_layout()        
         
     def set_network_view(self, nxView):
+        self.error()
+        self.warning()
+        self.information()
+        
+        if self.graph is None:
+            self.information('Do not forget to add a graph!')
+            
         if self._network_view is not None:
             QObject.disconnect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
             
@@ -1041,9 +1052,12 @@ class OWNxExplorerQt(OWWidget):
             QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
         
     def setItems(self, items=None):
-        self.error('')
+        self.error()
+        self.warning()
+        self.information()
         
         if self.graph is None or items is None:
+            self.warning('No graph found!')
             return
         
         if len(items) != self.graph_base.number_of_nodes():
@@ -1064,7 +1078,12 @@ class OWNxExplorerQt(OWWidget):
         self.markInputRadioButton.setEnabled(False)
         self.markInputItems = items
         
+        self.error()
+        self.warning()
+        self.information()
+        
         if self.graph is None or self.graph_base.items() is None or items is None:
+            self.warning('No graph found or no items attached to the graph.')
             return
         
         if len(items) > 0:
@@ -1084,7 +1103,8 @@ class OWNxExplorerQt(OWWidget):
                         self.set_mark_mode(9)
               
     def setExampleSubset(self, subset):
-        if self.networkCanvas is None:
+        print "TODO: not yet implemented"
+        if self.graph is None:
             return
         
         self.warning('')
