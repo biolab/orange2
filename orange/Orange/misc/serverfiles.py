@@ -461,7 +461,7 @@ def download(domain, filename, serverfiles=None, callback=None,
             f = tarfile.open(target + ".tmp")
             f.extractall(localpath(domain))
             shutil.copyfile(target + ".tmp", target)
-        if filename.endswith(".tar.gz"):
+        elif filename.endswith(".tar.gz"):
             f = tarfile.open(target + ".tmp")
             try:
                 os.mkdir(target)
