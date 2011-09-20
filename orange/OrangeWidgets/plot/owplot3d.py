@@ -104,7 +104,6 @@ class OWLegend3D(OWLegend):
                 color=color)
 
     def _paint(self, widget):
-        '''Does all the drawing itself.'''
         self.widget = widget
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
@@ -1040,6 +1039,8 @@ class OWPlot3D(orangeqt.Plot3D):
                 self._state = PlotState.DRAGGING_LEGEND
             elif self.state == PANNING:
                 self._state = PlotState.PANNING
+            elif QApplication.keyboardModifiers() & Qt.ShiftModifier:
+                self._state = PlotState.ROTATING
             else:
                 self._state = PlotState.SELECTING
                 self._selection = QRect(pos.x(), pos.y(), 0, 0)
