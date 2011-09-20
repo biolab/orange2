@@ -1270,13 +1270,13 @@ is supposed to give.
 
 The function can use several utility function provided in the module.
 
-.. autofunction:: insertStr
+.. autofunction:: insert_str
 
-.. autofunction:: insertDot
+.. autofunction:: insert_dot
 
-.. autofunction:: insertNum
+.. autofunction:: insert_num
 
-.. autofunction:: byWhom
+.. autofunction:: by_whom
 
 
 There are also a few pieces of regular expression that you may want to reuse. 
@@ -1294,11 +1294,11 @@ following tuple in the list of built-in formats::
 :obj:`replaceV` is a function defined by::
 
     def replaceV(strg, mo, node, parent, tree):
-        return insertStr(strg, mo, str(node.node_classifier.default_value))
+        return insert_str(strg, mo, str(node.node_classifier.default_value))
 
 It therefore takes the value predicted at the node
 (:samp:`node.node_classifier.default_value` ), converts it to a string
-and passes it to *insertStr* to do the replacement.
+and passes it to *insert_str* to do the replacement.
 
 A more complex regular expression is the one for the proportion of
 majority class, defined as :samp:`"%"+fs+"M"+by`. It uses the two partial
@@ -1313,16 +1313,14 @@ second largest class in the node (part of `orngTree2.py`_):
 .. literalinclude:: code/orngTree2.py
    :lines: 7-31
 
-We first defined getMargin which gets the distribution and computes
-the margin. The callback replaces, replaceB, computes the margin for
-the node.  If we need to divided the quantity by something (that is,
-if the :data:`by` group is present), we call :func:`byWhom` to get the
-node with whose margin this node's margin is to be divided. If this node
-(usually the parent) does not exist of if its margin is zero, we call
-:func:`insertDot` to insert a dot, otherwise we call :func:`insertNum`
-which will insert the number, obeying the format specified by the
-user. myFormat is a list containing the regular expression and the
-callback function.
+``get_margin`` gets the distribution and computes the margin. The callback
+replaces, ``replaceB``, computes the margin for the node.  If :data:`by`
+group is present, we call :func:`by_whom` to get the node with whose
+margin this node's margin is to be divided. If this node (usually the
+parent) does not exist of if its margin is zero, :func:`insert_dot`
+inserts dot, otherwise :func:`insert_num` is called which insert the
+number in the user-specified format.  ``my_format`` contains the regular
+expression and the callback function.
 
 We can now print out the iris tree:
 
@@ -1382,50 +1380,34 @@ learning algorithms, C4.5 does not accepts weighted examples.
 Building the C4.5 plug-in
 =========================
 
-We haven't been able to obtain the legal rights to distribute
-C4.5 and therefore couldn't statically link it into Orange. Instead,
-it's incorporated as a plug-in which you'll need to build yourself.
-The procedure is trivial, but you'll need a C compiler. On Windows,
-the scripts we provide work with MS Visual C and the files CL.EXE
-and LINK.EXE must be on the PATH. On Linux you're equipped with
-gcc. Mac OS X comes without gcc, but you can download it for
-free from Apple.
+C4.5 is not distributed with Orange, but it can be incorporated as a
+plug-in. A C compiler is need for the procedure: on Windows MS Visual C
+(CL.EXE and LINK.EXE must be on the PATH), on Linux and OS X gcc (OS X
+users can download it from Apple).
 
-Orange must be installed prior to building C4.5. (This is because
-the build script will copy the created file next to Orange,
-which it obviously can't if Orange isn't there yet.)
+Orange must be installed prior to building C4.5.
 
-#. Download the 
+#. Download 
    `C4.5 (Release 8) sources <http://www.rulequest.com/Personal/c4.5r8.tar.gz>`_
    from the `Rule Quest's site <http://www.rulequest.com/>`_ and extract
-   them into some temporary directory. The files will be modified in the
-   further process, so don't use your copy of Quinlan's sources that you
-   need for another purpose.
-#. Download 
-   `buildC45.zip <http://orange.biolab.si/orange/download/buildC45.zip>`_ 
-   and unzip its contents into the directory R8/Src of the Quinlan's 
-   stuff (it's the directory that contains, for instance, the file
-   average.c).
+   them. The files will be modified in the
+   further process.
+#. Download
+   `buildC45.zip <http://orange.biolab.si/orange/download/buildC45.zip>`_
+   and unzip its contents into the directory R8/Src of the C4.5 sources
+   (this directory contains, for instance, the file average.c).
 #. Run buildC45.py, which will build the plug-in and put it next to 
    orange.pyd (or orange.so on Linux/Mac).
-#. Run python, type :samp:`import Orange` and 
-   create create :samp:`Orange.classification.tree.C45Learner()`.
-   If this fails, something went wrong; see the diagnostic messages from
-   buildC45.py and read the below paragraph.
-#. Finally, you can remove the Quinlan's stuff, along with everything
-   created by buildC45.py.
+#. Run python, type :samp:`import Orange` and
+   create :samp:`Orange.classification.tree.C45Learner()`. This should
+   succeed.
+#. Finally, you can remove C4.5 sources.
 
-If the process fails, here's what buildC45.py really does: it creates
-.h files that wrap Quinlan's .i files and ensure that they are not
-included twice. It modifies C4.5 sources to include .h's instead of
-.i's. This step can hardly fail. Then follows the platform dependent
-step which compiles ensemble.c (which includes all the Quinlan's .c
-files it needs) into c45.dll or c45.so and puts it next to Orange.
-If this fails, but you do have a C compiler and linker, and you know
-how to use them, you can compile the ensemble.c into a dynamic
-library yourself. See the compile and link steps in buildC45.py,
-if it helps. Anyway, after doing this check that the built C4.5
-gives the same results as the original.
+The buildC45.py creates .h files that wrap Quinlan's .i files and
+ensure that they are not included twice. It modifies C4.5 sources to
+include .h's instead of .i's (this step can hardly fail). Then it compiles
+ensemble.c into c45.dll or c45.so and puts it next to Orange. In the end
+it checks if the built C4.5 gives the same results as the original.
 
 .. autoclass:: C45Learner
     :members:
@@ -1734,14 +1716,13 @@ class C45Learner(Orange.classification.Learner):
  
 class C45Classifier(Orange.classification.Classifier):
     """
-    A faithful reimplementation of Quinlan's function from C4.5. The only
-    difference (and the only reason it's been rewritten) is that it uses
-    a tree composed of :class:`C45Node` instead of C4.5's
-    original tree structure.
+    A faithful reimplementation of Quinlan's function from C4.5, but
+    uses a tree composed of :class:`C45Node` instead of C4.5's original
+    tree structure.
 
     .. attribute:: tree
 
-        C4.5 tree stored as a tree of :obj:`C45Node`.
+        C4.5 tree stored as :obj:`C45Node`.
     """
 
     def __init__(self, base_classifier):
@@ -1778,7 +1759,7 @@ class C45Classifier(Orange.classification.Classifier):
    
     def dump(self):  
         """
-        Prints the tree given as an argument in the same form as Ross Quinlan's 
+        Print the tree in the same form as Ross Quinlan's 
         C4.5 program.
 
         ::
@@ -1789,7 +1770,7 @@ class C45Classifier(Orange.classification.Classifier):
             c45 = Orange.classification.tree.C45Learner(data)
             print c45.dump()
 
-        will print out
+        prints
 
         ::
 
@@ -1805,9 +1786,7 @@ class C45Classifier(Orange.classification.Classifier):
             |   |   |   |   anti-satellite-test-ban = y: republican (2.2)
 
 
-        If you run the original C4.5 (that is, the standalone C4.5 - Orange does use the original C4.5) on the same data, it will print out
-
-        ::
+        The standalone C4.5 would, on the same data, print::
 
             physician-fee-freeze = n: democrat (253.4/5.9)
             physician-fee-freeze = y:
@@ -1820,11 +1799,8 @@ class C45Classifier(Orange.classification.Classifier):
             |   |   |   |   anti-satellite-test-ban = n: democrat (5.0/1.2)
             |   |   |   |   anti-satellite-test-ban = y: republican (2.2/1.0)
 
-        which is adoringly similar, except that C4.5 tested the tree on 
-        the learning data and has also printed out the number of errors 
-        in each node - something which :obj:`c45_printTree` obviously can't do
-        (nor is there any need it should).
-
+        4.5 also prints out the number of errors on learning data in
+        each node.
         """
         return  _c45_printTree0(self.tree, self.class_var, 0)
 
@@ -1966,12 +1942,12 @@ class TreeLearner(Orange.core.Learner):
     
         Measure for scoring of the attributes when deciding which of the
         attributes will be used for splitting of the instances in a node.
-        Can be either a :class:`Orange.feature.scoring.Measure` or one of
-        "infoGain" (:class:`Orange.feature.scoring.InfoGain`), 
-        "gainRatio" (:class:`Orange.feature.scoring.GainRatio`), 
-        "gini" (:class:`Orange.feature.scoring.Gini`),
-        "relief" (:class:`Orange.feature.scoring.Relief`),
-        "retis" (:class:`Orange.feature.scoring.MSE`). Default: "gainRatio".
+        A subclass of :class:`Orange.feature.scoring.Score` (perhaps
+        :class:`~Orange.feature.scoring.InfoGain`, 
+        :class:`~Orange.feature.scoring.GainRatio`, 
+        :class:`~Orange.feature.scoring.Gini`,
+        :class:`~Orange.feature.scoring.Relief`, or
+        :class:`~Orange.feature.scoring.MSE`). Default: :class:`Orange.feature.scoring.GainRatio`.
 
     .. attribute:: relief_m, relief_k
 
@@ -1987,12 +1963,11 @@ class TreeLearner(Orange.core.Learner):
 
     .. attribute:: contingency_computer
     
-        By default, this slot is left empty and ordinary contingency
-        matrices are computed for instances at each node. If need
-        arises, one can change the way the matrices are computed,
-        for example to change the treatment of unknown values. The
-        computed matrices can be used by split constructor and by
-        stopping criteria.
+        Used to change the way the contingency matrices (used
+        by :class:`SplitConstructor` and :class:`StopCriteria`) are
+        computed, for example, to change the treatment of unknown values.
+        By default ordinary contingency matrices are computed for
+        instances at each node.
 
     **Pruning**
 
@@ -2024,24 +1999,7 @@ class TreeLearner(Orange.core.Learner):
 
         Induction stops when the proportion of majority class in the
         node exceeds the value set by this parameter (default: 1.0). 
-        To stop the induction as soon as the majority class reaches 70%,
-        use :samp:`max_majority=0.7`, as in the following
-        example. The numbers show the majority class 
-        proportion at each node. The script `tree2.py`_ induces and 
-        prints this tree.
-
-        FIXME
-
-        .. _tree2.py: code/tree2.py
-
-        ::
-
-            root: 0.333
-            |    petal width<=0.800: 1.000
-            |    petal width>0.800: 0.500
-            |    |    petal width<=1.750: 0.907
-            |    |    petal width>1.750: 0.978
-   
+  
     .. attribute:: stop
 
         :class:`StopCriteria` or a function with the same signature as
@@ -2309,13 +2267,12 @@ re_d = re.compile("%"+fs+"d"+by)
 re_AE = re.compile("%"+fs+"(?P<AorE>A|E)"+bysub)
 re_I = re.compile("%"+fs+"I"+intrvl)
 
-def insertStr(s, mo, sub):
+def insert_str(s, mo, sub):
     """ Replace the part of s which is covered by mo 
     with the string sub. """
     return s[:mo.start()] + sub + s[mo.end():]
 
-
-def insertDot(s, mo):
+def insert_dot(s, mo):
     """ Replace the part of s which is covered by mo 
     with a dot.  You should use this when the 
     function cannot compute the desired quantity; it is called, for instance, 
@@ -2324,7 +2281,7 @@ def insertDot(s, mo):
     """
     return s[:mo.start()] + "." + s[mo.end():]
 
-def insertNum(s, mo, n):
+def insert_num(s, mo, n):
     """ Replace the part of s matched by mo with the number n, 
     formatted as specified by the user, that is, it multiplies 
     it by 100, if needed, and prints with the right number of 
@@ -2340,8 +2297,8 @@ def insertNum(s, mo, n):
     fs = grps.get("fs") or (m100 and ".0" or "5.3")
     return s[:mo.start()] + ("%%%sf" % fs % n) + s[mo.end():]
 
-def byWhom(by, parent, tree):
-    """ If by equals bp, it returns parent, else it returns 
+def by_whom(by, parent, tree):
+    """ If by equals bp, return parent, else return
     :samp:`tree.tree`. This is used to find what to divide the quantity 
     with, when division is required.
     """
@@ -2351,19 +2308,19 @@ def byWhom(by, parent, tree):
         return tree.tree
 
 def replaceV(strg, mo, node, parent, tree):
-    return insertStr(strg, mo, str(node.node_classifier.default_value))
+    return insert_str(strg, mo, str(node.node_classifier.default_value))
 
 def replaceN(strg, mo, node, parent, tree):
     by = mo.group("by")
     N = node.distribution.abs
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             if whom.distribution.abs > 1e-30:
                 N /= whom.distribution.abs
         else:
-            return insertDot(strg, mo)
-    return insertNum(strg, mo, N)
+            return insert_dot(strg, mo)
+    return insert_num(strg, mo, N)
         
 
 def replaceM(strg, mo, node, parent, tree):
@@ -2371,13 +2328,13 @@ def replaceM(strg, mo, node, parent, tree):
     maj = int(node.node_classifier.default_value)
     N = node.distribution[maj]
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             if whom.distribution[maj] > 1e-30:
                 N /= whom.distribution[maj]
         else:
-            return insertDot(strg, mo)
-    return insertNum(strg, mo, N)
+            return insert_dot(strg, mo)
+    return insert_num(strg, mo, N)
         
 
 def replacem(strg, mo, node, parent, tree):
@@ -2391,33 +2348,33 @@ def replacem(strg, mo, node, parent, tree):
                 if byN > 1e-30:
                     N /= byN
             else:
-                return insertDot(strg, mo)
+                return insert_dot(strg, mo)
     else:
         N = 0.
-    return insertNum(strg, mo, N)
+    return insert_num(strg, mo, N)
 
 
 def replaceCdisc(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
     
     by, op, cls = mo.group("by", "op", "cls")
     N = node.distribution[cls]
     if op == "!=":
         N = node.distribution.abs - N
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             if whom.distribution[cls] > 1e-30:
                 N /= whom.distribution[cls]
         else:
-            return insertDot(strg, mo)
-    return insertNum(strg, mo, N)
+            return insert_dot(strg, mo)
+    return insert_num(strg, mo, N)
 
     
 def replacecdisc(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
     
     op, by, cls = mo.group("op", "by", "cls")
     N = node.distribution[cls]
@@ -2426,40 +2383,40 @@ def replacecdisc(strg, mo, node, parent, tree):
         if op == "!=":
             N = 1 - N
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             if whom.distribution[cls] > 1e-30:
                 N /= whom.distribution[cls] / whom.distribution.abs
         else:
-            return insertDot(strg, mo)
-    return insertNum(strg, mo, N)
+            return insert_dot(strg, mo)
+    return insert_num(strg, mo, N)
 
 
 __opdict = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge, "=": operator.eq, "!=": operator.ne}
 
 def replaceCcont(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
     
     by, op, num = mo.group("by", "op", "num")
     op = __opdict[op]
     num = float(num)
     N = sum([x[1] for x in node.distribution.items() if op(x[0], num)], 0.)
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             byN = sum([x[1] for x in whom.distribution.items() if op(x[0], num)], 0.)
             if byN > 1e-30:
                 N /= byN
         else:
-            return insertDot(strg, mo)
+            return insert_dot(strg, mo)
 
-    return insertNum(strg, mo, N)
+    return insert_num(strg, mo, N)
     
     
 def replaceccont(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
     
     by, op, num = mo.group("by", "op", "num")
     op = __opdict[op]
@@ -2468,14 +2425,14 @@ def replaceccont(strg, mo, node, parent, tree):
     if node.distribution.abs > 1e-30:
         N /= node.distribution.abs
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             byN = sum([x[1] for x in whom.distribution.items() if op(x[0], num)], 0.)
             if byN > 1e-30:
                 N /= byN/whom.distribution.abs # abs > byN, so byN>1e-30 => abs>1e-30
         else:
-            return insertDot(strg, mo)
-    return insertNum(strg, mo, N)
+            return insert_dot(strg, mo)
+    return insert_num(strg, mo, N)
 
 
 def extractInterval(mo, dist):
@@ -2493,25 +2450,25 @@ def extractInterval(mo, dist):
     
 def replaceCconti(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
 
     by = mo.group("by")
     N = sum([x[1] for x in extractInterval(mo, node.distribution)])
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             byN = sum([x[1] for x in extractInterval(mo, whom.distribution)])
             if byN > 1e-30:
                 N /= byN
         else:
-            return insertDot(strg, mo)
+            return insert_dot(strg, mo)
         
-    return insertNum(strg, mo, N)
+    return insert_num(strg, mo, N)
 
             
 def replacecconti(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
 
     N = sum([x[1] for x in extractInterval(mo, node.distribution)])
     ab = node.distribution.abs
@@ -2520,39 +2477,39 @@ def replacecconti(strg, mo, node, parent, tree):
 
     by = mo.group("by")
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom and whom.distribution:
             byN = sum([x[1] for x in extractInterval(mo, whom.distribution)])
             if byN > 1e-30:
                 N /= byN/whom.distribution.abs
         else:
-            return insertDot(strg, mo)
+            return insert_dot(strg, mo)
         
-    return insertNum(strg, mo, N)
+    return insert_num(strg, mo, N)
 
     
 def replaceD(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
 
     fs, by, m100 = mo.group("fs", "by", "m100")
     dist = list(node.distribution)
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom:
             for i, d in enumerate(whom.distribution):
                 if d > 1e-30:
                     dist[i] /= d
         else:
-            return insertDot(strg, mo)
+            return insert_dot(strg, mo)
     mul = m100 and 100 or 1
     fs = fs or (m100 and ".0" or "5.3")
-    return insertStr(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
+    return insert_str(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
 
 
 def replaced(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
 
     fs, by, m100 = mo.group("fs", "by", "m100")
     dist = list(node.distribution)
@@ -2560,21 +2517,21 @@ def replaced(strg, mo, node, parent, tree):
     if ab > 1e-30:
         dist = [d/ab for d in dist]
     if by:
-        whom = byWhom(by, parent, tree)
+        whom = by_whom(by, parent, tree)
         if whom:
             for i, d in enumerate(whom.distribution):
                 if d > 1e-30:
                     dist[i] /= d/whom.distribution.abs # abs > d => d>1e-30 => abs>1e-30
         else:
-            return insertDot(strg, mo)
+            return insert_dot(strg, mo)
     mul = m100 and 100 or 1
     fs = fs or (m100 and ".0" or "5.3")
-    return insertStr(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
+    return insert_str(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
 
 
 def replaceAE(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
 
     AorE, bysub, by = mo.group("AorE", "bysub", "by")
     
@@ -2583,7 +2540,7 @@ def replaceAE(strg, mo, node, parent, tree):
     else:
         A = node.distribution.error()
     if by:
-        whom = byWhom("b"+by, parent, tree)
+        whom = by_whom("b"+by, parent, tree)
         if whom:
             if AorE == "A":
                 avg = whom.distribution.average()
@@ -2595,15 +2552,15 @@ def replaceAE(strg, mo, node, parent, tree):
             else:
                 A -= avg
         else:
-            return insertDot(strg, mo)
-    return insertNum(strg, mo, A)
+            return insert_dot(strg, mo)
+    return insert_num(strg, mo, A)
 
 
 Z = { 0.75:1.15, 0.80:1.28, 0.85:1.44, 0.90:1.64, 0.95:1.96, 0.99:2.58 }
 
 def replaceI(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
-        return insertDot(strg, mo)
+        return insert_dot(strg, mo)
 
     fs = mo.group("fs") or "5.3"
     intrvl = float(mo.group("intp") or mo.group("intv") or "95")/100.
@@ -2614,7 +2571,7 @@ def replaceI(strg, mo, node, parent, tree):
 
     av = node.distribution.average()    
     il = node.distribution.error() * Z[intrvl]
-    return insertStr(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av-il)*mul, (av+il)*mul))
+    return insert_str(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av-il)*mul, (av+il)*mul))
 
 
 # This class is more a collection of function, merged into a class so 
