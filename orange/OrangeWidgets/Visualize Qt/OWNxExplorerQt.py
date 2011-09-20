@@ -852,13 +852,15 @@ class OWNxExplorerQt(OWWidget):
             self.diameter = float('nan')
         else:
             try:
-                self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
+                if self.graph.number_of_nodes() > 1:
+                    self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
+                else:
+                    self.diameter = -1
             except Orange.network.nx.NetworkXError as err:
                 if 'infinite path length' in err.message:
                     self.diameter = float('inf')
                 else:
-                    raise err
-            
+                    raise err 
         if self.graph.is_multigraph():
             self.clustering_coefficient = -1
         else:
@@ -925,6 +927,7 @@ class OWNxExplorerQt(OWWidget):
         self._items = None
         self._links = None
         self.set_items_distance_matrix(None)
+        self.networkCanvas.set_graph(None)
         
     def set_graph(self, graph, curve=None):
         self.information()
@@ -932,6 +935,11 @@ class OWNxExplorerQt(OWWidget):
         
         if graph is None:
             self.set_graph_none()
+            return
+        
+        if graph.number_of_nodes() < 2:
+            self.set_graph_none()
+            self.information('I\'m not really in a mood to visualize just one node. Try again tomorrow.')
             return
         
         self.graph_base = graph
