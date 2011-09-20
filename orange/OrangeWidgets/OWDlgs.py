@@ -9,7 +9,10 @@ except ImportError:
     _have_qwt = False
 
 from PyQt4.QtGui import QGraphicsScene, QGraphicsView
-from PyQt4.QtOpenGL import QGLWidget
+try:
+    from PyQt4.QtOpenGL import QGLWidget
+except:
+    pass
 from PyQt4.QtSvg import *
 from ColorPalette import *
 import OWQCanvasFuncts
