@@ -8,11 +8,13 @@ try:
 except ImportError:
     _have_qwt = False
 
-from PyQt4.QtGui import QGraphicsScene, QGraphicsView
+_have_gl = True
 try:
     from PyQt4.QtOpenGL import QGLWidget
-except:
-    pass
+except ImportError:
+    _have_gl = False
+
+from PyQt4.QtGui import QGraphicsScene, QGraphicsView
 from PyQt4.QtSvg import *
 from ColorPalette import *
 import OWQCanvasFuncts
@@ -46,13 +48,13 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             self.customXEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customX", "Width: ", orientation = "horizontal", valueType = int)
             self.customYEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customY", "Height:", orientation = "horizontal", valueType = int)
             OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:   ', box = " Pen width multiplication factor ",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
-        elif isinstance(graph, QGraphicsScene) or isinstance(graph, QGraphicsView) or isinstance(graph, QGLWidget):
+        elif isinstance(graph, QGraphicsScene) or isinstance(graph, QGraphicsView) or (_have_gl and isinstance(graph, QGLWidget)):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
 
         box = OWGUI.widgetBox(self.space, 1)
         #self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
         self.saveImageButton =      OWGUI.button(box, self, "Save Image", callback = self.saveImage)
-        if not isinstance(graph, QGLWidget):
+        if not (_have_gl and isinstance(graph, QGLWidget)):
             self.saveMatplotlibButton = OWGUI.button(box, self, "Save Graph as matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(box, self, text, callback = funct)
@@ -72,7 +74,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             ext = ".png"                                        # if no format was specified, we choose png
         filename = fil + ext
        
-        if isinstance(self.graph, QGLWidget):
+        if _have_gl and isinstance(self.graph, QGLWidget):
             img = self.graph.grabFrameBuffer()
             if size != None:
                 img = img.scaled(size)
