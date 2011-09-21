@@ -10,8 +10,7 @@ Classification trees (``tree``)
 *******************************
 
 To build a :obj:`TreeClassifier` from the Iris data set
-(with the depth limited to three levels), use (part of `orngTree1.py`_,
-uses `iris.tab`_):
+(with the depth limited to three levels), use:
 
 .. literalinclude:: code/orngTree1.py
    :lines: 1-4
@@ -127,7 +126,7 @@ random function so that the stop criteria will also be met in 20% of the
 cases when *defStop* is false. For the second tree the stopping criteria
 is random. Note that in the second case lambda function still has three
 parameters, since this is a necessary number of parameters for the stop
-function (:obj:`StopCriteria`).  Part of `tree3.py`_ (uses  `iris.tab`_):
+function (:obj:`StopCriteria`). 
 
 .. _tree3.py: code/tree3.py
 
@@ -141,13 +140,12 @@ Tree Structure
 ==============
 
 To have something to work on, we'll take the data from lenses dataset and
-build a tree using the default components (part of `treestructure.py`_,
-uses `lenses.tab`_):
+build a tree using the default components:
 
 .. literalinclude:: code/treestructure.py
    :lines: 7-10
 
-How big is our tree (part of `treestructure.py`_, uses `lenses.tab`_)?
+How big is our tree?
 
 .. _lenses.tab: code/lenses.tab
 .. _treestructure.py: code/treestructure.py
@@ -169,8 +167,7 @@ Don't forget that this was only an excercise - :obj:`Node` has a built-in
 method :obj:`Node.treeSize` that does exactly the same.
 
 Let us now write a script that prints out a tree. The recursive part of
-the function will get a node and its level (part of `treestructure.py`_,
-uses `lenses.tab`_).
+the function will get a node and its level.
 
 .. literalinclude:: code/treestructure.py
    :lines: 26-41
@@ -210,8 +207,7 @@ We could write something like...
 
 ... but we won't. Let us learn how to handle arguments of
 different types. Let's write a function that will accept either a
-:obj:`TreeClassifier` or a :obj:`Node`.  Part of `treestructure.py`_,
-uses `lenses.tab`_.
+:obj:`TreeClassifier` or a :obj:`Node`.
 
 .. literalinclude:: code/treestructure.py
    :lines: 43-49
@@ -242,8 +238,7 @@ limit the maximal tree depth (the number of internal nodes on any path
 down the tree) given as an argument.  For example, to get a two-level
 tree, we would call cutTree(root, 2). The function will be recursive,
 with the second argument (level) decreasing at each call; when zero,
-the current node will be made a leaf (part of `treestructure.py`_, uses
-`lenses.tab`_):
+the current node will be made a leaf:
 
 .. literalinclude:: code/treestructure.py
    :lines: 54-62
@@ -273,8 +268,7 @@ finally, how to write a skeleton for tree induction in Python.
 
 .. _treelearner.py: code/treelearner.py
 
-Let us construct a :obj:`TreeLearner` to play with (`treelearner.py`_,
-uses `lenses.tab`_):
+Let us construct a :obj:`TreeLearner` to play with:
 
 .. literalinclude:: code/treelearner.py
    :lines: 7-10
@@ -934,7 +928,7 @@ Possible quantities are
 .. rubric:: Examples
 
 We shall build a small tree from the iris data set - we shall limit the
-depth to three levels (part of `orngTree1.py`_, uses `iris.tab`_):
+depth to three levels:
 
 .. literalinclude:: code/orngTree1.py
    :lines: 1-4
@@ -1306,7 +1300,7 @@ expressions defined above.
 
 Let's say with like to print the classification margin for each node,
 that is, the difference between the proportion of the largest and the
-second largest class in the node (part of `orngTree2.py`_):
+second largest class in the node:
 
 .. _orngTree2.py: code/orngTree2.py
 
@@ -1357,21 +1351,10 @@ its documentation to learn which.
 C4.5 Classifier and Learner
 ===========================
 
-As C4.5 is a standard benchmark in machine learning, 
-it is incorporated in Orange, although Orange has its own
-implementation of decision trees.
-
-The implementation uses the original Quinlan's code for learning so the
-tree you get is exactly like the one that would be build by standalone
-C4.5. Upon return, however, the original tree is copied to Orange
-components that contain exactly the same information plus what is needed
-to make them visible from Python. To be sure that the algorithm behaves
-just as the original, we use a dedicated class :class:`C45Node`
-instead of reusing the components used by Orange's tree inducer
-(ie, :class:`Node`). This, however, could be done and probably
-will be done in the future; we shall still retain :class:`C45Node` 
-but offer transformation to :class:`Node` so that routines
-that work on Orange trees will also be usable for C45 trees.
+C4.5 is incorporated in Orange because it is a standard benchmark in
+machine learning. The implementation uses the original C4.5 code, so the
+resulting tree is exactly like the one that would be build by standalone
+C4.5. The built tree is made accessible in Python.
 
 :class:`C45Learner` and :class:`C45Classifier` behave
 like any other Orange learner and classifier. Unlike most of Orange 
@@ -1380,8 +1363,8 @@ learning algorithms, C4.5 does not accepts weighted examples.
 Building the C4.5 plug-in
 =========================
 
-C4.5 is not distributed with Orange, but it can be incorporated as a
-plug-in. A C compiler is need for the procedure: on Windows MS Visual C
+C4.5 is not distributed with Orange, but it can be added as a
+plug-in. A C compiler is needed for the procedure: on Windows MS Visual C
 (CL.EXE and LINK.EXE must be on the PATH), on Linux and OS X gcc (OS X
 users can download it from Apple).
 
@@ -1472,52 +1455,42 @@ Examples
 .. _tree_c45.py: code/tree_c45.py
 .. _iris.tab: code/iris.tab
 
-The simplest way to use :class:`C45Learner` is to call it. This
+This
 script constructs the same learner as you would get by calling
-the usual C4.5 (`tree_c45.py`_, uses `iris.tab`_):
+the usual C4.5:
 
 .. literalinclude:: code/tree_c45.py
    :lines: 7-14
 
-Arguments can be set by the usual mechanism (the below to lines do the
-same, except that one uses command-line symbols and the other internal
-variable names)
-
-::
+Both C4.5 command-line symbols and variable names can be used. The 
+following lines produce the same result::
 
     tree = Orange.classification.tree.C45Learner(data, m=100)
-    tree = Orange.classification.tree.C45Learner(data, minObjs=100)
+    tree = Orange.classification.tree.C45Learner(data, min_objs=100)
 
-The way that could be prefered by veteran C4.5 user might be through
-method `:obj:C45Learner.commandline`.
-
-::
+A veteran C4.5 might prefer :func:`C45Learner.commandline`::
 
     lrn = Orange.classification.tree.C45Learner()
     lrn.commandline("-m 1 -s")
     tree = lrn(data)
 
-There's nothing special about using :obj:`C45Classifier` - it's 
-just like any other. To demonstrate what the structure of 
-:class:`C45Node`'s looks like, will show a script that prints 
-it out in the same format as C4.5 does.
+The following script prints out the tree same format as C4.5 does.
 
 .. literalinclude:: code/tree_c45_printtree.py
 
-Leaves are the simplest. We just print out the value contained
-in :samp:`node.leaf`. Since this is not a qualified value (ie., 
-:obj:`C45Node` does not know to which attribute it belongs), we need to
-convert it to a string through :obj:`class_var`, which is passed as an
-extra argument to the recursive part of printTree.
+For the leaves just the value in ``node.leaf`` in printed. Since
+:obj:`C45Node` does not know to which attribute it belongs, we need to
+convert it to a string through ``classvar``, which is passed as an extra
+argument to the recursive part of printTree.
 
 For discrete splits without subsetting, we print out all attribute values
-and recursively call the function for all branches. Continuous splits are
-equally easy to handle.
+and recursively call the function for all branches. Continuous splits
+are equally easy to handle.
 
-For discrete splits with subsetting, we iterate through branches, retrieve
-the corresponding values that go into each branch to inset, turn
-the values into strings and print them out, separately treating the
-case when only a single value goes into the branch.
+For discrete splits with subsetting, we iterate through branches,
+retrieve the corresponding values that go into each branch to inset,
+turn the values into strings and print them out, separately treating
+the case when only a single value goes into the branch.
 
 =================
 SimpleTreeLearner
@@ -1555,7 +1528,7 @@ Examples
 
 :obj:`SimpleTreeLearner` is used in much the same way as :obj:`TreeLearner`.
 A typical example of using :obj:`SimpleTreeLearner` would be to build a random
-forest (uses `iris.tab`_):
+forest:
 
 .. literalinclude:: code/simple_tree_random_forest.py
 
@@ -1635,7 +1608,7 @@ class C45Learner(Orange.classification.Learner):
     internal variables. All defaults are set as in C4.5; if you change
     nothing, you are running C4.5.
 
-    .. attribute:: gainRatio (g)
+    .. attribute:: gain_ratio (g)
         
         Determines whether to use information gain (false, default)
         or gain ratio for selection of attributes (true).
@@ -1650,11 +1623,11 @@ class C45Learner(Orange.classification.Learner):
         
         Enables subsetting (default: false, no subsetting),
  
-    .. attribute:: probThresh (p)
+    .. attribute:: prob_thresh (p)
 
         Probabilistic threshold for continuous attributes (default: false).
 
-    .. attribute:: minObjs (m)
+    .. attribute:: min_objs (m)
         
         Minimal number of objects (examples) in leaves (default: 2).
 
@@ -1681,31 +1654,50 @@ class C45Learner(Orange.classification.Learner):
         Return pruned tree (not an original C4.5 option) (default: true)
     """
 
+    _rename_new_old = { "min_objs": "minObjs", "probTresh": "prob_tresh",
+            "gain_ratio": "gainRatio" }
+    #_rename_new_old = {}
+    _rename_old_new = dict((a,b) for b,a in _rename_new_old.items())
+
+    @classmethod
+    def _rename_dict(cls, dic):
+        return dict((cls._rename_arg(a),b) for a,b in dic.items())
+
+    @classmethod
+    def _rename_arg(cls, a):
+        if a in cls._rename_old_new:
+            Orange.misc.deprecation_warning(a, cls._rename_old_new[a], stacklevel=4)
+        return cls._rename_new_old.get(a, a)
+
     def __new__(cls, instances = None, weightID = 0, **argkw):
-        self = Orange.classification.Learner.__new__(cls, **argkw)
+        self = Orange.classification.Learner.__new__(cls, **cls._rename_dict(argkw))
         if instances:
-            self.__init__(**argkw)
+            self.__init__(**cls._rename_dict(argkw))
             return self.__call__(instances, weightID)
         else:
             return self
         
     def __init__(self, **kwargs):
-        self.base = _C45Learner(**kwargs)
+        self.base = _C45Learner(**self._rename_dict(kwargs))
 
     def __setattr__(self, name, value):
-        if name != "base" and name in self.base.__dict__:
-            self.base.__dict__[name] = value
-        else:
+        nn = self._rename_arg(name)
+        if name != "base" and nn in self.base.__dict__:
+            self.base.__dict__[nn] = value
+        elif name == "base":
             self.__dict__["base"] = value
+        else:
+            settingAttributesNotSuccessful
 
-    def __getattr(self, name):
+    def __getattr__(self, name):
+        nn = self._rename_arg(name)
         if name != "base":
-            return self.base.__dict__[name]
+            return self.base.__dict__[nn]
         else:
             return self.base
 
     def __call__(self, *args, **kwargs):
-        return C45Classifier(self.base(*args, **kwargs))
+        return C45Classifier(self.base(*args, **self._rename_dict(kwargs)))
 
     def commandline(self, ln):
         """
@@ -1786,7 +1778,7 @@ class C45Classifier(Orange.classification.Classifier):
             |   |   |   |   anti-satellite-test-ban = y: republican (2.2)
 
 
-        The standalone C4.5 would, on the same data, print::
+        The standalone C4.5 would print::
 
             physician-fee-freeze = n: democrat (253.4/5.9)
             physician-fee-freeze = y:
@@ -1799,7 +1791,7 @@ class C45Classifier(Orange.classification.Classifier):
             |   |   |   |   anti-satellite-test-ban = n: democrat (5.0/1.2)
             |   |   |   |   anti-satellite-test-ban = y: republican (2.2/1.0)
 
-        4.5 also prints out the number of errors on learning data in
+        C4.5 also prints out the number of errors on learning data in
         each node.
         """
         return  _c45_printTree0(self.tree, self.class_var, 0)
