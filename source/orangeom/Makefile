@@ -1,26 +1,30 @@
 all:	objdir $(OLD)/orangeom.so
 
-MODULENAME=ORANGEOM
+MODULENAME = ORANGEOM
 include ../makefile.defs
 -include makefile.deps
 
-obj/qhull_geom.o : qhull/geom.c
-obj/qhull_geom2.o : qhull/geom2.c
-obj/qhull_global.o : qhull/global.c
-obj/qhull_io.o : qhull/io.c
-obj/qhull_mem.o : qhull/mem.c
-obj/qhull_merge.o : qhull/merge.c
-obj/qhull_poly.o : qhull/poly.c
-obj/qhull_poly2.o : qhull/poly2.c
-obj/qhull_qhull.o : qhull/qhull.c
-obj/qhull_qset.o : qhull/qset.c
-obj/qhull_stat.o : qhull/stat.c
-obj/qhull_user.o : qhull/user.c
+
+#########################################################################
+# If QHULL_LIB is not defiend then include qhull into orange library.
+# If QHULL_LIB is defined it must be the name of the qhull library to
+# link with (e.g. qhull). The library and its header files must be on the
+# search path (use CFLAGS/LDFLAGS if not on the default path).
+######################################################################### 
+
+ifndef QHULL_LIB
+QHULL_OBJECTS = obj/qhull_geom.o obj/qhull_geom2.o obj/qhull_global.o obj/qhull_io.o\
+		obj/qhull_mem.o obj/qhull_merge.o obj/qhull_poly.o obj/qhull_poly2.o obj/qhull_qhull.o\
+		obj/qhull_qset.o obj/qhull_stat.o obj/qhull_user.o
+# Add curr dir to include path
+COMPILEOPTIONS += -I./
+else
+QHULL_OBJECTS = 
+LINKOPTIONS += -l$(QHULL_LIB)
+endif
 
 obj/qhull_%.o : qhull/%.c
 	$(CCOMPILER) $(COMPILEOPTIONS) -c $< -o $@
-
-QHULL_OBJECTS=obj/qhull_geom.o obj/qhull_geom2.o obj/qhull_global.o obj/qhull_io.o obj/qhull_mem.o obj/qhull_merge.o obj/qhull_poly.o obj/qhull_poly2.o obj/qhull_qhull.o obj/qhull_qset.o obj/qhull_stat.o obj/qhull_user.o
 
 $(OLD)/orangeom.so:	px/stamp ppp/stamp $(ORANGEOM_OBJECTS) $(QHULL_OBJECTS)
 	$(LINKER) $(ORANGEOM_OBJECTS) $(QHULL_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so

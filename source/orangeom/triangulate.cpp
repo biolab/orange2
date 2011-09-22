@@ -58,9 +58,9 @@ PyObject *star(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(t, tri)")
 
 #include "numeric_interface.hpp"
 extern "C" {
-#include "../qhull/qhull.h"
-#include "../qhull/qset.h"		/* for FOREACHneighbor_() */
-#include "../qhull/poly.h"		/* for qh_vertexneighbors() */
+#include <qhull/qhull.h>
+#include <qhull/qset.h>		/* for FOREACHneighbor_() */
+#include <qhull/poly.h>		/* for qh_vertexneighbors() */
 }
 
 PyObject *qhull(PyObject *, PyObject *arg) PYARGS(METH_O, "(array) -> ?")
