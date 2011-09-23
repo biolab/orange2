@@ -37,31 +37,31 @@ class NetworkInfo(object):
     
     .. attribute:: name
     
-    The name of the network.
+        The name of the network.
     
     .. attribute:: link
     
-    The url address of the network file.
+        The url address of the network file.
     
     .. attribute:: type
     
-    Network type (directed, undirected).
+        Network type (directed, undirected).
     
     .. attribute:: nodes
     
-    Number of nodes in the network.
+        Number of nodes in the network.
     
     .. attribute:: edges
     
-    Number of edges in the network. 
+        Number of edges in the network. 
     
     .. attribute:: repository
     
-    The repository name (Social networks, Communication networks, ...).
+        The repository name (Social networks, Communication networks, ...).
     
     .. attribute:: description
     
-    Detailed description of the network.
+        Detailed description of the network.
     
     """
     def __init__(self, name='', link='', type='', nodes='', edges='', repository='', description=''):
@@ -169,9 +169,9 @@ class SNAP(object):
     
     .. attribute:: network_list
     
-    A list of networks on the `Stanford Large Network Dataset Collection web 
-    site <http://snap.stanford.edu/data>`_. Each list item is an instance of the 
-    :obj:`Orange.networks.snap.NetworkInfo` class.
+        A list of networks on the `Stanford Large Network Dataset Collection web 
+        site <http://snap.stanford.edu/data>`_. Each list item is an instance of the 
+        :obj:`Orange.networks.snap.NetworkInfo` class.
     
     """
     
