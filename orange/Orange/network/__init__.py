@@ -64,5 +64,6 @@ except ImportError:
     warnings.warn("Warning: install networkx to use the 'Orange.network' module.") 
 
 import community
+import snap
 
 from deprecated import *

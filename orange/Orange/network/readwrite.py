@@ -21,6 +21,7 @@ import os.path
 import warnings
 import itertools
 import tempfile
+import gzip
 
 import networkx as nx
 import networkx.readwrite.pajek as rwpajek
@@ -113,7 +114,7 @@ def read(path, encoding='UTF-8', auto_table=0):
     """
     
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
-    supported = ['.net', '.gml', '.gpickle']
+    supported = ['.net', '.gml', '.gpickle', '.gz']
     
     if not os.path.isfile(path):
         raise OSError('File %s does not exist.' % path)
@@ -130,6 +131,9 @@ def read(path, encoding='UTF-8', auto_table=0):
     
     if ext == '.gpickle':
         return read_gpickle(path, auto_table=auto_table)
+    
+    if ext == '.gz' and path[-6:] == 'txt.gz':
+        return read_txtgz(path)
 
 def write(G, path, encoding='UTF-8'):
     """Write graph in any of the supported file formats (.gpickle, .net, .gml).
@@ -359,5 +363,23 @@ def write_gml(G, path):
     """
     
     rwgml.write_gml(G, path)
+
+def read_txtgz(path):
+    f = gzip.open(path, 'rb')
+    content = f.read()
+    f.close()
+    
+    content = content.split('\n')
+    comments = (line for line in content if line.strip().startswith('#'))
+    content = (line for line in content if not line.strip().startswith('#'))
+    
+    if "directed graph" in ''.join(comments).lower():
+        G = Orange.network.DiGraph()
+    else:
+        G = Orange.network.Graph()
+    
+    G.add_edges_from([int(node) for node in coors.strip().split('\t')] for coors in content if len(coors.strip().split('\t')) == 2)
+    
+    return G
 
 _add_doc(write_gml, rwgml.write_gml)
