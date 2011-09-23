@@ -10,5 +10,6 @@ Network (``network``)
    Orange.network.layout
    Orange.network.community
    Orange.network.deprecated
-
+   Orange.network.snap
+   
 .. automodule:: Orange.network
