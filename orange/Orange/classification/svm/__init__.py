@@ -75,6 +75,11 @@ SVM-derived feature weights
 Kernel wrappers
 ===============
 
+Use kernel wrappers to build a custom kernel. All wrapper constructors take one
+or more Python functions (`wrapped` attribute) to wrap. The function must be a
+positive definite kernel, with two attributes (of type double) and return a 
+double.  
+
 .. autoclass:: Orange.classification.svm.kernels.KernelWrapper
    :members:
 
