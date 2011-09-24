@@ -11,3 +11,4 @@ print weights
 
 import pylab as plt
 plt.hist(weights.values())
+ 
