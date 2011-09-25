@@ -52,8 +52,8 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
     updateData = update_data
 
-    def setData(self, data, subsetData=None, **args):
-        OWLinProj3DPlot.set_data(self, data, subsetData, **args)
+    def setData(self, data, subset_data=None, **args):
+        OWLinProj3DPlot.set_data(self, data, subset_data, **args)
 
         # No need to generate backgroud grid sphere geometry more than once
         if hasattr(self, '_sphere_buffer'):

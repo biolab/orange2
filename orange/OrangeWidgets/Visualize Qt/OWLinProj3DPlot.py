@@ -38,10 +38,10 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
             self._arrow_lines = []
             self.mouseover_callback = self._update_arrow_values
 
-    def set_data(self, data, subsetData=None, **args):
+    def set_data(self, data, subset_data=None, **args):
         if data == None:
             return
-        ScaleLinProjData3D.setData(self, data, subsetData, **args)
+        ScaleLinProjData3D.setData(self, data, subset_data, **args)
         OWPlot3D.initializeGL(self)
 
         if hasattr(self, '_value_lines_shader'):

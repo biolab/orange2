@@ -615,11 +615,11 @@ class OWPlot3D(orangeqt.Plot3D):
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glMultMatrixd(array(self.projection.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(array(self.view.data(), dtype=float))
-        glMultMatrixd(array(self.model.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
 
         self.qglColor(self._theme.labels_color)
         for example in self.data.transpose():
@@ -827,7 +827,6 @@ class OWPlot3D(orangeqt.Plot3D):
             glActiveTexture(GL_TEXTURE0)
             print('Generation took ' + str(time.time()-start) + ' seconds')
         else:
-            start = time.time()
             orangeqt.Plot3D.update_data(self, x_index, y_index, z_index,
                 color_index, symbol_index, size_index, label_index,
                 colors, num_symbols_used,
@@ -861,7 +860,7 @@ class OWPlot3D(orangeqt.Plot3D):
             glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, tbo)
             glBindTexture(GL_TEXTURE_BUFFER, 0)
         else:
-            orangeqt.Plot3D.set_data(self, long(self.data_array.ctypes.data),
+            orangeqt.Plot3D.set_data(self, self.data_array,
                                      self.num_examples,
                                      self.example_size)
 
@@ -872,8 +871,8 @@ class OWPlot3D(orangeqt.Plot3D):
         :param valid_data: List of booleans: true for valid indices, false otherwise
         :type valid_data: list of bool
         '''
-        self.valid_data = numpy.array(valid_data, dtype=bool) # QList<bool> is being a PITA
-        orangeqt.Plot3D.set_valid_data(self, long(self.valid_data.ctypes.data))
+        self.valid_data = numpy.array(valid_data, dtype=bool)
+        orangeqt.Plot3D.set_valid_data(self, self.valid_data)
 
     def set_new_zoom(self, min, max):
         '''
