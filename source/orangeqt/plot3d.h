@@ -6,6 +6,7 @@
 #include <QVector3D>
 #include <QVector4D>
 #include <QMatrix4x4>
+#include <Python.h>
 
 #ifdef __APPLE__ // Apple OpenGL framework (What if we want to use X11 - then the include should be GL/gl.h)
 #include <OpenGL/gl.h>
@@ -24,11 +25,11 @@ public:
                              int type,
                              const QList<QVector3D>& geometry);
 
-    void set_data(quint64 array_address,
+    void set_data(float* data_array,
                   int num_examples,
                   int example_size);
 
-    void set_valid_data(quint64 valid_data_address); // Until I get QList<bool> to work, address of numpy array will have to do
+    void set_valid_data(bool* valid_data);
 
     void update_data(int x_index, int y_index, int z_index,
                      int color_index, int symbol_index, int size_index, int label_index,
@@ -55,6 +56,8 @@ public:
 
     QList<bool> get_selected_indices();
 
+    int get_num_examples();
+
 private:
     float* data_array;
     bool* valid_data;
@@ -78,5 +81,8 @@ private:
     QMap<int, QList<QVector3D> > geometry_data_edges_2d;
     QMap<int, QList<QVector3D> > geometry_data_edges_3d;
 };
+
+bool convert_numpy_array_to_native_f(PyObject* in, float*& out_data, int& out_size);
+bool convert_numpy_array_to_native_b(PyObject* in, bool*& out_data, int& out_size);
 
 #endif

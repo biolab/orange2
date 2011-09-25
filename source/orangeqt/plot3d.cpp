@@ -2,6 +2,7 @@
 #include <iostream>
 #include <limits>
 #include <QGLFormat>
+#include <numpy/arrayobject.h>
 
 #ifdef _WIN32 // Should be defined by most Windows compilers
 #include <GL/glext.h>
@@ -33,6 +34,14 @@ Plot3D::Plot3D(QWidget* parent) : QGLWidget(QGLFormat(QGL::SampleBuffers), paren
     vbos_generated = false;
     data_array = NULL;
     valid_data = NULL;
+    num_examples = 0;
+    example_size = 0;
+    num_selected_vertices = 0;
+    num_unselected_vertices = 0;
+    num_edges_vertices = 0;
+
+    // Initialize numpy C-API
+    import_array();
 }
 
 Plot3D::~Plot3D()
@@ -43,6 +52,12 @@ Plot3D::~Plot3D()
         glDeleteBuffers(1, &vbo_unselected_id);
         glDeleteBuffers(1, &vbo_edges_id);
     }
+
+    if (data_array != NULL)
+        delete [] data_array;
+
+    if (valid_data != NULL)
+        delete [] valid_data;
 }
 
 void Plot3D::set_symbol_geometry(int symbol, int type, const QList<QVector3D>& geometry)
@@ -66,9 +81,12 @@ void Plot3D::set_symbol_geometry(int symbol, int type, const QList<QVector3D>& g
     }
 }
 
-void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
+void Plot3D::set_data(float* data_array, int num_examples, int example_size)
 {
-    data_array = reinterpret_cast<float*>(array_address); // TODO: this is dangerous, make a numpy.array type or something instead
+    if (this->data_array != NULL)
+        delete [] this->data_array; // Clean previous data.
+
+    this->data_array = data_array;  // Data is copied to a fresh array in set_data()
     this->num_examples = num_examples;
     this->example_size = example_size;
     selected_indices = QVector<bool>(num_examples);
@@ -99,9 +117,12 @@ void Plot3D::set_data(quint64 array_address, int num_examples, int example_size)
 #endif
 }
 
-void Plot3D::set_valid_data(quint64 valid_data_address)
+void Plot3D::set_valid_data(bool* valid_data)
 {
-    valid_data = reinterpret_cast<bool*>(valid_data_address); // TODO: the same as the TODO above
+    if (this->valid_data != NULL)
+        delete [] this->valid_data;
+
+    this->valid_data = valid_data;//reinterpret_cast<bool*>(valid_data_address); // TODO: the same as the TODO above
 }
 
 void Plot3D::update_data(int x_index, int y_index, int z_index,
@@ -109,6 +130,12 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
                          const QList<QColor>& colors, int num_symbols_used,
                          bool x_discrete, bool y_discrete, bool z_discrete, bool use_2d_symbols)
 {
+    if (data_array == NULL)
+    {
+        std::cout << "set_data must be called before update_data!" << std::endl;
+        return;
+    }
+
     if (vbos_generated)
     {
         glDeleteBuffers(1, &vbo_selected_id);
@@ -482,8 +509,58 @@ void Plot3D::unselect_all_points()
 
 QList<bool> Plot3D::get_selected_indices()
 {
-    //return selected_indices.toList(); // TODO: this crashes on adult.tab
-    return QList<bool>();
+    return selected_indices.toList();
+}
+
+int Plot3D::get_num_examples()
+{
+    return num_examples;
+}
+
+bool convert_numpy_array_to_native_f(PyObject* in, float*& out_data, int& out_size)
+{
+    if (!PyArray_Check(in))
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Unknown object type (must be numpy.array)");
+        return false;
+    }
+
+    PyObject* array = PyArray_ContiguousFromAny(in, PyArray_FLOAT, 1, 0); // Returns a C-style contiguous and behaved (aligned + writable) array
+
+    if (!array)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to make contiguous array of PyArray_FLOAT");
+        return false;
+    }
+
+    out_size = PyArray_DIM(array, 0);
+    out_data = new float[out_size];
+    memcpy(out_data, (float *)PyArray_DATA(array), out_size*sizeof(float));
+    Py_DECREF(array);
+    return true;
+}
+
+bool convert_numpy_array_to_native_b(PyObject* in, bool*& out_data, int& out_size)
+{
+    if (!PyArray_Check(in))
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Unknown object type (must be numpy.array)");
+        return false;
+    }
+
+    PyObject* array = PyArray_ContiguousFromAny(in, PyArray_BOOL, 1, 0);
+
+    if (!array)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to make contiguous array of PyArray_BOOL");
+        return false;
+    }
+
+    out_size = PyArray_DIM(array, 0);
+    out_data = new bool[out_size];
+    memcpy(out_data, (bool *)PyArray_DATA(array), out_size*sizeof(bool));
+    Py_DECREF(array);
+    return true;
 }
 
 #include "plot3d.moc"

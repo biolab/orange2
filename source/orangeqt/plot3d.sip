@@ -13,11 +13,58 @@ public:
                              int type,
                              const QList<QVector3D>& geometry);
 
-    void set_data(quint64 array_address,
+    void set_data(SIP_PYOBJECT,
+                  SIP_PYOBJECT,  // int num_examples
+                  SIP_PYOBJECT); // int example_size
+%MethodCode
+    int size = -1;
+    float* data = NULL;
+    int num_examples = -1;
+    int example_size = -1;
+    if (!PyInt_Check(a1) || !PyInt_Check(a2))
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Wrong argument types!");
+        return 0;
+    }
+    num_examples = (int)PyInt_AsLong(a1);
+    example_size = (int)PyInt_AsLong(a2);
+    bool success = convert_numpy_array_to_native_f(a0, data, size);
+    if (!success)
+    {
+        return 0;
+    }
+    else if (size != num_examples * example_size)
+    {
+        delete [] data;
+        PyErr_SetString(PyExc_RuntimeError, "Data conversion corrupted!");
+        return 0;
+    }
+    sipCpp->Plot3D::set_data(data, num_examples, example_size);
+%End
+
+    void set_data(float* data_array,
                   int num_examples,
                   int example_size);
 
-    void set_valid_data(quint64 valid_data_address); // Until I get QList<bool> to work, address of numpy array will have to do
+    void set_valid_data(SIP_PYOBJECT);
+%MethodCode
+    int size = -1;
+    bool* data = NULL;
+    bool success = convert_numpy_array_to_native_b(a0, data, size);
+    if (!success)
+    {
+        return 0;
+    }
+    else if (size != sipCpp->Plot3D::get_num_examples())
+    {
+        delete [] data;
+        PyErr_SetString(PyExc_RuntimeError, "Data conversion corrupted!");
+        return 0;
+    }
+    sipCpp->Plot3D::set_valid_data(data);
+%End
+
+    void set_valid_data(bool* valid_data);
 
     void update_data(int x_index, int y_index, int z_index,
                      int color_index, int symbol_index, int size_index, int label_index,
@@ -43,4 +90,6 @@ public:
     void unselect_all_points();
 
     QList<bool> get_selected_indices();
+
+    int get_num_examples();
 };
