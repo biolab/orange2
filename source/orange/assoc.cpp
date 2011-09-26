@@ -179,8 +179,11 @@ int TAssociationRule::countItems(PExample ex)
 
 bool TAssociationRule::applies(const TExample &ex, const PExample &side)
 {
-  if (side->domain->variables->size())
-    return side->compatible(ex);
+  if (side->domain->variables->size()){
+    //For unpickled rules to work.
+    TExample converted_ex(side->domain, ex);
+    return side->compatible(converted_ex);
+  }
 
   // all meta-attributes that appear in 'side' must also appear in 'ex' and be noSpecial
   const_ITERATE(TMetaValues, mi, side->meta) {
