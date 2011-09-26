@@ -4,8 +4,8 @@
 Symmetric matrix (``SymMatrix``)
 ================================
 
-Class `Orange.data.SymMatrix` is symmetric (square) matrix of size fixed at 
-construction time (and stored to the attribute dim).
+:obj:`SymMatrix` implements symmetric matrices of size fixed at 
+construction time (and stored in :obj:`SymMatrix.dim`).
 
 .. class:: SymMatrix
 
@@ -15,19 +15,19 @@ construction time (and stored to the attribute dim).
             
     .. attribute:: matrix_type 
 
-        Value can be set to SymMatrix.Lower (0), SymMatrix.Upper (1), 
-        SymMatrix.Symmetric (2, default), SymMatrix.Lower_Filled (3) or
-        SymMatrix.Upper_Filled (4). 
-        
-        By setting it to Lower or Upper, we limit the matrix to the lower or 
-        upper half. Attempts to index anything above or below the diagonal, 
-        respectively, will yield an error. With Lower_Filled and Upper_Field, 
-        the elements of the other half (upper or lower, respectively) still 
-        exist, but are set to zero and can be read, but cannot be modified. The 
-        matrix type is by default initially set to symmetric, but can be changed 
+        Can be ``SymMatrix.Lower`` (0), ``SymMatrix.Upper`` (1), 
+        ``SymMatrix.Symmetric`` (2, default), ``SymMatrix.Lower_Filled`` (3) or
+        ``SymMatrix.Upper_Filled`` (4). 
+
+        If the matrix type is ``Lower`` or ``Upper``, indexing 
+        above or below the diagonal, respectively, will fail. 
+        With ``Lower_Filled`` and ``Upper_Filled``,
+        the elements upper or lower, respectively, still 
+        exist and are set to zero, but they cannot be modified. The 
+        default matrix type is ``Symmetric``, but can be changed 
         at any time.
 
-        If matrix type is changed to SymMatrix.Upper, it gets printed as
+        If matrix type is ``Upper``, it is printed as:
 
         >>> m.matrix_type = m.Upper
         >>> print m
@@ -36,7 +36,7 @@ construction time (and stored to the attribute dim).
          (                 9.000, 12.000),
          (                        16.000))
 
-        Changing the type to SymMatrix.Lower_Filled will change the printout to
+        Changing the type to ``Lower_Filled`` changes the printout to
 
         >>> m.matrix_type = m.Lower_Filled
         >>> print m
@@ -47,7 +47,7 @@ construction time (and stored to the attribute dim).
 	
     .. method:: __init__(dim[, default_value])
 
-        Construct an empty symmetric matrix with the given dimension.
+        Construct a symmetric matrix of the given dimension.
 
         :param dim: matrix dimension
         :type dim: int
@@ -64,8 +64,8 @@ construction time (and stored to the attribute dim).
         :param instances: data instances
         :type instances: list of lists
         
-        The following example fills the symmetric matrix created above with
-        some data from a list::
+        The following example fills a matrix created above with
+        data in a list::
 
             import Orange
             m = [[],
@@ -81,21 +81,20 @@ construction time (and stored to the attribute dim).
                     
             matrix = Orange.data.SymMatrix(m)
 
-        SymMatrix also stores the diagonal elements. Here they are not 
-        specified, so they are set to 0. If any line was shorter, the missing 
-        elements would be set to 0 as well. Any line could also be longer, 
-        spreading across the diagonal, in which case the constructor would check
-        for asymmetries. For instance, if the matrix started by::
+        SymMatrix also stores diagonal elements. They are set
+        to zero, if they are not specified. The missing elements
+        (shorter lists) are set to zero as well. If a list
+        spreads over the diagonal, the constructor checks
+        for asymmetries. For instance, the matrix
+
+        ::
 
             m = [[],
                  [ 3,  0, f],
-                 [ 2,  4], ...
+                 [ 2,  4]]
     
-        this would only be OK if f equals 2; otherwise, the matrix would be 
-        asymmetric.
-
-        Finally, no line can be longer than the total number of lines. Here we 
-        have 10 rows, so no row may have more than 10 columns.
+        is only OK if f equals 2. Finally, no row can be longer 
+        than matrix size.  
 
     .. method:: get_values()
     
@@ -137,17 +136,14 @@ construction time (and stored to the attribute dim).
 Indexing
 -------------------
 
-Indexing is implemented so that order of indices is unimportant (unless set 
-otherwise with the matrix_type attribute). For example, if m is an instance of 
-SymMatrix, then m[2, 4] addresses the same element as m[4, 2].
+For symmetric matrices the order of indices is not important: 
+if ``m`` is a SymMatrix, then ``m[2, 4]`` addresses the same element as ``m[4, 2]``.
 
-`symmatrix.py`_
-    
 .. literalinclude:: code/symmatrix.py
     :lines: 1-6
 
-Although only the lower left half of the matrix is set , we have actually 
-constructed a whole symmetric matrix.
+Although only the lower left half of the matrix was set explicitely, 
+the whole matrix is constructed.
 
 >>> print m
 (( 1.000,  2.000,  3.000,  4.000),
@@ -155,17 +151,11 @@ constructed a whole symmetric matrix.
  ( 3.000,  6.000,  9.000, 12.000),
  ( 4.000,  8.000, 12.000, 16.000))
  
-Other manipulations also respect the symmetricity, for instance, increasing an 
-element m[3, 2] += 15 will also increase m[2, 3] (since this is, in fact, one 
-and the same element).
-
-Index entire rows by using a single index instead of two:
+Entire rows are indexed with a single index. They can be iterated
+over in a for loop or sliced (with, for example, ``m[:3]``):
 
 >>> print m[1]
 (3.0, 6.0, 9.0, 0.0)
-
-Iterate over the matrix using a for loop:
-
 >>> m.matrix_type = m.Lower
 >>> for row in m:
 ...     print row
@@ -174,7 +164,3 @@ Iterate over the matrix using a for loop:
 (3.0, 6.0, 9.0)
 (4.0, 8.0, 12.0, 16.0)
 
-Slicing also works. For example, m[:3] is a tuple containing the first three 
-lines of the matrix (again represented as tuples).
-
-.. _symmatrix.py: code/symmatrix.py
