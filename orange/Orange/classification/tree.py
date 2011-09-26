@@ -22,7 +22,7 @@ See `Decision tree learning
 for introduction to classification trees.
 
 This page first describes the learner and the classifier, and then
-defines the base classes (individual components) of the trees and the
+the individual components of the trees and the
 tree-building process.
 
 .. autoclass:: TreeLearner
@@ -33,7 +33,7 @@ tree-building process.
 
 .. class:: Node
 
-    Classification trees are represented as a tree-like hierarchy of
+    Classification trees are represented as a hierarchy of
     :obj:`Node` classes.
 
     Node stores the instances belonging to the node, a branch selector,
@@ -65,37 +65,37 @@ tree-building process.
         it is only stored if :obj:`TreeLearner.store_node_classifier`
         is True.
 
-    If the node is an internal node, there are several additional
-    fields. The lists :obj:`branches`, :obj:`branch_descriptions` and
+    Internal nodes have additional
+    attributes. The lists :obj:`branches`, :obj:`branch_descriptions` and
     :obj:`branch_sizes` are of the same length.
 
     .. attribute:: branches
 
-        A list of subtrees, given as :obj:`Node`.  If an element
-        is None, the node is empty.
+        A list of subtrees. Each element is a :obj:`Node` or None.
+        If None, the node is empty.
 
     .. attribute:: branch_descriptions
 
-        A list with string descriptions for branches, constructed by
+        A list with string describing branches, which are constructed by
         :obj:`SplitConstructor`. It can contain anything,
         for example 'red' or '>12.3'.
 
     .. attribute:: branch_sizes
 
-        A (weighted) number of training instances that went into
+        A (weighted) number of training instances for 
         each branch. It can be used, for instance, for modeling
         probabilities when classifying instances with unknown values.
 
     .. attribute:: branch_selector
 
         A :obj:`~Orange.classification.Classifier` that returns a branch
-        for each instance: it gets an instance and returns discrete
+        for each instance: it returns discrete
         :obj:`Orange.data.Value` in ``[0, len(branches)-1]``.  When an
-        instance cannot be classified to any branch, the selector can
+        instance cannot be classified unambiguously, the selector can
         return a discrete distribution, which proposes how to divide
         the instance between the branches. Whether the proposition will
-        be used depends upon the chosen :obj:`Splitter` (when learning)
-        or :obj:`Descender` (when classifying).
+        be used depends upon the :obj:`Splitter` (for learning)
+        or :obj:`Descender` (for classification).
 
     .. method:: tree_size()
         
@@ -109,7 +109,7 @@ Examples
 Tree Structure
 ==============
 
-This example explores the tree tructure of a tree build on the
+This example works with the
 lenses data set:
 
 .. literalinclude:: code/treestructure.py
@@ -134,58 +134,44 @@ the :obj:`~Node.branches` attribute.
 This was only an excercise - a :obj:`Node` already has a built-in
 method :func:`~Node.tree_size`.
 
-Let us now write a script that prints out a tree. The recursive part of
-the function will get a node and its level.
+Trees can be printed with a recursive function:
 
 .. literalinclude:: code/treestructure.py
    :lines: 26-41
 
-Don't waste time on studying formatting tricks (\n's etc.), this is just
-for nicer output. What matters is everything but the print statements.
+The crux of the example is not in the formatting (\\n's etc.);
+what matters is everything but the print statements.
 As first, we check whether the node is a null-node (a node to which no
 learning instances were classified). If this is so, we just print out
 "<null node>" and return.
 
 After handling null nodes, remaining nodes are internal nodes and
-leaves.  For internal nodes, we print a node description consisting
-of the feature's name and distribution of classes. :obj:`Node`'s
-branch description is, for all currently defined splits, an instance
-of a class derived from :obj:`Orange.classification.Classifier` 
-(in fact, it is
-a :obj:`orange.ClassifierFromVarFD`, but a :obj:`Orange.classification.Classifier`
-would suffice), and its :obj:`class_var` points to the attribute we seek.
-So we print its name. We will also assume that storing class distributions
-has not been disabled and print them as well.  Then we iterate through
-branches; for each we print a branch description and iteratively call the
-:obj:`printTree0` with a level increased by 1 (to increase the indent).
+leaves. For internal nodes, we print a node description consisting of
+the feature's name and distribution of classes. :obj:`Node`'s branch
+description is an instance of :obj:`~Orange.classification.Classifier`,
+and its ``class_var`` is the feature whose name is printed.
+Class distributions are printed as well (they are assumed to be strored). 
+Then we branch description for each branch and recursively call 
+:obj:`printTree0` with a level increased by 1 to increase the indent.
 
-Finally, if the node is a leaf, we print out the distribution of learning
+Finally, if the node is a leaf, we print the distribution of learning
 instances in the node and the class to which the instances in the node
-would be classified. We again assume that the :obj:`~Node.node_classifier` is
-the default one - a :obj:`DefaultClassifier`. A better print function
+would be classified. We assume that the :obj:`~Node.node_classifier` is
+a :obj:`DefaultClassifier`. A better print function
 should be aware of possible alternatives.
 
-Now, we just need to write a simple function to call our printTree0.
-We could write something like...
-
-::
-
-    def printTree(x):
-        printTree0(x.tree, 0)
-
-... but we won't. Let us learn how to handle arguments of
-different types. Let's write a function that will accept either a
-:obj:`TreeClassifier` or a :obj:`Node`.
+If the print-out function needs to accept either a
+:obj:`TreeClassifier` or a :obj:`Node`, it can be written as follows:
 
 .. literalinclude:: code/treestructure.py
    :lines: 43-49
 
-It's fairly straightforward: if :obj:`x` is of type derived from
-:obj:`TreeClassifier`, we print :obj:`x.tree`; if it's :obj:`Node` we
-just call :obj:`printTree0` with :obj:`x`. If it's of some other type,
-we don't know how to handle it and thus raise an exception. The output::
+It's fairly straightforward: if ``x`` is a
+:obj:`TreeClassifier`, we print ``x.tree``; if it's :obj:`Node` we
+just call ``printTree0`` with `x`. If it's of some other type,
+we raise an exception. The output::
 
-    >>> printTree(treeClassifier)
+    >>> print_tree(tree_classifier)
     tear_rate (<15.000, 5.000, 4.000>)
     : reduced --> none (<12.000, 0.000, 0.000>)
     : normal
@@ -200,20 +186,20 @@ we don't know how to handle it and thus raise an exception. The output::
           : myope --> hard (<0.000, 0.000, 3.000>)
           : hypermetrope --> none (<2.000, 0.000, 1.000>)
 
-For a final exercise, let us write a simple pruning function. It will
-be written entirely in Python, unrelated to any :obj:`Pruner`. It will
-limit the maximal tree depth (the number of internal nodes on any path
+We conclude the tree structure examples with a simple pruning 
+function, written entirely in Python and unrelated to any :obj:`Pruner`. It 
+limits the maximal tree depth (the number of internal nodes on any path
 down the tree) given as an argument.  For example, to get a two-level
-tree, we would call cutTree(root, 2). The function will be recursive,
+tree, call cut_tree(root, 2). The function ise recursive,
 with the second argument (level) decreasing at each call; when zero,
 the current node will be made a leaf:
 
 .. literalinclude:: code/treestructure.py
    :lines: 54-62
 
-There's nothing to prune at null-nodes or leaves, so we act only when
-:obj:`node` and :obj:`node.branch_selector` are defined. If level is
-not zero, we call the function for each branch. Otherwise, we clear the
+The function acts only when
+:obj:`node` and :obj:`node.branch_selector` are defined. If the level is
+not zero, is recursively calls  the function for each branch. Otherwise, it clears the
 selector, branches and branch descriptions.
 
     >>> cutTree(tree.tree, 2)
@@ -225,16 +211,8 @@ selector, branches and branch descriptions.
        : no --> soft (<1.000, 5.000, 0.000>)
        : yes --> hard (<2.000, 0.000, 4.000>)
 
-Learning
-========
-
-You could just call :class:`TreeLearner` and let it fill the empty slots
-with the default components. This section will teach you three things:
-what are the missing components (and how to set the same components
-yourself), how to use alternative components to get a different tree and,
-finally, how to write a skeleton for tree induction in Python.
-
-.. _treelearner.py: code/treelearner.py
+Setting learning parameters
+===========================
 
 Let us construct a :obj:`TreeLearner` to play with:
 
@@ -243,36 +221,19 @@ Let us construct a :obj:`TreeLearner` to play with:
 
 There are three crucial components in learning: the
 :obj:`~TreeLearner.split` and :obj:`~TreeLearner.stop` criteria, and the
-example :obj:`~TreeLearner.splitter` (there are some others, which become
-important during classification; we'll talk about them later). They are
-not defined; if you use the learner, the slots are filled temporarily
-but later cleared again.
-
-::
-
-    >>> print learner.split
-    None
-    >>> learner(data)
-    <TreeClassifier instance at 0x01F08760>
-    >>> print learner.split
-    None
-
-Stopping criteria
-=================
-
-The stop is trivial. The default is set by
+example :obj:`~TreeLearner.splitter`. The default ``stop`` is set with
 
     >>> learner.stop = Orange.classification.tree.StopCriteria_common()
 
-We can now examine the default stopping parameters.
+and the default stopping parameters are
 
     >>> print learner.stop.max_majority, learner.stop.min_examples
     1.0 0.0
 
-Not very restrictive. This keeps splitting the instances until there's
-nothing left to split or all the instances are in the same class. Let us
-set the minimal subset that we allow to be split to five instances and
-see what comes out.
+The defaults keep splitting until there is
+nothing left to split or all the instances are in the same class.
+If the minimal subset that is allowed to be split further
+is set to five instances, the resulting tree is smaller.
 
     >>> learner.stop.min_instances = 5.0
     >>> tree = learner(data)
@@ -287,14 +248,12 @@ see what comes out.
     |    |    prescription=hypermetrope: none (66.67%)
     |    |    prescription=myope: hard (100.00%)
 
-OK, that's better. If we want an even smaller tree, we can also limit
-the maximal proportion of majority class.
+We can also limit the maximal proportion of majority class.
 
     >>> learner.stop.max_majority = 0.5
     >>> tree = learner(data)
     >>> print tree.dump()
     none (62.50%)
-
 
 Redefining tree induction components
 ====================================
