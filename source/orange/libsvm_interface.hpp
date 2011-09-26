@@ -147,7 +147,8 @@ public:
 	PExampleTable examples;	//P examples used to train the classifier
 	PKernelFunc kernelFunc;	//P custom kernel function
 
-//	const TExample *currentExample;
+	int svm_type; //P(&SVMLearner_SVMType)  SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPSILON_SVR=3, NU_SVR=4)
+	int kernel_type; //P(&SVMLearner_Kernel)  kernel type (LINEAR=0, POLY, RBF, SIGMOID, CUSTOM=4)
 
     svm_model* getModel() {return model;}
 

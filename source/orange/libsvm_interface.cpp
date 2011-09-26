@@ -704,17 +704,13 @@ TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable examples, svm
 	this->x_space = x_space;
 	this->examples = examples;
 	domain = examples->domain;
-//	model->param.classifier=this;
+	svm_type = svm_get_svm_type(model);
+	kernel_type = model->param.kernel_type;
 	this->kernelFunc = kernelFunc;
-//    if (model->param.learner) // if the model not constructed at unpickling
-//	    kernelFunc=model->param.learner->kernelFunc;
-//    model->param.learner=NULL;
-//	currentExample=NULL;
-	int svm_type = svm_get_svm_type(model);
+
 	computesProbabilities = model && svm_check_probability_model(model) && \
 			(svm_type != NU_SVR && svm_type != EPSILON_SVR); // Disable prob. estimation for regression
-//	if(!classVar && model->param.svm_type==ONE_CLASS)
-//		classVar=mlnew TFloatVariable();
+
 	int nr_class = svm_get_nr_class(model);
 	int i = 0;
 	supportVectors = mlnew TExampleTable(examples->domain);
