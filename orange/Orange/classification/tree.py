@@ -59,53 +59,42 @@ tree-building process.
 
     .. attribute:: node_classifier
 
-        A classifier (usually a :obj:`DefaultClassifier`) that can be used
-        to classify instances coming to the node. If the node is a leaf,
-        this is used to decide the final class (or class distribution)
-        of an instance. If it's an internal node, it is stored if
-        :obj:`Node`'s flag :obj:`store_node_classifier` is set. Since
-        the :obj:`node_classifier` is needed by :obj:`Descender` and
-        for pruning (see far below), this is the default behaviour;
-        space consumption of the default :obj:`DefaultClassifier` is
-        rather small. You should never disable this if you intend to
-        prune the tree later.
+        A classifier (usually a :obj:`DefaultClassifier`) for instances
+        coming to the node. If the node is a leaf, it chooses the class
+        (or class distribution) of an instance. If it's an internal node,
+        it is only stored if :obj:`TreeLearner.store_node_classifier`
+        is True.
 
-    If the node is a leaf, the remaining fields are None. If it's
-    an internal node, there are several additional fields. The lists
-    :obj:`branches`, :obj:`branch_descriptions` and :obj:`branch_sizes`
-    are of the same length.
+    If the node is an internal node, there are several additional
+    fields. The lists :obj:`branches`, :obj:`branch_descriptions` and
+    :obj:`branch_sizes` are of the same length.
 
     .. attribute:: branches
 
-        Stores a list of subtrees, given as :obj:`Node`.  An element
-        can be None; in this case the node is empty.
+        A list of subtrees, given as :obj:`Node`.  If an element
+        is None, the node is empty.
 
     .. attribute:: branch_descriptions
 
         A list with string descriptions for branches, constructed by
-        :obj:`SplitConstructor`. It can contain different kinds of
-        descriptions, but basically, expect things like 'red' or '>12.3'.
+        :obj:`SplitConstructor`. It can contain anything,
+        for example 'red' or '>12.3'.
 
     .. attribute:: branch_sizes
 
-        Gives a (weighted) number of training instances that went into
-        each branch. This can be used later, for instance, for modeling
+        A (weighted) number of training instances that went into
+        each branch. It can be used, for instance, for modeling
         probabilities when classifying instances with unknown values.
 
     .. attribute:: branch_selector
 
-        Gives a branch for each instance. The same object is used
-        during learning and classifying. The :obj:`branch_selector`
-        is of type :obj:`Orange.classification.Classifier`, since its job is
-        similar to that of a classifier: it gets an instance and
-        returns discrete :obj:`Orange.data.Value` in range :samp:`[0,
-        len(branches)-1]`.  When an instance cannot be classified to
-        any branch, the selector can return a :obj:`Orange.data.Value`
-        containing a special value (sVal) which should be a discrete
-        distribution (DiscDistribution). This should represent a
-        :obj:`branch_selector`'s opinion of how to divide the instance
-        between the branches. Whether the proposition will be used or not
-        depends upon the chosen :obj:`Splitter` (when learning)
+        A :obj:`~Orange.classification.Classifier` that returns a branch
+        for each instance: it gets an instance and returns discrete
+        :obj:`Orange.data.Value` in ``[0, len(branches)-1]``.  When an
+        instance cannot be classified to any branch, the selector can
+        return a discrete distribution, which proposes how to divide
+        the instance between the branches. Whether the proposition will
+        be used depends upon the chosen :obj:`Splitter` (when learning)
         or :obj:`Descender` (when classifying).
 
     .. method:: tree_size()
@@ -113,39 +102,20 @@ tree-building process.
         Return the number of nodes in the subtrees (including the node,
         excluding null-nodes).
 
-
-
 ========
 Examples
 ========
 
-For example, here's how to write your own stop function. The example
-constructs and prints two trees. For the first one we define the
-*defStop* function, which is used by default, and combine it with a
-random function so that the stop criteria will also be met in 20% of the
-cases when *defStop* is false. For the second tree the stopping criteria
-is random. Note that in the second case lambda function still has three
-parameters, since this is a necessary number of parameters for the stop
-function (:obj:`StopCriteria`). 
-
-.. _tree3.py: code/tree3.py
-
-.. literalinclude:: code/tree3.py
-   :lines: 8-23
-
-The output is not shown here since the resulting trees are rather
-big.
-
 Tree Structure
 ==============
 
-To have something to work on, we'll take the data from lenses dataset and
-build a tree using the default components:
+This example explores the tree tructure of a tree build on the
+lenses data set:
 
 .. literalinclude:: code/treestructure.py
    :lines: 7-10
 
-How big is our tree?
+The next function counts the number of nodes in a tree:
 
 .. _lenses.tab: code/lenses.tab
 .. _treestructure.py: code/treestructure.py
@@ -153,18 +123,16 @@ How big is our tree?
 .. literalinclude:: code/treestructure.py
    :lines: 12-21
 
-If node is None, we have a null-node; null nodes don't count, so we
-return 0. Otherwise, the size is 1 (this node) plus the sizes of all
-subtrees. The node is an internal node if it has a :obj:`branch_selector`;
-it there's no selector, it's a leaf. Don't attempt to skip the if
-statement: leaves don't have an empty list of branches, they don't have
-a list of branches at all.
+If node is None, we return 0. Otherwise, the size is 1 (this node)
+plus the sizes of all subtrees. We need to check if the node is an
+internal node (it has a :obj:`~Node.branch_selector`), as leaves don't have
+the :obj:`~Node.branches` attribute.
 
-    >>> treeSize(treeClassifier.tree)
+    >>> tree_size(tree_classifier.tree)
     10
 
-Don't forget that this was only an excercise - :obj:`Node` has a built-in
-method :obj:`Node.treeSize` that does exactly the same.
+This was only an excercise - a :obj:`Node` already has a built-in
+method :func:`~Node.tree_size`.
 
 Let us now write a script that prints out a tree. The recursive part of
 the function will get a node and its level.
@@ -327,6 +295,23 @@ the maximal proportion of majority class.
     >>> print tree.dump()
     none (62.50%)
 
+
+Redefining tree induction components
+====================================
+
+This example shows how to use a custom stop function.  First, the
+``def_stop`` function defines the default stop function. The first tree
+has some added randomness: the induction will also stop in 20% of the
+cases when ``def_stop`` returns False. The stopping criteria for the
+second tree is completely random: it stops induction in 20% of cases.
+Note that in the second case lambda function still has three parameters,
+since this is a necessary number of parameters for the stop function
+(:obj:`StopCriteria`).
+
+.. _tree3.py: code/tree3.py
+
+.. literalinclude:: code/tree3.py
+   :lines: 8-23
 
 =================================
 Learner and Classifier Components
@@ -2023,13 +2008,14 @@ class TreeLearner(Orange.core.Learner):
     
     .. attribute:: store_node_classifier
 
-        Determines whether to store class distributions, contingencies and
-        examples in :class:`Node`, and whether the :obj:`Node.node_classifier`
-        should be build for internal nodes.  No memory will be saved 
-        by not storing distributions but storing contingencies, since
-        distributions actually points to the same distribution that is
-        stored in :obj:`contingency.classes`.  By default everything
-        except :obj:`store_instances` is enabled. 
+        Determines whether to store class distributions,
+        contingencies and examples in :class:`Node`, and whether the
+        :obj:`Node.node_classifier` should be build for internal nodes
+        also (it is needed by the :obj:`Descender` or for pruning).
+        Not storing distributions but storing contingencies does not
+        save any memory, since distributions actually points to the
+        same distribution that is stored in :obj:`contingency.classes`.
+        By default everything except :obj:`store_instances` is enabled.
 
     """
     def __new__(cls, examples = None, weightID = 0, **argkw):
