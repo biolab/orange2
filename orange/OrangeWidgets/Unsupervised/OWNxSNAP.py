@@ -64,6 +64,10 @@ class OWNxSNAP(OWWidget):
     def add_tables(self, networks):
         self.networks = networks
         self.tables = []
+        
+        if networks is None:
+            return
+        
         networks.sort(key=lambda net: net.repository)
         for k,g in itertools.groupby(networks, key=lambda net: net.repository):
             network_group = list(g)
