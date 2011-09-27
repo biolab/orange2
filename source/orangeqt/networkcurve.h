@@ -89,12 +89,15 @@ public:
     
     void set_coordinates(double x, double y);
 
+
     void set_x(double x);
     double x() const;
 
     void set_y(double y);
     double y() const;
     
+    void set_image(QPixmap* im);
+
     virtual void set_graph_transform(const QTransform& transform);
     virtual QTransform graph_transform() const;
     
@@ -121,6 +124,9 @@ public:
     
     double m_size_value;
 
+protected:
+    QPixmap *image;
+
 private:
     double m_x;
     double m_y;
@@ -130,6 +136,14 @@ private:
     
     QList<EdgeItem*> m_connected_edges;
     QTransform m_graph_transform;
+};
+
+class ModelItem : public NodeItem
+{
+public:
+	ModelItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent = 0);
+
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
 };
 
 struct ArrowData

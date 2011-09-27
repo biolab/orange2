@@ -35,6 +35,76 @@
 
 #define PI 3.14159265
 
+
+ModelItem::ModelItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): NodeItem(index, symbol, color, size, parent)
+{
+
+}
+
+void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    NetworkCurve *curve = (NetworkCurve*)parentItem();
+    bool on_marked_only = curve->labels_on_marked_only();
+
+    if (image != NULL)
+    {
+    	const int ps = size() + 4;
+    	double style = 1;
+    	int _size = size() + 5;
+
+    	painter->setPen(QPen(QBrush(color()), 1, Qt::SolidLine, Qt::RoundCap));
+
+    	QRadialGradient gradient(QPointF(0, 0), _size);
+		gradient.setColorAt(0, color());
+		gradient.setColorAt(1, QColor(255, 255, 255, 0));
+
+		if (is_selected())
+		{
+			QColor brushColor(Qt::yellow);
+			brushColor.setAlpha(150);
+			gradient = QRadialGradient(QPointF(0, 0), _size);
+			gradient.setColorAt(0, brushColor);
+			gradient.setColorAt(1, QColor(255, 255, 255, 0));
+		}
+		else if (is_marked())
+		{
+			QColor brushColor(Qt::cyan);
+			brushColor.setAlpha(80);
+			gradient = QRadialGradient(QPointF(0, 0), _size);
+			gradient.setColorAt(0, brushColor);
+			gradient.setColorAt(1, QColor(255, 255, 255, 0));
+		}
+
+		painter->setBrush(QBrush(gradient));
+		painter->drawRoundedRect(-_size/2, -_size/2, _size, _size, style, style, Qt::RelativeSize);
+
+		_size = image->size().width();
+    	painter->drawPixmap(QPointF(-_size/2, -_size/2), *image);
+
+		if (!on_marked_only || is_marked() || is_selected())
+		{
+			QFontMetrics metrics = option->fontMetrics;
+			int th = metrics.height();
+			int tw = metrics.width(label());
+			QRect r(-tw/2, 0, tw, th);
+			//painter->fillRect(r, QBrush(Qt::white));
+			painter->drawText(r, Qt::AlignHCenter, label());
+		}
+    }
+    else
+    {
+    	const QString l = label();
+    	if (on_marked_only && !(is_marked() || is_selected()))
+		{
+			set_label(QString());
+		}
+
+    	Point::paint(painter, option, widget);
+
+    	set_label(l);
+    }
+}
+
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
 {
     set_index(index);
@@ -46,6 +116,7 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
     set_label("");
     setAcceptHoverEvents(true);
     set_transparent(false);
+    image = NULL;
 }
 
 NodeItem::~NodeItem()
@@ -63,8 +134,31 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
         set_label(QString());
     }
 
-    Point::paint(painter, option, widget);
+    if (image != NULL)
+    {
+    	const int ps = size() + 4;
+    	painter->drawPixmap(QPointF(-0.5*ps, -0.5*ps), *image);
+		if (!label().isEmpty())
+		{
+			QFontMetrics metrics = option->fontMetrics;
+			int th = metrics.height();
+			int tw = metrics.width(label());
+			QRect r(-tw/2, 0, tw, th);
+			//painter->fillRect(r, QBrush(Qt::white));
+			painter->drawText(r, Qt::AlignHCenter, label());
+		}
+    }
+    else
+    {
+    	Point::paint(painter, option, widget);
+    }
+
     set_label(l);
+}
+
+void NodeItem::set_image(QPixmap* im)
+{
+	image = im;
 }
 
 void NodeItem::set_coordinates(double x, double y)

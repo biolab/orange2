@@ -31,6 +31,15 @@ public:
     
     void add_connected_edge(EdgeItem* edge);
     void remove_connected_edge(EdgeItem* edge);
+    
+    void set_image(QPixmap* im);
+};
+
+class ModelItem : NodeItem
+{
+public:
+    ModelItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent /TransferThis/ = 0);
+    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
 };
 
 class EdgeItem : QAbstractGraphicsShapeItem
