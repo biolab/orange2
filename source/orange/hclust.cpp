@@ -567,8 +567,8 @@ struct m_element {
 	m_element(THierarchicalCluster * cluster, int left, int right);
 	m_element(const m_element & other);
 
-	bool operator< (const m_element & other) const;
-	bool operator== (const m_element & other) const;
+	inline bool operator< (const m_element & other) const;
+	inline bool operator== (const m_element & other) const;
 }; // cluster joined at left and right index
 
 struct ordering_element {
@@ -617,9 +617,19 @@ bool m_element::operator== (const m_element & other) const
 
 struct m_element_hash
 {
-	size_t operator()(const m_element & m) const
+	inline size_t operator()(const m_element & m) const
 	{
-		return ((size_t) m.cluster) * m.left * (m.right << 16);
+		size_t seed = 0;
+		hash_combine(seed, (size_t &) m.cluster);
+		hash_combine(seed, (size_t &) m.left);
+		hash_combine(seed, (size_t &) m.right);
+		return seed;
+	}
+
+	// more or less taken from boost::hash_combine
+	inline void hash_combine(size_t &seed, size_t &val) const
+	{
+		seed ^= val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
 };
 
@@ -743,6 +753,8 @@ void partial_opt_ordering(
 			vector<int> k_ordered(mapping.begin() + right_left.first,
 					mapping.begin() + right_left.last);
 
+			// TODO: precompute the scores for m and k in an array and use a simpler
+			// comparison function
 			std::sort(m_ordered.begin(), m_ordered.end(), CompareByScores(M, left, u));
 			std::sort(k_ordered.begin(), k_ordered.end(), CompareByScores(M, right, w));
 
