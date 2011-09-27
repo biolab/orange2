@@ -1,45 +1,65 @@
-from Orange.clustering.hierarchical import (clustering,
-    clustering_features,  cluster_to_list,
-    top_clusters, HierarchicalClustering)
-                           
-from Orange.clustering.kmeans import Clustering
+from Orange.clustering.hierarchical import clustering, \
+    clustering_features,  cluster_to_list, \
+    top_clusters, HierarchicalClustering, order_leaves_py, \
+    order_leaves_cpp, instance_distance_matrix
+                      
+from Orange.clustering import hierarchical as hier     
 from Orange.distance.instances import *
                            
 import Orange.misc.testing as testing
-import orange
+import Orange
 import unittest
+
+import cPickle as pickle
 
 @testing.datasets_driven
 class TestHClustering(testing.DataTestCase):    
     @testing.test_on_data
     def test_example_clustering_on(self, data):
         constructors = [EuclideanConstructor, ManhattanConstructor]
-        for distanceConstructor in constructors:
-            clust = clustering(data, distanceConstructor, HierarchicalClustering.Single)
-            clust = clustering(data, distanceConstructor, HierarchicalClustering.Average)
-            clust = clustering(data, distanceConstructor, HierarchicalClustering.Complete)
-            clust = clustering(data, distanceConstructor, HierarchicalClustering.Ward)
+        for distance_constructor in constructors:
+            clust = clustering(data, distance_constructor, HierarchicalClustering.Single)
+            clust = clustering(data, distance_constructor, HierarchicalClustering.Average)
+            clust = clustering(data, distance_constructor, HierarchicalClustering.Complete)
+            clust = clustering(data, distance_constructor, HierarchicalClustering.Ward)
             top_clust = top_clusters(clust, 5)
             cluster_list = cluster_to_list(clust, 5)
             
     @testing.test_on_data
     def test_attribute_clustering_on(self, data):
-        constructors = [EuclideanConstructor, ManhattanConstructor]
-        for distanceConstructor in constructors:
-            clust = clustering(data)
-            cluster_list = cluster_to_list(clust, 5)
+        clust = clustering_features(data)
+        cluster_list = cluster_to_list(clust, 5)
             
     @testing.test_on_datasets(datasets=["iris"])
     def test_pickling_on(self, data):
-#        data = iter(self.datasets()).next()
         cluster = clustering(data, EuclideanConstructor, HierarchicalClustering.Single)
-        import cPickle
-        s = cPickle.dumps(cluster)
-        cluster_clone = cPickle.loads(s)
+        s = pickle.dumps(cluster)
+        cluster_clone = pickle.loads(s)
+        self.assertEqual(len(cluster), len(cluster_clone))
         self.assertEqual(cluster.mapping, cluster_clone.mapping)
         
-from Orange.clustering import hierarchical as hier
-import Orange
+    @testing.test_on_data
+    def test_ordering_on(self, data):
+        def p(val, obj=None):
+            self.assert_(val >= 0 and val <=100)
+            self.assertIsInstance(val, float)
+        matrix = instance_distance_matrix(data, EuclideanConstructor(), progress_callback=p)
+        root1 = HierarchicalClustering(matrix, progress_callback=p)
+        root2 = hier.clone(root1)
+        
+        order_leaves_py(root1, matrix, progressCallback=p)
+        order_leaves_cpp(root2, matrix, progress_callback=p)
+        
+        def score(mapping):
+            sum = 0.0
+            for i in range(matrix.dim - 1):
+               sum += matrix[mapping[i], mapping[i+1]]
+            return sum
+        
+        # Slight differences are possible due to the float/double precision.
+        self.assertAlmostEqual(score(root1.mapping), score(root2.mapping),
+                               places=3)
+        
 
 class TestHClusteringUtility(unittest.TestCase):
     def setUp(self):
@@ -57,10 +77,16 @@ class TestHClusteringUtility(unittest.TestCase):
         self.matrix.setattr("objects", ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"])
         self.cluster = hier.HierarchicalClustering(self.matrix)
         
+    def test_objects_mapping(self):
+        objects = self.cluster.mapping.objects
+        self.assertEqual(list(self.cluster),
+                         [objects[i] for i in self.cluster.mapping])
+        
     def test_clone(self):
         cloned_cluster = hier.clone(self.cluster)
         self.assertTrue(self.cluster.mapping.objects is cloned_cluster.mapping.objects)
         self.assertEqual(self.cluster.mapping, cloned_cluster.mapping)
+        self.assertEqual(list(self.cluster), list(cloned_cluster))
         
     def test_order(self):
         post = hier.postorder(self.cluster)
@@ -68,25 +94,42 @@ class TestHClusteringUtility(unittest.TestCase):
         
     def test_prunning(self):
         pruned1 = hier.pruned(self.cluster, level=2)
+        depths = hier.cluster_depths(pruned1)
+        self.assertTrue(all(d <= 2 for d in depths.values()))
+        
         pruned2 = hier.pruned(self.cluster, height=10)
+        self.assertTrue(c.height >= 10 for c in hier.preorder(pruned2))
+        
         pruned3 = hier.pruned(self.cluster, condition=lambda cl: len(cl) <= 3)
+        self.assertTrue(len(c) > 3 for c in hier.preorder(pruned3))
+        
+    def test_dendrogram_draw(self):
+        from StringIO import StringIO
+        file = StringIO()
+        hier.dendrogram_draw(file, self.cluster, format="svg")
+        self.assertTrue(len(file.getvalue()))
+        file = StringIO()
+        hier.dendrogram_draw(file, self.cluster, format="eps")
+        self.assertTrue(len(file.getvalue()))
+        file = StringIO()
+        hier.dendrogram_draw(file, self.cluster, format="png")
+        self.assertTrue(len(file.getvalue()))
+        
+    def test_dendrogram_layout(self):
+        hier.dendrogram_layout(self.cluster)
+        pruned1 = hier.pruned(self.cluster, level=2)
+        hier.dendrogram_layout(pruned1, expand_leaves=True)
+        hier.dendrogram_layout(pruned1, expand_leaves=False)
+        pruned2 = hier.pruned(self.cluster, height=10)
+        hier.dendrogram_layout(pruned2, expand_leaves=True)
+        hier.dendrogram_layout(pruned2, expand_leaves=False)
+        
+    def test_cophenetic(self):
+        cmatrix = hier.cophenetic_distances(self.cluster)
+        self.assertEqual(cmatrix.dim, self.matrix.dim)
+        corr = hier.cophenetic_correlation(self.cluster, self.matrix)
         
 
-@testing.datasets_driven
-class TestKMeans(unittest.TestCase):
-    @testing.test_on_data
-    def test_kmeans_on(self, data):
-        km = Clustering(data, 5, maxiters=100, nstart=3)
-    
-    
-    @unittest.expectedFailure
-    def test_kmeans_fail(self):
-        """ Test the reaction when centroids is larger then example table length
-        """
-        data = iter(testDatasets()).next()
-        Clustering(data, len(data) + 1)
-        
-        
 if __name__ == "__main__":
     unittest.main()
         
