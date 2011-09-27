@@ -325,9 +325,9 @@ class OWNxCanvas(OWPlot):
         OWPlot.__init__(self, parent, name, axes=[])
         self.master = master
         self.parent = parent
-        
+        self.NodeItem = NodeItem
         self.graph = None
-
+        
         self.circles = []
         self.freezeNeighbours = False
         self.labelsOnMarkedOnly = 0
@@ -630,7 +630,7 @@ class OWNxCanvas(OWPlot):
         
         self.networkCurve.remove_nodes(list(remove_nodes))
         
-        nodes = dict((v, NodeItem(v, x=pos[v][0], y=pos[v][1], parent=self.networkCurve)) for v in add_nodes)
+        nodes = dict((v, self.NodeItem(v, x=pos[v][0], y=pos[v][1], parent=self.networkCurve)) for v in add_nodes)
         self.networkCurve.add_nodes(nodes)
         nodes = self.networkCurve.nodes()
         
@@ -686,7 +686,7 @@ class OWNxCanvas(OWPlot):
         
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
-        vertices = dict((v, NodeItem(v, parent=self.networkCurve)) for v in self.graph)
+        vertices = dict((v, self.NodeItem(v, parent=self.networkCurve)) for v in self.graph)
         self.networkCurve.set_nodes(vertices)
                 
         #build edge to row index
