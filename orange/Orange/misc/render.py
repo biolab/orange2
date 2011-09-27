@@ -109,6 +109,12 @@ class ColorPalette(object):
     def __call__(self, val, gamma=None):
         return self.get_rgb(val, gamma)
     
+def as_open_file(file, mode="rb"):
+    if isinstance(file, basestring):
+        file = open(file, mode)
+    else: # assuming it is file like with proper mode, could check for write, read
+        pass
+    return file
 
 class Renderer(object):
     render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform", "gradient", "text_alignment"]
@@ -210,22 +216,22 @@ class Renderer(object):
         self.apply_transform(transform)
     
     def draw_line(self, sx, sy, ex, ey, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
     
     def draw_lines(self, points, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
     
     def draw_rect(self, x, y, w, h, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
     
     def draw_polygon(self, vertices, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     def draw_arch(self, something, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
     
     def draw_text(self, x, y, text, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
     
     def string_size_hint(self, text, **kwargs):
         raise NotImpemented
@@ -243,8 +249,8 @@ class Renderer(object):
         finally:
             self.restore_render_state()
             
-    def save(self):
-        raise NotImplemented
+    def save(self, file):
+        raise NotImplementedError
     
     def close(self, file):
         pass
@@ -395,9 +401,9 @@ mypattern setcolor
         Renderer.skew(self, sx, sy)
         self._eps.write("%f %f skew\n" % (sx, sy))
         
-    def save(self, filename):
-#        self._eps.close()
-        open(filename, "wb").write(self._eps.getvalue())
+    def save(self, file):
+        file = as_open_file(file, "wb")
+        file.write(self._eps.getvalue())
         
     def string_size_hint(self, text, **kwargs):
         import warnings
@@ -456,8 +462,12 @@ class PILRenderer(Renderer):
         self._draw.text((x, y), text, font=self._pil_font,
                         fill=_int_color(self.stroke_color()))
         
-    def save(self, file):
-        self._pil_image.save(file)
+    def save(self, file, format=None):
+        if isinstance(file, basestring):
+            self._pil_image.save(file)
+        else:
+            file = as_open_file(file, "wb")
+            self._pil_image.save(file, format)
         
     def string_size_hint(self, text, **kwargs):
         return self._pil_font.getsize(text)[1]
@@ -559,8 +569,9 @@ class SVGRenderer(Renderer):
         count = self.transform_count_stack.pop(-1)
         self._svg.write('</g>\n' * count)
         
-    def save(self, filename):
-        open(filename, "wb").write(self.SVG_HEADER % (self.height, self.width, self._defs.getvalue(), self._svg.getvalue()))
+    def save(self, file):
+        file = as_open_file(file, "wb")
+        file.write(self.SVG_HEADER % (self.height, self.width, self._defs.getvalue(), self._svg.getvalue()))
         
 class CairoRenderer(Renderer):
     def __init__(self, width, height):
