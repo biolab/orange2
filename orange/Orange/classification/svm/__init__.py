@@ -531,7 +531,7 @@ def get_linear_svm_weights(classifier, sum=True):
     """Extract attribute weights from the linear SVM classifier.
     
     For multi class classification the weights are square-summed over all binary 
-    one vs. one classifiers. If obj:`sum` is False, the reported weights are is a
+    one vs. one classifiers. If obj:`sum` is False, the reported weights are a
     seqeunce: class1 vs class2, class1 vs class3 ... class2 vs class3 ... .
         
     """
