@@ -559,6 +559,32 @@ PHierarchicalCluster THierarchicalClustering::operator()(PSymMatrix distanceMatr
  *  Optimal leaf ordering.
  */
 
+struct m_element {
+	THierarchicalCluster * cluster;
+	int left;
+	int right;
+
+	m_element(THierarchicalCluster * cluster, int left, int right);
+	m_element(const m_element & other);
+
+	bool operator< (const m_element & other) const;
+	bool operator== (const m_element & other) const;
+}; // cluster joined at left and right index
+
+struct ordering_element {
+	THierarchicalCluster * left;
+	unsigned int u; // the left most (outer) index of left luster
+	unsigned m; // the rightmost (inner) index of left cluster
+	THierarchicalCluster * right;
+	unsigned int w; // the right most (outer) index of the right cluster
+	unsigned int k; // the left most (inner) index of the right cluster
+
+	ordering_element();
+	ordering_element(THierarchicalCluster * left, unsigned int u, unsigned m,
+			THierarchicalCluster * right, unsigned int w, unsigned int k);
+	ordering_element(const ordering_element & other);
+};
+
 m_element::m_element(THierarchicalCluster * _cluster, int _left, int _right):
 	cluster(_cluster), left(_left), right(_right)
 {}
@@ -584,6 +610,19 @@ bool m_element::operator< (const m_element & other) const
 			return false;
 }
 
+bool m_element::operator== (const m_element & other) const
+{
+	return cluster == other.cluster && left == other.left && right == other.right;
+}
+
+struct m_element_hash
+{
+	size_t operator()(const m_element & m) const
+	{
+		return ((size_t) m.cluster) * m.left * (m.right << 16);
+	}
+};
+
 ordering_element::ordering_element():
 	left(NULL), u(-1), m(-1),
 	right(NULL), w(-1), k(-1)
@@ -604,6 +643,27 @@ ordering_element::ordering_element(const ordering_element & other):
 	   right(other.right), w(other.w), k(other.k)
 {}
 
+#define USE_TR1 1
+
+#if USE_TR1
+	#if _MSC_VER
+		#define HAVE_TR1_DIR 0
+	#else
+		#define HAVE_TR1_DIR 1
+	#endif
+	// Diffrent includes required 
+	#if HAVE_TR1_DIR
+		#include <tr1/unordered_map>
+	#else
+		#include <unordered_map>
+	#endif
+	typedef std::tr1::unordered_map<m_element, double, m_element_hash> join_scores;
+	typedef std::tr1::unordered_map<m_element, ordering_element, m_element_hash> cluster_ordering;
+#else
+	typedef std::map<m_element, double> join_scores;
+	typedef std::map<m_element, ordering_element> cluster_ordering;
+#endif
+
 // Return the minimum distance between elements in matrix
 //
 float min_distance(
@@ -614,11 +674,13 @@ float min_distance(
 		TSymMatrix & matrix)
 {
 //	TIntList::iterator iter1 = indices1.begin(), iter2 = indices2.begin();
-	float mininum = std::numeric_limits<float>::infinity();
+	float minimum = std::numeric_limits<float>::infinity();
+	TIntList::iterator indices2;
 	for (; indices1_begin != indices1_end; indices1_begin++)
-		for (; indices2_begin != indices2_end; indices2_begin++)
-			mininum = std::min(matrix.getitem(*indices1_begin, *indices2_begin), mininum);
-	return mininum;
+		for (indices2 = indices2_begin; indices2 != indices2_end; indices2++){
+			minimum = std::min(matrix.getitem(*indices1_begin, *indices2), minimum);
+		}
+	return minimum;
 }
 
 
@@ -639,11 +701,12 @@ struct CompareByScores
 	}
 };
 
+
+//#include <iostream>
+//#include <cassert>
+
 // This needs to be called with all left, right pairs to
 // update all scores for cluster.
-#include <iostream>
-#include <cassert>
-
 void partial_opt_ordering(
 		THierarchicalCluster & cluster,
 		THierarchicalCluster & left,
@@ -665,7 +728,8 @@ void partial_opt_ordering(
 				w_iter != mapping.begin() + right_right.last;
 				w_iter++)
 		{
-			u = *u_iter; w = *w_iter;
+			u = *u_iter;
+			w = *w_iter;
 			float curr_min = std::numeric_limits<float>::infinity();
 			int curr_k = 0, curr_m = 0;
 			float C = min_distance(mapping.begin() + left_right.first,
@@ -693,7 +757,6 @@ void partial_opt_ordering(
 				m_element m_left(&left, u, m);
 
 				if (M[m_left] + M[m_right_k0] + C >= curr_min){
-//					M[m_element(&cluster, u, w)] = curr_min;
 					break;
 				}
 				for (vector<int>::iterator iter_k = k_ordered.begin(); iter_k != k_ordered.end(); iter_k++)
@@ -718,8 +781,8 @@ void partial_opt_ordering(
 			M[m_element(&cluster, u, w)] = curr_min;
 			M[m_element(&cluster, w, u)] = curr_min;
 
-			assert(M[m_element(&cluster, u, w)] == M[m_element(&cluster, u, w)]);
-			assert(M[m_element(&cluster, u, w)] == curr_min);
+//			assert(M[m_element(&cluster, u, w)] == M[m_element(&cluster, u, w)]);
+//			assert(M[m_element(&cluster, u, w)] == curr_min);
 
 //			assert(ordering.find(m_element(&cluster, u, w)) == ordering.end());
 //			assert(ordering.find(m_element(&cluster, w, u)) == ordering.end());
@@ -729,55 +792,67 @@ void partial_opt_ordering(
 		}
 }
 
-void THierarchicalClusterOrdering::order_clusters(
+void order_clusters(
 		THierarchicalCluster & cluster,
 		TSymMatrix &matrix,
 		join_scores & M,
-		cluster_ordering & ordering)
+		cluster_ordering & ordering,
+		TProgressCallback * callback)
 {
 	if (cluster.size() == 1)
 	{
 		M[m_element(&cluster, cluster.mapping->at(cluster.first), cluster.mapping->at(cluster.first))] = 0.0;
 		return;
 	}
-
 	else if (cluster.branches->size() == 2)
 	{
 		PHierarchicalCluster left = cluster.branches->at(0);
 		PHierarchicalCluster right = cluster.branches->at(1);
 
-		order_clusters(left.getReference(), matrix, M, ordering);
-		order_clusters(right.getReference(), matrix, M, ordering);
+		order_clusters(left.getReference(), matrix, M, ordering, callback);
+		order_clusters(right.getReference(), matrix, M, ordering, callback);
 
 		PHierarchicalCluster  left_left = (!left->branches) ? left : left->branches->at(0);
 		PHierarchicalCluster  left_right = (!left->branches) ? left : left->branches->at(1);
 		PHierarchicalCluster  right_left = (!right->branches) ? right : right->branches->at(0);
 		PHierarchicalCluster  right_right = (!right->branches) ? right : right->branches->at(1);
 
+		// 1.)
 		partial_opt_ordering(cluster,
 				left.getReference(), right.getReference(),
 				left_left.getReference(), left_right.getReference(),
 				right_left.getReference(), right_right.getReference(),
 				matrix, M, ordering);
 
-		partial_opt_ordering(cluster,
-				left.getReference(), right.getReference(),
-				left_left.getReference(), left_right.getReference(),
-				right_right.getReference(), right_left.getReference(),
-				matrix, M, ordering);
+		if (right->branches)
+			// 2.) Switch right branches.
+			// (if there are no right branches the ordering has already been evaluated in 1.)
+			partial_opt_ordering(cluster,
+					left.getReference(), right.getReference(),
+					left_left.getReference(), left_right.getReference(),
+					right_right.getReference(), right_left.getReference(),
+					matrix, M, ordering);
 
-		partial_opt_ordering(cluster,
-				left.getReference(), right.getReference(),
-				left_right.getReference(), left_left.getReference(),
-				right_left.getReference(), right_right.getReference(),
-				matrix, M, ordering);
+		if (left->branches)
+			// 3.) Switch left branches.
+			// (if there are no left branches the ordering has already been evaluated in 1. and 2.)
+			partial_opt_ordering(cluster,
+					left.getReference(), right.getReference(),
+					left_right.getReference(), left_left.getReference(),
+					right_left.getReference(), right_right.getReference(),
+					matrix, M, ordering);
 
-		partial_opt_ordering(cluster,
-				left.getReference(), right.getReference(),
-				left_right.getReference(), left_left.getReference(),
-				right_right.getReference(), right_left.getReference(),
-				matrix, M, ordering);
+		if (left->branches && right->branches)
+			// 4.) Switch both branches.
+			partial_opt_ordering(cluster,
+					left.getReference(), right.getReference(),
+					left_right.getReference(), left_left.getReference(),
+					right_right.getReference(), right_left.getReference(),
+					matrix, M, ordering);
 	}
+	if (callback)
+		// TODO: count the number of already processed nodes.
+		callback->operator()(0.0, PHierarchicalCluster(&cluster));
 }
 
 /* Check if TIntList contains element.
@@ -787,7 +862,7 @@ bool contains(TIntList::iterator iter_begin, TIntList::iterator iter_end, int el
 	return std::find(iter_begin, iter_end, element) != iter_end;
 }
 
-void THierarchicalClusterOrdering::optimal_swap(THierarchicalCluster * cluster, int u, int w, cluster_ordering & ordering)
+void optimal_swap(THierarchicalCluster * cluster, int u, int w, cluster_ordering & ordering)
 {
 	if (cluster->branches)
 	{
@@ -803,7 +878,6 @@ void THierarchicalClusterOrdering::optimal_swap(THierarchicalCluster * cluster, 
 		{
 			assert(!contains(mapping.begin() + left_right->first,
 							 mapping.begin() + left_right->last, ord.m));
-			std::cout << "Swapping left " << ord.m << endl;
 			ord.left->swap();
 			left_right = ord.left->branches->at(1);
 			assert(contains(mapping.begin() + left_right->first,
@@ -819,7 +893,6 @@ void THierarchicalClusterOrdering::optimal_swap(THierarchicalCluster * cluster, 
 		{
 			assert(!contains(mapping.begin() + right_left->first,
 							 mapping.begin() + right_left->last, ord.k));
-			std::cout << "Swapping right " << ord.k << endl;
 			ord.right->swap();
 			right_left = ord.right->branches->at(0);
 			assert(contains(mapping.begin() + right_left->first,
@@ -841,7 +914,8 @@ PHierarchicalCluster THierarchicalClusterOrdering::operator() (
 {
 	join_scores M; // scores
 	cluster_ordering ordering;
-	order_clusters(root.getReference(), matrix.getReference(), M, ordering);
+	order_clusters(root.getReference(), matrix.getReference(), M, ordering,
+			progress_callback.getUnwrappedPtr());
 
 	int u = 0, w = 0;
 	int min_u = 0, min_w = 0;
