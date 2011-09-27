@@ -86,7 +86,7 @@ clusters as well).
 .. class:: HierarchicalCluster
 
     Represents a node in the clustering tree, as returned by
-    :obj:`HierarchicalClustering``
+    :obj:`HierarchicalClustering`
 
     .. attribute:: branches
     
@@ -590,7 +590,7 @@ def top_cluster_membership(root, k):
             cmap[e] = i
     return cmap
 
-def order_leaves_py(tree, matrix, progressCallback=None):
+def order_leaves_py(tree, matrix, progress_callback=None):
     """Order the leaves in the clustering tree.
     
     (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering))
@@ -723,8 +723,8 @@ def order_leaves_py(tree, matrix, progressCallback=None):
     
     for i, subtree in enumerate(subtrees):
         _optOrderingIterative(subtree)
-        if progressCallback and i in milestones:
-            progressCallback(100.0 * i / len(subtrees))
+        if progress_callback and i in milestones:
+            progress_callback(100.0 * i / len(subtrees))
 
 #    def _orderRecursive(tree, u, w):
 #        """ Order the tree based on the computed optimal ordering. 
@@ -807,8 +807,12 @@ def order_leaves_cpp(tree, matrix, progress_callback=None):
         p = None
     
     Orange.core.HierarchicalClusterOrdering(tree, matrix, progress_callback=p)
-    
-## The cpp code still needs testing
+
+from Orange.misc import deprecated_keywords
+order_leaves_cpp = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_cpp)
+order_leaves_py = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_py)
+
+## The cpp code still needs testing, so we leave the python version as a default for now
 order_leaves = order_leaves_py
     
 """ Matplotlib dendrogram ploting.
@@ -1059,10 +1063,18 @@ class DendrogramPlot(object):
     >>> a = DendrogramPlot(tree)
     """
     def __init__(self, tree, attr_tree = None, labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None, 
-                 spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, renderer=EPSRenderer):
+                 spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, renderer=EPSRenderer, **kwargs):
         self.tree = tree
         self.attr_tree = attr_tree
-        self.labels = [str(ex.getclass()) for ex in data] if not labels and data and data.domain.classVar else (labels or [])
+        if not labels:
+            if data and data.domain.class_var:
+                labels = [str(ex.getclass()) for ex in data]
+            elif hasattr(tree.mapping, "objects"):
+                labels = [str(obj) for obj in tree.mapping.objects]
+            else:
+                labels = [""] * len(tree)
+        self.labels = labels
+        
 #        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
         self.data = data
         self.width, self.height = float(width) if width else None, float(height) if height else None
@@ -1134,7 +1146,7 @@ class DendrogramPlot(object):
             
         return width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size
     
-    def plot(self, filename="graph.eps"):
+    def plot(self, filename="graph.eps", **kwargs):
         width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size = self.layout()
         heatmap_cell_height = heatmap_height / len(self.labels)
 
@@ -1183,24 +1195,32 @@ class DendrogramPlot(object):
         self.renderer.translate(heatmap_width + self.spacing, heatmap_cell_height)
 #        print self.renderer.transform()
         self.renderer.set_font("Times-Roman", font_size)
-        for index in self.tree: #label in self.labels:
+        for index in self.tree.mapping: #label in self.labels:
             self.renderer.draw_text(0.0, 0.0, self.labels[index])
             self.renderer.translate(0.0, heatmap_cell_height)
         self.renderer.restore_render_state()
-        self.renderer.save(filename)
+        self.renderer.save(filename, **kwargs)
         
-def dendrogram_draw(filename, *args, **kwargs):
+def dendrogram_draw(file, *args, **kwargs):
     """ Plot the dendrogram to `filename`.
     
     .. todo:: Finish documentation.
     """
     import os
     from Orange.misc.render import PILRenderer, EPSRenderer, SVGRenderer
-    name, ext = os.path.splitext(filename)
-    kwargs["renderer"] = {".eps":EPSRenderer, ".svg":SVGRenderer, ".png":PILRenderer}.get(ext.lower(), PILRenderer)
-#    print kwargs["renderer"], ext
+    if isinstance(file, basestring):
+        name, ext = os.path.splitext(file)
+        format = ext.lower().lstrip(".")
+    else:
+        format = kwargs.get("format", "png").lower()
+    renderer = {"eps":EPSRenderer, "svg":SVGRenderer, "png":PILRenderer}.get(format, "png")
+        
+    kwargs["renderer"] = renderer
     d = DendrogramPlot(*args, **kwargs)
-    d.plot(filename)
+    if renderer is PILRenderer:
+        d.plot(file, format=format)
+    else:
+        d.plot(file)
     
 def postorder(cluster):
     """ Return a post order list of clusters.
