@@ -590,7 +590,7 @@ def top_cluster_membership(root, k):
             cmap[e] = i
     return cmap
 
-def order_leaves(tree, matrix, progressCallback=None):
+def order_leaves_py(tree, matrix, progressCallback=None):
     """Order the leaves in the clustering tree.
     
     (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering))
@@ -783,6 +783,34 @@ def order_leaves(tree, matrix, progressCallback=None):
     if objects:
         tree.mapping.setattr("objects", objects)
 
+def order_leaves_cpp(tree, matrix, progress_callback=None):
+    """ Order the leaves in the clustering tree (C++ implementation).
+    
+    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering))
+    
+    :param tree: Binary hierarchical clustering tree.
+    :type tree: :class:`HierarchicalCluster`
+    :param matrix: SymMatrix that was used to compute the clustering.
+    :type matrix: :class:`Orange.core.SymMatrix`
+    :param progress_callback: Function used to report on progress.
+    :type progress_callback: function
+    
+    .. note:: The ordering is done inplace.
+    
+    """
+    node_count = iter(range(len(tree)))
+    
+    if progress_callback is not None:
+        def p(*args):
+            progress_callback(100.0 * node_count.next() / len(tree))
+    else:
+        p = None
+    
+    Orange.core.HierarchicalClusterOrdering(tree, matrix, progress_callback=p)
+    
+## The cpp code still needs testing
+order_leaves = order_leaves_py
+    
 """ Matplotlib dendrogram ploting.
 """
 try:
