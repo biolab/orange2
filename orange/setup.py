@@ -1,3 +1,15 @@
+#!usr/bin/env python
+
+import os, sys
+have_setuptools = False
+
+if "USE_SETUPTOOLS" in os.environ:
+    try:
+        from setuptools import setup
+        have_setuptools = True
+    except ImportError:
+        have_setuptools = False
+        
 import distutils.core
 from distutils.core import setup
 from distutils.core import Extension
@@ -6,7 +18,7 @@ from distutils.command.install_lib import install_lib
 from distutils.msvccompiler import MSVCCompiler
 from distutils.unixccompiler import UnixCCompiler
 
-import os, sys, re
+import re
 import glob
 
 from subprocess import check_call
@@ -28,7 +40,7 @@ if sys.platform == "darwin":
     extra_compile_args = "-fPIC -fpermissive -fno-common -w -DDARWIN ".split()
     extra_link_args = "-headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -lorange_include".split()
 elif sys.platform == "win32":
-    extra_compile_args = ["/EHsc"]
+    extra_compile_args = ["-EHsc"]
     extra_link_args = []
 elif sys.platform.startswith("linux"):
     extra_compile_args = "-fPIC -fpermissive -w -DLINUX".split()
@@ -461,8 +473,6 @@ for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.
   for filename in fnmatch.filter(filenames, '__init__.py'):
       matches.append(os.path.join(root, filename))
 packages = [os.path.dirname(pkg).replace(os.path.sep, '.') for pkg in matches]
-
-have_setuptools = getattr(distutils.core, "have_setuptools", False)
 
 if have_setuptools:
     setuptools_args = {"zip_safe": False,
