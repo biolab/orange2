@@ -115,7 +115,7 @@ int svm_save_model_alt(std::ostream& stream, const svm_model *model){
 		const svm_node *p = SV[i];
 
 		if(param.kernel_type == PRECOMPUTED)
-			stream << (int)(p->value) << " ";
+			stream << "0:" << (int)(p->value) << " ";
 		else
 			while(p->index != -1)
 			{
