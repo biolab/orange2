@@ -30,7 +30,7 @@ if sys.platform == "darwin":
 elif sys.platform == "win32":
     extra_compile_args = ["/EHsc"]
     extra_link_args = []
-elif sys.platform == "linux2":
+elif sys.platform.startswith("linux"):
     extra_compile_args = "-fPIC -fpermissive -w -DLINUX".split()
     extra_link_args = ["-Wl,-R$ORIGIN"]    
 #    extra_link_args = ["-Wl,-R'$ORIGIN'"] #use this if distutils runs commands though the shell
@@ -356,17 +356,49 @@ def get_source_files(path, ext="cpp", exclude=[]):
 
 include_ext = LibStatic("orange_include", get_source_files("source/include/"), include_dirs=include_dirs)
 
-if sys.platform == "win32":
+
+if sys.platform == "win32": # ?? mingw/cygwin
     libraries = ["orange_include"]
 else:
     libraries = ["stdc++", "orange_include"]
 
-orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + \
-                                               get_source_files("source/orange/blas/", "c") + \
-                                               get_source_files("source/orange/linpack/", "c") + \
-                                               get_source_files("source/orange/liblinear/", "cpp") +\
-                                               get_source_files("source/orange/libsvm/", "cpp"),
-                                      include_dirs=include_dirs + ["source/orange/liblinear"],
+
+import ConfigParser
+config = ConfigParser.RawConfigParser()
+config.read("setup-site.cfg")
+
+orange_sources = get_source_files("source/orange/")
+orange_include_dirs = list(include_dirs)
+orange_libraries = list(libraries)
+
+if config.has_option("blas", "library"):
+    # Link external blas library
+    orange_libraries += [config.get("blas", "library")]
+else:
+    orange_sources += get_source_files("source/orange/blas/", "c")
+    
+if config.has_option("R", "library"):
+    # Link external R library (for linpack)
+    orange_libraries += [config.get("R", "library")]
+else:
+    orange_sources += get_source_files("source/orange/linpack/", "c")
+    
+if config.has_option("liblinear", "library"):
+    # Link external LIBLINEAR library
+    orange_libraries += [config.get("liblinear", "library")]
+else:
+    orange_sources += get_source_files("source/orange/liblinear/", "cpp")
+    orange_include_dirs += ["source/orange/liblinear"]
+    
+if config.has_option("libsvm", "library"):
+    # Link external LibSVM library
+    orange_libraries += [config.get("libsvm", "library")]
+else:
+    orange_sources += get_source_files("source/orange/libsvm/", "cpp")
+    
+
+orange_ext = PyXtractSharedExtension("orange", orange_sources,
+                                      include_dirs=orange_include_dirs,
                                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
                                       extra_link_args = extra_link_args,
                                       libraries=libraries,
@@ -383,11 +415,23 @@ if sys.platform == "darwin":
 else:
     shared_libs = libraries + ["orange"]
     
-orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/", exclude=["lib_vectors.cpp"]) + get_source_files("source/orangeom/qhull/", "c"),
-                                  include_dirs=include_dirs + ["source/orange/"],
+orangeom_sources = get_source_files("source/orangeom/", exclude=["lib_vectors.cpp"])
+orangeom_libraries = list(shared_libs)
+orangeom_include_dirs = list(include_dirs)
+
+if config.has_option("qhull", "library"):
+    # Link external qhull library
+    orangeom_libraries += [config.get("qhull", "library")]
+else:
+    orangeom_sources += get_source_files("source/orangeom/qhull/", "c")
+    orangeom_include_dirs += ["source/orangeom"]
+
+
+orangeom_ext = PyXtractExtension("orangeom", orangeom_sources,
+                                  include_dirs=orangeom_include_dirs + ["source/orange/"],
                                   extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
                                   extra_link_args = extra_link_args,
-                                  libraries=shared_libs,
+                                  libraries=orangeom_libraries,
                                   )
 
 orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/", exclude=["lib_vectors.cpp"]), 
@@ -450,6 +494,8 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                              "OrangeWidgets.Unsupervised",
                              "OrangeWidgets.Visualize",
                              "OrangeWidgets.Visualize Qt",
+                             "OrangeWidgets.plot",
+                             "OrangeWidgets.plot.primitives",
                              "doc",
                              ],
       package_dir = {"": "."},
@@ -463,6 +509,8 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                       "OrangeWidgets.Regression": ["icons/*.png"],
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
                       "OrangeWidgets.Visualize": ["icons/*.png"],
+                      "OrangeWidgets.plot": ["*.gs", "*.vs"],
+                      "OrangeWidgets.plot.primitives": ["*.obj"],
                       "doc": ["datasets/*.tab", ],
                       "": ["orangerc.cfg"] 
                       },
