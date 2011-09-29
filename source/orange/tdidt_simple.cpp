@@ -588,11 +588,12 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
     return node;
 }
 
-TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minInstances, int maxDepth, float skipProb) :
+TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minInstances, int maxDepth, float skipProb, unsigned int seed) :
     maxMajority(maxMajority),
     minInstances(minInstances),
     maxDepth(maxDepth),
-    skipProb(skipProb)
+    skipProb(skipProb),
+    seed(seed)
 {
 }
 
@@ -623,6 +624,7 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
     args.domain = ogen->domain;
     args.type = ogen->domain->classVar->varType == TValue::INTVAR ? Classification : Regression;
 
+    srand(seed);
     tree = build_tree(examples, ogen->numberOfExamples(), 0, NULL, &args);
 
     free(examples);

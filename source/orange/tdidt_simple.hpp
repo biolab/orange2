@@ -41,8 +41,9 @@ public:
     int minInstances; //P
     int maxDepth; //P
     float skipProb; //P
+    int seed; //P
 
-	TSimpleTreeLearner(const int & =0, float=1.0, int=0, int=INT_MAX, float=0.0);
+	TSimpleTreeLearner(const int & =0, float=1.0, int=0, int=INT_MAX, float=0.0, unsigned int=0);
 	PClassifier operator()(PExampleGenerator, const int & =0);
 };
 
@@ -55,7 +56,7 @@ public:
 	__REGISTER_CLASS 
 
 	TSimpleTreeClassifier();
-	TSimpleTreeClassifier(const PVariable &, struct SimpleTreeNode *tree, int type);
+	TSimpleTreeClassifier(const PVariable &, struct SimpleTreeNode *, int);
     ~TSimpleTreeClassifier();
 
 	TValue operator()(const TExample &);
