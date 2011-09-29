@@ -1,4 +1,5 @@
 """<name>Ensemble</name>
+<priority>330</priority>
 """
 
 from OWWidget import *

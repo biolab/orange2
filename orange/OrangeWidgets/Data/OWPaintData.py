@@ -1,8 +1,8 @@
 """
-<name>Generate data</name>
+<name>Paint Data</name>
 <description>Generate artificial data sets with a simple 'Paint' like interface</description>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>3050</priority>
+<priority>40</priority>
 <icon>icons/GenerateData.png</icon>
 """
 
@@ -25,7 +25,7 @@ icon_lasso = os.path.join(dir, "lasso-transparent_42px.png")
 #icon_remove = os.path.join(dir, "remove.svg")
 
 
-class DataGeneratorGraph(OWGraph):
+class PaintDataGraph(OWGraph):
     def setData(self, data, attr1, attr2):
         OWGraph.setData(self, data)
         self.data = data
@@ -603,7 +603,7 @@ class EnumVariableModel(PyListModel):
         painter.end()
         return QIcon(pixmap)
    
-class OWDataGenerator(OWWidget):
+class OWPaintData(OWWidget):
     TOOLS = [("Brush", "Create multiple instances", BrushTool,  icon_brush),
              ("Put", "Put individual instances", PutInstanceTool, icon_put),
              ("Select", "Select and move instances", SelectTool, icon_select),
@@ -688,7 +688,7 @@ class OWDataGenerator(OWWidget):
         OWGUI.rubber(self.controlArea)
         OWGUI.button(self.controlArea, self, "Commit", callback=self.commit, default=True)
         
-        self.graph = DataGeneratorGraph(self)
+        self.graph = PaintDataGraph(self)
         self.graph.setAxisScale(QwtPlot.xBottom, 0.0, 1.0)
         self.graph.setAxisScale(QwtPlot.yLeft, 0.0, 1.0)
         self.graph.setAttribute(Qt.WA_Hover, True)
@@ -813,7 +813,7 @@ class OWDataGenerator(OWWidget):
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    w = OWDataGenerator()
+    w = OWPaintData()
     w.show()
     app.exec_()
         

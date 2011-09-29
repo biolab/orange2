@@ -3,7 +3,7 @@
 <description>Executes python script.</description>
 <icon>icons/PythonScript.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>3011</priority>
+<priority>3150</priority>
 """
 from OWWidget import *
 

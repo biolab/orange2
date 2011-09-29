@@ -1,7 +1,7 @@
 """<name>Info</name>
 <description>Shows data information.</description>
 <icon>icons/DataInfo.png</icon>
-<priority>11</priority>
+<priority>80</priority>
 <contact>Ales Erjavec (ales.erjavec@fri.uni-lj.si)</contact>"""
 
 from OWWidget import *
