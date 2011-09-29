@@ -756,7 +756,7 @@ class OWPlot3D(orangeqt.Plot3D):
         :type bool
         '''
         if self.data == None:
-            print('set_plot_data has not been called yet!')
+            print('Error: set_plot_data has not been called yet!')
             return
         start = time.time()
         self.makeCurrent()

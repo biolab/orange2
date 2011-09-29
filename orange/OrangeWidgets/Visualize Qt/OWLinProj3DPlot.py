@@ -156,6 +156,7 @@ class OWLinProj3DPlot(OWPlot3D, ScaleLinProjData3D):
         if self.data_has_discrete_class:
             proj_data[3] = self.no_jittering_scaled_data[self.attribute_name_index[self.data_domain.classVar.name]]
         self.set_plot_data(proj_data, None)
+        self.proj_data = proj_data
         self.symbol_scale = self.point_width*self._point_width_to_symbol_scale
         self.hide_outside = False
         self.fade_outside = False

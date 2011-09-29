@@ -24,6 +24,7 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
 
         self.camera_angle = 90
         self.camera_type = 0 # Default, center, attribute
+        self.show_anchor_grid = False
 
     def _build_anchor_grid(self):
         lines = []
@@ -214,12 +215,13 @@ class OWSphereviz3DPlot(OWLinProj3DPlot):
                 self._build_anchor_grid()
 
             # Draw grid between anchors
-            self._grid_shader.bind()
-            self._grid_shader.setUniformValue('projection', self.projection)
-            self._grid_shader.setUniformValue('modelview', self.view * self.model)
-            self._grid_shader.setUniformValue('color', self._theme.axis_color)
-            self._grid_buffer.draw(GL_LINES)
-            self._grid_shader.release()
+            if self.show_anchor_grid:
+                self._grid_shader.bind()
+                self._grid_shader.setUniformValue('projection', self.projection)
+                self._grid_shader.setUniformValue('modelview', self.view * self.model)
+                self._grid_shader.setUniformValue('color', self._theme.axis_color)
+                self._grid_buffer.draw(GL_LINES)
+                self._grid_shader.release()
 
         self._draw_value_lines()
 

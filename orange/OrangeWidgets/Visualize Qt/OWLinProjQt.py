@@ -91,6 +91,8 @@ class OWLinProjQt(OWVisWidget):
             self.settingsList.append("graph.use_2d_symbols")
             self.settingsList.append("graph.mouse_sensitivity")
             self.settingsList.append("dark_theme")
+            if "sphereviz" in name_lower:
+                self.settingsList.append("graph.show_anchor_grid")
 
         #load settings
         self.loadSettings()
@@ -207,10 +209,11 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
 
         if "3d" in name_lower:
-            OWGUI.checkBox(box, self, 'dark_theme', 'Dark theme', callback=self.on_theme_change)
+            OWGUI.checkBox(box, self, 'dark_theme', 'Dark theme', callback = self.on_theme_change)
             OWGUI.checkBox(box, self, 'graph.use_2d_symbols', '2D symbols', callback = self.updateGraph, tooltip = "Use 2D symbols")
             self.on_theme_change()
             if "sphereviz" in name_lower:
+                OWGUI.checkBox(box, self, 'graph.show_anchor_grid', 'Anchor grid', callback = self.on_theme_change)
                 box = OWGUI.widgetBox(self.SettingsTab, 'Camery type', orientation = "horizontal")
                 c = OWGUI.comboBox(box, self, 'graph.camera_type', callback=self.graph.update_camera_type, sendSelectedValue=0)
                 c.addItem('Default')
