@@ -37,15 +37,14 @@ python_include_dir = get_python_inc(plat_specific=1)
 include_dirs = [python_include_dir, numpy_include_dir, "source/include"]
 
 if sys.platform == "darwin":
-    extra_compile_args = "-fPIC -fpermissive -fno-common -w -DDARWIN ".split()
-    extra_link_args = "-headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -lorange_include".split()
+    extra_compile_args = "-fPIC -fpermissive -fno-common -w -DDARWIN".split()
+    extra_link_args = "-headerpad_max_install_names -undefined dynamic_lookup".split()
 elif sys.platform == "win32":
     extra_compile_args = ["-EHsc"]
     extra_link_args = []
 elif sys.platform.startswith("linux"):
     extra_compile_args = "-fPIC -fpermissive -w -DLINUX".split()
     extra_link_args = ["-Wl,-R$ORIGIN"]    
-#    extra_link_args = ["-Wl,-R'$ORIGIN'"] #use this if distutils runs commands though the shell
 else:
     extra_compile_args = []
     extra_link_args = []
@@ -413,7 +412,7 @@ orange_ext = PyXtractSharedExtension("orange", orange_sources,
                                       include_dirs=orange_include_dirs,
                                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
                                       extra_link_args = extra_link_args,
-                                      libraries=libraries,
+                                      libraries=orange_libraries,
                                       extra_pyxtract_cmds = ["../pyxtract/defvectors.py"],
 #                                      depends=["orange/ppp/lists"]
                                       )
