@@ -1,5 +1,5 @@
 from plot.owplot3d import OWPlot3D
-from PyQt4 import Qt
+from PyQt4.QtCore import Qt
 import orangeqt
 import Orange
 import orange
@@ -28,20 +28,24 @@ class Edge3D(orangeqt.Edge3D):
         if label:
             self.set_label(label)
 
-class OWNxCanvas3D(OWPlot3D, orangeqt.Canvas3D):
+class OWNxCanvas3D(orangeqt.Canvas3D):
     def __init__(self, master, parent=None, name='None'):
-        OWPlot3D.__init__(self, parent)
         orangeqt.Canvas3D.__init__(self, parent)
+
+        self.plot = OWPlot3D(self)
+        self.plot.replot = self.plot.update
+        self.gui = self.plot.gui
+        self.saveToFile = self.plot.save_to_file
 
         # A little workaround, since NetExplorer sometimes calls networkCurve directly
         self.networkCurve = self
 
-        self.Node3D = orangeqt.Node3D
+        self.Node3D = Node3D
         self.replot = self.update
-        self.animate_plot = False
-        self.animate_points = False
-        self.antialias_plot = False
-        self.auto_adjust_performance = False
+        self.plot.animate_plot = False
+        self.plot.animate_points = False
+        self.plot.antialias_plot = False
+        self.plot.auto_adjust_performance = False
 
         self.master = master
         self.parent = parent
@@ -75,6 +79,7 @@ class OWNxCanvas3D(OWPlot3D, orangeqt.Canvas3D):
         self.axis_margin = 0
         self.title_margin = 0
         self.graph_margin = 1
+        import rpdb2; rpdb2.start_embedded_debugger('pass')
 
     def update_canvas(self):
         orangeqt.Canvas3D.update_properties(self)
@@ -359,7 +364,7 @@ class OWNxCanvas3D(OWPlot3D, orangeqt.Canvas3D):
         return True
 
     def set_graph(self, graph, curve=None, items=None, links=None):
-        self.clear() # TODO which one?
+        #self.clear() # TODO which one?
 
         if graph is None:
             self.graph = None
@@ -382,7 +387,7 @@ class OWNxCanvas3D(OWPlot3D, orangeqt.Canvas3D):
         self.links = links if links is not None else self.graph.links()
 
         vertices = dict((v, self.Node3D(v)) for v in self.graph)
-        self.set_nodes(vertices)
+        orangeqt.Canvas3D.set_nodes(self, vertices)
 
         self.edge_to_row = {}
         if self.links is not None and len(self.links) > 0:
@@ -417,7 +422,7 @@ class OWNxCanvas3D(OWPlot3D, orangeqt.Canvas3D):
                                       graph[i][j].get('weight', 1)) for (i, j) in self.graph.edges()]
 
         self.set_edges(edges)
-        self.update_properties()
+        #self.update_properties()
         self.update()  
 
     def update_animations(self, use_animations=None):
@@ -699,8 +704,6 @@ class OWNxCanvas3D(OWPlot3D, orangeqt.Canvas3D):
         #p.animate_points = animate_points
         return 0
 
-    #def update(self):
+    def update(self):
         #self.set_dirty()
-        #OWPlot.update(self)
-        #if hasattr(self, 'networkCurve') and self.networkCurve is not None:
-            #self.networkCurve.update()
+        self.plot.update()
