@@ -3,7 +3,7 @@ ifndef OLD
   OLD=..
 endif
 ifndef PYTHON
-  PYTHON=python
+  PYTHON=$(shell which python2)
 endif
 
 PYTHON_VERSION = $(shell $(PYTHON) -c 'import sys; print "%s.%s" % sys.version_info[:2]')

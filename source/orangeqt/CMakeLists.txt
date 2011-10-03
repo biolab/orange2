@@ -9,9 +9,10 @@ find_package(PyQt4 REQUIRED)
 find_package(SIP REQUIRED)
 find_package(PythonLibrary REQUIRED)
 find_package(OpenGL)
+find_package(Numpy)
 include(SIPMacros)
 
-include_directories(${QT_INCLUDES} ${SIP_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${PYTHON_INCLUDE_PATH})
+include_directories(${QT_INCLUDES} ${SIP_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${PYTHON_INCLUDE_PATH} ${NUMPY_INCLUDE_DIR})
 
 #### orangeqt sources ####
 set(orangeqt_SRCS 
