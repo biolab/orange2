@@ -680,8 +680,8 @@ class MDSGraph(OWGraph):
                     dict[hsv].append(i)
                 else:
                     dict[hsv]=[i]
-            maxX, maxY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
-            minX, minY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
+#            maxX, maxY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
+#            minX, minY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
             for color in set:
                 #print len(dict[color.getHsv()]), color.name()
                 X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
@@ -708,7 +708,7 @@ class MDSGraph(OWGraph):
                                   symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
                 c.setZ(100)
                 if self.NameAttr!=0:
-                    c = self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+                    c = self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignBottom)
                     c.setZ(100)
 
 #            for i in range(len(self.colors)):
@@ -723,8 +723,12 @@ class MDSGraph(OWGraph):
         if len(self.mds.points)>0:
             X = [point[0] for point in self.mds.points]
             Y = [point[1] for point in self.mds.points]
-            self.setAxisScale(QwtPlot.xBottom, min(X), max(X))
-            self.setAxisScale(QwtPlot.yLeft, min(Y), max(Y))
+            max_x, min_x = max(X), min(X)
+            max_y, min_y = max(Y), min(Y)
+            span_x = max_x - min_x
+            span_y = max_y - min_y
+            self.setAxisScale(QwtPlot.xBottom, min_x - 0.05 * span_x, max_x + 0.05 * span_x)
+            self.setAxisScale(QwtPlot.yLeft, min_y - 0.05 * span_y, max_y + 0.05 * span_y)
             
 
     def sendData(self, *args):
