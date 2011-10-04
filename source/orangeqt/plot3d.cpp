@@ -122,7 +122,7 @@ void Plot3D::set_valid_data(bool* valid_data)
     if (this->valid_data != NULL)
         delete [] this->valid_data;
 
-    this->valid_data = valid_data;//reinterpret_cast<bool*>(valid_data_address); // TODO: the same as the TODO above
+    this->valid_data = valid_data;
 }
 
 void Plot3D::update_data(int x_index, int y_index, int z_index,
@@ -160,7 +160,7 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
     int sib_unselected = 0;
     int sib_edges      = 0;
 
-    QMap<int, QList<QVector3D> >& geometry = use_2d_symbols ? geometry_data_2d : geometry_data_3d;
+    QMap<int, QList<QVector3D> >& geometry =       use_2d_symbols ? geometry_data_2d       : geometry_data_3d;
     QMap<int, QList<QVector3D> >& geometry_edges = use_2d_symbols ? geometry_data_edges_2d : geometry_data_edges_3d;
 
     for (int index = 0; index < num_examples; ++index)

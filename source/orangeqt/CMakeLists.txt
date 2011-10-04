@@ -24,6 +24,7 @@ set(orangeqt_SRCS
     multicurve.cpp
     plot.cpp 
     plot3d.cpp
+    canvas3d.cpp
 )
 qt4_automoc(${orangeqt_SRCS})
 
