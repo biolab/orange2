@@ -33,6 +33,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         orangeqt.Canvas3D.__init__(self, parent)
 
         self.plot = OWPlot3D(self)
+        self.plot.initializeGL()
         self.plot.replot = self.plot.update
         self.gui = self.plot.gui
         self.saveToFile = self.plot.save_to_file
@@ -79,10 +80,8 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self.axis_margin = 0
         self.title_margin = 0
         self.graph_margin = 1
-        import rpdb2; rpdb2.start_embedded_debugger('pass')
 
     def update_canvas(self):
-        orangeqt.Canvas3D.update_properties(self)
         self.draw_component_keywords()
         self.update()
 
@@ -135,7 +134,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             orangeqt.Canvas3D.set_node_marks(self, dict((i, True) for i in toMark))
 
     def draw_component_keywords(self):
-        self.clear_markers()
+        #self.clear_markers()
         if self.show_component_attribute == None or self.graph is None or self.items is None:
             return
 
@@ -187,6 +186,8 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
 
         return colorIndices, colorIndex, minValue, maxValue
 
+    getColorIndeces = get_color_indices
+
     def set_node_colors(self, attribute, nodes=None):
         if self.graph is None:
             return
@@ -233,12 +234,12 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             indices = [[str(u)] for u in nodes]
             
         if self.trim_label_words > 0:
-            self.networkCurve.set_node_labels(dict((node, 
+            orangeqt.Canvas3D.set_node_labels(self, dict((node, 
                 ', '.join(indices[i] + 
                           [' '.join(str(self.items[node][att]).split(' ')[:min(self.trim_label_words,len(str(self.items[node][att]).split(' ')))])
                 for att in label_attributes])) for i, node in enumerate(nodes)))
         else:
-            self.networkCurve.set_node_labels(dict((node, ', '.join(indices[i]+\
+            orangeqt.Canvas3D.set_node_labels(self, dict((node, ', '.join(indices[i]+\
                            [str(self.items[node][att]) for att in \
                            label_attributes])) for i, node in enumerate(nodes)))
         self.update()
@@ -251,18 +252,18 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         colors = []
         
         if colorIndex is not None and self.links.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
-            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
+            colors = [self.discEdgePalette[0] for edge in orangeqt.Canvas3D.edge_indices(self)]
         
         elif colorIndex is not None and self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
             colors = [self.contPalette[(float(self.links[edge.links_index()][colorIndex].value) - minValue) / (maxValue - minValue)]
                           if str(self.links[edge.links_index()][colorIndex].value) != '?' else 
-                          self.discPalette[0] for edge in self.networkCurve.edges()]
+                          self.discPalette[0] for edge in orangeqt.Canvas3D.edges(self)]
             
         elif colorIndex is not None and self.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
-            colors = [self.discEdgePalette[colorIndices[self.links[edge.links_index()][colorIndex].value]] for edge in self.networkCurve.edges()]
+            colors = [self.discEdgePalette[colorIndices[self.links[edge.links_index()][colorIndex].value]] for edge in orangeqt.Canvas3D.edges(self)]
             
         else:
-            colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
+            colors = [self.discEdgePalette[0] for edge in orangeqt.Canvas3D.edge_indices(self)]
             
         orangeqt.Canvas3D.set_edge_colors(self, colors)
         self.update()
@@ -288,7 +289,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         orangeqt.Canvas3D.set_edge_labels(self,
             [', '.join(weights[i] + [str(self.links[i][att]) for att in label_attributes]) for i,edge in enumerate(edges)])
 
-        self.upate()
+        self.update()
 
     def set_tooltip_attributes(self, attributes):
         if self.graph is None or self.items is None or \
@@ -365,10 +366,11 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
 
     def set_graph(self, graph, curve=None, items=None, links=None):
         #self.clear() # TODO which one?
+        # TODO: clear previous nodes and edges?
 
         if graph is None:
             self.graph = None
-            self.networkCurve = None
+            #self.networkCurve = None
             self.items = None
             self.links = None
             xMin = -1.0
@@ -380,14 +382,11 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             return
 
         self.graph = graph
-
-        # TODO: clear previous nodes and edges?
-
         self.items = items if items is not None else self.graph.items()
         self.links = links if links is not None else self.graph.links()
 
-        vertices = dict((v, self.Node3D(v)) for v in self.graph)
-        orangeqt.Canvas3D.set_nodes(self, vertices)
+        nodes = dict((v, self.Node3D(v)) for v in self.graph)
+        orangeqt.Canvas3D.set_nodes(self, nodes)
 
         self.edge_to_row = {}
         if self.links is not None and len(self.links) > 0:
@@ -409,20 +408,21 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             links_indices = (self.edge_to_row[i + 1][j + 1] for (i, j) in self.graph.edges())
 
             if self.graph.is_directed():
-                edges = [Edge3D(vertices[i], vertices[j],
+                edges = [Edge3D(nodes[i], nodes[j],
                     graph[i][j].get('weight', 1), links_index, arrows=Edge3D.ArrowV) for ((i, j), links_index) in zip(self.graph.edges(), links_indices)]
             else:
-                edges = [Edge3D(vertices[i], vertices[j],
+                edges = [Edge3D(nodes[i], nodes[j],
                     graph[i][j].get('weight', 1), links_index) for ((i, j), links_index) in zip(self.graph.edges(), links_indices)]
         elif self.graph.is_directed():
-            edges = [Edge3D(vertices[i], vertices[j],
+            edges = [Edge3D(nodes[i], nodes[j],
                                       graph[i][j].get('weight', 1), arrows=Edge3D.ArrowV) for (i, j) in self.graph.edges()]
         else:
-            edges = [Edge3D(vertices[i], vertices[j],
+            edges = [Edge3D(nodes[i], nodes[j],
                                       graph[i][j].get('weight', 1)) for (i, j) in self.graph.edges()]
 
         self.set_edges(edges)
-        #self.update_properties()
+        self._nodes = nodes # Store references, so these objects are not destroyed
+        self._edges = edges
         self.update()  
 
     def update_animations(self, use_animations=None):

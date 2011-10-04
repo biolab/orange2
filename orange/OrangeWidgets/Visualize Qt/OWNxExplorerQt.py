@@ -931,7 +931,7 @@ class OWNxExplorerQt(OWWidget):
         self._links = None
         self.set_items_distance_matrix(None)
         self.networkCanvas.set_graph(None)
-        
+
     def set_graph(self, graph, curve=None):
         self.information()
         self.warning()
