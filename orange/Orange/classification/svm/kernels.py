@@ -14,7 +14,7 @@ class KernelWrapper(object):
     """A base class for kernel function wrappers.
     
     :param wrapped: a function to wrap
-    :type wrapped: function(double, double)
+    :type wrapped: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
     
     """
     
@@ -29,9 +29,9 @@ class DualKernelWrapper(KernelWrapper):
     """A base class for kernel wrapper that wraps two other kernel functions.
     
     :param wrapped1:  a function to wrap
-    :type wrapped1: function(double, double)
+    :type wrapped1: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
     :param wrapped2:  a function to wrap
-    :type wrapped2: function(double, double)
+    :type wrapped2: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
     
     """
     
@@ -45,7 +45,7 @@ class RBFKernelWrapper(KernelWrapper):
     (Radial Basis Function).
     
     :param wrapped: a function to wrap
-    :type wrapped: function(double, double)
+    :type wrapped: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
     :param gamma: the gamma of the RBF
     :type gamma: double
     
@@ -68,8 +68,8 @@ class PolyKernelWrapper(KernelWrapper):
     """Polynomial kernel wrapper.
     
     :param wrapped: a function to wrap
-    :type wrapped: function(double, double)
-    :param degree: degree of the polinomial
+    :type wrapped: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
+    :param degree: degree of the polynomial
     :type degree: double
     
     """
@@ -112,9 +112,9 @@ class CompositeKernelWrapper(DualKernelWrapper):
     """Composite kernel wrapper.
     
     :param wrapped1:  a function to wrap
-    :type wrapped1: function(double, double)
+    :type wrapped1: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
     :param wrapped2:  a function to wrap
-    :type wrapped2: function(double, double)
+    :type wrapped2: function(:class:`Orange.data.Instance`, :class:`Orange.data.Instance`)
     :param l: coefficient
     :type l: double
         
@@ -135,22 +135,6 @@ class SparseLinKernel(object):
     def __call__(self, example1, example2):
         """Computes a linear kernel function using the examples meta attributes
         (need to be floats).
-        
-        """
-        s=set(example1.getmetas().keys()+example2.getmetas().keys())
-        sum=0
-        getmeta=lambda e: e.hasmeta(key) and float(e[key]) or 0.0
-        for key in s:
-            sum+=pow(getmeta(example2)-getmeta(example1), 2)
-        return pow(sum, 0.5)
-
-class BagOfWords(object):
-    def __call__(self, example1, example2):
-        """Computes a BOW kernel function:
-         
-        :math:`\sum_{i=1}^n example1_i * example2_i`
-        
-        using the examples meta attributes (need to be floats).
         
         """
         s = set(example1.getmetas().keys()) & set(example2.getmetas().keys())
