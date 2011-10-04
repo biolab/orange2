@@ -178,28 +178,6 @@ from Orange.preprocess import Preprocessor_impute, \
                               DomainContinuizer
 
 from Orange.misc import _orange__new__
-    
-def _orange__new__(base=Orange.core.Learner):
-    """Return an orange 'schizofrenic' __new__ class method.
-    
-    :param base: base orange class (default Orange.core.Learner)
-    :type base: type
-         
-    Example::
-        class NewOrangeLearner(Orange.core.Learner):
-            __new__ = _orange__new(Orange.core.Learner)
-        
-    """
-    from functools import wraps
-    @wraps(base.__new__)
-    def _orange__new_wrapped(cls, data=None, weight_id=None, **kwargs):
-        self = base.__new__(cls, **kwargs)
-        if data:
-            self.__init__(**kwargs)
-            return self.__call__(data, weight_id)
-        else:
-            return self
-    return _orange__new_wrapped
 
 def max_nu(data):
     """Return the maximum nu parameter for Nu_SVC support vector learning 
@@ -232,7 +210,7 @@ class SVMLearner(_SVMLearner):
     :param degree: kernel parameter (for Polynomial) (default 3)
     :type degree: int
     :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
-        (default 1/number_of_instances)
+        (default 1.0/num_of_features)
     :type gamma: float
     :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
     :type coef0: int
@@ -302,7 +280,6 @@ class SVMLearner(_SVMLearner):
         self.normalization = normalization
         for key, val in kwargs.items():
             setattr(self, key, val)
-#        self.__dict__.update(kwargs)
         self.learner = Orange.core.SVMLearner(**kwargs)
         self.weight = weight
 
@@ -314,8 +291,8 @@ class SVMLearner(_SVMLearner):
         :param table: data with continuous features
         :type table: Orange.data.Table
         
-        :param weight: refer to `LibSVM documentation 
-            <http://http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_
+        :param weight: unused - use the constructors ``weight``
+            parameter to set class weights
         
         """
         
@@ -351,8 +328,8 @@ class SVMLearner(_SVMLearner):
                      "verbose", "cache_size", "eps"]:
             setattr(self.learner, name, getattr(self, name))
         self.learner.nu = nu
-        self.learner.setWeights(self.weight)
-        return self.learnClassifier(examples)
+        self.learner.set_weights(self.weight)
+        return self.learn_classifier(examples)
 
     def learn_classifier(self, data):
         if self.normalization:
@@ -719,20 +696,20 @@ class Score_SVMWeights(Orange.feature.scoring.Score):
             return self
         
     def __reduce__(self):
-        return Score_SVMWeights, (), {"learner": self.learner}
+        return Score_SVMWeights, (), dict(self.__dict__)
     
     def __init__(self, learner=None, **kwargs):
         """
         :param learner: Learner used for weight estimation 
-            (default LinearLearner(solver_type=L2Loss_SVM_Dual))
-        :type learner: Orange.core.Learner 
+            (default LinearSVMLearner(solver_type=L2Loss_SVM_Dual))
+        :type learner: Orange.core.LinearLearner 
         
         """
         if learner:
             self.learner = learner 
         else:
-            self.learner = LinearLearner(solver_type=
-                                         LinearLearner.L2Loss_SVM_Dual)
+            self.learner = LinearSVMLearner(solver_type=
+                                    LinearSVMLearner.L2R_L2LOSS_DUAL)
              
         self._cached_examples = None
         

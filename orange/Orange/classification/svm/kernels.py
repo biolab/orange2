@@ -142,3 +142,5 @@ class SparseLinKernel(object):
         for key in s:
             sum += float(example2[key]) * float(example1[key])
         return sum
+
+BagOfWords = SparseLinKernel
