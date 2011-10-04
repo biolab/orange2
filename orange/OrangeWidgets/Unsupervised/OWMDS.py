@@ -423,6 +423,10 @@ class OWMDS(OWWidget):
         self.progressBarInit()
         self.iterNum=0
         self.mds.progressCallback=self.callback
+        # The name mangling for orange2.5 does not seem to work for orangeom.MDS
+        # so I set this explicitly  
+        self.mds.progress_callback=self.callback
+        
         self.mds.mds.optimize(self.maxIterations, self.stressFunc[self.StressFunc][1], self.minStressDelta)
         if self.iterNum%(math.pow(10,self.RefreshMode)):
             self.graph.updateData()
