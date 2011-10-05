@@ -16,7 +16,7 @@ import orngMisc
 # main class
 
 class OWExampleDistance(OWWidget):
-    settingsList = ["Metrics"]
+    settingsList = ["Metrics", "Normalize"]
     contextHandlers = {"": DomainContextHandler("", ["Label"])}
 
     def __init__(self, parent=None, signalManager = None):
@@ -26,6 +26,7 @@ class OWExampleDistance(OWWidget):
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
         self.Metrics = 0
+        self.Normalize = True
         self.Label = ""
         self.loadSettings()
         self.data = None
@@ -43,10 +44,18 @@ class OWExampleDistance(OWWidget):
         cb = OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics",
             items=[x[0] for x in self.metrics],
             tooltip="Choose metrics to measure pairwise distance between examples.",
-            callback=self.computeMatrix, valueType=str)
+            callback=self.distMetricChanged, valueType=str)
         cb.setMinimumWidth(170)
-
+        
         OWGUI.separator(self.controlArea)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Normalization", 
+                              addSpace=True)
+        self.normalizeCB = OWGUI.checkBox(box, self, "Normalize", "Normalize data", 
+                                          callback=self.computeMatrix)
+        
+        self.normalizeCB.setEnabled(self.Metrics in [0, 3])
+        
         self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label",
             items=[],
             tooltip="Attribute used for example labels",
@@ -62,12 +71,17 @@ class OWExampleDistance(OWWidget):
                              ("Label", self.Label)])
         self.reportData(self.data)
 
+    def distMetricChanged(self):
+        self.normalizeCB.setEnabled(self.Metrics in [0, 3])
+        self.computeMatrix()
 
     def computeMatrix(self):
         if not self.data:
             return
         data = self.data
-        dist = self.metrics[self.Metrics][1](data)
+        constructor = self.metrics[self.Metrics][1]()
+        constructor.normalize = self.Normalize
+        dist = constructor(data)
         self.error(0)
         try:
             self.matrix = orange.SymMatrix(len(data))
