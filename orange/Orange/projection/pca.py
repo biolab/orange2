@@ -271,7 +271,7 @@ class PcaClassifier(object):
         else:
             plt.show()
             
-    def biplot(self, filename = None, components = [1,2], title = 'Biplot'):
+    def biplot(self, filename = None, components = [0,1], title = 'Biplot'):
         """
         Draw biplot for PCA. Actual projection must be performed via pca(data)
         before bipot can be used.
@@ -289,7 +289,7 @@ class PcaClassifier(object):
         if len(components) < 2:
             raise orange.KernelException, 'Two components are needed for biplot'
         
-        if not (1 <= min(components) <= max(components) <= len(self.eigen_values)):
+        if not (0 <= min(components) <= max(components) < len(self.eigen_values)):
             raise orange.KernelException, 'Invalid components'
         
         X = self.A[:,components[0]]
@@ -310,8 +310,8 @@ class PcaClassifier(object):
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
         ax1.set_title(title + "\n")
-        ax1.set_xlabel("PC%s (%d%%)" % (components[0], self.eigen_values[0] / self.variance_sum * 100))
-        ax1.set_ylabel("PC%s (%d%%)" % (components[1], self.eigen_values[1] / self.variance_sum * 100))
+        ax1.set_xlabel("PC%s (%d%%)" % (components[0], self.eigen_values[components[0]] / self.variance_sum * 100))
+        ax1.set_ylabel("PC%s (%d%%)" % (components[1], self.eigen_values[components[1]] / self.variance_sum * 100))
         ax1.xaxis.set_label_position('bottom')
         ax1.xaxis.set_ticks_position('bottom')
         ax1.yaxis.set_label_position('left')
@@ -353,8 +353,11 @@ class PcaClassifier(object):
         arrowprops = dict(facecolor = 'red', edgecolor = 'red', width = 1, headwidth = 4)
 
         for (x, y, a) in zip(vectorsX, vectorsY,self.input_domain.attributes):
-            ax1.annotate('', (x, y), (0, 0), arrowprops = arrowprops)
-            ax1.text(x * 1.1, y * 1.2, a.name, color = 'red')
+            if max(x, y) < 0.1:
+                continue
+            print x, y, a
+            ax2.annotate('', (x, y), (0, 0), arrowprops = arrowprops)
+            ax2.text(x * 1.1, y * 1.2, a.name, color = 'red')
             
         ax2.set_xlim(-max_load_value, max_load_value)
         ax2.set_ylim(-max_load_value, max_load_value)
