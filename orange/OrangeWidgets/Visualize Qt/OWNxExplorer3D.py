@@ -22,7 +22,7 @@ class OWNxExplorer3D(OWNxExplorerQt):
                        ("Items to Mark", Orange.data.Table, self.markItems), 
                        ("Items Subset", Orange.data.Table, self.setExampleSubset), 
                        ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
-        
+
         self.outputs = [("Selected Network", Orange.network.Graph),
                         ("Selected Items Distance Matrix", Orange.core.SymMatrix),
                         ("Selected Items", Orange.data.Table), 

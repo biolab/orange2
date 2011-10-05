@@ -519,6 +519,22 @@ class OWPlot3D(orangeqt.Plot3D):
         model = QMatrix4x4()
         return model, view, projection
 
+    def set_2D_mode(self):
+        '''
+        Sets ortho projection and identity modelview transform. A convenience method which
+        can be called before doing 2D drawing.
+        '''
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, self.width(), self.height(), 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        self.projection = QMatrix4x4()
+        self.projection.ortho(0, self.width(), self.height(), 0, -1, 1)
+        self.model = QMatrix4x4()
+        self.view = QMatrix4x4()
+
     def paintEvent(self, event):
         glViewport(0, 0, self.width(), self.height())
         self.qglClearColor(self._theme.background_color)

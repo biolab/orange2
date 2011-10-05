@@ -1,5 +1,6 @@
 from plot.owplot3d import OWPlot3D
 from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QVBoxLayout
 import orangeqt
 import Orange
 import orange
@@ -32,8 +33,12 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
     def __init__(self, master, parent=None, name='None'):
         orangeqt.Canvas3D.__init__(self, parent)
 
+        layout = QVBoxLayout()
         self.plot = OWPlot3D(self)
+        layout.addWidget(self.plot)
+        self.setLayout(layout)
         self.plot.initializeGL()
+        self.plot.before_draw_callback = self.draw_callback
         self.plot.replot = self.plot.update
         self.gui = self.plot.gui
         self.saveToFile = self.plot.save_to_file
@@ -80,6 +85,9 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self.axis_margin = 0
         self.title_margin = 0
         self.graph_margin = 1
+
+    def draw_callback(self):
+        pass
 
     def update_canvas(self):
         self.draw_component_keywords()
@@ -434,9 +442,6 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
     def set_node_marks(self, d):
         orangeqt.Canvas3D.set_node_marks(self, d)
 
-    def layout_fr(self, steps, weighted=False, smooth_cooling=False):
-        orangeqt.Canvas3D.layout_fr(self, steps, weighted, smooth_cooling)
-
     def set_node_coordinates(self, positions):
         orangeqt.Canvas3D.set_node_coordinates(self, positions)
 
@@ -528,8 +533,6 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             #                        for i in range(len(self.graph.coors))]
             #    self.mds.freshD = 0
             
-            #self.update_properties()
-            #self.plot().replot()
             self.update()
             qApp.processEvents()
             
@@ -546,12 +549,11 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             self.information('invalid or no distance matrix')
             return 1
 
-        #p = self.plot()
-        edges = self.edges()
+        #edges = self.edges()
         nodes = self.nodes()
 
         avgLinkage = True
-        rotationOnly = False
+        #rotationOnly = False
         minStressDelta = 0
         mdsRefresh = int(steps / 20)
         
@@ -578,14 +580,9 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         h_mds = max(y_mds) - min(y_mds)
         d_mds = math.sqrt(w_mds**2 + h_mds**2)
         
-        #animate_points = p.animate_points
-        #p.animate_points = False
-        
         self.set_node_coordinates(dict(
            (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
         
-        #self.update_properties()
-        #p.replot()
         self.update()
         qApp.processEvents()
                      
@@ -676,7 +673,6 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self.set_node_coordinates(dict(
            (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
         
-        #p.replot()
         self.update()
         qApp.processEvents()
                      
@@ -701,9 +697,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
         
-        #p.animate_points = animate_points
         return 0
 
     def update(self):
-        #self.set_dirty()
         self.plot.update()
