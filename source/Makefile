@@ -5,6 +5,46 @@ ifndef ORANGE_LIBDIR
   ORANGE_LIBDIR=../..
 endif
 
+################################
+# External library configuration
+################################
+# 
+#  The folowing options if un-commented (or passes to the make command)
+# will cause the build process to link to the corresponding external
+# library. The option must name the library to link with. The library 
+# and its header files must be on the search path (add the apropriate
+# paths to CFLAGS, CXXFLAGS and LDFLAGS if they are not on the default
+# search path).
+#
+
+######
+# BLAS
+######
+
+#BLAS_LIB = blas
+
+
+#######
+#LibSVM
+#######
+
+#LIBSVM_LIB = svm
+
+
+###########
+# LIBLINEAR
+###########
+
+#LIBLINEAR_LIB = linear
+
+
+#######
+# QHULL
+#######
+
+#QHULL_LIB = qhull
+ 
+
 PYTHON ?= $(shell which python)
 
 MODULES=include orange orangeom orangene corn statc
