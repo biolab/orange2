@@ -301,16 +301,21 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings["WidgetTabs"] = widgetTabList
             
     def createWidgetsToolbar(self):
+        barstate, treestate = None, None
         if self.widgetsToolBar:
             self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
             if isinstance(self.widgetsToolBar, QToolBar):
                 self.removeToolBar(self.widgetsToolBar)
+                barstate = (self.tabs.currentIndex(), )
             elif isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
                 self.settings["toolboxWidth"] = self.widgetsToolBar.toolbox.width()
                 self.removeDockWidget(self.widgetsToolBar)
+                barstate = (self.tabs.toolbox.currentIndex(), )
             elif isinstance(self.widgetsToolBar, orngTabs.WidgetTree):
                 self.settings["toolboxWidth"] = self.widgetsToolBar.treeWidget.width()
                 self.removeDockWidget(self.widgetsToolBar)
+                treestate = ( [self.tabs.treeWidget.topLevelItem(i).isExpanded()
+                               for i in range(self.tabs.treeWidget.topLevelItemCount())], )
             
         if self.settings["widgetListType"] == 0:
             self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetRegistry)
@@ -333,6 +338,15 @@ class OrangeCanvasDlg(QMainWindow):
         self.tabs.createWidgetTabs(self.settings["WidgetTabs"], self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
         if not self.settings.get("showWidgetToolbar", True): 
             self.widgetsToolBar.hide()
+        if barstate:
+            if self.settings["widgetListType"] == 0:
+                self.tabs.toolbox.setCurrentIndex(barstate[0])
+            else:
+                self.tabs.setCurrentPage(barstate[0])
+        if treestate and self.settings["widgetListType"] in [1, 2]:
+            for i, e in enumerate(treestate[0]):
+                self.tabs.treeWidget.topLevelItem(i).setExpanded(e)
+
 
     def readShortcuts(self):
         self.widgetShortcuts = {}
