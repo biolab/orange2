@@ -34,14 +34,14 @@ class OWMDSQt(OWWidget):
                                                   ContextField("graph.ShapeAttr", DomainContextHandler.Optional),
                                                   ContextField("graph.NameAttr", DomainContextHandler.Optional),
                                                   ContextField("graph.ShowName", DomainContextHandler.Optional)])}
-    callbackDeposit=[]
+    
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable)]
 
         self.StressFunc=3
-        self.minStressDelta=1e-5
+        self.minStressDelta=5e-5
         self.maxIterations=5000
         self.maxImprovment=10
         self.autoSendSelection=0
@@ -82,8 +82,12 @@ class OWMDSQt(OWWidget):
         OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization", callback=lambda :1)
         
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
-        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Min. stress change", minValue=0, maxValue=1e-2, step=1e-5, precision=6)
-        OWGUI.qwtHSlider(self.stopping, self, "maxIterations", label="Max. number of steps", minValue=10, maxValue=5000, step=10, precision=0)
+        OWGUI.hSlider(OWGUI.widgetBox(self.stopping, "Min. stress change", flat=True),
+                      self, "minStressDelta", minValue=5e-5, maxValue=1e-2, step=5e-5, 
+                      labelFormat="%.5f", intOnly=0)
+        OWGUI.hSlider(OWGUI.widgetBox(self.stopping, "Max. number of steps", flat=True), 
+                      self, "maxIterations", minValue=10, maxValue=5000, step=10, 
+                      labelFormat="%i")
 
         ##Graph Tab        
         OWGUI.hSlider(graph, self, "graph.PointSize", box="Point Size", minValue=1, maxValue=20, callback=self.graph.updateData)
@@ -99,7 +103,7 @@ class OWMDSQt(OWWidget):
         OWGUI.separator(b2, height=3)
         sl = OWGUI.hSlider(b2, self, "graph.proportionGraphed", minValue=0, maxValue=20, callback=self.graph.updateLinesRepaint, tooltip="Proportion of connected pairs (Maximum of 1000 lines will be drawn")
         OWGUI.checkBox(box, self, "graph.differentWidths", "Show distance by line width", callback = self.graph.updateLinesRepaint)
-        OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateLinesRepaint)
+        OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateData)
         OWGUI.checkBox(box, self, "graph.stressBySize", "Show stress by symbol size", callback = self.updateStressBySize)
         self.updateStressBySize(True)
         
@@ -115,7 +119,10 @@ class OWMDSQt(OWWidget):
         mds.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         graph.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         self.controlArea.setMinimumWidth(250)
+        
         OWGUI.rubber(mds)
+        OWGUI.rubber(self.controlArea)
+        
         infoBox=OWGUI.widgetBox(mds, "Info")
         self.infoA=OWGUI.widgetLabel(infoBox, "Avg. stress:")
         self.infoB=OWGUI.widgetLabel(infoBox, "Num. steps")
@@ -159,7 +166,7 @@ class OWMDSQt(OWWidget):
             self.graph.clear()
 
     def cselected(self, selected=[]):
-        self.selectedInputExamples=selected and selected or[]
+        self.selectedInputExamples=selected or []
         if self.data and type(self.data)==orange.ExampleTable:
             self.setExampleTable(self.data)
             self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names, self.selectedInput)
@@ -198,13 +205,13 @@ class OWMDSQt(OWWidget):
 
         self.colors=[[Qt.black]*(len(attributes)+1) for i in range(len(data))]
         self.shapes=[[OWPoint.Ellipse]*(len(discAttributes)+1) for i in range(len(data))]
-        self.sizes=[[5]*(len(contAttributes)+1) for i in range(len(data))]
+        self.sizes=[[1.0]*(len(contAttributes)+1) for i in range(len(data))]
         self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
         try:
             selectedInput=self.selectedInputExamples.select(data.domain)
-        except:
+        except Exception:
             selectedInput=[]
-        self.selectedInput=map(lambda d: selectedInput and (d in selectedInput) or not selectedInput, data)
+        self.selectedInput=map(lambda d: selectedInput and (d in selectedInput), data)
         contI=discI=attrI=1
         def check(ex, a):
             try:
@@ -230,11 +237,12 @@ class OWMDSQt(OWWidget):
                 val=[e[attr] for e in data if check(e, attr)]
                 minVal=min(val or [0])
                 maxVal=max(val or [1])
+                span = max(maxVal - minVal, 1e-6)
                 for i in range(len(data)):
-                    self.colors[i][attrI]=check(data[i],attr) and c.getColor((data[i][attr]-minVal)/max(maxVal-minVal, 1e-6)) or Qt.black 
+                    self.colors[i][attrI]=check(data[i],attr) and c.getColor((data[i][attr] - minVal)/span) or Qt.black 
                     #self.shapes[i][discI]=self.graph.shapeList[0]
                     self.names[i][attrI]=check(data[i],attr) and " "+str(data[i][attr]) or ""
-                    self.sizes[i][contI]=check(data[i],attr) and int(self.data[i][attr]/maxVal*9)+1 or 5
+                    self.sizes[i][contI]=check(data[i],attr) and (float(self.data[i][attr]) - minVal) / span or 1.0
                 contI+=1
                 attrI+=1
             else:
@@ -262,7 +270,7 @@ class OWMDSQt(OWWidget):
 
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[OWPoint.Ellipse] for i in range(len(data))]
-        self.sizes=[[5] for i in range(len(data))]
+        self.sizes=[[1.0] for i in range(len(data))]
         self.selectedInput=[False]*len(data)
 
         if type(data[0]) in [str, unicode]:
@@ -290,7 +298,7 @@ class OWMDSQt(OWWidget):
             self.nameCombo.addItem(name)
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[OWPoint.Ellipse] for i in range(len(data))]
-        self.sizes=[[5] for i in range(len(data))]
+        self.sizes=[[1.0] for i in range(len(data))]
         self.names=[[""]*4 for i in range(len(data))]
         self.selectedInput=[False]*len(data)
         try:
@@ -304,7 +312,7 @@ class OWMDSQt(OWWidget):
     def updateStressBySize(self, noRepaint = False):
         self.sizeCombo.setDisabled(self.graph.stressBySize)
         if not noRepaint:
-            self.graph.updateLinesRepaint()
+            self.graph.updateData()
         
     def smacofStep(self):
         if not getattr(self, "mds", None):
@@ -356,12 +364,12 @@ class OWMDSQt(OWWidget):
     def jitter(self):
         if not getattr(self, "mds", None):
             return
-        mi = numpy.argmin(self.mds.points,0)
-        ma = numpy.argmax(self.mds.points,0)
-        st = 0.01*(ma-mi)
+        mi = numpy.min(self.mds.points, axis=0)
+        ma = numpy.max(self.mds.points, axis=0)
+        st = 0.05 * (ma - mi)
         for i in range(self.mds.n):
             for j in range(2):
-                self.mds.points[i][j] += st[j]*(random()-0.5)
+                self.mds.points[i][j] += st[j]*(random() - 0.5)
         if self.computeStress:
             self.mds.getStress(self.stressFunc[self.StressFunc][1])
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
@@ -587,12 +595,11 @@ class MDSPlot(OWPlot):
 
     def setData(self, mds, colors, sizes, shapes, names, showFilled):
         self.mds = mds
-        #self.data=data
         self.colors = colors
         self.sizes = sizes
         self.shapes = shapes
         self.names = names
-        self.showFilled = showFilled #map(lambda d: not d, showFilled)
+        self.showFilled = showFilled
         self.updateData()
 
     def updateData(self):
@@ -601,7 +608,6 @@ class MDSPlot(OWPlot):
         if self.ShowStress:
             self.updateDistanceLines()
         self.setPoints()
-#        self.updateAxes()
         self.replot()
 
     def updateDistanceLines(self):
@@ -666,27 +672,41 @@ class MDSPlot(OWPlot):
             return 
         x_data = [p[0] for p in self.mds.points]
         y_data = [p[1] for p in self.mds.points]
-        if self.ShapeAttr != 0:
-            shapes = [s[self.ShapeAttr] for s in self.shapes]
-        else:
-            shapes = [self.shapeList[0]]
+        
+        if self.stressBySize or self.stressByTransparency:
+            stresses = map(sum, self.mds.stress)
+            
+            mins, maxs = min(stresses), max(stresses)
+            stress_scale = 1. / max(1e-7, maxs - mins)
+#            stress_scale = 1. / max(1e-7, maxs - mins)
             
         if self.ColorAttr != 0:
             colors = [c[self.ColorAttr] for c in self.colors]
         else:
-            colors = [Qt.black] #QColor(Qt.black)
+            colors = [QColor(Qt.black) for _ in self.colors] #QColor(Qt.black)
             
-        if self.SizeAttr != 0:
-            sizes = [s[self.SizeAttr] for s in self.sizes]
+        if self.stressByTransparency:
+            for c, s in zip(colors, stresses):
+                c.setAlpha(math.floor((1.0 - ((s - mins) * stress_scale)) * 255))
+            
+        if self.stressBySize:
+            sizes = [(s - mins) * stress_scale * self.PointSize for s in stresses]
+        elif self.SizeAttr != 0:
+            sizes = [s[self.SizeAttr] * self.PointSize for s in self.sizes]
         else:
-            sizes = [6] #6
+            sizes = [self.PointSize]
+            
+        if self.ShapeAttr != 0:
+            shapes = [s[self.ShapeAttr] for s in self.shapes]
+        else:
+            shapes = [self.shapeList[0]]
         
         if self.NameAttr != 0:
             labels = [n[self.NameAttr] for n in self.names]
         else:
             labels = []
             
-        self.set_main_curve_data(x_data, y_data, colors, labels, sizes, shapes)
+        self.set_main_curve_data(x_data, y_data, colors, labels, sizes, shapes, self.showFilled)
         
     def sendData(self, *args):
         pass
@@ -708,5 +728,7 @@ if __name__=="__main__":
             matrix[i, j] = dist(data[i], data[j])
 
     w.cmatrix(matrix)
+    w.cselected(orange.ExampleTable(data[:50]))
     app.exec_()
+    w.saveSettings()
 
