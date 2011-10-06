@@ -543,15 +543,16 @@ Orange data mining library
 ==========================
 
 Orange is a scriptable environment for fast prototyping of new
-algorithms and testing schemes. It is a collection of Python-based modules
+algorithms and testing schemes. It is a collection of Python packages
 that sit over the core library and implement some functionality for
 which execution time is not crucial and which is easier done in Python
-than in C++. This includes a variety of tasks such as pretty-print of
-decision trees, attribute subset, bagging and boosting, and alike.
+than in C++. This includes a variety of tasks such as attribute subset,
+bagging and boosting, and alike.
 
-Orange also includes a set of graphical widgets that use methods from core
-library and Orange modules. Through visual programming, widgets can be assembled
-together into an application by a visual programming tool called Orange Canvas.
+Orange also includes a set of graphical widgets that use methods from 
+core library and Orange modules. Through visual programming, widgets
+can be assembled together into an application by a visual programming
+tool called Orange Canvas.
 """,
       **setuptools_args)
       
