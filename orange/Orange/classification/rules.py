@@ -331,11 +331,11 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
        
    .. attribute:: cover_and_remove
        
-      an object of class
-      :class:`~Orange.classification.rules.RuleCovererAndRemover` that removes
+      an object of
+      :class:`RuleCovererAndRemover` that removes
       instances covered by the rule and returns remaining instances. The
       default implementation
-      (:class:`~Orange.classification.rules.RuleCovererAndRemover_Default`)
+      (:class:`RuleCovererAndRemover_Default`)
       only removes the instances that belong to given target class, except if
       it is not given (ie. :obj:`target_class` == -1).
     
@@ -988,9 +988,9 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
     is the same as :class:`~Orange.classification.rules.CN2UnorderedLearner`.
     The difference between classical CN2 unordered and CN2-SD is selection of
     specific evaluation function and covering function:
-    :class:`~Orange.classification.rules.WRACCEvaluator` is used to implement
+    :class:`WRACCEvaluator` is used to implement
     weight-relative accuracy and 
-    :class:`~Orange.classification.rules.CovererAndRemover_MultWeight` avoids
+    :class:`CovererAndRemover_MultWeights` avoids
     excluding covered instances, multiplying their weight by the value of
     mult parameter instead.
     
