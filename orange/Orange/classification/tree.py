@@ -638,7 +638,7 @@ during learning).
         determined at some node the tree). Descenders that
         do split instances differ in returned vote weights.
 
-.. class:: Descender_UnknownsToNode
+.. class:: Descender_UnknownToNode
 
     Bases: :obj:`Descender`
 
@@ -648,7 +648,7 @@ during learning).
     need to have their :obj:`Node.node_classifier` (i.e., don't disable
     creating node classifier or manually remove them after the induction).
 
-.. class:: Descender_UnknownsToBranch
+.. class:: Descender_UnknownToBranch
 
     Bases: :obj:`Descender`
 
@@ -656,7 +656,7 @@ during learning).
     makes sense only if the tree itself was constructed with
     :obj:`Splitter_UnknownsToBranch`.
 
-.. class:: Descender_UnknownsToCommonBranch
+.. class:: Descender_UnknownToCommonBranch
 
     Bases: :obj:`Descender`
 
@@ -664,21 +664,21 @@ during learning).
     highest number of instances. If there is more than one such branch,
     random branch is chosen for each instance that is to be classified.
 
-.. class:: Descender_UnknownsToCommonSelector
+.. class:: Descender_UnknownToCommonSelector
 
     Bases: :obj:`Descender`
 
     Classifies instances with unknown values to the branch which received
     the highest recommendation by the selector.
 
-.. class:: Descender_MergeAsBranchSizes
+.. class:: Descender_UnknownMergeAsBranchSizes
 
     Bases: :obj:`Descender`
 
     The subtrees vote for the instance's class; the vote is weighted
     according to the sizes of the branches.
 
-.. class:: Descender_MergeAsSelector
+.. class:: Descender_UnknownMergeAsSelector
 
     Bases: :obj:`Descender`
 
@@ -2603,41 +2603,27 @@ class TreeClassifier(Orange.classification.Classifier):
 
     **The classification process**
 
-    :obj:`TreeClassifier` uses the :obj:`descender` to descend from
-    the root.  If it returns only a :obj:`Node` and no distribution,
-    the descend should stop; it does not matter whether it's a leaf
-    (the first case above) or an internal node (the second case). The
-    node's :obj:`~Node.node_classifier` is used to decide the class.
+    :obj:`TreeClassifier` uses the :obj:`descender` to descend the
+    instance from the root. If the :obj:`descender` returns only a
+    :obj:`Node` and no distribution, the descend should stop as the node
+    was unambiguously selected. The node's :obj:`~Node.node_classifier`
+    decides the class.
 
-    If the descender returns a :obj:`Node` and a distribution,
-    the :obj:`TreeClassifier` recursively calls itself for each of
-    the subtrees and the predictions are weighted as requested by
-    the descender. From now on, ``vote`` and ``class_distribution``
-    (private methods) interweave down the tree.
-
-    ``vote`` returns a normalized distribution  of predictions: for each
-    node, it calls the  :obj:`class_distribution` and then multiplies
-    and sums the distribution.  ``class_distribution`` gets an additional 
-    parameter, a default
-    tree root.  If :obj:`descender` reaches a leaf, it calls
-    :obj:`~Node.node_classifier`, otherwise it calls ``vote``. Thus,
-    ``vote`` and ``class_distribution`` form a double recursion. The
-    recursive calls only happen at nodes where a vote is needed (that is,
-    at nodes where the descender halts).
+    If the descender returns a :obj:`Node` and a distribution, as it
+    happens, for example, if the instance's value for the :obj:`Node`'s
+    feature is unknown, the same process repeats for all subtrees and
+    their predictions are combined.
 
     **Attributes**
 
     .. attribute:: tree
 
-        The root of the tree, represented as a :class:`Node`.
+        The root of the tree, as a :class:`Node`.
 
     .. attribute:: descender
 
-        A :obj:`Descender`. It is used to descend an instance from the
-        root of the tree (:obj:`tree`) as deeply as possible according
-        to the instance's feature values.
-
-
+        A :obj:`Descender` used to descend an instance from the root as
+        deeply as possible according to the instance's feature values.
     """
     
     def __init__(self, base_classifier=None):
