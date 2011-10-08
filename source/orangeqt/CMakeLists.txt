@@ -25,6 +25,7 @@ set(orangeqt_SRCS
     plot.cpp 
     plot3d.cpp
     canvas3d.cpp
+    glextensions.cpp
 )
 qt4_automoc(${orangeqt_SRCS})
 

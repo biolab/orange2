@@ -1,14 +1,21 @@
 #ifndef CANVAS_3D_H
 #define CANVAS_3D_H
 
+#include "triple.h"
+
 #include <deque>
 #include <algorithm>
-#include "triple.h"
 
 #include <QtGui/QWidget>
 #include <QtCore/QDebug>
 #include <QtCore/QMap>
 #include <QtCore/QList>
+
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#endif
 
 class Edge3D;
 
@@ -18,7 +25,7 @@ public:
     Node3D(int index, int symbol, QColor color, int size);
     virtual ~Node3D();
 
-    void set_coordinates(double x, double y, double z=0.0);
+    void set_coordinates(double x, double y, double z=0.5);
     Triple<double, double, double> coordinates() const;
 
     void set_x(double x);
@@ -190,6 +197,10 @@ public:
 
     QRectF data_rect() const;
 
+    void update();
+    void draw_edges();
+    void draw_nodes();
+
 private:
     Nodes m_nodes;
     Edges m_edges;
@@ -200,6 +211,10 @@ private:
     bool m_stop_optimization;
     bool m_labels_on_marked_only;
     bool m_show_component_distances;
+
+    GLuint m_vbo_edges;
+    GLuint m_vbo_nodes;
+    bool m_vbos_generated;
 };
 
 #endif

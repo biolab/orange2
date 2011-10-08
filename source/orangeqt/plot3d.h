@@ -1,18 +1,20 @@
 #ifndef PLOT_3D_H
 #define PLOT_3D_H
 
+#include <Python.h> // Complains when not included first
+
 #include "plot.h"
+
 #include <QtOpenGL/QGLWidget>
 #include <QVector3D>
 #include <QVector4D>
 #include <QMatrix4x4>
-#include <Python.h>
 
-#ifdef __APPLE__ // Apple OpenGL framework (What if we want to use X11 - then the include should be GL/gl.h)
+#ifdef __APPLE__
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
-#endif //__APPLE__
+#endif
 
 class Plot3D : public QGLWidget {
   Q_OBJECT

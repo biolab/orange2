@@ -4,12 +4,17 @@
 #include <QtCore/QMap>
 #include <QtCore/QList>
 #include <QtCore/qmath.h>
-#include <QStyleOptionGraphicsItem>
 #include <QCoreApplication>
 #include <QtCore/QTime>
-#include <QtCore/QParallelAnimationGroup>
+
+#include "glextensions.h"
 
 #define PI 3.14159265
+
+qreal _random()
+{
+    return ((qreal)(qrand()) / RAND_MAX);
+}
 
 class QueueVertex
 {
@@ -64,7 +69,7 @@ public:
 Node3D::Node3D(int index, int symbol, QColor color, int size)
 {
     set_index(index);
-    set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
+    set_coordinates(_random(), _random(), _random());
     set_size(1);
     set_marked(false);
     set_selected(false);
@@ -336,6 +341,7 @@ Canvas3D::Canvas3D(QWidget* parent) : QWidget(parent)
 {
 	 m_min_node_size = 5;
 	 m_max_node_size = 5;
+     m_vbos_generated = false;
 }
 
 Canvas3D::~Canvas3D()
@@ -352,9 +358,7 @@ int Canvas3D::random()
 	Nodes::ConstIterator uend = m_nodes.constEnd();
 
 	for (; uit != uend; ++uit)
-	{
-		uit.value()->set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
-	}
+		uit.value()->set_coordinates(_random(), _random(), _random());
 
 	return 0;
 }
@@ -1020,7 +1024,6 @@ void Canvas3D::set_node_tooltips(const QMap<int, QString>& tooltips)
 
 void Canvas3D::set_node_marks(const QMap<int, bool>& marks)
 {
-	//cancel_all_updates();
 	QMap<int, bool>::ConstIterator it;
 	for (it = marks.constBegin(); it != marks.constEnd(); ++it)
 	{
@@ -1030,7 +1033,6 @@ void Canvas3D::set_node_marks(const QMap<int, bool>& marks)
 
 void Canvas3D::clear_node_marks()
 {
-	//cancel_all_updates();
 	Nodes::Iterator it;
 	for (it = m_nodes.begin(); it != m_nodes.end(); ++it)
 	{
@@ -1049,12 +1051,10 @@ void Canvas3D::set_node_coordinates(const QMap<int, Triple<double, double, doubl
 		node->set_y(it.value().second);
 		node->set_z(it.value().third);
 	}
-	//register_points();
 }
 
 void Canvas3D::set_edge_colors(const QList<QColor>& colors)
 {
-    //cancel_all_updates();
 	int i;
 	/*for (i = 0; i < colors.size(); ++i)
 	{
@@ -1066,8 +1066,6 @@ void Canvas3D::set_edge_colors(const QList<QColor>& colors)
 
 void Canvas3D::set_edge_sizes(double max_size)
 {
-    //cancel_all_updates();
-
     double min_size_value = std::numeric_limits<double>::max();
 	double max_size_value = std::numeric_limits<double>::min();
 
@@ -1111,7 +1109,6 @@ void Canvas3D::set_edge_sizes(double max_size)
 
 void Canvas3D::set_edge_labels(const QList<QString>& labels)
 {
-    //cancel_all_updates();
 	int i;
 	for (i = 0; i < labels.size(); ++i)
 	{
@@ -1167,6 +1164,97 @@ void Canvas3D::set_show_component_distances(bool show_component_distances)
 void Canvas3D::stop_optimization()
 {
     m_stop_optimization = true;
+}
+
+void Canvas3D::update()
+{
+    if (m_nodes.size() == 0)
+        return;
+
+    init_gl_extensions();
+
+    if (m_vbos_generated)
+    {
+        glDeleteBuffers(1, &m_vbo_edges);
+        glDeleteBuffers(1, &m_vbo_nodes);
+    }
+
+    // Build VBOs:
+    int needed_floats = m_edges.size() * 2 * 3;
+    float* vbo_edges_data = new float[needed_floats];
+    float* dest = vbo_edges_data;
+    memset(vbo_edges_data, 0, needed_floats * sizeof(float));
+    for (int i = 0; i < m_edges.size(); ++i)
+    {
+        Node3D* node = m_edges[i]->u();
+        *dest = node->x(); dest++;
+        *dest = node->y(); dest++;
+        *dest = node->z(); dest++;
+
+        node = m_edges[i]->v();
+        *dest = node->x(); dest++;
+        *dest = node->y(); dest++;
+        *dest = node->z(); dest++;
+    }
+
+    glGenBuffers(1, &m_vbo_edges);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_edges);
+    glBufferData(GL_ARRAY_BUFFER, needed_floats * sizeof(float), vbo_edges_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    delete [] vbo_edges_data;
+
+    // Similar for nodes:
+    needed_floats = m_nodes.size() * 3;
+    float* vbo_nodes_data = new float[needed_floats];
+    dest = vbo_nodes_data;
+    memset(vbo_nodes_data, 0, needed_floats * sizeof(float));
+    for (int i = 0; i < m_nodes.size(); ++i)
+    {
+        Node3D* node = m_nodes[i];
+        *dest = node->x(); dest++;
+        *dest = node->y(); dest++;
+        *dest = node->z(); dest++;
+    }
+
+    glGenBuffers(1, &m_vbo_nodes);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_nodes);
+    glBufferData(GL_ARRAY_BUFFER, needed_floats * sizeof(float), vbo_nodes_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    delete [] vbo_nodes_data;
+
+    m_vbos_generated = true;
+}
+
+void Canvas3D::draw_edges()
+{
+    if (!m_vbos_generated)
+        return;
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_edges);
+    int vertex_size = 3;
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glEnableVertexAttribArray(0);
+    glDrawArrays(GL_LINES, 0, m_edges.size() * 2);
+    glDisableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Canvas3D::draw_nodes()
+{
+    if (!m_vbos_generated)
+        return;
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_nodes);
+    int vertex_size = 3;
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    glEnableVertexAttribArray(0);
+    glDrawArrays(GL_POINTS, 0, m_nodes.size());
+    glDisableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 #include "canvas3d.moc"

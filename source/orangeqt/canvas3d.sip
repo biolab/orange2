@@ -9,7 +9,7 @@ public:
     Node3D(int index, int symbol, QColor color, int size);
     virtual ~Node3D();
 
-    void set_coordinates(double x, double y, double z=0.0);
+    void set_coordinates(double x, double y, double z=0.5);
     Triple<double, double, double> coordinates() const;
 
     void set_x(double x);
@@ -147,4 +147,9 @@ public:
     void stop_optimization();
 
     QRectF data_rect() const;
+
+    void update();
+    void draw_edges();
+    void draw_nodes();
+
 };
