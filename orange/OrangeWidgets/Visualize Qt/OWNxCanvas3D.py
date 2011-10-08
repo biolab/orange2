@@ -91,8 +91,6 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self.graph_margin = 1
 
         self._markers = []
-        self._edge_buffer = None
-        self._node_buffer = None
 
     def draw_callback(self):
         if not hasattr(self, '_edge_shader'):
@@ -124,7 +122,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self._edge_shader.setUniformValue('view', self.plot.view)
         self._edge_shader.setUniformValue('translation', self.plot.plot_translation)
         self._edge_shader.setUniformValue('scale', self.plot.plot_scale)
-        self._edge_buffer.draw(GL_LINES)
+        orangeqt.Canvas3D.draw_edges(self)
         self._edge_shader.release()
 
         glEnable(GL_PROGRAM_POINT_SIZE)
@@ -134,7 +132,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self._node_shader.setUniformValue('view', self.plot.view)
         self._node_shader.setUniformValue('translation', self.plot.plot_translation)
         self._node_shader.setUniformValue('scale', self.plot.plot_scale)
-        self._node_buffer.draw(GL_POINTS)
+        orangeqt.Canvas3D.draw_nodes(self)
         self._node_shader.release()
 
     def update_canvas(self):
@@ -659,12 +657,12 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
                                 components=components,
                                 progress_callback=progress_callback: 
                                     self.fragviz_callback(a, b, mds, mdsRefresh, components, progress_callback))
-        
+
         self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
-        
+
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
-        
+
         return 0
 
     def mds_callback(self, a, b, mds, mdsRefresh, progress_callback):
@@ -743,21 +741,6 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         return 0
 
     def update(self):
-        nodes = self.nodes()
-        edges = self.edges()
-        if len(nodes) == 0:
-            return
-
-        if self._edge_buffer != None:
-            del self._edge_buffer
-        if self._node_buffer != None:
-            del self._node_buffer
-
-        data = numpy.array([node.coordinates() for key, node in nodes.items()], dtype=numpy.float32).flatten()
-        data /= 1000. * 500.
-        self._node_buffer = VertexBuffer(data, [(3, GL_FLOAT)])
-        data = numpy.array([(edge.u().coordinates(), edge.v().coordinates()) for edge in edges], dtype=numpy.float32).flatten()
-        data /= 1000. * 500.
-        self._edge_buffer = VertexBuffer(data, [(3, GL_FLOAT)])
-
+        orangeqt.Canvas3D.update(self)
         self.plot.update()
+
