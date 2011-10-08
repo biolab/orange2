@@ -33,7 +33,7 @@ Learner and Classifier
 
 .. class:: Node
 
-    Classification trees are a a hierarchy of :obj:`Node` classes.
+    Classification trees are a hierarchy of :obj:`Node` classes.
 
     Node stores the instances belonging to the node, a branch selector,
     a list of branches (if the node is not a leaf) with their descriptions
@@ -102,13 +102,12 @@ Examples
 Tree Structure
 ==============
 
-This example works with the
-lenses data set:
+This example works with the lenses data set:
 
 .. literalinclude:: code/treestructure.py
    :lines: 7-10
 
-The next function counts the number of nodes in a tree:
+The following function counts the number of nodes in a tree:
 
 .. _lenses.tab: code/lenses.tab
 .. _treestructure.py: code/treestructure.py
@@ -116,53 +115,51 @@ The next function counts the number of nodes in a tree:
 .. literalinclude:: code/treestructure.py
    :lines: 12-21
 
-If node is None, we return 0. Otherwise, the size is 1 (this node)
-plus the sizes of all subtrees. We need to check if the node is an
-internal node (it has a :obj:`~Node.branch_selector`), as leaves don't have
-the :obj:`~Node.branches` attribute.
+If node is None, the function above return 0. Otherwise, the size is 1
+(this node) plus the sizes of all subtrees. The algorithm need to check
+if a node is internal (it has a :obj:`~Node.branch_selector`), as leaves
+don't have the :obj:`~Node.branches` attribute.
 
     >>> tree_size(tree_classifier.tree)
     10
 
-This was only an excercise - a :obj:`Node` already has a built-in
-method :func:`~Node.tree_size`.
+Note that a :obj:`Node` already has a built-in method
+:func:`~Node.tree_size`.
 
-Trees can be printed with a recursive function:
+Trees can be printed with a simple recursive function:
 
 .. literalinclude:: code/treestructure.py
    :lines: 26-41
 
 The crux of the example is not in the formatting (\\n's etc.);
-what matters is everything but the print statements.
-As first, we check whether the node is a null-node (a node to which no
-learning instances were classified). If this is so, we just print out
-"<null node>" and return.
+what matters is everything but the print statements. The code
+separately handles three node types:
 
-After handling null nodes, remaining nodes are internal nodes and
-leaves. For internal nodes, we print a node description consisting of
-the feature's name and distribution of classes. :obj:`Node`'s branch
-description is an instance of :obj:`~Orange.classification.Classifier`,
-and its ``class_var`` is the feature whose name is printed.
-Class distributions are printed as well (they are assumed to be strored). 
-Then we branch description for each branch and recursively call 
-:obj:`printTree0` with a level increased by 1 to increase the indent.
+* For null nodes (a node to which no learning instances were classified),
+  it just prints "<null node>".
+* For internal nodes, it print a node description:
+  the feature's name and distribution of classes. :obj:`Node`'s
+  branch description is an :obj:`~Orange.classification.Classifier`,
+  and its ``class_var`` is the feature whose name is printed.  Class
+  distributions are printed as well (they are assumed to be stored).
+  The :obj:`printTree0` with a level increased by 1 to increase the
+  indent is recursively called for each branch.
+* If the node is a leaf, it prints the distribution of learning instances
+  in the node and the class to which the instances in the node would
+  be classified. We assume that the :obj:`~Node.node_classifier` is a
+  :obj:`DefaultClassifier`. A better print function should be aware of
+  possible alternatives.
 
-Finally, if the node is a leaf, we print the distribution of learning
-instances in the node and the class to which the instances in the node
-would be classified. We assume that the :obj:`~Node.node_classifier` is
-a :obj:`DefaultClassifier`. A better print function
-should be aware of possible alternatives.
-
-The print-out function that accepts either a
+The wrapper function that accepts either a
 :obj:`TreeClassifier` or a :obj:`Node` can be written as follows:
 
 .. literalinclude:: code/treestructure.py
    :lines: 43-49
 
-It's fairly straightforward: if ``x`` is a
-:obj:`TreeClassifier`, we print ``x.tree``; if it's :obj:`Node` we
-just call ``printTree0`` with `x`. If it's of some other type,
-we raise an exception. The output::
+It's straightforward: if ``x`` is a
+:obj:`TreeClassifier`, it prints ``x.tree``; if it's :obj:`Node` it
+print ``x``. If it's of some other type,
+an exception is raised. The output::
 
     >>> print_tree(tree_classifier)
     tear_rate (<15.000, 5.000, 4.000>)
@@ -179,21 +176,20 @@ we raise an exception. The output::
           : myope --> hard (<0.000, 0.000, 3.000>)
           : hypermetrope --> none (<2.000, 0.000, 1.000>)
 
-The tree structure examples conclude with a simple pruning 
-function, written entirely in Python and unrelated to any :obj:`Pruner`. It 
-limits the maximal tree depth (the number of internal nodes on any path
-down the tree) given as an argument.  For example, to get a two-level
-tree, call cut_tree(root, 2). The function ise recursive,
-with the second argument (level) decreasing at each call; when zero,
-the current node will be made a leaf:
+The tree structure examples conclude with a simple pruning function,
+written entirely in Python and unrelated to any :class:`Pruner`. It limits
+the tree depth (the number of internal nodes on any path down the tree).
+For example, to get a two-level tree, call cut_tree(root, 2). The function
+is recursive, with the second argument (level) decreasing at each call;
+when zero, the current node will be made a leaf:
 
 .. literalinclude:: code/treestructure.py
    :lines: 54-62
 
-The function acts only when
-:obj:`node` and :obj:`node.branch_selector` are defined. If the level is
-not zero, is recursively calls  the function for each branch. Otherwise, it clears the
-selector, branches and branch descriptions.
+The function acts only when :obj:`node` and :obj:`node.branch_selector`
+are defined. If the level is not zero, is recursively calls  the function
+for each branch. Otherwise, it clears the selector, branches and branch
+descriptions.
 
     >>> cutTree(tree.tree, 2)
     >>> printTree(tree)
@@ -214,19 +210,20 @@ Let us construct a :obj:`TreeLearner` to play with:
 
 There are three crucial components in learning: the
 :obj:`~TreeLearner.split` and :obj:`~TreeLearner.stop` criteria, and the
-example :obj:`~TreeLearner.splitter`. The default ``stop`` is set with
+example :obj:`~TreeLearner.splitter`. The default ``stop`` is set with:
 
     >>> learner.stop = Orange.classification.tree.StopCriteria_common()
 
-and the default stopping parameters are
+The default stopping parameters are:
 
     >>> print learner.stop.max_majority, learner.stop.min_examples
     1.0 0.0
 
-The defaults keep splitting until there is
-nothing left to split or all the instances are in the same class.
-If the minimal subset that is allowed to be split further
-is set to five instances, the resulting tree is smaller.
+The defaults only stop splitting when no instances are left or all of
+them are in the same class.
+
+If the minimal subset that is allowed to be split further is set to five
+instances, the resulting tree is smaller.
 
     >>> learner.stop.min_instances = 5.0
     >>> tree = learner(data)
@@ -253,12 +250,12 @@ Redefining tree induction components
 
 This example shows how to use a custom stop function.  First, the
 ``def_stop`` function defines the default stop function. The first tree
-has some added randomness: the induction will also stop in 20% of the
+has some added randomness; the induction will also stop in 20% of the
 cases when ``def_stop`` returns False. The stopping criteria for the
 second tree is completely random: it stops induction in 20% of cases.
 Note that in the second case lambda function still has three parameters,
-since this is a necessary number of parameters for the stop function
-(:obj:`StopCriteria`).
+even though in does not need any, since so many are necessary
+for :obj:`~TreeLearner.stop`.
 
 .. _tree3.py: code/tree3.py
 
@@ -272,77 +269,66 @@ Learner and Classifier Components
 Split constructors
 =====================
 
-Split constructor find a suitable criteria for dividing the learning (and
-later testing) instances. Those that cannot handle a particular feature
-type (discrete, continuous) quitely skip them. Therefore use a correct
-split constructor for your dataset, or :obj:`SplitConstructor_Combined`
-that delegates features to specialized split constructors.
-
-The same split constructors can be both for classification and regression
-trees, if the 'measure' attribute for the :obj:`SplitConstructor_Score`
-class (and derived classes) is set accordingly.
-
 .. class:: SplitConstructor
 
-    Finds a suitable criteria for dividing the learning (and later
-    testing) instances. 
+    Decide how to divide the learning instances.
     
     The :obj:`SplitConstructor` should use the domain contingency when
-    possible, both because it's faster and because the contingency
+    possible, both for speed and because the contingency
     matrices are not necessarily constructed by simply counting the
     instances. There are, however, cases when domain contingency does not
     suffice; for example if ReliefF is used to score features.
 
-    :obj:`SplitConstructor` returns a classifier to be used as
-    :obj:`Node`'s :obj:`~Node.branch_selector`, a list of branch descriptions
-    a list with the number of instances that go into each branch
-    (if empty, the :obj:`TreeLearner` will find the number itself after
-    splitting the instances into subsets), a split quality (a number without
-    any fixed meaning except that higher numbers mean better splits).
+    A :obj:`SplitConstructor` can veto further tree induction by
+    returning no classifier. This is generall related to number of
+    instances in the branches. If there are no splits with more than
+    :obj:`SplitConstructor.min_subset` instances in the branches (null
+    nodes are allowed), the induction is stopped.
 
-    If the constructed splitting criterion uses a feature in such
-    a way that the feature will be useless in the future and should not be
-    considered as a split criterion in any of the subtrees (the typical
-    case of this are discrete features that are used as-they-are,
-    without any binarization or subsetting), then it should report
-    the index of this feature. Some splits do not spend any features;
-    this is indicated by returning a negative index.
+    Split constructors that cannot handle a particular feature type
+    (discrete, continuous) quietly skip them. Therefore use a correct
+    split constructor or :obj:`SplitConstructor_Combined`, which delegates
+    features to specialized split constructors.
 
-    A :obj:`SplitConstructor` can veto the further tree induction
-    by returning no classifier. This can happen for many reasons.
-    A general one is related to number of instances in the branches.
-    :obj:`SplitConstructor` has a field :obj:`min_subset`, which sets
-    the minimal number of instances in a branch; null nodes
-    are allowed. If there is no split where this condition is met,
-    :obj:`SplitConstructor` stops the induction.
+    The same split constructors can be used both for classification
+    and regression, if the 'measure' attribute for the
+    :obj:`SplitConstructor_Score` class (and derived classes) is set
+    accordingly.
+
 
     .. attribute:: min_subset
 
-        The minimal number of (weighted) in non-null leaves.
+        The minimal (weighted) number in non-null leaves.
 
-    .. method:: __call__(instances, [ weightID, contingency, apriori_distribution, candidates, clsfr]) 
+    .. method:: __call__(data, [ weightID, contingency, apriori_distribution, candidates, clsfr]) 
 
-        :param instances:  Examples can be given in any acceptable form
-            (an :obj:`ExampleGenerator`, such as :obj:`ExampleTable`, or a
-            list of instances).
+        :param data: in any acceptable form.
         :param weightID: Optional; the default of 0 means that all
             instances have a weight of 1.0. 
         :param contingency: a domain contingency
         :param apriori_distribution: apriori class probabilities.
         :type apriori_distribution: :obj:`Orange.statistics.distribution.Distribution`
-        :param candidates: The split constructor should consider only 
-            the features in the candidate list (one boolean for each
-            feature).
+        :param candidates: only consider these 
+            features (one boolean for each feature).
         :param clsfr: a node classifier (if it was constructed, that is, 
             if :obj:`store_node_classifier` is True) 
 
         Construct a split. Return a tuple (:obj:`branch_selector`,
-        :obj:`branch_descriptions`, :obj:`subset_sizes`, :obj:`quality`,
-        :obj:`spent_feature`). :obj:`spent_feature` is -1 if no
-        feature is completely spent by the split criterion. If no
-        split is constructed, the :obj:`selector`, :obj:`branch_descriptions`
-        and :obj:`subset_sizes` are None, while :obj:`quality` is 0.0 and
-        :obj:`spent_feature` is -1. 
+        :obj:`branch_descriptions` (a list), :obj:`subset_sizes`
+        (the number of instances for each branch, may also be
+        empty), :obj:`quality` (higher numbers mean better splits),
+        :obj:`spent_feature`). If no split is constructed,
+        the :obj:`selector`, :obj:`branch_descriptions` and
+        :obj:`subset_sizes` are None, while :obj:`quality` is 0.0 and
+        :obj:`spent_feature` is -1.
+
+        If the splitting criterion uses a feature in such a way that the
+        feature will be useless in the future and should not be considered
+        as a split criterion in any of the subtrees (the typical case of
+        this are discrete features that are used as-they-are, without
+        any binarization or subsetting), then it should return the
+        index of this feature. If no features are spent,
+        -1 is returned.
 
 .. class:: SplitConstructor_Score
 
