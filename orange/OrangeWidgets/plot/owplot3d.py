@@ -315,9 +315,20 @@ class OWPlot3D(orangeqt.Plot3D):
         self._use_opengl_3 = False
         self.hide_outside = False
         self.fade_outside = True
-        self.label_index = -1
 
         self.data = self.data_array = None
+        self.x_index = -1
+        self.y_index = -1
+        self.z_index = -1
+        self.label_index = -1
+        self.color_index = -1
+        self.symbol_index = -1
+        self.size_index = -1
+        self.colors = []
+        self.num_symbols_used = -1
+        self.x_discrete = False
+        self.y_discrete = False
+        self.z_discrete = False
 
         self.continuous_palette = ColorPaletteGenerator(numberOfColors=-1)
         self.discrete_palette = ColorPaletteGenerator()
@@ -463,7 +474,6 @@ class OWPlot3D(orangeqt.Plot3D):
         self.symbol_program.bindAttributeLocation('offset',   1)
         self.symbol_program.bindAttributeLocation('color',    2)
         self.symbol_program.bindAttributeLocation('normal',   3)
-        self.symbol_program.bindAttributeLocation('index',    4)
 
         if not self.symbol_program.link():
             print('Failed to link symbol shader!')

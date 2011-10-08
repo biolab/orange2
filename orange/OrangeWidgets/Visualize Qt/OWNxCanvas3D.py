@@ -1,15 +1,19 @@
-from plot.owplot3d import OWPlot3D
+from plot.owplot3d import OWPlot3D, GL_FLOAT, GL_LINES, GL_POINTS, glEnable, GL_PROGRAM_POINT_SIZE
+from plot.owopenglrenderer import VertexBuffer
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QVBoxLayout
+from PyQt4 import QtOpenGL
 import orangeqt
 import Orange
 import orange
 import numpy
 import math
+import os
 
 from orngScaleScatterPlotData import getVariableValueIndices
 
 class Node3D(orangeqt.Node3D):
+    # TODO: __slot__
     def __init__(self, index, x=None, y=None, z=None):
         orangeqt.Node3D.__init__(self, index, 0, Qt.blue, 5)
         if x is not None:
@@ -86,11 +90,55 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         self.title_margin = 0
         self.graph_margin = 1
 
+        self._markers = []
+        self._edge_buffer = None
+        self._node_buffer = None
+
     def draw_callback(self):
-        pass
+        if not hasattr(self, '_edge_shader'):
+            self._edge_shader = QtOpenGL.QGLShaderProgram()
+            self._edge_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+                os.path.join(os.path.dirname(__file__), 'edge.vs'))
+            self._edge_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Fragment,
+                os.path.join(os.path.dirname(__file__), 'edge.fs'))
+
+            self._edge_shader.bindAttributeLocation('position', 0)
+
+            if not self._edge_shader.link():
+                print('Failed to link edge shader!')
+
+            self._node_shader = QtOpenGL.QGLShaderProgram()
+            self._node_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Vertex,
+                os.path.join(os.path.dirname(__file__), 'node.vs'))
+            self._node_shader.addShaderFromSourceFile(QtOpenGL.QGLShader.Fragment,
+                os.path.join(os.path.dirname(__file__), 'node.fs'))
+
+            self._node_shader.bindAttributeLocation('position', 0)
+
+            if not self._node_shader.link():
+                print('Failed to link node shader!')
+
+        self._edge_shader.bind()
+        self._edge_shader.setUniformValue('projection', self.plot.projection)
+        self._edge_shader.setUniformValue('model', self.plot.model)
+        self._edge_shader.setUniformValue('view', self.plot.view)
+        self._edge_shader.setUniformValue('translation', self.plot.plot_translation)
+        self._edge_shader.setUniformValue('scale', self.plot.plot_scale)
+        self._edge_buffer.draw(GL_LINES)
+        self._edge_shader.release()
+
+        glEnable(GL_PROGRAM_POINT_SIZE)
+        self._node_shader.bind()
+        self._node_shader.setUniformValue('projection', self.plot.projection)
+        self._node_shader.setUniformValue('model', self.plot.model)
+        self._node_shader.setUniformValue('view', self.plot.view)
+        self._node_shader.setUniformValue('translation', self.plot.plot_translation)
+        self._node_shader.setUniformValue('scale', self.plot.plot_scale)
+        self._node_buffer.draw(GL_POINTS)
+        self._node_shader.release()
 
     def update_canvas(self):
-        self.draw_component_keywords()
+        self.update_component_keywords()
         self.update()
 
     def hide_selected_nodes(self):
@@ -141,8 +189,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             toMark = set(self.get_neighbors_upto(node.index(), self.mark_neighbors))
             orangeqt.Canvas3D.set_node_marks(self, dict((i, True) for i in toMark))
 
-    def draw_component_keywords(self):
-        #self.clear_markers()
+    def update_component_keywords(self):
         if self.show_component_attribute == None or self.graph is None or self.items is None:
             return
 
@@ -153,14 +200,18 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         components = Orange.network.nx.algorithms.components.connected_components(self.graph)
         nodes = self.nodes()
 
+        self._markers = []
+
         for c in components:
             if len(c) == 0:
                 continue
 
             x1 = sum(nodes[n].x() for n in c) / len(c)
             y1 = sum(nodes[n].y() for n in c) / len(c)
+            z1 = sum(nodes[n].z() for n in c) / len(c)
             lbl = str(self.items[c[0]][str(self.show_component_attribute)])
 
+            self._markers.append((lbl, x1, y1, z1))
             #self.add_marker(lbl, x1, y1, alignment=Qt.AlignCenter, size=self.font_size)
 
     def get_color_indices(self, table, attribute, palette):
@@ -169,7 +220,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         minValue = None
         maxValue = None
 
-        if attribute[0] != "(" or attribute[ -1] != ")":
+        if attribute[0] != "(" or attribute[-1] != ")":
             i = 0
             for var in table.domain.variables:
                 if var.name == attribute:
@@ -202,13 +253,13 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
 
         colorIndices, colorIndex, minValue, maxValue = self.get_color_indices(self.items, attribute, self.discPalette)
         colors = {}
-        
+
         if nodes is None:
             nodes = self.graph.nodes()
         
         if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
             colors.update((node, self.discPalette[0]) for node in nodes)
-        
+
         elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
             colors.update((v, self.contPalette[(float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)]) 
                           if str(self.items[v][colorIndex].value) != '?' else 
@@ -216,10 +267,10 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
 
         elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
             colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
-            
+
         else:
             colors.update((node, self.discPalette[0]) for node in nodes)
-        
+
         orangeqt.Canvas3D.set_node_colors(self, colors)
         self.update()
 
@@ -231,16 +282,16 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
 
         if attributes is not None:
             self.node_label_attributes = attributes
-        
+
         label_attributes = []
         if self.items is not None and isinstance(self.items, orange.ExampleTable):
             label_attributes = [self.items.domain[att] for att in \
                 self.node_label_attributes if att in self.items.domain]
-            
+
         indices = [[] for u in nodes]
         if self.show_indices:
             indices = [[str(u)] for u in nodes]
-            
+
         if self.trim_label_words > 0:
             orangeqt.Canvas3D.set_node_labels(self, dict((node, 
                 ', '.join(indices[i] + 
@@ -279,21 +330,21 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
     def set_edge_labels(self, attributes=None):
         if self.graph is None:
             return 
-        
+
         edges = self.edge_indices()
 
         if attributes is not None:
             self.edge_label_attributes = attributes
-        
+
         label_attributes = []
         if self.links is not None and isinstance(self.links, orange.ExampleTable):
             label_attributes = [self.links.domain[att] for att in \
                 self.edge_label_attributes if att in self.links.domain]
-            
+
         weights = [[] for ex in edges]
         if self.show_weights:
             weights = [["%.2f" % self.graph[u][v].get('weight', 1)] for u,v in edges]
-            
+
         orangeqt.Canvas3D.set_edge_labels(self,
             [', '.join(weights[i] + [str(self.links[i][att]) for att in label_attributes]) for i,edge in enumerate(edges)])
 
@@ -316,10 +367,10 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         add_nodes = list(new_nodes.difference(inter_nodes))
 
         self.graph = newgraph
-        
+
         if len(remove_nodes) == 0 and len(add_nodes) == 0:
             return False
-        
+
         current_nodes = self.nodes()
 
         def closest_nodes_with_pos(nodes):
@@ -330,7 +381,7 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             # checked all, none found            
             if len(neighbors-nodes) == 0:
                 return []
-            
+
             inter = old_nodes.intersection(neighbors)
             if len(inter) > 0:
                 return inter
@@ -373,19 +424,19 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         return True
 
     def set_graph(self, graph, curve=None, items=None, links=None):
-        #self.clear() # TODO which one?
         # TODO: clear previous nodes and edges?
 
         if graph is None:
             self.graph = None
-            #self.networkCurve = None
             self.items = None
             self.links = None
             xMin = -1.0
             xMax = 1.0
             yMin = -1.0
             yMax = 1.0
-            #self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment=Qt.AlignCenter, size=self.font_size)
+            zMin = -1.0
+            zMax = 1.0
+            self._markers.append(('no network', (xMax - xMin) / 2, (yMax - yMin) / 2, (zMax - zMin) / 2))
             self.update()
             return
 
@@ -477,7 +528,6 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
             nodes = self.nodes()
             
             for i, component in enumerate(components):    
-                
                 if len(mds.points) == len(components):  # if average linkage before
                     x_avg_mds = mds.points[i][0]
                     y_avg_mds = mds.points[i][1]
@@ -556,36 +606,36 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         #rotationOnly = False
         minStressDelta = 0
         mdsRefresh = int(steps / 20)
-        
+
         self.mdsStep = 1
         self.stopMDS = False
-        
+
         components = Orange.network.nx.algorithms.components.connected.connected_components(graph)
         distances.matrixType = Orange.core.SymMatrix.Symmetric
-        
+
         # scale net coordinates
         if avgLinkage:
             distances = distances.avgLinkage(components)
-            
+
         mds = Orange.projection.mds.MDS(distances)
         mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
         rect = self.data_rect()
         w_fr = rect.width()
         h_fr = rect.height()
         d_fr = math.sqrt(w_fr**2 + h_fr**2)
-      
+
         x_mds = [mds.points[u][0] for u in range(len(mds.points))]
         y_mds = [mds.points[u][1] for u in range(len(mds.points))]
         w_mds = max(x_mds) - min(x_mds)
         h_mds = max(y_mds) - min(y_mds)
         d_mds = math.sqrt(w_mds**2 + h_mds**2)
-        
+
         self.set_node_coordinates(dict(
            (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
-        
+
         self.update()
         qApp.processEvents()
-                     
+
         if opt_from_curr:
             if avgLinkage:
                 for u, c in enumerate(components):
@@ -615,23 +665,21 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
         
-        #p.animate_points = animate_points
         return 0
 
     def mds_callback(self, a, b, mds, mdsRefresh, progress_callback):
         """Refresh the UI when running  MDS."""
-        
+
         if not self.mdsStep % mdsRefresh:
             self.set_node_coordinates(dict((u, (mds.points[u][0], \
                                                 mds.points[u][1])) for u in \
                                            range(len(mds.points))))
-            #self.plot().replot()
             self.update()
             qApp.processEvents()
-            
+
             if progress_callback is not None:
-                progress_callback(a, self.mdsStep) 
-            
+                progress_callback(a, self.mdsStep)
+
         self.mdsStep += 1
         return 0 if self.stopMDS else 1
 
@@ -640,19 +688,17 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         them.
         """
         nodes = self.nodes()
-        
+
         if distances == None or distances.dim != len(nodes):
             self.information('invalid or no distance matrix')
             return 1
-        
-        #p = self.plot()
-        
+
         minStressDelta = 0
         mdsRefresh = int(steps / 20)
-        
+
         self.mdsStep = 1
         self.stopMDS = False
-        
+
         distances.matrixType = Orange.core.SymMatrix.Symmetric
         mds = Orange.projection.mds.MDS(distances)
         mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
@@ -660,22 +706,19 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         w_fr = rect.width()
         h_fr = rect.height()
         d_fr = math.sqrt(w_fr**2 + h_fr**2)
-      
+
         x_mds = [mds.points[u][0] for u in range(len(mds.points))]
         y_mds = [mds.points[u][1] for u in range(len(mds.points))]
         w_mds = max(x_mds) - min(x_mds)
         h_mds = max(y_mds) - min(y_mds)
         d_mds = math.sqrt(w_mds**2 + h_mds**2)
-        
-        #animate_points = p.animate_points
-        #p.animate_points = False
-        
+
         self.set_node_coordinates(dict(
            (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
-        
+
         self.update()
         qApp.processEvents()
-                     
+
         if opt_from_curr:
             for i,u in enumerate(sorted(nodes.iterkeys())):
                 mds.points[i][0] = nodes[u].x()
@@ -691,13 +734,30 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
                                 mdsRefresh=mdsRefresh,
                                 progress_callback=progress_callback: 
                                     self.mds_callback(a, b, mds, mdsRefresh, progress_callback))
-        
+
         self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, progress_callback)
-        
+
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
-        
+
         return 0
 
     def update(self):
+        nodes = self.nodes()
+        edges = self.edges()
+        if len(nodes) == 0:
+            return
+
+        if self._edge_buffer != None:
+            del self._edge_buffer
+        if self._node_buffer != None:
+            del self._node_buffer
+
+        data = numpy.array([node.coordinates() for key, node in nodes.items()], dtype=numpy.float32).flatten()
+        data /= 1000. * 500.
+        self._node_buffer = VertexBuffer(data, [(3, GL_FLOAT)])
+        data = numpy.array([(edge.u().coordinates(), edge.v().coordinates()) for edge in edges], dtype=numpy.float32).flatten()
+        data /= 1000. * 500.
+        self._edge_buffer = VertexBuffer(data, [(3, GL_FLOAT)])
+
         self.plot.update()
