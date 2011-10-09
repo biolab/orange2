@@ -116,9 +116,6 @@ void Plot3D::update_data(int x_index, int y_index, int z_index,
     int sib_unselected = 0;
     int sib_edges      = 0;
 
-    if (num_examples > 10*1000)
-        use_2d_symbols = true;
-
     QMap<int, QList<QVector3D> >& geometry =       use_2d_symbols ? geometry_data_2d       : geometry_data_3d;
     QMap<int, QList<QVector3D> >& geometry_edges = use_2d_symbols ? geometry_data_edges_2d : geometry_data_edges_3d;
 
