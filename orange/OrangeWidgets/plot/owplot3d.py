@@ -799,6 +799,9 @@ class OWPlot3D(orangeqt.Plot3D):
         self.z_discrete = z_discrete
         self.label_index = label_index
 
+        if self.num_examples > 10*1000:
+            self.use_2d_symbols = True
+
         if self._use_opengl_3:
             # Re-run generating program (geometry shader), store
             # results through transform feedback into a VBO on the GPU.
