@@ -10,7 +10,6 @@ from OWWidget import *
 from plot.owplot3d import *
 from plot.owtheme import ScatterLightTheme, ScatterDarkTheme
 from plot import OWPoint
-from plot.primitives import normalize, normal_from_points
 
 import orange
 Discrete = orange.VarTypes.Discrete
@@ -647,7 +646,9 @@ class OWScatterPlot3D(OWWidget):
                       tooltip='Change mouse sensitivity')
 
         gui = self.plot.gui
-        self.zoom_select_toolbar = gui.zoom_select_toolbar(self.main_tab, buttons=gui.default_zoom_select_buttons)
+        buttons = gui.default_zoom_select_buttons
+        buttons.insert(2, (gui.UserButton, 'Rotate', 'state', ROTATING, None, 'Dlg_undo'))
+        self.zoom_select_toolbar = gui.zoom_select_toolbar(self.main_tab, buttons=buttons)
         self.connect(self.zoom_select_toolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.send_selection)
         self.connect(self.zoom_select_toolbar.buttons[gui.Zoom], SIGNAL("clicked()"), self.plot.unselect_all_points)
         self.plot.set_selection_behavior(OWPlot.ReplaceSelection)

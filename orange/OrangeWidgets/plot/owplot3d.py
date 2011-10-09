@@ -26,7 +26,7 @@ from owtheme import PlotTheme
 from owplot import OWPlot
 from owlegend import OWLegend, OWLegendItem, OWLegendTitle, OWLegendGradient
 from owopenglrenderer import OWOpenGLRenderer
-from owconstants import ZOOMING, PANNING
+from owconstants import ZOOMING, PANNING, ROTATING
 
 from OWColorPalette import ColorPaletteGenerator
 
@@ -1067,7 +1067,7 @@ class OWPlot3D(orangeqt.Plot3D):
                 self._state = PlotState.DRAGGING_LEGEND
             elif self.state == PANNING:
                 self._state = PlotState.PANNING
-            elif QApplication.keyboardModifiers() & Qt.ShiftModifier:
+            elif self.state == ROTATING or QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 self._state = PlotState.ROTATING
             else:
                 self._state = PlotState.SELECTING

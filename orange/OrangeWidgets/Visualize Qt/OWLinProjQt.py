@@ -165,7 +165,10 @@ class OWLinProjQt(OWVisWidget):
 
         if "3d" in name_lower:
             toolbar_buttons = [
-                gui.Select,
+                gui.StateButtonsBegin,
+                    (gui.UserButton, 'Rotate', 'state', ROTATING, None, 'Dlg_undo'),
+                    gui.Select,
+                gui.StateButtonsEnd,
                 gui.Spacing,
                 gui.SendSelection,
                 gui.ClearSelection
