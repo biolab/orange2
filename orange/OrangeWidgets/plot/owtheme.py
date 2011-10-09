@@ -4,12 +4,12 @@ class PlotTheme(object):
     '''Collection of color and font settings.'''
 
     def __init__(self):
-        self.labels_font = QFont('Helvetice', 10)
+        self.labels_font = QFont('Verdana', 10)
         self.helper_font = self.labels_font
         self.helpers_color = QColor(0, 0, 0, 255)
         self.background_color = QColor(255, 255, 255, 255)
-        self.axis_title_font = QFont('Helvetica', 11, QFont.Bold)
-        self.axis_font = QFont('Helvetica', 10)
+        self.axis_title_font = QFont('Verdana', 11, QFont.Bold)
+        self.axis_font = QFont('Verdana', 10)
         self.labels_color = QColor(0, 0, 0, 255)
         self.axis_color = QColor(30, 30, 30, 255)
         self.axis_values_color = QColor(30, 30, 30, 255)
