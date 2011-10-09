@@ -4,7 +4,7 @@ class PlotTheme(object):
     '''Collection of color and font settings.'''
 
     def __init__(self):
-        self.labels_font = QFont('Helvetice', 9)
+        self.labels_font = QFont('Helvetice', 10)
         self.helper_font = self.labels_font
         self.helpers_color = QColor(0, 0, 0, 255)
         self.background_color = QColor(255, 255, 255, 255)
