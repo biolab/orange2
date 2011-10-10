@@ -2107,16 +2107,38 @@ PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstup
 
   PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 
+  // Try to find the file in the doc/datasets directory
   PyObject *configurationModule = PyImport_ImportModule("orngConfiguration");
   if (configurationModule) {
     PyObject *datasetsPath = PyDict_GetItemString(PyModule_GetDict(configurationModule), "datasetsPath");
     if (datasetsPath)
       res = loadDataFromFilePath(type, filename, argstuple, keywords, generatorOnly, PyString_AsString(datasetsPath));
-      Py_DECREF(configurationModule);
+    Py_DECREF(configurationModule);
   }
   else {
     PyErr_Clear();
   }
+
+  // Try fo find the file using Orange.data.io.find_file
+  PyObject *ioModule = PyImport_ImportModule("Orange.data.io");
+  if (ioModule) {
+	  PyObject *find_file = PyObject_GetAttrString(ioModule, "find_file");
+	  if (find_file){
+		  PyObject *py_args = Py_BuildValue("(s)", filename);
+		  PyObject *ex_filename = PyObject_Call(find_file, py_args, NULL);
+		  if (ex_filename && PyString_Check(ex_filename)){
+			  res = loadDataFromFileNoSearch(type, PyString_AsString(ex_filename), argstuple, keywords, generatorOnly);
+			  Py_DECREF(ex_filename);
+		  }
+		  else
+			  PyErr_Clear();
+		  Py_DECREF(py_args);
+		  Py_DECREF(find_file);
+	  }
+	  Py_DECREF(ioModule);
+  }
+  if (!res)
+	  PyErr_Clear();
 
   if (!res) {
     res = loadDataFromFilePath(type, filename, argstuple, keywords, generatorOnly, getenv("ORANGE_DATA_PATH"));

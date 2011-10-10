@@ -740,3 +740,168 @@ register_file_type("Weka", loadARFF, toARFF, ".arff")
 register_file_type("libSVM", loadLibSVM, toLibSVM, ".svm")
 
 registerFileType = Orange.misc.deprecated_function_name(register_file_type)
+
+#__doc__ +=  \
+"""\
+Search Paths
+============
+
+Associate a prefix with a search path for easier data loading.
+The paths can be stored in a user specific file.
+
+Example ::
+
+    >>> import Orange, os
+    >>> from Orange.data import io
+    >>> io.set_search_path("my_datasets",
+    ...                     os.path.expanduser("~/Documents/My Datasets"))
+    ...                     persistent=True)
+    ...
+    
+    >>> data = Orange.data.Table("mydatasets:dataset1.tab")
+
+
+.. autofunction:: set_search_path
+
+.. autofunction:: search_paths
+
+.. autofunction:: persistent_search_paths
+
+.. autofunction:: find_file
+
+.. autofunction:: expand_filename
+
+"""
+# Non-persistent registered paths
+_session_paths = []
+
+import ConfigParser
+from ConfigParser import SafeConfigParser
+
+@Orange.misc.lru_cache(maxsize=1)
+def persistent_search_paths():
+    """ Return a list of persistent registered (prefix, path) pairs
+    """
+    
+    global_settings_dir = Orange.misc.environ.install_dir
+    user_settings_dir = Orange.misc.environ.orange_settings_dir
+    parser = SafeConfigParser()
+    parser.read([os.path.join(global_settings_dir, "orange-search-paths.cfg"),
+                 os.path.join(user_settings_dir, "orange-search-paths.cfg")])
+    try:
+        items = parser.items("paths")
+        defaults = parser.defaults().items()
+        items = [i for i in items if i not in defaults]
+    except ConfigParser.NoSectionError:
+        items = []
+    return items
+
+def save_persistent_search_path(prefix, path):
+    """ Save the prefix, path pair. If path is None delete the 
+    registered prefix.
+    
+    """
+    if isinstance(path, list):
+        path = os.path.pathsep.join(path)
+        
+    user_settings_dir = Orange.misc.environ.orange_settings_dir
+    if not os.path.exists(user_settings_dir):
+        try:
+            os.makedirs(user_settings_dir)
+        except OSError:
+            pass
+    
+    filename = os.path.join(user_settings_dir, "orange-search-paths.cfg")
+    parser = SafeConfigParser()
+    parser.read([filename])
+    
+    if not parser.has_section("paths"):
+        parser.add_section("paths")
+        
+    if path is not None:
+        parser.set("paths", prefix, path)
+    elif parser.has_option("paths", prefix):
+        # Remove the registered prefix 
+        parser.remove_option("paths", prefix)
+    parser.write(open(filename, "wb"))
+    
+def search_paths(prefix=None):
+    """ Return a list of the registered (prefix, path) pairs.
+    """
+    persistent_paths = persistent_search_paths()
+    paths = _session_paths + persistent_paths
+    if prefix is not None:
+        for pref, path in paths:
+            if pref == prefix:
+                return path
+        return ""
+    else:
+        return paths
+    
+def set_search_path(prefix, path, persistent=False):
+    """ Associate a search path with a prefix.
+    
+    :param prefix: a prefix
+    :type prefix: str
+    
+    :param path: search path (can also be a list of path strings)
+    :type paths: str
+    
+    :param persistent: if True then the prefix-paths pair will be 
+        saved between sessions (default False).
+    :type persistent: bool 
+    
+    """
+    global _session_paths
+    
+    if isinstance(path, list):
+        path = os.path.pathsep.join(path)
+        
+    if persistent:
+        save_persistent_search_path(prefix, path)
+        # Invalidate the persistent_search_paths cache.
+        persistent_search_paths.clear()
+    else:
+        _session_paths.append((prefix, path))
+        
+
+def expand_filename(prefixed_name):
+    """ Expand the prefixed filename with the full path.
+    ::
+        
+        >>> from Orange.data import io
+        >>> io.set_search_paths("docs", "/Users/aleserjavec/Documents")
+        >>> io.expand_filename("docs:my_tab_file.tab")
+        '/Users/aleserjavec/Documents/my_tab_file.tab'
+        
+        
+    """
+    print "expand", prefixed_name
+    prefix, filename = prefixed_name.split(":", 1) #TODO: windows drive letters.
+    paths = search_paths(prefix)
+    if paths:
+        path = paths.split(os.path.pathsep, 1)[0]
+        return os.path.join(path, filename)
+    else:
+        raise ValueError("Unknown prefix %r." % prefix)
+    
+def find_file(prefixed_name):
+    """ Find the prefixed filename and return its full path.
+    """
+    print "find", prefixed_name
+    if not os.path.exists(prefixed_name):
+        if ":" not in prefixed_name:
+            raise ValueError("Not a prefixed name.") 
+        prefix, filename = prefixed_name.split(":", 1) 
+        paths = search_paths(prefix)
+        if paths:
+            for path in paths.split(os.path.pathsep):
+                if os.path.exists(os.path.join(path, filename)):
+                    return os.path.join(path, filename)
+            raise ValueError("No file %r on prefixed search path %r." % \
+                             (filename, paths))
+        else:
+            raise ValueError("Unknown prefix %r." % prefix)
+    else:
+        return prefixed_name
+    
