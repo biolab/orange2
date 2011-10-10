@@ -1,3 +1,91 @@
+"""\
+*****************
+Data I/O (``io``)
+*****************
+
+Import/Export
+=============
+
+This module contains the functions for importing and exporting Orange
+data tables from/to different file formats. This works by associating
+a filename extension with a set of loading/saving functions using
+:obj:`register_file_type`.
+
+Support for some formats is already implemented:  
+    
+    - Weka `.arff` format
+    - C4.5 `.data/.names` format
+    - LibSVM data format
+    - R `.R` data frame source (export only)
+
+
+.. function:: register_file_type(format_name, load_func, save_func, extension)
+
+    Register the ``save_func``, ``load_func`` pair for the 
+    ``format_name``. The format is identified by the ``extension``.
+    
+    :param format_name: the name of the format.
+    :type format_name: str
+    
+    :param load_func: a function used for loading the data (see 
+        :ref:`custom-formats` for details)
+    :type load_func: function
+    
+    :param save_func: a function used for saving the data (see 
+        :ref:`custom-formats` for details)
+    :type save_func: function
+    
+    :param extension: the file extension associated with this format 
+        (e.g. '.myformat'). This can be a list of extension if the 
+        format uses multiple extensions (for instance the 
+        `.data` and `.names` file pairs in the C4.5 format)
+    
+    Example from the :obj:`~Orange.data.io` module that registers the Weka .arff 
+    format ::
+        
+        register_file_type("Weka", load_ARFF, to_ARFF, ".arff")
+        
+``load_func`` or ``save_func`` can be None, indicating that the
+corresponding functionality is not supported.
+ 
+Loading and saving from/to custom formats then works the same way as
+the standard Orange `.tab` file but with a different filename
+extension. ::
+
+    >>> import Orange
+    >>> data = Orange.data.Table("iris.arff")
+    >>> data.save("Copy of iris.arff")
+  
+    
+
+.. _custom-formats:
+
+Implementing custom import/export functions.
+--------------------------------------------
+
+The signature for the custom load functions should be
+
+``load_myformat(filename, create_new_on=Variable.MakeStatus.NoRecognizedValues, **kwargs)``
+    
+When constructing variables :obj:`Orange.data.variable.make` should 
+be used with the ``create_new_on`` parameter. 
+:obj:`~Orange.data.variable.make` will return an attribute and the 
+status of the variable, telling whether a new attribute was created 
+or the old one reused and why (see :mod:`Orange.data.variable`). 
+Additional keyword arguments can be provided in the call to 
+:obj:`~Orange.data.Table` constructor. These will be passed in the 
+``**kwargs``. 
+The function should return the build :obj:`~Orange.data.Table` object.
+For examples see the source code for the ``Orange.data.io`` module
+
+The save function is easier to implement.
+
+``save_myformat(filename, table, **kwargs)``
+
+Similar as above the ``**kwargs`` contains any additional arguments
+:obj:`~Orange.data.Table.save`.
+  
+"""
 import os
 
 import Orange
@@ -5,7 +93,8 @@ import Orange.data.variable
 import Orange.misc
 from Orange.core import \
      BasketFeeder, FileExampleGenerator, BasketExampleGenerator, \
-     C45ExampleGenerator, TabDelimExampleGenerator, registerFileType
+     C45ExampleGenerator, TabDelimExampleGenerator, \
+     registerFileType as register_file_type
 
 from Orange.data import variable
 from Orange.data.variable import Variable
@@ -645,9 +734,9 @@ def save_csv(file, table, orange_specific=True, **kwargs):
         writer.writerow(instance)
     
         
-
-registerFileType("R", None, toR, ".R")
-registerFileType("Weka", loadARFF, toARFF, ".arff")
+register_file_type("R", None, toR, ".R")
+register_file_type("Weka", loadARFF, toARFF, ".arff")
 #registerFileType("C50", None, toC50, [".names", ".data", ".test"])
-registerFileType("libSVM", loadLibSVM, toLibSVM, ".svm")
- 
+register_file_type("libSVM", loadLibSVM, toLibSVM, ".svm")
+
+registerFileType = Orange.misc.deprecated_function_name(register_file_type)
