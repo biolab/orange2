@@ -329,8 +329,7 @@ class OWDistanceMap(OWWidget):
 
             for i in tmp:
                 if self.distanceMapConstructor.order:
-                    if not (self.distanceMapConstructor.order[i] in selectedIndices):
-                        selectedIndices += [self.distanceMapConstructor.order[i]]
+                    i = self.distanceMapConstructor.order[i]
 
                 if not (i in selectedIndices):
                     selectedIndices += [i]
