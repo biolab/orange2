@@ -1179,7 +1179,6 @@ void Canvas3D::update()
         glDeleteBuffers(1, &m_vbo_nodes);
     }
 
-    // Build VBOs:
     int needed_floats = m_edges.size() * 2 * 3;
     float* vbo_edges_data = new float[needed_floats];
     float* dest = vbo_edges_data;
@@ -1205,16 +1204,50 @@ void Canvas3D::update()
     delete [] vbo_edges_data;
 
     // Similar for nodes:
-    needed_floats = m_nodes.size() * 3;
+    // vec3 location
+    // vec3 offset
+    // vec3 color
+    // vec2 selected_marked
+    //
+    // 6 vertices (2 triangles)
+    needed_floats = m_nodes.size() * (3+3+3+2) * 6;
     float* vbo_nodes_data = new float[needed_floats];
     dest = vbo_nodes_data;
     memset(vbo_nodes_data, 0, needed_floats * sizeof(float));
+    // 2D rectangle offsets (2 triangles)
+    const float x_offsets[] = {-0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f};
+    const float y_offsets[] = {-0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f};
+
     for (int i = 0; i < m_nodes.size(); ++i)
     {
         Node3D* node = m_nodes[i];
-        *dest = node->x(); dest++;
-        *dest = node->y(); dest++;
-        *dest = node->z(); dest++;
+        QColor color = node->color();
+        float x = node->x();
+        float y = node->y();
+        float z = node->z();
+        float red = color.red() / 255.f;
+        float green = color.green() / 255.f;
+        float blue = color.blue() / 255.f;
+        float selected = node->selected() ? 1.f : 0.f;
+        float marked = node->marked() ? 1.f : 0.f;
+
+        for (int v = 0; v < 6; ++v)
+        {
+            *dest = x; dest++;
+            *dest = y; dest++;
+            *dest = z; dest++;
+
+            *dest = x_offsets[v]; dest++;
+            *dest = y_offsets[v]; dest++;
+            *dest = 0.f; dest++;
+
+            *dest = red; dest++;
+            *dest = green; dest++;
+            *dest = blue; dest++;
+
+            *dest = selected; dest++;
+            *dest = marked; dest++;
+        }
     }
 
     glGenBuffers(1, &m_vbo_nodes);
@@ -1248,11 +1281,20 @@ void Canvas3D::draw_nodes()
         return;
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_nodes);
-    int vertex_size = 3;
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size*4, BUFFER_OFFSET(0));
+    int vertex_size = (3+3+3+2)*4;
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size, BUFFER_OFFSET(0));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_size, BUFFER_OFFSET(3*4));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertex_size, BUFFER_OFFSET(6*4));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vertex_size, BUFFER_OFFSET(9*4));
     glEnableVertexAttribArray(0);
-    glDrawArrays(GL_POINTS, 0, m_nodes.size());
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    glDrawArrays(GL_TRIANGLES, 0, m_nodes.size() * 6);
     glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glDisableVertexAttribArray(3);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
