@@ -13,9 +13,6 @@
 SCRIPT_DIR=`dirname $0 | xargs readlink -e`
 ADDONS_DIR="$SCRIPT_DIR/add-ons"
 ORANGE_DIR="$SCRIPT_DIR/orange"
-TARGET="/mnt/biolab/add-ons"
-
-mount $TARGET
 
 # Update the core orange (we need the orngAddOns.py to make a package).
 cd "$ORANGE_DIR"
@@ -38,5 +35,3 @@ for ADDON in * ; do
       fi
   fi
 done
-
-umount $TARGET

@@ -10,5 +10,10 @@
   echo "=== `date` ==="
   cd `dirname $0`
   ./update-scripts.sh
+  export TARGET="/mnt/biolab/add-ons"
+  mount $TARGET
+  sleep 5
   ./pack-addons.sh
+  sleep 5
+  umount $TARGET
 ) >> /var/log/update-and-run.log
