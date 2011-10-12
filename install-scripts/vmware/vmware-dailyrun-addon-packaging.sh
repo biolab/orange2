@@ -4,7 +4,7 @@
 #
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
-VMIMAGE='/Volumes/Data/vmware/Orange\ Add-on\ Packaging/Orange\ Add-on\ Packaging.vmx'
+VMIMAGE='/Volumes/Data/vmware/Orange Add-on Packaging/Orange Add-on Packaging.vmx'
 WAIT_START_TIME=300
 WAIT_STOP_TIME=600
 IP_ADDRESS='172.16.213.134'
