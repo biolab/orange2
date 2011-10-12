@@ -16,4 +16,4 @@
   ./pack-addons.sh
   sleep 5
   umount $TARGET
-) 2>&1 >> /var/log/update-and-run.log
+) >> /var/log/update-and-run.log 2>&1
