@@ -19,7 +19,7 @@ start_vmware() {
     fi
     
     # We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
-    "$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | grep -i -v 'kCGErrorFailure'
+    "$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | grep -i -v 'kCGErrorFailure' || true
     ps=("${PIPESTATUS[@]}")
     # PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
     if ((${ps[0]})); then
