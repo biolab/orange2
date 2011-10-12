@@ -8,7 +8,6 @@
 
 (
   echo "=== `date` ==="
-  sleep 120
   cd `dirname $0`
   ./update-scripts.sh
   ./pack-addons.sh
