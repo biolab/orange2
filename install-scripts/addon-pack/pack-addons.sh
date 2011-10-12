@@ -11,8 +11,8 @@
 #
 
 SCRIPT_DIR=`dirname $0 | xargs readlink -e`
-ADDONS_DIR="$SCRIPT_DIR/../add-ons"
-ORANGE_DIR="$SCRIPT_DIR/../orange"
+ADDONS_DIR="$SCRIPT_DIR/add-ons"
+ORANGE_DIR="$SCRIPT_DIR/orange"
 TARGET="/mnt/biolab/add-ons"
 
 mount $TARGET
