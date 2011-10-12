@@ -6,5 +6,5 @@
 # This script updates all packing scripts (including itself) from the SVN.
 #
 
-cd /home/orange/scripts
+cd /root
 svn up
