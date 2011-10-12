@@ -112,6 +112,9 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
                 os.path.join(os.path.dirname(__file__), 'node.fs'))
 
             self._node_shader.bindAttributeLocation('position', 0)
+            self._node_shader.bindAttributeLocation('offset', 1)
+            self._node_shader.bindAttributeLocation('color', 2)
+            self._node_shader.bindAttributeLocation('selected_marked', 3)
 
             if not self._node_shader.link():
                 print('Failed to link node shader!')
@@ -125,13 +128,13 @@ class OWNxCanvas3D(orangeqt.Canvas3D):
         orangeqt.Canvas3D.draw_edges(self)
         self._edge_shader.release()
 
-        glEnable(GL_PROGRAM_POINT_SIZE)
         self._node_shader.bind()
         self._node_shader.setUniformValue('projection', self.plot.projection)
         self._node_shader.setUniformValue('model', self.plot.model)
         self._node_shader.setUniformValue('view', self.plot.view)
         self._node_shader.setUniformValue('translation', self.plot.plot_translation)
         self._node_shader.setUniformValue('scale', self.plot.plot_scale)
+        self._node_shader.setUniformValue('mode', 0.)
         orangeqt.Canvas3D.draw_nodes(self)
         self._node_shader.release()
 
