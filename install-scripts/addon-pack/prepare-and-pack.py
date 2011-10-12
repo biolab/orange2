@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-sys.path += ["/home/orange/orange"]
+sys.path += ["/root/orange"]
 
 import Orange.misc.addons
 rao = Orange.misc.addons.OrangeRegisteredAddOn(None, sys.argv[1])

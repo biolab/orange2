@@ -12,5 +12,4 @@
   cd `dirname $0`
   ./update-scripts.sh
   ./pack-addons.sh
-  poweroff
 ) >> /var/log/update-and-run.log

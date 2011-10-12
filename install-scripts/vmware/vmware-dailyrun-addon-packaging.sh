@@ -43,4 +43,7 @@ stop_vmware() {
 }
 
 start_vmware
-#stop_vmware
+
+ssh root@$IP_ADDRESS "/root/update-and-run.sh"
+
+stop_vmware
