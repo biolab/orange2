@@ -5,41 +5,53 @@
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
 VMIMAGE='/Volumes/Data/vmware/Orange\ Add-on\ Packaging/Orange\ Add-on\ Packaging.vmx'
-WAIT_TIME=3600
+WAIT_START_TIME=300
+WAIT_STOP_TIME=600
+IP_ADDRESS='172.16.213.134'
 NAME='Orange Add-on Packaging'
 
-# Sets error handler
-trap "echo \"Script failed\"" ERR
+# We use public/private keys SSH authentication so no need for a password
 
 start_vmware() {
-	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "[$NAME] VMware is already running."
-		exit 1
-	fi
-	
-	# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
-	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | grep -i -v 'kCGErrorFailure' | true
-	# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-	# (which would be otherwise checked because of the -e switch, with true at the end of the pipe we ignore it)
-	if ((${PIPESTATUS[0]})); then false; fi
-
-	return 0
+    if "$VMRUN" list | grep -q "$VMIMAGE"; then
+        echo "[$NAME] VMware is already running."
+        exit 1
+    fi
+    
+    # We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
+    "$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | grep -i -v 'kCGErrorFailure'
+    ps=("${PIPESTATUS[@]}")
+    # PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
+    if ((${ps[0]})); then
+        echo "[$NAME] Could not start VMware."
+        exit 2
+    fi
+    
+    # Wait for VMware and OS to start
+    sleep $WAIT_START_TIME
+    
+    return 0
 }
 
 stop_vmware() {
-	# Wait for VMware and OS to start
-	sleep $WAIT_TIME
-	
-	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "[$NAME] Had to force shutdown."
-		# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
-		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | grep -i -v 'kCGErrorFailure' | true
-		# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-		# (which would be otherwise checked because of the -e switch, with true at the end of the pipe we ignore it)
-		if ((${PIPESTATUS[0]})); then false; fi
-	fi
-	
-	return 0
+    ssh root@$IP_ADDRESS "/sbin/shutdown -h now > /dev/null"
+    
+    # Wait for OS to stop
+    sleep $WAIT_STOP_TIME
+    
+    if "$VMRUN" list | grep -q "$VMIMAGE"; then
+        echo "[$NAME] Have to force shutdown."
+        # We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
+        "$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | grep -i -v 'kCGErrorFailure' | true
+        ps=("${PIPESTATUS[@]}")
+        # PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
+        if ((${ps[0]})); then
+            echo "[$NAME] Could not stop VMware."
+            exit 3
+        fi
+    fi
+    
+    return 0
 }
 
 start_vmware
