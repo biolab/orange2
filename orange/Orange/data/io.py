@@ -876,7 +876,6 @@ def expand_filename(prefixed_name):
         
         
     """
-    print "expand", prefixed_name
     prefix, filename = prefixed_name.split(":", 1) #TODO: windows drive letters.
     paths = search_paths(prefix)
     if paths:
@@ -888,7 +887,6 @@ def expand_filename(prefixed_name):
 def find_file(prefixed_name):
     """ Find the prefixed filename and return its full path.
     """
-    print "find", prefixed_name
     if not os.path.exists(prefixed_name):
         if ":" not in prefixed_name:
             raise ValueError("Not a prefixed name.") 

@@ -2119,23 +2119,24 @@ PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstup
     PyErr_Clear();
   }
 
-  // Try fo find the file using Orange.data.io.find_file
-  PyObject *ioModule = PyImport_ImportModule("Orange.data.io");
-  if (ioModule) {
-	  PyObject *find_file = PyObject_GetAttrString(ioModule, "find_file");
-	  if (find_file){
-		  PyObject *py_args = Py_BuildValue("(s)", filename);
-		  PyObject *ex_filename = PyObject_Call(find_file, py_args, NULL);
-		  if (ex_filename && PyString_Check(ex_filename)){
-			  res = loadDataFromFileNoSearch(type, PyString_AsString(ex_filename), argstuple, keywords, generatorOnly);
-			  Py_DECREF(ex_filename);
-		  }
-		  else
+  if (!res) {
+	  // Try fo find the file using Orange.data.io.find_file
+	  PyObject *ioModule = PyImport_ImportModule("Orange.data.io");
+	  if (ioModule) {
+		  PyObject *find_file = PyObject_GetAttrString(ioModule, "find_file");
+		  if (find_file){
+			  PyObject *py_args = Py_BuildValue("(s)", filename);
+			  PyObject *ex_filename = PyObject_Call(find_file, py_args, NULL);
+			  if (ex_filename && PyString_Check(ex_filename)){
+				  res = loadDataFromFileNoSearch(type, PyString_AsString(ex_filename), argstuple, keywords, generatorOnly);
+				  Py_DECREF(ex_filename);
+			  }
 			  PyErr_Clear();
-		  Py_DECREF(py_args);
-		  Py_DECREF(find_file);
+			  Py_DECREF(py_args);
+			  Py_DECREF(find_file);
+		  }
+		  Py_DECREF(ioModule);
 	  }
-	  Py_DECREF(ioModule);
   }
   if (!res)
 	  PyErr_Clear();
