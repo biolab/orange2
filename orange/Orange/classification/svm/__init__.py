@@ -30,7 +30,6 @@ SVM learners (from `LibSVM`_)
 =============================
 
 The most basic :class:`SVMLearner` implements the standard `LibSVM`_ learner
-(if you have used the `svm-train` command-line tool this will be familiar).
 It supports four built-in kernel types (Linear, Polynomial, RBF and Sigmoid).
 Additionally kernel functions defined in Python can be used instead. 
 
@@ -85,9 +84,6 @@ SVM Based feature selection and scoring
  
 Utility functions
 =================
-
-Some utility functions which are used in this module but might also
-be of use to you.
 
 .. automethod:: Orange.classification.svm.max_nu
 
