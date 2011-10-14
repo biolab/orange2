@@ -1363,6 +1363,7 @@ C_NAMED(ExamplesDistance_Hamming - Orange.distances.Hamming, ExamplesDistance, "
 C_NAMED(ExamplesDistance_Maximal - Orange.distances.Maximal, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Manhattan - Orange.distances.Manhattan, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Euclidean - Orange.distances.Euclidean, ExamplesDistance_Normalized, "()")
+C_NAMED(ExamplesDistance_Lp - Orange.distances.Lp, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Relief - Orange.distances.Relief, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_DTW - Orange.distances.DTW, ExamplesDistance_Normalized, "()")
 
@@ -1370,6 +1371,7 @@ C_CALL(ExamplesDistanceConstructor_Hamming - Orange.distances.HammingConstructor
 C_CALL(ExamplesDistanceConstructor_Maximal - Orange.distances.MaximalConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Maximal")
 C_CALL(ExamplesDistanceConstructor_Manhattan - Orange.distances.ManhattanConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Manhattan")
 C_CALL(ExamplesDistanceConstructor_Euclidean - Orange.distances.EuclideanConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Euclidean")
+C_CALL(ExamplesDistanceConstructor_Lp - Orange.distances.LpConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Lp")
 C_CALL(ExamplesDistanceConstructor_Relief - Orange.distances.ReliefConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Relief")
 C_CALL(ExamplesDistanceConstructor_DTW - Orange.distances.DTWConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_DTW")
 

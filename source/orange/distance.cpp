@@ -339,6 +339,8 @@ TExamplesDistanceConstructor_Euclidean::TExamplesDistanceConstructor_Euclidean()
 TExamplesDistanceConstructor_Manhattan::TExamplesDistanceConstructor_Manhattan()
 {}
 
+TExamplesDistanceConstructor_Lp::TExamplesDistanceConstructor_Lp(): p(1.0)
+{}
 
 PExamplesDistance TExamplesDistanceConstructor_Maximal::operator()(PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
 { return mlnew TExamplesDistance_Maximal(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, bstat); }
@@ -351,7 +353,8 @@ PExamplesDistance TExamplesDistanceConstructor_Manhattan::operator()(PExampleGen
 PExamplesDistance TExamplesDistanceConstructor_Euclidean::operator()(PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
 { return mlnew TExamplesDistance_Euclidean(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, bstat); }
 
-
+PExamplesDistance TExamplesDistanceConstructor_Lp::operator()(PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
+{ return mlnew TExamplesDistance_Lp(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, bstat, p); }
 
 TExamplesDistance_Maximal::TExamplesDistance_Maximal()
 {}
@@ -402,7 +405,18 @@ TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass
   }
 }
 
+TExamplesDistance_Lp::TExamplesDistance_Lp()
+{
+	this->p = 1.0;
+}
+TExamplesDistance_Lp::TExamplesDistance_Lp(float p)
+{
+	this->p = p;
+}
 
+TExamplesDistance_Lp::TExamplesDistance_Lp(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat dstat, float _p)
+: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, dstat), p(_p)
+{}
 
 float TExamplesDistance_Maximal::operator ()(const TExample &e1, const TExample &e2) const 
 { 
@@ -479,6 +493,15 @@ float TExamplesDistance_Euclidean::operator ()(const TExample &e1, const TExampl
 }
 
 
+float TExamplesDistance_Lp::operator ()(const TExample &e1, const TExample &e2) const
+{
+  vector<float> difs;
+  getDifs(e1, e2, difs);
+  float dist = 0.0;
+  const_ITERATE(vector<float>, di, difs)
+    dist += pow(fabs(*di), p);
+  return pow(dist, 1.0f / p);
+}
 
 
 TExamplesDistanceConstructor_Relief::TExamplesDistanceConstructor_Relief()

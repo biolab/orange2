@@ -192,6 +192,32 @@ public:
   virtual PExamplesDistance operator()(PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat()) const;
 };
 
+/* Lp distance:
+     p root of sum of distances raised to the power of p between corresponding attribute values.
+     A generalization of Euclidean (p=2), Manhattan (p=1) and Maximal (p=inf)
+*/
+
+class ORANGE_API TExamplesDistance_Lp : public TExamplesDistance_Normalized {
+public:
+  __REGISTER_CLASS
+
+  float p; //PR p
+  TExamplesDistance_Lp();
+  TExamplesDistance_Lp(float p);
+  TExamplesDistance_Lp(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat(), float p = 1.0);
+  virtual float operator()(const TExample &, const TExample &) const;
+};
+
+
+class ORANGE_API TExamplesDistanceConstructor_Lp : public TExamplesDistanceConstructor_Normalized {
+public:
+  __REGISTER_CLASS
+
+  float p; //P p
+  TExamplesDistanceConstructor_Lp();
+  virtual PExamplesDistance operator()(PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat()) const;
+};
+
 
 /* Relief distance */
 
