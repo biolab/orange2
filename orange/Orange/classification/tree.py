@@ -250,7 +250,7 @@ Redefining tree induction components
 
 This example shows how to use a custom stop function.  First, the
 ``def_stop`` function defines the default stop function. The first tree
-has some added randomness; the induction will also stop in 20% of the
+has some added randomness; the induction also stops in 20% of the
 cases when ``def_stop`` returns False. The stopping criteria for the
 second tree is completely random: it stops induction in 20% of cases.
 Note that in the second case lambda function still has three parameters,
@@ -271,30 +271,27 @@ Split constructors
 
 .. class:: SplitConstructor
 
-    Decide how to divide the learning instances.
+    Decide how to divide learning instances.
     
-    The :obj:`SplitConstructor` should use the domain contingency when
-    possible, both for speed and because the contingency
-    matrices are not necessarily constructed by simply counting the
-    instances. There are, however, cases when domain contingency does not
-    suffice; for example if ReliefF is used to score features.
+    The :obj:`SplitConstructor` should use the domain
+    contingency when possible, both for speed and adaptability
+    (:obj:`TreeLearner.contingency`).  Sometimes domain contingency does
+    not suffice, for example if ReliefF score is used.
 
-    A :obj:`SplitConstructor` can veto further tree induction by
-    returning no classifier. This is generall related to number of
-    instances in the branches. If there are no splits with more than
-    :obj:`SplitConstructor.min_subset` instances in the branches (null
-    nodes are allowed), the induction is stopped.
+    A :obj:`SplitConstructor` can veto further tree induction by returning
+    no classifier. This is generally related to the number of learning
+    instances that would go in each branch. If there are no splits with
+    more than :obj:`SplitConstructor.min_subset` instances in the branches
+    (null nodes are allowed), the induction is stopped.
 
-    Split constructors that cannot handle a particular feature type
-    (discrete, continuous) quietly skip them. Therefore use a correct
-    split constructor or :obj:`SplitConstructor_Combined`, which delegates
-    features to specialized split constructors.
+    Split constructors that cannot handle a particular feature
+    type (discrete, continuous) quietly skip them. When in doubt, use
+    :obj:`SplitConstructor_Combined`, which delegates features to
+    specialized split constructors.
 
-    The same split constructors can be used both for classification
-    and regression, if the 'measure' attribute for the
-    :obj:`SplitConstructor_Score` class (and derived classes) is set
-    accordingly.
-
+    The same split constructors can be used both for classification and
+    regression, if the chosen score (for :obj:`SplitConstructor_Score`
+    and derived classes) supports both.
 
     .. attribute:: min_subset
 
@@ -322,19 +319,18 @@ Split constructors
         :obj:`subset_sizes` are None, while :obj:`quality` is 0.0 and
         :obj:`spent_feature` is -1.
 
-        If the splitting criterion uses a feature in such a way that the
-        feature will be useless in the future and should not be considered
-        as a split criterion in any of the subtrees (the typical case of
-        this are discrete features that are used as-they-are, without
-        any binarization or subsetting), then it should return the
-        index of this feature. If no features are spent,
-        -1 is returned.
+        If the chosen feature will be useless in the future and
+        should not be considered for splitting in any of the subtrees
+        (typically, when discrete features are used as-they-are, without
+        any binarization or subsetting), then it should return the index
+        of this feature as :obj:`spent_feature`. If no features are spent,
+        :obj:`spent_feature` is -1.
 
 .. class:: SplitConstructor_Score
 
     Bases: :class:`SplitConstructor`
 
-    An abstract base class for split constructors that compare splits
+    An abstract base class that compare splits
     with a :class:`Orange.feature.scoring.Score`.  All split
     constructors except for :obj:`SplitConstructor_Combined` are derived
     from this class.
@@ -360,7 +356,7 @@ Split constructors
     tied, a random feature is selected.
 
     The constructed :obj:`branch_selector` is an instance of
-    :obj:`orange.ClassifierFromVarFD` that returns a value of the selected
+    :obj:`orange.ClassifierFromVarFD`, that returns a value of the selected
     feature. :obj:`branch_description` contains the feature's
     values. The feature is marked as spent (it cannot reappear in the
     node's subtrees).
@@ -369,25 +365,22 @@ Split constructors
 
     Bases: :class:`SplitConstructor_Score`
 
-    For each discrete feature it determines which binarization gives
-    the the highest score. In case of ties, a random feature is selected.
+    Finds the binarization with the highest score among all features. In
+    case of ties, a random feature is selected.
 
     The constructed :obj:`branch_selector` is an instance
-    :obj:`orange.ClassifierFromVarFD` that returns a value of the selected
-    feature. Its :obj:`transformer` contains a :obj:`MapIntValue`
-    that maps values of the feature into a binary feature. Branch
-    descriptions are of form ``[<val1>, <val2>, ...<valn>]`` for branches
-    with more than one feature value. Branches with a single feature
-    value are described with that value. If the feature was binary,
-    it is spent and cannot be used in the node's subtrees. Otherwise
-    it is not spent.
-
+    :obj:`orange.ClassifierFromVarFD`, that returns a value of the
+    selected feature. Its :obj:`transformer` contains a ``MapIntValue``
+    that maps values of the feature into a binary feature. Branches
+    with a single feature value are described with that value and
+    branches with more than one are described with ``[<val1>, <val2>,
+    ...<valn>]``. Only binary features are marked as spent.
 
 .. class:: SplitConstructor_Threshold
 
     Bases: :class:`SplitConstructor_Score`
 
-    The only split constructor for continuous features.  It divides the
+    The only split constructor for continuous features. It divides the
     range of feature values with a threshold that maximizes the split's
     quality. In case of ties, a random feature is selected.  The feature
     that yields the best binary split is returned.
@@ -408,24 +401,22 @@ Split constructors
 
     Bases: :class:`SplitConstructor`
 
-    This split constructor uses different split constructors for
-    discrete and continuous features. Each split constructor is called
-    with features of appropriate type only. Both construct a candidate
-    for a split; the better of them is selected.
+    Uses different split constructors for discrete and continuous
+    features. Each split constructor is called with appropriate
+    features. Both construct a candidate for a split; the better of them
+    is used.
 
-    There is a problem when multiple candidates have the same score. Let
-    there be nine discrete features with the highest score; the split
+    The choice of the split is not probabilistically fair, when
+    multiple candidates have the same score. For example, if there
+    are nine discrete features with the highest score the split
     constructor for discrete features will select one of them. Now,
-    if there is a single continuous feature with the same score,
+    if there is also a single continuous feature with the same score,
     :obj:`SplitConstructor_Combined` would randomly select between the
-    proposed discrete feature and the continuous feature. It is not aware
-    of that the discrete has already competed with eight other discrete
-    features. So, the probability for selecting (each) discrete feature
-    would be 1/18 instead of 1/10. Although incorrect, we doubt that
-    this would affect the tree's performance.
-
-    The :obj:`branch_selector`, :obj:`branch_descriptions` and whether
-    the feature is spent is decided by the winning split constructor.
+    proposed discrete feature and continuous feature, unaware that the
+    discrete feature  has already competed with eight others.  So,
+    the probability for selecting (each) discrete feature would be
+    1/18 instead of 1/10. Although incorrect, this should not affect
+    the performance.
 
     .. attribute: discrete_split_constructor
 
@@ -437,7 +428,7 @@ Split constructors
 
         Split constructor for continuous features; it 
         can be either :obj:`SplitConstructor_Threshold` or a 
-        split constructor you programmed in Python.
+        a custom split constructor.
 
 
 StopCriteria and StopCriteria_common
@@ -456,23 +447,21 @@ StopCriteria and StopCriteria_common
     .. method:: __call__(instances[, weightID, domain contingencies])
 
         Return True (stop) of False (continue the induction).
-        If contingencies are given, they are used for checking whether
-        classes but not for counting. Derived classes should use the
-        contingencies whenever possible.
+        Contingencies are not used for counting. Derived classes should
+        use the contingencies whenever possible.
 
 .. class:: StopCriteria_common
 
-    Additional criteria for pre-pruning: the proportion of majority
-    class and the number of weighted instances.
+    Pre-pruning with additional criteria.
 
     .. attribute:: max_majority
 
-        Maximal proportion of majority class. When exceeded,
+        Maximum proportion of majority class. When exceeded,
         induction stops.
 
     .. attribute:: min_instances
 
-        Minimal number of instances in internal leaves. Subsets with less
+        Minimum number of instances for splitting. Subsets with less
         than :obj:`min_instances` instances are not split further.
         The sample count is weighed.
 
@@ -480,35 +469,29 @@ StopCriteria and StopCriteria_common
 Splitters
 =================
 
-Splitters sort learning instances info brances (the branches are selected
+Splitters sort learning instances into branches (the branches are selected
 with a :obj:`SplitConstructor`, while a :obj:`Descender` decides the
 branch for an instance during classification.
 
-Most splitters simply call :obj:`Node.branch_selector` and assign
-instances to correspondingly. When the value is unknown they choose a
-particular branch or simply skip the instance.
+Most splitters call :obj:`Node.branch_selector` and assign
+instances correspondingly. When the value is unknown they choose a
+particular branch or skip the instance.
 
-Some enhanced splitters can split instances. An instance (actually,
-a pointer to it) is copied to more than one subset. To facilitate
-real splitting, weights are needed. Each branch has a weight ID (each
-would usually have its own ID) and all instances in that branch (either
-completely or partially) should have this meta attribute. If an instance
-hasn't been split, it has only one additional attribute - with weight
-ID corresponding to the subset to which it went. Instance that is split
+Some splitters can also split instances: a weighed instance is 
+used in more than than one subset. Each branch has a weight ID (usually,
+each its own ID) and all instances in that branch should have this meta attribute. 
+
+An instance that 
+hasn't been split has only one additional attribute (weight
+ID corresponding to the subset to which it went). Instance that is split
 between, say, three subsets, has three new meta attributes, one for each
-subset. ID's of weight meta attributes returned by the :obj:`Splitter`
-are used for the induction of the corresponding subtrees.
-
-The weights are used only when needed. When no splitting occured -
-because the splitter is was unable to do it or because there was no need
-for splitting - no weight ID's are returned.
+subset. The weights are used only when needed; when there is no
+splitting - no weight IDs are returned.
 
 .. class:: Splitter
 
-    An abstract base class for objects that split sets of instances
-    into subsets. The derived classes treat instances which cannot be
-    unambiguously placed into a single branch (usually due to unknown
-    value of the crucial attribute) differently.
+    An abstract base class that splits instances
+    into subsets.
 
     .. method:: __call__(node, instances[, weightID])
 
@@ -517,15 +500,11 @@ for splitting - no weight ID's are returned.
         :param instances: a set of instances
         :param weightID: weight ID. 
         
-        Use the information in :obj:`node` (particularly the
-        :obj:`branch_selector`) to split the given set of instances into
-        subsets.  Return a tuple with a list of instance generators and
-        a list of weights.  The list of weights is either an ordinary
-        python list of integers or a None when no splitting of instances
-        occurs and thus no weights are needed.
-
-        Return a list of subsets of instances and, optionally, a list
-        of new weight ID's.
+        Use the information in :obj:`Node` (particularly the
+        :obj:`~Node.branch_selector`) to split the given set of instances into
+        subsets.  Return a tuple with a list of instance subsets and
+        a list of weights.  The list of weights is either a
+        list of integers or None when no weights are added.
 
 .. class:: Splitter_IgnoreUnknowns
 
@@ -545,7 +524,7 @@ for splitting - no weight ID's are returned.
 
     Bases: :class:`Splitter`
 
-    Places instances with an unknown value of the feature into all branches.
+    Splits instances with an unknown value of the feature into all branches.
 
 .. class:: Splitter_UnknownsToRandom
 
@@ -557,7 +536,7 @@ for splitting - no weight ID's are returned.
 
     Bases: :class:`Splitter`
 
-    Constructs an additional branch to contain all ambiguous instances. 
+    Constructs an additional branch for ambiguous instances. 
     The branch's description is "unknown".
 
 .. class:: Splitter_UnknownsAsBranchSizes
@@ -578,19 +557,19 @@ for splitting - no weight ID's are returned.
 Descenders
 =============================
 
-Descenders decide the where should the instances that cannot be
-unambiguously put in a branch be sorted to (the branches are selected
+Descenders decide where should the instances that cannot be unambiguously
+put in a single branch go during classification (the branches are selected
 with a :obj:`SplitConstructor`, while a :obj:`Splitter` sorts instances
 during learning).
 
 .. class:: Descender
 
-    An abstract base object for tree descenders. It descends a
-    given instance as far deep as possible, according to the values
+    An abstract base tree descender. It descends a
+    an instance as deep as possible, according to the values
     of instance's features. The :obj:`Descender`: calls the node's
     :obj:`~Node.branch_selector` to get the branch index. If it's a
-    simple index, the corresponding branch is followed. If not, it's up
-    to descender to decide what to do. A descender can choose a single
+    simple index, the corresponding branch is followed. If not, the
+    descender decides what to do. A descender can choose a single
     branch (for instance, the one that is the most recommended by the
     :obj:`~Node.branch_selector`) or it can let the branches vote.
 
@@ -599,30 +578,24 @@ during learning).
     #. The descender reaches a leaf. This happens when
        there were no unknown or out-of-range values, or when the
        descender selected a single branch and continued the descend
-       despite them. The descender returns the reached :obj:`Node`.
-    #. Node's :obj:`~Node.branch_selector` returned a distribution and the
+       despite them. The descender returns the :obj:`Node` it has reached.
+    #. Node's :obj:`~Node.branch_selector` returned a distribution and
        :obj:`Descender` decided to stop the descend at this (internal)
        node. It returns the current :obj:`Node`.
     #. Node's :obj:`~Node.branch_selector` returned a distribution and the
        :obj:`Node` wants to split the instance (i.e., to decide the class
-       by voting). It returns a :obj:`Node` and the vote-weights for the
-       branches.  The weights can correspond to the distribution returned
-       by node's :obj:`~Node.branch_selector`, to the number of learning
-       instances that were assigned to each branch, or to something else.
+       by voting). It returns a :obj:`Node` and the vote-weights for
+       the branches.  The weights can correspond, for example,  to the
+       distribution returned by node's :obj:`~Node.branch_selector`, or to
+       the number of learning instances that were assigned to each branch.
 
     .. method:: __call__(node, instance)
 
-        Descends down the tree until it reaches a leaf or a node in
-        which a vote of subtrees is required. In both cases, a tuple
-        of two elements is returned; in the former, the tuple contains
-        the reached node and None, in the latter in contains a node and
-        weights of votes for subtrees (a list of floats).
-
-        Descenders that never split instances always descend to a
-        leaf. They differ in the treatment of instances with unknown
-        values (or, in general, instances for which a branch cannot be
-        determined at some node the tree). Descenders that
-        do split instances differ in returned vote weights.
+        Descends until it reaches a leaf or a node in
+        which a vote of subtrees is required. A tuple
+        of two elements is returned. If it reached a leaf, the tuple contains
+        the leaf node and None. If not, it contains a node and
+        a list of floats (weights of votes).
 
 .. class:: Descender_UnknownToNode
 
@@ -630,9 +603,8 @@ during learning).
 
     When instance cannot be classified into a single branch, the current
     node is returned. Thus, the node's :obj:`~Node.node_classifier`
-    will be used to make a decision. In such case the internal nodes
-    need to have their :obj:`Node.node_classifier` (i.e., don't disable
-    creating node classifier or manually remove them after the induction).
+    will be used to make a decision. Therefore, internal nodes
+    need to have :obj:`Node.node_classifier` defined.
 
 .. class:: Descender_UnknownToBranch
 
@@ -648,7 +620,7 @@ during learning).
 
     Classifies instances with unknown values to the branch with the
     highest number of instances. If there is more than one such branch,
-    random branch is chosen for each instance that is to be classified.
+    random branch is chosen for each instance.
 
 .. class:: Descender_UnknownToCommonSelector
 
@@ -677,58 +649,44 @@ Pruning
 .. index::
     pair: classification trees; pruning
 
-The pruners construct a shallow copy of a tree.  The pruned tree's
+The pruners construct a shallow copy of a tree. The pruned tree's
 :obj:`Node` contain references to the same contingency matrices,
-node classifiers, branch selectors, ...  as the original tree. Thus,
-you may modify a pruned tree structure (manually cut it, add new
-nodes, replace components) but modifying, for instance, some node's
-:obj:`~Node.node_classifier` (a :obj:`~Node.node_classifier` itself, not
-a reference to it!) would modify the node's :obj:`~Node.node_classifier`
-in the corresponding node of the original tree.
+node classifiers, branch selectors, ...  as the original tree.
 
-Pruners cannot construct a :obj:`~Node.node_classifier` nor merge
-:obj:`~Node.node_classifier` of the pruned subtrees into classifiers for new
-leaves. Thus, if you want to build a prunable tree, internal nodes
-must have their :obj:`~Node.node_classifier` defined. Fortunately, this is
-the default.
+Pruners cannot construct a new :obj:`~Node.node_classifier`.  Thus, for
+pruning, internal nodes must have :obj:`~Node.node_classifier` defined
+(the default).
 
 .. class:: Pruner
 
-    An abstract base class for a tree pruner which defines nothing useful, 
-    only a pure virtual call operator.
+    An abstract base tree pruner.
 
     .. method:: __call__(tree)
 
         :param tree: either
-            a :obj:`Node` (presumably, but not necessarily a root) or a
-            :obj:`_TreeClassifier` (the C++ version of the classifier,
+            a :obj:`Node` or (the C++ version of the classifier,
             saved in :obj:`TreeClassfier.base_classifier`).
 
-        Prunes a tree. The argument can be either a tree classifier or
-        a tree node; the result is of the same type as the argument.
+        The resulting pruned tree is of the same type as the argument.
         The original tree remains intact.
 
 .. class:: Pruner_SameMajority
 
     Bases: :class:`Pruner`
 
-    In Orange, a tree can have a non-trivial subtrees (i.e. subtrees with
-    more than one leaf) in which all the leaves have the same majority
-    class. This is allowed because those leaves can still have different
-    distributions of classes and thus predict different probabilities.
-    However, this can be undesired when we're only interested
-    in the class prediction or a simple tree interpretation. The
-    :obj:`Pruner_SameMajority` prunes the tree so that there is no
-    subtree in which all the nodes would have the same majority class.
+    A tree can have a subtrees where all the leaves have
+    the same majority class. This is allowed because leaves can still
+    have different class distributions and thus predict different
+    probabilities.  The :obj:`Pruner_SameMajority` prunes the tree so
+    that there is no subtree in which all the nodes would have the same
+    majority class.
 
     This pruner will only prune the nodes in which the node classifier
     is a :obj:`~Orange.classification.majority.ConstantClassifier`
     (or a derived class).
 
-    The leaves with more than one majority class require some special
-    handling. The pruning goes backwards, from leaves to the root.
-    When siblings are compared, the algorithm checks whether they have
-    (at least one) common majority class. If so, they can be pruned.
+    The pruning works from leaves to the root.
+    It siblings have (at least one) common majority class, they can be pruned.
 
 .. class:: Pruner_m
 
@@ -744,12 +702,12 @@ the default.
 Printing the tree
 =================
 
-The tree printing functions are very flexible. They can print
-out practically anything, from the number of instances, proportion
-of instances of majority class in nodes and similar, to more complex
-statistics like the proportion of instances in a particular class divided
-by the proportion of instances of this class in a parent node. Users
-may also pass their own functions to print certain elements.
+The tree printing functions are very flexible. They can print, for
+example, numbers of instances, proportions of majority class in nodes
+and similar, or more complex statistics like the proportion of instances
+in a particular class divided by the proportion of instances of this
+class in a parent node. Users may also pass their own functions to print
+certain elements.
 
 The easiest way to print the tree is to call :func:`TreeClassifier.dump`
 without any arguments::
@@ -787,7 +745,7 @@ is ``.0`` (no decimals, the number is rounded to the nearest integer).
 ``%NbP`` gives the number of instances in the node divided by the
 number of instances in parent node. Precision formatting can be added,
 e.g. ``%6.2NbP``. ``bA`` denotes division by the same quantity over the entire
-data set, so ``%NbA`` will tell you the proportion of instaces (out
+data set, so ``%NbA`` will tell you the proportion of instances (out
 of the entire training data set) that fell into that node. If division is
 impossible since the parent node does not exist or some data is missing,
 a dot is printed out instead.
@@ -896,14 +854,13 @@ is described with ``%MbA``. Add ``^`` in front for mutiplication with
 comma and parentheses. For the proportion of this class in the parent the
 ``bA`` is replaced with ``bA``.
 
-To print the
-number of versicolors in each node, together with the proportion of
-versicolors among the instances in this particular node and among all
-versicolors use the following format string::
+To print the number of versicolors in each node, together with the
+proportion of versicolors among the instances in this particular node
+and among all versicolors, use the following::
 
     '%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)
 
-It gives the following output::
+It gives::
 
     petal width<0.800: 0.000 (0% of node, 0% of versicolors)
     petal width>=0.800
@@ -939,8 +896,8 @@ nodes rounded to two decimals use ``%.2d``::
     |    |    petal length<4.850: [0.00, 0.33, 0.67]
     |    |    petal length>=4.850: [0.00, 0.00, 1.00]
 
-The most trivial format string for internal nodes is to for printing
-the prediction at each node. ``.`` in the following example specifies
+The most trivial format string for internal nodes is for printing
+node predictions. ``.`` in the following example specifies
 that the node_str should be the same as leaf_str.
 
 ::
@@ -959,21 +916,21 @@ The output::
     |    |    |    petal length<4.850: Iris-virginica
     |    |    |    petal length>=4.850: Iris-virginica
 
-There appeared a node called *root* and the tree looks one level
-deeper. This is needed to print out the data for that node to.
+A node *root* has appeared and the tree looks one level
+deeper. This is needed to also print the data for tree root.
 
 To observe how the number
-of virginicas decreases down the tree use::
+of virginicas decreases down the tree try::
 
     print tree.dump(leaf_str='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', node_str='.')
 
-The interpretation: ``CbA="Iris-virginica"`` is 
+Interpretation: ``CbA="Iris-virginica"`` is 
 the number of instances from virginica, divided by the total number
 of instances in this class. Add ``^.1`` and the result will be
 multiplied and printed with one decimal. The trailing ``%`` is printed
-out. In parentheses we print the same thing except that we divide by
-the instances in the parent node. Note the use of single quotes, so we
-can use the double quotes inside the string to specify the class.
+out. In parentheses the same thing was divided by
+the instances in the parent node. The single quotes were used for strings, so
+that double quotes inside the string can specify the class.
 
 ::
 
@@ -990,10 +947,9 @@ can use the double quotes inside the string to specify the class.
 If :meth:`~TreeClassifier.dump` cannot compute something, in this case
 because the root has no parent, it prints out a dot.
 
-For the final example with classification trees, we shall print the
-distributions in nodes, the distribution compared to the parent and the
-proportions compared to the parent.  In the leaves we shall also add
-the predicted class::
+The final example with classification trees prints the distributions in
+nodes, the distribution compared to the parent, the proportions compared
+to the parent and the predicted class in the leaves::
 
     >>> print tree.dump(leaf_str='"%V   %D %.2DbP %.2dbP"', node_str='"%D %.2DbP %.2dbP"')
     root: [50.000, 50.000, 50.000] . .
@@ -1014,9 +970,9 @@ the predicted class::
 
 .. rubric:: Examples on regression trees
 
-The regression trees examples use a tree
-induced from the housing data set. Without other argumets, 
-:meth:`TreeClassifier.dump` prints the following::
+The regression trees examples use a tree induced from the housing data
+set. Without other argumets, :meth:`TreeClassifier.dump` prints the
+following::
 
     RM<6.941
     |    LSTAT<14.400
@@ -1061,13 +1017,11 @@ the 90% confidence intervals in the leaves, use::
     |    |    |    TAX>=534.500: [SE: 0.000]:
     |    |    |        [SE: 0.000]   21.9 [21.900-21.900]
 
-The predicted value (``%V``) and the average (``%A``) may
-differ becase a regression tree does not always predict the
-leaf average, but whatever the
-:obj:`~Node.node_classifier` in a leaf returns.
-As ``%V`` uses the :obj:`Orange.data.variable.Continuous`' function
-for printing out the value, the number has the same
-number of decimals as in the data file.
+The predicted value (``%V``) and the average (``%A``) may differ because
+a regression tree does not always predict the leaf average, but whatever
+the :obj:`~Node.node_classifier` in a leaf returns.  As ``%V`` uses the
+:obj:`Orange.data.variable.Continuous`' function for printing the
+value, the number has the same number of decimals as in the data file.
 
 Regression trees cannot print the distributions in the same way
 as classification trees. They instead offer a set of operators for
@@ -1101,11 +1055,10 @@ interval [20, 22] and print out the proportions as percents use::
 
     >>> print tree.dump(leaf_str="%C![20,22] (%^cbP![20,22]%)", node_str=".")
 
-The format string  ``%c![20, 22]`` 
-denotes the proportion of instances (within the node) whose values
-are below 20 or above 22. ``%cbP![20, 22]`` derives 
-same statistics computed on the parent. A ``^`` is added for 
-percentages.
+The format string  ``%c![20, 22]`` denotes the proportion of instances
+(within the node) whose values are below 20 or above 22. ``%cbP![20,
+22]`` derives same statistics computed on the parent. A ``^`` is added
+for percentages.
 
 ::
 
@@ -1129,14 +1082,14 @@ percentages.
 Defining custom printouts
 -------------------------
 
-:meth:`TreeClassifier.dump`'s argument :obj:`user_formats`
-can be used to print out some other information.
-:obj:`~TreeClassifier.dump.user_formats` should contain a list of tuples
-with a regular expression and a function to be called when that expression
-is found in the format string. Expressions from :obj:`user_formats`
-are checked before the built-in expressions discussed above.
+:meth:`TreeClassifier.dump`'s argument :obj:`user_formats` can be used to
+print other information.  :obj:`~TreeClassifier.dump.user_formats` should
+contain a list of tuples with a regular expression and a function to be
+called when that expression is found in the format string. Expressions
+from :obj:`user_formats` are checked before the built-in expressions
+discussed above.
 
-The regular expression should describe a string like were used above,
+The regular expression should describe a string like used above,
 for instance ``%.2DbP``. When a leaf or internal node
 is printed, the format string (:obj:`leaf_str` or :obj:`node_str`)
 is checked for these regular expressions and when the match is found,
@@ -1176,7 +1129,7 @@ And ``replaceV`` is defined by::
     def replaceV(strg, mo, node, parent, tree):
         return insert_str(strg, mo, str(node.node_classifier.default_value))
 
-It therefore takes the value predicted at the node
+``replaceV`` takes the value predicted at the node
 (``node.node_classifier.default_value`` ), converts it to a string
 and passes it to :func:`insert_str`.
 
@@ -1235,10 +1188,10 @@ output formats.
 C4.5 Classifier and Learner
 ===========================
 
-C4.5 is incorporated in Orange because it is a standard benchmark in
-machine learning. The implementation uses the original C4.5 code, so the
-resulting tree is exactly like the one that would be build by standalone
-C4.5. The built tree is made accessible in Python.
+C4.5 is, as  a standard benchmark in machine learning, incorporated in
+Orange. The implementation uses the original C4.5 code, so the resulting
+tree is exactly like the one that would be build by standalone C4.5. The
+tree build is only made accessible in Python.
 
 :class:`C45Learner` and :class:`C45Classifier` behave
 like any other Orange learner and classifier. Unlike most of Orange 
