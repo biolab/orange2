@@ -243,7 +243,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         self.set_continuizer(continuizer=continuizer)
         self.__dict__.update(kwds)
 
-    def __call__(self, table, xVars=None, yVars=None):
+    def __call__(self, table, weight_id=None, xVars=None, yVars=None):
         """
         :param table: data instances.
         :type table: :class:`Orange.data.Table`
