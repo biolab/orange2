@@ -261,6 +261,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         if xVars is None and yVars is None:
             # Response variables are defined in the table.
             label_mask = data_label_mask(domain)
+            multilabel_flag = (sum(label_mask) - (1 if domain.class_var else 0)) > 0
             xVars = [v for v, label in zip(domain, label_mask) if not label]
             yVars = [v for v, label in zip(domain, label_mask) if label]
             x_table = select_attrs(table, xVars)
@@ -273,7 +274,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
                 # add it to the yVars
                 yVars.append(domain.class_var)
             label_mask = [v in yVars for v in domain.variables]
-            
+            multilabel_flag = True
             x_table = select_attrs(table, xVars)
             y_table = select_attrs(table, yVars)
         else:
@@ -321,7 +322,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         return PLSRegression(label_mask=label_mask, domain=self.domain, \
                              coefs=self.coefs, muX=self.muX, muY=self.muY, \
                              sigmaX=self.sigmaX, sigmaY=self.sigmaY, \
-                             xVars=xVars, yVars=yVars)
+                             xVars=xVars, yVars=yVars, multilabel_flag=multilabel_flag)
 
     def fit(self, X, Y):
         """ Fits all unknown parameters, i.e.
@@ -421,13 +422,14 @@ class PLSRegression(Orange.classification.Classifier):
     """
     def __init__(self, label_mask=None, domain=None, \
                  coefs=None, muX=None, muY=None, sigmaX=None, sigmaY=None, \
-                 xVars=None, yVars=None):
+                 xVars=None, yVars=None, multilabel_flag=0):
         self.label_mask = label_mask
         self.domain = domain
         self.coefs = coefs
         self.muX, self.muY = muX, muY
         self.sigmaX, self.sigmaY = sigmaX, sigmaY
         self.xVars, self.yVars = xVars, yVars
+        self.multilabel_flag = multilabel_flag
 
     def __call__(self, instance, result_type=Orange.core.GetValue):
         """
@@ -439,26 +441,28 @@ class PLSRegression(Orange.classification.Classifier):
         instance = Orange.data.Instance(self.domain, instance)
         ins = [instance[v].native() for v in self.xVars]
         
+        multilabel_flag = sum(data_label_mask(self.domain))
+        
         if "?" in ins: # missing value -> corresponding coefficient omitted
             def miss_2_0(x): return x if x != "?" else 0
             ins = map(miss_2_0, ins)
         ins = numpy.array(ins)
         xc = (ins - self.muX) / self.sigmaX
         predicted = dot(xc, self.coefs) * self.sigmaY + self.muY
-        yHat = [var(val) for var, val in zip(self.yVars, predicted)]
+        y_hat = [var(val) for var, val in zip(self.yVars, predicted)]
         if result_type == Orange.core.GetValue:
-            return yHat
+            return y_hat if self.multilabel_flag else y_hat[0]
         else:
             from Orange.statistics.distribution import Distribution
             probs = []
-            for var, val in zip(self.yVars, yHat):
+            for var, val in zip(self.yVars, y_hat):
                 dist = Distribution(var)
                 dist[val] = 1.0
                 probs.append(dist)
             if result_type == Orange.core.GetBoth:
-                return zip(yHat, probs) 
+                return zip(y_hat, probs) if self.multilabel_flag else (y_hat[0], probs[0])
             else:
-                return probs
+                return probs if self.multilabel_flag else probs[0]
             
     def print_pls_regression_coefficients(self):
         """ Pretty-prints the coefficient of the PLS regression model.
