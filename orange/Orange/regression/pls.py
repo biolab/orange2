@@ -441,8 +441,6 @@ class PLSRegression(Orange.classification.Classifier):
         instance = Orange.data.Instance(self.domain, instance)
         ins = [instance[v].native() for v in self.xVars]
         
-        multilabel_flag = sum(data_label_mask(self.domain))
-        
         if "?" in ins: # missing value -> corresponding coefficient omitted
             def miss_2_0(x): return x if x != "?" else 0
             ins = map(miss_2_0, ins)
@@ -460,7 +458,7 @@ class PLSRegression(Orange.classification.Classifier):
                 dist[val] = 1.0
                 probs.append(dist)
             if result_type == Orange.core.GetBoth:
-                return zip(y_hat, probs) if self.multilabel_flag else (y_hat[0], probs[0])
+                return (y_hat, probs) if self.multilabel_flag else (y_hat[0], probs[0])
             else:
                 return probs if self.multilabel_flag else probs[0]
             

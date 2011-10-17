@@ -286,7 +286,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         if result_type == Orange.core.GetValue:
             return vals
         elif result_type == Orange.core.GetBoth:
-            return zip(vals, probs) if self.multi_flag else (vals, probs)
+            return vals, probs
         else:
             return probs
     
@@ -635,6 +635,42 @@ def subset_selection_xtx_numpy(X, Y):
         del working_set[delete_i]
     return subsets, rss_vec
     
+def subset_selection_xtx2(X, Y):
+    """ Another implementation (this uses qr decomp).
+    """
+    from Orange.misc import linalg
+    X = numpy.asfortranarray(X, dtype=ctypes.c_double)
+    Y = numpy.asfortranarray(Y, dtype=ctypes.c_double)
+    col_count = X.shape[1]
+    working_set = range(col_count)
+    subsets = numpy.zeros((col_count, col_count), dtype=int)
+    rss_vec = numpy.zeros((col_count,))
+    QR, k, _, jpvt = linalg.qr_decomp(X)
+    
+    if k < col_count:
+        # remove jpvt[k:] from the work set. Will have zero 
+        # entries in the subsets matrix
+        for i in jpvt[k:]:
+            del working_set[i]
+        col_count = len(working_set)
+        
+    for subset_size in reversed(range(col_count)):
+        subsets[subset_size, :subset_size + 1] = working_set
+        X_work = X[:, working_set]
+        b, rsd, rank = linalg.qr_lstsq(X_work, Y)
+#        print rsd
+        rss_vec[subset_size] = numpy.sum(rsd ** 2)
+        XtX = numpy.dot(X_work.T, X_work)
+        iXtX = numpy.linalg.pinv(XtX)
+        diag = numpy.diag(iXtX)
+        
+        if subset_size == 0:
+            break
+        
+        delta_rss = b ** 2 / diag
+        delete_i = numpy.argmin(delta_rss[1:]) + 1 # Keep the intercept
+        del working_set[delete_i]
+    return subsets, rss_vec
     
 def pruning_pass(bx, y, penalty, pruned_terms=-1):
     """ Do pruning pass
@@ -1020,7 +1056,7 @@ class ScoreRSS(scoring.Score):
         else:
             x, y = data.to_numpy_MA("1A/c")
             try:
-                subsets, rss = subset_selection_xtx(x, y)
+                subsets, rss = subset_selection_xtx2(x, y)
             except numpy.linalg.LinAlgError:
                 subsets, rss = subset_selection_xtx_numpy(x, y)
             rss_diff = -numpy.diff(rss)
@@ -1034,7 +1070,7 @@ class ScoreRSS(scoring.Score):
 #        print sorted(zip(rss, data.domain.attributes))
         index = list(data.domain.attributes).index(attr)
         return rss[index]
-        
+    
 
 #from Orange.core import EarthLearner as BaseEarthLearner, \
 #                        EarthClassifier as BaseEarthClassifier
