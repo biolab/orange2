@@ -11,6 +11,11 @@
 #include <QtCore/QMap>
 #include <QtCore/QList>
 
+#ifdef _WIN32
+#define NOMINMAX // Avoiding clashing with std::numeric_limits
+#include <windows.h> // Errors in gl.h when not included (VS10)
+#endif
+
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #else

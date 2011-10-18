@@ -3,13 +3,18 @@
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
+#ifdef _WIN32
+#define NOMINMAX // Avoiding clashing with std::numeric_limits
+#include <windows.h> // Errors in gl.h when not included (VS10)
+#endif
+
 #ifdef __APPLE__ // Apple OpenGL framework
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
 #endif //__APPLE__
 
-#ifdef _WIN32 // Should be defined by most Windows compilers
+#ifdef _WIN32
 #include <GL/glext.h>
 #elif defined __APPLE__ // OpenGL framework
 #include <OpenGL/glext.h>
