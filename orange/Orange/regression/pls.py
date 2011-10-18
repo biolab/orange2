@@ -60,7 +60,7 @@ import numpy
 from Orange.regression import base
 from Orange.regression.earth import data_label_mask
 from numpy import dot, zeros
-from numpy.linalg import svd, inv
+from numpy.linalg import svd, pinv
 
 def normalize_matrix(X):
     """ Normalizes matrix, i.e. subtracts column means
@@ -73,6 +73,7 @@ def normalize_matrix(X):
    
     """
     muX, sigmaX = numpy.mean(X, axis=0), numpy.std(X, axis=0)
+    sigmaX[sigmaX == 0] = 1.
     return (X-muX)/sigmaX, muX, sigmaX
 
 def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
@@ -382,10 +383,10 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         # T = X W(P'W)^-1 = XW* (W* : p x k matrix)
         # U = Y C(Q'C)^-1 = YC* (W* : q x k matrix)
         self.xRotations = dot(self.W,
-            inv(dot(self.P.T, self.W)))
+            pinv(dot(self.P.T, self.W)))
         if Y.shape[1] > 1:
             self.yRotations = dot(self.C,
-                inv(dot(self.Q.T, self.C)))
+                pinv(dot(self.Q.T, self.C)))
         else:
             self.yRotations = numpy.ones(1)
 
