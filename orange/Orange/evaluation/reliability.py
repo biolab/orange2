@@ -76,10 +76,16 @@ Reliability estimate learner
 ============================
 
 .. autoclass:: Learner
+    :members:
+
+Reliability estimation scoring methods
+======================================
 
 .. autofunction:: get_pearson_r
 
 .. autofunction:: get_pearson_r_by_iterations
+
+.. autofunction:: get_spearman_r
 
 Referencing
 ===========
@@ -165,6 +171,7 @@ Bosnic Z, Kononenko I (2010) `Automatic selection of reliability estimates for i
 regression predictions.
 <http://journals.cambridge.org/abstract_S0269888909990154>`_
 *The Knowledge Engineering Review* 25(1), 27-47.
+
 """
 import Orange
 
@@ -742,10 +749,6 @@ class Learner:
     :type name: string
     
     :rtype: :class:`Orange.evaluation.reliability.Learner`
-    
-    .. function:: internal_cross_validation
-    
-    .. function:: internal_cross_validation_testing
     """
     def __init__(self, box_learner, name="Reliability estimation",
                  estimators = [SensitivityAnalysis(),
@@ -778,7 +781,8 @@ class Learner:
     
     def internal_cross_validation(self, examples, folds=10):
         """ Performs the ususal internal cross validation for getting the best
-        reliability estimate. Returns the id of the method that scored the 
+        reliability estimate. It uses the reliability estimators defined in 
+        estimators attribute. Returns the id of the method that scored the 
         best. """
         res = Orange.evaluation.testing.cross_validation([self], examples, folds=folds)
         results = get_pearson_r(res)
@@ -798,7 +802,10 @@ class Learner:
         
         for fold in xrange(folds):
             data = examples.select(cv_indices, fold)
-            res = Orange.evaluation.testing.cross_validation([self], data)
+            if len(data) < 10:
+                res = Orange.evaluation.testing.leave_one_out([self], data)
+            else:
+                res = Orange.evaluation.testing.cross_validation([self], data)
             results = get_pearson_r(res)
             for r, _, _, method in results:
                 sum_of_rs[method] += r
@@ -826,7 +833,7 @@ class Classifier:
     
     def __call__(self, example, result_type=Orange.core.GetValue):
         """
-        Classifiy and estimate a new instance. When you chose 
+        Classify and estimate a new instance. When you chose 
         Orange.core.GetBoth or Orange.core.getProbabilities, you can access 
         the reliability estimates inside probabilities.reliability_estimate.
         
