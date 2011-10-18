@@ -15,7 +15,7 @@ for estimate in reliability_res:
     print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
                                  estimate[0], estimate[1])
 
-reliability.use[Orange.evaluation.reliability.DO_SA] = False
+reliability = Orange.evaluation.reliability.Learner(knn, estimators=[Orange.evaluation.reliability.SensitivityAnalysis()])
 
 res = Orange.evaluation.testing.cross_validation([reliability], table)
 
@@ -31,13 +31,12 @@ indices = Orange.core.MakeRandomIndices2(table, p0=0.7)
 train = table.select(indices, 0)
 test = table.select(indices, 1)
 
-reliability = Orange.evaluation.reliability.Learner(knn, icv=True, \
-                                                    use=[False, False, False, False, False, False])
+reliability = Orange.evaluation.reliability.Learner(knn, icv=True)
 res = Orange.evaluation.testing.learn_and_test_on_test_data([reliability], train, test)
 
 print
-print "Method used in internal cross-validation: ", Orange.evaluation.reliability.METHOD_NAME[res.results[0].probabilities[0].reliability_estimate[0][3]]
+print "Method used in internal cross-validation: ", Orange.evaluation.reliability.METHOD_NAME[res.results[0].probabilities[0].reliability_estimate[0].method]
 
-top5 = sorted((abs(result.probabilities[0].reliability_estimate[0][0]), id) for id, result in enumerate(res.results))[:5]
+top5 = sorted((abs(result.probabilities[0].reliability_estimate[0].estimate), id) for id, result in enumerate(res.results))[:5]
 for estimate, id in top5:
     print "%7.3f %i" % (estimate, id)

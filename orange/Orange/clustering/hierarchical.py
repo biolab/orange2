@@ -86,7 +86,7 @@ clusters as well).
 .. class:: HierarchicalCluster
 
     Represents a node in the clustering tree, as returned by
-    :obj:`HierarchicalClustering``
+    :obj:`HierarchicalClustering`
 
     .. attribute:: branches
     
@@ -433,7 +433,7 @@ But don't blame it on me then.
 
 
 Utility Functions
-=================
+-----------------
 
 .. autofunction:: clustering
 .. autofunction:: clustering_features
@@ -464,7 +464,7 @@ from Orange.core import HierarchicalClustering, \
                         HierarchicalCluster, \
                         HierarchicalClusterList
 
-from Orange.misc import progressBarMilestones
+from Orange.misc import progress_bar_milestones, deprecated_keywords
                         
 import sys
 
@@ -474,10 +474,10 @@ COMPLETE = HierarchicalClustering.Complete
 WARD = HierarchicalClustering.Ward
 
 def clustering(data,
-               distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
+               distance_constructor=orange.ExamplesDistanceConstructor_Euclidean,
                linkage=AVERAGE,
                order=False,
-               progressCallback=None):
+               progress_callback=None):
     """ Return a hierarchical clustering of the instances in a data set.
     
     :param data: Input data table for clustering.
@@ -498,18 +498,25 @@ def clustering(data,
         reporting the on the progress.
     :type progress_callback: function
     
+    :rtype: :class:`HierarchicalCluster` 
+    
     """
-    distance = distanceConstructor(data)
+    distance = distance_constructor(data)
     matrix = orange.SymMatrix(len(data))
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
-    root = HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
+    root = HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value*100.0/(2 if order else 1))) if progress_callback else None)
     if order:
-        order_leaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
+        order_leaves(root, matrix, progress_callback=(lambda value: progress_callback(50.0 + value/2)) if progress_callback else None)
     return root
 
-def clustering_features(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
+clustering = \
+    deprecated_keywords({"distanceConstructor": "distance_constructor",
+                         "progressCallback": "progress_callback"})(clustering)
+
+
+def clustering_features(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progress_callback=None):
     """ Return hierarchical clustering of attributes in a data set.
     
     :param data: Input data table for clustering.
@@ -530,16 +537,22 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
         reporting the on the progress.
     :type progress_callback: function
     
+    :rtype: :class:`HierarchicalCluster`
+    
     """
     matrix = orange.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
             matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value*100.0/(2 if order else 1))) if progress_callback else None)
     if order:
-        order_leaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
+        order_leaves(root, matrix, progressCallback=(lambda value: progress_callback(50.0 + value/2)) if progress_callback else None)
     return root
 
+clustering_features = \
+    deprecated_keywords({"progressCallback":"progress_callback"})(clustering_features)
+    
+    
 def cluster_to_list(node, prune=None):
     """ Return a list of clusters down from the node of hierarchical clustering.
     
@@ -549,6 +562,8 @@ def cluster_to_list(node, prune=None):
         with less then `prune` items will be left out of the list.
     :type node: int or `NoneType`
     
+    :rtype: list of :class:`HierarchicalCluster` instances
+    
     """
     if prune:
         if len(node) <= prune:
@@ -557,6 +572,7 @@ def cluster_to_list(node, prune=None):
         return [node] + cluster_to_list(node.left, prune) + cluster_to_list(node.right, prune)
     return [node]
 
+
 def top_clusters(root, k):
     """ Return k topmost clusters from hierarchical clustering.
     
@@ -564,6 +580,8 @@ def top_clusters(root, k):
     :type root: :class:`HierarchicalCluster`
     :param k: Number of top clusters.
     :type k: int
+    
+    :rtype: list of :class:`HierarchicalCluster` instances
     
     """
     candidates = set([root])
@@ -582,6 +600,8 @@ def top_cluster_membership(root, k):
     :param k: Number of top clusters.
     :type k: int
     
+    :rtype: list-of-int
+    
     """
     clist = top_clusters(root, k)
     cmap = [None] * len(root)
@@ -590,7 +610,7 @@ def top_cluster_membership(root, k):
             cmap[e] = i
     return cmap
 
-def order_leaves(tree, matrix, progressCallback=None):
+def order_leaves_py(tree, matrix, progress_callback=None):
     """Order the leaves in the clustering tree.
     
     (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering))
@@ -610,15 +630,15 @@ def order_leaves(tree, matrix, progressCallback=None):
     tree.mapping.setattr("objects", range(len(tree)))
     M = {}
     ordering = {}
-    visitedClusters = set()
+    visited_clusters = set()
     
-#    def _optOrderingRecursive(tree):
+#    def opt_ordering_recursive(tree):
 #        if len(tree)==1:
 #            for leaf in tree:
 #                M[tree, leaf, leaf] = 0
 #        else:
-#            _optOrderingRecursive(tree.left)
-#            _optOrderingRecursive(tree.right)
+#            opt_ordering_recursive(tree.left)
+#            opt_ordering_recursive(tree.right)
 #            
 #            Vl = set(tree.left)
 #            Vr = set(tree.right)
@@ -632,25 +652,25 @@ def order_leaves(tree, matrix, progressCallback=None):
 #                for w in Vr:
 ##                    if True: #Improved search
 #                    C = min([matrix[m, k] for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)])
-#                    orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
-#                    orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
-#                    k0 = orderedKs[0]
-#                    curMin = 1e30000 
-#                    curM = curK = None
-#                    for m in orderedMs:
-#                        if M[tree_left, u, m] + M[tree_right, w, k0] + C >= curMin:
+#                    ordered_m = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
+#                    ordered_k = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
+#                    k0 = ordered_k[0]
+#                    cur_min = 1e30000 
+#                    cur_m = cur_k = None
+#                    for m in ordered_m:
+#                        if M[tree_left, u, m] + M[tree_right, w, k0] + C >= cur_min:
 #                            break
-#                        for k in  orderedKs:
-#                            if M[tree_left, u, m] + M[tree_right, w, k] + C >= curMin:
+#                        for k in  ordered_k:
+#                            if M[tree_left, u, m] + M[tree_right, w, k] + C >= cur_min:
 #                                break
-#                            testMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
-#                            if curMin > testMin:
-#                                curMin = testMin
-#                                curM = m
-#                                curK = k
-#                    M[tree, u, w] = M[tree, w, u] = curMin
-#                    ordering[tree, u, w] = (tree_left, u, curM, tree_right, w, curK)
-#                    ordering[tree, w, u] = (tree_right, w, curK, tree_left, u, curM)
+#                            test_min = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
+#                            if cur_min > test_min:
+#                                cur_min = test_min
+#                                cur_m = m
+#                                cur_k = k
+#                    M[tree, u, w] = M[tree, w, u] = cur_min
+#                    ordering[tree, u, w] = (tree_left, u, cur_m, tree_right, w, cur_k)
+#                    ordering[tree, w, u] = (tree_right, w, cur_k, tree_left, u, cur_m)
 ##                    else:
 ##                    def MFunc((m, k)):
 ##                        return M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
@@ -660,13 +680,13 @@ def order_leaves(tree, matrix, progressCallback=None):
 ##                    ordering[tree, w, u] = (tree_right, w, k, tree_left, u, m)
 #
 #            if progressCallback:
-#                progressCallback(100.0 * len(visitedClusters) / len(tree.mapping))
-#                visitedClusters.add(tree)
+#                progressCallback(100.0 * len(visited_clusters) / len(tree.mapping))
+#                visited_clusters.add(tree)
 #    
 #    with recursion_limit(sys.getrecursionlimit() + len(tree)):
-#        _optOrderingRecursive(tree)
+#        opt_ordering_recursive(tree)
         
-    def _optOrderingIterative(tree):
+    def opt_ordering_iterative(tree):
         if len(tree)==1:
             for leaf in tree:
                 M[tree, leaf, leaf] = 0
@@ -686,25 +706,25 @@ def order_leaves(tree, matrix, progressCallback=None):
                 for w in Vr:
 #                    if True: #Improved search
                         C = min([matrix[m, k] for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)])
-                        orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
-                        orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
-                        k0 = orderedKs[0]
-                        curMin = 1e30000 
-                        curM = curK = None
-                        for m in orderedMs:
-                            if M[tree_left, u, m] + M[tree_right, w, k0] + C >= curMin:
+                        ordered_m = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
+                        ordered_k = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
+                        k0 = ordered_k[0]
+                        cur_min = 1e30000 
+                        cur_m = cur_k = None
+                        for m in ordered_m:
+                            if M[tree_left, u, m] + M[tree_right, w, k0] + C >= cur_min:
                                 break
-                            for k in  orderedKs:
-                                if M[tree_left, u, m] + M[tree_right, w, k] + C >= curMin:
+                            for k in  ordered_k:
+                                if M[tree_left, u, m] + M[tree_right, w, k] + C >= cur_min:
                                     break
-                                testMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
-                                if curMin > testMin:
-                                    curMin = testMin
-                                    curM = m
-                                    curK = k
-                        M[tree, u, w] = M[tree, w, u] = curMin
-                        ordering[tree, u, w] = (tree_left, u, curM, tree_right, w, curK)
-                        ordering[tree, w, u] = (tree_right, w, curK, tree_left, u, curM)
+                                test_min = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
+                                if cur_min > test_min:
+                                    cur_min = test_min
+                                    cur_m = m
+                                    cur_k = k
+                        M[tree, u, w] = M[tree, w, u] = cur_min
+                        ordering[tree, u, w] = (tree_left, u, cur_m, tree_right, w, cur_k)
+                        ordering[tree, w, u] = (tree_right, w, cur_k, tree_left, u, cur_m)
 #                    else:
 #                        def MFunc((m, k)):
 #                            return M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
@@ -714,19 +734,18 @@ def order_leaves(tree, matrix, progressCallback=None):
 #                        ordering[tree, w, u] = (tree_right, w, k, tree_left, u, m)
 
 #            if progressCallback:
-#                progressCallback(100.0 * len(visitedClusters) / len(tree.mapping))
-#                visitedClusters.add(tree)
-    from Orange.misc import progressBarMilestones
+#                progressCallback(100.0 * len(visited_clusters) / len(tree.mapping))
+#                visited_clusters.add(tree)
     
     subtrees = postorder(tree)
-    milestones = progressBarMilestones(len(subtrees), 1000)
+    milestones = progress_bar_milestones(len(subtrees), 1000)
     
     for i, subtree in enumerate(subtrees):
-        _optOrderingIterative(subtree)
-        if progressCallback and i in milestones:
-            progressCallback(100.0 * i / len(subtrees))
+        opt_ordering_iterative(subtree)
+        if progress_callback and i in milestones:
+            progress_callback(100.0 * i / len(subtrees))
 
-#    def _orderRecursive(tree, u, w):
+#    def order_recursive(tree, u, w):
 #        """ Order the tree based on the computed optimal ordering. 
 #        """
 #        if len(tree)==1:
@@ -734,13 +753,13 @@ def order_leaves(tree, matrix, progressCallback=None):
 #        left, u, m, right, w, k = ordering[tree, u, w]
 #        if len(left)>1 and m not in left.right:
 #            left.swap()
-#        _orderRecursive(left, u, m)
+#        order_recursive(left, u, m)
 #        
 #        if len(right)>1 and k not in right.left:
 #            right.swap()
-#        _orderRecursive(right, k, w)
+#        order_recursive(right, k, w)
         
-    def _orderIterative(tree, u, w):
+    def order_iterative(tree, u, w):
         """ Order the tree based on the computed optimal ordering. 
         """
         opt_uw = {tree: (u, w)}
@@ -762,9 +781,9 @@ def order_leaves(tree, matrix, progressCallback=None):
 ##    print "M(v) =", M[tree, u, w]
     
 #    with recursion_limit(sys.getrecursionlimit() + len(tree)):
-#        _orderRecursive(tree, u, w)
+#        order_recursive(tree, u, w)
             
-    _orderIterative(tree, u, w)
+    order_iterative(tree, u, w)
             
 
 #    def _check(tree, u, w):
@@ -783,7 +802,42 @@ def order_leaves(tree, matrix, progressCallback=None):
     if objects:
         tree.mapping.setattr("objects", objects)
 
-""" Matplotlib dendrogram ploting.
+
+def order_leaves_cpp(tree, matrix, progress_callback=None):
+    """ Order the leaves in the clustering tree (C++ implementation).
+    
+    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering))
+    
+    :param tree: Binary hierarchical clustering tree.
+    :type tree: :class:`HierarchicalCluster`
+    :param matrix: SymMatrix that was used to compute the clustering.
+    :type matrix: :class:`Orange.core.SymMatrix`
+    :param progress_callback: Function used to report on progress.
+    :type progress_callback: function
+    
+    .. note:: The ordering is done inplace.
+    
+    """
+    node_count = iter(range(len(tree)))
+    
+    if progress_callback is not None:
+        def p(*args):
+            progress_callback(100.0 * node_count.next() / len(tree))
+    else:
+        p = None
+    
+    Orange.core.HierarchicalClusterOrdering(tree, matrix, progress_callback=p)
+
+order_leaves_cpp = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_cpp)
+order_leaves_py = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_py)
+
+## The cpp code still needs testing, so we leave the python version as a default for now
+order_leaves = order_leaves_py
+    
+"""
+Matplotlib dendrogram ploting. This is mostly untested,
+use dendrogram_draw funciton instead of this.
+
 """
 try:
     import numpy
@@ -1020,21 +1074,37 @@ class DendrogramPlotPylab(object):
             self.plt.show()
         
         
-""" Dendrogram ploting using Orange.misc.reander
+"""
+Dendrogram ploting using Orange.misc.render
 """
 
 from Orange.misc.render import EPSRenderer, ColorPalette
 
 class DendrogramPlot(object):
-    """ A class for drawing dendrograms
-    Example:
-    >>> a = DendrogramPlot(tree)
+    """ A class for drawing dendrograms.
+    
+    .. note:: ``dendrogram_draw`` function is a more convinient interface
+        to the functionality provided by this class and.   
+        
+    Example::
+    
+        a = DendrogramPlot(tree)
+        a.plot("tree.png", format="png")
+        
     """
     def __init__(self, tree, attr_tree = None, labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None, 
-                 spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, renderer=EPSRenderer):
+                 spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, renderer=EPSRenderer, **kwargs):
         self.tree = tree
         self.attr_tree = attr_tree
-        self.labels = [str(ex.getclass()) for ex in data] if not labels and data and data.domain.classVar else (labels or [])
+        if not labels:
+            if data and data.domain.class_var:
+                labels = [str(ex.getclass()) for ex in data]
+            elif hasattr(tree.mapping, "objects"):
+                labels = [str(obj) for obj in tree.mapping.objects]
+            else:
+                labels = [""] * len(tree)
+        self.labels = labels
+        
 #        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
         self.data = data
         self.width, self.height = float(width) if width else None, float(height) if height else None
@@ -1106,7 +1176,7 @@ class DendrogramPlot(object):
             
         return width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size
     
-    def plot(self, filename="graph.eps"):
+    def plot(self, filename="graph.eps", **kwargs):
         width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size = self.layout()
         heatmap_cell_height = heatmap_height / len(self.labels)
 
@@ -1155,30 +1225,93 @@ class DendrogramPlot(object):
         self.renderer.translate(heatmap_width + self.spacing, heatmap_cell_height)
 #        print self.renderer.transform()
         self.renderer.set_font("Times-Roman", font_size)
-        for index in self.tree: #label in self.labels:
+        for index in self.tree.mapping: #label in self.labels:
             self.renderer.draw_text(0.0, 0.0, self.labels[index])
             self.renderer.translate(0.0, heatmap_cell_height)
         self.renderer.restore_render_state()
-        self.renderer.save(filename)
+        self.renderer.save(filename, **kwargs)
         
-def dendrogram_draw(filename, *args, **kwargs):
-    """ Plot the dendrogram to `filename`.
+        
+def dendrogram_draw(file, cluster, attr_cluster = None, labels=None, data=None,
+                    width=None, height=None, tree_height=None,
+                    heatmap_width=None, text_width=None,  spacing=2,
+                    cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]),
+                    maxv=None, minv=None, gamma=None,
+                    format=None):
+    """ Plot the dendrogram to ``file``.
     
-    .. todo:: Finish documentation.
+    :param file: An  open file or a filename to store the image to.
+    :type file: str or an file-like object suitable for writing.
+    
+    :param cluster: An instance of :class:`HierarcicalCluster`
+    :type cluster: :class:`HierarcicalCluster`
+    
+    :param attr_cluster: An instance of :class:`HierarcicalCluster` for the attributes
+        in ``data`` (unused if ``data`` is not supplied)
+    :type attr_cluster: :class:`HierarcicalCluster`
+    
+    :param labels: Labels for the ``cluster`` leaves.
+    :type labels: list-of-strings
+    
+    :param data: A data table for the (optional) heatmap.
+    :type data: :class:`Orange.data.Table`
+    
+    :param width: Image width.
+    :type width: int
+    
+    :param height: Image height.
+    :type height: int
+    
+    :param tree_height: Dendrogram tree height in the image.
+    :type tree_height: int
+    
+    :param heatmap_width: Heatmap width.
+    :type heatmap_width: int
+    
+    :param text_width: Text labels area width.
+    :type text_width: int
+    
+    :param spacing: Spacing between consecutive leaves.
+    :type spacing: int
+    
+    :param cluster_colors: A dictionary mapping :class:`HierarcicalCluster`
+        instances in ``cluster`` to a RGB color 3-tuple.
+    :type cluster_colors: dict
+    
+    :param format: Output image format Currently supported formats are
+        "png" (default), "eps" and "svg". You only need this arguement if the
+        format cannot be deduced from the ``file`` argument.
+        
+    :type format: str 
+    
     """
     import os
     from Orange.misc.render import PILRenderer, EPSRenderer, SVGRenderer
-    name, ext = os.path.splitext(filename)
-    kwargs["renderer"] = {".eps":EPSRenderer, ".svg":SVGRenderer, ".png":PILRenderer}.get(ext.lower(), PILRenderer)
-#    print kwargs["renderer"], ext
-    d = DendrogramPlot(*args, **kwargs)
-    d.plot(filename)
+    if isinstance(file, basestring):
+        name, ext = os.path.splitext(file)
+        format = ext.lower().lstrip(".") or format
+        
+    if format is None:
+        format = "png"
+        
+    renderer = {"eps":EPSRenderer, "svg":SVGRenderer, "png":PILRenderer}.get(format, "png")
+    
+    d = DendrogramPlot(cluster, attr_cluster, labels, data, width, height,
+                       tree_height, heatmap_width, text_width, spacing,
+                       cluster_colors, color_palette, maxv, minv, gamma,
+                       renderer=renderer)
+    if renderer is PILRenderer:
+        d.plot(file, format=format)
+    else:
+        d.plot(file)
     
 def postorder(cluster):
     """ Return a post order list of clusters.
     
     :param cluster: Cluster
     :type cluster: :class:`HierarchicalCluster`
+    
+    :rtype: list of :class:`HierarchicalCluster` instances
     
     """
     order = []
@@ -1205,6 +1338,8 @@ def preorder(cluster):
     :param cluster: Cluster
     :type cluster: :class:`HierarchicalCluster`
     
+    :rtype: list of :class:`HierarchicalCluster` instances
+    
     """
     order = []
     stack = [cluster]
@@ -1216,24 +1351,26 @@ def preorder(cluster):
     return order
     
     
-def dendrogram_layout(root_cluster, expand_leaves=False):
+def dendrogram_layout(cluster, expand_leaves=False):
     """ Return a layout of the cluster dendrogram on a 2D plane. The return 
     value if a list of (subcluster, (start, center, end)) tuples where
     subcluster is an instance of :class:`HierarchicalCluster` and start,
     end are the two end points for the cluster branch. The list is sorted
     in post-order.
     
-    :param root_cluster: Cluster to layout.
-    :type root_cluster: :class:`HierarchicalCluster`
+    :param cluster: Cluster to layout.
+    :type cluster: :class:`HierarchicalCluster`
     
     :param expand_leaves: If True leaves will span proportional to the number
-        of items they map, else all leaves will be the same width. 
-     
+        of items they contain, else all leaves will be the same width. 
+    
+    :rtype: list of (:class:`HierarchicalCluster`, (start, center, end)) tuples
+    
     """
     result = []
     cluster_geometry = {}
     leaf_idx = 0
-    for cluster in postorder(root_cluster):
+    for cluster in postorder(cluster):
         if not cluster.branches:
             if expand_leaves:
                 start, end = float(cluster.first), float(cluster.last)
@@ -1261,6 +1398,8 @@ def clone(cluster):
     :param cluster: Cluster to clone
     :type cluster: :class:`HierarchicalCluster`
     
+    :rtype: :class:`HierarchicalCluster`
+    
     """
     import copy
     clones = {}
@@ -1274,10 +1413,10 @@ def clone(cluster):
         
     return clones[cluster]
     
-def pruned(root_cluster, level=None, height=None, condition=None):
+def pruned(cluster, level=None, height=None, condition=None):
     """ Return a new pruned clustering instance.
     
-    .. note:: This uses :obj:`clone` to create a copy of the `root_cluster`
+    .. note:: This uses :obj:`clone` to create a copy of the `cluster`
         instance.
     
     :param cluster: Cluster to prune.
@@ -1295,14 +1434,16 @@ def pruned(root_cluster, level=None, height=None, condition=None):
         or False value indicating if the cluster should be pruned.
     :type condition: function 
     
+    :rtype: :class:`HierarchicalCluster`
+    
     """
-    root_cluster = clone(root_cluster)
-    prune(root_cluster, level, height, condition)
-    return root_cluster
+    cluster = clone(cluster)
+    prune(cluster, level, height, condition)
+    return cluster
     
     
-def prune(root_cluster, level=None, height=None, condition=None):
-    """ Prune clustering instance in place
+def prune(cluster, level=None, height=None, condition=None):
+    """ Prune the clustering instance ``cluster`` in place.
     
     :param cluster: Cluster to prune.
     :type cluster: :class:`HierarchicalCluster`
@@ -1324,13 +1465,13 @@ def prune(root_cluster, level=None, height=None, condition=None):
         raise ValueError("At least one pruning argument must be supplied")
     
     level_check = height_check = condition_check = lambda cl: False
-    cluster_depth = cluster_depths(root_cluster)
+    cluster_depth = cluster_depths(cluster)
     
     if level is not None:
-        level_check = lambda cl: cluster_depth[cl] > level
+        level_check = lambda cl: cluster_depth[cl] >= level
         
     if height is not None:
-        height_check = lambda cl: cl.height < height
+        height_check = lambda cl: cl.height <= height
 
     if condition is not None:
         condition_check = condition
@@ -1341,7 +1482,7 @@ def prune(root_cluster, level=None, height=None, condition=None):
         return any([check(cl) for check in [level_check, height_check,
                                             condition_check]])
         
-    for cluster in preorder(root_cluster):
+    for cluster in preorder(cluster):
         if cluster not in pruned_set:
             if check_all(cluster):
                 cluster.branches = None
@@ -1350,14 +1491,19 @@ def prune(root_cluster, level=None, height=None, condition=None):
                 pass
     
     
-def cluster_depths(root_cluster):
+def cluster_depths(cluster):
     """ Return a dictionary mapping :class:`HierarchicalCluster` instances to
-    their depths in the `root_cluster` hierarchy.
+    their depths in the `cluster` hierarchy.
+    
+    :param cluster: Root cluster
+    :type cluster: :class:`HierarchicalCluster`
+    
+    :rtype: class:`dict`
     
     """
     depths = {}
-    depths[root_cluster] = 0
-    for cluster in preorder(root_cluster):
+    depths[cluster] = 0
+    for cluster in preorder(cluster):
         cl_depth = depths[cluster]
         if cluster.branches:
             depths.update(dict.fromkeys(cluster.branches, cl_depth + 1))
@@ -1376,12 +1522,18 @@ def instance_distance_matrix(data,
     :param distance_constructor: An ExamplesDistance_Constructor instance.
     :type distance_constructor: :class:`Orange.distance.instances.ExampleDistConstructor`
     
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    :rtype: :class:`Orange.core.SymMatrix`
+    
     """
     matrix = orange.SymMatrix(len(data))
     dist = distance_constructor(data)
     
     iter_count = matrix.dim * (matrix.dim - 1) / 2
-    milestones = progressBarMilestones(iter_count, 100)
+    milestones = progress_bar_milestones(iter_count, 100)
     
     for count, ((i, ex1), (j, ex2)) in enumerate(_pairs(enumerate(data))):
         matrix[i, j] = dist(ex1, ex2)
@@ -1397,14 +1549,21 @@ def feature_distance_matrix(data, distance=None, progress_callback=None):
     
     :param data: A data table
     :type data: :class:`Orange.data.Table`
+    
     :param distance: a function taking two lists and returning the distance.
     :type distance: function
-     
+    
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    :rtype: :class:`Orange.core.SymMatrix`
+    
     """
     attributes = data.domain.attributes
     matrix = orange.SymMatrix(len(attributes))
     iter_count = matrix.dim * (matrix.dim - 1) / 2
-    milestones = progressBarMilestones(iter_count, 100)
+    milestones = progress_bar_milestones(iter_count, 100)
     
     for count, ((i, a1), (j, a2)) in enumerate(_pairs(enumerate(attributes))):
         matrix[i, j] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
@@ -1424,16 +1583,17 @@ def _pairs(seq, same = False):
             yield seq[i], seq[j]
     
     
-def joining_cluster(root_cluster, item1, item2):
+def joining_cluster(cluster, item1, item2):
     """ Return the cluster where `item1` and `item2` are first joined
     
-    :param root_cluster: Clustering.
-    :type root_cluster: :class:`HierarchicalCluster`
-    :param item1: An element of `root_cluster.mapping` or `root_cluster.mapping.objects`
-    :param item2: An element of `root_cluster.mapping` or `root_cluster.mapping.objects`
+    :param cluster: Clustering.
+    :type cluster: :class:`HierarchicalCluster`
+    :param item1: An element of `cluster.mapping` or `cluster.mapping.objects`
+    :param item2: An element of `cluster.mapping` or `cluster.mapping.objects`
+    
+    :rtype: :class:`HierarchicalCluster`
     
     """
-    cluster = root_cluster
     while True:
         if cluster.branches:
             for branch in cluster.branches:
@@ -1446,19 +1606,21 @@ def joining_cluster(root_cluster, item1, item2):
             return cluster
         
 
-def cophenetic_distances(root_cluster):
+def cophenetic_distances(cluster):
     """ Return the cophenetic distance matrix between items in clustering.
     Cophenetic distance is defined as the height of the cluster where the 
     two items are first joined.
     
-    :param root_cluster: Clustering.
-    :type root_cluster: :class:`HierarchicalCluster`
-     
+    :param cluster: Clustering.
+    :type cluster: :class:`HierarchicalCluster`
+    
+    :rtype: :class:`Orange.core.SymMatrix`
+    
     """
 
-    mapping = root_cluster.mapping  
+    mapping = cluster.mapping  
     matrix = Orange.core.SymMatrix(len(mapping))
-    for cluster in postorder(root_cluster):
+    for cluster in postorder(cluster):
         if cluster.branches:
             for branch1, branch2 in _pairs(cluster.branches):
                 for idx1 in mapping[branch1.first: branch1.last]:
@@ -1470,21 +1632,24 @@ def cophenetic_distances(root_cluster):
                 matrix[ind1, ind2] = cluster.height
     
     return matrix
+
     
-def cophenetic_correlation(root_cluster, matrix):
+def cophenetic_correlation(cluster, matrix):
     """ Return the `cophenetic correlation coefficient
     <http://en.wikipedia.org/wiki/Cophenetic_correlation>`_ of the given
     clustering.
     
-    :param root_cluster: Clustering.
-    :type root_cluster: :class:`HierarchicalCluster`
+    :param cluster: Clustering.
+    :type cluster: :class:`HierarchicalCluster`
     
-    :param matrix: The distance matrix from which the `root_cluster` was
+    :param matrix: The distance matrix from which the `cluster` was
         derived.
-     
+    
+    :rtype: :class:`float`
+    
     """
     import numpy
-    cophenetic = cophenetic_distances(root_cluster)
+    cophenetic = cophenetic_distances(cluster)
     cophenetic = [list(row) for row in cophenetic]
     original = [list(row) for row in matrix]
     cophenetic = numpy.ravel(cophenetic)

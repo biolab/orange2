@@ -54,7 +54,7 @@ def getobjectname(x, default=""):
     return default
 
 
-def demangleExamples(x):
+def demangle_examples(x):
     if type(x)==types.TupleType:
         return x
     else:
@@ -62,6 +62,8 @@ def demangleExamples(x):
 
 
 def frange(*argw):
+    """ Like builtin `range` but works with floats
+    """
     start, stop, step = 0.0, 1.0, 0.1
     if len(argw)==1:
         start=step=argw[0]
@@ -85,20 +87,70 @@ def frange(*argw):
 
 verbose = 0
 
-def printVerbose(text, *verb):
+def print_verbose(text, *verb):
     if len(verb) and verb[0] or verbose:
         print text
 
+__doc__ += """\
+------------------
+Reporting progress
+------------------
+
+.. autoclass:: Orange.misc.ConsoleProgressBar
+    :members:
+
+"""
+
 class ConsoleProgressBar(object):
-    def __init__(self, title="", charwidth=40, step=1, output=sys.stderr):
+    """ A class to for printing progress bar reports in the console.
+    
+    Example ::
+    
+        >>> import sys, time
+        >>> progress = ConsoleProgressBar("Example", output=sys.stdout)
+        >>> for i in range(100):
+        ...    progress.advance()
+        ...    # Or
+        ...    progress.set_state(i)
+        ...    time.sleep(0.01)
+        ...
+        ...
+        Example ===================================>100%
+        
+    """
+    def __init__(self, title="", charwidth=40, step=1, output=None):
+        """ Initialize the progress bar.
+        
+        :param title: The title for the progress bar.
+        :type title: str
+        :param charwidth: The maximum progress bar width in characters.
+        
+            .. todo:: Get the console width from the ``output`` if the
+                information can be retrieved. 
+                
+        :type charwidth: int
+        :param step: A default step used if ``advance`` is called without
+            any  arguments
+        
+        :type step: int
+        :param output: The output file. If None (default) then ``sys.stderr``
+            is used.
+            
+        :type output: An file like object to print the progress report to.
+         
+        """
         self.title = title + " "
         self.charwidth = charwidth
         self.step = step
         self.currstring = ""
         self.state = 0
+        if output is None:
+            output = sys.stderr
         self.output = output
 
     def clear(self, i=-1):
+        """ Clear the current progress line indicator string.
+        """
         try:
             if hasattr(self.output, "isatty") and self.output.isatty():
                 self.output.write("\b" * (i if i != -1 else len(self.currstring)))
@@ -108,11 +160,15 @@ class ConsoleProgressBar(object):
             self.output.write("\n")
 
     def getstring(self):
+        """ Return the progress indicator string.
+        """
         progchar = int(round(float(self.state) * (self.charwidth - 5) / 100.0))
         return self.title + "=" * (progchar) + ">" + " " * (self.charwidth\
             - 5 - progchar) + "%3i" % int(round(self.state)) + "%"
 
     def printline(self, string):
+        """ Print the ``string`` to the output file.
+        """
         try:
             self.clear()
             self.output.write(string)
@@ -122,19 +178,53 @@ class ConsoleProgressBar(object):
         self.currstring = string
 
     def __call__(self, newstate=None):
-        if newstate == None:
-            newstate = self.state + self.step
+        """ Set the ``newstate`` as the current state of the progress bar.
+        ``newstate`` must be in the interval [0, 100].
+        
+        .. note:: ``set_state`` is the prefered way to set a new steate. 
+        
+        :param newstate: The new state of the progress bar.
+        :type newstate: float
+         
+        """
+        if newstate is None:
+            self.advance()
+        else:
+            self.set_state(newstate)
+            
+    def set_state(self, newstate):
+        """ Set the ``newstate`` as the current state of the progress bar.
+        ``newstate`` must be in the interval [0, 100]. 
+        
+        :param newstate: The new state of the progress bar.
+        :type newstate: float
+        
+        """
         if int(newstate) != int(self.state):
             self.state = newstate
             self.printline(self.getstring())
         else:
             self.state = newstate
+            
+    def advance(self, step=None):
+        """ Advance the current state by ``step``. If ``step`` is None use
+        the default step as set at class initialization.
+          
+        """
+        if step is None:
+            step = self.step
+            
+        newstate = self.state + step
+        self.set_state(newstate)
 
     def finish(self):
+        """ Finish the progress bar (i.e. set the state to 100 and
+        print the final newline to the ``output`` file).
+        """
         self.__call__(100)
         self.output.write("\n")
 
-def progressBarMilestones(count, iterations=100):
+def progress_bar_milestones(count, iterations=100):
     return set([int(i*count/float(iterations)) for i in range(iterations)])
 
 def lru_cache(maxsize=100):
@@ -173,6 +263,7 @@ def lru_cache(maxsize=100):
 #from Orange.misc.render import contextmanager
 from contextlib import contextmanager
 
+
 @contextmanager
 def member_set(obj, name, val):
     """ A context manager that sets member ``name`` on ``obj`` to ``val``
@@ -183,7 +274,7 @@ def member_set(obj, name, val):
     yield
     setattr(obj, name, old_val)
     
-
+    
 class recursion_limit(object):
     """ A context manager that sets a new recursion limit. 
     
@@ -200,9 +291,9 @@ class recursion_limit(object):
 
 
 __doc__ += """\
-=============================
+-----------------------------
 Deprecation utility functions
-=============================
+-----------------------------
 
 .. autofunction:: Orange.misc.deprecation_warning
 
@@ -211,6 +302,8 @@ Deprecation utility functions
 .. autofunction:: Orange.misc.deprecated_keywords
 
 .. autofunction:: Orange.misc.deprecated_attribute
+
+.. autofunction:: Orange.misc.deprecated_function_name 
 
 """
 
@@ -403,6 +496,37 @@ def deprecated_attribute(old_name, new_name):
                     doc="A deprecated member '%s'. Use '%s' instead." % (old_name, new_name))
     return prop 
 
+
+def deprecated_function_name(func):
+    """ Return a wrapped function that raises an deprecation warning when
+    called. This should be used for deprecation of module level function names. 
+    
+    Example ::
+    
+        >>> def func_a(arg):
+        ...    print "This is func_a  (used to be named funcA) called with", arg
+        ...
+        ...
+        >>> funcA = deprecated_function_name(func_a)
+        >>> funcA(None)
+          
+    
+    .. note:: This decorator does nothing and if \
+        :obj:`Orange.misc.environ.orange_no_deprecated_members` environment \
+        variable is set to `True`.
+        
+    """
+    if environ.orange_no_deprecated_members:
+        return func
+    
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        warnings.warn("Deprecated function name. Use %r instead!" % func.__name__,
+                      DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    return wrapped
+    
+
 """
 Some utility functions common to Orange classes.
  
@@ -446,4 +570,6 @@ def _orange__reduce__(self):
     return type(self), (), dict(self.__dict__)
 
 
-    
+demangleExamples = deprecated_function_name(demangle_examples)
+progressBarMilestones = deprecated_function_name(progress_bar_milestones)
+printVerbose = deprecated_function_name(print_verbose)

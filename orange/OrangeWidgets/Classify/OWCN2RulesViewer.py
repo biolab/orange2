@@ -57,7 +57,9 @@ class DistributionItemDelegate(QStyledItemDelegate):
         
         painter.save()
         painter.setFont(option.font)
+        
         qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
         
         showText = getattr(self, "showDistText", True)
         metrics = QFontMetrics(option.font)
@@ -100,7 +102,10 @@ class MultiLineStringItemDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
         text = self.displayText(index.data(Qt.DisplayRole), QLocale())
         painter.save()
+        
         qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
+        
         rect = option.rect.adjusted(4, 4, -4, -4)
             
         if option.state & QStyle.State_Selected:

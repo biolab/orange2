@@ -3,7 +3,7 @@
 <description>Saves data to a file.</description>
 <icon>icons/Save.png</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-<priority>12</priority>
+<priority>90</priority>
 """
 
 #

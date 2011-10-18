@@ -66,8 +66,8 @@ class BaseRegressionLearner(object):
         :type table: :class:`Orange.data.Table`
         """
         if table.has_missing_values():
-            self.imputer = self.imputer(table)
-            table = self.imputer(table)
+            imputer = self.imputer(table)
+            table = imputer(table)
         return table
 
     def continuize_table(self, table):

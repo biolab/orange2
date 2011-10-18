@@ -35,8 +35,8 @@ tree = Orange.classification.tree.C45Learner(data)
 print tree.dump()
 print
 
-import orngStat, orngTest
-res = orngTest.crossValidation([Orange.classification.tree.C45Learner(), 
+
+res = Orange.evaluation.testing.cross_validation([Orange.classification.tree.C45Learner(), 
     Orange.classification.tree.C45Learner(convertToOrange=1)], data)
-print "Classification accuracy: %5.3f (converted to tree: %5.3f)" % tuple(orngStat.CA(res))
-print "Brier score: %5.3f (converted to tree: %5.3f)" % tuple(orngStat.BrierScore(res))
+print "Classification accuracy: %5.3f (converted to tree: %5.3f)" % tuple(Orange.evaluation.scoring.CA(res))
+print "Brier score: %5.3f (converted to tree: %5.3f)" % tuple(Orange.evaluation.scoring.Brier_score(res))

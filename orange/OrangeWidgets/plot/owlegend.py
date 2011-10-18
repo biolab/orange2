@@ -92,6 +92,7 @@ class OWLegendGradient(QGraphicsObject):
     
     def __init__(self, palette, values, parent):
         QGraphicsObject.__init__(self, parent)
+        self.parent = parent
         self.palette = palette
         self.values = values
         self.legend = parent
@@ -125,7 +126,7 @@ class OWLegendGradient(QGraphicsObject):
             y = 0
             x = 30
             for item in self.label_items:
-                move_item_xy(item, x, y)
+                move_item_xy(item, x, y, self.parent.graph.animate_plot)
                 y += interval
             self.rect = QRectF(10, 0, self.gradient_width + max([item.boundingRect().width() for item in self.label_items]), self.label_items[0].boundingRect().height() * max(5, len(self.label_items)))
         else:
@@ -142,7 +143,7 @@ class OWLegendGradient(QGraphicsObject):
             x = 0
             y = 30
             for item in self.label_items:
-                move_item_xy(item, x, y)
+                move_item_xy(item, x, y, self.parent.graph.animate_plot)
                 x += interval
             self.rect = QRectF(0, 0, total_width, self.gradient_width + height)
   
@@ -201,7 +202,8 @@ class OWLegend(QGraphicsObject):
         for lst in self.items.itervalues():
             for i in lst:
                 i.setParentItem(None)
-                self.scene().removeItem(i)
+                if self.scene():
+                    self.scene().removeItem(i)
         self.items = {}
         self.update_items()
         
@@ -247,8 +249,9 @@ class OWLegend(QGraphicsObject):
         """
         if category not in self.items:
             return
-        for item in self.items[category]:
-            self.scene().removeItem(item)
+        if self.scene():
+            for item in self.items[category]:
+                self.scene().removeItem(item)
         del self.items[category]
         
     def update_items(self):

@@ -1,10 +1,24 @@
-from distutils.core import setup, Extension
+#!usr/bin/env python
+
+import os, sys
+have_setuptools = False
+
+if "USE_SETUPTOOLS" in os.environ:
+    try:
+        from setuptools import setup
+        have_setuptools = True
+    except ImportError:
+        have_setuptools = False
+        
+import distutils.core
+from distutils.core import setup
+from distutils.core import Extension
 from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib
 from distutils.msvccompiler import MSVCCompiler
 from distutils.unixccompiler import UnixCCompiler
 
-import os, sys, re
+import re
 import glob
 
 from subprocess import check_call
@@ -23,21 +37,17 @@ python_include_dir = get_python_inc(plat_specific=1)
 include_dirs = [python_include_dir, numpy_include_dir, "source/include"]
 
 if sys.platform == "darwin":
-    extra_compile_args = "-fPIC -fpermissive -fno-common -w -DDARWIN ".split()
-    extra_link_args = "-headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -lorange_include".split()
+    extra_compile_args = "-fPIC -fpermissive -fno-common -w -DDARWIN".split()
+    extra_link_args = "-headerpad_max_install_names -undefined dynamic_lookup".split()
 elif sys.platform == "win32":
-    extra_compile_args = ["/EHsc"]
+    extra_compile_args = ["-EHsc"]
     extra_link_args = []
-elif sys.platform == "linux2":
+elif sys.platform.startswith("linux"):
     extra_compile_args = "-fPIC -fpermissive -w -DLINUX".split()
     extra_link_args = ["-Wl,-R$ORIGIN"]    
-#    extra_link_args = ["-Wl,-R'$ORIGIN'"] #use this if distutils runs commands though the shell
 else:
     extra_compile_args = []
     extra_link_args = []
-    
-define_macros=[('NDEBUG', '1'),
-               ('HAVE_STRFTIME', None)]
         
 class LibStatic(Extension):
     pass
@@ -357,18 +367,52 @@ def get_source_files(path, ext="cpp", exclude=[]):
 
 include_ext = LibStatic("orange_include", get_source_files("source/include/"), include_dirs=include_dirs)
 
-if sys.platform == "win32":
+
+if sys.platform == "win32": # ?? mingw/cygwin
     libraries = ["orange_include"]
 else:
     libraries = ["stdc++", "orange_include"]
 
-orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + \
-                                               get_source_files("source/orange/blas/", "c") + \
-                                               get_source_files("source/orange/linpack/", "c"),
-                                      include_dirs=include_dirs,
+
+import ConfigParser
+config = ConfigParser.RawConfigParser()
+config.read("setup-site.cfg")
+
+orange_sources = get_source_files("source/orange/")
+orange_include_dirs = list(include_dirs)
+orange_libraries = list(libraries)
+
+if config.has_option("blas", "library"):
+    # Link external blas library
+    orange_libraries += [config.get("blas", "library")]
+else:
+    orange_sources += get_source_files("source/orange/blas/", "c")
+    
+if config.has_option("R", "library"):
+    # Link external R library (for linpack)
+    orange_libraries += [config.get("R", "library")]
+else:
+    orange_sources += get_source_files("source/orange/linpack/", "c")
+    
+if config.has_option("liblinear", "library"):
+    # Link external LIBLINEAR library
+    orange_libraries += [config.get("liblinear", "library")]
+else:
+    orange_sources += get_source_files("source/orange/liblinear/", "cpp")
+    orange_include_dirs += ["source/orange/liblinear"]
+    
+if config.has_option("libsvm", "library"):
+    # Link external LibSVM library
+    orange_libraries += [config.get("libsvm", "library")]
+else:
+    orange_sources += get_source_files("source/orange/libsvm/", "cpp")
+    
+
+orange_ext = PyXtractSharedExtension("orange", orange_sources,
+                                      include_dirs=orange_include_dirs,
                                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
                                       extra_link_args = extra_link_args,
-                                      libraries=libraries,
+                                      libraries=orange_libraries,
                                       extra_pyxtract_cmds = ["../pyxtract/defvectors.py"],
 #                                      depends=["orange/ppp/lists"]
                                       )
@@ -382,11 +426,23 @@ if sys.platform == "darwin":
 else:
     shared_libs = libraries + ["orange"]
     
-orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/", exclude=["lib_vectors.cpp"]) + get_source_files("source/orangeom/qhull/", "c"),
-                                  include_dirs=include_dirs + ["source/orange/"],
+orangeom_sources = get_source_files("source/orangeom/", exclude=["lib_vectors.cpp"])
+orangeom_libraries = list(shared_libs)
+orangeom_include_dirs = list(include_dirs)
+
+if config.has_option("qhull", "library"):
+    # Link external qhull library
+    orangeom_libraries += [config.get("qhull", "library")]
+else:
+    orangeom_sources += get_source_files("source/orangeom/qhull/", "c")
+    orangeom_include_dirs += ["source/orangeom"]
+
+
+orangeom_ext = PyXtractExtension("orangeom", orangeom_sources,
+                                  include_dirs=orangeom_include_dirs + ["source/orange/"],
                                   extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
                                   extra_link_args = extra_link_args,
-                                  libraries=shared_libs,
+                                  libraries=orangeom_libraries,
                                   )
 
 orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/", exclude=["lib_vectors.cpp"]), 
@@ -417,9 +473,17 @@ for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.
       matches.append(os.path.join(root, filename))
 packages = [os.path.dirname(pkg).replace(os.path.sep, '.') for pkg in matches]
 
+if have_setuptools:
+    setuptools_args = {"zip_safe": False,
+                       "install_requires": ["numpy"],
+                       "extra_requires": ["networkx", "PyQt4", "PyQwt"]
+                       }
+else:
+    setuptools_args = {}
+
 setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       name ="Orange",
-      version = "2.0.0b",
+      version = "2.5a1",
       description = "Orange data mining library for python.",
       author = "Bioinformatics Laboratory, FRI UL",
       author_email = "orange@fri.uni-lj.si",
@@ -427,7 +491,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       maintainer_email = "ales.erjavec@fri.uni-lj.si",
       url = "http://orange.biolab.si",
       download_url = "http://orange.biolab.si/svn/orange/trunk",
-      packages = packages + [".",
+      packages = packages + ["",
                              "OrangeCanvas", 
                              "OrangeWidgets", 
                              "OrangeWidgets.Associate",
@@ -439,8 +503,11 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                              "OrangeWidgets.Unsupervised",
                              "OrangeWidgets.Visualize",
                              "OrangeWidgets.Visualize Qt",
+                             "OrangeWidgets.plot",
+                             "OrangeWidgets.plot.primitives",
                              "doc",
                              ],
+      package_dir = {"": "."},
       package_data = {"OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
                       "OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],
                       "OrangeWidgets.Associate": ["icons/*.png"],
@@ -451,8 +518,10 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                       "OrangeWidgets.Regression": ["icons/*.png"],
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
                       "OrangeWidgets.Visualize": ["icons/*.png"],
+                      "OrangeWidgets.plot": ["*.gs", "*.vs"],
+                      "OrangeWidgets.plot.primitives": ["*.obj"],
                       "doc": ["datasets/*.tab", ],
-                      ".": ["orangerc.cfg"] 
+                      "": ["orangerc.cfg"] 
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
@@ -474,16 +543,17 @@ Orange data mining library
 ==========================
 
 Orange is a scriptable environment for fast prototyping of new
-algorithms and testing schemes. It is a collection of Python-based modules
+algorithms and testing schemes. It is a collection of Python packages
 that sit over the core library and implement some functionality for
 which execution time is not crucial and which is easier done in Python
-than in C++. This includes a variety of tasks such as pretty-print of
-decision trees, attribute subset, bagging and boosting, and alike.
+than in C++. This includes a variety of tasks such as attribute subset,
+bagging and boosting, and alike.
 
-Orange also includes a set of graphical widgets that use methods from core
-library and Orange modules. Through visual programming, widgets can be assembled
-together into an application by a visual programming tool called Orange Canvas.
-"""
-      )
+Orange also includes a set of graphical widgets that use methods from 
+core library and Orange modules. Through visual programming, widgets
+can be assembled together into an application by a visual programming
+tool called Orange Canvas.
+""",
+      **setuptools_args)
       
 

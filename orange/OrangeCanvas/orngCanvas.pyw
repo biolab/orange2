@@ -283,7 +283,7 @@ class OrangeCanvasDlg(QMainWindow):
             for i in xrange(len(defaultTabs)-1,0,-1):
                 if defaultTabs[i] in defaultTabs[0:i]:
                     del defaultTabs[i]
-            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Prototypes", Qt.Unchecked)]
+            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Visualize Qt", Qt.Unchecked), ("Prototypes", Qt.Unchecked)]
             
         widgetTabList = self.settings["WidgetTabs"]
         self.widgetRegistry = orngRegistry.readCategories()
@@ -292,23 +292,30 @@ class OrangeCanvasDlg(QMainWindow):
         extraTabs = sorted(extraTabs)
         
         # Keep Prototypes as last in list
-        if widgetTabList[-1][0] == "Prototypes":
+        if widgetTabList[-1][0] == "Prototypes" and widgetTabList[-2][0] == "Visualize Qt":
+            widgetTabList = widgetTabList[: -2] + extraTabs + widgetTabList[-2 :]
+        elif widgetTabList[-1][0] == "Prototypes":
             widgetTabList = widgetTabList[: -1] + extraTabs + widgetTabList[-1 :]
         else:
             widgetTabList = widgetTabList + extraTabs
         self.settings["WidgetTabs"] = widgetTabList
             
     def createWidgetsToolbar(self):
+        barstate, treestate = None, None
         if self.widgetsToolBar:
             self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
             if isinstance(self.widgetsToolBar, QToolBar):
                 self.removeToolBar(self.widgetsToolBar)
+                barstate = (self.tabs.currentIndex(), )
             elif isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
                 self.settings["toolboxWidth"] = self.widgetsToolBar.toolbox.width()
                 self.removeDockWidget(self.widgetsToolBar)
+                barstate = (self.tabs.toolbox.currentIndex(), )
             elif isinstance(self.widgetsToolBar, orngTabs.WidgetTree):
                 self.settings["toolboxWidth"] = self.widgetsToolBar.treeWidget.width()
                 self.removeDockWidget(self.widgetsToolBar)
+                treestate = ( [self.tabs.treeWidget.topLevelItem(i).isExpanded()
+                               for i in range(self.tabs.treeWidget.topLevelItemCount())], )
             
         if self.settings["widgetListType"] == 0:
             self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetRegistry)
@@ -331,6 +338,15 @@ class OrangeCanvasDlg(QMainWindow):
         self.tabs.createWidgetTabs(self.settings["WidgetTabs"], self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
         if not self.settings.get("showWidgetToolbar", True): 
             self.widgetsToolBar.hide()
+        if barstate:
+            if self.settings["widgetListType"] == 0:
+                self.tabs.toolbox.setCurrentIndex(barstate[0])
+            else:
+                self.tabs.setCurrentPage(barstate[0])
+        if treestate and self.settings["widgetListType"] in [1, 2]:
+            for i, e in enumerate(treestate[0]):
+                self.tabs.treeWidget.topLevelItem(i).setExpanded(e)
+
 
     def readShortcuts(self):
         self.widgetShortcuts = {}
@@ -725,12 +741,12 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://www.ailab.si/orange/doc/catalog")
+        webbrowser.open("http://orange.biolab.si/doc/catalog")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser
-        #webbrowser.open("http://www.ailab.si/orange/orangeCanvas") # to be added on the web
-        webbrowser.open("http://www.ailab.si/orange")
+        #webbrowser.open("http://orange.biolab.si/orangeCanvas") # to be added on the web
+        webbrowser.open("http://orange.biolab.si")
 
     def menuCheckForUpdates(self):
         import updateOrange

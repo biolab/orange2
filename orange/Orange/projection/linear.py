@@ -1250,7 +1250,7 @@ class FreeVizClassifier(Orange.classification.Classifier):
     @deprecated_keywords({"example": "instance", "returnType": "return_type"})
     def __call__(self, instance, return_type=Orange.classification.Classifier.GetValue):
         #instance.setclass(0)
-        return self.classifier(instance, returntype)
+        return self.classifier(instance, return_type)
 
 FreeVizClassifier = deprecated_members({"FreeViz":"freeviz"})(FreeVizClassifier)
 

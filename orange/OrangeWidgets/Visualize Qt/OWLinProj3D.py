@@ -10,8 +10,6 @@ from OWLinProjQt import *
 from OWLinProj3DPlot import OWLinProj3DPlot
 
 class OWLinProj3D(OWLinProjQt):
-    settingsList = ['showAllAttributes'] #TODO
-
     def __init__(self, parent=None, signalManager=None):
         OWLinProjQt.__init__(self, parent, signalManager, "Linear Projection 3D", graphClass=OWLinProj3DPlot)
 

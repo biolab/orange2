@@ -33,14 +33,14 @@ class OWMDS(OWWidget):
                                                   ContextField("graph.ShapeAttr", DomainContextHandler.Optional),
                                                   ContextField("graph.NameAttr", DomainContextHandler.Optional),
                                                   ContextField("graph.ShowName", DomainContextHandler.Optional)])}
-    callbackDeposit=[]
+    
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.StressFunc=3
-        self.minStressDelta=1e-5
+        self.minStressDelta=5e-5
         self.maxIterations=5000
         self.maxImprovment=10
         self.autoSendSelection=0
@@ -81,8 +81,13 @@ class OWMDS(OWWidget):
         OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization", callback=lambda :1)
         
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
-        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Min. stress change", minValue=0, maxValue=1e-2, step=1e-5, precision=6)
-        OWGUI.qwtHSlider(self.stopping, self, "maxIterations", label="Max. number of steps", minValue=10, maxValue=5000, step=10, precision=0)
+        
+        OWGUI.hSlider(OWGUI.widgetBox(self.stopping, "Min. stress change", flat=True),
+                      self, "minStressDelta", minValue=5e-5, maxValue=1e-2, step=5e-5, 
+                      labelFormat="%.5f", intOnly=0)
+        OWGUI.hSlider(OWGUI.widgetBox(self.stopping, "Max. number of steps", flat=True), 
+                      self, "maxIterations", minValue=10, maxValue=5000, step=10, 
+                      labelFormat="%i")
 
         ##Graph Tab        
         OWGUI.hSlider(graph, self, "graph.PointSize", box="Point Size", minValue=1, maxValue=20, callback=self.graph.updateData)
@@ -98,7 +103,7 @@ class OWMDS(OWWidget):
         OWGUI.separator(b2, height=3)
         sl = OWGUI.hSlider(b2, self, "graph.proportionGraphed", minValue=0, maxValue=20, callback=self.graph.updateLinesRepaint, tooltip="Proportion of connected pairs (Maximum of 1000 lines will be drawn")
         OWGUI.checkBox(box, self, "graph.differentWidths", "Show distance by line width", callback = self.graph.updateLinesRepaint)
-        OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateLinesRepaint)
+        OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateData)
         OWGUI.checkBox(box, self, "graph.stressBySize", "Show stress by symbol size", callback = self.updateStressBySize)
         self.updateStressBySize(True)
         
@@ -303,7 +308,7 @@ class OWMDS(OWWidget):
     def updateStressBySize(self, noRepaint = False):
         self.sizeCombo.setDisabled(self.graph.stressBySize)
         if not noRepaint:
-            self.graph.updateLinesRepaint()
+            self.graph.updateData()
         
     def smacofStep(self):
         if not getattr(self, "mds", None):
@@ -355,12 +360,12 @@ class OWMDS(OWWidget):
     def jitter(self):
         if not getattr(self, "mds", None):
             return
-        mi = numpy.argmin(self.mds.points,0)
-        ma = numpy.argmax(self.mds.points,0)
-        st = 0.01*(ma-mi)
+        mi = numpy.min(self.mds.points, axis=0)
+        ma = numpy.max(self.mds.points, axis=0)
+        st = 0.05 * (ma - mi)
         for i in range(self.mds.n):
             for j in range(2):
-                self.mds.points[i][j] += st[j]*(random()-0.5)
+                self.mds.points[i][j] += st[j]*(random() - 0.5)
         if self.computeStress:
             self.mds.getStress(self.stressFunc[self.StressFunc][1])
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
@@ -423,6 +428,10 @@ class OWMDS(OWWidget):
         self.progressBarInit()
         self.iterNum=0
         self.mds.progressCallback=self.callback
+        # The name mangling for orange2.5 does not seem to work for orangeom.MDS
+        # so I set this explicitly  
+        self.mds.progress_callback=self.callback
+        
         self.mds.mds.optimize(self.maxIterations, self.stressFunc[self.StressFunc][1], self.minStressDelta)
         if self.iterNum%(math.pow(10,self.RefreshMode)):
             self.graph.updateData()
@@ -583,6 +592,8 @@ class MDSGraph(OWGraph):
                                 QwtSymbol.RTriangle,
                                 QwtSymbol.Cross,
                                 QwtSymbol.XCross ]
+        
+        self.axis_margin = 10
 
     def setData(self, mds, colors, sizes, shapes, names, showFilled):
         self.mds = mds
@@ -680,8 +691,8 @@ class MDSGraph(OWGraph):
                     dict[hsv].append(i)
                 else:
                     dict[hsv]=[i]
-            maxX, maxY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
-            minX, minY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
+#            maxX, maxY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
+#            minX, minY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
             for color in set:
                 #print len(dict[color.getHsv()]), color.name()
                 X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
@@ -708,7 +719,7 @@ class MDSGraph(OWGraph):
                                   symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
                 c.setZ(100)
                 if self.NameAttr!=0:
-                    c = self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+                    c = self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignBottom)
                     c.setZ(100)
 
 #            for i in range(len(self.colors)):
@@ -723,8 +734,12 @@ class MDSGraph(OWGraph):
         if len(self.mds.points)>0:
             X = [point[0] for point in self.mds.points]
             Y = [point[1] for point in self.mds.points]
-            self.setAxisScale(QwtPlot.xBottom, min(X), max(X))
-            self.setAxisScale(QwtPlot.yLeft, min(Y), max(Y))
+            max_x, min_x = max(X), min(X)
+            max_y, min_y = max(Y), min(Y)
+            span_x = max_x - min_x
+            span_y = max_y - min_y
+            self.setAxisScale(QwtPlot.xBottom, min_x - 0.05 * span_x, max_x + 0.05 * span_x)
+            self.setAxisScale(QwtPlot.yLeft, min_y - 0.05 * span_y, max_y + 0.05 * span_y)
             
 
     def sendData(self, *args):

@@ -110,7 +110,124 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
     which is used for preprocessing the data (continuization and imputation)
     before fitting the regression parameters
 
-    .. attribute:: coeff0
+    """
+    
+
+    def __init__(self, name='lasso regression', t=1, tol=0.001, \
+                 nBoot=100, nPerm=100, imputer=None, continuizer=None):
+        """
+        :param name: name of the linear model, default 'lasso regression'
+        :type name: string
+        :param t: tuning parameter, upper bound for the L1-norm of the
+            regression coefficients
+        :type t: float
+        :param tol: tolerance parameter, regression coefficients
+            (absoulute value) under tol are set to 0,
+            default=0.001
+        :type tol: float
+        :param nBoot: number of bootstrap samples used for non-parametric
+            estimation of standard errors
+        :type nBoot: int
+        :param nPerm: number of permuations used for non-parametric
+            estimation of p-values
+        :type nPerm: int
+        """
+
+        self.name = name
+        self.t = t
+        self.tol = tol
+        self.nBoot = nBoot
+        self.nPerm = nPerm
+        self.set_imputer(imputer=imputer)
+        self.set_continuizer(continuizer=continuizer)
+        
+        
+    def __call__(self, table, weight=None):
+        """
+        :param table: data instances.
+        :type table: :class:`Orange.data.Table`
+        :param weight: the weights for instances. Default: None, i.e.
+            all data instances are eqaully important in fitting
+            the regression parameters
+        :type weight: None or list of Orange.data.variable.Continuous
+            which stores weights for instances
+        
+        """  
+        # dicrete values are continuized        
+        table = self.continuize_table(table)
+        # missing values are imputed
+        table = self.impute_table(table)
+
+        domain = table.domain
+        X, y, w = table.to_numpy()
+        n, m = numpy.shape(X)
+        X, muX = center(X)
+        y, coef0 = center(y)
+
+        import scipy.optimize
+
+        # objective function to be minimized
+        objective = lambda beta: numpy.linalg.norm(y - numpy.dot(X, beta))
+        # initial guess for the regression parameters
+        betaInit = numpy.random.random(m)
+        # constraints for the regression coefficients
+        cnstr = lambda beta: self.t - sum(numpy.abs(beta))
+        # optimal solution
+        coefficients = scipy.optimize.fmin_cobyla(objective, betaInit,\
+                                                       cnstr)
+
+        # set small coefficients to 0
+        def set_2_0(c): return c if abs(c) > self.tol else 0
+        coefficients = map(set_2_0, coefficients)
+
+        # bootstrap estimator of standard error of the coefficient estimators
+        # assumption: fixed t
+        if self.nBoot > 0:
+            coeffB = [] # bootstrapped coefficients
+            for i in range(self.nBoot):
+                tmpTable = get_bootstrap_sample(table)
+                l = LassoRegressionLearner(t=self.t, nBoot=0, nPerm=0)
+                c = l(tmpTable)
+                coeffB.append(c.coefficients)
+            stdErrorsFixedT = numpy.std(coeffB, axis=0)
+        else:
+            stdErrorsFixedT = [float("nan")] * m
+
+        # permutation test to obtain the significance of the regression
+        #coefficients
+        if self.nPerm > 0:
+            coeffP = []
+            for i in range(self.nPerm):
+                tmpTable = permute_responses(table)
+                l = LassoRegressionLearner(t=self.t, nBoot=0, nPerm=0)
+                c = l(tmpTable)
+                coeffP.append(c.coefficients)
+            pVals = \
+                   numpy.sum(abs(numpy.array(coeffP))>\
+                             abs(numpy.array(coefficients)), \
+                             axis=0)/float(self.nPerm)
+        else:
+            pVals = [float("nan")] * m
+
+        # dictionary of regression coefficients with standard errors
+        # and p-values
+        dictModel = {}
+        for i, var in enumerate(domain.attributes):
+            dictModel[var.name] = (coefficients[i], stdErrorsFixedT[i], pVals[i])            
+       
+        return LassoRegression(domain=domain, class_var=domain.class_var,
+                               coef0=coef0, coefficients=coefficients,
+                               stdErrorsFixedT=stdErrorsFixedT,
+                               pVals=pVals,
+                               dictModel= dictModel,
+                               muX=muX)
+
+
+class LassoRegression(Orange.classification.Classifier):
+    """Lasso regression predicts value of the response variable
+    based on the values of independent variables.
+
+    .. attribute:: coef0
 
         intercept (sample mean of the response variable)    
 
@@ -139,128 +256,18 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
 
         the sample mean of the all independent variables    
 
-
-    """
-    
-
-    def __init__(self, name='lasso regression', t=1, tol=0.001, \
-                 imputer=None, continuizer=None):
-        """
-        :param name: name of the linear model, default 'lasso regression'
-        :type name: string
-        :param t: tuning parameter, upper bound for the L1-norm of the
-            regression coefficients
-        :type t: float
-        :param tol: tolerance parameter, regression coefficients
-            (absoulute value) under tol are set to 0,
-            default=0.001
-        :type tol: float
-        """
-
-        self.name = name
-        self.t = t
-        self.tol = tol
-        self.set_imputer(imputer=imputer)
-        self.set_continuizer(continuizer=continuizer)
-        
-        
-    def __call__(self, table, weight=None, nBoot=100, nPerm=100):
-        """
-        :param table: data instances.
-        :type table: :class:`Orange.data.Table`
-        :param weight: the weights for instances. Default: None, i.e.
-            all data instances are eqaully important in fitting
-            the regression parameters
-        :type weight: None or list of Orange.data.variable.Continuous
-            which stores weights for instances
-        :param nBoot: number of bootstrap samples used for non-parametric
-            estimation of standard errors
-        :type nBoot: int
-        :param nPerm: number of permuations used for non-parametric
-            estimation of p-values
-        :type nPerm: int
-        
-        """  
-        # dicrete values are continuized        
-        table = self.continuize_table(table)
-        # missing values are imputed
-        table = self.impute_table(table)
-
-        self.domain = table.domain
-        X, y, w = table.to_numpy()
-        n, m = numpy.shape(X)
-        X, self.muX = center(X)
-        y, self.coef0 = center(y)
-
-        import scipy.optimize
-
-        # objective function to be minimized
-        objective = lambda beta: numpy.linalg.norm(y-numpy.dot(X,beta))
-        # initial guess for the regression parameters
-        betaInit = numpy.random.random(m)
-        # constraints for the regression coefficients
-        cnstr = lambda beta: self.t - sum(numpy.abs(beta))
-        # optimal solution
-        self.coefficients = scipy.optimize.fmin_cobyla(objective, betaInit,\
-                                                       cnstr)
-
-        # set small coefficients to 0
-        def set_2_0(c): return c if abs(c) > self.tol else 0
-        self.coefficients = map(set_2_0, self.coefficients)
-
-        # bootstrap estimator of standard error of the coefficient estimators
-        # assumption: fixed t
-        if nBoot > 0:
-            coeffB = [] # bootstrapped coefficients
-            for i in range(nBoot):
-                tmpTable = get_bootstrap_sample(table)
-                l = LassoRegressionLearner(t=self.t)
-                c = l(tmpTable, nBoot=0, nPerm=0)
-                coeffB.append(l.coefficients)
-            self.stdErrorsFixedT = numpy.std(coeffB, axis=0)
-        else:
-            self.stdErrorsFixedT = [float("nan")] * m
-
-        # permutation test to obtain the significance of the regression
-        #coefficients
-        if nPerm > 0:
-            coeffP = []
-            for i in range(nPerm):
-                tmpTable = permute_responses(table)
-                l = LassoRegressionLearner(t=self.t)
-                c = l(tmpTable, nBoot=0, nPerm=0)
-                coeffP.append(l.coefficients)
-            self.pVals = \
-                       numpy.sum(abs(numpy.array(coeffP))>\
-                                 abs(numpy.array(self.coefficients)), \
-                                 axis=0)/float(nPerm)
-        else:
-            self.pVals = [float("nan")] * m
-
-        # dictionary of regression coefficients with standard errors
-        # and p-values
-        self.dictModel = {}
-        for i, var in enumerate(self.domain.attributes):
-            self.dictModel[var.name] = (self.coefficients[i], self.stdErrorsFixedT[i], self.pVals[i])            
-       
-        return LassoRegression(self)
-
-
-class LassoRegression(Orange.classification.Classifier):
-    """Lasso regression predicts value of the response variable
-    based on the values of independent variables.
-
-    .. attribute:: model
-    
-        fitted lasso regression model   
-
     """ 
-    def __init__(self, model):
-        """
-        :param model: fitted lasso regression model
-        :type model: :class:`LassoRegressionLearner`
-        """
-        self.model = model
+    def __init__(self, domain=None, class_var=None, coef0=None,
+                 coefficients=None, stdErrorsFixedT=None, pVals=None,
+                 dictModel=None, muX=None):
+        self.domain = domain
+        self.class_var = class_var
+        self.coef0 = coef0
+        self.coefficients = coefficients
+        self.stdErrorsFixedT = stdErrorsFixedT
+        self.pVals = pVals
+        self.dictModel = dictModel
+        self.muX = muX
 
     def __call__(self, instance,\
                  resultType=Orange.classification.Classifier.GetValue):
@@ -269,22 +276,23 @@ class LassoRegression(Orange.classification.Classifier):
             variable will be predicted
         :type instance: 
         """  
-        ins = Orange.data.Instance(self.model.domain, instance)
+        ins = Orange.data.Instance(self.domain, instance)
         if "?" in ins: # missing value -> corresponding coefficient omitted
             def miss_2_0(x): return x if x != "?" else 0
             ins = map(miss_2_0, ins)
-            ins = numpy.array(ins)[:-1]-self.model.muX
+            ins = numpy.array(ins)[:-1] - self.muX
         else:
-            ins = numpy.array(ins.native())[:-1]-self.model.muX
+            ins = numpy.array(ins.native())[:-1] - self.muX
 
-        yHat = numpy.dot(self.model.coefficients, ins) + self.model.coef0 
-        yHat = Orange.data.Value(yHat)
-         
+        yHat = numpy.dot(self.coefficients, ins) + self.coef0 
+        yHat = self.class_var(yHat)
+        dist = Orange.statistics.distribution.Continuous(self.class_var)
+        dist[yHat] = 1.0
         if resultType == Orange.classification.Classifier.GetValue:
             return yHat
         if resultType == Orange.classification.Classifier.GetProbabilities:
-            return Orange.statistics.distribution.Continuous({1.0: yHat})
-        return (yHat, Orange.statistics.distribution.Continuous({1.0: yHat}))    
+            return dist
+        return (yHat, dist)    
 
 
 
@@ -302,7 +310,7 @@ def print_lasso_regression_model(lr, skipZero=True):
     """
     
     from string import join
-    m = lr.model    
+    m = lr
     labels = ('Variable', 'Coeff Est', 'Std Error', 'p')
     print join(['%10s' % l for l in labels], ' ')
 

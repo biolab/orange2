@@ -1,16 +1,13 @@
-#version 150
-
 // Each example is drawn using a symbol constructed out
 // of triangles. Each vertex is specified by its offset
 // from the center point, example's position, color, normal
-// and index.
-in vec3 position;
-in vec3 offset;
-in vec3 color;
-in vec3 normal;
-in float index;
+// and index (stored in .w components of position and offset).
+attribute vec4 position;
+attribute vec4 offset;
+attribute vec3 color;
+attribute vec3 normal;
 
-out vec4 var_color;
+varying vec4 var_color;
 
 uniform bool use_2d_symbols;
 uniform bool encode_color;
@@ -28,7 +25,7 @@ uniform mat4 modelview;
 uniform mat4 projection;
 
 void main(void) {
-    vec3 offset_rotated = offset;
+    vec3 offset_rotated = offset.xyz;
     offset_rotated.x *= symbol_scale.x;
     offset_rotated.y *= symbol_scale.x;
     offset_rotated.z *= symbol_scale.x;
@@ -54,7 +51,7 @@ void main(void) {
         offset_rotated = invs * offset_rotated;
     }
 
-    vec3 pos = position;
+    vec3 pos = position.xyz;
     pos += translation;
     pos *= scale;
     vec4 off_pos = vec4(pos+offset_rotated, 1.);
@@ -67,10 +64,7 @@ void main(void) {
     }
     else if (encode_color)
     {
-        var_color = vec4(float((int(index) & 0xFF)) / 255.,
-                         float((int(index) & 0xFF00) >> 8) / 255.,
-                         float((int(index) & 0xFF0000) >> 16) / 255.,
-                         float((int(index) & 0xFF000000) >> 24) / 255.);
+        var_color = vec4(position.w, offset.w, 0, 0);
     }
     else
     {
@@ -83,14 +77,13 @@ void main(void) {
 
         if (use_2d_symbols)
         {
-            // Disable lighting for 2d symbols.
-            // TODO: gradients?
+            // No lighting for 2d symbols.
             var_color = vec4(color, a);
         }
         else
         {
             // Calculate the amount of lighting this triangle receives (diffuse component only).
-            // The calculations are physically wrong, but look better. TODO: make them look better
+            // The calculations are physically wrong, but look better.
             vec3 light_direction = normalize(vec3(1., 1., 0.5));
             float diffuse = max(0., dot(normalize((modelview * vec4(normal, 0.)).xyz), light_direction));
             var_color = vec4(color+diffuse*0.7, a);

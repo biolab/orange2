@@ -9,7 +9,7 @@ from Orange.regression import linear
 from orngWrap import PreprocessedLearner
 
 class OWLinearRegression(OWWidget):
-    settingsList = []
+    settingsList = ["name", "use_ridge", "ridge_lambda"]
     
     def __init__(self, parent=None, signalManager=None, title="Linear Regression"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
@@ -22,8 +22,9 @@ class OWLinearRegression(OWWidget):
         ##########
          
         self.name = "Linear Regression"
-#        self.beta0 = True
-        
+        self.use_ridge = False
+        self.ridge_lambda = 1.0
+        self.loadSettings()
         
         #####
         # GUI
@@ -31,10 +32,10 @@ class OWLinearRegression(OWWidget):
         
         OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/predictor name", 
                        tooltip="Name of the learner/predictor")
-        
-#        OWGUI.checkBox(self.controlArea, self, "beta0", "Include intercept.",
-#                       box="Settings",
-#                       tooltip="Add an intercept to the linear model")
+
+        OWGUI.checkWithSpin(self.controlArea, self, "Ridge lambda", 1, 10,
+                            "use_ridge", "ridge_lambda", step=1,
+                            tooltip="Ridge lambda for ridge regression")
         
         OWGUI.button(self.controlArea, self, "&Apply",
                      callback=self.apply,
@@ -56,7 +57,11 @@ class OWLinearRegression(OWWidget):
         self.apply()
             
     def apply(self):
-        learner = linear.LinearRegressionLearner(name=self.name)
+        if self.use_ridge:
+            learner = linear.LinearRegressionLearner(name=self.name,
+                                                ridgeLambda=self.ridge_lambda)
+        else:
+            learner = linear.LinearRegressionLearner(name=self.name)
         predictor = None
         if self.preprocessor:
             learner = self.preprocessor.wrapLearner(learner)

@@ -35,6 +35,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.StringVariable": "Orange.data.variable.String",
            "orange.PythonVariable": "Orange.data.variable.Python",
            "orange.VarList": "Orange.data.variable.Variables",
+           "orange.SymMatrix": "Orange.data.SymMatrix",
            "orange.GetValue": "Orange.classification.Classifier.GetValue",
            "orange.GetProbabilities": "Orange.classification.Classifier.GetProbabilities",
            "orange.GetBoth": "Orange.classification.Classifier.GetBoth",
@@ -492,6 +493,14 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngEvalAttr.MeasureAttribute_DistanceClass": "Orange.feature.scoring.Distance",
            "orngEvalAttr.OrderAttributesByMeasure": "Orange.feature.scoring.OrderAttributes",
 
+           "orange.ProbabilityEstimator": "Orange.statistics.estimate.Estimator",
+           "orange.ProbabilityEstimator_FromDistribution": "Orange.statistics.estimate.EstimatorFromDistribution",
+           "orange.ProbabilityEstimatorConstructor": "Orange.statistics.estimate.EstimatorConstructor",
+           "orange.ProbabilityEstimatorConstructor_Laplace": "Orange.statistics.estimate.Laplace",
+           "orange.ProbabilityEstimatorConstructor_kernel": "Orange.statistics.estimate.Kernel",
+           "orange.ProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.Loess",
+           "orange.ProbabilityEstimatorConstructor_m": "Orange.statistics.estimate.M",
+           "orange.ProbabilityEstimatorConstructor_relative": "Orange.statistics.estimate.RelativeFrequency",
            }
 
 for k, v in MAPPING.items():

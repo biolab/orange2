@@ -260,10 +260,10 @@ class GraphLayout(orangeom.GraphLayout):
     
     .. attribute:: coors
    
-    Coordinates of all vertices. They are initialized to random positions.
-    You can modify them manually or use one of the optimization algorithms.
-    Usage: coors[0][i], coors[1][i]; 0 for x-axis, 1 for y-axis
-    
+        Coordinates of all vertices. They are initialized to random positions.
+        You can modify them manually or use one of the optimization algorithms.
+        Usage: coors[0][i], coors[1][i]; 0 for x-axis, 1 for y-axis
+        
     
     .. automethod:: Orange.network.GraphLayout.set_graph
     

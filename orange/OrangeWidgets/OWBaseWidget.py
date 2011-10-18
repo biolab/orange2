@@ -436,6 +436,7 @@ class OWBaseWidget(QDialog):
                     pass
         
         if alsoContexts:
+            self.synchronizeContexts()
             contextHandlers = getattr(self, "contextHandlers", {})
             for contextHandler in contextHandlers.values():
                 contextHandler.mergeBack(self)

@@ -1,16 +1,9 @@
-"""
-======================
-Probability estimation
-======================
-"""
-
-from orange import \
-     ProbabilityEstimator, \
-               ProbabilityEstimator_FromDistribution, \
-          ProbabilityEstimatorConstructor, \
-               ProbabilityEstimatorConstructor_Laplace, \
-               ProbabilityEstimatorConstructor_kernel, \
-               ProbabilityEstimatorConstructor_loess, \
-               ProbabilityEstimatorConstructor_m, \
-               ProbabilityEstimatorConstructor_relative, \
-          ProbabilityEstimatorList
+import Orange
+from Orange.core import ProbabilityEstimator as Estimator
+from Orange.core import ProbabilityEstimator_FromDistribution as EstimatorFromDistribution
+from Orange.core import ProbabilityEstimatorConstructor as EstimatorConstructor
+from Orange.core import ProbabilityEstimatorConstructor_Laplace as Laplace
+from Orange.core import ProbabilityEstimatorConstructor_kernel as Kernel
+from Orange.core import ProbabilityEstimatorConstructor_loess as Loess
+from Orange.core import ProbabilityEstimatorConstructor_m as M
+from Orange.core import ProbabilityEstimatorConstructor_relative as RelativeFrequency

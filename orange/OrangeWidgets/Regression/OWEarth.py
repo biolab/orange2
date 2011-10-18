@@ -9,7 +9,7 @@ from Orange.regression import earth
 from orngWrap import PreprocessedLearner
  
 class OWEarth(OWWidget):
-    settingsList = ["degree", "terms", "penalty"]
+    settingsList = ["name", "degree", "terms", "penalty"]
     
     def __init__(self, parent=None, signalManager=None,
                  title="Earth - Multivariate Adaptive Regression Splines"):

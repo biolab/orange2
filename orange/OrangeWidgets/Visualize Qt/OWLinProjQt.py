@@ -16,6 +16,7 @@ from OWFreeVizOptimization import *
 import OWToolbars, OWGUI, orngTest
 import orngVisFuncts, OWColorPalette
 import orngVizRank
+from plot.owtheme import LinProjDarkTheme, LinProjLightTheme
 
 ###########################################################################################
 ##### WIDGET : Linear Projection
@@ -25,7 +26,7 @@ class OWLinProjQt(OWVisWidget):
                     "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection",
-                    "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing"
+                    "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing",
                     "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
 
@@ -43,6 +44,7 @@ class OWLinProjQt(OWVisWidget):
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("FreeViz Learner", orange.Learner)]
 
         name_lower = name.lower()
+        self._name_lower = name_lower
 
         # local variables
         self.showAllAttributes = 0
@@ -83,6 +85,14 @@ class OWLinProjQt(OWVisWidget):
         self.graph.showAxisScale = 0
         self.graph.showValueLines = 0
         self.graph.valueLineLength = 5
+        self.dark_theme = False
+
+        if "3d" in name_lower:
+            self.settingsList.append("graph.use_2d_symbols")
+            self.settingsList.append("graph.mouse_sensitivity")
+            self.settingsList.append("dark_theme")
+            if "sphereviz" in name_lower:
+                self.settingsList.append("graph.show_anchor_grid")
 
         #load settings
         self.loadSettings()
@@ -151,11 +161,26 @@ class OWLinProjQt(OWVisWidget):
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
-        g = self.graph.gui
+        gui = self.graph.gui
 
-        # zooming / selection
-        self.zoomSelectToolbar = g.zoom_select_toolbar(self.GeneralTab, buttons = g.default_zoom_select_buttons + [g.Spacing, g.ShufflePoints])
-        self.connect(self.zoomSelectToolbar.buttons[g.SendSelection], SIGNAL("clicked()"), self.sendSelections)
+        if "3d" in name_lower:
+            toolbar_buttons = [
+                gui.StateButtonsBegin,
+                    (gui.UserButton, 'Rotate', 'state', ROTATING, None, 'Dlg_undo'),
+                    gui.Select,
+                gui.StateButtonsEnd,
+                gui.Spacing,
+                gui.SendSelection,
+                gui.ClearSelection
+            ]
+
+            self.zoomSelectToolbar = gui.zoom_select_toolbar(self.GeneralTab, buttons = toolbar_buttons)
+            self.connect(self.zoomSelectToolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.sendSelections)
+            self.graph.set_selection_behavior(OWPlot.ReplaceSelection)
+        else:
+            # zooming / selection
+            self.zoomSelectToolbar = gui.zoom_select_toolbar(self.GeneralTab, buttons = gui.default_zoom_select_buttons + [gui.Spacing, gui.ShufflePoints])
+            self.connect(self.zoomSelectToolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
         # SETTINGS TAB
@@ -178,19 +203,28 @@ class OWLinProjQt(OWVisWidget):
         self.graph.gui.show_legend_check_box(box)
         bbox = OWGUI.widgetBox(box, orientation = "horizontal")
         if "3d" in name_lower:
-            OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.graph.updateGL)
-            OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.graph.updateGL, showValueLabel = 0)
+            OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.graph.update)
+            OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.graph.update, showValueLabel = 0)
         else:
             OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
             OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
         OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
 
-        if "sphereviz" in name_lower:
-            OWGUI.checkBox(box, self, 'graph.camera_in_center', 'Camera in center', callback = self.updateGraph, tooltip = "Look at the data from the center")
-
         if "3d" in name_lower:
+            OWGUI.checkBox(box, self, 'dark_theme', 'Dark theme', callback = self.on_theme_change)
             OWGUI.checkBox(box, self, 'graph.use_2d_symbols', '2D symbols', callback = self.updateGraph, tooltip = "Use 2D symbols")
+            self.on_theme_change()
+            if "sphereviz" in name_lower:
+                OWGUI.checkBox(box, self, 'graph.show_anchor_grid', 'Anchor grid', callback = self.on_theme_change)
+                box = OWGUI.widgetBox(self.SettingsTab, 'Camery type', orientation = "horizontal")
+                c = OWGUI.comboBox(box, self, 'graph.camera_type', callback=self.graph.update_camera_type, sendSelectedValue=0)
+                c.addItem('Default')
+                c.addItem('Center')
+                c.addItem('Random attribute')
+                OWGUI.hSlider(box, self, 'graph.camera_angle', label='FOV', minValue=45, maxValue=180, step=1, callback = self.graph.update, tooltip='Field of view angle')
+            box = OWGUI.widgetBox(self.SettingsTab, 'Mouse', orientation = "horizontal")
+            OWGUI.hSlider(box, self, 'graph.mouse_sensitivity', label='Sensitivity', minValue=1, maxValue=10, step=1, callback = self.graph.update, tooltip='Change mouse sensitivity')
         else:
             self.graph.gui.filled_symbols_check_box(box)
             wbox = OWGUI.widgetBox(box, orientation = "horizontal")
@@ -209,7 +243,7 @@ class OWLinProjQt(OWVisWidget):
         OWGUI.button(box, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring variables", debuggingEnabled = 0)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Tooltips Settings")
-        callback = self.graph.updateGL if "3d" in name_lower else self.updateGraph
+        callback = self.graph.update if "3d" in name_lower else self.updateGraph
         OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = callback)
         OWGUI.comboBox(box, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = callback, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
@@ -271,7 +305,10 @@ class OWLinProjQt(OWVisWidget):
         val = self.vizrank.getSelectedProjection()
         if val:
             (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
-            self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
+            if "3d" in self._name_lower:
+                self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"), ZAnchors = generalDict.get("ZAnchors"))
+            else:
+                self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
             self.graph.removeAllSelections()
 
 
@@ -397,9 +434,15 @@ class OWLinProjQt(OWVisWidget):
             self.freeVizDlg.hide()
         OWVisWidget.hideEvent(self, ev)
         
-
     def sendReport(self):
         self.reportImage(self.graph.saveToFileDirect, QSize(500, 500))
+
+    def on_theme_change(self):
+        if self.dark_theme:
+            self.graph.theme = LinProjDarkTheme()
+        else:
+            self.graph.theme = LinProjLightTheme()
+
         
 #test widget appearance
 if __name__=="__main__":

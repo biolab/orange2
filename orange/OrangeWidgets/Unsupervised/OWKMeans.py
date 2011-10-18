@@ -13,7 +13,7 @@ import orngClustering
 import math
 import random
 import statc
-from PyQt4.Qwt5 import *
+#from PyQt4.Qwt5 import *
 from itertools import izip
 
 import orngDebugging

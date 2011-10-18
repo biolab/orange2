@@ -140,6 +140,7 @@ class OWDistributionGraphQt(OWPlot):
             
         self.calcHistogramAndProbGraph()
         self.refreshVisibleOutcomes()
+        self.reset_zoom()
 
     def setNumberOfBars(self, n):
         self.numberOfBars = n

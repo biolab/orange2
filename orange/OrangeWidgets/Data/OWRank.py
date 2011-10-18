@@ -6,8 +6,11 @@
 <priority>1102</priority>
 """
 from OWWidget import *
+    
 import OWGUI
 import orange
+
+from functools import partial
 
 def _toPyObject(variant):
     val = variant.toPyObject()
@@ -36,19 +39,118 @@ def table(shape, fill=None):
     """
     return [[fill for j in range(shape[1])] for i in range(shape[0])]
  
-class OWRank(OWWidget):
-    settingsList =  ["nDecimals", "reliefK", "reliefN", "nIntervals", "sortBy", "nSelected", "selectMethod", "autoApply", "showDistributions", "distColorRgb"]
-    discMeasures          = ["ReliefF", "Information Gain", "Gain Ratio", "Gini Gain", "Log Odds Ratio"]
-    discMeasuresShort     = ["ReliefF", "Inf. gain", "Gain ratio", "Gini", "log OR"]
-    discMeasuresAttrs     = ["computeReliefF", "computeInfoGain", "computeGainRatio", "computeGini", "computeLogOdds"]
-    discEstimators        = [orange.MeasureAttribute_relief, orange.MeasureAttribute_info, orange.MeasureAttribute_gainRatio, orange.MeasureAttribute_gini, orange.MeasureAttribute_logOddsRatio]
-    discHandlesContinuous = [True, False, False, False, False]
+from Orange.regression.earth import ScoreEarthImportance
+from orngSVM import MeasureAttribute_SVMWeights
+from orngEnsemble import MeasureAttribute_randomForests
+
+MEASURE_PARAMS = {ScoreEarthImportance: \
+                    [{"name": "degree", 
+                      "type": int,
+                      "display_name": "Max. term degree",
+                      "range": range(1, 4),
+                      "default": 2,
+                      "doc": "Maximum degree of terms included in the model." 
+                     },
+                     {"name": "t",
+                      "type": int,
+                      "display_name": "Num. models.",
+                      "range": range(1, 21),
+                      "default": 10,
+                      "doc": "Number of models to train for feature scoring."
+                      },
+#                     {"name": "score_what",
+#                      "type": int,
+#                      "display_name": "Score what",
+#                      "range": range(0, 3),
+#                      "display_role": ["Num. Subsets", "RSS", "GCV"]
+#                      "default": 2,
+#                      "doc": ""}
+                     ],
+                  orange.MeasureAttribute_relief: \
+                     [{"name": "k",
+                       "type": int,
+                       "display_name": "Neighbours",
+                       "range": range(1, 21),
+                       "default": 10,
+                       "doc": "Number of neighbors to consider."},
+                      {"name":"m",
+                       "type": int,
+                       "display_name": "Examples",
+                       "range": range(20, 101),
+                       "default": 20,
+                       "doc": ""}
+                      ],
+                  MeasureAttribute_randomForests:\
+                     [{"name": "trees",
+                       "type": int,
+                       "display_name": "Num. of trees",
+                       "range": range(20, 101),
+                       "default": 100,
+                       "doc": "Number of trees in the random forest."}
+                      ]
+                  }
+
+
+MEASURES = [("ReliefF", "ReliefF", orange.MeasureAttribute_relief),
+            ("Information Gain", "Inf. gain", orange.MeasureAttribute_info),
+            ("Gain Ratio", "Gain Ratio", orange.MeasureAttribute_gainRatio),
+            ("Gini Gain", "Gini", orange.MeasureAttribute_gini),
+            ("Log Odds Ratio", "log OR", orange.MeasureAttribute_logOddsRatio),
+            ("MSE", "MSE", orange.MeasureAttribute_MSE),
+            ("Earth Importance", "Earth imp.", ScoreEarthImportance),
+            ("Linear SVM Weights", "SVM weight", MeasureAttribute_SVMWeights),
+            ("Random Forests", "RF", MeasureAttribute_randomForests),
+            ]
+
+MEASURES_HANDLES_CONTINUOUS = {"ReliefF": True,
+                               "Earth Importance": True,
+                               "Linear SVM Weights": True,
+                               "Random Forests": True,
+                               }
+
+MEASURES_SUPPORTS_REGRESSION = {"ReliefF": True,
+                                "MSE": True,
+                                "Earth Importance": True,
+                                "Random Forests": True,
+                                }
+
+MEASURES_SUPPORTS_CLASSIFICATION = {"MSE": False,
+                                    "Random Forests": True,
+                                    }
+
+MEASURES_DEFAULT_SELECTED = dict([(mname, True) for mname, _, _ in MEASURES[:6]] + \
+                                 [(mname, False) for mname, _, _ in MEASURES[6:]]) # The Earth imp. and SVM are not selected by default
+
+
+class MethodParameter(object):
+    def __init__(self, name="", type=None, display_name="Parameter",
+                 range=None, default=None, doc=""):
+        self.name = name
+        self.type = type
+        self.display_name = display_name
+        self.range = range
+        self.default = default
+        self.doc = doc
     
-    contMeasures      = ["ReliefF", "MSE"]
-    contMeasuresShort = ["ReliefF", "MSE"]
-    contMeasuresAttrs = ["computeReliefFCont", "computeMSECont"]
-    contEstimators    = [orange.MeasureAttribute_relief, orange.MeasureAttribute_MSE]
-    contHandlesContinuous   = [True, False]
+def supports_classification(name):
+    return MEASURES_SUPPORTS_CLASSIFICATION.get(name, True)
+
+def supports_regression(name):
+    return MEASURES_SUPPORTS_REGRESSION.get(name, False)
+
+def handles_continuous(name):
+    return MEASURES_HANDLES_CONTINUOUS.get(name, False)
+
+def measure_parameters(measure):
+    return [MethodParameter(**args) for args in MEASURE_PARAMS.get(measure, [])]
+
+def param_attr_name(measure, param):
+    """ Name of the OWRank widget where the parameter is stored. 
+    """
+    return "param_" + measure.__name__ + "_" + param.name
+        
+class OWRank(OWWidget):
+    settingsList =  ["nDecimals", "nIntervals", "sortBy", "nSelected", "selectMethod", "autoApply", "showDistributions", "distColorRgb"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Rank")
@@ -56,12 +158,7 @@ class OWRank(OWWidget):
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Reduced Example Table", ExampleTable, Default + Single)]
 
-        self.settingsList += self.discMeasuresAttrs + self.contMeasuresAttrs
-        self.logORIdx = self.discMeasuresShort.index("log OR")
-
         self.nDecimals = 3
-        self.reliefK = 10
-        self.reliefN = 20
         self.nIntervals = 4
         self.sortBy = 2
         self.selectMethod = 2
@@ -71,72 +168,119 @@ class OWRank(OWWidget):
         self.distColorRgb = (220,220,220, 255)
         self.distColor = QColor(*self.distColorRgb)
         self.minmax = {}
-        
+        self.selectedMeasures = dict(MEASURES_DEFAULT_SELECTED)
         self.data = None
-
-        for meas in self.discMeasuresAttrs + self.contMeasuresAttrs:
-            setattr(self, meas, True)
-
-        self.loadSettings()
+        
+#        self.measure_parameters = AttributeDict()
+#        self.measure_parameters = {}
+        
+        self.methodParamAttrs = []
+        for _, _, m in MEASURES:
+            params = measure_parameters(m) or []
+            for p in params:
+                setattr(self, param_attr_name(m, p), p.default)
+                self.methodParamAttrs.append(param_attr_name(m, p))
+        self.settingsList = self.settingsList + self.methodParamAttrs
+        
+        self.loadSettings() 
 
         labelWidth = 80
+        
+        self.discMeasures = [name for name, short, _ in MEASURES \
+                             if supports_classification(name)]
+        
+        self.contMeasures = [name for name, short, _ in MEASURES \
+                             if supports_regression(name)]
+        
+        self.discMeasuresShort = [short for name, short, _ in MEASURES \
+                                  if supports_classification(name)]
+        
+        self.contMeasuresShort = [short for name, short, _ in MEASURES \
+                                  if supports_regression(name)]
+        
+        self.discEstimators = [measure for name, _, measure in MEASURES \
+                               if supports_classification(name)]
+        
+        self.contEstimators = [measure for name, _, measure in MEASURES \
+                               if supports_regression(name)]
+        
+        self.discHandlesContinuous = map(handles_continuous, self.discMeasures)
+        self.contHandlesContinuous = map(handles_continuous, self.contMeasures)
 
+        # The stacked layout for Classification/Regression measures
+#        self.stackedWidget = OWGUI.widgetBox(self.controlArea, margin=0,
+#                                             addSpace=True)
+        
         self.stackedLayout = QStackedLayout()
         self.stackedLayout.setContentsMargins(0, 0, 0, 0)
         self.stackedWidget = OWGUI.widgetBox(self.controlArea, margin=0,
                                              orientation=self.stackedLayout,
                                              addSpace=True)
+#        self.stackedWidget.layout().addLayout(self.stackedLayout)
         # Discrete class scoring
-        box = OWGUI.widgetBox(self.stackedWidget, "Scoring",
-                              addSpace=False,
-                              addToLayout=False)
-        self.stackedLayout.addWidget(box)
+        discreteBox = OWGUI.widgetBox(self.stackedWidget, "Scoring",
+                                      addSpace=False,
+                                      addToLayout=False)
+        self.stackedLayout.addWidget(discreteBox)
         
-        for meas, valueName in zip(self.discMeasures, self.discMeasuresAttrs):
-            if valueName == "computeReliefF":
-                hbox = OWGUI.widgetBox(box, orientation = "horizontal")
-                OWGUI.checkBox(hbox, self, valueName, meas, callback=self.measuresChanged)
-                hbox.layout().addSpacing(5)
-                smallWidget = OWGUI.SmallWidgetLabel(hbox, pixmap = 1, box = "ReliefF Parameters", tooltip = "Show ReliefF parameters")
-                OWGUI.spin(smallWidget.widget, self, "reliefK", 1, 20, label="Neighbours", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
-                OWGUI.spin(smallWidget.widget, self, "reliefN", 20, 100, label="Examples", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
-                OWGUI.button(smallWidget.widget, self, "Load defaults", callback = self.loadReliefDefaults)
-                OWGUI.rubber(hbox)
-            else:
-                OWGUI.checkBox(box, self, valueName, meas, callback=self.measuresChanged)
-                
-        OWGUI.comboBox(box, self, "sortBy", label = "Sort by"+"  ",
-                       items = ["No Sorting", "Attribute Name", "Number of Values"] + self.discMeasures,
-                       orientation=0, valueType = int, callback=self.sortingChanged)
-                
         # Continuous class scoring
-        box = OWGUI.widgetBox(self.stackedWidget, "Scoring",
-                              addSpace=False,
-                              addToLayout=False)
-        self.stackedLayout.addWidget(box)
-        for meas, valueName in zip(self.contMeasures, self.contMeasuresAttrs):
-            if valueName == "computeReliefFCont":
-                hbox = OWGUI.widgetBox(box, orientation = "horizontal")
-                OWGUI.checkBox(hbox, self, valueName, meas, callback=self.measuresChanged)
-                hbox.layout().addSpacing(5)
-                smallWidget = OWGUI.SmallWidgetLabel(hbox, pixmap = 1, box = "ReliefF Parameters", tooltip = "Show ReliefF parameters")
-                OWGUI.spin(smallWidget.widget, self, "reliefK", 1, 20, label="Neighbours", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
-                OWGUI.spin(smallWidget.widget, self, "reliefN", 20, 100, label="Examples", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
-                OWGUI.button(smallWidget.widget, self, "Load defaults", callback = self.loadReliefDefaults)
-                OWGUI.rubber(hbox)
-            else:
-                OWGUI.checkBox(box, self, valueName, meas, callback=self.measuresChanged)
+        continuousBox = OWGUI.widgetBox(self.stackedWidget, "Scoring",
+                                        addSpace=False,
+                                        addToLayout=False)
+        self.stackedLayout.addWidget(continuousBox)
+        
+        def measure_control(container, name, measure):
+            """ Construct UI control for measure.
+            """
+            params = measure_parameters(measure)
+            if params:
+                hbox = OWGUI.widgetBox(container, orientation = "horizontal")
+                OWGUI.checkBox(hbox, self.selectedMeasures, name, name,
+                               callback=partial(self.measuresSelectionChanged, name),
+                               tooltip="Enable " + name)
+                smallWidget = OWGUI.SmallWidgetLabel(hbox, pixmap=1, box=name + " Parameters",
+                                                     tooltip="Show " + name + "Parameters")
+                for param in params:
+                    OWGUI.spin(smallWidget.widget, self, param_attr_name(measure, param),
+                               param.range[0], param.range[-1],
+                               label=param.display_name, 
+                               tooltip=param.doc,
+                               callback=partial(self.measureParamChanged, name, param),
+                               callbackOnReturn=True)
                 
-        OWGUI.comboBox(box, self, "sortBy", label = "Sort by"+"  ",
-                       items = ["No Sorting", "Attribute Name", "Number of Values"] + self.contMeasures,
-                       orientation=0, valueType = int, callback=self.sortingChanged)
+                OWGUI.button(smallWidget.widget, self, "Load defaults",
+                             callback=partial(self.loadMeasureDefaults, name))
+            else:
+                OWGUI.checkBox(container, self.selectedMeasures, name, name,
+                               callback=partial(self.measuresSelectionChanged, name),
+                               tooltip="Enable " + name)
+        
+        for name, short_name, measure in MEASURES:
+            if supports_classification(name):
+                measure_control(discreteBox, name, measure)
+                    
+            if supports_regression(name):
+                measure_control(continuousBox, name, measure)
+        
+        
+        OWGUI.comboBox(discreteBox, self, "sortBy", label = "Sort by"+"  ",
+                       items = ["No Sorting", "Attribute Name", "Number of Values"] + \
+                               [name for name in self.discMeasures],
+                       orientation=0, valueType = int,
+                       callback=self.sortingChanged)
+        
+        OWGUI.comboBox(continuousBox, self, "sortBy", label = "Sort by"+"  ",
+                       items = ["No Sorting", "Attribute Name", "Number of Values"] + \
+                               [name for name in self.contMeasures],
+                       orientation=0, valueType = int,
+                       callback=self.sortingChanged)
 
         box = OWGUI.widgetBox(self.controlArea, "Discretization",
                               addSpace=True)
         OWGUI.spin(box, self, "nIntervals", 2, 20,
                    label="Intervals: ",
                    orientation=0,
-                   tooltip="Disctetization for measures which cannot score continuous attributes",
+                   tooltip="Disctetization for measures which cannot score continuous attributes.",
                    callback=self.discretizationChanged,
                    callbackOnReturn=True)
 
@@ -243,6 +387,7 @@ class OWRank(OWWidget):
         self.switchRanksMode(0)
         self.resetInternals()
         self.updateDelegates()
+        self.updateVisibleScoreColumns()
 
 #        self.connect(self.table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.headerClick)
         
@@ -262,7 +407,6 @@ class OWRank(OWWidget):
             self.measures = self.discMeasures
             self.handlesContinuous = self.discHandlesContinuous
             self.estimators = self.discEstimators
-            self.measuresAttrs = self.discMeasuresAttrs
         else:
             self.ranksView = self.contRanksView
             self.ranksModel = self.contRanksModel
@@ -270,7 +414,8 @@ class OWRank(OWWidget):
             self.measures = self.contMeasures
             self.handlesContinuous = self.contHandlesContinuous
             self.estimators = self.contEstimators
-            self.measuresAttrs = self.contMeasuresAttrs
+            
+        self.updateVisibleScoreColumns()
             
     def setData(self, data):
         self.error(0)
@@ -309,7 +454,6 @@ class OWRank(OWWidget):
             if is_class_discrete(self.data):
                 self.setLogORTitle()
             self.ranksView.setSortingEnabled(self.sortBy > 0)
-            self.ranksView
             
         self.applyIf()
 
@@ -328,17 +472,21 @@ class OWRank(OWWidget):
         self.warning(range(max(len(self.discEstimators), len(self.contEstimators))))
         
         if measuresMask is None:
-            measuresMask = [True] * len(measures)
-        for measure_index, (est, meas, handles, mask) in enumerate(zip(
-                estimators, measures, handlesContinous, measuresMask)):
+            # Update all selected measures
+            measuresMask = [self.selectedMeasures.get(m) for m in measures]
+        
+        for measure_index, (est, meas, mask) in enumerate(zip(
+                estimators, measures, measuresMask)):
             if not mask:
                 continue
-            if meas == "ReliefF":
-                est = est()
-                est.k = self.reliefK
-                est.m = self.reliefN
-            else:
-                est = est()
+            handles = MEASURES_HANDLES_CONTINUOUS.get(meas, False)
+            params = measure_parameters(est)
+            estimator = est()
+            if params:
+                for p in params:
+                    setattr(estimator, p.name,
+                            getattr(self, param_attr_name(est, p)))
+                    
             if not handles:
                 data = self.getDiscretizedData()
                 attr_map = data.attrDict
@@ -351,7 +499,7 @@ class OWRank(OWWidget):
                 s = None
                 if attr is not None:
                     try:
-                        s = est(attr, data)
+                        s = estimator(attr, data)
                     except Exception, ex:
                         self.warning(measure_index, "Error evaluating %r: %r" % (meas, str(ex)))
                         # TODO: store exception message (for widget info or item tooltip)
@@ -366,7 +514,7 @@ class OWRank(OWWidget):
                 attr_scores.append(s)
             self.measure_scores[measure_index] = attr_scores
         
-        self.updateRankModel()
+        self.updateRankModel(measuresMask)
         self.ranksProxyModel.invalidate()
         
         if self.selectMethod in [0, 2]:
@@ -383,9 +531,6 @@ class OWRank(OWWidget):
                     values_one.append(s)
                 else:
                     values_one.append(None)
-                
-#                if s is None:
-#                    s = "NA"
                 item = self.ranksModel.item(j, i + 2)
                 if not item:
                     item = PyStandardItem()
@@ -400,7 +545,7 @@ class OWRank(OWWidget):
                 for j, v in enumerate(vals):
                     if v is not None:
                         # Set the bar ratio role for i-th measure.
-                        ratio = (v - vmin) / ((vmax - vmin) or 1)
+                        ratio = float((v - vmin) / ((vmax - vmin) or 1))
                         if self.showDistributions:
                             self.ranksModel.item(j, i + 2).setData(QVariant(ratio), OWGUI.BarRatioRole)
                         else:
@@ -411,6 +556,7 @@ class OWRank(OWWidget):
         self.ranksView.resizeRowsToContents()
             
     def cbShowDistributions(self):
+        # This should be handled by the delegates only (must always set the BarRatioRole
         self.updateRankModel()
         # Need to update the selection
         self.autoSelection()
@@ -445,19 +591,10 @@ class OWRank(OWWidget):
         self.ranksModel.setRowCount(0)
 
     def onSelectionChanged(self, *args):
-        """ Called when the ranks vire selection changes.
+        """ Called when the ranks view selection changes.
         """
         selected = self.selectedAttrs()
         self.clearButton.setEnabled(bool(selected))
-#        # Change the selectionMethod to manual if necessary.
-#        if self.selectMethod == 0 and len(selected) != self.ranksModel.rowCount():
-#            self.selectMethod = 1
-#        elif self.selectMethod == 2:
-#            inds = self.ranksView.selectionModel().selectedRows(0)
-#            rows = [ind.row() for ind in inds]
-#            if set(rows) != set(range(self.nSelected)):
-#                self.selectMethod = 1
-                
         self.applyIf()
         
     def onSelectItem(self, index):
@@ -499,15 +636,20 @@ class OWRank(OWWidget):
         self.discretizedData = None
         self.updateScores([not b for b in self.handlesContinuous])
         self.autoSelection()
-
-    def reliefChanged(self):
-        self.updateScores([m == "ReliefF" for m in self.measures])
-        self.autoSelection()
-
-    def loadReliefDefaults(self):
-        self.reliefK = 5
-        self.reliefN = 20
-        self.reliefChanged()
+        
+    def measureParamChanged(self, name, param=None):
+        index = self.measures.index(name)
+        measure = self.estimators[index]
+        mask = [i == index for i, _ in enumerate(self.measures)]
+        self.updateScores(mask)
+    
+    def loadMeasureDefaults(self, name):
+        index = self.measures.index(name)
+        measure = self.estimators[index]
+        params = measure_parameters(measure)
+        for i, p in enumerate(params):
+            setattr(self, param_attr_name(measure, p), p.default)
+        self.measureParamChanged(name)
         
     def autoSelection(self):
         selModel = self.ranksView.selectionModel()
@@ -560,20 +702,39 @@ class OWRank(OWWidget):
             self.ranksView.setSortingEnabled(True)
 
     def setLogORTitle(self):
-        var =self.data.domain.classVar 
+        var =self.data.domain.classVar    
         if len(var.values) == 2:
             title = "log OR (for %r)" % var.values[1][:10]
         else:
             title = "log OR"
-        item = PyStandardItem(title)
-        self.ranksModel.setHorizontalHeaderItem(self.ranksModel.columnCount() - 1, item)
-        return 
+        if "Log Odds Ratio" in self.discEstimators:
+            index = self.discMeasures.index("Log Odds Ratio")
+            item = PyStandardItem(title)
+            self.ranksModel.setHorizontalHeaderItem(index + 2, item)
 
-    def measuresChanged(self):
+    def measuresSelectionChanged(self, name=None):
         """ Measure selection has changed. Update column visibility.
         """
-        for i, valName in enumerate(self.measuresAttrs):
-            shown = getattr(self, valName, True)
+        if name is None:
+            # Update all scores
+            measuresMask = None
+        else:
+            # Update scores for shown column if they are not yet computed.
+            shown = self.selectedMeasures.get(name, False)
+            index = self.measures.index(name)
+            if all(s is None for s in self.measure_scores[index]) and shown:
+                measuresMask = [n == name for n in self.measures]
+            else:
+                measuresMask = [False] * len(self.measures)
+        self.updateScores(measuresMask)
+        
+        self.updateVisibleScoreColumns()
+            
+    def updateVisibleScoreColumns(self):
+        """ Update the visible columns of the scores view.
+        """
+        for i, measure in enumerate(self.measures):
+            shown = self.selectedMeasures.get(measure)
             self.ranksView.setColumnHidden(i + 2, not shown)
 
     def sortByColumn(self, col):
@@ -624,7 +785,7 @@ class OWRank(OWWidget):
             inds = [ind.row() for ind in inds]
             return [self.data.domain.attributes[i] for i in inds]
         else:
-            return []
+            return []    
 
 class RankItemDelegate(QStyledItemDelegate):
     """ Item delegate that can also draw a distribution bar
@@ -665,7 +826,9 @@ class RankItemDelegate(QStyledItemDelegate):
             
         painter.save()
         painter.setFont(option.font)
+        
         qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
         
         # TODO: Check ForegroundRole.
         if option.state & QStyle.State_Selected:
@@ -728,7 +891,6 @@ class MySortProxyModel(QSortFilterProxyModel):
         role = self.sortRole()
         left = left.data(role).toPyObject()
         right = right.data(role).toPyObject()
-#        print left, right
         return left < right
 
 if __name__=="__main__":
@@ -736,7 +898,8 @@ if __name__=="__main__":
     ow=OWRank()
     ow.setData(orange.ExampleTable("wine.tab"))
     ow.setData(orange.ExampleTable("zoo.tab"))
-#    ow.setData(orange.ExampleTable("servo.tab"))
+    ow.setData(orange.ExampleTable("servo.tab"))
+    ow.setData(orange.ExampleTable("iris.tab"))
 #    ow.setData(orange.ExampleTable("auto-mpg.tab"))
     ow.show()
     a.exec_()

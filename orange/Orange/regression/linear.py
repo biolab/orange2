@@ -66,78 +66,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
     The class is derived from
     :class:`Orange.regression.base.BaseRegressionLearner`
     which is used for preprocessing the data (continuization and imputation)
-    before fitting the regression parameters
-
-    .. attribute:: F
-    
-        F-statistics of the model.
-
-    .. attribute:: coefficients
-
-        list of regression coefficients. If the intercept is included
-        the first item corresponds to the estimated intercept
-
-    .. attribute:: stdError
-
-        list of standard errors of the coefficient estimator.    
-
-    .. attribute:: tScores
-
-        list of t-scores for the estimated regression coefficients    
-
-    .. attribute:: pVals
-
-        list of p-values for the null hypothesis that the regression
-        coefficients equal 0 based on t-scores and two sided
-        alternative hypothesis    
-
-    .. attribute:: dictModel
-
-        dictionary of statistical properties of the model.
-        Keys - names of the independent variables (or "Intercept")
-        Values - tuples (coefficient, standard error,
-        t-value, p-value)
-
-    .. attribute:: fitted
-
-        estimated values of the dependent variable for all instances
-        from the table
-
-    .. attribute:: residuals
-
-        differences between estimated and actual values of the
-        dependent variable for all instances from the table
-
-    .. attribute:: m
-
-        number of independent variables    
-
-    .. attribute:: n
-
-        number of instances    
-
-    .. attribute:: muY
-
-        the sample mean of the dependent variable    
-
-    .. attribute:: r2
-
-        _`coefficient of determination`:
-        http://en.wikipedia.org/wiki/Coefficient_of_determination
-
-    .. attribute:: r2adj
-
-        adjusted coefficient of determination
-
-    .. attribute:: sst, sse, ssr
-
-        total sum of squares, explained sum of squares and
-        residual sum of squares respectively
-
-    .. attribute:: stdCoefficients
-
-        standardized regression coefficients
-
+    before fitting the regression parameters.
 
     """    
 
@@ -232,9 +161,9 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
                  X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
         else:
              X = A
-
-        self.domain, self.m, self.n = table.domain, m, n
-
+             
+        domain = table.domain
+        
         if numpy.std(y) < 10e-6: # almost constant variable
             return Orange.regression.mean.MeanLearner(table)
      
@@ -244,66 +173,73 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             for i, ins in enumerate(table):
                 W[i, i] = float(ins[weight])
 
+        computeStats = self.computeStats
         # adds some robustness by computing the pseudo inverse;
         # normal inverse could fail due to singularity of the X.T * W * X
         if self.ridgeLambda is None:
             cov = pinv(dot(dot(X.T, W), X))        
         else:
             cov = pinv(dot(dot(X.T, W), X) - self.ridgeLambda*numpy.eye(m+1))
-            self.computeStats = False # TO DO: find inferential properties of the estimators
+            computeStats = False # TO DO: find inferential properties of the estimators
         D = dot(dot(cov, X.T), W)
-        self.coefficients = dot(D, y)
+        coefficients = dot(D, y)
 
-        self.muY, sigmaY = numpy.mean(y), numpy.std(y)
+        muY, sigmaY = numpy.mean(y), numpy.std(y)
         if A is not None:
             covX = numpy.cov(X, rowvar=0)
 
             # standardized coefficients
-            self.stdCoefficients = (sqrt(covX.diagonal()) / sigmaY) \
-                                   * self.coefficients
+            stdCoefficients = (sqrt(covX.diagonal()) / sigmaY) \
+                               * coefficients
 
-        if self.computeStats is False:
-            return LinearRegression(self)
+        if computeStats is False:
+            return LinearRegression(domain.class_var, domain, coefficients=coefficients,
+                                    std_coefficients=stdCoefficients, intercept=self.intercept)
+            
 
-        self.fitted = dot(X, self.coefficients)
-        self.residuals = [ins.get_class()-self.fitted[i] \
-                          for i, ins in enumerate(table)]
+        fitted = dot(X, coefficients)
+        residuals = [ins.get_class()-fitted[i] \
+                     for i, ins in enumerate(table)]
 
         # model summary        
         # total sum of squares (total variance)
-        self.sst = numpy.sum((y - self.muY) ** 2)
+        sst = numpy.sum((y - muY) ** 2)
         # sum of squares due to regression (explained variance)
-        self.ssr = numpy.sum((self.fitted - self.muY)**2)
-        # eror sum of squares (unexplaied variance)
-        self.sse = self.sst - self.ssr
+        ssr = numpy.sum((fitted - muY)**2)
+        # error sum of squares (unexplaied variance)
+        sse = sst - ssr
         # coefficient of determination
-        self.r2 = self.ssr / self.sst
-        self.r2adj = 1-(1-self.r2)*(n-1)/(n-m-1)
-        self.F = (self.ssr/m)/(self.sst-self.ssr/(n-m-1))
+        r2 = ssr / sst
+        r2adj = 1-(1-r2)*(n-1)/(n-m-1)
+        F = (ssr/m)/(sst-ssr/(n-m-1))
         df = n-2 
-        sigmaSquare = self.sse/(n-m-1)
+        sigmaSquare = sse/(n-m-1)
         # standard error of the regression estimator, t-scores and p-values
-        self.stdError = sqrt(sigmaSquare*pinv(dot(X.T, X)).diagonal())
-        self.tScores = self.coefficients/self.stdError
-        self.pVals=[scipy.stats.betai(df*0.5,0.5,df/(df + t*t)) \
-                    for t in self.tScores]
+        stdError = sqrt(sigmaSquare*pinv(dot(X.T, X)).diagonal())
+        tScores = coefficients/stdError
+        pVals = [scipy.stats.betai(df*0.5,0.5,df/(df + t*t)) \
+                 for t in tScores]
 
         # dictionary of regression coefficients with standard errors
         # and p-values
-        self.dictModel = {}
+        dictModel = {}
         if self.intercept:
-            self.dictModel["Intercept"] = (self.coefficients[0],\
-                                           self.stdError[0], \
-                                           self.tScores[0], \
-                                           self.pVals[0])
-        for i, var in enumerate(self.domain.attributes):
-            j = i+1 if self.intercept else i
-            self.dictModel[var.name] = (self.coefficients[j], \
-                                        self.stdError[j],\
-                                        self.tScores[j],\
-                                        self.pVals[j])
+            dictModel["Intercept"] = (coefficients[0],\
+                                      stdError[0], \
+                                      tScores[0], \
+                                      pVals[0])
+        for i, var in enumerate(domain.attributes):
+            j = i + 1 if self.intercept else i
+            dictModel[var.name] = (coefficients[j], \
+                                   stdError[j],\
+                                   tScores[j],\
+                                   pVals[j])
         
-        return LinearRegression(self)
+        return LinearRegression(domain.class_var, domain, coefficients, F,
+                 std_error=stdError, t_scores=tScores, p_vals=pVals, dict_model=dictModel,
+                 fitted=fitted, residuals=residuals, m=m, n=n, mu_y=muY,
+                 r2=r2, r2adj=r2adj, sst=sst, sse=sse, ssr=ssr,
+                 std_coefficients=stdCoefficients, intercept=self.intercept)
 
 
 class LinearRegression(Orange.classification.Classifier):
@@ -311,20 +247,109 @@ class LinearRegression(Orange.classification.Classifier):
     """Linear regression predicts value of the response variable
     based on the values of independent variables.
 
-    .. attribute:: model
+    .. attribute:: F
     
-        fitted linear regression model   
+        F-statistics of the model.
+
+    .. attribute:: coefficients
+
+        list of regression coefficients. If the intercept is included
+        the first item corresponds to the estimated intercept
+
+    .. attribute:: std_error
+
+        list of standard errors of the coefficient estimator.    
+
+    .. attribute:: t_scores
+
+        list of t-scores for the estimated regression coefficients    
+
+    .. attribute:: p_vals
+
+        list of p-values for the null hypothesis that the regression
+        coefficients equal 0 based on t-scores and two sided
+        alternative hypothesis    
+
+    .. attribute:: dict_model
+
+        dictionary of statistical properties of the model.
+        Keys - names of the independent variables (or "Intercept")
+        Values - tuples (coefficient, standard error,
+        t-value, p-value)
+
+    .. attribute:: fitted
+
+        estimated values of the dependent variable for all instances
+        from the training table
+
+    .. attribute:: residuals
+
+        differences between estimated and actual values of the
+        dependent variable for all instances from the training table
+
+    .. attribute:: m
+
+        number of independent variables    
+
+    .. attribute:: n
+
+        number of instances    
+
+    .. attribute:: mu_y
+
+        the sample mean of the dependent variable    
+
+    .. attribute:: r2
+
+        _`coefficient of determination`:
+        http://en.wikipedia.org/wiki/Coefficient_of_determination
+
+    .. attribute:: r2adj
+
+        adjusted coefficient of determination
+
+    .. attribute:: sst, sse, ssr
+
+        total sum of squares, explained sum of squares and
+        residual sum of squares respectively
+
+    .. attribute:: std_coefficients
+
+        standardized regression coefficients
 
     """   
 
 
     
-    def __init__(self, model):
+    def __init__(self, class_var=None, domain=None, coefficients=None, F=None,
+                 std_error=None, t_scores=None, p_vals=None, dict_model=None,
+                 fitted=None, residuals=None, m = None, n=None, mu_y=None,
+                 r2=None, r2adj=None, sst=None, sse=None, ssr=None,
+                 std_coefficients=None, intercept=None):
         """
         :param model: fitted linear regression model
         :type model: :class:`LinearRegressionLearner`
         """
-        self.model = model
+        self.class_var = class_var
+        self.domain = domain
+        self.coefficients = coefficients
+        self.F = F
+        self.std_error = std_error
+        self.t_scores = t_scores
+        self.p_vals = p_vals
+        self.dict_model = dict_model
+        self.fitted = fitted
+        self.residuals = residuals
+        self.m = m
+        self.n = n
+        self.mu_y = mu_y
+        self.r2 = r2
+        self.r2adj = r2adj
+        self.sst = sst
+        self.sse = sse
+        self.ssr = ssr
+        self.std_coefficients = std_coefficients
+        self.intercept = intercept
 
     def __call__(self, instance, \
                  resultType=Orange.classification.Classifier.GetValue):
@@ -333,31 +358,33 @@ class LinearRegression(Orange.classification.Classifier):
             variable will be predicted
         :type instance: 
         """        
-        ins = Orange.data.Instance(self.model.domain, instance)
+        ins = Orange.data.Instance(self.domain, instance)
         ins = numpy.array(ins.native())
         if "?" in ins: # missing value -> corresponding coefficient omitted
             def miss_2_0(x): return x if x != "?" else 0
             ins = map(miss_2_0, ins)
 
-        if self.model.intercept:
-            if len(self.model.coefficients) > 1:
-                yHat = self.model.coefficients[0] + \
-                       dot(self.model.coefficients[1:], ins[:-1])
+        if self.intercept:
+            if len(self.coefficients) > 1:
+                yHat = self.coefficients[0] + \
+                       dot(self.coefficients[1:], ins[:-1])
             else:
                 if len(ins) == 1:
                     print ins
-                    yHat = self.model.muY
+                    yHat = self.mu_y
                 else:
-                    yHat = dot(self.model.coefficients, ins[:-1])
+                    yHat = dot(self.coefficients, ins[:-1])
         else:
-            yHat = dot(self.model.coefficients, ins[:-1])
-        yHat = Orange.data.Value(yHat)
-         
+            yHat = dot(self.coefficients, ins[:-1])
+#        yHat = Orange.data.Value(yHat)
+        yHat = self.class_var(yHat)
+        dist = Orange.statistics.distribution.Continuous(self.class_var)
+        dist[yHat] = 1.0
         if resultType == Orange.classification.Classifier.GetValue:
             return yHat
         if resultType == Orange.classification.Classifier.GetProbabilities:
-            return Orange.statistics.distribution.Continuous({1.0: yHat})
-        return (yHat, Orange.statistics.distribution.Continuous({1.0: yHat}))
+            return dist
+        return (yHat, dist)
 
 
 def print_linear_regression_model(lr):
@@ -370,12 +397,13 @@ def print_linear_regression_model(lr):
 
     """
     from string import join
-    m = lr.model    
+    m = lr   
     labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
     print join(['%10s' % l for l in labels], ' ')
 
     fmt = "%10s " + join(["%10.3f"]*4, " ") + " %5s"
-
+    if not lr.p_vals:
+        raise ValueError("Model does not contain model statistics.")
     def get_star(p):
         if p < 0.001: return  "*"*3
         elif p < 0.01: return "*"*2
@@ -384,20 +412,20 @@ def print_linear_regression_model(lr):
         else: return " "
     
     if m.intercept == True:
-        stars =  get_star(m.pVals[0])
+        stars =  get_star(m.p_vals[0])
         print fmt % ('Intercept', m.coefficients[0], \
-                     m.stdError[0], m.tScores[0], m.pVals[0], stars)
+                     m.std_error[0], m.t_scores[0], m.p_vals[0], stars)
         for i in range(len(m.domain.attributes)):
-            stars = get_star(m.pVals[i+1])
+            stars = get_star(m.p_vals[i+1])
             print fmt % (m.domain.attributes[i].name,\
-                         m.coefficients[i+1], m.stdError[i+1],\
-                         m.tScores[i+1], m.pVals[i+1], stars)
+                         m.coefficients[i+1], m.std_error[i+1],\
+                         m.t_scores[i+1], m.p_vals[i+1], stars)
     else:
         for i in range(len(m.domain.attributes)):
-            stars = get_star(m.pVals[i])
+            stars = get_star(m.p_vals[i])
             print fmt % (m.domain.attributes[i].name,\
-                         m.coefficients[i], m.stdError[i],\
-                         m.tScores[i], m.pVals[i], stars)
+                         m.coefficients[i], m.std_error[i],\
+                         m.t_scores[i], m.p_vals[i], stars)
     print "Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1"
 
 

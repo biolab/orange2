@@ -1,8 +1,8 @@
 """
-<name>Generate data</name>
+<name>Paint Data</name>
 <description>Generate artificial data sets with a simple 'Paint' like interface</description>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>3050</priority>
+<priority>40</priority>
 <icon>icons/GenerateData.png</icon>
 """
 
@@ -25,8 +25,14 @@ icon_lasso = os.path.join(dir, "lasso-transparent_42px.png")
 #icon_remove = os.path.join(dir, "remove.svg")
 
 
-class DataGeneratorGraph(OWGraph):
+class PaintDataGraph(OWGraph):
     def setData(self, data, attr1, attr2):
+        """ Set the data to display.
+        
+        :param data: data
+        :param attr1: attr for X axis
+        :param attr2: attr for Y axis
+        """
         OWGraph.setData(self, data)
         self.data = data
         self.attr1 = attr1
@@ -55,13 +61,19 @@ class DataGeneratorGraph(OWGraph):
         if pixmap:
             painter.drawPixmap(0, 0, pixmap)
         
+        
 class DataTool(QObject):
-    """ A base class for data tools that operate on OWGraph
-    widgets by installing itself as its event filter.
+    """ A base class for data tools that operate on PaintDataGraph
+    widget by installing itself as its event filter.
+     
     """
-    classIndex = 0
     cursor = Qt.ArrowCursor
     class optionsWidget(QFrame):
+        """ An options (parameters) widget for the tool (this will
+        be put in the "Options" box in the main OWPaintData widget
+        when this tool is selected.
+        
+        """
         def __init__(self, tool, parent=None):
             QFrame.__init__(self, parent)
             self.tool = tool
@@ -71,17 +83,32 @@ class DataTool(QObject):
         self.setGraph(graph)
         
     def setGraph(self, graph):
+        """ Install this tool to operate on ``graph``. If another tool
+        is already operating on the graph it will first be removed.
+        
+        """
         self.graph = graph
         if graph:
             installed = getattr(graph,"_data_tool_event_filter", None)
             if installed:
                 self.graph.canvas().removeEventFilter(installed)
+                installed.removed()
             self.graph.canvas().setMouseTracking(True)
             self.graph.canvas().installEventFilter(self)
             self.graph._data_tool_event_filter = self
             self.graph._tool_pixmap = None
             self.graph.setCursor(self.cursor)
             self.graph.replot()
+            self.installed()
+            
+    def removed(self):
+        """ Called when the tool is removed from a graph.
+        """
+        pass
+    
+    def installed(self):
+        """ Called when the tool is installed on a graph.
+        """
         
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
@@ -98,8 +125,9 @@ class DataTool(QObject):
             return self.leaveEvent(event)
         elif event.type() == QEvent.Enter:
             return self.enterEvent(event)
-        return False  
+        return False
     
+    # These are actually event filters (note the return values)
     def paintEvent(self, event):
         return False
     
@@ -141,6 +169,7 @@ class DataTool(QObject):
     
     def dataTransform(self, *args):
         pass
+    
     
 class GraphSelections(QObject):
     def __init__(self, parent, movable=True, multipleSelection=False):
@@ -186,7 +215,7 @@ class GraphSelections(QObject):
         pos = self.getPos(event)
         index = self.regionAt(event)
         if index == -1 or not self.movable:
-            if event.modifiers() & Qt.ControlModifier and self.multipleSelection: 
+            if event.modifiers() & Qt.ControlModifier and self.multipleSelection:
                 self.addSelectionRegion((pos, pos))
             else:
                 self.clearSelection()
@@ -213,10 +242,11 @@ class GraphSelections(QObject):
     def end(self, event):
         self.update(event)
         if self._moving_index != -1:
-            self.emit(SIGNAL("selectionRegionMoveEnd(int)"), self._moving_index)
+            self.emit(SIGNAL("selectionRegionMoveFinished(int, QPointF, QPainterPath)"), 
+                      self._moving_index, self.getPos(event),
+                      self.toPath(self.selection[self._moving_index]))
         self._moving_index = -1
                       
-        
     def regionAt(self, event):
         pos = self.getPos(event)
         for i, region in enumerate(self.selection):
@@ -259,10 +289,9 @@ class GraphSelections(QObject):
         dy = invTransform(QwtPlot.yLeft, 0)
         return QTransform(sx, 0.0, 0.0, sy, dx, dy)
     
+    
 class SelectTool(DataTool):
     class optionsWidget(QFrame):
-        actions = [("Move", ""),
-                   ("Delete selected", "")]
         def __init__(self, tool, parent=None):
             QFrame.__init__(self, parent)
             self.tool = tool
@@ -272,25 +301,36 @@ class SelectTool(DataTool):
             self.connect(delete, SIGNAL("clicked()"), self.tool.deleteSelected)
             
             layout.addWidget(delete)
+            layout.addStretch(10)
             self.setLayout(layout)
         
-            
-    def __init__(self, graph, parent=None):
+    def __init__(self, graph, parent=None, graphSelection=None):
         DataTool.__init__(self, graph, parent)
-        self.selection = GraphSelections(graph)
+        if graphSelection is None:
+            self.selection = GraphSelections(graph)
+        else:
+            self.selection = graphSelection
+            
         self.pen = QPen(Qt.black, 1, Qt.DashDotLine)
         self.pen.setCosmetic(True)
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.pen.setCapStyle(Qt.RoundCap)
         self.connect(self.selection, SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), self.onMoveStarted)
         self.connect(self.selection, SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), self.onMove)
-        
+        self.connect(self.selection, SIGNAL("selectionRegionMoveFinished(int, QPointF, QPainterPath)"), self.onMoveFinished)
+        self.connect(self.selection, SIGNAL("selectionRegionUpdated(int, QPainterPath)"), self.invalidateMoveSelection)
+        self._validMoveSelection = False
+        self._moving = None
         
     def setGraph(self, graph):
         DataTool.setGraph(self, graph)
         if graph and hasattr(self, "selection"):
             self.selection.setParent(graph)
 
+    def installed(self):
+        DataTool.installed(self)
+        self.invalidateMoveSelection()
+        
     def paintEvent(self, event):
         if self.selection:
             pixmap = QPixmap(self.graph.canvas().size())
@@ -330,24 +370,39 @@ class SelectTool(DataTool):
             self.selection.end(event)
             self.graph.replot()
         return True
+    
+    def invalidateMoveSelection(self, *args):
+        self._validMoveSelection = False
+        self._moving = None
         
     def onMoveStarted(self, index, pos, path):
         data = self.graph.data
         attr1, attr2 = self.graph.attr1, self.graph.attr2
-        self._moving = [(i, float(ex[attr1]), float(ex[attr2])) for i, ex in enumerate(data)]
-        self._moving = [(i, x, y) for i, x, y in self._moving if path.contains(QPointF(x, y))]
-        self._moving_pos = pos
+        if not self._validMoveSelection:
+            self._moving = [(i, float(ex[attr1]), float(ex[attr2])) for i, ex in enumerate(data)]
+            self._moving = [(i, x, y) for i, x, y in self._moving if path.contains(QPointF(x, y))]
+            self._validMoveSelection = True
+        self._move_anchor = pos
         
     def onMove(self, index, pos, path):
         data = self.graph.data
         attr1, attr2 = self.graph.attr1, self.graph.attr2
         
-        diff = pos - self._moving_pos
+        diff = pos - self._move_anchor 
         for i, x, y in self._moving:
             ex = data[i]
             ex[attr1] = x + diff.x()
             ex[attr2] = y + diff.y()
         self.graph.updateGraph()
+        self.emit(SIGNAL("editing()"))
+        
+    def onMoveFinished(self, index, pos, path):
+        self.onMove(index, pos, path)
+        diff = pos - self._move_anchor
+        self._moving = [(i, x + diff.x(), y + diff.y()) \
+                        for i, x, y in self._moving]
+        
+        self.emit(SIGNAL("editingFinished()"))
         
     def deleteSelected(self, *args):
         data = self.graph.data
@@ -356,7 +411,10 @@ class SelectTool(DataTool):
         selected = [i for i, ex in enumerate(data) if path.contains(QPointF(float(ex[attr1]) , float(ex[attr2])))]
         for i in reversed(selected):
             del data[i]
-        self.graph.updateGraph() 
+        self.graph.updateGraph()
+        if selected:
+            self.emit(SIGNAL("editing()"))
+            self.emit(SIGNAL("editingFinished()"))
         
 class GraphLassoSelections(GraphSelections):
     def start(self, event):
@@ -386,19 +444,25 @@ class GraphLassoSelections(GraphSelections):
     def end(self, event):
         self.update(event)
         if self._moving_index != -1:
-            self.emit(SIGNAL("selectionRegionMoveEnd(int)"), self._moving_index)
+            self.emit(SIGNAL("selectionRegionMoveFinished(int, QPointF, QPainterPath)"), 
+                      self._moving_index, self.getPos(event),
+                      self.toPath(self.selection[self._moving_index]))
         self._moving_index = -1
+        
         
 class LassoTool(SelectTool):
     def __init__(self, graph, parent=None):
-        DataTool.__init__(self, graph, parent)
-        self.selection = GraphLassoSelections(graph)
-        self.pen = QPen(Qt.black, 1, Qt.DashDotLine)
-        self.pen.setCosmetic(True)
-        self.pen.setJoinStyle(Qt.RoundJoin)
-        self.pen.setCapStyle(Qt.RoundCap)
-        self.connect(self.selection, SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), self.onMoveStarted)
-        self.connect(self.selection, SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), self.onMove)
+        SelectTool.__init__(self, graph, parent, 
+                            graphSelection=GraphLassoSelections(graph))
+#        self.selection = GraphLassoSelections(graph)
+#        self.pen = QPen(Qt.black, 1, Qt.DashDotLine)
+#        self.pen.setCosmetic(True)
+#        self.pen.setJoinStyle(Qt.RoundJoin)
+#        self.pen.setCapStyle(Qt.RoundCap)
+#        self.connect(self.selection, SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), self.onMoveStarted)
+#        self.connect(self.selection, SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), self.onMove)
+#        self.connect(self.selection, SIGNAL("selectionRegionMoveFinished(int, QPointF, QPainterPath)"), self.onMoveFinished)
+    
     
 class ZoomTool(DataTool):
     def __init__(self, graph, parent=None):
@@ -422,6 +486,7 @@ class ZoomTool(DataTool):
     def keyPressEvent(self, event):
         return False
     
+    
 class PutInstanceTool(DataTool):
     cursor = Qt.CrossCursor
     def mousePressEvent(self, event):
@@ -430,6 +495,8 @@ class PutInstanceTool(DataTool):
             val1, val2 = coord.x(), coord.y()
             attr1, attr2 = self.attributes()
             self.dataTransform(attr1, val1, attr2, val2)
+            self.emit(SIGNAL("editing()"))
+            self.emit(SIGNAL("editingFinished()"))
         return True
         
     def dataTransform(self, attr1, val1, attr2, val2):
@@ -439,6 +506,7 @@ class PutInstanceTool(DataTool):
         example.setclass(self.graph.data.domain.classVar(self.graph.data.domain.classVar.baseValue))
         self.graph.data.append(example)
         self.graph.updateGraph(dataInterval=(-1, sys.maxint))
+        
         
 class BrushTool(DataTool):
     brushRadius = 20
@@ -475,6 +543,7 @@ class BrushTool(DataTool):
         if event.buttons() & Qt.LeftButton:
             attr1, attr2 = self.attributes()
             self.dataTransform(attr1, x, rx, attr2, y, ry)
+            self.emit(SIGNAL("editing()"))
         self.graph.replot()
         return True
         
@@ -484,11 +553,14 @@ class BrushTool(DataTool):
         if event.buttons() & Qt.LeftButton:
             attr1, attr2 = self.attributes()
             self.dataTransform(attr1, x, rx, attr2, y, ry)
+            self.emit(SIGNAL("editing()"))
         self.graph.replot()
         return True
     
     def mouseReleaseEvent(self, event):
         self.graph.replot()
+        if event.button() & Qt.LeftButton:
+            self.emit(SIGNAL("editingFinished()"))
         return True
     
     def leaveEvent(self, event):
@@ -534,6 +606,7 @@ class BrushTool(DataTool):
         self.graph.data.extend(new)
         self.graph.updateGraph(dataInterval=(-len(new), sys.maxint))
     
+    
 class MagnetTool(BrushTool):
     cursor = Qt.ArrowCursor
     def dataTransform(self, attr1, x, rx, attr2, y, ry):
@@ -548,6 +621,7 @@ class MagnetTool(BrushTool):
             ex[attr1] = x1 + dx
             ex[attr2] = y1 + dy
         self.graph.updateGraph()
+    
     
 class JitterTool(BrushTool):
     cursor = Qt.ArrowCursor
@@ -564,6 +638,7 @@ class JitterTool(BrushTool):
             ex[attr1] = x1 - random.normalvariate(0, dx) #*self.density)
             ex[attr2] = y1 - random.normalvariate(0, dy) #*self.density)
         self.graph.updateGraph()
+        
         
 class EnumVariableModel(PyListModel):
     def __init__(self, var, parent=None, **kwargs):
@@ -603,7 +678,8 @@ class EnumVariableModel(PyListModel):
         painter.end()
         return QIcon(pixmap)
    
-class OWDataGenerator(OWWidget):
+   
+class OWPaintData(OWWidget):
     TOOLS = [("Brush", "Create multiple instances", BrushTool,  icon_brush),
              ("Put", "Put individual instances", PutInstanceTool, icon_put),
              ("Select", "Select and move instances", SelectTool, icon_select),
@@ -612,6 +688,7 @@ class OWDataGenerator(OWWidget):
              ("Magnet", "Move (drag) multiple instances", MagnetTool, icon_magnet),
              ("Zoom", "Zoom", ZoomTool, OWToolbars.dlg_zoom) #"GenerateDataZoomTool.png")
              ]
+    settingsList = ["commitOnChange"]
     def __init__(self, parent=None, signalManager=None, name="Data Generator"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         
@@ -620,6 +697,7 @@ class OWDataGenerator(OWWidget):
         self.addClassAsMeta = False
         self.attributes = []
         self.cov = []
+        self.commitOnChange = False
         
         self.loadSettings()
         
@@ -684,11 +762,17 @@ class OWDataGenerator(OWWidget):
         optionsbox = OWGUI.widgetBox(self.controlArea, "Options", orientation=self.optionsLayout)
         
 #        OWGUI.checkBox(self.controlArea, self, "addClassAsMeta", "Add class ids as meta attributes")
-        
         OWGUI.rubber(self.controlArea)
-        OWGUI.button(self.controlArea, self, "Commit", callback=self.commit, default=True)
+        box = OWGUI.widgetBox(self.controlArea, "Commit")
         
-        self.graph = DataGeneratorGraph(self)
+        cb = OWGUI.checkBox(box, self, "commitOnChange", "Commit on change",
+                            tooltip="Send the data on any change.",
+                            callback=self.commitIf,)
+        b = OWGUI.button(box, self, "Commit", 
+                         callback=self.commit, default=True)
+        OWGUI.setStopper(self, b, cb, "dataChangedFlag", callback=self.commit)
+        
+        self.graph = PaintDataGraph(self)
         self.graph.setAxisScale(QwtPlot.xBottom, 0.0, 1.0)
         self.graph.setAxisScale(QwtPlot.yLeft, 0.0, 1.0)
         self.graph.setAttribute(Qt.WA_Hover, True)
@@ -696,6 +780,7 @@ class OWDataGenerator(OWWidget):
         
         self.currentOptionsWidget = None
         self.data = []
+        self.dataChangedFlag = False 
         self.domain = None
         
         self.onDomainChanged()
@@ -765,17 +850,6 @@ class OWDataGenerator(OWWidget):
         index = self.selectedClassLabelIndex()
         if index is not None:
             self.classVariable.baseValue = index
-        
-    def onAddFeature(self):
-        self.variablesModel.append(orange.FloatVariable("New feature"))
-        self.varListView.edit(self.variablesModel.index(len(self.variablesModel) - 1))
-        
-    def onRemoveFeature(self):
-        raise NotImplemented
-  
-            
-    def onVariableSelectionChange(self, selected, deselected):
-        self.selected
     
     def onToolAction(self, tool):
         self.setCurrentTool(tool)
@@ -785,7 +859,10 @@ class OWDataGenerator(OWWidget):
             newtool = tool(None, self)
             option = newtool.optionsWidget(newtool, self)
             self.optionsLayout.addWidget(option)
-            self.connect(newtool, SIGNAL("dataChanged()"), self.graph.updateGraph)
+#            self.connect(newtool, SIGNAL("dataChanged()"), self.graph.updateGraph)
+#            self.connect(newtool, SIGNAL("dataChanged()"), self.onDataChanged)
+            self.connect(newtool, SIGNAL("editing()"), self.onDataChanged)
+            self.connect(newtool, SIGNAL("editingFinished()"), self.commitIf)
             self.toolsStackCache[tool] = (newtool, option)
         
         self.currentTool, self.currentOptionsWidget = tool, option = self.toolsStackCache[tool]
@@ -800,20 +877,29 @@ class OWDataGenerator(OWWidget):
             else:
                 self.data = orange.ExampleTable(self.domain)
             self.graph.setData(self.data, 0, 1)
+            
+    def onDataChanged(self):
+        self.dataChangedFlag = True
     
-    def commit(self):
-        if self.addClassAsMeta:
-            domain = orange.Domain(self.graph.data.domain.attributes, None)
-            domain.addmeta(orange.newmetaid(), self.graph.data.domain.classVar)
-            data = orange.ExampleTable(domain, self.graph.data)
+    def commitIf(self):
+        if self.commitOnChange and self.dataChangedFlag:
+            self.commit()
         else:
-            data = self.graph.data
-        self.send("Example Table", self.graph.data)
+            self.dataChangedFlag = True
+            
+    def commit(self):
+        data = self.graph.data
+        values = set([str(ex.getclass()) for ex in data])
+        if len(values) == 1:
+            # Remove the useless class variable.
+            domain = orange.Domain(data.domain.attributes, None)
+            data = orange.ExampleTable(domain, data)
+        self.send("Example Table", data)
         
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    w = OWDataGenerator()
+    w = OWPaintData()
     w.show()
     app.exec_()
         

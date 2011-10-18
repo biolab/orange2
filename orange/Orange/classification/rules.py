@@ -9,12 +9,13 @@
 Rule induction (``rules``)
 **************************
 
-Orange implements several supervised rule induction algorithms
-and rule-based classification methods. First, there is an implementation of the classic 
-`CN2 induction algorithm <http://www.springerlink.com/content/k6q2v76736w5039r/>`_. 
-The implementation of CN2 is modular, providing the opportunity to change, specialize
-and improve the algorithm. The implementation is thus based on the rule induction 
-framework that we describe below.
+This module implements supervised rule induction algorithms
+and rule-based classification methods, specifically the 
+`CN2 induction algorithm <http://www.springerlink.com/content/k6q2v76736w5039r/>`_
+in multiple variants, including an argument-based learning one. 
+The implementation is modular, based on the rule induction 
+framework that is described below, providing the opportunity to change, specialize
+and improve the algorithm.
 
 CN2 algorithm
 =============
@@ -24,7 +25,7 @@ CN2 algorithm
 
 Several variations of well-known CN2 rule learning algorithms are implemented.
 All are implemented by wrapping the
-:class:`Orange.classification.rules.RuleLearner` class. Each CN2 learner class
+:class:`~Orange.classification.rules.RuleLearner` class. Each CN2 learner class
 in this module changes some of RuleLearner's replaceable components to reflect
 the required behavior.
 
@@ -38,7 +39,7 @@ Usage is consistent with typical learner usage in Orange:
 .. _rules-cn2.py: code/rules-cn2.py
 .. _titanic.tab: code/titanic.tab
 
-This is the resulting printout::
+The result::
     
     IF sex=['female'] AND status=['first'] AND age=['child'] THEN survived=yes<0.000, 1.000>
     IF sex=['female'] AND status=['second'] AND age=['child'] THEN survived=yes<0.000, 13.000>
@@ -177,13 +178,13 @@ probability with m=50. The result is::
     IF sex=['female'] THEN survived=no<106.000, 90.000>
     IF TRUE THEN survived=yes<0.000, 5.000>
 
-Notice that we first need to set the rule_finder component, because the default
-components are not constructed when the learner is constructed, but only when
-we run it on data. At that time, the algorithm checks which components are
-necessary and sets defaults. Similarly, when the learner finishes, it destructs
-all *default* components. Continuing with our example, assume that we wish to
-set a different validation function and a different bean width. This is simply
-written as:
+Notice that it is first necessary to set the :obj:`rule_finder` component,
+because the default components are not constructed when the learner is
+constructed, but only when we run it on data. At that time, the algorithm
+checks which components are necessary and sets defaults. Similarly, when the
+learner finishes, it destructs all *default* components. Continuing with our
+example, assume that we wish to set a different validation function and a
+different bean width. This is simply written as:
 
 part of `rules-customized.py`_ (uses `titanic.tab`_)
 
@@ -192,7 +193,7 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
 
 .. py:class:: Orange.classification.rules.Rule(filter, classifier, lr, dist, ce, w = 0, qu = -1)
    
-   Base class for presentation of a single induced rule.
+   Representation of a single induced rule.
    
    Parameters, that can be passed to the constructor, correspond to the first
    7 attributes. All attributes are:
@@ -304,48 +305,47 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
           return Orange.classification.rules.RuleClassifier_FirstRule(
               rules=rule_list, instances=all_instances)
                 
-   The four customizable components here are the invoked data_stopping,
-   rule_finder, cover_and_remove and rule_stopping objects. By default, components
-   of the original CN2 algorithm will be used, but this can be changed by
-   modifying those attributes:
+   The four customizable components here are the invoked :obj:`data_stopping`,
+   :obj:`rule_finder`, :obj:`cover_and_remove` and :obj:`rule_stopping`
+   objects. By default, components of the original CN2 algorithm are be used,
+   but this can be changed by modifying those attributes:
    
    .. attribute:: data_stopping
    
       an object of class
-      :class:`Orange.classification.rules.RuleDataStoppingCriteria`
+      :class:`~Orange.classification.rules.RuleDataStoppingCriteria`
       that determines whether there will be any benefit from further learning
       (ie. if there is enough data to continue learning). The default
       implementation
-      (:class:`Orange.classification.rules.RuleDataStoppingCriteria_NoPositives`)
+      (:class:`~Orange.classification.rules.RuleDataStoppingCriteria_NoPositives`)
       returns True if there are no more instances of given class. 
    
    .. attribute:: rule_stopping
       
       an object of class 
-      :class:`Orange.classification.rules.RuleStoppingCriteria`
+      :class:`~Orange.classification.rules.RuleStoppingCriteria`
       that decides from the last rule learned if it is worthwhile to use the
       rule and learn more rules. By default, no rule stopping criteria is
-      used (rule_stopping==None), thus accepting all rules.
+      used (:obj:`rule_stopping` == :obj:`None`), thus accepting all
+      rules.
        
    .. attribute:: cover_and_remove
        
-      an object of class
-      :class:`Orange.classification.rules.RuleCovererAndRemover`
-      that removes instances covered by the rule and returns remaining
-      instances. The default implementation
-      (:class:`Orange.classification.rules.RuleCovererAndRemover_Default`)
+      an object of
+      :class:`RuleCovererAndRemover` that removes
+      instances covered by the rule and returns remaining instances. The
+      default implementation
+      (:class:`RuleCovererAndRemover_Default`)
       only removes the instances that belong to given target class, except if
-      it is not given (ie. target_class==-1).
+      it is not given (ie. :obj:`target_class` == -1).
     
    .. attribute:: rule_finder
       
       an object of class
-      :class:`Orange.classification.rules.RuleFinder` that learns a single
+      :class:`~Orange.classification.rules.RuleFinder` that learns a single
       rule from instances. Default implementation is
-      :class:`Orange.classification.rules.RuleBeamFinder`.
+      :class:`~Orange.classification.rules.RuleBeamFinder`.
 
-   Constructor can be given the following parameters:
-    
    :param store_instances: if set to True, the rules will have data instances
        stored.
    :type store_instances: bool
@@ -353,10 +353,10 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
    :param target_class: index of a specific class being learned; -1 for all.
    :type target_class: int
    
-   :param base_rules: Rules that we would like to use in rule_finder to
+   :param base_rules: Rules that we would like to use in :obj:`rule_finder` to
        constrain the learning space. If not set, it will be set to a set
        containing only an empty rule.
-   :type base_rules: :class:`Orange.classification.rules.RuleList`
+   :type base_rules: :class:`~Orange.classification.rules.RuleList`
 
 Rule finders
 ------------
@@ -382,14 +382,14 @@ Rule finders
       :param target_class: index of a specific class being learned; -1 for all.
       :type target_class: int 
       
-      :param base_rules: Rules that we would like to use in rule_finder to
-          constrain the learning space. If not set, it will be set to a set
+      :param base_rules: Rules that we would like to use in :obj:`rule_finder`
+          to constrain the learning space. If not set, it will be set to a set
           containing only an empty rule.
-      :type base_rules: :class:`Orange.classification.rules.RuleList`
+      :type base_rules: :class:`~Orange.classification.rules.RuleList`
 
 .. class:: Orange.classification.rules.RuleBeamFinder
    
-   Bases: :class:`Orange.classification.rules.RuleFinder`
+   Bases: :class:`~Orange.classification.rules.RuleFinder`
    
    Beam search for the best rule. This is the default class used in RuleLearner
    to find the best rule. Pseudo code of the algorithm is shown here:
@@ -421,41 +421,42 @@ Rule finders
    .. attribute:: initializer
    
       an object of class
-      :class:`Orange.classification.rules.RuleBeamInitializer`
-      used to initialize rules_star and for selecting the
+      :class:`~Orange.classification.rules.RuleBeamInitializer`
+      used to initialize :obj:`rules_star` and for selecting the
       initial best rule. By default
-      (:class:`Orange.classification.rules.RuleBeamInitializer_Default`),
-      base_rules are returned as starting rulesSet and the best from base_rules
-      is set as best_rule. If base_rules are not set, this class will return
-      rules_star with rule that covers all instances (has no selectors) and
-      this rule will be also used as best_rule.
+      (:class:`~Orange.classification.rules.RuleBeamInitializer_Default`),
+      :obj:`base_rules` are returned as starting :obj:`rulesSet` and the best
+      from :obj:`base_rules` is set as :obj:`best_rule`. If :obj:`base_rules`
+      are not set, this class will return :obj:`rules_star` with rule that
+      covers all instances (has no selectors) and this rule will be also used
+      as :obj:`best_rule`.
    
    .. attribute:: candidate_selector
    
       an object of class
-      :class:`Orange.classification.rules.RuleBeamCandidateSelector`
+      :class:`~Orange.classification.rules.RuleBeamCandidateSelector`
       used to separate a subset from the current
-      rules_star and return it. These rules will be used in the next
+      :obj:`rules_star` and return it. These rules will be used in the next
       specification step. Default component (an instance of
-      :class:`Orange.classification.rules.RuleBeamCandidateSelector_TakeAll`)
-      takes all rules in rules_star
+      :class:`~Orange.classification.rules.RuleBeamCandidateSelector_TakeAll`)
+      takes all rules in :obj:`rules_star`.
     
    .. attribute:: refiner
    
       an object of class
-      :class:`Orange.classification.rules.RuleBeamRefiner`
+      :class:`~Orange.classification.rules.RuleBeamRefiner`
       used to refine given rule. New rule should cover a
       strict subset of examples covered by given rule. Default component
-      (:class:`Orange.classification.rules.RuleBeamRefiner_Selector`) adds
+      (:class:`~Orange.classification.rules.RuleBeamRefiner_Selector`) adds
       a conjunctive selector to selectors present in the rule.
     
    .. attribute:: rule_filter
    
       an object of class
-      :class:`Orange.classification.rules.RuleBeamFilter`
+      :class:`~Orange.classification.rules.RuleBeamFilter`
       used to filter rules to keep beam relatively small
       to contain search complexity. By default, it takes five best rules:
-      :class:`Orange.classification.rules.RuleBeamFilter_Width`\ *(m=5)*\ .
+      :class:`~Orange.classification.rules.RuleBeamFilter_Width`\ *(m=5)*\ .
 
    .. method:: __call__(data, weight_id, target_class, base_rules)
 
@@ -471,7 +472,7 @@ Rule finders
    :type target_class: int
    
    :param base_rules: existing rules.
-   :type base_rules: :class:`Orange.classification.rules.RuleList`
+   :type base_rules: :class:`~Orange.classification.rules.RuleList`
 
 Rule evaluators
 ---------------
@@ -487,7 +488,7 @@ Rule evaluators
       Calculates a non-negative rule quality.
       
       :param rule: rule to evaluate.
-      :type rule: :class:`Orange.classification.rules.Rule`
+      :type rule: :class:`~Orange.classification.rules.Rule`
       
       :param instances: a table of instances, covered by the rule.
       :type instances: :class:`Orange.data.Table`
@@ -513,19 +514,19 @@ Rule evaluators
    
 .. class:: Orange.classification.rules.RuleEvaluator_Entropy
 
-   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
     
 .. class:: Orange.classification.rules.RuleEvaluator_LRS
 
-   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
 
 .. class:: Orange.classification.rules.RuleEvaluator_Laplace
 
-   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
 
 .. class:: Orange.classification.rules.RuleEvaluator_mEVC
 
-   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
    
 Instance covering and removal
 -----------------------------
@@ -540,7 +541,7 @@ Instance covering and removal
       Calculates a non-negative rule quality.
       
       :param rule: rule to evaluate.
-      :type rule: :class:`Orange.classification.rules.Rule`
+      :type rule: :class:`~Orange.classification.rules.Rule`
       
       :param instances: a table of instances, covered by the rule.
       :type instances: :class:`Orange.data.Table`
@@ -702,17 +703,13 @@ class CN2Learner(RuleLearner):
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
 
-    Constructor can be given the following parameters:
-    
     :param evaluator: an object that evaluates a rule from covered instances.
         By default, entropy is used as a measure. 
-    :type evaluator: :class:`Orange.classification.rules.RuleEvaluator`
+    :type evaluator: :class:`~Orange.classification.rules.RuleEvaluator`
     :param beam_width: width of the search beam.
     :type beam_width: int
-    :param alpha: significance level of the statistical test to determine
-        whether rule is good enough to be returned by rulefinder. Likelihood
-        ratio statistics is used that gives an estimate if rule is
-        statistically better than the default rule.
+    :param alpha: significance level of the likelihood ratio statistics to
+        determine whether rule is better than the default rule.
     :type alpha: float
 
     """
@@ -755,14 +752,11 @@ class CN2Classifier(RuleClassifier):
     """
     Classical CN2 (see Clark and Niblett; 1988) classifies a new instance
     using an ordered set of rules. Usually the learner
-    (:class:`Orange.classification.rules.CN2Learner`) is used to construct the
+    (:class:`~Orange.classification.rules.CN2Learner`) is used to construct the
     classifier.
     
-    When constructing the classifier manually, the following parameters can
-    be passed:
-    
     :param rules: learned rules to be used for classification (mandatory).
-    :type rules: :class:`Orange.classification.rules.RuleList`
+    :type rules: :class:`~Orange.classification.rules.RuleList`
     
     :param instances: data instances that were used for learning.
     :type instances: :class:`Orange.data.Table`
@@ -792,7 +786,7 @@ class CN2Classifier(RuleClassifier):
               :class:`Orange.classification.Classifier.GetBoth`
         
         :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both
+              :class:`Orange.statistics.distribution.Distribution` or a tuple with both
         """
         classifier = None
         for r in self.rules:
@@ -835,17 +829,13 @@ class CN2UnorderedLearner(RuleLearner):
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
 
-    Constructor can be given the following parameters:
-    
     :param evaluator: an object that evaluates a rule from covered instances.
         By default, Laplace's rule of succession is used as a measure. 
-    :type evaluator: :class:`Orange.classification.rules.RuleEvaluator`
+    :type evaluator: :class:`~Orange.classification.rules.RuleEvaluator`
     :param beam_width: width of the search beam.
     :type beam_width: int
-    :param alpha: significance level of the statistical test to determine
-        whether rule is good enough to be returned by rulefinder. Likelihood
-        ratio statistics is used that gives an estimate if rule is
-        statistically better than the default rule.
+    :param alpha: significance level of the likelihood ratio statistics to
+        determine whether rule is better than the default rule.
     :type alpha: float
     """
     def __new__(cls, instances=None, weight_id=0, **kwargs):
@@ -908,14 +898,11 @@ class CN2UnorderedClassifier(RuleClassifier):
     """
     CN2 unordered (see Clark and Boswell; 1991) classifies a new instance using
     a set of unordered rules. Usually the learner
-    (:class:`Orange.classification.rules.CN2UnorderedLearner`) is used to
+    (:class:`~Orange.classification.rules.CN2UnorderedLearner`) is used to
     construct the classifier.
     
-    When constructing the classifier manually, the following parameters can
-    be passed:
-    
     :param rules: learned rules to be used for classification (mandatory).
-    :type rules: :class:`Orange.classification.rules.RuleList`
+    :type rules: :class:`~Orange.classification.rules.RuleList`
     
     :param instances: data instances that were used for learning.
     :type instances: :class:`Orange.data.Table`
@@ -947,7 +934,7 @@ class CN2UnorderedClassifier(RuleClassifier):
               :class:`Orange.classification.Classifier.GetBoth`
         
         :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both
+              :class:`Orange.statistics.distribution.Distribution` or a tuple with both
         """
         def add(disc1, disc2, sumd):
             disc = Orange.statistics.distribution.Discrete(disc1)
@@ -998,30 +985,29 @@ class CN2UnorderedClassifier(RuleClassifier):
 class CN2SDUnorderedLearner(CN2UnorderedLearner):
     """
     CN2-SD (see Lavrac et al.; 2004) induces a set of unordered rules, which
-    is the same as :class:`Orange.classification.rules.CN2UnorderedLearner`.
+    is the same as :class:`~Orange.classification.rules.CN2UnorderedLearner`.
     The difference between classical CN2 unordered and CN2-SD is selection of
     specific evaluation function and covering function:
-    :class:`Orange.classifier.rules.WRACCEvaluator` is used to implement
+    :class:`WRACCEvaluator` is used to implement
     weight-relative accuracy and 
-    :class:`Orange.classifier.rules.CovererAndRemover_MultWeight` avoids
+    :class:`CovererAndRemover_MultWeights` avoids
     excluding covered instances, multiplying their weight by the value of
     mult parameter instead.
     
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
 
-    Constructor can be given the following parameters:
-    
     :param evaluator: an object that evaluates a rule from covered instances.
         By default, weighted relative accuracy is used.
-    :type evaluator: :class:`Orange.classification.rules.RuleEvaluator`
+    :type evaluator: :class:`~Orange.classification.rules.RuleEvaluator`
+    
     :param beam_width: width of the search beam.
     :type beam_width: int
-    :param alpha: significance level of the statistical test to determine
-        whether rule is good enough to be returned by rulefinder. Likelihood
-        ratio statistics is used that gives an estimate if rule is
-        statistically better than the default rule.
+    
+    :param alpha: significance level of the likelihood ratio statistics to
+        determine whether rule is better than the default rule.
     :type alpha: float
+    
     :param mult: multiplicator for weights of covered instances.
     :type mult: float
     """
@@ -1464,7 +1450,7 @@ class ABCN2(RuleLearner):
             if self.prune_arguments:
                 allowed_conditions = [c for c in p.filter.conditions]
                 pruned_conditions = self.prune_arg_conditions(ae, allowed_conditions, examples, weight_id)
-                p.baseDist = orange.Distribution(examples.domain.classVar, examples, weight_id)
+                p.baseDist = Orange.statistics.distribution.Distribution(examples.domain.classVar, examples, weight_id)
                 p.filter.conditions = pruned_conditions
                 p.learner.setattr("arg_length", 0)
                 
@@ -1544,24 +1530,23 @@ class CN2EVCUnorderedLearner(ABCN2):
     """
     CN2-SD (see Lavrac et al.; 2004) induces a set of unordered rules in a
     simmilar manner as
-    :class:`Orange.classification.rules.CN2SDUnorderedLearner`. This
+    :class:`~Orange.classification.rules.CN2SDUnorderedLearner`. This
     implementation uses the EVC rule evaluation.
     
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
 
-    Constructor can be given the following parameters:
-    
     :param evaluator: an object that evaluates a rule from covered instances.
         By default, weighted relative accuracy is used.
-    :type evaluator: :class:`Orange.classification.rules.RuleEvaluator`
+    :type evaluator: :class:`~Orange.classification.rules.RuleEvaluator`
+    
     :param beam_width: width of the search beam.
     :type beam_width: int
-    :param alpha: significance level of the statistical test to determine
-        whether rule is good enough to be returned by rulefinder. Likelihood
-        ratio statistics is used that gives an estimate if rule is
-        statistically better than the default rule.
+    
+    :param alpha: significance level of the likelihood ratio statistics to
+        determine whether rule is better than the default rule.
     :type alpha: float
+    
     :param mult: multiplicator for weights of covered instances.
     :type mult: float
     """
@@ -1712,10 +1697,10 @@ class RuleClassifier_BestRule(RuleClassifier):
 
 class CovererAndRemover_MultWeights(RuleCovererAndRemover):
     """
-    Covering and removing of instances using weight multiplication.
-    :param mult: weighting multiplication factor
-    :type mult: float
+    Covering and removing of instances using weight multiplication:
     
+    :param mult: weighting multiplication factor
+    :type mult: float    
     """
     
     def __init__(self, mult = 0.7):
@@ -1855,7 +1840,7 @@ def rule_to_string(rule, show_distribution = True):
     Write a string presentation of rule in human readable format.
     
     :param rule: rule to pretty-print.
-    :type rule: :class:`Orange.classification.rules.Rule`
+    :type rule: :class:`~Orange.classification.rules.Rule`
     
     :param show_distribution: determines whether presentation should also
         contain the distribution of covered instances

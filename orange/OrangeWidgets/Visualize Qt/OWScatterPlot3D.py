@@ -1,10 +1,15 @@
 '''
 <name>Scatterplot 3D</name>
+<icon>icons/ScatterPlot.png</icon>
 <priority>2001</priority>
 '''
 
+from math import log10, ceil, floor
+
 from OWWidget import *
 from plot.owplot3d import *
+from plot.owtheme import ScatterLightTheme, ScatterDarkTheme
+from plot import OWPoint
 
 import orange
 Discrete = orange.VarTypes.Discrete
@@ -13,7 +18,6 @@ Continuous = orange.VarTypes.Continuous
 from Orange.preprocess.scaling import get_variable_values_sorted
 
 import OWGUI
-import OWToolbars
 import orngVizRank
 from OWkNNOptimization import *
 from orngScaleScatterPlotData import *
@@ -21,44 +25,101 @@ from orngScaleScatterPlotData import *
 import numpy
 
 TooltipKind = enum('NONE', 'VISIBLE', 'ALL')
+Axis = enum('X', 'Y', 'Z')
 
-class ScatterPlotTheme(PlotTheme):
-    def __init__(self):
-        super(ScatterPlotTheme, self).__init__()
-        self.grid_color = [0.8, 0.8, 0.8, 1.]
+class Plane:
+    '''Internal convenience class.'''
+    def __init__(self, A, B, C, D):
+        self.A = A
+        self.B = B
+        self.C = C
+        self.D = D
 
-class LightTheme(ScatterPlotTheme):
-    pass
+    def normal(self):
+        v1 = self.A - self.B
+        v2 = self.A - self.C
+        return QVector3D.crossProduct(v1, v2).normalized()
 
-class DarkTheme(ScatterPlotTheme):
-    def __init__(self):
-        super(DarkTheme, self).__init__()
-        self.grid_color = [0.3, 0.3, 0.3, 1.]
-        self.labels_color = [0.9, 0.9, 0.9, 1.]
-        self.helpers_color = [0.9, 0.9, 0.9, 1.]
-        self.axis_values_color = [0.7, 0.7, 0.7, 1.]
-        self.axis_color = [0.8, 0.8, 0.8, 1.]
-        self.background_color = [0., 0., 0., 1.]
+    def visible_from(self, location):
+        normal = self.normal()
+        loc_plane = (self.A - location).normalized()
+        if QVector3D.dotProduct(normal, loc_plane) > 0:
+            return False
+        return True
+
+class Edge:
+    def __init__(self, v0, v1):
+        self.v0 = v0
+        self.v1 = v1
+
+    def __add__(self, vec):
+        return Edge(self.v0 + vec, self.v1 + vec)
+
+def nicenum(x, round):
+    if x <= 0.:
+        return x # TODO: what to do in such cases?
+    expv = floor(log10(x))
+    f = x / pow(10., expv)
+    if round:
+        if f < 1.5: nf = 1.
+        elif f < 3.: nf = 2.
+        elif f < 7.: nf = 5.
+        else: nf = 10.
+    else:
+        if f <= 1.: nf = 1.
+        elif f <= 2.: nf = 2.
+        elif f <= 5.: nf = 5.
+        else: nf = 10.
+    return nf * pow(10., expv)
+
+def loose_label(min_value, max_value, num_ticks):
+    '''Algorithm by Paul S. Heckbert (Graphics Gems).
+       Generates a list of "nice" values between min and max,
+       given the number of ticks. Also returns the number
+       of fractional digits to use.
+    '''
+    range = nicenum(max_value-min_value, False)
+    d = nicenum(range / float(num_ticks-1), True)
+    if d <= 0.: # TODO
+        return numpy.arange(min_value, max_value, (max_value-min_value)/num_ticks), 1
+    plot_min = floor(min_value / d) * d
+    plot_max = ceil(max_value / d) * d
+    num_frac = int(max(-floor(log10(d)), 0))
+    return numpy.arange(plot_min, plot_max + 0.5*d, d), num_frac
 
 class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
     def __init__(self, parent=None):
+        self.parent = parent
         OWPlot3D.__init__(self, parent)
         orngScaleScatterPlotData.__init__(self)
 
-        null = lambda: None
-        self.activateZooming = null
-
-        self.disc_palette = ColorPaletteGenerator()
-        self._theme = LightTheme()
+        self._theme = ScatterLightTheme()
         self.show_grid = True
         self.show_chassis = True
+        self.show_axes = True
+        self._build_axes()
+
+        self._x_axis_labels = None
+        self._y_axis_labels = None
+        self._z_axis_labels = None
+
+        self._x_axis_title = ''
+        self._y_axis_title = ''
+        self._z_axis_title = ''
+
+        # These are public
+        self.show_x_axis_title = self.show_y_axis_title = self.show_z_axis_title = True
+
+        self.animate_plot = False
 
     def set_data(self, data, subset_data=None, **args):
         if data == None:
             return
+        args['skipIfSame'] = False
         orngScaleScatterPlotData.set_data(self, data, subset_data, **args)
-        OWPlot3D.set_plot_data(self, self.no_jittering_scaled_data, self.no_jittering_scaled_subset_data)
-        # TODO: wire jitter settings (actual jittering done in geometry shader)
+        # Optimization: calling set_plot_data here (and not in update_data) because data won't change.
+        OWPlot3D.set_plot_data(self, self.scaled_data, self.scaled_subset_data)
+        OWPlot3D.initializeGL(self)
 
     def update_data(self, x_attr, y_attr, z_attr,
                     color_attr, symbol_attr, size_attr, label_attr):
@@ -66,23 +127,22 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             return
         self.before_draw_callback = self.before_draw
 
-        color_discrete = symbol_discrete = size_discrete = False
+        color_discrete = size_discrete = False
 
         color_index = -1
         if color_attr != '' and color_attr != '(Same color)':
             color_index = self.attribute_name_index[color_attr]
             if self.data_domain[color_attr].varType == Discrete:
                 color_discrete = True
-                self.disc_palette.setNumberOfColors(len(self.data_domain[color_attr].values))
+                self.discrete_palette.setNumberOfColors(len(self.data_domain[color_attr].values))
 
         symbol_index = -1
         num_symbols_used = -1
         if symbol_attr != '' and symbol_attr != 'Same symbol)' and\
-           len(self.data_domain[symbol_attr].values) < len(Symbol):
+           len(self.data_domain[symbol_attr].values) < len(Symbol) and\
+           self.data_domain[symbol_attr].varType == Discrete:
             symbol_index = self.attribute_name_index[symbol_attr]
-            if self.data_domain[symbol_attr].varType == Discrete:
-                symbol_discrete = True
-                num_symbols_used = len(self.data_domain[symbol_attr].values)
+            num_symbols_used = len(self.data_domain[symbol_attr].values)
 
         size_index = -1
         if size_attr != '' and size_attr != '(Same size)':
@@ -105,7 +165,7 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
         colors = []
         if color_discrete:
             for i in range(len(self.data_domain[color_attr].values)):
-                c = self.disc_palette[i]
+                c = self.discrete_palette[i]
                 colors.append(c)
 
         data_scale = [self.attr_values[x_attr][1] - self.attr_values[x_attr][0],
@@ -125,99 +185,100 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
             data_scale[2] = 0.5 / float(len(self.data_domain[z_attr].values))
             data_translation[2] = 1.
 
+        self.data_scale = QVector3D(*data_scale)
+        self.data_translation = QVector3D(*data_translation)
+
+        self._x_axis_labels = None
+        self._y_axis_labels = None
+        self._z_axis_labels = None
+
         self.clear()
-        self.set_shown_attributes_indices(x_index, y_index, z_index,
+
+        attr_indices = [x_index, y_index, z_index]
+        if color_index > -1:
+            attr_indices.append(color_index)
+        if size_index > -1:
+            attr_indices.append(size_index)
+        if symbol_index > -1:
+            attr_indices.append(symbol_index)
+        if label_index > -1:
+            attr_indices.append(label_index)
+
+        valid_data = self.getValidList(attr_indices)
+        self.set_valid_data(valid_data)
+
+        self.set_features(x_index, y_index, z_index,
             color_index, symbol_index, size_index, label_index,
             colors, num_symbols_used,
-            x_discrete, y_discrete, z_discrete, self.jitter_size, self.jitter_continuous,
-            data_scale, data_translation)
+            x_discrete, y_discrete, z_discrete)
 
-        if self.show_legend:
-            legend_keys = {}
-            color_index = color_index if color_index != -1 and color_discrete else -1
-            size_index = size_index if size_index != -1 and size_discrete else -1
-            symbol_index = symbol_index if symbol_index != -1 and symbol_discrete else -1
+        ## Legend
+        def_color = QColor(150, 150, 150)
+        def_symbol = 0
+        def_size = 10
 
-            single_legend = [color_index, size_index, symbol_index].count(-1) == 2
-            if single_legend:
-                legend_join = lambda name, val: val
-            else:
-                legend_join = lambda name, val: name + '=' + val 
+        if color_discrete:
+            num = len(self.data_domain[color_attr].values)
+            values = get_variable_values_sorted(self.data_domain[color_attr])
+            for ind in range(num):
+                self.legend().add_item(color_attr, values[ind], OWPoint(def_symbol, self.discrete_palette[ind], def_size))
 
-            color_attr = self.data_domain[color_attr] if color_index != -1 else None
-            symbol_attr = self.data_domain[symbol_attr] if symbol_index != -1 else None
-            size_attr = self.data_domain[size_attr] if size_index != -1 else None
+        if symbol_index != -1:
+            num = len(self.data_domain[symbol_attr].values)
+            values = get_variable_values_sorted(self.data_domain[symbol_attr])
+            for ind in range(num):
+                self.legend().add_item(symbol_attr, values[ind], OWPoint(ind, def_color, def_size))
 
-            if color_index != -1:
-                num = len(color_attr.values)
-                val = [[], [], [1.]*num, [Symbol.RECT]*num]
-                var_values = get_variable_values_sorted(color_attr)
-                for i in range(num):
-                    val[0].append(legend_join(color_attr.name, var_values[i]))
-                    c = self.disc_palette[i]
-                    val[1].append([c.red()/255., c.green()/255., c.blue()/255., 1.])
-                legend_keys[color_attr] = val
+        if size_discrete:
+            num = len(self.data_domain[size_attr].values)
+            values = get_variable_values_sorted(self.data_domain[size_attr])
+            for ind in range(num):
+                self.legend().add_item(size_attr, values[ind], OWPoint(def_symbol, def_color, 6 + round(ind * 5 / len(values))))
 
-            if symbol_index != -1:
-                num = len(symbol_attr.values)
-                if legend_keys.has_key(symbol_attr):
-                    val = legend_keys[symbol_attr]
-                else:
-                    val = [[], [(0, 0, 0, 1)]*num, [1.]*num, []]
-                var_values = get_variable_values_sorted(symbol_attr)
-                val[3] = []
-                val[0] = []
-                for i in range(num):
-                    val[3].append(i)
-                    val[0].append(legend_join(symbol_attr.name, var_values[i]))
-                legend_keys[symbol_attr] = val
+        if color_index != -1 and self.data_domain[color_attr].varType == Continuous:
+            self.legend().add_color_gradient(color_attr, [("%%.%df" % self.data_domain[color_attr].numberOfDecimals % v) for v in self.attr_values[color_attr]])
 
-            if size_index != -1:
-                num = len(size_attr.values)
-                if legend_keys.has_key(size_attr):
-                    val = legend_keys[size_attr]
-                else:
-                    val = [[], [(0, 0, 0, 1)]*num, [], [Symbol.RECT]*num]
-                val[2] = []
-                val[0] = []
-                var_values = get_variable_values_sorted(size_attr)
-                for i in range(num):
-                    val[0].append(legend_join(size_attr.name, var_values[i]))
-                    val[2].append(0.1 + float(i) / len(var_values))
-                legend_keys[size_attr] = val
+        self.legend().max_size = QSize(400, 400)
+        self.legend().set_floating(True)
+        self.legend().set_orientation(Qt.Vertical)
+        if self.legend().pos().x() == 0:
+            self.legend().setPos(QPointF(100, 100))
+        self.legend().update_items()
+        self.legend().setVisible(self.show_legend)
 
-            for val in legend_keys.values():
-                for i in range(len(val[1])):
-                    self.legend.add_item(val[3][i], val[1][i], val[2][i], val[0][i])
-
-        self.set_axis_title(Axis.X, x_attr)
-        self.set_axis_title(Axis.Y, y_attr)
-        self.set_axis_title(Axis.Z, z_attr)
+        ## Axes
+        self._x_axis_title = x_attr
+        self._y_axis_title = y_attr
+        self._z_axis_title = z_attr
 
         if x_discrete:
-            self.set_axis_labels(Axis.X, get_variable_values_sorted(self.data_domain[x_attr]))
+            self._x_axis_labels = get_variable_values_sorted(self.data_domain[x_attr])
         if y_discrete:
-            self.set_axis_labels(Axis.Y, get_variable_values_sorted(self.data_domain[y_attr]))
+            self._y_axis_labels = get_variable_values_sorted(self.data_domain[y_attr])
         if z_discrete:
-            self.set_axis_labels(Axis.Z, get_variable_values_sorted(self.data_domain[z_attr]))
+            self._z_axis_labels = get_variable_values_sorted(self.data_domain[z_attr])
 
-        self.updateGL()
+        self.update()
 
     def before_draw(self):
+        if self.show_grid:
+            self._draw_grid()
+        if self.show_chassis:
+            self._draw_chassis()
+        if self.show_axes:
+            self._draw_axes()
+
+    def _draw_chassis(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glMultMatrixd(numpy.array(self.projection.data(), dtype=float))
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glMultMatrixd(numpy.array(self.modelview.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.view.data(), dtype=float))
+        glMultMatrixd(numpy.array(self.model.data(), dtype=float))
 
-        if self.show_grid:
-            self.draw_grid()
-        if self.show_chassis:
-            self.draw_chassis()
-
-    def draw_chassis(self):
-        glColor4f(*self._theme.axis_values_color)
+        # TODO: line stipple with shaders?
+        self.qglColor(self._theme.axis_values_color)
         glEnable(GL_LINE_STIPPLE)
         glLineStipple(1, 0x00FF)
         glDisable(GL_DEPTH_TEST)
@@ -233,39 +294,43 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                  self.z_axis+self.unit_x+self.unit_y]
         glBegin(GL_LINES)
         for edge in edges:
-            start, end = edge
-            glVertex3f(*start)
-            glVertex3f(*end)
+            start, end = edge.v0, edge.v1
+            glVertex3f(start.x(), start.y(), start.z())
+            glVertex3f(end.x(), end.y(), end.z())
         glEnd()
         glDisable(GL_LINE_STIPPLE)
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
-    def draw_grid(self):
-        cam_in_space = numpy.array([
-          self.camera[0]*self.camera_distance,
-          self.camera[1]*self.camera_distance,
-          self.camera[2]*self.camera_distance
-        ])
+    def _map_to_original(self, point, coord_index):
+        v = vec_div(self.map_to_data(point), self.data_scale) + self.data_translation
+        if coord_index == 0:
+            return v.x()
+        elif coord_index == 1:
+            return v.y()
+        elif coord_index == 2:
+            return v.z()
 
-        def _draw_grid(axis0, axis1, normal0, normal1, i, j):
-            glColor4f(*self._theme.grid_color)
+    def _draw_grid(self):
+        self.renderer.set_transform(self.model, self.view, self.projection)
+        cam_in_space = self.camera * self.camera_distance
+
+        def _draw_grid_plane(axis0, axis1, normal0, normal1, i, j):
             for axis, normal, coord_index in zip([axis0, axis1], [normal0, normal1], [i, j]):
-                start, end = axis.copy()
-                start_value = self.map_to_data(start.copy())[coord_index]
-                end_value = self.map_to_data(end.copy())[coord_index]
+                start, end = axis.v0, axis.v1
+                start_value = self._map_to_original(start, coord_index)
+                end_value = self._map_to_original(end, coord_index)
                 values, _ = loose_label(start_value, end_value, 7)
                 for value in values:
                     if not (start_value <= value <= end_value):
                         continue
                     position = start + (end-start)*((value-start_value) / float(end_value-start_value))
-                    glBegin(GL_LINES)
-                    glVertex3f(*position)
-                    glVertex3f(*(position-normal*1.))
-                    glEnd()
+                    self.renderer.draw_line(
+                        position,
+                        position - normal*1,
+                        color=self._theme.grid_color)
 
         glDisable(GL_DEPTH_TEST)
-        glLineWidth(1)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -275,37 +340,186 @@ class ScatterPlot(OWPlot3D, orngScaleScatterPlotData):
                 [self.y_axis, self.z_axis],
                 [self.x_axis+self.unit_z, self.y_axis+self.unit_z],
                 [self.z_axis+self.unit_x, self.y_axis+self.unit_x]]
-        normals = [[numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0, 0,-1]), numpy.array([ 0,-1, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([-1, 0, 0])],
-                   [numpy.array([0,-1, 0]), numpy.array([ 0, 0,-1])]]
+        normals = [[QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0, 0,-1), QVector3D( 0,-1, 0)],
+                   [QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0,-1, 0), QVector3D( 0, 0,-1)]]
         coords = [[0, 1],
                   [1, 2],
                   [0, 1],
                   [2, 1]]
-        visible_planes = [plane_visible(plane, cam_in_space) for plane in planes]
-        xz_visible = not plane_visible(self.axis_plane_xz, cam_in_space)
+        visible_planes = [plane.visible_from(cam_in_space) for plane in planes]
+        xz_visible = not self.axis_plane_xz.visible_from(cam_in_space)
         if xz_visible:
-            _draw_grid(self.x_axis, self.z_axis, numpy.array([0,0,-1]), numpy.array([-1,0,0]), 0, 2)
+            _draw_grid_plane(self.x_axis, self.z_axis, QVector3D(0, 0, -1), QVector3D(-1, 0, 0), 0, 2)
         for visible, (axis0, axis1), (normal0, normal1), (i, j) in\
              zip(visible_planes, axes, normals, coords):
             if not visible:
-                _draw_grid(axis0, axis1, normal0, normal1, i, j)
+                _draw_grid_plane(axis0, axis1, normal0, normal1, i, j)
 
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
+    def _build_axes(self):
+        edge_half = 1. / 2.
+        self.x_axis = Edge(QVector3D(-edge_half, -edge_half, -edge_half), QVector3D( edge_half, -edge_half, -edge_half))
+        self.y_axis = Edge(QVector3D(-edge_half, -edge_half, -edge_half), QVector3D(-edge_half,  edge_half, -edge_half))
+        self.z_axis = Edge(QVector3D(-edge_half, -edge_half, -edge_half), QVector3D(-edge_half, -edge_half,  edge_half))
+
+        self.unit_x = unit_x = QVector3D(1, 0, 0)
+        self.unit_y = unit_y = QVector3D(0, 1, 0)
+        self.unit_z = unit_z = QVector3D(0, 0, 1)
+ 
+        A = self.y_axis.v1
+        B = self.y_axis.v1 + unit_x
+        C = self.x_axis.v1
+        D = self.x_axis.v0
+
+        E = A + unit_z
+        F = B + unit_z
+        G = C + unit_z
+        H = D + unit_z
+
+        self.axis_plane_xy = Plane(A, B, C, D)
+        self.axis_plane_yz = Plane(A, D, H, E)
+        self.axis_plane_xz = Plane(D, C, G, H)
+
+        self.axis_plane_xy_back = Plane(H, G, F, E)
+        self.axis_plane_yz_right = Plane(B, F, G, C)
+        self.axis_plane_xz_top = Plane(E, F, B, A)
+
+    def _draw_axes(self):
+        self.renderer.set_transform(self.model, self.view, self.projection)
+
+        def _draw_axis(axis):
+            glLineWidth(2)
+            self.renderer.draw_line(axis.v0,
+                                    axis.v1,
+                                    color=self._theme.axis_color)
+            glLineWidth(1)
+
+        def _draw_discrete_axis_values(axis, coord_index, normal, axis_labels):
+            start, end = axis.v0, axis.v1
+            start_value = self._map_to_original(start, coord_index)
+            end_value = self._map_to_original(end, coord_index)
+            length = end_value - start_value
+            for i, label in enumerate(axis_labels):
+                value = (i + 1) * 2
+                if start_value <= value <= end_value:
+                    position = start + (end-start)*((value-start_value) / length)
+                    self.renderer.draw_line(
+                        position,
+                        position + normal*0.03,
+                        color=self._theme.axis_values_color)
+                    position += normal * 0.1
+                    self.renderText(position.x(),
+                                    position.y(),
+                                    position.z(),
+                                    label, font=self._theme.labels_font)
+
+        def _draw_values(axis, coord_index, normal, axis_labels):
+            glLineWidth(1)
+            if axis_labels != None:
+                _draw_discrete_axis_values(axis, coord_index, normal, axis_labels)
+                return
+            start, end = axis.v0, axis.v1
+            start_value = self._map_to_original(start, coord_index)
+            end_value = self._map_to_original(end, coord_index)
+            values, num_frac = loose_label(start_value, end_value, 7)
+            for value in values:
+                if not (start_value <= value <= end_value):
+                    continue
+                position = start + (end-start)*((value-start_value) / float(end_value-start_value))
+                text = ('%%.%df' % num_frac) % value
+                self.renderer.draw_line(
+                    position,
+                    position+normal*0.03,
+                    color=self._theme.axis_values_color)
+                position += normal * 0.1
+                self.renderText(position.x(),
+                                position.y(),
+                                position.z(),
+                                text, font=self._theme.axis_font)
+
+        def _draw_axis_title(axis, title, normal):
+            middle = (axis.v0 + axis.v1) / 2.
+            middle += normal * 0.1 if axis.v0.y() != axis.v1.y() else normal * 0.2
+            self.renderText(middle.x(), middle.y(), middle.z(),
+                            title,
+                            font=self._theme.axis_title_font)
+
+        glDisable(GL_DEPTH_TEST)
+        glLineWidth(1)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        cam_in_space = self.camera * self.camera_distance
+
+        # TODO: the code below is horrible and should be simplified
+        planes = [self.axis_plane_xy, self.axis_plane_yz,
+                  self.axis_plane_xy_back, self.axis_plane_yz_right]
+        normals = [[QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0, 0,-1), QVector3D( 0,-1, 0)],
+                   [QVector3D(0,-1, 0), QVector3D(-1, 0, 0)],
+                   [QVector3D(0,-1, 0), QVector3D( 0, 0,-1)]]
+        visible_planes = [plane.visible_from(cam_in_space) for plane in planes]
+        xz_visible = not self.axis_plane_xz.visible_from(cam_in_space)
+
+        if visible_planes[0 if xz_visible else 2]:
+            _draw_axis(self.x_axis)
+            _draw_values(self.x_axis, 0, QVector3D(0, 0, -1), self._x_axis_labels)
+            if self.show_x_axis_title:
+                _draw_axis_title(self.x_axis, self._x_axis_title, QVector3D(0, 0, -1))
+        elif visible_planes[2 if xz_visible else 0]:
+            _draw_axis(self.x_axis + self.unit_z)
+            _draw_values(self.x_axis + self.unit_z, 0, QVector3D(0, 0, 1), self._x_axis_labels)
+            if self.show_x_axis_title:
+                _draw_axis_title(self.x_axis + self.unit_z,
+                                self._x_axis_title, QVector3D(0, 0, 1))
+
+        if visible_planes[1 if xz_visible else 3]:
+            _draw_axis(self.z_axis)
+            _draw_values(self.z_axis, 2, QVector3D(-1, 0, 0), self._z_axis_labels)
+            if self.show_z_axis_title:
+                _draw_axis_title(self.z_axis, self._z_axis_title, QVector3D(-1, 0, 0))
+        elif visible_planes[3 if xz_visible else 1]:
+            _draw_axis(self.z_axis + self.unit_x)
+            _draw_values(self.z_axis + self.unit_x, 2, QVector3D(1, 0, 0), self._z_axis_labels)
+            if self.show_z_axis_title:
+                _draw_axis_title(self.z_axis + self.unit_x, self._z_axis_title, QVector3D(1, 0, 0))
+
+        try:
+            rightmost_visible = visible_planes[::-1].index(True)
+        except ValueError:
+            return
+        if rightmost_visible == 0 and visible_planes[0] == True:
+            rightmost_visible = 3
+        y_axis_translated = [self.y_axis+self.unit_x,
+                             self.y_axis+self.unit_x+self.unit_z,
+                             self.y_axis+self.unit_z,
+                             self.y_axis]
+        normals = [QVector3D(1, 0, 0),
+                   QVector3D(0, 0, 1),
+                   QVector3D(-1,0, 0),
+                   QVector3D(0, 0,-1)]
+        axis = y_axis_translated[rightmost_visible]
+        normal = normals[rightmost_visible]
+        _draw_axis(axis)
+        _draw_values(axis, 1, normal, self._y_axis_labels)
+        if self.show_y_axis_title:
+            _draw_axis_title(axis, self._y_axis_title, normal)
+
 class OWScatterPlot3D(OWWidget):
     settingsList = ['plot.show_legend', 'plot.symbol_size', 'plot.show_x_axis_title', 'plot.show_y_axis_title',
-                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols',
-                    'plot.alpha_value', 'plot.show_grid', 'plot.pitch', 'plot.yaw', 'plot.use_ortho',
+                    'plot.show_z_axis_title', 'plot.show_legend', 'plot.use_2d_symbols', 'plot.symbol_scale',
+                    'plot.alpha_value', 'plot.show_grid', 'plot.pitch', 'plot.yaw',
                     'plot.show_chassis', 'plot.show_axes',
                     'auto_send_selection', 'auto_send_selection_update',
-                    'plot.jitter_size', 'plot.jitter_continuous']
+                    'plot.jitter_size', 'plot.jitter_continuous', 'dark_theme']
     contextHandlers = {'': DomainContextHandler('', ['x_attr', 'y_attr', 'z_attr'])}
     jitter_sizes = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
-    def __init__(self, parent=None, signalManager=None, name='Scatter Plot 3D'):
+    def __init__(self, parent=None, signalManager=None, name='ScatterPlot 3D'):
         OWWidget.__init__(self, parent, signalManager, name, True)
 
         self.inputs = [('Examples', ExampleTable, self.set_data, Default), ('Subset Examples', ExampleTable, self.set_subset_data)]
@@ -388,11 +602,10 @@ class OWScatterPlot3D(OWWidget):
             debuggingEnabled=0)
 
         box = OWGUI.widgetBox(self.settings_tab, 'Point properties')
-        ss = OWGUI.hSlider(box, self, 'plot.symbol_scale', label='Symbol scale',
-            minValue=0, maxValue=20,
+        OWGUI.hSlider(box, self, 'plot.symbol_scale', label='Symbol scale',
+            minValue=1, maxValue=20,
             tooltip='Scale symbol size',
             callback=self.on_checkbox_update)
-        ss.setValue(4)
 
         OWGUI.hSlider(box, self, 'plot.alpha_value', label='Transparency',
             minValue=10, maxValue=255,
@@ -403,12 +616,12 @@ class OWScatterPlot3D(OWWidget):
         box = OWGUI.widgetBox(self.settings_tab, 'Jittering Options')
         self.jitter_size_combo = OWGUI.comboBox(box, self, 'plot.jitter_size', label='Jittering size (% of size)'+'  ',
             orientation='horizontal',
-            callback=self.update_plot,
+            callback=self.handleNewSignals,
             items=self.jitter_sizes,
             sendSelectedValue=1,
             valueType=float)
         OWGUI.checkBox(box, self, 'plot.jitter_continuous', 'Jitter continuous attributes',
-            callback=self.update_plot,
+            callback=self.handleNewSignals,
             tooltip='Does jittering apply also on continuous attributes?')
 
         self.dark_theme = False
@@ -418,7 +631,6 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.show_y_axis_title',   'Y axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_z_axis_title',   'Z axis title',   callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.show_legend',         'Show legend',    callback=self.on_checkbox_update)
-        OWGUI.checkBox(box, self, 'plot.use_ortho',           'Use ortho',      callback=self.on_checkbox_update)
         OWGUI.checkBox(box, self, 'plot.use_2d_symbols',      '2D symbols',     callback=self.update_plot)
         OWGUI.checkBox(box, self, 'dark_theme',               'Dark theme',     callback=self.on_theme_change)
         OWGUI.checkBox(box, self, 'plot.show_grid',           'Show grid',      callback=self.on_checkbox_update)
@@ -427,25 +639,19 @@ class OWScatterPlot3D(OWWidget):
         OWGUI.checkBox(box, self, 'plot.hide_outside',        'Hide outside',   callback=self.on_checkbox_update)
         OWGUI.rubber(box)
 
-        self.auto_send_selection = True
-        self.auto_send_selection_update = False
-        self.plot.selection_changed_callback = self.selection_changed_callback
-        self.plot.selection_updated_callback = self.selection_updated_callback
-        box = OWGUI.widgetBox(self.settings_tab, 'Auto Send Selected Data When...')
-        OWGUI.checkBox(box, self, 'auto_send_selection', 'Adding/Removing selection areas',
-            callback = self.on_checkbox_update, tooltip='Send selected data whenever a selection area is added or removed')
-        OWGUI.checkBox(box, self, 'auto_send_selection_update', 'Moving selection areas',
-            callback = self.on_checkbox_update, tooltip='Send selected data when a user moves or resizes an existing selection area')
+        box = OWGUI.widgetBox(self.settings_tab, 'Mouse', orientation = "horizontal")
+        OWGUI.hSlider(box, self, 'plot.mouse_sensitivity', label='Sensitivity', minValue=1, maxValue=10,
+                      step=1,
+                      callback=self.plot.update,
+                      tooltip='Change mouse sensitivity')
 
-        self.zoom_select_toolbar = OWToolbars.ZoomSelectToolbar(self, self.main_tab, self.plot, self.auto_send_selection,
-            buttons=(1, 4, 5, 0, 6, 7, 8))
-        self.connect(self.zoom_select_toolbar.buttonSendSelections, SIGNAL('clicked()'), self.send_selections)
-        self.connect(self.zoom_select_toolbar.buttonSelectRect, SIGNAL('clicked()'), self.change_selection_type)
-        self.connect(self.zoom_select_toolbar.buttonSelectPoly, SIGNAL('clicked()'), self.change_selection_type)
-        self.connect(self.zoom_select_toolbar.buttonZoom, SIGNAL('clicked()'), self.change_selection_type)
-        self.connect(self.zoom_select_toolbar.buttonRemoveLastSelection, SIGNAL('clicked()'), self.plot.remove_last_selection)
-        self.connect(self.zoom_select_toolbar.buttonRemoveAllSelections, SIGNAL('clicked()'), self.plot.remove_all_selections)
-        self.toolbarSelection = None
+        gui = self.plot.gui
+        buttons = gui.default_zoom_select_buttons
+        buttons.insert(2, (gui.UserButton, 'Rotate', 'state', ROTATING, None, 'Dlg_undo'))
+        self.zoom_select_toolbar = gui.zoom_select_toolbar(self.main_tab, buttons=buttons)
+        self.connect(self.zoom_select_toolbar.buttons[gui.SendSelection], SIGNAL("clicked()"), self.send_selection)
+        self.connect(self.zoom_select_toolbar.buttons[gui.Zoom], SIGNAL("clicked()"), self.plot.unselect_all_points)
+        self.plot.set_selection_behavior(OWPlot.ReplaceSelection)
 
         self.tooltip_kind = TooltipKind.NONE
         box = OWGUI.widgetBox(self.settings_tab, 'Tooltips Settings')
@@ -462,6 +668,7 @@ class OWScatterPlot3D(OWWidget):
 
         self.loadSettings()
         self.plot.update_camera()
+        self.on_theme_change()
 
         self.data = None
         self.subset_data = None
@@ -469,7 +676,7 @@ class OWScatterPlot3D(OWWidget):
 
     def mouseover_callback(self, index):
         if self.tooltip_kind == TooltipKind.VISIBLE:
-            self.plot.show_tooltip(self.get_example_tooltip(self.data[index], self.shown_attr_indices))
+            self.plot.show_tooltip(self.get_example_tooltip(self.data[index], self.shown_attrs))
         elif self.tooltip_kind == TooltipKind.ALL:
             self.plot.show_tooltip(self.get_example_tooltip(self.data[index]))
 
@@ -507,42 +714,6 @@ class OWScatterPlot3D(OWWidget):
                 try: text += '&nbsp;'*4 + '%s = %s<br>' % (example.domain[key].name, str(example[key]))
                 except: pass
         return text[:-4]
-
-    def selection_changed_callback(self):
-        if self.plot.selection_type == SelectionType.ZOOM:
-            indices = self.plot.get_selection_indices()
-            if len(indices) < 1:
-                self.plot.remove_all_selections()
-                return
-            selected_indices = [1 if i in indices else 0
-                                for i in range(len(self.data))]
-            selected = self.plot.raw_data.selectref(selected_indices)
-            x_min = y_min = z_min = 1e100
-            x_max = y_max = z_max = -1e100
-            x_index = self.plot.attribute_name_index[self.x_attr]
-            y_index = self.plot.attribute_name_index[self.y_attr]
-            z_index = self.plot.attribute_name_index[self.z_attr]
-            # TODO: there has to be a faster way
-            for example in selected:
-                x_min = min(example[x_index], x_min)
-                y_min = min(example[y_index], y_min)
-                z_min = min(example[z_index], z_min)
-                x_max = max(example[x_index], x_max)
-                y_max = max(example[y_index], y_max)
-                z_max = max(example[z_index], z_max)
-            self.plot.set_new_zoom(x_min, x_max, y_min, y_max, z_min, z_max)
-        else:
-            if self.auto_send_selection:
-                self.send_selections()
-
-    def selection_updated_callback(self):
-        if self.plot.selection_type != SelectionType.ZOOM and self.auto_send_selection_update:
-            self.send_selections()
-
-    def change_selection_type(self):
-        if self.toolbarSelection < 3:
-            selection_type = [SelectionType.ZOOM, SelectionType.RECTANGLE, SelectionType.POLYGON][self.toolbarSelection]
-            self.plot.set_selection_type(selection_type)
 
     def set_data(self, data=None):
         self.closeContext()
@@ -584,7 +755,7 @@ class OWScatterPlot3D(OWWidget):
                 self.z_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.color_attr_cb.addItem(icons[attr.varType], attr.name)
                 self.size_attr_cb.addItem(icons[attr.varType], attr.name)
-            if attr.varType == Discrete: 
+            if attr.varType == Discrete and len(attr.values) < len(Symbol):
                 self.symbol_attr_cb.addItem(icons[attr.varType], attr.name)
             self.label_attr_cb.addItem(icons[attr.varType], attr.name)
 
@@ -605,16 +776,16 @@ class OWScatterPlot3D(OWWidget):
             self.color_attr = ''
 
         self.symbol_attr = self.size_attr = self.label_attr = ''
-        self.shown_attr_indices = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
+        self.shown_attrs = [self.x_attr, self.y_attr, self.z_attr, self.color_attr]
 
     def set_subset_data(self, data=None):
         self.subset_data = data
 
     def handleNewSignals(self):
-        self.vizrank.resetDialog()
         self.plot.set_data(self.data, self.subset_data)
+        self.vizrank.resetDialog()
         self.update_plot()
-        self.send_selections()
+        self.send_selection()
 
     def saveSettings(self):
         OWWidget.saveSettings(self)
@@ -638,14 +809,17 @@ class OWScatterPlot3D(OWWidget):
         self.reportSection('Plot')
         self.reportImage(self.plot.save_to_file_direct, QSize(400, 400))
 
-    def send_selections(self):
+    def send_selection(self):
         if self.data == None:
             return
-        indices = self.plot.get_selection_indices()
-        selected = [1 if i in indices else 0 for i in range(len(self.data))]
-        unselected = map(lambda n: 1-n, selected)
-        selected = self.data.selectref(selected)
-        unselected = self.data.selectref(unselected)
+
+        selected = None#selected = self.plot.get_selected_indices() # TODO: crash
+        if selected == None or len(selected) != len(self.data):
+            return
+
+        unselected = numpy.logical_not(selected)
+        selected = self.data.selectref(list(selected))
+        unselected = self.data.selectref(list(unselected))
         self.send('Selected Examples', selected)
         self.send('Unselected Examples', unselected)
 
@@ -655,12 +829,12 @@ class OWScatterPlot3D(OWWidget):
 
     def on_theme_change(self):
         if self.dark_theme:
-            self.plot.theme = DarkTheme()
+            self.plot.theme = ScatterDarkTheme()
         else:
-            self.plot.theme = LightTheme()
+            self.plot.theme = ScatterLightTheme()
 
     def on_checkbox_update(self):
-        self.plot.updateGL()
+        self.plot.update()
 
     def update_plot(self):
         if self.data is None:

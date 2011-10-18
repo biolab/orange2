@@ -14,6 +14,8 @@ import numpy
 
 from plot.owplot import *
 from plot.owpoint import *
+from plot.owtools import *  
+
 from orngScaleScatterPlotData import *
 import orangeqt
 
@@ -26,22 +28,269 @@ class NodeItem(orangeqt.NodeItem):
             self.set_y(y)
         
 class EdgeItem(orangeqt.EdgeItem):
-    def __init__(self, u=None, v=None, weight=1, links_index=0, label='', parent=None):
+    def __init__(self, u=None, v=None, weight=1, links_index=0, arrows=None, label='', parent=None):
         orangeqt.EdgeItem.__init__(self, u, v, parent)
         self.set_weight(weight)
         self.set_links_index(links_index)
+        if arrows is not None:
+            self.set_arrows(arrows)
 
 class NetworkCurve(orangeqt.NetworkCurve):
     def __init__(self, parent=None, pen=QPen(Qt.black), xData=None, yData=None):
         orangeqt.NetworkCurve.__init__(self, parent)
         self.name = "Network Curve"
         
-    def fr(self, steps, weighted=False, smooth_cooling=False):
+    def layout_fr(self, steps, weighted=False, smooth_cooling=False):
         orangeqt.NetworkCurve.fr(self, steps, weighted, smooth_cooling)
       
     def set_node_sizes(self, values={}, min_size=0, max_size=0):
         orangeqt.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
+    
+    def fragviz_callback(self, a, b, mds, mdsRefresh, components, progress_callback):
+        """Refresh the UI when running  MDS on network components."""
+        
+        if not self.mdsStep % mdsRefresh:
+            rotationOnly = False
+            component_props = []
+            x_mds = []
+            y_mds = []
+            phi = [None] * len(components)
+            nodes = self.nodes()
+            
+            for i, component in enumerate(components):    
+                
+                if len(mds.points) == len(components):  # if average linkage before
+                    x_avg_mds = mds.points[i][0]
+                    y_avg_mds = mds.points[i][1]
+                else:                                   # if not average linkage before
+                    x = [mds.points[u][0] for u in component]
+                    y = [mds.points[u][1] for u in component]
+            
+                    x_avg_mds = sum(x) / len(x) 
+                    y_avg_mds = sum(y) / len(y)
+                    # compute rotation angle
+#                    c = [numpy.linalg.norm(numpy.cross(mds.points[u], \
+#                                [nodes[u].x(), nodes[u].y()])) for u in component]
+#                    
+#                    n = [numpy.vdot([nodes[u].x(), nodes[u].y()], \
+#                                    [nodes[u].x(), nodes[u].y()]) for u in component]
+#                    phi[i] = sum(c) / sum(n)
+                    
+                
+                x = [nodes[i].x() for i in component]
+                y = [nodes[i].y() for i in component]
+                
+                x_avg_graph = sum(x) / len(x)
+                y_avg_graph = sum(y) / len(y)
+                
+                x_mds.append(x_avg_mds) 
+                y_mds.append(y_avg_mds)
+    
+                component_props.append((x_avg_graph, y_avg_graph, \
+                                        x_avg_mds, y_avg_mds, phi))
+
+            for i, component in enumerate(components):
+                x_avg_graph, y_avg_graph, x_avg_mds, \
+                y_avg_mds, phi = component_props[i]
+                
+    #            if phi[i]:  # rotate vertices
+    #                #print "rotate", i, phi[i]
+    #                r = numpy.array([[numpy.cos(phi[i]), -numpy.sin(phi[i])], [numpy.sin(phi[i]), numpy.cos(phi[i])]])  #rotation matrix
+    #                c = [x_avg_graph, y_avg_graph]  # center of mass in FR coordinate system
+    #                v = [numpy.dot(numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]]) - c, r) + c for u in component]
+    #                self.graph.coors[0][component] = [u[0] for u in v]
+    #                self.graph.coors[1][component] = [u[1] for u in v]
+                    
+                # translate vertices
+                if not rotationOnly:
+                    self.set_node_coordinates(dict(
+                       (i, ((nodes[i].x() - x_avg_graph) + x_avg_mds,  
+                            (nodes[i].y() - y_avg_graph) + y_avg_mds)) \
+                                  for i in component))
+                    
+            #if self.mdsType == MdsType.exactSimulation:
+            #    self.mds.points = [[self.graph.coors[0][i], \
+            #                        self.graph.coors[1][i]] \
+            #                        for i in range(len(self.graph.coors))]
+            #    self.mds.freshD = 0
+            
+            #self.update_properties()
+            self.plot().replot()
+            qApp.processEvents()
+            
+            if progress_callback is not None:
+                progress_callback(a, self.mdsStep) 
+            
+        self.mdsStep += 1
+        return 0 if self.stopMDS else 1
+            
+    def layout_fragviz(self, steps, distances, graph, progress_callback=None, opt_from_curr=False):
+        """Position the network components according to similarities among 
+        them.
+        
+        """
+
+        if distances == None or graph == None or distances.dim != graph.number_of_nodes():
+            self.information('invalid or no distance matrix')
+            return 1
+        
+        p = self.plot()
+        edges = self.edges()
+        nodes = self.nodes()
+        
+        avgLinkage = True
+        rotationOnly = False
+        minStressDelta = 0
+        mdsRefresh = int(steps / 20)
+        
+        self.mdsStep = 1
+        self.stopMDS = False
+        
+        components = Orange.network.nx.algorithms.components.connected.connected_components(graph)
+        distances.matrixType = Orange.core.SymMatrix.Symmetric
+        
+        # scale net coordinates
+        if avgLinkage:
+            distances = distances.avgLinkage(components)
+            
+        mds = Orange.projection.mds.MDS(distances)
+        mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
+        rect = self.data_rect()
+        w_fr = rect.width()
+        h_fr = rect.height()
+        d_fr = math.sqrt(w_fr**2 + h_fr**2)
       
+        x_mds = [mds.points[u][0] for u in range(len(mds.points))]
+        y_mds = [mds.points[u][1] for u in range(len(mds.points))]
+        w_mds = max(x_mds) - min(x_mds)
+        h_mds = max(y_mds) - min(y_mds)
+        d_mds = math.sqrt(w_mds**2 + h_mds**2)
+        
+        animate_points = p.animate_points
+        p.animate_points = False
+        
+        self.set_node_coordinates(dict(
+           (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
+        
+        #self.update_properties()
+        p.replot()
+        qApp.processEvents()
+                     
+        if opt_from_curr:
+            if avgLinkage:
+                for u, c in enumerate(components):
+                    x = sum([nodes[n].x() for n in c]) / len(c)
+                    y = sum([nodes[n].y() for n in c]) / len(c)
+                    mds.points[u][0] = x
+                    mds.points[u][1] = y
+            else:
+                for i,u in enumerate(sorted(nodes.iterkeys())):
+                    mds.points[i][0] = nodes[u].x()
+                    mds.points[i][1] = nodes[u].y()
+        else:
+            mds.Torgerson() 
+
+        mds.optimize(steps, Orange.projection.mds.SgnRelStress, minStressDelta, 
+                     progressCallback=
+                         lambda a, 
+                                b=None, 
+                                mds=mds,
+                                mdsRefresh=mdsRefresh,
+                                components=components,
+                                progress_callback=progress_callback: 
+                                    self.fragviz_callback(a, b, mds, mdsRefresh, components, progress_callback))
+        
+        self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
+        
+        if progress_callback != None:
+            progress_callback(mds.avgStress, self.mdsStep)
+        
+        p.animate_points = animate_points
+        return 0
+    
+    def mds_callback(self, a, b, mds, mdsRefresh, progress_callback):
+        """Refresh the UI when running  MDS."""
+        
+        if not self.mdsStep % mdsRefresh:
+            
+            self.set_node_coordinates(dict((u, (mds.points[u][0], \
+                                                mds.points[u][1])) for u in \
+                                           range(len(mds.points))))
+            self.plot().replot()
+            qApp.processEvents()
+            
+            if progress_callback is not None:
+                progress_callback(a, self.mdsStep) 
+            
+        self.mdsStep += 1
+        return 0 if self.stopMDS else 1
+    
+    def layout_mds(self, steps, distances, progress_callback=None, opt_from_curr=False):
+        """Position the network components according to similarities among 
+        them.
+        
+        """
+        nodes = self.nodes()
+        
+        if distances == None or distances.dim != len(nodes):
+            self.information('invalid or no distance matrix')
+            return 1
+        
+        p = self.plot()
+        
+        minStressDelta = 0
+        mdsRefresh = int(steps / 20)
+        
+        self.mdsStep = 1
+        self.stopMDS = False
+        
+        distances.matrixType = Orange.core.SymMatrix.Symmetric
+        mds = Orange.projection.mds.MDS(distances)
+        mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
+        rect = self.data_rect()
+        w_fr = rect.width()
+        h_fr = rect.height()
+        d_fr = math.sqrt(w_fr**2 + h_fr**2)
+      
+        x_mds = [mds.points[u][0] for u in range(len(mds.points))]
+        y_mds = [mds.points[u][1] for u in range(len(mds.points))]
+        w_mds = max(x_mds) - min(x_mds)
+        h_mds = max(y_mds) - min(y_mds)
+        d_mds = math.sqrt(w_mds**2 + h_mds**2)
+        
+        animate_points = p.animate_points
+        p.animate_points = False
+        
+        self.set_node_coordinates(dict(
+           (n, (nodes[n].x()*d_mds/d_fr, nodes[n].y()*d_mds/d_fr)) for n in nodes))
+        
+        p.replot()
+        qApp.processEvents()
+                     
+        if opt_from_curr:
+            for i,u in enumerate(sorted(nodes.iterkeys())):
+                mds.points[i][0] = nodes[u].x()
+                mds.points[i][1] = nodes[u].y()
+        else:
+            mds.Torgerson() 
+
+        mds.optimize(steps, Orange.projection.mds.SgnRelStress, minStressDelta, 
+                     progressCallback=
+                         lambda a, 
+                                b=None, 
+                                mds=mds,
+                                mdsRefresh=mdsRefresh,
+                                progress_callback=progress_callback: 
+                                    self.mds_callback(a, b, mds, mdsRefresh, progress_callback))
+        
+        self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, progress_callback)
+        
+        if progress_callback != None:
+            progress_callback(mds.avgStress, self.mdsStep)
+        
+        p.animate_points = animate_points
+        return 0
+    
 #    def move_selected_nodes(self, dx, dy):
 #        selected = self.get_selected_nodes()
 #        
@@ -76,15 +325,18 @@ class OWNxCanvas(OWPlot):
         OWPlot.__init__(self, parent, name, axes=[])
         self.master = master
         self.parent = parent
-        
+        self.NodeItem = NodeItem
         self.graph = None
-
+        
         self.circles = []
         self.freezeNeighbours = False
         self.labelsOnMarkedOnly = 0
 
         self.show_indices = False
         self.show_weights = False
+        self.trim_label_words = 0
+        self.explore_distances = False
+        self.show_component_distances = False
         
         self.showComponentAttribute = None
         self.forceVectors = None
@@ -114,7 +366,9 @@ class OWNxCanvas(OWPlot):
         
     def update_canvas(self):
         self.networkCurve.update_properties()
-            
+        self.drawComponentKeywords()
+        self.replot()
+        
     def set_hidden_nodes(self, nodes):
         self.networkCurve.set_hidden_nodes(nodes)
     
@@ -161,12 +415,17 @@ class OWNxCanvas(OWPlot):
         
         self.networkCurve.clear_node_marks()
         self.networkCurve.set_node_marks(dict((i, True) for i in toMark))
+    
+    def mark_on_focus_changed(self, node):
+        self.networkCurve.clear_node_marks()
+        
+        if node is not None:
+            toMark = set(self.get_neighbors_upto(node.index(), self.mark_neighbors))
+            self.networkCurve.set_node_marks(dict((i, True) for i in toMark))
         
     def drawComponentKeywords(self):
-        if self.showComponentAttribute == None:
-            return
-        
-        if self.graph is None or self.items is None:
+        self.clear_markers()
+        if self.showComponentAttribute == None or self.graph is None or self.items is None:
             return
         
         if str(self.showComponentAttribute) not in self.items.domain:
@@ -174,25 +433,19 @@ class OWNxCanvas(OWPlot):
             return
         
         components = Orange.network.nx.algorithms.components.connected_components(self.graph)
+        nodes = self.networkCurve.nodes()
         
-        for component in components:
-            if len(component) == 0:
+        for c in components:
+            if len(c) == 0:
                 continue
             
-            vertices = [vertex for vertex in component if self.networkCurve.vertices[vertex].show]
-    
-            if len(vertices) == 0:
-                continue
+            x1 = sum(nodes[n].x() for n in c) / len(c)
+            y1 = sum(nodes[n].y() for n in c) / len(c)
+            lbl = str(self.items[c[0]][str(self.showComponentAttribute)])
             
-            xes = [self.networkCurve.coors[vertex][0] for vertex in vertices]  
-            yes = [self.networkCurve.coors[vertex][1] for vertex in vertices]  
-                                  
-            x1 = sum(xes) / len(xes)
-            y1 = sum(yes) / len(yes)
+            self.add_marker(lbl, x1, y1, alignment=Qt.AlignCenter, size=self.fontSize)
             
-            lbl = str(self.items[component[0]][str(self.showComponentAttribute)])
-            
-            mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
+            #mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
                             
     def getColorIndeces(self, table, attribute, palette):
         colorIndices = {}
@@ -270,7 +523,13 @@ class OWNxCanvas(OWPlot):
         if self.show_indices:
             indices = [[str(u)] for u in nodes]
             
-        self.networkCurve.set_node_labels(dict((node, ', '.join(indices[i] + \
+        if self.trim_label_words > 0:
+            self.networkCurve.set_node_labels(dict((node, 
+                ', '.join(indices[i] + 
+                          [' '.join(str(self.items[node][att]).split(' ')[:min(self.trim_label_words,len(str(self.items[node][att]).split(' ')))])
+                for att in label_attributes])) for i, node in enumerate(nodes)))
+        else:
+            self.networkCurve.set_node_labels(dict((node, ', '.join(indices[i]+\
                            [str(self.items[node][att]) for att in \
                            label_attributes])) for i, node in enumerate(nodes)))
         
@@ -371,7 +630,7 @@ class OWNxCanvas(OWPlot):
         
         self.networkCurve.remove_nodes(list(remove_nodes))
         
-        nodes = dict((v, NodeItem(v, x=pos[v][0], y=pos[v][1], parent=self.networkCurve)) for v in add_nodes)
+        nodes = dict((v, self.NodeItem(v, x=pos[v][0], y=pos[v][1], parent=self.networkCurve)) for v in add_nodes)
         self.networkCurve.add_nodes(nodes)
         nodes = self.networkCurve.nodes()
         
@@ -384,7 +643,7 @@ class OWNxCanvas(OWPlot):
             
             if self.graph.is_directed():
                 edges = [EdgeItem(nodes[i], nodes[j],
-                    self.graph[i][j].get('weight', 1), 0, 1, links_index, \
+                    self.graph[i][j].get('weight', 1), links_index, arrows=EdgeItem.ArrowV, \
                     parent=self.networkCurve) for ((i, j), links_index) in \
                          zip(new_edges, links_indices)]
             else:
@@ -394,7 +653,7 @@ class OWNxCanvas(OWPlot):
                                         links_indices, parent=self.networkCurve)]
         elif self.graph.is_directed():
             edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
-                    0, 1, parent=self.networkCurve) for (i, j) in new_edges]
+                    arrows=EdgeItem.ArrowV, parent=self.networkCurve) for (i, j) in new_edges]
         else:
             edges = [EdgeItem(nodes[i], nodes[j], self.graph[i][j].get('weight', 1), \
                     parent=self.networkCurve) for (i, j) in new_edges]
@@ -419,7 +678,7 @@ class OWNxCanvas(OWPlot):
             return
         
         self.graph = graph
-        self.networkCurve = NetworkCurve() if curve is None else curve
+        self.networkCurve = NetworkCurve() if curve is None else curve()
         self.add_custom_curve(self.networkCurve)
         
         self.items = items if items is not None else self.graph.items()
@@ -427,7 +686,7 @@ class OWNxCanvas(OWPlot):
         
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
-        vertices = dict((v, NodeItem(v, parent=self.networkCurve)) for v in self.graph)
+        vertices = dict((v, self.NodeItem(v, parent=self.networkCurve)) for v in self.graph)
         self.networkCurve.set_nodes(vertices)
                 
         #build edge to row index
@@ -453,7 +712,7 @@ class OWNxCanvas(OWPlot):
             
             if self.graph.is_directed():
                 edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), 0, 1, links_index, \
+                    graph[i][j].get('weight', 1), links_index, arrows=EdgeItem.ArrowV, \
                     parent=self.networkCurve) for ((i, j), links_index) in \
                          zip(self.graph.edges(), links_indices)]
             else:
@@ -464,7 +723,7 @@ class OWNxCanvas(OWPlot):
                 
         elif self.graph.is_directed():
             edges = [EdgeItem(vertices[i], vertices[j],
-                                      graph[i][j].get('weight', 1), 0, 1, parent=self.networkCurve) for (i, j) in self.graph.edges()]
+                                      graph[i][j].get('weight', 1), arrows=EdgeItem.ArrowV, parent=self.networkCurve) for (i, j) in self.graph.edges()]
         else:
             edges = [EdgeItem(vertices[i], vertices[j],
                                       graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges()]
@@ -481,8 +740,15 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_labels_on_marked_only(labelsOnMarkedOnly)
         self.replot()
     
+    def set_show_component_distances(self):
+        self.networkCurve.set_show_component_distances(self.show_component_distances)
+        self.replot()
+        
     def replot(self):
+        
+                #, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None, x_axis_key = xBottom, y_axis_key = yLeft):
         self.set_dirty()
         OWPlot.replot(self)
         if hasattr(self, 'networkCurve') and self.networkCurve is not None:
             self.networkCurve.update()
+            

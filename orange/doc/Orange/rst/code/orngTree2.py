@@ -16,16 +16,16 @@ def replaceB(strg, mo, node, parent, tree):
 
     by = mo.group("by")
     if margin and by:
-        whom = Orange.classification.tree.byWhom(by, parent, tree)
+        whom = Orange.classification.tree.by_whom(by, parent, tree)
         if whom and whom.distribution:
             div_margin = get_margin(whom.distribution)
             if div_margin > 1e-30:
                 margin /= div_margin
             else:
-                Orange.classification.tree.insertDot(strg, mo)
+                Orange.classification.tree.insert_dot(strg, mo)
         else:
-            return Orange.classification.tree.insertDot(strg, mo)
-    return Orange.classification.tree.insertNum(strg, mo, margin)
+            return Orange.classification.tree.insert_dot(strg, mo)
+    return Orange.classification.tree.insert_num(strg, mo, margin)
     
 my_format = [(re.compile("%"+Orange.classification.tree.fs
     +"B"+Orange.classification.tree.by), replaceB)]

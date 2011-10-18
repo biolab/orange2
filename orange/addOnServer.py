@@ -107,7 +107,7 @@ def _handlerContent(req, args, repositoryDir):
 #                <title>Orange Add-on Repository</title>
 #              </head>
 #              <body><h1>Orange Add-on Repository %s</h1>
-#                <p>This is an <a href="http://www.ailab.si/orange">Orange</a> add-on repository. Would you like to <a href="upload.html">upload</a> new add-ons?</p>
+#                <p>This is an <a href="http://orange.biolab.si">Orange</a> add-on repository. Would you like to <a href="upload.html">upload</a> new add-ons?</p>
 #              </body>
 #            </html>""" % req.uri
 #            try: 

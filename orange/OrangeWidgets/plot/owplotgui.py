@@ -30,8 +30,8 @@ import OWGUI
 
 from owconstants import *
 
-from PyQt4.QtGui import QWidget, QToolButton, QGroupBox, QVBoxLayout, QHBoxLayout, QIcon
-from PyQt4.QtCore import Qt, pyqtSignal, qDebug, QObject, SIGNAL
+from PyQt4.QtGui import QWidget, QToolButton, QGroupBox, QVBoxLayout, QHBoxLayout, QIcon, QMenu, QAction
+from PyQt4.QtCore import Qt, pyqtSignal, qDebug, QObject, SIGNAL, SLOT
 
 
 class OrientedWidget(QWidget):
@@ -119,7 +119,7 @@ class StateButtonContainer(OrientedWidget):
         self._clicked_button = None
         for i in buttons:
             b = gui.tool_button(i, self)
-            QObject.connect(b, SIGNAL("clicked(bool)"), self.button_clicked)
+            QObject.connect(b, SIGNAL("triggered(QAction*)"), self.button_clicked)
             self.buttons[i] = b
             self.layout().addWidget(b)
             
@@ -136,34 +136,45 @@ class StateButtonContainer(OrientedWidget):
         OrientedWidget.setEnabled(self, enabled)
         if enabled and self._clicked_button:
             self._clicked_button.click()
-                    
-class OWButton(QToolButton):
+            
+class OWAction(QAction):
     '''
-        A custom tool button that can set and attribute or call a function when clicked. 
+      A :obj:.QAction with convenience methods for calling a callback or setting an attribute of the plot. 
+    '''
+    def __init__(self, plot, icon_name=None, attr_name='', attr_value=None, callback=None, parent=None):
+        QAction.__init__(self, parent)
         
-        :param plot: The object whose attributes will be modified
-        :type plot: :obj:`.OWPlot`
-    '''
-    def __init__(self, plot, attr_name, attr_value, callback, parent):
-        QToolButton.__init__(self, parent)
-        self.setMinimumSize(30, 30)
-        self.plot = plot
         if type(callback) == str:
             callback = getattr(plot, callback, None)
         if callback:
-            QObject.connect(self, SIGNAL("clicked(bool)"), callback)
+            QObject.connect(self, SIGNAL("triggered(bool)"), callback)
         if attr_name:
+            self._plot = plot
             self.attr_name = attr_name
             self.attr_value = attr_value
-            QObject.connect(self, SIGNAL("clicked(bool)"), self.set_attribute)
-        
+            QObject.connect(self, SIGNAL("triggered(bool)"), self.set_attribute)
+        if icon_name:
+            self.setIcon(QIcon(os.path.dirname(__file__) + "/../icons/" + icon_name + '.png'))
+
     def set_attribute(self, clicked):
-        setattr(self.plot, self.attr_name, self.attr_value)
+        setattr(self._plot, self.attr_name, self.attr_value)
+        
+                    
+class OWButton(QToolButton):
+    '''
+        A custom tool button which signal when its down state changes
+    '''
+    def __init__(self, action=None, parent=None):
+        QToolButton.__init__(self, parent)
+        self.setMinimumSize(30, 30)
+        if action:
+            self.setDefaultAction(action)
         
     def setDown(self, down):
-        self.emit(SIGNAL("downChanged(bool)"), down)
+        if self.isDown() != down:
+            self.emit(SIGNAL("downChanged(bool)"), down)
         QToolButton.setDown(self, down)
-                    
+    
 class OWPlotGUI:
     '''
         This class contains functions to create common user interface elements (QWidgets)
@@ -264,12 +275,6 @@ class OWPlotGUI:
             Select,
         StateButtonsEnd,
         Spacing,
-        StateButtonsBegin,
-            SelectionOne,
-            SelectionAdd, 
-            SelectionRemove,
-        StateButtonsEnd,
-        Spacing,
         SendSelection,
         ClearSelection
     ]
@@ -278,10 +283,10 @@ class OWPlotGUI:
         Zoom : ('Zoom', 'state', ZOOMING, None, 'Dlg_zoom'),
         Pan : ('Pan', 'state', PANNING, None, 'Dlg_pan_hand'),
         Select : ('Select', 'state', SELECT, None, 'Dlg_arrow'),
-        SelectionAdd : ('Add to selection', 'selection_behavior', SELECTION_ADD, None, ''),
-        SelectionRemove : ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, None, ''),
-        SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, None, ''),
-        SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_REPLACE, None, ''),
+        SelectionAdd : ('Add to selection', 'selection_behavior', SELECTION_ADD, None, 'Dlg_select_add'),
+        SelectionRemove : ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, None, 'Dlg_select_remove'),
+        SelectionToggle : ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, None, 'Dlg_select_toggle'),
+        SelectionOne : ('Replace selection', 'selection_behavior', SELECTION_REPLACE, None, 'Dlg_arrow'),
         SendSelection : ('Send selection', None, None, 'send_selection', 'Dlg_send'),
         ClearSelection : ('Clear selection', None, None, 'clear_selection', 'Dlg_clear'),
         ShufflePoints : ('ShufflePoints', None, None, 'shuffle_points', 'Dlg_sort')
@@ -400,24 +405,59 @@ class OWPlotGUI:
             The ``ids`` argument is a list of widget ID's that will be added to this box
         '''
         box = OWGUI.widgetBox(widget, name)
-        self.add_widgets(ids, widget)
+        self.add_widgets(ids, box)
         return box
+        
+    def _expand_id(self, id):
+        if type(id) == int:
+            name, attr_name, attr_value, callback, icon_name = self._buttons[id]
+        elif len(id) == 4:
+            name, attr_name, attr_value, callback, icon_name = id
+            id = -1
+        else:
+            id, name, attr_name, attr_value, callback, icon_name = id
+        return id, name, attr_name, attr_value, callback, icon_name
         
     def tool_button(self, id, widget):
         '''
             Creates an :obj:`.OWButton` and adds it to the parent ``widget``. 
         '''
-        if type(id) == int:
-            name, attr_name, attr_value, callback, icon_name = self._buttons[id]
-        elif len(id) == 4:
-            name, attr_name, attr_value, callback, icon_name = id
+        id, name, attr_name, attr_value, callback, icon_name = self._expand_id(id)
+        if id == OWPlotGUI.Select:
+            b = self.menu_button(self.Select, [self.SelectionOne, self.SelectionAdd, self.SelectionRemove, self.SelectionToggle], widget)
         else:
-            id, name, attr_name, attr_value, callback, icon_name = id
-        b = OWButton(self._plot, attr_name, attr_value, callback, widget)
+            b = OWButton(OWAction(self._plot, icon_name, attr_name, attr_value, callback), widget)
         b.setToolTip(name)
-        b.setIcon(QIcon(os.path.dirname(__file__) + "/../icons/" + icon_name + '.png'))
         if widget.layout() is not None:
             widget.layout().addWidget(b)
+        return b
+        
+    def menu_button(self, main_action_id, ids, widget):
+        '''
+            Creates an :obj:`.OWButton` with a popup-menu and adds it to the parent ``widget``. 
+        '''
+        id, name, attr_name, attr_value, callback, icon_name = self._expand_id(main_action_id)
+        b = OWButton(parent=widget)
+        m = QMenu(b)
+        b.setMenu(m)
+        QObject.connect(m, SIGNAL("triggered(QAction*)"), b, SLOT("setDefaultAction(QAction*)"))
+
+        if main_action_id:
+            main_action = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=b)
+            QObject.connect(m, SIGNAL("triggered(QAction*)"), main_action, SLOT("trigger()"))
+        
+        for id in ids:
+            id, name, attr_name, attr_value, callback, icon_name = self._expand_id(id)
+            m.addAction(OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=m))
+            
+        if m.actions():
+            b.setDefaultAction(m.actions()[0])
+        elif main_action_id:
+            b.setDefaultAction(main_action)
+            
+        
+        b.setPopupMode(QToolButton.MenuButtonPopup)
+        b.setMinimumSize(40, 30)
         return b
         
     def state_buttons(self, orientation, buttons, widget):
@@ -443,10 +483,7 @@ class OWPlotGUI:
         
     def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons):
         t = self.toolbar(widget, text, orientation, buttons)
-        t.groups[self.SelectionOne].setEnabled(t.buttons[self.Select].isDown())
-        QObject.connect(t.buttons[self.Select], SIGNAL("downChanged(bool)"), t.groups[self.SelectionOne].setEnabled)
         t.buttons[self.Select].click()
-        t.buttons[self.SelectionOne].click()
         return t    
         
     def effects_box(self, widget):

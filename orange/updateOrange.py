@@ -164,9 +164,9 @@ class updateOrangeDlg(QMainWindow):
 
         self.downfile = os.path.join(self.orangeDir, "whatsdown.txt")
 
-        self.updateUrl = "http://www.ailab.si/orange/download/update/"
-        self.binaryUrl = "http://www.ailab.si/orange/download/binaries/%i%i/" % sys.version_info[:2]
-        self.whatsupUrl = "http://www.ailab.si/orange/download/whatsup.txt"
+        self.updateUrl = "http://orange.biolab.si/download/update/"
+        self.binaryUrl = "http://orange.biolab.si/download/binaries/%i%i/" % sys.version_info[:2]
+        self.whatsupUrl = "http://orange.biolab.si/download/whatsup.txt"
 
         self.updateGroups = []
         self.dontUpdateGroups = []
@@ -416,7 +416,7 @@ class updateOrangeDlg(QMainWindow):
     def updatePyd(self):
         files = "orange", "corn", "statc", "orangeom", "orangene", "_orngCRS"
 
-        baseurl = "http://www.ailab.si/orange/download/binaries/%i%i/" % sys.version_info[:2]
+        baseurl = "http://orange.biolab.si/download/binaries/%i%i/" % sys.version_info[:2]
         repository_stamps = dict([tuple(x.split()) for x in urllib.urlopen(baseurl + "stamps_pyd.txt") if x.strip()])
         updated = 0
 

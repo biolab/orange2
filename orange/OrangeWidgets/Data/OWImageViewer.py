@@ -1,6 +1,7 @@
 """<name>Image Viewer</name>
 <description>View images embeded in example table</description>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
+<priority>4050</priority>
 """
 
 from OWWidget import *

@@ -8,11 +8,15 @@ import weakref
 from collections import defaultdict
 
 import PyQt4.QtGui
+from PyQt4 import QtCore, QtGui
 from PyQt4.QtTest import QTest
 from PyQt4.QtCore import Qt
 
+import random
 class debug(object):
-    elements_list = defaultdict(list) 
+    elements_list = defaultdict(list)
+    random = random
+    
     @classmethod
     def registerQItemView(cls, widget, view):
         cls.elements_list[widget].append(view)
@@ -22,7 +26,7 @@ class debug(object):
         cls.elements_list[widget].append(view)
         
     @classmethod
-    def regiseterQwtPlot(cls, widget, graph):
+    def registerQwtPlot(cls, widget, graph):
         cls.elements_list[widget].append(graph)
         
     @classmethod
@@ -42,14 +46,21 @@ class debug(object):
     def scrollAreaInteract(cls, area):
 #        print "scrollAreaInteract", area
         from PyQt4.QtTest import QTest
-        QTest.mouseMove(area)
-        QTest.mouseClick(area, Qt.LeftButton)
+        geom = area.geometry()
+        randpos = lambda: geom.topLeft() + QtCore.QPoint(geom.width() * random.random(), geom.height() * random.random())
+        QTest.mouseMove(area, randpos(), 2)
+        QTest.mouseClick(area, Qt.LeftButton, pos=randpos(), delay=2)
+        QTest.mouseDClick(area, Qt.LeftButton, pos=randpos(), delay=2)
+        QTest.mousePress(area, Qt.LeftButton, pos=randpos(), delay=2)
+        QTest.mouseRelease(area, Qt.LeftButton, pos=randpos(), delay=2)
+        
+#        area.scrollContentsBy(random.randint(-10, 10), random.randint(-10, 10))
         
         
     @classmethod
     def itemViewInteract(cls, view):
-        cls.scrollAreaInteract(view)        
-         
+        cls.scrollAreaInteract(view)
+    
     @classmethod
     def graphicsViewInteract(cls, view):
         cls.scrollAreaInteract(view)

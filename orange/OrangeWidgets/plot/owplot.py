@@ -28,7 +28,7 @@ SelectionPen = QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.Round
 SelectionBrush = QBrush(QColor(168, 202, 236, 192))
 
 from PyQt4.QtGui import QGraphicsView,  QGraphicsScene, QPainter, QTransform, QPolygonF, QGraphicsItem, QGraphicsPolygonItem, QGraphicsRectItem, QRegion
-from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL
+from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL, Qt, QEvent
 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
@@ -367,9 +367,12 @@ class OWPlot(orangeqt.Plot):
         self.curveSymbols = range(13)
         self.tips = TooltipManager(self)
         self.setMouseTracking(True)
+        self.grabGesture(Qt.PinchGesture)
+        self.grabGesture(Qt.PanGesture)
         
         self.state = NOTHING
         self._pressed_mouse_button = Qt.NoButton
+        self._pressed_point = None
         self.selection_items = []
         self._current_rs_item = None
         self._current_ps_item = None
@@ -456,9 +459,6 @@ class OWPlot(orangeqt.Plot):
     contPalette = deprecated_attribute("contPalette", "continuous_palette")
     discPalette = deprecated_attribute("discPalette", "discrete_palette")
     
-    def __setattr__(self, name, value):
-        unisetattr(self, name, value, QGraphicsView)
-        
     def scrollContentsBy(self, dx, dy):
         # This is overriden here to prevent scrolling with mouse and keyboard
         # Instead of moving the contents, we simply do nothing
@@ -944,18 +944,27 @@ class OWPlot(orangeqt.Plot):
         self._legend.update_items()
             
         axis_rects = dict()
-        margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
+        base_margin = min(self.axis_margin,  graph_rect.height()/4, graph_rect.height()/4)
         if xBottom in self.axes and self.axes[xBottom].isVisible():
+            margin = base_margin
+            if self.axes[xBottom].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             bottom_rect = QRectF(graph_rect)
             bottom_rect.setTop( bottom_rect.bottom() - margin)
             axis_rects[xBottom] = bottom_rect
             graph_rect.setBottom( graph_rect.bottom() - margin)
         if xTop in self.axes and self.axes[xTop].isVisible():
+            margin = base_margin
+            if self.axes[xTop].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             top_rect = QRectF(graph_rect)
             top_rect.setBottom(top_rect.top() + margin)
             axis_rects[xTop] = top_rect
             graph_rect.setTop(graph_rect.top() + margin)
         if yLeft in self.axes and self.axes[yLeft].isVisible():
+            margin = base_margin
+            if self.axes[yLeft].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             left_rect = QRectF(graph_rect)
             left = graph_rect.left() + margin + self.y_axis_extra_margin
             left_rect.setRight(left)
@@ -966,6 +975,9 @@ class OWPlot(orangeqt.Plot):
             if xTop in axis_rects:
                 axis_rects[xTop].setLeft(left)
         if yRight in self.axes and self.axes[yRight].isVisible():
+            margin = base_margin
+            if self.axes[yRight].should_be_expanded():
+                margin += min(20, graph_rect.height()/8, graph_rect.width() / 8)
             right_rect = QRectF(graph_rect)
             right = graph_rect.right() - margin - self.y_axis_extra_margin
             right_rect.setLeft(right)
@@ -1132,11 +1144,14 @@ class OWPlot(orangeqt.Plot):
         if b == Qt.LeftButton | Qt.RightButton:
             b = Qt.MidButton
         if m & Qt.AltModifier and b == Qt.LeftButton:
-            m = m & ~AltModifier
+            m = m & ~Qt.AltModifier
             b = Qt.MidButton
         
         if b == Qt.LeftButton and not m:
             return self.state
+        
+        if b == Qt.RightButton and not m and self.state == SELECT:
+            return SELECT_RIGHTCLICK
             
         if b == Qt.MidButton:
             return PANNING
@@ -1148,6 +1163,30 @@ class OWPlot(orangeqt.Plot):
             return SELECT
     
     ## Event handling
+    
+    def event(self, event):
+        if event.type() == QEvent.Gesture:
+            qDebug('We have gesture!')
+            return self.gestureEvent(event)
+        else:
+            return orangeqt.Plot.event(self, event)
+            
+    def gestureEvent(self, event):
+        for gesture in event.gestures():
+            if gesture.state() == Qt.GestureStarted:
+                self.current_gesture_scale = 1.
+                event.accept(gesture)
+                continue
+            elif gesture.gestureType() == Qt.PinchGesture:
+                old_animate_plot = self.animate_plot
+                self.animate_plot = False
+                self.zoom(gesture.centerPoint(), gesture.scaleFactor()/self.current_gesture_scale )
+                self.current_gesture_scale = gesture.scaleFactor()
+                self.animate_plot = old_animate_plot
+            elif gesture.gestureType() == Qt.PanGesture:
+                self.pan(gesture.delta())
+        return True
+    
     def resizeEvent(self, event):
         self.replot()
         s = event.size() - event.oldSize()
@@ -1174,6 +1213,12 @@ class OWPlot(orangeqt.Plot):
         point = self.mapToScene(event.pos())
         a = self.mouse_action(event)
 
+        if a == SELECT and hasattr(self, 'move_selected_points'):
+            self._pressed_point = self.nearest_point(point)
+            self._pressed_point_coor = None 
+            if self._pressed_point is not None:
+                self._pressed_point_coor = self._pressed_point.coordinates()
+            
         if a == PANNING:
             self._last_pan_pos = point
             event.accept()
@@ -1193,7 +1238,8 @@ class OWPlot(orangeqt.Plot):
         
         point = self.mapToScene(event.pos())
         if not self._pressed_mouse_button:
-            self.emit(SIGNAL('point_hovered(Point*)'), self.nearest_point(point))
+            if self.receivers(SIGNAL('point_hovered(Point*)')) > 0:
+                self.emit(SIGNAL('point_hovered(Point*)'), self.nearest_point(point))
         
         ## We implement a workaround here, because sometimes mouseMoveEvents are not fast enough
         ## so the moving legend gets left behind while dragging, and it's left in a pressed state
@@ -1203,7 +1249,19 @@ class OWPlot(orangeqt.Plot):
             
         a = self.mouse_action(event)
         
-        if a in [SELECT, ZOOMING] and self.graph_area.contains(point):
+        if a == SELECT and self._pressed_point is not None and hasattr(self, 'move_selected_points'):
+            animate_points = self.animate_points
+            self.animate_points = False
+            x1, y1 = self._pressed_point_coor
+            x2, y2 = self.map_from_graph(point)
+            self.move_selected_points((x2 - x1, y2 - y1))
+            self.replot()
+            if self._pressed_point is not None:
+                self._pressed_point_coor = self._pressed_point.coordinates()
+                
+            self.animate_points = animate_points
+            
+        elif a in [SELECT, ZOOMING] and self.graph_area.contains(point):
             if not self._current_rs_item:
                 self._selection_start_point = self.mapToScene(self._pressed_mouse_pos)
                 self._current_rs_item = QGraphicsRectItem(scene=self.scene())
@@ -1241,6 +1299,8 @@ class OWPlot(orangeqt.Plot):
             return
         
         a = self.mouse_action(event)
+        if a == SELECT and self._pressed_point is not None:
+            self._pressed_point = None
         if a in [ZOOMING, SELECT] and self._current_rs_item:
             rect = self._current_rs_item.rect()
             if a == ZOOMING:
@@ -1258,7 +1318,8 @@ class OWPlot(orangeqt.Plot):
             return False
             
         a = self.mouse_action(event)
-            
+        b = event.buttons() | event.button()
+        
         if a == ZOOMING:
             if event.button() == Qt.LeftButton:
                 self.zoom_in(point)
@@ -1267,7 +1328,7 @@ class OWPlot(orangeqt.Plot):
             else:
                 return False
             return True
-        elif a == SELECT:
+        elif a == SELECT and b == Qt.LeftButton:
             point_item = self.nearest_point(point)
             b = self.selection_behavior
             if b == self.ReplaceSelection:
@@ -1276,6 +1337,10 @@ class OWPlot(orangeqt.Plot):
             if point_item:
                 point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
             self.emit(SIGNAL('selection_changed()'))
+        elif a == SELECT and b == Qt.RightButton:
+            point_item = self.nearest_point(point)
+            if point_item:
+                self.emit(SIGNAL('point_rightclicked(Point*)'), self.nearest_point(point))
         else:
             return False
             

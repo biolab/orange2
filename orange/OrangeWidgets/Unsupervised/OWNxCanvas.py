@@ -724,24 +724,24 @@ class OWNxCanvas(OWGraph):
     #          vals = vals[:2 * matrix.dim]
     #          edges = [(ind / matrix.dim, ind % matrix.dim) for v, ind in vals]
     #          print "number of component edges:", len(edges), "number of components:", len(components)
-            components_c = [(sum(self.networkCurve.coors[c][0]) / len(c), sum(self.networkCurve.coors[c][1]) / len(c)) for c in components]
-            weights = [1 - matrix[u,v] for u,v in edges]
-            
-            max_weight = max(weights)
-            min_weight = min(weights)
-            span_weights = max_weight - min_weight
-          
-            for u,v in edges:
-                x = [components_c[u][0], components_c[v][0]]
-                y = [components_c[u][1], components_c[v][1]]
-                w = ((1 - matrix[u,v]) - min_weight) / span_weights * (self.maxComponentEdgeWidth - self.minComponentEdgeWidth) + self.minComponentEdgeWidth
-                
-                pen = QPen()
-                pen.setWidth(int(w))
-                pen.setBrush(QColor(50,200,255,15))
-                pen.setCapStyle(Qt.FlatCap)
-                pen.setJoinStyle(Qt.RoundJoin)
-                self.addCurve("component_edges", Qt.green, Qt.green, 0, style=QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData=x, yData=y, pen=pen, showFilledSymbols=False)
+#            components_c = [(sum(self.networkCurve.coors[c][0]) / len(c), sum(self.networkCurve.coors[c][1]) / len(c)) for c in components]
+#            weights = [1 - matrix[u,v] for u,v in edges]
+#            
+#            max_weight = max(weights)
+#            min_weight = min(weights)
+#            span_weights = max_weight - min_weight
+#          
+#            for u,v in edges:
+#                x = [components_c[u][0], components_c[v][0]]
+#                y = [components_c[u][1], components_c[v][1]]
+#                w = ((1 - matrix[u,v]) - min_weight) / span_weights * (self.maxComponentEdgeWidth - self.minComponentEdgeWidth) + self.minComponentEdgeWidth
+#                
+#                pen = QPen()
+#                pen.setWidth(int(w))
+#                pen.setBrush(QColor(50,200,255,15))
+#                pen.setCapStyle(Qt.FlatCap)
+#                pen.setJoinStyle(Qt.RoundJoin)
+#                self.addCurve("component_edges", Qt.green, Qt.green, 0, style=QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData=x, yData=y, pen=pen, showFilledSymbols=False)
         
         
         self.networkCurve.setData(self.layout.coors[0], self.layout.coors[1])

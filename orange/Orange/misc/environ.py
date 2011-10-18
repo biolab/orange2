@@ -10,7 +10,7 @@ How it works
 ------------
 
 When this module is imported it will first load and parse a global 
-configuration `orangerc.cfg` (located in the root directory off the orange
+configuration `orangerc.cfg` (located in the root directory of the orange
 installation). Further, it will look for and try to load a user specific
 configuration file located in $(HOME)/.orangerc.cfg or 
 `application_dir`/orangerc.cfg where `application_dir` is a variable defined

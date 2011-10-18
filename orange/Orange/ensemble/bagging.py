@@ -135,11 +135,10 @@ class BaggedClassifier(orange.Classifier):
                 from collections import defaultdict
                 prob = defaultdict(float)
                 for c, p in votes:
-                    try: 
-                        prob[float(c)] += p[c] / wsum
-                    except IndexError: # p[c] sometimes fails with index error
-                        prob[float(c)] += 1.0 / wsum
-                prob = orange.ContDistribution(prob)
+                    for val, val_p in p.items():
+                        prob[float(val)] += val_p / wsum
+                    
+                prob = Orange.statistics.distribution.Continuous(prob)
                 return (self.classVar(pred), prob) if resultType == orange.GetBoth\
                     else prob
             elif resultType == orange.GetValue:

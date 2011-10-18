@@ -113,6 +113,7 @@ Exception classes
 import xml.dom.minidom
 import re
 import os
+import shutil
 import sys
 import glob
 import time
@@ -663,7 +664,7 @@ function setElColors(t, id, color) {
                                       glob.iglob(os.path.join(wdir, "*.py"))] +\
                                      [(True, filename) for filename in
                                       glob.iglob(os.path.join(pdir, "*.py"))]:
-            if os.path.isdir(filename) or os.path.islink(filename):
+            if os.path.isdir(filename):
                 continue
             try:
                 meta = widgetParser.WidgetMetaData(file(filename).read(),
@@ -1478,11 +1479,20 @@ def load_installed_addons_from_dir(dir):
 def repository_list_filename():
     """
     Return the full filename of pickled add-on repository list. It resides
-    within Canvas settings directory. 
+    within Orange settings directory. 
     """
-    canvasSettingsDir = os.path.realpath(Orange.misc.environ.canvas_settings_dir)
-    listFileName = os.path.join(canvasSettingsDir, "repositoryList.pickle")
-    return listFileName
+    orange_settings_dir = os.path.realpath(Orange.misc.environ.orange_settings_dir)
+    list_file_name = os.path.join(orange_settings_dir, "repositoryList.pickle")
+    if not os.path.isfile(list_file_name):
+        # Try to move the config from the old location.
+        try:
+            canvas_settings_dir = os.path.realpath(Orange.misc.environ.canvas_settings_dir)
+            old_list_file_name = os.path.join(canvas_settings_dir, "repositoryList.pickle")
+            shutil.move(old_list_file_name, list_file_name)
+        except:
+            pass
+    
+    return list_file_name
 
 available_repositories = None
             

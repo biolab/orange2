@@ -1,4 +1,5 @@
 import Orange
+import Orange.core
 from Orange.core import BayesClassifier as _BayesClassifier
 from Orange.core import BayesLearner as _BayesLearner
 
@@ -6,30 +7,8 @@ from Orange.core import BayesLearner as _BayesLearner
 class NaiveLearner(Orange.classification.Learner):
     """
     Probabilistic classifier based on applying Bayes' theorem (from Bayesian
-    statistics) with strong (naive) independence assumptions.
-    If data instances are provided to the constructor, the learning algorithm
-    is called and the resulting classifier is returned instead of the learner.
-    
-    ..
-        :param adjust_threshold: sets the corresponding attribute
-        :type adjust_threshold: boolean
-        :param m: sets the :obj:`estimatorConstructor` to
-            :class:`orange.ProbabilityEstimatorConstructor_m` with specified m
-        :type m: integer
-        :param estimator_constructor: sets the corresponding attribute
-        :type estimator_constructor: orange.ProbabilityEstimatorConstructor
-        :param conditional_estimator_constructor: sets the corresponding attribute
-        :type conditional_estimator_constructor:
-                :class:`orange.ConditionalProbabilityEstimatorConstructor`
-        :param conditional_estimator_constructor_continuous: sets the corresponding
-                attribute
-        :type conditional_estimator_constructor_continuous: 
-                :class:`orange.ConditionalProbabilityEstimatorConstructor`
-                
-    :rtype: :class:`Orange.classification.bayes.NaiveLearner` or
-            :class:`Orange.classification.bayes.NaiveClassifier`
-            
-    Constructor parameters set the corresponding attributes.
+    statistics) with strong (naive) independence assumptions. Constructor parameters
+    set the corresponding attributes.
     
     .. attribute:: adjust_threshold
     
@@ -42,15 +21,15 @@ class NaiveLearner(Orange.classification.Learner):
     .. attribute:: m
     
         m for m-estimate. If set, m-estimation of probabilities
-        will be used using :class:`orange.ProbabilityEstimatorConstructor_m`.
-        This attribute is ignored if you also set estimatorConstructor.
+        will be used using :class:`Orange.statistics.estimate.M`.
+        This attribute is ignored if you also set :obj:`estimator_constructor`.
         
     .. attribute:: estimator_constructor
     
         Probability estimator constructor for
         prior class probabilities. Defaults to
-        :class:`orange.ProbabilityEstimatorConstructor_relative`.
-        Setting this attribute disables the above described attribute m.
+        :class:`Orange.statistics.estimate.RelativeFrequency`.
+        Setting this attribute disables the above described attribute :obj:`m`.
         
     .. attribute:: conditional_estimator_constructor
     
@@ -62,14 +41,14 @@ class NaiveLearner(Orange.classification.Learner):
     
         Probability estimator constructor for conditional probabilities for
         continuous features. Defaults to 
-        :class:`orange.ConditionalProbabilityEstimatorConstructor_loess`.
+        :class:`Orange.statistics.estimate.Loess`.
     """
     
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
+    def __new__(cls, data = None, weight_id = 0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if instances:
+        if data:
             self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
+            return self.__call__(data, weight_id)
         else:
             return self
         
@@ -83,14 +62,14 @@ class NaiveLearner(Orange.classification.Learner):
         self.conditional_estimator_constructor_continuous = conditional_estimator_constructor_continuous
         self.__dict__.update(argkw)
 
-    def __call__(self, instances, weight=0):
+    def __call__(self, data, weight=0):
         """Learn from the given table of data instances.
         
-        :param instances: Data instances to learn from.
-        :type instances: Orange.data.Table
+        :param data: Data instances to learn from.
+        :type data: Orange.data.Table
         :param weight: Id of meta attribute with weights of instances
-        :type weight: integer
-        :rtype: :class:`Orange.classification.bayes.NaiveBayesClassifier`
+        :type weight: int
+        :rtype: :class:`Orange.classification.bayes.NaiveClassifier`
         """
         bayes = _BayesLearner()
         if self.estimator_constructor:
@@ -111,7 +90,7 @@ class NaiveLearner(Orange.classification.Learner):
             bayes.conditional_estimator_constructor_continuous = self.conditional_estimator_constructor_continuous
         if self.adjust_threshold:
             bayes.adjust_threshold = self.adjust_threshold
-        return NaiveClassifier(bayes(instances, weight))
+        return NaiveClassifier(bayes(data, weight))
 NaiveLearner = Orange.misc.deprecated_members(
 {     "adjustThreshold": "adjust_threshold",
       "estimatorConstructor": "estimator_constructor",
@@ -123,12 +102,7 @@ NaiveLearner = Orange.misc.deprecated_members(
 
 class NaiveClassifier(Orange.classification.Classifier):
     """
-    Predictor based on calculated probabilities. It wraps an
-    :class:`Orange.core.BayesClassifier` that does the actual classification.
-    
-    :param base_classifier: an :class:`Orange.core.BayesLearner` to wrap. If
-            not set, a new :class:`Orange.core.BayesLearner` is created.
-    :type base_classifier: :class:`Orange.core.BayesLearner`
+    Predictor based on calculated probabilities.
     
     .. attribute:: distribution
     
@@ -171,7 +145,7 @@ class NaiveClassifier(Orange.classification.Classifier):
               :class:`Orange.classification.Classifier.GetBoth`
         
         :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both
+              :class:`Orange.statistics.distribution.Distribution` or a tuple with both
         """
         return self.native_bayes_classifier(instance, result_type, *args, **kwdargs)
 
@@ -189,9 +163,9 @@ class NaiveClassifier(Orange.classification.Classifier):
         Probability is not normalized and can be different from probability
         returned from __call__.
         
-        :param class_: class variable for which the probability should be
+        :param class_: class value for which the probability should be
                 output.
-        :type class_: :class:`Orange.data.Variable`
+        :type class_: :class:`Orange.data.Value`
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
         

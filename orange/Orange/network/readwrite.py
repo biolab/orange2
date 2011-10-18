@@ -21,6 +21,7 @@ import os.path
 import warnings
 import itertools
 import tempfile
+import gzip
 
 import networkx as nx
 import networkx.readwrite.pajek as rwpajek
@@ -90,7 +91,7 @@ def graph_to_table(G):
     """Builds a Data Table from node values."""
     if G.number_of_nodes() > 0:
         features = list(set(itertools.chain.from_iterable(node.iterkeys() for node in G.node.itervalues())))
-        data = [[node.get(f).replace('\t', ' ') if type(node.get(f, 1)) == str else str(node.get(f, '?')) for f in features] for node in G.node.itervalues()]
+        data = [[node.get(f).encode('utf-8').replace('\t', ' ') if type(node.get(f, 1)) == str or type(node.get(f, 1)) == unicode else str(node.get(f, '?')) for f in features] for node in G.node.itervalues()]
         fp = tempfile.NamedTemporaryFile('wt', suffix='.txt', delete=False)
         fp.write('\n'.join('\t'.join(line) for line in [features] + data))
         fp.close()
@@ -113,7 +114,7 @@ def read(path, encoding='UTF-8', auto_table=0):
     """
     
     #supported = ['.net', '.gml', '.gpickle', '.gz', '.bz2', '.graphml']
-    supported = ['.net', '.gml', '.gpickle']
+    supported = ['.net', '.gml', '.gpickle', '.gz']
     
     if not os.path.isfile(path):
         raise OSError('File %s does not exist.' % path)
@@ -130,6 +131,9 @@ def read(path, encoding='UTF-8', auto_table=0):
     
     if ext == '.gpickle':
         return read_gpickle(path, auto_table=auto_table)
+    
+    if ext == '.gz' and path[-6:] == 'txt.gz':
+        return read_txtgz(path)
 
 def write(G, path, encoding='UTF-8'):
     """Write graph in any of the supported file formats (.gpickle, .net, .gml).
@@ -187,20 +191,7 @@ def write_gpickle(G, path):
 _add_doc(write_gpickle, rwgpickle.write_gpickle)
 
 def read_pajek(path, encoding='UTF-8', project=False, auto_table=False):
-    """A completely reimplemented Unhandled exception of type KeyError occured at 13:45:31:
-Traceback:
-  File: orngSignalManager.py, line 555 in processNewSignals
-  Code: self.widgets[i].processSignals()
-    File: OWBaseWidget.py, line 686 in processSignals
-    Code: self.handleNewSignals()
-      File: OWScatterPlot3D.py, line 616 in handleNewSignals
-      Code: self.update_plot()
-        File: OWScatterPlot3D.py, line 671 in update_plot
-        Code: self.label_attr)
-          File: OWScatterPlot3D.py, line 97 in update_data
-          Code: x_index = self.attribute_name_index[x_attr]
-            KeyError: 8 
-method for reading Pajek files. Written in 
+    """A completely reimplemented method for reading Pajek files. Written in
     C++ for maximum performance.  
     
     :param path: File or filename to write.
@@ -372,5 +363,23 @@ def write_gml(G, path):
     """
     
     rwgml.write_gml(G, path)
+
+def read_txtgz(path):
+    f = gzip.open(path, 'rb')
+    content = f.read()
+    f.close()
+    
+    content = content.split('\n')
+    comments = (line for line in content if line.strip().startswith('#'))
+    content = (line for line in content if not line.strip().startswith('#'))
+    
+    if "directed graph" in ''.join(comments).lower():
+        G = Orange.network.DiGraph()
+    else:
+        G = Orange.network.Graph()
+    
+    G.add_edges_from([int(node) for node in coors.strip().split('\t')] for coors in content if len(coors.strip().split('\t')) == 2)
+    
+    return G
 
 _add_doc(write_gml, rwgml.write_gml)

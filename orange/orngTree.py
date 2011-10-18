@@ -56,3 +56,7 @@ printDot = dot
 dotTree = printDot
 """ DEPRECATED. Replaced by :obj:`TreeClassifier.dot` """
 
+byWhom = by_whom
+insertStr = insert_str
+insertDot = insert_dot
+insertNum = insert_num

@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__(self, parent=None, signalManager=None, title="Orange Widget", wantGraph=False, wantStatusBar=False, savePosition=True, wantMainArea=1, noReport=False, showSaveGraph=1, resizingEnabled=1, **args):
+    def __init__(self, parent=None, signalManager=None, title="Orange Widget", wantGraph=False, wantStatusBar=False, savePosition=True, wantMainArea=1, noReport=False, showSaveGraph=1, resizingEnabled=1, wantStateInfoWidget=None, **args):
         """
         Initialization
         Parameters:
@@ -28,6 +28,7 @@ class OWWidget(OWBaseWidget):
             self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding), margin=0)
             self.mainArea.layout().setMargin(4)
             self.mainArea.updateGeometry()
+            
         self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=4)# if wantMainArea else 1)
 
         self.space = self.controlArea
@@ -39,6 +40,37 @@ class OWWidget(OWBaseWidget):
             self.buttonBackground.show()
             self.graphButton = OWGUI.button(self.buttonBackground, self, "&Save Graph")
             self.graphButton.setAutoDefault(0)
+            
+        if wantStateInfoWidget is None:
+            wantStateInfoWidget = self._owShowStatus
+            
+        if wantStateInfoWidget:
+            # Widget for error, warnings, info.
+            self.widgetStateInfoBox = OWGUI.widgetBox(self.leftWidgetPart, "Widget state")
+            self.widgetStateInfo = OWGUI.widgetLabel(self.widgetStateInfoBox, "\n")
+            self.widgetStateInfo.setWordWrap(True)
+            self.widgetStateInfo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            self.widgetStateInfo.setFixedHeight(self.widgetStateInfo.height())
+            self.widgetStateInfoBox.hide()
+            def updateWidgetStateInfo(stateType, id, text):
+                html = self.widgetStateToHtml(self._owInfo, self._owWarning, self._owError)
+                if html:
+                    self.widgetStateInfoBox.show()
+                    self.widgetStateInfo.setText(html)
+                    self.widgetStateInfo.setToolTip(html)
+                else:
+                    if not self.widgetStateInfoBox.isVisible():
+                        dHeight = - self.widgetStateInfoBox.height()
+                    else:
+                        dHeight = 0
+                    self.widgetStateInfoBox.hide()
+                    self.widgetStateInfo.setText("")
+                    self.widgetStateInfo.setToolTip("")
+                    width, height = self.width(), self.height() + dHeight
+                    QTimer.singleShot(50, lambda :self.resize(width, height))
+                    
+            self.connect(self, SIGNAL("widgetStateChanged(QString, int, QString)"), updateWidgetStateInfo)
+        
 
         self.__reportData = None
         if OWReport.report and not noReport and hasattr(self, "sendReport"):
