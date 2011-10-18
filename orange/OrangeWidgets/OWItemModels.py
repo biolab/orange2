@@ -1,15 +1,38 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from functools import wraps
+from functools import wraps, partial
+from collections import defaultdict
 
+class _store(dict):
+    pass
+
+def _argsort(seq, cmp=None, key=None, reverse=False):
+    if key is not None:
+        items = sorted(zip(range(len(seq)), seq), key=lambda i,v: key(v))
+    elif cmp is not None:
+        items = sorted(zip(range(len(seq)), seq), cmp=lambda a,b: cmp(a[1], b[1]))
+    else:
+        items = sorted(zip(range(len(seq)), seq), key=seq.__getitem__)
+    if reverse:
+        items = reversed(items)
+    return items
+
+    
 class PyListModel(QAbstractListModel):
     """ A model for displaying python list like objects in Qt item view classes
     """
-    def __init__(self, iterable=[], parent=None, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled):
+    def __init__(self, iterable=[], parent=None,
+                 flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled,
+                 list_item_role=Qt.DisplayRole,
+                 supportedDropActions=Qt.MoveAction):
         QAbstractListModel.__init__(self, parent)
         self._list = []
-        self._flags = flags 
+        self._other_data = []
+        self._flags = flags
+        self.list_item_role = list_item_role
+        
+        self._supportedDropActions = supportedDropActions
         self.extend(iterable)
         
     def wrap(self, list):
@@ -17,6 +40,7 @@ class PyListModel(QAbstractListModel):
         are done in place on the passed list
         """
         self._list = list
+        self._other_data = [_store() for _ in list]
         self.reset()
     
     def index(self, row, column=0, parent=QModelIndex()):
@@ -34,22 +58,50 @@ class PyListModel(QAbstractListModel):
     
     def data(self, index, role=Qt.DisplayRole):
         row = index.row()
-        if role == Qt.DisplayRole:
+        if role in [self.list_item_role, Qt.EditRole]:
             return QVariant(self[index.row()])
-        return QVariant()
+        else:
+            return QVariant(self._other_data[index.row()].get(role, QVariant()))
+    
+    def itemData(self, index):
+        map = QAbstractListModel.itemData(self, index)
+        for key, value in self._other_data[index.row()].items():
+            map[key] = QVariant(value)
+        return map
     
     def parent(self, index=QModelIndex()):
         return QModelIndex()
     
     def setData(self, index, value, role=Qt.EditRole):
-        obj = value.toPyObject()
-        self[index.row()] = obj
+        if role == Qt.EditRole:
+            obj = value.toPyObject()
+            self[index.row()] = obj
+        else:
+            self._other_data[index.row()][role] = value
+            self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), index, index)
         return True
         
     def flags(self, index):
-        return Qt.ItemFlags(self._flags)
+        if index.isValid():
+            return self._other_data[index.row()].get("flags", self._flags)
+        else:
+            return self._flags | Qt.ItemIsDropEnabled
+        
+    def insertRows(self, row, count, parent=QModelIndex()):
+        """ Insert ``count`` rows at ``row``, the list fill be filled 
+        with ``None`` 
+        """
+#        print "Insert", row, count
+        if not parent.isValid():
+            self.__setslice__(row, row, [None] * count)
+            return True
+        else:
+            return False
         
     def removeRows(self, row, count, parent=QModelIndex()):
+        """
+        """
+#        print "Remove", row, count
         if not parent.isValid():
             self.__delslice__(row, row + count)
             return True
@@ -60,6 +112,7 @@ class PyListModel(QAbstractListModel):
         list_ = list(iterable)
         self.beginInsertRows(QModelIndex(), len(self), len(self) + len(list_) - 1)
         self._list.extend(list_)
+        self._other_data.extend([_store() for _ in list_])
         self.endInsertRows()
     
     def append(self, item):
@@ -68,6 +121,7 @@ class PyListModel(QAbstractListModel):
     def insert(self, i, val):
         self.beginInsertRows(QModelIndex(), i, i)
         self._list.insert(i, val)
+        self._other_data.insert(i, _store())
         self.endInsertRows()
         
     def remove(self, val):
@@ -89,6 +143,7 @@ class PyListModel(QAbstractListModel):
         return self._list[i]
         
     def __add__(self, iterable):
+        # Does not preserve flags other data.
         return PyListModel(self._list + iterable, self.parent())
     
     def __iadd__(self, iterable):
@@ -97,12 +152,14 @@ class PyListModel(QAbstractListModel):
     def __delitem__(self, i):
         self.beginRemoveRows(QModelIndex(), i, i)
         del self._list[i]
+        del self._other_data[i]
         self.endRemoveRows()
         
     def __delslice__(self, i, j):
         if j > i:
             self.beginRemoveRows(QModelIndex(), i, j - 1)
             del self._list[i:j]
+            del self._other_data[i:j]
             self.endRemoveRows()
         
     def __setitem__(self, i, value):
@@ -115,16 +172,22 @@ class PyListModel(QAbstractListModel):
         if len(all):
             self.beginInsertRows(QModelIndex(), i, i + len(all) - 1)
             self._list[i:i] = all
+            self._other_data[i:i] = [_store() for _ in all]
             self.endInsertRows()
-#        self.reset()
-#        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(i), self.index(j))
         
     def reverse(self):
         self._list.reverse()
+        self._other_data.reverse()
         self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0), self.index(len(self) -1))
         
     def sort(self, *args, **kwargs):
-        self._list.sort(*args, **kwargs)
+        indices = _argsort(self._list, *args, **kwargs)
+        list = [self._list[i] for i in indices]
+        other = [self._other_data[i] for i in indices]
+        for i, new_l, new_o in enumerate(zip(list, other)):
+            self._list[i] = new_l
+            self._other_data[i] = new_o
+#        self._list.sort(*args, **kwargs)
         self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0), self.index(len(self) -1))
         
     def __repr__(self):
@@ -143,6 +206,13 @@ class PyListModel(QAbstractListModel):
         for ind in indexList:
             self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(ind), self.index(ind))
             
+    ###########
+    # Drag/drop
+    ###########
+    
+    def supportedDropActions(self):
+        return self._supportedDropActions
+            
 
 import OWGUI
 import orange
@@ -154,14 +224,9 @@ class VariableListModel(PyListModel):
             return QVariant(self.__getitem__(i).name)
         elif role == Qt.DecorationRole:
             return QVariant(OWGUI.getAttributeIcons().get(self.__getitem__(i).varType, -1))
-        elif role == Qt.EditRole:
-            return QVariant(self.__getitem__(i))
-        return QVariant()
+        else:
+            return PyListModel.data(self, index, role)
         
-    def setData(self, index, value, role):
-        i = index.row()
-        if role == Qt.EditRole:    
-            self.__setitem__(i,  value.toPyObject()) 
         
 class VariableEditor(QWidget):
     def __init__(self, var, parent):
