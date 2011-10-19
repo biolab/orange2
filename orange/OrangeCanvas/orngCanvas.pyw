@@ -667,7 +667,7 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemShowOutputWindow(self):
         self.output.show()
         self.output.raise_()
-        self.output.activateWindow()
+#        self.output.activateWindow()
 
     def menuItemClearOutputWindow(self):
         self.output.textOutput.clear()
