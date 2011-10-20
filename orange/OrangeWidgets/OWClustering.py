@@ -770,7 +770,7 @@ class CutoffLine(QGraphicsLineItem):
             self.setLine(0, geom.height(), geom.width(), geom.height())
             self.setCursor(Qt.SizeVerCursor)
         self.cutoff_height = widget.root_cluster.height
-        self.setZValue(widget.item(widget.root_cluster).zValue() + 10)
+        self.setZValue(widget.item(widget.root_cluster).zValue() + widget.root_cluster.height + 10)
         widget.connect(widget, SIGNAL("dendrogramGeometryChanged(QRectF)"), self.on_geometry_changed)
         
     def set_cutoff_at_height(self, height):
@@ -802,7 +802,7 @@ class CutoffLine(QGraphicsLineItem):
         else:
             self.setLine(0, pos.y(), geom.width(), pos.y())
             self.setCursor(Qt.SizeVerCursor)
-        self.setZValue(widget.item(widget.root_cluster).zValue() + 10)
+        self.setZValue(widget.item(widget.root_cluster).zValue() + widget.root_cluster.height + 10)
             
     def mousePressEvent(self, event):
         pass
