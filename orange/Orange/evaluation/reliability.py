@@ -179,6 +179,7 @@ import random
 import statc
 import math
 import warnings
+import numpy
 
 from collections import defaultdict
 from itertools import izip
@@ -208,6 +209,7 @@ BVCK_ABSOLUTE = 7
 MAHAL_ABSOLUTE = 8
 BLENDING_ABSOLUTE = 9
 ICV_METHOD = 10
+MAHAL_TO_CENTER_ABSOLUTE = 13
 
 # Type of estimator constant
 SIGNED = 0
@@ -217,7 +219,8 @@ ABSOLUTE = 1
 METHOD_NAME = {0: "SAvar absolute", 1: "SAbias signed", 2: "SAbias absolute",
                3: "BAGV absolute", 4: "CNK signed", 5: "CNK absolute",
                6: "LCV absolute", 7: "BVCK_absolute", 8: "Mahalanobis absolute",
-               9: "BLENDING absolute", 10: "ICV", 11: "RF Variance", 12: "RF Std"}
+               9: "BLENDING absolute", 10: "ICV", 11: "RF Variance", 12: "RF Std",
+               13: "Mahalanobis to center"}
 
 select_with_repeat = Orange.core.MakeRandomIndicesMultiple()
 select_with_repeat.random_generator = Orange.core.RandomGenerator()
@@ -656,6 +659,42 @@ class MahalanobisClassifier:
         mahalanobis_distance = sum(ex[self.mid].value for ex in self.nnm(example, self.k))
         
         return [ Estimate(mahalanobis_distance, ABSOLUTE, MAHAL_ABSOLUTE) ]
+
+class MahalanobisToCenter:
+    """
+    :rtype: :class:`Orange.evaluation.reliability.MahalanobisToCenterClassifier`
+    
+    Mahalanobis distance to center estimate is defined as `mahalanobis distance <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_ to the
+    centroid of the data.
+
+    
+    """
+    def __init__(self):
+        pass
+    
+    def __call__(self, examples, *args):
+        distance_constructor = Orange.distance.instances.MahalanobisConstructor()
+        distance = distance_constructor(examples)
+        
+        X, _, _ = examples.to_numpy()
+        example_avg = numpy.average(X, 0)
+        
+        average_example = Orange.data.Instance(examples.domain, list(example_avg) + ["?"])
+        
+        return MahalanobisToCenterClassifier(distance, average_example)
+
+class MahalanobisToCenterClassifier:
+    def __init__(self, distance, average_example):
+        self.distance = distance
+        self.average_example = average_example
+    
+    def __call__(self, example, *args):
+        
+        
+        mahalanobis_to_center = self.distance(example, self.average_example)
+        
+        return [ Estimate(mahalanobis_to_center, ABSOLUTE, MAHAL_TO_CENTER_ABSOLUTE) ]
+
 
 class BaggingVarianceCNeighbours:
     """
