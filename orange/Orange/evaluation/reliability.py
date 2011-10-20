@@ -849,7 +849,6 @@ class Learner:
             for r, _, _, method in results:
                 sum_of_rs[method] += r
         sorted_sum_of_rs = sorted(sum_of_rs.items(), key=lambda estimate: estimate[1], reverse=True)
-        print sorted_sum_of_rs
         return sorted_sum_of_rs[0][0]
     
     labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
