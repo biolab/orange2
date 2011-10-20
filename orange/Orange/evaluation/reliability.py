@@ -673,25 +673,35 @@ class MahalanobisToCenter:
         pass
     
     def __call__(self, examples, *args):
-        distance_constructor = Orange.distance.instances.MahalanobisConstructor()
-        distance = distance_constructor(examples)
+        dc = Orange.core.DomainContinuizer()
+        dc.classTreatment = Orange.core.DomainContinuizer.Ignore
+        dc.continuousTreatment = Orange.core.DomainContinuizer.NormalizeBySpan
+        dc.multinomialTreatment = Orange.core.DomainContinuizer.NValues
+        
+        new_domain = dc(examples)
+        new_examples = examples.translate(new_domain)
         
         X, _, _ = examples.to_numpy()
         example_avg = numpy.average(X, 0)
         
-        average_example = Orange.data.Instance(examples.domain, list(example_avg) + ["?"])
+        distance_constructor = Orange.distance.instances.MahalanobisConstructor()
+        distance = distance_constructor(new_examples)
         
-        return MahalanobisToCenterClassifier(distance, average_example)
+        average_example = Orange.data.Instance(new_examples.domain, list(example_avg) + ["?"])
+        
+        return MahalanobisToCenterClassifier(distance, average_example, new_domain)
 
 class MahalanobisToCenterClassifier:
-    def __init__(self, distance, average_example):
+    def __init__(self, distance, average_example, new_domain):
         self.distance = distance
         self.average_example = average_example
+        self.new_domain = new_domain
     
     def __call__(self, example, *args):
         
+        ex = Orange.data.Instance(self.new_domain, example)
         
-        mahalanobis_to_center = self.distance(example, self.average_example)
+        mahalanobis_to_center = self.distance(ex, self.average_example)
         
         return [ Estimate(mahalanobis_to_center, ABSOLUTE, MAHAL_TO_CENTER_ABSOLUTE) ]
 
