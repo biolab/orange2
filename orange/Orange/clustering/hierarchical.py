@@ -582,11 +582,11 @@ def top_clusters(root, k):
     :type k: int
     
     :rtype: list of :class:`HierarchicalCluster` instances
-    
+
     """
     candidates = set([root])
     while len(candidates) < k:
-        repl = max([(max(c.left.height, c.right.height), c) for c in candidates if c.branches])[1]
+        repl = max([(c.height, c) for c in candidates if c.branches])[1]
         candidates.discard(repl)
         candidates.add(repl.left)
         candidates.add(repl.right)
