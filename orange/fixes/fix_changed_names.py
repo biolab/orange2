@@ -54,6 +54,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ContingencyAttrClass": "Orange.statistics.contingency.VarClass",
            "orange.ContingencyClassAttr": "Orange.statistics.contingency.ClassVar",
            "orange.DomainContingency": "Orange.statistics.contingency.Domain",
+           "orange.Contingency": "Orange.statistics.contingency.Table",
           
            "orange.MeasureAttribute": "Orange.feature.scoring.Score", 
            "orange.MeasureAttributeFromProbabilities": "Orange.feature.scoring.ScoreFromProbabilities", 
@@ -501,6 +502,12 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.Loess",
            "orange.ProbabilityEstimatorConstructor_m": "Orange.statistics.estimate.M",
            "orange.ProbabilityEstimatorConstructor_relative": "Orange.statistics.estimate.RelativeFrequency",
+           "orange.onditionalProbabilityEstimator": "Orange.statistics.estimate.ConditionalEstimator",
+           "orange.ConditionalProbabilityEstimator_FromDistribution": "Orange.statistics.estimate.ConditionalEstimatorFromDistribution",
+           "orange.ConditionalProbabilityEstimator_ByRows": "Orange.statistics.estimate.ConditionalEstimatorByRows",
+           "orange.ConditionalProbabilityEstimatorConstructor_ByRows": "Orange.statistics.estimate.ConditionalByRows",
+           "orange.ConditionalProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.ConditionalLoess",
+
            }
 
 for k, v in MAPPING.items():
