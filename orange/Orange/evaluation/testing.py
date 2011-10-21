@@ -703,7 +703,67 @@ def learning_curve_with_test_data(learners, learnset, testset, times=10,
         
     return allResults
 
-   
+def preprocess_data(learnset, testset, preprocessors):
+    """Apply preprocessors on learn and test dataset"""
+    for p_type, preprocessor in preprocessors:
+        if p_type == "B":
+            learnset = preprocessor(learnset)
+            testset = preprocessor(testset)
+    for p_type, preprocessor in preprocessors:
+        if p_type == "L":
+            learnset = preprocessor(learnset)
+        elif p_type == "T":
+            testset = preprocessor(testset)
+        elif p_type == "LT":
+            (learnset, testset) = preprocessor(learnset, testset)
+
+    return learnset, testset
+
+
+def one_fold_with_indices(learners, examples, fold, indices, test_results, preprocessors, weight, cache, callback,
+                          store_classifiers):
+    """Perform one fold of cross-validation like procedure using provided indices."""
+    
+    # learning
+    learnset = examples.selectref(indices, fold, negate=1)
+    if not len(learnset):
+        return
+    testset = examples.selectref(indices, fold, negate=0)
+    if not len(testset):
+        return
+
+    learnset, testset = preprocess_data(learnset, testset, preprocessors)
+    if not learnset:
+        raise SystemError, "no training examples after preprocessing"
+    if not testset:
+        raise SystemError, "no test examples after preprocessing"
+
+    nlearners = len(learners)
+    classifiers = [None] * nlearners
+    for i in range(nlearners):
+        if not cache or not test_results.loaded[i]:
+            classifiers[i] = learners[i](learnset, weight)
+    if store_classifiers:
+        test_results.classifiers.append(classifiers)
+
+    # testing
+    tcn = 0
+    for i in range(len(examples)):
+        if indices[i] == fold:
+            # This is to prevent cheating:
+            ex = Orange.data.Instance(testset[tcn])
+            ex.setclass("?")
+            tcn += 1
+            for cl in range(nlearners):
+                if not cache or not test_results.loaded[cl]:
+                    cr = classifiers[cl](ex, Orange.core.GetBoth)
+                    if cr[0].is_special():
+                        raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
+                    test_results.results[i].set_result(cl, cr[0], cr[1])
+    if callback:
+        callback()
+
+
 def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
     """
     Performs a cross-validation-like test. The difference is that the
@@ -764,56 +824,8 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
         printVerbose("  loaded from cache", verb)
     else:
         for fold in range(nIterations):
-            # learning
-            learnset = examples.selectref(indices, fold, negate=1)
-            if not len(learnset):
-                continue
-            testset = examples.selectref(indices, fold, negate=0)
-            if not len(testset):
-                continue
-            
-            for pp in pps:
-                if pp[0]=="B":
-                    learnset = pp[1](learnset)
-                    testset = pp[1](testset)
-
-            for pp in pps:
-                if pp[0]=="L":
-                    learnset = pp[1](learnset)
-                elif pp[0]=="T":
-                    testset = pp[1](testset)
-                elif pp[0]=="LT":
-                    (learnset, testset) = pp[1](learnset, testset)
-
-            if not learnset:
-                raise SystemError, "no training examples after preprocessing"
-
-            if not testset:
-                raise SystemError, "no test examples after preprocessing"
-
-            classifiers = [None]*nLrn
-            for i in range(nLrn):
-                if not cache or not testResults.loaded[i]:
-                    classifiers[i] = learners[i](learnset, weight)
-            if storeclassifiers:    
-                testResults.classifiers.append(classifiers)
-
-            # testing
-            tcn = 0
-            for i in range(len(examples)):
-                if (indices[i]==fold):
-                    # This is to prevent cheating:
-                    ex = Orange.data.Instance(testset[tcn])
-                    ex.setclass("?")
-                    tcn += 1
-                    for cl in range(nLrn):
-                        if not cache or not testResults.loaded[cl]:
-                            cr = classifiers[cl](ex, Orange.core.GetBoth)                                      
-                            if cr[0].isSpecial():
-                                raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
-                            testResults.results[i].set_result(cl, cr[0], cr[1])
-            if callback:
-                callback()
+            one_fold_with_indices(learners, examples, fold, indices, testResults, pps, weight, cache, callback,
+                                  storeclassifiers)
         if cache:
             testResults.save_to_files(learners, fnstr)
         
@@ -846,18 +858,7 @@ def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, i
     testset, testweight = demangleExamples(testset)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     
-    for pp in pps:
-        if pp[0]=="B":
-            learnset = pp[1](learnset)
-            testset = pp[1](testset)
-
-    for pp in pps:
-        if pp[0]=="L":
-            learnset = pp[1](learnset)
-        elif pp[0]=="T":
-            testset = pp[1](testset)
-        elif pp[0]=="LT":
-            learnset, testset = pp[1](learnset, testset)
+    learnset, testset = preprocess_data(learnset, testset, preprocessors)
             
     classifiers = []
     for learner in learners:
