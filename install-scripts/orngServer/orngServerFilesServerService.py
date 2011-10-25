@@ -9,6 +9,7 @@ import win32serviceutil
 import win32service
 import win32event
 
+orngServerFilesServer.basedir = 'D:/orngServerData'
 
 class MyService(win32serviceutil.ServiceFramework):
 
