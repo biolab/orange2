@@ -132,14 +132,14 @@ class OWNomogram(OWWidget):
 
         #add a graph widget
         self.header = OWNomogramHeader(None, self.mainArea)
-        self.header.setFixedHeight(self.verticalSpacing)
+        self.header.setFixedHeight(60)
         self.header.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.header.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.graph = OWNomogramGraph(self.bnomogram, self.mainArea)
         self.graph.setMinimumWidth(200)
         self.graph.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.footer = OWNomogramHeader(None, self.mainArea)
-        self.footer.setFixedHeight(self.verticalSpacing*2+10)
+        self.footer.setFixedHeight(60*2+10)
         self.footer.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.footer.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 

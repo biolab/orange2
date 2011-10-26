@@ -922,6 +922,9 @@ class BasicNomogramHeader(QGraphicsScene):
             self.removeItem(item)
 
     def paintHeader(self, rect, mapper):
+        rect = QRect(rect)
+        # The header line follows the bottom of the rect.
+        rect.setBottom(30)  
         self.headerAttrLine = mapper.getHeaderLine(self, rect)
         self.headerAttrLine.name = self.nomogram.parent.pointsName[self.nomogram.parent.yAxis]
         self.headerAttrLine.paint(self, rect, mapper)
