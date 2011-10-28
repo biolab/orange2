@@ -93,7 +93,7 @@ void TBasicAttrStat::add(float f, float p)
   n += p;
   if (!holdRecomputation && (n>0)) {
     avg = sum/n;
-    dev = sqrt(sum2/n - avg*avg);
+    dev = sqrt(std::max(sum2/n - avg*avg, 0.0f));
   }
 
   if (f<min) 
@@ -105,7 +105,7 @@ void TBasicAttrStat::add(float f, float p)
 void TBasicAttrStat::recompute()
 { if (n>0) {
     avg = sum/n;
-    dev = sqrt(sum2/n - avg*avg);
+    dev = sqrt(std::max(sum2/n - avg*avg, 0.0f));
   }
   else
     avg = dev = -1;
