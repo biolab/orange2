@@ -72,6 +72,11 @@ Mahalanobis distance
 
 .. autoclass:: Mahalanobis
 
+Mahalanobis to center
+---------------------
+
+.. autoclass:: MahalanobisToCenter
+
 Reliability estimate learner
 ============================
 
@@ -805,6 +810,7 @@ class Learner:
                                LocalCrossValidation(),
                                BaggingVarianceCNeighbours(),
                                Mahalanobis(),
+                               MahalanobisToCenter()
                                ],
                  **kwds):
         self.__dict__.update(kwds)
