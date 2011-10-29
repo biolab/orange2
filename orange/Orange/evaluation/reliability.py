@@ -491,7 +491,7 @@ class BaggingVarianceClassifier:
         BAGV = 0
         
         # Calculate the bagging variance
-        bagged_values = [c(example, Orange.core.GetValue).value for c in self.classifiers]
+        bagged_values = [c(example, Orange.core.GetValue).value for c in self.classifiers if c is not None]
         
         k = sum(bagged_values) / len(bagged_values)
         
@@ -569,7 +569,8 @@ class LocalCrossValidationClassifier:
             LCVdi += math.exp(-knn[i][self.distance_id])
         
         LCV = LCVer / LCVdi if LCVdi != 0 else 0
-        
+        if math.isnan(LCV):
+            LCV = 0.0
         return [ Estimate(LCV, ABSOLUTE, LCV_ABSOLUTE) ]
 
 class CNeighbours:
@@ -681,7 +682,7 @@ class MahalanobisToCenter:
         new_domain = dc(examples)
         new_examples = examples.translate(new_domain)
         
-        X, _, _ = examples.to_numpy()
+        X, _, _ = new_examples.to_numpy()
         example_avg = numpy.average(X, 0)
         
         distance_constructor = Orange.distance.instances.MahalanobisConstructor()
