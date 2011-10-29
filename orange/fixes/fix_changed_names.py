@@ -540,7 +540,8 @@ class FixChangedNames(fixer_base.BaseFix):
     
     def compile_pattern(self):
         self.PATTERN = build_pattern(self.mapping)
-        self._modules_to_change = [key.rsplit(".", 1)[0] for key in self.mapping.keys()]
+        #self._modules_to_change = [key.rsplit(".", 1)[0] for key in self.mapping.keys()] #reverted change from 20110316
+        self._modules_to_change = [key.split(".", 1)[0] for key in self.mapping.keys()]
         super(FixChangedNames, self).compile_pattern()
         
     def package_tree(self, package):
@@ -563,7 +564,8 @@ class FixChangedNames(fixer_base.BaseFix):
         member = results.get("member")
         head = results.get("head")
         tail = results.get("tail")
-        module = ''.join(map(str, head))
+        #module = '.'.join(map(str, head)) #reverted change from 20110316
+        module = head[0].value
 
         if member and module in self._modules_to_change:
             node = member[0]
