@@ -827,6 +827,9 @@ class Learner:
         blending_classifier = None
         new_domain = None
         
+        if examples.domain.class_var.var_type != Orange.data.variable.Continuous.Continuous:
+            raise Exception("This method only works on data with continuous class.")
+        
         return Classifier(examples, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
     
     def internal_cross_validation(self, examples, folds=10):
