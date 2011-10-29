@@ -18,7 +18,7 @@ from Comparison of approaches for estimating reliability of individual
 regression predictions, Zoran Bosnic 2008.
 
 Next example shows basic reliability estimation usage 
-(`reliability_basic.py`_, uses `housing.tab`_):
+(`reliability-basic.py`_, uses `housing.tab`_):
 
 .. literalinclude:: code/reliability_basic.py
 
