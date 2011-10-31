@@ -2,6 +2,7 @@
 <name>Reliability</name>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>310</priority>
+<icon>icons/Reliability.png</icon>
 """
 
 import Orange
@@ -40,16 +41,16 @@ class OWReliability(OWWidget):
         
         self.var_e = "0.01, 0.1, 0.5, 1.0, 2.0"
         self.bias_e =  "0.01, 0.1, 0.5, 1.0, 2.0"
-        self.bagged_m = 50
+        self.bagged_m = 10
         self.local_cv_k = 2
         self.local_pe_k = 5
         self.bagged_cn_m = 5
         self.bagged_cn_k = 1
-        self.mahalanobis_k = 5
+        self.mahalanobis_k = 3
         
         self.include_error = True
         self.include_class = True
-        self.include_input_features = True
+        self.include_input_features = False
         self.auto_commit = False
              
         self.methods = [("variance_checked", self.run_SAVar),
@@ -302,7 +303,7 @@ class OWReliability(OWWidget):
         from Orange.data import variable
         
         self.run()
-        name_mapper = {"Mahalanobis absolute": "Mahalanobis"}
+        name_mapper = {"Mahalanobis": "Mahalanobis"}
         all_predictions = []
         all_estimates = []
         score_vars = []
