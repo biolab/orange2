@@ -78,7 +78,7 @@ cat <<-EOMSG
 	
 	and you can install them using commands like:
 	
-	    fink install orange
+	    fink install orange-gui-svn-py27
 EOMSG
 
 if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' || grep '^SelfUpdateMethod:' $FINK_ROOT/etc/fink.conf | grep -q 'point'; then
