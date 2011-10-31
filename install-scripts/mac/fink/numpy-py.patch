@@ -1,0 +1,20 @@
+--- numpy-1.6.0/numpy/distutils/system_info.py.orig	2011-07-23 10:10:06.000000000 -0400
++++ numpy-1.6.0/numpy/distutils/system_info.py	2011-07-23 10:10:53.000000000 -0400
+@@ -1287,7 +1287,7 @@
+         if sys.platform=='darwin' and not os.environ.get('ATLAS',None):
+             args = []
+             link_args = []
+-            if get_platform()[-4:] == 'i386':
++            if get_platform().rsplit('-', 1)[1] in ('i386', 'x86_64', 'intel'):
+                 intel = 1
+             else:
+                 intel = 0
+@@ -1374,7 +1374,7 @@
+         if sys.platform=='darwin' and not os.environ.get('ATLAS',None):
+             args = []
+             link_args = []
+-            if get_platform()[-4:] == 'i386':
++            if get_platform().rsplit('-', 1)[1] in ('i386', 'x86_64', 'intel'): 
+                 intel = 1
+             else:
+                 intel = 0
