@@ -1781,9 +1781,9 @@ def __read_addons_list(addons_file, systemwide):
     else:
         return []
     
-def __read_addon_lists(userOnly=False):
+def __read_addon_lists(user_only=False):
     return __read_addons_list(os.path.join(Orange.misc.environ.orange_settings_dir, "add-ons.txt"),
-                              False) + ([] if userOnly else
+                              False) + ([] if user_only else
                                         __read_addons_list(os.path.join(Orange.misc.environ.install_dir, "add-ons.txt"),
                                                            True))
 
