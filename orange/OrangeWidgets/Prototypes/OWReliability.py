@@ -12,7 +12,12 @@ from OWWidget import *
 import OWGUI
 
 class OWReliability(OWWidget):
-    settingsList = []
+    settingsList = ["variance_checked", "bias_checked", "bagged_variance",
+        "local_cv", "local_model_pred_error", "bagging_variance_cn", 
+        "mahalanobis_distance", "var_e", "bias_e", "bagged_m", "local_cv_k",
+        "local_pe_k", "bagged_cn_m", "bagged_cn_k", "mahalanobis_k",
+        "include_error", "include_class", "include_input_features",
+        "auto_commit"]
     
     def __init__(self, parent=None, signalManager=None, title="Reliability"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
@@ -44,8 +49,7 @@ class OWReliability(OWWidget):
         self.include_class = True
         self.include_input_features = True
         self.auto_commit = False
-        
-        
+             
         self.methods = [("variance_checked", self.run_SAVar),
                         ("bias_checked", self.run_SABias),
                         ("bagged_variance", self.run_BAGV),
@@ -153,11 +157,15 @@ class OWReliability(OWWidget):
         
         cb = OWGUI.checkBox(box, self, "auto_commit", "Commit on any change",
                             callback=self.commit_if)
-        b = OWGUI.button(box, self, "Commit",
-                         callback=self.commit,
-                         autoDefault=True)
+        
+        self.commit_button = b = OWGUI.button(box, self, "Commit",
+                                              callback=self.commit,
+                                              autoDefault=True)
         
         OWGUI.setStopper(self, b, cb, "output_changed", callback=self.commit)
+        
+        self.commit_button.setEnabled(any([getattr(self, selected) \
+                                for selected, _ in  self.methods]))
         
         self.learner = None
         self.train_data = None
@@ -196,7 +204,7 @@ class OWReliability(OWWidget):
         self.info_box.setText("\n".join([name, train, test]))
         
         if self.learner and self._test_data() is not None:
-            self.run()
+            self.commit_if()
         
     def invalidate_results(self, which=None):
         if which is None:
@@ -216,7 +224,6 @@ class OWReliability(OWWidget):
 #                print 'Computing', i, selected, method
                 self.results[i] = method()
 #                print self.results[i]
-        self.commit_if()
             
     def _test_data(self):
         if self.test_data is not None:
@@ -278,12 +285,14 @@ class OWReliability(OWWidget):
         return self.run_estimation(est)
     
     def method_selection_changed(self, method=None):
-        self.run()
+        self.commit_button.setEnabled(any([getattr(self, selected) \
+                                for selected, _ in  self.methods]))
+        self.commit_if()
     
     def method_param_changed(self, method=None):
         if method is not None:
             self.invalidate_results([method])
-        self.run()
+        self.commit_if()
         
     def commit_if(self):
         if self.auto_commit:
@@ -294,6 +303,8 @@ class OWReliability(OWWidget):
     def commit(self):
         from Orange.data import variable
         
+        self.run()
+        name_mapper = {"Mahalanobis absolute": "Mahalanobis"}
         all_predictions = []
         all_estimates = []
         score_vars = []
@@ -327,6 +338,7 @@ class OWReliability(OWWidget):
                         values.append(value)
                         estimates.append(probs.reliability_estimate[ei])
                     name = estimates[0].method_name
+                    name = name_mapper.get(name, name)
                     var = variable.Continuous(name)
                     features.append(var)
                     score_vars.append(var)
@@ -361,10 +373,6 @@ class OWReliability(OWWidget):
                 for d, e in zip(data, estimations):
                     d[var] = e.estimate
             
-#            domain = Orange.data.Domain(features, False)
-#            print data
-#            table = Orange.data.Table(domain, data)
-#            print data[:]
             table = data
             
         self.send("Reliability Scores", table)
