@@ -52,14 +52,16 @@ class OWReliability(OWWidget):
         self.include_class = True
         self.include_input_features = False
         self.auto_commit = False
-             
-        self.methods = [("variance_checked", self.run_SAVar),
-                        ("bias_checked", self.run_SABias),
-                        ("bagged_variance", self.run_BAGV),
-                        ("local_cv", self.run_LCV),
-                        ("local_model_pred_error", self.run_CNK),
-                        ("bagging_variance_cn", self.run_BVCK),
-                        ("mahalanobis_distance", self.run_Mahalanobis)]
+        
+        # (selected attr name, getter function, count of returned estimators, index of estimator)
+        self.estimators = \
+            [("variance_checked", self.get_SAVar, 3, 0),
+             ("bias_checked", self.get_SABias, 3, 1),
+             ("bagged_variance", self.get_BAGV, 1, 0),
+             ("local_cv", self.get_LCV, 1, 0),
+             ("local_model_pred_error", self.get_CNK, 2, 0),
+             ("bagging_variance_cn", self.get_BVCK, 4, 0),
+             ("mahalanobis_distance", self.get_Mahalanobis, 1, 0)]
         
         #####
         # GUI
@@ -168,7 +170,7 @@ class OWReliability(OWWidget):
         OWGUI.setStopper(self, b, cb, "output_changed", callback=self.commit)
         
         self.commit_button.setEnabled(any([getattr(self, selected) \
-                                for selected, _ in  self.methods]))
+                                for selected, _, _, _ in  self.estimators]))
         
         self.learner = None
         self.train_data = None
@@ -178,8 +180,13 @@ class OWReliability(OWWidget):
         self.invalidate_results()
         
     def set_train_data(self, data=None):
+        self.error()
+        if data is not None:
+            if not self.isDataWithClass(data, Orange.core.VarTypes.Continuous):
+                data = None
+        
         self.train_data = data
-        self.invalidate_results()
+        self.invalidate_results() 
         
     def set_test_data(self, data=None):
         self.test_data = data
@@ -190,7 +197,10 @@ class OWReliability(OWWidget):
         self.invalidate_results()
         
     def handleNewSignals(self):
-        name = test = train = ""
+        name = "No learner on input"
+        train = "No train data on input"
+        test = "No test data on input"
+        
         if self.learner:
             name = getattr(self.learner, "name") or type(self.learner).__name__
             
@@ -201,7 +211,7 @@ class OWReliability(OWWidget):
         if self.test_data is not None:
             test = "Train Data: %i features, %i instances" % \
                 (len(self.test_data.domain), len(self.test_data))
-        else:
+        elif self.train_data:
             test = "Test data: using training data"
         
         self.info_box.setText("\n".join([name, train, test]))
@@ -211,26 +221,35 @@ class OWReliability(OWWidget):
         
     def invalidate_results(self, which=None):
         if which is None:
-            self.results = [None for f in self.methods]
+            self.results = [None for f in self.estimators]
 #            print "Invalidating all"
         else:
             for i in which:
                 self.results[i] = None
 #            print "Invalidating", which
-    
+        
     def run(self):
         plan = []
-        for i, (selected, method) in enumerate(self.methods):
+        estimate_index = 0
+        for i, (selected, method, count, offset) in enumerate(self.estimators):
             if self.results[i] is None and getattr(self, selected):
-#                print 'Computing', i, selected, method
-                plan.append((i, method))
-#                self.results[i] = method()
-#                print self.results[i]
-        count = len(plan)
-        pb = OWGUI.ProgressBar(self, count * len(self._test_data()))
-        for i, (index, method) in enumerate(plan):
-            self.results[index] = method(pb.advance)    
+                plan.append((i, method, estimate_index + offset))
+                estimate_index += count
+                
+        estimators = [method() for _, method, _ in plan]
+        
+        if not estimators:
+            return
+            
+        pb = OWGUI.ProgressBar(self, len(self._test_data()))
+        estimates = self.run_estimation(estimators, pb.advance)
         pb.finish()
+        
+        self.predictions = [v for v, _ in estimates]
+        estimates = [prob.reliability_estimate for _, prob in estimates]
+        
+        for i, (index, method, estimate_index) in enumerate(plan):
+            self.results[index] = [e[estimate_index] for e in estimates]
         
     def _test_data(self):
         if self.test_data is not None:
@@ -248,44 +267,37 @@ class OWReliability(OWWidget):
                 advance()
         return res
                 
-    def run_estimation(self, method, advance=None):
-        rel = reliability.Learner(self.learner, estimators=[method])
+    def run_estimation(self, estimators, advance=None):
+        rel = reliability.Learner(self.learner, estimators=estimators)
         estimator = rel(self.train_data)
         return self.get_estimates(estimator, advance) 
     
-    def run_SAVar(self, advance=None):
-        est = reliability.SensitivityAnalysis(e=eval(self.var_e))
-        return self.run_estimation(est, advance)
-        
-    def run_SABias(self, advance=None):
-        est = reliability.SensitivityAnalysis(e=eval(self.bias_e))
-        return self.run_estimation(est, advance)
+    def get_SAVar(self):
+        return reliability.SensitivityAnalysis(e=eval(self.var_e))
     
-    def run_BAGV(self, advance=None):
-        est = reliability.BaggingVariance(m=self.bagged_m)
-        return self.run_estimation(est, advance)
+    def get_SABias(self):
+        return reliability.SensitivityAnalysis(e=eval(self.bias_e))
     
-    def run_LCV(self, advance=None):
-        est = reliability.LocalCrossValidation(k=self.local_cv_k)
-        return self.run_estimation(est, advance)
+    def get_BAGV(self):
+        return reliability.BaggingVariance(m=self.bagged_m)
     
-    def run_CNK(self, advance=None):
-        est = reliability.CNeighbours(k=self.local_pe_k)
-        return self.run_estimation(est, advance)
+    def get_LCV(self):
+        return reliability.LocalCrossValidation(k=self.local_cv_k)
     
-    def run_BVCK(self, advance=None):
+    def get_CNK(self):
+        return reliability.CNeighbours(k=self.local_pe_k)
+    
+    def get_BVCK(self):
         bagv = reliability.BaggingVariance(m=self.bagged_cn_m)
         cnk = reliability.CNeighbours(k=self.bagged_cn_k)
-        est = reliability.BaggingVarianceCNeighbours(bagv, cnk)
-        return self.run_estimation(est, advance)
+        return reliability.BaggingVarianceCNeighbours(bagv, cnk)
     
-    def run_Mahalanobis(self, advance=None):
-        est = reliability.Mahalanobis(k=self.mahalanobis_k)
-        return self.run_estimation(est, advance)
+    def get_Mahalanobis(self):
+        return reliability.Mahalanobis(k=self.mahalanobis_k)
     
     def method_selection_changed(self, method=None):
         self.commit_button.setEnabled(any([getattr(self, selected) \
-                                for selected, _ in  self.methods]))
+                                for selected, _, _, _ in  self.estimators]))
         self.commit_if()
     
     def method_param_changed(self, method=None):
@@ -303,7 +315,7 @@ class OWReliability(OWWidget):
         from Orange.data import variable
         
         self.run()
-        name_mapper = {"Mahalanobis": "Mahalanobis"}
+        name_mapper = {"Mahalanobis absolute": "Mahalanobis"}
         all_predictions = []
         all_estimates = []
         score_vars = []
@@ -322,26 +334,17 @@ class OWReliability(OWWidget):
                 
             if self.include_error:
                 error_var = variable.Continuous("Error")
-                abs_error_var = variable.Continuous("Abs Error")
+                abs_error_var = variable.Continuous("Abs. Error")
                 features.append(error_var)
                 features.append(abs_error_var)
                 
-            for res, (selected, method) in zip(self.results, self.methods):
-                if res is not None and getattr(self, selected):
-                    if selected == "bias_checked":
-                        ei = 1
-                    else:
-                        ei = 0
-                    values, estimates = [], []
-                    for value, probs in res:
-                        values.append(value)
-                        estimates.append(probs.reliability_estimate[ei])
+            for estimates, (selected, method, _, _) in zip(self.results, self.estimators):
+                if estimates is not None and getattr(self, selected):
                     name = estimates[0].method_name
                     name = name_mapper.get(name, name)
                     var = variable.Continuous(name)
                     features.append(var)
                     score_vars.append(var)
-                    all_predictions.append(values)
                     all_estimates.append(estimates)
                     
             if self.include_input_features:
@@ -354,16 +357,16 @@ class OWReliability(OWWidget):
                 data = Orange.data.Table(domain, [[] for _ in self._test_data()])
                 
             for f in features:
-                data.domain.add_meta(Orange.core.newmetaid(), f)
+                data.domain.add_meta(Orange.data.new_meta_id(), f)
             
             if self.include_class:
-                for d, inst, pred in zip(data, self._test_data(), all_predictions[0]):
+                for d, inst, pred in zip(data, self._test_data(), self.predictions):
                     if not self.include_input_features:
                         d[features[0]] = float(inst.get_class())
                     d[prediction_var] = float(pred)
             
             if self.include_error:
-                for d, inst, pred in zip(data, self._test_data(), all_predictions[0]):
+                for d, inst, pred in zip(data, self._test_data(), self.predictions):
                     error = float(pred) - float(inst.get_class())
                     d[error_var] = error
                     d[abs_error_var] = abs(error)
@@ -375,7 +378,7 @@ class OWReliability(OWWidget):
             table = data
             
         self.send("Reliability Scores", table)
-        self.output_changed = True
+        self.output_changed = False
         
         
 if __name__ == "__main__":
