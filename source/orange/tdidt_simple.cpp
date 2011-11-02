@@ -100,9 +100,10 @@ test_min_examples(float *attr_dist, int attr_vals, struct Args *args)
 {
     int i;
 
-    for (i = 0; i < attr_vals; i++)
+    for (i = 0; i < attr_vals; i++) {
         if (attr_dist[i] > 0.0 && attr_dist[i] < args->minInstances)
             return 0;
+    }
     return 1;
 }
 
@@ -250,7 +251,7 @@ mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *
     float size_attr_known, size_weight, cls_val, cls_score, best_score, size_attr_cls_known, score;
 
     struct Variance {
-        float n, sum, sum2;
+        double n, sum, sum2;
     } var_lt = {0.0, 0.0, 0.0}, var_ge = {0.0, 0.0, 0.0};
 
     cls_vals = args->domain->classVar->noOfValues();
@@ -294,10 +295,32 @@ mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *
             var_lt.sum += ex->weight * cls_val;
             var_lt.sum2 += ex->weight * cls_val * cls_val;
 
+            /* this calculation might be numarically unstable - fix */
             var_ge.n -= ex->weight;
             var_ge.sum -= ex->weight * cls_val;
             var_ge.sum2 -= ex->weight * cls_val * cls_val;
         }
+
+        /* Naive calculation of variance (used for testing)
+         
+        struct Example *ex2, *ex_end2;
+        float nlt, sumlt, sum2lt, nge, sumge, sum2ge;
+        nlt = sumlt = sum2lt = nge = sumge = sum2ge = 0.0;
+
+        for (ex2 = examples, ex_end2 = ex2 + size; ex2 < ex_end2; ex2++) {
+            cls_val = ex2->example->getClass();
+            if (ex2 < ex) {
+                nlt += ex2->weight;
+                sumlt += ex2->weight * cls_val;
+                sum2lt += ex2->weight * cls_val * cls_val;
+            } else {
+                nge += ex2->weight;
+                sumge += ex2->weight * cls_val;
+                sum2ge += ex2->weight * cls_val * cls_val;
+            }
+        }
+        */
+
 
         if (ex->example->values[attr] == ex_next->example->values[attr] || i + 1 < minInstances)
             continue;
@@ -305,6 +328,7 @@ mse_c(struct Example *examples, int size, int attr, float cls_mse, struct Args *
         /* compute mse */
         score = var_lt.sum2 - var_lt.sum * var_lt.sum / var_lt.n;
         score += var_ge.sum2 - var_ge.sum * var_ge.sum / var_ge.n;
+
         score = (cls_mse - score / size_attr_cls_known) / cls_mse * (size_attr_known / size_weight);
 
         if (score > best_score) {
@@ -378,19 +402,7 @@ finish:
 struct SimpleTreeNode *
 make_predictor(struct SimpleTreeNode *node, struct Example *examples, int size, struct Args *args)
 {
-    struct Example *ex, *ex_end;
-
     node->type = PredictorNode;
-    if (args->type == Regression) {
-        node->n = node->sum = 0.0;
-        for (ex = examples, ex_end = examples + size; ex < ex_end; ex++)
-            if (!ex->example->getClass().isSpecial()) {
-                node->sum += ex->weight * ex->example->getClass().floatV;
-                node->n += ex->weight;
-            }
-
-    }
-
     return node;
 }
 
@@ -453,7 +465,13 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
                 sum2 += ex->weight * cls_val * cls_val;
             }
 
+        node->n = n;
+        node->sum = sum;
         cls_mse = (sum2 - sum * sum / n) / n;
+
+        if (cls_mse < 1e-5) {
+            return make_predictor(node, examples, size, args);
+        }
     }
 
     /* stopping criterion: depth exceeds limit */
@@ -499,6 +517,7 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
         float size_known, *attr_dist;
 
         /* printf("* %2d %3s %3d %f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), size, best_score); */
+        printf("* %2d %d %3d %f\n", depth, best_attr, size, best_score); 
 
         attr_vals = args->domain->attributes->at(best_attr)->noOfValues(); 
 
@@ -706,7 +725,7 @@ predict_regression(const TExample &ex, struct SimpleTreeNode *node, float *sum, 
     int i;
     float local_sum, local_n;
 
-    while (node->type != PredictorNode)
+    while (node->type != PredictorNode) {
         if (ex.values[node->split_attr].isSpecial()) {
             *sum = *n = 0;
             for (i = 0; i < node->children_size; i++) {
@@ -716,11 +735,13 @@ predict_regression(const TExample &ex, struct SimpleTreeNode *node, float *sum, 
             }
             return;
         } else if (node->type == DiscreteNode) {
+            assert(ex.values[node->split_attr].intV < node->children_size);
             node = node->children[ex.values[node->split_attr].intV];
         } else {
             assert(node->type == ContinuousNode);
             node = node->children[ex.values[node->split_attr].floatV > node->split];
         }
+    }
 
     *sum = node->sum;
     *n = node->n;
