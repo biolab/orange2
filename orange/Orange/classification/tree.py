@@ -1333,32 +1333,7 @@ the case when only a single value goes into the branch.
 SimpleTreeLearner
 =================
 
-:obj:`SimpleTreeLearner` is an implementation of regression and classification
-trees. It is faster than :obj:`TreeLearner` at the expense of flexibility.
-It uses gain ratio for classification and mse for regression.
-
-:obj:`SimpleTreeLearner` was developed for speeding up the construction
-of random forests, but can also be used as a standalone tree.
-
-.. class:: SimpleTreeLearner
-
-    .. attribute:: max_majority
-
-        Maximal proportion of majority class. When this is exceeded,
-        induction stops.
-
-    .. attribute:: min_instances
-
-        Minimal number of instances in leaves. Instance count is weighed.
-
-    .. attribute:: max_depth
-
-        Maximal depth of tree.
-
-    .. attribute:: skip_prob
-        
-        At every split an attribute will be skipped with probability ``skip_prob``.
-        Useful for building random forests.
+.. include:: /SimpleTreeLearner.txt
         
 Examples
 ========
