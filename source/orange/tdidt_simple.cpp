@@ -517,7 +517,6 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
         float size_known, *attr_dist;
 
         /* printf("* %2d %3s %3d %f\n", depth, args->domain->attributes->at(best_attr)->get_name().c_str(), size, best_score); */
-        printf("* %2d %d %3d %f\n", depth, best_attr, size, best_score); 
 
         attr_vals = args->domain->attributes->at(best_attr)->noOfValues(); 
 
