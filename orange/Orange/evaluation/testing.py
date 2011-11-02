@@ -193,7 +193,7 @@ pages 317-328.
 """
 
 import Orange
-from Orange.misc import demangleExamples, getobjectname, printVerbose
+from Orange.misc import demangle_examples, getobjectname, printVerbose
 import exceptions, cPickle, os, os.path
 
 #### Some private stuff
@@ -447,7 +447,7 @@ def leave_one_out(learners, examples, pps=[], indicesrandseed="*", **argkw):
 
     """
 
-    (examples, weight) = demangleExamples(examples)
+    (examples, weight) = demangle_examples(examples)
     return test_with_indices(learners, examples, range(len(examples)), indicesrandseed, pps, **argkw)
     # return test_with_indices(learners, examples, range(len(examples)), pps=pps, argkw)
 
@@ -482,7 +482,7 @@ def proportion_test(learners, examples, learnProp, times=10,
     randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
     pick = Orange.core.MakeRandomIndices2(stratified = strat, p0 = learnProp, randomGenerator = randomGenerator)
     
-    examples, weight = demangleExamples(examples)
+    examples, weight = demangle_examples(examples)
     classVar = examples.domain.classVar
     if classVar.varType == Orange.data.Type.Discrete:
         values = list(classVar.values)
@@ -507,7 +507,7 @@ def cross_validation(learners, examples, folds=10,
     Performs a cross validation with the given number of folds.
 
     """
-    (examples, weight) = demangleExamples(examples)
+    (examples, weight) = demangle_examples(examples)
     if indicesrandseed!="*":
         indices = Orange.core.MakeRandomIndicesCV(examples, folds, randseed=indicesrandseed, stratified = strat)
     else:
@@ -594,7 +594,7 @@ def learning_curve(learners, examples, cv=None, pick=None, proportions=Orange.co
         if not pick:
             pick = Orange.core.MakeRandomIndices2(stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible, randomGenerator = randomGenerator)
 
-    examples, weight = demangleExamples(examples)
+    examples, weight = demangle_examples(examples)
     folds = cv(examples)
     ccsum = hex(examples.checksum())[2:]
     ppsp = encode_PP(pps)
@@ -681,8 +681,8 @@ def learning_curve_with_test_data(learners, learnset, testset, times=10,
     """
     verb = argkw.get("verbose", 0)
 
-    learnset, learnweight = demangleExamples(learnset)
-    testweight = demangleExamples(testset)[1]
+    learnset, learnweight = demangle_examples(learnset)
+    testweight = demangle_examples(testset)[1]
     
     randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
     pick = Orange.core.MakeRandomIndices2(stratified = strat, randomGenerator = randomGenerator)
@@ -787,7 +787,7 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     cache = cache and not storeclassifiers
 
-    examples, weight = demangleExamples(examples)
+    examples, weight = demangle_examples(examples)
     nLrn = len(learners)
 
     if not examples:
@@ -854,8 +854,8 @@ def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, i
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     storeExamples = argkw.get("storeExamples", 0)
 
-    learnset, learnweight = demangleExamples(learnset)
-    testset, testweight = demangleExamples(testset)
+    learnset, learnweight = demangle_examples(learnset)
+    testset, testweight = demangle_examples(testset)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     
     learnset, testset = preprocess_data(learnset, testset, preprocessors)
@@ -891,7 +891,7 @@ def learn_and_test_on_learn_data(learners, learnset, testResults=None, iteration
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     storeExamples = argkw.get("storeExamples", 0)
 
-    learnset, learnweight = demangleExamples(learnset)
+    learnset, learnweight = demangle_examples(learnset)
 
     hasLorT = 0    
     for pp in pps:
@@ -936,7 +936,7 @@ def test_on_data(classifiers, testset, testResults=None, iterationNumber=0, stor
 
     """
 
-    testset, testweight = demangleExamples(testset)
+    testset, testweight = demangle_examples(testset)
 
     if not testResults:
         classVar = testset.domain.classVar
