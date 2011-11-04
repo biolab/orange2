@@ -31,8 +31,8 @@ Provides: python-orange-svn
 Replaces: python-orange-svn
 Conflicts: python-orange-svn
 Suggests: orange-canvas
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-imaging (>= 1.1), python-networkx (>= 1.1)
-Recommends: ${shlibs:Recommends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-imaging (>= 1.1)
+Recommends: ${shlibs:Recommends}, python-networkx (>= 1.1)
 Description: data mining framework (Python module)
  Orange is a component-based data mining software. It includes a range
  of data visualization, exploration, preprocessing and modeling
