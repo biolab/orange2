@@ -69,6 +69,16 @@ else
 	cd ..
 	rm -rf python-orange-0.0.$DAILY_REVISION~svn.orig/ python-orange-0.0.$DAILY_REVISION~svn.tar.gz
 	
+	echo "Updating Debian packaging files."
+	cd python-orange-0.0.$DAILY_REVISION~svn/debian/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/install-scripts/debian/control-files
+	cd control-files
+	rm -f changelog
+	mv -f * ../
+	cd ../
+	rm -rf control-files
+	cd ../../
+	
 	echo "Building new packages."
 fi
 
