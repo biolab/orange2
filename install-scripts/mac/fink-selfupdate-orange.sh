@@ -90,16 +90,18 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' || grep '
 		         found or possible to install. In this case please configure Fink to
 		         use unstable tree using:
 		         
-				     fink selfupdate-rsync
+		             fink selfupdate-rsync
 		             fink configure
 		         
-		         and after that upgrade Fink to rsync updating using:
+		         and after that update Fink:
 		         
 		             fink scanpackages
-					 ./fink-selfupdate-orange.sh
 		             fink selfupdate
-		             fink selfupdate-rsync
 		             fink update-all
+		         
+		         and run this script again:
+		         
+		             sudo ./fink-selfupdate-orange.sh
 	EOMSG
 	
 	if [ ! -x /usr/bin/xcodebuild ]; then
