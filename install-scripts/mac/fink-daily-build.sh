@@ -440,7 +440,7 @@ for (</Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/orange-*.deb>
 }
 for (</Volumes/fink/dists/10.$MAC_VERSION/main/source/*.tgz>) {
 	m/.+-(.+)\\.tgz/;
-	next if \$versions{\$1};
+	next if \$versions{\$1} or -M() < 30;
 	unlink;
 }
 "
