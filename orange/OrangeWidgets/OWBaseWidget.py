@@ -153,6 +153,7 @@ class OWBaseWidget(QDialog):
             pass
 
         self.setCaption(title.replace("&","")) # used for widget caption
+        self.setFocusPolicy(Qt.StrongFocus)
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
