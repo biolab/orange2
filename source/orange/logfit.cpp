@@ -184,8 +184,8 @@ double **TLogRegFitter::generateDoubleXMatrix(PExampleGenerator gen, long &numEx
   catch (...) {
     for(int i = 0; i<=numExamples; i++)
       if (matrix[i])
-        delete matrix[i];
-      delete matrix;
+        delete[] matrix[i];
+      delete[] matrix;
   }
 
   return matrix;
@@ -210,7 +210,7 @@ double *TLogRegFitter::generateDoubleYVector(PExampleGenerator gen, const int &w
         }
     }
     catch (...) {
-        delete Y;
+        delete[] Y;
     }
 
     return Y;
@@ -235,7 +235,7 @@ double *TLogRegFitter::generateDoubleYVector_cont(PExampleGenerator gen, const i
         }
     }
     catch (...) {
-        delete Y;
+        delete[] Y;
     }
 
     return Y;
@@ -260,7 +260,7 @@ double *TLogRegFitter::generateDoubleTrialsVector(PExampleGenerator gen, const i
         }    
     }
     catch (...) {
-      delete T;
+      delete[] T;
       throw;
     }
     return T;
@@ -277,11 +277,14 @@ LRInput::~LRInput() {
     int i;
     if (data != NULL) {
         for (i=0; i <= nn; ++i)
-            delete data[i];
-        delete data;
+            delete[] data[i];
+        delete[] data;
     }
     if (success != NULL) {
-        delete success;
+        delete[] success;
+    }
+    if (trials != NULL){
+    	delete[] trials;
     }
 }
 
@@ -297,12 +300,12 @@ LRInfo::LRInfo() {
 LRInfo::~LRInfo() {
     if (cov_beta!=NULL)
         for (int i = 0; i <= k; ++i)
-            delete cov_beta[i];
-    delete cov_beta;
-    delete fit;
-    delete beta;
-    delete se_beta;
-    delete stdres;
-    delete dependent;
+            delete[] cov_beta[i];
+    delete[] cov_beta;
+    delete[] fit;
+    delete[] beta;
+    delete[] se_beta;
+    delete[] stdres;
+    delete[] dependent;
 }
 
