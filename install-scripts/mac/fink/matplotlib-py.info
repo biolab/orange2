@@ -4,7 +4,7 @@ Info2: <<
 
 Package: matplotlib-py%type_pkg[python]
 Version: 1.0.1
-Revision: 2
+Revision: 3
 Source: mirror:sourceforge:matplotlib/matplotlib-%v.tar.gz
 Source-MD5: 2196c0482d5b33dc8d33f67bbafc1323
 Type: python (2.7)
@@ -37,7 +37,6 @@ Depends: <<
 
 BuildDepends: <<
  fink (>= 0.24.12),
-# gcc4.2,
  atk1 (>= 1.20.0-1),
  cairo (>= 1.6-1),
  expat1,
