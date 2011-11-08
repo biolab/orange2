@@ -3,6 +3,7 @@ from PyQt4.QtGui import *
 
 from functools import wraps, partial
 from collections import defaultdict
+from contextlib import contextmanager
 
 class _store(dict):
     pass
@@ -18,10 +19,20 @@ def _argsort(seq, cmp=None, key=None, reverse=False):
         items = reversed(items)
     return items
 
+
+@contextmanager
+def signal_blocking(object):
+    blocked = object.signalsBlocked()
+    object.blockSignals(True)
+    yield
+    object.blockSignals(blocked)
+
     
 class PyListModel(QAbstractListModel):
     """ A model for displaying python list like objects in Qt item view classes
     """
+    MIME_TYPES = ["application/x-Orange-PyListModelData"]
+    
     def __init__(self, iterable=[], parent=None,
                  flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled,
                  list_item_role=Qt.DisplayRole,
@@ -81,6 +92,19 @@ class PyListModel(QAbstractListModel):
             self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), index, index)
         return True
         
+    def setItemData(self, index, data):
+        data = dict(data)
+        with signal_blocking(self):
+            for role, value in data.items():
+                if role == Qt.EditRole:
+                    self[index.row()] = value.toPyObject()
+                else:
+                    self._other_data[index.row()][role] = value
+                    
+        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), index, index)
+        return True
+#        return QAbstractListModel.setItemData(self, index, data)
+    
     def flags(self, index):
         if index.isValid():
             return self._other_data[index.row()].get("flags", self._flags)
@@ -141,9 +165,12 @@ class PyListModel(QAbstractListModel):
     
     def __getitem__(self, i):
         return self._list[i]
+    
+    def __getslice__(self, i, j):
+        return self._list[i:j]
         
     def __add__(self, iterable):
-        # Does not preserve flags other data.
+        # Does not preserve flags or other data.
         return PyListModel(self._list + iterable, self.parent())
     
     def __iadd__(self, iterable):
@@ -212,21 +239,114 @@ class PyListModel(QAbstractListModel):
     
     def supportedDropActions(self):
         return self._supportedDropActions
-            
-
+    
+    def decode_qt_data(self, data):
+        """ Decode internal Qt 'application/x-qabstractitemmodeldatalist'
+        mime data 
+        """
+        stream = QDataStream(data)
+        items = []
+        while not stream.atEnd():
+            row = ds.readInt()
+            col = ds.readInt()
+            item_count = ds.readInt()
+            item = {}
+            for i in range(item_count):
+                role = ds.readInt()
+                value = ds.readQVariant()
+                item[role] = value
+            items.append((row, column, item))
+        return items
+    
+    def mimeTypes(self):
+        return self.MIME_TYPES + list(QAbstractListModel.mimeTypes(self))
+    
+    def mimeData(self, indexlist):
+        if len(indexlist) <= 0:
+            return None
+        
+        items = [self[i.row()] for i in indexlist]
+        mime = QAbstractListModel.mimeData(self, indexlist)
+        data = cPickle.dumps(vars)
+        mime.setData(self.MIME_TYPE, QByteArray(data))
+        mime._items = items
+        return mime
+    
+    def dropMimeData(self, mime, action, row, column, parent):
+        if action == Qt.IgnoreAction:
+            return True
+        
+        if not mime.hasFormat(self.MIME_TYPE):
+            return False
+        
+        if hasattr(mime, "_vars"):
+            vars = mime._vars
+        else:
+            desc = str(mime.data(self.MIME_TYPE))
+            vars = cPickle.loads(desc)
+        
+        return QAbstractListModel.dropMimeData(self, mime, action, row, column, parent)
+    
+    
 import OWGUI
 import orange
+import Orange
+import cPickle
 
 class VariableListModel(PyListModel):
+    
+    MIME_TYPE = "application/x-Orange-VariableList"
+    
     def data(self, index, role=Qt.DisplayRole):
         i = index.row()
+        var = self[i]
         if role == Qt.DisplayRole:
-            return QVariant(self.__getitem__(i).name)
+            return QVariant(var.name)
         elif role == Qt.DecorationRole:
-            return QVariant(OWGUI.getAttributeIcons().get(self.__getitem__(i).varType, -1))
+            return QVariant(OWGUI.getAttributeIcons().get(var.varType, -1))
+        elif role == Qt.ToolTipRole:
+            return self.variable_tooltip(var)
         else:
             return PyListModel.data(self, index, role)
         
+    def variable_tooltip(self, var):
+        if isinstance(var, Orange.data.variable.Discrete):
+            return self.discrete_variable_tooltip(var)
+        elif isinstance(var, Orange.data.variable.Continuous):
+            return self.continuous_variable_toltip(var)
+        elif isinstance(var, Orange.data.variable.String):
+            return self.string_variable_tooltip(var)
+        
+    def variable_labels_tooltip(self, var):
+        text = ""
+        if var.attributes:
+            items = var.attributes.items()
+            labels = map("%s = %s".__mod__, items)
+            text += "<br/>Variable Labels:<br/>"
+            text += "<br/>".join(labels)
+        return text
+            
+    def discrete_variable_tooltip(self, var):
+        text = "<b>%s</b><br/>Discrete with %i values: " % (var.name, len(var.values))
+        text += ", ".join("%r" % v for v in var.values)
+        text += self.variable_labels_tooltip(var)
+        return text
+            
+    def continuous_variable_toltip(self, var):
+        text = "<b>%s</b><br/>Continuous" % var.name
+        text += self.variable_labels_tooltip(var)
+        return text
+    
+    def string_variable_tooltip(self, var):
+        text = "<b>%s</b><br/>String" % var.name
+        text += self.variable_labels_tooltip(var)
+        return text
+    
+    def python_variable_tooltip(self, var):
+        text = "<b>%s</b><br/>Python" % var.name
+        text += self.variable_labels_tooltip(var)
+        return text
+            
         
 class VariableEditor(QWidget):
     def __init__(self, var, parent):
