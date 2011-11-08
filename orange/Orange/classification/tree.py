@@ -1503,17 +1503,15 @@ class C45Learner(Orange.classification.Learner):
         nn = self._rename_arg(name)
         if name != "base" and nn in self.base.__dict__:
             self.base.__dict__[nn] = value
-        elif name == "base":
-            self.__dict__["base"] = value
         else:
-            settingAttributesNotSuccessful
+            self.__dict__[nn] = value
 
     def __getattr__(self, name):
         nn = self._rename_arg(name)
-        if name != "base":
+        if name != " base" and nn in self.base.__dict__:
             return self.base.__dict__[nn]
         else:
-            return self.base
+            return self.__dict__[nn]
 
     def __call__(self, *args, **kwargs):
         return C45Classifier(self.base(*args, **self._rename_dict(kwargs)))
