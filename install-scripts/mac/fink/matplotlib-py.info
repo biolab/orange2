@@ -1,0 +1,125 @@
+Info2: <<
+
+# https://github.com/matplotlib/matplotlib/issues/434
+
+Package: matplotlib-py%type_pkg[python]
+Version: 1.0.1
+Revision: 2
+Source: mirror:sourceforge:matplotlib/matplotlib-%v.tar.gz
+Source-MD5: 2196c0482d5b33dc8d33f67bbafc1323
+Type: python (2.7)
+
+# FIX: libpng15 failed to work.
+
+Maintainer: Kurt Schwehr <goatbar@users.sourceforge.net>
+Depends: <<
+ atk1-shlibs (>= 1.20.0-1),
+ cairo-shlibs (>= 1.6-1),
+ configobj-py%type_pkg[python],
+ dateutil-py%type_pkg[python],
+ fontconfig2-shlibs (>= 2.4.1-1),
+ freetype219-shlibs (>= 2.3.5-1),
+ glib2-shlibs (>= 2.14.0-1),
+ gtk+2-shlibs (>= 2.12.0-1),
+ libgettext8-shlibs,
+ libiconv,
+ libpng14-shlibs,
+ pango1-xft2-ft219-shlibs (>= 1.18.4-4),
+ pygobject2-py%type_pkg[python],
+ pygtk2-gtk-py%type_pkg[python],
+ python%type_pkg[python],
+ pytz-py%type_pkg[python],
+ numpy-py%type_pkg[python],
+ tcltk-shlibs,
+ tetex-base,
+ x11-shlibs
+<<
+
+BuildDepends: <<
+ fink (>= 0.24.12),
+# gcc4.2,
+ atk1 (>= 1.20.0-1),
+ cairo (>= 1.6-1),
+ expat1,
+ fontconfig2-dev (>= 2.4.1-1),
+ freetype219 (>= 2.3.5-1),
+ gettext-bin,
+ gettext-tools,
+ glib2-dev (>= 2.14.0-1),
+ glitz,
+ gtk+2-dev (>= 2.12.0-1),
+ libgettext8-dev,
+ libiconv-dev,
+ libpng14,
+ pango1-xft2-ft219-dev (>= 1.18.4-4),
+ pixman (>= 0.10.0-1),
+ pkgconfig (>= 0.21-1),
+ pygobject2-py%type_pkg[python]-dev,
+ pygtk2-gtk-py%type_pkg[python]-dev,
+ distribute-py%type_pkg[python],
+ tcltk-dev,
+ x11-dev,
+ xft2-dev
+<<
+
+GCC: 4.0
+
+# Apple clang and gcc 4.6 compiler gags on matplotlib
+#SetCC: gcc-4.2
+#SetCC: gcc-fsf-4.6
+#SetCXX: g++-fsf-4.6
+
+NoSetCPPFLAGS: True
+SetCPPFLAGS: -I%p/include/pygtk-2.0 -I%p/lib/freetype219/include/freetype2 -I%p/lib/fontconfig2/include -DNSIG=32
+NoSetLDFLAGS: True
+SetLDFLAGS: -L%p/lib/freetype219/lib -L%p/lib/fontconfig2/lib
+
+PatchFile: %{ni}.patch
+PatchFile-MD5: 758179e681590f68d65f36344a5e268f
+PatchScript: sed 's|@PREFIX@|%p|g' < %{PatchFile} | patch -p1
+
+CompileScript:  <<
+ #!/bin/sh -ev
+ export PATH=%p/lib/freetype219:$PATH
+ export PKG_CONFIG_PATH="%p/lib/pango-ft219/lib/pkgconfig:%p/lib/fontconfig2/lib/pkgconfig:%p/lib/freetype219/lib/pkgconfig:$PKG_CONFIG_PATH"
+ %p/bin/python%type_raw[python] setup.py build 
+<<
+
+# --compiler=%p/bin/g++-fsf-4.6
+
+InstallScript: <<
+ #!/bin/sh -ev
+ export PATH=%p/lib/freetype219:$PATH
+ export PKG_CONFIG_PATH="%p/lib/pango-ft219/lib/pkgconfig:%p/lib/fontconfig2/lib/pkgconfig:%p/lib/freetype219/lib/pkgconfig:$PKG_CONFIG_PATH"
+ %p/bin/python%type_raw[python] setup.py install --root %d
+ mkdir -p %i/share/doc/%n
+ cp -R examples %i/share/doc/%n
+<<
+License: OSI-Approved
+DocFiles: README.txt license/*LICENSE* TODO INTERACTIVE INSTALL CHANGELOG  KNOWN_BUGS
+# API_CHANGES
+Description: Pure python 2D plotting with a Matlab syntax
+DescDetail: <<
+Produces publication quality figures using in a variety of hardcopy 
+formats (PNG, JPG, TIFF, PS) and interactive GUI environments
+across platforms. matplotlib can be used in python scripts,
+interactively from the python shell (ala matlab or mathematica), 
+in web application servers generating dynamic charts, or embedded 
+in applications.
+
+Includes GTK, TkAgg, GTKAgg, SVG, PS and Agg backends.
+<<
+DescPackaging: <<
+ Checks for qt, qt4, cairo (their python bindings) but doesn't use
+ those test results, so don't bother setting dependencies or forcing
+ non-detection of them.
+<<
+DescPort: <<
+-DNSIG is only need for the build of the py25 variant.  Don't know why.
+<<
+Homepage: http://matplotlib.sf.net
+DescUsage: <<
+The pylab frontend is broken on x86_64.
+<<
+
+<<

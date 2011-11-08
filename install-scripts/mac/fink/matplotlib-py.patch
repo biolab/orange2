@@ -1,0 +1,54 @@
+diff -Nurd matplotlib-1.0.1.orig/setup.cfg matplotlib-1.0.1/setup.cfg
+--- matplotlib-1.0.1.orig/setup.cfg	1969-12-31 19:00:00.000000000 -0500
++++ matplotlib-1.0.1/setup.cfg	2011-06-07 21:42:17.000000000 -0400
+@@ -0,0 +1,6 @@
++[gui_support]
++gtk = True
++gtkagg = True
++tkagg = True
++wxagg = False
++macosx = True
+diff -Nurd matplotlib-1.0.1.orig/setup.py matplotlib-1.0.1/setup.py
+--- matplotlib-1.0.1.orig/setup.py	2010-07-06 21:41:55.000000000 -0400
++++ matplotlib-1.0.1/setup.py	2011-06-07 21:43:20.000000000 -0400
+@@ -264,6 +264,9 @@
+ except NameError: additional_params = {}
+ 
+ for mod in ext_modules:
++    mod.include_dirs.append('@PREFIX@/include')
++    mod.library_dirs.append('@PREFIX@/lib')
++ 
+     if options['verbose']:
+         mod.extra_compile_args.append('-DVERBOSE')
+ 
+diff -Nurd matplotlib-1.0.1.orig/setupext.py matplotlib-1.0.1/setupext.py
+--- matplotlib-1.0.1.orig/setupext.py	2010-07-06 21:41:55.000000000 -0400
++++ matplotlib-1.0.1/setupext.py	2011-06-07 21:44:14.000000000 -0400
+@@ -63,7 +63,8 @@
+     # people to :
+     #   make -f make.osx fetch deps mpl_build mpl_install
+ 
+-    'darwin' : [],
++    'darwin' : ['@PREFIX@/lib/freetype219', '@PREFIX@',
++                '/usr/X11', '/usr/X11R6', '/usr'],
+ 
+     'freebsd4' : ['/usr/local', '/usr'],
+     'freebsd5' : ['/usr/local', '/usr'],
+@@ -1011,6 +1012,17 @@
+         module.library_dirs.extend([os.path.join(sys.prefix, 'dlls')])
+ 
+     elif sys.platform == 'darwin':
++        tcl_inc = "@PREFIX@/include"
++        tk_inc = "@PREFIX@/include"
++        tcl_lib = "@PREFIX@/lib"
++        tk_lib = "@PREFIX@/lib"
++        tk_ver = ""
++        # Add final versions of directories and libraries to module lists
++        module.include_dirs.extend([tcl_inc, tk_inc])
++        module.library_dirs.extend([tcl_lib, tk_lib])
++        module.libraries.extend(['tk' + tk_ver, 'tcl' + tk_ver])
++
++    elif False:
+         # this config section lifted directly from Imaging - thanks to
+         # the effbot!
+ 
