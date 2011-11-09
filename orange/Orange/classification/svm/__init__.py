@@ -447,9 +447,21 @@ class SVMLearnerSparse(SVMLearner):
     
     """
     
+    @Orange.misc.deprecated_keywords({"useNonMeta": "use_non_meta"})
     def __init__(self, **kwds):
         SVMLearner.__init__(self, **kwds)
-        self.learner=Orange.core.SVMLearnerSparse(**kwds)
+        self.use_non_meta = kwds.get("use_non_meta", False)
+        self.learner = Orange.core.SVMLearnerSparse(**kwds)
+        
+    def _normalize(self, data):
+        if self.use_non_meta:
+            dc = Orange.core.DomainContinuizer()
+            dc.class_treatment = Orange.core.DomainContinuizer.Ignore
+            dc.continuous_treatment = Orange.core.DomainContinuizer.NormalizeBySpan
+            dc.multinomial_treatment = Orange.core.DomainContinuizer.NValues
+            newdomain = dc(data)
+            data = data.translate(newdomain)
+        return data
 
 class SVMLearnerEasy(SVMLearner):
     
