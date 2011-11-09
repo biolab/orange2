@@ -321,33 +321,40 @@ class VariableListModel(PyListModel):
         text = ""
         if var.attributes:
             items = var.attributes.items()
+            items = [(safe_text(key), safe_text(value)) for key, value in items]
             labels = map("%s = %s".__mod__, items)
             text += "<br/>Variable Labels:<br/>"
             text += "<br/>".join(labels)
         return text
             
     def discrete_variable_tooltip(self, var):
-        text = "<b>%s</b><br/>Discrete with %i values: " % (var.name, len(var.values))
-        text += ", ".join("%r" % v for v in var.values)
+        text = "<b>%s</b><br/>Discrete with %i values: " % (safe_text(var.name), len(var.values))
+        text += ", ".join("%r" % safe_text(v) for v in var.values)
         text += self.variable_labels_tooltip(var)
         return text
             
     def continuous_variable_toltip(self, var):
-        text = "<b>%s</b><br/>Continuous" % var.name
+        text = "<b>%s</b><br/>Continuous" % safe_text(var.name)
         text += self.variable_labels_tooltip(var)
         return text
     
     def string_variable_tooltip(self, var):
-        text = "<b>%s</b><br/>String" % var.name
+        text = "<b>%s</b><br/>String" % safe_text(var.name)
         text += self.variable_labels_tooltip(var)
         return text
     
     def python_variable_tooltip(self, var):
-        text = "<b>%s</b><br/>Python" % var.name
+        text = "<b>%s</b><br/>Python" % safe_text(var.name)
         text += self.variable_labels_tooltip(var)
         return text
-            
-        
+    
+_html_replace = [("<", "&lt;"), (">", "&gt;")]
+
+def safe_text(text):
+    for old, new in _html_replace:
+        text = text.replace(old, new)
+    return text
+
 class VariableEditor(QWidget):
     def __init__(self, var, parent):
         QWidget.__init__(self, parent)

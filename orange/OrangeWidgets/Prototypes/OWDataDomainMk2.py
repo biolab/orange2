@@ -37,6 +37,8 @@ def source_model(view):
         return view.model()
 
 def source_indexes(indexes, view):
+    """ Map model indexes through a views QSortFilterProxyModel
+    """
     model = view.model()
     if isinstance(model, QSortFilterProxyModel):
         return map(model.mapToSource, indexes)
@@ -157,11 +159,6 @@ class VariablesListItemView(QListView):
         self.setDefaultDropAction(Qt.MoveAction)
         self.setDragDropOverwriteMode(False)
         self.viewport().setAcceptDrops(True)
-        
-#    def visualRect(self, index):
-#        rect = QListView.visualRect(self, index)
-#        print >> sys.stderr, "vRect", index.row(), rect, self.viewport().rect()
-#        return rect
     
     def startDrag(self, supported_actions):
         indices = self.selectionModel().selectedIndexes()
@@ -249,7 +246,33 @@ class VariableFilterProxyModel(QSortFilterProxyModel):
         else:
             return True
         
+USE_COMPLETER = True
 
+class CompleterNavigator(QObject):
+    """ An event filter to be installed on a QLineEdit, to enable 
+    Key up/ down to navigate between posible completions.
+    
+    """
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress and isinstance(obj, QLineEdit):
+            if event.key() == Qt.Key_Down:
+                diff = 1
+            elif event.key() == Qt.Key_Up:
+                diff = -1
+            else:
+                return False
+                
+            completer = obj.completer()
+            if completer is not None:
+                current = completer.currentRow()
+                current += diff
+                r = completer.setCurrentRow(current % completer.completionCount())
+                completer.complete()
+            return True
+        else:
+            return False
+    
+    
 from functools import partial
 class OWDataDomainMk2(OWWidget):
     contextHandlers = {"": DomainContextHandler("", [ContextField("domain_role_hints")])}
@@ -283,14 +306,17 @@ class OWDataDomainMk2(OWWidget):
             self.filter_edit.setPlaceholderText("Filter")
         
         # Completer
-#        self.completer = QCompleter()
-#        self.completer.setCompletionMode(QCompleter.InlineCompletion)
-#        self.completer_model = QStringListModel()
-#        self.completer.setModel(self.completer_model)
-#        self.completer.setModelSorting(QCompleter.CaseSensitivelySortedModel)
-#        
-#        self.filter_edit.setCompleter(self.completer)
-         
+        if USE_COMPLETER:
+            self.completer = QCompleter()
+            self.completer.setCompletionMode(QCompleter.InlineCompletion)
+            self.completer_model = QStringListModel()
+            self.completer.setModel(self.completer_model)
+            self.completer.setModelSorting(QCompleter.CaseSensitivelySortedModel)
+    
+            self.filter_edit.setCompleter(self.completer)
+            self.completer_navigator = CompleterNavigator(self)
+            self.filter_edit.installEventFilter(self.completer_navigator)
+            
         self.available_attrs = VariablesListItemModel()
         self.available_attrs_proxy = VariableFilterProxyModel()
         self.available_attrs_proxy.setSourceModel(self.available_attrs)
@@ -301,28 +327,28 @@ class OWDataDomainMk2(OWWidget):
         self.connect(self.filter_edit,
                      SIGNAL("textChanged(QString)"),
                      self.available_attrs_proxy.set_filter_string)
-#                     self.on_filter_text_changed)
-                     
-#        self.connect(self.filter_edit,
-#                     SIGNAL("textChanged(QString)"),
-#                     self.update_completer_prefix)
         
         self.connect(self.available_attrs_view.selectionModel(),
                      SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
                      partial(self.update_interface_state,
                              self.available_attrs_view))
         
-#        self.connect(self.available_attrs,
-#                     SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
-#                     self.update_completer_model)
-#        
-#        self.connect(self.available_attrs,
-#                     SIGNAL("rowsInserted(QModelIndex, int, int)"),
-#                     self.update_completer_model)
-#        
-#        self.connect(self.available_attrs,
-#                     SIGNAL("rowsRemoved(QModelIndex, int, int)"),
-#                     self.update_completer_model)
+        if USE_COMPLETER:
+            self.connect(self.filter_edit,
+                         SIGNAL("textChanged(QString)"),
+                         self.update_completer_prefix)
+        
+            self.connect(self.available_attrs,
+                         SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
+                         self.update_completer_model)
+            
+            self.connect(self.available_attrs,
+                         SIGNAL("rowsInserted(QModelIndex, int, int)"),
+                         self.update_completer_model)
+            
+            self.connect(self.available_attrs,
+                         SIGNAL("rowsRemoved(QModelIndex, int, int)"),
+                         self.update_completer_model)
         
         box.layout().addWidget(self.available_attrs_view)
         layout.addWidget(box, 0, 0, 3, 1)
@@ -446,9 +472,10 @@ class OWDataDomainMk2(OWWidget):
             self.available_attrs[:] = []
         
         self.commit()
-            
         
     def update_domain_role_hints(self):
+        """ Update the domain hints to be stored in the widgets settings.
+        """
         hints_from_model = lambda role, model: \
                 [((attr.name, attr.varType), (role, i)) \
                  for i, attr in enumerate(model)]
@@ -460,6 +487,8 @@ class OWDataDomainMk2(OWWidget):
         self.domain_role_hints = hints
         
     def selected_rows(self, view):
+        """ Return the selected rows in the view. 
+        """
         rows = view.selectionModel().selectedRows()
         model = view.model()
         if isinstance(model, QSortFilterProxyModel):
@@ -541,33 +570,35 @@ class OWDataDomainMk2(OWWidget):
             self.move_meta_button.setText(">" if available_selected else "<")
             
     def update_completer_model(self, *args):
+        """ This gets called when the model for available attributes changes
+        through either drag/drop or the left/right button actions.
+          
+        """
         vars = list(self.available_attrs)
         items = [var.name for var in vars]
         labels = reduce(list.__add__, [v.attributes.items() for v in vars], [])
         items.extend(["%s=%s" % item for item in labels])
         items.extend(reduce(list.__add__, map(list, labels), []))
-#        self.completer_model.clear()
-        self.original_completer_items = sorted(set(items))
-        self.completer_model.setStringList(self.original_completer_items)
+        
+        new = sorted(set(items))
+        if new != self.original_completer_items:
+            self.original_completer_items = new
+            self.completer_model.setStringList(self.original_completer_items)
         
     def update_completer_prefix(self, prefix):
+        """ Prefixes all items in the completer model with the current
+        already done completion to enable the completion of multiple keywords.   
+        """
         prefix = str(prefix)
         if not prefix.endswith(" ") and " " in prefix:
             prefix, _ = prefix.rsplit(" ", 1)
             items = [prefix + " " + item for item in self.original_completer_items]
         else:
             items = self.original_completer_items
-            
-        self.completer_model.setStringList(items)
+        old = map(str, self.completer_model.stringList())
         
-#    def on_filter_text_changed(self, string):
-#        prefix = self.completer.completionPrefix()
-#        text =  self.filter_edit.displayText()
-#        print "Prefix", prefix
-#        print "Display", text
-#        if len(text) < len(prefix):
-#            prefix = text
-#        self.available_attrs_proxy.set_filter_string(prefix)
+        if set(old) != set(items):
+            self.completer_model.setStringList(items)
         
     def commit(self):
         self.update_domain_role_hints()
