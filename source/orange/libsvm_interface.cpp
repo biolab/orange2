@@ -512,24 +512,6 @@ svm_node* init_precomputed_problem(svm_problem &problem, PExampleTable examples,
 	return x_space;
 }
 
-svm_node* init_problem(svm_problem &problem, PExampleTable examples, int n_elements){
-	problem.l = examples->numberOfExamples();
-	problem.y = Malloc(double ,problem.l);
-	problem.x = Malloc(svm_node*, problem.l);
-	svm_node *x_space = Malloc(svm_node, n_elements);
-	svm_node *node = x_space;
-
-	for (int i = 0; i < problem.l; i++){
-		problem.x[i] = node;
-		node = example_to_svm(examples->at(i), node, i);
-		if (examples->domain->classVar->varType == TValue::FLOATVAR)
-			problem.y[i] = examples->at(i).getClass().floatV;
-		else
-			problem.y[i] = examples->at(i).getClass().intV;
-	}
-	return x_space;
-}
-
 static void print_string_null(const char* s) {}
 
 TSVMLearner::TSVMLearner(){
@@ -668,6 +650,25 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 
 svm_node* TSVMLearner::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
 	return ::example_to_svm(ex, node, last, type);
+}
+
+svm_node* TSVMLearner::init_problem(svm_problem &problem, PExampleTable examples, int n_elements){
+	problem.l = examples->numberOfExamples();
+	problem.y = Malloc(double ,problem.l);
+	problem.x = Malloc(svm_node*, problem.l);
+	svm_node *x_space = Malloc(svm_node, n_elements);
+	svm_node *node = x_space;
+
+	for (int i = 0; i < problem.l; i++){
+		problem.x[i] = node;
+		node = example_to_svm(examples->at(i), node, i);
+		if (examples->domain->classVar)
+			if (examples->domain->classVar->varType == TValue::FLOATVAR)
+				problem.y[i] = examples->at(i).getClass().floatV;
+			else if (examples->domain->classVar->varType == TValue::INTVAR)
+				problem.y[i] = examples->at(i).getClass().intV;
+	}
+	return x_space;
 }
 
 int TSVMLearner::getNumOfElements(PExampleGenerator examples){

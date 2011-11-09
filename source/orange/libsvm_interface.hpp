@@ -107,6 +107,7 @@ public:
 
 protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual svm_node* init_problem(svm_problem &problem, PExampleTable examples, int n_elements);
 	virtual int getNumOfElements(PExampleGenerator examples);
 	virtual TSVMClassifier* createClassifier(PVariable var, PExampleTable ex, svm_model* model, svm_node* x_space);
 };
