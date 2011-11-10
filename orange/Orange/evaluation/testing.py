@@ -832,7 +832,7 @@ def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], 
     return testResults
 
 
-def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
+def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, iterationNumber=0, pps=(), callback=None, **argkw):
     """
     This function performs no sampling on its own: two separate datasets
     need to be passed, one for training and the other for testing. The
@@ -858,7 +858,7 @@ def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, i
     testset, testweight = demangle_examples(testset)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     
-    learnset, testset = preprocess_data(learnset, testset, preprocessors)
+    learnset, testset = preprocess_data(learnset, testset, pps)
             
     classifiers = []
     for learner in learners:
