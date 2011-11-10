@@ -259,7 +259,7 @@ class SVMLearner(_SVMLearner):
                  coef0=0, shrinking=True, probability=True, verbose=False, 
                  cache_size=200, eps=0.001, normalization=True,
                  weight=[], **kwargs):
-        self.svm_type = SVMLearner.Nu_SVC
+        self.svm_type = svm_type
         self.kernel_type = kernel_type
         self.kernel_func = kernel_func
         self.C = C
@@ -309,12 +309,13 @@ class SVMLearner(_SVMLearner):
         if self.kernel_type == kernels.Custom and not self.kernel_func:
             raise ValueError("Custom kernel function not supplied")
         
+        import warnings
+        
         nu = self.nu
         if self.svm_type == SVMLearner.Nu_SVC: #is nu feasible
             max_nu= self.max_nu(examples)
             if self.nu > max_nu:
                 if getattr(self, "verbose", 0):
-                    import warnings
                     warnings.warn("Specified nu %.3f is infeasible. \
                     Setting nu to %.3f" % (self.nu, max_nu))
                 nu = max(max_nu - 1e-7, 0.0)
@@ -325,6 +326,9 @@ class SVMLearner(_SVMLearner):
             setattr(self.learner, name, getattr(self, name))
         self.learner.nu = nu
         self.learner.set_weights(self.weight)
+        if self.svm_type == SVMLearner.OneClass and self.probability:
+            self.learner.probability = False
+            warnings.warn("One-class SVM probability output not supported yet.")
         return self.learn_classifier(examples)
 
     def learn_classifier(self, data):
