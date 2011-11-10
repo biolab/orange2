@@ -10,5 +10,5 @@ titanic = Orange.data.Table("titanic.tab")
 learner = Orange.classification.bayes.NaiveLearner()
 classifier = learner(titanic)
 
-for ex in table[:5]:
+for ex in titanic[:5]:
     print ex.getclass(), classifier(ex)
