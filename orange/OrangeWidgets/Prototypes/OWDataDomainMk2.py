@@ -263,7 +263,7 @@ class CompleterNavigator(QObject):
                 return False
                 
             completer = obj.completer()
-            if completer is not None:
+            if completer is not None and completer.completionCount() > 0:
                 current = completer.currentRow()
                 current += diff
                 r = completer.setCurrentRow(current % completer.completionCount())
@@ -585,11 +585,11 @@ class OWDataDomainMk2(OWWidget):
             self.original_completer_items = new
             self.completer_model.setStringList(self.original_completer_items)
         
-    def update_completer_prefix(self, prefix):
+    def update_completer_prefix(self, filter):
         """ Prefixes all items in the completer model with the current
         already done completion to enable the completion of multiple keywords.   
         """
-        prefix = str(prefix)
+        prefix = str(self.completer.completionPrefix())
         if not prefix.endswith(" ") and " " in prefix:
             prefix, _ = prefix.rsplit(" ", 1)
             items = [prefix + " " + item for item in self.original_completer_items]
@@ -647,7 +647,8 @@ class OWDataDomainMk2(OWWidget):
 if __name__ == "__main__":    
     app = QApplication(sys.argv)
     w = OWDataDomainMk2()
-    data = Orange.data.Table("rep:dicty-express.tab")
+#    data = Orange.data.Table("rep:dicty-express.tab")
+    data = Orange.data.Table("brown-selected.tab")
     w.set_data(data)
     w.show()
     app.exec_()
