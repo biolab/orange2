@@ -620,14 +620,14 @@ struct m_element_hash
 	inline size_t operator()(const m_element & m) const
 	{
 		size_t seed = 0;
-		hash_combine(seed, (size_t &) m.cluster);
-		hash_combine(seed, (size_t &) m.left);
-		hash_combine(seed, (size_t &) m.right);
+		hash_combine(seed, (size_t) m.cluster);
+		hash_combine(seed, (size_t) m.left);
+		hash_combine(seed, (size_t) m.right);
 		return seed;
 	}
 
 	// more or less taken from boost::hash_combine
-	inline void hash_combine(size_t &seed, size_t &val) const
+	inline void hash_combine(size_t &seed, size_t val) const
 	{
 		seed ^= val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
@@ -692,7 +692,6 @@ float min_distance(
 		}
 	return minimum;
 }
-
 
 struct CompareByScores
 {
