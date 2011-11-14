@@ -24,12 +24,10 @@ import os.path
 import urllib
 import httplib
 
-import PyQt4.QtNetwork
 import Orange.misc
 import Orange.network
 
 from HTMLParser import HTMLParser
-from PyQt4.QtCore import QObject, QString, SIGNAL
 
 class NetworkInfo(object):
     """The NetworkInfo class provides information about a network on the SNAP 
@@ -185,7 +183,7 @@ class SNAP(object):
             #if self.last_total <= 0:
             #    self.last_total = 24763
             
-            src = str(QString(self.http.readAll()))
+            src = str(self.http.readAll())
             snap_parser = SNAPParser()
             snap_parser.feed(src)
             
@@ -220,6 +218,9 @@ class SNAP(object):
             self.network_list = snap_parser.networks
             return self.network_list
         else:
+            import PyQt4.QtNetwork
+            from PyQt4.QtCore import QObject, QString, SIGNAL
+
             self.http = PyQt4.QtNetwork.QHttp()
             
             QObject.connect(self.http, SIGNAL('done(bool)'), lambda error,\
