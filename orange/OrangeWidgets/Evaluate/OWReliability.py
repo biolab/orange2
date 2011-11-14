@@ -176,7 +176,7 @@ class OWReliability(OWWidget):
         self.train_data = None
         self.test_data = None
         self.output_changed = False
-         
+        
         self.invalidate_results()
         
     def set_train_data(self, data=None):
@@ -313,17 +313,16 @@ class OWReliability(OWWidget):
             
     def commit(self):
         from Orange.data import variable
-        
-        self.run()
         name_mapper = {"Mahalanobis absolute": "Mahalanobis"}
         all_predictions = []
         all_estimates = []
         score_vars = []
         features = []
         table = None
-        if self._test_data() is not None:
-            scores = []
+        if self.learner and self._test_data() is not None:
+            self.run()
             
+            scores = []
             if self.include_class and not self.include_input_features:
                 original_class = self._test_data().domain.class_var
                 features.append(original_class)
