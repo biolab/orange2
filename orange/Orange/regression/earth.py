@@ -228,6 +228,11 @@ class EarthLearner(Orange.core.LearnerFD):
                                label_mask=label_mask, multi_flag=self.multi_label,
                                expanded_class=expanded_class)
     
+    
+def soft_max(values):
+    values = numpy.asarray(values)
+    return numpy.exp(values) / numpy.sum(numpy.exp(values))
+
 
 class EarthClassifier(Orange.core.ClassifierFD):
     """ Earth classifier.
@@ -266,12 +271,16 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
         from Orange.statistics.distribution import Distribution
         
-        if is_discrete(self.class_var):
-            winner = max(vals) #TODO: Handle ties.
-            value = winner.variable.get_value_from.transformer.value
-            value = self.class_var(value)
+        if not self.multi_flag and is_discrete(self.class_var):
             dist = Distribution(self.class_var)
-            dist[value] = 1.0
+            if len(self.class_var.values) == 2:
+                probs = [1 - float(vals[0]), float(vals[0])]
+            else:
+                probs = soft_max(map(float, vals))
+                
+            for val, p in zip(self.class_var.values, probs):
+                dist[val] = p
+            value = dist.modus()
             vals, probs = [value], [dist]
         else:
             probs = []
