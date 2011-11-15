@@ -1,4 +1,5 @@
 import unittest
+import operator
 import Orange
 
 class DummyLearner(Orange.classification.majority.MajorityLearner):
@@ -37,6 +38,10 @@ class DummyPreprocessor(object):
             new_datasets.append(new_data)
 
         return new_data if len(datasets) == 1 else new_datasets
+
+class BrokenPreprocessor(object):
+    def __call__(self, *args):
+        return []
 
 def create_examples(id):
     data = Orange.data.Table("iris")
@@ -96,7 +101,8 @@ class TestTestWithIndices(unittest.TestCase):
         test_results = Orange.evaluation.testing.test_with_indices(self.learners, self.examples, self.indices, store_classifiers=True)
 
         self.assertGreater(len(test_results.classifiers), 0)
-        self.assertItemsEqual(self.learners[0].classifiers, test_results.classifiers)
+        classifiers = map(operator.itemgetter(0), test_results.classifiers)
+        self.assertItemsEqual(self.learners[0].classifiers, classifiers)
 
     def callback(self):
         self.callback_calls += 1
@@ -149,7 +155,19 @@ class TestTestWithIndices(unittest.TestCase):
                 self.assertTrue(example.has_meta(learntest))
                 # Preprocessor learn should not be applied to test data.
                 self.assertFalse(example.has_meta(learn))
-    
 
+    def test_error(self):
+        # No data should raise a Value error
+        with self.assertRaises(ValueError):
+            Orange.evaluation.testing.test_with_indices(self.learners, [], self.indices)
 
-    
+        # If one fold is not represented in indices, cross validation should still execute
+        Orange.evaluation.testing.test_with_indices(self.learners, self.examples, [2] + [1]*(len(self.examples)-1))
+
+        # If preprocessors is "broken" (returns no data), error should be  raised
+        with self.assertRaises(SystemError):
+            Orange.evaluation.testing.test_with_indices(self.learners, self.examples, self.indices, preprocessors=(("L", BrokenPreprocessor()),))
+        with self.assertRaises(SystemError):
+            Orange.evaluation.testing.test_with_indices(self.learners, self.examples, self.indices, preprocessors=(("T", BrokenPreprocessor()),))
+if __name__ == '__main__':
+    unittest.main()

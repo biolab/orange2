@@ -215,23 +215,14 @@ class TestedExample:
     TestedExample stores predictions of different classifiers for a single testing example.
 
     .. attribute:: classes
-
         A list of predictions of type Value, one for each classifier.
-
     .. attribute:: probabilities
-        
         A list of probabilities of classes, one for each classifier.
-
     .. attribute:: iterationNumber
-
         Iteration number (e.g. fold) in which the TestedExample was created/tested.
-
     .. attribute:: actualClass
-
         The correct class of the example
-
     .. attribute:: weight
-
         Example's weight. Even if the example set was not weighted,
         this attribute is present and equals 1.0.
 
@@ -319,7 +310,7 @@ class ExperimentResults(object):
         the weights in statistics.
 
     """
-    def __init__(self, iterations, classifierNames, classValues, weights, baseClass=-1, **argkw):
+    def __init__(self, iterations, classifierNames, classValues=None, weights=None, baseClass=-1, domain=None, **argkw):
         self.classValues = classValues
         self.classifierNames = classifierNames
         self.numberOfIterations = iterations
@@ -329,74 +320,30 @@ class ExperimentResults(object):
         self.loaded = None
         self.baseClass = baseClass
         self.weights = weights
+
+        if domain is not None:
+            if domain.classVar.varType == Orange.data.Type.Discrete:
+                self.classValues = list(domain.classVar.values)
+                self.baseClass = domain.classVar.base_value
+                self.converter = int
+            else:
+                self.baseClass = self.classValues = None
+                self.converter = float
+
         self.__dict__.update(argkw)
 
     def load_from_files(self, learners, filename):
-        self.loaded = []
-      
-        for i in range(len(learners)):
-            f = None
-            try:
-                f = open(".\\cache\\"+filename % getobjectname(learners[i], "*"), "rb")
-                d = cPickle.load(f)
-                for ex in range(len(self.results)):
-                    tre = self.results[ex]
-                    if (tre.actualClass, tre.iterationNumber) != d[ex][0]:
-                        raise SystemError, "mismatching example tables or sampling"
-                    self.results[ex].set_result(i, d[ex][1][0], d[ex][1][1])
-                self.loaded.append(1)
-            except exceptions.Exception:
-                self.loaded.append(0)
-            if f:
-                f.close()
-                
-        return not 0 in self.loaded                
-                
+        raise NotImplementedError("This feature is no longer supported.")
+
     def save_to_files(self, learners, filename):
-        """
-        Saves and load testing results. ``learners`` is a list of learners and
-        ``filename`` is a template for the filename. The attribute loaded is
-        initialized so that it contains 1's for the learners whose data
-        was loaded and 0's for learners which need to be tested. The
-        function returns 1 if all the files were found and loaded,
-        and 0 otherwise.
+        raise NotImplementedError("This feature is no longer supported. Pickle whole class instead.")
 
-        The data is saved in a separate file for each classifier. The
-        file is a binary pickle file containing a list of tuples
-        ``((x.actualClass, x.iterationNumber), (x.classes[i],
-        x.probabilities[i]))`` where ``x`` is a :obj:`TestedExample`
-        and ``i`` is the index of a learner.
-
-        The file resides in the directory ``./cache``. Its name consists
-        of a template, given by a caller. The filename should contain
-        a %s which is replaced by name, shortDescription, description,
-        func_doc or func_name (in that order) attribute of the learner
-        (this gets extracted by orngMisc.getobjectname). If a learner
-        has none of these attributes, its class name is used.
-
-        Filename should include enough data to make sure that it
-        indeed contains the right experimental results. The function
-        :obj:`learning_curve`, for example, forms the name of the file
-        from a string ``"{learning_curve}"``, the proportion of learning
-        examples, random seeds for cross-validation and learning set
-        selection, a list of preprocessors' names and a checksum for
-        examples. Of course you can outsmart this, but it should suffice
-        in most cases.
-
-        """
-
-        for i in range(len(learners)):
-            if self.loaded[i]:
-                continue
-            
-            fname=".\\cache\\"+filename % getobjectname(learners[i], "*")
-            if not "*" in fname:
-                if not os.path.isdir("cache"):
-                    os.mkdir("cache")
-                f=open(fname, "wb")
-                pickler=cPickle.Pickler(f, 1)
-                pickler.dump([(  (x.actualClass, x.iterationNumber), (x.classes[i], x.probabilities[i])  ) for x in self.results])
-                f.close()
+    def create_tested_example(self, fold, example):
+        return TestedExample(fold,
+                             self.converter(example.getclass()),
+                             self.numberOfLearners,
+                             example.getweight(self.weights))
+        pass
 
     def remove(self, index):
         """remove one learner from evaluation results"""
@@ -501,7 +448,7 @@ def proportion_test(learners, examples, learnProp, times=10,
 
 def cross_validation(learners, examples, folds=10,
                     strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
-                    pps=[], indicesrandseed="*", **argkw):
+                    preprocessors=(), indicesrandseed="*", **argkw):
     """cross-validation evaluation of learners
 
     Performs a cross validation with the given number of folds.
@@ -513,7 +460,7 @@ def cross_validation(learners, examples, folds=10,
     else:
         randomGenerator = argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
         indices = Orange.core.MakeRandomIndicesCV(examples, folds, stratified = strat, randomGenerator = randomGenerator)
-    return test_with_indices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
+    return test_with_indices(learners, (examples, weight), indices, preprocessors, **argkw)
 
 
 def learning_curve_n(learners, examples, folds=10,
@@ -704,7 +651,7 @@ def learning_curve_with_test_data(learners, learnset, testset, times=10,
     return allResults
 
 def preprocess_data(learnset, testset, preprocessors):
-    """Apply preprocessors on learn and test dataset"""
+    """Apply preprocessors to learn and test dataset"""
     for p_type, preprocessor in preprocessors:
         if p_type == "B":
             learnset = preprocessor(learnset)
@@ -719,137 +666,106 @@ def preprocess_data(learnset, testset, preprocessors):
 
     return learnset, testset
 
+def test_with_indices(learners, examples, indices, preprocessors=(),
+                      callback=None, store_classifiers=False, store_examples=False, **kwargs):
+    """
+    Perform a cross-validation-like test. Examples for each fold are selected
+    based on given indices.
 
-def one_fold_with_indices(learners, examples, fold, indices, test_results, preprocessors, weight, cache, callback,
-                          store_classifiers):
+    :param learners: list of learners to be tested
+    :param examples: data table on which the learners will be tested
+    :param indices: a list of integers that defines, which examples will be
+     used for testing in each fold. The number of indices should be equal to
+     the number of examples.
+    :param preprocessors: a list of preprocessors to be used on data.
+    :param callback: a function that will be called after each fold is computed.
+    :param store_classifiers: if True, classifiers will be accessible in test_results.
+    :param store_examples: if True, examples will be accessible in test_results.
+    """
+    examples, weight = demangle_examples(examples)
+    if not examples:
+        raise ValueError("Test data set with no examples")
+    if not examples.domain.classVar:
+        raise ValueError("Test data set without class attribute")
+    if "cache" in kwargs:
+        raise ValueError("This feature is no longer supported.")
+
+
+    niterations = max(indices)+1
+    test_result = ExperimentResults(niterations,
+                                    classifierNames = [getobjectname(l) for l in learners],
+                                    domain=examples.domain,
+                                    weights=weight)
+
+    test_result.results = [test_result.create_tested_example(indices[i], example)
+                           for i, example in enumerate(examples)]
+
+    if store_examples:
+        test_result.examples = examples
+
+    for fold in xrange(niterations):
+        results, classifiers = one_fold_with_indices(learners, examples, fold, indices, preprocessors, weight)
+
+        for example, learner, result in results:
+            test_result.results[example].set_result(learner, *result)
+
+        if store_classifiers:
+            test_result.classifiers.append(classifiers)
+        if callback:
+            callback()
+
+    return test_result
+
+def one_fold_with_indices(learners, examples, fold, indices, preprocessors=(), weight=0):
     """Perform one fold of cross-validation like procedure using provided indices."""
-    
-    # learning
-    learnset = examples.selectref(indices, fold, negate=1)
-    if not len(learnset):
-        return
-    testset = examples.selectref(indices, fold, negate=0)
-    if not len(testset):
-        return
 
+    results = []
+
+    learnset = examples.selectref(indices, fold, negate=1)
+    testset = examples.selectref(indices, fold, negate=0)
+    if len(learnset)==0 or len(testset)==0:
+        return (), ()
+
+    # learning
     learnset, testset = preprocess_data(learnset, testset, preprocessors)
     if not learnset:
         raise SystemError, "no training examples after preprocessing"
     if not testset:
         raise SystemError, "no test examples after preprocessing"
 
-    nlearners = len(learners)
-    classifiers = [None] * nlearners
-    for i in range(nlearners):
-        if not cache or not test_results.loaded[i]:
-            classifiers[i] = learners[i](learnset, weight)
-    if store_classifiers:
-        test_results.classifiers.append(classifiers)
+    classifiers = [learner(learnset, weight) for learner in learners]
 
     # testing
-    tcn = 0
+    test_idx = 0
     for i in range(len(examples)):
-        if indices[i] == fold:
-            # This is to prevent cheating:
-            ex = Orange.data.Instance(testset[tcn])
-            ex.setclass("?")
-            tcn += 1
-            for cl in range(nlearners):
-                if not cache or not test_results.loaded[cl]:
-                    cr = classifiers[cl](ex, Orange.core.GetBoth)
-                    if cr[0].is_special():
-                        raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
-                    test_results.results[i].set_result(cl, cr[0], cr[1])
-    if callback:
-        callback()
+        if indices[i] != fold:
+            continue
 
+        # Remove class value from testing example to prevent cheating:
+        ex = Orange.data.Instance(testset[test_idx])
+        ex.setclass("?")
+        test_idx += 1
 
-def test_with_indices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
-    """
-    Performs a cross-validation-like test. The difference is that the
-    caller provides indices (each index gives a fold of an example) which
-    do not necessarily divide the examples into folds of (approximately)
-    same sizes. In fact, the function :obj:`cross_validation` is actually written
-    as a single call to ``test_with_indices``.
+        for c, classifier in enumerate(classifiers):
+            result = classifier(ex, Orange.core.GetBoth)
+            if result[0].is_special():
+                raise "Classifier %s returned unknown value" % (classifier.name or ("#%i" % c))
+            results.append((i, c, result))
 
-    ``test_with_indices`` takes care the ``TestedExamples`` are in the same order
-    as the corresponding examples in the original set. Preprocessing of
-    testing examples is thus not allowed. The computed results can be
-    saved in files or loaded therefrom if you add a keyword argument
-    ``cache=1``. In this case, you also have to specify the random seed
-    which was used to compute the indices (argument ``indicesrandseed``;
-    if you don't there will be no caching.
-
-    """
-
-    verb = argkw.get("verbose", 0)
-    cache = argkw.get("cache", 0)
-    storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
-    cache = cache and not storeclassifiers
-
-    examples, weight = demangle_examples(examples)
-    nLrn = len(learners)
-
-    if not examples:
-        raise ValueError("Test data set with no examples")
-    if not examples.domain.classVar:
-        raise ValueError("Test data set without class attribute")
-    
-##    for pp in pps:
-##        if pp[0]!="L":
-##            raise SystemError, "cannot preprocess testing examples"
-
-    nIterations = max(indices)+1
-    if examples.domain.classVar.varType == Orange.data.Type.Discrete:
-        values = list(examples.domain.classVar.values)
-        basevalue = examples.domain.classVar.baseValue
-    else:
-        basevalue = values = None
-
-    conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float        
-    testResults = ExperimentResults(nIterations, [getobjectname(l) for l in learners], values, weight!=0, basevalue)
-    testResults.results = [TestedExample(indices[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
-                           for i in range(len(examples))]
-
-    if argkw.get("storeExamples", 0):
-        testResults.examples = examples
-        
-    ccsum = hex(examples.checksum())[2:]
-    ppsp = encode_PP(pps)
-    fnstr = "{TestWithIndices}_%s_%s%s-%s" % ("%s", indicesrandseed, ppsp, ccsum)
-    if "*" in fnstr:
-        cache = 0
-
-    if cache and testResults.load_from_files(learners, fnstr):
-        printVerbose("  loaded from cache", verb)
-    else:
-        for fold in range(nIterations):
-            one_fold_with_indices(learners, examples, fold, indices, testResults, pps, weight, cache, callback,
-                                  storeclassifiers)
-        if cache:
-            testResults.save_to_files(learners, fnstr)
-        
-    return testResults
-
+    return results, classifiers
 
 def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, iterationNumber=0, pps=(), callback=None, **argkw):
     """
-    This function performs no sampling on its own: two separate datasets
-    need to be passed, one for training and the other for testing. The
-    function preprocesses the data, induces the model and tests it. The
-    order of filters is peculiar, but it makes sense when compared to
-    other methods that support preprocessing of testing examples. The
-    function first applies preprocessors marked ``"B"`` (both sets), and only
-    then the preprocessors that need to processor only one of the sets.
+    Perform a test, where learners are learned on one dataset and tested
+    on another.
 
-    You can pass an already initialized :obj:`ExperimentResults` (argument
-    ``results``) and an iteration number (``iterationNumber``). Results
-    of the test will be appended with the given iteration
-    number. This is because :obj:`learnAndTestWithTestData`
-    gets called by other functions, like :obj:`proportion_test` and
-    :obj:`learning_curve_with_test_data`. If you omit the parameters, a new
-    :obj:`ExperimentResults` will be created.
-
+    :param learners: list of learners to be tested
+    :param trainset: a dataset used for training
+    :param testset: a dataset used for testing
+    :param preprocessors: a list of preprocessors to be used on data.
+    :param callback: a function that is be called after each classifier is computed.
+    :param store_classifiers: if True, classifiers will be accessible in test_results.
+    :param store_examples: if True, examples will be accessible in test_results.
     """
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     storeExamples = argkw.get("storeExamples", 0)
@@ -857,7 +773,7 @@ def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, i
     learnset, learnweight = demangle_examples(learnset)
     testset, testweight = demangle_examples(testset)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
-    
+
     learnset, testset = preprocess_data(learnset, testset, pps)
             
     classifiers = []
