@@ -193,7 +193,7 @@ pages 317-328.
 """
 
 import Orange
-from Orange.misc import demangle_examples, getobjectname, printVerbose
+from Orange.misc import demangle_examples, getobjectname, printVerbose, deprecated_keywords
 import exceptions, cPickle, os, os.path
 
 #### Some private stuff
@@ -666,6 +666,9 @@ def preprocess_data(learnset, testset, preprocessors):
 
     return learnset, testset
 
+@deprecated_keywords({"storeExamples": "store_examples",
+                      "storeClassifiers": "store_classifiers=True",
+                      "pps":"preprocessors"})
 def test_with_indices(learners, examples, indices, preprocessors=(),
                       callback=None, store_classifiers=False, store_examples=False, **kwargs):
     """
