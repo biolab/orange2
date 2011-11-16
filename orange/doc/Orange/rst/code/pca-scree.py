@@ -8,5 +8,4 @@ import Orange
 table = Orange.data.Table("iris.tab")
 
 pca = Orange.projection.pca.Pca()(table)
-pca.scree_plot()
-  
+pca.scree_plot("pca-scree.png")
