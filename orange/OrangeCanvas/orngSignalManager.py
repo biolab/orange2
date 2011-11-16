@@ -130,9 +130,11 @@ class SignalManager(object):
         if not hasattr(self, "log"):
             SignalManager.log = logging.getLogger("SignalManager")
             self.logFileName = os.path.join(orngEnviron.canvasSettingsDir, "signalManager.log")
-            self.log.addHandler(logging.handlers.RotatingFileHandler(self.logFileName, maxBytes=2**20, backupCount=2))
+            try:
+                self.log.addHandler(logging.handlers.RotatingFileHandler(self.logFileName, maxBytes=2**20, backupCount=2))
+            except:
+                pass
             self.log.setLevel(logging.INFO)
-            
             
         self.log.info("Signal Manager started")
         
