@@ -237,7 +237,7 @@ class OWAxis(QGraphicsItem):
                 if self.title_above:
                     label_pos = tick_pos + n_p * (w + self.text_margin) + l_p * item.boundingRect().height()/2
                 else:
-                    label_pos = tick_pos + n_p * (w + self.text_margin) - l_p * item.boundingRect().height()/2
+                    label_pos = tick_pos + n_p * self.text_margin + l_p * item.boundingRect().height()/2
                 text_angle = -90 if self.title_above else 90
             else:
                 w = min(item.boundingRect().width(), QLineF(self.map_to_graph(pos - hs), self.map_to_graph(pos + hs) ).length())
@@ -245,7 +245,10 @@ class OWAxis(QGraphicsItem):
                 item.setTextWidth(w)
                 
             if not self.always_horizontal_text:
-                item.setRotation(-self.graph_line.angle() - text_angle)
+                if self.title_above:
+                    item.setRotation(-self.graph_line.angle() - text_angle)
+                else:
+                    item.setRotation(self.graph_line.angle() - text_angle)
 
             item.setPos(label_pos)
             item.setDefaultTextColor(text_color)
