@@ -21,7 +21,7 @@ help with the data normalization and parameter tuning. Learn with a fast
 
 .. note:: SVM can perform poorly on some data sets. Choose the parameters 
           carefully. In cases of low classification accuracy, try scaling the 
-          data and experiment with different parameters.
+          data and experiment with different parameters. \
           :obj:`SVMLearnerEasy` class does this automatically (it is similar
           to the `svm-easy.py` script in the LibSVM distribution).
 
@@ -33,7 +33,7 @@ The most basic :class:`SVMLearner` implements the standard `LibSVM`_ learner
 It supports four built-in kernel types (Linear, Polynomial, RBF and Sigmoid).
 Additionally kernel functions defined in Python can be used instead. 
 
-.. note:: For learning from ordinary :class:`Orange.data.Table` use the
+.. note:: For learning from ordinary :class:`Orange.data.Table` use the \
     :class:`SVMLearner`. For learning from sparse dataset (i.e.
     data in `basket` format) use the :class:`SVMLearnerSparse` class.
 
