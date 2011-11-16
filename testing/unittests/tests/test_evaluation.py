@@ -1,5 +1,6 @@
-import unittest
-import operator
+import operator, unittest
+from collections import Counter
+
 import Orange
 
 class DummyLearner(Orange.classification.majority.MajorityLearner):
@@ -169,5 +170,122 @@ class TestTestWithIndices(unittest.TestCase):
             Orange.evaluation.testing.test_with_indices(self.learners, self.examples, self.indices, preprocessors=(("L", BrokenPreprocessor()),))
         with self.assertRaises(SystemError):
             Orange.evaluation.testing.test_with_indices(self.learners, self.examples, self.indices, preprocessors=(("T", BrokenPreprocessor()),))
+
+class TestCrossValidation(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        def dummy_test_with_indices(*args, **kwds):
+            return kwds["indices"], kwds
+        Orange.evaluation.testing.test_with_indices = dummy_test_with_indices
+
+    def setUp(self):
+        self.examples = Orange.data.Table("iris")
+        self.folds = 10
+        self.preprocessors = ("P1", "P2", "P3", "P4")
+        def callback(): pass
+        self.callback = callback
+        self.random_generator = 5
+        self.store_classifiers = True
+        self.store_examples = True
+
+    def test_all_arguments_forwarded(self):
+        _, kwargs = Orange.evaluation.testing.cross_validation([], self.examples, self.folds,
+                                                                 preprocessors=self.preprocessors,
+                                                                 callback=self.callback,
+                                                                 store_classifiers=self.store_classifiers,
+                                                                 store_examples=self.store_classifiers)
+        self.assertIn("preprocessors", kwargs)
+        self.assertEqual(kwargs["preprocessors"], self.preprocessors)
+        self.assertIn("callback", kwargs)
+        self.assertEqual(kwargs["callback"], self.callback)
+        self.assertIn("store_classifiers", kwargs)
+        self.assertEqual(kwargs["store_classifiers"], self.store_classifiers)
+        self.assertIn("store_examples", kwargs)
+        self.assertEqual(kwargs["store_examples"], self.store_examples)
+
+    def test_generating_indices(self):
+        indices1, _ = Orange.evaluation.testing.cross_validation([], self.examples, self.folds)
+        indices2, _ = Orange.evaluation.testing.cross_validation([], self.examples, self.folds)
+
+        # By default, cross_validation generates the same indices every time. (multiple runs of
+        # cross-validation produce the same results)
+        self.assertEqual(indices1, indices2)
+
+        indices3, _ = Orange.evaluation.testing.cross_validation([], self.examples, self.folds, random_generator=self.random_generator)
+        indices4, _ = Orange.evaluation.testing.cross_validation([], self.examples, self.folds, random_generator=self.random_generator)
+        # Providing the same random seed should give use the same indices
+        self.assertEqual(indices3, indices4)
+        # But different from default ones
+        self.assertNotEqual(indices1, indices3)
+
+        rg = Orange.core.RandomGenerator()
+        indices5, _ = Orange.evaluation.testing.cross_validation([], self.examples, self.folds, random_generator=rg)
+        rg.reset()
+        indices6, _ = Orange.evaluation.testing.cross_validation([], self.examples, self.folds, random_generator=rg)
+        # Using the same random generator and resetting it before calling cross-validation should result
+        # in same indices
+        self.assertEqual(indices5, indices6)
+
+    def test_stratification(self):
+        ds = Orange.data.Table("iris")
+        indices1,_ = Orange.evaluation.testing.cross_validation([], ds, 3, stratified=Orange.core.MakeRandomIndices.NotStratified)
+        indices2,_ = Orange.evaluation.testing.cross_validation([], ds, 3, stratified=Orange.core.MakeRandomIndices.Stratified)
+
+        # We know that the iris dataset has 150 instances and 3 class values. First 50 examples belong to first class,
+        # Next 50 to the second and the rest to the third.
+        # When using stratification, class distributions in folds should be about the same (max difference of one
+        # instance per class)
+        freq = Counter(indices2[:50]), Counter(indices2[50:100]), Counter(indices2[100:]) #Get class value distributions
+        frequencies = [[freq[fold][cls] for cls in range(3)] for fold in range(3)]
+        for value_counts in frequencies:
+            self.assertTrue(max(value_counts)-min(value_counts) <= 1)
+
+        # If stratification is not enabled, class value numbers in different folds usually vary.
+        freq = Counter(indices1[:50]), Counter(indices1[50:100]), Counter(indices1[100:]) #Get class value distributions
+        frequencies = [[freq[fold][cls] for cls in range(3)] for fold in range(3)]
+        for value_counts in frequencies:
+            self.assertTrue(max(value_counts)-min(value_counts) > 1)
+
+    @classmethod
+    def tearDownClass(cls):
+        reload(Orange.evaluation.testing)
+
+class TestLeaveOneOut(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        def dummy_test_with_indices(*args, **kwds):
+            return kwds["indices"], kwds
+        Orange.evaluation.testing.test_with_indices = dummy_test_with_indices
+
+    def setUp(self):
+        self.examples = Orange.data.Table("iris")
+        self.folds = 10
+        self.preprocessors = ("P1", "P2", "P3", "P4")
+        def callback(): pass
+        self.callback = callback
+        self.random_generator = 5
+        self.store_classifiers = True
+        self.store_examples = True
+
+    def test_all_arguments_forwarded(self):
+        indices, kwargs = Orange.evaluation.testing.leave_one_out([], self.examples,
+                                                                 preprocessors=self.preprocessors,
+                                                                 callback=self.callback,
+                                                                 store_classifiers=self.store_classifiers,
+                                                                 store_examples=self.store_classifiers)
+        self.assertIn("preprocessors", kwargs)
+        self.assertEqual(kwargs["preprocessors"], self.preprocessors)
+        self.assertIn("callback", kwargs)
+        self.assertEqual(kwargs["callback"], self.callback)
+        self.assertIn("store_classifiers", kwargs)
+        self.assertEqual(kwargs["store_classifiers"], self.store_classifiers)
+        self.assertIn("store_examples", kwargs)
+        self.assertEqual(kwargs["store_examples"], self.store_examples)
+        self.assertItemsEqual(indices, range(len(self.examples)))
+
+    @classmethod
+    def tearDownClass(cls):
+        reload(Orange.evaluation.testing)
+
 if __name__ == '__main__':
     unittest.main()
