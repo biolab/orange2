@@ -198,7 +198,9 @@ class ExperimentResults(object):
 
 #### Experimental procedures
 
-@deprecated_keywords({"pps": "preprocessors"})
+@deprecated_keywords({"pps": "preprocessors",
+                      "storeClassifiers": "store_classifiers",
+                      "storeExamples": "store_examples"})
 def leave_one_out(learners, examples, preprocessors=(),
                   callback=None, store_classifiers=False, store_examples=False):
     """Perform leave-one-out evaluation of learners on a data set.
@@ -264,7 +266,9 @@ def proportion_test(learners, examples, learnProp, times=10,
                       "strat": "stratified",
                       "randseed": "random_generator",
                       "indicesrandseed": "random_generator",
-                      "randomGenerator": "random_generator"})
+                      "randomGenerator": "random_generator",
+                      "storeClassifiers": "store_classifiers",
+                      "storeExamples": "store_examples"})
 def cross_validation(learners, examples, folds=10, stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible,
                     preprocessors=(), random_generator=0, callback=None, store_classifiers=False, store_examples=False):
     """Perform cross validation with specified number of folds.
