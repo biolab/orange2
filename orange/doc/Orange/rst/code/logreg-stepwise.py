@@ -1,24 +1,20 @@
-import orngTest
-import orngFSS
-from Orange import *
-import Orange.evaluation.testing
+import Orange
 
+ionosphere = Orange.data.Table("ionosphere.tab")
 
-table = data.Table("ionosphere.tab")
-
-lr = classification.logreg.LogRegLearner(removeSingular=1)
+lr = Orange.classification.logreg.LogRegLearner(removeSingular=1)
 learners = (
-  classification.logreg.LogRegLearner(name='logistic', removeSingular=1),
-  feature.selection.FilteredLearner(lr,
+  Orange.classification.logreg.LogRegLearner(name='logistic', removeSingular=1),
+  Orange.feature.selection.FilteredLearner(lr,
      filter=Orange.classification.logreg.StepWiseFSSFilter(addCrit=0.05, deleteCrit=0.9),
      name='filtered')
 )
-results = Orange.evaluation.testing.crossValidation(learners, table, storeClassifiers=1)
+results = Orange.evaluation.testing.cross_validation(learners, ionosphere, store_classifiers=1)
 
 # output the results
 print "Learner      CA"
 for i in range(len(learners)):
-    print "%-12s %5.3f" % (learners[i].name, evaluation.scoring.CA(results)[i])
+    print "%-12s %5.3f" % (learners[i].name, Orange.evaluation.scoring.CA(results)[i])
 
 # find out which features were retained by filtering
 
