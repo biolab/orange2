@@ -1,18 +1,12 @@
+import itertools
+
 import Orange
 from Orange.misc import demangle_examples, getobjectname, printVerbose, deprecated_keywords
-import exceptions, cPickle, os, os.path
+
 
 #### Some private stuff
 
-def encode_PP(pps):
-    pps=""
-    for pp in pps:
-        objname = getobjectname(pp[1], "")
-        if len(objname):
-            pps+="_"+objname
-        else:
-            return "*"
-    return pps
+
 
 #### Data structures
 
@@ -198,23 +192,6 @@ class ExperimentResults(object):
 
 #### Experimental procedures
 
-@deprecated_keywords({"pps": "preprocessors",
-                      "storeClassifiers": "store_classifiers",
-                      "storeExamples": "store_examples"})
-def leave_one_out(learners, examples, preprocessors=(),
-                  callback=None, store_classifiers=False, store_examples=False):
-    """Perform leave-one-out evaluation of learners on a data set.
-
-    :param learners: list of learners to be tested
-    :param examples: data table on which the learners will be tested
-    :param preprocessors: a list of preprocessors to be used on data.
-    :param callback: a function that will be called after each fold is computed.
-    :param store_classifiers: if True, classifiers will be accessible in test_results.
-    :param store_examples: if True, examples will be accessible in test_results.
-    """
-    return test_with_indices(learners, examples, indices=range(len(examples)), preprocessors=preprocessors,
-                             callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
-
 
 def proportion_test(learners, examples, learnProp, times=10,
                    strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
@@ -261,34 +238,6 @@ def proportion_test(learners, examples, learnProp, times=10,
         if callback: callback()
     return testResults
 
-
-@deprecated_keywords({"pps": "preprocessors",
-                      "strat": "stratified",
-                      "randseed": "random_generator",
-                      "indicesrandseed": "random_generator",
-                      "randomGenerator": "random_generator",
-                      "storeClassifiers": "store_classifiers",
-                      "storeExamples": "store_examples"})
-def cross_validation(learners, examples, folds=10, stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible,
-                    preprocessors=(), random_generator=0, callback=None, store_classifiers=False, store_examples=False):
-    """Perform cross validation with specified number of folds.
-
-    :param learners: list of learners to be tested
-    :param examples: data table on which the learners will be tested
-    :param folds: number of folds to perform
-    :param stratified: sets, whether indices should be stratified
-    :param preprocessors: a list of preprocessors to be used on data.
-    :param random_generator: random seed or random generator for selection of indices
-    :param callback: a function that will be called after each fold is computed.
-    :param store_classifiers: if True, classifiers will be accessible in test_results.
-    :param store_examples: if True, examples will be accessible in test_results.
-    """
-    (examples, weight) = demangle_examples(examples)
-
-    indices = Orange.core.MakeRandomIndicesCV(examples, folds, stratified=stratified, random_generator=random_generator)
-    return test_with_indices(learners=learners, examples=(examples, weight), indices=indices,
-                             preprocessors=preprocessors,
-                             callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
 
 
 def learning_curve_n(learners, examples, folds=10,
@@ -478,113 +427,6 @@ def learning_curve_with_test_data(learners, learnset, testset, times=10,
         
     return allResults
 
-def preprocess_data(learnset, testset, preprocessors):
-    """Apply preprocessors to learn and test dataset"""
-    for p_type, preprocessor in preprocessors:
-        if p_type == "B":
-            learnset = preprocessor(learnset)
-            testset = preprocessor(testset)
-    for p_type, preprocessor in preprocessors:
-        if p_type == "L":
-            learnset = preprocessor(learnset)
-        elif p_type == "T":
-            testset = preprocessor(testset)
-        elif p_type == "LT":
-            (learnset, testset) = preprocessor(learnset, testset)
-
-    return learnset, testset
-
-@deprecated_keywords({"storeExamples": "store_examples",
-                      "storeClassifiers": "store_classifiers=True",
-                      "pps":"preprocessors"})
-def test_with_indices(learners, examples, indices, preprocessors=(),
-                      callback=None, store_classifiers=False, store_examples=False, **kwargs):
-    """
-    Perform a cross-validation-like test. Examples for each fold are selected
-    based on given indices.
-
-    :param learners: list of learners to be tested
-    :param examples: data table on which the learners will be tested
-    :param indices: a list of integers that defines, which examples will be
-     used for testing in each fold. The number of indices should be equal to
-     the number of examples.
-    :param preprocessors: a list of preprocessors to be used on data.
-    :param callback: a function that will be called after each fold is computed.
-    :param store_classifiers: if True, classifiers will be accessible in test_results.
-    :param store_examples: if True, examples will be accessible in test_results.
-    """
-    examples, weight = demangle_examples(examples)
-    if not examples:
-        raise ValueError("Test data set with no examples")
-    if not examples.domain.classVar:
-        raise ValueError("Test data set without class attribute")
-    if "cache" in kwargs:
-        raise ValueError("This feature is no longer supported.")
-
-
-    niterations = max(indices)+1
-    test_result = ExperimentResults(niterations,
-                                    classifierNames = [getobjectname(l) for l in learners],
-                                    domain=examples.domain,
-                                    weights=weight)
-
-    test_result.results = [test_result.create_tested_example(indices[i], example)
-                           for i, example in enumerate(examples)]
-
-    if store_examples:
-        test_result.examples = examples
-
-    for fold in xrange(niterations):
-        results, classifiers = one_fold_with_indices(learners, examples, fold, indices, preprocessors, weight)
-
-        for example, learner, result in results:
-            test_result.results[example].set_result(learner, *result)
-
-        if store_classifiers:
-            test_result.classifiers.append(classifiers)
-        if callback:
-            callback()
-
-    return test_result
-
-def one_fold_with_indices(learners, examples, fold, indices, preprocessors=(), weight=0):
-    """Perform one fold of cross-validation like procedure using provided indices."""
-
-    results = []
-
-    learnset = examples.selectref(indices, fold, negate=1)
-    testset = examples.selectref(indices, fold, negate=0)
-    if len(learnset)==0 or len(testset)==0:
-        return (), ()
-
-    # learning
-    learnset, testset = preprocess_data(learnset, testset, preprocessors)
-    if not learnset:
-        raise SystemError("no training examples after preprocessing")
-    if not testset:
-        raise SystemError("no test examples after preprocessing")
-
-    classifiers = [learner(learnset, weight) for learner in learners]
-
-    # testing
-    test_idx = 0
-    for i in range(len(examples)):
-        if indices[i] != fold:
-            continue
-
-        # Remove class value from testing example to prevent cheating:
-        ex = Orange.data.Instance(testset[test_idx])
-        ex.setclass("?")
-        test_idx += 1
-
-        for c, classifier in enumerate(classifiers):
-            result = classifier(ex, Orange.core.GetBoth)
-            if result[0].is_special():
-                raise "Classifier %s returned unknown value" % (classifier.name or ("#%i" % c))
-            results.append((i, c, result))
-
-    return results, classifiers
-
 def learn_and_test_on_test_data(learners, learnset, testset, testResults=None, iterationNumber=0, pps=(), callback=None, **argkw):
     """
     Perform a test, where learners are learned on one dataset and tested
@@ -720,3 +562,182 @@ def test_on_data(classifiers, testset, testResults=None, iterationNumber=0, stor
         testResults.results.append(te)
         
     return testResults
+
+class Evaluation(object):
+    @deprecated_keywords({"pps": "preprocessors",
+                          "strat": "stratified",
+                          "randseed": "random_generator",
+                          "indicesrandseed": "random_generator",
+                          "randomGenerator": "random_generator",
+                          "storeClassifiers": "store_classifiers",
+                          "storeExamples": "store_examples"})
+    def cross_validation(self, learners, examples, folds=10, stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible,
+                        preprocessors=(), random_generator=0, callback=None, store_classifiers=False, store_examples=False):
+        """Perform cross validation with specified number of folds.
+
+        :param learners: list of learners to be tested
+        :param examples: data table on which the learners will be tested
+        :param folds: number of folds to perform
+        :param stratified: sets, whether indices should be stratified
+        :param preprocessors: a list of preprocessors to be used on data.
+        :param random_generator: random seed or random generator for selection of indices
+        :param callback: a function that will be called after each fold is computed.
+        :param store_classifiers: if True, classifiers will be accessible in test_results.
+        :param store_examples: if True, examples will be accessible in test_results.
+        """
+        (examples, weight) = demangle_examples(examples)
+
+        indices = Orange.core.MakeRandomIndicesCV(examples, folds, stratified=stratified, random_generator=random_generator)
+        return self.test_with_indices(learners=learners, examples=(examples, weight), indices=indices,
+                                 preprocessors=preprocessors,
+                                 callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
+
+
+    @deprecated_keywords({"pps": "preprocessors",
+                          "storeClassifiers": "store_classifiers",
+                          "storeExamples": "store_examples"})
+    def leave_one_out(self, learners, examples, preprocessors=(),
+                      callback=None, store_classifiers=False, store_examples=False):
+        """Perform leave-one-out evaluation of learners on a data set.
+
+        :param learners: list of learners to be tested
+        :param examples: data table on which the learners will be tested
+        :param preprocessors: a list of preprocessors to be used on data.
+        :param callback: a function that will be called after each fold is computed.
+        :param store_classifiers: if True, classifiers will be accessible in test_results.
+        :param store_examples: if True, examples will be accessible in test_results.
+        """
+        return self.test_with_indices(learners, examples, indices=range(len(examples)), preprocessors=preprocessors,
+                                 callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
+
+    
+    @deprecated_keywords({"storeExamples": "store_examples",
+                          "storeClassifiers": "store_classifiers=True",
+                          "pps":"preprocessors"})
+    def test_with_indices(self, learners, examples, indices, preprocessors=(),
+                          callback=None, store_classifiers=False, store_examples=False, **kwargs):
+        """
+        Perform a cross-validation-like test. Examples for each fold are selected
+        based on given indices.
+
+        :param learners: list of learners to be tested
+        :param examples: data table on which the learners will be tested
+        :param indices: a list of integers that defines, which examples will be
+         used for testing in each fold. The number of indices should be equal to
+         the number of examples.
+        :param preprocessors: a list of preprocessors to be used on data.
+        :param callback: a function that will be called after each fold is computed.
+        :param store_classifiers: if True, classifiers will be accessible in test_results.
+        :param store_examples: if True, examples will be accessible in test_results.
+        """
+        examples, weight = demangle_examples(examples)
+        if not examples:
+            raise ValueError("Test data set with no examples")
+        if not examples.domain.classVar:
+            raise ValueError("Test data set without class attribute")
+        if "cache" in kwargs:
+            raise ValueError("This feature is no longer supported.")
+
+
+        niterations = max(indices)+1
+        test_result = ExperimentResults(niterations,
+                                        classifierNames = [getobjectname(l) for l in learners],
+                                        domain=examples.domain,
+                                        weights=weight)
+
+        test_result.results = [test_result.create_tested_example(indices[i], example)
+                               for i, example in enumerate(examples)]
+
+        if store_examples:
+            test_result.examples = examples
+
+        for fold in xrange(niterations):
+            results, classifiers = self.one_fold_with_indices(learners, examples, fold, indices, preprocessors, weight)
+
+            for example, learner, result in results:
+                test_result.results[example].set_result(learner, *result)
+
+            if store_classifiers:
+                test_result.classifiers.append(classifiers)
+            if callback:
+                callback()
+
+        return test_result
+
+
+    def one_fold_with_indices(self, learners, examples, fold, indices, preprocessors=(), weight=0):
+        """Perform one fold of cross-validation like procedure using provided indices."""
+        learn_set = examples.selectref(indices, fold, negate=1)
+        test_set = examples.selectref(indices, fold, negate=0)
+        if len(learn_set)==0 or len(test_set)==0:
+            return (), ()
+
+        # learning
+        learn_set, test_set = self.preprocess_data(learn_set, test_set, preprocessors)
+        if not learn_set:
+            raise SystemError("no training examples after preprocessing")
+        if not test_set:
+            raise SystemError("no test examples after preprocessing")
+
+        classifiers = [learner(learn_set, weight) for learner in learners]
+
+        # testing
+        testset_ids = (i for i, _ in enumerate(examples) if indices[i] == fold)
+        results = self._test_on_data(classifiers, test_set, testset_ids)
+
+        return results, classifiers
+
+
+    def _test_on_data(self, classifiers, examples, example_ids=None):
+        results = []
+
+        if example_ids is None:
+            numbered_examples = enumerate(examples)
+        else:
+            numbered_examples = itertools.izip(example_ids, examples)
+
+        for e, example in numbered_examples:
+            for c, classifier in enumerate(classifiers):
+                # Hide actual class to prevent cheating
+                ex2 = Orange.data.Instance(example)
+                ex2.setclass("?")
+                result = classifier(ex2, Orange.core.GetBoth)
+                results.append((e, c, result))
+        return results
+
+    def preprocess_data(self, learn_set, test_set, preprocessors):
+        """Apply preprocessors to learn and test dataset"""
+        for p_type, preprocessor in preprocessors:
+            if p_type == "B":
+                learn_set = preprocessor(learn_set)
+                test_set = preprocessor(test_set)
+        for p_type, preprocessor in preprocessors:
+            if p_type == "L":
+                learn_set = preprocessor(learn_set)
+            elif p_type == "T":
+                test_set = preprocessor(test_set)
+            elif p_type == "LT":
+                (learn_set, test_set) = preprocessor(learn_set, test_set)
+
+        return learn_set, test_set
+
+    def encode_PP(self, pps):
+        pps=""
+        for pp in pps:
+            objname = getobjectname(pp[1], "")
+            if len(objname):
+                pps+="_"+objname
+            else:
+                return "*"
+        return pps
+    
+default_evaluation = _default_evaluation = Evaluation()
+
+preprocess_data = _default_evaluation.preprocess_data
+test_with_indices = _default_evaluation.test_with_indices
+one_fold_with_indices = _default_evaluation.one_fold_with_indices
+cross_validation = _default_evaluation.cross_validation
+leave_one_out = _default_evaluation.leave_one_out
+
+
+encode_PP = _default_evaluation.encode_PP
