@@ -12,7 +12,7 @@ OS = $(shell uname)
 all:
 	mkdir -p $(ORANGEQT_BUILD_DIR)
 	cd $(ORANGEQT_BUILD_DIR); cmake -DCMAKE_BUILD_TYPE=Release -DORANGE_LIB_DIR=$(abspath $(OLD)) -DPYTHON_EXECUTABLE=$(PYTHON) -DCMAKE_USE_PYTHON_VERSION=$(PYTHON_VERSION) $(EXTRA_ORANGEQT_CMAKE_ARGS) ..
-	if ! $(MAKE) $@ -C $(ORANGEPLOT_BUILD_DIR); then exit 1; fi;
+	if ! $(MAKE) $@ -C $(ORANGEQT_BUILD_DIR); then exit 1; fi;
 ifeq ($(OS), Darwin)
 	install_name_tool -id $(DESTDIR)/orangeqt.so $(OLD)/orangeqt.so
 endif
