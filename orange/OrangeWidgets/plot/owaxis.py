@@ -36,7 +36,7 @@
 from math import *
 
 from PyQt4.QtGui import QGraphicsItem, QGraphicsLineItem, QGraphicsTextItem, QPainterPath, QGraphicsPathItem, QGraphicsScene, QTransform, QGraphicsRectItem, QPen, QFontMetrics
-from PyQt4.QtCore import QLineF, QPointF, qDebug, QRectF, Qt
+from PyQt4.QtCore import QLineF, QPointF, QRectF, Qt
 
 from owconstants import *
 from owtools import resize_plot_item_list

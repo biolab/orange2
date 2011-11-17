@@ -13,7 +13,7 @@ Plot legend (``owlegend``)
 """
 
 from PyQt4.QtGui import QGraphicsTextItem, QGraphicsRectItem, QGraphicsObject, QColor, QPen, QLinearGradient
-from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF, qDebug
+from PyQt4.QtCore import QPointF, QRectF, Qt, QPropertyAnimation, QSizeF
 
 from owpoint import *
 from owcurve import OWCurve
@@ -292,9 +292,7 @@ class OWLegend(QGraphicsObject):
                 if lst:
                     x = 0
                     y = y + max_h
-        else:
-            qDebug('A bad orientation of the legend')
-    
+        
     def mouseMoveEvent(self, event):
         self.graph.notify_legend_moved(event.scenePos())
         if self._floating:

@@ -31,7 +31,7 @@ import OWGUI
 from owconstants import *
 
 from PyQt4.QtGui import QWidget, QToolButton, QGroupBox, QVBoxLayout, QHBoxLayout, QIcon, QMenu, QAction
-from PyQt4.QtCore import Qt, pyqtSignal, qDebug, QObject, SIGNAL, SLOT
+from PyQt4.QtCore import Qt, pyqtSignal, QObject, SIGNAL, SLOT
 
 
 class OrientedWidget(QWidget):
@@ -76,7 +76,6 @@ class OWToolbar(OrientedWidget):
                 state_buttons = []
                 for j in range(i+1, n):
                     if buttons[j] == gui.StateButtonsEnd:
-                        qDebug('Adding state buttons ' + repr(state_buttons) + ' to layout ' + repr(self.layout()))
                         s = gui.state_buttons(orientation, state_buttons, self)
                         self.buttons.update(s.buttons)
                         self.groups[buttons[i+1]] = s
