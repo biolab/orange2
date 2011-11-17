@@ -12,7 +12,8 @@ from OWMajority import *
 
 class OWMean(OWMajority):
     def __init__(self, parent=None, signalManager=None, title="Mean"):
-        OWMajority.__init__(self, parent, signalManager, "title")
+        OWMajority.__init__(self, parent, signalManager)
+        self.setCaption("Mean")
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
