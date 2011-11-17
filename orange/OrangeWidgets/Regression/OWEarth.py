@@ -1,5 +1,11 @@
-"""<name>Earth</name>
-Multivariate Adaptive Regression Splines"""
+"""
+<name>Earth</name>
+<description>Multivariate Adaptive Regression Splines (MARS)</description>
+<category>Regression</category>
+<icon>icons/Earth.png<icon>
+<priority>100</priority>
+<keywords>MARS, Multivariate, Adaptive, Regression, Splines</keywords>
+"""
 
 from OWWidget import *
 import OWGUI

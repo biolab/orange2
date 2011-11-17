@@ -1,4 +1,11 @@
-"""<name>Linear Regression</name>
+"""
+<name>Linear Regression</name>
+<description>Linear Regression</name>
+<icon>icons/LinearRegression.png</icon>
+<priority>10</priority>
+<category>Regression</category>
+<keywords>linear, model</keywords>
+
 """
 
 import os, sys
@@ -30,7 +37,7 @@ class OWLinearRegression(OWWidget):
         # GUI
         #####
         
-        OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/predictor name", 
+        OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/predictor name",
                        tooltip="Name of the learner/predictor")
 
         OWGUI.checkWithSpin(self.controlArea, self, "Ridge lambda", 1, 10,
