@@ -14,6 +14,11 @@ include(SIPMacros)
 
 include_directories(${QT_INCLUDES} ${SIP_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${PYTHON_INCLUDE_PATH} ${NUMPY_INCLUDE_DIR})
 
+if (${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
+  add_definitions(-DQT_NO_DEBUG)
+  add_definitions(-DQT_NO_DEBUG_OUTPUT)
+endif ()
+
 #### orangeqt sources ####
 set(orangeqt_SRCS 
     plotitem.cpp 
