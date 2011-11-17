@@ -67,7 +67,7 @@ class OWSVM(OWWidget):
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
         eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label=u"Numeric precision (ε)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
 
-        OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
+        self.probBox = OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
 ##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
 ##        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
         OWGUI.checkBox(b, self, "normalization", label="Normalize data", tooltip="Use data normalization")
