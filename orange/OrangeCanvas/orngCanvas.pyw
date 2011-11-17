@@ -341,6 +341,10 @@ class OrangeCanvasDlg(QMainWindow):
         if barstate:
             if self.settings["widgetListType"] == 0:
                 self.tabs.toolbox.setCurrentIndex(barstate[0])
+            elif self.settings["widgetListType"] in [1, 2]:
+                widget = self.tabs.treeWidget
+                widget.scrollToItem(widget.topLevelItem(barstate[0]),
+                                    QAbstractItemView.PositionAtTop)
             else:
                 self.tabs.setCurrentPage(barstate[0])
         if treestate and self.settings["widgetListType"] in [1, 2]:
