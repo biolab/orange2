@@ -173,6 +173,8 @@ from Orange.preprocess import Preprocessor_impute, \
                               Preprocessor_preprocessorList, \
                               DomainContinuizer
 
+from Orange.data import variable
+
 from Orange.misc import _orange__new__
 
 def max_nu(data):
@@ -365,15 +367,21 @@ class SVMLearner(_SVMLearner):
         
         import orngWrap
         
-        parameters = ["nu", "C", "gamma"] if parameters == None else parameters
+        if parameters is None:
+            parameters = ["nu", "C", "gamma"]
+            
         searchParams = []
         normalization = self.normalization
         if normalization:
             data = self._normalize(data)
             self.normalization = False
-        if self.svm_type == SVMLearner.Nu_SVC and "nu" in parameters:
+        if self.svm_type in [SVMLearner.Nu_SVC, SVMLearner.Nu_SVR] \
+                    and "nu" in parameters:
             numOfNuValues=9
-            max_nu = max(self.max_nu(data) - 1e-7, 0.0)
+            if isinstance(data.domain.class_var, variable.Discrete):
+                max_nu = max(self.max_nu(data) - 1e-7, 0.0)
+            else:
+                max_nu = 1.0
             searchParams.append(("nu", [i/10.0 for i in range(1, 9) if \
                                         i/10.0 < max_nu] + [max_nu]))
         elif "C" in parameters:
