@@ -12,7 +12,7 @@ from exceptions import SystemExit
 from orngWrap import PreprocessedLearner
 
 class OWSVM(OWWidget):
-    settingsList=["C","nu","p","probability","gamma","degree", "coef0", "kernel_type", "name", "useNu", "normalization"]
+    settingsList=["C","nu","p", "eps", "probability","gamma","degree", "coef0", "kernel_type", "name", "useNu", "normalization"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         self.inputs=[("Example Table", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
@@ -23,7 +23,7 @@ class OWSVM(OWWidget):
         self.coef0 = 0.0
         self.degree = 3
         self.C = 1.0
-        self.p = 0.5
+        self.p = 0.1
         self.eps = 1e-3
         self.nu = 0.5
         self.shrinking = 1
@@ -64,8 +64,8 @@ class OWSVM(OWWidget):
         OWGUI.separator(self.controlArea)
         
         self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace=True)
-        OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
-        eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label=u"Numeric precision (ε)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
+        OWGUI.doubleSpin(b,self, "eps", 0.0005, 1.0, 0.0005, label=u"Tolerance (ε)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
+#        eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label=u"Numeric precision (ε)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
 
         self.probBox = OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
 ##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
@@ -128,6 +128,9 @@ class OWSVM(OWWidget):
         
     def setPreprocessor(self, pp):
         self.preprocessor = pp
+        self.applySettings()
+        
+    def handleNewSignals(self):
         self.applySettings()
 
     def applySettings(self):
