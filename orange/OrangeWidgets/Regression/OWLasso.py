@@ -56,7 +56,7 @@ def get_model_params(model, params):
     return d
     
 class OWLasso(OWWidget):
-    settingsList = []
+    settingsList = ["name", "t", "tol"]
     PARAMETERS = PARAMETERS
     
     def __init__(self, parent=None, signalManager=None, title="Lasso regression"):
@@ -79,6 +79,7 @@ class OWLasso(OWWidget):
         OWGUI.lineEdit(box, self, name["name"], tooltip=name["doc"])
         
         box = OWGUI.widgetBox(self.controlArea, "Parameters", addSpace=True)
+        
         for p in PARAMETERS[1:]:
             min, max = p["range"]
             OWGUI.doubleSpin(box, self, p["name"], min, max or 1e3, p["range"].step,
@@ -92,6 +93,8 @@ class OWLasso(OWWidget):
         
         self.data = None
         self.preproc = None
+        
+        self.resize(300, 100)
         
     init_param_model = init_param_model
     lasso_params = get_model_params
