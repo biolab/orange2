@@ -124,11 +124,9 @@ class OWSVM(OWWidget):
     def setData(self, data=None):
         self.data = self.isDataWithClass(data, checkMissing=True) and data or None
         self.paramButton.setDisabled(not self.data)
-        self.applySettings()
         
     def setPreprocessor(self, pp):
         self.preprocessor = pp
-        self.applySettings()
         
     def handleNewSignals(self):
         self.applySettings()
