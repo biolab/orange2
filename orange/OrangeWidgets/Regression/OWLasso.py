@@ -51,7 +51,6 @@ def init_param_model(model, params):
 def get_model_params(model, params):
     d = {}
     for p in params:
-        print p, p["name"], getattr(model, p["name"])
         d[p["name"]] = getattr(model, p["name"])
     return d
     
@@ -95,6 +94,8 @@ class OWLasso(OWWidget):
         self.preproc = None
         
         self.resize(300, 100)
+        
+        self.apply()
         
     init_param_model = init_param_model
     lasso_params = get_model_params
