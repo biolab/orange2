@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -305,7 +307,7 @@ class VariableListModel(PyListModel):
         elif role == Qt.DecorationRole:
             return QVariant(OWGUI.getAttributeIcons().get(var.varType, -1))
         elif role == Qt.ToolTipRole:
-            return self.variable_tooltip(var)
+            return QVariant(self.variable_tooltip(var))
         else:
             return PyListModel.data(self, index, role)
         

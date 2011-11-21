@@ -156,7 +156,9 @@ class VariablesListItemView(QListView):
         self.setDragEnabled(True)
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QListView.DragDrop)
-        self.setDefaultDropAction(Qt.MoveAction)
+        if hasattr(self, "setDefaultDropAction"):
+            # For compatibility with Qt version < 4.6
+            self.setDefaultDropAction(Qt.MoveAction)
         self.setDragDropOverwriteMode(False)
         self.viewport().setAcceptDrops(True)
     
@@ -175,7 +177,8 @@ class VariablesListItemView(QListView):
 #            drag.setPixmap(pixmap)
             
             default_action = Qt.IgnoreAction
-            if self.defaultDropAction() != Qt.IgnoreAction and \
+            if hasattr(self, "defaultDropAction") and \
+                    self.defaultDropAction() != Qt.IgnoreAction and \
                     supported_actions & self.defaultDropAction():
                 default_action = self.defaultDropAction()
             elif supported_actions & Qt.CopyAction and dragDropMode() != QListView.InternalMove:
