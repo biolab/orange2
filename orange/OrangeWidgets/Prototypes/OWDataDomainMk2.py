@@ -298,6 +298,7 @@ class OWDataDomainMk2(OWWidget):
         sip.delete(self.controlArea.layout())
         
         layout = QGridLayout()
+        layout.setMargin(0)
         box = OWGUI.widgetBox(self.controlArea, "Available attributes", addToLayout=False)
         
         self.filter_edit = QLineEdit()
