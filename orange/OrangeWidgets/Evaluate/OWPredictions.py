@@ -360,6 +360,7 @@ class OWPredictions(OWWidget):
         
         self.dataView.hide()
         self.predictionsView.hide()
+        
 
     ##############################################################################
     # Input signals
@@ -369,7 +370,7 @@ class OWPredictions(OWWidget):
         if self.data:
             self.setDataModel(self.data)
             self.setPredictionModel(self.predictors.values(), self.data)
-            self.checksendpredictions()
+        self.checksendpredictions()
 
     def setData(self, data):
         self.handledAllSignalsFlag = False
@@ -382,7 +383,9 @@ class OWPredictions(OWWidget):
             self.data = data
             self.rindx = range(len(self.data))
             self.datalabel = "%d instances" % len(data)
+            
         self.checkenable()
+        self.changedFlag = True
 
     def setPredictor(self, predictor, id):
         """handles incoming classifier (prediction, as could be a regressor as well)"""
@@ -438,12 +441,13 @@ class OWPredictions(OWWidget):
                 self.tasklabel = "Classification"
                 
         self.checkenable()
+        self.changedFlag = True
 
     ##############################################################################
     # Ouput signals
 
     def checksendpredictions(self):
-        if len(self.predictors) and self.sendOnChange and self.changedFlag:
+        if self.sendOnChange:
             self.sendpredictions()
         else:
             self.changedFlag = True
