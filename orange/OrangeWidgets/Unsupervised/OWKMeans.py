@@ -388,9 +388,15 @@ class OWKMeans(OWWidget):
         new = orange.ExampleTable(domain, self.data)
         for ex, midx in izip(new, km.clusters):
             ex[aid] = midx
+        
+        centroids = orange.ExampleTable(domain, km.centroids)
+        for i, c in enumerate(centroids):
+            c[aid] = i
+            if origDomain.classVar:
+                c[origDomain.classVar] = "?"
 
         self.send("Examples", new)
-        self.send("Centroids", orange.ExampleTable(km.centroids))
+        self.send("Centroids", centroids)
         
     def setData(self, data):
         """Handle data from the input signal."""
