@@ -1,48 +1,20 @@
-<link rel="shortcut icon" href="/pageicon.ico">
-<link rel="alternate" type="application/rss+xml" title="Orange Forum" href="/forum/rss.php" />
-<link rel="alternate" type="application/rss+xml" title="News about Orange" href="/forum/rss-news.php" />
-<!--<link rel="search" type="application/opensearchdescription+xml" title="Orange Documentation Search" href="/orangeSearch.xml">-->
-
-<!-- General page header which goes to the beginning of the body element -->
 <div id="container">
-	<div class="border1"></div>
-	<div class="border2"></div>
-	<div class="borderv">
-		<div id="header">
-			<div id="orangeimg"><a href="/"><img src="/orange-logo-w.png"></a></div>
+    <div class="border1"></div>
+    <div class="border2"></div>
+    <div class="borderv">
+        <div id="header">
+			<div id="orangeimg"><h1><a href="{{ pathto(master_doc) }}"><img src="{{ pathto('_static/orange-logo-w.png', 1) }}" alt="Orange" /></a></h1></div>
 
-			<form action="http://orange.biolab.si/searchRes.html" id="cse-search-box">
-				<input type="hidden" name="cx" value="004435948024671398314:koge-dvl9sc" />
-				<input type="hidden" name="cof" value="FORID:10" />
-				<input type="hidden" name="ie" value="UTF-8" />
-				<img src="/search.png" height="12"/>
-				<input type="text" name="q" size="25"/>
-				<input style="visibility: hidden; height: 1px;" type="submit" name="sa" value="." />
-			</form>
+            <div id="cse-search-box" style="height: 22px;"></div>
 
-			<div id="underimg"></div>
+            <div id="underimg"></div>
+        </div>
+    </div>
+    <div class="border2"></div>
+    <div class="border1"></div>
 
-			<table id="uplinks">
-				<tr>
-					<td><a href="/features.html">Features</a></td>
-					<td><a href="/nightly_builds.html">Download</a></td>
-					<td><a href="/doc">Documentation</a></td>
-					<td><a href="/forum">Forum</a></td>
-				</tr>
-			</table>
-			
-
-		</div>
-	</div>
-	<div class="border2"></div>
-	<div class="border1"></div>
-
-
-	<div id="main">
-		<div class="border1"></div>
-		<div class="border2"></div>
-		<div class="borderv">
-
-		<div id="maininner">
-		
-<!-- End of general header -->
+    <div id="main">
+        <div class="border1"></div>
+        <div class="border2"></div>
+        <div class="borderv">
+            <div id="maininner">
