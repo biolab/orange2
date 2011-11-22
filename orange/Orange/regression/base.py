@@ -17,7 +17,7 @@ class BaseRegressionLearner(Orange.core.Learner):
         variables and missing data.
     """
 
-    def __new__(cls, table=None, weigth_id=None, **kwds):
+    def __new__(cls, table=None, weight_id=None, **kwds):
         learner = Orange.core.Learner.__new__(cls, **kwds)
         if table is not None:
             learner.__init__(**kwds) 
