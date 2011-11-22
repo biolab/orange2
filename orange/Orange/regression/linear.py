@@ -54,7 +54,11 @@ Utility functions
 import Orange
 from Orange.regression import base
 import numpy
-import scipy.stats
+
+try:
+    from scipy import stats
+except ImportError:
+    import statc as stats
 
 from numpy import dot, sqrt
 from numpy.linalg import inv, pinv
@@ -221,7 +225,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         # standard error of the regression estimator, t-scores and p-values
         std_error = sqrt(sigma_square*pinv(dot(X.T, X)).diagonal())
         t_scores = coefficients/std_error
-        p_vals = [scipy.stats.betai(df*0.5,0.5,df/(df + t*t)) \
+        p_vals = [stats.betai(df*0.5,0.5,df/(df + t*t)) \
                   for t in t_scores]
 
         # dictionary of regression coefficients with standard errors
@@ -458,7 +462,7 @@ def compare_models(c1, c2):
     if RSS1 <= RSS2 or p2 <= p1 or n <= p2 or RSS2 <= 0:
         return 1.0
     F = ((RSS1-RSS2)/(p2-p1))/(RSS2/(n-p2))
-    return scipy.stats.fprob(int(p2-p1), int(n-p2), F)
+    return stats.fprob(int(p2-p1), int(n-p2), F)
 
 
 @deprecated_keywords({"addSig": "add_sig", "removeSig": "remove_sig"})
@@ -499,7 +503,7 @@ def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
             try:
                 reduced_model.append(LinearRegressionLearner(table, weight,
                         use_vars=inc_vars[:ati] + inc_vars[(ati + 1):]))
-            except:
+            except Exception:
                 reduced_model.append(None)
         
         sigs = [compare_models(r, c0) for r in reduced_model]
@@ -518,7 +522,7 @@ def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
             try:
                 extended_model.append(LinearRegressionLearner(table,
                         weight, use_vars=inc_vars + [not_inc_vars[ati]]))
-            except:
+            except Exception:
                 extended_model.append(None)
              
         sigs = [compare_models(c0, r) for r in extended_model]
