@@ -431,6 +431,8 @@ class PLSRegression(Orange.classification.Classifier):
         self.sigmaX, self.sigmaY = sigmaX, sigmaY
         self.xVars, self.yVars = xVars, yVars
         self.multilabel_flag = multilabel_flag
+        if not multilabel_flag:
+            self.class_var = yVars[0]
 
     def __call__(self, instance, result_type=Orange.core.GetValue):
         """
