@@ -60,6 +60,8 @@ from numpy import dot, sqrt
 from numpy.linalg import inv, pinv
 
 
+from Orange.misc import deprecated_members, deprecated_keywords
+
 class LinearRegressionLearner(base.BaseRegressionLearner):
 
     """Fits the linear regression model, i.e. learns the regression parameters
@@ -71,51 +73,51 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
     """    
 
     def __init__(self, name='linear regression', intercept=True, \
-                 computeStats=True, ridgeLambda=None,\
+                 compute_stats=True, ridge_lambda=None,\
                  imputer=None, continuizer=None, \
-                 useVars=None, stepwise=False, addSig=0.05,
-                 removeSig=0.2, **kwds):
+                 use_vars=None, stepwise=False, add_sig=0.05,
+                 remove_sig=0.2, **kwds):
         """
         :param name: name of the linear model, default 'linear regression'
         :type name: string
         :param intercept: if True, the intercept beta0 is included
             in the model
         :type intercept: boolean
-        :param computeStats: if True, statistical properties of
+        :param compute_stats: if True, statistical properties of
             the estimators (standard error, t-scores, significances)
             and statistical properties of the model
             (sum of squares, R2, adjusted R2) are computed
-        :type computeStats: boolean
-        :param ridgeLambda: if not None, the lambda parameter
+        :type compute_stats: boolean
+        :param ridge_lambda: if not None, the lambda parameter
             in ridge regression
-        :type ridgeLambda: integer or None
-        :param useVars: the list of independent varaiables included in
+        :type ridge_lambda: integer or None
+        :param use_vars: the list of independent varaiables included in
             regression model. If None (default) all variables are used
-        :type useVars: list of Orange.data.variable or None
+        :type use_vars: list of Orange.data.variable or None
         :param stepwise: if True, _`stepwise regression`:
             http://en.wikipedia.org/wiki/Stepwise_regression
             based on F-test is performed. The significance parameters are
-            addSig and removeSig
+            add_sig and remove_sig
         :type stepwise: boolean
-        :param addSig: lower bound of significance for which the variable
+        :param add_sig: lower bound of significance for which the variable
             is included in regression model
             default value = 0.05
-        :type addSig: float
-        :param removeSig: upper bound of significance for which
+        :type add_sig: float
+        :param remove_sig: upper bound of significance for which
             the variable is excluded from the regression model
             default value = 0.2
-        :type removeSig: float
+        :type remove_sig: float
         """
         self.name = name
         self.intercept = intercept
-        self.computeStats = computeStats
-        self.ridgeLambda = ridgeLambda
+        self.compute_stats = compute_stats
+        self.ridge_lambda = ridge_lambda
         self.set_imputer(imputer=imputer)
         self.set_continuizer(continuizer=continuizer)
         self.stepwise = stepwise
-        self.addSig = addSig
-        self.removeSig = removeSig
-        self.useVars = useVars
+        self.add_sig = add_sig
+        self.remove_sig = remove_sig
+        self.use_vars = use_vars
         self.__dict__.update(kwds)
         
     def __call__(self, table, weight=None, verbose=0):
@@ -128,11 +130,11 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         :type weight: None or list of Orange.data.variable.Continuous
             which stores weights for instances
         """       
-        if not self.useVars is None:
-            newDomain = Orange.data.Domain(self.useVars,
+        if not self.use_vars is None:
+            new_domain = Orange.data.Domain(self.use_vars,
                                             table.domain.class_var)
-            newDomain.addmetas(table.domain.getmetas())
-            table = Orange.data.Table(newDomain, table)
+            new_domain.addmetas(table.domain.getmetas())
+            table = Orange.data.Table(new_domain, table)
 
         # dicrete values are continuized        
         table = self.continuize_table(table)
@@ -141,11 +143,11 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         table = self.impute_table(table)
 
         if self.stepwise:
-            useVars = stepwise(table, weight, addSig=self.addSig,
-                                      removeSig=self.removeSig)
-            newDomain = Orange.data.Domain(useVars, table.domain.class_var)
-            newDomain.addmetas(table.domain.getmetas())
-            table = Orange.data.Table(newDomain, table)
+            use_vars = stepwise(table, weight, add_sig=self.add_sig,
+                                      remove_sig=self.remove_sig)
+            new_domain = Orange.data.Domain(use_vars, table.domain.class_var)
+            new_domain.addmetas(table.domain.getmetas())
+            table = Orange.data.Table(new_domain, table)
 
         # convertion to numpy
         A, y, w = table.to_numpy()
@@ -173,39 +175,41 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             for i, ins in enumerate(table):
                 W[i, i] = float(ins[weight])
 
-        computeStats = self.computeStats
+        compute_stats = self.compute_stats
         # adds some robustness by computing the pseudo inverse;
         # normal inverse could fail due to singularity of the X.T * W * X
-        if self.ridgeLambda is None:
-            cov = pinv(dot(dot(X.T, W), X))        
+        if self.ridge_lambda is None:
+            cov = pinv(dot(dot(X.T, W), X))
         else:
-            cov = pinv(dot(dot(X.T, W), X) - self.ridgeLambda*numpy.eye(m+1))
-            computeStats = False # TO DO: find inferential properties of the estimators
+            cov = pinv(dot(dot(X.T, W), X) - self.ridge_lambda*numpy.eye(m+1))
+            compute_stats = False # TO DO: find inferential properties of the estimators
         D = dot(dot(cov, X.T), W)
         coefficients = dot(D, y)
 
-        muY, sigmaY = numpy.mean(y), numpy.std(y)
+        mu_y, sigma_y = numpy.mean(y), numpy.std(y)
         if A is not None:
-            covX = numpy.cov(X, rowvar=0)
+            cov_x = numpy.cov(X, rowvar=0)
 
             # standardized coefficients
-            stdCoefficients = (sqrt(covX.diagonal()) / sigmaY) \
-                               * coefficients
+            std_coefficients = (sqrt(cov_x.diagonal()) / sigma_y) \
+                                * coefficients
+        else:
+            std_coefficients = None
 
-        if computeStats is False:
+        if compute_stats is False:
             return LinearRegression(domain.class_var, domain, coefficients=coefficients,
-                                    std_coefficients=stdCoefficients, intercept=self.intercept)
+                                    std_coefficients=std_coefficients, intercept=self.intercept)
             
 
         fitted = dot(X, coefficients)
-        residuals = [ins.get_class()-fitted[i] \
+        residuals = [ins.get_class() - fitted[i] \
                      for i, ins in enumerate(table)]
 
         # model summary        
         # total sum of squares (total variance)
-        sst = numpy.sum((y - muY) ** 2)
+        sst = numpy.sum((y - mu_y) ** 2)
         # sum of squares due to regression (explained variance)
-        ssr = numpy.sum((fitted - muY)**2)
+        ssr = numpy.sum((fitted - mu_y)**2)
         # error sum of squares (unexplaied variance)
         sse = sst - ssr
         # coefficient of determination
@@ -213,34 +217,42 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         r2adj = 1-(1-r2)*(n-1)/(n-m-1)
         F = (ssr/m)/(sst-ssr/(n-m-1))
         df = n-2 
-        sigmaSquare = sse/(n-m-1)
+        sigma_square = sse/(n-m-1)
         # standard error of the regression estimator, t-scores and p-values
-        stdError = sqrt(sigmaSquare*pinv(dot(X.T, X)).diagonal())
-        tScores = coefficients/stdError
-        pVals = [scipy.stats.betai(df*0.5,0.5,df/(df + t*t)) \
-                 for t in tScores]
+        std_error = sqrt(sigma_square*pinv(dot(X.T, X)).diagonal())
+        t_scores = coefficients/std_error
+        p_vals = [scipy.stats.betai(df*0.5,0.5,df/(df + t*t)) \
+                  for t in t_scores]
 
         # dictionary of regression coefficients with standard errors
         # and p-values
-        dictModel = {}
+        dict_model = {}
         if self.intercept:
-            dictModel["Intercept"] = (coefficients[0],\
-                                      stdError[0], \
-                                      tScores[0], \
-                                      pVals[0])
+            dict_model["Intercept"] = (coefficients[0],\
+                                      std_error[0], \
+                                      t_scores[0], \
+                                      p_vals[0])
         for i, var in enumerate(domain.attributes):
             j = i + 1 if self.intercept else i
-            dictModel[var.name] = (coefficients[j], \
-                                   stdError[j],\
-                                   tScores[j],\
-                                   pVals[j])
+            dict_model[var.name] = (coefficients[j], \
+                                   std_error[j],\
+                                   t_scores[j],\
+                                   p_vals[j])
         
         return LinearRegression(domain.class_var, domain, coefficients, F,
-                 std_error=stdError, t_scores=tScores, p_vals=pVals, dict_model=dictModel,
-                 fitted=fitted, residuals=residuals, m=m, n=n, mu_y=muY,
+                 std_error=std_error, t_scores=t_scores, p_vals=p_vals, dict_model=dict_model,
+                 fitted=fitted, residuals=residuals, m=m, n=n, mu_y=mu_y,
                  r2=r2, r2adj=r2adj, sst=sst, sse=sse, ssr=ssr,
-                 std_coefficients=stdCoefficients, intercept=self.intercept)
+                 std_coefficients=std_coefficients, intercept=self.intercept)
 
+deprecated_members({"ridgeLambda": "ridge_lambda",
+                    "computeStats": "compute_stats",
+                    "useVars": "use_vars",
+                    "addSig": "add_sig",
+                    "removeSig": "remove_sig",
+                    }
+                   , ["__init__"],
+                   in_place=True)(LinearRegressionLearner)
 
 class LinearRegression(Orange.classification.Classifier):
 
@@ -366,25 +378,25 @@ class LinearRegression(Orange.classification.Classifier):
 
         if self.intercept:
             if len(self.coefficients) > 1:
-                yHat = self.coefficients[0] + \
+                y_hat = self.coefficients[0] + \
                        dot(self.coefficients[1:], ins[:-1])
             else:
                 if len(ins) == 1:
                     print ins
-                    yHat = self.mu_y
+                    y_hat = self.mu_y
                 else:
-                    yHat = dot(self.coefficients, ins[:-1])
+                    y_hat = dot(self.coefficients, ins[:-1])
         else:
-            yHat = dot(self.coefficients, ins[:-1])
-#        yHat = Orange.data.Value(yHat)
-        yHat = self.class_var(yHat)
+            y_hat = dot(self.coefficients, ins[:-1])
+#        y_hat = Orange.data.Value(y_hat)
+        y_hat = self.class_var(y_hat)
         dist = Orange.statistics.distribution.Continuous(self.class_var)
-        dist[yHat] = 1.0
+        dist[y_hat] = 1.0
         if resultType == Orange.classification.Classifier.GetValue:
-            return yHat
+            return y_hat
         if resultType == Orange.classification.Classifier.GetProbabilities:
             return dist
-        return (yHat, dist)
+        return (y_hat, dist)
 
 
 def print_linear_regression_model(lr):
@@ -441,15 +453,16 @@ def compare_models(c1, c2):
     """
     if c1 == None or c2 == None:
         return 1.0
-    p1, p2, n = c1.model.m, c2.model.m, c1.model.n
-    RSS1, RSS2 = c1.model.sse, c2.model.sse
+    p1, p2, n = c1.m, c2.m, c1.n
+    RSS1, RSS2 = c1.sse, c2.sse
     if RSS1 <= RSS2 or p2 <= p1 or n <= p2 or RSS2 <= 0:
         return 1.0
     F = ((RSS1-RSS2)/(p2-p1))/(RSS2/(n-p2))
     return scipy.stats.fprob(int(p2-p1), int(n-p2), F)
 
 
-def stepwise(table, weight, addSig=0.05, removeSig=0.2):
+@deprecated_keywords({"addSig": "add_sig", "removeSig": "remove_sig"})
+def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
     """ Performs _`stepwise linear regression`:
     http://en.wikipedia.org/wiki/Stepwise_regression
     on table and returns the list of remaing independent variables
@@ -461,60 +474,60 @@ def stepwise(table, weight, addSig=0.05, removeSig=0.2):
         instances are eqaully important in fitting the regression parameters
     :type weight: None or list of Orange.data.variable.Continuous
         which stores the weights
-    :param addSig: lower bound of significance for which the variable
+    :param add_sig: lower bound of significance for which the variable
         is included in regression model
         default value = 0.05
-    :type addSig: float
-    :param removeSig: upper bound of significance for which the variable
+    :type add_sig: float
+    :param remove_sig: upper bound of significance for which the variable
         is excluded from the regression model
         default value = 0.2
-    :type removeSig: float
+    :type remove_sig: float
     """
 
     
-    incVars = []
-    notIncVars = table.domain.attributes
+    inc_vars = []
+    not_inc_vars = table.domain.attributes
 
-    changedModel = True
-    while changedModel:
-        changedModel = False
+    changed_model = True
+    while changed_model:
+        changed_model = False
         # remove all unsignificant conditions (learn several models,
         # where each time one variable is removed and check significance)
-        c0 = LinearRegressionLearner(table, useVars=incVars)
-        reducedModel = [] # reduced model
-        for ati in range(len(incVars)):
+        c0 = LinearRegressionLearner(table, use_vars=inc_vars)
+        reduced_model = [] # reduced model
+        for ati in range(len(inc_vars)):
             try:
-                reducedModel.append(LinearRegressionLearner(table, weight,
-                        useVars=incVars[:ati] + incVars[(ati + 1):]))
+                reduced_model.append(LinearRegressionLearner(table, weight,
+                        use_vars=inc_vars[:ati] + inc_vars[(ati + 1):]))
             except:
-                reducedModel.append(None)
+                reduced_model.append(None)
         
-        sigs = [compare_models(r, c0) for r in reducedModel]
-        if sigs and max(sigs) > removeSig:
+        sigs = [compare_models(r, c0) for r in reduced_model]
+        if sigs and max(sigs) > remove_sig:
             # remove that variable, start again
-            critVar = incVars[sigs.index(max(sigs))]
-            notIncVars.append(critVar)
-            incVars.remove(critVar)
-            changedModel = True
+            crit_var = inc_vars[sigs.index(max(sigs))]
+            not_inc_vars.append(crit_var)
+            inc_vars.remove(crit_var)
+            changed_model = True
             continue
 
         # add all significant conditions (go through all attributes in
-        # notIncVars, is there one that significantly improves the model?
-        extendedModel = []
-        for ati in range(len(notIncVars)):
+        # not_inc_vars, is there one that significantly improves the model?
+        extended_model = []
+        for ati in range(len(not_inc_vars)):
             try:
-                extendedModel.append(LinearRegressionLearner(table,
-                        weight, useVars=incVars + [notIncVars[ati]]))
+                extended_model.append(LinearRegressionLearner(table,
+                        weight, use_vars=inc_vars + [not_inc_vars[ati]]))
             except:
-                extendedModel.append(None)
+                extended_model.append(None)
              
-        sigs = [compare_models(c0, r) for r in extendedModel]
-        if sigs and min(sigs) < addSig:
-            bestVar = notIncVars[sigs.index(min(sigs))]
-            incVars.append(bestVar)
-            notIncVars.remove(bestVar)
-            changedModel = True
-    return incVars
+        sigs = [compare_models(c0, r) for r in extended_model]
+        if sigs and min(sigs) < add_sig:
+            best_var = not_inc_vars[sigs.index(min(sigs))]
+            inc_vars.append(best_var)
+            not_inc_vars.remove(best_var)
+            changed_model = True
+    return inc_vars
 
 
 if __name__ == "__main__":
