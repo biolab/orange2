@@ -16,7 +16,7 @@ from Orange.regression import pls
 from Orange.optimization import PreprocessedLearner
 
 class OWPLS(OWWidget):
-    settingsList = []
+    settingsList = ["name", "n_comp", "deflation_mode", "mode", "algorithm"]
     
     def __init__(self, parent=None, signalManager=None, title="PLS Regression"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
@@ -38,6 +38,7 @@ class OWPLS(OWWidget):
         self.mode = "PLS"
         self.algorithm = "svd"
         
+        self.loadSettings()
         #####
         # GUI
         #####
@@ -56,13 +57,13 @@ class OWPLS(OWWidget):
         
         OWGUI.comboBox(box, self, "deflation_mode", 
                        label="Deflation mode", 
-                       items=["Cannonical", "Regression"],
+                       items=["Regression", "Canonical"],
 #                       tooltip="",
                        sendSelectedValue=True)
         
         OWGUI.comboBox(box, self, "mode", 
                        label="Mode", 
-                       items=["CCA", "PLS"],
+                       items=["PLS", "CCA"],
 #                       tooltip="", 
                        sendSelectedValue=True)
         
@@ -88,10 +89,10 @@ class OWPLS(OWWidget):
         self.apply()
         
     def apply(self):
-        learner = pls.PLSRegressionLearner(nComp=self.n_comp,
-                        deflationMode=self.deflation_mode.lower(),
+        learner = pls.PLSRegressionLearner(n_comp=self.n_comp,
+                        deflation_mode=self.deflation_mode.lower(),
                         mode=self.mode,
-                        name=self.mode
+                        name=self.name
                         )
         predictor = None
         

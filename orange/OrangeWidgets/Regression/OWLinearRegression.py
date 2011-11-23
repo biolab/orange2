@@ -86,6 +86,8 @@ class OWLinearRegression(OWWidget):
                          tooltip="Tolerance parameter, regression coefficients (absoulute value) under tolerance are set to 0",
                          )
         
+        OWGUI.rubber(self.controlArea)
+        
         OWGUI.button(self.controlArea, self, "&Apply",
                      callback=self.apply,
                      tooltip="Send the learner on",
