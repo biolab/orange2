@@ -19,7 +19,7 @@ endif
 	
 
 cleantemp:
-	rm -rf $(ORANGEPLOT_BUILD_DIR)
+	rm -rf $(ORANGEQT_BUILD_DIR)
 
 clean: cleantemp
 	rm -f $(OLD)/orangeqt.so
