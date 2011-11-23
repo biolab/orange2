@@ -433,8 +433,16 @@ class OWDataDomainMk2(OWWidget):
         
         self.data = None
         self.original_completer_items = []
-        
+
         self.resize(500, 600)
+        
+        # For automatic widget testing using
+        self._guiElements.extend( \
+                  [(QListView, self.available_attrs_view),
+                   (QListView, self.used_attrs_view),
+                   (QListView, self.class_attrs_view),
+                   (QListView, self.meta_attrs_view),
+                  ])
         
     def set_data(self, data=None):
         self.update_domain_role_hints()
