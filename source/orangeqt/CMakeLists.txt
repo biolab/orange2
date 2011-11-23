@@ -62,6 +62,8 @@ endif()
 
 get_target_property(PYTHON_LIB_LOCATION python_module_orangeqt LOCATION)
 
+message(${ORANGE_LIB_DIR})
+
 add_custom_command(
    TARGET python_module_orangeqt
    POST_BUILD
