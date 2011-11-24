@@ -2,7 +2,7 @@
 ##!contact=ales.erjavec@fri.uni-lj.si
 
 import obiPPI, orngServerFiles
-import os, sys, shutil, urllib2, tarfile
+import os, sys, shutil, urllib2, gzip
 from getopt import getopt
 
 opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])
@@ -12,17 +12,40 @@ password = opt.get("-p", opt.get("--password", "password"))
 
 serverFiles = orngServerFiles.ServerFiles(username, password)
 
-filename = orngServerFiles.localpath("PPI", "string-protein.sqlite")
+import obiPPI
+
+filename = orngServerFiles.localpath("PPI", obiPPI.STRING.FILENAME)
+
 if os.path.exists(filename):
     os.remove(filename)
-    
-import obiPPI
+
 obiPPI.STRING.download_data("v9.0")
 
 gzfile = gzip.GzipFile(filename + ".gz", "wb")
-shutil.copyfileobj(open(fileaname, "rb"), gzfile)
+shutil.copyfileobj(open(filename, "rb"), gzfile)
 
-serverFiles.upload("PPI", "string-protein.sqlite", filename + ".gz", "STRING Protein interactions",
-                   tags=["protein interaction", "STRING", "#compression:gz", "#version:%s" % obiPPI.STRING.VERSION]
+serverFiles.upload("PPI", obiPPI.STRING.FILENAME, filename + ".gz", 
+                   "STRING Protein interactions (Creative Commons Attribution 3.0 License)",
+                   tags=["protein interaction", "STRING", 
+                         "#compression:gz", "#version:%s" % obiPPI.STRING.VERSION]
                    )
-serverFiles.unprotect("PPI", "string-protein.sqlite")
+serverFiles.unprotect("PPI", obiPPI.STRING.FILENAME)
+
+# The second part
+filename = orngServerFiles.localpath("PPI", obiPPI.STRINGDetailed.FILENAME_DETAILED)
+
+if os.path.exists(filename):
+    os.remove(filename)
+
+obiPPI.STRINGDetailed.download_data("v9.0")
+
+gzfile = gzip.GzipFile(filename + ".gz", "wb")
+shutil.copyfileobj(open(filename, "rb"), gzfile)
+
+serverFiles.upload("PPI", obiPPI.STRINGDetailed.FILENAME_DETAILED, filename + ".gz", 
+                   "STRING Protein interactions (Creative Commons Attribution-Noncommercial-Share Alike 3.0 License)" ,
+                   tags=["protein interaction", "STRING",
+                         "#compression:gz", "#version:%s" % obiPPI.STRINGDetailed.VERSION]
+                   )
+serverFiles.unprotect("PPI", obiPPI.STRINGDetailed.FILENAME_DETAILED)
+    
