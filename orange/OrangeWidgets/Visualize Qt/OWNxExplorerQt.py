@@ -1,9 +1,5 @@
 """
-<name>Net Explorer (Qt)</name>
-<description>Orange widget for network exploration.</description>
-<icon>icons/Network.png</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>410</priority>
+THIS WIDGET IS NOW INCLUDED IN OWNxExplorer.py
 """
 import math
 import operator
