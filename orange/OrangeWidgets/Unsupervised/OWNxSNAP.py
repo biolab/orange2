@@ -3,7 +3,7 @@
 <description>Read networks from Stanford Large Network Dataset Collection.</description>
 <icon>icons/SNAP.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>6450</priority>
+<priority>6415</priority>
 """
 
 import sys
