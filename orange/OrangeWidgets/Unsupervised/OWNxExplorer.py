@@ -1537,6 +1537,7 @@ except ImportError as err:
     try:
         from OWNxCanvas import *
     except:
+        # if Qwt is also not installed throw could not import orangeqt error
         raise err 
     
     class OWNxExplorer(OWWidget):
