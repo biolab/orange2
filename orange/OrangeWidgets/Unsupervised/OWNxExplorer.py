@@ -29,8 +29,9 @@ dlg_showall = dir + "Dlg_clear.png"
 
 try:
     from OWNxCanvasQt import *
-    
+
     class OWNxExplorer(OWWidget):
+        
         settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
         "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.animate_plot",
         "networkCanvas.animate_points", "networkCanvas.antialias_plot", 
@@ -74,7 +75,6 @@ try:
             self.edgeAttributes = []
             self.autoSendSelection = False
             self.graphShowGrid = 1  # show gridlines in the graph
-            
             self.markNConnections = 2
             self.markNumber = 0
             self.markProportion = 0
@@ -1533,8 +1533,11 @@ try:
             self.reportSection("Graph")
             self.reportImage(self.networkCanvas.saveToFileDirect)        
             
-except:
-    from OWNxCanvas import *
+except ImportError as err:
+    try:
+        from OWNxCanvas import *
+    except:
+        raise err 
     
     class OWNxExplorer(OWWidget):
         settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
