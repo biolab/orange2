@@ -49,7 +49,7 @@ def print_tree(x):
         raise TypeError, "invalid parameter"
 
 print "\n\nUnpruned tree"
-print tree_classifier.dump()
+print tree_classifier
 
 def cut_tree(node, level):
     if node and node.branch_selector:
@@ -63,5 +63,5 @@ def cut_tree(node, level):
 
 print "\n\nPruned tree"
 cut_tree(tree_classifier.tree, 2)
-print tree_classifier.dump()
+print tree_classifier
 

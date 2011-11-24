@@ -10,9 +10,9 @@ data = Orange.data.Table("iris.tab")
 
 print "BIG TREE:"
 tree1 = Orange.classification.tree.TreeLearner(data)
-print tree1.dump(leaf_str="%m", node_str=".")
+print tree1.format(leaf_str="%m", node_str=".")
 
 print "\nPRE-PRUNED TREE:"
 tree2 = Orange.classification.tree.TreeLearner(data, max_majority=0.7)
-print tree2.dump(leaf_str="%m", node_str=".")
+print tree2.format(leaf_str="%m", node_str=".")
 
