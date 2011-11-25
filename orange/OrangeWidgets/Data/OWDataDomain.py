@@ -433,6 +433,7 @@ class OWDataDomain(OWWidget):
         self.controlArea.setLayout(layout)
         
         self.data = None
+        self.output_report = None
         self.original_completer_items = []
 
         self.resize(500, 600)

@@ -1086,8 +1086,8 @@ class OWDiscretize(OWWidget):
             settings.append(("Number of intervals", str(self.intervals)))
         self.reportSettings("Settings", settings)
         
+        attrs = []
         if self.data:
-            attrs = []
             for i, (attr, disc) in enumerate(zip(self.data.domain.attributes, self.discretizers)):
                 if disc:
                     discType, intervals = self.indiData[i][:2]

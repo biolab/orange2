@@ -153,11 +153,13 @@ class OWContinuize(OWWidget):
         
     def sendReport(self):
         self.reportData(self.data, "Input data")
-        classVar = self.data.domain.classVar
-        if self.classTreatment == 3 and classVar and classVar.varType == orange.VarTypes.Discrete and len(classVar.values) >= 2:  
-            clstr = "Dummy variable for target '%s'" % classVar.values[self.targetValue]
-        else:
-            clstr = self.classTreats[self.classTreatment][0]
+        clstr = "None"
+        if self.data is not None:
+            classVar = self.data.domain.classVar
+            if self.classTreatment == 3 and classVar and classVar.varType == orange.VarTypes.Discrete and len(classVar.values) >= 2:  
+                clstr = "Dummy variable for target '%s'" % classVar.values[self.targetValue]
+            else:
+                clstr = self.classTreats[self.classTreatment][0]
         self.reportSettings("Settings",
                             [("Multinominal attributes", self.multinomialTreats[self.multinomialTreatment][0]),
                              ("Continuous attributes", self.continuousTreats[self.continuousTreatment][0]),
