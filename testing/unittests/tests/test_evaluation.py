@@ -1,37 +1,49 @@
-import operator, unittest
+import itertools, operator, unittest
 from collections import Counter
 
 import Orange
 
+example_no = Orange.data.variable.new_meta_id()
+
 class DummyLearner(Orange.classification.majority.MajorityLearner):
-    def __init__(self, *args, **kwds):
+    def __init__(self, id=None):
+        self.id=id
         self.data = []
         self.classifiers = []
-        super(DummyLearner, self).__init__(*args, **kwds)
+        self.classifier_no = 0
+        super(DummyLearner, self).__init__()
 
     def __call__(self, dataset, weight=0):
         self.data.append(dataset)
+
         cl = super(DummyLearner, self).__call__(dataset, weight)
-        cl = DummyClassifier(cl)
+        cl = DummyClassifier(cl, self.id, self.classifier_no)
+        self.classifier_no += 1
         self.classifiers.append(cl)
         return cl
 
 class DummyClassifier(object):
     name="DummyClassifier"
-    def __init__(self, base_class):
+    def __init__(self, base_class, learner_id, classifier_no):
         self.base_class = base_class
+        self.classifier_no = classifier_no
+        self.learner_id = learner_id
         self.data = []
+        self.predictions = []
 
     def __call__(self, example, options=None):
+        value, probability = self.base_class.__call__(example, options)
+        p = [self.learner_id, self.classifier_no, int(example[example_no])]
         self.data.append(example)
-        return self.base_class.__call__(example, options)
+        self.predictions.append(p)
+
+        return value, p
 
 class DummyPreprocessor(object):
     def __init__(self, meta_id):
         self.meta_id = meta_id
 
     def __call__(self, *datasets):
-        # TODO: What is LT Preprocessor and how to use it?
         new_datasets = []
         for dataset in datasets:
             new_data = Orange.data.Table(dataset)
@@ -45,17 +57,13 @@ class BrokenPreprocessor(object):
     def __call__(self, *args):
         return []
 
-def create_examples(id):
-    data = Orange.data.Table("iris")
-    for i, inst in enumerate(data):
-        inst[id] = i
-    return data
-
-
 class TestEvaluation(unittest.TestCase):
     def setUp(self):
-        self.meta_id = Orange.data.variable.new_meta_id()
-        self.examples = create_examples(self.meta_id)
+        self.example_no = example_no
+        self.learner = DummyLearner()
+        self.examples = Orange.data.Table("iris")
+        for i, inst in enumerate(self.examples):
+            inst[self.example_no] = i
 
         self.preprocessed_with_both = Orange.data.variable.new_meta_id()
         self.preprocessed_with_learn = Orange.data.variable.new_meta_id()
@@ -70,84 +78,56 @@ class TestEvaluation(unittest.TestCase):
         examples_in_fold = len(self.examples) // self.folds
         self.indices = [i // examples_in_fold for i in range(len(self.examples))]
         self.callback_calls = 0
-
-        self.evaluation = Orange.evaluation.testing.Evaluation()
-
-    def callback(self):
-        self.callback_calls += 1
+        reload(Orange.evaluation.testing)
+        self.evaluation = Orange.evaluation.testing
 
     def test_with_indices(self):
-        # Perform test on MajorityLearner and Iris dataset.
-        learner = DummyLearner()
+        learners = [DummyLearner(id=0), DummyLearner(id=1), DummyLearner(id=2)]
         self.callback_calls = 0
-        test_results = self.evaluation.test_with_indices([learner], (self.examples, 0), self.indices, callback=self.callback)
-        expected_results = [1]*50+[0]*100
-        predicted_classes = map(lambda x:x.classes[0], test_results.results)
-        self.assertItemsEqual(expected_results, predicted_classes)
 
-        # Each example should be used for training (n-1)x, where n is the number of folds
-        example_cnt = 0
-        for fold, data in enumerate(learner.data):
-            for example in data:
-                # Classifier should be trained on examples where fold is different from current fold
-                self.assertNotEqual(self.indices[int(example[self.meta_id])], fold)
-                example_cnt += 1
-        self.assertEqual(example_cnt, len(self.examples) * (self.folds-1))
+        test_results = self.evaluation.test_with_indices(learners, (self.examples, 0), self.indices, callback=self.callback)
 
-        # Each example should be used for testing only once
-        example_cnt = 0
-        for fold, classifier in enumerate(learner.classifiers):
-            for example in classifier.data:
-                # Classifier should perform classification on examples with same fold number
-                self.assertEqual(self.indices[int(example[self.meta_id])], fold)
-                example_cnt += 1
-        self.assertEqual(example_cnt, len(self.examples))
+        for l, learner in enumerate(learners):
+            predicted_results = [prediction for classifier in learner.classifiers for prediction in classifier.predictions]
+            returned_results = [r.probabilities[l] for r in test_results.results]
+            self.assertItemsEqual(returned_results, predicted_results)
+
+            # Each example should be used for training (n-1)x, where n is the number of folds
+            example_cnt = 0
+            for fold, data in enumerate(learner.data):
+                for example in data:
+                    # Classifier should be trained on examples where fold is different from current fold
+                    self.assertNotEqual(self.indices[int(example[self.example_no])], fold)
+                    example_cnt += 1
+            self.assertEqual(example_cnt, len(self.examples) * (self.folds-1))
+
+            # Each example should be used for testing only once
+            example_cnt = 0
+            for fold, classifier in enumerate(learner.classifiers):
+                for example in classifier.data:
+                    # Classifier should perform classification on examples with same fold number
+                    self.assertEqual(self.indices[int(example[self.example_no])], fold)
+                    example_cnt += 1
+            self.assertEqual(example_cnt, len(self.examples))
 
         # Callback function should be called once for every fold.
         self.assertEqual(self.callback_calls, self.folds)
 
+    def callback(self):
+        self.callback_calls += 1
+
     def test_with_indices_can_store_examples_and_classifiers(self):
-        learner = DummyLearner()
-        # Passing store_examples = True should make examples accessible
-        test_results = self.evaluation.test_with_indices([learner], self.examples, self.indices,
+        test_results = self.evaluation.test_with_indices([self.learner], self.examples, self.indices,
                                                         store_examples=True, store_classifiers=True)
         self.assertGreater(len(test_results.examples), 0)
         self.assertGreater(len(test_results.classifiers), 0)
         classifiers = map(operator.itemgetter(0), test_results.classifiers)
-        self.assertItemsEqual(learner.classifiers, classifiers)
+        self.assertItemsEqual(self.learner.classifiers, classifiers)
 
     def test_with_indices_uses_preprocessors(self):
-        # Preprocessors should be applyed to data as specified in their type
-        learner = DummyLearner()
-        self.evaluation.test_with_indices([learner],
-                                     self.examples,
-                                     self.indices,
-                                     preprocessors=self.preprocessors)
-
-        # Original examples should be left intact
-        for example in self.examples:
-            self.assertFalse(example.has_meta(self.preprocessed_with_both))
-            self.assertFalse(example.has_meta(self.preprocessed_with_learn))
-            self.assertFalse(example.has_meta(self.preprocessed_with_test))
-            self.assertFalse(example.has_meta(self.preprocessed_with_learn_test))
-
-        for fold, data in enumerate(learner.data):
-            for example in data:
-                # Preprocessors both, learn and learntest should be applied to learn data.
-                self.assertTrue(example.has_meta(self.preprocessed_with_both))
-                self.assertTrue(example.has_meta(self.preprocessed_with_learn))
-                self.assertTrue(example.has_meta(self.preprocessed_with_learn_test))
-                # Preprocessor test should not be applied to learn data.
-                self.assertFalse(example.has_meta(self.preprocessed_with_test))
-
-        for fold, classifier in enumerate(learner.classifiers):
-            for example in classifier.data:
-                # Preprocessors both, test and learntest should be applied to test data.
-                self.assertTrue(example.has_meta(self.preprocessed_with_both))
-                self.assertTrue(example.has_meta(self.preprocessed_with_test))
-                self.assertTrue(example.has_meta(self.preprocessed_with_learn_test))
-                # Preprocessor learn should not be applied to test data.
-                self.assertFalse(example.has_meta(self.preprocessed_with_learn))
+        self.evaluation.test_with_indices([self.learner], self.examples, self.indices,
+                                           preprocessors=self.preprocessors)
+        self.assertPreprocessedCorrectly()
 
     def test_with_indices_handles_errors(self):
         learner = DummyLearner()
@@ -166,97 +146,201 @@ class TestEvaluation(unittest.TestCase):
 
 
     def test_cross_validation(self):
-        def dummy_test_with_indices(*args, **kwargs):
-            return kwargs["indices"], kwargs
-        self.evaluation.test_with_indices = dummy_test_with_indices
+        learners = [DummyLearner(id=0), DummyLearner(id=1), DummyLearner(id=2)]
+        self.callback_calls = 0
+        folds = 10
+        test_results = self.evaluation.cross_validation(learners, (self.examples, 0), folds=folds, callback=self.callback)
 
+        for l, learner in enumerate(learners):
+            predicted_results = [prediction for classifier in learner.classifiers for prediction in classifier.predictions]
+            returned_results = [r.probabilities[l] for r in test_results.results]
+            self.assertItemsEqual(returned_results, predicted_results)
 
-        _, kwargs = self.evaluation.cross_validation([], self.examples, self.folds,
-                                                                 preprocessors=self.preprocessors,
-                                                                 callback=self.callback,
-                                                                 store_classifiers=True,
-                                                                 store_examples=True)
-        self.assertIn("preprocessors", kwargs)
-        self.assertEqual(kwargs["preprocessors"], self.preprocessors)
-        self.assertIn("callback", kwargs)
-        self.assertEqual(kwargs["callback"], self.callback)
-        self.assertIn("store_classifiers", kwargs)
-        self.assertEqual(kwargs["store_classifiers"], True)
-        self.assertIn("store_examples", kwargs)
-        self.assertEqual(kwargs["store_examples"], True)
+            # Each example should be used for training (n-1)x, where n is the number of folds
+            example_cnt = 0
+            for fold, data in enumerate(learner.data):
+                for example in data:
+                    example_cnt += 1
+            self.assertEqual(example_cnt, len(self.examples) * (folds-1))
 
-        indices1, _ = self.evaluation.cross_validation([], self.examples, self.folds)
-        indices2, _ = self.evaluation.cross_validation([], self.examples, self.folds)
-
-        # By default, cross_validation generates the same indices every time. (multiple runs of
-        # cross-validation produce the same results)
-        self.assertEqual(indices1, indices2)
-
-        indices3, _ = self.evaluation.cross_validation([], self.examples, self.folds, random_generator=3145)
-        indices4, _ = self.evaluation.cross_validation([], self.examples, self.folds, random_generator=3145)
-        # Providing the same random seed should give use the same indices
-        self.assertEqual(indices3, indices4)
-        # But different from default ones
-        self.assertNotEqual(indices1, indices3)
-
-        rg = Orange.core.RandomGenerator()
-        indices5, _ = self.evaluation.cross_validation([], self.examples, self.folds, random_generator=rg)
-        rg.reset()
-        indices6, _ = self.evaluation.cross_validation([], self.examples, self.folds, random_generator=rg)
-        # Using the same random generator and resetting it before calling cross-validation should result
-        # in same indices
-        self.assertEqual(indices5, indices6)
-
-        ds = Orange.data.Table("iris")
-        indices1,_ = self.evaluation.cross_validation([], ds, 3, stratified=Orange.core.MakeRandomIndices.NotStratified)
-        indices2,_ = self.evaluation.cross_validation([], ds, 3, stratified=Orange.core.MakeRandomIndices.Stratified)
-
-        # We know that the iris dataset has 150 instances and 3 class values. First 50 examples belong to first class,
-        # Next 50 to the second and the rest to the third.
-        # When using stratification, class distributions in folds should be about the same (max difference of one
-        # instance per class)
-        freq = Counter(indices2[:50]), Counter(indices2[50:100]), Counter(indices2[100:]) #Get class value distributions
-        frequencies = [[freq[fold][cls] for cls in range(3)] for fold in range(3)]
-        for value_counts in frequencies:
-            self.assertTrue(max(value_counts)-min(value_counts) <= 1)
-
-        # If stratification is not enabled, class value numbers in different folds usually vary.
-        freq = Counter(indices1[:50]), Counter(indices1[50:100]), Counter(indices1[100:]) #Get class value distributions
-        frequencies = [[freq[fold][cls] for cls in range(3)] for fold in range(3)]
-        for value_counts in frequencies:
-            self.assertTrue(max(value_counts)-min(value_counts) > 1)
+            # Each example should be used for testing only once
+            example_cnt = 0
+            for fold, classifier in enumerate(learner.classifiers):
+                for example in classifier.data:
+                    example_cnt += 1
+            self.assertEqual(example_cnt, len(self.examples))
 
     def test_leave_one_out(self):
-        def dummy_test_with_indices(*args, **kwargs):
-            return kwargs["indices"], kwargs
-        self.evaluation.test_with_indices = dummy_test_with_indices
+        learners = [DummyLearner(id=0), DummyLearner(id=1), DummyLearner(id=2)]
+        self.callback_calls = 0
         
-        indices, kwargs = self.evaluation.leave_one_out([], self.examples,
-                                                                 preprocessors=self.preprocessors,
-                                                                 callback=self.callback,
-                                                                 store_classifiers=True,
-                                                                 store_examples=True)
-        self.assertIn("preprocessors", kwargs)
-        self.assertEqual(kwargs["preprocessors"], self.preprocessors)
-        self.assertIn("callback", kwargs)
-        self.assertEqual(kwargs["callback"], self.callback)
-        self.assertIn("store_classifiers", kwargs)
-        self.assertEqual(kwargs["store_classifiers"], True)
-        self.assertIn("store_examples", kwargs)
-        self.assertEqual(kwargs["store_examples"], True)
-        self.assertItemsEqual(indices, range(len(self.examples)))
+        test_results = self.evaluation.leave_one_out(learners, self.examples)
+        for l, learner in enumerate(learners):
+            predicted_results = [prediction for classifier in learner.classifiers for prediction in classifier.predictions]
+            returned_results = [r.probabilities[l] for r in test_results.results]
+            self.assertItemsEqual(returned_results, predicted_results)
 
-    def test_rest(self):
-        classifiers = [DummyLearner()(self.examples)]
-        learners = [DummyLearner()]
-        Orange.evaluation.testing.test_on_data(classifiers, self.examples)
-        Orange.evaluation.testing.learn_and_test_on_learn_data(learners, self.examples)
-        Orange.evaluation.testing.learn_and_test_on_test_data(learners, self.examples, self.examples)
-        Orange.evaluation.testing.learning_curve(learners, self.examples)
-        Orange.evaluation.testing.learning_curve_n(learners, self.examples)
-        Orange.evaluation.testing.learning_curve_with_test_data(learners, self.examples, self.examples)
-        Orange.evaluation.testing.proportion_test(learners, self.examples, 0.7)
+            # Each example should be used for training (n-1)x, where n is the number of folds
+            example_cnt = 0
+            for fold, data in enumerate(learner.data):
+                for example in data:
+                    example_cnt += 1
+            self.assertEqual(example_cnt, len(self.examples) * (len(self.examples)-1))
 
+            # Each example should be used for testing only once
+            example_cnt = 0
+            for fold, classifier in enumerate(learner.classifiers):
+                for example in classifier.data:
+                    example_cnt += 1
+            self.assertEqual(example_cnt, len(self.examples))
+
+    def test_on_data(self):
+        pass
+
+    def test_on_data_can_store_examples_and_classifiers(self):
+        learner = DummyLearner()
+        classifier = learner(self.examples)
+        # Passing store_examples = True should make examples accessible
+        test_results = self.evaluation.test_on_data([classifier], self.examples,
+                                                    store_examples=True, store_classifiers=True)
+        self.assertGreater(len(test_results.examples), 0)
+        self.assertGreater(len(test_results.classifiers), 0)
+        self.assertItemsEqual(learner.classifiers, test_results.classifiers)
+
+    def test_learn_and_test_on_learn_data(self):
+        self.callback_calls = 0
+        learner = DummyLearner()
+
+        test_results = self.evaluation.learn_and_test_on_learn_data([learner], self.examples, callback=self.callback,
+                                                    store_examples=True, store_classifiers=True)
+
+        self.assertEqual(self.callback_calls, 1)
+
+
+
+    def test_learn_and_test_on_learn_data_with_preprocessors(self):
+        self.learner = DummyLearner()
+        test_results = self.evaluation.learn_and_test_on_learn_data([self.learner], self.examples,
+                                                    preprocessors=self.preprocessors,
+                                                    callback=self.callback, store_examples=True, store_classifiers=True)
+        self.assertPreprocessedCorrectly()
+
+    def test_learn_and_test_on_learn_data_can_store_examples_and_classifiers(self):
+        learner = DummyLearner()
+        
+        test_results = self.evaluation.learn_and_test_on_learn_data([learner], self.examples,
+                                                    store_examples=True, store_classifiers=True)
+        self.assertGreater(len(test_results.examples), 0)
+        self.assertGreater(len(test_results.classifiers), 0)
+        self.assertItemsEqual(learner.classifiers, test_results.classifiers)
+
+    def test_learn_and_test_on_test_data(self):
+        self.callback_calls = 0
+        learner = DummyLearner()
+
+        test_results = self.evaluation.learn_and_test_on_test_data([learner], self.examples, self.examples,
+                                                    callback=self.callback, store_examples=True, store_classifiers=True)
+        self.assertEqual(self.callback_calls, 1)
+
+    def test_learn_and_test_on_test_data_with_preprocessors(self):
+        self.learner = DummyLearner()
+        test_results = self.evaluation.learn_and_test_on_test_data([self.learner], self.examples, self.examples,
+                                                    preprocessors=self.preprocessors,
+                                                    callback=self.callback, store_examples=True, store_classifiers=True)
+        self.assertPreprocessedCorrectly()
+
+    def test_learn_and_test_on_test_data_can_store_examples_and_classifiers(self):
+        learner = DummyLearner()
+
+        test_results = self.evaluation.learn_and_test_on_test_data([learner], self.examples, self.examples,
+                                                    store_examples=True, store_classifiers=True)
+        self.assertGreater(len(test_results.examples), 0)
+        self.assertGreater(len(test_results.classifiers), 0)
+        self.assertItemsEqual(learner.classifiers, test_results.classifiers)
+
+    def test_learning_curve_with_test_data(self):
+        learner = DummyLearner()
+        times=10
+        proportions=Orange.core.frange(0.1)
+        test_results = self.evaluation.learning_curve_with_test_data([learner], self.examples, self.examples,
+                                                                              times=times, proportions=proportions)
+        # We expect the method to return a list of test_results, one instance for each proportion. Each
+        # instance should have "times" folds.
+        self.assertEqual(len(test_results), len(proportions))
+        for test_result in test_results:
+            self.assertEqual(test_result.numberOfIterations, times)
+            self.assertEqual(len(test_result.results), times*len(self.examples))
+
+
+
+    def test_learning_curve_with_test_data_can_store_examples_and_classifiers(self):
+        learner = DummyLearner()
+
+        test_results = self.evaluation.learn_and_test_on_test_data([learner], self.examples, self.examples,
+                                                                            store_examples=True, store_classifiers=True)
+        self.assertGreater(len(test_results.examples), 0)
+        self.assertGreater(len(test_results.classifiers), 0)
+        self.assertItemsEqual(learner.classifiers, test_results.classifiers)
+
+
+    def test_proportion_test(self):
+        self.callback_calls = 0
+        times = 10
+        learner = DummyLearner()
+
+        test_results = self.evaluation.proportion_test([learner], self.examples, learning_proportion=.7, times=times,
+                                                                callback = self.callback)
+
+        self.assertEqual(self.callback_calls, times)
+
+    def test_learning_curve(self):
+        self.callback_calls = 0
+        times = 10
+        proportions=Orange.core.frange(0.1)
+        folds=10
+        learner = DummyLearner()
+
+        test_results = self.evaluation.learning_curve([learner], self.examples,
+                                                                callback = self.callback)
+
+        # Ensure that each iteration is learned on correct proportion of training examples
+        for proportion, data in zip((p for p in proportions for _ in range(10)), learner.data):
+            actual_examples = len(data)
+            expected_examples = len(self.examples)*proportion*(folds-1)/folds
+            self.assertTrue(abs(actual_examples - expected_examples) <= 1)
+
+        # Ensure results are not lost
+        predicted_results = [prediction for classifier in learner.classifiers for prediction in classifier.predictions]
+        returned_results = [r.probabilities[0] for tr in test_results for r in tr.results]
+        self.assertItemsEqual(returned_results, predicted_results)
+        
+        self.assertEqual(self.callback_calls, folds*len(proportions))
+
+    #TODO: LearningCurveN tests
+
+    def assertPreprocessedCorrectly(self):
+        # Original examples should be left intact
+        for example in self.examples:
+            self.assertFalse(example.has_meta(self.preprocessed_with_both))
+            self.assertFalse(example.has_meta(self.preprocessed_with_learn))
+            self.assertFalse(example.has_meta(self.preprocessed_with_test))
+            self.assertFalse(example.has_meta(self.preprocessed_with_learn_test))
+        for fold, data in enumerate(self.learner.data):
+            for example in data:
+                # Preprocessors both, learn and learntest should be applied to learn data.
+                self.assertTrue(example.has_meta(self.preprocessed_with_both))
+                self.assertTrue(example.has_meta(self.preprocessed_with_learn))
+                self.assertTrue(example.has_meta(self.preprocessed_with_learn_test))
+                # Preprocessor test should not be applied to learn data.
+                self.assertFalse(example.has_meta(self.preprocessed_with_test))
+        for fold, classifier in enumerate(self.learner.classifiers):
+            for example in classifier.data:
+                # Preprocessors both, test and learntest should be applied to test data.
+                self.assertTrue(example.has_meta(self.preprocessed_with_both))
+                self.assertTrue(example.has_meta(self.preprocessed_with_test))
+                self.assertTrue(example.has_meta(self.preprocessed_with_learn_test))
+                # Preprocessor learn should not be applied to test data.
+                self.assertFalse(example.has_meta(self.preprocessed_with_learn))
 
 if __name__ == '__main__':
     unittest.main()
