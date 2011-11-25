@@ -195,9 +195,9 @@ class OWSurveyPlot(OWVisWidget):
     def sendReport(self):
         self.reportSettings("",
                             [("Sorting", ", ".join([x for x in (self.primaryAttribute, self.secondaryAttribute) if x != "(None)"]) or "None"), 
-                             ("Continuous attribute ordering", self.attrContOrder),
-                             ("Discrete attribute ordering", self.attrDiscOrder)]
-                             )
+#                             ("Continuous attribute ordering", self.attrContOrder),
+#                             ("Discrete attribute ordering", self.attrDiscOrder)
+                             ])
         self.reportRaw("<br/>")
         self.reportImage(self.graph.saveToFileDirect, QSize(400, 400))
 

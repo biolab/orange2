@@ -103,9 +103,14 @@ class OWClassificationTreeViewer(OWWidget):
         self.resize(830, 400)
 
     def sendReport(self):
-        self.reportSettings("Information",
-                            [("Target class",self.tree.domain.classVar.values[self.targetClass]),
-                         ("Tree size", "%i nodes, %i leaves" % (self.treeNodes, self.treeLeaves))])
+        if self.tree:
+            self.reportSettings("Information",
+                                [("Target class",self.tree.domain.classVar.values[self.targetClass]),
+                                 ("Tree size", "%i nodes, %i leaves" % (self.treeNodes, self.treeLeaves))])
+        else:
+            self.reportSettings("Information",
+                                [("Target class", "N/A"),
+                                 ("Tree size", "N/A")])
         self.reportSection("Tree")
         import OWReport
         self.reportRaw(OWReport.reportTree(self.v))

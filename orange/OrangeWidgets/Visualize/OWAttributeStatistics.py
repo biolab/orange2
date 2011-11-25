@@ -133,8 +133,11 @@ class OWAttributeStatistics(OWWidget):
         sizeDlg.exec_()
 
     def sendReport(self):
-        self.startReport("%s [%s]" % (self.windowTitle(), self.canvas.attr.name))
-        self.reportImage(lambda *x: OWChooseImageSizeDlg(self.canvas).saveImage(*x))
+        if self.dataset:
+            self.startReport("%s [%s]" % (self.windowTitle(), self.canvas.attr.name))
+            self.reportImage(lambda *x: OWChooseImageSizeDlg(self.canvas).saveImage(*x))
+        else:
+            self.startReport(self.windowTitle())
 """
 class DisplayStatistics
 constructs a canvas to display some statistics
