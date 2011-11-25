@@ -1091,7 +1091,7 @@ class OWSOMVisualizer(OWWidget):
 
     def sendReport(self):
         self.reportSettings("Visual settings",
-                           [("Background", self.drawModes[self.scene.drawMode]+(" - "+self.componentCombo.currentText() if self.scene.drawMode==2 else "")),
+                           [("Background", self.drawModes[self.drawMode]+(" - "+self.componentCombo.currentText() if self.drawMode==2 else "")),
                             ("Histogram", ["data from training set", "data from input subset"][self.inputSet] if self.histogram else "none"),
                             ("Coloring",  "%s for %s" % (["pie chart", "majority value", "majority value probability"][self.discHistMode], self.attributeCombo.currentText()))
                            ])

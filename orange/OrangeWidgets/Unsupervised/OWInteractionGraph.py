@@ -43,7 +43,7 @@ class OWInteractionGraph(OWWidget):
     settingsList = ["onlyImportantInteractions"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Interaction graph", noReport=True)
+        OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list)]
@@ -116,8 +116,8 @@ class OWInteractionGraph(OWWidget):
         self.saveLCanvas = OWGUI.button(None, self, "Save left canvas", callback = self.saveToFileLCanvas, debuggingEnabled = 0, addToLayout=False)
         self.saveRCanvas = OWGUI.button(None, self, "Save right canvas", callback = self.saveToFileRCanvas, debuggingEnabled = 0, addToLayout=False)
         
-        if OWReport.report:
-            self.reportButton = OWGUI.button(None, self, "&Report", self.reportAndFinish, debuggingEnabled=0, addToLayout=False)
+#        if OWReport.report:
+#            self.reportButton = OWGUI.button(None, self, "&Report", self.reportAndFinish, debuggingEnabled=0, addToLayout=False)
 
         layout.addWidget(self.saveLCanvas, 0, 0)
         layout.addWidget(self.saveRCanvas, 0, 1)
@@ -623,13 +623,14 @@ class OWInteractionGraph(OWWidget):
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR, parent=self)
         sizeDlg.exec_()
 
-    def _sendReport(self):
+    def sendReport(self):
         self.reportData(self.data)
         self.reportSettings("", [("Selected attributes", ", ".join(str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())))])
-        self.reportSection("Pairwise interaction bars")
-        self.reportImage(OWDlgs.OWChooseImageSizeDlg(self.canvasL).saveImage)
-        self.reportSection("Interaction graph")
-        self.reportImage(OWDlgs.OWChooseImageSizeDlg(self.canvasR).saveImage)
+        if self.data:
+            self.reportSection("Pairwise interaction bars")
+            self.reportImage(OWDlgs.OWChooseImageSizeDlg(self.canvasL).saveImage)
+            self.reportSection("Interaction graph")
+            self.reportImage(OWDlgs.OWChooseImageSizeDlg(self.canvasR).saveImage)
                             
 
 #test widget appearance

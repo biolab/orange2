@@ -748,12 +748,15 @@ class OWROC(OWWidget):
                             [("Classifiers", ", ".join('<font color="#%s">%s</font>' % ("".join(("0"+hex(x)[2:])[-2:] for x in self.classifierColor[cNum].getRgb()[:3]), str(item.text()))
                                                         for cNum, item in enumerate(self.classifiersQLB.item(i) for i in range(self.classifiersQLB.count()))
                                                           if item.isSelected())),
-                             ("Target class", self.classCombo.itemText(self.targetClass)),
+                             ("Target class", self.classCombo.itemText(self.targetClass)
+                                              if self.targetClass is not None else
+                                              "N/A"),
                              ("Costs", "FP=%i, FN=%i" % (self.FPcost, self.FNcost)),
                              ("Prior target class probability", "%i%%" % self.pvalue)
                             ])
-        self.reportRaw("<br/>")
-        self.reportImage(self.graphs[self.targetClass].saveToFileDirect, QSize(400, 400))
+        if self.targetClass is not None:
+            self.reportRaw("<br/>")
+            self.reportImage(self.graphs[self.targetClass].saveToFileDirect, QSize(400, 400))
         
     def saveToFile(self):
         for g in self.graphs:

@@ -1416,7 +1416,7 @@ class OWNomogramGraph(QGraphicsView):
         if self.scene():
             self.resizing = True
             self.scene().show()
-        self.setSceneRect(0, 0, self.width(), self.scene().height())
+            self.setSceneRect(0, 0, self.width(), self.scene().height())
 
     # ###################################################################
     # mouse button was pressed #########################################
