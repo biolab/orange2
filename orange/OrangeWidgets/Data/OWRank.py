@@ -758,7 +758,7 @@ class OWRank(OWWidget):
         
     def sendReport(self):
         self.reportData(self.data)
-        self.reportRaw(OWReport.reportTable(self.table))
+        self.reportRaw(OWReport.reportTable(self.ranksView))
 
     def applyIf(self):
         if self.autoApply:

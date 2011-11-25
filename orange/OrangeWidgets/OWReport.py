@@ -394,10 +394,15 @@ def reportCell(item, tag, style):
         align = item.data(Qt.TextAlignmentRole)
         align, ok = align.toInt() if align.isValid() else Qt.AlignLeft, True 
         alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(align & Qt.AlignHorizontal_Mask, "left")
-        text = str(item.data(Qt.DisplayRole).toString()).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        value = item.data(Qt.DisplayRole)
+        if value.type() >= QVariant.UserType:
+            text = str(value.toPyObject())
+        else:
+            text = str(value.toString())
+        text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
     elif isinstance(item, tuple): #(QAbstractItemModel, headerIndex)
-        model, ind = item
+        model, index = item
         align = model.headerData(index, Qt.Horizontal, Qt.TextAlignmentRole)
         align, ok = align.toInt() if align.isValid() else Qt.AlignLeft, True
         alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(align & Qt.AlignHorizontal_Mask, "left")
