@@ -202,14 +202,14 @@ class OWReliability(OWWidget):
         test = "No test data on input"
         
         if self.learner:
-            name = getattr(self.learner, "name") or type(self.learner).__name__
+            name = "Learner: " + (getattr(self.learner, "name") or type(self.learner).__name__)
             
         if self.train_data is not None:
             train = "Train Data: %i features, %i instances" % \
                 (len(self.train_data.domain), len(self.train_data))
             
         if self.test_data is not None:
-            test = "Train Data: %i features, %i instances" % \
+            test = "Test Data: %i features, %i instances" % \
                 (len(self.test_data.domain), len(self.test_data))
         elif self.train_data:
             test = "Test data: using training data"
@@ -319,7 +319,8 @@ class OWReliability(OWWidget):
         score_vars = []
         features = []
         table = None
-        if self.learner and self._test_data() is not None:
+        if self.learner and self.train_data is not None \
+                and self._test_data() is not None:
             self.run()
             
             scores = []
