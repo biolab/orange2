@@ -88,9 +88,9 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
         if just_print == "report-html":
             for name, lastResult in test_set:
                 if lastResult =="OK":
-                    print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dir, name, name, lastResult)
+                    print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dirname, name, name, lastResult)
                 else:            
-                    print '  <tr><td><a href="results/%s/%s/%s.%s.%s.%s.txt">%s</a></td><td>%s</td></tr>' % (module, dir, name, platform, pyversion, lastResult, name, lastResult)
+                    print '  <tr><td><a href="results/%s/%s/%s.%s.%s.%s.txt">%s</a></td><td>%s</td></tr>' % (module, dirname, name, platform, pyversion, lastResult, name, lastResult)
             print "</table>"
         elif just_print:
             for name, lastResult in test_set:
@@ -168,6 +168,10 @@ def main(argv):
         root = "%s/doc" % orngEnviron.orangeDir
         module = "orange"
         dirs = [("modules", "modules"), ("reference", "reference"), ("ofb", "ofb-rst/code")]
+    elif module in ["ofb-rst"]:
+        root = "%s/doc" % orngEnviron.orangeDir
+        module = "orange"
+        dirs = [("ofb", "ofb-rst/code")]
     elif module in ["orange25"]:
         root = "%s/doc" % orngEnviron.orangeDir
         module = "orange25"
