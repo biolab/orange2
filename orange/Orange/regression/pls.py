@@ -27,7 +27,7 @@ Example ::
     >>> # it is considered as a response variable.
     >>> # In such situation x and y do not need to be specified.
     >>> l = pls.PLSRegressionLearner()
-    >>> c = l(table, xVars=x, yVars=y)
+    >>> c = l(table, x_vars=x, y_vars=y)
     >>> c.print_pls_regression_coefficients()
            Y1     Y2     Y3     Y4     
     X1     0.513  0.915  0.341  -0.069  
@@ -60,7 +60,11 @@ import numpy
 from Orange.regression import base
 from Orange.regression.earth import data_label_mask
 from numpy import dot, zeros
-from numpy.linalg import svd, inv
+from numpy import linalg
+from numpy.linalg import svd, pinv
+
+from Orange.misc import deprecated_members, deprecated_keywords
+
 
 def normalize_matrix(X):
     """ Normalizes matrix, i.e. subtracts column means
@@ -72,10 +76,12 @@ def normalize_matrix(X):
     :type X: :class:`numpy.array`
    
     """
-    muX, sigmaX = numpy.mean(X, axis=0), numpy.std(X, axis=0)
-    return (X-muX)/sigmaX, muX, sigmaX
+    mu_x, sigma_x = numpy.mean(X, axis=0), numpy.std(X, axis=0)
+    sigma_x[sigma_x == 0] = 1.
+    return (X - mu_x)/sigma_x, mu_x, sigma_x
 
-def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
+@deprecated_keywords({"maxIter": "max_iter"})
+def nipals_xy(X, Y, mode="PLS", max_iter=500, tol=1e-06):
     """
     NIPALS algorithm. Returns the first left and rigth singular
     vectors of X'Y.
@@ -86,8 +92,8 @@ def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
     :param mode: possible values "PLS" (default) or "CCA" 
     :type mode: string
 
-    :param maxIter: maximal number of iterations (default 500)
-    :type maxIter: int
+    :param max_iter: maximal number of iterations (default 500)
+    :type max_iter: int
 
     :param tol: tolerance parameter, if norm of difference
         between two successive left singular vectors is less than tol,
@@ -98,7 +104,7 @@ def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
     yScore, uOld, ite = Y[:, [0]], 0, 1
     Xpinv = Ypinv = None
     # Inner loop of the Wold algo.
-    while True and ite < maxIter:
+    while True and ite < max_iter:
         # Update u: the X weights
         if mode == "CCA":
             if Xpinv is None:
@@ -133,11 +139,12 @@ def nipals_xy(X, Y, mode="PLS", maxIter=500, tol=1e-06):
     return u, v
 
 def svd_xy(X, Y):
-    """ Returns the first left and rigth singular
+    """ Returns the first left and right singular
     vectors of X'Y.
 
     :param X, Y: data matrix
     :type X, Y: :class:`numpy.array`    
+    
     """
     U, s, V = svd(dot(X.T, Y), full_matrices=False)
     u = U[:, [0]]
@@ -163,62 +170,19 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
     :class:`Orange.regression.base.BaseRegressionLearner`
     which is used for preprocessing the data (continuization and imputation)
     before fitting the regression parameters
-
-    Basic notations:
-    n - number of data instances
-    p - number of independent variables
-    q - number of reponse variables
-
-    .. attribute:: T
     
-        A n x nComp numpy array of x-scores
-
-    .. attribute:: U
-    
-        A n x nComp numpy array of y-scores
-
-    .. attribute:: W
-    
-        A p x nComp numpy array of x-weights
-
-    .. attribute:: C
-    
-        A q x nComp numpy array of y-weights
-
-    .. attribute:: P
-    
-        A p x nComp numpy array of x-loadings
-
-    .. attribute:: Q
-    
-        A q x nComp numpy array of y-loading
-
-    .. attribute:: coefs
-    
-        A p x q numpy array coefficients
-        of the linear model: Y = X coefs + E
-
-    .. attribute:: xVars
-    
-        list of independent variables
-
-    .. attribute:: yVars
-    
-        list of response variables 
-        
-
     """
 
-    def __init__(self, nComp=2, deflationMode="regression", mode="PLS",
-                 algorithm="nipals", maxIter=500, 
+    def __init__(self, n_comp=2, deflation_mode="regression", mode="PLS",
+                 algorithm="nipals", max_iter=500, 
                  imputer=None, continuizer=None,
                  **kwds):
         """
-        .. attribute:: nComp
+        .. attribute:: n_comp
     
             number of components to keep. Default: 2
 
-        .. attribute:: deflationMode
+        .. attribute:: deflation_mode
     
             "canonical" or "regression" (default)
 
@@ -234,67 +198,52 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 
 
         """        
-        self.nComp = nComp
-        self.deflationMode = deflationMode
+        self.n_comp = n_comp
+        self.deflation_mode = deflation_mode
         self.mode = mode
         self.algorithm = algorithm
-        self.maxIter = maxIter
+        self.max_iter = max_iter
         self.set_imputer(imputer=imputer)
         self.set_continuizer(continuizer=continuizer)
         self.__dict__.update(kwds)
 
-    def __call__(self, table, weight_id=None, xVars=None, yVars=None):
+    @deprecated_keywords({"xVars": "x_vars", "yVars": "y_vars"})
+    def __call__(self, table, weight_id=None, x_vars=None, y_vars=None):
         """
         :param table: data instances.
         :type table: :class:`Orange.data.Table`
 
-        :param xVars, yVars: List of input and response variables
+        :param x_vars, y_vars: List of input and response variables
             (`Orange.data.variable.Continuous` or `Orange.data.variable.Discrete`).
             If None (default) it is assumed that data definition provides information
             which variables are reponses and which not. If a variable var
             has key "label" in dictionary Orange.data.Domain[var].attributes
             it is treated as a response variable
-        :type xVars, yVars: list            
+        :type x_vars, y_vars: list            
 
         """     
         domain = table.domain
-        if xVars is None and yVars is None:
+        if x_vars is None and y_vars is None:
             # Response variables are defined in the table.
             label_mask = data_label_mask(domain)
             multilabel_flag = (sum(label_mask) - (1 if domain.class_var else 0)) > 0
-            xVars = [v for v, label in zip(domain, label_mask) if not label]
-            yVars = [v for v, label in zip(domain, label_mask) if label]
-            x_table = select_attrs(table, xVars)
-            y_table = select_attrs(table, yVars)
+            x_vars = [v for v, label in zip(domain, label_mask) if not label]
+            y_vars = [v for v, label in zip(domain, label_mask) if label]
+            x_table = select_attrs(table, x_vars)
+            y_table = select_attrs(table, y_vars)
             
-        elif xVars and yVars:
+        elif x_vars and y_vars:
             # independent and response variables are passed by the caller
-            if domain.class_var and domain.class_var not in yVars:
+            if domain.class_var and domain.class_var not in y_vars:
                 # if the original table contains class variable
-                # add it to the yVars
-                yVars.append(domain.class_var)
-            label_mask = [v in yVars for v in domain.variables]
+                # add it to the y_vars
+                y_vars.append(domain.class_var)
+            label_mask = [v in y_vars for v in domain.variables]
             multilabel_flag = True
-            x_table = select_attrs(table, xVars)
-            y_table = select_attrs(table, yVars)
+            x_table = select_attrs(table, x_vars)
+            y_table = select_attrs(table, y_vars)
         else:
-            raise ValueError("Both xVars and yVars must be defined.")
-        
-        # if independent and response variables are not listed in domain
-#        if xVars is not None:
-#            for var in xVars:
-#                if table.domain[var].attributes.has_key("label"):
-#                    del table.domain[var].attributes["label"]
-#        if yVars is not None:
-#            for var in yVars:
-#                table.domain[var].attributes["label"] = True               
-
-        # if the original table contains class variable        
-#        if table.domain.class_var is not None:
-#            oldClass = table.domain.class_var
-#            newDomain = Orange.data.Domain(table.domain.variables, 0)
-#            newDomain[oldClass].attributes["label"] = True
-#            table = Orange.data.Table(newDomain, table)
+            raise ValueError("Both x_vars and y_vars must be defined.")
 
         # dicrete values are continuized        
         x_table = self.continuize_table(x_table)
@@ -303,33 +252,30 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         x_table = self.impute_table(x_table)
         y_table = self.impute_table(y_table)
         
-        # Collect the new transformed xVars/yVars 
-        xVars = list(x_table.domain.variables)
-        yVars = list(y_table.domain.variables)
+        # Collect the new transformed x_vars/y_vars 
+        x_vars = list(x_table.domain.variables)
+        y_vars = list(y_table.domain.variables)
         
-        self.domain = Orange.data.Domain(xVars + yVars, False)
-        label_mask = [False for _ in xVars] + [True for _ in yVars]
+        domain = Orange.data.Domain(x_vars + y_vars, False)
+        label_mask = [False for _ in x_vars] + [True for _ in y_vars]
         
-#        label_mask = data_label_mask(table.domain)
-#        xy = table.toNumpy()[0]
-#        y, x = xy[:, label_mask], xy[:, ~ label_mask]
-#        self.yVars = [v for v, m in zip(self.domain.variables, label_mask) if m]
-#        self.xVars = [v for v in self.domain.variables if v not in self.yVars]
         x = x_table.toNumpy()[0]
         y = y_table.toNumpy()[0]
         
-        self.fit(x, y)
-        return PLSRegression(label_mask=label_mask, domain=self.domain, \
-                             coefs=self.coefs, muX=self.muX, muY=self.muY, \
-                             sigmaX=self.sigmaX, sigmaY=self.sigmaY, \
-                             xVars=xVars, yVars=yVars, multilabel_flag=multilabel_flag)
+        kwargs = self.fit(x, y)
+        return PLSRegression(label_mask=label_mask, domain=domain, \
+#                             coefs=self.coefs, muX=self.muX, muY=self.muY, \
+#                             sigmaX=self.sigmaX, sigmaY=self.sigmaY, \
+                             x_vars=x_vars, y_vars=y_vars,
+                             multilabel_flag=multilabel_flag, **kwargs)
 
     def fit(self, X, Y):
         """ Fits all unknown parameters, i.e.
         weights, scores, loadings (for x and y) and regression coefficients.
-
+        Returns a dict with all of the parameters.
+        
         """
-        # copy since this will contains the residuals (deflated) matrices
+        # copy since this will contain the residuals (deflated) matrices
 
         X, Y = X.copy(), Y.copy()
         if Y.ndim == 1:
@@ -338,20 +284,21 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         q = Y.shape[1]
 
         # normalization of data matrices
-        X, self.muX, self.sigmaX = normalize_matrix(X)
-        Y, self.muY, self.sigmaY = normalize_matrix(Y)
+        X, muX, sigmaX = normalize_matrix(X)
+        Y, muY, sigmaY = normalize_matrix(Y)
         # Residuals (deflated) matrices
         Xk, Yk = X, Y
         # Results matrices
-        self.T, self.U = zeros((n, self.nComp)), zeros((n, self.nComp))
-        self.W, self.C = zeros((p, self.nComp)), zeros((q, self.nComp))
-        self.P, self.Q = zeros((p, self.nComp)), zeros((q, self.nComp))      
+        T, U = zeros((n, self.n_comp)), zeros((n, self.n_comp))
+        W, C = zeros((p, self.n_comp)), zeros((q, self.n_comp))
+        P, Q = zeros((p, self.n_comp)), zeros((q, self.n_comp))      
 
         # NIPALS over components
-        for k in xrange(self.nComp):
+        for k in xrange(self.n_comp):
             # Weights estimation (inner loop)
             if self.algorithm == "nipals":
-                u, v = nipals_xy(X=Xk, Y=Yk, mode=self.mode)
+                u, v = nipals_xy(X=Xk, Y=Yk, mode=self.mode, 
+                                 max_iter=self.max_iter)
             elif self.algorithm == "svd":
                 u, v = svd_xy(X=Xk, Y=Yk)
             # compute scores
@@ -361,43 +308,154 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
             xLoadings = dot(Xk.T, xScore) / dot(xScore.T, xScore)
             # - substract rank-one approximations to obtain remainder matrix
             Xk -= dot(xScore, xLoadings.T)
-            if self.deflationMode == "canonical":
+            if self.deflation_mode == "canonical":
                 # - regress Yk's on yScore, then substract rank-one approx.
                 yLoadings = dot(Yk.T, yScore) / dot(yScore.T, yScore)
                 Yk -= dot(yScore, yLoadings.T)
-            if self.deflationMode == "regression":
+            if self.deflation_mode == "regression":
                 # - regress Yk's on xScore, then substract rank-one approx.
                 yLoadings = dot(Yk.T, xScore) / dot(xScore.T, xScore)
                 Yk -= dot(xScore, yLoadings.T)
             # Store weights, scores and loadings 
-            self.T[:, k] = xScore.ravel() # x-scores
-            self.U[:, k] = yScore.ravel() # y-scores
-            self.W[:, k] = u.ravel() # x-weights
-            self.C[:, k] = v.ravel() # y-weights
-            self.P[:, k] = xLoadings.ravel() # x-loadings
-            self.Q[:, k] = yLoadings.ravel() # y-loadings
+            T[:, k] = xScore.ravel() # x-scores
+            U[:, k] = yScore.ravel() # y-scores
+            W[:, k] = u.ravel() # x-weights
+            C[:, k] = v.ravel() # y-weights
+            P[:, k] = xLoadings.ravel() # x-loadings
+            Q[:, k] = yLoadings.ravel() # y-loadings
         # X = TP' + E and Y = UQ' + E
 
         # Rotations from input space to transformed space (scores)
         # T = X W(P'W)^-1 = XW* (W* : p x k matrix)
         # U = Y C(Q'C)^-1 = YC* (W* : q x k matrix)
-        self.xRotations = dot(self.W,
-            inv(dot(self.P.T, self.W)))
+        xRotations = dot(W, pinv(dot(P.T, W)))
         if Y.shape[1] > 1:
-            self.yRotations = dot(self.C,
-                inv(dot(self.Q.T, self.C)))
+            yRotations = dot(C, pinv(dot(Q.T, C)))
         else:
-            self.yRotations = numpy.ones(1)
+            yRotations = numpy.ones(1)
 
-        if self.deflationMode == "regression":
+        if True or self.deflation_mode == "regression":
             # Estimate regression coefficient
             # Y = TQ' + E = X W(P'W)^-1Q' + E = XB + E
             # => B = W*Q' (p x q)
-            self.coefs = dot(self.xRotations, self.Q.T)
-            self.coefs = 1. / self.sigmaX.reshape((p, 1)) * \
-                    self.coefs * self.sigmaY
-        return self
+            coefs = dot(xRotations, Q.T)
+            coefs = 1. / sigmaX.reshape((p, 1)) * \
+                    coefs * sigmaY
+        
+        return {"mu_x": muX, "mu_y": muY, "sigma_x": sigmaX,
+                "sigma_y": sigmaY, "T": T, "U":U, "W":U, 
+                "C": C, "P":P, "Q":Q, "x_rotations": xRotations,
+                "y_rotations": yRotations, "coefs": coefs}
 
+deprecated_members({"nComp": "n_comp",
+                    "deflationMode": "deflation_mode",
+                    "maxIter": "max_iter"},
+                   wrap_methods=["__init__"],
+                   in_place=True)(PLSRegressionLearner)
+
+class PLSRegression(Orange.classification.Classifier):
+    """ PLSRegression predicts value of the response variables
+    based on the values of independent variables.
+    
+    Basic notations:
+    n - number of data instances
+    p - number of independent variables
+    q - number of reponse variables
+
+    .. attribute:: T
+    
+        A n x n_comp numpy array of x-scores
+
+    .. attribute:: U
+    
+        A n x n_comp numpy array of y-scores
+
+    .. attribute:: W
+    
+        A p x n_comp numpy array of x-weights
+
+    .. attribute:: C
+    
+        A q x n_comp numpy array of y-weights
+
+    .. attribute:: P
+    
+        A p x n_comp numpy array of x-loadings
+
+    .. attribute:: Q
+    
+        A q x n_comp numpy array of y-loading
+
+    .. attribute:: coefs
+    
+        A p x q numpy array coefficients
+        of the linear model: Y = X coefs + E
+
+    .. attribute:: x_vars
+    
+        list of independent variables
+
+    .. attribute:: y_vars
+    
+        list of response variables 
+        
+    """
+    def __init__(self, label_mask=None, domain=None, \
+                 coefs=None, mu_x=None, mu_y=None, sigma_x=None, sigma_y=None, \
+                 x_vars=None, y_vars=None, multilabel_flag=0, **kwargs):
+        self.label_mask = label_mask
+        self.domain = domain
+        self.coefs = coefs
+        self.mu_x, self.mu_y = mu_x, mu_y
+        self.sigma_x, self.sigma_y = sigma_x, sigma_y
+        self.x_vars, self.y_vars = x_vars, y_vars
+        self.multilabel_flag = multilabel_flag
+        if not multilabel_flag and y_vars:
+            self.class_var = y_vars[0]
+            
+        for name, val in kwargs.items():
+            setattr(self, name, val)
+
+    def __call__(self, instance, result_type=Orange.core.GetValue):
+        """
+        :param instance: data instance for which the value of the response
+            variable will be predicted
+        :type instance: :class:`Orange.data.Instance` 
+        
+        """ 
+        instance = Orange.data.Instance(self.domain, instance)
+        ins = [instance[v].native() for v in self.x_vars]
+        
+        if "?" in ins: # missing value -> corresponding coefficient omitted
+            def miss_2_0(x): return x if x != "?" else 0
+            ins = map(miss_2_0, ins)
+        ins = numpy.array(ins)
+        xc = (ins - self.mu_x) / self.sigma_x
+        predicted = dot(xc, self.coefs) * self.sigma_y + self.mu_y
+        y_hat = [var(val) for var, val in zip(self.y_vars, predicted)]
+        if result_type == Orange.core.GetValue:
+            return y_hat if self.multilabel_flag else y_hat[0]
+        else:
+            from Orange.statistics.distribution import Distribution
+            probs = []
+            for var, val in zip(self.y_vars, y_hat):
+                dist = Distribution(var)
+                dist[val] = 1.0
+                probs.append(dist)
+            if result_type == Orange.core.GetBoth:
+                return (y_hat, probs) if self.multilabel_flag else (y_hat[0], probs[0])
+            else:
+                return probs if self.multilabel_flag else probs[0]
+            
+    def print_pls_regression_coefficients(self):
+        """ Pretty-prints the coefficient of the PLS regression model.
+        """       
+        x_vars, y_vars = [x.name for x in self.x_vars], [y.name for y in self.y_vars]
+        print " " * 7 + "%-6s " * len(y_vars) % tuple(y_vars)
+        fmt = "%-6s " + "%-5.3f  " * len(y_vars)
+        for i, coef in enumerate(self.coefs):
+            print fmt % tuple([x_vars[i]] + list(coef))
+            
     """
     def transform(self, X, Y=None):
 
@@ -413,65 +471,16 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 
         return xScores
     """
-
-
-class PLSRegression(Orange.classification.Classifier):
-    """ PLSRegression predicts value of the response variables
-    based on the values of independent variables.
-    
-    """
-    def __init__(self, label_mask=None, domain=None, \
-                 coefs=None, muX=None, muY=None, sigmaX=None, sigmaY=None, \
-                 xVars=None, yVars=None, multilabel_flag=0):
-        self.label_mask = label_mask
-        self.domain = domain
-        self.coefs = coefs
-        self.muX, self.muY = muX, muY
-        self.sigmaX, self.sigmaY = sigmaX, sigmaY
-        self.xVars, self.yVars = xVars, yVars
-        self.multilabel_flag = multilabel_flag
-
-    def __call__(self, instance, result_type=Orange.core.GetValue):
-        """
-        :param instance: data instance for which the value of the response
-            variable will be predicted
-        :type instance: :class:`Orange.data.Instance` 
-        
-        """ 
-        instance = Orange.data.Instance(self.domain, instance)
-        ins = [instance[v].native() for v in self.xVars]
-        
-        if "?" in ins: # missing value -> corresponding coefficient omitted
-            def miss_2_0(x): return x if x != "?" else 0
-            ins = map(miss_2_0, ins)
-        ins = numpy.array(ins)
-        xc = (ins - self.muX) / self.sigmaX
-        predicted = dot(xc, self.coefs) * self.sigmaY + self.muY
-        y_hat = [var(val) for var, val in zip(self.yVars, predicted)]
-        if result_type == Orange.core.GetValue:
-            return y_hat if self.multilabel_flag else y_hat[0]
-        else:
-            from Orange.statistics.distribution import Distribution
-            probs = []
-            for var, val in zip(self.yVars, y_hat):
-                dist = Distribution(var)
-                dist[val] = 1.0
-                probs.append(dist)
-            if result_type == Orange.core.GetBoth:
-                return (y_hat, probs) if self.multilabel_flag else (y_hat[0], probs[0])
-            else:
-                return probs if self.multilabel_flag else probs[0]
-            
-    def print_pls_regression_coefficients(self):
-        """ Pretty-prints the coefficient of the PLS regression model.
-        """       
-        xVars, yVars = [x.name for x in self.xVars], [y.name for y in self.yVars]
-        print " " * 7 + "%-6s " * len(yVars) % tuple(yVars)
-        fmt = "%-6s " + "%-5.3f  " * len(yVars)
-        for i, coef in enumerate(self.coefs):
-            print fmt % tuple([xVars[i]] + list(coef))  
-    
-
+              
+deprecated_members({"xVars": "x_vars", 
+                    "yVars": "y_vars",
+                    "muX": "mu_x",
+                    "muY": "mu_y",
+                    "sigmaX": "sigma_x",
+                    "sigmaY": "sigma_y"},
+                   wrap_methods=["__init__"],
+                   in_place=True)(PLSRegression)
+                   
 if __name__ == "__main__":
 
     import Orange
@@ -483,6 +492,6 @@ if __name__ == "__main__":
     x = [var for var in table.domain if var.name[0]=="X"]
     y = [var for var in table.domain if var.name[0]=="Y"]
     print x, y
-#    c = l(table, xVars=x, yVars=y)
+#    c = l(table, x_vars=x, y_vars=y)
     c = l(table)
     c.print_pls_regression_coefficients()

@@ -65,9 +65,13 @@ div#footerinner {
 }
 
 div#header {
-    /*height: 70px;
-    */
+    height: 70px;
     padding-top:20px;
+}
+
+#header h1 {
+    margin: 0;
+    font-size: 1px;
 }
 
 div#orangeimg {
@@ -81,6 +85,11 @@ div#orangeimg img {
     border:none;
 	margin-left: 10px;
 	margin-right: 10px;
+}
+
+#cse-search-box {
+    text-align: right;
+    margin-bottom: 16px;
 }
 
 form#search-box {
@@ -277,6 +286,10 @@ h1, h2, h3  {
 }
 tt {
     font-size: 13px;
+}
+
+#header h1 {
+	border-bottom: 0px;
 }
 
 tt.descname {

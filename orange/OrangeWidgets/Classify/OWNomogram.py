@@ -1,6 +1,6 @@
 """
 <name>Nomogram</name>
-<description>Nomogram viewer for Naive Bayesian, logistic regression or linear SVM classifiers.</description>
+<description>Nomogram viewer for Naive Bayesian, logistic regression or CN2 (EVC only) classifiers.</description>
 <icon>icons/Nomogram.png</icon>
 <contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact>
 <priority>2500</priority>
@@ -132,14 +132,14 @@ class OWNomogram(OWWidget):
 
         #add a graph widget
         self.header = OWNomogramHeader(None, self.mainArea)
-        self.header.setFixedHeight(self.verticalSpacing)
+        self.header.setFixedHeight(60)
         self.header.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.header.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.graph = OWNomogramGraph(self.bnomogram, self.mainArea)
         self.graph.setMinimumWidth(200)
         self.graph.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.footer = OWNomogramHeader(None, self.mainArea)
-        self.footer.setFixedHeight(self.verticalSpacing*2+10)
+        self.footer.setFixedHeight(60*2+10)
         self.footer.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.footer.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -154,21 +154,25 @@ class OWNomogram(OWWidget):
         self.mousepr = False
 
     def sendReport(self):
+        if self.cl:
+            tclass = self.cl.domain.classVar.values[self.TargetClassIndex]
+        else:
+            tclass = "N/A"
         self.reportSettings("Information",
-                            [("Target class", self.cl.domain.classVar.values[self.TargetClassIndex]),
+                            [("Target class", tclass),
                              self.confidence_check and ("Confidence intervals", "%i%%" % self.confidence_percent),
                              ("Sorting", self.sortOptions[self.sort_type] if self.sort_type else "None")])
-        
-        canvases = header, graph, footer = self.header.scene(), self.graph.scene(), self.footer.scene()
-        painter = QPainter()
-        buffer = QPixmap(max(c.width() for c in canvases), sum(c.height() for c in canvases))
-        painter.begin(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
-        header.render(painter, QRectF(0, 0, header.width(), header.height()), QRectF(0, 0, header.width(), header.height()))
-        graph.render(painter, QRectF(0, header.height(), graph.width(), graph.height()), QRectF(0, 0, graph.width(), graph.height()))
-        footer.render(painter, QRectF(0, header.height()+graph.height(), footer.width(), footer.height()), QRectF(0, 0, footer.width(), footer.height()))
-        painter.end()
-        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
+        if self.cl:
+            canvases = header, graph, footer = self.header.scene(), self.graph.scene(), self.footer.scene()
+            painter = QPainter()
+            buffer = QPixmap(max(c.width() for c in canvases), sum(c.height() for c in canvases))
+            painter.begin(buffer)
+            painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+            header.render(painter, QRectF(0, 0, header.width(), header.height()), QRectF(0, 0, header.width(), header.height()))
+            graph.render(painter, QRectF(0, header.height(), graph.width(), graph.height()), QRectF(0, 0, graph.width(), graph.height()))
+            footer.render(painter, QRectF(0, header.height()+graph.height(), footer.width(), footer.height()), QRectF(0, 0, footer.width(), footer.height()))
+            painter.end()
+            self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
 
         
     # Input channel: the Bayesian classifier

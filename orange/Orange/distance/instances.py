@@ -316,7 +316,7 @@ class MahalanobisConstructor(ExamplesDistanceConstructor):
         
         data, cls, _ = newtable.to_numpy()
         
-        covariance_matrix = numpy.cov(data, rowvar=0)
+        covariance_matrix = numpy.cov(data, rowvar=0, bias=1)
         inverse_covariance_matrix = linalg.pinv(covariance_matrix, rcond=1e-10)
         
         return Mahalanobis(domain=newdomain, icm=inverse_covariance_matrix)

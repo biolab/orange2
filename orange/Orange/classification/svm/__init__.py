@@ -21,7 +21,7 @@ help with the data normalization and parameter tuning. Learn with a fast
 
 .. note:: SVM can perform poorly on some data sets. Choose the parameters 
           carefully. In cases of low classification accuracy, try scaling the 
-          data and experiment with different parameters.
+          data and experiment with different parameters. \
           :obj:`SVMLearnerEasy` class does this automatically (it is similar
           to the `svm-easy.py` script in the LibSVM distribution).
 
@@ -33,7 +33,7 @@ The most basic :class:`SVMLearner` implements the standard `LibSVM`_ learner
 It supports four built-in kernel types (Linear, Polynomial, RBF and Sigmoid).
 Additionally kernel functions defined in Python can be used instead. 
 
-.. note:: For learning from ordinary :class:`Orange.data.Table` use the
+.. note:: For learning from ordinary :class:`Orange.data.Table` use the \
     :class:`SVMLearner`. For learning from sparse dataset (i.e.
     data in `basket` format) use the :class:`SVMLearnerSparse` class.
 
@@ -173,6 +173,8 @@ from Orange.preprocess import Preprocessor_impute, \
                               Preprocessor_preprocessorList, \
                               DomainContinuizer
 
+from Orange.data import variable
+
 from Orange.misc import _orange__new__
 
 def max_nu(data):
@@ -259,7 +261,7 @@ class SVMLearner(_SVMLearner):
                  coef0=0, shrinking=True, probability=True, verbose=False, 
                  cache_size=200, eps=0.001, normalization=True,
                  weight=[], **kwargs):
-        self.svm_type = SVMLearner.Nu_SVC
+        self.svm_type = svm_type
         self.kernel_type = kernel_type
         self.kernel_func = kernel_func
         self.C = C
@@ -309,12 +311,13 @@ class SVMLearner(_SVMLearner):
         if self.kernel_type == kernels.Custom and not self.kernel_func:
             raise ValueError("Custom kernel function not supplied")
         
+        import warnings
+        
         nu = self.nu
         if self.svm_type == SVMLearner.Nu_SVC: #is nu feasible
             max_nu= self.max_nu(examples)
             if self.nu > max_nu:
                 if getattr(self, "verbose", 0):
-                    import warnings
                     warnings.warn("Specified nu %.3f is infeasible. \
                     Setting nu to %.3f" % (self.nu, max_nu))
                 nu = max(max_nu - 1e-7, 0.0)
@@ -325,6 +328,9 @@ class SVMLearner(_SVMLearner):
             setattr(self.learner, name, getattr(self, name))
         self.learner.nu = nu
         self.learner.set_weights(self.weight)
+        if self.svm_type == SVMLearner.OneClass and self.probability:
+            self.learner.probability = False
+            warnings.warn("One-class SVM probability output not supported yet.")
         return self.learn_classifier(examples)
 
     def learn_classifier(self, data):
@@ -361,15 +367,21 @@ class SVMLearner(_SVMLearner):
         
         import orngWrap
         
-        parameters = ["nu", "C", "gamma"] if parameters == None else parameters
+        if parameters is None:
+            parameters = ["nu", "C", "gamma"]
+            
         searchParams = []
         normalization = self.normalization
         if normalization:
             data = self._normalize(data)
             self.normalization = False
-        if self.svm_type == SVMLearner.Nu_SVC and "nu" in parameters:
+        if self.svm_type in [SVMLearner.Nu_SVC, SVMLearner.Nu_SVR] \
+                    and "nu" in parameters:
             numOfNuValues=9
-            max_nu = max(self.max_nu(data) - 1e-7, 0.0)
+            if isinstance(data.domain.class_var, variable.Discrete):
+                max_nu = max(self.max_nu(data) - 1e-7, 0.0)
+            else:
+                max_nu = 1.0
             searchParams.append(("nu", [i/10.0 for i in range(1, 9) if \
                                         i/10.0 < max_nu] + [max_nu]))
         elif "C" in parameters:
@@ -447,9 +459,21 @@ class SVMLearnerSparse(SVMLearner):
     
     """
     
+    @Orange.misc.deprecated_keywords({"useNonMeta": "use_non_meta"})
     def __init__(self, **kwds):
         SVMLearner.__init__(self, **kwds)
-        self.learner=Orange.core.SVMLearnerSparse(**kwds)
+        self.use_non_meta = kwds.get("use_non_meta", False)
+        self.learner = Orange.core.SVMLearnerSparse(**kwds)
+        
+    def _normalize(self, data):
+        if self.use_non_meta:
+            dc = Orange.core.DomainContinuizer()
+            dc.class_treatment = Orange.core.DomainContinuizer.Ignore
+            dc.continuous_treatment = Orange.core.DomainContinuizer.NormalizeBySpan
+            dc.multinomial_treatment = Orange.core.DomainContinuizer.NValues
+            newdomain = dc(data)
+            data = data.translate(newdomain)
+        return data
 
 class SVMLearnerEasy(SVMLearner):
     

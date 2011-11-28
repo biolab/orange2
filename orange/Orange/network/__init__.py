@@ -61,7 +61,7 @@ try:
     from network import *
 except ImportError:
     import warnings
-    warnings.warn("Warning: install networkx to use the 'Orange.network' module.") 
+    warnings.warn("Warning: some features are disabled. Install networkx to use the 'Orange.network' module.") 
 
 import community
 import snap

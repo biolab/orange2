@@ -1,5 +1,5 @@
 """
-<name>Model Map</name>
+<name>Model Map (Qwt)</name>
 <description>Visualization and analysis of prediction models.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
@@ -268,7 +268,7 @@ class OWModelMap(OWNxExplorer, OWNxHist):
                     "toolbarSelection", "minComponentEdgeWidth", 
                     "maxComponentEdgeWidth", "mdsFromCurrentPos"]
     
-    def __init__(self, parent=None, signalManager=None, name="Model Map"):
+    def __init__(self, parent=None, signalManager=None, name="Model Map (Qwt)"):
         OWNxExplorer.__init__(self, parent, signalManager, name, 
                                NetworkCanvas=OWModelMapCanvas)
         

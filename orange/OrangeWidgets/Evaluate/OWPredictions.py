@@ -150,6 +150,7 @@ class OWPredictions(OWWidget):
         self.predictorlabel = "N/A"
         self.tasklabel = "N/A"
         self.precision = 2
+        self.doPrediction = True
         self.outvar = None # current output variable (set by the first predictor/data set send in)
 
         self.data = None
@@ -201,6 +202,9 @@ class OWPredictions(OWWidget):
         b = self.commitBtn = OWGUI.button(self.outbox, self, "Send Predictions", callback=self.sendpredictions, default=True)
         cb = OWGUI.checkBox(self.outbox, self, 'sendOnChange', 'Send automatically')
         OWGUI.setStopper(self, b, cb, "changedFlag", callback=self.sendpredictions)
+        OWGUI.checkBox(self.outbox, self, "doPrediction", "Replace/add predicted class",
+                       tooltip="Apply the first predictor to input examples and replace/add the predicted value as the new class variable.",
+                       callback=self.checksendpredictions)
 
         self.outbox.setDisabled(1)
 
@@ -360,6 +364,7 @@ class OWPredictions(OWWidget):
         
         self.dataView.hide()
         self.predictionsView.hide()
+        
 
     ##############################################################################
     # Input signals
@@ -369,7 +374,7 @@ class OWPredictions(OWWidget):
         if self.data:
             self.setDataModel(self.data)
             self.setPredictionModel(self.predictors.values(), self.data)
-            self.checksendpredictions()
+        self.checksendpredictions()
 
     def setData(self, data):
         self.handledAllSignalsFlag = False
@@ -382,7 +387,9 @@ class OWPredictions(OWWidget):
             self.data = data
             self.rindx = range(len(self.data))
             self.datalabel = "%d instances" % len(data)
+            
         self.checkenable()
+        self.changedFlag = True
 
     def setPredictor(self, predictor, id):
         """handles incoming classifier (prediction, as could be a regressor as well)"""
@@ -438,12 +445,13 @@ class OWPredictions(OWWidget):
                 self.tasklabel = "Classification"
                 
         self.checkenable()
+        self.changedFlag = True
 
     ##############################################################################
     # Ouput signals
 
     def checksendpredictions(self):
-        if len(self.predictors) and self.sendOnChange and self.changedFlag:
+        if self.sendOnChange:
             self.sendpredictions()
         else:
             self.changedFlag = True
@@ -475,12 +483,18 @@ class OWPredictions(OWWidget):
                                        getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
                   for c in self.predictors.values()]
             metas.extend(mc)
-
-        domain = orange.Domain(self.data.domain.attributes + [self.data.domain.classVar])
+                
+        classVar = self.outvar
+        domain = orange.Domain(self.data.domain.attributes + [classVar])
         domain.addmetas(self.data.domain.getmetas())
         for m in metas:
             domain.addmeta(orange.newmetaid(), m)
         predictions = orange.ExampleTable(domain, self.data)
+        if self.doPrediction:
+            c = self.predictors.values()[0]
+            for ex in predictions:
+                ex[classVar] = c(ex)
+                
         predictions.name = self.data.name
         self.send("Predictions", predictions)
         

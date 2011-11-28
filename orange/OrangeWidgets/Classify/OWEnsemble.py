@@ -1,5 +1,11 @@
-"""<name>Ensemble</name>
+"""
+<name>Ensemble</name>
+<description>Ensemble classification</description>
+<icons>icons/Ensemble.png</icons>
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>330</priority>
+<keywords>ensemble, bagging, boosting, adaboost</keywords>
+
 """
 
 from OWWidget import *
@@ -27,8 +33,10 @@ class OWEnsemble(OWWidget):
         self.method = 0
         self.t = 10
         
+        self.loadSettings()
+        
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "method", [name for name, _ in self.METHODS], box="Ensemble", callback=self.onChange)
-        i_box = OWGUI.indentedBox(box, sep=16)
+        i_box = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(box.buttons[0]))
         
         OWGUI.spin(i_box, self, "t", min=1, max=100, step=1, label="Number of created classifiers:")
         OWGUI.rubber(self.controlArea)
@@ -41,10 +49,11 @@ class OWEnsemble(OWWidget):
         
     def setLearner(self, learner=None):
         self.learner = learner
-        self.commit()
         
     def setData(self, data):
         self.data = data
+        
+    def handleNewSignals(self):
         self.commit()
         
     def onChange(self):

@@ -338,7 +338,6 @@ class OWScatterPlotGraphQt(OWPlot, orngScaleScatterPlotData):
     def computePotentials(self):
         import orangeom
         s = self.graph_area.toRect().size()
-        qDebug('Computing potentials with size ' + repr(s))
         if not s.isValid():
             self.potentialsImage = QImage()
             return

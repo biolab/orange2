@@ -26,6 +26,15 @@ following example (`regression-tree-run.py`_, uses `servo.tab`_):
 .. _servo.tab: code/servo.tab
 
 
+=================
+SimpleTreeLearner
+=================
+
+.. include:: /SimpleTreeLearner.txt
+
+A basic example of using a SimpleTreeLearner is shown below:
+
+.. literalinclude:: code/simple_tree_regression.py
 
 """
 
@@ -61,6 +70,10 @@ from Orange.core import \
                    TreeSplitConstructor_Threshold as SplitConstructor_Threshold, \
          TreeStopCriteria as StopCriteria, \
               TreeStopCriteria_Python as StopCriteria_Python, \
-              TreeStopCriteria_common as StopCriteria_common
+              TreeStopCriteria_common as StopCriteria_common, \
+         SimpleTreeLearner, \
+         SimpleTreeClassifier
+
               
 from Orange.classification.tree import TreeLearner, TreeClassifier
+

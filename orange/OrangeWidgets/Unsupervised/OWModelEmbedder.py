@@ -3,7 +3,7 @@
 <description>Embeds a model widget</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
-<priority>1120</priority>
+<priority>6530</priority>
 """
 
 import sip

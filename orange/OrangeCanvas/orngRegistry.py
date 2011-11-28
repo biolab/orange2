@@ -23,7 +23,7 @@ class WidgetDescription:
             subDir = os.path.relpath(dir, widgetDir) if "relpath" in os.path.__dict__ else dir.replace(widgetDir, "")
             return os.path.join(orngEnviron.orangeDocDir, "catalog", subDir)
         else:  # An add-on widget
-            addOnDocDir = self.addOn.directoryDocumentation()
+            addOnDocDir = self.addOn.directory_documentation()
             return os.path.join(addOnDocDir, "widgets")
 
 

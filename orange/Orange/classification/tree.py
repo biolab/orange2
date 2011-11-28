@@ -9,6 +9,11 @@
 Classification trees (``tree``)
 *******************************
 
+Orange includes multiple implementations of classification tree learners:
+a very flexible :class:`TreeLearner`, a fast :class:`SimpleTreeLearner`,
+and a :class:`C45Learner`, which uses the C4.5 tree induction
+algorithm.
+
 The following code builds a :obj:`TreeClassifier` on the Iris data set
 (with the depth limited to three levels):
 
@@ -137,7 +142,7 @@ separately handles three node types:
 
 * For null nodes (a node to which no learning instances were classified),
   it just prints "<null node>".
-* For internal nodes, it print a node description:
+* For internal nodes, it prints a node description:
   the feature's name and distribution of classes. :obj:`Node`'s
   branch description is an :obj:`~Orange.classification.Classifier`,
   and its ``class_var`` is the feature whose name is printed.  Class
@@ -227,7 +232,7 @@ instances, the resulting tree is smaller.
 
     >>> learner.stop.min_instances = 5.0
     >>> tree = learner(data)
-    >>> print tree.dump()
+    >>> print tree
     tear_rate=reduced: none (100.00%)
     tear_rate=normal
     |    astigmatic=no
@@ -242,7 +247,7 @@ We can also limit the maximal proportion of majority class.
 
     >>> learner.stop.max_majority = 0.5
     >>> tree = learner(data)
-    >>> print tree.dump()
+    >>> print tree
     none (62.50%)
 
 Redefining tree induction components
@@ -271,11 +276,11 @@ Split constructors
 
 .. class:: SplitConstructor
 
-    Decide how to divide learning instances.
+    Decide how to divide learning instances, ie. define branching criteria.
     
     The :obj:`SplitConstructor` should use the domain
-    contingency when possible, both for speed and adaptability
-    (:obj:`TreeLearner.contingency`).  Sometimes domain contingency does
+    contingency when possible, both for speed and adaptability. 
+    Sometimes domain contingency does
     not suffice, for example if ReliefF score is used.
 
     A :obj:`SplitConstructor` can veto further tree induction by returning
@@ -374,7 +379,7 @@ Split constructors
     that maps values of the feature into a binary feature. Branches
     with a single feature value are described with that value and
     branches with more than one are described with ``[<val1>, <val2>,
-    ...<valn>]``. Only binary features are marked as spent.
+    ..., <valn>]``. Only binary features are marked as spent.
 
 .. class:: SplitConstructor_Threshold
 
@@ -471,7 +476,7 @@ Splitters
 
 Splitters sort learning instances into branches (the branches are selected
 with a :obj:`SplitConstructor`, while a :obj:`Descender` decides the
-branch for an instance during classification.
+branch for an instance during classification).
 
 Most splitters call :obj:`Node.branch_selector` and assign
 instances correspondingly. When the value is unknown they choose a
@@ -709,10 +714,9 @@ in a particular class divided by the proportion of instances of this
 class in a parent node. Users may also pass their own functions to print
 certain elements.
 
-The easiest way to print the tree is to call :func:`TreeClassifier.dump`
-without any arguments::
+The easiest way to print the tree is to print :func:`TreeClassifier`::
 
-    >>> print tree.dump()
+    >>> print tree
     petal width<0.800: Iris-setosa (100.00%)
     petal width>=0.800
     |    petal width<1.750
@@ -824,7 +828,7 @@ Printing the predicted class at each node, the number
 of instances in the majority class with the total number of instances in
 the node requires a custom format string::
 
-    >>> print tree.dump(leaf_str="%V (%M out of %N)")
+    >>> print tree.format(leaf_str="%V (%M out of %N)")
     petal width<0.800: Iris-setosa (50.000 out of 50.000)
     petal width>=0.800
     |    petal width<1.750
@@ -837,7 +841,7 @@ the node requires a custom format string::
 The number of instances as
 compared to the entire data set and to the parent node::
 
-    >>> print tree.dump(leaf_str="%V (%^MbA%, %^MbP%)")
+    >>> print tree.format(leaf_str="%V (%^MbA%, %^MbP%)")
     petal width<0.800: Iris-setosa (100%, 100%)
     petal width>=0.800
     |    petal width<1.750
@@ -902,7 +906,7 @@ that the node_str should be the same as leaf_str.
 
 ::
 
-    tree.dump(leaf_str="%V", node_str=".")
+    tree.format(leaf_str="%V", node_str=".")
  
 The output::
 
@@ -922,7 +926,7 @@ deeper. This is needed to also print the data for tree root.
 To observe how the number
 of virginicas decreases down the tree try::
 
-    print tree.dump(leaf_str='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', node_str='.')
+    print tree.format(leaf_str='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', node_str='.')
 
 Interpretation: ``CbA="Iris-virginica"`` is 
 the number of instances from virginica, divided by the total number
@@ -944,14 +948,14 @@ that double quotes inside the string can specify the class.
     |    |    |    petal length<4.850: 4.0% (4.4%)
     |    |    |    petal length>=4.850: 86.0% (95.6%)
 
-If :meth:`~TreeClassifier.dump` cannot compute something, in this case
+If :meth:`~TreeClassifier.format` cannot compute something, in this case
 because the root has no parent, it prints out a dot.
 
 The final example with classification trees prints the distributions in
 nodes, the distribution compared to the parent, the proportions compared
 to the parent and the predicted class in the leaves::
 
-    >>> print tree.dump(leaf_str='"%V   %D %.2DbP %.2dbP"', node_str='"%D %.2DbP %.2dbP"')
+    >>> print tree.format(leaf_str='"%V   %D %.2DbP %.2dbP"', node_str='"%D %.2DbP %.2dbP"')
     root: [50.000, 50.000, 50.000] . .
     |    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
     |        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
@@ -971,7 +975,7 @@ to the parent and the predicted class in the leaves::
 .. rubric:: Examples on regression trees
 
 The regression trees examples use a tree induced from the housing data
-set. Without other argumets, :meth:`TreeClassifier.dump` prints the
+set. Without other argumets, :meth:`TreeClassifier.format` prints the
 following::
 
     RM<6.941
@@ -992,7 +996,7 @@ following::
 To add the standard error in both internal nodes and leaves, and
 the 90% confidence intervals in the leaves, use::
 
-    >>> print tree.dump(leaf_str="[SE: %E]\t %V %I(90)", node_str="[SE: %E]")
+    >>> print tree.format(leaf_str="[SE: %E]\t %V %I(90)", node_str="[SE: %E]")
     root: [SE: 0.409]
     |    RM<6.941: [SE: 0.306]
     |    |    LSTAT<14.400: [SE: 0.320]
@@ -1029,7 +1033,7 @@ observing the number of instances within a certain range. For instance,
 to print the number of instances with values below 22 and compare
 it with values in the parent nodes use::
 
-    >>> print tree.dump(leaf_str="%C<22 (%cbP<22)", node_str=".")
+    >>> print tree.format(leaf_str="%C<22 (%cbP<22)", node_str=".")
     root: 277.000 (.)
     |    RM<6.941: 273.000 (1.160)
     |    |    LSTAT<14.400: 107.000 (0.661)
@@ -1053,7 +1057,7 @@ the number of such instances in its parent node.
 To count the same for all instances *outside*
 interval [20, 22] and print out the proportions as percents use::
 
-    >>> print tree.dump(leaf_str="%C![20,22] (%^cbP![20,22]%)", node_str=".")
+    >>> print tree.format(leaf_str="%C![20,22] (%^cbP![20,22]%)", node_str=".")
 
 The format string  ``%c![20, 22]`` denotes the proportion of instances
 (within the node) whose values are below 20 or above 22. ``%cbP![20,
@@ -1082,8 +1086,8 @@ for percentages.
 Defining custom printouts
 -------------------------
 
-:meth:`TreeClassifier.dump`'s argument :obj:`user_formats` can be used to
-print other information.  :obj:`~TreeClassifier.dump.user_formats` should
+:meth:`TreeClassifier.format`'s argument :obj:`user_formats` can be used to
+print other information.  :obj:`~TreeClassifier.format.user_formats` should
 contain a list of tuples with a regular expression and a function to be
 called when that expression is found in the format string. Expressions
 from :obj:`user_formats` are checked before the built-in expressions
@@ -1333,32 +1337,7 @@ the case when only a single value goes into the branch.
 SimpleTreeLearner
 =================
 
-:obj:`SimpleTreeLearner` is an implementation of regression and classification
-trees. It is faster than :obj:`TreeLearner` at the expense of flexibility.
-It uses gain ratio for classification and mse for regression.
-
-:obj:`SimpleTreeLearner` was developed for speeding up the construction
-of random forests, but can also be used as a standalone tree.
-
-.. class:: SimpleTreeLearner
-
-    .. attribute:: max_majority
-
-        Maximal proportion of majority class. When this is exceeded,
-        induction stops.
-
-    .. attribute:: min_instances
-
-        Minimal number of instances in leaves. Instance count is weighed.
-
-    .. attribute:: max_depth
-
-        Maximal depth of tree.
-
-    .. attribute:: skip_prob
-        
-        At every split an attribute will be skipped with probability ``skip_prob``.
-        Useful for building random forests.
+.. include:: /SimpleTreeLearner.txt
         
 Examples
 ========
@@ -1445,6 +1424,8 @@ class C45Learner(Orange.classification.Learner):
     internal variables. All defaults are set as in C4.5; if you change
     nothing, you are running C4.5.
 
+    Constructs a :obj:`C45Classifier` when given data.
+
     .. attribute:: gain_ratio (g)
         
         Determines whether to use information gain (false, default)
@@ -1521,17 +1502,15 @@ class C45Learner(Orange.classification.Learner):
         nn = self._rename_arg(name)
         if name != "base" and nn in self.base.__dict__:
             self.base.__dict__[nn] = value
-        elif name == "base":
-            self.__dict__["base"] = value
         else:
-            settingAttributesNotSuccessful
+            self.__dict__[nn] = value
 
     def __getattr__(self, name):
         nn = self._rename_arg(name)
-        if name != "base":
+        if name != " base" and nn in self.base.__dict__:
             return self.base.__dict__[nn]
         else:
-            return self.base
+            return self.__dict__[nn]
 
     def __call__(self, *args, **kwargs):
         return C45Classifier(self.base(*args, **self._rename_dict(kwargs)))
@@ -1545,7 +1524,7 @@ class C45Learner(Orange.classification.Learner):
  
 class C45Classifier(Orange.classification.Classifier):
     """
-    A faithful reimplementation of Quinlan's function from C4.5, but
+    A faithful reimplementation of Quinlan's C4.5, but
     uses a tree composed of :class:`C45Node` instead of C4.5's original
     tree structure.
 
@@ -1586,6 +1565,7 @@ class C45Classifier(Orange.classification.Classifier):
     def __str__(self):
         return self.dump()
    
+
     def dump(self):  
         """
         Print the tree in the same form as Ross Quinlan's 
@@ -1597,7 +1577,7 @@ class C45Classifier(Orange.classification.Classifier):
 
             data = Orange.data.Table("voting")
             c45 = Orange.classification.tree.C45Learner(data)
-            print c45.dump()
+            print c45
 
         prints
 
@@ -1632,6 +1612,8 @@ class C45Classifier(Orange.classification.Classifier):
         each node.
         """
         return  _c45_printTree0(self.tree, self.class_var, 0)
+
+    format = dump
 
 def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
@@ -1681,8 +1663,9 @@ class TreeLearner(Orange.core.Learner):
 
     **The tree induction process**
 
-    #. The learning instances are copied to a table, unless
-       :obj:`store_instances` is `False` and they already are in table.
+    #. The learning instances are copied, unless
+       :obj:`store_instances` is `False` and the instance
+       already are stored in a :obj:`~Orange.data.Table`.
     #. Apriori class probabilities are computed. A list of
        candidate features for the split is compiled; in the beginning,
        all features are candidates.
@@ -2597,21 +2580,21 @@ class TreeClassifier(Orange.classification.Classifier):
         self.__dict__[name] = value
     
     def __str__(self):
-        return self.dump()
+        return self.format()
 
     @Orange.misc.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \
         "userFormats": "user_formats", "minExamples": "min_examples", \
         "maxDepth": "max_depth", "simpleFirst": "simple_first"})
-    def dump(self, leaf_str = "", node_str = "", \
+    def format(self, leaf_str = "", node_str = "", \
             user_formats=[], min_examples=0, max_depth=1e10, \
             simple_first=True):
         """
         Return a string representation of a tree.
 
         :arg leaf_str: The format string for the tree leaves. If 
-          left empty, "%V (%^.2m%)" will be used for classification trees
-          and "%V" for regression trees.
+          left empty, ``"%V (%^.2m%)"`` will be used for classification trees
+          and ``"%V"`` for regression trees.
         :type leaf_str: string
         :arg node_str: The format string for the internal nodes.
           If left empty (as it is by default), no data is printed out for
@@ -2637,6 +2620,8 @@ class TreeClassifier(Orange.classification.Classifier):
             _TreeDumper.defaultStringFormats, min_examples, 
             max_depth, simple_first, self).dumpTree()
 
+    dump = format
+
     @Orange.misc.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \
         "leafShape": "leaf_shape", "nodeShape": "node_shape", \
@@ -2648,7 +2633,7 @@ class TreeClassifier(Orange.classification.Classifier):
             simple_first=True):
         """ Print the tree to a file in a format used by `GraphViz
         <http://www.research.att.com/sw/tools/graphviz>`_.  Uses the
-        same parameters as :meth:`dump` plus two which define the shape
+        same parameters as :meth:`format` plus two which define the shape
         of internal nodes and leaves of the tree:
 
         :param leaf_shape: Shape of the outline around leaves of the tree. 

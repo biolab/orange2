@@ -187,7 +187,7 @@ class OWHierarchicalClustering(OWWidget):
         self.dendrogram = DendrogramScene(self)
         self.dendrogramView = DendrogramView(self.dendrogram, self.mainArea)
         
-        self.connect(self.dendrogram, SIGNAL("selectionChanged()"), self.on_selection_change)
+        self.connect(self.dendrogram, SIGNAL("clusterSelectionChanged()"), self.on_selection_change)
         self.connect(self.dendrogram, SIGNAL("sceneRectChanged(QRectF)"), scale.scene_rect_update)
         self.connect(self.dendrogram, SIGNAL("dendrogramGeometryChanged(QRectF)"), self.on_dendrogram_geometry_change)
         self.connect(self.dendrogram, SIGNAL("cutoffValueChanged(float)"), self.on_cuttof_value_changed)
@@ -195,7 +195,7 @@ class OWHierarchicalClustering(OWWidget):
         self.connect(self.dendrogramView, SIGNAL("viewportResized(QSize)"), self.on_width_changed)
         self.connect(self.dendrogramView, SIGNAL("transformChanged(QTransform)"), self.headerView.setTransform)
         self.connect(self.dendrogramView, SIGNAL("transformChanged(QTransform)"), self.footerView.setTransform)
-    
+        
         self.mainArea.layout().addWidget(self.headerView)
         self.mainArea.layout().addWidget(self.dendrogramView)
         self.mainArea.layout().addWidget(self.footerView)
@@ -426,7 +426,7 @@ class OWHierarchicalClustering(OWWidget):
     def on_selection_change(self):
         if self.matrix:
             try:
-                items = self.dendrogram.selectedItems()
+                items = self.dendrogram.widget.selected_items
                 self.selected_clusters = [item.cluster for item in items]
                 self.commit_data_if()
             except RuntimeError: # underlying C/C++ object has been deleted
@@ -446,10 +446,11 @@ class OWHierarchicalClustering(OWWidget):
         self.selectionChanged = False
         self.selectedExamples = None
         selection = self.selected_clusters
+        selection = sorted(selection, key=lambda c: c.first)
         maps = [list(self.root_cluster.mapping[c.first: c.last]) for c in selection]
         
         from operator import add
-        selected_indices = sorted(reduce(add, maps, []))
+        selected_indices = reduce(add, maps, [])
         unselected_indices = sorted(set(self.root_cluster.mapping) - set(selected_indices))
         
         self.selection = selected = [items[k] for k in selected_indices]
@@ -596,6 +597,9 @@ class DendrogramScene(QGraphicsScene):
         self.connect(widget, SIGNAL("dendrogramGeometryChanged(QRectF)"), 
                      lambda rect: self.emit(SIGNAL("dendrogramGeometryChanged(QRectF)"),
                                             rect))
+        self.connect(widget, SIGNAL("selectionChanged()"),
+                     lambda: self.emit(SIGNAL("clusterSelectionChanged()"))
+                     )
         
         widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         

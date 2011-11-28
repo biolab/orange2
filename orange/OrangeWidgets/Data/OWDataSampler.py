@@ -320,9 +320,15 @@ class OWDataSampler(OWWidget):
             stype = "Leave one out"
         elif self.SelectType == 3:
             stype = "Multiple subsets"
-        self.reportSettings("Settings", [("Sampling type", stype), ("Stratification", OWGUI.YesNo[self.Stratified]), ("Random seed", str(self.RandomSeed) if self.UseSpecificSeed else "auto")])
-                             
-        self.reportSettings("Data", [("Input", "%i examples" % len(self.data)), ("Sample", "%i examples" % self.nSample), ("Rest", "%i examples" % self.nRemainder)])
+        self.reportSettings("Settings", [("Sampling type", stype), 
+                                         ("Stratification", OWGUI.YesNo[self.Stratified]),
+                                         ("Random seed", str(self.RandomSeed) if self.UseSpecificSeed else "auto")])
+        if self.data is not None:
+            self.reportSettings("Data", [("Input", "%i examples" % len(self.data)), 
+                                         ("Sample", "%i examples" % self.nSample), 
+                                         ("Rest", "%i examples" % self.nRemainder)])
+        else:
+            self.reportSettings("Data", [("Input", "None")])
 
 ##############################################################################
 # Test the widget, run from prompt

@@ -35,7 +35,7 @@ Plot tools (``owtools``)
 '''
 
 from PyQt4.QtGui import QGraphicsItem, QGraphicsRectItem, QPolygonF, QGraphicsPolygonItem, QGraphicsEllipseItem, QPen, QBrush
-from PyQt4.QtCore import Qt, QRectF, QPointF, qDebug, QPropertyAnimation
+from PyQt4.QtCore import Qt, QRectF, QPointF, QPropertyAnimation
 
 from owcurve import *
 from owpalette import OWPalette

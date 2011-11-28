@@ -228,6 +228,11 @@ class EarthLearner(Orange.core.LearnerFD):
                                label_mask=label_mask, multi_flag=self.multi_label,
                                expanded_class=expanded_class)
     
+    
+def soft_max(values):
+    values = numpy.asarray(values)
+    return numpy.exp(values) / numpy.sum(numpy.exp(values))
+
 
 class EarthClassifier(Orange.core.ClassifierFD):
     """ Earth classifier.
@@ -266,12 +271,16 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
         from Orange.statistics.distribution import Distribution
         
-        if is_discrete(self.class_var):
-            winner = max(vals) #TODO: Handle ties.
-            value = winner.variable.get_value_from.transformer.value
-            value = self.class_var(value)
+        if not self.multi_flag and is_discrete(self.class_var):
             dist = Distribution(self.class_var)
-            dist[value] = 1.0
+            if len(self.class_var.values) == 2:
+                probs = [1 - float(vals[0]), float(vals[0])]
+            else:
+                probs = soft_max(map(float, vals))
+                
+            for val, p in zip(self.class_var.values, probs):
+                dist[val] = p
+            value = dist.modus()
             vals, probs = [value], [dist]
         else:
             probs = []
@@ -424,7 +433,7 @@ def gcv(rss, n, n_effective_params):
     :param n_effective_params: Number of effective paramaters.
      
     """
-    return  rss / (n * (1 - n_effective_params / n) ** 2)
+    return  rss / (n * (1. - n_effective_params / n) ** 2)
 
 """
 Multi-label utility functions
@@ -625,12 +634,13 @@ def subset_selection_xtx_numpy(X, Y):
             
         XtX = numpy.dot(X_work.T, X_work)
         iXtX = numpy.linalg.pinv(XtX)
-        diag = numpy.diag(iXtX)
+        diag = numpy.diag(iXtX).reshape((-1, 1))
         
         if subset_size == 0:
             break
         
         delta_rss = b ** 2 / diag
+        delta_rss = numpy.sum(delta_rss, axis=1)
         delete_i = numpy.argmin(delta_rss[1:]) + 1 # Keep the intercept
         del working_set[delete_i]
     return subsets, rss_vec
@@ -649,9 +659,10 @@ def subset_selection_xtx2(X, Y):
     
     if k < col_count:
         # remove jpvt[k:] from the work set. Will have zero 
-        # entries in the subsets matrix
-        for i in jpvt[k:]:
+        # entries in the subsets matrix, and inf rss
+        for i in sorted(jpvt[k:], reverse=True):
             del working_set[i]
+            rss_vec[len(working_set)] = float("inf")
         col_count = len(working_set)
         
     for subset_size in reversed(range(col_count)):

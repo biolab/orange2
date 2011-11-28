@@ -236,7 +236,7 @@ class Preprocessor_featureSelection(orange.Preprocessor):
     def attrScores(self, data):
         """ Return a list of computed scores for all attributes in `data`. 
         """
-        measures = [(self.measure(attr, data), attr) for attr in data.domain.attributes]
+        measures = sorted([(self.measure(attr, data), attr) for attr in data.domain.attributes])
         return measures
          
     def __call__(self, data, weightId=None):

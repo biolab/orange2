@@ -13,7 +13,7 @@ def _import(name):
     try:
         __import__(name, globals(), locals(), [], -1)
     except Exception:
-        warnings.warn("Could not import: " + name, UserWarning, 2)
+        warnings.warn("Some features are disabled, because Orange could not import: " + name, UserWarning, 2)
 
 _import("data")
 _import("data.io")

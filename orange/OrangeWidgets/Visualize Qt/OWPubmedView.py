@@ -41,13 +41,9 @@ class PubmedNetworkView(Orange.network.NxView):
         return graph
         
     
-    def update_network(self):
-        print 'update_network'
-        
+    def update_network(self):    
         if self._center_nodes == []:
             return
-        #if len(self._center_nodes) == 1:  
-        #    return
         
         subnet = Orange.network.Graph()
         central_nodes, to_add = self._center_nodes[:], self._center_nodes[:]
@@ -63,15 +59,15 @@ class PubmedNetworkView(Orange.network.NxView):
         nodes = subnet.nodes()
         while nodes:
             i = nodes.pop()
-            neig = [x for x in self._network.neighbors(i) if x in nodes] #if net.edge[i][x]['weight'] > 0.5]
+            subnet.node[i] = self._network.node[i]
+            neig = [x for x in self._network.neighbors(i) if x in nodes] 
             subnet.add_weighted_edges_from([(i,x,w) for x,w in zip(neig, [self._network.edge[i][y]['weight'] for y in neig])])
         
         subnet.remove_nodes_from(self._hidden_nodes)
-        #subnet = self._propagate(subnet)
+        subnet = self._propagate(subnet)
         
         if self._nx_explorer is not None:
-            self._nx_explorer.change_graph(subnet)
-        
+            self._nx_explorer.change_graph(subnet)       
         
     def set_nhops(self, nhops):
         self._nhops = nhops  
@@ -92,21 +88,15 @@ class PubmedNetworkView(Orange.network.NxView):
         self._k_algorithm = k
     
     def node_selection_changed(self):
-        # selection --> delete_node/delete_node_and_neig/expand/set_score ?
-        
-        selection = self._nx_explorer.networkCanvas.selected_nodes()
-        # case "set_score"  - input = input_score, to be provided
-                #self._delta_scores(selection) = to update!!!! 
-        for i in selection:
-            self._network.node[i]['user_score'] = 1
-            self._network.node[i]['score'] = 1 # input_score
-        # case "expand_node" - with the settings already set
-        self._center_nodes.extend(selection)
-        # case "delete_node"
-        self._hidden_nodes.extend(selection)
-        # delete_node_and_neig --> ???? 
-        
-        self.update_network()  #chiama propagate
+        pass
+    
+    def set_user_node_score(self, node_index, new_score):
+        self._delta_score[node_index] = new_score - self._network.node[node_index]['score']
+        self._network.node[node_index]['score'] = new_score
+        self._network.node[node_index]['user_score'] = 1
+    
+    def update_center_nodes(self, new_node):
+        self._center_nodes.append(new_node)  
         
     def _get_neighbors(self):
     #TO DELETE?
@@ -120,7 +110,7 @@ class PubmedNetworkView(Orange.network.NxView):
         
     def _propagate(self, net):
         central_nodes = [i for i in net.nodes() if net.node[i]['user_score'] == 1]
-        central_delta_score = [delta_score[id] for id in central_nodes]
+        central_delta_score = [self._delta_score[id] for id in central_nodes]
         cluster_centers = [net.node[x]['cluster'] for x in central_nodes if net.node[x]['cluster'] != '']
         updated = central_nodes[:]
         L = 0
@@ -134,7 +124,7 @@ class PubmedNetworkView(Orange.network.NxView):
                     if not net.node[i]['user_score']:
                         predec = [j for j in net.neighbors(i) if j in central_nodes]
                         predec_delta_score = [central_delta_score[central_nodes.index(x)] for x in predec]
-                        self._k_algortihm = compute_k(i, cluster_centers, net)
+                        self._k_algortihm = self.compute_k(i, cluster_centers, net)
                         if self._k_algortihm: #else the node is isolated and the score doesn't change
                             net.node[i]['score'] = _prop(predec, predec_delta_score, i, L, net)
                         net.node[i]['level'] = L
@@ -142,15 +132,15 @@ class PubmedNetworkView(Orange.network.NxView):
                 central_nodes = list(to_update)
                 central_delta_score = []
                 for id in central_nodes:
-                    if delta_score.get(id, []):
-                        central_delta_score.append(delta_score[id])
+                    if self._delta_score.get(id, []):
+                        central_delta_score.append(self._delta_score[id])
                     else:
                         central_delta_score.append(net.node[id]['score'] - 0.5)
                 L += 1
             else:
                 return net
                 
-    def compute_k(id, centers, net):
+    def compute_k(self, id, centers, net):
         import networkx as nx #VEDERE SE C'E' IN ORANGENET 
         if self._algorithm == 0: #no clustering
             return self._algorithm
@@ -163,10 +153,7 @@ class PubmedNetworkView(Orange.network.NxView):
                     return None #isolated node
                     
             return float(min(paths))/10
-            #if paths:
-            #    return float(min(paths))/10
-            #else:
-            #    return None # Isolated node
+           
                 
     def _prop(self, predec, predec_delta_score, node, L, net): 
         edges_weight = [net[i][node]['weight'] for i in predecessors]
@@ -214,14 +201,13 @@ class OWPubmedView(OWWidget):
         
         self.inside_view = PubmedNetworkView(self)
         self.send("Nx View", self.inside_view)
-        
-    
+  
         
     def init_network(self):
         if self.inside_view._network is None:
             return
         
-        self.titles = [self.inside_view._network.node[node]['title'] for node in self.inside_view._network]
+        self.titles = [self.inside_view._network.node[node]['title'] for node in self.inside_view._network.nodes()]
         self.ids = self.inside_view._network.nodes()
         
         QObject.connect(self.inside_view._nx_explorer.networkCanvas, SIGNAL('point_rightclicked(Point*)'), self.node_menu_show)
@@ -237,7 +223,6 @@ class OWPubmedView(OWWidget):
         self.inside_view.set_center_nodes(self._selected_nodes)
         self.inside_view.update_network()
         
-   
         
     def filter_list(self):
         """Given a query for similar titles sets titles and ids"""
@@ -251,13 +236,32 @@ class OWPubmedView(OWWidget):
         
     def node_menu_show(self, node):
         menu = QMenu(self)
-        menu.addAction('It works!')
-        
+        menu.addAction('Expand Node')
+        menu.addAction('Hide Node')
+        qstr = QString('Set Score')
+        submenu = menu.addMenu(qstr)
+        submenu.addAction('0')
+        submenu.addAction('0.2')
+        submenu.addAction('0.5')
+        submenu.addAction('0.7')
+        submenu.addAction('1')
         self.connect(menu, SIGNAL("triggered(QAction*)"), lambda action, node=node: self.node_menu_triggered(action, node))
         menu.popup(QCursor.pos())
   
-    def node_menu_triggered(self, action, node):
-        if action.text() == 'It works!':
-            pass
+    def node_menu_triggered(self, action, node):        
+        # delete_node_and_neig --> ????        
+        if action.text() == 'Expand Node':
+            self.inside_view.update_center_nodes(node.index())
+            
+        elif action.text() == 'Hide Node':
+            self.inside_view._hidden_nodes.append(node.index())
+        
+        else:      
+            self.inside_view.set_user_node_score(node.index(), float(action.text()))
+        
+        self.inside_view.update_network()  #chiama propagate
+        
+            
+
     
      

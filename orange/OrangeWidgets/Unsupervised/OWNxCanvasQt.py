@@ -609,6 +609,9 @@ class OWNxCanvas(OWPlot):
         
         current_nodes = self.networkCurve.nodes()
         
+        center_x = numpy.average([node.x() for node in current_nodes.values()]) if len(current_nodes) > 0 else 0
+        center_y = numpy.average([node.y() for node in current_nodes.values()]) if len(current_nodes) > 0 else 0
+        
         def closest_nodes_with_pos(nodes):
             
             neighbors = set()
@@ -616,21 +619,20 @@ class OWNxCanvas(OWPlot):
                 neighbors |= set(self.graph.neighbors(n))
 
             # checked all, none found            
-            if len(neighbors-nodes) == 0:
+            if len(neighbors - nodes) == 0:
                 return []
             
             inter = old_nodes.intersection(neighbors)
             if len(inter) > 0:
                 return inter
             else:
-                print "in recursion"
-                return closest_nodes_with_pos(neighbors)
+                return closest_nodes_with_pos(neighbors | nodes)
         
         pos = dict((n, [numpy.average(c) for c in zip(*[(current_nodes[u].x(), current_nodes[u].y()) for u in closest_nodes_with_pos(set([n]))])]) for n in add_nodes)
         
         self.networkCurve.remove_nodes(list(remove_nodes))
         
-        nodes = dict((v, self.NodeItem(v, x=pos[v][0], y=pos[v][1], parent=self.networkCurve)) for v in add_nodes)
+        nodes = dict((v, self.NodeItem(v, x=pos[v][0] if len(pos[v]) == 2 else center_x, y=pos[v][1] if len(pos[v]) == 2 else center_y, parent=self.networkCurve)) for v in add_nodes)
         self.networkCurve.add_nodes(nodes)
         nodes = self.networkCurve.nodes()
         

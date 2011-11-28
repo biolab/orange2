@@ -1,9 +1,9 @@
 """
-<name>Model Map (Qt)</name>
+<name>Model Map</name>
 <description>Visualization and analysis of prediction models.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>430</priority>
+<priority>6520</priority>
 """
 
 import scipy.stats
@@ -268,7 +268,7 @@ class OWModelMapQt(OWNxExplorerQt, OWNxHist):
                     "toolbarSelection", "minComponentEdgeWidth", 
                     "maxComponentEdgeWidth", "mdsFromCurrentPos"]
     
-    def __init__(self, parent=None, signalManager=None, name="Model Map (Qt)"):
+    def __init__(self, parent=None, signalManager=None, name="Model Map"):
         OWNxExplorerQt.__init__(self, parent, signalManager, name, 
                                NetworkCanvas=OWModelMapCanvas)
         

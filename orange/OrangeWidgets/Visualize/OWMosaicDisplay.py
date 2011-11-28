@@ -221,8 +221,8 @@ class OWMosaicDisplay(OWWidget):
 
 
     def sendReport(self):
-        self.reportSettings([("Color in cells", self.interiorColoringOpts[self.interiorColoring]),
-                             ("Subboxes", self.subboxesOpts[self.useBoxes])])
+        self.reportSettings("Settings", [("Color in cells", self.interiorColoringOpts[self.interiorColoring]),
+                                         ("Subboxes", self.subboxesOpts[self.useBoxes])])
         self.reportImage(lambda *x: OWDlgs.OWChooseImageSizeDlg(self.canvas).saveImage(*x))
 
     def permutationListToggle(self):

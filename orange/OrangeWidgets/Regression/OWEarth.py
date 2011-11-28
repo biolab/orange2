@@ -1,4 +1,10 @@
-"""<name>Earth - Multivariate Adaptive Regression Splines</name>
+"""
+<name>Earth</name>
+<description>Multivariate Adaptive Regression Splines (MARS)</description>
+<category>Regression</category>
+<icon>icons/Earth.png<icon>
+<priority>100</priority>
+<keywords>MARS, Multivariate, Adaptive, Regression, Splines</keywords>
 """
 
 from OWWidget import *
@@ -12,7 +18,7 @@ class OWEarth(OWWidget):
     settingsList = ["name", "degree", "terms", "penalty"]
     
     def __init__(self, parent=None, signalManager=None,
-                 title="Earth - Multivariate Adaptive Regression Splines"):
+                 title="Earth"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
         self.inputs = [("Training data", Orange.data.Table, self.set_data), ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]
@@ -41,7 +47,7 @@ class OWEarth(OWWidget):
                    label="Max. terms",
                    tooltip="Maximum number of terms derived in the forward pass.")
         
-        box = OWGUI.widgetBox(self.controlArea, "Prunning Pass", addSpace=True)
+        box = OWGUI.widgetBox(self.controlArea, "Pruning Pass", addSpace=True)
         OWGUI.doubleSpin(box, self, "penalty", min=0.0, max=10.0, step=0.25,
                    label="Knot penalty")
         

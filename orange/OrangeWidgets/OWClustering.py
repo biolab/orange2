@@ -153,6 +153,7 @@ class DendrogramItem(QGraphicsRectItem):
         self._path = QPainterPath()
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setAcceptHoverEvents(True)
+        self.setAcceptedMouseButtons(Qt.LeftButton)
         self.orientation = orientation
         self.set_cluster(cluster)
         if scene is not None:
@@ -281,13 +282,24 @@ class DendrogramItem(QGraphicsRectItem):
                 path.lineTo(rect.topRight())
         self._path = path
     
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemSelectedHasChanged: 
-            widget = self.parentWidget()
-            if isinstance(widget, DendrogramWidget):
-                # Notify the DendrogramWidget of the change in the selection
-                return QVariant(widget.item_selection(self, value.toBool()))
-        return value
+    def mousePressEvent(self, event):
+        widget = self.parentWidget()
+        if isinstance(widget, DendrogramWidget):
+            if event.modifiers() & Qt.ControlModifier:
+                widget.item_selection(self, not self.isSelected()) 
+            else:
+                widget.set_selected_items([self])
+        else:
+            return QGraphicsRectItem.mousePressEvent(self, event)
+        
+    def mouseMoveEvent(self, *args, **kwargs):
+        pass
+    
+    def mouseReleaseEvent(self, *args, **kwargs):
+        pass
+    
+    def mouseDoubleClickEvent(self, *args, **kwargs):
+        pass
             
         
 class GraphicsRectLayoutItem(QGraphicsLayoutItem):
@@ -635,12 +647,14 @@ class DendrogramWidget(QGraphicsWidget):
             # If item is already inside another selected item,
             # remove that selection
             super_selection = self._selected_super_item(item)
+            print super_selection
             if super_selection:
-                self._remove_selection(super_selection)
+                self._remove_selection(super_selection, emit_changed=False)
             # Remove selections this selection will override.
             sub_selections = self._selected_sub_items(item)
+            print sub_selections
             for sub in sub_selections:
-                self._remove_selection(sub)
+                self._remove_selection(sub, emit_changed=False)
             
             if select_state == True:
                 self._add_selection(item)
@@ -756,7 +770,7 @@ class CutoffLine(QGraphicsLineItem):
             self.setLine(0, geom.height(), geom.width(), geom.height())
             self.setCursor(Qt.SizeVerCursor)
         self.cutoff_height = widget.root_cluster.height
-        self.setZValue(widget.item(widget.root_cluster).zValue() + 10)
+        self.setZValue(widget.item(widget.root_cluster).zValue() + widget.root_cluster.height + 10)
         widget.connect(widget, SIGNAL("dendrogramGeometryChanged(QRectF)"), self.on_geometry_changed)
         
     def set_cutoff_at_height(self, height):
@@ -788,10 +802,10 @@ class CutoffLine(QGraphicsLineItem):
         else:
             self.setLine(0, pos.y(), geom.width(), pos.y())
             self.setCursor(Qt.SizeVerCursor)
-        self.setZValue(widget.item(widget.root_cluster).zValue() + 10)
+        self.setZValue(widget.item(widget.root_cluster).zValue() + widget.root_cluster.height + 10)
             
     def mousePressEvent(self, event):
-        pass 
+        pass
     
     def mouseMoveEvent(self, event):
         widget = self.parentWidget()
@@ -806,7 +820,16 @@ class CutoffLine(QGraphicsLineItem):
         self.cutoff_selection(height)
         
     def mouseReleaseEvent(self, event):
-        pass
+        widget = self.parentWidget()
+        dpos = event.pos() - event.lastPos()
+        line = self.line()
+        if widget.orientation == Qt.Vertical:
+            line = line.translated(dpos.x(), 0)
+        else:
+            line = line.translated(0, dpos.y())
+        self.setLine(line)
+        height = widget.height_at(event.pos())
+        self.cutoff_selection(height)
     
     def mouseDoubleClickEvent(self, event):
         pass

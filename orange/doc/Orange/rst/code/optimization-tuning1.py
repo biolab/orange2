@@ -11,7 +11,7 @@ classifier = tuner(data)
 print "Optimal setting: ", learner.minSubset
 
 untuned = Orange.classification.tree.TreeLearner()
-res = Orange.evaluation.testing.crossValidation([untuned, tuner], data)
+res = Orange.evaluation.testing.cross_validation([untuned, tuner], data)
 AUCs = Orange.evaluation.scoring.AUC(res)
 
 print "Untuned tree: %5.3f" % AUCs[0]

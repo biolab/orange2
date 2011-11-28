@@ -3,7 +3,7 @@
 <description>Load prediction models</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
-<priority>1100</priority>
+<priority>6510</priority>
 """
 
 from OWWidget import *

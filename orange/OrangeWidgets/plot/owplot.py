@@ -1166,7 +1166,6 @@ class OWPlot(orangeqt.Plot):
     
     def event(self, event):
         if event.type() == QEvent.Gesture:
-            qDebug('We have gesture!')
             return self.gestureEvent(event)
         else:
             return orangeqt.Plot.event(self, event)
@@ -1406,7 +1405,6 @@ class OWPlot(orangeqt.Plot):
         else:
             selected = self.selected_points(xData, yData)
         unselected = [not i for i in selected]
-        qDebug('%d out of %d points selected' % (selected.count(True), len(selected)))
         return selected, unselected
         
     def add_selection(self, reg):
@@ -1724,7 +1722,6 @@ class OWPlot(orangeqt.Plot):
             self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
 
     def reset_zoom(self):
-        qDebug('Resetting zoom')
         self._zoom_rect = None
         self.update_zoom()
         

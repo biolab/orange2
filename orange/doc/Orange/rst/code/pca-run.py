@@ -5,9 +5,9 @@
 # Classes:     Orange.projection.pca.Pca, Orange.projection.pca.PcaClassifier
 
 import Orange
-table = Orange.data.Table("iris.tab")
+iris = Orange.data.Table("iris.tab")
 
-pca = Orange.projection.pca.Pca(table)
-transformed_data = pca(data)
+pca = Orange.projection.pca.Pca(iris)
+transformed_data = pca(iris)
 
 print pca

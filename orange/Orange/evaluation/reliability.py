@@ -18,7 +18,7 @@ from Comparison of approaches for estimating reliability of individual
 regression predictions, Zoran Bosnic 2008.
 
 Next example shows basic reliability estimation usage 
-(`reliability_basic.py`_, uses `housing.tab`_):
+(`reliability-basic.py`_, uses `housing.tab`_):
 
 .. literalinclude:: code/reliability_basic.py
 
@@ -72,14 +72,25 @@ Mahalanobis distance
 
 .. autoclass:: Mahalanobis
 
+Mahalanobis to center
+---------------------
+
+.. autoclass:: MahalanobisToCenter
+
 Reliability estimate learner
 ============================
 
 .. autoclass:: Learner
+    :members:
+
+Reliability estimation scoring methods
+======================================
 
 .. autofunction:: get_pearson_r
 
 .. autofunction:: get_pearson_r_by_iterations
+
+.. autofunction:: get_spearman_r
 
 Referencing
 ===========
@@ -165,6 +176,7 @@ Bosnic Z, Kononenko I (2010) `Automatic selection of reliability estimates for i
 regression predictions.
 <http://journals.cambridge.org/abstract_S0269888909990154>`_
 *The Knowledge Engineering Review* 25(1), 27-47.
+
 """
 import Orange
 
@@ -172,6 +184,7 @@ import random
 import statc
 import math
 import warnings
+import numpy
 
 from collections import defaultdict
 from itertools import izip
@@ -201,6 +214,7 @@ BVCK_ABSOLUTE = 7
 MAHAL_ABSOLUTE = 8
 BLENDING_ABSOLUTE = 9
 ICV_METHOD = 10
+MAHAL_TO_CENTER_ABSOLUTE = 13
 
 # Type of estimator constant
 SIGNED = 0
@@ -210,7 +224,8 @@ ABSOLUTE = 1
 METHOD_NAME = {0: "SAvar absolute", 1: "SAbias signed", 2: "SAbias absolute",
                3: "BAGV absolute", 4: "CNK signed", 5: "CNK absolute",
                6: "LCV absolute", 7: "BVCK_absolute", 8: "Mahalanobis absolute",
-               9: "BLENDING absolute", 10: "ICV", 11: "RF Variance", 12: "RF Std"}
+               9: "BLENDING absolute", 10: "ICV", 11: "RF Variance", 12: "RF Std",
+               13: "Mahalanobis to center"}
 
 select_with_repeat = Orange.core.MakeRandomIndicesMultiple()
 select_with_repeat.random_generator = Orange.core.RandomGenerator()
@@ -481,7 +496,7 @@ class BaggingVarianceClassifier:
         BAGV = 0
         
         # Calculate the bagging variance
-        bagged_values = [c(example, Orange.core.GetValue).value for c in self.classifiers]
+        bagged_values = [c(example, Orange.core.GetValue).value for c in self.classifiers if c is not None]
         
         k = sum(bagged_values) / len(bagged_values)
         
@@ -559,7 +574,8 @@ class LocalCrossValidationClassifier:
             LCVdi += math.exp(-knn[i][self.distance_id])
         
         LCV = LCVer / LCVdi if LCVdi != 0 else 0
-        
+        if math.isnan(LCV):
+            LCV = 0.0
         return [ Estimate(LCV, ABSOLUTE, LCV_ABSOLUTE) ]
 
 class CNeighbours:
@@ -649,6 +665,52 @@ class MahalanobisClassifier:
         mahalanobis_distance = sum(ex[self.mid].value for ex in self.nnm(example, self.k))
         
         return [ Estimate(mahalanobis_distance, ABSOLUTE, MAHAL_ABSOLUTE) ]
+
+class MahalanobisToCenter:
+    """
+    :rtype: :class:`Orange.evaluation.reliability.MahalanobisToCenterClassifier`
+    
+    Mahalanobis distance to center estimate is defined as `mahalanobis distance <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_ to the
+    centroid of the data.
+
+    
+    """
+    def __init__(self):
+        pass
+    
+    def __call__(self, examples, *args):
+        dc = Orange.core.DomainContinuizer()
+        dc.classTreatment = Orange.core.DomainContinuizer.Ignore
+        dc.continuousTreatment = Orange.core.DomainContinuizer.NormalizeBySpan
+        dc.multinomialTreatment = Orange.core.DomainContinuizer.NValues
+        
+        new_domain = dc(examples)
+        new_examples = examples.translate(new_domain)
+        
+        X, _, _ = new_examples.to_numpy()
+        example_avg = numpy.average(X, 0)
+        
+        distance_constructor = Orange.distance.instances.MahalanobisConstructor()
+        distance = distance_constructor(new_examples)
+        
+        average_example = Orange.data.Instance(new_examples.domain, list(example_avg) + ["?"])
+        
+        return MahalanobisToCenterClassifier(distance, average_example, new_domain)
+
+class MahalanobisToCenterClassifier:
+    def __init__(self, distance, average_example, new_domain):
+        self.distance = distance
+        self.average_example = average_example
+        self.new_domain = new_domain
+    
+    def __call__(self, example, *args):
+        
+        ex = Orange.data.Instance(self.new_domain, example)
+        
+        mahalanobis_to_center = self.distance(ex, self.average_example)
+        
+        return [ Estimate(mahalanobis_to_center, ABSOLUTE, MAHAL_TO_CENTER_ABSOLUTE) ]
+
 
 class BaggingVarianceCNeighbours:
     """
@@ -742,16 +804,13 @@ class Learner:
     :type name: string
     
     :rtype: :class:`Orange.evaluation.reliability.Learner`
-    
-    .. function:: internal_cross_validation
-    
-    .. function:: internal_cross_validation_testing
     """
     def __init__(self, box_learner, name="Reliability estimation",
                  estimators = [SensitivityAnalysis(),
                                LocalCrossValidation(),
                                BaggingVarianceCNeighbours(),
                                Mahalanobis(),
+                               MahalanobisToCenter()
                                ],
                  **kwds):
         self.__dict__.update(kwds)
@@ -774,11 +833,15 @@ class Learner:
         blending_classifier = None
         new_domain = None
         
+        if examples.domain.class_var.var_type != Orange.data.variable.Continuous.Continuous:
+            raise Exception("This method only works on data with continuous class.")
+        
         return Classifier(examples, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
     
     def internal_cross_validation(self, examples, folds=10):
         """ Performs the ususal internal cross validation for getting the best
-        reliability estimate. Returns the id of the method that scored the 
+        reliability estimate. It uses the reliability estimators defined in 
+        estimators attribute. Returns the id of the method that scored the 
         best. """
         res = Orange.evaluation.testing.cross_validation([self], examples, folds=folds)
         results = get_pearson_r(res)
@@ -798,12 +861,14 @@ class Learner:
         
         for fold in xrange(folds):
             data = examples.select(cv_indices, fold)
-            res = Orange.evaluation.testing.cross_validation([self], data)
+            if len(data) < 10:
+                res = Orange.evaluation.testing.leave_one_out([self], data)
+            else:
+                res = Orange.evaluation.testing.cross_validation([self], data)
             results = get_pearson_r(res)
             for r, _, _, method in results:
                 sum_of_rs[method] += r
         sorted_sum_of_rs = sorted(sum_of_rs.items(), key=lambda estimate: estimate[1], reverse=True)
-        print sorted_sum_of_rs
         return sorted_sum_of_rs[0][0]
     
     labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
@@ -826,7 +891,7 @@ class Classifier:
     
     def __call__(self, example, result_type=Orange.core.GetValue):
         """
-        Classifiy and estimate a new instance. When you chose 
+        Classify and estimate a new instance. When you chose 
         Orange.core.GetBoth or Orange.core.getProbabilities, you can access 
         the reliability estimates inside probabilities.reliability_estimate.
         

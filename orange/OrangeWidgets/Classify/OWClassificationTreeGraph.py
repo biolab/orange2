@@ -252,12 +252,19 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         
 
     def sendReport(self):
+        if self.tree:
+            tclass = self.tree.examples.domain.classVar.values[self.TargetClassIndex]
+            tsize = "%i nodes, %i leaves" % (orngTree.countNodes(self.tree), orngTree.countLeaves(self.tree))
+        else:
+            tclass = "N/A"
+            tsize = "N/A"
+            
         self.reportSettings("Information",
                             [("Node color", self.nodeColorOpts[self.NodeColorMethod]),
-                             ("Target class", self.tree.examples.domain.classVar.values[self.TargetClassIndex]),
+                             ("Target class", tclass),
                              ("Data in nodes", ", ".join(s for i, s in enumerate(self.nodeInfoButtons) if self.NodeInfoW[i].isChecked())),
                              ("Line widths", ["Constant", "Proportion of all instances", "Proportion of parent's instances"][self.LineWidthMethod]),
-                             ("Tree size", "%i nodes, %i leaves" % (orngTree.countNodes(self.tree), orngTree.countLeaves(self.tree)))])
+                             ("Tree size", tsize) ])
         OWTreeViewer2D.sendReport(self)
 
     def setColors(self):
@@ -273,7 +280,6 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         c.createDiscretePalette("colorPalette", "Discrete Palette")
         c.setColorSchemas(self.colorSettings, self.selectedColorSettingsIndex)
         return c
-
 
     def setNodeInfo(self, widget=None, id=None):
         flags = sum(2**i for i, name in enumerate(['maj',

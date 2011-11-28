@@ -12,6 +12,7 @@ import Orange.misc.r as r
 
 globalenv = r.globalenv
 
+import rpy2.rinterface
 import rpy2.robjects as robjects
 import rpy2.rlike.container as rlc
 
@@ -29,7 +30,10 @@ class RPy2Console(PythonConsole):
         more = 0
         try:
             r_res = self._rpy(line)
-            self.write(r_res.r_repr())
+            if not isinstance(r_res, rpy2.rinterface.RNULLType):
+                self.write(r_res.r_repr())
+        except rpy2.rinterface.RRuntimeError, ex:
+            self.write(ex.message)
         except Exception, ex:
             self.write(repr(ex))
         
@@ -201,6 +205,7 @@ class OWRScript(OWWidget):
         self.in_data, self.in_distance = None, None
         self.scriptLibraryList = [RScript("New script", "x <- c(1,2,5)\ny <- c(2,1 6)\nplot(x,y)\n")]
         self.selectedScriptIndex = 0
+        self.selectedGrDev = "PNG"
         
         self.lastDir = os.path.expanduser("~/script.R")
         
@@ -234,6 +239,7 @@ class OWRScript(OWWidget):
         
         box = OWGUI.widgetBox(self.controlArea, "Run")
         OWGUI.button(box, self, "Execute", callback=self.runScript, tooltip="Execute the script")
+        
         OWGUI.rubber(self.controlArea)
         
         
@@ -247,31 +253,30 @@ class OWRScript(OWWidget):
         
         self._cachedDocuments = {}
         
+        self.grView = QLabel()
+        
         self.resize(800, 600)
         QTimer.singleShot(30, self.initGrDevice)
         
     def initGrDevice(self):
-#        from rpy2.robjects.packages import importr
-#        grdevices = importr('grDevices')
         import tempfile
-        self.grDevFile = tempfile.NamedTemporaryFile("rwb", prefix="orange-rscript-grDev", suffix=".png",  delete=False)
+        self.grDevFile = tempfile.NamedTemporaryFile("rwb", prefix="orange-rscript-grDev", suffix=".png", delete=False)
         self.grDevFile.close()
         robjects.r('png("%s", width=512, height=512)' % self.grDevFile.name)
-        print "Temp bitmap file", self.grDevFile.name
-#        self.fileWatcher = QFileSystemWatcher(self)
-#        self.connect(self.fileWatcher, SIGNAL("fileChanged(QString)"), self.updateGraphicsView)
+        self.fileWatcher = QFileSystemWatcher(self)
+        self.fileWatcher.addPath(self.grDevFile.name)
+        self.connect(self.fileWatcher, SIGNAL("fileChanged(QString)"), self.updateGraphicsView)
         
-    
     def updateGraphicsView(self, filename):
-        self.grView = w = QLabel()
-        w.setPixmap(QPixmap(filename))
-        w.show()
+        self.grView.setPixmap(QPixmap(filename))
+        self.grView.show()
+        if self.grDevFile.name not in list(self.fileWatcher.files()):
+            # The file can be removed and recreated by R, in which case we need to re-add it
+            self.fileWatcher.addPath(self.grDevFile.name)
 
-        
     def selectScript(self, index):
         index = self.libraryModel.index(index)
         self.libraryView.selectionModel().select(index, QItemSelectionModel.ClearAndSelect)
-        
         
     def selectedScript(self):
         rows = self.libraryView.selectionModel().selectedRows()
@@ -281,25 +286,21 @@ class OWRScript(OWWidget):
         else:
             return None
         
-        
     def onAddNewScript(self):
         self.libraryModel.append(RScript("New Script", ""))
         self.selectScript(len(self.libraryModel) - 1)
-        
         
     def onRemoveScript(self):
         row = self.selectedScript()
         if row is not None:
             del self.libraryModel[row]
         
-        
     def onUpdateScript(self):
         row = self.selectedScript()
         if row is not None:
             self.libraryModel[row].script = str(self.scriptEdit.toPlainText())
             self.scriptEdit.document().setModified(False)
-            self.libraryModel.emitDataChanged([row])
-            
+            self.libraryModel.emitDataChanged([row])   
         
     def onAddScriptFromFile(self):
         filename = str(QFileDialog.getOpenFileName(self, "Open script", self.lastDir))
@@ -307,8 +308,7 @@ class OWRScript(OWWidget):
             script = open(filename, "rb").read()
             self.lastDir, name = os.path.split(filename)
             self.libraryModel.append(RScript(name, script, sourceFileName=filename))
-            self.selectScript(len(self.libraryModel) - 1)
-            
+            self.selectScript(len(self.libraryModel) - 1)   
             
     def onSaveScriptToFile(self):
         row = self.selectedScript()
@@ -320,14 +320,12 @@ class OWRScript(OWWidget):
                 script.sourceFileName = filename
                 script.flags = 0
                 open(filename, "wb").write(script.script)
-                
-                
+                       
     def onScriptSelection(self, *args):
         row = self.selectedScript()
         if row is not None:
             self.scriptEdit.setDocument(self.documentForScript(row))
-            
-                
+                       
     def documentForScript(self, script=0):
         if type(script) != RScript:
             script = self.libraryModel[script]
@@ -342,24 +340,20 @@ class OWRScript(OWWidget):
             self._cachedDocuments[script] = doc
         return self._cachedDocuments[script]
     
-        
     def onModificationChanged(self, changed):
         row = self.selectedScript()
         if row is not None:
             self.libraryModel[row].flags = RScript.Modified if changed else 0
             self.libraryModel.emitDataChanged([row]) 
-                               
-                            
+                             
     def setData(self, data):
         self.in_data = data
         self.console.setLocals(self.getLocals())
-
 
     def setDistance(self, matrix):
         self.in_distance = matrix
         self.console.setLocals(self.getLocals())
 
-        
     def getLocals(self):
         return {"in_data": self.in_data,
                 "in_distance": self.in_distance,
@@ -370,7 +364,6 @@ class OWRScript(OWWidget):
         self.console.push(str(self.scriptEdit.toPlainText()))
         self.console.new_prompt(">>> ")
         robjects.r("dev.off()\n")
-        self.updateGraphicsView(self.grDevFile.name)
         
     
 if __name__ == "__main__":

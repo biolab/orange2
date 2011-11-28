@@ -49,6 +49,8 @@ class OWConcatenate(OWWidget):
         OWGUI.rubber(self.controlArea)
 
         self.adjustSize()
+        
+        self.dataReport = None
 
 
     def setData(self, data):

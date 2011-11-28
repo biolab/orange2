@@ -250,11 +250,14 @@ class OWDistanceFile(OWWidget):
             labels = "Labels from the file (%s%s)" % (", ".join(self.labels[:5]), " ..." if len(self.labels)>5 else "")
         else:
             labels = "None" 
-                
-        self.reportSettings("File",
-                            [("File name", self.recentFiles[self.fileIndex or 0]),
-                             ("Matrix dimension", self.matrix.dim),
-                             ("Labels", labels)])
+            
+        if self.matrix is not None:
+            self.reportSettings("File",
+                                [("File name", self.recentFiles[self.fileIndex or 0]),
+                                 ("Matrix dimension", self.matrix.dim),
+                                 ("Labels", labels)])
+        else:
+            self.reportSettings("File", [])
         if self.data:
             self.reportData(self.data, "Examples")
         

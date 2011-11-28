@@ -446,29 +446,30 @@ class OWTreeViewer2D(OWWidget):
 
     def sendReport(self):
         from PyQt4.QtSvg import QSvgGenerator
-        self.reportSection("Tree")
-        urlfn, filefn = self.getUniqueImageName(ext=".svg")
-        svg = QSvgGenerator()
-        svg.setFileName(filefn)
-        ssize = self.scene.sceneRect().size()
-        w, h = ssize.width(), ssize.height()
-        fact = 600/w
-        svg.setSize(QSize(600, h*fact))
-        painter = QPainter()
-        painter.begin(svg)
-        self.scene.render(painter)
-        painter.end()
+        if self.tree:
+            self.reportSection("Tree")
+            urlfn, filefn = self.getUniqueImageName(ext=".svg")
+            svg = QSvgGenerator()
+            svg.setFileName(filefn)
+            ssize = self.scene.sceneRect().size()
+            w, h = ssize.width(), ssize.height()
+            fact = 600/w
+            svg.setSize(QSize(600, h*fact))
+            painter = QPainter()
+            painter.begin(svg)
+            self.scene.render(painter)
+            painter.end()
         
-#        buffer = QPixmap(QSize(600, h*fact))
-#        painter.begin(buffer)
-#        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
-#        self.scene.render(painter)
-#        painter.end()
-#        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
-        from OWDlgs import OWChooseImageSizeDlg
-        self.reportImage(OWChooseImageSizeDlg(self.scene).saveImage)
-        self.reportRaw('<!--browsercode<br/>(Click <a href="%s">here</a> to view or download this image in a scalable vector format)-->' % urlfn)
-        #self.reportObject(self.svg_type, urlfn, width="600", height=str(h*fact))
+#            buffer = QPixmap(QSize(600, h*fact))
+#            painter.begin(buffer)
+#            painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+#            self.scene.render(painter)
+#            painter.end()
+#            self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
+            from OWDlgs import OWChooseImageSizeDlg
+            self.reportImage(OWChooseImageSizeDlg(self.scene).saveImage)
+            self.reportRaw('<!--browsercode<br/>(Click <a href="%s">here</a> to view or download this image in a scalable vector format)-->' % urlfn)
+            #self.reportObject(self.svg_type, urlfn, width="600", height=str(h*fact))
 
     def toggleZoomSlider(self):
         k = 0.0028 * (self.Zoom ** 2) + 0.2583 * self.Zoom + 1.1389

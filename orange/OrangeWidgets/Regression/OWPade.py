@@ -83,6 +83,7 @@ class OWPade(OWWidget):
         
         self.contAttributes = []
         self.dimensions = []
+        self.data = None
 
         #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
         #self.setFixedWidth(self.sizeHint().width())

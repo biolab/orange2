@@ -12,16 +12,16 @@ Basic regression learner (``basic``)
 
 import Orange
 
-class BaseRegressionLearner(object):
+class BaseRegressionLearner(Orange.core.Learner):
     """ Base Regression Learner "learns" how to treat the discrete
         variables and missing data.
     """
 
-    def __new__(self, table=None, name='regression learner', **kwds):
-        learner = object.__new__(self, **kwds)
+    def __new__(cls, table=None, weight_id=None, **kwds):
+        learner = Orange.core.Learner.__new__(cls, **kwds)
         if table is not None:
-            learner.__init__(name,**kwds) 
-            return learner(table)
+            learner.__init__(**kwds) 
+            return learner(table, weight_id)
         else:
             return learner      
 

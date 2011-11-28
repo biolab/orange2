@@ -40,9 +40,9 @@ print learner.stop.max_majority, learner.stop.min_examples
 print "\n\nTree with minExamples = 5.0"
 learner.stop.min_examples = 5.0
 tree = learner(data)
-print tree.dump()
+print tree
 
 print "\n\nTree with maxMajority = 0.5"
 learner.stop.max_majority = 0.5
 tree = learner(data)
-print tree.dump()
+print tree

@@ -54,6 +54,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ContingencyAttrClass": "Orange.statistics.contingency.VarClass",
            "orange.ContingencyClassAttr": "Orange.statistics.contingency.ClassVar",
            "orange.DomainContingency": "Orange.statistics.contingency.Domain",
+           "orange.Contingency": "Orange.statistics.contingency.Table",
           
            "orange.MeasureAttribute": "Orange.feature.scoring.Score", 
            "orange.MeasureAttributeFromProbabilities": "Orange.feature.scoring.ScoreFromProbabilities", 
@@ -501,6 +502,12 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.Loess",
            "orange.ProbabilityEstimatorConstructor_m": "Orange.statistics.estimate.M",
            "orange.ProbabilityEstimatorConstructor_relative": "Orange.statistics.estimate.RelativeFrequency",
+           "orange.onditionalProbabilityEstimator": "Orange.statistics.estimate.ConditionalEstimator",
+           "orange.ConditionalProbabilityEstimator_FromDistribution": "Orange.statistics.estimate.ConditionalEstimatorFromDistribution",
+           "orange.ConditionalProbabilityEstimator_ByRows": "Orange.statistics.estimate.ConditionalEstimatorByRows",
+           "orange.ConditionalProbabilityEstimatorConstructor_ByRows": "Orange.statistics.estimate.ConditionalByRows",
+           "orange.ConditionalProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.ConditionalLoess",
+
            }
 
 for k, v in MAPPING.items():
@@ -533,7 +540,7 @@ class FixChangedNames(fixer_base.BaseFix):
     
     def compile_pattern(self):
         self.PATTERN = build_pattern(self.mapping)
-        self._modules_to_change = [key.rsplit(".", 1)[0] for key in self.mapping.keys()]
+        self._modules_to_change = [key.split(".", 1)[0] for key in self.mapping.keys()]
         super(FixChangedNames, self).compile_pattern()
         
     def package_tree(self, package):
@@ -556,7 +563,7 @@ class FixChangedNames(fixer_base.BaseFix):
         member = results.get("member")
         head = results.get("head")
         tail = results.get("tail")
-        module = ''.join(map(str, head))
+        module = head[0].value
 
         if member and module in self._modules_to_change:
             node = member[0]

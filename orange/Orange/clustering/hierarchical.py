@@ -582,11 +582,11 @@ def top_clusters(root, k):
     :type k: int
     
     :rtype: list of :class:`HierarchicalCluster` instances
-    
+
     """
     candidates = set([root])
     while len(candidates) < k:
-        repl = max([(max(c.left.height, c.right.height), c) for c in candidates if c.branches])[1]
+        repl = max([(c.height, c) for c in candidates if c.branches])[1]
         candidates.discard(repl)
         candidates.add(repl.left)
         candidates.add(repl.right)
@@ -831,8 +831,7 @@ def order_leaves_cpp(tree, matrix, progress_callback=None):
 order_leaves_cpp = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_cpp)
 order_leaves_py = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_py)
 
-## The cpp code still needs testing, so we leave the python version as a default for now
-order_leaves = order_leaves_py
+order_leaves = order_leaves_cpp
     
 """
 Matplotlib dendrogram ploting. This is mostly untested,

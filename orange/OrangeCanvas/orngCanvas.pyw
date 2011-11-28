@@ -341,8 +341,12 @@ class OrangeCanvasDlg(QMainWindow):
         if barstate:
             if self.settings["widgetListType"] == 0:
                 self.tabs.toolbox.setCurrentIndex(barstate[0])
+            elif self.settings["widgetListType"] in [1, 2]:
+                widget = self.tabs.treeWidget
+                widget.scrollToItem(widget.topLevelItem(barstate[0]),
+                                    QAbstractItemView.PositionAtTop)
             else:
-                self.tabs.setCurrentPage(barstate[0])
+                self.tabs.setCurrentIndex(barstate[0])
         if treestate and self.settings["widgetListType"] in [1, 2]:
             for i, e in enumerate(treestate[0]):
                 self.tabs.treeWidget.topLevelItem(i).setExpanded(e)
@@ -667,7 +671,7 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemShowOutputWindow(self):
         self.output.show()
         self.output.raise_()
-        self.output.activateWindow()
+#        self.output.activateWindow()
 
     def menuItemClearOutputWindow(self):
         self.output.textOutput.clear()

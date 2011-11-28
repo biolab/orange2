@@ -32,7 +32,7 @@ for i in data:
         print i, tree(i)
 
 tree = Orange.classification.tree.C45Learner(data)
-print tree.dump()
+print tree
 print
 
 

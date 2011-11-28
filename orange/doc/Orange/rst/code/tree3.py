@@ -15,9 +15,9 @@ print "SOME RANDOMNESS IN STOPING:"
 def_stop = Orange.classification.tree.StopCriteria()
 f = lambda examples, weightID, contingency: def_stop(examples, weightID, contingency) or randint(1, 5) == 1
 l = Orange.classification.tree.TreeLearner(data, stop=f)
-print l.dump()
+print l
 
 print "\nRANDOM STOPING:"
 f = lambda x,y,z: randint(1, 5)==1
 l = Orange.classification.tree.TreeLearner(data, stop=f)
-print l.dump()
+print l

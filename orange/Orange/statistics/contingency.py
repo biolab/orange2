@@ -17,10 +17,6 @@ section <contcont>`.
 The example below loads the monks-1 data set and prints out the conditional
 class distribution given the value of `e`.
 
-.. _statistics-contingency: code/statistics-contingency.py
-
-part of `statistics-contingency`_ (uses monks-1.tab)
-
 .. literalinclude:: code/statistics-contingency.py
     :lines: 1-7
 
@@ -247,10 +243,6 @@ Contingency tables
         :type value: int, float, string or :obj:`Orange.data.Value`
         :rtype: float
 
-    .. _statistics-contingency3.py: code/statistics-contingency3.py
-
-    part of `statistics-contingency3.py`_ (uses monks-1.tab)
-
     .. literalinclude:: code/statistics-contingency3.py
         :lines: 1-23
 
@@ -338,13 +330,9 @@ Contingency tables
         :type value: int, float, string or :obj:`Orange.data.Value`
         :rtype: float
 
-    .. _statistics-contingency4.py: code/statistics-contingency4.py
-
     .. literalinclude:: code/statistics-contingency4.py
         :lines: 1-27
 
-    part of the output from `statistics-contingency4.py`_ (uses monk1.tab)
-    
     The role of the feature and the class are reversed compared to
     :obj:`ClassVar`::
     
@@ -355,8 +343,6 @@ Contingency tables
         Feature:         e
     
     Distributions given the class can be printed out by calling :meth:`p_attr`.
-    
-    part of `statistics-contingency4.py`_ (uses monks-1.tab)
     
     .. literalinclude:: code/statistics-contingency4.py
         :lines: 30-31
@@ -415,10 +401,6 @@ Contingency tables
 
     The following example investigates which material is used for
     bridges of different lengths.
-    
-    .. _statistics-contingency5.py: code/statistics-contingency5.py
-    
-    part of `statistics-contingency5.py`_ (uses bridges.tab)
     
     .. literalinclude:: code/statistics-contingency5.py
         :lines: 1-17
@@ -482,24 +464,15 @@ A list of contingency tables, either :obj:`VarClass` or
 
     The following script prints the contingency tables for features
     "a", "b" and "e" for the dataset Monk 1.
-    
-    .. _statistics-contingency8: code/statistics-contingency8.py
-    
-    part of `statistics-contingency8`_ (uses monks-1.tab)
-    
+        
     .. literalinclude:: code/statistics-contingency8.py
         :lines: 9
 
     Contingency tables of type :obj:`VarClass` give
     the conditional distributions of classes, given the value of the variable.
     
-    .. _statistics-contingency8: code/statistics-contingency8.py
-    
-    part of `statistics-contingency8`_ (uses monks-1.tab)
-    
     .. literalinclude:: code/statistics-contingency8.py
         :lines: 12- 
-
 
 .. _contcont:
 
@@ -508,14 +481,10 @@ Contingency tables for continuous variables
 
 If the outer variable is continuous, the index must be one of the
 values that do exist in the contingency table; other values raise an
-exception::
+exception:
 
-    .. _statistics-contingency6: code/statistics-contingency6.py
-    
-    part of `statistics-contingency6`_ (uses monks-1.tab)
-    
-    .. literalinclude:: code/statistics-contingency6.py
-        :lines: 1-4,17-
+.. literalinclude:: code/statistics-contingency6.py
+    :lines: 1-4,17-
 
 Since even rounding can be a problem, the only safe way to get the key
 is to take it from from the contingencies' ``keys``.
@@ -526,13 +495,9 @@ and :obj:`ContingencyVarClass.p_attr` use the primitive density estimation
 provided by :obj:`Orange.statistics.distribution.Distribution`.
 
 For example, :obj:`ClassVar` on the iris dataset can return the
-probability of the sepal length 5.5 for different classes::
+probability of the sepal length 5.5 for different classes:
 
-    .. _statistics-contingency7: code/statistics-contingency7.py
-    
-    part of `statistics-contingency7`_ (uses iris.tab)
-    
-    .. literalinclude:: code/statistics-contingency7.py
+.. literalinclude:: code/statistics-contingency7.py
 
 The script outputs::
 
