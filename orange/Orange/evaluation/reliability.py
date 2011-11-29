@@ -909,9 +909,9 @@ class Classifier:
         # Create a place holder for estimates
         if probabilities is None:
             probabilities = Orange.statistics.distribution.Continuous()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            probabilities.reliability_estimate = []
+        #with warnings.catch_warnings():
+        #    warnings.simplefilter("ignore")
+        probabilities.setattr('reliability_estimate', [])
         
         # Calculate all the estimates and add them to the results
         for estimate in self.estimation_classifiers:
