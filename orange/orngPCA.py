@@ -14,7 +14,7 @@ try:
     import matplotlib.pyplot as plt
 except:
     import warnings
-    warnings.warn("Warning: importing of matplotlib has failed.\nPlotting functions will be unavailable.")
+    warnings.warn("Importing of matplotlib has failed.\nPlotting functions will be unavailable.")
     mathlib_import = False
     
 #color table for biplot
