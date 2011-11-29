@@ -1,10 +1,10 @@
 c:
-cd \Python25\Lib\site-packages
+cd \Python26\Lib\site-packages
 
-rem svn co --force http://www.ailab.si/svn/orange/trunk/orange/ orange
-rem svn co --force http://www.ailab.si/svn/orange/trunk/add-ons/Bioinformatics/ orange/add-ons/Bioinformatics
-rem svn co --force http://www.ailab.si/svn/orange/trunk/add-ons/Text/ orange/add-ons/Text
-rem svn co --force http://www.ailab.si/svn/orange/trunk/testing/regressionTests/ regressionTests
+rem svn co --force http://orange.biolab.si/svn/orange/trunk/orange/ orange
+rem svn co --force http://orange.biolab.si/svn/orange/trunk/add-ons/Bioinformatics/ orange/add-ons/Bioinformatics
+rem svn co --force http://orange.biolab.si/svn/orange/trunk/add-ons/Text/ orange/add-ons/Text
+rem svn co --force http://orange.biolab.si/svn/orange/trunk/testing/regressionTests/ regressionTests
 
 svn cleanup orange
 svn update --force orange
