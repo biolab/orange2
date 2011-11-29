@@ -19,8 +19,8 @@ parser.add_option("-m", "--mailto", help="e-mail the results to EMAIL", metavar=
 option, args = parser.parse_args()
 
 if not args:
-    args = ["updateTaxonomy.py", "updateGO.py", "updateKEGG.py", "updateMeSH.py", "updateNCBI_geneinfo.py",
-            "updateOMIM.py", "updateHomoloGene.py", "updateDictyBase.py", "updatePPI.py"]
+    args = ["updateTaxonomy.py", "updateGO.py", "updateMeSH.py", "updateNCBI_geneinfo.py",
+            "updateHomoloGene.py", "updateDictyBase.py", "updatePPI.py"]
     
 for script in args:
     log = open(os.path.join(option.log_dir, script + ".log.txt"), "wb")

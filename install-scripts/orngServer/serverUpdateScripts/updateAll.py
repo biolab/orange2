@@ -12,8 +12,8 @@ password = opt.get("-p", opt.get("--password", "password"))
 
 age = datetime.now() - datetime.fromtimestamp(0) ## age of the universe
 
-files = ["updateTaxonomy.py", "updateGO.py", "updateKEGG.py", "updateMeSH.py", "updateNCBI_geneinfo.py",
-         "updateOMIM.py", "updateHomoloGene.py", "updateDictyBase.py", "updatePPI.py"]
+files = ["updateTaxonomy.py", "updateGO.py", "updateMeSH.py", "updateNCBI_geneinfo.py",
+         "updateHomoloGene.py", "updateDictyBase.py", "updatePPI.py"]
 
 for filename in files:
     options = dict([line[3:].split("=") for line in open(filename).readlines() if line.startswith("##!")])
