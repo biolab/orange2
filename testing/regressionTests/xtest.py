@@ -88,9 +88,24 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
         if just_print == "report-html":
             for name, lastResult in test_set:
                 if lastResult =="OK":
-                    print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dirname, name, name, lastResult)
-                else:            
-                    print '  <tr><td><a href="results/%s/%s/%s.%s.%s.%s.txt">%s</a></td><td>%s</td></tr>' % (module, dirname, name, platform, pyversion, lastResult, name, lastResult)
+                    result = "results/%s/%s/%s.txt" % (module, dirname, name)
+                    print '''  <tr><td><a href="http://orange.biolab.si/trac/browser/trunk/orange/doc/%(dir)s/%(name)s">%(name)s</a></td>
+    <td><a href="%(result)s">%(lastResult)s</a></td>
+  </tr>''' % {"dir":dir, "name":name, "lastResult":lastResult, "result":result}
+    
+#                    print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dirname, name, name, lastResult)
+                elif lastResult in ["changed", "crash", "random"]:
+#                else:
+                    if lastResult == "random":
+                        result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult+"1")
+                    else:
+                        result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult)
+                    original = "results/%s/%s/%s.txt" % (module, dirname, name)
+                    print '''  <tr><td><a href="http://orange.biolab.si/trac/browser/trunk/orange/doc/%(dir)s/%(name)s">%(name)s</a>
+    </td><td><a href="%(result)s">%(lastResult)s</a></td>
+    <td><a href="%(original)s">original</a></td>
+  </tr>''' %  {"dir":dir, "name":name, "lastResult":lastResult, "result":result, "original":original}
+  
             print "</table>"
         elif just_print:
             for name, lastResult in test_set:
@@ -178,8 +193,10 @@ def main(argv):
         dirs = [("orange25", "Orange/rst/code")]
     elif module == "obi":
         root = orngEnviron.addOnsDirSys + "/Bioinformatics/doc"
+        dirs = [("modules", "modules")]
     elif module == "text":
         root = orngEnviron.addOnsDirSys + "/Text/doc"
+        dirs = [("modules", "modules")]
     else:
         print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
         sys.exit(1)
