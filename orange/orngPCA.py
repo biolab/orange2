@@ -13,7 +13,8 @@ mathlib_import = True
 try:
     import matplotlib.pyplot as plt
 except:
-    print "Warning: importing of matplotlib has failed.\nPlotting functions will be unavailable."
+    import warnings
+    warnings.warn("Warning: importing of matplotlib has failed.\nPlotting functions will be unavailable.")
     mathlib_import = False
     
 #color table for biplot
