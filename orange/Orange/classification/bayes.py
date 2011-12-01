@@ -189,7 +189,7 @@ class NaiveClassifier(Orange.classification.Classifier):
                     ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
                     for v in xrange(len(i.variable.values)))]
                 ) for i in self.conditional_distributions
-                        if i.variable.var_type == Orange.data.variable.Discrete])])
+                        if i.variable.var_type == i.variable.Discrete])])
             
 
 def printModel(model):
