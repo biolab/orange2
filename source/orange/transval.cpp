@@ -119,10 +119,10 @@ void TOrdinal2Continuous::transform(TValue &val)
 {
   if (val.isSpecial())
     val = TValue(TValue::FLOATVAR, val.valueType);
-  if (val.varType!=TValue::INTVAR)
+  else if (val.varType!=TValue::INTVAR)
     raiseError("invalid value type (discrete expected)");
-
-  val = TValue(float(val.intV) * factor);
+  else
+    val = TValue(float(val.intV) * factor);
 }
 
 
