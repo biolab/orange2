@@ -22,8 +22,8 @@ Gini index
           - unknowns as value:         0.1944         0.0278         0.1806         0.0959
 
 Relief
-                - no unknowns:         1.0000        -0.5833        -0.1667         0.0833
-              - with unknowns:         0.7580        -0.3412         0.0256         0.2157
+                - no unknowns:         1.0000        -0.6250        -0.1667         0.0833
+              - with unknowns:         0.7732        -0.3676         0.0385         0.1575
 
 Cost matrix ((0, 5), (1, 0))
                 - no unknowns:         0.6667         0.0000         0.0000         0.0833
