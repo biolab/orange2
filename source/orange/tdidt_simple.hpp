@@ -41,9 +41,9 @@ public:
     int minInstances; //P
     int maxDepth; //P
     float skipProb; //P
-    int seed; //P
+	PRandomGenerator randomGenerator; //P
 
-	TSimpleTreeLearner(const int & =0, float=1.0, int=2, int=INT_MAX, float=0.0, unsigned int=0);
+	TSimpleTreeLearner(const int & =0, float=1.0, int=2, int=INT_MAX, float=0.0, PRandomGenerator=NULL);
 	PClassifier operator()(PExampleGenerator, const int & =0);
 };
 

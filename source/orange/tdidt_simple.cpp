@@ -51,6 +51,7 @@ struct Args {
 
     int type, *attr_split_so_far;
     PDomain domain;
+	PRandomGenerator randomGenerator;
 };
 
 struct Example {
@@ -484,7 +485,7 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
     for (i = 0, it = args->domain->attributes->begin(); it != args->domain->attributes->end(); it++, i++) {
         if (!args->attr_split_so_far[i]) {
             /* select random subset of attributes */
-            if ((double)rand() / RAND_MAX < args->skipProb)
+			if (args->randomGenerator->randdouble() < args->skipProb)
                 continue;
 
             if ((*it)->varType == TValue::INTVAR) {
@@ -606,13 +607,13 @@ build_tree(struct Example *examples, int size, int depth, struct SimpleTreeNode 
     return node;
 }
 
-TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minInstances, int maxDepth, float skipProb, unsigned int seed) :
+TSimpleTreeLearner::TSimpleTreeLearner(const int &weight, float maxMajority, int minInstances, int maxDepth, float skipProb, PRandomGenerator rgen) :
     maxMajority(maxMajority),
     minInstances(minInstances),
     maxDepth(maxDepth),
-    skipProb(skipProb),
-    seed(seed)
+    skipProb(skipProb)
 {
+	randomGenerator = rgen ? rgen : PRandomGenerator(mlnew TRandomGenerator());
 }
 
 PClassifier
@@ -640,9 +641,9 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
     args.maxDepth = maxDepth;
     args.skipProb = skipProb;
     args.domain = ogen->domain;
+	args.randomGenerator = randomGenerator;
     args.type = ogen->domain->classVar->varType == TValue::INTVAR ? Classification : Regression;
 
-    srand(seed);
     tree = build_tree(examples, ogen->numberOfExamples(), 0, NULL, &args);
 
     free(examples);
