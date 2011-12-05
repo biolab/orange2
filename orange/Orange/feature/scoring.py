@@ -219,7 +219,7 @@ Feature scoring in classification problems
     again, it uses the stored results if the domain and the data table
     have not changed (data table version and the data checksum are
     compared). Caching will only work if you use the same object. 
-    Constructing new instances of :obj:`Relief` fir each feature,
+    Constructing new instances of :obj:`Relief` for each feature,
     like this::
 
         for attr in data.domain.attributes:
