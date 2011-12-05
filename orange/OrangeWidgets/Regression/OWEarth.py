@@ -89,6 +89,14 @@ class OWEarth(OWWidget):
         self.send("Learner", learner)
         self.send("Predictor", predictor)
         
+    def sendReport(self):
+        self.reportSettings("Learning parameters", 
+                            [("Degree", self.degree),
+                             ("Terms", self.terms),
+                             ("Knot penalty", "%.2f" % self.penalty)
+                             ])
+        self.reportData(self.data)
+        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWEarth()
