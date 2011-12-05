@@ -24,6 +24,10 @@ from lib2to3 import fixer_util
 from lib2to3.fixer_util import Name, attr_chain
 
 from lib2to3.fixes import fix_imports
+
+import fix_changed_names
+
+NAMES_MAPPING = fix_changed_names.MAPPING
     
 
 """Fix incompatible imports and module references. Modified from the
@@ -48,10 +52,11 @@ MAPPING = {"orange": "Orange.core",
            "orngTest": "Orange.evaluation.testing",
            "orngWrap": "Orange.optimization",
            "orngClustering": "Orange.clustering",
+           "orngDisc": "Orange.feature.discretization",
            "orngLookup": "Orange.classification.lookup",
            "orngLinProj": "Orange.projection.linear",
+           "orngEnviron": "Orange.misc.environ",
            }
-
 
 def alternates(members):
     return "(" + "|".join(map(repr, members)) + ")"
