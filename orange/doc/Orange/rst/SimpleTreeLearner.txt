@@ -24,3 +24,7 @@ of random forests, but can also be used as a standalone tree.
 
         At every split an attribute will be skipped with probability ``skip_prob``.
         Useful for building random forests.
+
+    .. attribute:: random_generator
+        
+        :obj:`Orange.core.RandomGenerator` to use.
