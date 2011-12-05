@@ -1,5 +1,5 @@
-1 1 0 1 0 0 0 1 1 1
-24 21
+1 0 0 0 1 1 0 1 0 1
+24 19
 First five examples
 ['?', 'myope', 'no', 'reduced', 'none']
 ['young', 'myope', 'no', 'normal', '?']

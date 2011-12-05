@@ -1,9 +1,9 @@
 Attribute scores for best three attributes:
-0.728 physician-fee-freeze
-0.329 adoption-of-the-budget-resolution
-0.321 synfuels-corporation-cutback
+0.752 physician-fee-freeze
+0.365 el-salvador-aid
+0.340 crime
 
 Best 3 attributes:
 physician-fee-freeze
-adoption-of-the-budget-resolution
-synfuels-corporation-cutback
+el-salvador-aid
+crime

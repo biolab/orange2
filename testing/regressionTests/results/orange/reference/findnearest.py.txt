@@ -1,6 +1,6 @@
 *** Reference example:  ['young', 'myope', 'no', 'reduced', 'none']
 ['young', 'myope', 'no', 'reduced', 'none'], {-42:0.00}
-['young', 'hypermetrope', 'no', 'reduced', 'none'], {-42:1.00}
-['pre-presbyopic', 'myope', 'no', 'reduced', 'none'], {-42:1.00}
 ['young', 'myope', 'yes', 'reduced', 'none'], {-42:1.00}
+['presbyopic', 'myope', 'no', 'reduced', 'none'], {-42:1.00}
+['young', 'hypermetrope', 'no', 'reduced', 'none'], {-42:1.00}
 ['young', 'myope', 'no', 'normal', 'soft'], {-42:1.00}
