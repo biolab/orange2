@@ -45,3 +45,18 @@ class OWMean(OWMajority):
         self.setLearner()
         self.resize(100,100)
         
+    def setData(self,data):
+        self.data = self.isDataWithClass(data, orange.VarTypes.Continuous, checkMissing=True) and data or None
+
+        if self.data:
+            try:
+                self.classifier = self.learner(self.data)
+                self.classifier.name = self.name
+                self.error(1)
+            except Exception, (errValue):
+                self.classifier = None
+                self.error(1, str(errValue))
+        else:
+            self.classifier = None
+        self.send("Predictor", self.classifier)
+        
