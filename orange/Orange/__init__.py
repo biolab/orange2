@@ -60,6 +60,8 @@ _import("regression")
 _import("regression.mean")
 _import("regression.tree")
 
+_import("multitarget")
+
 _import("associate")
 
 _import("preprocess")
