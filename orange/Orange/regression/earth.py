@@ -20,7 +20,7 @@ Example ::
     >>> from Orange.regression import earth
     >>> data = Orange.data.Table("housing")
     >>> c = earth.EarthLearner(data, degree=2)
-    >>> c.print_model()
+    >>> print c
     MEDV =
        23.587
        +11.896 * max(0, RM - 6.431)
@@ -298,16 +298,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
             return vals, probs
         else:
             return probs
-    
-    def format_model(self, percision=3, indent=3):
-        """ Return a string representation of the model.
-        """
-        return format_model(self, percision, indent)
-    
-    def print_model(self, percision=3, indent=3):
-        """ Print the model to stdout.
-        """
-        print self.format_model(percision, indent)
         
     def base_matrix(self, instances=None):
         """Return the base matrix (bx) of the Earth model for the table.
@@ -363,8 +353,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
         :param used_only: if True return only used attributes
         
-
-         
         """  
         return evimp(self, used_only)
     
@@ -372,6 +360,15 @@ class EarthClassifier(Orange.core.ClassifierFD):
         return (type(self), (self.domain, self.best_set, self.dirs,
                             self.cuts, self.betas),
                 dict(self.__dict__))
+        
+    def format(self, percision=3, indent=3):
+        """ Return a string representation of the model.
+        """
+        return format_model(self, percision, indent)
+        
+    def __str__(self):
+        return self.format()
+    
 
 """
 Utility functions
@@ -710,14 +707,9 @@ def pruning_pass(bx, y, penalty, pruned_terms=-1):
 """
 Printing functions.
 """
-
-def print_model(model, percision=3, indent=3):
-    """ Print model to stdout.
-    """
-    print format_model(model, percision, indent)
     
 def format_model(model, percision=3, indent=3):
-    """ Return a formated string representation of the model.
+    """ Return a formated string representation of the earth model.
     """
     mask = model.label_mask
     if model.multi_flag:
