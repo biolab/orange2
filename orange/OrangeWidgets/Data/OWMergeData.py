@@ -11,15 +11,24 @@ import OWGUI
 
 class OWMergeData(OWWidget):
 
-    contextHandlers = {"A": DomainContextHandler("A", [ContextField("varA")], syncWithGlobal=False, contextDataVersion=2),
-                       "B": DomainContextHandler("B", [ContextField("varB")], syncWithGlobal=False, contextDataVersion=2)}                                            
+    contextHandlers = {"A": DomainContextHandler("A",
+                                [ContextField("varA")],
+                                syncWithGlobal=False,
+                                contextDataVersion=2),
+                       "B": DomainContextHandler("B",
+                                [ContextField("varB")],
+                                syncWithGlobal=False,
+                                contextDataVersion=2)}
 
     def __init__(self, parent = None, signalManager = None, name = "Merge data"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
 
         # set channels
-        self.inputs = [("Examples A", ExampleTable, self.onDataAInput), ("Examples B", ExampleTable, self.onDataBInput)]
-        self.outputs = [("Merged Examples A+B", ExampleTable), ("Merged Examples B+A", ExampleTable)]
+        self.inputs = [("Examples A", ExampleTable, self.onDataAInput),
+                       ("Examples B", ExampleTable, self.onDataBInput)]
+        
+        self.outputs = [("Merged Examples A+B", ExampleTable),
+                        ("Merged Examples B+A", ExampleTable)]
 
         # data
         self.dataA = None
@@ -40,12 +49,12 @@ class OWMergeData(OWWidget):
         grid = QGridLayout()
         grid.setMargin(0)
         w.setLayout(grid)
-
+        
         # attribute A
         boxAttrA = OWGUI.widgetBox(self, 'Attribute A', orientation = "vertical", addToLayout=0)
         grid.addWidget(boxAttrA, 0,0)
         self.lbAttrA = OWGUI.listBox(boxAttrA, self, "lbAttrAItems", callback = self.lbAttrAChange)
-
+        
         # attribute  B
         boxAttrB = OWGUI.widgetBox(self, 'Attribute B', orientation = "vertical", addToLayout=0)
         grid.addWidget(boxAttrB, 0,1)
@@ -103,6 +112,8 @@ class OWMergeData(OWWidget):
             var = self.varListA[index]
             self.varA = (var.name, var.varType)
             self.lbAttrA.setCurrentItem(self.lbAttrA.item(index))
+        else:
+            self.varA = None
             
         self.sendData()
 
@@ -129,6 +140,8 @@ class OWMergeData(OWWidget):
             var = self.varListB[index]
             self.varB = (var.name, var.varType)
             self.lbAttrB.setCurrentItem(self.lbAttrB.item(index))
+        else:
+            self.varB = None
             
         self.sendData()
 
@@ -155,9 +168,13 @@ class OWMergeData(OWWidget):
             self.lblDataBAttributes.setText("")
 
     def sendData(self):
+        self.error(0)
         if self.dataA and self.dataB and self.varA and self.varB:
-            self.send("Merged Examples A+B", self.merge(self.dataA, self.dataB, self.varA[0], self.varB[0]))
-            self.send("Merged Examples B+A", self.merge(self.dataB, self.dataA, self.varB[0], self.varA[0]))
+            try:
+                self.send("Merged Examples A+B", self.merge(self.dataA, self.dataB, self.varA[0], self.varB[0]))
+                self.send("Merged Examples B+A", self.merge(self.dataB, self.dataA, self.varB[0], self.varA[0]))
+            except orange.KernelException, ex:
+                self.error(0, "Cannot merge the two tables (%r)" % str(ex))
         else:
             self.send("Merged Examples A+B", None)
             self.send("Merged Examples B+A", None)
@@ -276,6 +293,6 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWMergeData()
     ow.show()
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    data = orange.ExampleTable("iris.tab")
     ow.onDataAInput(data)
     a.exec_()
