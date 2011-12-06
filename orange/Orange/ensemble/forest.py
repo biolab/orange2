@@ -21,8 +21,8 @@ def _default_small_learner(attributes=None, rand=None, base=None):
     # tree learner assembled as suggested by Breiman (2001)
     if not base:
         base = Orange.classification.tree.TreeLearner(
-            storeNodeClassifier=0, storeContingencies=0, 
-            storeDistributions=1, minExamples=5)
+            store_node_classifier=0, store_contingencies=0, 
+            store_distributions=1, min_instances=5)
 
     return _RandomForestTreeLearner(base=base, attributes=attributes, rand=rand)
 
