@@ -67,9 +67,11 @@ class RandomForestLearner(orange.Learner):
     :type base_learner: None or :class:`Orange.classification.tree.TreeLearner`
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
-    :param learner: Tree induction learner. If None (default), 
-        the :obj:`~ScoreFeature.base_learner` will be used (and randomized). If
-        :obj:`~ScoreFeature.learner` is specified, it will be used as such
+    :param learner: Tree induction learner. If `"fast"` (default),
+        :obj:`~Orange.classification.tree.SimpleTreeLearner` with
+        random feature subset selection will be used.  If `None`, 
+        the :obj:`base_learner` will be used (and randomized). If
+        :obj:`learner` is specified, it will be used as such
         with no additional transformations.
     :type learner: None or :class:`Orange.core.Learner`
     :param callback: a function to be called after every iteration of
@@ -99,16 +101,18 @@ class RandomForestLearner(orange.Learner):
 
         self.base_learner = base_learner
 
-        if base_learner != None and learner not in [ None, "orig", "fast" ]:
+        if base_learner != None and learner not in [ None, "fast" ]:
             wrongSpecification()
-        elif base_learner != None or learner == "orig":
+        elif base_learner != None:
             learner = None   #build with base_learner
 
         if not self.rand:
             self.rand = random.Random(0)
 
+        self.randorange = Orange.core.RandomGenerator(self.rand.randint(0,2**31-1))
+
         if learner == "fast":
-            self.learner = SimpleTreeLearnerSetProb(min_instances=5)
+            self.learner = SimpleTreeLearnerSetProb(min_instances=5, random_generator=self.randorange)
         elif learner == None:
             self.learner = _default_small_learner(self.attributes, self.rand, base=self.base_learner)
         else:
@@ -127,6 +131,7 @@ class RandomForestLearner(orange.Learner):
         :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`
         """
         self.rand.setstate(self.randstate) #when learning again, set the same state
+        self.randorange.reset()        
 
         if "attributes" in self.learner.__dict__:
             self.learner.attributes = len(instances.domain.attributes)**0.5 if self.attributes == None else self.attributes
