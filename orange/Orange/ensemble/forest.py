@@ -73,9 +73,10 @@ class RandomForestLearner(orange.Learner):
     :param base_learner: A base tree learner. The base learner will be
         randomized with Random Forest's random
         feature subset selection.  If None (default),
-        :class:`~Orange.classification.tree.SimpleTreeLearner` and it will not split
-        nodes with less than 5 data instances.
-    :type base_learner: None or :class:`Orange.classification.tree.TreeLearner` or 
+        :class:`~Orange.classification.tree.SimpleTreeLearner` and it
+        will not split nodes with less than 5 data instances.
+    :type base_learner: None or
+    :class:`Orange.classification.tree.TreeLearner` or
         :class:`Orange.classification.tree.SimpleTreeLearner`
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
@@ -278,18 +279,18 @@ class ScoreFeature(orange.MeasureAttribute):
     :param base_learner: A base tree learner. The base learner will be
         randomized with Random Forest's random
         feature subset selection.  If None (default),
-        :class:`~Orange.classification.tree.TreeLearner` with Gini index
-        or MSE for attribute scoring will be used, and it will not split
-        nodes with less than 5 data instances.
-    :type base_learner: None or :class:`Orange.classification.tree.TreeLearner`
+        :class:`~Orange.classification.tree.SimpleTreeLearner` and it
+        will not split nodes with less than 5 data instances.
+    :type base_learner: None or
+    :class:`Orange.classification.tree.TreeLearner` or
+        :class:`Orange.classification.tree.SimpleTreeLearner`
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
-    :param learner: Tree induction learner. If None (default), 
-        the :obj:`~ScoreFeature.base_learner` will be used (and randomized). If
-        :obj:`~ScoreFeature.learner` is specified, it will be used as such
+    :param learner: Tree induction learner. If `None` (default), 
+        the :obj:`base_learner` will be used (and randomized). If
+        :obj:`learner` is specified, it will be used as such
         with no additional transformations.
     :type learner: None or :class:`Orange.core.Learner`
-
     """
     def __init__(self, trees=100, attributes=None, rand=None, base_learner=None, learner=None):
 
@@ -299,10 +300,18 @@ class ScoreFeature(orange.MeasureAttribute):
         self.attributes = attributes
         self.rand = rand
         self.base_learner = base_learner
+
+        if base_learner != None and learner != None:
+            wrongSpecification()
+
         if not self.rand:
             self.rand = random.Random(0)
-        if self.learner == None:
-            self.learner = _default_small_learner(attributes=self.attributes, rand=self.rand, base=self.base_learner)
+        self.randorange = Orange.core.RandomGenerator(self.rand.randint(0,2**31-1))
+
+        if learner == None:
+            self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
+        else:
+            self.learner = learner
   
     def __call__(self, feature, instances, apriorClass=None):
         """
@@ -424,7 +433,11 @@ class ScoreFeature(orange.MeasureAttribute):
             #right on unmixed
             right = self._numRight(oob, cla)
             
-            presl = list(self._presentInTree(cla.tree, attrnum))
+            presl = range(attrs)
+            try: #FIXME SimpleTreeLearner does not know how to output attributes yet
+                presl = list(self._presentInTree(cla.tree, attrnum))
+            except:
+                pass
                       
             #randomize each feature in data and test
             #only those on which there was a split
