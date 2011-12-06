@@ -397,7 +397,10 @@ class ScoreFeature(orange.MeasureAttribute):
         attrnum = {}
         for attr in range(len(instances.domain.attributes)):
            attrnum[instances.domain.attributes[attr].name] = attr            
-   
+
+        if "attributes" in self.learner.__dict__:
+            self.learner.attributes = len(instances.domain.attributes)**0.5 if self.attributes == None else self.attributes
+
         # build the forest
         classifiers = []  
         for i in range(trees):
@@ -476,8 +479,11 @@ class _RandomForestTreeLearner(Orange.core.Learner):
                 if isinstance(examples.domain.class_var, Orange.data.variable.Discrete) \
                 else Orange.feature.scoring.MSE()
 
+        #ats = self.attributes if self.attributes else int(sqrt(len(candidates)))
+        ats = self.attributes
+
         bcopy.split = SplitConstructor_AttributeSubset(\
-            bcopy.split, self.attributes, self.rand)
+            bcopy.split, ats, self.rand)
 
         return bcopy(examples, weight=weight)
 
