@@ -26,6 +26,21 @@ def _default_small_learner(attributes=None, rand=None, base=None):
 
     return _RandomForestTreeLearner(base=base, attributes=attributes, rand=rand)
 
+class SimpleTreeLearnerSetProb(Orange.classification.tree.SimpleTreeLearner):
+    """
+    :class:`Orange.classification.tree.SimpleTreeLearner` which sets the 
+    skip_prob so that the number of randomly chosen features for each split
+    is  (on average) as the user specified (default: a square number of
+    attributes).
+    """
+    def __init__(self, *args, **kwargs):
+        self.attributes = kwargs.pop("attributes", None)
+        Orange.classification.tree.SimpleTreeLearner.__init__(self, *args, **kwargs)
+
+    def __call__(self, examples, weight=0):
+        self.skip_prob = 1-float(self.attributes)/len(examples.domain.attributes)
+        return Orange.classification.tree.SimpleTreeLearner.__call__(self, examples, weight)
+
 class RandomForestLearner(orange.Learner):
     """
     Just like in bagging, classifiers in random forests are trained from bootstrap
@@ -75,17 +90,29 @@ class RandomForestLearner(orange.Learner):
             return self
 
     def __init__(self, trees=100, attributes=None,\
-                    name='Random Forest', rand=None, callback=None, base_learner=None, learner=None):
+                    name='Random Forest', rand=None, callback=None, base_learner=None, learner="fast"):
         self.trees = trees
         self.name = name
-        self.learner = learner
         self.attributes = attributes
         self.callback = callback
         self.rand = rand
+
         self.base_learner = base_learner
-        
+
+        if base_learner != None and learner not in [ None, "orig", "fast" ]:
+            wrongSpecification()
+        elif base_learner != None or learner == "orig":
+            learner = None   #build with base_learner
+
         if not self.rand:
             self.rand = random.Random(0)
+
+        if learner == "fast":
+            self.learner = SimpleTreeLearnerSetProb(min_instances=5)
+        elif learner == None:
+            self.learner = _default_small_learner(self.attributes, self.rand, base=self.base_learner)
+        else:
+            self.learner = learner
             
         self.randstate = self.rand.getstate() #original state
 
@@ -95,17 +122,16 @@ class RandomForestLearner(orange.Learner):
         
         :param instances: learning data.
         :type instances: class:`Orange.data.Table`
-        :param origWeight: weight.
-        :type origWeight: int
+        :param weight: weight.
+        :type weight: int
         :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`
         """
-        
-        if not self.learner:
-            learner = _default_small_learner(self.attributes, self.rand, base=self.base_learner)
-        else:
-            learner = self.learner
-        
         self.rand.setstate(self.randstate) #when learning again, set the same state
+
+        if "attributes" in self.learner.__dict__:
+            self.learner.attributes = len(instances.domain.attributes)**0.5 if self.attributes == None else self.attributes
+
+        learner = self.learner
 
         n = len(instances)
         # build the forest
@@ -201,13 +227,16 @@ class RandomForestClassifier(orange.Classifier):
         
         else:
             # Handle continuous class
-            
+        
             # voting for class probabilities
             if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
-                probs = [c(instance, orange.GetProbabilities) for c in self.classifiers]
+                probs = [c(instance, orange.GetBoth) for c in self.classifiers]
                 cprob = dict()
-                for prob in probs:
-                    a = dict(prob.items())
+                for val,prob in probs:
+                    if prob != None: #no probability output
+                        a = dict(prob.items())
+                    else:
+                        a = { val.value : 1. }
                     cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
                 cprob = Orange.statistics.distribution.Continuous(cprob)
                 cprob.normalize()
@@ -457,10 +486,7 @@ class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
 
     def __call__(self, gen, weightID, contingencies, apriori, candidates, clsfr):
         # if number of features for subset is not set, use square root
-        if not self.attributes:
-            self.attributes = int(sqrt(len(candidates)))
-
-        cand = [1]*self.attributes + [0]*(len(candidates) - self.attributes)
+        cand = [1]*int(self.attributes) + [0]*(len(candidates) - int(self.attributes))
         self.rand.shuffle(cand)
         # instead with all features, we will invoke split constructor 
         # only for the subset of a features
