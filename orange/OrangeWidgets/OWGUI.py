@@ -166,8 +166,8 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
 def spin(widget, master, value, min, max, step=1,
          box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
          callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
-         checked = "", checkCallback = None, posttext = None, alignment = Qt.AlignLeft,
-         keyboardTracking=True):
+         checked = "", checkCallback = None, posttext = None, addToLayout=True,
+         alignment = Qt.AlignLeft, keyboardTracking=True):
     if box or label and not checked:
         b = widgetBox(widget, box, orientation)
         hasHBox = orientation == 'horizontal' or not orientation
@@ -189,7 +189,7 @@ def spin(widget, master, value, min, max, step=1,
     wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
     wa.setAlignment(alignment)
     wa.setKeyboardTracking(keyboardTracking) # If false it wont emit valueChanged signals while editing the text
-    if bi.layout() is not None:
+    if addToLayout and bi.layout() is not None:
         bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
@@ -1942,6 +1942,129 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
     
 LinkRole = LinkStyledItemDelegate.LinkRole
 
+def _toPyObject(variant):
+    val = variant.toPyObject()
+    if isinstance(val, type(NotImplemented)):
+        # PyQt 4.4 converts python int, floats ... to C types and
+        # cannot convert them back again and returns an exception instance.
+        qtype = variant.type()
+        if qtype == QVariant.Double:
+            val, ok = variant.toDouble()
+        elif qtype == QVariant.Int:
+            val, ok = variant.toInt()
+        elif qtype == QVariant.LongLong:
+            val, ok = variant.toLongLong()
+        elif qtype == QVariant.String:
+            val = variant.toString()
+    return val
+
+class ColoredBarItemDelegate(QStyledItemDelegate):
+    """ Item delegate that can also draw a distribution bar
+    """
+    def __init__(self, parent=None, decimals=3, color=Qt.red):
+        QStyledItemDelegate.__init__(self, parent)
+        self.decimals = decimals
+        self.float_fmt = "%%.%if" % decimals
+        self.color = QColor(color)
+        
+    def displayText(self, value, locale):
+        obj = _toPyObject(value)
+        if isinstance(obj, float):
+            return self.float_fmt % obj
+        elif isinstance(obj, basestring):
+            return obj
+        elif obj is None:
+            return "NA"
+        else:
+            return obj.__str__()
+        
+    def sizeHint(self, option, index):
+        font = self.get_font(option, index)
+        metrics = QFontMetrics(font)
+        height = metrics.lineSpacing() + 8 # 4 pixel margin
+        width = metrics.width(self.displayText(index.data(Qt.DisplayRole), QLocale())) + 8
+        return QSize(width, height)
+    
+    def paint(self, painter, option, index):
+        self.initStyleOption(option, index)
+        text = self.displayText(index.data(Qt.DisplayRole), QLocale())
+        
+        ratio, have_ratio = self.get_bar_ratio(option, index)
+        
+        rect = option.rect
+        if have_ratio:
+            # The text is raised 3 pixels above the bar.
+            text_rect = rect.adjusted(4, 1, -4, -4) # TODO: Style dependent margins?
+        else:
+            text_rect = rect.adjusted(4, 4, -4, -4)
+            
+        painter.save()
+        font = self.get_font(option, index)
+        painter.setFont(font)
+        
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
+        
+        # TODO: Check ForegroundRole.
+        if option.state & QStyle.State_Selected:
+            color = option.palette.highlightedText().color()
+        else:
+            color = option.palette.text().color()
+        painter.setPen(QPen(color))
+        
+        align = self.get_text_align(option, index)
+            
+        metrics = QFontMetrics(font)
+        elide_text = metrics.elidedText(text, option.textElideMode, text_rect.width())
+        painter.drawText(text_rect, align, elide_text)
+        
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        if have_ratio:
+            brush = self.get_bar_brush(option, index)
+            
+            painter.setBrush(brush)
+            painter.setPen(QPen(brush, 1))
+            bar_rect = QRect(text_rect)
+            bar_rect.setTop(bar_rect.bottom() - 1)
+            bar_rect.setBottom(bar_rect.bottom() + 1)
+            w = text_rect.width()
+            bar_rect.setWidth(max(0, min(w * ratio, w)))
+            painter.drawRoundedRect(bar_rect, 2, 2)
+        painter.restore()
+    
+    def get_font(self, option, index):
+        font = index.data(Qt.FontRole)
+        if font.isValid():
+            font = font.toPyObject()
+        else:
+            font = option.font
+        return font
+    
+    def get_text_align(self, option, index):
+        align = index.data(Qt.TextAlignmentRole)
+        if align.isValid():
+            align = align.toInt()
+        else:
+            align = Qt.AlignLeft | Qt.AlignVCenter
+        return align
+    
+    def get_bar_ratio(self, option, index):
+        bar_ratio = index.data(BarRatioRole)
+        ratio, have_ratio = bar_ratio.toDouble()
+        return ratio, have_ratio
+    
+    def get_bar_brush(self, option, index):
+        bar_brush = index.data(BarBrushRole)
+        if bar_brush.isValid():
+            bar_brush = bar_brush.toPyObject()
+            if not isinstance(bar_brush, (QColor, QBrush)):
+                bar_brush = None
+        else:
+            bar_brush = None
+        if bar_brush is None:
+            bar_brush = self.color
+        return QBrush(bar_brush)
+            
 ##############################################################################
 # progress bar management
 
