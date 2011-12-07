@@ -578,6 +578,7 @@ class OWEditDomain(OWWidget):
             self.openContext("", self.data)
             self.domain_model[:] = self.all_vars
             self.select_variable(self.selected_index)
+            self.commit_if()
             
     def reset_selected(self):
         """ Reset the currently selected variable to its original
@@ -586,8 +587,17 @@ class OWEditDomain(OWWidget):
         """
         if self.data is not None:
             var = self.all_vars[self.selected_index]
+            desc = variable_description(var)
+            if desc in self.domain_change_hints:
+                del self.domain_change_hints[desc]
+            
+            # To invalidate stored hints
+            self.closeContext("")
+            self.openContext("", self.data)
+            
             self.domain_model[self.selected_index] = var
             self.editor_stack.currentWidget().set_data(var)
+            self.commit_if()
             
     def commit_if(self):
         if self.auto_commit:
