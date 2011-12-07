@@ -342,7 +342,11 @@ class OWEditDomain(OWWidget):
             if index >= 0:
                 self.select_variable(index)
         
-        self.commit_if()
+            self.changed_flag = True
+            self.commit_if()
+        else:
+            # To force send None on output
+            self.commit()
             
     def on_selection_changed(self, *args):
         i = self.selected_var_index()
