@@ -168,6 +168,7 @@ class VariableEditor(QWidget):
                         shortcut=QKeySequence(QKeySequence.Delete))
         
         button_size = OWGUI.toolButtonSizeHint()
+        button_size = QSize(button_size, button_size)
         
         button = QToolButton(self)
         button.setFixedSize(button_size)
