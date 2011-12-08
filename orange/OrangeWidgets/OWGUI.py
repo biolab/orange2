@@ -2163,6 +2163,17 @@ def checkButtonOffsetHint(button, style=None):
     style_correction = {"macintosh (aqua)": -2, "macintosh(aqua)": -2, "plastique": 1, "cde": 1, "motif": 1} #TODO: add other styles (Maybe load corrections from .cfg file?)
     return space + width + style_correction.get(str(qApp.style().objectName()).lower(), 0)
     
+    
+def toolButtonSizeHint(button=None, style=None):
+    if button is None and style is None:
+        style = qApp.style()
+    elif style is None:
+        style = button.style()
+    
+    button_size = style.pixelMetric(QStyle.PM_SmallIconSize) + \
+                  style.pixelMetric(QStyle.PM_ButtonMargin)
+    return button_size
+    
 class FloatSlider(QSlider):
     def __init__(self, orientation, min_value, max_value, step, parent=None):
         QSlider.__init__(self, orientation, parent)

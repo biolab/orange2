@@ -166,16 +166,19 @@ class VariableEditor(QWidget):
                         triggered=self.on_remove_label,
                         enabled=False,
                         shortcut=QKeySequence(QKeySequence.Delete))
-
+        
+        button_size = OWGUI.toolButtonSizeHint()
+        
         button = QToolButton(self)
+        button.setFixedSize(button_size)
         button.setDefaultAction(self.add_label_action)
         hlayout.addWidget(button)
         
         button = QToolButton(self)
+        button.setFixedSize(button_size)
         button.setDefaultAction(self.remove_label_action)
         hlayout.addWidget(button)
         hlayout.addStretch(10)
-        
         vlayout.addLayout(hlayout)
         
         self.main_form.addRow("Labels", vlayout)
@@ -185,6 +188,7 @@ class VariableEditor(QWidget):
         """
         self.clear()
         self.var = var
+        
         if var is not None:
             self.name_edit.setText(var.name)
             self.labels_model.set_dict(dict(var.attributes))
