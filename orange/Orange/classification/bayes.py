@@ -182,7 +182,7 @@ class NaiveClassifier(Orange.classification.Classifier):
             classes,
             "class probabilities "+(frmtStr % tuple(self.distribution)),
             "",
-            "\n".join(["\n".join([
+            "\n\n".join(["\n".join([
                 "Attribute " + i.variable.name,
                 classes,
                 "\n".join(
