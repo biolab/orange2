@@ -34,7 +34,7 @@ if not vars().has_key("NO_RANDOMNESS"):
 
 print "\nproportionsTest + storing classifiers"
 res = orngTest.proportionTest(learners, data, 0.7, 100, storeClassifiers = 1)
-print "#iter %i, #classifiers %i" % (len(res.classifiers), len(res.classifiers[0]))
+print "#iter %i, #classifiers %i" % (len(res.classifiers), len(res.classifiers[0]) if len(res.classifiers) > 0 else -1)
 print
 
 ##print "\nLearning with 100% class noise"
