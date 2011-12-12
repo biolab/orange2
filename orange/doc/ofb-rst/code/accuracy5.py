@@ -5,7 +5,6 @@
 # Referenced:  c_performance.htm
 
 import orange, orngTree
-reload(orngTree)
 
 def accuracy(test_data, classifiers):
     correct = [0.0]*len(classifiers)

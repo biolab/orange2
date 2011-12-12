@@ -22,6 +22,5 @@ for a in data_ent.domain.attributes:
     print a.name
 
 import orngDisc
-reload(orngDisc)
 data_ent2 = orngDisc.entropyDiscretization(data)
 print '%d features after removing features discretized to a constant value' % len(data_ent2.domain.attributes)
