@@ -68,12 +68,3 @@ If petal lengths are shorter, the most probable class is "setosa". Irises with
 middle petal lengths belong to "versicolor", while longer petal lengths indicate
 for "virginica". Critical values where the decision would change are at about
 5.4 and 6.3.
-
-.. _bayes-run.py: code/bayes-run.py
-.. _bayes-thresholdAdjustment.py: code/bayes-thresholdAdjustment.py
-.. _bayes-mestimate.py: code/bayes-mestimate.py
-.. _bayes-plot-iris.py: code/bayes-plot-iris.py
-.. _adult-sample.tab: code/adult-sample.tab
-.. _iris.tab: code/iris.tab
-.. _titanic.tab: code/iris.tab
-.. _lenses.tab: code/lenses.tab

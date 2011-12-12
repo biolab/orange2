@@ -31,7 +31,7 @@ are available at the end of this page.
 Example scripts in this section suppose that the data is loaded and a
 list of learning algorithms is prepared.
 
-part of `testing-test.py`_ (uses `voting.tab`_)
+part of `testing-test.py <code/testing-test.py>` (uses `voting.tab <code/voting.tab>`)
 
 .. literalinclude:: code/testing-test.py
     :start-after: import random
@@ -42,9 +42,6 @@ printed by the following function.
 
 .. literalinclude:: code/testing-test.py
     :pyobject: printResults
-
-.. _voting.tab: code/voting.tab
-.. _testing-test.py: code/testing-test.py
 
 Common Arguments
 ================

@@ -11,7 +11,7 @@ and optional flags along with the feature names, which can ofter result in short
 is provided in a form of a 3-line header. First line contains feature names, followed by type of features and optional
 flags in that order.
 
-Example of iris dataset in tab-delimited format (`iris.tab`_)
+Example of iris dataset in tab-delimited format (:download:`iris.tab <code/iris.tab>`)
 
 .. literalinclude:: code/iris.tab
    :lines: 1-7
@@ -36,5 +36,3 @@ Other supported data formats
 Orange can import data from csv or tab delimited files where the first line contains attribute names followed by
 lines containing data. For such files, orange tries to guess the type of features and treats the right-most
 column as the class variable. If feature types are known in advance, special orange tab format should be used.
-
-.. _iris.tab: code/iris.tab
