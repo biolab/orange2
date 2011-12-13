@@ -17,7 +17,9 @@ import sys, os, os.path
 sys.path.insert(0, os.path.dirname(__file__))
 import myinspect
 import sphinx.ext.autodoc
+import numpydoc
 sphinx.ext.autodoc.inspect = myinspect
+numpydoc.docscrape.inspect = myinspect
 
 #disable deprecation decorators for the documentation
 os.environ["orange_no_deprecated_members"] = "1"
@@ -36,7 +38,6 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphin
 
 # Numpydoc generates autosummary directives for all undocumented members. Orange documentation only includes documented
 # member, so _str_member_list is modified to return [] where a list of undocumented members is originally returned.
-import numpydoc
 numpydoc.docscrape_sphinx.SphinxDocString._str_member_list # if numpydoc changes, this line will cause an error
 numpydoc.docscrape_sphinx.SphinxDocString._str_member_list = lambda x, y : []
 
