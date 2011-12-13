@@ -1,5 +1,3 @@
-/home/marko/orangegit/trunk/testing/regressionTests/xtest1.py:11: DeprecationWarning: object.__new__() takes no parameters
-  def t__samefiles(name1, name2):
 Learner      CA
 Naive Bayes  0.903
 with FSS     0.938
