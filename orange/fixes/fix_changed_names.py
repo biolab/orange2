@@ -673,6 +673,10 @@ class FixChangedNames(fixer_base.BaseFix):
 #                package = new_name.split(":",1)[0]
 #            else:
 #                package = new_name.rsplit(".", 1)[0]
-            touch_import(None, package, node)
+
+            def orange_to_root(package):
+                return "Orange" if package.startswith("Orange.") else package
+
+            touch_import(None, orange_to_root(package), node)
             return new
         
