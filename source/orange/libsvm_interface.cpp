@@ -568,12 +568,6 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		param.weight = NULL;
 	}
 
-//	param.learner=this;
-//	param.classifier=NULL;
-	//cout<<param.kernel_type<<endl;
-
-//	tempExamples=examples;
-	//int exlen=examples->domain->attributes->size();
 	int classVarType;
 	if(examples->domain->classVar)
 		classVarType=examples->domain->classVar->varType;
@@ -595,28 +589,6 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	else // Compute the matrix using the kernelFunc
 		x_space = init_precomputed_problem(prob, examples, kernelFunc.getReference());
 
-//	prob.l=examples->numberOfExamples();
-//	prob.y=Malloc(double,prob.l);
-//	prob.x=Malloc(svm_node*, prob.l);
-//	x_space=Malloc(svm_node, numElements);
-//	int k=0;
-//	svm_node *node=x_space;
-//	PEITERATE(iter, examples){
-//		prob.x[k]=node;
-//		node=example_to_svm(*iter, node, k, (param.kernel_type==CUSTOM)? 1:0);
-//		switch(classVarType){
-//			case TValue::FLOATVAR:{
-//				prob.y[k]=(*iter).getClass().floatV;
-//				break;
-//			}
-//			case TValue::INTVAR:{
-//				prob.y[k]=(*iter).getClass().intV;
-//				break;
-//			}
-//		}
-//		k++;
-//	}
-
 	if(param.gamma==0)
 		param.gamma=1.0f/(float(numElements)/float(prob.l)-1);
 
@@ -627,8 +599,19 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		free(prob.x);
 		raiseError("LibSVM parameter error: %s", error);
 	}
-	//cout<<"training"<<endl;
+
 //	svm_print_string = (verbose)? &print_string_stdout : &print_string_null;
+
+	// If a probability model was requested LibSVM uses 5 fold
+	// cross-validation to estimate the prediction errors. This includes a
+	// random shuffle of the data. To make the results reproducible and
+	// consistent with 'svm-train' (which always learns just on one dataset
+	// in a process run) we reset the random seed. This could have unintended
+	// consequences.
+	if (param.probability)
+	{
+		srand(1);
+	}
 	svm_set_print_string_function((verbose)? NULL : &print_string_null);
 	model=svm_train(&prob,&param);
 
