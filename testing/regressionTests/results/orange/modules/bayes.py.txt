@@ -83,4 +83,3 @@ Attribute export-administration-act-south-africa
                      republican   democrat
                    n      0.806      0.194
                    y      0.357      0.643
-
