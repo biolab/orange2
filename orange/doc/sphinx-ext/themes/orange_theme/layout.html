@@ -9,11 +9,6 @@
 	{% include 'footer.html' %}
 {% endblock %}
 
-{% block extrahead %}
-<link rel="stylesheet" href= "{{ pathto('_static/' + style, 1) }}" type="text/css" />
-<link rel="stylesheet" href= "{{ pathto('_static/pygments.css', 1) }}" type="text/css" />
-{% endblock %}
-
 {% set rellinks = () %}
 {% set show_copyright = 0 %}
 {% set show_sphinx = 0 %}
