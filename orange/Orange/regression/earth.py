@@ -117,7 +117,12 @@ class EarthLearner(Orange.core.LearnerFD):
         :param degree: Maximum degree (num. of hinge functions per term)
             of the terms in the model.
         :type degree: int
-        :param terms: Maximum number of terms in the forward pass.
+        :param terms: Maximum number of terms in the forward pass (default 21).
+            
+            .. note:: If this paramter is None then 
+                ``min(200, max(20, 2 * n_attributes)) + 1`` will be used. This
+                is the same as the default setting in earth R package.
+                
         :type terms: int
         :param penalty: Penalty for hinges in the GCV computation (used 
             in the pruning pass). By default it is 3.0 if the degree > 1,
@@ -132,7 +137,7 @@ class EarthLearner(Orange.core.LearnerFD):
         :type new_var_penalty: float
         :param fast_k: Fast k.
         :param fast_beta: Fast beta.
-        :param pruned_terms: Maximum number if terms in the model after
+        :param pruned_terms: Maximum number of terms in the model after
             pruning (default None - no limit).
         :type pruned_terms: int
         :param scale_resp: Scale responses prior to forward pass (default
@@ -203,8 +208,13 @@ class EarthLearner(Orange.core.LearnerFD):
         else:
             sy = y
             
+        terms = self.terms
+        if terms is None:
+            # Automatic maximum number of terms
+            terms = min(200, max(20, 2 * x.shape[1])) + 1
+            
         n_terms, used, bx, dirs, cuts = forward_pass(x, sy,
-            degree=self.degree, terms=self.terms, penalty=self.penalty,
+            degree=self.degree, terms=terms, penalty=self.penalty,
             thresh=self.thresh, fast_k=self.fast_k, fast_beta=self.fast_beta,
             new_var_penalty=self.new_var_penalty)
         
