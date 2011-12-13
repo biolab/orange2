@@ -13,17 +13,14 @@ Outlier detection (``outliers``)
 
 .. rubric:: Examples
 
-.. _outliers1.py: code/outlier1.py
-.. _outliers2.py: code/outlier2.py
-
 The following example prints a list of Z-values of examples in bridges dataset
-(`outliers1.py`_).
+(:download:`outlier1.py <code/outlier1.py>`).
 
 .. literalinclude:: code/outlier1.py
 
 The following example prints 5 examples with highest Z-scores. Euclidean
 distance is used as a distance measurement and average distance is calculated
-over 3 nearest neighbours (`outliers2.py`_).
+over 3 nearest neighbours (:download:`outlier2.py <code/outlier2.py>`).
 
 .. literalinclude:: code/outlier2.py
 

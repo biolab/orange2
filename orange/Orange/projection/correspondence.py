@@ -16,13 +16,11 @@ quantitative data.
     :members:
     :exclude-members: A, B, D, F, G
              
-
-
 Example
 -------
 
 Data table given below represents smoking habits of different employees
-in a company (computed from smokers_ct.tab).
+in a company (computed from :download:`smokers_ct.tab <code/smokers_ct.tab>`).
 
     ================  ====  =====  ======  =====  ==========
                            Smoking category
@@ -57,7 +55,7 @@ correspondence analysis (e.g., represent the 10 consumer items in a
 of the table.
 
 So lets load the data, compute the contingency and do the analysis
-(`correspondence.py`_, uses `smokers_ct.tab`_))::
+(:download:`correspondence.py <code/correspondence.py>`, uses :download:`smokers_ct.tab <code/smokers_ct.tab>`)::
     
     from Orange.projection import correspondence
     from Orange.statistics import contingency
@@ -158,9 +156,6 @@ Utility Functions
 -----------------
 
 .. autofunction:: burt_table
-
-.. _correspondence.py: code/correspondence.py
-.. _smokers_ct.tab: code/smokers_ct.tab
 
 """
 

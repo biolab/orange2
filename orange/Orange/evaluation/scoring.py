@@ -25,13 +25,9 @@ with the vehicle data set (telling whether a vehicle described by the features
 extracted from a picture is a van, bus, or Opel or Saab car).
 
 Basic cross validation example is shown in the following part of 
-(`statExamples.py`_, uses `voting.tab`_ and `vehicle.tab`_):
+(:download:`statExamples.py <code/statExamples.py/>`, uses :download:`voting.tab <code/voting.tab>` and :download:`vehicle.tab <code/vehicle.tab>`):
 
 .. literalinclude:: code/statExample0.py
-
-.. _voting.tab: code/voting.tab
-.. _vehicle.tab: code/vehicle.tab
-.. _statExamples.py: code/statExamples.py
 
 If instances are weighted, weights are taken into account. This can be
 disabled by giving :obj:`unweighted=1` as a keyword argument. Another way of
@@ -50,14 +46,10 @@ General Measures of Quality
 .. autofunction:: IS
 
 So, let's compute all this in part of 
-(`statExamples.py`_, uses `voting.tab`_ and `vehicle.tab`_) and print it out:
+(:download:`statExamples.py <code/statExamples.py>`, uses :download:`voting.tab <code/voting.tab>` and :download:`vehicle.tab <code/vehicle.tab>`) and print it out:
 
 .. literalinclude:: code/statExample1.py
    :lines: 13-
-
-.. _voting.tab: code/voting.tab
-.. _vehicle.tab: code/vehicle.tab
-.. _statExamples.py: code/statExamples.py
 
 The output should look like this::
 
@@ -66,10 +58,8 @@ The output should look like this::
     tree    0.846   0.845   0.286    0.641
     majrty  0.614   0.526   0.474   -0.000
 
-Script `statExamples.py`_ contains another example that also prints out 
+Script :download:`statExamples.py <code/statExamples.py>` contains another example that also prints out 
 the standard errors.
-
-.. _statExamples.py: code/statExamples.py
 
 Confusion Matrix
 ================
@@ -95,7 +85,7 @@ Confusion Matrix
    probabilities, and consider the prediction "positive" if the predicted
    probability of the positive class is higher than the :obj:`cutoff`.
 
-   The example (part of `statExamples.py`_) below shows how setting the
+   The example (part of :download:`statExamples.py <code/statExamples.py>`) below shows how setting the
    cut off threshold from the default 0.5 to 0.2 affects the confusion matrics 
    for naive Bayesian classifier::
    
@@ -107,8 +97,6 @@ Confusion Matrix
        print "Confusion matrix for naive Bayes:"
        print "TP: %i, FP: %i, FN: %s, TN: %i" % (cm.TP, cm.FP, cm.FN, cm.TN)
 
-   .. _statExamples.py: code/statExamples.py
-   
    The output::
    
        Confusion matrix for naive Bayes:
@@ -152,15 +140,13 @@ vehicle.domain.classVar.values.index("van"))
    'learner' predicted 'predictedClass'. We shall compute and print out
    the matrix for naive Bayesian classifier.
    
-   Here we see another example from `statExamples.py`_::
+   Here we see another example from :download:`statExamples.py <code/statExamples.py>`::
    
        cm = Orange.evaluation.scoring.confusion_matrices(resVeh)[0]
        classes = vehicle.domain.classVar.values
        print "\t"+"\t".join(classes)
        for className, classConfusions in zip(classes, cm):
            print ("%s" + ("\t%i" * len(classes))) % ((className, ) + tuple(classConfusions))
-   
-   .. _statExamples.py: code/statExamples.py
    
    So, here's what this nice piece of code gives::
    
@@ -222,7 +208,7 @@ vehicle.domain.classVar.values.index("van"))
    these functions don't check the 'weighted' keyword argument.
    
    Let us print out sensitivities and specificities of our classifiers in
-   part of `statExamples.py`_::
+   part of :download:`statExamples.py <code/statExamples.py>`::
    
        cm = Orange.evaluation.scoring.confusion_matrices(res)
        print
@@ -230,8 +216,6 @@ vehicle.domain.classVar.values.index("van"))
        for l in range(len(learners)):
            print "%s\t%5.3f\t%5.3f" % (learners[l].name, Orange.evaluation.scoring.sens(cm[l]), Orange.evaluation.scoring.spec(cm[l]))
    
-   .. _statExamples.py: code/statExamples.py
-
 ROC Analysis
 ============
 
@@ -383,12 +367,10 @@ the sucess of numeric prediction:
 
 .. autofunction:: R2
 
-The following code (`statExamples.py`_) uses most of the above measures to
+The following code (:download:`statExamples.py <code/statExamples.py>`) uses most of the above measures to
 score several regression methods.
 
 .. literalinclude:: code/statExamplesRegression.py
-
-.. _statExamples.py: code/statExamples.py
 
 The code above produces the following output::
 
@@ -404,11 +386,9 @@ Ploting functions
 
 .. autofunction:: graph_ranks
 
-The following script (`statExamplesGraphRanks.py`_) shows hot to plot a graph:
+The following script (:download:`statExamplesGraphRanks.py <code/statExamplesGraphRanks.py>`) shows hot to plot a graph:
 
 .. literalinclude:: code/statExamplesGraphRanks.py
-
-.. _statExamplesGraphRanks.py: code/statExamplesGraphRanks.py
 
 Code produces the following graph: 
 

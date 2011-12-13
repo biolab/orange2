@@ -100,14 +100,11 @@ of Spanish Inquisition, given by Palin et al:
     
 The text needs to be cleaned of punctuation marks and capital letters at beginnings of the sentences, each sentence needs to be put in a new line and commas need to be inserted between the words.
 
-.. _inquisition.basket: code/inquisition.basket
-.. _lenses.tab: code/lenses.tab
-
-Data example (`inquisition.basket`_):
+Data example (:download:`inquisition.basket <code/inquisition.basket>`):
 
 .. literalinclude:: code/inquisition.basket
    
-Inducing the rules is trivial (uses `inquisition.basket`_): ::
+Inducing the rules is trivial (uses :download:`inquisition.basket <code/inquisition.basket>`)::
 
     import Orange
     data = Orange.data.Table("inquisition")
@@ -206,7 +203,7 @@ feature on the right-hand side is the class Feature.
 
 Meaning of all attributes (except the new one, classificationRules) is the
 same as for AssociationRulesSparseInducer. See the description of
-:ref:`maxItemSets <maxItemSets>` there. The example uses `lenses.tab`_: ::
+:ref:`maxItemSets <maxItemSets>` there. The example uses :download:`lenses.tab <code/lenses.tab>`::
 
     import Orange
 
@@ -352,7 +349,7 @@ Association rule inducers do not store evidence about which example supports
 which rule (although this information is available during induction its
 discarded afterwards). Let us write a function that finds the examples that
 confirm the rule (fit both sides of it) and those that contradict it (fit the
-left-hand side but not the right). The example uses the `lenses.tab`_: ::
+left-hand side but not the right). The example uses the :download:`lenses.tab <code/lenses.tab>`::
 
     import Orange
 

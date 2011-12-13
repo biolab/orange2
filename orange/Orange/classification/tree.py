@@ -20,8 +20,6 @@ The following code builds a :obj:`TreeClassifier` on the Iris data set
 .. literalinclude:: code/orngTree1.py
    :lines: 1-4
 
-.. _orngTree1.py: code/orngTree1.py
-
 See `Decision tree learning
 <http://en.wikipedia.org/wiki/Decision_tree_learning>`_ on Wikipedia
 for introduction to classification trees.
@@ -113,9 +111,6 @@ This example works with the lenses data set:
    :lines: 7-10
 
 The following function counts the number of nodes in a tree:
-
-.. _lenses.tab: code/lenses.tab
-.. _treestructure.py: code/treestructure.py
 
 .. literalinclude:: code/treestructure.py
    :lines: 12-21
@@ -261,8 +256,6 @@ second tree is completely random: it stops induction in 20% of cases.
 Note that in the second case lambda function still has three parameters,
 even though in does not need any, since so many are necessary
 for :obj:`~TreeLearner.stop`.
-
-.. _tree3.py: code/tree3.py
 
 .. literalinclude:: code/tree3.py
    :lines: 8-23
@@ -822,8 +815,6 @@ levels is built as follows:
 .. literalinclude:: code/orngTree1.py
    :lines: 1-4
 
-.. _orngTree1.py: code/orngTree1.py
-
 Printing the predicted class at each node, the number
 of instances in the majority class with the total number of instances in
 the node requires a custom format string::
@@ -1145,8 +1136,6 @@ The following code prints the classification margin for each node,
 that is, the difference between the proportion of the largest and the
 second largest class in the node:
 
-.. _orngTree2.py: code/orngTree2.py
-
 .. literalinclude:: code/orngTree2.py
    :lines: 7-31
 
@@ -1292,9 +1281,6 @@ it checks if the built C4.5 gives the same results as the original.
 
 Examples
 ========
-
-.. _tree_c45.py: code/tree_c45.py
-.. _iris.tab: code/iris.tab
 
 This
 script constructs the same learner as you would get by calling

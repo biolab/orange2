@@ -40,9 +40,6 @@ The following example computes feature scores, both with
 :obj:`score_all` and by scoring each feature individually, and prints out 
 the best three features. 
 
-.. _scoring-all.py: code/scoring-all.py
-.. _voting.tab: code/voting.tab
-
 .. literalinclude:: code/scoring-all.py
     :lines: 7-
 
@@ -432,18 +429,6 @@ Other
 .. [Breiman1984] L Breiman et al: Classification and Regression Trees, Chapman and Hall, 1984.
 
 .. [Kononenko1995] I Kononenko: On biases in estimating multi-valued attributes, International Joint Conference on Artificial Intelligence, 1995.
-
-.. _iris.tab: code/iris.tab
-.. _lenses.tab: code/lenses.tab
-.. _scoring-relief-gainRatio.py: code/scoring-relief-gainRatio.py
-.. _voting.tab: code/voting.tab
-.. _selection-best3.py: code/selection-best3.py
-.. _scoring-info-lenses.py: code/scoring-info-lenses.py
-.. _scoring-info-iris.py: code/scoring-info-iris.py
-.. _scoring-diff-measures.py: code/scoring-diff-measures.py
-
-.. _scoring-regression.py: code/scoring-regression.py
-.. _scoring-relief-caching: code/scoring-relief-caching
 
 """
 

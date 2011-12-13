@@ -64,34 +64,42 @@ class RandomForestLearner(orange.Learner):
         
     :param trees: number of trees in the forest.
     :type trees: int
+
     :param attributes: number of randomly drawn features among
             which to select the best to split the nodes in tree
             induction. The default, None, means the square root of
             the number of features in the training data. Ignored if
             :obj:`learner` is specified.
     :type attributes: int
+
     :param base_learner: A base tree learner. The base learner will be
         randomized with Random Forest's random
         feature subset selection.  If None (default),
         :class:`~Orange.classification.tree.SimpleTreeLearner` and it
         will not split nodes with less than 5 data instances.
     :type base_learner: None or
-    :class:`Orange.classification.tree.TreeLearner` or
+        :class:`Orange.classification.tree.TreeLearner` or
         :class:`Orange.classification.tree.SimpleTreeLearner`
+
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
+
     :param learner: Tree induction learner. If `None` (default), 
         the :obj:`base_learner` will be used (and randomized). If
         :obj:`learner` is specified, it will be used as such
         with no additional transformations.
     :type learner: None or :class:`Orange.core.Learner`
+
     :param callback: a function to be called after every iteration of
             induction of classifier. This is called with parameter 
             (from 0.0 to 1.0) that gives estimates on learning progress.
+
     :param name: name of the learner.
     :type name: string
+
     :rtype: :class:`~Orange.ensemble.forest.RandomForestClassifier` or 
             :class:`~Orange.ensemble.forest.RandomForestLearner`
+
     """
 
     def __new__(cls, instances=None, weight = 0, **kwds):
@@ -270,27 +278,32 @@ class ScoreFeature(orange.MeasureAttribute):
     """
     :param trees: number of trees in the forest.
     :type trees: int
+
     :param attributes: number of randomly drawn features among
             which to select the best to split the nodes in tree
             induction. The default, None, means the square root of
             the number of features in the training data. Ignored if
             :obj:`learner` is specified.
     :type attributes: int
+
     :param base_learner: A base tree learner. The base learner will be
         randomized with Random Forest's random
         feature subset selection.  If None (default),
         :class:`~Orange.classification.tree.SimpleTreeLearner` and it
         will not split nodes with less than 5 data instances.
     :type base_learner: None or
-    :class:`Orange.classification.tree.TreeLearner` or
+        :class:`Orange.classification.tree.TreeLearner` or
         :class:`Orange.classification.tree.SimpleTreeLearner`
+
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
+
     :param learner: Tree induction learner. If `None` (default), 
         the :obj:`base_learner` will be used (and randomized). If
         :obj:`learner` is specified, it will be used as such
         with no additional transformations.
     :type learner: None or :class:`Orange.core.Learner`
+
     """
     def __init__(self, trees=100, attributes=None, rand=None, base_learner=None, learner=None):
 

@@ -94,7 +94,7 @@ the above class for all variables in the domain.
         truncates the list, so the indices do not respond to indices of
         variables in the domain.
     
-    part of `distributions-basic-stat.py`_ (uses monks-1.tab)
+    part of :download:`distributions-basic-stat.py <code/distributions-basic-stat.py>` (uses :download:`monks-1.tab <code/monks-1.tab>`)
     
     .. literalinclude:: code/distributions-basic-stat.py
         :lines: 1-10
@@ -108,7 +108,7 @@ the above class for all variables in the domain.
          petal width 0.100 2.500 1.199
 
 
-    part of `distributions-basic-stat`_ (uses iris.tab)
+    part of :download:`distributions-basic-stat.py <code/distributions-basic-stat.py>` (uses :download:`iris.tab <code/iris.tab>`)
     
     .. literalinclude:: code/distributions-basic-stat.py
         :lines: 11-
@@ -117,8 +117,6 @@ the above class for all variables in the domain.
 
         5.84333467484 
 
-.. _distributions-basic-stat: code/distributions-basic-stat.py
-.. _distributions-basic-stat.py: code/distributions-basic-stat.py
 """
 
 from Orange.core import BasicAttrStat as Variable

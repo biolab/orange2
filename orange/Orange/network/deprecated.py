@@ -28,7 +28,7 @@ Reading and saving a network
 This example demonstrates reading a network. Network class can read or write 
 Pajek (.net) or GML file format.
 
-`network-read.py`_ (uses: `K5.net`_):
+:download:`network-read.py <code/network-read.py>` (uses: :download:`K5.net <code/K5.net>`):
 
 .. literalinclude:: code/network-read.py
     :lines: 4-5
@@ -38,7 +38,7 @@ Visualize a network in NetExplorer widget
 
 This example demonstrates how to display a network in NetExplorer.
 
-part of `network-widget.py`_
+part of :download:`network-widget.py <code/network-widget.py>`
 
 .. literalinclude:: code/network-widget.py
     :lines: 10-16
@@ -65,7 +65,7 @@ Vertices are initially placed randomly. Graph is visualized using pylabs
 matplotlib. NetworkOptimization class is not needed because we do not apply any 
 layout optimization method in this example.
 
-`network-constructor.py`_
+:download:`network-constructor.py <code/network-constructor.py>`
 
 .. literalinclude:: code/network-constructor.py
 
@@ -80,7 +80,7 @@ Network layout optimization
 This example demonstrates how to optimize network layout using one of included 
 algorithms.
 
-part of `network-optimization.py`_
+part of :download:`network-optimization.py <code/network-optimization.py>`
 
 .. literalinclude:: code/network-optimization.py
     :lines: 12-16
@@ -251,7 +251,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     If objects contains a dictionary, its keys are vertex identifiers and the
     values in the dictionary should be integers, eg.
        
-    part of `network-graph.py`_
+    part of :download:`network-graph.py <code/network-graph.py>`
 
     .. literalinclude:: code/network-graph.py
         :lines: 20-23
@@ -450,7 +450,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
 Examples
 ^^^^^^^^
 
-How to use graphs, part of `network-graph.py`_
+How to use graphs, part of :download:`network-graph.py <code/network-graph.py>`
 
 .. literalinclude:: code/network-graph.py
     :lines: 9-56
@@ -476,7 +476,7 @@ Results::
     (None, None, 3)
     (None, None, None)
 
-How to use graphs with objects on edges, part of `network-graph-obj.py`_
+How to use graphs with objects on edges, part of :download:`network-graph-obj.py <code/network-graph-obj.py>`
 
 .. literalinclude:: code/network-graph-obj.py
     :lines: 9-59
@@ -504,8 +504,8 @@ Results::
     (None, None, 3)
     (None, None, None)
 
-An example of network analysis, part of `network-graph-analysis.py`_ (uses:
-`combination.net`_):
+An example of network analysis, part of :download:`network-graph-analysis.py <code/network-graph-analysis.py>` (uses:
+:download:`combination.net <code/combination.net>`):
 
 .. literalinclude:: code/network-graph-analysis.py
     :lines: 12-49
@@ -550,16 +550,6 @@ Community Detection in Graphs (deprecated)
 
 .. autoclass:: Orange.network.NetworkClustering
    :members:
-
-.. _network-constructor.py: code/network-constructor.py
-.. _network-optimization.py: code/network-optimization.py
-.. _network-read.py: code/network-read.py
-.. _K5.net: code/K5.net
-.. _combination.net: code/combination.net
-.. _network-widget.py: code/network-widget.py
-.. _network-graph-analysis.py: code/network-graph-analysis.py
-.. _network-graph.py: code/network-graph.py
-.. _network-graph-obj.py: code/network-graph-obj.py
 
 """
 import math

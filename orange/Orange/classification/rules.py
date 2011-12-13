@@ -31,13 +31,10 @@ the required behavior.
 
 Usage is consistent with typical learner usage in Orange:
 
-`rules-cn2.py`_ (uses `titanic.tab`_)
+:download:`rules-cn2.py <code/rules-cn2.py>` (uses :download:`titanic.tab <code/titanic.tab>`)
 
 .. literalinclude:: code/rules-cn2.py
     :lines: 7-
-
-.. _rules-cn2.py: code/rules-cn2.py
-.. _titanic.tab: code/titanic.tab
 
 The result::
     
@@ -157,14 +154,11 @@ can in fact be fine-tuned to specific needs by replacing individual components.
 Here is a simple example, while a detailed architecture can be observed
 in description of classes that follows it:
 
-part of `rules-customized.py`_ (uses `titanic.tab`_)
+part of :download:`rules-customized.py <code/rules-customized.py>` (uses :download:`titanic.tab <code/titanic.tab>`)
 
 .. literalinclude:: code/rules-customized.py
     :lines: 7-17
 
-.. _rules-customized.py: code/rules-customized.py
-
-In the example, the rule evaluation function was set to an m-estimate of
 probability with m=50. The result is::
 
     IF sex=['male'] AND status=['second'] AND age=['adult'] THEN survived=no<154.000, 14.000>
@@ -186,7 +180,7 @@ learner finishes, it destructs all *default* components. Continuing with our
 example, assume that we wish to set a different validation function and a
 different bean width. This is simply written as:
 
-part of `rules-customized.py`_ (uses `titanic.tab`_)
+part of :download:`rules-customized.py <code/rules-customized.py>` (uses :download:`titanic.tab <code/titanic.tab>`)
 
 .. literalinclude:: code/rules-customized.py
     :lines: 19-23

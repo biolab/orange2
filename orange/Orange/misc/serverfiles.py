@@ -73,10 +73,7 @@ Remote file management
 Examples
 ========
 
-.. _serverfiles1.py: code/serverfiles1.py
-.. _serverfiles2.py: code/serverfiles2.py
-
-Listing local files, files from the repository and downloading all available files from domain "demo" (`serverfiles1.py`_).
+Listing local files, files from the repository and downloading all available files from domain "demo" (:download:`serverfiles1.py <code/serverfiles1.py>`).
 
 .. literalinclude:: code/serverfiles1.py
 
@@ -94,7 +91,7 @@ A possible output (it depends on the current repository state)::
     My files after download ['urllib2_file.py', 'orngServerFiles.py']
     My domains ['KEGG', 'gene_sets', 'dictybase', 'NCBI_geneinfo', 'GO', 'miRNA', 'demo', 'Taxonomy', 'GEO']
 
-A domain with a simple file can be built as follows (`serverfiles2.py`_). Of course,
+A domain with a simple file can be built as follows (:download:`serverfiles2.py <code/serverfiles2.py>`). Of course,
 the username and password should be valid.
 
 .. literalinclude:: code/serverfiles2.py

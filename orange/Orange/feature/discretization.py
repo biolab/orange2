@@ -37,8 +37,6 @@ list of methods with belonging classes.
 * Fixed discretization (:class:`IntervalDiscretizer`). Discretization with 
   user-prescribed cut-off points.
 
-.. _discretization.py: code/discretization.py
-
 Instances of classes derived from :class:`Discretization`. It define a
 single method: the call operator. The object can also be called through
 constructor.
@@ -52,7 +50,7 @@ constructor.
         attribute. Argument ``attribute`` can be a descriptor, index or
         name of the attribute.
 
-Here's an example. Part of `discretization.py`_:
+Here's an example. Part of :download:`discretization.py <code/discretization.py>`:
 
 .. literalinclude:: code/discretization.py
     :lines: 7-15
@@ -161,7 +159,7 @@ for discretizations induced by :class:`BiModalDiscretization`.
 
 Let us manually construct an interval discretizer with cut-off points at 3.0
 and 5.0. We shall use the discretizer to construct a discretized sepal length 
-(part of `discretization.py`_):
+(part of :download:`discretization.py <code/discretization.py>`):
 
 .. literalinclude:: code/discretization.py
     :lines: 22-26
@@ -178,7 +176,7 @@ That's all. First five examples of ``data2`` are now
 
 Can you use the same discretizer for more than one attribute? Yes, as long
 as they have same cut-off points, of course. Simply call construct_var for each
-continuous attribute (part of `discretization.py`_):
+continuous attribute (part of :download:`discretization.py <code/discretization.py>`):
 
 .. literalinclude:: code/discretization.py
     :lines: 30-34
@@ -286,7 +284,7 @@ Discretization Algorithms
 For an example, we shall discretize all attributes of Iris dataset into 6
 intervals. We shall construct an :class:`Orange.data.Table` with discretized
 attributes and print description of the attributes (part
-of `discretization.py`_):
+of :download:`discretization.py <code/discretization.py>`):
 
 .. literalinclude:: code/discretization.py
     :lines: 38-43
@@ -318,7 +316,7 @@ Compare the following with the values above.
     D_petal width: first interval at 0.500, step 0.400
 
 As all discretizers, :class:`EquiDistDiscretizer` also has the method 
-``construct_variable`` (part of `discretization.py`_):
+``construct_variable`` (part of :download:`discretization.py <code/discretization.py>`):
 
 .. literalinclude:: code/discretization.py
     :lines: 69-73
@@ -363,7 +361,7 @@ The use of this discretization is the same as the use of
         Forces the algorithm to induce at least one cut-off point, even when
         its information gain is lower than MDL (default: false).
 
-Part of `discretization.py`_:
+Part of :download:`discretization.py <code/discretization.py>`:
 
 .. literalinclude:: code/discretization.py
     :lines: 77-80

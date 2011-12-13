@@ -408,9 +408,7 @@ There are two functions for reusing the variables instead of creating new ones.
 
     :return_type: :class:`Orange.data.variable.Variable`
     
-.. _`variable-reuse.py`: code/variable-reuse.py
-
-These following examples (from `variable-reuse.py`_) give the shown results if
+These following examples (from :download:`variable-reuse.py <code/variable-reuse.py>`) give the shown results if
 executed only once (in a Python session) and in this order.
 
 :func:`Orange.data.variable.make` can be used for the construction of new variables. ::

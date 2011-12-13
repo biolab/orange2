@@ -31,7 +31,7 @@ Example
 The following snippet loads the data set lymphography and prints out the
 feature with the highest information gain.
 
-part of `misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
+part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 7-16
@@ -41,7 +41,7 @@ Our candidates are tuples gain ratios and features, so we set
 element (gain ratios). We could achieve the same by initializing the object
 like this:
 
-part of `misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
+part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 18-18
@@ -49,13 +49,10 @@ part of `misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
 
 The other way to do it is through indices.
 
-`misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
+:download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 25-
-
-.. _misc-selection-bestonthefly.py: code/misc-selection-bestonthefly.py.py
-.. _lymphography.tab: code/lymphography.tab
 
 Here we only give gain ratios to :obj:`BestOnTheFly`, so we don't have
 to specify a special compare operator. After checking all features we

@@ -153,7 +153,7 @@ Examples
 --------
 
 The first example shows a very simple induction of a logistic regression
-classifier (`logreg-run.py`_, uses `titanic.tab`_).
+classifier (:download:`logreg-run.py <code/logreg-run.py>`, uses :download:`titanic.tab <code/titanic.tab>`).
 
 .. literalinclude:: code/logreg-run.py
 
@@ -174,7 +174,7 @@ Result::
        sex=female       2.42       0.14      17.04       0.00      11.25
 
 The next examples shows how to handle singularities in data sets
-(`logreg-singularities.py`_, uses `adult_sample.tab`_).
+(:download:`logreg-singularities.py <code/logreg-singularities.py>`, uses :download:`adult_sample.tab <code/adult_sample.tab>`).
 
 .. literalinclude:: code/logreg-singularities.py
 
@@ -218,7 +218,7 @@ classifier would return an error::
 We can see that the attribute workclass is causing a singularity.
 
 The example below shows, how the use of stepwise logistic regression can help to
-gain in classification performance (`logreg-stepwise.py`_, uses `ionosphere.tab`_):
+gain in classification performance (:download:`logreg-stepwise.py <code/logreg-stepwise.py>`, uses :download:`ionosphere.tab <code/ionosphere.tab>`):
 
 .. literalinclude:: code/logreg-stepwise.py
 
@@ -259,14 +259,6 @@ The output of this script is::
      8 x a6
     10 x a9
     10 x a8
-
-.. _logreg-run.py: code/logreg-run.py
-.. _logreg-singularities.py: code/logreg-singularities.py
-.. _logreg-stepwise.py: code/logreg-stepwise.py
-
-.. _ionosphere.tab: code/ionosphere.tab
-.. _adult_sample.tab: code/adult_sample.tab
-.. _titanic.tab: code/titanic.tab
 
 """
 

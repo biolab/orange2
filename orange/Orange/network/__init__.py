@@ -22,28 +22,23 @@ Reading and writing a network
 This example demonstrates reading a network. Network class can read or write 
 Pajek (.net) or GML file format.
 
-`network-read-nx.py`_ (uses: `K5.net`_):
+:download:`network-read-nx.py <code/network-read-nx.py>` (uses: :download:`K5.net <code/K5.net>`):
 
 .. literalinclude:: code/network-read.py
     :lines: 5-6
     
-.. _network-read-nx.py: code/network-read-nx.py
-.. _K5.net: code/K5.net
-
 Visualize a network in NetExplorer widget
 -----------------------------------------
 
 This example demonstrates how to display a network in NetExplorer.
 
-part of `network-widget.py`_
+part of :download:`network-widget.py <code/network-widget.py>`
 
 .. literalinclude:: code/network-widget.py
     :lines: 10-16
     
 .. image:: files/network-explorer.png
     :width: 100%
-
-.. _network-widget.py: code/network-widget.py
 
 """
 

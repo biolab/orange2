@@ -11,7 +11,7 @@ Regression trees
 Regression tree shares its implementation with Orange.classification.tree.TreeLearner,
 but uses a different set of functions to evaluate node splitting and stop
 criteria. Usage of regression trees is straightforward as demonstrated on the
-following example (`regression-tree-run.py`_, uses `servo.tab`_):
+following example (:download:`regression-tree-run.py <code/regression-tree-run.py>`, uses :download:`servo.tab <code/servo.tab>`):
 
 .. literalinclude:: code/regression-tree-run.py
    :lines: 7-
@@ -21,10 +21,6 @@ following example (`regression-tree-run.py`_, uses `servo.tab`_):
 
 .. autoclass:: TreeClassifier
     :members:
-
-.. _regression-tree-run.py: code/regression-tree-run.py
-.. _servo.tab: code/servo.tab
-
 
 =================
 SimpleTreeLearner
