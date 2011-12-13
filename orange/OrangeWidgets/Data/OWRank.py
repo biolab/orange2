@@ -44,20 +44,27 @@ from orngSVM import MeasureAttribute_SVMWeights
 from orngEnsemble import MeasureAttribute_randomForests
 
 MEASURE_PARAMS = {ScoreEarthImportance: \
-                    [{"name": "degree", 
-                      "type": int,
-                      "display_name": "Max. term degree",
-                      "range": range(1, 4),
-                      "default": 2,
-                      "doc": "Maximum degree of terms included in the model." 
-                     },
-                     {"name": "t",
+                    [{"name": "t",
                       "type": int,
                       "display_name": "Num. models.",
                       "range": range(1, 21),
                       "default": 10,
                       "doc": "Number of models to train for feature scoring."
                       },
+                     {"name": "terms",
+                      "type": int,
+                      "display_name": "Max. num of terms",
+                      "range": range(3, 200),
+                      "default": 10,
+                      "doc": "Maximum number of terms in the forward pass" 
+                      },
+                     {"name": "degree", 
+                      "type": int,
+                      "display_name": "Max. term degree",
+                      "range": range(1, 4),
+                      "default": 2,
+                      "doc": "Maximum degree of terms included in the model." 
+                     },
 #                     {"name": "score_what",
 #                      "type": int,
 #                      "display_name": "Score what",
@@ -145,7 +152,7 @@ def measure_parameters(measure):
     return [MethodParameter(**args) for args in MEASURE_PARAMS.get(measure, [])]
 
 def param_attr_name(measure, param):
-    """ Name of the OWRank widget where the parameter is stored. 
+    """ Name of the OWRank widget's member where the parameter is stored. 
     """
     return "param_" + measure.__name__ + "_" + param.name
         
