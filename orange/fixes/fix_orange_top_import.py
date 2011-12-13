@@ -27,9 +27,7 @@ def Import(name_leafs):
 
 class FixOrangeTopImport(fixer_base.BaseFix):
 
-    PATTERN = """
-    import_name< 'import' imp=any >
-    """
+    PATTERN = """import_name< 'import' imp=any >"""
 
     run_order = 7
 
@@ -54,7 +52,17 @@ class FixOrangeTopImport(fixer_base.BaseFix):
             else:
                 handle_one(imp)
     
-            #FIXME remove newlines that remained from these import statements
-            return Import(new_contents) if new_contents else BlankLine()
+            #copy prefix, so you do not lose comments
+            opref = node.prefix
+            if new_contents:
+                nn = Import(new_contents)
+                nn.prefix = opref
+            else:
+                nn = BlankLine()
+                if opref and opref[-1] in ["\n"]: #remove previous newline
+                    opref = opref[:-1]
+                nn.prefix = opref
+        
+            return nn
 
         return t(imp)
