@@ -1725,9 +1725,9 @@ def AUC_x(cdtComputer, ite, all_ite, divideByIfIte, computerArgs):
         return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T)/divideByIfIte for cdt in cdts], True
         
     if all_ite:
-         cdts = cdtComputer(*(all_ite, ) + computerArgs)
-         if not is_CDT_empty(cdts[0]):
-             return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
+        cdts = cdtComputer(*(all_ite, ) + computerArgs)
+        if not is_CDT_empty(cdts[0]):
+            return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
 
     return False, False
 
