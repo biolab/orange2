@@ -110,12 +110,17 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
             }
             else if (m_state & Marked)
             {
-                QRadialGradient g(0.5*ps, 0.5*ps, 0.5*m_size);
+                /*
+            	QRadialGradient g(0.5*ps, 0.5*ps, 0.5*m_size);
                 g.setColorAt(0, m_color);
                 g.setColorAt(0.5, Qt::transparent);
                 g.setColorAt(1, m_color);
                 brush = QBrush(g);
                 pen.setStyle(Qt::NoPen);
+                */
+            	QColor c = Qt::yellow;
+            	c.setAlpha(70);
+				brush.setColor(c);
             }
             else
             {
