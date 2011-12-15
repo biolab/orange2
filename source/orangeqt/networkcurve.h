@@ -213,6 +213,7 @@ public:
 
     typedef QList<EdgeItem*> Edges;
     typedef QMap<int, NodeItem*> Nodes;
+    typedef QMap<int, QGraphicsTextItem*> Labels;
 
     explicit NetworkCurve(QGraphicsItem* parent = 0);
     virtual ~NetworkCurve();
@@ -237,6 +238,12 @@ public:
     Edges edges() const;
     void set_edges(const Edges& edges);
     void add_edges(const Edges& edges);
+
+    Labels labels() const;
+    void set_labels(const Labels& labels);
+    void add_labels(const Labels& labels);
+    void remove_label(int index);
+    void remove_labels(const QList< int >& labels);
 
     QList<QPair<int, int> > edge_indices();
 
@@ -271,6 +278,7 @@ public:
 private:
     Nodes m_nodes;
     Edges m_edges;
+    Labels m_labels;
 
     double m_min_node_size;
     double m_max_node_size;

@@ -265,9 +265,9 @@ try:
                         ("buttonM2S", "Add marked to selection", None, None, "marked_to_selected", 'Dlg_Mark2Sel'),
                         ("buttonS2M", "Add selection to marked", None, None, "selected_to_marked", 'Dlg_Sel2Mark'),
                         G.Spacing,
-                        ("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
-                        ("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
-                        ("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
+                        #("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
+                        #("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
+                        #("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
                     ])
             self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_data)
             OWGUI.rubber(self.zoomSelectToolbar)

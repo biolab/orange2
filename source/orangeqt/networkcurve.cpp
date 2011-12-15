@@ -20,6 +20,8 @@
 
 #include <QtCore/QMap>
 #include <QtCore/QList>
+#include <QtGui/QTextBlockFormat>
+#include <QtGui/QTextCursor>
 
 #include <QtCore/qmath.h>
 #include <limits>
@@ -528,6 +530,8 @@ NetworkCurve::~NetworkCurve()
     m_edges.clear();
     qDeleteAll(m_nodes);
     m_nodes.clear();
+    qDeleteAll(m_labels);
+    m_labels.clear();
 }
 
 
@@ -989,6 +993,70 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	return 0;
 }
 
+NetworkCurve::Labels NetworkCurve::labels() const
+{
+    return m_labels;
+}
+
+void NetworkCurve::set_labels(const NetworkCurve::Labels& labels)
+{
+    cancel_all_updates();
+    qDeleteAll(m_labels);
+    m_labels = labels;
+    //Q_ASSERT(m_labels.uniqueKeys() == m_labels.keys());
+    //register_points();
+}
+
+void NetworkCurve::add_labels(const NetworkCurve::Labels& labels)
+{
+    Labels::ConstIterator it = labels.constBegin();
+    Labels::ConstIterator end = labels.constEnd();
+    QList<int> indices;
+	for (it; it != end; ++it)
+	{
+		indices.append(it.key());
+
+		if (m_labels.contains(it.key()))
+		{
+			remove_label(it.key());
+		}
+	}
+
+	m_labels.unite(labels);
+    Q_ASSERT(m_labels.uniqueKeys() == m_labels.keys());
+	//register_points();
+}
+
+void NetworkCurve::remove_label(int index)
+{
+    cancel_all_updates();
+    if (!m_labels.contains(index))
+    {
+        qWarning() << "Trying to remove label for node " << index << " which is not in the network";
+        return;
+    }
+    QGraphicsItem* label = m_labels.take(index);
+    //Q_ASSERT(node->index() == index);
+    /*
+    Plot* p = plot();
+    if (p)
+    {
+        p->remove_point(node, this);
+    }
+	*/
+    delete label;
+}
+
+void NetworkCurve::remove_labels(const QList<int>& labels)
+{
+    cancel_all_updates();
+    foreach (int i, labels)
+    {
+        remove_label(i);
+    }
+
+}
+
 void NetworkCurve::set_edges(const NetworkCurve::Edges& edges)
 {
     cancel_all_updates();
@@ -1039,7 +1107,6 @@ void NetworkCurve::remove_nodes(const QList<int>& nodes)
     {
         remove_node(i);
     }
-    
 }
 
 void NetworkCurve::remove_node(int index)
@@ -1206,11 +1273,33 @@ void NetworkCurve::set_node_sizes(const QMap<int, double>& sizes, double min_siz
 
 void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
 {
-    cancel_all_updates();
-	QMap<int, QString>::ConstIterator it;
+	cancel_all_updates();
+    qDeleteAll(m_labels);
+    m_labels.clear();
+    QMap<int, QString>::ConstIterator it;
 	for (it = labels.constBegin(); it != labels.constEnd(); ++it)
 	{
-		m_nodes[it.key()]->set_label(it.value());
+		QGraphicsTextItem* item = new QGraphicsTextItem(it.value(), this);
+		item->setZValue(0.6);
+		item->setFont(plot()->font());
+		item->setFlag(ItemIgnoresTransformations);
+		//item->setPos(m_nodes[it.key()]->pos() - QPointF(item->boundingRect().width() / 2, 0));
+		item->setPos(m_nodes[it.key()]->pos());
+		/*
+        QFontMetrics fm(item->font());
+        QTransform t;
+        t.translate(-(fm.width(it.value()) / 2), -5);
+		item->setTransform(t);
+        item->setTextWidth(item->boundingRect().width());
+        QTextBlockFormat format;
+        format.setAlignment(Qt::AlignHCenter);
+        QTextCursor cursor = item->textCursor();
+        cursor.select(QTextCursor::Document);
+        cursor.mergeBlockFormat(format);
+        cursor.clearSelection();
+        item->setTextCursor(cursor);
+        */
+		m_labels.insert(it.key(), item);
 	}
 }
 
