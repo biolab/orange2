@@ -490,7 +490,7 @@ class CorrelationsGraph(OWScatterPlotGraph):
         y2 = beta[0] + x_max * beta[1]
         
         self.regression_line.setData([x_min, x_max], [y1, y2])        
-        
+        self.replot()
 
 def main():
     import sys
