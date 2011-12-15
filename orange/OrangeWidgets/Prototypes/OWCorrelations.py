@@ -461,15 +461,19 @@ class CorrelationsGraph(OWScatterPlotGraph):
                                                   symbol=OWGraph.QwtSymbol.NoSymbol,
                                                   autoScale=True)
         if isinstance(x_attr, basestring):
-            x_attr = self.attribute_name_index[x_attr]
+            x_index = self.attribute_name_index[x_attr]
+        else:
+            x_index = x_attr
             
         if isinstance(y_attr, basestring):
-            y_attr = self.attribute_name_index[y_attr]
+            y_index = self.attribute_name_index[y_attr]
+        else:
+            y_index = y_attr
         
-        X = self.original_data[x_attr]
-        Y = self.original_data[y_attr]
+        X = self.original_data[x_index]
+        Y = self.original_data[y_index]
         
-        valid = self.getValidList([x_attr, y_attr])
+        valid = self.getValidList([x_index, y_index])
         
         X = X[valid]
         Y = Y[valid]
