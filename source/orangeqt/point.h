@@ -46,6 +46,14 @@ struct PointData
     bool transparent;
 };
 
+class LabelItem : public QGraphicsTextItem
+{
+public:
+	LabelItem(QGraphicsItem *parent = 0);
+	LabelItem(const QString &text, QGraphicsItem *parent = 0);
+	~LabelItem();
+};
+
 class Point : public QGraphicsObject
 {
     Q_OBJECT
@@ -163,7 +171,7 @@ public:
 
     static QHash<PointData, QPixmap> pixmap_cache;
 
-    QGraphicsTextItem* label;
+    LabelItem* label;
 
 private:
     static QPainterPath trianglePath(double d, double rot);

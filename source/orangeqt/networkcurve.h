@@ -213,7 +213,7 @@ public:
 
     typedef QList<EdgeItem*> Edges;
     typedef QMap<int, NodeItem*> Nodes;
-    typedef QMap<int, QGraphicsTextItem*> Labels;
+    typedef QMap<int, LabelItem*> Labels;
 
     explicit NetworkCurve(QGraphicsItem* parent = 0);
     virtual ~NetworkCurve();

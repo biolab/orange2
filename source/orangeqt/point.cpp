@@ -61,6 +61,47 @@ DataPoint::operator QPointF() const
     return QPointF(x, y);
 }
 
+LabelItem::LabelItem(QGraphicsItem* parent): QGraphicsTextItem(parent)
+{
+}
+
+LabelItem::LabelItem(const QString &text, QGraphicsItem *parent): QGraphicsTextItem(text, parent)
+{
+}
+
+LabelItem::~LabelItem()
+{
+}
+/*
+void LabelItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    Q_UNUSED(widget);
+    if (dd->control) {
+        painter->save();
+        QRectF r = option->exposedRect;
+        painter->translate(-dd->controlOffset());
+        r.translate(dd->controlOffset());
+
+        QTextDocument *doc = dd->control->document();
+        QTextDocumentLayout *layout = qobject_cast<QTextDocumentLayout *>(doc->documentLayout());
+
+        // the layout might need to expand the root frame to
+        // the viewport if NoWrap is set
+        if (layout)
+            layout->setViewport(dd->boundingRect);
+
+        dd->control->drawContents(painter, r);
+
+        if (layout)
+            layout->setViewport(QRect());
+
+        painter->restore();
+    }
+
+    if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus))
+        qt_graphicsItem_highlightSelected(this, painter, option);
+}
+*/
 
 Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsObject(parent),
  m_symbol(symbol),

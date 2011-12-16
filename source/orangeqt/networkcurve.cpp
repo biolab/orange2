@@ -17,6 +17,7 @@
 */
 
 #include "networkcurve.h"
+#include "point.h"
 
 #include <QtCore/QMap>
 #include <QtCore/QList>
@@ -1289,7 +1290,7 @@ void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
     QMap<int, QString>::ConstIterator it;
 	for (it = labels.constBegin(); it != labels.constEnd(); ++it)
 	{
-		QGraphicsTextItem* item = new QGraphicsTextItem(it.value(), this);
+		LabelItem* item = new LabelItem(it.value(), this);
 		item->setZValue(0.6);
 		item->setFont(plot()->font());
 		item->setFlag(ItemIgnoresTransformations);
