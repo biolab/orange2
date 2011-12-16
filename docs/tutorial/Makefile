@@ -9,7 +9,7 @@ PAPER         =
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-# ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) . ..
+#ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 ALLSPHINXOPTS   = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) rst
 
 .PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
@@ -18,6 +18,7 @@ help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html      to make standalone HTML files"
 	@echo "  dirhtml   to make HTML files named index.html in directories"
+	@echo "  epub	   to make epub file"
 	@echo "  pickle    to make pickle files"
 	@echo "  json      to make JSON files"
 	@echo "  htmlhelp  to make HTML files and a HTML help project"
@@ -28,10 +29,16 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _build/*
+	-rm -rf _* *.html html .doctrees .buildinfo searchindex.js *.epub epub
+
+epub:
+	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) epub
+	mv epub/*.epub .
+	@echo
+	@echo "Build finished. The epub pages are in "
 
 html:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) html
 	@echo
 	@echo "Build finished. The HTML pages are in .. ."
 
@@ -61,9 +68,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in .qthelp, like this:"
-	@echo "# qcollectiongenerator .qthelp/ofb.qhcp"
+	@echo "# qcollectiongenerator .qthelp/OrangeWidgetCatalog.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile .qthelp/ofb.qhc"
+	@echo "# assistant -collectionFile .qthelp/OrangeWidgetCatalog.qhc"
 
 latex:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) .latex
