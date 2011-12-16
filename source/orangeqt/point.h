@@ -52,6 +52,8 @@ public:
 	LabelItem(QGraphicsItem *parent = 0);
 	LabelItem(const QString &text, QGraphicsItem *parent = 0);
 	~LabelItem();
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 };
 
 class Point : public QGraphicsObject

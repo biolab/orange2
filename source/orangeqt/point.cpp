@@ -72,9 +72,10 @@ LabelItem::LabelItem(const QString &text, QGraphicsItem *parent): QGraphicsTextI
 LabelItem::~LabelItem()
 {
 }
-/*
+
 void LabelItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+	/*
     Q_UNUSED(widget);
     if (dd->control) {
         painter->save();
@@ -100,8 +101,9 @@ void LabelItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus))
         qt_graphicsItem_highlightSelected(this, painter, option);
+    */
+	QGraphicsTextItem::paint(painter, option, widget);
 }
-*/
 
 Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphicsObject(parent),
  m_symbol(symbol),
