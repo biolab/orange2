@@ -741,8 +741,8 @@ class OWNxCanvas(OWPlot):
         OWPlot.update_animations(self, use_animations)
         self.networkCurve.set_use_animations(self.use_animations)
 
-    def set_labels_on_marked_only(self, labelsOnMarkedOnly):
-        self.networkCurve.set_labels_on_marked_only(labelsOnMarkedOnly)
+    def set_labels_on_marked(self, labelsOnMarkedOnly):
+        self.networkCurve.set_labels_on_marked(labelsOnMarkedOnly)
         self.replot()
     
     def set_show_component_distances(self):

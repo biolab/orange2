@@ -216,7 +216,7 @@ try:
             
             ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
             OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_node_labels)
-            OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback=(lambda: self.networkCanvas.set_labels_on_marked_only(self.labelsOnMarkedOnly)))
+            OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback=(lambda: self.networkCanvas.set_labels_on_marked(self.labelsOnMarkedOnly)))
             
             ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
             OWGUI.label(ib, self, "Nodes (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
@@ -982,7 +982,7 @@ try:
             self.networkCanvas.maxEdgeSize = self.maxLinkSize
             self.networkCanvas.minComponentEdgeWidth = self.minComponentEdgeWidth
             self.networkCanvas.maxComponentEdgeWidth = self.maxComponentEdgeWidth
-            self.networkCanvas.set_labels_on_marked_only(self.labelsOnMarkedOnly)
+            self.networkCanvas.set_labels_on_marked(self.labelsOnMarkedOnly)
             
             self.compute_network_info()
             self.setCombos()
