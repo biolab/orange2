@@ -186,7 +186,12 @@ struct PointPosUpdater
   PointPosUpdater(QTransform t) : t(t) {}
   void operator()(Point* point)
   {
-    point->setPos(t.map(QPointF(point->coordinates().x, point->coordinates().y)));
+	QPointF p = t.map(QPointF(point->coordinates().x, point->coordinates().y));
+    point->setPos(p);
+    if (point->label)
+    {
+    	point->label->setPos(p);
+    }
   }
   
 private:
