@@ -154,7 +154,8 @@ class OWAction(QAction):
             QObject.connect(self, SIGNAL("triggered(bool)"), self.set_attribute)
         if icon_name:
             self.setIcon(QIcon(os.path.dirname(__file__) + "/../icons/" + icon_name + '.png'))
-
+            self.setIconVisibleInMenu(True)
+            
     def set_attribute(self, clicked):
         setattr(self._plot, self.attr_name, self.attr_value)
         
