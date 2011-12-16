@@ -46,7 +46,7 @@ try:
         "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
         "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex", 
         "networkCanvas.trim_label_words", "opt_from_curr", "networkCanvas.explore_distances",
-        "networkCanvas.show_component_distances"] 
+        "networkCanvas.show_component_distances", "fontWeight"] 
         
         def __init__(self, parent=None, signalManager=None, name = 'Net Explorer', 
                      NetworkCanvas=OWNxCanvas):
@@ -108,6 +108,7 @@ try:
             self.showDistances = 0
             self.showMissingValues = 0
             self.fontSize = 12
+            self.fontWeight = 1
             self.mdsTorgerson = 0
             self.mdsAvgLinkage = 1
             self.mdsSteps = 10000
@@ -195,7 +196,6 @@ try:
             self.vertexSizeCombo.addItem("(none)")
             
             self.attBox = OWGUI.widgetBox(self.verticesTab, "Node labels | tooltips", orientation="vertical", addSpace = False)
-            OWGUI.spin(self.attBox, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.set_font_size)
             hb = OWGUI.widgetBox(self.attBox, orientation="horizontal", addSpace = False)
             self.attListBox = OWGUI.listBox(hb, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
             self.tooltipListBox = OWGUI.listBox(hb, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)        
@@ -220,6 +220,11 @@ try:
             ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
             OWGUI.checkBox(ib, self, 'networkCanvas.show_indices', 'Show indices', callback=self.networkCanvas.set_node_labels)
             OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback=(lambda: self.networkCanvas.set_labels_on_marked(self.labelsOnMarkedOnly)))
+            OWGUI.spin(ib, self, "fontSize", 4, 30, 1, label="Font size:", callback = self.set_font)
+            self.comboFontWeight = OWGUI.comboBox(ib, self, "fontWeight", label='Font weight:', orientation='horizontal', callback=self.set_font)
+            self.comboFontWeight.addItem("Normal")
+            self.comboFontWeight.addItem("Bold")
+            self.comboFontWeight.setCurrentIndex(self.fontWeight)
             
             ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
             OWGUI.label(ib, self, "Nodes (shown/hidden): %(number_of_nodes_label)i (%(nShown)i/%(nHidden)i)")
@@ -344,7 +349,7 @@ try:
             self.networkCanvas.discEdgePalette = dlg.getDiscretePalette("discPalette")
             
             self.graph_layout_method()
-            self.set_font_size()
+            self.set_font()
             self.set_graph(None)
             
             self.setMinimumWidth(900)
@@ -1520,12 +1525,15 @@ try:
             
             self.networkCanvas.replot()
             
-        def set_font_size(self):
+        def set_font(self):
             if self.networkCanvas is None:
                 return
             
+            weights = {0: 50, 1: 80}
+            
             font = self.networkCanvas.font()
             font.setPointSize(self.fontSize)
+            font.setWeight(weights[self.fontWeight])
             self.networkCanvas.setFont(font)
             self.networkCanvas.fontSize = font
             self.networkCanvas.set_node_labels() 
