@@ -209,6 +209,9 @@ public:
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
   
+  bool labels_on_marked();
+  void set_labels_on_marked(bool value);
+
 protected:
   Curve::UpdateFlags needs_update();
   void set_updated(Curve::UpdateFlags flags);
@@ -239,8 +242,9 @@ private:
   QList<Point*> m_pointItems;
   UpdateFlags m_needsUpdate;
   bool m_autoUpdate;
-    QGraphicsPathItem* m_lineItem;
-    
+  QGraphicsPathItem* m_lineItem;
+  bool m_labels_on_marked;
+
   QPen m_pen;
   QBrush m_brush;
   QTransform m_zoom_transform;

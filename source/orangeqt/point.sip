@@ -102,9 +102,6 @@ public:
     
     DataPoint coordinates() const;
     void set_coordinates(const DataPoint& data_point);    
-
-    void set_label(const QString& label);
-    QString label() const;
     
     /**
     * Creates a path from a symbol and a size

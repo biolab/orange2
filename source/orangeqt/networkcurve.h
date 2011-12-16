@@ -250,6 +250,7 @@ public:
     void set_node_colors(const QMap<int, QColor>& colors);
     void set_node_sizes(const QMap<int, double>& sizes, double min_size, double max_size);
     void set_node_labels(const QMap<int, QString>& labels);
+
     void set_node_tooltips(const QMap<int, QString>& tooltips);
     void set_node_marks(const QMap<int, bool>& marks);
     void clear_node_marks();
@@ -268,9 +269,6 @@ public:
     void set_use_animations(bool use_animations);
     bool use_animations() const;
 
-    void set_labels_on_marked_only(bool labels_on_marked_only);
-    bool labels_on_marked_only();
-
     void set_show_component_distances(bool show_component_distances);
 
     void stop_optimization();
@@ -284,7 +282,6 @@ private:
     double m_max_node_size;
     bool m_use_animations;
     bool m_stop_optimization;
-    bool m_labels_on_marked_only;
     bool m_show_component_distances;
 };
 

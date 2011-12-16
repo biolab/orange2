@@ -432,6 +432,16 @@ QList< Point* > Curve::points()
     return m_pointItems;
 }
 
+void Curve::set_labels_on_marked(bool value)
+{
+	m_labels_on_marked = value;
+}
+
+bool Curve::labels_on_marked()
+{
+	return m_labels_on_marked;
+}
+
 void Curve::update_point_coordinates()
 {
     if (m_coords_watcher.isRunning())

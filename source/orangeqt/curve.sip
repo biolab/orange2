@@ -99,6 +99,9 @@ public:
   void set_points(const QList<Point*>& points);
   QList<Point*> points();
   
+  void set_labels_on_marked(bool value);
+  bool labels_on_marked();
+  
 protected:
   void set_updated(Curve::UpdateFlags flags);
   Curve::UpdateFlags needs_update();

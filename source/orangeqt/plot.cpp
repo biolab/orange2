@@ -419,7 +419,7 @@ void Plot::selected_to_marked()
 		}
 	}
 	emit selection_changed();
-        emit marked_points_changed();
+    emit marked_points_changed();
 }
 
 void Plot::marked_to_selected()
@@ -433,7 +433,7 @@ void Plot::marked_to_selected()
 		}
 	}
 	emit selection_changed();
-        emit marked_points_changed();
+    emit marked_points_changed();
 }
 
 void Plot::mark_points(const Data& data, Plot::SelectionBehavior behavior)

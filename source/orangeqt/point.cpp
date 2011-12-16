@@ -17,6 +17,7 @@
 */
 
 #include "point.h"
+#include "curve.h"
 
 #include <QtGui/QPainter>
 #include <QtCore/QDebug>
@@ -69,6 +70,7 @@ Point::Point(int symbol, QColor color, int size, QGraphicsItem* parent): QGraphi
     m_display_mode = DisplayPath;
     m_transparent = true;
     setFlag(ItemIgnoresTransformations);
+    label = NULL;
 }
 
 Point::Point(QGraphicsItem* parent): QGraphicsObject(parent)
@@ -79,6 +81,7 @@ Point::Point(QGraphicsItem* parent): QGraphicsObject(parent)
     m_display_mode = DisplayPath;
     m_transparent = true;
     setFlag(ItemIgnoresTransformations);
+    label = NULL;
 }
   
 void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -119,7 +122,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
                 pen.setStyle(Qt::NoPen);
                 */
             	QColor c = Qt::yellow;
-            	c.setAlpha(70);
+            	c.setAlpha(120);
 				brush.setColor(c);
             }
             else
@@ -147,6 +150,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
         }
     }
     painter->drawPixmap(QPointF(-0.5*ps, -0.5*ps), pixmap_cache.value(key));
+    /*
     if (!m_label.isEmpty())
     {        
         QFontMetrics metrics = option->fontMetrics;
@@ -156,6 +160,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
         //painter->fillRect(r, QBrush(Qt::white));
         painter->drawText(r, Qt::AlignHCenter, m_label);
     }
+    */
 }
 
 QRectF Point::boundingRect() const
@@ -365,6 +370,19 @@ void Point::set_state_flag(Point::StateFlag flag, bool on)
     {
         m_state &= ~flag;
     }
+
+    if ((flag == Selected || flag == Marked) && label && ((Curve *)parentObject())->labels_on_marked())
+    {
+		if (is_selected() || is_marked())
+		{
+			label->show();
+		}
+		else
+		{
+			label->hide();
+		}
+    }
+
     update();
 }
 
@@ -417,7 +435,7 @@ void Point::clear_cache()
     pixmap_cache.clear();
 }
 
-
+/*
 void Point::set_label(const QString& label)
 {
     m_label = label;
@@ -427,5 +445,5 @@ QString Point::label() const
 {
     return m_label;
 }
-
+*/
 #include "point.moc"

@@ -90,6 +90,7 @@ public:
 	
     typedef QList<EdgeItem*> Edges;
     typedef QMap<int, NodeItem*> Nodes;
+    typedef QMap<int, QGraphicsItem*> Labels;
 
     NetworkCurve(QGraphicsItem* parent /TransferThis/ = 0);
     virtual ~NetworkCurve();
@@ -113,6 +114,12 @@ public:
     void set_edges(const Edges& edges);
     void add_edges(const Edges& edges);
     
+    Labels labels() const;
+    void set_labels(const Labels& labels);
+    void add_labels(const Labels& labels);
+    void remove_label(int index);
+    void remove_labels(const QList< int >& labels);
+    
     QList<QPair<int, int> > edge_indices();
 
     void set_node_colors(const QMap<int, QColor>& colors);    
@@ -135,9 +142,6 @@ public:
     
     void set_use_animations(bool use_animations);
     bool use_animations() const;
-    
-    void set_labels_on_marked_only(bool labels_on_marked_only);
-    bool labels_on_marked_only();
     
     void set_show_component_distances(bool show_component_distances);
     

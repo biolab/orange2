@@ -46,7 +46,7 @@ ModelItem::ModelItem(int index, int symbol, QColor color, int size, QGraphicsIte
 void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     NetworkCurve *curve = (NetworkCurve*)parentItem();
-    bool on_marked_only = curve->labels_on_marked_only();
+    //bool on_marked_only = curve->labels_on_marked();
 
     if (image != NULL)
     {
@@ -82,7 +82,7 @@ void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 
 		_size = image->size().width();
     	painter->drawPixmap(QPointF(-_size/2, -_size/2), *image);
-
+    	/*
 		if (!on_marked_only || is_marked() || is_selected())
 		{
 			QFontMetrics metrics = option->fontMetrics;
@@ -92,7 +92,9 @@ void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 			//painter->fillRect(r, QBrush(Qt::white));
 			painter->drawText(r, Qt::AlignHCenter, label());
 		}
+		*/
     }
+    /*
     else
     {
     	const QString l = label();
@@ -105,6 +107,7 @@ void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 
     	set_label(l);
     }
+    */
 }
 
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
@@ -115,7 +118,7 @@ NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem*
     m_size_value = 1;
     set_marked(false);
     set_selected(false);
-    set_label("");
+    //set_label("");
     setAcceptHoverEvents(true);
     set_transparent(false);
     image = NULL;
@@ -128,6 +131,7 @@ NodeItem::~NodeItem()
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     NetworkCurve *curve = (NetworkCurve*)parentItem();
+    /*
     bool on_marked_only = curve->labels_on_marked_only();
     const QString l = label();
 
@@ -135,12 +139,13 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     {
         set_label(QString());
     }
-
+	*/
     if (image != NULL)
     {
     	const int ps = size() + 4;
     	painter->drawPixmap(QPointF(-0.5*ps, -0.5*ps), *image);
-		if (!label().isEmpty())
+		/*
+    	if (!label().isEmpty())
 		{
 			QFontMetrics metrics = option->fontMetrics;
 			int th = metrics.height();
@@ -149,13 +154,14 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 			//painter->fillRect(r, QBrush(Qt::white));
 			painter->drawText(r, Qt::AlignHCenter, label());
 		}
+		*/
     }
     else
     {
     	Point::paint(painter, option, widget);
     }
 
-    set_label(l);
+    //set_label(l);
 }
 
 void NodeItem::set_image(QPixmap* im)
@@ -386,7 +392,7 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 	if (!m_label.isEmpty())
 	{
 		NetworkCurve *curve = (NetworkCurve*)parentItem();
-		bool on_marked_only = curve->labels_on_marked_only();
+		bool on_marked_only = curve->labels_on_marked();
 		bool is_marked = (u()->is_marked() || u()->is_selected()) && (v()->is_marked() || v()->is_selected());
 
 		if(!on_marked_only || (on_marked_only && is_marked))
@@ -1274,6 +1280,10 @@ void NetworkCurve::set_node_sizes(const QMap<int, double>& sizes, double min_siz
 void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
 {
 	cancel_all_updates();
+	foreach (int i, m_labels.keys())
+	{
+		m_nodes[i]->label = NULL;
+	}
     qDeleteAll(m_labels);
     m_labels.clear();
     QMap<int, QString>::ConstIterator it;
@@ -1285,6 +1295,7 @@ void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
 		item->setFlag(ItemIgnoresTransformations);
 		//item->setPos(m_nodes[it.key()]->pos() - QPointF(item->boundingRect().width() / 2, 0));
 		item->setPos(m_nodes[it.key()]->pos());
+
 		/*
         QFontMetrics fm(item->font());
         QTransform t;
@@ -1299,6 +1310,11 @@ void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
         cursor.clearSelection();
         item->setTextCursor(cursor);
         */
+		if (labels_on_marked() && !(m_nodes[it.key()]->is_marked() || m_nodes[it.key()]->is_selected()))
+		{
+			item->hide();
+		}
+		m_nodes[it.key()]->label = item;
 		m_labels.insert(it.key(), item);
 	}
 }
@@ -1452,16 +1468,6 @@ void NetworkCurve::set_use_animations(bool use_animations)
 bool NetworkCurve::use_animations() const
 {
     return m_use_animations;
-}
-
-void NetworkCurve::set_labels_on_marked_only(bool labels_on_marked_only)
-{
-	m_labels_on_marked_only = labels_on_marked_only;
-}
-
-bool NetworkCurve::labels_on_marked_only()
-{
-	return m_labels_on_marked_only;
 }
 
 void NetworkCurve::set_show_component_distances(bool show_component_distances)

@@ -52,7 +52,7 @@ class Point : public QGraphicsObject
     Q_PROPERTY(QColor color READ color WRITE set_color)
     Q_PROPERTY(int symbol READ symbol WRITE set_symbol)
     Q_PROPERTY(int size READ size WRITE set_size)
-    Q_PROPERTY(QString label READ label WRITE set_label)
+    //Q_PROPERTY(QString label READ label WRITE set_label)
     Q_PROPERTY(DataPoint coordinates READ coordinates WRITE set_coordinates)
     Q_PROPERTY(bool marked READ is_marked WRITE set_marked STORED false)
     Q_PROPERTY(bool selected READ is_selected WRITE set_selected STORED false)
@@ -144,8 +144,8 @@ public:
     DataPoint coordinates() const;
     void set_coordinates(const DataPoint& data_point);
     
-    void set_label(const QString& label);
-    QString label() const;
+    //void set_label(const QString& label);
+    //QString label() const;
     
     /**
     * Creates a path from a symbol and a size
@@ -163,6 +163,8 @@ public:
 
     static QHash<PointData, QPixmap> pixmap_cache;
 
+    QGraphicsTextItem* label;
+
 private:
     static QPainterPath trianglePath(double d, double rot);
     static QPainterPath crossPath(double d, double rot);
@@ -176,7 +178,7 @@ private:
     bool m_transparent;
     
     DataPoint m_coordinates;
-    QString m_label;
+    //QString m_label;
 };
 
 struct PointPosUpdater
