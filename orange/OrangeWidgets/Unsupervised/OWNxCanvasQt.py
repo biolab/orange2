@@ -506,7 +506,6 @@ class OWNxCanvas(OWPlot):
         self.replot()
         
     def set_node_labels(self, attributes=None):
-        print "set labels"
         if self.graph is None:
             return 
         
@@ -523,15 +522,16 @@ class OWNxCanvas(OWPlot):
         indices = [[] for u in nodes]
         if self.show_indices:
             indices = [[str(u)] for u in nodes]
-            
-        if self.trim_label_words > 0:
-            print "trim"
+        
+        if len(label_attributes) == 0 and not self.show_indices:
+            self.networkCurve.set_node_labels({})
+        
+        elif self.trim_label_words > 0:
             self.networkCurve.set_node_labels(dict((node, 
                 ', '.join(indices[i] + 
                           [' '.join(str(self.items[node][att]).split(' ')[:min(self.trim_label_words,len(str(self.items[node][att]).split(' ')))])
                 for att in label_attributes])) for i, node in enumerate(nodes)))
         else:
-            print "no trim"
             self.networkCurve.set_node_labels(dict((node, ', '.join(indices[i]+\
                            [str(self.items[node][att]) for att in \
                            label_attributes])) for i, node in enumerate(nodes)))

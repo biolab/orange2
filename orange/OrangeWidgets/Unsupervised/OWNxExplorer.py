@@ -1508,8 +1508,8 @@ try:
             font = self.networkCanvas.font()
             font.setPointSize(self.fontSize)
             self.networkCanvas.setFont(font)
-            self.networkCanvas.fontSize = font 
-            
+            self.networkCanvas.fontSize = font
+            self.networkCanvas.set_node_labels() 
                     
         def sendReport(self):
             self.reportSettings("Graph data",
