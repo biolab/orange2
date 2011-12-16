@@ -1,24 +1,16 @@
-gain: 0.348, attribute: physician-fee-freeze
-gain: 0.003, attribute: synfuels-corporation-cutback
-gain: 0.005, attribute: education-spending
-stopped (0.000)
-features: [physician-fee-freeze, synfuels-corporation-cutback, education-spending, party]
 gain: 0.345, attribute: physician-fee-freeze
 gain: 0.003, attribute: synfuels-corporation-cutback
-gain: 0.000, attribute: adoption-of-the-budget-resolution
-stopped (0.000)
-features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
-gain: 0.338, attribute: physician-fee-freeze
-gain: 0.003, attribute: synfuels-corporation-cutback
 gain: 0.005, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
 features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
-gain: 0.340, attribute: physician-fee-freeze
-stopped (0.000)
-features: [physician-fee-freeze, party]
-gain: 0.338, attribute: physician-fee-freeze
+gain: 0.343, attribute: physician-fee-freeze
 gain: 0.003, attribute: synfuels-corporation-cutback
-gain: 0.005, attribute: adoption-of-the-budget-resolution
+gain: 0.005, attribute: mx-missile
+stopped (0.000)
+features: [physician-fee-freeze, synfuels-corporation-cutback, mx-missile, party]
+gain: 0.345, attribute: physician-fee-freeze
+gain: 0.003, attribute: synfuels-corporation-cutback
+gain: 0.003, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
 features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
 gain: 0.337, attribute: physician-fee-freeze
@@ -26,25 +18,34 @@ gain: 0.003, attribute: synfuels-corporation-cutback
 gain: 0.005, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
 features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
-gain: 0.352, attribute: physician-fee-freeze
+gain: 0.338, attribute: physician-fee-freeze
 gain: 0.003, attribute: synfuels-corporation-cutback
-gain: 0.010, attribute: adoption-of-the-budget-resolution
+gain: 0.005, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
 features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
 gain: 0.339, attribute: physician-fee-freeze
+stopped (0.000)
+features: [physician-fee-freeze, party]
+gain: 0.339, attribute: physician-fee-freeze
 gain: 0.003, attribute: synfuels-corporation-cutback
-gain: 0.005, attribute: adoption-of-the-budget-resolution
+gain: 0.008, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
 features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
-gain: 0.347, attribute: physician-fee-freeze
+gain: 0.345, attribute: physician-fee-freeze
 gain: 0.003, attribute: synfuels-corporation-cutback
-gain: 0.005, attribute: adoption-of-the-budget-resolution
+gain: 0.008, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
 features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
-gain: 0.342, attribute: physician-fee-freeze
-gain: 0.003, attribute: handicapped-infants
+gain: 0.344, attribute: physician-fee-freeze
+gain: 0.003, attribute: synfuels-corporation-cutback
+gain: 0.003, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
-features: [physician-fee-freeze, handicapped-infants, party]
+features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
+gain: 0.349, attribute: physician-fee-freeze
+gain: 0.003, attribute: synfuels-corporation-cutback
+gain: 0.003, attribute: adoption-of-the-budget-resolution
+stopped (0.000)
+features: [physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution, party]
 Learner      CA     IS     Brier    AUC
-bayes        0.901  0.758  0.176  0.976
-w fss        0.949  0.833  0.077  0.987
+bayes        0.903  0.758  0.176  0.974
+w fss        0.956  0.841  0.072  0.991
