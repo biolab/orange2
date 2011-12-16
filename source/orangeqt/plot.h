@@ -102,6 +102,9 @@ public:
 
     bool animate_points;
     
+    void emit_marked_points_changed();
+    void emit_selection_changed();
+
 signals:
     void selection_changed();
     void marked_points_changed();

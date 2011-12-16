@@ -487,6 +487,16 @@ void Plot::move_selected_points(const DataPoint& d)
 	}
 }
 
+void Plot::emit_marked_points_changed()
+{
+	emit marked_points_changed();
+}
+
+void Plot::emit_selection_changed()
+{
+	emit selection_changed();
+}
+
 QList< Point* > Plot::all_points()
 {
     QList<Point*> list;

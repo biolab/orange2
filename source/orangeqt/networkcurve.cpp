@@ -1337,6 +1337,8 @@ void NetworkCurve::set_node_marks(const QMap<int, bool>& marks)
 	{
 		m_nodes[it.key()]->set_marked(it.value());
 	}
+
+	plot()->emit_marked_points_changed();
 }
 
 void NetworkCurve::clear_node_marks()
@@ -1347,6 +1349,8 @@ void NetworkCurve::clear_node_marks()
 	{
 		it.value()->set_marked(false);
 	}
+
+	plot()->emit_marked_points_changed();
 }
 
 void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >& coordinates)
