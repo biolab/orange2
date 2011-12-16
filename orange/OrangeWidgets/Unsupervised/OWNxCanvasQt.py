@@ -743,6 +743,7 @@ class OWNxCanvas(OWPlot):
 
     def set_labels_on_marked(self, labelsOnMarkedOnly):
         self.networkCurve.set_labels_on_marked(labelsOnMarkedOnly)
+        self.set_node_labels()
         self.replot()
     
     def set_show_component_distances(self):

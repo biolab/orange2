@@ -124,6 +124,9 @@ try:
             self.number_of_edges_label = -1
             self.opt_from_curr = False
             
+            self.checkSendMarkedNodes = True
+            self.checkSendSelectedNodes = True
+            
             self.loadSettings()
             
             self._network_view = None
@@ -250,9 +253,9 @@ try:
             self.markInputCombo = OWGUI.comboBox(ib, self, "markInput", callback=(lambda h=9: self.set_mark_mode(h)))
             self.markInputRadioButton.setEnabled(False)
             
-            ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
-            self.checkSendMarkedNodes = 0
-            OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.send_marked_nodes, disabled=0)
+            #ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
+            #self.checkSendMarkedNodes = True
+            #OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.send_marked_nodes, disabled=0)
             
             G = self.networkCanvas.gui
             
@@ -270,6 +273,7 @@ try:
                         #("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
                     ])
             self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_data)
+            self.zoomSelectToolbar.buttons[G.SendSelection].hide()
             OWGUI.rubber(self.zoomSelectToolbar)
             
             ib = OWGUI.widgetBox(self.infoTab, "General")
@@ -342,7 +346,12 @@ try:
             self.graph_layout_method()
             self.set_font_size()
             self.set_graph(None)
+            
             self.setMinimumWidth(900)
+
+            self.connect(self.networkCanvas, SIGNAL("marked_points_changed()"), self.send_marked_nodes)
+            self.connect(self.networkCanvas, SIGNAL("selection_changed()"), self.send_data)
+            
             
         def setComponentEdgeWidth(self, changedMin=True):
             if self.networkCanvas is None:
@@ -437,23 +446,21 @@ try:
                     self.graph_layout()
         
         def send_marked_nodes(self):
-            if self.checkSendMarkedNodes:
+            print "send marked"
+            if self.checkSendMarkedNodes and \
+                len(self.signalManager.getLinks(self, None, \
+                                                "Marked Items", None)) > 0:
+                # signal connected
                 markedNodes = self.networkCanvas.marked_nodes()
                 
-                if len(markedNodes) == 0:
-                    self.send("Marked Items", None)
-                    return
-                
-                if self.graph is not None and self.graph_base.items() is not None:
+                if len(markedNodes) > 0 and self.graph is not None and\
+                                         self.graph_base.items() is not None:
+                    
                     items = self.graph_base.items().getitems(markedNodes)
                     self.send("Marked Items", items)
-                    return
-                
-                self.send("Marked Items", None)
-            else:
-                self.networkCanvas.send_marked_nodes = None
-                self.send("Marked Items", None)
-                
+                else:
+                    self.send("Marked Items", None)
+                        
         def showComponents(self):
             if self.graph is None or self.graph_base.items() is None:
                 return
@@ -704,7 +711,7 @@ try:
                         self.networkCanvas.networkCurve.clear_node_marks()      
             
             self.nMarked = len(self.networkCanvas.marked_nodes())
-            self.send_marked_nodes()
+            #self.send_marked_nodes()
            
         def testRefresh(self):
             start = time.time()
@@ -734,26 +741,39 @@ try:
             pass
                 
         def send_data(self):
-            selected_nodes = self.networkCanvas.selected_nodes()
-            graph = self.graph_base.subgraph(selected_nodes)
-            
-            if graph is not None:
-                self.send("Selected Items", graph.items())
+            if len(self.signalManager.getLinks(self, None, \
+                "Selected Items", None)) > 0 or \
+                    len(self.signalManager.getLinks(self, None, \
+                        "Unselected Items", None)) > 0 or \
+                            len(self.signalManager.getLinks(self, None, \
+                                "Selected Network", None)) > 0:
                 
-                nodes = self.networkCanvas.not_selected_nodes()
-                if len(nodes) > 0 and self.graph_base.items() is not None:
-                    self.send("Unselected Items", self.graph_base.items().getitems(nodes))
-                else:
-                    self.send("Unselected Items", None)
+                # signal connected
+                selected_nodes = self.networkCanvas.selected_nodes()
+                graph = self.graph_base.subgraph(selected_nodes)
+                
+                if graph is not None:
+                    self.send("Selected Items", graph.items())
                     
-                self.send("Selected Network", graph)
-            else:
-                self.send("Selected Items", None)
-                self.send("Unselected Items", None)
-                self.send("Selected Network", None)
-                
-            matrix = None if self.items_matrix is None else self.items_matrix.getitems(selected_nodes)
-            self.send("Selected Items Distance Matrix", matrix)
+                    if len(self.signalManager.getLinks(self, None, \
+                                                "Unselected Items", None)) > 0:
+                        nodes = self.networkCanvas.not_selected_nodes()
+                        if len(nodes) > 0 and self.graph_base.items() is not None:
+                            self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                        else:
+                            self.send("Unselected Items", None)
+                        
+                    self.send("Selected Network", graph)
+                else:
+                    self.send("Selected Items", None)
+                    self.send("Unselected Items", None)
+                    self.send("Selected Network", None)
+                    
+            if len(self.signalManager.getLinks(self, None, \
+                                "Selected Items Distance Matrix", None)) > 0:
+                # signal connected
+                matrix = None if self.items_matrix is None else self.items_matrix.getitems(selected_nodes)
+                self.send("Selected Items Distance Matrix", matrix)
                     
         def setCombos(self):
             vars = self.graph_base.items_vars()
@@ -1628,6 +1648,10 @@ except ImportError as err:
             self.tabIndex = 0
             self.number_of_nodes_label = -1
             self.number_of_edges_label = -1
+            
+            self.checkSendMarkedNodes = True
+            self.checkSendSelectedNodes = True
+            
             self.loadSettings()
             
             self._network_view = None
@@ -1754,9 +1778,7 @@ except ImportError as err:
             self.markInputRadioButton.setEnabled(False)
             
             ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
-            self.checkSendMarkedNodes = 0
             OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked vertices', callback = self.setSendMarkedNodes, disabled=0)
-            
             
             T = OWToolbars.NavigateSelectToolbar
             self.zoomSelectToolbar = T(self, self.hcontroArea, self.networkCanvas, self.autoSendSelection,
@@ -1869,6 +1891,8 @@ except ImportError as err:
             self.setFontSize()
             self.set_graph(None)
             self.setMinimumWidth(900)
+            
+            
             
             #self.resize(1000, 600)
             #self.controlArea.setEnabled(False)
@@ -2611,45 +2635,53 @@ except ImportError as err:
                 Orange.network.readwrite.write(self.graph, fn)
                 
         def sendData(self):
-            graph = self.networkCanvas.getSelectedGraph()
-            vertices = self.networkCanvas.getSelectedVertices()
-            
-            if graph is not None:
-                if graph.items() is not None:
-                    self.send("Selected Items", graph.items())
+            if len(self.signalManager.getLinks(self, None, \
+                    "Selected Items", None)) > 0 or \
+                        len(self.signalManager.getLinks(self, None, \
+                                                "Unselected Items", None)) > 0:
+                # signal connected
+                graph = self.networkCanvas.getSelectedGraph()
+                vertices = self.networkCanvas.getSelectedVertices()
+                
+                if graph is not None:
+                    if graph.items() is not None:
+                        self.send("Selected Items", graph.items())
+                    else:
+                        nodes = self.networkCanvas.getSelectedExamples()
+                        
+                        if len(nodes) > 0 and self.graph_base.items() is not None:
+                            self.send("Selected Items", self.graph_base.items().getitems(nodes))
+                        else:
+                            self.send("Selected Items", None)
+                        
+                    nodes = self.networkCanvas.getUnselectedExamples()
+                    if len(nodes) > 0 and self.graph_base.items() is not None:
+                        self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                    else:
+                        self.send("Unselected Items", None)
+                        
+                    self.send("Selected Network", graph)
                 else:
                     nodes = self.networkCanvas.getSelectedExamples()
-                    
                     if len(nodes) > 0 and self.graph_base.items() is not None:
                         self.send("Selected Items", self.graph_base.items().getitems(nodes))
                     else:
                         self.send("Selected Items", None)
-                    
-                nodes = self.networkCanvas.getUnselectedExamples()
-                if len(nodes) > 0 and self.graph_base.items() is not None:
-                    self.send("Unselected Items", self.graph_base.items().getitems(nodes))
-                else:
-                    self.send("Unselected Items", None)
-                    
-                self.send("Selected Network", graph)
-            else:
-                nodes = self.networkCanvas.getSelectedExamples()
-                if len(nodes) > 0 and self.graph_base.items() is not None:
-                    self.send("Selected Items", self.graph_base.items().getitems(nodes))
-                else:
-                    self.send("Selected Items", None)
-                    
-                nodes = self.networkCanvas.getUnselectedExamples()
-                if len(nodes) > 0 and self.graph_base.items() is not None:
-                    self.send("Unselected Items", self.graph_base.items().getitems(nodes))
-                else:
-                    self.send("Unselected Items", None)
-            
-            matrix = None
-            if self.items_matrix is not None:
-                matrix = self.items_matrix.getitems(vertices)
-    
-            self.send("Selected Items Distance Matrix", matrix)
+                        
+                    nodes = self.networkCanvas.getUnselectedExamples()
+                    if len(nodes) > 0 and self.graph_base.items() is not None:
+                        self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                    else:
+                        self.send("Unselected Items", None)
+                
+            if len(self.signalManager.getLinks(self, None, \
+                                "Selected Items Distance Matrix", None)) > 0:
+                # signal connected
+                matrix = None
+                if self.items_matrix is not None:
+                    matrix = self.items_matrix.getitems(vertices)
+        
+                self.send("Selected Items Distance Matrix", matrix)
                     
         def setCombos(self):
             vars = self.graph_base.items_vars()
