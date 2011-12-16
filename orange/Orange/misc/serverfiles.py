@@ -117,13 +117,9 @@ import socket
 timeout = 120
 socket.setdefaulttimeout(timeout)
 
+import urllib
 import urllib2
 import base64
-
-import urllib2_file 
-#switch to poster in the future
-#import poster.streaminghttp as psh
-#import poster.encode
 
 from orngMisc import ConsoleProgressBar
 import time, threading
@@ -230,10 +226,7 @@ class ServerFiles(object):
         self.access_code = access_code
         self.searchinfo = None
 
-    def _getOpener(self):
-        #commented lines are for poster 0.6
-        #handlers = [psh.StreamingHTTPHandler, psh.StreamingHTTPRedirectHandler, psh.StreamingHTTPSHandler]
-        #opener = urllib2.build_opener(*handlers)
+    def _getOpener(self, multipart=False):
         opener = urllib2.build_opener()
         return opener
  
@@ -391,12 +384,22 @@ class ServerFiles(object):
     def _server_request(self, root, command, data, repeat=2):
         def do():
             opener = self._getOpener()
-            #the next lines work for poster 0.6.0
-            #datagen, headers = poster.encode.multipart_encode(data)
-            #request = urllib2.Request(root+command, datagen, headers)
-
+            
             if data:
-                request = urllib2.Request(root+command, data)
+                if command == "upload":
+                    # Need to use poster to handle multipart post
+                    try:
+                        import poster.streaminghttp as psh
+                        import poster.encode
+                    except ImportError:
+                        raise ImportError("You need to install 'poster' (http://pypi.python.org/pypi/poster) to be able to upload files.")
+                
+                    handlers = [psh.StreamingHTTPHandler, psh.StreamingHTTPRedirectHandler, psh.StreamingHTTPSHandler]
+                    opener = urllib2.build_opener(*handlers)
+                    datagen, headers = poster.encode.multipart_encode(data)
+                    request = urllib2.Request(root+command, datagen, headers)
+                else:
+                    request = urllib2.Request(root+command, urllib.urlencode(data))
             else:
                 request = urllib2.Request(root+command)
 
@@ -406,6 +409,7 @@ class ServerFiles(object):
                 request.add_header('Authorization', 'Basic %s' % auth ) # Add Auth header to request
             
             return opener.open(request)
+                
         if repeat <= 0:
             return do()
         else:
