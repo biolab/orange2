@@ -63,8 +63,8 @@ try:
                             ("Selected Items Distance Matrix", Orange.core.SymMatrix),
                             ("Selected Items", Orange.data.Table), 
                             ("Unselected Items", Orange.data.Table), 
-                            ("Marked Items", Orange.data.Table),
-                            ("Attribute Selection List", AttributeList)]
+                            ("Marked Items", Orange.data.Table)]
+                            #("Attribute Selection List", AttributeList)]
             
             self.networkCanvas = NetworkCanvas(self, self.mainArea, "Net Explorer")
             
@@ -88,8 +88,8 @@ try:
             self.nShown = self.nHidden = self.nMarked = self.nSelected = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
             self.optimizeWhat = 1
             self.maxLinkSize = 3
-            self.maxVertexSize = 5
-            self.minVertexSize = 5
+            self.maxVertexSize = 7
+            self.minVertexSize = 12
             self.labelsOnMarkedOnly = 0
             self.invertSize = 0
             self.optMethod = 0
@@ -446,7 +446,6 @@ try:
                     self.graph_layout()
         
         def send_marked_nodes(self):
-            print "send marked"
             if self.checkSendMarkedNodes and \
                 len(self.signalManager.getLinks(self, None, \
                                                 "Marked Items", None)) > 0:
