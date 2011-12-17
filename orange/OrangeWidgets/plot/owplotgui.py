@@ -65,7 +65,7 @@ class OWToolbar(OrientedWidget):
         :param parent: The toolbar's parent widget
         :type parent: :obj:`.QWidget`
     '''
-    def __init__(self, gui, text, orientation, buttons, parent):
+    def __init__(self, gui, text, orientation, buttons, parent, nomargin = False):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
         self.groups = {}
@@ -76,7 +76,7 @@ class OWToolbar(OrientedWidget):
                 state_buttons = []
                 for j in range(i+1, n):
                     if buttons[j] == gui.StateButtonsEnd:
-                        s = gui.state_buttons(orientation, state_buttons, self)
+                        s = gui.state_buttons(orientation, state_buttons, self, nomargin)
                         self.buttons.update(s.buttons)
                         self.groups[buttons[i+1]] = s
                         i = j
@@ -111,10 +111,11 @@ class StateButtonContainer(OrientedWidget):
         :param parent: The toolbar's parent widget
         :type parent: :obj:`.QWidget`
     '''
-    def __init__(self, gui, orientation, buttons, parent):
+    def __init__(self, gui, orientation, buttons, parent, nomargin = False):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        if nomargin:
+            self.layout().setContentsMargins(0, 0, 0, 0)
         self._clicked_button = None
         for i in buttons:
             b = gui.tool_button(i, self)
@@ -460,29 +461,31 @@ class OWPlotGUI:
         b.setMinimumSize(40, 30)
         return b
         
-    def state_buttons(self, orientation, buttons, widget):
+    def state_buttons(self, orientation, buttons, widget, nomargin = False):
         '''
             This function creates a set of checkable buttons and connects them so that only one
             may be checked at a time. 
         '''
-        c = StateButtonContainer(self, orientation, buttons, widget)
+        c = StateButtonContainer(self, orientation, buttons, widget, nomargin)
         if widget.layout() is not None:
             widget.layout().addWidget(c)
         return c
         
-    def toolbar(self, widget, text, orientation, buttons):
+    def toolbar(self, widget, text, orientation, buttons, nomargin = False):
         '''
             Creates an :obj:`.OWToolbar` with the specified ``text``, ``orientation`` and ``buttons`` and adds it to ``widget``. 
             
             .. seealso:: :obj:`.OWToolbar`
         '''
-        t = OWToolbar(self, text, orientation, buttons, widget)
+        t = OWToolbar(self, text, orientation, buttons, widget, nomargin)
+        if nomargin:
+            t.layout().setContentsMargins(0, 0, 0, 0)
         if widget.layout() is not None:
             widget.layout().addWidget(t)
         return t
         
-    def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons):
-        t = self.toolbar(widget, text, orientation, buttons)
+    def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons, nomargin = False):
+        t = self.toolbar(widget, text, orientation, buttons, nomargin)
         t.buttons[self.Select].click()
         return t    
         
