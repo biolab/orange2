@@ -50,7 +50,7 @@ try:
         
         def __init__(self, parent=None, signalManager=None, name = 'Net Explorer', 
                      NetworkCanvas=OWNxCanvas):
-            OWWidget.__init__(self, parent, signalManager, name)
+            OWWidget.__init__(self, parent, signalManager, name, noReport=True)
             #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
             self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
                            ("Network", Orange.network.Graph, self.set_graph, Default),
@@ -139,17 +139,12 @@ try:
             if self.optMethod == 9:
                 self.optMethod = 3
             
-            self.mainArea.layout().setContentsMargins(0,4,4,4)
-            self.controlArea.layout().setContentsMargins(4,4,0,4)
-            
             self.networkCanvas.showMissingValues = self.showMissingValues
             self.mainArea.layout().addWidget(self.networkCanvas)
             
             self.networkCanvas.maxLinkSize = self.maxLinkSize
             
-            self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
-            
-            self.tabs = OWGUI.tabWidget(self.hcontroArea)
+            self.tabs = OWGUI.tabWidget(self.controlArea)
             
             self.verticesTab = OWGUI.createTabPage(self.tabs, "Nodes")
             self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
@@ -262,24 +257,23 @@ try:
             #self.checkSendMarkedNodes = True
             #OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.send_marked_nodes, disabled=0)
             
+            self.toolbar = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
             G = self.networkCanvas.gui
-            
-            self.zoomSelectToolbar = G.zoom_select_toolbar(self.hcontroArea, orientation = Qt.Vertical,
-                buttons = 
-                    [G.Spacing] * 2 + 
-                    G.default_zoom_select_buttons + 
-                    [
-                        G.Spacing,
-                        ("buttonM2S", "Add marked to selection", None, None, "marked_to_selected", 'Dlg_Mark2Sel'),
-                        ("buttonS2M", "Add selection to marked", None, None, "selected_to_marked", 'Dlg_Sel2Mark'),
-                        G.Spacing,
-                        #("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
-                        #("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
-                        #("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
-                    ])
+            self.zoomSelectToolbar = G.zoom_select_toolbar(self.toolbar, nomargin=True, buttons = 
+                G.default_zoom_select_buttons + 
+                [
+                    G.Spacing,
+                    ("buttonM2S", "Add marked to selection", None, None, "marked_to_selected", 'Dlg_Mark2Sel'),
+                    ("buttonS2M", "Add selection to marked", None, None, "selected_to_marked", 'Dlg_Sel2Mark'),
+                    #("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
+                    #("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
+                    #("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
+                ])
             self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_data)
             self.zoomSelectToolbar.buttons[G.SendSelection].hide()
-            OWGUI.rubber(self.zoomSelectToolbar)
+            
+            self.reportButton = OWGUI.button(self.toolbar, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
+            self.reportButton.setAutoDefault(0)
             
             ib = OWGUI.widgetBox(self.infoTab, "General")
             OWGUI.label(ib, self, "Number of nodes: %(number_of_nodes_label)i")
