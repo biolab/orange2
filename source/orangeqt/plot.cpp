@@ -332,6 +332,7 @@ Point* Plot::point_at(const DataPoint& pos)
 
 Point* Plot::nearest_point(const QPointF& pos)
 {
+    QPointF zoomedPos = graph_item->transform().inverted().map(pos);
     QPair<double, Point*> closest_point;
     closest_point.first = std::numeric_limits<double>::max();
     closest_point.second = 0;
@@ -340,7 +341,7 @@ Point* Plot::nearest_point(const QPointF& pos)
     {
         foreach (Point* p, hash)
         {
-            const double d = distance(p->pos(), pos);
+            const double d = distance(p->pos(), zoomedPos);
             if (d < closest_point.first)
             {
                 closest_point.first = d;
@@ -348,7 +349,15 @@ Point* Plot::nearest_point(const QPointF& pos)
             }
         }
     }
-
+    
+    
+    if (closest_point.second)
+    {
+        // In case of zooming, we want the actual distance on the screen, 
+        // rather then the distance on the non-zoomed canvas
+        closest_point.first = distance(graph_item->transform().map(closest_point.second->pos()), pos);
+    }
+		
     if(closest_point.second && closest_point.first <= closest_point.second->size())
     {
         return closest_point.second;
