@@ -1,10 +1,3 @@
-.. _assoc1.py: code/assoc1.py
-.. _assoc2.py: code/assoc2.py
-.. _assoc3.py: code/assoc3.py
-.. _imports-85.tab: code/imports-85.tab
-.. _orngAssoc.htm: ../modules/orngAssoc.htm
-
-
 .. index:: association rules
 
 Association rules
@@ -22,11 +15,11 @@ chapter in Advances in knowledge discovery and data mining, 1996),
 Orange includes an optimized version of the algorithm that works on
 tabular data).  For number of reasons (but mostly for convenience)
 association rules should be constructed and managed through the
-interface provided by `orngAssoc.htm`_.  As implemented in Orange,
+interface provided by :py:mod:`Orange.associate`.  As implemented in Orange,
 association rules construction procedure does not handle continuous
 attributes, so make sure that your data is categorized. Also, class
 variables are treated just like attributes.  For examples in this
-tutorial, we will use data from the data set `imports-85.tab`_, which
+tutorial, we will use data from the data set :download:`imports-85.tab <code/imports-85.tab>`, which
 surveys different types of cars and lists their characteristics. We
 will use only first ten attributes from this data set and categorize
 them so three equally populated intervals will be created for each
@@ -42,8 +35,8 @@ Now, to our examples. First one uses the data set constructed with
 above script and shows how to build a list of association rules which
 will have support of at least 0.4. Next, we select a subset of first
 five rules, print them out, delete first three rules and repeat the
-printout. The script that does this is (part of `assoc1.py`_, uses
-`imports-85.tab`_)::
+printout. The script that does this is (part of :download:`assoc1.py <code/assoc1.py>`, uses
+:download:`imports-85.tab <code/imports-85.tab>`)::
 
    rules = orange.AssociationRulesInducer(data, support=0.4)
    
@@ -94,7 +87,7 @@ functions. The one in our example uses ``support`` and ``lift``.
    requested in our example should be passed as function
    arguments. 
 
-Here goes the code (part of `assoc2.py`_, uses `imports-85.tab`_)::
+Here goes the code (part of :download:`assoc2.py <code/assoc2.py>`, uses :download:`imports-85.tab <code/imports-85.tab>`)::
 
    rules = orange.AssociationRulesInducer(data, support = 0.4)
    
@@ -130,7 +123,7 @@ our example, but may be very useful otherwise). So, we use cloning to
 make a copy of the set of rules, then sort by first support and then
 confidence, and then print out few best rules. We have also lower
 required minimal support, just to see how many rules we obtain in this
-way (`assoc3.py`_, `imports-85.tab`_)::
+way (:download:`assoc3.py <code/assoc3.py>`, :download:`imports-85.tab <code/imports-85.tab>`)::
 
    minSupport = 0.2
    rules = orngAssoc.build(data, minSupport)

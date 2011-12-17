@@ -1,10 +1,3 @@
-.. _classifier.py: code/classifier.py
-.. _classifier2.py: code/classifier2.py
-.. _voting.tab: code/voting.tab
-.. _dot: http://graphviz.org/
-.. _handful.py: code/handful.py
-.. _tree.py: code/tree.py
-
 Classification
 ==============
 
@@ -14,7 +7,7 @@ Classification
 A substantial part of Orange is devoted to machine learning methods
 for classification, or supervised data mining. These methods start
 from the data that incorporates class-labeled instances, like
-`voting.tab`_::
+:download:`voting.tab <code/voting.tab>`::
 
    >>> data = orange.ExampleTable("voting.tab")
    >>> data[0]
@@ -43,7 +36,7 @@ A Simple Classifier
 Let us see how this works in practice. We will
 construct a naive Bayesian classifier from voting data set, and
 will use it to classify the first five instances from this data set
-(`classifier.py`_, uses `voting.tab`_)::
+(:download:`classifier.py <code/classifier.py>`, uses :download:`voting.tab <code/voting.tab>`)::
 
    import orange
    data = orange.ExampleTable("voting")
@@ -80,7 +73,7 @@ To find out what is the probability that the classifier assigns
 to, say, democrat class, we need to call the classifier with
 additional parameter ``orange.GetProbabilities``. Also, note that the
 democrats have a class index 1. We find this out with print
-``data.domain.classVar.values`` (`classifier2.py`_, uses `voting.tab`_)::
+``data.domain.classVar.values`` (:download:`classifier2.py <code/classifier2.py>`, uses :download:`voting.tab <code/voting.tab>`)::
 
    import orange
    data = orange.ExampleTable("voting")
@@ -126,8 +119,8 @@ complex object that is for its versatility composed of a number of
 other objects (for attribute estimation, stopping criterion, etc.),
 a wrapper (module) called ``orngTree`` was build around it to simplify
 the use of classification trees and to assemble the learner with
-some usual (default) components. Here is a script with it (`tree.py`_,
-uses `voting.tab`_)::
+some usual (default) components. Here is a script with it (:download:`tree.py <code/tree.py>`,
+uses :download:`voting.tab <code/voting.tab>`)::
 
    import orange, orngTree
    data = orange.ExampleTable("voting")
@@ -143,7 +136,7 @@ uses `voting.tab`_)::
 
 .. note:: 
    The script for classification tree is almost the same as the one
-   for naive Bayes (`classifier2.py`_), except that we have imported
+   for naive Bayes (:download:`classifier2.py <code/classifier2.py>`), except that we have imported
    another module (``orngTree``) and used learner
    ``orngTree.TreeLearner`` to build a classifier called ``tree``.
 
@@ -206,8 +199,10 @@ is ``orngTree.printDot(tree, fileName='tree.dot',
 internalNodeShape="ellipse", leafShape="box")``), which was then
 compiled to PNG using program called `dot`_.
 
-.. image:: tree.*
+.. image:: files/tree.png
    :alt: A graphical presentation of a classification tree
+
+.. _dot: http://graphviz.org/
 
 Nearest neighbors and majority classifiers
 ------------------------------------------
@@ -235,7 +230,7 @@ probabilities and uses the most frequent class for prediction.
 The following script takes naive Bayes, classification tree (what we
 have already learned), majority and k-nearest neighbors classifier
 (new ones) and prints prediction for first 10 instances of voting data
-set (`handful.py`_, uses `voting.tab`_)::
+set (:download:`handful.py <code/handful.py>`, uses :download:`voting.tab <code/voting.tab>`)::
 
    import orange, orngTree
    data = orange.ExampleTable("voting")

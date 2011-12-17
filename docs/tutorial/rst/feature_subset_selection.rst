@@ -1,9 +1,3 @@
-.. _adult_sample.tab: ../datasets/adult_sample.tab
-.. _fss6.py: code/fss6.py
-.. _fss7.py: code/fss7.py
-.. _orngFSS.htm: ../modules/orngFSS.htm
-
-
 .. index::
    single: feature subset selection
 
@@ -12,12 +6,12 @@ Feature Subset Selection
 
 While the core Orange provides mechanisms to estimate relevance of
 attributes that describe classified instances, a module called
-`orngFSS.htm`_ provides functions and wrappers that simplify feature
+:py:mod:`Orange.feature.selection` provides functions and wrappers that simplify feature
 subset selection. For instance, the following code loads the data,
 sets-up a filter that will use Relief measure to estimate the
 relevance of attributes and remove attribute with relevance lower than
-0.01, and in this way construct a new data set (`fss6.py`_, uses
-`adult_sample.tab`_)::
+0.01, and in this way construct a new data set (:download:`fss6.py <code/fss6.py>`, uses
+:download:`adult_sample.tab <code/adult_sample.tab>`)::
 
    import orange, orngFSS
    data = orange.ExampleTable("adult_sample")
@@ -90,7 +84,7 @@ has feature subset selection up-front, i.e., before it actually
 learns. For a learner, we will use Naive Bayes with categorization (a
 particular wrapper from orngDisc). The code is quite short since we
 will also use a wrapper called FilteredLearner from orngFSS module
-(part of `fss7.py`_, uses `adult_sample.tab`_)::
+(part of :download:`fss7.py <code/fss7.py>`, uses :download:`adult_sample.tab <code/adult_sample.tab>`)::
 
    import orange, orngDisc, orngTest, orngStat, orngFSS
    
@@ -115,7 +109,7 @@ that on average only the use of about two features was sufficient::
    bayes & fss     0.846      2.60
 
 The code that computes this statistics, as well as determines which
-are those features that were used, is shown below (from `fss7.py`_)::
+are those features that were used, is shown below (from :download:`fss7.py <code/fss7.py>`)::
 
    # how many attributes did each classifier use?
    natt = [0.] * len(learners)

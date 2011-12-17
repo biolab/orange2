@@ -1,17 +1,3 @@
-.. _accuracy.py: code/accuracy.py
-.. _accuracy2.py: code/accuracy2.py
-.. _accuracy3.py: code/accuracy3.py
-.. _accuracy4.py: code/accuracy4.py
-.. _accuracy5.py: code/accuracy5.py
-.. _accuracy6.py: code/accuracy6.py
-.. _accuracy7.py: code/accuracy7.py
-.. _accuracy8.py: code/accuracy8.py
-.. _orngStat.htm: ../modules/orngStat.htm
-.. _orngTest.htm: ../modules/orngTest.htm
-.. _roc.py: code/roc.py
-.. _voting.tab: code/voting.tab
-
-
 Testing and evaluating your classifiers
 =======================================
 
@@ -20,14 +6,14 @@ Testing and evaluating your classifiers
 
 In this lesson you will learn how to estimate the accuracy of
 classifiers. The simplest way to do this is to use Orange's
-`orngTest.htm`_ and `orngStat.htm`_ modules. This is probably how you
+:py:mod:`Orange.evaluation.testing` and :py:mod:`Orange.statistics` modules. This is probably how you
 will perform evaluation in your scripts, and thus we start with
 examples that uses these two modules. You may as well perform testing
 and scoring on your own, so we further provide several example scripts
 to compute classification accuracy, measure it on a list of
 classifiers, do cross-validation, leave-one-out and random
 sampling. While all of this functionality is available in
-`orngTest.htm`_ and `orngStat.htm`_ modules, these example scripts may
+:py:mod:`Orange.evaluation.testing` and :py:mod:`Orange.statistics` modules, these example scripts may
 still be useful for those that want to learn more about Orange's
 learner/classifier objects and the way to use them in combination with
 data sampling.
@@ -42,7 +28,7 @@ classifer and classification tree) and scores their predictive
 performance on a single data set using ten-fold cross validation. The
 script reports on four different scores: classification accuracy,
 information score, Brier score and area under ROC curve
-(`accuracy7.py`_, uses `voting.tab`_)::
+(:download:`accuracy7.py <code/accuracy7.py>`, uses :download:`voting.tab <code/voting.tab>`)::
 
    import orange, orngTest, orngStat, orngTree
    
@@ -78,13 +64,13 @@ accuracy, information score, Brier score and area under ROC curve
 (AUC) for each of the learners are computed (function ``CA``, ``IS``
 and ``AUC``).
 
-Apart from statistics that we have mentioned above, `orngStat.htm`_
+Apart from statistics that we have mentioned above, :py:mod:`Orange.statistics`,
 has build-in functions that can compute other performance metrics, and
-`orngTest.htm`_ includes other testing schemas. If you need to test
+:py:mod:`Orange.evaluation.testing` includes other testing schemas. If you need to test
 your learners with standard statistics, these are probably all you
 need. Compared to the script above, we below show the use of some
 other statistics, with perhaps more modular code as above (part of
-`accuracy8.py`_)::
+:download:`accuracy8.py <code/accuracy8.py>`)::
 
    data = orange.ExampleTable("voting")
    res = orngTest.crossValidation(learners, data, folds=10)
@@ -119,8 +105,8 @@ Do it on your own: a warm-up
 
 Let us continue with a line of exploration of voting data set, and
 build a naive Bayesian classifier from it, and compute the
-classification accuracy on the same data set (`accuracy.py`_, uses
-`voting.tab`_)::
+classification accuracy on the same data set (:download:`accuracy.py <code/accuracy.py>`, uses
+:download:`voting.tab <code/voting.tab>`)::
 
    import orange
    data = orange.ExampleTable("voting")
@@ -148,7 +134,7 @@ Let us extend the code with a function that is given a data set and a
 set of classifiers (e.g., ``accuracy(test_data, classifiers)``) and
 computes the classification accuracies for each of the classifier. By
 this means, let us compare naive Bayes and classification trees
-(`accuracy2.py`_, uses `voting.tab`_)::
+(:download:`accuracy2.py <code/accuracy2.py>`, uses :download:`voting.tab <code/voting.tab>`)::
 
    import orange, orngTree
    
@@ -201,7 +187,7 @@ In machine learning, one should not learn and test classifiers on the
 same data set. For this reason, let us split our data in half, and use
 first half of the data for training and the rest for testing. The
 script is similar to the one above, with a part which is different
-shown below (part of `accuracy3.py`_, uses `voting.tab`_)::
+shown below (part of :download:`accuracy3.py <code/accuracy3.py>`, uses :download:`voting.tab <code/voting.tab>`)::
 
    # set up the classifiers
    data = orange.ExampleTable("voting")
@@ -275,7 +261,7 @@ can do this only through the use of learners (remember, classifiers
 have already seen the data and cannot be re-learned).
 
 Our script, without accuracy function, which is exactly like the
-one we have defined in `accuracy2.py`_, is (part of `accuracy4.py`_)::
+one we have defined in :download:`accuracy2.py <code/accuracy2.py>`, is (part of :download:`accuracy4.py <code/accuracy4.py>`)::
 
    def test_rnd_sampling(data, learners, p=0.7, n=10):
        acc = [0.0]*len(learners)
@@ -366,7 +352,7 @@ cross-validation).
 The script for k-fold cross-validation is similar to the script for
 repetitive random sampling above. We define a function called
 ``cross_validation`` and use it to compute the accuracies (part of
-`accuracy5.py`_)::
+:download:`accuracy5.py <code/accuracy5.py>`)::
 
    def cross_validation(data, learners, k=10):
        acc = [0.0]*len(learners)
@@ -418,7 +404,7 @@ This evaluation procedure is often performed when data sets are small
 (no really the case for the data we are using in our example). If each
 cycle, a single instance is used for testing, while the classifier is
 build on all other instances. One can define leave-one-out test
-through a single Python function (part of `accuracy6.py`_)::
+through a single Python function (part of :download:`accuracy6.py <code/accuracy6.py>`)::
 
    def leave_one_out(data, learners):
        print 'leave-one-out: %d of %d' % (i, len(data))
@@ -462,7 +448,7 @@ accuracies obtained on voting data set are similar as well::
 Area under roc
 --------------
 
-Going back to the data set we use in this lesson (`voting.tab`_), let
+Going back to the data set we use in this lesson (:download:`voting.tab <code/voting.tab>`), let
 us say that at the end of 1984 we met on a corridor two members of
 congress. Somebody tells us that they are for a different party. We
 now use the classifier we have just developed on our data to compute
@@ -482,7 +468,7 @@ example for yet another statistics that can be assessed in Orange, we
 here present a simple (but not optimized and rather inefficient)
 implementation of this measure.
 
-We will use a script similar to `accuracy5.py`_ (k-fold cross
+We will use a script similar to :download:`accuracy5.py <code/accuracy5.py>` (k-fold cross
 validation) and will replace the accuracy() function with a function
 that computes area under ROC for a given data set and set of
 classifiers. The algorithm will investigate all pairs of data
@@ -496,7 +482,7 @@ set of valid pairs of instances. In case of ties (both instances were
 assigned the same probability of representing a republican), this
 would be counted as 0.5 instead of 1. The code for function that
 computes the area under ROC using this method is coded in Python as
-(part of `roc.py`_)::
+(part of :download:`roc.py <code/roc.py>`)::
 
    def aroc(data, classifiers):
        ar = []
@@ -525,7 +511,7 @@ probabilities of the item being classified as republican. We have to
 admit that although on the voting data set and under 10-fold
 cross-validation computing area under ROC is rather fast (below 3s),
 there exist a better algorithm with complexity O(n log n) instead of
-O(n^2). Anyway, running `roc.py`_ shows that naive Bayes is better in
+O(n^2). Anyway, running :download:`roc.py <code/roc.py>` shows that naive Bayes is better in
 terms of discrimination using area under ROC::
 
    Area under ROC:

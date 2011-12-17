@@ -236,4 +236,7 @@ epub_exclude_files = ["index.html", "genindex.html", "py-modindex.html", "search
 #epub_tocdup = True
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {
+    'python': ('http://docs.python.org/', None),
+    'reference': ('http://orange.biolab.si/doc/reference/', 'http://orange.biolab.si/doc/reference/_objects/'),
+}

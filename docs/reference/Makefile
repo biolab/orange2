@@ -29,7 +29,7 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _* *.html html .doctrees .buildinfo searchindex.js *.epub epub
+	-rm -rf _* *.html html .doctrees .buildinfo searchindex.js *.epub epub rst/_build
 
 epub:
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) epub

@@ -1,16 +1,3 @@
-.. _adult.tab: ../datasets/adult.tab
-.. _adult_sample.tab: ../datasets/adult_sample.tab
-.. _classification.htm: code/classification.htm
-.. _data_characteristics.py: code/data_characteristics.py
-.. _data_characteristics2.py: code/data_characteristics2.py
-.. _data_characteristics3.py: code/data_characteristics3.py
-.. _data_characteristics4.py: code/data_characteristics4.py
-.. _load_data.htm: code/load_data.htm
-.. _regression.htm: code/regression.htm
-.. _report_missing.py: code/report_missing.py
-.. _sample_adult.py: code/sample_adult.py
-
-
 Basic data exploration
 ======================
 
@@ -22,11 +9,11 @@ and look at another file with mixture of attribute types. We will
 first use adult data set from UCI ML Repository. The prediction task
 related to this data set is to determine whether a person
 characterized by 14 attributes like education, race, occupation, etc.,
-makes over $50K/year. Because of the original set `adult.tab`_ is
+makes over $50K/year. Because of the original set :download:`adult.tab <code/adult.tab>` is
 rather big (32561 data instances, about 4 MBytes), we will first
 create a smaller sample of about 3% of instances and use it in our
 examples. If you are curious how we do this, here is the code
-(`sample_adult.py`_ )::
+(:download:`sample_adult.py <code/sample_adult.py>`)::
 
    import orange
    data = orange.ExampleTable("adult")
@@ -57,7 +44,7 @@ For classification data sets, basic data characteristics are most
 often number of classes, number of attributes (and of these, how many
 are nominal and continuous), information if data contains missing
 values, and class distribution. Below is the script that does all
-this (`data_characteristics.py`_, `adult_sample.tab`_)::
+this (:download:`data_characteristics.py <code/data_characteristics.py>`, :download:`adult_sample.tab <code/adult_sample.tab>`)::
 
    import orange
    data = orange.ExampleTable("adult_sample")
@@ -127,7 +114,7 @@ Running the above script, we obtain the following output::
 If you would like class distributions printed as proportions of
 each class in the data sets, then the last part of the script needs
 to be slightly changed. This time, we have used string formatting
-with print as well (part of `data_characteristics2.py`_)::
+with print as well (part of :download:`data_characteristics2.py <code/data_characteristics2.py>`)::
 
    # obtain class distribution
    c = [0] * len(data.domain.classVar.values)
@@ -163,7 +150,7 @@ Another interesting piece of information that we can obtain from the
 data is the distribution of classes for each value of the discrete
 attribute, and means for continuous attribute (we will leave the
 computation of standard deviation and other statistics to you). Let's
-compute means of continuous attributes first (part of `data_characteristics3.py`_)::
+compute means of continuous attributes first (part of :download:`data_characteristics3.py <code/data_characteristics3.py>`)::
 
    print "Continuous attributes:"
    for a in range(len(data.domain.attributes)):
@@ -196,7 +183,7 @@ For nominal attributes, we could now compose a code that computes,
 for each attribute, how many times a specific value was used for each
 class. Instead, we used a build-in method DomainContingency, which
 does just that. All that our script will do is, mainly, to print it
-out in a readable form (part of `data_characteristics3.py`_)::
+out in a readable form (part of :download:`data_characteristics3.py <code/data_characteristics3.py>`)::
 
    print "\nNominal attributes (contingency matrix for classes:", data.domain.classVar.values, ")"
    cont = orange.DomainContingency(data)
@@ -258,7 +245,7 @@ proportion of the instances with that attribute unknown. We have
 already learned that if a function isSpecial() can be used to
 determine if for specific instances and attribute the value is not
 defined. Let us use this function to compute the proportion of missing
-values per each attribute (`report_missing.py`_, uses `adult_sample.tab`_)::
+values per each attribute (:download:`report_missing.py <code/report_missing.py>`, uses :download:`adult_sample.tab <code/adult_sample.tab>`)::
 
    import orange
    data = orange.ExampleTable("adult_sample")
@@ -327,8 +314,8 @@ For some of the tasks above, Orange can provide a shortcut by means of
 holds averages and mean square errors for continuous attributes, value
 frequencies for discrete attributes, and for both number of instances
 where specific attribute has a missing value.  The use of this object
-is exemplified in the following script (data_characteristics4.py`_,
-uses `adult_sample.tab`_)::
+is exemplified in the following script (:download:`data_characteristics4.py <code/data_characteristics4.py>`,
+uses :download:`adult_sample.tab <code/adult_sample.tab>`)::
 
    import orange
    data = orange.ExampleTable("adult_sample")

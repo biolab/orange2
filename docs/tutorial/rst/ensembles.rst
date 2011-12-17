@@ -1,10 +1,3 @@
-.. _c_bagging.htm: code/c_bagging.htm
-.. _ensemble2.py: code/ensemble2.py
-.. _ensemble3.py: code/ensemble3.py
-.. _orngEnsemble.htm: ../modules/orngEnsemble.htm
-.. _promoters.tab: code/promoters.tab
-
-
 .. index:: ensembles
 .. index:: 
    single: ensembles; bagging
@@ -20,12 +13,12 @@ needed, use example weights, ensembles are actually wrappers that can
 aggregate predictions from a list of constructed classifiers. These
 wrappers behave exactly like other Orange learners/classifiers. We
 will here first show how to use a module for bagging and boosting that
-is included in Orange distribution (`orngEnsemble.htm`_ module), and
+is included in Orange distribution (:py:mod:`Orange.ensemble` module), and
 then, for a somehow more advanced example build our own ensemble
 learner. Using this module, using it is very easy: you have to define
 a learner, give it to bagger or booster, which in turn returns a new
-(boosted or bagged) learner. Here goes an example (`ensemble3.py`_,
-uses `promoters.tab`_)::
+(boosted or bagged) learner. Here goes an example (:download:`ensemble3.py <code/ensemble3.py>`,
+uses :download:`promoters.tab <code/promoters.tab>`)::
 
    import orange, orngTest, orngStat, orngEnsemble
    data = orange.ExampleTable("promoters")

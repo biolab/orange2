@@ -20,5 +20,5 @@ Structure
 The actual documentation is intermixed from docs/reference/rst and documented
 Python modules in orange/Orange. 
 
-Regression testing and scripts are in docs/reference/rst/code. Additional
-files, such as images, are in docs/reference/rst/files.
+Example scripts and datasets are in docs/reference/rst/code. Additional files,
+such as images, are in docs/reference/rst/files.

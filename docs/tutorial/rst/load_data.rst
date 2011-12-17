@@ -1,9 +1,6 @@
 Data input
 ==========
 
-.. _lenses.tab: code/lenses.tab
-.. _lenses.py: code/lenses.py
-
 .. index:: data input
 
 Orange is a machine learning and data mining suite, so
@@ -16,7 +13,7 @@ native format is the simplest so most of our data files will come
 in this flavor.
 
 Let us start with example and Orange native data format. Let us
-consider an artificial data set `lenses.tab`_ on prescription of eye
+consider an artificial data set :download:`lenses.tab <code/lenses.tab>` on prescription of eye
 lenses [CJ1987]. The data set has four attributes (age of the patient,
 spectacle prescription, notion on astigmatism, and information on tear
 production rate) plus an associated three-valued class, that gives the
@@ -25,7 +22,7 @@ contact lenses, no lenses). You may have already guessed that this
 data set can, in principle, be used to build a classifier that, based
 on the four attributes, prescribes the right lenses. But before we do
 that, let us see how the data set file is composed and how to read it
-in Orange by displaying first few lines of `lenses.tab`_::
+in Orange by displaying first few lines of :download:`lenses.tab <code/lenses.tab>`::
 
    age       prescription  astigmatic    tear_rate     lenses
    discrete  discrete      discrete      discrete      discrete 
@@ -62,16 +59,16 @@ example.
 
 Attribute values are separated with tabulators (<TAB>).  This is
 rather hard to see above (it looks like spaces were used), so to
-verify that check the original `lenses.tab`_ data set in
+verify that check the original :download:`lenses.tab <code/lenses.tab>` data set in
 your favorite text editor.  Alternatively, authors of this text like
 best to edit these files in a spreadsheet program (and use
 tab-delimited format to save the files), so a snapshot of the data set
 as edited in Excel can look like this:
 
-.. image:: excel.*
+.. image:: files/excel.png
    :alt: Data in Excel
 
-Now create a directory, save `lenses.tab`_ in
+Now create a directory, save :download:`lenses.tab <code/lenses.tab>` in
 it (right click on the link and choose choose "Save Target As
 ..."). Open a terminal (cmd shell in Windows, Terminal on Mac OS X),
 change the directory to the one you have just created, and run
@@ -102,9 +99,9 @@ let's check this out and print the attribute names and first
 ['young', 'myope', 'yes', 'reduced', 'none']
 >>>
 
-Now let's put together a script file `lenses.py`_ that
+Now let's put together a script file :download:`lenses.py <code/lenses.py>` that
 reads lenses data, prints out names of the attributes and class, and
-lists first 5 data instances (`lenses.py`_)::
+lists first 5 data instances (:download:`lenses.py <code/lenses.py>`)::
 
    import orange
    data = orange.ExampleTable("lenses")
@@ -128,7 +125,7 @@ line that declares the loop ends with ``:``, and whatever
 is in the loop is indented (we have used three spaces to indent the
 statements that are within each loop).
 
-Save `lenses.py`_ in your working directory. There
+Save :download:`lenses.py <code/lenses.py>` in your working directory. There
 should now be both files lenses.py and lenses.tab. Now let's see if we
 run the script we have just written::
 
@@ -150,8 +147,8 @@ described within two files: file with extension ".data" holds the
 actual data, whereas domain (attribute and class names and types) are
 described in a separate file ".names".  Instead of going into how
 exactly these files are formed, we show just an example that Orange
-can handle them. For this purpose, load `car.data <car.data>`_ and
-`car.names <car.names>`_ and run the following code::
+can handle them. For this purpose, load :download:`car.data <code/car.data>` and
+:download:`car.names <code/car.names>` and run the following code::
 
    > python
    >>> car_data = orange.ExampleTable("car")

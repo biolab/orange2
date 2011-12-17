@@ -1,11 +1,3 @@
-.. _housing.tab: code/housing.tab
-.. _orngStat.htm: ../modules/orngStat.htm
-.. _regression1.py: code/regression1.py
-.. _regression2.py: code/regression2.py
-.. _regression3.py: code/regression3.py
-.. _regression4.py: code/regression4.py
-
-
 .. index:: regression
 
 Regression
@@ -24,8 +16,8 @@ Few simple regressors
 ---------------------
 
 Let us start with regression trees. Below is an example script that builds
-the tree from `housing.tab`_ data set and prints
-out the tree in textual form (`regression1.py`_)::
+the tree from :download:`housing.tab <code/housing.tab>` data set and prints
+out the tree in textual form (:download:`regression1.py <code/regression1.py>`)::
 
    import orange, orngTree
    
@@ -54,7 +46,7 @@ Predicting continues classes is just like predicting crisp ones. In
 this respect, the following script will be nothing new. It uses both
 regression trees and k-nearest neighbors, and also uses a majority
 learner which for regression simply returns an average value from
-learning data set (`regression2.py`_)::
+learning data set (:download:`regression2.py <code/regression2.py>`)::
 
    import orange, orngTree, orngTest, orngStat
    
@@ -107,7 +99,7 @@ Evaluation and scoring
 
 For our third and last example for regression, let us see how we can
 use cross-validation testing and for a score function use
-(`regression3.py`_, uses  `housing.tab`_)::
+(:download:`regression3.py <code/regression3.py>`, uses `housing.tab <code/housing.tab>`)::
 
    import orange, orngTree, orngTest, orngStat
    
@@ -143,7 +135,7 @@ Other scoring techniques are available to evaluate the success of
 regression. Script below uses a range of them, plus features a nice
 implementation where a list of scoring techniques is defined
 independetly from the code that reports on the results (part of
-`regression4.py`_)::
+:download:`regression4.py <code/regression4.py>`)::
 
    lr = orngRegression.LinearRegressionLearner(name="lr")
    rt = orngTree.TreeLearner(measure="retis", mForPruning=2,
@@ -176,7 +168,7 @@ Here, we used a number of different scores, including:
 * RAE - relative absolute error, and
 * R2 - coefficient of determinatin, also referred to as R-squared.
 
-For precise definition of these measures, see `orngStat.htm`_. Running
+For precise definition of these measures, see :py:mod:`Orange.statistics`. Running
 the script above yields::
 
    Learner  MSE    RMSE   MAE    RSE    RRSE   RAE    R2

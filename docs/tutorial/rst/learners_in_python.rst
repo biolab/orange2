@@ -1,17 +1,3 @@
-.. _adult_sample.tab: ../datasets/adult_sample.tab
-.. _bagging.py: code/bagging.py
-.. _bagging_test.py: code/bagging_test.py
-.. _bayes.py: code/bayes.py
-.. _bayes_test.py: code/bayes_test.py
-.. _c_nb_disc.htm: code/c_nb_disc.htm
-.. _iris.tab: code/iris.tab
-.. _nbdisc.py: code/nbdisc.py
-.. _nbdisc_test.py: code/nbdisc_test.py
-.. _o_categorization.htm: code/o_categorization.htm
-.. _orngEnsemble.htm: ../modules/orngEnsemble.htm
-.. _voting.tab: code/voting.tab
-
-
 Build your own learner
 ======================
 
@@ -82,14 +68,16 @@ data. Then we will show how to write naive Bayesian classifier in
 Python (that is, how to do this from scratch). We conclude with Python
 implementation of bagging.
 
+.. _naive bayes with discretization:
+
 Naive Bayes with discretization
 -------------------------------
 
 Let us build a learner/classifier that is an extension of build-in
 naive Bayes and which before learning categorizes the data. We will
-define a module `nbdisc.py`_ that will implement two classes, Learner
+define a module :download:`nbdisc.py <code/nbdisc.py>` that will implement two classes, Learner
 and Classifier. Following is a Python code for a Learner class (part
-of `nbdisc.py`_)::
+of :download:`nbdisc.py <code/nbdisc.py>`)::
 
    class Learner(object):
        def __new__(cls, examples=None, name='discretized bayes', **kwds):
@@ -129,7 +117,7 @@ learner, we first discretize the data using Fayyad &amp; Irani's
 entropy-based discretization, then build a naive Bayesian model and
 finally pass it to a class ``Classifier``. You may expect that at its
 first invocation the ``Classifier`` will just remember the model we
-have called it with (part of `nbdisc.py`_)::
+have called it with (part of :download:`nbdisc.py <code/nbdisc.py>`)::
 
    class Classifier:
        def __init__(self, **kwds):
@@ -163,8 +151,8 @@ Here are now a few lines to test our code::
 
 For a more elaborate test that also shows the use of a learner (that
 is not given the data at its initialization), here is a script that
-does 10-fold cross validation (`nbdisc_test.py`_, uses `iris.tab`_ and
-`nbdisc.py`_)::
+does 10-fold cross validation (:download:`nbdisc_test.py <code/nbdisc_test.py>`, uses :download:`iris.tab <code/iris.tab>` and
+:download:`nbdisc.py <code/nbdisc.py>`)::
 
    import orange, orngEval, nbdisc
    data = orange.ExampleTable("iris")
@@ -231,9 +219,9 @@ frequency as estimated from training data is taken.
 
 We will develop a module called bayes.py that will implement our naive
 Bayes learner and classifier. The structure of the module will be as
-with `c_nb_disc.htm`_.  Again, we will implement two classes, one for
+with `naive bayes with discretization`_.  Again, we will implement two classes, one for
 learning and the other on for classification. Here is a ``Learner``:
-class (part of `bayes.py`_)::
+class (part of :download:`bayes.py <code/bayes.py>`)::
 
    class Learner_Class:
      def __init__(self, m=0.0, name='std naive bayes', **kwds):
@@ -288,7 +276,7 @@ m-estimate equal to relative frequency unless the user specifies some
 other value for m. Function ``__call__`` is called with the training
 data set, computes class and conditional probabilities and calls
 classifiers, passing the probabilities along with some other variables
-required for classification (part of `bayes.py`_)::
+required for classification (part of :download:`bayes.py <code/bayes.py>`)::
 
    class Classifier:
      def __init__(self, **kwds):
@@ -344,8 +332,8 @@ reports on m, class probabilities and conditional probabilities::
 
 The following script tests our naive Bayes, and compares it to
 10-nearest neighbors. Running the script (do you it yourself) reports
-classification accuracies just about 90% (`bayes_test.py`_, uses
-`bayes.py`_ and `voting.tab`_)::
+classification accuracies just about 90% (:download:`bayes_test.py <code/bayes_test.py>`, uses
+:download:`bayes.py <code/bayes.py>` and :download:`voting.tab <code/voting.tab>`)::
 
    import orange, orngEval, bayes
    data = orange.ExampleTable("voting")
@@ -364,7 +352,7 @@ Bagging
 
 Here we show how to use the schema that allows us to build our own
 learners/classifiers for bagging. While you can find bagging,
-boosting, and other ensemble-related stuff in `orngEnsemble.htm`_ module, we thought
+boosting, and other ensemble-related stuff in :py:mod:`Orange.ensemble` module, we thought
 explaining how to code bagging in Python may provide for a nice
 example. The following pseudo-code (from
 Whitten &amp; Frank: Data Mining) illustrates the main idea of bagging::
@@ -388,7 +376,7 @@ classification. We will allow parameter t to be specified by the user,
 10 being the default.
 
 The code for the ``Learner_Class`` is therefore (part of
-`bagging.py`_)::
+:download:`bagging.py <code/bagging.py>`)::
 
    class Learner_Class:
        def __init__(self, learner, t=10, name='bagged classifier'):
@@ -420,7 +408,7 @@ sampling with replacement, a list of data instance indices is build
 (``selection``) and then used to sample the data from training
 examples (``example.getitems``). Finally, a ``Classifier`` is called
 with a list of classifiers, name and domain information (part of
-`bagging.py`_)::
+:download:`bagging.py <code/bagging.py>`)::
 
    class Classifier:
        def __init__(self, **kwds):
@@ -454,8 +442,8 @@ not probabilities are used).
 
 Here is the code that tests our bagging we have just implemented. It
 compares a decision tree and its bagged variant.  Run it yourself to
-see which one is better (`bagging_test.py`_, uses `bagging.py`_ and
-`adult_sample.tab`_)::
+see which one is better (:download:`bagging_test.py <code/bagging_test.py>`, uses :download:`bagging.py <code/bagging.py>` and
+:download:`adult_sample.tab <code/adult_sample.tab>`)::
 
    import orange, orngTree, orngEval, bagging
    data = orange.ExampleTable("adult_sample")

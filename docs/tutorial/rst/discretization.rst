@@ -1,13 +1,3 @@
-.. _disc.py: code/disc.py
-.. _disc2.py: code/disc2.py
-.. _disc3.py: code/disc3.py
-.. _disc4.py: code/disc4.py
-.. _disc5.py: code/disc5.py
-.. _disc6.py: code/disc6.py
-.. _disc7.py: code/disc7.py
-.. _domain.htm: code/domain.htm
-.. _iris.tab: code/iris.tab
-
 .. index:: discretization
 .. index::
    single: discretization; entropy-based
@@ -43,7 +33,7 @@ Data set discretization
 -----------------------
 
 Here is a script which demonstraters the basics of discretization in
-Orange (`disc.py`_, uses `iris.tab`_)::
+Orange (:download:`disc.py <code/disc.py>`, uses :download:`iris.tab <code/iris.tab>`)::
 
    import orange
    
@@ -95,9 +85,7 @@ specific attributes. For this, you may want to apply different kind of
 discretizations. The idea is that you discretize each of attributes
 separately, and them use newly crafter attributes to form your new
 domain for the new data set. We have not told you anything on working
-with example domains, so if you want to learn more on this, jump to
-`domain.htm`_ section of this tutorial, and then come back. For those
-of you that trust us in what we are doing, just read on.
+with example domains, but trust us in what we are doing, and just read on.
 
 In Orange, when converting examples (transforming one data set to
 another), attribute's values can be computed from values of other
@@ -107,7 +95,7 @@ width`` by quartile-discretized attribute called ``pl``. For ``sepal
 length``, we'll keep the original attribute, but add the attribute
 discretized using quartiles (``sl``) and using Fayyad-Irani's
 algorithm (``sl_ent``). We shall also keep the original (continuous)
-attribute ``sepal width`` (from `disc2.py`_, uses `iris.tab`_)::
+attribute ``sepal width`` (from :download:`disc2.py <code/disc2.py>`, uses :download:`iris.tab <code/iris.tab>`)::
 
    def printexamples(data, inxs, msg="First %i examples"):
      print msg % len(inxs)
@@ -168,7 +156,7 @@ values remains the same. Adding the line::
    pl.values = sl.values = ["very low", "low", "high", "very high"]
 
 to our code after the introduction of this two attributes (the new script is in
-`disc3.py`_), following is the second part of the output::
+:download:`disc3.py <code/disc3.py>`), following is the second part of the output::
 
    5 examples before discretization
    0 [3.500000, 'very low', 5.100000, 'low', '<=5.50', 'Iris-setosa']
@@ -191,7 +179,7 @@ it.
 
 Both, ``EquiNDiscretization`` and ``EntropyDiscretization`` construct
 transformer objects of type ``IntervalDiscretizer``. It's cut-off
-points are stored in a list points (`disc4.py`_, uses `iris.tab`_)::
+points are stored in a list points (:download:`disc4.py <code/disc4.py>`, uses :download:`iris.tab <code/iris.tab>`)::
 
    import orange
    iris = orange.ExampleTable("iris")
@@ -222,7 +210,7 @@ domain of the attribute and how it is derived. We did not created a
 data set with this attribute yet, so before this, it is well time to
 change anything the discretization will actually do to the data. In
 the following example, we have rounded the cut-off points for the
-attribute ``pl`` (`disc5.py`_, uses  `iris.tab`_)::
+attribute ``pl`` (:download:`disc5.py <code/disc5.py>`, uses :download:`iris.tab <code/iris.tab>`)::
 
    import orange
    iris = orange.ExampleTable("iris")
@@ -267,7 +255,7 @@ algorithms. We need to define a descriptor, among with the ``name``,
 be ``IntervalDiscretizer`` and with it we specify the cut-off points.
 
 Let's now discretize Iris' attribute pl using three intervals with
-cut-off points 2.0 and 4.0 (`disc6.py`_, uses  `iris.tab`_)::
+cut-off points 2.0 and 4.0 (:download:`disc6.py <code/disc6.py>`, uses :download:`iris.tab <code/iris.tab>`)::
 
    import orange
    
@@ -310,7 +298,7 @@ does one then apply the same discretization on the test set?  For
 discretized attributes Orange remembers the how they were converted
 from their original continuous versions, so you need only to convert
 the testing examples to a new (discretized) domain. Following code
-shows how (`disc7.py`_, uses  `iris.tab`_)::
+shows how (:download:`disc7.py <code/disc7.py>`, uses :download:`iris.tab <code/iris.tab>`)::
 
    import orange
    data = orange.ExampleTable("iris")

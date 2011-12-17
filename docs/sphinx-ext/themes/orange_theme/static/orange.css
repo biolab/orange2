@@ -563,6 +563,7 @@ div.sphinxsidebar h3 a {
 
 img {
     border: 0;
+	max-width: 100%;
 }
 
 div#sidebarbutton {

@@ -1,3 +1,5 @@
+.. py:module:: Orange.statistics
+
 ###########################
 Statistics (``statistics``)
 ###########################
