@@ -46,7 +46,7 @@ try:
         "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
         "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex", 
         "networkCanvas.trim_label_words", "opt_from_curr", "networkCanvas.explore_distances",
-        "networkCanvas.show_component_distances", "fontWeight"] 
+        "networkCanvas.show_component_distances", "fontWeight", "networkCanvas.state"] 
         
         def __init__(self, parent=None, signalManager=None, name = 'Net Explorer', 
                      NetworkCanvas=OWNxCanvas):
@@ -258,6 +258,7 @@ try:
             #OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.send_marked_nodes, disabled=0)
             
             self.toolbar = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
+            prevstate = self.networkCanvas.state
             G = self.networkCanvas.gui
             self.zoomSelectToolbar = G.zoom_select_toolbar(self.toolbar, nomargin=True, buttons = 
                 G.default_zoom_select_buttons + 
@@ -271,6 +272,15 @@ try:
                 ])
             self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_data)
             self.zoomSelectToolbar.buttons[G.SendSelection].hide()
+            #NOTHING = 0
+            #ZOOMING = 1
+            #SELECT = 2
+            #SELECT_POLYGON = 3
+            #PANNING = 4
+            #SELECT_RECTANGLE = SELECT
+            #SELECT_RIGHTCLICK = SELECT
+            state_buttons = {0: 11, 1: 11, 2: 13, 3: 13, 4: 12}
+            self.zoomSelectToolbar.buttons[state_buttons[prevstate]].click()
             
             self.reportButton = OWGUI.button(self.toolbar, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
             self.reportButton.setAutoDefault(0)
