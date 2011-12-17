@@ -18,14 +18,14 @@ Contents:
    :maxdepth: 1
 
    start.rst
-   load_data.rst
-   basic_exploration.rst
+   load-data.rst
+   basic-exploration.rst
    classification.rst
    evaluation.rst
-   learners_in_python.rst
+   learners-in-python.rst
    regression.rst
-   association_rules.rst
-   feature_subset_selection.rst
+   association-rules.rst
+   feature-subset-selection.rst
    ensembles.rst
    discretization.rst
 
