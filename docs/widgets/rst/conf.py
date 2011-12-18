@@ -38,35 +38,45 @@ master_doc = 'index'
 
 # rst epilog with shortcuts for screen shoot numbers
 rst_epilog = """
-.. |1| image:: /images/1.png
+.. |1| image:: /../../sphinx-ext/themes/orange_theme/static/images/1.png
        :align: middle
+       :alt: 1
           
-.. |2| image:: /images/2.png
+.. |2| image:: /../../sphinx-ext/themes/orange_theme/static/images/2.png
        :align: middle
+       :alt: 2
 
-.. |3| image:: /images/3.png
+.. |3| image:: /../../sphinx-ext/themes/orange_theme/static/images/3.png
        :align: middle
+       :alt: 3
        
-.. |4| image:: /images/4.png
+.. |4| image:: /../../sphinx-ext/themes/orange_theme/static/images/4.png
        :align: middle
+       :alt: 4
        
-.. |5| image:: /images/5.png
+.. |5| image:: /../../sphinx-ext/themes/orange_theme/static/images/5.png
        :align: middle
+       :alt: 5
        
-.. |6| image:: /images/6.png
+.. |6| image:: /../../sphinx-ext/themes/orange_theme/static/images/6.png
        :align: middle
+       :alt: 6
        
-.. |7| image:: /images/7.png
+.. |7| image:: /../../sphinx-ext/themes/orange_theme/static/images/7.png
        :align: middle
+       :alt: 7
        
-.. |8| image:: /images/8.png
+.. |8| image:: /../../sphinx-ext/themes/orange_theme/static/images/8.png
        :align: middle
+       :alt: 8
        
-.. |9| image:: /images/9.png
+.. |9| image:: /../../sphinx-ext/themes/orange_theme/static/images/9.png
        :align: middle
+       :alt: 9
        
-.. |10| image:: /images/10.png
+.. |10| image:: /../../sphinx-ext/themes/orange_theme/static/images/10.png
        :align: middle
+       :alt: 10
 """
 
 # General information about the project.

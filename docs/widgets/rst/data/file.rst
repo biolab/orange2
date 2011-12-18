@@ -1,7 +1,9 @@
+.. _File:
+
 File
 ====
 
-.. image:: File_icon.png
+.. image:: images/File_icon.png
    :alt: File widget icon
    
 Signals
@@ -17,7 +19,7 @@ Outputs:
 Description
 -----------
 
-.. image:: File.*
+.. image:: images/File.png
    :alt: File widget with loaded ionosphere.tab data set
    
 This is the widget you will probably use in every schema. It reads the input data file 
@@ -52,18 +54,12 @@ the second. In cases when attributes from different files just accidentally bear
 names, one can instruct Orange to either always construct new attribute or construct them when 
 they differ in their domains. Use this option with great care (if at all).
 
-
 Examples
 --------
 
 Any of your schemas should probably start with the File_ widget. In the schema below, 
-the widget is used to read the data that is then sent to both `Data Table`_ widget and 
-to widget that displays `Attribute statistics`_.
+the widget is used to read the data that is then sent to both :ref:`Data Table` widget and 
+to widget that displays :ref:`Attribute Statistics`.
 
-.. image:: File_schema.*
+.. image:: images/File_schema.png
    :alt: Example schema with File widget
-   
-   
-.. _File: File.html
-.. _`Data Table`: DataTable.html
-.. _`Attribute Statistics`: AttributeStatistics.html
