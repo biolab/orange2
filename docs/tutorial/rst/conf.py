@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# ofb documentation build configuration file, created by
+# tutorial documentation build configuration file, created by
 # sphinx-quickstart on Fri Jul 16 13:29:06 2010.
 #
 # This file is execfile()d with the current directory set to its containing dir.
