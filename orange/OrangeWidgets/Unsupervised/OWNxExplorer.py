@@ -266,14 +266,15 @@ try:
                 G.default_zoom_select_buttons + 
                 [
                     G.Spacing,
-                    ("buttonM2S", "Add marked to selection", None, None, "marked_to_selected", 'Dlg_Mark2Sel'),
-                    ("buttonS2M", "Add selection to marked", None, None, "selected_to_marked", 'Dlg_Sel2Mark'),
+                    ("buttonM2S", "marked to selection", None, None, "marked_to_selected", 'Dlg_Mark2Sel'),
+                    ("buttonS2M", "selection to marked", None, None, "selected_to_marked", 'Dlg_Sel2Mark'),
                     #("buttonSEL", "Hide selected", None, None, "hideSelectedVertices", 'Dlg_UnselectedNodes'),
                     #("buttonUN", "Hide unselected", None, None, "hideUnSelectedVertices", 'Dlg_SelectedNodes'),
                     #("buttonSW", "Show all nodes", None, None, "showAllVertices", 'Dlg_clear'),
                 ])
             self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_data)
-            self.zoomSelectToolbar.buttons[G.SendSelection].hide()
+            self.zoomSelectToolbar.buttons[G.SendSelection].clicked.connect(self.send_marked_nodes)
+            #self.zoomSelectToolbar.buttons[G.SendSelection].hide()
             self.zoomSelectToolbar.select_selection_behaviour(prevselbeh)
             self.zoomSelectToolbar.select_state(prevstate)
             
