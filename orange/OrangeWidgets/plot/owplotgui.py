@@ -444,7 +444,9 @@ class OWPlotGUI:
         if id == OWPlotGUI.Select:
             b = self.menu_button(self.Select, [self.SelectionOne, self.SelectionAdd, self.SelectionRemove, self.SelectionToggle], widget)
         else:
-            b = OWButton(OWAction(self._plot, icon_name, attr_name, attr_value, callback), widget)
+            b = OWButton(parent=widget)
+            ac = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=b)
+            b.setDefaultAction(ac)
         b.setToolTip(name)
         if widget.layout() is not None:
             widget.layout().addWidget(b)
