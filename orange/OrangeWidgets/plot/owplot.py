@@ -1695,8 +1695,7 @@ class OWPlot(orangeqt.Plot):
             target.setProperty(prop_name, end_val)
             
     def clear_selection(self):
-        ## TODO
-        pass
+        self.unselect_all_points()
     
     def send_selection(self):
         if self.auto_send_selection_callback:
