@@ -215,8 +215,13 @@ svm_model *svm_load_model_alt(std::istream& stream)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
 			model->rho = Malloc(double,n);
-			for(int i=0;i<n;i++)
-				stream >> model->rho[i];
+			string rho_str;
+			for(int i=0;i<n;i++){
+				// Read the number into a string and then use strtod
+				// for proper handling of NaN's
+				stream >> rho_str;
+				model->rho[i] = strtod(rho_str.c_str(), NULL);
+			}
 		}
 		else if(strcmp(cmd,"label")==0)
 		{
