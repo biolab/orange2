@@ -1248,7 +1248,7 @@ class OWPlot(orangeqt.Plot):
             
         a = self.mouse_action(event)
         
-        if a == SELECT and self._pressed_point is not None and hasattr(self, 'move_selected_points'):
+        if a == SELECT and self._pressed_point is not None and self._pressed_point.is_selected() and hasattr(self, 'move_selected_points'):
             animate_points = self.animate_points
             self.animate_points = False
             x1, y1 = self._pressed_point_coor
@@ -1330,9 +1330,11 @@ class OWPlot(orangeqt.Plot):
         elif a == SELECT and b == Qt.LeftButton:
             point_item = self.nearest_point(point)
             b = self.selection_behavior
+            
             if b == self.ReplaceSelection:
                 self.unselect_all_points()
                 b = self.AddSelection
+            
             if point_item:
                 point_item.set_selected(b == self.AddSelection or (b == self.ToggleSelection and not point_item.is_selected()))
             self.emit(SIGNAL('selection_changed()'))
@@ -1340,6 +1342,8 @@ class OWPlot(orangeqt.Plot):
             point_item = self.nearest_point(point)
             if point_item:
                 self.emit(SIGNAL('point_rightclicked(Point*)'), self.nearest_point(point))
+            else:
+                self.unselect_all_points()
         else:
             return False
             
