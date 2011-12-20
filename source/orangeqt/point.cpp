@@ -165,7 +165,7 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
                 pen.setStyle(Qt::NoPen);
                 */
             	QColor c = Qt::yellow;
-            	c.setAlpha(120);
+            	c.setAlpha(150);
 				brush.setColor(c);
             }
             else
