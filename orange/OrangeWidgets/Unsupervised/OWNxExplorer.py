@@ -277,7 +277,6 @@ try:
             self.zoomSelectToolbar.select_selection_behaviour(prevselbeh)
             self.zoomSelectToolbar.select_state(prevstate)
             
-            
             self.reportButton = OWGUI.button(self.toolbar, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
             self.reportButton.setAutoDefault(0)
             
