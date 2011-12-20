@@ -94,7 +94,24 @@ class OWToolbar(OrientedWidget):
             i = i + 1
         self.layout().addStretch()
 
-
+    def select_state(self, state):
+        #NOTHING = 0
+        #ZOOMING = 1
+        #SELECT = 2
+        #SELECT_POLYGON = 3
+        #PANNING = 4
+        #SELECT_RECTANGLE = SELECT
+        #SELECT_RIGHTCLICK = SELECT
+        state_buttons = {0: 11, 1: 11, 2: 13, 3: 13, 4: 12}
+        self.buttons[state_buttons[state]].click()
+    
+    def select_selection_behaviour(self, selection_behaviour):
+        #SelectionAdd = 21
+        #SelectionRemove = 22
+        #SelectionToggle = 23
+        #SelectionOne = 24
+        self.buttons[13]._actions[21 + selection_behaviour].trigger()
+    
 class StateButtonContainer(OrientedWidget):
     '''
         This class can contain any number of checkable buttons, of which only one can be selected at any time. 
@@ -441,6 +458,8 @@ class OWPlotGUI:
         b = OWButton(parent=widget)
         m = QMenu(b)
         b.setMenu(m)
+        b._actions = {}
+        
         QObject.connect(m, SIGNAL("triggered(QAction*)"), b, SLOT("setDefaultAction(QAction*)"))
 
         if main_action_id:
@@ -449,7 +468,9 @@ class OWPlotGUI:
         
         for id in ids:
             id, name, attr_name, attr_value, callback, icon_name = self._expand_id(id)
-            m.addAction(OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=m))
+            a = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=m)
+            m.addAction(a)
+            b._actions[id] = a
             
         if m.actions():
             b.setDefaultAction(m.actions()[0])
