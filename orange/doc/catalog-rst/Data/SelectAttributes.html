@@ -1,0 +1,247 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Select Attributes &mdash; Orange widget catalog</title>
+    <link rel="stylesheet" href="../_static/orange.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0b',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Orange widget catalog" href="../index.html" />
+    <link rel="prev" title="Data Table" href="DataTable.html" />
+<!--orange style--><link rel="stylesheet" href= "../_static/orange.css" type="text/css">
+<!--orange style--><link rel="stylesheet" href= "../_static/pygments.css" type="text/css">
+
+  </head>
+  <body>
+	<link rel="shortcut icon" href="/pageicon.ico">
+<link rel="alternate" type="application/rss+xml" title="Orange Forum" href="/forum/rss.php" />
+<link rel="alternate" type="application/rss+xml" title="News about Orange" href="/forum/rss-news.php" />
+<!--<link rel="search" type="application/opensearchdescription+xml" title="Orange Documentation Search" href="/orangeSearch.xml">-->
+
+<!-- General page header which goes to the beginning of the body element -->
+<div id="container">
+	<div class="border1"></div>
+	<div class="border2"></div>
+	<div class="borderv">
+		<div id="header">
+			<div id="orangeimg"><a href="/"><img src="/orange-logo-w.png"></a></div>
+
+			<form action="http://www.ailab.si/orange/searchRes.html" id="cse-search-box">
+				<input type="hidden" name="cx" value="004435948024671398314:koge-dvl9sc" />
+				<input type="hidden" name="cof" value="FORID:10" />
+				<input type="hidden" name="ie" value="UTF-8" />
+				<img src="/search.png" height="12"/>
+				<input type="text" name="q" size="25"/>
+				<input style="visibility: hidden; height: 1px;" type="submit" name="sa" value="." />
+			</form>
+
+			<div id="underimg"></div>
+
+			<table id="uplinks">
+				<tr>
+					<td><a href="/features.html">Features</a></td>
+					<td><a href="/nightly_builds.html">Download</a></td>
+					<td><a href="/doc">Documentation</a></td>
+					<td><a href="/forum">Forum</a></td>
+				</tr>
+			</table>
+			
+
+		</div>
+	</div>
+	<div class="border2"></div>
+	<div class="border1"></div>
+
+
+	<div id="main">
+		<div class="border1"></div>
+		<div class="border2"></div>
+		<div class="borderv">
+
+		<div id="maininner">
+		
+<!-- End of general header -->
+ 
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body">
+            
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+           <p><a class="uplink" href="../index.html">Orange Documentation</a>
+           </p>
+           <ul>
+<li><a class="reference internal" href="#">Select Attributes</a><ul>
+<li><a class="reference internal" href="#signals">Signals</a></li>
+<li><a class="reference internal" href="#description">Description</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+  
+  <div class="section" id="select-attributes">
+<h1>Select Attributes<a class="headerlink" href="#select-attributes" title="Permalink to this headline">¶</a></h1>
+<img alt="Select Attributes icon" src="../_images/SelectAttributes_icon.png" />
+<div class="section" id="signals">
+<h2>Signals<a class="headerlink" href="#signals" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>Input:</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>Examples (ExampleTable)</dt>
+<dd><p class="first last">Attribute-valued data set.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Outputs:</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>Examples (ExampleTable)</dt>
+<dd><p class="first last">Attribute-valued data set composed using the domain
+specification constructed using the widget.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Select Attributes widget is used to manually compose your data
+domain, that is, to decide which attributes will be used and how.
+Orange distinguishes between ordinary attributes, an (optional) class attributes
+and meta attributes. For instance, for building a classification model, the
+domain would be composed of a set of attributes and a discrete class attribute.
+Meta attributes are not used in modelling, but several widgets can use them
+for providing optional labels to instances.</p>
+<p>Orange attributes are typed and are either discrete, continuous or
+a character string. The attribute type is marked with a symbol appearing
+before the name of the attribute (D, C, S, respectively).</p>
+<p>Changes made to the domain are propagated to the output by pressing an
+Apply button. Reset will present the attributes as defined in original
+domain in the data set from the input signal</p>
+<img alt="SelectAttributes" src="../_images/SelectAttributes.png" />
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Below is a simple example how to use this widget. The input is fed directly from
+the <cite>File</cite> widget, and the output to the <cite>Data Table</cite> widget. We have also linked
+the former to the File widget so that one can inspect the difference in the
+domain composition.</p>
+<img alt="SelectAttributes schema" src="../_images/SelectAttributes_schema.png" />
+</div>
+</div>
+
+
+
+          </div>
+      </div> 
+      <div class="clearer"></div>
+    </div>  
+	
+    <div class="footer">
+    </div>
+	<!-- general footer which goes to the end of the body element -->
+
+	</div>
+	</div>
+    <div class="border1"></div>
+	<div class="border2"></div>
+	</div>
+
+
+	<div id="footer">
+		<div class="border1"></div>
+		<div class="border2"></div>
+		<div class="borderv">
+			<div id="footerinner">
+				<table>
+					<tr>
+						<td>
+							<p><a href="/">Home</a></p>
+							<a href="/screenshots.psp">Screenshots</a><br/>
+							<a href="/features.html">Feature list</a><br/>
+							<a href="/extensions.html">Extensions</a><br/>
+							<a href="/license.html">License</a>
+						</td>
+
+						<td>
+							<p><a href="/nightly_builds.html">Download</a></p>
+							<a href="/extensions.html">Extensions</a><br/>
+							<!--<a href="/nightly_builds.html" class="downlink">Nightly builds</a><br/>-->
+							<a href="/svn.html">Subversion</a><br/>
+							<a href="/download.html">Orange 1.0 (old)</a><br/>
+						</td>
+
+						<td>
+							<p><a class="downlink-main" href="#">News &amp; Support</a></p>
+							<a href="/blog">Blog</a><br/>
+							<a href="/forum">Forum</a><br/>
+						</td>
+
+						<td>
+							<p><a href="/doc">Documentation</a></p>
+							<!--<a href="/screencasts" class="downlink">Video tutorials</a><br/>-->
+							<a href="/doc/catalog">Widget catalog</a><br/>
+							<a href="/doc/catalog10">Widget catalog (Orange 1.0)</a><br/>
+							<a href="/datasets.psp">Data sets</a><br/>
+						</td>
+
+						<td>
+							<p><a href="/doc/scripting.html">Scripting</a></p>
+							<a href="/doc/ofb-rst">Quick start</a><br/>
+							<a href="/doc/reference">Reference</a><br/>
+							<a href="/doc/modules">Modules</a><br/>
+							<a href="/doc/widgets">Widget development</a><br/>
+							<a href="/examples.psp">Example scripts</a><br/>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="border2"></div>
+		<div class="border1"></div>
+	</div>
+</div> <!--container-->
+			<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+			<script type="text/javascript">google.load("elements", "1", {packages: "transliteration"});</script>
+			<script type="text/javascript" src="http://www.google.com/coop/cse/t13n?form=cse-search-box"></script>
+			<script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box"></script>
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-528382-1");
+pageTracker._trackPageview();
+} catch(err) {}
+</script> 
+
+</body></html>
+
+  </body>
+</html>
