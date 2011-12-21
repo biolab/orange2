@@ -293,7 +293,7 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
         return res;
       }
 
-      static const char *legalDirects[] = {"s", "skip","i", "ignore", "c", "class", "m", "meta", NULL};
+      static const char *legalDirects[] = {"s", "skip","i", "ignore", "c", "class", "multiclass", "m", "meta", NULL};
       string &direct = args.direct.front();
       const char **lc = legalDirects;
       while(*lc && strcmp(*lc, direct.c_str()))
