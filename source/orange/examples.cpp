@@ -59,16 +59,14 @@ TExample::TExample(PDomain dom, bool initMetas)
     raiseError("example needs domain");
 
   const int attrs = domain->variables->size();
-  const int classes = domain->classes ? domain->classes->size() : 0;
+  const int classes = domain->classVars->size();
   TValue *vi = values = mlnew TValue[attrs+classes];
   values_end = values + attrs;
   classes_end = values_end + classes;
   PITERATE(TVarList, di, dom->variables)
     *(vi++) = (*di)->DK();
-  if (dom->classes) {
-    PITERATE(TVarList, ci, dom->classes) {
-        *(vi++) = (*ci)->DK();
-    }
+  PITERATE(TVarList, ci, dom->classVars) {
+    *(vi++) = (*ci)->DK();
   }
   if (initMetas)
     ITERATE(TMetaVector, mi, dom->metas)
@@ -104,7 +102,7 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
     raiseError("example needs a domain");
 
   const int attrs = domain->variables->size();
-  const int classes = domain->classes ? domain->classes->size() : 0;
+  const int classes = domain->classVars->size();
   values = mlnew TValue[attrs + classes];
   values_end = values + attrs;
   classes_end = values_end + classes;
@@ -159,12 +157,12 @@ TExample::TExample(PDomain dom, PExampleList elist)
 {
   if (!dom)
     raiseError("example needs a domain");
-  if (dom->classes) {
+  if (dom->classVars->size()) {
       raiseError("example merging does not support multiple classes");
   }
 
   const int attrs = domain->variables->size();
-  const int classes = domain->classes ? domain->classes->size() : 0;
+  const int classes = domain->classVars->size();
   vector<bool> defined(attrs, false);
 
   TValue *vi = values = mlnew TValue[attrs];
@@ -331,7 +329,7 @@ bool TExample::operator == (const TExample &other) const
   if (domain != other.domain)
     raiseError("examples are from different domains");
 
-  int Na = domain->variables->size() + (domain->classes ? domain->classes->size() : 0);
+  int Na = domain->variables->size() + domain->classVars->size();
   if (!Na)
     return true;
   for (const_iterator vi1(begin()), vi2(other.begin()); (*vi1==*vi2) && --Na; vi1++, vi2++);
@@ -350,9 +348,7 @@ int TExample::compare(const TExample &other, const bool ignoreClass) const
       }
   }
   else {
-      if (domain->classes) {
-          Na += domain->classes->size();
-      }
+      Na += domain->classVars->size();
   }
   if (!Na)
     return true;
@@ -375,9 +371,7 @@ bool TExample::compatible(const TExample &other, const bool ignoreClass) const
       }
   }
   else {
-      if (domain->classes) {
-          Na += domain->classes->size();
-      }
+      Na += domain->classVars->size();
   }
   if (!Na)
     return true;
@@ -409,8 +403,7 @@ void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
 {
   TValue *vli = values;
   ::addToCRC(crc, domain->variables, vli);
-  if (domain->classes)
-      ::addToCRC(crc, domain->classes, vli);
+  ::addToCRC(crc, domain->classVars, vli);
   
   if (includeMetas) {
     const_ITERATE(TMetaValues, mi, meta) {

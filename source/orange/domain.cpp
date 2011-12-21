@@ -42,7 +42,7 @@ TDomain::TDomain()
 : classVar((TVariable *)NULL),
   attributes(mlnew TVarList()),
   variables(mlnew TVarList()),
-  classes(PVarList()),
+  classVars(mlnew TVarList()),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
@@ -53,7 +53,7 @@ TDomain::TDomain(const TVarList &vl)
 : classVar(vl.size() ? vl.back() : PVariable()),
   attributes(mlnew TVarList(vl)),
   variables(mlnew TVarList(vl)),
-  classes(PVarList()),
+  classVars(mlnew TVarList()),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
@@ -66,7 +66,7 @@ TDomain::TDomain(PVariable va, const TVarList &vl)
 : classVar(va),
   attributes(mlnew TVarList(vl)),
   variables(mlnew TVarList(vl)),
-  classes(PVarList()),
+  classVars(mlnew TVarList()),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
@@ -81,7 +81,7 @@ TDomain::TDomain(const TDomain &old)
   classVar(old.classVar), 
   attributes(mlnew TVarList(old.attributes.getReference())),
   variables(mlnew TVarList(old.variables.getReference())), 
-  classes(old.classes ? mlnew TVarList(old.classes.getReference()) : NULL),
+  classVars(mlnew TVarList(old.classVars.getReference())),
   metas(old.metas),
   version(++domainVersion),
   knownDomains(),  // don't copy, unless you want to mess with the notifiers..
@@ -211,9 +211,8 @@ int TDomain::getVarNum(PVariable var, bool throwExc) const
   for(vi = variables->begin(), ve = variables->end(); vi!=ve; vi++, pos++)
     if (*vi == var)
       return pos;
-  if (classes)
-    for(vi = classes->begin(), ve = classes->end(); vi != ve; vi++, pos++)
-        if (*vi == var)
+  for(vi = classVars->begin(), ve = classVars->end(); vi != ve; vi++, pos++)
+      if (*vi == var)
             return pos;
 
   pos = getMetaNum(var, false);
@@ -230,8 +229,7 @@ int TDomain::getVarNum(const string &name, bool throwExc) const
   for(vi = variables->begin(), ve = variables->end(); vi!=ve; vi++, pos++)
     if ((*vi)->get_name()== name)
       return pos;
-  if (classes)
-    for(vi = classes->begin(), ve = classes->end(); vi != ve; vi++, pos++)
+  for(vi = classVars->begin(), ve = classVars->end(); vi != ve; vi++, pos++)
         if ((*vi)->get_name() == name)
             return pos;
 
@@ -249,10 +247,8 @@ PVariable TDomain::getVar(int num, bool throwExc) const
   if (num>=0) {
       if (num < variables->size())
           return variables->at(num);
-
-      if (classes && (num - variables->size() < classes->size()))
-          return classes->at(num - variables->size());
-
+      if (num - variables->size() < classVars->size())
+          return classVars->at(num - variables->size());
       if (throwExc)
         if (!variables->size())
           raiseError("no attributes in domain");
@@ -283,8 +279,8 @@ PVariable TDomain::getVar(int num, bool throwExc)
       if (num < variables->size())
           return variables->at(num);
 
-      if (classes && (num - variables->size() < classes->size()))
-          return classes->at(num - variables->size());
+      if (num - variables->size() < classVars->size())
+          return classVars->at(num - variables->size());
 
       if (throwExc)
         if (!variables->size())
@@ -310,13 +306,14 @@ PVariable TDomain::getVar(int num, bool throwExc)
 
 
 PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc)
-{ PITERATE(TVarList, vi, variables)
+{ 
+  PITERATE(TVarList, vi, variables) {
     if ((*vi)->get_name()==name)
       return *vi;
-  if (classes) {
-    PITERATE(TVarList, vi, classes)
-    if ((*vi)->get_name()==name)
-      return *vi;
+  }
+  PITERATE(TVarList, vi2, classVars) {
+    if ((*vi2)->get_name()==name)
+      return *vi2;
   }
   if (takeMetas)
     ITERATE(TMetaVector, mi, metas)
@@ -331,13 +328,13 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc)
 
 
 PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc) const
-{ const_PITERATE(TVarList, vi, variables)
+{ const_PITERATE(TVarList, vi, variables) {
     if ((*vi)->get_name()==name)
       return *vi;
-  if (classes) {
-    const_PITERATE(TVarList, vi, classes)
-    if ((*vi)->get_name()==name)
-      return *vi;
+  }
+  const_PITERATE(TVarList, vi2, classVars) {
+    if ((*vi2)->get_name()==name)
+      return *vi2;
   }
 
   if (takeMetas)

@@ -298,9 +298,8 @@ PDomain TDomainDepot::prepareDomain(TPAttributeDescriptions *attributes, bool ha
   newDomain = mlnew TDomain(classVar, attrList);
 
   if (classDescriptions) {
-      newDomain->classes = mlnew TVarList();
       PITERATE(TPAttributeDescriptions, ai, classDescriptions) {
-          newDomain->classes->push_back(makeVariable(**ai, tStatus, createNewOn));
+          newDomain->classVars->push_back(makeVariable(**ai, tStatus, createNewOn));
       }
   }
 

@@ -68,7 +68,7 @@ public:
   PVariable classVar; //PR class variable
   PVarList attributes; //PR list of attributes, excluding the class
   PVarList variables; //PR list of attributes, including the class at the end of the list
-  PVarList classes; //PR list of class variables, if multiple; else None
+  PVarList classVars; //PR list of class variables, if multiple; else None
 
   TMetaVector metas;
 

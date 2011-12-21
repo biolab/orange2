@@ -597,13 +597,11 @@ PyObject *Example_get_classes(TPyExample *pex) PYARGS(METH_NOARGS, "()  -> [Valu
 { PyTRY
       const TExample &example = PyExample_AS_ExampleReference(pex);
       PyObject *list=PyList_New(0);
-      if (example.domain->classes) {
-          TExample::const_iterator ei=example.values_end;
-          const_PITERATE(TVarList, vi, example.domain->classes) {
-            PyObject *valo = Value_FromVariableValue(*vi, *ei++);
-            PyList_Append(list, valo);
-            Py_DECREF(valo);
-          }
+      TExample::const_iterator ei=example.values_end;
+      const_PITERATE(TVarList, vi, example.domain->classVars) {
+          PyObject *valo = Value_FromVariableValue(*vi, *ei++);
+          PyList_Append(list, valo);
+          Py_DECREF(valo);
       }
       return list;
   PyCATCH
@@ -634,21 +632,13 @@ PyObject *Example_set_classes(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(l
       if (!PyList_Check(val)) {
           PYERROR(PyExc_TypeError, "list of values expected", PYNULL);
       }
-      if (!example.domain->classes) {
-          if (PyList_Size(val) != 0) {
-              PYERROR(PyExc_ValueError, "domain does not have multiple classes", PYNULL);
-          }
-          else {
-              RETURN_NONE;
-          }
-      }
-      if (PyList_Size(val) != example.domain->classes->size()) {
-          PyErr_Format(PyExc_IndexError, "expected %i values, got %i", example.domain->classes->size(), PyList_Size(val));
+      if (PyList_Size(val) != example.domain->classVars->size()) {
+          PyErr_Format(PyExc_IndexError, "expected %i values, got %i", example.domain->classVars->size(), PyList_Size(val));
           return NULL;
       }
       TExample::iterator ei=example.values_end;
       int pos = 0;
-      const_PITERATE(TVarList, vi, example.domain->classes) {
+      const_PITERATE(TVarList, vi, example.domain->classVars) {
           if (!convertFromPython(PyList_GET_ITEM(val, pos++), *ei++, *vi))
               return PYNULL;
       }

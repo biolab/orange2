@@ -83,6 +83,7 @@ public:
   bool randomExample(TExample &);
 
   virtual void changeDomain(PDomain, bool filterMetas = false);
+  virtual void pickClass(PVariable);
 
 protected:
   virtual void increaseIterator(TExampleIterator &);

@@ -682,6 +682,72 @@ void TExampleTable::changeDomain(PDomain dom, bool filterMetas)
 }
 
 
+void TExampleTable::pickClass(PVariable classVar)
+{
+    if (!ownsExamples) {
+        raiseError("Cannot change the class in a table of references");
+    }
+    const int attrs = domain->attributes->size();
+    const int classes = domain->classVars->size();
+    TDomain *newDomain;
+    int classPos;
+    int end_off = 0;
+    if (!classVar) {
+        if (!classes) {
+            return;
+        }
+        end_off = -1;
+        newDomain = mlnew TDomain(classVar, domain->attributes.getReference()); // No class
+        newDomain->classVars->push_back(domain->classVar);
+        PITERATE(TVarList, ci, domain->classVars) {
+            if (*ci != classVar) {
+                newDomain->classVars->push_back(*ci);
+            }
+        }
+        classPos = attrs;
+    }
+    else {
+        classPos = attrs;
+        if (domain->classVar) {
+            classPos += 1;
+        }
+        else {
+            end_off += 1;
+        }
+        TVarList::const_iterator mci(domain->classVars->begin()), mce(domain->classVars->end());
+        for(; (mci != mce) && (*mci != classVar); ++mci, ++classPos);
+        if (mci == mce) {
+            raiseError("Domain has no class %s", classVar->get_name());
+        }
+        newDomain = mlnew TDomain(classVar, domain->attributes.getReference());
+        newDomain->classVars = mlnew TVarList();
+        PITERATE(TVarList, ci, domain->classVars) {
+            if (*ci == classVar) {
+                if (domain->classVar) {
+                    newDomain->classVars->push_back(domain->classVar);
+                }
+            }
+            else {
+                newDomain->classVars->push_back(*ci);
+            }
+        }
+    }
+    ITERATE(TMetaVector, mi, domain->metas) {
+        newDomain->metas.push_back(*mi);
+    }
+    PDomain wdomain = newDomain;
+    domain = wdomain;
+    for(TExample **ri = examples; ri != _Last; ri++) {
+        (**ri).domain = wdomain;
+        if (classPos != attrs) {
+            TValue t = (**ri).values[attrs];
+            (**ri).values[attrs] = (**ri).values[classPos];
+            (**ri).values[classPos] = t;
+        }
+        (**ri).values_end += end_off;
+    }
+}
+
 void TExampleTable::addMetaAttribute(const int &id, const TValue &value)
 { 
   PEITERATE(ei, this)

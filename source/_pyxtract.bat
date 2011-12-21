@@ -1,5 +1,6 @@
 @echo off
 cd orange
+alias python \python26\python
 python ..\pyxtract\defvectors.py
 
 rem I know this is stupid, but works under any shell

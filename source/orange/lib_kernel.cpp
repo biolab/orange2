@@ -1361,61 +1361,93 @@ int Domain_contains(PyObject *self, PyObject *arg)
   PyCATCH_1
 }
 
-CONSTRUCTOR_KEYWORDS(Domain, "source")
+CONSTRUCTOR_KEYWORDS(Domain, "source class_vars")
 
 PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange - Orange.data.Domain, "(list-of-attrs | domain [, hasClass | classVar | None] [,domain | list-of-attrs | source=domain])")
 { PyTRY
     PyObject *list;
     PyObject *arg1 = PYNULL;
     PyObject *arg2 = PYNULL;
+    PyObject *pyclassvars = PYNULL;
 
     if (PyArg_ParseTuple(args, "O|OO", &list, &arg1, &arg2)) {
 
       if (keywds) {
-        if (PyDict_Size(keywds)>1)
-          PYERROR(PyExc_TypeError, "Domain() accepts only one keyword argument ('source')", PYNULL);
-        if (PyDict_Size(keywds)==1) {
-          PyObject *arg3 = PyDict_GetItemString(keywds, "source");
-          if (!arg3)
-            PYERROR(PyExc_TypeError, "Domain: invalid keywords argument ('source' expected)", PYNULL);
-          if (arg1 && arg2) {
-            PYERROR(PyExc_TypeError, "Domain: too many arguments", PYNULL);
+          PyObject *key, *value;
+          Py_ssize_t pos = 0;
+          while (PyDict_Next(keywds, &pos, &key, &value)) {
+              if (!PyString_Check(key)) {
+                  Py_XDECREF(pyclassvars);
+                  PYERROR(PyExc_TypeError, "keyword argument name must be a string", PYNULL);
+              }
+              if (!strcmp(PyString_AS_STRING(key), "source")) {
+                  if (arg1 && arg2) {
+                      Py_XDECREF(pyclassvars);
+                      PYERROR(PyExc_TypeError, "Domain: too many arguments", PYNULL);
+                  }
+                  Py_INCREF(value);
+                  if (!arg1) {
+                      arg1 = value;
+                  }
+                  else {
+                      arg2 = value;
+                  }
+              }
+              else if (!strcmp(PyString_AS_STRING(key), "class_vars")) {
+                  Py_INCREF(value);
+                  pyclassvars = value;
+              }
+              else {
+                  Py_XDECREF(pyclassvars);
+                  PyErr_Format(PyExc_ValueError, "unexpected keyword argument '%s'", PyString_AS_STRING(key));
+                  return PYNULL;
+              }
           }
-          else
-            if (!arg1)
-              arg1 = arg3;
-            else
-              arg2 = arg3;
-        }
       }
-
 
       if (PyOrDomain_Check(list)) {
 
         PDomain dom = PyOrange_AsDomain(list);
+        TDomain *newdomain = NULL;
 
-        if (arg1)
+        if (arg1) {
           if (PyString_Check(arg1) || PyOrVariable_Check(arg1)) {
             PVariable classVar = varFromArg_byDomain(arg1, dom, false);
-            if (!classVar)
-              return PYNULL;
+            if (!classVar) {
+                Py_XDECREF(pyclassvars);
+                return PYNULL;
+            }
             TVarList attributes = dom->variables.getReference();
             int vnumint = dom->getVarNum(classVar, false);
-            if (vnumint>=0)
-              attributes.erase(attributes.begin()+vnumint);
-            return WrapNewOrange(mlnew TDomain(classVar, attributes), type);
+            if (vnumint>=0) {
+                attributes.erase(attributes.begin()+vnumint);
+            }
+            newdomain = mlnew TDomain(classVar, attributes);
           }
           else if (PyInt_Check(arg1) || (arg1==Py_None)) {
             TVarList attributes = dom->variables.getReference();
             if (PyObject_IsTrue(arg1))
-              return WrapNewOrange(CLONE(TDomain, dom), type);
+                newdomain = CLONE(TDomain, dom), type;
             else
-              return WrapNewOrange(mlnew TDomain(PVariable(), dom->variables.getReference()), type);
+                newdomain = mlnew TDomain(PVariable(), dom->variables.getReference());
           }
-          else
-            PYERROR(PyExc_TypeError, "Domain: invalid arguments for constructor (I'm unable to guess what you meant)", PYNULL);
-
-        return WrapNewOrange(CLONE(TDomain, dom), type);
+          else {
+              Py_XDECREF(pyclassvars);
+              PYERROR(PyExc_TypeError, "Domain: invalid arguments for constructor (I'm unable to guess what you meant)", PYNULL);
+          }
+        }
+        else {
+           newdomain = CLONE(TDomain, dom);
+        }
+        if (pyclassvars) {
+            if (!varListFromVarList(pyclassvars, dom->variables, newdomain->classVars.getReference(), false, false)) {
+                Py_DECREF(pyclassvars);
+                mldelete newdomain;
+                return PYNULL;
+            }
+            Py_DECREF(pyclassvars);
+        }
+        return WrapNewOrange(newdomain, type);
       }
 
       /* Now, arg1 can be either
@@ -1469,7 +1501,16 @@ PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED
         variables.erase(variables.end()-1);
       }
 
-      return WrapNewOrange(mlnew TDomain(classVar, variables), type);
+      TDomain *newdomain = mlnew TDomain(classVar, variables);
+      if (pyclassvars) {
+          if (!varListFromVarList(pyclassvars, source, newdomain->classVars.getReference(), false, false)) {
+              Py_DECREF(pyclassvars);
+              mldelete newdomain;
+              return PYNULL;
+          }
+          Py_DECREF(pyclassvars);
+      }
+      return WrapNewOrange(newdomain, type);
     }
 
     PYERROR(PyExc_TypeError, "invalid parameters (list of 'Variable' expected)", PYNULL);
@@ -4233,6 +4274,35 @@ PyObject *ExampleTable_changeDomain(TPyOrange *self, PyObject *args) PYARGS(METH
     RETURN_NONE;
   PyCATCH
 }
+
+PyObject *ExampleTable_pickClass(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Variable | name) -> None")
+{
+    PyTRY
+        CAST_TO(TExampleTable, table);
+        if (!table->ownsExamples) {
+            PYERROR(PyExc_TypeError, "tables containing references to examples cannot change domain", PYNULL);
+        }
+        PVariable newClass;
+        if (PyString_Check(obj)) {
+            const char *attr = PyString_AS_STRING(obj);
+            TVarList::const_iterator mci(table->domain->classVars->begin()), mce(table->domain->classVars->end());
+            for(; (mci != mce) && ((*mci)->get_name() != attr); mci++);
+            if (mci == mce) {
+                PYERROR(PyExc_TypeError, "table does not have multiple classes", PYNULL);
+            }
+            newClass = *mci;
+        }
+        if (PyOrVariable_Check(obj)) {
+            newClass = PyOrange_AsVariable(obj);
+        }
+        else if (obj != Py_None) {
+            PYERROR(PyExc_TypeError, "class should be given as Variable, name or None", PYNULL);
+        }
+        table->pickClass(newClass);
+        RETURN_NONE;
+    PyCATCH;
+}
+
 
 
 PyObject *ExampleTable_hasMissingValues(TPyOrange *self) PYARGS(0, "() -> bool")

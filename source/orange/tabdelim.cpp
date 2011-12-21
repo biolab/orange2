@@ -146,7 +146,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
           }
           else if (classPoses && (cp != ce) && (pos == *cp)) {
               const int ind = cp - cb;
-              domain->classes->at(ind)->filestr2val(valstr, exam.values_end[ind], exam);
+              domain->classVars->at(ind)->filestr2val(valstr, exam.values_end[ind], exam);
               cp++;
           }
           else { // if this is a normal value
@@ -183,7 +183,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
      waste time studying it since we are moving to 3.0 */
   else if (classPoses && (cp != ce) && (pos == *cp)) {
     const int ind = cp - cb;
-    domain->classes->at(ind)->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam.values_end[ind], exam);
+    domain->classVars->at(ind)->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam.values_end[ind], exam);
   }
 
   while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
