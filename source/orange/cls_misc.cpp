@@ -234,7 +234,7 @@ PyObject *DomainDepot_prepareDomain(PyObject *self, PyObject *args, PyObject *) 
     TDomainDepot::TPAttributeDescriptions adescs, mdescs;
     TDomainDepot::pattrFromtAttr(attributeDescriptions, adescs);
     TDomainDepot::pattrFromtAttr(metaDescriptions, mdescs);
-    PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&adescs, hasClass, &mdescs, createNewOn, status, metaStatus);
+    PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&adescs, hasClass, NULL,  &mdescs, createNewOn, status, metaStatus);
 
     return Py_BuildValue("NNN", WrapOrange(newDomain), encodeStatus(status), encodeStatus(metaStatus));
   PyCATCH

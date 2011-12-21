@@ -41,7 +41,8 @@ TDomainMapping::TDomainMapping(TDomain *dom)
 TDomain::TDomain()
 : classVar((TVariable *)NULL),
   attributes(mlnew TVarList()),
-  variables(mlnew TVarList()), 
+  variables(mlnew TVarList()),
+  classes(PVarList()),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
@@ -52,6 +53,7 @@ TDomain::TDomain(const TVarList &vl)
 : classVar(vl.size() ? vl.back() : PVariable()),
   attributes(mlnew TVarList(vl)),
   variables(mlnew TVarList(vl)),
+  classes(PVarList()),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
@@ -64,6 +66,7 @@ TDomain::TDomain(PVariable va, const TVarList &vl)
 : classVar(va),
   attributes(mlnew TVarList(vl)),
   variables(mlnew TVarList(vl)),
+  classes(PVarList()),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
@@ -78,6 +81,7 @@ TDomain::TDomain(const TDomain &old)
   classVar(old.classVar), 
   attributes(mlnew TVarList(old.attributes.getReference())),
   variables(mlnew TVarList(old.variables.getReference())), 
+  classes(old.classes ? mlnew TVarList(old.classes.getReference()) : NULL),
   metas(old.metas),
   version(++domainVersion),
   knownDomains(),  // don't copy, unless you want to mess with the notifiers..
@@ -203,9 +207,14 @@ bool TDomain::delVariable(PVariable var)
 
 int TDomain::getVarNum(PVariable var, bool throwExc) const
 { int pos = 0;
-  for(TVarList::const_iterator vi(variables->begin()), ve(variables->end()); vi!=ve; vi++, pos++)
+  TVarList::const_iterator vi, ve;
+  for(vi = variables->begin(), ve = variables->end(); vi!=ve; vi++, pos++)
     if (*vi == var)
       return pos;
+  if (classes)
+    for(vi = classes->begin(), ve = classes->end(); vi != ve; vi++, pos++)
+        if (*vi == var)
+            return pos;
 
   pos = getMetaNum(var, false);
   if ((pos == ILLEGAL_INT) && throwExc)
@@ -217,9 +226,14 @@ int TDomain::getVarNum(PVariable var, bool throwExc) const
 
 int TDomain::getVarNum(const string &name, bool throwExc) const
 { int pos = 0;
-  for(TVarList::const_iterator vi(variables->begin()), ve(variables->end()); vi!=ve; vi++, pos++)
+  TVarList::const_iterator vi, ve;
+  for(vi = variables->begin(), ve = variables->end(); vi!=ve; vi++, pos++)
     if ((*vi)->get_name()== name)
       return pos;
+  if (classes)
+    for(vi = classes->begin(), ve = classes->end(); vi != ve; vi++, pos++)
+        if ((*vi)->get_name() == name)
+            return pos;
 
   pos = getMetaNum(name, false);
   if ((pos == ILLEGAL_INT) && throwExc)
@@ -233,16 +247,19 @@ PVariable TDomain::getVar(int num, bool throwExc) const
 { checkProperty(variables);
   
   if (num>=0) {
-    if (num>=int(variables->size()))
+      if (num < variables->size())
+          return variables->at(num);
+
+      if (classes && (num - variables->size() < classes->size()))
+          return classes->at(num - variables->size());
+
       if (throwExc)
         if (!variables->size())
           raiseError("no attributes in domain");
         else
-          raiseError("index %i out of range 0-%i", num, variables->size()-1);
+          raiseError("index %i out of range", num);
       else
         return PVariable();
-
-    return variables->at(num);
   }
   else {
     const_ITERATE(TMetaVector, mi, metas)
@@ -263,16 +280,19 @@ PVariable TDomain::getVar(int num, bool throwExc)
 { checkProperty(variables);
   
   if (num>=0) {
-    if (num>=int(variables->size()))
+      if (num < variables->size())
+          return variables->at(num);
+
+      if (classes && (num - variables->size() < classes->size()))
+          return classes->at(num - variables->size());
+
       if (throwExc)
         if (!variables->size())
           raiseError("no attributes in domain");
         else
-          raiseError("index %i out of range 0-%i", num, variables->size()-1);
+          raiseError("index %i out of range", num);
       else
         return PVariable();
-
-    return variables->at(num);
   }
   else {
     ITERATE(TMetaVector, mi, metas)
@@ -293,7 +313,11 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc)
 { PITERATE(TVarList, vi, variables)
     if ((*vi)->get_name()==name)
       return *vi;
-
+  if (classes) {
+    PITERATE(TVarList, vi, classes)
+    if ((*vi)->get_name()==name)
+      return *vi;
+  }
   if (takeMetas)
     ITERATE(TMetaVector, mi, metas)
       if ((*mi).variable->get_name()==name)
@@ -310,6 +334,11 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc) con
 { const_PITERATE(TVarList, vi, variables)
     if ((*vi)->get_name()==name)
       return *vi;
+  if (classes) {
+    const_PITERATE(TVarList, vi, classes)
+    if ((*vi)->get_name()==name)
+      return *vi;
+  }
 
   if (takeMetas)
     const_ITERATE(TMetaVector, mi, metas)

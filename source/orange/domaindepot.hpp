@@ -76,6 +76,7 @@ public:
                           const TPAttributeDescriptions *metas, int *metaIDs = NULL);
 
   PDomain prepareDomain(TPAttributeDescriptions *attributes, bool hasClass,
+                        TPAttributeDescriptions *classDescriptions,
                         TPAttributeDescriptions *metas, const int createNewOn,
                         vector<int> &status, vector<pair<int, int> > &metaStatus);
 

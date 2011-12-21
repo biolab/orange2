@@ -39,7 +39,7 @@ public:
   __REGISTER_CLASS
 
   PDomain domain; //PR Example's domain
-  TValue *values, *values_end;
+  TValue *values, *values_end, *classes_end;
   TMetaValues meta;
   string *name;
   int id; //P
@@ -160,7 +160,7 @@ public:
   
   bool hasMissing() const
   {
-    for(TValue const *vi = values, *ve = values_end; vi!=ve; vi++)
+    for(TValue const *vi = values, *ve = classes_end; vi!=ve; vi++)
       if (vi->isSpecial())
         return true;
     return false;

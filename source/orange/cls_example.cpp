@@ -593,6 +593,23 @@ PyObject *Example_get_class(TPyExample *pex) PYARGS(METH_NOARGS, "()  -> Value; 
 }
 
 
+PyObject *Example_get_classes(TPyExample *pex) PYARGS(METH_NOARGS, "()  -> [Values]; Returns example's class")
+{ PyTRY
+      const TExample &example = PyExample_AS_ExampleReference(pex);
+      PyObject *list=PyList_New(0);
+      if (example.domain->classes) {
+          TExample::const_iterator ei=example.values_end;
+          const_PITERATE(TVarList, vi, example.domain->classes) {
+            PyObject *valo = Value_FromVariableValue(*vi, *ei++);
+            PyList_Append(list, valo);
+            Py_DECREF(valo);
+          }
+      }
+      return list;
+  PyCATCH
+}
+
+
 PyObject *Example_set_class(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(value); Sets example's class")
 { PyTRY
     PExample &example=PyExample_AS_Example(pex);
@@ -609,6 +626,36 @@ PyObject *Example_set_class(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(val
     RETURN_NONE;
   PyCATCH
 }
+
+
+PyObject *Example_set_classes(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(list-of-Values); Returns example's class")
+{ PyTRY
+      const TExample &example = PyExample_AS_ExampleReference(pex);
+      if (!PyList_Check(val)) {
+          PYERROR(PyExc_TypeError, "list of values expected", PYNULL);
+      }
+      if (!example.domain->classes) {
+          if (PyList_Size(val) != 0) {
+              PYERROR(PyExc_ValueError, "domain does not have multiple classes", PYNULL);
+          }
+          else {
+              RETURN_NONE;
+          }
+      }
+      if (PyList_Size(val) != example.domain->classes->size()) {
+          PyErr_Format(PyExc_IndexError, "expected %i values, got %i", example.domain->classes->size(), PyList_Size(val));
+          return NULL;
+      }
+      TExample::iterator ei=example.values_end;
+      int pos = 0;
+      const_PITERATE(TVarList, vi, example.domain->classes) {
+          if (!convertFromPython(PyList_GET_ITEM(val, pos++), *ei++, *vi))
+              return PYNULL;
+      }
+      RETURN_NONE;
+  PyCATCH
+}
+
 
 
 PyObject *Example_compatible(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(example[, ignoreClass]); Returns true if examples are compatible")
@@ -838,7 +885,7 @@ PyObject *Example_checksum(TPyExample *pex, PyObject *) PYARGS(METH_NOARGS, "() 
 
 void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherValues)
 {
-  for(TValue *vali = example.values; vali != example.values_end; vali++)
+  for(TValue *vali = example.values; vali != example.classes_end; vali++)
     Value_pack(*vali, buf, otherValues);
 
   buf.writeInt(example.meta.size() | (example.name ? 1<<31 : 0));
@@ -863,7 +910,7 @@ void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherVal
 void Example_unpack(TExample &example, TCharBuffer &buf, PyObject *&otherValues, int &otherValuesIndex)
 {
   TVarList::const_iterator vi = example.domain->variables->begin();
-  for(TValue *vali = example.values; vali != example.values_end; vali++, vi++) {
+  for(TValue *vali = example.values; vali != example.classes_end; vali++, vi++) {
     vali->varType = (*vi)->varType;
     Value_unpack(*vali, buf, otherValues, otherValuesIndex);
   }

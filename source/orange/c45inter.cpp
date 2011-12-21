@@ -122,7 +122,7 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, const int createNew
 
   TDomainDepot::TPAttributeDescriptions adescs;
   TDomainDepot::pattrFromtAttr(attributeDescriptions, adescs);
-  return domainDepot.prepareDomain(&adescs, true, NULL, createNewOn, status, metaStatus);
+  return domainDepot.prepareDomain(&adescs, true, NULL, NULL, createNewOn, status, metaStatus);
 }
 
 

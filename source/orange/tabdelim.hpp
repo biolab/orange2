@@ -70,6 +70,7 @@ public:
   char *DK; //P general character that denotes DK
   char *DC; //P general character that denotes DC
   int classPos; //P position of the class attribute
+  PIntList classPoses; //P positions of class attributes if there are multiple; otherwise None
   int basketPos; //P position of the (virtual) basket attribute
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
   bool csv; //P also allow ',' as a separator

@@ -42,6 +42,7 @@ long getExampleId()
 TExample::TExample()
 : values(NULL),
   values_end(NULL),
+  classes_end(NULL),
   name(NULL),
   id(getExampleId())
 {}
@@ -51,17 +52,24 @@ TExample::TExample(PDomain dom, bool initMetas)
 : domain(dom),
   values(NULL),
   values_end(NULL),
+  classes_end(NULL),
   name(NULL),
   id(getExampleId())
 { if (!dom)
     raiseError("example needs domain");
 
   const int attrs = domain->variables->size();
-  TValue *vi = values = mlnew TValue[attrs];
+  const int classes = domain->classes ? domain->classes->size() : 0;
+  TValue *vi = values = mlnew TValue[attrs+classes];
   values_end = values + attrs;
+  classes_end = values_end + classes;
   PITERATE(TVarList, di, dom->variables)
     *(vi++) = (*di)->DK();
-
+  if (dom->classes) {
+    PITERATE(TVarList, ci, dom->classes) {
+        *(vi++) = (*ci)->DK();
+    }
+  }
   if (initMetas)
     ITERATE(TMetaVector, mi, dom->metas)
       if (!(*mi).optional)
@@ -76,11 +84,14 @@ TExample::TExample(const TExample &orig, bool copyMetas)
   id(orig.id)
 { if (domain) {
     const int attrs = domain->variables->size();
-    TValue *vi = values = mlnew TValue[attrs];
+    const int classes = orig.classes_end - orig.values_end;
+    TValue *vi = values = mlnew TValue[attrs+classes];
     values_end = values + attrs;
-    for(TValue *origi = orig.values, *thisi = values; thisi != values_end; *(thisi++) = *(origi++));
+    classes_end = values_end + classes;
+    for(TValue *origi = orig.values, *thisi = values; thisi != classes_end; *(thisi++) = *(origi++));
   }
-  else values = values_end = NULL;
+  else 
+      values = values_end = classes_end = NULL;
 }
 
 
@@ -93,8 +104,10 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
     raiseError("example needs a domain");
 
   const int attrs = domain->variables->size();
-  values = mlnew TValue[attrs];
+  const int classes = domain->classes ? domain->classes->size() : 0;
+  values = mlnew TValue[attrs + classes];
   values_end = values + attrs;
+  classes_end = values_end + classes;
   domain->convert(*this, orig, !copyMetas);
 }
 
@@ -146,8 +159,12 @@ TExample::TExample(PDomain dom, PExampleList elist)
 {
   if (!dom)
     raiseError("example needs a domain");
+  if (dom->classes) {
+      raiseError("example merging does not support multiple classes");
+  }
 
   const int attrs = domain->variables->size();
+  const int classes = domain->classes ? domain->classes->size() : 0;
   vector<bool> defined(attrs, false);
 
   TValue *vi = values = mlnew TValue[attrs];
@@ -192,7 +209,7 @@ TExample::~TExample()
 int TExample::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
   
-  for(TValue *vi = values, *ve = values_end; vi!=ve; vi++)
+  for(TValue *vi = values, *ve = classes_end; vi!=ve; vi++)
     if (vi->svalV)
       PVISIT(vi->svalV);
 
@@ -206,7 +223,7 @@ int TExample::traverse(visitproc visit, void *arg) const
 
 int TExample::dropReferences()
 {
-  for(TValue *vi = values, *ve = values_end; vi!=ve; vi++)
+  for(TValue *vi = values, *ve = classes_end; vi!=ve; vi++)
     if (vi->svalV)
       vi->svalV.~PSomeValue();
 
@@ -224,25 +241,27 @@ int TExample::dropReferences()
 TExample &TExample::operator =(const TExample &orig)
 {
   if (!orig.domain) {
-    values = values_end = NULL;
+    if (values)
+       mldelete[] values;
+    values = values_end = classes_end = NULL;
     domain = PDomain();
   }
 
   else {
-    const int attrs = orig.domain->variables->size();
-
+    const int attrs = orig.values_end - orig.values;
+    const int classes = orig.classes_end - orig.values_end;
     if (domain != orig.domain) {
-      if (domain->variables->size() != attrs) {
+      if ((values_end - values != attrs) || (classes_end - values_end != classes)) {
         if (values)
           mldelete[] values;
-        values = mlnew TValue[attrs];
+        values = mlnew TValue[attrs+classes];
         values_end = values + attrs;
+        classes_end = values_end + classes;
       }
-
       domain = orig.domain;
     }
 
-    for(TValue *origi = orig.values, *thisi = values; thisi != values_end; *(thisi++) = *(origi++));
+    for(TValue *origi = orig.values, *thisi = values; thisi != classes_end; *(thisi++) = *(origi++));
   }
 
   meta = orig.meta;
@@ -312,7 +331,7 @@ bool TExample::operator == (const TExample &other) const
   if (domain != other.domain)
     raiseError("examples are from different domains");
 
-  int Na = domain->variables->size();
+  int Na = domain->variables->size() + (domain->classes ? domain->classes->size() : 0);
   if (!Na)
     return true;
   for (const_iterator vi1(begin()), vi2(other.begin()); (*vi1==*vi2) && --Na; vi1++, vi2++);
@@ -324,11 +343,21 @@ int TExample::compare(const TExample &other, const bool ignoreClass) const
 { if (domain != other.domain)
     raiseError("examples are from different domains");
 
-  const_iterator i1(begin()), i2(other.begin());
-  int Na = domain->variables->size() - (ignoreClass && domain->classVar ? 1 : 0);
+  int Na = domain->variables->size();
+  if (ignoreClass) {
+      if (domain->classVar) {
+          Na--;
+      }
+  }
+  else {
+      if (domain->classes) {
+          Na += domain->classes->size();
+      }
+  }
   if (!Na)
     return true;
 
+  const_iterator i1(begin()), i2(other.begin());
   int comp;
   while (0==(comp= (*(i1++)).compare(*(i2++))) && --Na);
   return comp;
@@ -339,7 +368,17 @@ bool TExample::compatible(const TExample &other, const bool ignoreClass) const
 { if (domain != other.domain)
     raiseError("examples are from different domains");
   
-  int Na = domain->variables->size() - (ignoreClass && domain->classVar ? 1 : 0);
+  int Na = domain->variables->size();
+  if (ignoreClass) {
+      if (domain->classVar) {
+          Na--;
+      }
+  }
+  else {
+      if (domain->classes) {
+          Na += domain->classes->size();
+      }
+  }
   if (!Na)
     return true;
   for (const_iterator i1(begin()), i2(other.begin()); (*i1).compatible(*i2) && --Na; i1++, i2++);
@@ -349,10 +388,9 @@ bool TExample::compatible(const TExample &other, const bool ignoreClass) const
 
 #include "stringvars.hpp"
 
-void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
+inline void addToCRC(unsigned long &crc, const PVarList &vars, TValue *&vli)
 {
-  TValue *vli = values;
-  const_PITERATE(TVarList, vi, domain->variables) {
+  const_PITERATE(TVarList, vi, vars) {
     if ((*vi)->varType == TValue::INTVAR)
       add_CRC((const unsigned long)(vli->isSpecial() ? ILLEGAL_INT : vli->intV), crc);
     else if (((*vi)->varType == TValue::FLOATVAR))
@@ -365,6 +403,14 @@ void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
     }
     vli++;
   }
+}
+
+void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
+{
+  TValue *vli = values;
+  ::addToCRC(crc, domain->variables, vli);
+  if (domain->classes)
+      ::addToCRC(crc, domain->classes, vli);
   
   if (includeMetas) {
     const_ITERATE(TMetaValues, mi, meta) {

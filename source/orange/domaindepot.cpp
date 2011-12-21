@@ -275,6 +275,7 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
 
 
 PDomain TDomainDepot::prepareDomain(TPAttributeDescriptions *attributes, bool hasClass,
+                                    TPAttributeDescriptions *classDescriptions,
                                     TPAttributeDescriptions *metas, const int createNewOn,
                                     vector<int> &status, vector<pair<int, int> > &metaStatus)
 { 
@@ -286,7 +287,7 @@ PDomain TDomainDepot::prepareDomain(TPAttributeDescriptions *attributes, bool ha
     attrList.push_back(makeVariable(**ai, tStatus, createNewOn));
     status.push_back(tStatus);
   }
-
+  
   PDomain newDomain;
   PVariable classVar;
   if (hasClass) {
@@ -295,6 +296,13 @@ PDomain TDomainDepot::prepareDomain(TPAttributeDescriptions *attributes, bool ha
   }
   
   newDomain = mlnew TDomain(classVar, attrList);
+
+  if (classDescriptions) {
+      newDomain->classes = mlnew TVarList();
+      PITERATE(TPAttributeDescriptions, ai, classDescriptions) {
+          newDomain->classes->push_back(makeVariable(**ai, tStatus, createNewOn));
+      }
+  }
 
   metaStatus.clear();
   if (metas)

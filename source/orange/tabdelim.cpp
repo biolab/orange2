@@ -120,6 +120,11 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
   TVarList::iterator vi(domain->attributes->begin());
   vector<string>::iterator ai(atoms.begin());
   TIntList::iterator si(attributeTypes->begin()), se(attributeTypes->end());
+  TIntList::iterator cb, cp, ce;
+  if (classPoses) {
+      cb = cp = classPoses->begin();
+      ce = classPoses->end();
+  }
   int pos=0;
   for (; (si!=se); pos++, si++, ai++) {
     if (*si) { // if attribute is not to be skipped and is not a basket
@@ -138,6 +143,11 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
             TValue cval;
             domain->classVar->filestr2val(valstr, cval, exam);
             exam.setClass(cval);
+          }
+          else if (classPoses && (cp != ce) && (pos == *cp)) {
+              const int ind = cp - cb;
+              domain->classes->at(ind)->filestr2val(valstr, exam.values_end[ind], exam);
+              cp++;
           }
           else { // if this is a normal value
             (*vi++)->filestr2val(valstr, *ei++, exam);
@@ -169,6 +179,12 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 
   if (pos==classPos) // if class is the last value in the line, it is set here
     domain->classVar->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1], exam);
+  /* I'm not sure that this is needed; this code is a mess but I don't wish to
+     waste time studying it since we are moving to 3.0 */
+  else if (classPoses && (cp != ce) && (pos == *cp)) {
+    const int ind = cp - cb;
+    domain->classes->at(ind)->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam.values_end[ind], exam);
+  }
 
   while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
 
@@ -318,8 +334,13 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
   scanAttributeValues(stem, descriptions);
   
   TIntList::iterator ati(attributeTypes->begin());
-  TDomainDepot::TPAttributeDescriptions attributeDescriptions, metaDescriptions;
+  TDomainDepot::TPAttributeDescriptions attributeDescriptions, metaDescriptions, classDescriptions;
   int ind = 0, lastRegular = -1;
+  TIntList::const_iterator cp, ce;
+  if (classPoses) {
+      cp = classPoses->begin();
+      ce = classPoses->end();
+  }
 
   for(TDomainDepot::TAttributeDescriptions::iterator adi(descriptions.begin()), ade(descriptions.end()); adi != ade; adi++, ati++, ind++) {
     if (!*ati)
@@ -350,7 +371,10 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
     
     if (*ati == 1)
       metaDescriptions.push_back(&*adi);
-      
+    else if (classPoses && (cp != ce) && (*cp == ind)) {
+        classDescriptions.push_back(&*adi);
+        cp++;
+    }
     else if ((classPos != ind) && (basketPos != ind)) {
       attributeDescriptions.push_back(&*adi);
       lastRegular = ind;
@@ -375,7 +399,7 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
     return sourceDomain;
   }
 */
-  PDomain newDomain = domainDepot.prepareDomain(&attributeDescriptions, classPos>-1, &metaDescriptions, createNewOn, status, metaStatus);
+  PDomain newDomain = domainDepot.prepareDomain(&attributeDescriptions, classPos>-1, &classDescriptions, &metaDescriptions, createNewOn, status, metaStatus);
 
   vector<pair<int, int> >::const_iterator mid(metaStatus.begin());
   PITERATE(TIntList, ii, attributeTypes)
@@ -609,6 +633,7 @@ void TTabDelimExampleGenerator::readTxtHeader(const string &stem, TDomainDepot::
 void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::TAttributeDescriptions &descs)
 {
   classPos = -1;
+  classPoses = mlnew TIntList;
   basketPos = -1;
   headerLines = 3;
 
@@ -666,6 +691,10 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
           classPos = ind;
         }
         
+        else if (direct=="multiclass") {
+          classPoses->push_back(ind);
+        }
+        
         else if ((direct=="m") || (direct=="meta"))
           *attributeType = 1;
       }
@@ -678,7 +707,7 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
 
       desc.userFlags = args.unrecognized;
     }
-
+    
     if (!strcmp((*ti).c_str(), "basket")) {
       if (basketPos > -1)
         ::raiseError("multiple basket attributes are defined");
@@ -727,6 +756,9 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
         desc.addValue(vals);
     }
   }
+
+  if (!classPoses->size())
+      classPoses = PIntList();
 }
 
 
