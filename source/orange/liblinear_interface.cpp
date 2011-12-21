@@ -352,7 +352,7 @@ TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _exampl
 	examples = _examples;
 	domain = examples->domain;
 	indexMap = _indexMap;
-	computesProbabilities = check_probability_model(linmodel);
+	computesProbabilities = check_probability_model(linmodel) != 0;
 	int nr_classifier = (linmodel->nr_class==2 && linmodel->param.solver_type != MCSVM_CS)? 1 : linmodel->nr_class;
 	weights = mlnew TFloatListList(nr_classifier);
 	for (int i=0; i<nr_classifier; i++){
