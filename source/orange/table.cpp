@@ -717,7 +717,7 @@ void TExampleTable::pickClass(PVariable classVar)
         TVarList::const_iterator mci(domain->classVars->begin()), mce(domain->classVars->end());
         for(; (mci != mce) && (*mci != classVar); ++mci, ++classPos);
         if (mci == mce) {
-            raiseError("Domain has no class %s", classVar->get_name());
+            raiseError("Domain has no class %s", classVar->get_name().c_str());
         }
         newDomain = mlnew TDomain(classVar, domain->attributes.getReference());
         newDomain->classVars = mlnew TVarList();
