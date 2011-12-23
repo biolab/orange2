@@ -1,5 +1,4 @@
 import Orange
-from Orange.regression.earth import data_label_mask
 
 
 # Other algorithms which also work with multitarget data
@@ -40,15 +39,14 @@ class MultitargetLearner(Orange.classification.Learner):
         :rtype: :class:`Orange.multitarget.MultitargetClassifier`
         """
 
-        label_mask = data_label_mask(data.domain)
-        if sum(label_mask) == 0:
-            raise 'No classes/labels defined.'
-        x_vars = [v for v, label in zip(data.domain, label_mask) if not label]
-        y_vars = [v for v, label in zip(data.domain, label_mask) if label]
-
-        classifiers = [self.learner(Orange.data.Table(Orange.data.Domain(x_vars, y),
-            data), weight) for y in y_vars]
-        return MultitargetClassifier(classifiers=classifiers, x_vars=x_vars, y_vars=y_vars)
+        if not data.domain.class_vars:
+            raise Exception('No classes defined.')
+        
+        domains = [Orange.data.Domain(data.domain.attributes, y)
+                   for y in data.domain.class_vars]
+        classifiers = [self.learner(Orange.data.Table(dom, data), weight)
+                       for dom in domains]
+        return MultitargetClassifier(classifiers=classifiers, domains=domains)
         
 
 class MultitargetClassifier(Orange.classification.Classifier):
@@ -61,13 +59,13 @@ class MultitargetClassifier(Orange.classification.Classifier):
         List of individual classifiers for each class.
     """
 
-    def __init__(self, classifiers, x_vars, y_vars):
+    def __init__(self, classifiers, domains):
         self.classifiers = classifiers
-        self.x_vars = x_vars
-        self.y_vars = y_vars
+        self.domains = domains
 
     def __call__(self, instance, return_type=Orange.core.GetValue):
-        predictions = [c(Orange.data.Instance(Orange.data.Domain(self.x_vars, y),
-            instance), return_type) for c, y in zip(self.classifiers, self.y_vars)]
-        return zip(*predictions) if return_type == Orange.core.GetBoth else predictions
+        predictions = [c(Orange.data.Instance(dom, instance), return_type)
+                       for c, dom in zip(self.classifiers, self.domains)]
+        return zip(*predictions) if return_type == Orange.core.GetBoth \
+               else predictions
 

@@ -2,13 +2,17 @@ from operator import itemgetter
 
 import numpy as np
 import Orange
-from Orange.multitarget import data_label_mask
 
 
 def weighted_variance(X, weights=None):
     """Computes the variance using a weighted distance between vectors"""
-    if weights:
-        X = X * np.array(weights)
+    global foo
+    foo = X
+
+    if not weights:
+        weights = [1] * len(X[0])
+
+    X = X * np.array(weights)
     return np.sum((X - np.mean(X, 0))**2, 1).sum()
 
 class MultitargetVariance(Orange.feature.scoring.Score):
@@ -26,8 +30,6 @@ class MultitargetVariance(Orange.feature.scoring.Score):
 
     def threshold_function(self, feature, data, cont_distrib=None, weightID=0):
         f = data.domain[feature]
-        label_mask = data_label_mask(data.domain)
-        classes = [v for v, label in zip(data.domain, label_mask) if label]
         values = sorted(set(ins[f].value for ins in data))
         ts = [(v1 + v2) / 2. for v1, v2 in zip(values, values[1:])]
         if len(ts) > 40:
@@ -36,7 +38,11 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         for t in ts:
             bf = Orange.feature.discretization.IntervalDiscretizer(
                 points=[t]).construct_variable(f)
-            data2 = data.select([bf] + classes)
+            dom2 = Orange.data.Domain([bf], class_vars=data.domain.class_vars)
+            data2 = Orange.data.Table(dom2, data)
+            # TODO: remove when bug is fixed (currently => very slow)
+            for i1, i2 in zip(data, data2):
+                i2.set_classes(i1.get_classes())
             scores.append((t, self.__call__(bf, data2)))
         return scores
 
@@ -46,14 +52,9 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         return (threshold, score, None)
 
     def __call__(self, feature, data, apriori_class_distribution=None, weightID=0):
-        if data.domain[feature].attributes.has_key('label'):
-            return float('-inf')
-        label_mask = data_label_mask(data.domain)
-        classes = [v for v, label in zip(data.domain, label_mask) if label]
         split = dict((ins[feature].value, []) for ins in data)
         for ins in data:
-            # TODO: does not work when there are missing class values
-            split[ins[feature].value].append([float(ins[c]) for c in classes])
+            split[ins[feature].value].append(ins.get_classes())
         score = -sum(weighted_variance(x, self.weights) * len(x) for x in split.values())
         return score
 
@@ -78,13 +79,13 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
         # TreeLearner does not work on class-less domains,
         # so we set the class if necessary
         if data.domain.class_var is None:
-            for var in data.domain:
-                if var.attributes.has_key('label'):
-                    data = Orange.data.Table(Orange.data.Domain(data.domain, var),
-                                             data)
-                    break
-
-        tree = Orange.classification.tree.TreeLearner.__call__(self, data, weight)
+            data2 = Orange.data.Table(Orange.data.Domain(
+                data.domain.attributes, data.domain.class_vars[0],
+                class_vars=data.domain.class_vars), data)
+        # until the bug is fixed, manually set correct values of classes
+        for i1, i2 in zip(data, data2):
+            i2.set_classes(i1.get_classes())
+        tree = Orange.classification.tree.TreeLearner.__call__(self, data2, weight)
         return MultiTree(base_classifier=tree)
 
 class MultiTree(Orange.classification.tree.TreeClassifier):
@@ -93,4 +94,12 @@ class MultiTree(Orange.classification.tree.TreeClassifier):
     def __call__(self, instance, return_type=Orange.core.GetValue):
         node = self.descender(self.tree, instance)[0]
         return node.node_classifier(instance, return_type)
+
+
+if __name__ == '__main__':
+    data = Orange.data.Table('emotions')
+    print 'Actual classes:\n', data[0].get_classes()
+    mt = MultiTreeLearner(max_depth=2)
+    c = mt(data)
+    print 'Predicted classes:\n', c(data[0])
 
