@@ -48,7 +48,21 @@
 
 #include "vars.ppp"
 
-typedef multimap<string, TVariable *> MMV;
+bool mmvDeallocated = 0;
+
+/* The following class is to be used only for the allVariablesMap variable.
+ * It sets a flag after it has been deallocated, so that after program shutdown
+ * the deallocated TVariable instances do not try to remove themselves from the
+ * map. Besides, this class overrides the non-virtual destructor of STL
+ * multimap, so it's not functional if the variable is declared using MMV's
+ * supertype!
+ */
+class MMV :	public multimap<string, TVariable *> {
+public:
+	~MMV() {
+		mmvDeallocated = 1;
+	}
+};
 
 DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
@@ -239,7 +253,7 @@ TVariable::~TVariable()
 {
     /* When the program shuts down, it may happen that the list is destroyed before
        the variables. We do nothing in this case. */
-    if (allVariablesMap.size()) {
+    if (!mmvDeallocated) {
         removeVariable();
     }
 }

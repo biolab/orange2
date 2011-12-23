@@ -52,6 +52,7 @@ WRAPPER(RandomGenerator)
 WRAPPER(Variable);
 WRAPPER(Classifier)
 
+class MMV;
 
 class ORANGE_API TVariable : public TOrange {
 public:
@@ -95,7 +96,7 @@ public:
     registerVariable();
   }
 
-  static multimap<string, TVariable *> allVariablesMap;
+  static MMV allVariablesMap;
 
   ~TVariable();
 
