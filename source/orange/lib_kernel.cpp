@@ -1524,28 +1524,30 @@ PyObject *Domain__reduce__(PyObject *self)
   CAST_TO(TDomain, domain)
 
 
-  return Py_BuildValue("O(ONNNN)N", getExportedFunction("__pickleLoaderDomain"),
+  return Py_BuildValue("O(ONNNNN)N", getExportedFunction("__pickleLoaderDomain"),
                                    self->ob_type,
                                    WrapOrange(domain->attributes),
                                    WrapOrange(domain->classVar),
+                                   WrapOrange(domain->classVars),
                                    Domain_getmetasLow(SELF_AS(TDomain), false),
                                    Domain_getmetasLow(SELF_AS(TDomain), true),
                                    packOrangeDictionary(self));
 }
 
-PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, attributes, classVar, metas)")
+PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, attributes, classVar, classVars, req_metas, opt_metas)")
 {
   PyTRY {
-    if (!args || !PyTuple_Check(args) || (PyTuple_Size(args) != 5))
+    if (!args || !PyTuple_Check(args) || (PyTuple_Size(args) != 6))
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
 
     PyTypeObject *type = (PyTypeObject *)PyTuple_GET_ITEM(args, 0);
     PyObject *attributes = PyTuple_GET_ITEM(args, 1);
     PyObject *classVar = PyTuple_GET_ITEM(args, 2);
-    PyObject *req_metas = PyTuple_GET_ITEM(args, 3);
-    PyObject *opt_metas = PyTuple_GET_ITEM(args, 4);
+    PyObject *classVars = PyTuple_GET_ITEM(args, 3);
+    PyObject *req_metas = PyTuple_GET_ITEM(args, 4);
+    PyObject *opt_metas = PyTuple_GET_ITEM(args, 5);
 
-    if (!PyOrVarList_Check(attributes) || !PyDict_Check(req_metas) || !PyDict_Check(opt_metas))
+    if (!PyOrVarList_Check(attributes) || (classVars && !PyOrVarList_Check(attributes)) || !PyDict_Check(req_metas) || !PyDict_Check(opt_metas))
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
 
 
@@ -1556,7 +1558,7 @@ PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, 
       domain = new TDomain(PyOrange_AsVariable(classVar), PyOrange_AsVarList(attributes).getReference());
     else
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
-
+    domain->classVars = PyOrange_AsVarList(classVars);
 
     PyObject *pydomain = WrapNewOrange(domain, type);
 

@@ -899,8 +899,13 @@ void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherVal
 
 void Example_unpack(TExample &example, TCharBuffer &buf, PyObject *&otherValues, int &otherValuesIndex)
 {
-  TVarList::const_iterator vi = example.domain->variables->begin();
-  for(TValue *vali = example.values; vali != example.classes_end; vali++, vi++) {
+  TVarList::const_iterator vi;
+  TValue *vali = example.values;
+  for(vi = example.domain->variables->begin(); vali != example.values_end; vali++, vi++) {
+    vali->varType = (*vi)->varType;
+    Value_unpack(*vali, buf, otherValues, otherValuesIndex);
+  }
+  for(vi = example.domain->classVars->begin(); vali != example.classes_end; vali++, vi++) {
     vali->varType = (*vi)->varType;
     Value_unpack(*vali, buf, otherValues, otherValuesIndex);
   }
@@ -985,12 +990,26 @@ string TPyExample2string(TPyExample *pex)
 { PExample example = PyExample_AS_Example(pex);
   string res("[");
   TVarList::iterator vi(example->domain->variables->begin());
-  PITERATE(TExample, ei, example) {
-    if (ei!=example->begin())
+  TVarList::iterator ve(example->domain->variables->end());
+  TExample::const_iterator ei = example->values;
+  for(; vi != ve; vi++, ei++) {
+    if (ei != example->values)
       res+=", ";
-    addValue(res, *ei, *(vi++));
+    addValue(res, *ei, *vi);
   }
   res+="]";
+
+  vi = example->domain->classVars->begin();
+  ve = example->domain->classVars->end();
+  if (vi != ve) {
+      res += " (";
+      for(; vi != ve; vi++, ei++) {
+          if (ei != example->values_end)
+              res += ", ";
+          addValue(res, *ei, *vi);
+      }
+      res += ")";
+  }
 
   int madded=0;
   ITERATE(TMetaValues, mi, example->meta) {

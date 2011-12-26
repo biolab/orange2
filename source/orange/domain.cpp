@@ -467,7 +467,7 @@ void TDomain::convert(TExample &dest, const TExample &src, bool filterMetas)
 {
   dest.id = src.id; 
   if (src.domain==this) {
-    int Nv = variables->size();
+    int Nv = variables->size() + classVars->size();
     TExample::iterator de = dest.begin();
     TExample::const_iterator sr = src.begin();
     while(Nv--)
@@ -495,6 +495,13 @@ void TDomain::convert(TExample &dest, const TExample &src, bool filterMetas)
           (*lastDomain).metasNotToCopy.insert(cvi);
       }
 
+      const_PITERATE(TVarList, mvi, classVars) {
+        const int cvi = src.domain->getVarNum(*mvi, false);
+        (*lastDomain).positions.push_back(cvi);
+        if (cvi<0)
+          (*lastDomain).metasNotToCopy.insert(cvi);
+      }
+
       ITERATE(TMetaVector, mvi, metas) {
         const int cvi = src.domain->getVarNum((*mvi).variable, false);
         (*lastDomain).metaPositions.push_back(make_pair(int((*mvi).id), cvi));
@@ -507,11 +514,16 @@ void TDomain::convert(TExample &dest, const TExample &src, bool filterMetas)
     }
 
     // Now, lastDomain points to an appropriate mapping
-    vector<int>::iterator pi((*lastDomain).positions.begin());
-    TVarList::iterator vi(variables->begin());
-
     TExample::iterator deval(dest.begin());
-    for(int Nv = dest.domain->variables->size(); Nv--; pi++, vi++)
+    vector<int>::iterator pi((*lastDomain).positions.begin());
+
+    TVarList::iterator vi;
+    int Nv;
+    
+    for(vi = variables->begin(), Nv = dest.domain->variables->size(); Nv--; pi++, vi++)
+      *(deval++) = (*pi == ILLEGAL_INT) ? (*vi)->computeValue(src) : src[*pi];
+
+    for(vi = classVars->begin(), Nv = dest.domain->classVars->size(); Nv--; pi++, vi++)
       *(deval++) = (*pi == ILLEGAL_INT) ? (*vi)->computeValue(src) : src[*pi];
 
     TMetaVector::iterator mvi(metas.begin());
