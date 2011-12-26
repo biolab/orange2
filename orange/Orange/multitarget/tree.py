@@ -40,9 +40,6 @@ class MultitargetVariance(Orange.feature.scoring.Score):
                 points=[t]).construct_variable(f)
             dom2 = Orange.data.Domain([bf], class_vars=data.domain.class_vars)
             data2 = Orange.data.Table(dom2, data)
-            # TODO: remove when bug is fixed (currently => very slow)
-            for i1, i2 in zip(data, data2):
-                i2.set_classes(i1.get_classes())
             scores.append((t, self.__call__(bf, data2)))
         return scores
 
@@ -82,9 +79,6 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
             data2 = Orange.data.Table(Orange.data.Domain(
                 data.domain.attributes, data.domain.class_vars[0],
                 class_vars=data.domain.class_vars), data)
-        # until the bug is fixed, manually set correct values of classes
-        for i1, i2 in zip(data, data2):
-            i2.set_classes(i1.get_classes())
         tree = Orange.classification.tree.TreeLearner.__call__(self, data2, weight)
         return MultiTree(base_classifier=tree)
 
