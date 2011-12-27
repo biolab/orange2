@@ -1,17 +1,35 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "corn", "corn\corn.vcxproj", "{DB7466D1-CF93-44A1-9AB2-27290A2EC7C7}"
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Corn", "corn\Corn.vcproj", "{DB7466D1-CF93-44A1-9AB2-27290A2EC7C7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{93B854DA-EC3F-4314-B801-58411F9713FD} = {93B854DA-EC3F-4314-B801-58411F9713FD}
+		{745880F1-8F10-4247-B481-E4321BC1BD9F} = {745880F1-8F10-4247-B481-E4321BC1BD9F}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Orange", "orange\Orange.vcxproj", "{93B854DA-EC3F-4314-B801-58411F9713FD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Orange", "orange\Orange.vcproj", "{93B854DA-EC3F-4314-B801-58411F9713FD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{745880F1-8F10-4247-B481-E4321BC1BD9F} = {745880F1-8F10-4247-B481-E4321BC1BD9F}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Statc", "statc\Statc.vcxproj", "{A0E81B4F-E592-4002-A6BE-5EAA1DD86A25}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Statc", "statc\Statc.vcproj", "{A0E81B4F-E592-4002-A6BE-5EAA1DD86A25}"
+	ProjectSection(ProjectDependencies) = postProject
+		{745880F1-8F10-4247-B481-E4321BC1BD9F} = {745880F1-8F10-4247-B481-E4321BC1BD9F}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "include", "include\include.vcxproj", "{745880F1-8F10-4247-B481-E4321BC1BD9F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "include", "include\include.vcproj", "{745880F1-8F10-4247-B481-E4321BC1BD9F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "orangene", "orangene\orangene.vcxproj", "{A9DFB98F-8235-4D5B-BFE2-BBCB9A283D98}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "orangene", "orangene\orangene.vcproj", "{A9DFB98F-8235-4D5B-BFE2-BBCB9A283D98}"
+	ProjectSection(ProjectDependencies) = postProject
+		{745880F1-8F10-4247-B481-E4321BC1BD9F} = {745880F1-8F10-4247-B481-E4321BC1BD9F}
+		{93B854DA-EC3F-4314-B801-58411F9713FD} = {93B854DA-EC3F-4314-B801-58411F9713FD}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "orangeom", "orangeom\orangeom.vcxproj", "{1DD56474-1110-413B-80B8-707E8EE28EC6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "orangeom", "orangeom\orangeom.vcproj", "{1DD56474-1110-413B-80B8-707E8EE28EC6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{93B854DA-EC3F-4314-B801-58411F9713FD} = {93B854DA-EC3F-4314-B801-58411F9713FD}
+		{745880F1-8F10-4247-B481-E4321BC1BD9F} = {745880F1-8F10-4247-B481-E4321BC1BD9F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
