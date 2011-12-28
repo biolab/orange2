@@ -20,7 +20,7 @@ Proc. 5th Hellenic Conference on Artificial Intelligence (SETN 2008), Springer, 
    .. method:: __new__(instances, **argkw) 
    BRkNNLearner Constructor
    
-   :param instances: a table of instances, covered by the rule.
+   :param instances: a table of instances.
    :type instances: :class:`Orange.data.Table`
 
 .. index:: BRkNN Classifier
@@ -46,14 +46,14 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 
 """
 import random
-import Orange
-import label
-import multiknn as _multiknn
 import math
+
+import Orange
+import multiknn as _multiknn
 
 class BRkNNLearner(_multiknn.MultikNNLearner):
     """
-    Class implementing the BR-kNN algorithm. 
+    Class implementing the BR-kNN learner. 
     
     .. attribute:: k
     
@@ -62,8 +62,9 @@ class BRkNNLearner(_multiknn.MultikNNLearner):
     
     .. attribute:: ext
     
-        Extension type. The default is None, means 'Standard BR'; 'a' means Predict top ranked label in case of empty prediction set;
-        'b' means Predict top n ranked labels based on size of labelset in neighbours 
+        Extension type. The default is None, means 'Standard BR'; 'a' means
+        predicting top ranked label in case of empty prediction set; 'b' means
+        predicting top n ranked labels based on size of labelset in neighbours. 
     
     .. attribute:: knn
         
@@ -74,22 +75,23 @@ class BRkNNLearner(_multiknn.MultikNNLearner):
         """
         Constructor of BRkNNLearner
         
-        :param instances: a table of instances, covered by the rule.
+        :param instances: a table of instances.
         :type instances: :class:`Orange.data.Table`
         
         :param k: number of nearest neighbours used in classification
         :type k: int
         
-        :param ext:  Extension type (Default value is set to '0' which yields the Standard BR).
-        :type smooth: string
+        :param ext: extension type (default value is None which yields
+            the Standard BR), values 'a' and 'b' are also possible.
+        :type ext: string
         
         :rtype: :class:`BRkNNLearner`
         """
         
         self = _multiknn.MultikNNLearner.__new__(cls, k, **argkw)
         
-        if ext and ext <>'a' and ext <> 'b':
-            raise ValueError, "invalid ext value: 'the extension value should be only None, 'a' or 'b' "
+        if ext not in [None, 'a', 'b']:
+            raise ValueError, "Invalid ext value: should be None, 'a' or 'b'."
         self.ext = ext
         
         if instances:
@@ -100,112 +102,78 @@ class BRkNNLearner(_multiknn.MultikNNLearner):
             return self
 
     def __call__(self, instances, weight_id = 0, **kwds):
+        if not Orange.multilabel.is_multilabel(instances):
+            raise TypeError("The given data set is not a multi-label data set.")
+
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
+        self._build_knn(instances)
 
-        _multiknn.MultikNNLearner.transfor_table(self,instances)
+        labeling_f = [BRkNNClassifier.get_labels, BRkNNClassifier.get_labels_a,
+                      BRkNNClassifier.get_labels_b][ [None, 'a', 'b'].index(self.ext) ]
         
-        return BRkNNClassifier(instances = instances, label_indices = self.label_indices,
+        return BRkNNClassifier(instances = instances,
                                ext = self.ext,
                                knn = self.knn,
-                               weight_id = self.weight_id,
-                               k = self.k)
+                               k = self.k,
+                               labeling_f = labeling_f)
 
-def max(x,y):
-    if x > y:
-        return x
-    else:
-        return y
-
-class BRkNNClassifier(_multiknn.MultikNNClassifier):    
-    def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
-        self.num_labels = len(self.label_indices)
+class BRkNNClassifier(_multiknn.MultikNNClassifier):
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         domain = self.instances.domain
-        labels = []
-        if self.num_labels == 0:
-            raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
 
-        neighbours = self.knn(example, self.k)
-        distances = [inst.get_weight(self.weight_id) for i,inst in enumerate(neighbours)]
+        neighbours = self.knn(instance, self.k)
         
-        prob = self.get_prob(neighbours, distances)
+        prob = self.get_prob(neighbours)
         
-        if self.ext == None:
-            labels = self.get_label(prob, 0.5)
-        elif self.ext == 'a':
-            labels = self.get_label_a(prob)
-        elif self.ext == 'b':
-            labels = self.get_label_b(prob)
-        
-        disc = Orange.statistics.distribution.Discrete(prob)
-        disc.variable = Orange.core.EnumVariable(
-            values = [domain[val].name for index,val in enumerate(self.label_indices)])
+        labels = self.labeling_f(self, prob, neighbours)
         
         if result_type == Orange.classification.Classifier.GetValue:
             return labels
+
+        dists = [Orange.statistics.distribution.Discrete([1-p, p]) for p in prob]
+        for v, d in zip(self.instances.domain.class_vars, dists):
+            d.variable = v
+
         if result_type == Orange.classification.Classifier.GetProbabilities:
-            return disc
-        return labels,disc
+            return dists
+        return labels, dists
     
-    def get_prob(self, neighbours, distances):
+    def get_prob(self, neighbours):
         """
-        Calculates the probabilities of the labels, based on the neighboring instances
+        Calculates the probabilities of the labels, based on the neighboring
+        instances.
      
-        :param neighbours: a list of nearest neighboring instances
+        :param neighbours: a list of nearest neighboring instances.
         :type neighbours: list of :class:`Orange.data.Instance`
-        
-        :param distances: distance of the neighbours
-        :type distances: list of double
         
         :rtype: the prob of the labels
         
         """
         total = 0
-        weight = 0
-        neighbor_labels = 0
-        confidences = [0.0]* self.num_labels
+        label_count = len(self.instances.domain.class_vars)
+        confidences = [1.0 / max(1, len(self.instances))] * label_count
 
-        #Set up a correction to the estimator
-        for i  in range(self.num_labels):
-            confidences[i] = 1.0 / max(1, len(self.instances))
+        total = float(label_count) / max(1, len(self.instances))
         
-        total = self.num_labels / max(1, len(self.instances))
-        
-        for i in range(self.k):
-            #Collect class counts
-            current = neighbours[i]
-            distances[i] = distances[i] * distances[i]
-            distances[i] = math.sqrt(distances[i] / (len(self.instances.domain.variables) - self.num_labels))
-           
-            weight = 1.0
-            #weight *= current.weight();
-
-            for j in range(self.num_labels):
-                value = current.get_class().value[j]
+        for neigh in neighbours:
+            vals = neigh.get_classes()
+            for j, value in enumerate(vals):
                 if value == '1':
-                    confidences[j] += weight
-                    neighbor_labels += weight
-            total += weight
+                    confidences[j] += 1
+            total += 1
 
-        self.avg_predicted_labels = int(math.ceil(neighbor_labels / total))
-        
-        #Normalise distribution
+        #Normalize distribution
         if total > 0:
             confidences = [con/total for con in confidences]
         
         return confidences
     
-    def get_label(self, prob, thresh):
-        labels = []
-        for i in range(self.num_labels):
-            if prob[i] >= thresh:
-                labels.append(Orange.data.Value(self.instances.domain[self.label_indices[i]],'1'))
-            else:
-                labels.append(Orange.data.Value(self.instances.domain[self.label_indices[i]],'0'))
-           
-        return labels
+    def get_labels(self, prob, _neighs=None, thresh=0.5):
+        return [Orange.data.Value(lvar, str(int(p>thresh)))
+                for p, lvar in zip(prob, self.instances.domain.class_vars)]
     
-    def get_label_a(self, prob):
+    def get_labels_a(self, prob, _neighs=None):
         """
         used for BRknn-a
         
@@ -214,29 +182,16 @@ class BRkNNClassifier(_multiknn.MultikNNClassifier):
         
         :rtype: the list label value
         """
-        labels = []
-        flag = False; #check the case that no label is true
-
-        for i in range(self.num_labels):
-            if prob[i] >= 0.5:
-                labels.append(Orange.data.Value(self.instances.domain[self.label_indices[i]],'1'))
-            else:
-                labels.append(Orange.data.Value(self.instances.domain[self.label_indices[i]],'0'))
+        labels = self.get_labels(prob)
             
-        #assign the class with the greater confidence
-        if flag == False:
-            max_p = -1
-            index = -1
-            for i in range(len(prob)):
-                if max_p <= prob[i]:
-                    max_p = prob[i]
-                    index = i
-            if index <> -1:
-                labels[index].value = '1'
+        #assign the class with the greatest confidence
+        if all(l.value=='0' for l in labels):
+            index = max((v,i) for i,v in enumerate(prob))[1]
+            labels[index].value = '1'
         
         return labels
     
-    def get_label_b(self, prob):
+    def get_labels_b(self, prob, neighs):
         """
         used for BRknn-b
         
@@ -246,33 +201,17 @@ class BRkNNClassifier(_multiknn.MultikNNClassifier):
         :rtype: the list label value
         """
         
-        labels = []
-        for i in range(self.num_labels):
-            labels.append(Orange.data.Value(self.instances.domain[self.label_indices[i]],'0'))
+        labels = [Orange.data.Value(lvar, '0')
+                  for p, lvar in zip(prob, self.instances.domain.class_vars)]
         
-        prob_copy = prob
-        prob_copy.sort()
+        avg_label_cnt = sum(sum(l.value=='1' for l in n.get_classes())
+                            for n in neighs) / float(len(neighs))
+        avg_label_cnt = int(round(avg_label_cnt))
         
-        indices = []
-        counter = 0
+        for p, lval in sorted(zip(prob, labels), reverse=True)[:avg_label_cnt]:
+            lval.value = '1'
 
-        for i in range(self.num_labels):
-            if prob[i] > prob[self.num_labels - self.avg_predicted_labels]:
-                labels[i].value = '1'
-                counter = counter + 1
-            elif prob[i] == prob[self.num_labels - self.avg_predicted_labels]:
-                indices.append(i)
-
-        size = len(indices)
-
-        j = self.avg_predicted_labels - counter
-        while j > 0:
-            next = random.randint(0,size-1)
-            if labels[indices[next]] <> '1':
-                labels[indices[next]] = '1'
-                j = j - 1
-        
-        return labels       
+        return labels
     
 #########################################################################################
 # Test the code, run from DOS prompt

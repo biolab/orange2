@@ -21,7 +21,7 @@ International Journal of Data Warehousing and Mining, 3(3):1-13, 2007.
    .. method:: __new__(instances, base_learner, **argkw) 
    LabelPowersetLearner Constructor
    
-   :param instances: a table of instances, covered by the rule.
+   :param instances: a table of instances.
    :type instances: :class:`Orange.data.Table`
       
    :param base_learner: the binary learner, the default learner is BayesLearner
@@ -52,8 +52,31 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 
 import Orange
 from Orange.core import BayesLearner as _BayesLearner
-import label
 import multibase as _multibase
+
+def get_label_bitstream(e):
+    return ''.join(lv.value for lv in e.get_classes())
+
+def transform_to_powerset(instances):
+    new_class = Orange.data.variable.Discrete("label")
+    
+    for e in instances:
+        class_value = get_label_bitstream(e)
+        new_class.add_value(class_value)
+    
+    new_domain = Orange.data.Domain(instances.domain.attributes, new_class)
+    
+    #build the instances
+    new_table = Orange.data.Table(new_domain)
+    for e in instances:
+        new_row = Orange.data.Instance(
+          new_domain,
+          [e[a].value for a in instances.domain.attributes] +
+          [get_label_bitstream(e)])
+        
+        new_table.append(new_row)
+    
+    return new_table
 
 class LabelPowersetLearner(_multibase.MultiLabelLearner):
     """
@@ -61,85 +84,47 @@ class LabelPowersetLearner(_multibase.MultiLabelLearner):
     """
     def __new__(cls, instances = None, base_learner = None, weight_id = 0, **argkw):
         self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
-        if base_learner:
-            self.base_learner = base_learner
-        else:
-            self.base_learner = _BayesLearner
         
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances,base_learner,weight_id)
+            return self.__call__(instances, base_learner, weight_id)
         else:
             return self
                 
     def __call__(self, instances, base_learner = None, weight_id = 0, **kwds):
-        for k in kwds.keys():
-            self.__dict__[k] = kwds[k]
+        if not Orange.multilabel.is_multilabel(instances):
+            raise TypeError("The given data set is not a multi-label data set.")
 
-        num_labels = label.get_num_labels(instances)
-        label_indices = label.get_label_indices(instances)
+        self.__dict__.update(kwds)
+
+        new_table = transform_to_powerset(instances)
         
-        #abtain the labels and use a string to represent it and store the classvalues
-        new_class = Orange.data.variable.Discrete("label")
-        
-        for e in instances:
-            class_value = label.get_label_bitstream(instances,e)
-            new_class.add_value(class_value)
-        
-        #remove the label attributes
-        indices_remove = [var for index, var in enumerate(label_indices)]
-        new_domain = label.remove_indices(instances,indices_remove)
-        
-        #add the class attribute
-        new_domain = Orange.data.Domain(new_domain,new_class)
-        
-        #build the instances
-        new_table = Orange.data.Table(new_domain)
-        for e in instances:
-            new_row = Orange.data.Instance(
-              new_domain, 
-              [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
-                    [label.get_label_bitstream(instances,e)])
-            
-            new_table.append(new_row)
-             
         #store the classifier
-        classifier = self.base_learner(new_table)
+        base_learner = base_learner if base_learner else _BayesLearner
+        classifier = base_learner(new_table)
         
         #Learn from the given table of data instances.
         return LabelPowersetClassifier(instances = instances, 
-                                       label_indices = label_indices,
                                        classifier = classifier,
                                        weight_id = weight_id)
 
-class LabelPowersetClassifier(_multibase.MultiLabelClassifier):      
-    def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
-        num_labels = len(self.label_indices)
-        domain = self.instances.domain
+class LabelPowersetClassifier(_multibase.MultiLabelClassifier):
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         labels = []
         prob = []
-        if num_labels == 0:
-            raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
         
-        c,p = self.classifier(example,Orange.classification.Classifier.GetBoth)
-        str = c.value
-        for i in range(len(str)):
-            if str[i] == '0':
-                labels.append(Orange.data.Value(domain[self.label_indices[i]],'0'))
-                prob.append(0.0)
-            elif str[i] == '1':
-                labels.append(Orange.data.Value(domain[self.label_indices[i]],'1'))
-                prob.append(1.0)
-            else:
-                #raise ValueError, "invalid label value: 'the label value in instances should be only 0 or 1' "
-                labels.append(Orange.data.Value(domain[self.label_indices[i]],'?'))
-                prob.append(0.0)
-        
-        disc = Orange.statistics.distribution.Discrete(prob)
-        disc.variable = Orange.core.EnumVariable(values = [domain[val].name for index,val in enumerate(self.label_indices)])
+        c = self.classifier(instance)
+        for bit, lvar in zip(c.value, self.instances.domain.class_vars):
+            labels.append(Orange.data.Value(lvar, bit))
+            prob.append(float(bit == '1'))
         
         if result_type == Orange.classification.Classifier.GetValue:
             return labels
+        
+        disc = [Orange.statistics.distribution.Discrete([1-p, p]) for p in prob]
+        for v, d in zip(self.instances.domain.class_vars, disc):
+            d.variable = v
+        
         if result_type == Orange.classification.Classifier.GetProbabilities:
             return disc
         return labels,disc

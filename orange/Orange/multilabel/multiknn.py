@@ -8,9 +8,11 @@
 MultikNN Learner
 ***************************************
 
-MultikNN Classification is the base class of kNN method based multi-label classification. 
+MultikNN Classification is the base class of kNN method based multi-label
+classification. 
 It is an adaptation of the kNN lazy learning algorithm for multi-label data. 
-For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
+For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning
+approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
 Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.  
 
 .. index:: MultikNN Learner
@@ -21,7 +23,7 @@ Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.
    .. method:: __new__(instances, **argkw) 
    MLkNNLearner Constructor
    
-   :param instances: a table of instances, covered by the rule.
+   :param instances: a table of instances.
    :type instances: :class:`Orange.data.Table`
 
 .. index:: MLkNN Classifier
@@ -47,8 +49,8 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 
 """
 import random
+
 import Orange
-import label
 import multibase as _multibase
 
 class MultikNNLearner(_multibase.MultiLabelLearner):
@@ -85,54 +87,15 @@ class MultikNNLearner(_multibase.MultiLabelLearner):
         self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
         self.k = k
         return self
-
-    def transfor_table(self, instances):
-        """ build the instances table using power set transfor method 
-        
-        :param instances: a table of instances, covered by the rule.
-        :type instances: :class:`Orange.data.Table`
-        
-        :rtype: :class:`Orange.data.Table`
-        
-        """
-        
-        self.num_labels = label.get_num_labels(instances)
-        self.label_indices = label.get_label_indices(instances)
-        
-        num_labels = self.num_labels
-        label_indices = self.label_indices
-        k = self.k
-        
-        #build a kNNLearner
-        #remove labels
-        indices_remove = [var for index, var in enumerate(label_indices)]
-        new_domain = label.remove_indices(instances,indices_remove) 
-        
-        new_class = Orange.data.variable.Discrete("label")
-        for e in instances:
-            class_value = label.get_label_bitstream(instances,e)
-            new_class.add_value(class_value)
-        
-        new_domain = Orange.data.Domain(new_domain,new_class)
-        
-        new_table = Orange.data.Table(new_domain)
-        for e in instances:
-            new_row = Orange.data.Instance(
-              new_domain, 
-              [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
-                    [label.get_label_bitstream(instances,e)])
-            
-            new_table.append(new_row)
-        
+    
+    def _build_knn(self, instances):
         nnc = Orange.classification.knn.FindNearestConstructor()
         nnc.distanceConstructor = Orange.core.ExamplesDistanceConstructor_Euclidean()
         
         weight_id = Orange.core.newmetaid()
-        self.knn = nnc(new_table, 0, weight_id)
+        self.knn = nnc(instances, 0, weight_id)
         self.weight_id = weight_id
-        
-        return new_table
-        
+
 class MultikNNClassifier(_multibase.MultiLabelClassifier):   
     pass
         

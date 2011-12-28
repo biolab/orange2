@@ -1,32 +1,22 @@
 import Orange
 
-data = Orange.data.Table("multidata.tab")
+def test_mlc(data, learners):
+    for l in learners:
+        c = l(data)
+        for e in data:
+            labels, probs = c(e, Orange.classification.Classifier.GetBoth)
+            print [val.value for val in labels], "[%s]" % ", ".join("(%.4f, %.4f)" % (p['0'], p['1']) for p in probs)
+        print
 
-classifier = Orange.multilabel.BinaryRelevanceLearner(data)
-
-for e in data:
-    c,p = classifier(e,Orange.classification.Classifier.GetBoth)
-    print c,p
-    #prints [<orange.Value 'Sports'='1'>, <orange.Value 'Politics'='1'>] <1.000, 0.000, 0.000, 1.000>
-    #prints [<orange.Value 'SCience'='1'>, <orange.Value 'Politics'='1'>] <0.000, 0.000, 1.000, 1.000>
-    #prints [<orange.Value 'Sports'='1'>] <1.000, 0.000, 0.000, 0.000>
-    #prints [<orange.Value 'Religion'='1'>, <orange.Value 'SCience'='1'>] <0.000, 1.000, 1.000, 0.000>
-    
-powerset_cliassifer = Orange.multilabel.LabelPowersetLearner(data)
-for e in data:
-    c,p = powerset_cliassifer(e,Orange.classification.Classifier.GetBoth)
-    print c,p
-    #prints [<orange.Value 'Sports'='1'>, <orange.Value 'Politics'='1'>] <1.000, 0.000, 0.000, 1.000>
-    #prints [<orange.Value 'SCience'='1'>, <orange.Value 'Politics'='1'>] <0.000, 0.000, 1.000, 1.000>
-    #prints [<orange.Value 'Sports'='1'>] <1.000, 0.000, 0.000, 0.000>
-    #prints [<orange.Value 'Religion'='1'>, <orange.Value 'SCience'='1'>] <0.000, 1.000, 1.000, 0.000>
-
-mlknn_cliassifer = Orange.multilabel.MLkNNLearner(data,k=1)
-for e in data:
-    c,p = mlknn_cliassifer(e,Orange.classification.Classifier.GetBoth)
-    print c,p
-    
-br_cliassifer = Orange.multilabel.BRkNNLearner(data,k=1)
-for e in data:
-    c,p = br_cliassifer(e,Orange.classification.Classifier.GetBoth)
-    print c,p
+learners = [Orange.multilabel.BinaryRelevanceLearner(),
+            Orange.multilabel.LabelPowersetLearner(),
+            Orange.multilabel.MLkNNLearner(k=1),
+            Orange.multilabel.MLkNNLearner(k=5),
+            Orange.multilabel.BRkNNLearner(k=1),
+            Orange.multilabel.BRkNNLearner(k=5),
+            Orange.multilabel.BRkNNLearner(k=5,ext='a'),
+            Orange.multilabel.BRkNNLearner(k=5,ext='b')
+            ]
+            
+test_mlc(Orange.data.Table("multidata.tab"), learners)
+test_mlc(Orange.data.Table("emotions.tab"), learners)

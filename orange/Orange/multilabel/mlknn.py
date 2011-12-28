@@ -5,15 +5,15 @@
 ML-kNN Learner
 ***************************************
 
-ML-kNN Classification is a kind of adaptation method for multi-label classification. 
-It is an adaptation of the kNN lazy learning algorithm for multi-label data. 
+ML-kNN Classification is a kind of adaptation method for multi-label classification.
+It is an adaptation of the kNN lazy learning algorithm for multi-label data.
 In essence, ML-kNN uses the kNN algorithm independently for each label :math:`l`.
-It finds the k nearest examples to the test instance and considers those that are 
-labelled at least with :math:`l` as positive and the rest as negative. 
-Actually this method follows the paradigm of Binary Relevance (BR). What mainly 
+It finds the k nearest examples to the test instance and considers those that are
+labelled at least with :math:`l` as positive and the rest as negative.
+Actually this method follows the paradigm of Binary Relevance (BR). What mainly
 differentiates this method from BR is the use of prior probabilities. ML-kNN has also
 the capability of producing a ranking of the labels as an output.
-For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning 
+For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning
 approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
 Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.  
 
@@ -25,7 +25,7 @@ Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.
    .. method:: __new__(instances, **argkw) 
    MLkNNLearner Constructor
    
-   :param instances: a table of instances, covered by the rule.
+   :param instances: a table of instances.
    :type instances: :class:`Orange.data.Table`
 
 .. index:: MLkNN Classifier
@@ -52,8 +52,9 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 """
 import random
 import Orange
-import label
 import multiknn as _multiknn
+
+from lp import transform_to_powerset
 
 class MLkNNLearner(_multiknn.MultikNNLearner):
     """
@@ -124,7 +125,7 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
         """
         Constructor of MLkNNLearner
         
-        :param instances: a table of instances, covered by the rule.
+        :param instances: a table of instances.
         :type instances: :class:`Orange.data.Table`
         
         :param k: number of nearest neighbors used in classification
@@ -147,136 +148,90 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
             return self
 
     def __call__(self, instances, weight_id = 0, **kwds):
-        for k in kwds.keys():
-            self.__dict__[k] = kwds[k]
+        if not Orange.multilabel.is_multilabel(instances):
+            raise TypeError("The given data set is not a multi-label data set.")
+        
+        self.__dict__.update(kwds)
+        self._build_knn(instances)
 
-        _multiknn.MultikNNLearner.transfor_table(self,instances)
-
-        num_labels = self.num_labels
-        k = self.k
-        
-        #A table holding the prior probability for an instance to belong in each class
-        self.prior_probabilities  = [0.] * num_labels
-        
-        #A table holding the prior probability for an instance not to belong in each class
-        self.prior_nprobabilities = [0.] * num_labels
-        
-        #A table holding the probability for an instance to belong in each class given that i:0..k of its neighbors belong to that class
-        self.cond_probabilities   = [ [0.] * (k + 1) ] * num_labels
-        
-        #A table holding the probability for an instance not to belong in each class given that i:0..k of its neighbors belong to that class
-        self.cond_nprobabilities  = [ [0.] * (k + 1) ] * num_labels
-        
         #Computing the prior probabilities P(H_b^l)
-        self.compute_prior(instances)
+        prior_prob = self.compute_prior(instances)
         
         #Computing the posterior probabilities P(E_j^l|H_b^l)
-        self.compute_cond(instances)
+        cond_prob = list(self.compute_cond(instances))
         
-        return MLkNNClassifier(instances = instances, label_indices = self.label_indices, 
-                               prior_probabilities = self.prior_probabilities, 
-                               prior_nprobabilities = self.prior_nprobabilities,
-                               cond_probabilities = self.cond_probabilities,
-                               cond_nprobabilities = self.cond_nprobabilities,
+        return MLkNNClassifier(instances = instances,
+                               prior_prob = prior_prob, 
+                               cond_prob = cond_prob,
                                knn = self.knn,
-                               k = self.k,
-                               weight_id = weight_id)
+                               k = self.k)
 
-    def compute_prior(self,instances):
-        """ Computing Prior and PriorN Probabilities for each class of the training set """
-        num_instances = len(instances)
-        for i in range(self.num_labels):
-            temp_ci = 0
-            for j in range(num_instances):
-                value = instances[j][self.label_indices[i]].value
-                if value == '1':
-                    temp_ci = temp_ci+1
-            self.prior_probabilities[i] = (self.smooth + temp_ci) / (self.smooth * 2 + num_instances)
-            self.prior_nprobabilities[i] = 1 - self.prior_probabilities[i]
+    def compute_prior(self, instances):
+        """ Computing Prior Probabilities for each label of the training set """
+        prior_prob = []
+        for lvar in instances.domain.class_vars:
+            freq = sum(inst[lvar].value == '1' for inst in instances)
+            prior_prob.append( float(self.smooth + freq) / (self.smooth * 2 + len(instances)) )
+        return prior_prob
             
-    def compute_cond(self,instances):
-        """ Computing Cond and CondN Probabilities for each class of the training set """
-        num_labels = self.num_labels
-        label_indices = self.label_indices
+    def compute_cond(self, instances):
+        """ Computing Posterior Probabilities for each label of the training set """
         k = self.k
-        num_instances = len(instances)
         
-        temp_ci  = [ [0] * (k + 1) ] * num_labels
-        temp_nci = [ [0] * (k + 1) ] * num_labels
+        def _remove_identical(table, inst):
+            try:
+                i = [inst1.get_classes() == inst.get_classes() for inst1 in table].index(1)
+            except:
+                i = -1
+            del table[i]
+            return table
+            
+            
+        neighbor_lists = [_remove_identical(self.knn(inst, k+1), inst) for inst in instances]
+        p1 = [[0]*(k+1) for lvar in instances.domain.class_vars]
+        p0 = [[0]*(k+1) for lvar in instances.domain.class_vars]
 
-        for i  in range(num_instances):
-            neighbors = self.knn(instances[i], k)
-                 
-            # now compute values of temp_ci and temp_nci for every class label
-            for j in range(num_labels):
-                aces = 0 # num of aces in Knn for j
-                for m in range(k):
-                    value = neighbors[m].get_class().value[j]
-                    if value == '1':
-                        aces = aces + 1
-                     
-                #raise the counter of temp_ci[j][aces] and temp_nci[j][aces] by 1
-                if instances[i][label_indices[j]].value == '1':
-                    temp_ci[j][aces] = temp_ci[j][aces] + 1
-                else:
-                    temp_nci[j][aces] = temp_nci[j][aces] + 1
+        for li, lvar in enumerate(instances.domain.class_vars):
+            c  = [0] * (k + 1)
+            cn = [0] * (k + 1)
+            
+            for inst, neighbors in zip(instances, neighbor_lists):
+                delta = sum(n[lvar].value=='1' for n in neighbors)
                 
-        # compute cond_probabilities[i][..] for labels based on temp_ci[]
-        for i in range(num_labels):
-            temp1 = 0
-            temp2 = 0
-            for j in range(k + 1):
-                temp1 += temp_ci[i][j]
-                temp2 += temp_nci[i][j]
-            for j in range(k + 1):
-                self.cond_probabilities[i][j] = (self.smooth + temp_ci[i][j]) / (self.smooth * (k + 1) + temp1)
-                self.cond_nprobabilities[i][j] = (self.smooth + temp_nci[i][j]) / (self.smooth * (k + 1) + temp2)
+                (c if inst[lvar].value == '1' else cn)[delta] += 1
+                
+            for j in range(k+1):
+                p1[li][j] = float(self.smooth + c[j]) / (self.smooth * (k+1) + sum(c))
+                p0[li][j] = float(self.smooth + cn[j]) / (self.smooth * (k+1) + sum(cn))
+        
+        return p0, p1
  
 class MLkNNClassifier(_multiknn.MultikNNClassifier):      
-    def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
-        num_labels = len(self.label_indices)
-        domain = self.instances.domain
-        labels = []
-        prob = []
-        if num_labels == 0:
-            raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
+        neighbors = self.knn(instance, self.k)
         
-        #Computing y_t and r_t
-        neighbors = self.knn(example, self.k)
-        for i in range(num_labels):
-            # compute sum of aces in KNN
-            aces = 0  #num of aces in Knn for i
-            for m in range(self.k):
-                value = neighbors[m].get_class().value[i]
-                if value == '1':
-                    aces = aces + 1
+        labels = []
+        dists = []
+        
+        for li, lvar in enumerate(self.instances.domain.class_vars):
+            delta = sum(n[lvar].value=='1' for n in neighbors)
     
-            prob_in = self.prior_probabilities[i] * self.cond_probabilities[i][aces]
-            prob_out = self.prior_nprobabilities[i] * self.cond_nprobabilities[i][aces]
-                
-            if prob_in > prob_out:
-                labels.append(Orange.data.Value(domain[self.label_indices[i]],'1'))
-            elif prob_in < prob_out:
-                labels.append(Orange.data.Value(domain[self.label_indices[i]],'0'))
-            else:
-                rnd = random.randint(0,1)
-                if rnd == 0:
-                    labels.append(Orange.data.Value(domain[self.label_indices[i]],'0'))
-                else:
-                    labels.append(Orange.data.Value(domain[self.label_indices[i]],'1'))
+            p1 = self.prior_prob[li] * self.cond_prob[1][li][delta]
+            p0 = (1-self.prior_prob[li]) * self.cond_prob[0][li][delta]
+            y = (p1 >= p0)
+            labels.append(Orange.data.Value(lvar, str(int(y))))
             
-            #ranking function
-            prob.append( prob_in / (prob_in + prob_out) )
+            r = p1 / (p0+p1)
+            dists.append( Orange.statistics.distribution.Discrete([1-r, r]) )
        
-        disc = Orange.statistics.distribution.Discrete(prob)
-        disc.variable = Orange.core.EnumVariable(
-            values = [domain[val].name for index,val in enumerate(self.label_indices)])
+        for d, lvar in zip(dists, self.instances.domain.class_vars):
+            d.variable = lvar
         
         if result_type == Orange.classification.Classifier.GetValue:
             return labels
         if result_type == Orange.classification.Classifier.GetProbabilities:
-            return disc
-        return labels,disc
+            return dists
+        return labels, dists
         
 #########################################################################################
 # Test the code, run from DOS prompt

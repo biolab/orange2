@@ -17,6 +17,10 @@ For more information, see G. Tsoumakas and I. Katakis. `Multi-label classificati
 <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.104.9401&rep=rep1&type=pdf>`_. 
 International Journal of Data Warehousing and Mining, 3(3):1-13, 2007.
 
+Note that a copy of the table is made for each label to enable construction of
+a classifier. Due to technical limitations, that is currently unavoidable and
+should be remedied in Orange 3.
+
 .. index:: Binary Relevance Learner
 .. autoclass:: Orange.multilabel.BinaryRelevanceLearner
    :members:
@@ -25,7 +29,7 @@ International Journal of Data Warehousing and Mining, 3(3):1-13, 2007.
    .. method:: __new__(instances, base_learner, **argkw) 
    BinaryRelevanceLearner Constructor
    
-   :param instances: a table of instances, covered by the rule.
+   :param instances: a table of instances.
    :type instances: :class:`Orange.data.Table`
       
    :param base_learner: the binary learner, the default learner is BayesLearner
@@ -38,7 +42,8 @@ International Journal of Data Warehousing and Mining, 3(3):1-13, 2007.
 
    .. method:: __call__(self, example, result_type)
    :rtype: a list of :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both 
+              a list of :class:`Orange.statistics.Distribution` or a tuple
+              with both 
    
 Examples
 ========
@@ -55,8 +60,7 @@ this algorithm (`mlc-classify.py`_, uses `multidata.tab`_):
 """
 
 import Orange
-from Orange.core import BayesLearner as _BayesLearner
-import label
+from Orange.classification.bayes import NaiveLearner as _BayesLearner
 import multibase as _multibase
 
 class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
@@ -72,46 +76,29 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
         
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances,base_learner,weight_id)
+            return self.__call__(instances, weight_id)
         else:
             return self
         
-    def __call__(self, instances, base_learner = None, weight_id = 0, **kwds):
+    def __call__(self, instances, weight_id = 0, **kwds):
+        if not Orange.multilabel.is_multilabel(instances):
+            raise TypeError("The given data set is not a multi-label data set.")
+        
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
 
-        num_labels = label.get_num_labels(instances)
-        label_indices = label.get_label_indices(instances)
-        
         classifiers = []
             
-        for i in range(num_labels):
-            # Indices of attributes to remove
-            #abtain the labels and use a string to represent it and store the classvalues
-            new_class = Orange.data.variable.Discrete(instances.domain[ label_indices[i] ].name, values = ['0','1'])
-            
-            #remove the label attributes
-            indices_remove = [var for index, var in enumerate(label_indices)]
-            new_domain = label.remove_indices(instances,indices_remove)
-            
-            #add the class attribute
-            new_domain = Orange.data.Domain(new_domain,new_class)
+        for c in instances.domain.class_vars:
+            new_domain = Orange.data.Domain(instances.domain.attributes, c)
             
             #build the instances
-            new_table = Orange.data.Table(new_domain)
-            for e in instances:
-                new_row = Orange.data.Instance(
-                  new_domain, 
-                  [v.value for v in e if v.variable.attributes.has_key('label') <> 1] +
-                        [e[label_indices[i]].value])
-                new_table.append(new_row)
-            
+            new_table = Orange.data.Table(new_domain, instances)
             classifer = self.base_learner(new_table)
             classifiers.append(classifer)
             
         #Learn from the given table of data instances.
         return BinaryRelevanceClassifier(instances = instances, 
-                                         label_indices = label_indices,
                                          classifiers = classifiers,
                                          weight_id = weight_id)
 
@@ -120,44 +107,25 @@ class BinaryRelevanceClassifier(_multibase.MultiLabelClassifier):
         self.multi_flag = 1
         self.__dict__.update(kwds)
         
-    def __call__(self, example, result_type=Orange.classification.Classifier.GetValue):
-        num_labels = len(self.label_indices)
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         domain = self.instances.domain
         labels = []
-        prob = []
-        if num_labels == 0:
-            raise ValueError, "has no label attribute: 'the multilabel data should have at last one label attribute' "
+        dists = []
         
-        for i in range(num_labels):
-            c,p = self.classifiers[i](example,Orange.classification.Classifier.GetBoth)
-            #get the index of label value that = 1, so as to locate the index of label in prob 
-            label_index = -1
-            values = domain[ self.label_indices[i] ].values
-            if len(values) > 2:
-                raise ValueError, "invalid label value: 'the label value in instances should be only 0 or 1' "
-            
-            if values[0] == '1' :
-                label_index = 0
-            elif values[1] == '1':
-                label_index = 1
-            else:
-                raise ValueError, "invalid label value: 'the label value in instances should be only 0 or 1' "
+        for c in self.classifiers:
+            v, p = c(instance, Orange.classification.Classifier.GetBoth)
                 
-            prob.append(p[label_index])
-            labels.append(c)
-            
-            disc = Orange.statistics.distribution.Discrete(prob)
-            disc.variable = Orange.core.EnumVariable(values = [domain[val].name for index,val in enumerate(self.label_indices)])
+            labels.append(v)
+            dists.append(p)
             
         if result_type == Orange.classification.Classifier.GetValue:
             return labels
         if result_type == Orange.classification.Classifier.GetProbabilities:
-            return disc
-        return labels,disc
+            return dists
+        return labels, dists
         
 #########################################################################################
-# Test the code, run from DOS prompt
-# assume the data file is in proper directory
+# A quick test/example.
 
 if __name__ == "__main__":
     data = Orange.data.Table("emotions.tab")

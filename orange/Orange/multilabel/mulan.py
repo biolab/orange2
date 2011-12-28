@@ -3,7 +3,7 @@ import xml.dom.minidom
 from xml.dom.minidom import Node
 
 def trans_mulan_data(xml_name,arff_name, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
-    """ transform the mulan data format to Tab file
+    """ Transform the mulan data format to Tab file.
     
         :param xml: a text file in XML format, specifying the labels and any hierarchical relationship among them. 
         see 'Mulan data format <http://mulan.sourceforge.net/format.html>'_
@@ -27,11 +27,9 @@ def trans_mulan_data(xml_name,arff_name, create_on_new = Orange.data.variable.Va
     domain = arff_table.domain
     
     #remove class tag
-    domain = Orange.data.Domain(domain,False)
-    
-    for i, var in enumerate(domain.variables):
-        if var.name in labels:
-            domain[i].attributes["label"] = 1
+    features = [v for v in domain.attributes if v.name not in labels]
+    class_vars = [v for v in domain.attributes if v.name in labels]
+    domain = Orange.data.Domain(features, None, class_vars = class_vars)
     
     table = arff_table.translate(domain)
     

@@ -1,3 +1,5 @@
+import Orange
+
 from multibase import MultiLabelLearner
 from multibase import MultiLabelClassifier
 
@@ -15,3 +17,11 @@ from mlknn import MLkNNClassifier
 
 from brknn import BRkNNLearner
 from brknn import BRkNNClassifier
+
+def is_multilabel(data):
+    if not data.domain.class_vars:
+        return False
+    for c in data.domain.class_vars:
+        if type(c) is not Orange.data.variable.Discrete or sorted(c.values) != ['0', '1']:
+            return False
+    return True
