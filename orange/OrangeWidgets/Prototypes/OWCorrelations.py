@@ -2,6 +2,7 @@
 <name>Correlations</name>
 <description>Compute all pairwise attribute correlations</description>
 <icon>icons/Correlations.png</icon>
+<contact>ales.erjavec(@ at @)fri.uni-lj.si</contact>
 
 """
 
@@ -257,7 +258,7 @@ class OWCorrelations(OWWidget):
         self.clear()
         self.information(0)
         self.data = data
-        if data is not None and len(data.domain) > 2:
+        if data is not None and len(filter(is_continuous, data.domain)) >= 2:
             self.set_variables_list(data)
             self.selected_index = None
             self.corr_graph.setData(data)
@@ -277,7 +278,8 @@ class OWCorrelations(OWWidget):
             self.run()
                 
         elif data is not None:
-            self.information(0, "Need data with at least 2 variables.")
+            self.data = None
+            self.information(0, "Need data with at least 2 continuous variables.")
             
         self.commit_if()
             
@@ -303,10 +305,11 @@ class OWCorrelations(OWWidget):
             self.set_all_pairwise_matrix(matrix)
             
         elif is_continuous(self.target_variable):
-            p_corr = target_pearson_correlations(self.data, self.cont_vars, self.target_variable)
-            s_corr = target_spearman_correlations(self.data, self.cont_vars, self.target_variable)
+            vars = [v for v in self.cont_vars if v != self.target_variable]
+            p_corr = target_pearson_correlations(self.data, vars, self.target_variable)
+            s_corr = target_spearman_correlations(self.data, vars, self.target_variable)
             correlations = map(list, zip(p_corr, s_corr))
-            self.set_target_correlations(correlations, self.cont_vars, self.target_variable)
+            self.set_target_correlations(correlations, vars, self.target_variable)
             
     def set_all_pairwise_matrix(self, matrix, vars=None):
         self.matrix = matrix
@@ -367,19 +370,19 @@ class OWCorrelations(OWWidget):
                          QItemSelectionModel.ClearAndSelect)
     
     def on_corr_type_change(self):
-#        self.spliter.setOrientation(Qt.Vertical if self.correlations_type < 2 else Qt.Horizontal)
-        curr_selection = self.selected_vars
-        self.clear_computed()
-        self.run()
-        
-        if curr_selection:
-            try:
-                self.set_selected_vars(*curr_selection)
-            except Exception, ex:
-                import traceback
-                traceback.print_exc()
-        
-        self.commit_if()
+        if self.data is not None:
+            curr_selection = self.selected_vars
+            self.clear_computed()
+            self.run()
+            
+            if curr_selection:
+                try:
+                    self.set_selected_vars(*curr_selection)
+                except Exception, ex:
+                    import traceback
+                    traceback.print_exc()
+            
+            self.commit_if()
         
     def on_table_selection_change(self, selected, deselected):
         indexes = self.corr_table.selectionModel().selectedIndexes()
