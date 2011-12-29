@@ -186,8 +186,8 @@ Section ""
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
 
 	SetOutPath $INSTDIR\OrangeCanvas
-	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\OrangeCanvas\icons\orange.ico 0
-	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\OrangeCanvas\icons\orange.ico 0
+	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$PythonDir\pythonw.exe" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" $INSTDIR\OrangeCanvas\icons\orange.ico 0
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$PythonDir\pythonw.exe" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" $INSTDIR\OrangeCanvas\icons\orange.ico 0
 
 	WriteRegStr SHELL_CONTEXT "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 	WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
