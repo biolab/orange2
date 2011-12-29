@@ -664,6 +664,10 @@ class OWNxCanvas(OWPlot):
                     parent=self.networkCurve) for (i, j) in new_edges]
             
         self.networkCurve.add_edges(edges)
+        
+        if len(current_nodes) < 3:
+            self.networkCurve.random()
+        
         return True
         
     def set_graph(self, graph, curve=None, items=None, links=None):

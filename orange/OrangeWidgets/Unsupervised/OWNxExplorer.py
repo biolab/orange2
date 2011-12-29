@@ -694,7 +694,7 @@ try:
                         self.diameter = float('inf')
                     else:
                         raise err 
-            if self.graph.is_multigraph():
+            if self.graph.is_multigraph() or self.graph.number_of_nodes() <= 0:
                 self.clustering_coefficient = -1
             else:
                 self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
@@ -718,10 +718,11 @@ try:
             
             self.compute_network_info()
             
-            t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
-            self.frSteps = int(2.0 / t)
-            if self.frSteps <   1: self.frSteps = 1
-            if self.frSteps > 100: self.frSteps = 100
+            if self.graph.number_of_nodes() > 0:
+                t = 1.13850193174e-008 * (self.graph.number_of_nodes()**2 + self.graph.number_of_edges())
+                self.frSteps = int(2.0 / t)
+                if self.frSteps <   1: self.frSteps = 1
+                if self.frSteps > 100: self.frSteps = 100
     #        
     #        if self.frSteps < 10:
     #            self.networkCanvas.use_antialiasing = 0
@@ -983,7 +984,7 @@ try:
         #######################################################################
         
         def graph_layout(self):
-            if self.graph is None:   #grafa se ni
+            if self.graph is None or self.graph.number_of_nodes <= 0:   #grafa se ni
                 self.optButton.setChecked(False)
                 return
             
