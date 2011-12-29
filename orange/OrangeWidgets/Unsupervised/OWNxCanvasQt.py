@@ -200,7 +200,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
                                 progress_callback=progress_callback: 
                                     self.fragviz_callback(a, b, mds, mdsRefresh, components, progress_callback))
         
-        self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
+        self.fragviz_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
         
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
