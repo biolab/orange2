@@ -37,29 +37,36 @@ class OWNxHist():
             
         boxGeneral = OWGUI.widgetBox(parent, box = "Distance boundaries")
         
-        OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", orientation='horizontal', callback=self.changeLowerSpin, valueType=float)
-        OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", orientation='horizontal', callback=self.changeUpperSpin, valueType=float)
-        ribg = OWGUI.radioButtonsInBox(boxGeneral, self, "andor", [], orientation='horizontal', callback = self.generateGraph)
-        OWGUI.appendRadioButton(ribg, self, "andor", "OR", callback = self.generateGraph)
-        b = OWGUI.appendRadioButton(ribg, self, "andor", "AND", callback = self.generateGraph)
-        b.setEnabled(False)
-        OWGUI.spin(boxGeneral, self, "kNN", 0, 1000, 1, label="kNN:", orientation='horizontal', callback=self.generateGraph, callbackOnReturn=1)
-        OWGUI.doubleSpin(boxGeneral, self, "percentil", 0, 100, 0.1, label="Percentil:", orientation='horizontal', callback=self.setPercentil, callbackOnReturn=1)
+        ribg = OWGUI.widgetBox(boxGeneral, None, orientation="horizontal", addSpace = False)
+        OWGUI.lineEdit(ribg, self, "spinLowerThreshold", "Lower", orientation='horizontal', callback=self.changeLowerSpin, valueType=float, enterPlaceholder=True, controlWidth=100)
+        OWGUI.lineEdit(ribg, self, "spinUpperThreshold", "Upper    ", orientation='horizontal', callback=self.changeUpperSpin, valueType=float, enterPlaceholder=True,controlWidth=100)
+        ribg.layout().addStretch(1)
+        #ribg = OWGUI.radioButtonsInBox(boxGeneral, self, "andor", [], orientation='horizontal', callback = self.generateGraph)
+        #OWGUI.appendRadioButton(ribg, self, "andor", "OR", callback = self.generateGraph)
+        #b = OWGUI.appendRadioButton(ribg, self, "andor", "AND", callback = self.generateGraph)
+        #b.setEnabled(False)
+        #ribg.hide(False)
         
+        ribg = OWGUI.widgetBox(boxGeneral, None, orientation="horizontal", addSpace = False)
+        OWGUI.spin(ribg, self, "kNN", 0, 1000, 1, label="kNN   ", orientation='horizontal', callback=self.generateGraph, callbackOnReturn=1, controlWidth=100)
+        OWGUI.doubleSpin(ribg, self, "percentil", 0, 100, 0.1, label="Percentil", orientation='horizontal', callback=self.setPercentil, callbackOnReturn=1, controlWidth=100)
+        ribg.layout().addStretch(1)
         # Options
         self.attrColor = ""
         ribg = OWGUI.radioButtonsInBox(parent, self, "netOption", [], "Options", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
-        OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude small components", callback = self.generateGraph)
-        OWGUI.spin(OWGUI.indentedBox(ribg), self, "excludeLimit", 1, 100, 1, label="Less vertices than: ", callback = (lambda h=True: self.generateGraph(h)))
+        hb = OWGUI.widgetBox(ribg, None, orientation="horizontal", addSpace = False)
+        OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude components with less nodes than:", insertInto=hb, callback=self.generateGraph)
+        OWGUI.spin(hb, self, "excludeLimit", 1, 100, 1, callback = (lambda h=True: self.generateGraph(h)))
         OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Connected component with vertex")
         self.attribute = None
-        self.attributeCombo = OWGUI.comboBox(ribg, self, "attribute", box = "Filter attribute")#, callback=self.setVertexColor)
+        self.attributeCombo = OWGUI.comboBox(parent, self, "attribute", box="Filter attribute", orientation='horizontal')#, callback=self.setVertexColor)
         
-        ribg = OWGUI.radioButtonsInBox(parent, self, "dstWeight", [], "Distance -> Weight", callback = self.generateGraph)
-        OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := distance", callback = self.generateGraph)
-        OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := 1 - distance", callback = self.generateGraph)
+        ribg = OWGUI.radioButtonsInBox(parent, self, "dstWeight", [], "Distance -> Weight", callback=self.generateGraph)
+        hb = OWGUI.widgetBox(ribg, None, orientation="horizontal", addSpace = False)
+        OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := distance", insertInto=hb, callback=self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := 1 - distance", insertInto=hb, callback=self.generateGraph)
         
         self.label = ''
         self.searchString = OWGUI.lineEdit(self.attributeCombo.box, self, "label", callback=self.setSearchStringTimer, callbackOnType=True)
@@ -95,7 +102,7 @@ class OWNxHist():
         
         low = min(values)
         upp = max(values)
-        self.spinLowerThreshold = self.spinUpperThreshold = low - (0.03 * (upp - low))
+        self.spinLowerThreshold = self.spinUpperThreshold = math.floor(low - (0.03 * (upp - low)))
         self.generateGraph()
         self.attributeCombo.clear()
         vars = []
