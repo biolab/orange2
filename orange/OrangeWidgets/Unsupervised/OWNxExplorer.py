@@ -173,7 +173,7 @@ try:
             colorBox = OWGUI.widgetBox(self.verticesTab, "Node color attribute", orientation="horizontal", addSpace = False)
             self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.set_node_colors)
             self.colorCombo.addItem("(same color)")
-            OWGUI.button(colorBox, self, "Set node color palette", self._set_colors, tooltip = "Set node color palette", debuggingEnabled = 0)
+            OWGUI.button(colorBox, self, "palette", self._set_colors, tooltip = "Set node color palette", width=60, debuggingEnabled = 0)
             
             ib = OWGUI.widgetBox(self.verticesTab, "Node size attribute", orientation="vertical", addSpace = False)
             hb = OWGUI.widgetBox(ib, orientation="horizontal", addSpace = False)
@@ -199,7 +199,7 @@ try:
             colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
             self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.set_edge_colors)
             self.edgeColorCombo.addItem("(same color)")
-            OWGUI.button(colorBox, self, "Set edge color palette", self._set_edge_color_palette, tooltip = "Set edge color palette", debuggingEnabled = 0)
+            OWGUI.button(colorBox, self, "palette", self._set_edge_color_palette, tooltip = "Set edge color palette", width=60, debuggingEnabled = 0)
             
             self.edgeLabelBox = OWGUI.widgetBox(self.edgesTab, "Edge labels", addSpace = False)
             self.edgeLabelListBox = OWGUI.listBox(self.edgeLabelBox, self, "edgeLabelAttributes", "edgeAttributes", selectionMode=QListWidget.MultiSelection, callback=self._clicked_edge_label_listbox)
@@ -3409,24 +3409,23 @@ except ImportError as err:
             self.reportImage(self.networkCanvas.saveToFileDirect)        
             
         
-if __name__=="__main__":    
+if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNxExplorer()
     ow.show()
-    root = 'c:\\Users\\miha\\Projects\\res\\Orange\\test\\'
-    #net = Orange.network.readwrite.read(root + 'airlines_4.net')
-    #net.set_items(Orange.data.Table(root + 'airlines_4.tab'))
-    #net = Orange.network.readwrite.read(root + 'K4K2.net')
-    net = Orange.network.readwrite.read(root + 'K4K4K5_.net')
-    ow.set_graph(net)
-    #ow.handleNewSignals()
-    #import OWNetExplorer
-    #ow1=OWNetExplorer.OWNetExplorer()
-    #ow1.show()
-    #net1 = Orange.network.Network.read(root + 'K4K4K5_.net')
-    #ow1.setGraph(net1)
+    def setNetwork(signal, data, id=None):
+        if signal == 'Network':
+            ow.set_graph(data)
+        #if signal == 'Items':
+        #    ow.set_items(data)
+        
+    import OWNxFile
+    owFile = OWNxFile.OWNxFile()
+    owFile.send = setNetwork
+    owFile.show()
+    owFile.selectNetFile(0)
+    
     a.exec_()
-    #save settings
     ow.saveSettings()
-    #ow1.saveSettings()
+    owFile.saveSettings()
     
