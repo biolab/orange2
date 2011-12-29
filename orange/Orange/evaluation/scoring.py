@@ -2601,22 +2601,21 @@ def mlc_hamming_loss(res):
     
     :math:`HammingLoss(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{Y_i \\vartriangle Z_i}{|L|}`
     """
-    losses = [0.0]*res.number_of_learners
-    label_num = len(res.class_values)
+    losses = [0]*res.number_of_learners
+    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
         aclass = e.actual_class
-        for i in range(len(e.classes)):
-            labels = e.classes[i]
-            #print labels,aclass
+        for i, labels in enumerate(e.classes):
+            labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
             for j in range(label_num):
-                if labels[j] <> aclass[j]:
-                    losses[i] = losses[i]+1
+                if labels[j] != aclass[j]:
+                    losses[i] += 1
             
-    return [x/label_num/example_num for x in losses]
+    return [float(x)/(label_num*example_num) for x in losses]
 
 def mlc_accuracy(res, forgiveness_rate = 1.0):
     """
@@ -2630,25 +2629,25 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
     :math:`Accuracy(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} (\\frac{|Y_i \\cap Z_i|}{|Y_i \\cup Z_i|})^{\\alpha}`
     """
     accuracies = [0.0]*res.number_of_learners
-    label_num = len(res.class_values)
+    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
         aclass = e.actual_class
-        for i in range(len(e.classes)):
-            labels = e.classes[i] 
+        for i, labels in enumerate(e.classes):
+            labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
             
             intersection = 0.0
             union = 0.0
-            for j in range(label_num):
-                if labels[j]=='1' and aclass[j]=='1':
+            for real, pred in zip(labels, aclass):
+                if real and pred:
                     intersection = intersection+1
-                if labels[j]=='1' or aclass[j]=='1':
+                if real or pred:
                     union = union+1
-            #print intersection, union
-            if union <> 0:
+
+            if union != 0:
                 accuracies[i] = accuracies[i] + intersection/union
             
     return [math.pow(x/example_num,forgiveness_rate) for x in accuracies]
@@ -2658,22 +2657,22 @@ def mlc_precision(res):
     :math:`Precision(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Z_i|}`
     """
     precisions = [0.0]*res.number_of_learners
-    label_num = len(res.class_values)
+    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
         aclass = e.actual_class
-        for i in range(len(e.classes)):
-            labels = e.classes[i] 
+        for i, labels in enumerate(e.classes):
+            labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
             
             intersection = 0.0
             predicted = 0.0
-            for j in range(label_num):
-                if labels[j]=='1' and aclass[j]=='1':
+            for real, pred in zip(labels, aclass):
+                if real and pred:
                     intersection = intersection+1
-                if labels[j] == '1':
+                if real:
                     predicted = predicted + 1
             if predicted <> 0:
                 precisions[i] = precisions[i] + intersection/predicted
@@ -2685,36 +2684,36 @@ def mlc_recall(res):
     :math:`Recall(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Y_i|}`
     """
     recalls = [0.0]*res.number_of_learners
-    label_num = len(res.class_values)
+    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
         aclass = e.actual_class
-        for i in range(len(e.classes)):
-            labels = e.classes[i] 
+        for i, labels in enumerate(e.classes):
+            labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
             
             intersection = 0.0
             actual = 0.0
-            for j in range(label_num):
-                if labels[j]=='1' and aclass[j]=='1':
+            for real, pred in zip(labels, aclass):
+                if real and pred:
                     intersection = intersection+1
-                if aclass[j] == '1':
+                if pred:
                     actual = actual + 1
             if actual <> 0:
                 recalls[i] = recalls[i] + intersection/actual
             
     return [x/example_num for x in recalls]
 
-def mlc_ranking_loss(res):
-    pass
-
-def mlc_average_precision(res):
-    pass
-
-def mlc_hierarchical_loss(res):
-    pass
+#def mlc_ranking_loss(res):
+#    pass
+#
+#def mlc_average_precision(res):
+#    pass
+#
+#def mlc_hierarchical_loss(res):
+#    pass
 
 #########################################################################################
 if __name__ == "__main__":

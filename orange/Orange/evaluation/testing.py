@@ -14,13 +14,13 @@ class TestedExample:
 
     :var classes: A list of predictions of type Value, one for each classifier.
     :var probabilities: A list of probabilities of classes, one for each classifier.
-    :var iterationNumber: Iteration number (e.g. fold) in which the TestedExample was created/tested.
-    :var actualClass: The correct class of the example
+    :var iteration_number: Iteration number (e.g. fold) in which the TestedExample was created/tested.
+    :var actual_class: The correct class of the example
     :var weight: Example's weight. Even if the example set was not weighted, this attribute is present and equals 1.0.
     """
 
-    @deprecated_keywords({"iterationNumber": "iteration_number",
-                          "actualClass": "actual_class"})
+    @deprecated_keywords({"iteration_number": "iteration_number",
+                          "actual_class": "actual_class"})
     def __init__(self, iteration_number=None, actual_class=None, n=0, weight=1.0):
         """
         :param iteration_number:
@@ -30,8 +30,8 @@ class TestedExample:
         """
         self.classes = [None]*n
         self.probabilities = [None]*n
-        self.iterationNumber = iteration_number
-        self.actualClass= actual_class
+        self.iteration_number = iteration_number
+        self.actual_class= actual_class
         self.weight = weight
 
     def add_result(self, aclass, aprob):
@@ -62,6 +62,10 @@ class TestedExample:
     def __repr__(self):
         return str(self.__dict__)
 
+TestedExample = deprecated_members({"iterationNumber": "iteration_number",
+                                    "actualClass": "actual_class"
+                                    })(TestedExample)
+
 class ExperimentResults(object):
     """
     ``ExperimentResults`` stores results of one or more repetitions of
@@ -72,7 +76,7 @@ class ExperimentResults(object):
     :var classifiers: A list of classifiers, one element for each repetition (eg. fold). Each element is a list
       of classifiers, one for each learner. This field is used only if storing is enabled by ``storeClassifiers=1``.
     :var number_of_iterations: Number of iterations. This can be the number of folds (in cross validation)
-      or the number of repetitions of some test. ``TestedExample``'s attribute ``iterationNumber`` should
+      or the number of repetitions of some test. ``TestedExample``'s attribute ``iteration_number`` should
       be in range ``[0, number_of_iterations-1]``.
     :var number_of_learners: Number of learners. Lengths of lists classes and probabilities in each :obj:`TestedExample`
       should equal ``number_of_learners``.
@@ -110,6 +114,7 @@ class ExperimentResults(object):
                 else:
                     self.converter = float
             elif test_type==TEST_TYPE_MLC:
+                self.labels = [var.name for var in domain.class_vars]
                 self.converter = lambda vals: [int(val) if val.variable.var_type == Orange.data.Type.Discrete
                                                else float(val) for val in vals]
 
@@ -331,6 +336,7 @@ class Evaluation(object):
         """
 
         examples, weight = demangle_examples(examples)
+        test_type = self.check_test_type(examples, learners)
 
         # If preprocessors are not used, we use the same dataset for learning and testing. Otherwise we need to
         # clone it.
@@ -343,7 +349,8 @@ class Evaluation(object):
         classifiers = self._train_with_callback(learners, learn_set, weight, callback)
 
         test_results = ExperimentResults(1,
-                                        classifierNames = [getobjectname(l) for l in learners],
+                                        classifier_names = [getobjectname(l) for l in learners],
+                                        test_type = test_type,
                                         domain=examples.domain,
                                         weights=weight)
         test_results.results = [test_results.create_tested_example(0, example)
@@ -379,9 +386,13 @@ class Evaluation(object):
         learn_set, learn_weight = demangle_examples(learn_set)
         test_set, test_weight = demangle_examples(test_set)
 
+        test_type = self.check_test_type(learn_set, learners)
+        self.check_test_type(test_set, learners)
+        
         test_results = ExperimentResults(1,
-                                        classifierNames = [getobjectname(l) for l in learners],
+                                        classifier_names = [getobjectname(l) for l in learners],
                                         domain=test_set.domain,
+                                        test_type = test_type,
                                         weights=test_weight)
         test_results.results = [test_results.create_tested_example(0, example)
                                for i, example in enumerate(test_set)]
@@ -426,9 +437,12 @@ class Evaluation(object):
 
         examples, weight = demangle_examples(examples)
 
+        test_type = self.check_test_type(examples, learners)
+        
         test_results = ExperimentResults(times,
                                         classifierNames = [getobjectname(l) for l in learners],
                                         domain=examples.domain,
+                                        test_type = test_type,
                                         weights=weight)
         test_results.classifiers = []
         offset=0
@@ -555,7 +569,9 @@ class Evaluation(object):
         """
         learn_set, learn_weight = demangle_examples(learn_set)
         test_set, test_weight = demangle_examples(test_set)
-
+        test_type = self.check_test_type(learn_set, learners)
+        self.check_test_type(test_set, learners)
+        
         indices = Orange.core.MakeRandomIndices2(stratified = stratification, randomGenerator = random_generator)
         
         all_results=[]
@@ -563,6 +579,7 @@ class Evaluation(object):
             test_results = ExperimentResults(times,
                                         classifierNames = [getobjectname(l) for l in learners],
                                         domain=test_set.domain,
+                                        test_type = test_type,
                                         weights=test_weight)
             offset = 0
             for t in xrange(times):
@@ -593,10 +610,12 @@ class Evaluation(object):
         """
 
         examples, weight = demangle_examples(examples)
+        test_type = self.check_test_type(examples, learners)
 
         test_results = ExperimentResults(1,
                                         classifierNames = [getobjectname(l) for l in classifiers],
                                         domain=examples.domain,
+                                        test_type = test_type,
                                         weights=weight)
         test_results.results = [test_results.create_tested_example(0, example)
                                for i, example in enumerate(examples)]
