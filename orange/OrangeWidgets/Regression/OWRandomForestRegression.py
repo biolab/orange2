@@ -18,9 +18,7 @@ class OWRandomForestRegression(OWRandomForest):
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         
         self.outputs = [("Learner", orange.Learner),
-                        ("Random Forest Classifier", orange.Classifier),
-                        ("Choosen Tree", orange.TreeClassifier)]
-        
+                        ("Random Forest Classifier", orange.Classifier)]
 
     def setData(self, data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Continuous, checkMissing=True) and data or None
@@ -32,15 +30,12 @@ class OWRandomForestRegression(OWRandomForest):
             try:
                 self.classifier = learner(self.data)
                 self.classifier.name = self.name
-                self.streeEnabled(True)
             except Exception, (errValue):
                 self.error(str(errValue))
                 self.classifier = None
-                self.streeEnabled(False)
             pb.finish()
         else:
             self.classifier = None
-            self.streeEnabled(False)
 
         self.send("Random Forest Classifier", self.classifier)
         

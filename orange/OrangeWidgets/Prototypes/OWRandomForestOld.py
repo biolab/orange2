@@ -1,5 +1,5 @@
 """
-<name>Random Forest</name>
+<name>Random Forest (Old)</name>
 <description>Random forest learner/classifier.</description>
 <icon>icons/RandomForest.png</icon>
 <contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact>
@@ -12,17 +12,14 @@ import orngEnsemble
 from exceptions import Exception
 from orngWrap import PreprocessedLearner
 
-class OWRandomForest(OWWidget):
-    settingsList = ["name", "trees", "attributes", "attributesP", "preNodeInst", "preNodeInstP", "limitDepth", "limitDepthP", "rseed"]
+class OWRandomForestOld(OWWidget):
+    settingsList = ["name", "trees", "attributes", "attributesP", "preNodeInst", "preNodeInstP", "limitDepth", "limitDepthP", "rseed", "outtree" ]
 
     def __init__(self, parent=None, signalManager = None, name='Random Forest'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False, resizingEnabled=False)
 
-        self.inputs = [("Examples", ExampleTable, self.setData),
-                       ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        
-        self.outputs = [("Learner", orange.Learner),
-                        ("Random Forest Classifier", orange.Classifier)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner),("Random Forest Classifier", orange.Classifier),("Choosen Tree", orange.TreeClassifier) ]
 
         self.name = 'Random Forest'
         self.trees = 10
@@ -33,6 +30,7 @@ class OWRandomForest(OWWidget):
         self.limitDepth = 0
         self.limitDepthP = 3
         self.rseed = 0
+        self.outtree = 0
 
         self.maxTrees = 10000
 
@@ -60,6 +58,13 @@ class OWRandomForest(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
+        #self.sBox = QVGroupBox(self.controlArea)
+        #self.sBox.setTitle('Single Tree Output')
+
+        self.streesBox = OWGUI.spin(self.controlArea, self, "outtree", -1, self.maxTrees, orientation="horizontal", label="Index of tree on the output", callback=[self.period, self.extree])
+        #self.streesBox.setDisabled(True)
+        self.streeEnabled(False)
+
         OWGUI.separator(self.controlArea)
 
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.doBoth, disabled=0, default=True)
@@ -77,6 +82,23 @@ class OWRandomForest(OWWidget):
                              ("Minimal number of instances in a leaf", self.preNodeInstP if self.preNodeInst else "not limited")
                            ])
         self.reportData(self.data)
+        
+    def period(self):
+        if self.outtree == -1: self.outtree = self.claTrees-1
+        elif self.outtree >= self.claTrees: self.outtree = 0
+
+    def extree(self):
+        self.send("Choosen Tree", self.classifier.classifiers[self.outtree])
+
+    def streeEnabled(self, status):
+        if status:
+            self.claTrees = self.trees
+            self.streesBox.setDisabled(False)
+            self.period()
+            self.extree()
+        else:
+            #a = 1
+            self.streesBox.setDisabled(True)
 
     def constructLearner(self):
         rand = random.Random(self.rseed)
@@ -85,17 +107,20 @@ class OWRandomForest(OWWidget):
         if self.attributes:
             attrs = self.attributesP
 
-        from Orange.classification.tree import SimpleTreeLearner
-        
-        smallLearner = SimpleTreeLearner()
+        smallLearner = orngTree.TreeLearner()
 
         if self.preNodeInst:
-            smallLearner.min_instances = self.preNodeInstP 
+            smallLearner.stop.minExamples = self.preNodeInstP 
         else:
-            smallLearner.min_instances = 0
+            smallLearner.stop.minExamples = 0
+
+        smallLearner.storeExamples = 1
+        smallLearner.storeNodeClassifier = 1
+        smallLearner.storeContingencies = 1
+        smallLearner.storeDistributions = 1
 
         if self.limitDepth:
-            smallLearner.max_depth = self.limitDepthP 
+            smallLearner.maxDepth = self.limitDepthP
         
         learner = orngEnsemble.RandomForestLearner(base_learner=smallLearner, 
                             trees=self.trees, rand=rand, attributes=attrs)
@@ -129,12 +154,15 @@ class OWRandomForest(OWWidget):
             try:
                 self.classifier = learner(self.data)
                 self.classifier.name = self.name
+                self.streeEnabled(True)
             except Exception, (errValue):
                 self.error(str(errValue))
                 self.classifier = None
+                self.streeEnabled(False)
             pb.finish()
         else:
             self.classifier = None
+            self.streeEnabled(False)
 
         self.send("Random Forest Classifier", self.classifier)
         
@@ -155,7 +183,7 @@ class OWRandomForest(OWWidget):
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWRandomForest()
+    ow=OWRandomForestOld()
     a.setMainWidget(ow)
 
     d = orange.ExampleTable('adult_sample')
