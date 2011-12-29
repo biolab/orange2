@@ -200,7 +200,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
                                 progress_callback=progress_callback: 
                                     self.fragviz_callback(a, b, mds, mdsRefresh, components, progress_callback))
         
-        self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
+        self.fragviz_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
         
         if progress_callback != None:
             progress_callback(mds.avgStress, self.mdsStep)
@@ -522,8 +522,11 @@ class OWNxCanvas(OWPlot):
         indices = [[] for u in nodes]
         if self.show_indices:
             indices = [[str(u)] for u in nodes]
-            
-        if self.trim_label_words > 0:
+        
+        if len(label_attributes) == 0 and not self.show_indices:
+            self.networkCurve.set_node_labels({})
+        
+        elif self.trim_label_words > 0:
             self.networkCurve.set_node_labels(dict((node, 
                 ', '.join(indices[i] + 
                           [' '.join(str(self.items[node][att]).split(' ')[:min(self.trim_label_words,len(str(self.items[node][att]).split(' ')))])
@@ -661,6 +664,10 @@ class OWNxCanvas(OWPlot):
                     parent=self.networkCurve) for (i, j) in new_edges]
             
         self.networkCurve.add_edges(edges)
+        
+        if len(current_nodes) < 3:
+            self.networkCurve.random()
+        
         return True
         
     def set_graph(self, graph, curve=None, items=None, links=None):
@@ -738,8 +745,9 @@ class OWNxCanvas(OWPlot):
         OWPlot.update_animations(self, use_animations)
         self.networkCurve.set_use_animations(self.use_animations)
 
-    def set_labels_on_marked_only(self, labelsOnMarkedOnly):
-        self.networkCurve.set_labels_on_marked_only(labelsOnMarkedOnly)
+    def set_labels_on_marked(self, labelsOnMarkedOnly):
+        self.networkCurve.set_labels_on_marked(labelsOnMarkedOnly)
+        self.set_node_labels()
         self.replot()
     
     def set_show_component_distances(self):

@@ -81,7 +81,7 @@ Supporting Classes
 ==================
 
 Class :obj:`Map` stores the self-organizing map composed of :obj:`Node` objects. The code below
-(`som-node.py`_, uses `iris.tab`_) shows an example how to access the information stored in the 
+(:download:`som-node.py <code/som-node.py>`, uses :download:`iris.tab <code/iris.tab>`) shows an example how to access the information stored in the 
 node of the map:
 
 .. literalinclude:: code/som-node.py
@@ -97,11 +97,7 @@ node of the map:
 Examples
 ========
 
-.. _som-mapping.py: code/som-mapping.py
-.. _som-node.py: code/som-node.py
-.. _iris.tab: code/iris.tab
-
-The following code  (`som-mapping.py`_, uses `iris.tab`_) infers self-organizing map from Iris data set. The map is rather small, and consists 
+The following code  (:download:`som-mapping.py <code/som-mapping.py>`, uses :download:`iris.tab <code/iris.tab>`) infers self-organizing map from Iris data set. The map is rather small, and consists 
 of only 9 cells. We optimize the network, and then report how many data instances were mapped
 into each cell. The second part of the code reports on data instances from one of the corner cells:
 

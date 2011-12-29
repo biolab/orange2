@@ -65,7 +65,7 @@ class OWToolbar(OrientedWidget):
         :param parent: The toolbar's parent widget
         :type parent: :obj:`.QWidget`
     '''
-    def __init__(self, gui, text, orientation, buttons, parent):
+    def __init__(self, gui, text, orientation, buttons, parent, nomargin = False):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
         self.groups = {}
@@ -76,7 +76,7 @@ class OWToolbar(OrientedWidget):
                 state_buttons = []
                 for j in range(i+1, n):
                     if buttons[j] == gui.StateButtonsEnd:
-                        s = gui.state_buttons(orientation, state_buttons, self)
+                        s = gui.state_buttons(orientation, state_buttons, self, nomargin)
                         self.buttons.update(s.buttons)
                         self.groups[buttons[i+1]] = s
                         i = j
@@ -94,7 +94,24 @@ class OWToolbar(OrientedWidget):
             i = i + 1
         self.layout().addStretch()
 
-
+    def select_state(self, state):
+        #NOTHING = 0
+        #ZOOMING = 1
+        #SELECT = 2
+        #SELECT_POLYGON = 3
+        #PANNING = 4
+        #SELECT_RECTANGLE = SELECT
+        #SELECT_RIGHTCLICK = SELECT
+        state_buttons = {0: 11, 1: 11, 2: 13, 3: 13, 4: 12}
+        self.buttons[state_buttons[state]].click()
+    
+    def select_selection_behaviour(self, selection_behaviour):
+        #SelectionAdd = 21
+        #SelectionRemove = 22
+        #SelectionToggle = 23
+        #SelectionOne = 24
+        self.buttons[13]._actions[21 + selection_behaviour].trigger()
+    
 class StateButtonContainer(OrientedWidget):
     '''
         This class can contain any number of checkable buttons, of which only one can be selected at any time. 
@@ -111,10 +128,11 @@ class StateButtonContainer(OrientedWidget):
         :param parent: The toolbar's parent widget
         :type parent: :obj:`.QWidget`
     '''
-    def __init__(self, gui, orientation, buttons, parent):
+    def __init__(self, gui, orientation, buttons, parent, nomargin = False):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        if nomargin:
+            self.layout().setContentsMargins(0, 0, 0, 0)
         self._clicked_button = None
         for i in buttons:
             b = gui.tool_button(i, self)
@@ -154,7 +172,8 @@ class OWAction(QAction):
             QObject.connect(self, SIGNAL("triggered(bool)"), self.set_attribute)
         if icon_name:
             self.setIcon(QIcon(os.path.dirname(__file__) + "/../icons/" + icon_name + '.png'))
-
+            self.setIconVisibleInMenu(True)
+            
     def set_attribute(self, clicked):
         setattr(self._plot, self.attr_name, self.attr_value)
         
@@ -425,7 +444,9 @@ class OWPlotGUI:
         if id == OWPlotGUI.Select:
             b = self.menu_button(self.Select, [self.SelectionOne, self.SelectionAdd, self.SelectionRemove, self.SelectionToggle], widget)
         else:
-            b = OWButton(OWAction(self._plot, icon_name, attr_name, attr_value, callback), widget)
+            b = OWButton(parent=widget)
+            ac = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=b)
+            b.setDefaultAction(ac)
         b.setToolTip(name)
         if widget.layout() is not None:
             widget.layout().addWidget(b)
@@ -439,6 +460,8 @@ class OWPlotGUI:
         b = OWButton(parent=widget)
         m = QMenu(b)
         b.setMenu(m)
+        b._actions = {}
+        
         QObject.connect(m, SIGNAL("triggered(QAction*)"), b, SLOT("setDefaultAction(QAction*)"))
 
         if main_action_id:
@@ -447,7 +470,9 @@ class OWPlotGUI:
         
         for id in ids:
             id, name, attr_name, attr_value, callback, icon_name = self._expand_id(id)
-            m.addAction(OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=m))
+            a = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=m)
+            m.addAction(a)
+            b._actions[id] = a
             
         if m.actions():
             b.setDefaultAction(m.actions()[0])
@@ -459,29 +484,31 @@ class OWPlotGUI:
         b.setMinimumSize(40, 30)
         return b
         
-    def state_buttons(self, orientation, buttons, widget):
+    def state_buttons(self, orientation, buttons, widget, nomargin = False):
         '''
             This function creates a set of checkable buttons and connects them so that only one
             may be checked at a time. 
         '''
-        c = StateButtonContainer(self, orientation, buttons, widget)
+        c = StateButtonContainer(self, orientation, buttons, widget, nomargin)
         if widget.layout() is not None:
             widget.layout().addWidget(c)
         return c
         
-    def toolbar(self, widget, text, orientation, buttons):
+    def toolbar(self, widget, text, orientation, buttons, nomargin = False):
         '''
             Creates an :obj:`.OWToolbar` with the specified ``text``, ``orientation`` and ``buttons`` and adds it to ``widget``. 
             
             .. seealso:: :obj:`.OWToolbar`
         '''
-        t = OWToolbar(self, text, orientation, buttons, widget)
+        t = OWToolbar(self, text, orientation, buttons, widget, nomargin)
+        if nomargin:
+            t.layout().setContentsMargins(0, 0, 0, 0)
         if widget.layout() is not None:
             widget.layout().addWidget(t)
         return t
         
-    def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons):
-        t = self.toolbar(widget, text, orientation, buttons)
+    def zoom_select_toolbar(self, widget, text = 'Zoom / Select', orientation = Qt.Horizontal, buttons = default_zoom_select_buttons, nomargin = False):
+        t = self.toolbar(widget, text, orientation, buttons, nomargin)
         t.buttons[self.Select].click()
         return t    
         

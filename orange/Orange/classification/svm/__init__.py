@@ -135,14 +135,6 @@ Example:
 
 .. literalinclude:: code/svm-custom-kernel.py
 
-
-.. _svm-linear-weights.py: code/svm-linear-weights.py
-.. _svm-custom-kernel.py: code/svm-custom-kernel.py
-.. _svm-easy.py: code/svm-easy.py
-.. _brown-selected.tab: code/brown-selected.tab
-.. _iris.tab: code/iris.tab
-.. _vehicle.tab: code/vehicle.tab
-
 .. _`Support Vector Machine`: http://en.wikipedia.org/wiki/Support_vector_machine
 .. _`LibSVM`: http://www.csie.ntu.edu.tw/~cjlin/libsvm/
 .. _`LIBLINEAR`: http://www.csie.ntu.edu.tw/~cjlin/liblinear/

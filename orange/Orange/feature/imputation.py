@@ -206,7 +206,7 @@ feature. We will try to determine whether the naive Bayesian classifier with
 its  implicit internal imputation works better than one that uses imputation by 
 minimal values.
 
-`imputation-minimal-imputer.py`_ (uses `voting.tab`_):
+:download:`imputation-minimal-imputer.py <code/imputation-minimal-imputer.py>` (uses :download:`voting.tab <code/voting.tab>`):
 
 .. literalinclude:: code/imputation-minimal-imputer.py
     :lines: 7-
@@ -278,7 +278,7 @@ class, :obj:`Imputer_defaults`.
     The following code will load the bridges data, and first impute the values
     in a single examples and then in the whole table.
 
-`imputation-complex.py`_ (uses `bridges.tab`_):
+:download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 9-23
@@ -298,8 +298,6 @@ yourself and specify your own defaults. Or leave some values unspecified, in
 which case the imputer won't impute them, as in the following example. Here,
 the only attribute whose values will get imputed is "LENGTH"; the imputed value
 will be 1234.
-
-`imputation-complex.py`_ (uses `bridges.tab`_):
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 56-69
@@ -370,7 +368,7 @@ Model-based imputation
 
 The following imputer predicts the missing attribute values using
 classification and regression trees with the minimum of 20 examples in a leaf. 
-Part of `imputation-complex.py`_ (uses `bridges.tab`_):
+Part of :download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 74-76
@@ -386,7 +384,7 @@ continuous attributes. Probably a common setup will be to use
 :class:`Orange.classification.bayes.BayesLearner` for discrete and 
 :class:`Orange.regression.mean.MeanLearner` (which
 just remembers the average) for continuous attributes. Part of 
-`imputation-complex.py`_ (uses `bridges.tab`_):
+:download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 91-94
@@ -396,7 +394,7 @@ this if different attributes need different treatment. Brace for an
 example that will be a bit more complex. First we shall construct an 
 :class:`Imputer_model` and initialize an empty list of models. 
 The following code snippets are from
-`imputation-complex.py`_ (uses `bridges.tab`_):
+:download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 108-109
@@ -495,11 +493,10 @@ in models.
         Default values for continuous attributes. Present only if there are any.
 
 The following code shows what this imputer actually does to the domain.
-Part of `imputation-complex.py`_ (uses `bridges.tab`_):
+Part of :download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 137-151
-
 
 The script's output looks like this::
 
@@ -599,11 +596,6 @@ imputer constructor as opposed to what we did above is that you can use such a
 constructor as a component for Orange learners (like logistic regression) or
 for wrappers from module orngImpute, and that way properly use the in
 classifier testing procedures.
-
-.. _imputation-minimal-imputer.py: code/imputation-minimal-imputer.py
-.. _imputation-complex.py: code/imputation-complex.py
-.. _voting.tab: code/voting.tab
-.. _bridges.tab: code/bridges.tab
 
 """
 

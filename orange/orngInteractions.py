@@ -1,5 +1,3 @@
-# Author: Blaz Zupan <blaz.zupan at fri.uni-lj.si>
-
 """
 Feature interaction analysis. Implements 3-way attribute interactions as proposed
 by Aleks Jakulin in his Ph. D. Thesis. Replaces his own orange module (orngInteract)

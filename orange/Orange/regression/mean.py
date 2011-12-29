@@ -25,13 +25,10 @@ This "learning algorithm" will most often be used to establish
 whether some other learning algorithm is better than "nothing".
 Here's a simple example.
 
-`mean-regression.py`_ (uses: `housing.tab`_):
+:download:`mean-regression.py <code/mean-regression.py>` (uses: :download:`housing.tab <code/housing.tab>`):
 
 .. literalinclude:: code/mean-regression.py
     :lines: 7-
-
-.. _mean-regression.py: code/mean-regression.py
-.. _housing.tab: code/housing.tab
 
 """
 

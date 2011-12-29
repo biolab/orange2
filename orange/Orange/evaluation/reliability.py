@@ -18,7 +18,7 @@ from Comparison of approaches for estimating reliability of individual
 regression predictions, Zoran Bosnic 2008.
 
 Next example shows basic reliability estimation usage 
-(`reliability-basic.py`_, uses `housing.tab`_):
+(:download:`reliability-basic.py <code/reliability-basic.py>`, uses :download:`housing.tab <code/housing.tab>`):
 
 .. literalinclude:: code/reliability_basic.py
 
@@ -32,7 +32,7 @@ We can also do reliability estimation on whole data table not only on single
 instance. Example shows us doing cross validation on the desired data table,
 using default reliability estimates, and at the ending output reliability
 estimates for the first instance of data table.
-(`reliability-run.py`_, uses `housing.tab`_):
+(:download:`reliability-run.py <code/reliability-run.py>`, uses :download:`housing.tab <code/housing.tab>`):
 
 .. literalinclude:: code/reliability-run.py
 
@@ -113,7 +113,7 @@ Example of usage
 ================
 
 Here we will walk through a bit longer example of how to use the reliability
-estimate module (`reliability-long.py`_, uses `prostate.tab`_):.
+estimate module (:download:`reliability-long.py <code/reliability-long.py>`, uses :download:`prostate.tab <code/prostate.tab>`):
 
 .. literalinclude:: code/reliability-long.py
     :lines: 1-16
@@ -152,12 +152,6 @@ Outputs::
 As you can see in the above code you can also chose with reliability estimation
 method do you want to use. You might want to do this to reduce computation time 
 or because you think they don't perform good enough.
-
-.. _reliability-run.py: code/reliability-run.py
-.. _housing.tab: code/housing.tab
-
-.. _reliability-long.py: code/reliability-long.py
-.. _prostate.tab: code/prostate.tab
 
 
 References
@@ -909,9 +903,9 @@ class Classifier:
         # Create a place holder for estimates
         if probabilities is None:
             probabilities = Orange.statistics.distribution.Continuous()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            probabilities.reliability_estimate = []
+        #with warnings.catch_warnings():
+        #    warnings.simplefilter("ignore")
+        probabilities.setattr('reliability_estimate', [])
         
         # Calculate all the estimates and add them to the results
         for estimate in self.estimation_classifiers:

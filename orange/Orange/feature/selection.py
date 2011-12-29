@@ -19,7 +19,7 @@ simplicity of resulting models. Feature scores are estimated prior to the
 modelling, that is, without knowing of which machine learning method will be
 used to construct a predictive model.
 
-`selection-best3.py`_ (uses `voting.tab`_):
+:download:`selection-best3.py <code/selection-best3.py>` (uses :download:`voting.tab <code/voting.tab>`):
 
 .. literalinclude:: code/selection-best3.py
     :lines: 7-
@@ -77,7 +77,7 @@ lesson in <a href="../ofb/default.htm">Orange for Beginners</a>). The
 script compares this filtered learner naive Bayes that uses a complete
 set of features.
 
-`selection-bayes.py`_ (uses `voting.tab`_):
+:download:`selection-bayes.py <code/selection-bayes.py>` (uses :download:`voting.tab <code/voting.tab>`):
 
 .. literalinclude:: code/selection-bayes.py
     :lines: 7-
@@ -105,7 +105,7 @@ from previous example, and compares naive Bayesian classifier to the
 same classifier when only a single most important attribute is
 used.
 
-`selection-filtered-learner.py`_ (uses `voting.tab`_):
+:download:`selection-filtered-learner.py <code/selection-filtered-learner.py>` (uses :download:`voting.tab <code/voting.tab>`):
 
 .. literalinclude:: code/selection-filtered-learner.py
     :lines: 13-16
@@ -123,7 +123,7 @@ convenient!), so the code to do all this is quite short.
 .. literalinclude:: code/selection-filtered-learner.py
     :lines: 25-
 
-Running `selection-filtered-learner.py`_ with three features selected each
+Running :download:`selection-filtered-learner.py <code/selection-filtered-learner.py>` with three features selected each
 time a learner is run gives the following result::
 
     Learner      CA
@@ -155,11 +155,6 @@ References
 
 * R. Kohavi, G. John: Wrappers for Feature Subset Selection, Artificial
   Intelligence, 97 (1-2), pages 273-324, 1997
-
-.. _selection-best3.py: code/selection-best3.py
-.. _selection-bayes.py: code/selection-bayes.py
-.. _selection-filtered-learner.py: code/selection-filtered-learner.py
-.. _voting.tab: code/voting.tab
 
 """
 

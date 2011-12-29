@@ -1,6 +1,6 @@
 """ This fixer changes all occurrences of the form 'module.member' from the
 global dictionary MAPPING's keys and replaces them with the corresponding
-value. It adds the proper imports to make it available in the script
+value. It adds the proper imports to make it available in the script. 
 
 For example this code::
     import orange
@@ -11,8 +11,8 @@ For example this code::
 will be replaced with::
     import Orange.data
     import Orange.classification.svm
-    data =Orange.data.Table('iris')
-    learner =Orange.classification.svm.SVMLearner(name='svm')
+    data = Orange.data.Table('iris')
+    learner = Orange.classification.svm.SVMLearner(name='svm')
     
 Try to add as much name mappings as possible (This fixer is prefered 
 (and will run before) the fix_orange_imports  
@@ -23,7 +23,13 @@ from lib2to3 import fixer_util
 from lib2to3 import pytree
 from lib2to3.fixer_util import Name, Dot, Node, attr_chain, touch_import
 
-# keys must be in the form of 'orange.name' not name or orange.bla.name 
+# Keys must be in the form of 'orange.name' not name or orange.bla.name 
+# If the values name a doted name inside of the package the package and name
+# must be separated by ':' e.g. Orange.classification:Classifier.GetValue
+# indicates Classifier.GetValue is a name inside package Orange.classification,
+# do not use Orange.classification.Classifier.GetValue as this is assumed that 
+# Orange.classification.Classifier is a package
+# 
 MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.Example": "Orange.data.Instance",
            "orange.Domain": "Orange.data.Domain",
@@ -36,9 +42,9 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.PythonVariable": "Orange.data.variable.Python",
            "orange.VarList": "Orange.data.variable.Variables",
            "orange.SymMatrix": "Orange.data.SymMatrix",
-           "orange.GetValue": "Orange.classification.Classifier.GetValue",
-           "orange.GetProbabilities": "Orange.classification.Classifier.GetProbabilities",
-           "orange.GetBoth": "Orange.classification.Classifier.GetBoth",
+           "orange.GetValue": "Orange.classification:Classifier.GetValue",
+           "orange.GetProbabilities": "Orange.classification:Classifier.GetProbabilities",
+           "orange.GetBoth": "Orange.classification:Classifier.GetBoth",
            
            "orange.Distribution": "Orange.statistics.distribution.Distribution",
            "orange.DiscDistribution": "Orange.statistics.distribution.Discrete",
@@ -124,12 +130,16 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngClustering.score_silhouette": "Orange.clustering.kmeans.score_silhouette",
            
            "orange.HierarchicalClustering": "Orange.clustering.hierarchical.HierarchicalClustering",
+           "orange.HierarchicalCluster": "Orange.clustering.hierarchical.HierarchicalCluster",
            "orngClustering.hierarchicalClustering": "Orange.clustering.hierarchical.clustering",
            "orngClustering.hierarchicalClustering_attributes": "Orange.clustering.hierarchical.clustering_features",
            "orngClustering.hierarchicalClustering_clusterList": "Orange.clustering.hierarchical.cluster_to_list",
            "orngClustering.hierarchicalClustering_topClusters": "Orange.clustering.hierarchical.top_clusters",
            "orngClustering.hierarhicalClustering_topClustersMembership": "Orange.clustering.hierarchical.top_cluster_membership",
            "orngClustering.orderLeaves": "Orange.clustering.hierarchical.order_leaves",
+           "orngClustering.dendrogram_draw": "Orange.clustering.hierarchical.dendrogram_draw",
+           "orngClustering.DendrogramPlot": "Orange.clustering.hierarchical.DendrogramPlot",
+           "orngClustering.DendrogramPlotPylab": "Orange.clustering.hierarchical.DendrogramPlotPylab",
            
            "orngSVM.RBFKernelWrapper": "Orange.classification.svm.kernels.RBFKernelWrapper",
            "orngSVM.CompositeKernelWrapper": "Orange.classification.svm.kernels.CompositeKernelWrapper",
@@ -140,6 +150,9 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngSVM.MultiplicationKernelWrapper": "Orange.classification.svm.kernels.MultiplicationKernelWrapper",
            "orngSVM.SparseLinKernel": "Orange.classification.svm.kernels.SparseLinKernel",
            "orngSVM.BagOfWords": "Orange.classification.svm.kernels.BagOfWords",
+           "orngSVM.SVMLearner": "Orange.classification.svm.SVMLearner",
+           "orngSVM.SVMLearnerEasy": "Orange.classification.svm.SVMLearnerEasy",
+           "orngSVM.SVMLearnerSparse": "Orange.classification.svm.SVMLearnerSparse",
            
            "orange.kNNLearner":"Orange.classification.knn.kNNLearner",
            "orange.kNNClassifier":"Orange.classification.knn.kNNClassifier",
@@ -200,6 +213,20 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.TreeStopCriteria_Python":"Orange.classification.tree.StopCriteria_Python",
            "orange.TreeStopCriteria_common":"Orange.classification.tree.StopCriteria_common",
            
+           "orngTree.printTxt": "Orange.classification.tree:TreeClassifier.dump",
+           "orngTree.printTree": "Orange.classification.tree:TreeClassifier.dump",
+           "orngTree.dumpTree": "Orange.classification.tree:TreeClassifier.dump",
+           "orngTree.printDot": "Orange.classification.tree:TreeClassifier.dot",
+           "orngTree.dotTree": "Orange.classification.tree:TreeClassifier.dot",
+           "orngTree.dump": "Orange.classification.tree:TreeClassifier.dump",
+           "orngTree.dot": "Orange.classification.tree:TreeClassifier.dot",
+           "orngTree.countLeaves": "Orange.classification.tree:TreeClassifier.count_leaves",
+           "orngTree.countNodes": "Orange.classification.tree:TreeClassifier.count_nodes",
+           "orngTree.byWhom": "Orange.classification.tree.by_whom",
+           "orngTree.insertStr": "Orange.classification.tree.insert_str",
+           "orngTree.insertDot": "Orange.classification.tree.insert_dot",
+           "orngTree.insertNum": "Orange.classification.tree.insert_num",
+           
            "orange.MajorityLearner":"Orange.classification.majority.MajorityLearner",
            "orange.DefaultClassifier":"Orange.classification.ConstantClassifier",
            
@@ -222,7 +249,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ItemsetNodeProxy" : "Orange.associate.ItemsetNodeProxy",
            "orange.ItemsetsSparseInducer" : "Orange.associate.ItemsetsSparseInducer",
 
-           "orngCN2.ruleToString": "Orange.classification.rules.ruleToString",
+           "orngCN2.ruleToString": "Orange.classification.rules.rule_to_string",
            "orngCN2.LaplaceEvaluator": "Orange.classification.rules.LaplaceEvaluator",
            "orngCN2.WRACCEvaluator": "Orange.classification.rules.WRACCEvaluator",
            "orngCN2.mEstimate": "Orange.classification.rules.MEstimateEvaluator",
@@ -360,22 +387,27 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngStat.statisticsByFolds" : "Orange.evaluation.scoring.statistics_by_folds",
 #           "orngStat.x" : "Orange.evaluation.scoring.x",
            
-           # Now use old orngMisc
            # Orange.selection
-           #"orngMisc.BestOnTheFly":"Orange.misc.selection.BestOnTheFly",
-           #"orngMisc.selectBest":"Orange.misc.selection.selectBest",
-           #"orngMisc.selectBestIndex":"Orange.misc.selection.selectBestIndex",
-           #"orngMisc.compare2_firstBigger":"Orange.misc.selection.compareFirstBigger",
-           #"orngMisc.compare2_firstBigger":"Orange.misc.selection.compareFirstBigger",
-           #"orngMisc.compare2_firstSmaller":"Orange.misc.selection.compareFirstSmaller",
-           #"orngMisc.compare2_lastBigger":"Orange.misc.selection.compareLastBigger",
-           #"orngMisc.compare2_lastSmaller":"Orange.misc.selection.compareLastSmaller",
-           #"orngMisc.compare2_bigger":"Orange.misc.selection.compareBigger",
-           #"orngMisc.compare2_smaller":"Orange.misc.selection.compareSmaller",
+           "orngMisc.BestOnTheFly":"Orange.misc.selection.BestOnTheFly",
+           "orngMisc.selectBest":"Orange.misc.selection.select_best",
+           "orngMisc.selectBestIndex":"Orange.misc.selection.select_best_index",
+           "orngMisc.compare2_firstBigger":"Orange.misc.selection.compare_first_bigger",
+           "orngMisc.compare2_firstBigger":"Orange.misc.selection.compare_first_bigger",
+           "orngMisc.compare2_firstSmaller":"Orange.misc.selection.compare_first_smaller",
+           "orngMisc.compare2_lastBigger":"Orange.misc.selection.compare_last_bigger",
+           "orngMisc.compare2_lastSmaller":"Orange.misc.selection.compare_last_smaller",
+           "orngMisc.compare2_bigger":"Orange.misc.selection.compare_bigger",
+           "orngMisc.compare2_smaller":"Orange.misc.selection.compare_smaller",
+           
+           "orngMisc.Renderer": "Orange.misc.render.Renderer",
+           "orngMisc.EPSRenderer": "Orange.misc.render.EPSRenderer",
+           "orngMisc.SVGRenderer": "Orange.misc.render.SVGRenderer",
+           "orngMisc.PILRenderer": "Orange.misc.render.PILRenderer",
+           # The rest of orngMisc is handled by fix_orange_imports (maps to Orange.misc) 
            
            "orngEnsemble.BaggedLearner":"Orange.ensemble.bagging.BaggedLearner",
            "orngEnsemble.BaggedClassifier":"Orange.ensemble.bagging.BaggedClassifier",
-           "orngEnsemble.BoostedLearner":"Orange.boosting.BoostedLearner",
+           "orngEnsemble.BoostedLearner":"Orange.ensemble.boosting.BoostedLearner",
            "orngEnsemble.BoostedClassifier":"Orange.ensemble.boosting.BoostedClassifier",
            "orngEnsemble.RandomForestClassifier":"Orange.ensemble.forest.RandomForestClassifier",
            "orngEnsemble.RandomForestLearner":"Orange.ensemble.forest.RandomForestLearner",
@@ -395,6 +427,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngTest.TestedExample":"Orange.evaluation.testing.TestedExample",
            "orngTest.ExperimentResults":"Orange.evaluation.testing.ExperimentResults",
 
+           "orngLR.dump":"Orange.classification.logreg.dump",
            "orngLR.printOUT":"Orange.classification.logreg.dump",
            "orngLR.printOut":"Orange.classification.logreg.dump",
            "orngLR.hasDiscreteValues":"Orange.classification.logreg.has_discrete_values",
@@ -479,6 +512,52 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngLinProj.FreeVizLearner": "Orange.projection.linear.FreeVizLearner",
            "orngLinProj.S2NHeuristicLearner": "Orange.projection.linear.S2NHeuristicLearner",
            
+           "orngDisc.entropyDiscretization": "Orange.feature.discretization.entropyDiscretization_wrapper",
+           "orngDisc.EntropyDiscretization": "Orange.feature.discretization.EntropyDiscretization_wrapper",
+           
+           "orange.ProbabilityEstimator": "Orange.statistics.estimate.ProbabilityEstimator",
+           "orange.ProbabilityEstimator_FromDistribution": "Orange.statistics.estimate.ProbabilityEstimator_FromDistribution",
+           "orange.ProbabilityEstimatorConstructor": "Orange.statistics.estimate.ProbabilityEstimatorConstructor",
+           "orange.ProbabilityEstimatorConstructor_Laplace": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_Laplace",
+           "orange.ProbabilityEstimatorConstructor_kernel": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_kernel",
+           "orange.ProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_loess",
+           "orange.ProbabilityEstimatorConstructor_m": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_m",
+           "orange.ProbabilityEstimatorConstructor_relative": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_relative",
+           "orange.ProbabilityEstimatorList": "Orange.statistics.estimate.ProbabilityEstimatorList",
+           
+           "orange.FilterList": "Orange.preprocess.FilterList",
+           "orange.Filter": "Orange.preprocess.Filter",
+           "orange.Filter_conjunction": "Orange.preprocess.Filter_conjunction",
+           "orange.Filter_disjunction": "Orange.preprocess.Filter_disjunction",
+           "orange.Filter_hasClassValue": "Orange.preprocess.Filter_hasClassValue",
+           "orange.Filter_hasMeta": "Orange.preprocess.Filter_hasMeta",
+           "orange.Filter_hasSpecial": "Orange.preprocess.Filter_hasSpecial",
+           "orange.Filter_isDefined": "Orange.preprocess.Filter_isDefined",
+           "orange.Filter_random": "Orange.preprocess.Filter_random",
+           "orange.Filter_sameValue": "Orange.preprocess.Filter_sameValue",
+           "orange.Filter_values": "Orange.preprocess.Filter_values",
+           
+           # orngEnviron
+           
+           "orngEnviron.orangeDir": "Orange.misc.environ.install_dir",
+           "orngEnviron.orangeDocDir": "Orange.misc.environ.doc_install_dir",
+           "orngEnviron.orangeVer": "Orange.misc.environ.version",
+           "orngEnviron.canvasDir": "Orange.misc.environ.canvas_install_dir",
+           "orngEnviron.widgetDir": "Orange.misc.environ.widget_install_dir",
+           "orngEnviron.picsDir": "Orange.misc.environ.icons_install_dir",
+           "orngEnviron.addOnsDirSys": "Orange.misc.environ.add_ons_dir",
+           "orngEnviron.addOnsDirUser": "Orange.misc.environ.add_ons_dir_user",
+           "orngEnviron.applicationDir": "Orange.misc.environ.application_dir",
+           "orngEnviron.outputDir": "Orange.misc.environ.output_dir",
+           "orngEnviron.defaultReportsDir": "Orange.misc.environ.default_reports_dir",
+           "orngEnviron.orangeSettingsDir": "Orange.misc.environ.orange_settings_dir",
+           "orngEnviron.widgetSettingsDir": "Orange.misc.environ.widget_settings_dir",
+           "orngEnviron.canvasSettingsDir": "Orange.misc.environ.canvas_settings_dir",
+           "orngEnviron.bufferDir": "Orange.misc.environ.buffer_dir",
+           "orngEnviron.directoryNames": "Orange.misc.environ.directories",
+           "orngEnviron.samepath": "Orange.misc.environ.samepath",
+           "orngEnviron.addOrangeDirectoriesToPath": "Orange.misc.environ.add_orange_directories_to_path",
+                      
            "orngScaleData.getVariableValuesSorted": "Orange.preprocess.scaling.get_variable_values_sorted",
            "orngScaleData.getVariableValueIndices": "Orange.preprocess.scaling.get_variable_value_indices",
            "orngScaleData.discretizeDomain": "Orange.preprocess.scaling.discretize_domain",
@@ -572,9 +651,16 @@ class FixChangedNames(fixer_base.BaseFix):
             old_name = module + "." + node.value
             if old_name not in self.mapping:
                 return
-             
-            new_name = unicode(self.mapping[module + "." + node.value])
             
+            new_name = unicode(self.mapping[old_name])
+            
+            if ":" in new_name:
+                # ':' is the delimiter used to separate module namespace
+                package = new_name.split(":",1)[0]
+                new_name = new_name.replace(":", ".")
+            else:
+                package = new_name.rsplit(".", 1)[0]
+                
             syms = self.syms
             
             if tail:
@@ -583,7 +669,14 @@ class FixChangedNames(fixer_base.BaseFix):
             new = pytree.Node(syms.power, new + tail, prefix=head.prefix)
             
             # Make sure the proper package is imported
-            package = new_name.rsplit(".", 1)[0]
-            touch_import(None, package, node)
-            return new    
-    
+#            if ":" in new_name:
+#                package = new_name.split(":",1)[0]
+#            else:
+#                package = new_name.rsplit(".", 1)[0]
+
+            def orange_to_root(package):
+                return "Orange" if package.startswith("Orange.") else package
+
+            touch_import(None, orange_to_root(package), node)
+            return new
+        

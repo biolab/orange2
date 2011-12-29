@@ -20,7 +20,7 @@ Example ::
     >>> from Orange.regression import earth
     >>> data = Orange.data.Table("housing")
     >>> c = earth.EarthLearner(data, degree=2)
-    >>> c.print_model()
+    >>> print c
     MEDV =
        23.587
        +11.896 * max(0, RM - 6.431)
@@ -117,7 +117,12 @@ class EarthLearner(Orange.core.LearnerFD):
         :param degree: Maximum degree (num. of hinge functions per term)
             of the terms in the model.
         :type degree: int
-        :param terms: Maximum number of terms in the forward pass.
+        :param terms: Maximum number of terms in the forward pass (default 21).
+            
+            .. note:: If this paramter is None then 
+                ``min(200, max(20, 2 * n_attributes)) + 1`` will be used. This
+                is the same as the default setting in earth R package.
+                
         :type terms: int
         :param penalty: Penalty for hinges in the GCV computation (used 
             in the pruning pass). By default it is 3.0 if the degree > 1,
@@ -132,7 +137,7 @@ class EarthLearner(Orange.core.LearnerFD):
         :type new_var_penalty: float
         :param fast_k: Fast k.
         :param fast_beta: Fast beta.
-        :param pruned_terms: Maximum number if terms in the model after
+        :param pruned_terms: Maximum number of terms in the model after
             pruning (default None - no limit).
         :type pruned_terms: int
         :param scale_resp: Scale responses prior to forward pass (default
@@ -203,8 +208,13 @@ class EarthLearner(Orange.core.LearnerFD):
         else:
             sy = y
             
+        terms = self.terms
+        if terms is None:
+            # Automatic maximum number of terms
+            terms = min(200, max(20, 2 * x.shape[1])) + 1
+            
         n_terms, used, bx, dirs, cuts = forward_pass(x, sy,
-            degree=self.degree, terms=self.terms, penalty=self.penalty,
+            degree=self.degree, terms=terms, penalty=self.penalty,
             thresh=self.thresh, fast_k=self.fast_k, fast_beta=self.fast_beta,
             new_var_penalty=self.new_var_penalty)
         
@@ -298,16 +308,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
             return vals, probs
         else:
             return probs
-    
-    def format_model(self, percision=3, indent=3):
-        """ Return a string representation of the model.
-        """
-        return format_model(self, percision, indent)
-    
-    def print_model(self, percision=3, indent=3):
-        """ Print the model to stdout.
-        """
-        print self.format_model(percision, indent)
         
     def base_matrix(self, instances=None):
         """Return the base matrix (bx) of the Earth model for the table.
@@ -363,8 +363,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
         :param used_only: if True return only used attributes
         
-
-         
         """  
         return evimp(self, used_only)
     
@@ -372,6 +370,15 @@ class EarthClassifier(Orange.core.ClassifierFD):
         return (type(self), (self.domain, self.best_set, self.dirs,
                             self.cuts, self.betas),
                 dict(self.__dict__))
+        
+    def format(self, percision=3, indent=3):
+        """ Return a string representation of the model.
+        """
+        return format_model(self, percision, indent)
+        
+    def __str__(self):
+        return self.format()
+    
 
 """
 Utility functions
@@ -710,14 +717,9 @@ def pruning_pass(bx, y, penalty, pruned_terms=-1):
 """
 Printing functions.
 """
-
-def print_model(model, percision=3, indent=3):
-    """ Print model to stdout.
-    """
-    print format_model(model, percision, indent)
     
 def format_model(model, percision=3, indent=3):
-    """ Return a formated string representation of the model.
+    """ Return a formated string representation of the earth model.
     """
     mask = model.label_mask
     if model.multi_flag:

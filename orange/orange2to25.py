@@ -155,7 +155,7 @@ def main(fixer_pkg, args=None):
             rt.refactor_stdin()
         else:
             try:
-                rt.refactor(args, options.write, options.doctests_only,
+                rt.refactor(args[1:], options.write, options.doctests_only,
                             options.processes)
             except refactor.MultiprocessingUnsupported:
                 assert options.processes > 1

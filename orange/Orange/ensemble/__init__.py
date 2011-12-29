@@ -45,13 +45,10 @@ Let us try boosting and bagging on Lymphography data set and use TreeLearner
 with post-pruning as a base learner. For testing, we use 10-fold cross
 validation and observe classification accuracy.
 
-`ensemble.py`_ (uses `lymphography.tab`_)
+:download:`ensemble.py <code/ensemble.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
 
 .. literalinclude:: code/ensemble.py
   :lines: 7-
-
-.. _lymphography.tab: code/lymphography.tab
-.. _ensemble.py: code/ensemble.py
 
 Running this script, we may get something like::
 
@@ -84,14 +81,10 @@ Example
 The following script assembles a random forest learner and compares it
 to a tree learner on a liver disorder (bupa) and housing data sets.
 
-`ensemble-forest.py`_ (uses `buba.tab`_, `housing.tab`_)
+:download:`ensemble-forest.py <code/ensemble-forest.py>` (uses :download:`bupa.tab <code/bupa.tab>`, :download:`housing.tab <code/housing.tab>`)
 
 .. literalinclude:: code/ensemble-forest.py
   :lines: 7-
-
-.. _buba.tab: code/buba.tab
-.. _housing.tab: code/housing.tab
-.. _ensemble-forest.py: code/ensemble-forest.py
 
 Notice that our forest contains 50 trees. Learners are compared through 
 3-fold cross validation::
@@ -112,12 +105,10 @@ random forests. In the following example the best feature for decision
 nodes is selected among three randomly chosen features, and maxDepth
 and minExamples are both set to 5.
 
-`ensemble-forest2.py`_ (uses `buba.tab`_)
+:download:`ensemble-forest2.py <code/ensemble-forest2.py>` (uses :download:`bupa.tab <code/bupa.tab>`)
 
 .. literalinclude:: code/ensemble-forest2.py
   :lines: 7-
-
-.. _ensemble-forest2.py: code/ensemble-forest2.py
 
 Running the above code would report on sizes (number of nodes) of the tree
 in a constructed random forest.
@@ -152,13 +143,10 @@ not foolproof; it will not detect if you change values of existing instances,
 but will notice adding and removing instances; see the page on 
 :class:`Orange.data.Table` for details).
 
-`ensemble-forest-measure.py`_ (uses `iris.tab`_)
+:download:`ensemble-forest-measure.py <code/ensemble-forest-measure.py>` (uses :download:`iris.tab <code/iris.tab>`)
 
 .. literalinclude:: code/ensemble-forest-measure.py
   :lines: 7-
-
-.. _ensemble-forest-measure.py: code/ensemble-forest-measure.py
-.. _iris.tab: code/iris.tab
 
 Corresponding output::
 

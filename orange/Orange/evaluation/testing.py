@@ -386,17 +386,21 @@ class Evaluation(object):
                                         classifierNames = [getobjectname(l) for l in learners],
                                         domain=examples.domain,
                                         weights=weight)
-
+        test_results.classifiers = []
+        offset=0
         for time in xrange(times):
             indices = pick(examples)
             learn_set = examples.selectref(indices, 0)
             test_set = examples.selectref(indices, 1)
             classifiers, results = self._learn_and_test_on_test_data(learners, learn_set, weight, test_set, preprocessors)
+            if store_classifiers:
+                test_results.classifiers.append(classifiers)
 
             test_results.results.extend(test_results.create_tested_example(time, example)
                                         for i, example in enumerate(test_set))
             for example, classifier, result in results:
-                test_results.results[example].set_result(classifier, *result)
+                test_results.results[offset+example].set_result(classifier, *result)
+            offset += len(test_set)
 
             if callback:
                 callback()
@@ -516,7 +520,7 @@ class Evaluation(object):
                                         classifierNames = [getobjectname(l) for l in learners],
                                         domain=test_set.domain,
                                         weights=test_weight)
-
+            offset = 0
             for t in xrange(times):
                 test_results.results.extend(test_results.create_tested_example(t, example)
                                             for i, example in enumerate(test_set))
@@ -525,7 +529,8 @@ class Evaluation(object):
                 classifiers, results = self._learn_and_test_on_test_data(learners, learn_examples, learn_weight, test_set)
 
                 for example, classifier, result in results:
-                    test_results.results[example].set_result(classifier, *result)
+                    test_results.results[offset+example].set_result(classifier, *result)
+                offset += len(test_set)
 
                 test_results.classifiers.append(classifiers)
 

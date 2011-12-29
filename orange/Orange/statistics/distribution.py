@@ -14,7 +14,7 @@ distributions of discrete and continuous variables.
 
         >>> import Orange
         >>> data = Orange.data.Table("adult_sample")
-        >>> disc = orange.statistics.distribution.Distribution("workclass", data)
+        >>> disc = Orange.statistics.distribution.Distribution("workclass", data)
         >>> print disc
         <685.000, 72.000, 28.000, 29.000, 59.000, 43.000, 2.000>
         >>> print type(disc)

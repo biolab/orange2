@@ -196,6 +196,9 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
 
     def __contains__(self, item):
         return any(item.lower() in tag.lower() for tag in self.tags + [self.title])
+    
+    def __lt__(self, other):
+        return getattr(self, "title", "") < getattr(other, "title", "") 
 
 class UpdateItemDelegate(QItemDelegate):
     def sizeHint(self, option, index):

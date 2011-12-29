@@ -349,15 +349,14 @@ class OWReliability(OWWidget):
                     
             if self.include_input_features:
                 dom = self._test_data().domain
-                domain = Orange.data.Domain(dom.attributes, dom.class_var)
+                attributes = list(dom.attributes) + features
+                domain = Orange.data.Domain(attributes, dom.class_var)
                 domain.add_metas(dom.get_metas())
+                
                 data = Orange.data.Table(domain, self._test_data())
             else:
-                domain = Orange.data.Domain([])
-                data = Orange.data.Table(domain, [[] for _ in self._test_data()])
-                
-            for f in features:
-                data.domain.add_meta(Orange.data.new_meta_id(), f)
+                domain = Orange.data.Domain(features, None)
+                data = Orange.data.Table(domain, [[None] * len(features) for _ in self._test_data()])
             
             if self.include_class:
                 for d, inst, pred in zip(data, self._test_data(), self.predictions):

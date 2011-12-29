@@ -54,7 +54,7 @@ Examples
 
 This is how you use the learner.
 
-part of `optimization-thresholding1.py`_
+part of :download:`optimization-thresholding1.py <code/optimization-thresholding1.py>`
 
 .. literalinclude:: code/optimization-thresholding1.py
 
@@ -68,7 +68,7 @@ shows that fitting threshold is good (well, although 2.5 percent increase in
 the accuracy absolutely guarantees you a publication at ICML, the difference is
 still unimportant), while setting it at 80% is a bad idea. Or is it?
 
-part of `optimization-thresholding2.py`_
+part of :download:`optimization-thresholding2.py <code/optimization-thresholding2.py>`
 
 .. literalinclude:: code/optimization-thresholding2.py
 
@@ -88,9 +88,6 @@ positives and negatives.
 .. autoclass:: Orange.optimization.PreprocessedLearner
    :members: 
    
-.. _optimization-thresholding1.py: code/optimization-thresholding1.py
-.. _optimization-thresholding2.py: code/optimization-thresholding2.py
-
 """
 
 import Orange.core
@@ -209,7 +206,7 @@ class Tune1Parameter(TuneParameters):
     To show how it works, we shall fit the minimal number of examples in a leaf
     for a tree classifier.
     
-    part of `optimization-tuning1.py`_
+    part of :download:`optimization-tuning1.py <code/optimization-tuning1.py>`
 
     .. literalinclude:: code/optimization-tuning1.py
         :lines: 3-11
@@ -233,7 +230,7 @@ class Tune1Parameter(TuneParameters):
     enhances the AUC or not. We shall reuse the tuner from above, add another
     tree learner, and test them both.
     
-    part of `optimization-tuning1.py`_
+    part of :download:`optimization-tuning1.py <code/optimization-tuning1.py>`
 
     .. literalinclude:: code/optimization-tuning1.py
         :lines: 13-18
@@ -247,8 +244,6 @@ class Tune1Parameter(TuneParameters):
     
         Untuned tree: 0.930
         Tuned tree: 0.986
-    
-    .. _optimization-tuning1.py: code/optimization-tuning1.py
     
     """
     
@@ -311,15 +306,13 @@ class TuneMParameters(TuneParameters):
     number of examples in leaves and the splitting criteria by setting the
     tuner as follows:
     
-    `optimization-tuningm.py`_
+    :download:`optimization-tuningm.py <code/optimization-tuningm.py>`
 
     .. literalinclude:: code/optimization-tuningm.py
         
     Everything else stays like above, in examples for
     :obj:`Orange.optimization.Tune1Parameter`.
     
-    .. _optimization-tuningm.py: code/optimization-tuningm.py
-        
     """
     
     def __call__(self, table, weight=None, verbose=0):

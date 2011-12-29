@@ -44,20 +44,27 @@ from orngSVM import MeasureAttribute_SVMWeights
 from orngEnsemble import MeasureAttribute_randomForests
 
 MEASURE_PARAMS = {ScoreEarthImportance: \
-                    [{"name": "degree", 
-                      "type": int,
-                      "display_name": "Max. term degree",
-                      "range": range(1, 4),
-                      "default": 2,
-                      "doc": "Maximum degree of terms included in the model." 
-                     },
-                     {"name": "t",
+                    [{"name": "t",
                       "type": int,
                       "display_name": "Num. models.",
                       "range": range(1, 21),
                       "default": 10,
                       "doc": "Number of models to train for feature scoring."
                       },
+                     {"name": "terms",
+                      "type": int,
+                      "display_name": "Max. num of terms",
+                      "range": range(3, 200),
+                      "default": 10,
+                      "doc": "Maximum number of terms in the forward pass" 
+                      },
+                     {"name": "degree", 
+                      "type": int,
+                      "display_name": "Max. term degree",
+                      "range": range(1, 4),
+                      "default": 2,
+                      "doc": "Maximum degree of terms included in the model." 
+                     },
 #                     {"name": "score_what",
 #                      "type": int,
 #                      "display_name": "Score what",
@@ -145,7 +152,7 @@ def measure_parameters(measure):
     return [MethodParameter(**args) for args in MEASURE_PARAMS.get(measure, [])]
 
 def param_attr_name(measure, param):
-    """ Name of the OWRank widget where the parameter is stored. 
+    """ Name of the OWRank widget's member where the parameter is stored. 
     """
     return "param_" + measure.__name__ + "_" + param.name
         
@@ -362,7 +369,7 @@ class OWRank(OWWidget):
         self.contRanksView.setSelectionBehavior(QTableView.SelectRows)
         self.contRanksView.setSelectionMode(QTableView.MultiSelection)
         self.contRanksView.setSortingEnabled(True)
-#        self.contRanksView.setItemDelegate(RankItemDelegate())
+#        self.contRanksView.setItemDelegate(OWGUI.ColoredBarItemDelegate())
 #        self.contRanksView.horizontalHeader().restoreState(self.contRanksHeaderState)
         
         self.contRanksModel = QStandardItemModel(self)
@@ -393,6 +400,8 @@ class OWRank(OWWidget):
         
         self.resize(690,500)
         self.updateColor()
+        
+        self.measure_scores = table((len(self.measures), 0), None)
 
     def switchRanksMode(self, index):
         """ Switch between discrete/continuous mode
@@ -749,10 +758,10 @@ class OWRank(OWWidget):
         self.ranksView.resizeColumnsToContents()
         
     def updateDelegates(self):
-        self.contRanksView.setItemDelegate(RankItemDelegate(self,
+        self.contRanksView.setItemDelegate(OWGUI.ColoredBarItemDelegate(self,
                             decimals=self.nDecimals,
                             color=self.distColor))
-        self.discRanksView.setItemDelegate(RankItemDelegate(self,
+        self.discRanksView.setItemDelegate(OWGUI.ColoredBarItemDelegate(self,
                             decimals=self.nDecimals,
                             color=self.distColor))
         
@@ -787,85 +796,7 @@ class OWRank(OWWidget):
         else:
             return []    
 
-class RankItemDelegate(QStyledItemDelegate):
-    """ Item delegate that can also draw a distribution bar
-    """
-    def __init__(self, parent=None, decimals=3, color=Qt.red):
-        QStyledItemDelegate.__init__(self, parent)
-        self.decimals = decimals
-        self.float_fmt = "%%.%if" % decimals
-        self.color = QColor(color)
-        
-    def displayText(self, value, locale):
-        obj = _toPyObject(value)
-        if isinstance(obj, float):
-            return self.float_fmt % obj
-        elif isinstance(obj, basestring):
-            return obj
-        elif obj is None:
-            return "NA"
-        else:
-            return obj.__str__()
-        
-    def sizeHint(self, option, index):
-        metrics = QFontMetrics(option.font)
-        height = metrics.lineSpacing() + 8 # 4 pixel margin
-        width = metrics.width(self.displayText(index.data(Qt.DisplayRole), QLocale())) + 8
-        return QSize(width, height)
-    
-    def paint(self, painter, option, index):
-        text = self.displayText(index.data(Qt.DisplayRole), QLocale())
-        
-        bar_ratio = index.data(OWGUI.BarRatioRole)
-        ratio, have_ratio = bar_ratio.toDouble()
-        rect = option.rect
-        if have_ratio:
-            text_rect = rect.adjusted(4, 1, -4, -5) # Style dependent margins?
-        else:
-            text_rect = rect.adjusted(4, 4, -4, -4)
-            
-        painter.save()
-        painter.setFont(option.font)
-        
-        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
-        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
-        
-        # TODO: Check ForegroundRole.
-        if option.state & QStyle.State_Selected:
-            color = option.palette.highlightedText().color()
-        else:
-            color = option.palette.text().color()
-        painter.setPen(QPen(color))
-        
-        align = index.data(Qt.TextAlignmentRole)
-        if align.isValid():
-            align = align.toInt()
-        else:
-            align = Qt.AlignLeft | Qt.AlignVCenter
-        painter.drawText(text_rect, align, text)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        if have_ratio:
-            bar_brush = index.data(OWGUI.BarBrushRole)
-            if bar_brush.isValid():
-                bar_brush = bar_brush.toPyObject()
-                if not isinstance(bar_brush, (QColor, QBrush)):
-                    bar_brush = None
-            else:
-                bar_brush =  None
-            if bar_brush is None:
-                bar_brush = self.color
-            brush = QBrush(bar_brush)
-            painter.setBrush(brush)
-            painter.setPen(QPen(brush, 1))
-            bar_rect = QRect(text_rect)
-            bar_rect.setTop(bar_rect.bottom() - 1)
-            bar_rect.setBottom(bar_rect.bottom() + 1)
-            w = text_rect.width()
-            bar_rect.setWidth(max(0, min(w * ratio, w)))
-            painter.drawRoundedRect(bar_rect, 2, 2)
-        painter.restore()
 
-        
 class PyStandardItem(QStandardItem):
     """ A StandardItem subclass for python objects.
     """

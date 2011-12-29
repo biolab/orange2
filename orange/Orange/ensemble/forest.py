@@ -6,26 +6,53 @@ import random
 import copy
 
 def _default_small_learner(attributes=None, rand=None, base=None):
-    """ A helper function for constructing a small tree learner for use
-    in the RandomForestLearner.
-    :param instances: data - to select the measure.
-    :param attributes: number of features used in a randomly drawn
-            subset when searching for best feature to split the node
-            in tree growing
-    :type attributes: int
-    :param rand: random generator used in feature subset selection in split constructor. 
-            If None is passed, then Python's Random from random library is 
-            used, with seed initialized to 0.
-    :type rand: function
-    """
     # tree learner assembled as suggested by Breiman (2001)
     if not base:
         base = Orange.classification.tree.TreeLearner(
-            storeNodeClassifier=0, storeContingencies=0, 
-            storeDistributions=1, minExamples=5)
+            store_node_classifier=0, store_contingencies=0, 
+            store_distributions=1, min_instances=5)
 
-    return _RandomForestTreeLearner(base=base, attributes=attributes, rand=rand)
+    return _RandomForestTreeLearner(base=base, rand=rand)
 
+def _default_simple_learner(base, randorange):
+    if base == None:
+        base = Orange.classification.tree.SimpleTreeLearner(min_instances=5)
+    return _RandomForestSimpleTreeLearner(base=base, rand=randorange)
+
+def _wrap_learner(base, rand, randorange):
+    if base == None or isinstance(base, Orange.classification.tree.SimpleTreeLearner):
+        return _default_simple_learner(base, randorange)
+    elif isinstance(base, Orange.classification.tree.TreeLearner):
+        return _default_small_learner(None, rand, base)
+    else:
+        notRightLearnerToWrap()
+ 
+class _RandomForestSimpleTreeLearner(Orange.core.Learner):
+    """ A learner which wraps an ordinary SimpleTreeLearner.  Sets the
+    skip_prob so that the number of randomly chosen features for each
+    split is  (on average) as specified.  """
+
+    def __new__(cls, examples = None, weightID = 0, **argkw):
+        self = Orange.core.Learner.__new__(cls, **argkw)
+        if examples:
+            self.__init__(**argkw)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+      
+    def __init__(self, base, rand):
+        self.base = base
+        self.attributes = None
+        self.rand = rand
+    
+    def __call__(self, examples, weight=0):
+        osp,orand = self.base.skip_prob, self.base.random_generator
+        self.base.skip_prob = 1-float(self.attributes)/len(examples.domain.attributes)
+        self.base.random_generator = self.rand
+        r = self.base(examples, weight)
+        self.base.skip_prob, self.base.random_generator = osp, orand
+        return r
+   
 class RandomForestLearner(orange.Learner):
     """
     Just like in bagging, classifiers in random forests are trained from bootstrap
@@ -37,33 +64,42 @@ class RandomForestLearner(orange.Learner):
         
     :param trees: number of trees in the forest.
     :type trees: int
+
     :param attributes: number of randomly drawn features among
             which to select the best to split the nodes in tree
             induction. The default, None, means the square root of
             the number of features in the training data. Ignored if
             :obj:`learner` is specified.
     :type attributes: int
+
     :param base_learner: A base tree learner. The base learner will be
         randomized with Random Forest's random
         feature subset selection.  If None (default),
-        :class:`~Orange.classification.tree.TreeLearner` with Gini index
-        or MSE for attribute scoring will be used, and it will not split
-        nodes with less than 5 data instances.
-    :type base_learner: None or :class:`Orange.classification.tree.TreeLearner`
+        :class:`~Orange.classification.tree.SimpleTreeLearner` and it
+        will not split nodes with less than 5 data instances.
+    :type base_learner: None or
+        :class:`Orange.classification.tree.TreeLearner` or
+        :class:`Orange.classification.tree.SimpleTreeLearner`
+
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
-    :param learner: Tree induction learner. If None (default), 
-        the :obj:`~ScoreFeature.base_learner` will be used (and randomized). If
-        :obj:`~ScoreFeature.learner` is specified, it will be used as such
+
+    :param learner: Tree induction learner. If `None` (default), 
+        the :obj:`base_learner` will be used (and randomized). If
+        :obj:`learner` is specified, it will be used as such
         with no additional transformations.
     :type learner: None or :class:`Orange.core.Learner`
+
     :param callback: a function to be called after every iteration of
             induction of classifier. This is called with parameter 
             (from 0.0 to 1.0) that gives estimates on learning progress.
+
     :param name: name of the learner.
     :type name: string
+
     :rtype: :class:`~Orange.ensemble.forest.RandomForestClassifier` or 
             :class:`~Orange.ensemble.forest.RandomForestLearner`
+
     """
 
     def __new__(cls, instances=None, weight = 0, **kwds):
@@ -78,15 +114,24 @@ class RandomForestLearner(orange.Learner):
                     name='Random Forest', rand=None, callback=None, base_learner=None, learner=None):
         self.trees = trees
         self.name = name
-        self.learner = learner
         self.attributes = attributes
         self.callback = callback
         self.rand = rand
+
         self.base_learner = base_learner
-        
+
+        if base_learner != None and learner != None:
+            wrongSpecification()
+
         if not self.rand:
             self.rand = random.Random(0)
-            
+        self.randorange = Orange.core.RandomGenerator(self.rand.randint(0,2**31-1))
+
+        if learner == None:
+            self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
+        else:
+            self.learner = learner
+           
         self.randstate = self.rand.getstate() #original state
 
     def __call__(self, instances, weight=0):
@@ -95,17 +140,17 @@ class RandomForestLearner(orange.Learner):
         
         :param instances: learning data.
         :type instances: class:`Orange.data.Table`
-        :param origWeight: weight.
-        :type origWeight: int
+        :param weight: weight.
+        :type weight: int
         :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`
         """
-        
-        if not self.learner:
-            learner = _default_small_learner(self.attributes, self.rand, base=self.base_learner)
-        else:
-            learner = self.learner
-        
         self.rand.setstate(self.randstate) #when learning again, set the same state
+        self.randorange.reset()        
+
+        if "attributes" in self.learner.__dict__:
+            self.learner.attributes = len(instances.domain.attributes)**0.5 if self.attributes == None else self.attributes
+
+        learner = self.learner
 
         n = len(instances)
         # build the forest
@@ -201,13 +246,16 @@ class RandomForestClassifier(orange.Classifier):
         
         else:
             # Handle continuous class
-            
+        
             # voting for class probabilities
             if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
-                probs = [c(instance, orange.GetProbabilities) for c in self.classifiers]
+                probs = [c(instance, orange.GetBoth) for c in self.classifiers]
                 cprob = dict()
-                for prob in probs:
-                    a = dict(prob.items())
+                for val,prob in probs:
+                    if prob != None: #no probability output
+                        a = dict(prob.items())
+                    else:
+                        a = { val.value : 1. }
                     cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
                 cprob = Orange.statistics.distribution.Continuous(cprob)
                 cprob.normalize()
@@ -230,24 +278,29 @@ class ScoreFeature(orange.MeasureAttribute):
     """
     :param trees: number of trees in the forest.
     :type trees: int
+
     :param attributes: number of randomly drawn features among
             which to select the best to split the nodes in tree
             induction. The default, None, means the square root of
             the number of features in the training data. Ignored if
             :obj:`learner` is specified.
     :type attributes: int
+
     :param base_learner: A base tree learner. The base learner will be
         randomized with Random Forest's random
         feature subset selection.  If None (default),
-        :class:`~Orange.classification.tree.TreeLearner` with Gini index
-        or MSE for attribute scoring will be used, and it will not split
-        nodes with less than 5 data instances.
-    :type base_learner: None or :class:`Orange.classification.tree.TreeLearner`
+        :class:`~Orange.classification.tree.SimpleTreeLearner` and it
+        will not split nodes with less than 5 data instances.
+    :type base_learner: None or
+        :class:`Orange.classification.tree.TreeLearner` or
+        :class:`Orange.classification.tree.SimpleTreeLearner`
+
     :param rand: random generator used in bootstrap sampling. If None (default), 
         then ``random.Random(0)`` is used.
-    :param learner: Tree induction learner. If None (default), 
-        the :obj:`~ScoreFeature.base_learner` will be used (and randomized). If
-        :obj:`~ScoreFeature.learner` is specified, it will be used as such
+
+    :param learner: Tree induction learner. If `None` (default), 
+        the :obj:`base_learner` will be used (and randomized). If
+        :obj:`learner` is specified, it will be used as such
         with no additional transformations.
     :type learner: None or :class:`Orange.core.Learner`
 
@@ -260,10 +313,18 @@ class ScoreFeature(orange.MeasureAttribute):
         self.attributes = attributes
         self.rand = rand
         self.base_learner = base_learner
+
+        if base_learner != None and learner != None:
+            wrongSpecification()
+
         if not self.rand:
             self.rand = random.Random(0)
-        if self.learner == None:
-            self.learner = _default_small_learner(attributes=self.attributes, rand=self.rand, base=self.base_learner)
+        self.randorange = Orange.core.RandomGenerator(self.rand.randint(0,2**31-1))
+
+        if learner == None:
+            self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
+        else:
+            self.learner = learner
   
     def __call__(self, feature, instances, apriorClass=None):
         """
@@ -363,7 +424,10 @@ class ScoreFeature(orange.MeasureAttribute):
         attrnum = {}
         for attr in range(len(instances.domain.attributes)):
            attrnum[instances.domain.attributes[attr].name] = attr            
-   
+
+        if "attributes" in self.learner.__dict__:
+            self.learner.attributes = len(instances.domain.attributes)**0.5 if self.attributes == None else self.attributes
+
         # build the forest
         classifiers = []  
         for i in range(trees):
@@ -382,7 +446,11 @@ class ScoreFeature(orange.MeasureAttribute):
             #right on unmixed
             right = self._numRight(oob, cla)
             
-            presl = list(self._presentInTree(cla.tree, attrnum))
+            presl = range(attrs)
+            try: #FIXME SimpleTreeLearner does not know how to output attributes yet
+                presl = list(self._presentInTree(cla.tree, attrnum))
+            except:
+                pass
                       
             #randomize each feature in data and test
             #only those on which there was a split
@@ -422,9 +490,9 @@ class _RandomForestTreeLearner(Orange.core.Learner):
         else:
             return self
       
-    def __init__(self, base, attributes, rand):
+    def __init__(self, base, rand):
         self.base = base
-        self.attributes = attributes
+        self.attributes = None
         self.rand = rand
         if not self.rand: #for all the built trees
             self.rand = random.Random(0)
@@ -457,10 +525,7 @@ class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
 
     def __call__(self, gen, weightID, contingencies, apriori, candidates, clsfr):
         # if number of features for subset is not set, use square root
-        if not self.attributes:
-            self.attributes = int(sqrt(len(candidates)))
-
-        cand = [1]*self.attributes + [0]*(len(candidates) - self.attributes)
+        cand = [1]*int(self.attributes) + [0]*(len(candidates) - int(self.attributes))
         self.rand.shuffle(cand)
         # instead with all features, we will invoke split constructor 
         # only for the subset of a features

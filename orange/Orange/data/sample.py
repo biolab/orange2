@@ -114,11 +114,8 @@ for details.
  
 Say that you have loaded the lenses domain into ``data``. We'll split
 it into two datasets, the first containing only 6 examples and the other
-containing the rest (from `randomindices2.py`_):
+containing the rest (from :download:`randomindices2.py <code/randomindices2.py>`):
  
-.. _randomindices2.py: code/randomindices2.py
-.. _lenses.tab: code/lenses.tab
-
 .. literalinclude:: code/randomindices2.py
     :lines: 11-17
 
@@ -265,11 +262,9 @@ Output::
 :obj:`SubsetIndicesN` does not support stratification; setting
 :obj:`stratified` to :obj:`Stratified` will yield an error.
 
-.. _randomindicesn.py: code/randomindicesn.py
-
 Let us construct a list of indices that would assign half of examples
 to the first set and a quarter to the second and third (part of
-`randomindicesn.py`_, uses `lenses.tab`_):
+:download:`randomindicesn.py <code/randomindicesn.py>`, uses :download:`lenses.tab <code/lenses.tab>`):
 
 .. literalinclude:: code/randomindicesn.py
     :lines: 9-14
@@ -293,12 +288,10 @@ Count them and you'll see there are 12 zero's and 6 one's and two's out of 24.
 
         Number of folds. Default is 10.
  
-.. _randomindicescv.py: code/randomindicescv.py
- 
 We shall prepare indices for an ordinary ten-fold cross validation and
 indices for 10 examples for 5-fold cross validation. For the latter,
 we shall only pass the number of examples, which, of course, prevents
-the stratification. Part of `randomindicescv.py`_, uses `lenses.tab`_):
+the stratification. Part of :download:`randomindicescv.py <code/randomindicescv.py>`, uses :download:`lenses.tab <code/lenses.tab>`):
 
 .. literalinclude:: code/randomindicescv.py
     :lines: 7-12

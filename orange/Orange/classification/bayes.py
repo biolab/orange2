@@ -182,14 +182,14 @@ class NaiveClassifier(Orange.classification.Classifier):
             classes,
             "class probabilities "+(frmtStr % tuple(self.distribution)),
             "",
-            "\n".join(["\n".join([
+            "\n\n".join(["\n".join([
                 "Attribute " + i.variable.name,
                 classes,
                 "\n".join(
                     ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
                     for v in xrange(len(i.variable.values)))]
                 ) for i in self.conditional_distributions
-                        if i.variable.var_type == Orange.data.variable.Discrete])])
+                        if i.variable.var_type == i.variable.Discrete])])
             
 
 def printModel(model):

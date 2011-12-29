@@ -76,6 +76,18 @@ def center(X):
     mu = X.mean(axis=0)
     return X - mu, mu
 
+def standardize(X):
+    """Standardizes the data, i.e. subtracts the column means and divide by 
+    standard deviation.
+    Returns the centered data, the mean, and deviations.
+
+    :param X: the data arry
+    :type table: :class:`numpy.array`
+    """
+    mu = numpy.mean(X, axis=0)
+    std = numpy.std(X, axis=0)
+    return (X - mu) / std, mu, std
+
 def get_bootstrap_sample(table):
     """Generates boostrap sample from an Orange Example Table
     and stores it in a new :class:`Orange.data.Table` object
@@ -113,30 +125,41 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
     before fitting the regression parameters
 
     """
-    
 
-    def __init__(self, name='lasso regression', t=1, tol=0.001, \
+    def __init__(self, name='lasso regression', t=1, s=None, tol=0.001, \
                  n_boot=100, n_perm=100, imputer=None, continuizer=None):
         """
         :param name: name of the linear model, default 'lasso regression'
         :type name: string
+        
         :param t: tuning parameter, upper bound for the L1-norm of the
             regression coefficients
         :type t: float
+        
+        :param s: An alternative way to specify the tuning parameter ``t``.
+            Here ``t`` is taken to be t = s * sum(abs(B)) where B are the
+            coefficients of an ordinary least square linear fit. ``t`` parameter is ignored if ``s`` is specified (by default it
+            is None).
+        :type s: float
+        
         :param tol: tolerance parameter, regression coefficients
             (absoulute value) under tol are set to 0,
             default=0.001
         :type tol: float
+        
         :param n_boot: number of bootstrap samples used for non-parametric
             estimation of standard errors
         :type n_boot: int
+        
         :param n_perm: number of permuations used for non-parametric
             estimation of p-values
         :type n_perm: int
+        
         """
 
         self.name = name
         self.t = t
+        self.s = s
         self.tol = tol
         self.n_boot = n_boot
         self.n_perm = n_perm
@@ -163,32 +186,41 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         domain = table.domain
         X, y, w = table.to_numpy()
         n, m = numpy.shape(X)
-        X, mu_x = center(X)
+        
+        X, mu_x, sigma_x = standardize(X)
         y, coef0 = center(y)
-
+        
+        t = self.t
+        
+        if self.s is not None:
+            beta_full, rss, _, _ = numpy.linalg.lstsq(X, y)
+            t = self.s * numpy.sum(numpy.abs(beta_full))
+            print "t =", t
+            
         import scipy.optimize
-
+            
         # objective function to be minimized
         objective = lambda beta: numpy.linalg.norm(y - numpy.dot(X, beta))
         # initial guess for the regression parameters
         beta_init = numpy.random.random(m)
         # constraints for the regression coefficients
-        cnstr = lambda beta: self.t - sum(numpy.abs(beta))
+        cnstr = lambda beta: t - numpy.sum(numpy.abs(beta))
         # optimal solution
         coefficients = scipy.optimize.fmin_cobyla(objective, beta_init,\
-                                                       cnstr)
+                                                       cnstr, disp=0)
 
         # set small coefficients to 0
         def set_2_0(c): return c if abs(c) > self.tol else 0
-        coefficients = map(set_2_0, coefficients)
-
+        coefficients = numpy.array(map(set_2_0, coefficients))
+        coefficients /= sigma_x
+        
         # bootstrap estimator of standard error of the coefficient estimators
         # assumption: fixed t
         if self.n_boot > 0:
             coeff_b = [] # bootstrapped coefficients
             for i in range(self.n_boot):
                 tmp_table = get_bootstrap_sample(table)
-                l = LassoRegressionLearner(t=self.t, n_boot=0, n_perm=0)
+                l = LassoRegressionLearner(t=t, n_boot=0, n_perm=0)
                 c = l(tmp_table)
                 coeff_b.append(c.coefficients)
             std_errors_fixed_t = numpy.std(coeff_b, axis=0)
@@ -201,7 +233,7 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
             coeff_p = []
             for i in range(self.n_perm):
                 tmp_table = permute_responses(table)
-                l = LassoRegressionLearner(t=self.t, n_boot=0, n_perm=0)
+                l = LassoRegressionLearner(t=t, n_boot=0, n_perm=0)
                 c = l(tmp_table)
                 coeff_p.append(c.coefficients)
             p_vals = \
@@ -298,7 +330,8 @@ class LassoRegression(Orange.classification.Classifier):
             return y_hat
         if result_type == Orange.core.GetProbabilities:
             return dist
-        return (y_hat, dist)    
+        else:
+            return (y_hat, dist)    
 
 deprecated_members({"muX": "mu_x",
                     "stdErrorsFixedT": "std_errors_fixed_t",

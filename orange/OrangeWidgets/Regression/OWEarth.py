@@ -43,9 +43,10 @@ class OWEarth(OWWidget):
         OWGUI.spin(box, self, "degree", 1, 3, step=1,
                    label="Max. term degree", 
                    tooltip="Maximum degree of the terms derived (number of hinge functions).")
-        OWGUI.spin(box, self, "terms", 2, 50, step=1,
-                   label="Max. terms",
-                   tooltip="Maximum number of terms derived in the forward pass.")
+        s = OWGUI.spin(box, self, "terms", 1, 200, step=1,
+                       label="Max. terms",
+                       tooltip="Maximum number of terms derived in the forward pass.")
+        s.control.setSpecialValueText("Automatic")
         
         box = OWGUI.widgetBox(self.controlArea, "Pruning Pass", addSpace=True)
         OWGUI.doubleSpin(box, self, "penalty", min=0.0, max=10.0, step=0.25,
@@ -71,7 +72,7 @@ class OWEarth(OWWidget):
             
     def apply(self):
         learner = earth.EarthLearner(degree=self.degree,
-                                    terms=self.terms,
+                                    terms=self.terms if self.terms >= 2 else None,
                                     penalty=self.penalty,
                                     name=self.name)
         predictor = None
@@ -88,6 +89,14 @@ class OWEarth(OWWidget):
             
         self.send("Learner", learner)
         self.send("Predictor", predictor)
+        
+    def sendReport(self):
+        self.reportSettings("Learning parameters", 
+                            [("Degree", self.degree),
+                             ("Terms", self.terms if self.terms >= 2 else "Automatic"),
+                             ("Knot penalty", "%.2f" % self.penalty)
+                             ])
+        self.reportData(self.data)
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

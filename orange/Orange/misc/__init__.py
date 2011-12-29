@@ -10,7 +10,6 @@ Module Orange.misc contains common functions and classes which are used in other
   :members:
 
 .. automodule:: Orange.misc.selection
-  :members:
 
 .. automodule:: Orange.misc.addons
 
@@ -23,7 +22,6 @@ Module Orange.misc contains common functions and classes which are used in other
 """
 import environ
 import counters
-import selection
 import render
 import serverfiles
 
@@ -573,3 +571,6 @@ def _orange__reduce__(self):
 demangleExamples = deprecated_function_name(demangle_examples)
 progressBarMilestones = deprecated_function_name(progress_bar_milestones)
 printVerbose = deprecated_function_name(print_verbose)
+
+# Must be imported after deprecation function definitions
+import selection

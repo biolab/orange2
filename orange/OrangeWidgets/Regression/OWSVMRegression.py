@@ -1,4 +1,4 @@
-# -*- coding=utf-8 -*-
+# coding=utf-8
 """
 <name>SVM Regression</name>
 <description>Support Vector Machine Regression.</description>
@@ -46,7 +46,7 @@ class OWSVMRegression(OWSVM):
         self.data = None
         self.selFlag=False
         self.preprocessor = None
-        self.name="SVM Regression"
+        self.name = "SVM Regression"
         
         self.loadSettings()
 
@@ -198,6 +198,7 @@ class OWSVMRegression(OWSVM):
         if self.data is not None:
             predictor = learner(self.data)
             support_vectors = predictor.support_vectors
+            predictor.name = self.name
             
         self.send("Learner", learner)
         self.send("Predictor", predictor)

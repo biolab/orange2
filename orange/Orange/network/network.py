@@ -305,7 +305,7 @@ class GraphLayout(orangeom.GraphLayout):
     Vertices are initially placed randomly. Graph is visualized using pylabs 
     matplotlib. 
         
-    `network-constructor-nx.py`_
+    :download:`network-constructor-nx.py <code/network-constructor-nx.py>`
     
     .. literalinclude:: code/network-constructor-nx.py
     
@@ -313,14 +313,12 @@ class GraphLayout(orangeom.GraphLayout):
     
     .. image:: files/network-K5-random.png
     
-    .. _network-constructor-nx.py: code/network-constructor-nx.py
-    
     *Network layout optimization*
     
     This example demonstrates how to optimize network layout using one of the
     included algorithms.
     
-    part of `network-optimization-nx.py`_
+    part of :download:`network-optimization-nx.py <code/network-optimization-nx.py>`
     
     .. literalinclude:: code/network-optimization-nx.py
         :lines: 14-19
@@ -328,8 +326,6 @@ class GraphLayout(orangeom.GraphLayout):
     The result of the above script is a spring force layout optimization:
     
     .. image:: files/network-K5-fr.png
-    
-    .. _network-optimization-nx.py: code/network-optimization-nx.py
     
     """
     

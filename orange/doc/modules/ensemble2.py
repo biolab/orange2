@@ -7,9 +7,9 @@
 import orange, orngTree, orngEnsemble
 
 data = orange.ExampleTable('bupa.tab')
-forest = orngEnsemble.RandomForestLearner(trees=50, name="forest")
 tree = orngTree.TreeLearner(minExamples=2, mForPrunning=2, \
                             sameMajorityPruning=True, name='tree')
+forest = orngEnsemble.RandomForestLearner(trees=50, name="forest")
 learners = [tree, forest]
 
 import orngTest, orngStat
@@ -20,3 +20,4 @@ for i in range(len(learners)):
         orngStat.CA(results)[i], 
         orngStat.BrierScore(results)[i],
         orngStat.AUC(results)[i])
+
