@@ -145,14 +145,14 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
             QPainter p;
             
             QPen pen(m_color);
-            pen.setWidth(qMin(2, m_size/8));
+            pen.setWidth(qMin(2, m_size/6));
             
             p.begin(&pixmap);
             p.setRenderHints(painter->renderHints() | QPainter::Antialiasing);
             if (m_state & Selected)
             {
                 brush.setColor(m_color);
-                pen.setStyle(Qt::NoPen);
+                //pen.setStyle(Qt::NoPen);
             }
             else if (m_state & Marked)
             {
@@ -164,14 +164,19 @@ void Point::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
                 brush = QBrush(g);
                 pen.setStyle(Qt::NoPen);
                 */
-            	QColor c = Qt::yellow;
-            	c.setAlpha(150);
+            	//QColor c = Qt::darkGray;
+            	//c.setAlpha(150);
+            	QColor c = brush.color();
+				//c.setAlpha(m_color.alpha()/6);
 				brush.setColor(c);
+				pen.setColor(Qt::black);
+				pen.setWidth(qMin(3, m_size/3));
+
             }
             else
             {
                 QColor c = brush.color();
-                c.setAlpha(m_color.alpha()/8);
+                c.setAlpha(m_color.alpha()/6);
                 brush.setColor(c);
             }
             const QPainterPath path = path_for_symbol(m_symbol, m_size).translated(0.5*ps, 0.5*ps);
