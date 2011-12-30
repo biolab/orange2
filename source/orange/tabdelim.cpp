@@ -893,14 +893,18 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
 { 
   const TDomain domain = rg->domain.getReference();
   TVarList::const_iterator vb(domain.variables->begin()), vi, ve(domain.variables->end());
+  TVarList::const_iterator cvb(domain.classVars->begin()), cve(domain.classVars->end());
 
   PEITERATE(ex, rg) {
-    vi = vb;
     TExample::const_iterator ri((*ex).begin());
     string st;
     bool ho = false;
 
-    for(; vi!=ve; vi++, ri++) {
+    for(vi=vb; vi!=cve; vi++, ri++) {
+      if (vi==ve) {
+        vi = cvb;
+        if (vi==cve) break;
+      }
       PUTDELIM;
       if (DK && ((*ri).valueType == valueDK))
         fprintf(file, DK);
@@ -1028,6 +1032,7 @@ void tabDelim_printAttributes(FILE *file, PVariable var, bool needsSpace) {
 void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, bool listDiscreteValues)
 { 
   TVarList::const_iterator vi, vb(dom->variables->begin()), ve(dom->variables->end());
+  TVarList::const_iterator cvi, cvb(dom->classVars->begin()), cve(dom->classVars->end());
   TMetaVector::const_iterator mi, mb(dom->metas.begin()), me(dom->metas.end());
 
   bool ho = false;
@@ -1037,6 +1042,10 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   for(vi = vb; vi!=ve; vi++) {
     PUTDELIM;
     fprintf(file, "%s", checkCtrl((*vi)->get_name().c_str()));
+  }
+  for(cvi = cvb; cvi!=cve; cvi++) {
+    PUTDELIM;
+    fprintf(file, "%s", checkCtrl((*cvi)->get_name().c_str()));
   }
   for(mi = mb; mi!=me; mi++) {
     if (mi->optional) {
@@ -1062,6 +1071,10 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   for(vi = vb; vi!=ve; vi++) {
     PUTDELIM;
     printVarType(file, *vi, listDiscreteValues);
+  }
+  for(cvi = cvb; cvi!=cve; cvi++) {
+    PUTDELIM;
+    printVarType(file, *cvi, listDiscreteValues);
   }
   for(mi = mb; mi!=me; mi++) {
     if (mi->optional)
@@ -1091,6 +1104,11 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     PUTDELIM;
     fprintf(file, "class");
     tabDelim_printAttributes(file, dom->classVar, true);
+  }
+  for(cvi = cvb; cvi!=cve; cvi++) {
+    PUTDELIM;
+    fprintf(file, "multiclass");
+    tabDelim_printAttributes(file, *cvi, true);
   }
   for(mi = mb; mi!=me; mi++) {
     if (mi->optional)
