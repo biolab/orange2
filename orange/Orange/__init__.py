@@ -62,6 +62,14 @@ _import("regression.tree")
 
 _import("multitarget")
 
+_import("multilabel")
+_import("multilabel.multibase")
+_import("multilabel.br")
+_import("multilabel.lp")
+_import("multilabel.mlknn")
+_import("multilabel.brknn")
+_import("multilabel.mulan")
+
 _import("associate")
 
 _import("preprocess")

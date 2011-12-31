@@ -11,8 +11,10 @@ Orange Scripting Reference
 
    Orange.classification
 
+   Orange.multilabel
+
    Orange.clustering
-   
+
    Orange.distance
 
    Orange.ensemble

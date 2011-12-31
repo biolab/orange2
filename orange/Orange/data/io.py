@@ -101,6 +101,20 @@ from Orange.data.variable import Variable
 MakeStatus = Variable.MakeStatus
 
 def loadARFF(filename, create_on_new = MakeStatus.Incompatible, **kwargs):
+    """Return class:`Orange.data.Table` containing data from file in Weka ARFF format
+       if there exists no .xml file with the same name. If it does, a multi-label
+       dataset is read and returned.
+    """
+    if filename[-5:] == ".arff":
+        filename = filename[:-5]
+    if os.path.exists(filename + ".xml") and os.path.exists(filename + ".arff"):
+        xml_name = filename + ".xml" 
+        arff_name = filename + ".arff" 
+        return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name,create_on_new)
+    else:
+        return loadARFF_Weka(filename, create_on_new)
+        
+def loadARFF_Weka(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
     """Return class:`Orange.data.Table` containing data from file in Weka ARFF format"""
     if not os.path.exists(filename) and os.path.exists(filename + ".arff"):
         filename = filename + ".arff" 
@@ -121,21 +135,32 @@ def loadARFF(filename, create_on_new = MakeStatus.Incompatible, **kwargs):
         if state == 0 and x[0] != '@':
             print "ARFF import ignoring:",x
         if state == 1:
-            dd = x.split(',')
-            r = []
-            for xs in dd:
-                y = xs.strip(" ")
-                if len(y) > 0:
-                    if y[0]=="'" or y[0]=='"':
-                        r.append(xs.strip("'\""))
+            if x[0] == '{':#sparse data format, begin with '{', ends with '}'
+                r = [None]*len(attributes)
+                dd = x[1:-1]
+                dd = dd.split(',')
+                for xs in dd:
+                    y = xs.split(" ")
+                    if len(y) <> 2:
+                        raise ValueError("the format of the data is error")
+                    r[int(y[0])] = y[1]
+                data.append(r)
+            else:#normal data format, split by ','
+                dd = x.split(',')
+                r = []
+                for xs in dd:
+                    y = xs.strip(" ")
+                    if len(y) > 0:
+                        if y[0]=="'" or y[0]=='"':
+                            r.append(xs.strip("'\""))
+                        else:
+                            ns = xs.split()
+                            for ls in ns:
+                                if len(ls) > 0:
+                                    r.append(ls)
                     else:
-                        ns = xs.split()
-                        for ls in ns:
-                            if len(ls) > 0:
-                                r.append(ls)
-                else:
-                    r.append('?')
-            data.append(r[:len(attributes)])
+                        r.append('?')
+                data.append(r[:len(attributes)])
         else:
             y = []
             for cy in x.split(' '):
@@ -179,7 +204,9 @@ def loadARFF(filename, create_on_new = MakeStatus.Incompatible, **kwargs):
         lex.append(e)
     t = Orange.data.Table(d,lex)
     t.name = name
-    t.attribute_load_status = attributeLoadStatus
+    
+    if hasattr(t, "attribute_load_status"):
+        t.attribute_load_status = attributeLoadStatus
     return t
 loadARFF = Orange.misc.deprecated_keywords(
 {"createOnNew": "create_on_new"}
@@ -241,6 +268,20 @@ def toARFF(filename, table, try_numericize=0):
         for i in x[:-1]:
             f.write('%s,'%i)
         f.write('%s\n'%x[-1])
+
+def loadMULAN(filename, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
+    """Return class:`Orange.data.Table` containing data from file in Mulan ARFF and XML format"""
+    if filename[-4:] == ".xml":
+        filename = filename[:-4]
+    if os.path.exists(filename + ".xml") and os.path.exists(filename + ".arff"):
+        xml_name = filename + ".xml" 
+        arff_name = filename + ".arff" 
+        return Orange.multilabel.mulan.trans_mulan_data(xml_name,arff_name)
+    else:
+        return None
+loadARFF = Orange.misc.deprecated_keywords(
+{"createOnNew": "create_on_new"}
+)(loadARFF)
 
 def toC50(filename, table, try_numericize=0):
     """Save class:`Orange.data.Table` to file in C50 format"""
@@ -736,6 +777,7 @@ def save_csv(file, table, orange_specific=True, **kwargs):
         
 register_file_type("R", None, toR, ".R")
 register_file_type("Weka", loadARFF, toARFF, ".arff")
+register_file_type("Mulan", loadMULAN, None, ".xml")
 #registerFileType("C50", None, toC50, [".names", ".data", ".test"])
 register_file_type("libSVM", loadLibSVM, toLibSVM, ".svm")
 
