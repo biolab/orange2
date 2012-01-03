@@ -7,13 +7,11 @@ Orange Scripting Reference
 
    Orange.associate
 
-   Orange.data
-
    Orange.classification
 
-   Orange.multilabel
-
    Orange.clustering
+
+   Orange.data
 
    Orange.distance
 
@@ -22,6 +20,8 @@ Orange Scripting Reference
    Orange.evaluation
 
    Orange.feature
+
+   Orange.multilabel
 
    Orange.network
 
