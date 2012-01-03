@@ -262,7 +262,7 @@ class Evaluation(object):
         :param examples: data table on which the learners will be tested
         :param indices: a list of integers that defines, which examples will be
                used for testing in each fold. The number of indices should be
-                equal to the number of examples.
+               equal to the number of examples.
         :param preprocessors: a list of preprocessors to be used on data.
         :param callback: a function that will be called after each fold is
                computed.
