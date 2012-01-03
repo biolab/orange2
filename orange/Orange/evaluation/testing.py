@@ -127,7 +127,8 @@ class ExperimentResults(object):
         raise NotImplementedError("This feature is no longer supported. Pickle whole class instead.")
 
     def create_tested_example(self, fold, example):
-        actual = [example.getclass, example.get_classes][self.test_type]()
+        actual = example.getclass() if self.test_type == TEST_TYPE_SINGLE \
+                                  else example.get_classes()
         return TestedExample(fold,
                              self.converter(actual),
                              self.number_of_learners,
@@ -172,16 +173,17 @@ class ExperimentResults(object):
     def __repr__(self):
         return str(self.__dict__)
 
-
 ExperimentResults = deprecated_members({"classValues": "class_values",
                                         "classifierNames": "classifier_names",
                                         "baseClass": "base_class",
                                         "numberOfIterations": "number_of_iterations",
                                         "numberOfLearners": "number_of_learners"
-                                        })(ExperimentResults)
+})(ExperimentResults)
 
-#### Experimental procedures
+    
 class Evaluation(object):
+    """Common methods for learner evaluation."""
+
     @deprecated_keywords({"pps": "preprocessors",
                           "strat": "stratified",
                           "randseed": "random_generator",
@@ -189,8 +191,10 @@ class Evaluation(object):
                           "randomGenerator": "random_generator",
                           "storeClassifiers": "store_classifiers",
                           "storeExamples": "store_examples"})
-    def cross_validation(self, learners, examples, folds=10, stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible,
-                        preprocessors=(), random_generator=0, callback=None, store_classifiers=False, store_examples=False):
+    def cross_validation(self, learners, examples, folds=10,
+            stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible,
+            preprocessors=(), random_generator=0, callback=None,
+            store_classifiers=False, store_examples=False):
         """Perform cross validation with specified number of folds.
 
         :param learners: list of learners to be tested
@@ -198,69 +202,73 @@ class Evaluation(object):
         :param folds: number of folds to perform
         :param stratified: sets, whether indices should be stratified
         :param preprocessors: a list of preprocessors to be used on data.
-        :param random_generator: random seed or random generator for selection of indices
-        :param callback: a function that will be called after each fold is computed.
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param random_generator: random seed or random generator for selection
+               of indices
+        :param callback: a function that will be called after each fold is
+               computed.
+        :param store_classifiers: if True, classifiers will be accessible in
+               test_results.
+        :param store_examples: if True, examples will be accessible in
+               test_results.
+        :return: :obj:`ExperimentResults`
         """
         (examples, weight) = demangle_examples(examples)
 
-        indices = Orange.core.MakeRandomIndicesCV(examples, folds, stratified=stratified, random_generator=random_generator)
-        return self.test_with_indices(learners=learners, examples=(examples, weight), indices=indices,
-                                 preprocessors=preprocessors,
-                                 callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
+        indices = Orange.core.MakeRandomIndicesCV(examples, folds,
+            stratified=stratified, random_generator=random_generator)
+
+        return self.test_with_indices(
+            learners=learners,
+            examples=(examples, weight),
+            indices=indices,
+            preprocessors=preprocessors,
+            callback=callback,
+            store_classifiers=store_classifiers,
+            store_examples=store_examples)
 
 
     @deprecated_keywords({"pps": "preprocessors",
                           "storeClassifiers": "store_classifiers",
                           "storeExamples": "store_examples"})
     def leave_one_out(self, learners, examples, preprocessors=(),
-                      callback=None, store_classifiers=False, store_examples=False):
+            callback=None, store_classifiers=False, store_examples=False):
         """Perform leave-one-out evaluation of learners on a data set.
 
         :param learners: list of learners to be tested
         :param examples: data table on which the learners will be tested
         :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that will be called after each fold is computed.
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param callback: a function that will be called after each fold is
+               computed.
+        :param store_classifiers: if True, classifiers will be accessible in
+               test_results.
+        :param store_examples: if True, examples will be accessible in
+               test_results.
+        :return: :obj:`ExperimentResults`
         """
         return self.test_with_indices(learners, examples, indices=range(len(examples)), preprocessors=preprocessors,
                                  callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
-    
-    def check_test_type(self, instances, learners):
-        learner_is_mlc = [isinstance(l, Orange.multilabel.MultiLabelLearner)
-                          for l in learners]
-        multi_label = any(learner_is_mlc)
-        if multi_label and not all(learner_is_mlc):
-            raise ValueError("Test on mixed types of learners (MLC and non-MLC) not possible")
-        
-        if multi_label and not instances.domain.class_vars:
-            raise ValueError("Test data with multiple labels (class vars) expected")
-        if not multi_label and not instances.domain.class_var:
-            raise ValueError("Test data set without class attributes")
-        
-        return [TEST_TYPE_SINGLE, TEST_TYPE_MLC][multi_label]
 
-    
     @deprecated_keywords({"storeExamples": "store_examples",
                           "storeClassifiers": "store_classifiers=True",
                           "pps":"preprocessors"})
     def test_with_indices(self, learners, examples, indices, preprocessors=(),
-                          callback=None, store_classifiers=False, store_examples=False, **kwargs):
+            callback=None, store_classifiers=False, store_examples=False,
+            **kwargs):
         """
-        Perform a cross-validation-like test. Examples for each fold are selected
-        based on given indices.
+        Perform a cross-validation-like test. Examples for each fold are
+        selected based on given indices.
 
         :param learners: list of learners to be tested
         :param examples: data table on which the learners will be tested
         :param indices: a list of integers that defines, which examples will be
-         used for testing in each fold. The number of indices should be equal to
-         the number of examples.
+               used for testing in each fold. The number of indices should be
+                equal to the number of examples.
         :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that will be called after each fold is computed.
+        :param callback: a function that will be called after each fold is
+               computed.
         :param store_classifiers: if True, classifiers will be accessible in test_results.
         :param store_examples: if True, examples will be accessible in test_results.
+        :return: :obj:`ExperimentResults`
         """
         examples, weight = demangle_examples(examples)
         if not examples:
@@ -333,6 +341,7 @@ class Evaluation(object):
         :param callback: a function that will be called after each fold is computed.
         :param store_classifiers: if True, classifiers will be accessible in test_results.
         :param store_examples: if True, examples will be accessible in test_results.
+        :return: :obj:`ExperimentResults`
         """
 
         examples, weight = demangle_examples(examples)
@@ -382,6 +391,7 @@ class Evaluation(object):
         :param callback: a function that is be called after each classifier is computed.
         :param store_classifiers: if True, classifiers will be accessible in test_results.
         :param store_examples: if True, examples will be accessible in test_results.
+        :return: :obj:`ExperimentResults`
         """
         learn_set, learn_weight = demangle_examples(learn_set)
         test_set, test_weight = demangle_examples(test_set)
@@ -432,6 +442,7 @@ class Evaluation(object):
         :param callback: a function that is be called after each classifier is computed.
         :param store_classifiers: if True, classifiers will be accessible in test_results.
         :param store_examples: if True, examples will be accessible in test_results.
+        :return: :obj:`ExperimentResults`
         """
         pick = Orange.core.MakeRandomIndices2(stratified = stratification, p0 = learning_proportion, randomGenerator = random_generator)
 
@@ -464,41 +475,41 @@ class Evaluation(object):
                 callback()
         return test_results
 
-    def learning_curve(self, learners, examples, cv=None, pick=None, proportions=Orange.core.frange(0.1),
+    @deprecated_keywords({"storeExamples": "store_examples",
+                          "storeClassifiers": "store_classifiers",
+                          "learnProp": "learning_proportion",
+                          "strat": "stratification",
+                          "pps": "preprocessors",
+                          "indicesrandseed": "random_generator",
+                          "randseed": "random_generator",
+                          "randomGenerator": "random_generator"})
+    def learning_curve(self, learners, examples, cv_indices=None, proportion_indices=None, proportions=Orange.core.frange(0.1),
                        preprocessors=(), random_generator=0, callback=None):
         """
-        Computes learning curves using a procedure recommended by Salzberg
-        (1997). It first prepares data subsets (folds). For each proportion,
-        it performs the cross-validation, but taking only a proportion of
-        examples for learning.
+        Compute a learning curve using multiple cross-validations where
+        models are trained on different portions of the training data.
 
-        Arguments ``cv`` and ``pick`` give the methods for preparing
-        indices for cross-validation and random selection of learning
-        examples. If they are not given, :obj:`orange.MakeRandomIndicesCV` and
-        :obj:`orange.MakeRandomIndices2` are used, both will be stratified and the
-        cross-validation will be 10-fold. Proportions is a list of proportions
-        of learning examples.
-
-        The function can save time by loading experimental existing data for
-        any test that were already conducted and saved. Also, the computed
-        results are stored for later use. You can enable this by adding
-        a keyword argument ``cache=1``. Another keyword deals with progress
-        report. If you add ``verbose=1``, the function will print the proportion
-        and the fold number.
-
+        :param learners: list of learners to be tested
+        :param examples: a dataset used for evaluation
+        :param cv_indices: indices used for crossvalidation
+        :param proportion_indices: indices for proportion selection
+        :param proportions: proportions of train data to be used
+        :param preprocessors: a list of preprocessors to be used on data.
+        :param callback: a function that is be called after each classifier is computed.
+        :return: list of :obj:`ExperimentResults`
         """
-        if cv is None:
-            cv = Orange.core.MakeRandomIndicesCV(folds=10, stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible, randomGenerator = random_generator)
-        if pick is None:
-            pick = Orange.core.MakeRandomIndices2(stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible, randomGenerator = random_generator)
+        if cv_indices is None:
+            cv_indices = Orange.core.MakeRandomIndicesCV(folds=10, stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible, randomGenerator = random_generator)
+        if proportion_indices is None:
+            proportion_indices = Orange.core.MakeRandomIndices2(stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible, randomGenerator = random_generator)
 
         examples, weight = demangle_examples(examples)
-        indices = cv(examples)
+        indices = cv_indices(examples)
         
         all_results=[]
         for p in proportions:
             def select_proportion_preprocessor(examples):
-                return examples.selectref(pick(examples, p0=p), 0)
+                return examples.selectref(proportion_indices(examples, p0=p), 0)
 
             test_results = self.test_with_indices(learners, examples, indices,
                                                   preprocessors=list(preprocessors) + [("L", select_proportion_preprocessor)],
@@ -508,25 +519,18 @@ class Evaluation(object):
 
 
     def learning_curve_n(self, learners, examples, folds=10,
-                       strat=Orange.core.MakeRandomIndices.StratifiedIfPossible,
-                       proportions=Orange.core.frange(0.1), pps=[], **argkw):
-        """Construct a learning curve for learners.
+                       proportions=Orange.core.frange(0.1), preprocessors=(), callback=None):
+        """
+        Compute a learning curve where each cross-validation has given number of folds
+        and models are trained on specified proportion of training data.
 
-        A simpler interface for the function :obj:`learning_curve`. Instead
-        of methods for preparing indices, it simply takes the number of folds
-        and a flag telling whether we want a stratified cross-validation or
-        not. This function does not return a single :obj:`ExperimentResults` but
-        a list of them, one for each proportion. ::
-
-            prop = [0.2, 0.4, 0.6, 0.8, 1.0]
-            res = Orange.evaluation.testing.learning_curve_n(learners, data, folds = 5, proportions = prop)
-            for i, p in enumerate(prop):
-                print "%5.3f:" % p,
-                printResults(res[i])
-
-        This function basically prepares a random generator and example selectors
-        (``cv`` and ``pick``) and calls :obj:`learning_curve`.
-
+        :param learners: list of learners to be tested
+        :param examples: a dataset used for evaluation
+        :param folds: number of folds for cross-validation
+        :param proportions: proportions of train data to be used
+        :param preprocessors: a list of preprocessors to be used on data.
+        :param callback: a function that is called after each classifier is computed.
+        :return: list of :obj:`ExperimentResults`
         """
 
         seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
@@ -543,29 +547,22 @@ class Evaluation(object):
             pick=Orange.core.RandomIndices2(stratified = strat, randomGenerator = randomGenerator)
         return learning_curve(learners, examples, cv, pick, proportions, pps, **argkw)
     
-    def learning_curve_with_test_data(self, learners, learn_set, test_set, times=10,
-                                  proportions=Orange.core.frange(0.1),
-                                  stratification=Orange.core.MakeRandomIndices.StratifiedIfPossible, pps=[], random_generator=0):
+    def learning_curve_with_test_data(self, learners, learn_set, test_set,
+            times=10, proportions=Orange.core.frange(0.1),
+            stratification=Orange.core.MakeRandomIndices.StratifiedIfPossible,
+            preprocessors=(), random_generator=0):
         """
-        This function is suitable for computing a learning curve on datasets,
-        where learning and testing examples are split in advance. For each
-        proportion of learning examples, it randomly select the requested
-        number of learning examples, builds the models and tests them on the
-        entire testset. The whole test is repeated for the given number of
-        times for each proportion. The result is a list of :obj:`ExperimentResults`,
-        one for each proportion.
+        Compute a learning curve given two datasets. Models are learned on
+        proportion of the first dataset and then used to make predictions for
+        the second dataset.
 
-        In the following scripts, examples are pre-divided onto training
-        and testing set. Learning curves are computed in which 20, 40, 60,
-        80 and 100 percents of the examples in the former set are used for
-        learning and the latter set is used for testing. Random selection
-        of the given proportion of learning set is repeated for five times.
-
-        .. literalinclude:: code/testing-test.py
-            :start-after: Learning curve with pre-separated data
-            :end-before: # End
-
-
+        :param learners: list of learners to be tested
+        :param examples: a dataset used for evaluation
+        :param folds: number of folds for cross-validation
+        :param proportions: proportions of train data to be used
+        :param preprocessors: a list of preprocessors to be used on data.
+        :param callback: a function that is called after each classifier is computed.
+        :return: list of :obj:`ExperimentResults`
         """
         learn_set, learn_weight = demangle_examples(learn_set)
         test_set, test_weight = demangle_examples(test_set)
@@ -610,7 +607,7 @@ class Evaluation(object):
         """
 
         examples, weight = demangle_examples(examples)
-        test_type = self.check_test_type(examples, learners)
+        test_type = self.check_test_type(examples, classifiers)
 
         test_results = ExperimentResults(1,
                                         classifierNames = [getobjectname(l) for l in classifiers],
@@ -696,6 +693,21 @@ class Evaluation(object):
             else:
                 return "*"
         return pps
+
+    def check_test_type(self, instances, models):
+        model_is_mlc = [isinstance(m, Orange.multilabel.MultiLabelLearner) or
+                        isinstance(m, Orange.multilabel.MultiLabelClassifier)
+                          for m in models]
+        multi_label = any(model_is_mlc)
+        if multi_label and not all(model_is_mlc):
+            raise ValueError("Test on mixed types of learners (MLC and non-MLC) not possible")
+
+        if multi_label and not instances.domain.class_vars:
+            raise ValueError("Test data with multiple labels (class vars) expected")
+        if not multi_label and not instances.domain.class_var:
+            raise ValueError("Test data set without class attributes")
+
+        return TEST_TYPE_MLC if multi_label else TEST_TYPE_SINGLE
     
 default_evaluation = _default_evaluation = Evaluation()
 

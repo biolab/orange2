@@ -14,12 +14,13 @@ object(s) can be passed to statistical function for model evaluation
 (classification accuracy, Brier score, ROC analysis...) available in
 module :obj:`Orange.evaluation.scoring`.
 
-Your scripts will thus basically conduct experiments using functions in
-:obj:`Orange.evaluation.testing`, covered on this page and then evaluate
-the results by functions in :obj:`Orange.evaluation.scoring`. For those
-interested in writing their own statistical measures of the quality of
-models, description of :obj:`TestedExample` and :obj:`ExperimentResults`
-are available at the end of this page.
+Your scripts will thus basically conduct experiments using methods of
+:obj:`Evaluation` class and functions in  :obj:`Orange.evaluation.testing`,
+covered on this page and then evaluate the results by functions in
+:obj:`Orange.evaluation.scoring`. For those interested in writing their own
+statistical measures of the quality of models,
+description of :obj:`TestedExample` and :obj:`ExperimentResults` are
+available at the end of this page.
 
 .. note:: Orange has been "de-randomized". Running the same script twice
     will generally give the same results, unless special care is taken to
@@ -111,7 +112,7 @@ Many function in this module use a set of common arguments, which we define here
       that you can have independent local random generators in case you
       need them.
 
-*pps*
+*preprocessors*
     A list of preprocessors. It consists of tuples ``(c, preprocessor)``,
     where ``c`` determines whether the preprocessor will be applied
     to the learning set (``"L"``), test set (``"T"``) or to both
@@ -135,7 +136,7 @@ Many function in this module use a set of common arguments, which we define here
     Gives the proportions of learning examples at which the tests are
     to be made, where applicable. The default is ``[0.1, 0.2, ..., 1.0]``.
 
-*storeClassifiers (keyword argument)*
+*store_classifiers (keyword argument)*
     If this flag is set, the testing procedure will store the constructed
     classifiers. For each iteration of the test (eg for each fold in
     cross validation, for each left out example in leave-one-out...),
@@ -145,25 +146,14 @@ Many function in this module use a set of common arguments, which we define here
     The script below makes 100 repetitions of 70:30 test and store the
     classifiers it induces. ::
 
-        res = Orange.evaluation.testing.proportion_test(learners, data, 0.7, 100, storeClassifier=1)
-
-*verbose (keyword argument)*
-    Several functions can report their progress if you add a keyword
-    argument ``verbose=1``.
+        res = Orange.evaluation.testing.proportion_test(learners, data, 0.7,
+        100, store_classifiers=1)
 
 Sampling and Testing Functions
 ==============================
 
-.. autofunction:: proportion_test
-.. autofunction:: leave_one_out
-.. autofunction:: cross_validation
-.. autofunction:: test_with_indices
-.. autofunction:: learning_curve
-.. autofunction:: learning_curve_n
-.. autofunction:: learning_curve_with_test_data
-.. autofunction:: learn_and_test_on_test_data
-.. autofunction:: learn_and_test_on_learn_data
-.. autofunction:: test_on_data
+.. autoclass:: Evaluation
+   :members:
 
 Classes
 =======
