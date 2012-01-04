@@ -2,6 +2,7 @@
 <description>View images embeded in example table</description>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>4050</priority>
+<icon>icons/ImageViewer.png</icon>
 """
 
 from OWWidget import *
