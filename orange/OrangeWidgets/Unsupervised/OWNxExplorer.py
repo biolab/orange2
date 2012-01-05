@@ -78,7 +78,7 @@ try:
             self.color = 0
             self.edgeColor = 0
             self.vertexSize = 0
-            self.nShown = self.nHidden = self.nMarked = self.nSelected = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
+            self.nShown = self.nHidden = self.nMarked = self.nSelected = self.verticesPerEdge = self.edgesPerVertex = 0
             self.optimizeWhat = 1
             self.maxLinkSize = 3
             self.maxVertexSize = 7
@@ -278,15 +278,12 @@ try:
             OWGUI.label(ib, self, "Number of edges: %(number_of_edges_label)i")
             OWGUI.label(ib, self, "Nodes per edge: %(verticesPerEdge).2f")
             OWGUI.label(ib, self, "Edges per node: %(edgesPerVertex).2f")
-            OWGUI.label(ib, self, "Diameter: %(diameter).0f")
-            OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
             
             ib = OWGUI.widgetBox(self.infoTab, orientation="horizontal")
             
-            OWGUI.button(ib, self, "Degree dist", callback=self.show_degree_dist, width=84, debuggingEnabled=False)
-            OWGUI.button(ib, self, "Save net", callback=self.save_network, width=84, debuggingEnabled=False)
-            OWGUI.button(ib, self, "Save img", callback=self.networkCanvas.saveToFile, width=84, debuggingEnabled=False)
-            self.reportButton = OWGUI.button(ib, self, "&Report", self.reportAndFinish, width=84, debuggingEnabled=0)
+            OWGUI.button(ib, self, "Save net", callback=self.save_network, debuggingEnabled=False)
+            OWGUI.button(ib, self, "Save img", callback=self.networkCanvas.saveToFile, debuggingEnabled=False)
+            self.reportButton = OWGUI.button(ib, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
             self.reportButton.setAutoDefault(0)
             
             #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
@@ -678,26 +675,6 @@ try:
                 self.edgesPerVertex = float(self.graph.number_of_edges()) / float(self.graph.number_of_nodes())
             else:
                 self.edgesPerVertex = 0
-            
-            undirected_graph = self.graph.to_undirected() if self.graph.is_directed() else self.graph
-            components = Orange.network.nx.algorithms.components.connected_components(undirected_graph)
-            if len(components) > 1:
-                self.diameter = float('nan')
-            else:
-                try:
-                    if self.graph.number_of_nodes() > 1:
-                        self.diameter = Orange.network.nx.algorithms.distance_measures.diameter(self.graph)
-                    else:
-                        self.diameter = -1
-                except Orange.network.nx.NetworkXError as err:
-                    if 'infinite path length' in err.message:
-                        self.diameter = float('inf')
-                    else:
-                        raise err 
-            if self.graph.is_multigraph() or self.graph.number_of_nodes() <= 0:
-                self.clustering_coefficient = -1
-            else:
-                self.clustering_coefficient = Orange.network.nx.algorithms.cluster.average_clustering(undirected_graph) * 100
           
         def change_graph(self, newgraph):
             self.information()
@@ -775,6 +752,10 @@ try:
             if graph.number_of_nodes() < 2:
                 self.set_graph_none()
                 self.information('I\'m not really in a mood to visualize just one node. Try again tomorrow.')
+                return
+            
+            if graph == self.graph_base:
+                self.set_items(graph.items())
                 return
             
             self.graph_base = graph
@@ -957,28 +938,7 @@ try:
                     self.networkCanvas.setHiddenNodes(hiddenNodes)
                 except:
                     self.warning('"index" attribute does not exist in "items" table.')
-                        
-        def show_degree_dist(self):
-            if self.graph is None:
-                return
-            
-            from matplotlib import rcParams
-            import pylab as p
-            
-            x = self.graph.degree().values()
-            nbins = len(set(x))
-            if nbins > 500:
-              bbins = 500
-            
-            # the histogram of the data
-            n, bins, patches = p.hist(x, nbins)
-            
-            p.xlabel('Degree')
-            p.ylabel('No. of nodes')
-            p.title(r'Degree distribution')
-            
-            p.show()
-        
+                       
         #######################################################################
         ### Layout Optimization                                             ###
         #######################################################################
@@ -1350,8 +1310,6 @@ try:
                                  ("Number of edges", self.graph.number_of_edges()),
                                  ("Vertices per edge", "%.3f" % self.verticesPerEdge),
                                  ("Edges per vertex", "%.3f" % self.edgesPerVertex),
-                                 ("Diameter", self.diameter),
-                                 ("Clustering Coefficient", "%.1f%%" % self.clustering_coefficient)
                                  ])
             if self.color or self.vertexSize or self.markerAttributes or self.edgeColor:
                 self.reportSettings("Visual settings",
