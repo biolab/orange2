@@ -731,7 +731,7 @@ try:
     
         def set_graph_none(self):
             self.graph = None
-            self.graph_base = None
+            #self.graph_base = None
             self._clear_combos()
             self.number_of_nodes_label = -1
             self.number_of_edges_label = -1
@@ -754,7 +754,7 @@ try:
                 self.information('I\'m not really in a mood to visualize just one node. Try again tomorrow.')
                 return
             
-            if graph == self.graph_base:
+            if graph == self.graph_base and self.graph is not None and self._network_view is None:
                 self.set_items(graph.items())
                 return
             
