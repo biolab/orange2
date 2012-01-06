@@ -1451,7 +1451,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 							int i = 3;
 							while(i+1<n) {
 								PyDict_SetItemString(aData, words[i].c_str(),
-										PyString_FromString(words[i+1].c_str()));
+								PyString_FromString(words[i+1].c_str()));
 								i += 2;
 							}
 
@@ -1466,6 +1466,14 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 									PyList_Append(arcList, nel);
 									Py_DECREF(nel);
 								}
+							}
+							// if no weight specified, use default weight 1
+							else
+							{
+								double i3 = 1;
+								PyObject *nel = Py_BuildValue("iidN", i1 - 1, i2 - 1, i3, aData);
+								PyList_Append(arcList, nel);
+								Py_DECREF(nel);
 							}
 						}
 					}
@@ -1501,7 +1509,7 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 						int i = 3;
 						while(i+1<n) {
 							PyDict_SetItemString(eData, words[i].c_str(),
-									PyString_FromString(words[i+1].c_str()));
+							PyString_FromString(words[i+1].c_str()));
 							i += 2;
 						}
 
@@ -1516,6 +1524,14 @@ PyObject *GraphLayout_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARA
 								PyList_Append(edgeList, nel);
 								Py_DECREF(nel);
 							}
+						}
+						// if no weight specified, use default weight 1
+						else
+						{
+							double i3 = 1;
+							PyObject *nel = Py_BuildValue("iidN", i1 - 1, i2 - 1, i3, eData);
+							PyList_Append(edgeList, nel);
+							Py_DECREF(nel);
 						}
 					}
 				}
