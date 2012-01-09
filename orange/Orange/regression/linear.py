@@ -408,9 +408,6 @@ class LinearRegression(Orange.classification.Classifier):
         i.e. estimated regression coefficients with standard errors, t-scores
         and significances.
 
-        :param lr: a linear regression model object.
-        :type lr: :class:`LinearRegression`    
-
         """
         from string import join 
         labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
