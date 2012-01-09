@@ -12,7 +12,7 @@ Example ::
     >>> from Orange.regression import linear
     >>> table = Orange.data.Table("housing")
     >>> c = linear.LinearRegressionLearner(table)
-    >>> linear.print_linear_regression_model(c)
+    >>> print c
     
       Variable  Coeff Est  Std Error    t-value          p
      Intercept     36.459      5.103      7.144      0.000   ***
