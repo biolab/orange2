@@ -57,7 +57,7 @@ cartesian.get_value_from = Orange.classification.lookup.ClassifierByLookupTable(
 
 print "Information gain of Cartesian product of %s and %s: %6.4f" % (table.domain[2].name, table.domain[3].name, meas(cartesian, table))
 
-mid = Orange.core.newmetaid()
+mid = Orange.data.new_meta_id()
 table.domain.add_meta(mid, Orange.data.variable.Discrete(values = ["v0", "v1"]))
 table.add_meta_attribute(mid)
 

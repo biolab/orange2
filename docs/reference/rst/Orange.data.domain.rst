@@ -142,7 +142,7 @@ attribute named "misses" with the following code (a detailed
 desription of methods related to meta attributes is given below)::
 
      >>> misses = Orange.data.variable.Continuous("misses")
-     >>> id = orange.new_meta_id()
+     >>> id = Orange.data.new_meta_id()
      >>> data.domain.add_meta(id, misses)
 
 This does not change the data: no attributes are added to data
@@ -188,8 +188,8 @@ appropriate values, otherwise they will have a "don't know" value. ::
      domain = data.domain
      d2 = Orange.data.Domain(["a", "b", "e", "y"], domain)
      for attr in ["c", "d", "f"]:
-	 d2.add_meta(orange.newmetaid(), domain[attr])
-     d2.add_meta(orange.newmetaid(), orange.data.variable.Discrete("X"))
+	 d2.add_meta(Orange.data.new_meta_id(), domain[attr])
+     d2.add_meta(Orange.data.new_meta_id(), orange.data.variable.Discrete("X"))
      data2 = Orange.data.Table(d2, data)
 
 Domain ``d2`` in this example has variables ``a``, ``b``, ``e`` and the

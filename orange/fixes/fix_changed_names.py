@@ -45,6 +45,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.GetValue": "Orange.classification:Classifier.GetValue",
            "orange.GetProbabilities": "Orange.classification:Classifier.GetProbabilities",
            "orange.GetBoth": "Orange.classification:Classifier.GetBoth",
+
+           "orange.newmetaid": "Orange.data.new_meta_id",
            
            "orange.Distribution": "Orange.statistics.distribution.Distribution",
            "orange.DiscDistribution": "Orange.statistics.distribution.Discrete",

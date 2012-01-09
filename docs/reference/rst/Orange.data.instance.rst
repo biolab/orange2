@@ -126,7 +126,7 @@ Another consequence of registering the meta attribute is that it
 allows for conversion from Python native types::
 
     ok = orange.EnumVariable("ok?", values=["no", "yes"])
-    ok_id = orange.newmetaid()
+    ok_id = Orange.data.new_meta_id()
     data.domain.addmeta(ok_id, ok)
     data[0][ok_id] = "yes"
 

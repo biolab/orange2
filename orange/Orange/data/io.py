@@ -691,7 +691,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible, **kwargs):
                 class_var_load_status.append(status)
                 class_indices.append(i)
             elif flag == "meta":
-                mid = Orange.core.newmetaid()
+                mid = Orange.data.new_meta_id()
                 metas[mid] = var
                 meta_attribute_load_status[mid] = status
                 meta_indices.append((i, var))

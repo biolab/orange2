@@ -69,7 +69,7 @@ class MultikNNLearner(_multibase.MultiLabelLearner):
         nnc = Orange.classification.knn.FindNearestConstructor()
         nnc.distanceConstructor = Orange.core.ExamplesDistanceConstructor_Euclidean()
         
-        weight_id = Orange.core.newmetaid()
+        weight_id = Orange.data.new_meta_id()
         self.knn = nnc(instances, 0, weight_id)
         self.weight_id = weight_id
 

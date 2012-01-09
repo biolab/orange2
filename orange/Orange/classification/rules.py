@@ -1305,7 +1305,7 @@ class ABCN2(RuleLearner):
         """
         (newDomain, targetVal) = createDichotomousClass(examples.domain, examples.domain.class_var, str(cl), negate=0)
         newDomainmetas = newDomain.getmetas()
-        newDomain.addmeta(Orange.core.newmetaid(), examples.domain.class_var) # old class as meta
+        newDomain.addmeta(Orange.data.new_meta_id(), examples.domain.class_var) # old class as meta
         dichData = examples.select(newDomain)
         if self.argument_id:
             for d in dichData: # remove arguments given to other classes
@@ -1701,11 +1701,11 @@ class CovererAndRemover_MultWeights(RuleCovererAndRemover):
         self.mult = mult
     def __call__(self, rule, instances, weights, target_class):
         if not weights:
-            weights = Orange.core.newmetaid()
+            weights = Orange.data.new_meta_id()
             instances.addMetaAttribute(weights,1.)
             instances.domain.addmeta(weights, Orange.data.variable.\
                 Continuous("weights-"+str(weights)), True)
-        newWeightsID = Orange.core.newmetaid()
+        newWeightsID = Orange.data.new_meta_id()
         instances.addMetaAttribute(newWeightsID,1.)
         instances.domain.addmeta(newWeightsID, Orange.data.variable.\
             Continuous("weights-"+str(newWeightsID)), True)
@@ -1726,7 +1726,7 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
     
     def __call__(self, rule, instances, weights, target_class):
         if not weights:
-            weights = Orange.core.newmetaid()
+            weights = Orange.data.new_meta_id()
             instances.addMetaAttribute(weights,1.)
             instances.domain.addmeta(weights, Orange.data.variable.\
                 Continuous("weights-"+str(weights)), True)
@@ -1734,9 +1734,9 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
             coverage = instances.domain.getmeta("Coverage")
         except:
             coverage = Orange.data.variable.Continuous("Coverage")
-            instances.domain.addmeta(Orange.core.newmetaid(),coverage, True)
+            instances.domain.addmeta(Orange.data.new_meta_id(),coverage, True)
             instances.addMetaAttribute(coverage,0.0)
-        newWeightsID = Orange.core.newmetaid()
+        newWeightsID = Orange.data.new_meta_id()
         instances.addMetaAttribute(newWeightsID,1.)
         instances.domain.addmeta(newWeightsID, Orange.data.variable.\
             Continuous("weights-"+str(newWeightsID)), True)
@@ -1757,7 +1757,7 @@ class CovererAndRemover_Prob(RuleCovererAndRemover):
     """ This class impements probabilistic covering. """
     def __init__(self, examples, weight_id, target_class, apriori, argument_id):
         self.best_rule = [None]*len(examples)
-        self.prob_attribute = Orange.core.newmetaid()
+        self.prob_attribute = Orange.data.new_meta_id()
         self.apriori_prob = apriori[target_class]/apriori.abs
         examples.addMetaAttribute(self.prob_attribute, self.apriori_prob)
         examples.domain.addmeta(self.prob_attribute, 

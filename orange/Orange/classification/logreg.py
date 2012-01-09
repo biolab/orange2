@@ -483,7 +483,7 @@ class LogRegLearnerGetPriors(object):
 
         # get extended Model (you should not change data)
         if weight == 0:
-            weight = Orange.core.newmetaid()
+            weight = Orange.data.new_meta_id()
             examples.addMetaAttribute(weight, 1.0)
         extended_set_of_examples = createLogRegExampleTable(examples, weight)
         extended_models = [learner(extended_examples, weight) \
@@ -599,7 +599,7 @@ class LogRegLearnerGetPriorsOneTable:
 
         # get extended Model (you should not change data)
         if weight == 0:
-            weight = Orange.core.newmetaid()
+            weight = Orange.data.new_meta_id()
             examples.addMetaAttribute(weight, 1.0)
         extended_examples = createLogRegExampleTable(examples, weight)
         extended_model = learner(extended_examples, weight)

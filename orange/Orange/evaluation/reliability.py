@@ -530,7 +530,7 @@ class LocalCrossValidation:
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.instances.EuclideanConstructor()
         
-        distance_id = Orange.core.newmetaid()
+        distance_id = Orange.data.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(examples, 0, distance_id)
         
         if self.k == 0:
@@ -597,7 +597,7 @@ class CNeighbours:
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.instances.EuclideanConstructor()
         
-        distance_id = Orange.core.newmetaid()
+        distance_id = Orange.data.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(examples, 0, distance_id)
         return CNeighboursClassifier(nearest_neighbours, self.k)
 
@@ -643,7 +643,7 @@ class Mahalanobis:
         nnm = Orange.classification.knn.FindNearestConstructor()
         nnm.distanceConstructor = Orange.distance.instances.MahalanobisConstructor()
         
-        mid = Orange.core.newmetaid()
+        mid = Orange.data.new_meta_id()
         nnm = nnm(examples, 0, mid)
         return MahalanobisClassifier(self.k, nnm, mid)
 
