@@ -253,12 +253,24 @@ keys in dictionaries or collected to Python data sets.
 
         Return the instance's class as :obj:`Orange.data.Value`.
 
+    .. method:: get_classes()
+
+        Return the values of multiple classes as a list of
+        :obj:`Orange.data.Value`.
+
     .. method:: set_class(value)
 
         Set the instance's class.
 
         :param value: the new instance's class
         :type value: :obj:`Orange.data.Value`, number or string
+
+    .. method:: set_classes(values)
+
+        Set the values of multiple classes.
+
+        :param values: a list of values; the length must match the number of multiple classes
+        :type values: list
 
     .. method:: get_metas([key_type])
 

@@ -27,6 +27,7 @@ Optional flags
 --------------
  * ignore (or i) - feature will not be imported
  * class (or c) - feature will be imported as class variable. Only one feature can be marked as class.
+ * multiclass - feature is one of multiple classes. Data can have both, multiple classes and an ordinary class.
  * meta (or m) - feature will be imported as a meta attribute.
  * -dc
 

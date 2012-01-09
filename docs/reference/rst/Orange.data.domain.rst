@@ -77,6 +77,15 @@ Entire data table can be converted similarly::
      ['1', '2', '4', '0']
 
 
+Multiple classes
+================
+
+A domain can have multiple additional class attributes. These are stored
+similarly to other features except that they are not used for learning. The
+list of such classes is stored in `class_vars`. When converting between
+domains, multiple classes can become ordinary features or the class, and
+vice versa.
+
 Meta attributes
 ===============
 
@@ -196,6 +205,8 @@ follows. ::
 After conversion, the three attributes are moved to meta attributes
 and the new attribute appears as unknown.
 
+
+
 .. class:: Domain
 
      .. attribute:: features
@@ -215,13 +226,17 @@ and the new attribute appears as unknown.
 	 The class variable (:obj:`Orange.data.variable.Variable`), or
 	 :obj:`None` if there is none. Read only.
 
+     .. attribute:: class_vars
+
+	 A list of additional class attributes. Read only.
+
      .. attribute:: version
 
 	 An integer value that is changed when the domain is
 	 modified. Can be also used as unique domain identifier; two
 	 different domains also have different versions.
 
-     .. method:: __init__(variables)
+     .. method:: __init__(variables[, class_vars=])
 
 	 Construct a domain with the given variables specified; the
 	 last one is used as the class variable. ::
@@ -235,9 +250,10 @@ and the new attribute appears as unknown.
 	     EnumVariable 'c'
 
 	 :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type variables: list
 
-     .. method:: __init__(features, class_variable)
+     .. method:: __init__(features, class_variable[, classVars=])
 
 	 Construct a domain with the given list of features and the
 	 class variable. ::
@@ -250,9 +266,10 @@ and the new attribute appears as unknown.
 	 :param features: List of features (instances of :obj:`Orange.data.variable.Variable`)
 	 :type features: list
 	 :param class_variable: Class variable
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type features: Orange.data.variable.Variable
 
-     .. method:: __init__(variables, has_class)
+     .. method:: __init__(variables, has_class[, class_vars=])
 
 	 Construct a domain with the given variables. If has_class is
 	 :obj:`True`, the last one is used as the class variable. ::
@@ -266,9 +283,10 @@ and the new attribute appears as unknown.
 	 :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
 	 :type features: list
 	 :param has_class: A flag telling whether the domain has a class
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type has_class: bool
 
-     .. method:: __init__(variables, source)
+     .. method:: __init__(variables, source[, class_vars=])
 
 	 Construct a domain with the given variables, which can also be
 	 specified by names, provided that the variables with that
@@ -281,9 +299,10 @@ and the new attribute appears as unknown.
 	 :param variables: List of variables (strings or instances of :obj:`Orange.data.variable.Variable`)
 	 :type variables: list
 	 :param source: An existing domain or a list of variables
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type source: Orange.data.Domain or list of :obj:`Orange.data.variable.Variable`
 
-     .. method:: __init__(variables, has_class, source)
+     .. method:: __init__(variables, has_class, source[, class_vars=])
 
 	 Similar to above except for the flag which tells whether the
 	 last variable should be used as the class variable. ::
@@ -296,9 +315,10 @@ and the new attribute appears as unknown.
 	 :param has_class: A flag telling whether the domain has a class
 	 :type has_class: bool
 	 :param source: An existing domain or a list of variables
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type source: Orange.data.Domain or list of :obj:`Orange.data.variable.Variable`
 
-     .. method:: __init__(domain, class_var)
+     .. method:: __init__(domain, class_var[, class_vars=])
 
 	 Construct a domain as a shallow copy of an existing domain
 	 except that the class variable is replaced with the given one
@@ -309,9 +329,10 @@ and the new attribute appears as unknown.
 	 :param domain: An existing domain
 	 :type domain: :obj:`Orange.variable.Domain`
 	 :param class_var: Class variable for the new domain
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type class_var: string or :obj:`Orange.data.variable.Variable`
 
-     .. method:: __init__(domain, has_class=False)
+     .. method:: __init__(domain, has_class=False[, class_vars=])
 
 	 Construct a shallow copy of the domain. If the ``has_class``
 	 flag is given and equals :obj:`False`, it moves the class
@@ -320,6 +341,7 @@ and the new attribute appears as unknown.
 	 :param domain: An existing domain
 	 :type domain: :obj:`Orange.variable.Domain`
 	 :param has_class: A flag telling whether the domain has a class
+         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type has_class: bool
 
      .. method:: has_discrete_attributes(include_class=True)
