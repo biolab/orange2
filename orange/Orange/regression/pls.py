@@ -225,25 +225,25 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         domain = table.domain
         if x_vars is None and y_vars is None:
             # Response variables are defined in the table.
-            label_mask = data_label_mask(domain)
-            multilabel_flag = (sum(label_mask) - (1 if domain.class_var else 0)) > 0
-            x_vars = [v for v, label in zip(domain, label_mask) if not label]
-            y_vars = [v for v, label in zip(domain, label_mask) if label]
+            x_vars = domain.features
+            if domain.class_var:
+                y_vars = [domain.class_var]
+                multitarget = False
+            elif domain.class_vars:
+                y_vars = domain.class_vars
+                multitarget = True
+            else:
+                raise TypeError('Class-less domain (x-vars and y-vars needed).')
             x_table = select_attrs(table, x_vars)
             y_table = select_attrs(table, y_vars)
-            
         elif x_vars and y_vars:
             # independent and response variables are passed by the caller
-            if domain.class_var and domain.class_var not in y_vars:
-                # if the original table contains class variable
-                # add it to the y_vars
-                y_vars.append(domain.class_var)
-            label_mask = [v in y_vars for v in domain.variables]
-            multilabel_flag = True
-            x_table = select_attrs(table, x_vars)
-            y_table = select_attrs(table, y_vars)
+            multitarget = True
         else:
             raise ValueError("Both x_vars and y_vars must be defined.")
+
+        x_table = select_attrs(table, x_vars)
+        y_table = select_attrs(table, y_vars)
 
         # dicrete values are continuized        
         x_table = self.continuize_table(x_table)
@@ -257,17 +257,13 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         y_vars = list(y_table.domain.variables)
         
         domain = Orange.data.Domain(x_vars + y_vars, False)
-        label_mask = [False for _ in x_vars] + [True for _ in y_vars]
         
-        x = x_table.toNumpy()[0]
-        y = y_table.toNumpy()[0]
+        x = x_table.to_numpy()[0]
+        y = y_table.to_numpy()[0]
         
         kwargs = self.fit(x, y)
-        return PLSRegression(label_mask=label_mask, domain=domain, \
-#                             coefs=self.coefs, muX=self.muX, muY=self.muY, \
-#                             sigmaX=self.sigmaX, sigmaY=self.sigmaY, \
-                             x_vars=x_vars, y_vars=y_vars,
-                             multilabel_flag=multilabel_flag, **kwargs)
+        return PLSRegression(domain=domain, x_vars=x_vars, y_vars=y_vars,
+                             **kwargs)
 
     def fit(self, X, Y):
         """ Fits all unknown parameters, i.e.
@@ -400,18 +396,14 @@ class PLSRegression(Orange.classification.Classifier):
         list of response variables 
         
     """
-    def __init__(self, label_mask=None, domain=None, \
-                 coefs=None, mu_x=None, mu_y=None, sigma_x=None, sigma_y=None, \
-                 x_vars=None, y_vars=None, multilabel_flag=0, **kwargs):
-        self.label_mask = label_mask
+    def __init__(self, domain=None, multitarget=False, coefs=None, sigma_x=None, sigma_y=None,
+                 mu_x=None, mu_y=None, x_vars=None, y_vars=None, **kwargs):
         self.domain = domain
+        self.multitarget = multitarget
         self.coefs = coefs
         self.mu_x, self.mu_y = mu_x, mu_y
         self.sigma_x, self.sigma_y = sigma_x, sigma_y
         self.x_vars, self.y_vars = x_vars, y_vars
-        self.multilabel_flag = multilabel_flag
-        if not multilabel_flag and y_vars:
-            self.class_var = y_vars[0]
             
         for name, val in kwargs.items():
             setattr(self, name, val)
@@ -434,7 +426,7 @@ class PLSRegression(Orange.classification.Classifier):
         predicted = dot(xc, self.coefs) * self.sigma_y + self.mu_y
         y_hat = [var(val) for var, val in zip(self.y_vars, predicted)]
         if result_type == Orange.core.GetValue:
-            return y_hat if self.multilabel_flag else y_hat[0]
+            return y_hat if self.multitarget else y_hat[0]
         else:
             from Orange.statistics.distribution import Distribution
             probs = []
@@ -443,19 +435,23 @@ class PLSRegression(Orange.classification.Classifier):
                 dist[val] = 1.0
                 probs.append(dist)
             if result_type == Orange.core.GetBoth:
-                return (y_hat, probs) if self.multilabel_flag else (y_hat[0], probs[0])
+                return (y_hat, probs) if self.multitarget else (y_hat[0], probs[0])
             else:
-                return probs if self.multilabel_flag else probs[0]
+                return probs if self.multitarget else probs[0]
             
-    def print_pls_regression_coefficients(self):
+    def to_string(self):
         """ Pretty-prints the coefficient of the PLS regression model.
         """       
         x_vars, y_vars = [x.name for x in self.x_vars], [y.name for y in self.y_vars]
-        print " " * 7 + "%-6s " * len(y_vars) % tuple(y_vars)
         fmt = "%-6s " + "%-5.3f  " * len(y_vars)
-        for i, coef in enumerate(self.coefs):
-            print fmt % tuple([x_vars[i]] + list(coef))
+        first = [" " * 7 + "%-6s " * len(y_vars) % tuple(y_vars)]
+        lines = [fmt % tuple([x_vars[i]] + list(coef))
+                 for i, coef in enumerate(self.coefs)]
+        return '\n'.join(first + lines)
             
+    def __str__(self):
+        return self.to_string()
+
     """
     def transform(self, X, Y=None):
 
@@ -486,12 +482,13 @@ if __name__ == "__main__":
     import Orange
     from Orange.regression import pls
 
-    table = Orange.data.Table("test-pls.tab")
+    data = Orange.data.Table("test-pls.tab")
     l = pls.PLSRegressionLearner()
 
-    x = [var for var in table.domain if var.name[0]=="X"]
-    y = [var for var in table.domain if var.name[0]=="Y"]
+    x = [var for var in data.domain.features if var.name[0]=="X"]
+    y = [var for var in data.domain.class_vars if var.name[0]=="Y"]
     print x, y
-#    c = l(table, x_vars=x, y_vars=y)
-    c = l(table)
-    c.print_pls_regression_coefficients()
+#    c = l(data, x_vars=x, y_vars=y)
+    c = l(data)
+
+    print c
