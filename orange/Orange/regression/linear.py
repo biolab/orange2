@@ -403,46 +403,50 @@ class LinearRegression(Orange.classification.Classifier):
         return (y_hat, dist)
 
 
-def print_linear_regression_model(lr):
-    """Pretty-prints linear regression model,
-    i.e. estimated regression coefficients with standard errors, t-scores
-    and significances.
+    def to_string(self):
+        """Pretty-prints linear regression model,
+        i.e. estimated regression coefficients with standard errors, t-scores
+        and significances.
 
-    :param lr: a linear regression model object.
-    :type lr: :class:`LinearRegression`    
+        :param lr: a linear regression model object.
+        :type lr: :class:`LinearRegression`    
 
-    """
-    from string import join
-    m = lr   
-    labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
-    print join(['%10s' % l for l in labels], ' ')
+        """
+        from string import join 
+        labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
+        lines = [join(['%10s' % l for l in labels], ' ')]
 
-    fmt = "%10s " + join(["%10.3f"]*4, " ") + " %5s"
-    if not lr.p_vals:
-        raise ValueError("Model does not contain model statistics.")
-    def get_star(p):
-        if p < 0.001: return  "*"*3
-        elif p < 0.01: return "*"*2
-        elif p < 0.05: return "*"
-        elif p < 0.1: return  "."
-        else: return " "
-    
-    if m.intercept == True:
-        stars =  get_star(m.p_vals[0])
-        print fmt % ('Intercept', m.coefficients[0], \
-                     m.std_error[0], m.t_scores[0], m.p_vals[0], stars)
-        for i in range(len(m.domain.attributes)):
-            stars = get_star(m.p_vals[i+1])
-            print fmt % (m.domain.attributes[i].name,\
-                         m.coefficients[i+1], m.std_error[i+1],\
-                         m.t_scores[i+1], m.p_vals[i+1], stars)
-    else:
-        for i in range(len(m.domain.attributes)):
-            stars = get_star(m.p_vals[i])
-            print fmt % (m.domain.attributes[i].name,\
-                         m.coefficients[i], m.std_error[i],\
-                         m.t_scores[i], m.p_vals[i], stars)
-    print "Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1"
+        fmt = "%10s " + join(["%10.3f"]*4, " ") + " %5s"
+        if not self.p_vals:
+            raise ValueError("Model does not contain model statistics.")
+        def get_star(p):
+            if p < 0.001: return  "*"*3
+            elif p < 0.01: return "*"*2
+            elif p < 0.05: return "*"
+            elif p < 0.1: return  "."
+            else: return " "
+        
+        if self.intercept == True:
+            stars =  get_star(self.p_vals[0])
+            lines.append(fmt % ('Intercept', self.coefficients[0], 
+                         self.std_error[0], self.t_scores[0], self.p_vals[0], stars))
+            for i in range(len(self.domain.attributes)):
+                stars = get_star(self.p_vals[i+1])
+                lines.append(fmt % (self.domain.attributes[i].name,
+                             self.coefficients[i+1], self.std_error[i+1],
+                             self.t_scores[i+1], self.p_vals[i+1], stars))
+        else:
+            for i in range(len(self.domain.attributes)):
+                stars = get_star(self.p_vals[i])
+                lines.append(fmt % (self.domain.attributes[i].name,
+                             self.coefficients[i], self.std_error[i],
+                             self.t_scores[i], self.p_vals[i], stars))
+        lines.append("Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1")
+        return "\n".join(lines)
+
+    def __str__(self):
+        return self.to_string()
+        
 
 
 
@@ -541,4 +545,4 @@ if __name__ == "__main__":
 
     table = Orange.data.Table("housing.tab")
     c = LinearRegressionLearner(table)
-    print_linear_regression_model(c)
+    print c
