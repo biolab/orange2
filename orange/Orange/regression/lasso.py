@@ -14,27 +14,27 @@ Example ::
     >>> from Orange.regression import lasso
     >>> table = Orange.data.Table("housing")
     >>> c = lasso.LassoRegressionLearner(table)
-    >>> linear.print_lasso_regression_model(c)
+    >>> print c
     
       Variable  Coeff Est  Std Error          p
      Intercept     22.533
-          CRIM     -0.049      0.282      0.770      
-            ZN      0.106      0.055      0.030     *
-         INDUS     -0.111      0.442      0.920      
-          CHAS      1.757      0.669      0.180      
-           NOX      0.318      0.483      0.680      
-            RM      1.643      0.461      0.480      
-           AGE      0.062      0.051      0.230      
-           DIS      0.627      0.538      0.930      
-           RAD      1.260      0.472      0.070     .
-           TAX     -0.074      0.027      0.120      
-       PTRATIO      1.331      0.464      0.050     .
-             B      0.017      0.007      0.080     .
-         LSTAT     -0.209      0.323      0.650      
+          CRIM     -0.044      0.030      0.510      
+            ZN      0.013      0.010      0.660      
+         INDUS     -0.003      0.023      0.980      
+          CHAS      2.318      1.304      0.200      
+           NOX     -7.530      2.803      0.370      
+            RM      4.231      0.819      0.000   ***
+           DIS     -0.710      0.130      0.070     .
+           RAD      0.074      0.029      0.510      
+           TAX     -0.004      0.002      0.560      
+       PTRATIO     -0.821      0.095      0.000   ***
+             B      0.007      0.002      0.170      
+         LSTAT     -0.503      0.085      0.000   ***
     Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
 
 
-    All variables have non-zero regression coefficients. 
+    For 1 variable the regression coefficient equals 0: 
+    AGE
        
     >>> 
 
@@ -331,7 +331,61 @@ class LassoRegression(Orange.classification.Classifier):
         if result_type == Orange.core.GetProbabilities:
             return dist
         else:
-            return (y_hat, dist)    
+            return (y_hat, dist)
+        
+    @deprecated_keywords({"skipZero": "skip_zero"})
+    def to_string(self, skip_zero=True):
+        """Pretty-prints Lasso regression model,
+        i.e. estimated regression coefficients with standard errors
+        and significances. Standard errors are obtained using bootstrapping
+        method and significances by the permuation test
+
+        :param skip_zero: if True variables with estimated coefficient equal to 0
+            are omitted
+        :type skip_zero: boolean
+        """
+        
+        from string import join
+        labels = ('Variable', 'Coeff Est', 'Std Error', 'p')
+        lines = [join(['%10s' % l for l in labels], ' ')]
+
+        fmt = "%10s " + join(["%10.3f"]*3, " ") + " %5s"
+        fmt1 = "%10s %10.3f"
+
+        def get_star(p):
+            if p < 0.001: return  "*"*3
+            elif p < 0.01: return "*"*2
+            elif p < 0.05: return "*"
+            elif p < 0.1: return  "."
+            else: return " "
+
+        stars =  get_star(self.p_vals[0])
+        lines.append(fmt1 % ('Intercept', self.coef0))
+        skipped = []
+        for i in range(len(self.domain.attributes)):
+            if self.coefficients[i] == 0. and skip_zero:
+                skipped.append(self.domain.attributes[i].name)
+                continue            
+            stars = get_star(self.p_vals[i])
+            lines.append(fmt % (self.domain.attributes[i].name, 
+                         self.coefficients[i], self.std_errors_fixed_t[i], 
+                         self.p_vals[i], stars))
+        lines.append("Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1")
+        lines.append("\n")
+        if skip_zero:
+            k = len(skipped)
+            if k == 0:
+                lines.append("All variables have non-zero regression coefficients. ")
+            else:
+                suff = "s" if k > 1 else ""
+                lines.append("For %d variable%s the regression coefficient equals 0: " \
+                      % (k, suff))
+                for var in skipped:
+                    lines.append(var)
+        return "\n".join(lines)
+
+    def __str__(self):
+        return self.to_string(skip_zero=True)
 
 deprecated_members({"muX": "mu_x",
                     "stdErrorsFixedT": "std_errors_fixed_t",
@@ -340,61 +394,6 @@ deprecated_members({"muX": "mu_x",
                    wrap_methods=["__init__"],
                    in_place=True)(LassoRegression)
 
-
-@deprecated_keywords({"skipZero": "skip_zero"})
-def print_lasso_regression_model(lr, skip_zero=True):
-    """Pretty-prints Lasso regression model,
-    i.e. estimated regression coefficients with standard errors
-    and significances. Standard errors are obtained using bootstrapping
-    method and significances by the permuation test
-
-    :param lr: a Lasso regression model object.
-    :type lr: :class:`LassoRegression`
-    :param skip_zero: if True variables with estimated coefficient equal to 0
-        are omitted
-    :type skip_zero: boolean
-    """
-    
-    from string import join
-    m = lr
-    labels = ('Variable', 'Coeff Est', 'Std Error', 'p')
-    print join(['%10s' % l for l in labels], ' ')
-
-    fmt = "%10s " + join(["%10.3f"]*3, " ") + " %5s"
-    fmt1 = "%10s %10.3f"
-
-    def get_star(p):
-        if p < 0.001: return  "*"*3
-        elif p < 0.01: return "*"*2
-        elif p < 0.05: return "*"
-        elif p < 0.1: return  "."
-        else: return " "
-
-    stars =  get_star(m.p_vals[0])
-    print fmt1 % ('Intercept', m.coef0)
-    skipped = []
-    for i in range(len(m.domain.attributes)):
-        if m.coefficients[i] == 0. and skip_zero:
-            skipped.append(m.domain.attributes[i].name)
-            continue            
-        stars = get_star(m.p_vals[i])
-        print fmt % (m.domain.attributes[i].name, \
-                     m.coefficients[i], m.std_errors_fixed_t[i], \
-                     m.p_vals[i], stars)
-    print "Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1"
-    print "\n"
-    if skip_zero:
-        k = len(skipped)
-        if k == 0:
-            print "All variables have non-zero regression coefficients. "
-        else:
-            suff = "s" if k > 1 else ""
-            print "For %d variable%s the regression coefficient equals 0: " \
-                  % (k, suff)
-            for var in skipped:
-                print var
-
-
 if __name__ == "__main__":
 
     import Orange
@@ -402,4 +401,4 @@ if __name__ == "__main__":
     table = Orange.data.Table("housing.tab")        
 
     c = LassoRegressionLearner(table, t=len(table.domain))
-    print_lasso_regression_model(c)
+    print c
