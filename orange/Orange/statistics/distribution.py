@@ -3,13 +3,13 @@
 Distributions
 =============
 
-Class :obj:`Distribution` and derived classes are used for storing empirical
+:obj:`Distribution` and derived classes store empirical
 distributions of discrete and continuous variables.
 
 .. class:: Distribution
 
-    A base class for storing distributions of variable values. The class can
-    store absolute or relative frequencies. Provides a convenience constructor
+    This class can
+    store absolute or relative frequencies. It provides a convenience constructor
     which constructs instances of derived classes. ::
 
         >>> import Orange
@@ -352,11 +352,11 @@ prints out distributions for discrete and averages for continuous attributes. ::
 
     dist = Orange.statistics.distribution.Domain(data)
 
-        for d in dist:
-            if d.variable.varType == orange.VarTypes.Discrete:
-                 print "%30s: %s" % (d.variable.name, d)
-            else:
-                 print "%30s: avg. %5.3f" % (d.variable.name, d.average())
+    for d in dist:
+        if d.variable.var_type == Orange.data.Type.Discrete:
+             print "%30s: %s" % (d.variable.name, d)
+        else:
+             print "%30s: avg. %5.3f" % (d.variable.name, d.average())
 
 The distribution for, say, attribute `age` can be obtained by its index and also
 by its name::
