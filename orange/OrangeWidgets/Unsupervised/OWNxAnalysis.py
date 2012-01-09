@@ -203,7 +203,7 @@ class OWNxAnalysis(OWWidget):
     def set_items(self, items):
         self.mutex.lock()
         
-        if items is None and self.items_original is not None:
+        if items is None and self.items_graph is not None:
             self.items_analysis = self.items_graph
             
         elif items is not None:

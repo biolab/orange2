@@ -48,8 +48,7 @@ try:
             self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
                            ("Network", Orange.network.Graph, self.set_graph, Default),
                            ("Items", Orange.data.Table, self.set_items),
-                           ("Items to Mark", Orange.data.Table, self.mark_items), 
-                           ("Items Subset", Orange.data.Table, self.set_feature_subset), 
+                           ("Items Subset", Orange.data.Table, self.mark_items), 
                            ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
             
             self.outputs = [("Selected Network", Orange.network.Graph),
@@ -499,8 +498,12 @@ try:
                 elif hubs == 9:
                     var = str(self.markInputCombo.currentText())
                     if self.markInputItems is not None and len(self.markInputItems) > 0:
-                        values = [str(x[var]).strip().upper() for x in self.markInputItems]
-                        tomark = dict((x, True) for x in self.graph.nodes() if str(self.graph_base.items()[x][var]).strip().upper() in values)
+                        if var == 'ID':
+                            values = [x.id for x in self.markInputItems]
+                            tomark = dict((x, True) for x in self.graph.nodes() if self.graph_base.items()[x].id in values)
+                        else:
+                            values = [str(x[var]).strip().upper() for x in self.markInputItems]
+                            tomark = dict((x, True) for x in self.graph.nodes() if str(self.graph_base.items()[x][var]).strip().upper() in values)
                         self.networkCanvas.networkCurve.clear_node_marks()
                         self.networkCanvas.networkCurve.set_node_marks(tomark)
                         
@@ -868,7 +871,10 @@ try:
             self.warning()
             self.information()
             
-            if self.graph is None or items is None:
+            if items is None:
+                return
+            
+            if self.graph is None:
                 self.warning('No graph found!')
                 return
             
@@ -894,6 +900,9 @@ try:
             self.warning()
             self.information()
             
+            if items is None:
+                return
+            
             if self.graph is None or self.graph_base.items() is None or items is None:
                 self.warning('No graph found or no items attached to the graph.')
                 return
@@ -903,6 +912,8 @@ try:
                 lstNewDomain = [x.name for x in items.domain] + [items.domain[x].name for x in items.domain.getmetas()]
                 commonVars = set(lstNewDomain) & set(lstOrgDomain)
     
+                self.markInputCombo.addItem(self.icons[Orange.data.Type.Discrete], unicode("ID"))
+                
                 if len(commonVars) > 0:
                     for var in commonVars:
                         orgVar = self.graph_base.items().domain[var]
@@ -910,35 +921,10 @@ try:
     
                         if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.data.Type.String:
                             self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
-                            self.markInputRadioButton.setEnabled(True)
-                    
-                            self.set_mark_mode(9)
+                
+                self.markInputRadioButton.setEnabled(True)
+                self.set_mark_mode(9)
                   
-        def set_feature_subset(self, subset):
-            print "TODO: not yet implemented"
-            if self.graph is None:
-                return
-            
-            self.warning('')
-            hiddenNodes = []
-            
-            if subset is not None:
-                try:
-                    expected = 1
-                    for row in subset:
-                        index = int(row['index'].value)
-                        if expected != index:
-                            hiddenNodes += range(expected-1, index-1)
-                            expected = index + 1
-                        else:
-                            expected += 1
-                            
-                    hiddenNodes += range(expected-1, self.graph.number_of_nodes())
-                    
-                    self.networkCanvas.setHiddenNodes(hiddenNodes)
-                except:
-                    self.warning('"index" attribute does not exist in "items" table.')
-                       
         #######################################################################
         ### Layout Optimization                                             ###
         #######################################################################
