@@ -1537,17 +1537,37 @@ PyObject *Domain__reduce__(PyObject *self)
 PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, attributes, classVar, classVars, req_metas, opt_metas)")
 {
   PyTRY {
-    if (!args || !PyTuple_Check(args) || (PyTuple_Size(args) != 6))
-      PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
+    if (!args || !PyTuple_Check(args))
+        PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL)
+
+    int arg_size = PyTuple_Size(args);
+
+    if (!(arg_size == 6 || arg_size == 5))
+        PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
 
     PyTypeObject *type = (PyTypeObject *)PyTuple_GET_ITEM(args, 0);
     PyObject *attributes = PyTuple_GET_ITEM(args, 1);
     PyObject *classVar = PyTuple_GET_ITEM(args, 2);
-    PyObject *classVars = PyTuple_GET_ITEM(args, 3);
-    PyObject *req_metas = PyTuple_GET_ITEM(args, 4);
-    PyObject *opt_metas = PyTuple_GET_ITEM(args, 5);
 
-    if (!PyOrVarList_Check(attributes) || (classVars && !PyOrVarList_Check(attributes)) || !PyDict_Check(req_metas) || !PyDict_Check(opt_metas))
+    PyObject *classVars = NULL;
+    PyObject *req_metas = NULL;
+    PyObject *opt_metas = NULL;
+
+    if (arg_size == 5)
+    {
+        // Old tuple format (pre multiclass support)
+        req_metas = PyTuple_GET_ITEM(args, 3);
+        opt_metas = PyTuple_GET_ITEM(args, 4);
+
+    }
+    else
+    {
+        classVars = PyTuple_GET_ITEM(args, 3);
+        req_metas = PyTuple_GET_ITEM(args, 4);
+        opt_metas = PyTuple_GET_ITEM(args, 5);
+    }
+
+    if (!PyOrVarList_Check(attributes) || (classVars && !PyOrVarList_Check(classVars)) || !PyDict_Check(req_metas) || !PyDict_Check(opt_metas))
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
 
 
@@ -1558,7 +1578,12 @@ PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, 
       domain = new TDomain(PyOrange_AsVariable(classVar), PyOrange_AsVarList(attributes).getReference());
     else
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
-    domain->classVars = PyOrange_AsVarList(classVars);
+
+    if (classVars != NULL)
+        domain->classVars = PyOrange_AsVarList(classVars);
+    else
+        domain->classVars = PVarList(new TVarList());
+
 
     PyObject *pydomain = WrapNewOrange(domain, type);
 
