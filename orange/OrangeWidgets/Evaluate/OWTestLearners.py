@@ -20,7 +20,6 @@ warnings.filterwarnings("ignore", "'id' is not a builtin attribute",
 
 class Learner:
     def __init__(self, learner, id):
-        learner.id = id
         self.learner = learner
         self.name = learner.name
         self.id = id
@@ -267,10 +266,12 @@ class OWTestLearners(OWWidget):
         if (not self.data):
             for id in ids:
                 self.learners[id].results = None
+                self.learners[id].scores = []
             return
         # test which learners can accept the given data set
         # e.g., regressions can't deal with classification data
         learners = []
+        used_ids = []
         n = len(self.data.domain.attributes)*2
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
         new = self.data.selectref(indices(self.data))
@@ -285,12 +286,16 @@ class OWTestLearners(OWWidget):
                 predictor = learner(new)
                 if predictor(new[0]).varType == new.domain.classVar.varType:
                     learners.append(learner)
+                    used_ids.append(l.id)
                 else:
                     l.scores = []
+                    l.results = None
+                
             except Exception, ex:
                 learner_exceptions.append((l, ex))
                 l.scores = []
-
+                l.results = None
+        
         if learner_exceptions:
             text = "\n".join("Learner %s ends with exception: %s" % (l.name, str(ex)) \
                              for l, ex in learner_exceptions)
@@ -344,16 +349,15 @@ class OWTestLearners(OWWidget):
         for l in [self.learners[id] for id in ids]:
             if l.learner in learners:
                 l.results = res
+            else:
+                l.results = None
 
         self.error(range(len(self.stat)))
         scores = []
         
-        
-        
         for i, s in enumerate(self.stat):
             if s.cmBased:
                 try:
-#                    scores.append(eval("orngStat." + s.f))
                     scores.append(dispatch(s, res, cm))
                 except Exception, ex:
                     self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
@@ -363,7 +367,6 @@ class OWTestLearners(OWWidget):
                 scores_one = []
                 for res_one in orngStat.split_by_classifiers(res):
                     try:
-#                        scores_one.append(eval("orngStat." + s.f)[0])
                         scores_one.extend(dispatch(s, res_one, cm))
                     except Exception, ex:
                         self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
@@ -371,8 +374,8 @@ class OWTestLearners(OWWidget):
                         scores_one.append(None)
                 scores.append(scores_one)
                 
-        for i, l in enumerate(learners):
-            self.learners[l.id].scores = [s[i] if s else None for s in scores]
+        for i, (id, l) in enumerate(zip(used_ids, learners)):
+            self.learners[id].scores = [s[i] if s else None for s in scores]
             
         self.sendResults()
 
@@ -384,12 +387,20 @@ class OWTestLearners(OWWidget):
                   for (indx, s) in enumerate(self.stat) if s.cmBased]
         for (indx, score) in scores:
             for (i, l) in enumerate([l for l in self.learners.values() if l.scores]):
-                l.scores[indx] = score[i]
+                learner_indx = self.results.learners.index(l.learner)
+                l.scores[indx] = score[learner_indx]
+                
         self.paintscores()
         
-
+    def clearScores(self, ids=None):
+        if ids is None:
+            ids = self.learners.keys()
+            
+        for id in ids:
+            self.learners[id].scores = []
+            self.learners[id].results = None
+        
     # handle input signals
-
     def setData(self, data):
         """handle input train data set"""
         self.closeContext()
@@ -397,12 +408,12 @@ class OWTestLearners(OWWidget):
         self.fillClassCombo()
         if not self.data:
             # data was removed, remove the scores
-            for l in self.learners.values():
-                l.scores = []
-                l.results = None
+            self.clearScores()
             self.send("Evaluation Results", None)
         else:
             # new data has arrived
+            self.clearScores()
+            
             self.data = orange.Filter_hasClassValue(self.data)
             self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
             
@@ -466,7 +477,8 @@ class OWTestLearners(OWWidget):
             if id in self.learners:
                 res = self.learners[id].results
                 if res and res.numberOfLearners > 1:
-                    indx = [l.id for l in res.learners].index(id)
+                    old_learner = self.learners[id].learner
+                    indx = res.learners.index(old_learner)
                     res.remove(indx)
                     del res.learners[indx]
                 del self.learners[id]
@@ -486,7 +498,7 @@ class OWTestLearners(OWWidget):
         # for each learner, we first find a list where a result is stored
         # and remember the corresponding index
 
-        valid = [(l.results, [x.id for x in l.results.learners].index(l.id))
+        valid = [(l.results, l.results.learners.index(l.learner))
                  for l in self.learners.values() if l.scores and l.results]
             
         if not (self.data and len(valid)):
@@ -495,20 +507,22 @@ class OWTestLearners(OWWidget):
 
         # find the result set for a largest number of learners
         # and remove this set from the list of result sets
-        rlist = dict([(l.results,1) for l in self.learners.values() if l.scores]).keys()
+        rlist = dict([(l.results,1) for l in self.learners.values() if l.scores and l.results]).keys()
         rlen = [r.numberOfLearners for r in rlist]
         results = rlist.pop(rlen.index(max(rlen)))
         
         for (i, l) in enumerate(results.learners):
-            if not l.id in self.learners:
+            if not l in [l.learner for l in self.learners.values()]:
                 results.remove(i)
                 del results.learners[i]
+            
         for r in rlist:
             for (i, l) in enumerate(r.learners):
+                learner_id = [l1.id for l1 in self.learners.values() if l1.learner is l][0]
                 if (r, i) in valid:
                     results.add(r, i)
                     results.learners.append(r.learners[i])
-                    self.learners[r.learners[i].id].results = results
+                    self.learners[learner_id].results = results
         self.send("Evaluation Results", results)
         self.results = results
 
