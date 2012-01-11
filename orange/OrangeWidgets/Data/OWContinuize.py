@@ -148,6 +148,7 @@ class OWContinuize(OWWidget):
                 domain = continuizer(self.data, 0, self.targetValue if self.classTreatment else -1)
             else:
                 domain = continuizer(self.data, 0)
+            domain.addmetas(self.data.domain.getmetas())
             self.send("Examples", orange.ExampleTable(domain, self.data))
         self.dataChanged = False
         
