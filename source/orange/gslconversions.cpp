@@ -39,14 +39,15 @@ gsl_error_handler_t *fooerrh = gsl_set_error_handler(my_gsl_error_handler);
 */
 
 void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
-                         bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
+                         bool &hasClass, bool &classVector, bool &multiclassVector, bool &weightVector, bool &classIsDiscrete, int &columns,
                          vector<bool> &include)
 {
   hasClass = bool(egen->domain->classVar);
 
   columns = 0;
-  int classIncluded = 0, attrsIncluded = 0, weightIncluded = 0;
+  int classIncluded = 0, attrsIncluded = 0, weightIncluded = 0, multiclassIncluded = 0;
   bool attrsRequested = false, classRequested = false, weightRequested = false;
+  bool multiclassRequested = false;
   const char *cp;
   for(cp = contents; *cp && (*cp!='/'); cp++) {
     switch (*cp) {
@@ -60,6 +61,10 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
 
       case 'W': weightRequested = true;
       case 'w': weightIncluded++;
+                break;
+
+      case 'M': multiclassRequested = true;
+      case 'm': multiclassIncluded++;
                 break;
 
       case '0':
@@ -87,6 +92,9 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
 
         case 'w': weightVector = (weightID != 0); break;
         case 'W': weightVector = true; break;
+
+        case 'm': multiclassVector = (egen->domain->classVars->size() != 0); break;
+        case 'M': multiclassVector = true; break;
         default:
           raiseErrorWho("parseMatrixContents", "unrecognized character '%c' in format string '%s')", *cp, contents);
       }
@@ -115,6 +123,10 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
   if (weightIncluded || weightVector) {
     if (weightID)
       columns += weightIncluded;
+  }
+
+  if (multiclassIncluded || multiclassVector) {
+      columns += multiclassIncluded * egen->domain->classVars->size();
   }
 
   include.clear();

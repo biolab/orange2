@@ -30,7 +30,7 @@ void exampleGenerator2r(PExampleGenerator egen, const int &weightID, const char 
                           double *&X, double *&y, double *&w, int &rows, int &columns);
 
 void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
-                         bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
+                         bool &hasClass, bool &classVector, bool &multiClassVector, bool &weightVector, bool &classIsDiscrete, int &columns,
                          vector<bool> &include);
 
 #endif

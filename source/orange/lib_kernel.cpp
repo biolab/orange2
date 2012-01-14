@@ -3284,7 +3284,7 @@ PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
 
 
 
-PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
+PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *my, PyObject *w, char *contents)
 {
   int left = (*contents && *contents != '/') ? 1 : 0;
 
@@ -3306,20 +3306,25 @@ PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
         Py_INCREF(y);
         PyTuple_SetItem(res, left++, y);
       }
-      else {
+      else if ((*cp == 'w') || (*cp == 'W')) {
         Py_INCREF(w);
         PyTuple_SetItem(res, left++, w);
+      }
+      else {
+        Py_INCREF(my);
+        PyTuple_SetItem(res, left++, my);
       }
 
   Py_DECREF(X);
   Py_DECREF(y);
+  Py_DECREF(my);
   Py_DECREF(w);
   return res;
 }
 
 
 void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
-                         bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
+                         bool &hasClass, bool &classVector, bool &multiclassVector, bool &weightVector, bool &classIsDiscrete, int &columns,
                          vector<bool> &include);
 
 
@@ -3382,18 +3387,19 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
     PExampleGenerator egen = PyOrange_AsExampleGenerator(self);
 
-    bool hasClass, classVector, weightVector, classIsDiscrete;
+    bool hasClass, classVector, weightVector, multiclassVector, classIsDiscrete;
     vector<bool> include;
     int columns;
     parseMatrixContents(egen, weightID, contents, multinomialTreatment,
-                            hasClass, classVector, weightVector, classIsDiscrete, columns, include);
+                            hasClass, classVector, multiclassVector, weightVector,
+                            classIsDiscrete, columns, include);
 
     int rows = egen->numberOfExamples();
     PVariable classVar = egen->domain->classVar;
 
-    PyObject *X, *y, *w, *mask = NULL, *masky = NULL;
-    double *Xp, *yp, *wp;
-    signed char *mp = NULL, *mpy = NULL;
+    PyObject *X, *y, *w, *my, *mask = NULL, *masky = NULL, *maskmy = NULL;
+    double *Xp, *yp, *myp, *wp;
+    signed char *mp = NULL, *mpy = NULL, *mpmy = NULL;
     if (columns) {
       X = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "d");
       if (!X)
@@ -3429,6 +3435,22 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
       yp = NULL;
     }
 
+    if (multiclassVector) {
+      my = PyObject_CallFunction(mzeros, "(ii)s", rows, egen->domain->classVars->size(), "d");
+      if (!my)
+        return PYNULL;
+      myp = (double *)((PyArrayObject *)my)->data;
+
+      if (maskedArray) {
+        maskmy= PyObject_CallFunction(mzeros, "(ii)s", rows, egen->domain->classVars->size(), "b");
+        mpmy = (signed char *)((PyArrayObject *)maskmy)->data;
+      }
+    }
+    else {
+      my = Py_None;
+      Py_INCREF(my);
+      mpmy = NULL;
+    }
 
     if (weightVector) {
       w = PyObject_CallFunction(mzeros, "(i)s", rows, "d");
@@ -3471,6 +3493,17 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                 return PYNULL;
               break;
 
+            case 'M':
+            case 'm': {
+              const TVarList &classes = egen->domain->classVars.getReference();
+              TVarList::const_iterator vi(classes.begin()), ve(classes.end());
+              TValue *eei = (*ei).values_end;
+              for(; vi != ve; eei++, vi++)
+                if (!storeNumPyValue(Xp, *eei, mp, *vi, row))
+                  return PYNULL;
+              break;
+            }
+
             case 'W':
             case 'w':
               if (weightID)
@@ -3498,10 +3531,19 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
         if (wp)
           *wp++ = WEIGHT(*ei);
+
+        if (myp) {
+            const TVarList &classes = egen->domain->classVars.getReference();
+            TVarList::const_iterator vi(classes.begin()), ve(classes.end());
+            TValue *eei = (*ei).values_end;
+            for(; vi != ve; eei++, vi++)
+              if (!storeNumPyValue(myp, *eei, mpmy, *vi, row))
+                return PYNULL;
+        }
       }
 
       if (maskedArray) {
-        PyObject *args, *maskedX = NULL, *maskedy = NULL;
+        PyObject *args, *maskedX = NULL, *maskedy = NULL, *maskedmy = NULL;
 
         bool err = false;
 
@@ -3531,6 +3573,19 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           err = !maskedy;
         }
 
+        if (!err && maskmy) {
+          args = Py_BuildValue("OOiOO", my, Py_None, 1, Py_None, maskmy);
+          maskedmy = PyObject_CallObject(*maskedArray, args);
+          Py_DECREF(args);
+          if (!maskedmy) {
+            PyErr_Clear();
+            args = Py_BuildValue("OOOi", my, maskmy, Py_None, 1);
+            maskedmy = PyObject_CallObject(*maskedArray, args);
+            Py_DECREF(args);
+          }
+          err = !maskedmy;
+        }
+
         if (err) {
           Py_DECREF(X);
           Py_DECREF(y);
@@ -3538,6 +3593,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           Py_XDECREF(maskedX);
           Py_XDECREF(mask);
           Py_XDECREF(masky);
+          Py_XDECREF(maskmy);
           return PYNULL;
         }
 
@@ -3552,9 +3608,15 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           Py_DECREF(masky);
           y = maskedy;
         }
+
+        if (maskmy) {
+          Py_DECREF(my);
+          Py_DECREF(maskmy);
+          my = maskedmy;
+        }
       }
 
-      return packMatrixTuple(X, y, w, contents);
+      return packMatrixTuple(X, y, my, w, contents);
     }
     catch (...) {
       Py_DECREF(X);
@@ -3562,6 +3624,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
       Py_DECREF(w);
       Py_XDECREF(mask);
       Py_XDECREF(masky);
+      Py_XDECREF(maskmy);
       throw;
     }
   PyCATCH

@@ -27,11 +27,14 @@
 void exampleGenerator2r(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
                         double *&X, double *&y, double *&w, int &rows, int &columns)
 {
-  bool hasClass, classVector, weightVector, classIsDiscrete;
+  bool hasClass, classVector, multiclassVector, weightVector, classIsDiscrete;
   vector<bool> include;
 
   parseMatrixContents(egen, weightID, contents, multiTreatment,
-                          hasClass, classVector, weightVector, classIsDiscrete, columns, include);
+                          hasClass, classVector, multiclassVector, weightVector, classIsDiscrete, columns, include);
+
+  // this does not work if the domain includes multiple classes -- which is irrelevant
+  // since nobody calls this function anyway ;)
 
   rows = egen->numberOfExamples();
 

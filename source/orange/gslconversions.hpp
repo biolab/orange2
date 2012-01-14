@@ -34,7 +34,7 @@ void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const cha
                           void *&X, void *&y, void *&w, int &rows, int &columns);
 
 void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
-                         bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
+                         bool &hasClass, bool &classVector, bool &multiclassVector, bool &weightVector, bool &classIsDiscrete, int &columns,
                          vector<bool> &include);
 
 #endif
