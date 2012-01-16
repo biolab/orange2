@@ -1,5 +1,6 @@
 import Orange
 
+import tree
 
 # Other algorithms which also work with multitarget data
 from Orange.regression import pls

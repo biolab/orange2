@@ -22,6 +22,8 @@ Orange Scripting Reference
    Orange.feature
 
    Orange.multilabel
+   
+   Orange.multitarget
 
    Orange.network
 
