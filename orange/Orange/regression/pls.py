@@ -12,11 +12,11 @@ Implementation is based on `Scikit learn python implementation`_
 Example ::
 
     >>> import Orange
-    >>>     from Orange.regression import pls
-    >>> table = Orange.data.Table("test-pls.tab")
+    >>> from Orange.regression import pls
+    >>> data = Orange.data.Table("test-pls.tab")
     >>> # set independent and response variables
-    >>> x = [var for var in table.domain if var.name[0]=="X"]
-    >>> y = [var for var in table.domain if var.name[0]=="Y"]
+    >>> x = data.domain.features
+    >>> y = data.domain.class_vars
     >>> print x
         [FloatVariable 'X1', FloatVariable 'X2', FloatVariable 'X3']
     >>> print y
@@ -27,8 +27,8 @@ Example ::
     >>> # it is considered as a response variable.
     >>> # In such situation x and y do not need to be specified.
     >>> l = pls.PLSRegressionLearner()
-    >>> c = l(table, x_vars=x, y_vars=y)
-    >>> c.print_pls_regression_coefficients()
+    >>> c = l(data, x_vars=x, y_vars=y)
+    >>> print c
            Y1     Y2     Y3     Y4     
     X1     0.513  0.915  0.341  -0.069  
     X2     0.641  -1.044  0.249  -0.015  
@@ -485,10 +485,9 @@ if __name__ == "__main__":
     data = Orange.data.Table("test-pls.tab")
     l = pls.PLSRegressionLearner()
 
-    x = [var for var in data.domain.features if var.name[0]=="X"]
-    y = [var for var in data.domain.class_vars if var.name[0]=="Y"]
+    x = data.domain.features
+    y = data.domain.class_vars
     print x, y
-#    c = l(data, x_vars=x, y_vars=y)
+    # c = l(data, x_vars=x, y_vars=y)
     c = l(data)
-
     print c
