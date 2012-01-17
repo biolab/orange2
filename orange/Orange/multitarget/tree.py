@@ -17,6 +17,18 @@ can be used and a helper class :class:`MultiTreeLearner` which extends
 aspects except for different (multi-target) defaults for `measure` and
 `node_learner`.
 
+Examples
+========
+
+The following example demonstrates how to build a prediction model with
+MultitargetTreeLearner and use it to predict (multiple) class values for
+a given instance (:download:`multitarget.py <code/multitarget.py>`,
+uses :download:`emotions.tab <code/emotions.tab>`):
+
+.. literalinclude:: code/multitarget.py
+   :lines: 1-4, 10-12
+
+
 .. index:: Multi-target Variance 
 .. autoclass:: Orange.multitarget.tree.MultitargetVariance
    :members:
@@ -31,18 +43,6 @@ aspects except for different (multi-target) defaults for `measure` and
 .. autoclass:: Orange.multitarget.tree.MultiTree
    :members:
    :show-inheritance:
-
-
-Examples
-========
-
-The following example demonstrates how to build a prediction model with
-MultitargetTreeLearner and use it to predict (multiple) class values for
-a given instance (:download:`multitarget.py <code/multitarget.py>`,
-uses :download:`emotions.tab <code/emotions.tab>`):
-
-.. literalinclude:: code/multitarget.py
-   :lines: 1-4, 10-12
 
 """
 
