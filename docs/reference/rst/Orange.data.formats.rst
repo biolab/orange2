@@ -80,9 +80,11 @@ while the others are optional.  ::
     >>> d.domain.getmetas(True)
     {-6: FloatVariable 'd', -5: FloatVariable 'c', -4: FloatVariable 'b', -3: FloatVariable 'a'}
 
-To fully understand all this, you should read the documentation on meta
-attributes in Domain and on the basket file format (a simple format that is
-limited to baskets only).
+To fully understand all this, you should read the documentation on :ref:`meta
+attributes <meta-attributes>` in Domain and on the :ref:`basket file format
+<basket-format>` (a simple format that is limited to baskets only).
+
+.. _basket-format:
 
 Basket Format
 =============
@@ -110,7 +112,8 @@ and the latter appears twice with value of 1.0.
 
 All attributes are loaded as optional meta-attributes, so zero values don't
 take any memory (unless they are given, but initialized to zero). See also
-section on meta-attributes in the reference for domain descriptors.
+section on :ref:`meta attributes <meta-attributes>` in the reference for domain
+descriptors.
 
 Notice that at the time of writing this reference only association rules can
 directly use examples presented in the basket format.

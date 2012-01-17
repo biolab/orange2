@@ -86,6 +86,8 @@ list of such classes is stored in `class_vars`. When converting between
 domains, multiple classes can become ordinary features or the class, and
 vice versa.
 
+.. _meta-attributes:
+
 Meta attributes
 ===============
 
