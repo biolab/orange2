@@ -2677,11 +2677,12 @@ class TreeClassifier(Orange.classification.Classifier):
             else:
                 table.append([maj] + [0]*(2 + len(d)))
         else:
-            table.append(maj, d.error, d.abs)
+            table.append([maj, d.error(), d.abs])
         if node.branches:
             for branch in node.branches:
-                child_id = self.to_network0(branch, net, table)
-                net.add_edge(node_id, child_id)
+                if branch:
+                    child_id = self.to_network0(branch, net, table)
+                    net.add_edge(node_id, child_id)
         return node_id
 
 def _countNodes(node):
