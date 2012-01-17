@@ -2651,6 +2651,39 @@ class TreeClassifier(Orange.classification.Classifier):
         """
         return _countLeaves(self.tree)
 
+    def to_network(self):
+        net = Orange.network.DiGraph()
+        if self.class_var.var_type == Orange.data.Type.Discrete:
+            domain = Orange.data.Domain([self.class_var] +
+                [Orange.data.variable.Continuous(name) for name in
+                 ["instances", "majority proportion"] + list(self.class_var.values)], None)
+        else:
+            domain = Orange.data.Domain([self.class_var] +
+                [Orange.data.variable.Continuous(name) for name in
+                 ["error", "instances"]], None)
+        domain = Orange.data.Domain(domain)
+        data = Orange.data.Table(domain)
+        self.to_network0(self.tree, net, data)
+        return net, data
+
+    def to_network0(self, node, net, table):
+        node_id = len(table)
+        net.add_node(node_id)
+        d = node.distribution
+        maj = node.node_classifier.default_value
+        if self.class_var.var_type == Orange.data.Type.Discrete:
+            if d.abs > 1e-6:
+                table.append([maj, d.abs, d[maj]] + [x/d.abs for x in d])
+            else:
+                table.append([maj] + [0]*(2 + len(d)))
+        else:
+            table.append(maj, d.error, d.abs)
+        if node.branches:
+            for branch in node.branches:
+                child_id = self.to_network0(branch, net, table)
+                net.add_edge(node_id, child_id)
+        return node_id
+
 def _countNodes(node):
     count = 0
     if node:
