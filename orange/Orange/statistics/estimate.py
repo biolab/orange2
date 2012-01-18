@@ -1,4 +1,6 @@
 """
+.. index:: Probability Estimation
+
 =======================================
 Probability Estimation (``estimate``)
 =======================================

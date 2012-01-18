@@ -1,7 +1,5 @@
 import Orange
 
-import tree
-
 # Other algorithms which also work with multitarget data
 from Orange.regression import pls
 # change the default value of multi_label=True in init

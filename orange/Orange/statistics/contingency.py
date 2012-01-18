@@ -1,4 +1,6 @@
 """
+.. index:: Contingency table
+
 =================
 Contingency table
 =================

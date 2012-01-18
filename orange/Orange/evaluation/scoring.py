@@ -25,7 +25,7 @@ with the vehicle data set (telling whether a vehicle described by the features
 extracted from a picture is a van, bus, or Opel or Saab car).
 
 Basic cross validation example is shown in the following part of 
-(:download:`statExamples.py <code/statExamples.py/>`, uses :download:`voting.tab <code/voting.tab>` and :download:`vehicle.tab <code/vehicle.tab>`):
+(:download:`statExamples.py <code/statExamples.py>`, uses :download:`voting.tab <code/voting.tab>` and :download:`vehicle.tab <code/vehicle.tab>`):
 
 .. literalinclude:: code/statExample0.py
 
@@ -419,14 +419,12 @@ and :math:`Z_i=H(x_i)` be the set of labels predicted by :math:`H` for example :
 .. autofunction:: mlc_precision
 .. autofunction:: mlc_recall
 
-So, let's compute all this in part of 
-(`ml-evaluator.py`_, uses `multidata.tab`_) and print it out:
+So, let's compute all this and print it out (part of
+:download:`mlc-evaluate.py <code/mlc-evaluate.py>`, uses
+:download:`emotions.tab <code/emotions.tab>`):
 
-.. literalinclude:: code/mlc-evaluator.py
+.. literalinclude:: code/mlc-evaluate.py
    :lines: 1-15
-
-.. _multidata.tab: code/multidata.tab
-.. _ml-evaluator.py: code/mlc-evaluator.py
 
 The output should look like this::
 
