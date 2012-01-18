@@ -72,11 +72,11 @@ class ExperimentResults(object):
     some test (cross validation, repeated sampling...) under the same
     circumstances.
 
-    :var results: A list of instances of TestedExample, one for each example in the dataset.
+    :var results: A list of instances of :obj:`TestedExample`, one for each example in the dataset.
     :var classifiers: A list of classifiers, one element for each repetition (eg. fold). Each element is a list
       of classifiers, one for each learner. This field is used only if storing is enabled by ``storeClassifiers=1``.
     :var number_of_iterations: Number of iterations. This can be the number of folds (in cross validation)
-      or the number of repetitions of some test. ``TestedExample``'s attribute ``iteration_number`` should
+      or the number of repetitions of some test. :obj:`TestedExample`'s attribute ``iteration_number`` should
       be in range ``[0, number_of_iterations-1]``.
     :var number_of_learners: Number of learners. Lengths of lists classes and probabilities in each :obj:`TestedExample`
       should equal ``number_of_learners``.
@@ -84,7 +84,7 @@ class ExperimentResults(object):
       random seeds), this is a list of boolean values. Each element corresponds to a classifier and tells whether the
       experimental results for that classifier were computed or loaded from the cache.
     :var weights: A flag telling whether the results are weighted. If ``False``, weights are still present
-      in ``TestedExamples``, but they are all ``1.0``. Clear this flag, if your experimental procedure ran on weighted
+      in :obj:`TestedExample`, but they are all ``1.0``. Clear this flag, if your experimental procedure ran on weighted
       testing examples but you would like to ignore the weights in statistics.
     """
     @deprecated_keywords({"classifierNames": "classifier_names",
