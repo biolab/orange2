@@ -16,7 +16,9 @@ Multiple = 4
 Default = 8
 NonDefault = 16
 
-Dynamic = 32 #Dynamic output signal
+Explicit = 32 # Explicit - only connected if specifically requested or the only possibility 
+
+Dynamic = 64 #Dynamic output signal
 
 
 class InputSignal(object):
@@ -37,6 +39,7 @@ class InputSignal(object):
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.single = parameters & Single
         self.default = parameters & Default
+        self.explicit = parameters & Explicit
         
         
 class OutputSignal(object):
@@ -52,18 +55,19 @@ class OutputSignal(object):
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.single = parameters & Single
         self.default = parameters & Default
+        self.explicit = parameters & Explicit
+        
         self.dynamic = parameters & Dynamic
         if self.dynamic and self.single:
             print "Output signal can not be Multiple and Dynamic"
             self.dynamic = 0
-        
-                
+            
+            
 def canConnect(output, input, dynamic=False):
     ret = issubclass(output.type, input.type)
     if output.dynamic and dynamic:
         ret = ret or issubclass(input.type,output.type)
     return ret
-
 
 
 class SignalLink(object):
@@ -91,7 +95,6 @@ class SignalLink(object):
         return isinstance(obj, self.inputSignal.type)
     
     
-
 # class that allows to process only one signal at a time
 class SignalWrapper(object):
     def __init__(self, widget, method):
@@ -317,10 +320,14 @@ class SignalManager(object):
         alreadyConnected = [link.signalNameTo for link in links if link.inputSignal.single]
         
         def weight(outS, inS):
-            check = [not outS.dynamic, inS.name not in alreadyConnected, bool(inS.default), bool(outS.default)] #Dynamic signals are lasts
-            weights = [2**i for i in range(len(check), 0, -1)]
-            
-            return sum([w for w, c in zip(weights, check) if c])
+            if outS.explicit or inS.explicit:
+                # Zero weight for explicit signals
+                weight = 0
+            else:
+                check = [not outS.dynamic, inS.name not in alreadyConnected, bool(inS.default), bool(outS.default)] #Dynamic signals are lasts
+                weights = [2**i for i in range(len(check), 0, -1)]
+                weight = sum([w for w, c in zip(weights, check) if c])
+            return weight
         
         possibleLinks = []
         for outS in outSignals:
@@ -350,21 +357,36 @@ class SignalManager(object):
             return 0
         # check if signal names still exist
         found = 0
-        for o in widgetFrom.outputs:
-            output = OutputSignal(*o)
-            if output.name == signalNameFrom: found=1
+        output_names = [t[0] for t in widgetFrom.outputs]
+        found = signalNameFrom in output_names
+        
+        if not found:
+            if signalNameFrom in _CHANNEL_NAME_MAP and \
+                    _CHANNEL_NAME_MAP[signalNameFrom] in output_names:
+                self.addEvent("Widget changed its output signal  %r name. Changed to %r." % (signalNameFrom, _CHANNEL_NAME_MAP[signalNameFrom]),
+                              eventVerbosity=1)
+                signalNameFrom = _CHANNEL_NAME_MAP[signalNameFrom]
+                found = 1
+                
         if not found:
             print "Error. Widget %s changed its output signals. It does not have signal %s anymore." % (str(getattr(widgetFrom, "captionTitle", "")), signalNameFrom)
             return 0
 
         found = 0
-        for i in widgetTo.inputs:
-            input = InputSignal(*i)
-            if input.name == signalNameTo: found=1
+        input_names = [t[0] for t in widgetTo.inputs]
+        found = signalNameTo in input_names
+        
+        if not found:
+            if signalNameTo in _CHANNEL_NAME_MAP and \
+                    _CHANNEL_NAME_MAP[signalNameTo] in input_names:
+                self.addEvent("Widget changed its input signal  %r name. Changed to %r." % (signalNameFrom, _CHANNEL_NAME_MAP[signalNameTo]),
+                              eventVerbosity=1)
+                signalNameTo = _CHANNEL_NAME_MAP[signalNameTo]
+                found = 1
+                
         if not found:
             print "Error. Widget %s changed its input signals. It does not have signal %s anymore." % (str(getattr(widgetTo, "captionTitle", "")), signalNameTo)
             return 0
-
 
         if self.links.has_key(widgetFrom):
             if self.getLinks(widgetFrom, widgetTo, signalNameFrom, signalNameTo):
@@ -671,9 +693,59 @@ class SignalManager(object):
         import PyQt4.QtCore as QtCore
         link.widgetFrom.emit(QtCore.SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"), link, enabled)
         
-    
+
+# Channel renames.
+
+_CHANNEL_NAME_MAP = \
+    {'Additional Tables': 'Additional Data',
+     'Attribute Definitions': 'Feature Definitions',
+     'Attribute List': 'Features',
+     'Attribute Pair': 'Interacting Features',
+     'Attribute Selection List': 'Features',
+     'Attribute Statistics': 'Feature Statistics',
+     'Attribute selection': 'Features',
+     'Attributes': 'Features',
+     'Choosen Tree': 'Selected Tree',
+     'Covered Examples': 'Covered Data',
+     'Data Instances': 'Data',
+     'Data Table': 'Data',
+     'Distance Matrix': 'Distances',
+     'Distance matrix': 'Distances',
+     'Example Subset': 'Data Subset',
+     'Example Table': 'Data',
+     'Examples': 'Data',
+     'Examples A': 'Data A',
+     'Examples B': 'Data B',
+     'Graph with ExampleTable': 'Graph with Data',
+     'Input Data': 'Data',
+     'Input Table': 'Data',
+     'Instances': 'Data',
+     'Items Distance Matrix': 'Distances',
+     'Items Subset': 'Item Subset',
+     'Items to Mark': 'Marked Itenms',
+     'KNN Classifier': 'kNN Classifier',
+     'Marked Examples': 'Marked Data',
+     'Matching Examples': 'Merged Data',
+     'Mismatching Examples': 'Mismatched Data',
+     'Output Data': 'Data',
+     'Output Table': 'Data',
+     'Preprocessed Example Table': 'Preprocessed Data',
+     'Primary Table': 'Primary Data',
+     'Reduced Example Table': 'Reduced Data',
+     'Remaining Examples': 'Remaining Data',
+     'SOMMap': 'SOM',
+     'Sample': 'Data Sample',
+     'Selected Attributes List': 'Selected Features',
+     'Selected Examples': 'Selected Data',
+     'Selected Instances': 'Selected Data',
+     'Selected Items Distance Matrix': 'Distance Matrix',
+     'Shuffled Data Table': 'Shuffled Data',
+     'Train Data': 'Training Data',
+     'Training data': 'Data',
+     'Unselected Examples': 'Other Data',
+     'Unselected Items': 'Other Items',
+     }    
 
 # create a global instance of signal manager
 globalSignalManager = SignalManager()
-        
-     
+

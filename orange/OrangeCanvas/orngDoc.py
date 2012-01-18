@@ -13,57 +13,6 @@ from orngDlgs import *
 from orngSignalManager import SignalManager
 import cPickle, math, orngHistory
 
-_CHANNEL_NAME_MAP = \
-    {'Additional Tables': 'Additional Data',
-     'Attribute Definitions': 'Feature Definitions',
-     'Attribute List': 'Features',
-     'Attribute Pair': 'Interacting Features',
-     'Attribute Selection List': 'Features',
-     'Attribute Statistics': 'Feature Statistics',
-     'Attribute selection': 'Features',
-     'Attributes': 'Features',
-     'Choosen Tree': 'Selected Tree',
-     'Covered Examples': 'Covered Data',
-     'Data Instances': 'Data',
-     'Data Table': 'Data',
-     'Distance Matrix': 'Distances',
-     'Distance matrix': 'Distances',
-     'Example Subset': 'Data Subset',
-     'Example Table': 'Data',
-     'Examples': 'Data',
-     'Examples A': 'Data',
-     'Examples B': 'Data',
-     'Graph with ExampleTable': 'Graph with Data',
-     'Input Data': 'Data',
-     'Input Table': 'Data',
-     'Instances': 'Data',
-     'Items Distance Matrix': 'Distances',
-     'Items Subset': 'Item Subset',
-     'Items to Mark': 'Marked Itenms',
-     'KNN Classifier': 'kNN Classifier',
-     'Marked Examples': 'Marked Data',
-     'Matching Examples': 'Merged Data',
-     'Mismatching Examples': 'Mismatched Data',
-     'Output Data': 'Data',
-     'Output Table': 'Data',
-     'Preprocessed Example Table': 'Preprocessed Data',
-     'Primary Table': 'Primary Data',
-     'Reduced Example Table': 'Reduced Data',
-     'Remaining Examples': 'Remaining Data',
-     'SOMMap': 'SOM',
-     'Sample': 'Data Sample',
-     'Selected Attributes List': 'Selected Features',
-     'Selected Examples': 'Selected Data',
-     'Selected Instances': 'Selected Data',
-     'Selected Items Distance Matrix': 'Distance Matrix',
-     'Shuffled Data Table': 'Shuffled Data',
-     'Train Data': 'Training Data',
-     'Training data': 'Data',
-     'Unselected Examples': 'Other Data',
-     'Unselected Items': 'Other Items',
-     }
-    
-
 class SchemaDoc(QWidget):
     def __init__(self, canvasDlg, *args):
         QWidget.__init__(self, *args)
@@ -632,16 +581,7 @@ class SchemaDoc(QWidget):
                     continue
 
                 signalList = eval(signals)
-                
                 for (outName, inName) in signalList:
-                    if not outName in [t[0] for t in outWidget.instance.outputs] \
-                            and outName in _CHANNEL_NAME_MAP:
-                        outName = _CHANNEL_NAME_MAP[outName]
-                        
-                    if not inName in [t[0] for t in inWidget.instance.inputs] \
-                            and inName in _CHANNEL_NAME_MAP:
-                        inName = _CHANNEL_NAME_MAP[inName]
-                        
                     self.addLink(outWidget, inWidget, outName, inName, enabled, saveTempDoc=False)
                 #qApp.processEvents()
         finally:
