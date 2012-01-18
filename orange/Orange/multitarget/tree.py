@@ -7,15 +7,16 @@ Multi-target Tree Learner
 
 To use the tree learning algorithm for multi-target data, standard
 orange trees (:class:`Orange.classification.tree.TreeLearner`) can be used.
-Only the :obj:`Orange.classification.tree.TreeLearner.measure` for feature
-scoring and the :obj:`Orange.classification.tree.TreeLearner.node_learner`
+Only the :obj:`~Orange.classification.tree.TreeLearner.measure` for feature
+scoring and the :obj:`~Orange.classification.tree.TreeLearner.node_learner`
 components have to be chosen so that they work on multi-target data domains.
 
 This module provides one such measure (:class:`MultitargetVariance`) that
 can be used and a helper class :class:`MultiTreeLearner` which extends
-:class:`Orange.classification.tree.TreeLearner` and is the same in all
-aspects except for different (multi-target) defaults for `measure` and
-`node_learner`.
+:class:`~Orange.classification.tree.TreeLearner` and is the same in all
+aspects except for different (multi-target) defaults for
+:obj:`~Orange.classification.tree.TreeLearner.measure` and
+:obj:`~Orange.classification.tree.TreeLearner.node_learner`.
 
 Examples
 ========
@@ -95,7 +96,7 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         :param data: The data set to be split using the given continuous feature.
         :type data: :class:`Orange.data.Table`
 
-        :return: :obj:`list` of tuples (threshold, score, None)
+        :return: :obj:`list` of :obj:`tuples <tuple>` [(threshold, score, None),]
         """
 
         f = data.domain[feature]
@@ -150,16 +151,16 @@ class MultitargetVariance(Orange.feature.scoring.Score):
 class MultiTreeLearner(Orange.classification.tree.TreeLearner):
     """
     MultiTreeLearner is a multi-target version of a tree learner. It is the
-    same as :class:`Orange.classification.tree.TreeLearner`, except for the
+    same as :class:`~Orange.classification.tree.TreeLearner`, except for the
     default values of two parameters:
     
     .. attribute:: measure
         
-        A multi-target score is used by default: :class:`Orange.multitarget.tree.MultitargetVariance`.
+        A multi-target score is used by default: :class:`MultitargetVariance`.
 
     .. attribute:: node_learner
         
-        Standard trees use :class:`Orange.classification.majority.MajorityLearner`
+        Standard trees use :class:`~Orange.classification.majority.MajorityLearner`
         to construct prediction models in the leaves of the tree.
         MultiTreeLearner uses the multi-target equivalent which can be 
         obtained simply by wrapping the majority learner:
@@ -170,7 +171,8 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
 
     def __init__(self, **kwargs):
         """
-        The constructor simply passes all given arguments to TreeLearner's constructor
+        The constructor simply passes all given arguments to
+        :class:`~Orange.classification.tree.TreeLearner`'s constructor
         :obj:`Orange.classification.tree.TreeLearner.__init__`.
         """
         
@@ -202,7 +204,7 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
 class MultiTree(Orange.classification.tree.TreeClassifier):
     """
     MultiTree classifier is almost the same as the base class it extends
-    (:class:`Orange.classification.tree.TreeClassifier`). Only the
+    (:class:`~Orange.classification.tree.TreeClassifier`). Only the
     :obj:`__call__` method is modified so it works with multi-target data.
     """
 
