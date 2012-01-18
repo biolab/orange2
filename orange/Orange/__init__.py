@@ -58,7 +58,7 @@ _import("ensemble.forest")
 
 _import("regression")
 _import("regression.base")
-_import("regression.eart")
+_import("regression.earth")
 _import("regression.lasso")
 _import("regression.linear")
 _import("regression.mean")
