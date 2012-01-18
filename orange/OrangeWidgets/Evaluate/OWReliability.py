@@ -176,13 +176,23 @@ class OWReliability(OWWidget):
         self.train_data = None
         self.test_data = None
         self.output_changed = False
-        
+        self.train_data_has_no_class = False
+        self.train_data_has_discrete_class = False
         self.invalidate_results()
         
     def set_train_data(self, data=None):
         self.error()
+        self.train_data_has_no_class = False
+        self.train_data_has_discrete_class = False
+        
         if data is not None:
             if not self.isDataWithClass(data, Orange.core.VarTypes.Continuous):
+                if not data.domain.class_var:
+                    self.train_data_has_no_class = True
+                elif not isinstance(data.domain.class_var,
+                                    Orange.data.variable.Continuous):
+                    self.train_data_has_discrete_class = True
+                    
                 data = None
         
         self.train_data = data
@@ -207,6 +217,10 @@ class OWReliability(OWWidget):
         if self.train_data is not None:
             train = "Train Data: %i features, %i instances" % \
                 (len(self.train_data.domain), len(self.train_data))
+        elif self.train_data_has_no_class:
+            train = "Train Data has no class variable"
+        elif self.train_data_has_discrete_class:
+            train = "Train Data doesn't have a continuous class"
             
         if self.test_data is not None:
             test = "Test Data: %i features, %i instances" % \
