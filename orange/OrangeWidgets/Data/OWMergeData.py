@@ -24,11 +24,11 @@ class OWMergeData(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
 
         # set channels
-        self.inputs = [("Data", ExampleTable, self.onDataAInput),
-                       ("Data", ExampleTable, self.onDataBInput)]
+        self.inputs = [("Data A", ExampleTable, self.onDataAInput),
+                       ("Data B", ExampleTable, self.onDataBInput)]
         
-        self.outputs = [("Merged Examples A+B", ExampleTable),
-                        ("Merged Examples B+A", ExampleTable)]
+        self.outputs = [("Merged Data A+B", ExampleTable),
+                        ("Merged Data B+A", ExampleTable)]
 
         # data
         self.dataA = None
@@ -171,13 +171,13 @@ class OWMergeData(OWWidget):
         self.error(0)
         if self.dataA and self.dataB and self.varA and self.varB:
             try:
-                self.send("Merged Examples A+B", self.merge(self.dataA, self.dataB, self.varA[0], self.varB[0]))
-                self.send("Merged Examples B+A", self.merge(self.dataB, self.dataA, self.varB[0], self.varA[0]))
+                self.send("Merged Data A+B", self.merge(self.dataA, self.dataB, self.varA[0], self.varB[0]))
+                self.send("Merged Data B+A", self.merge(self.dataB, self.dataA, self.varB[0], self.varA[0]))
             except orange.KernelException, ex:
                 self.error(0, "Cannot merge the two tables (%r)" % str(ex))
         else:
-            self.send("Merged Examples A+B", None)
-            self.send("Merged Examples B+A", None)
+            self.send("Merged Data A+B", None)
+            self.send("Merged Data B+A", None)
 
     ############################################################################################################################################################
     ## Event handlers
