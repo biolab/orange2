@@ -59,7 +59,7 @@ class OWReliability(OWWidget):
              ("bias_checked", self.get_SABias, 3, 1),
              ("bagged_variance", self.get_BAGV, 1, 0),
              ("local_cv", self.get_LCV, 1, 0),
-             ("local_model_pred_error", self.get_CNK, 2, 0),
+             ("local_model_pred_error", self.get_CNK, 2, 1),
              ("bagging_variance_cn", self.get_BVCK, 4, 0),
              ("mahalanobis_distance", self.get_Mahalanobis, 1, 0)]
         
