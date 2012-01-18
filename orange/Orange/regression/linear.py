@@ -43,8 +43,6 @@ Example ::
 Utility functions
 -----------------
 
-.. autofunction:: print_linear_regression_model
-
 .. autofunction:: stepwise
 
 

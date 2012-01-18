@@ -54,9 +54,6 @@ Utility functions
 
 .. autofunction:: permute_responses
 
-.. autofunction:: print_lasso_regression_model
-
-
 """
 
 import Orange
