@@ -20,7 +20,7 @@ class OWOutliers(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Data", ExampleTable, self.cdata),("Distances", orange.SymMatrix, self.cdistance)]
-        self.outputs = [("Outliers", ExampleTable), ("Inliers", ExampleTable), ("Examples with Z-scores", ExampleTable)]
+        self.outputs = [("Outliers", ExampleTable), ("Inliers", ExampleTable), ("Data with z-score", ExampleTable)]
                
         # Settings
         self.zscore = '4.0'
@@ -88,7 +88,7 @@ class OWOutliers(OWWidget):
             for i, el in enumerate(zv):
                 self.newdata[i]["Z score"] = el            
 
-            self.send("Examples with Z-scores", self.newdata)
+            self.send("Data with z-score", self.newdata)
             
             filterout = orange.Filter_values(domain=self.newdata.domain)
             filterout["Z score"] = (orange.Filter_values.Greater, eval(self.zscore))
@@ -101,7 +101,7 @@ class OWOutliers(OWWidget):
             self.send("Outliers", outliers)
             self.send("Inliers", inliers)
         else:
-            self.send("Examples with Z-scores", None)
+            self.send("Data with z-score", None)
             self.send("Outliers", None)
             self.send("Inliers", None)
   

@@ -40,7 +40,7 @@ class OWLinProjQt(OWVisWidget):
                        ("Features", AttributeList, self.setShownAttributes),
                        ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults),
                        ("VizRank Learner", orange.Learner, self.setVizRankLearner),
-                       ("Distances btw. Instances", orange.SymMatrix, self.setDistances)]
+                       ("Distances", orange.SymMatrix, self.setDistances)]
         self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable), ("Features", AttributeList), ("FreeViz Learner", orange.Learner)]
 
         name_lower = name.lower()

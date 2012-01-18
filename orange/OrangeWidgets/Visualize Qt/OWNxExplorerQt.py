@@ -48,7 +48,7 @@ class OWNxExplorerQt(OWWidget):
         self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
                        ("Network", Orange.network.Graph, self.set_graph, Default),
                        ("Items", Orange.data.Table, self.setItems),
-                       ("Marked Itenms", Orange.data.Table, self.markItems), 
+                       ("Marked Items", Orange.data.Table, self.markItems), 
                        ("Item Subset", Orange.data.Table, self.setExampleSubset), 
                        ("Distances", Orange.core.SymMatrix, self.set_items_distance_matrix)]
         

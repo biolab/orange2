@@ -42,7 +42,7 @@ class OWNetExplorer(OWWidget):
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", orngNetwork.Network, self.setGraph, Default), 
                        ("Items", orange.ExampleTable, self.setItems),
-                       ("Marked Itenms", orange.ExampleTable, self.markItems), 
+                       ("Marked Items", orange.ExampleTable, self.markItems), 
                        ("Item Subset", orange.ExampleTable, self.setExampleSubset), 
                        ("Vertex Distance", orange.SymMatrix, self.setVertexDistance)]
         
