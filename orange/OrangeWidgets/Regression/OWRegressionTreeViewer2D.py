@@ -126,7 +126,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Data", ExampleTable)]
         
         self.NodeColorMethod = 1
         self.showNodeInfoText = False
@@ -255,7 +255,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
 #        self.treeNav.leech()
 
     def ctree(self, tree=None):
-        self.send("Examples", None)
+        self.send("Data", None)
         OWTreeViewer2D.ctree(self, tree)
 
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):

@@ -25,8 +25,8 @@ class OWAttributeDistance(OWWidget):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.dataset)]
-        self.outputs = [("Distance Matrix", orange.SymMatrix)]
+        self.inputs = [("Data", ExampleTable, self.dataset)]
+        self.outputs = [("Distances", orange.SymMatrix)]
 
         self.data = None
 
@@ -129,7 +129,7 @@ class OWAttributeDistance(OWWidget):
             matrix = self.computeMatrix()
         else:
             matrix = None
-        self.send("Distance Matrix", matrix)
+        self.send("Distances", matrix)
 
 
 ##################################################################################################

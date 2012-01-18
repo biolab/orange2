@@ -29,10 +29,10 @@ class OWNxFromDistances(OWWidget, OWNxHist):
         OWWidget.__init__(self, parent, signalManager, "Nx from Distances")
         OWNxHist.__init__(self)
         
-        self.inputs = [("Distance Matrix", Orange.core.SymMatrix, self.setMatrix)]
+        self.inputs = [("Distances", Orange.core.SymMatrix, self.setMatrix)]
         self.outputs = [("Network", Orange.network.Graph), 
-                        ("Examples", Orange.data.Table), 
-                        ("Distance Matrix", Orange.core.SymMatrix)]
+                        ("Data", Orange.data.Table), 
+                        ("Distances", Orange.core.SymMatrix)]
 
         self.addHistogramControls()
         
@@ -85,12 +85,12 @@ class OWNxFromDistances(OWWidget, OWNxHist):
         self.send("Network", self.graph)
         
         if self.matrix:
-            self.send("Distance Matrix", self.matrix)
+            self.send("Distances", self.matrix)
             
         if self.graph == None:
-            self.send("Examples", None)
+            self.send("Data", None)
         else:
-            self.send("Examples", self.graph.items())
+            self.send("Data", self.graph.items())
                                                                      
 if __name__ == "__main__":    
     appl = QApplication(sys.argv)

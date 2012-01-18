@@ -25,7 +25,7 @@ class OWSieveMultigram(OWVisWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", wantGraph = True, wantStatusBar = True)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Features", AttributeList, self.setShownAttributes)]
         self.outputs = []
 
         #add a graph widget

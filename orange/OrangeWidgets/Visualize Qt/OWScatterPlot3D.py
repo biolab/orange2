@@ -522,8 +522,8 @@ class OWScatterPlot3D(OWWidget):
     def __init__(self, parent=None, signalManager=None, name='ScatterPlot 3D'):
         OWWidget.__init__(self, parent, signalManager, name, True)
 
-        self.inputs = [('Examples', ExampleTable, self.set_data, Default), ('Subset Examples', ExampleTable, self.set_subset_data)]
-        self.outputs = [('Selected Examples', ExampleTable), ('Unselected Examples', ExampleTable)]
+        self.inputs = [('Data', ExampleTable, self.set_data, Default), ('Subset Examples', ExampleTable, self.set_subset_data)]
+        self.outputs = [('Selected Data', ExampleTable), ('Other Data', ExampleTable)]
 
         self.x_attr = ''
         self.y_attr = ''
@@ -820,8 +820,8 @@ class OWScatterPlot3D(OWWidget):
         unselected = numpy.logical_not(selected)
         selected = self.data.selectref(list(selected))
         unselected = self.data.selectref(list(unselected))
-        self.send('Selected Examples', selected)
-        self.send('Unselected Examples', unselected)
+        self.send('Selected Data', selected)
+        self.send('Other Data', unselected)
 
     def on_axis_change(self):
         if self.data is not None:

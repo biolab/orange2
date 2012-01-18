@@ -134,7 +134,7 @@ class OWPredictions(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Predictions")
 
         self.callbackDeposit = []
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Predictors", orange.Classifier, self.setPredictor, Multiple)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Predictors", orange.Classifier, self.setPredictor, Multiple)]
         self.outputs = [("Predictions", ExampleTable)]
         self.predictors = {}
 

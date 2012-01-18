@@ -28,8 +28,8 @@ class OWSurveyPlot(OWVisWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
-        self.outputs = [("Attribute Selection List", AttributeList)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Features", AttributeList, self.setShownAttributes)]
+        self.outputs = [("Features", AttributeList)]
 
         #add a graph widget
         self.graph = OWSurveyPlotGraph(self.mainArea)
@@ -160,7 +160,7 @@ class OWSurveyPlot(OWVisWidget):
         self.updateGraph()
 
     def sendShownAttributes(self):
-        self.send("Attribute Selection List", [a[0] for a in self.shownAttributes])
+        self.send("Features", [a[0] for a in self.shownAttributes])
 
     # just tell the graph to hide the selected rectangle
     def enterEvent(self, e):

@@ -14,7 +14,7 @@ class OWMean(OWMajority):
     def __init__(self, parent=None, signalManager=None, title="Mean"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
 
-        self.inputs = [("Examples", ExampleTable, self.setData),
+        self.inputs = [("Data", ExampleTable, self.setData),
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         
         self.outputs = [("Learner", orange.Learner),

@@ -14,8 +14,8 @@ class OWAddRowIds(OWWidget):
     def __init__(self, parent=None, signalManager=None, title="Add row ids"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
-        self.inputs = [("Input Table", Orange.data.Table, self.set_table)]
-        self.outputs = [("Output Table", Orange.data.Table)]
+        self.inputs = [("Data", Orange.data.Table, self.set_table)]
+        self.outputs = [("Data", Orange.data.Table)]
         
         self.use_guid = False
         
@@ -42,7 +42,7 @@ be unique across all widget istances and orange sessions.",
         else:
             table = None
             
-        self.send("Output Table", table)
+        self.send("Data", table)
             
             
                 

@@ -55,8 +55,8 @@ class OWFeatureConstructor(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "FeatureConstructor")
 
-        self.inputs = [("Examples", orange.ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.inputs = [("Data", orange.ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable)]
 
         self.expression = self.attrname = ""
         self.selectedDef = []
@@ -222,7 +222,7 @@ class OWFeatureConstructor(OWWidget):
     def apply(self):
         self.dataChanged = False
         if not self.data:
-            self.send("Examples", None)
+            self.send("Data", None)
             return
 
         oldDomain = self.data.domain
@@ -231,7 +231,7 @@ class OWFeatureConstructor(OWWidget):
         for name in names:
             if names.count(name)>1 or name in oldDomain > 1:
                 self.error(1, "Multiple attributes with the same name (%s)" % name)
-                self.send("Examples", None)
+                self.send("Data", None)
                 return
 
         unknown = [[name, exp, set([id[0] or id[1] for id in re_identifier.findall(exp) if id[0] in names or id[1][1:-1] in names])] for name, exp in self.definitions]
@@ -246,7 +246,7 @@ class OWFeatureConstructor(OWWidget):
                     solved.add(name)
             if not solved:
                 self.error(1, "Circular attribute definitions (%s)" % ", ".join([x[0] for x in unknown]))
-                self.send("Examples", None)
+                self.send("Data", None)
                 return
             for name, exp, unk_attrs in unknown:
                 unk_attrs -= solved
@@ -255,4 +255,4 @@ class OWFeatureConstructor(OWWidget):
 
         newDomain = orange.Domain(oldDomain.attributes + [orange.FloatVariable(str(attrname), getValueFrom = AttrComputer(reinserted[attrname])) for attrname in names], oldDomain.classVar)
         newDomain.addmetas(oldDomain.getmetas())
-        self.send("Examples", orange.ExampleTable(newDomain, self.data))
+        self.send("Data", orange.ExampleTable(newDomain, self.data))

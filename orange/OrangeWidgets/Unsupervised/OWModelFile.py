@@ -24,7 +24,7 @@ class OWModelFile(OWDistanceFile):
         
         
         
-        self.outputs = [("Distance Matrix", orange.SymMatrix)]
+        self.outputs = [("Distances", orange.SymMatrix)]
         
         self.dataFileBox.setTitle(" Model File ")
         self.origRecentFiles=[]
@@ -79,7 +79,7 @@ class OWModelFile(OWDistanceFile):
             self.loadFile()
         else:
             self.matrix.originalData = self.originalData
-            self.send("Distance Matrix", self.matrix)
+            self.send("Distances", self.matrix)
         
     def loadFile(self):
         if not hasattr(self, "originalData"):

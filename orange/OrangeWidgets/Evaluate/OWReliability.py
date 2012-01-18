@@ -26,7 +26,7 @@ class OWReliability(OWWidget):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
         self.inputs = [("Learner", Orange.core.Learner, self.set_learner),
-                       ("Train Data", Orange.data.Table, self.set_train_data),
+                       ("Training Data", Orange.data.Table, self.set_train_data),
                        ("Test Data", Orange.data.Table, self.set_test_data)]
         
         self.outputs = [("Reliability Scores", Orange.data.Table)]

@@ -35,8 +35,8 @@ class OWScatterPlot(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Scatter Plot", TRUE)
 
-        self.inputs =  [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute selection", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
+        self.inputs =  [("Data", ExampleTable, self.setData, Default), ("Data Subset", ExampleTable, self.setSubsetData), ("Features", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
+        self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable)]
 
         self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
         self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
@@ -251,8 +251,8 @@ class OWScatterPlot(OWWidget):
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
         (selected, unselected) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
-        self.send("Selected Examples",selected)
-        self.send("Unselected Examples",unselected)
+        self.send("Selected Data",selected)
+        self.send("Other Data",unselected)
 
 
     # ##############################################################################################################################################################

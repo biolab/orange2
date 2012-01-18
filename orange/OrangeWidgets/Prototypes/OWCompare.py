@@ -20,7 +20,7 @@ class OWCompare(OWWidget):
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Compare Examples")
-        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
         self.outputs = [("Bars", list, Default)]
         self.icons = self.createAttributeIconDict()
 

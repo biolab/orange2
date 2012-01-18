@@ -468,8 +468,8 @@ class OWPreprocess(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Preprocess"):
         OWWidget.__init__(self, parent, signalManager, name)
         
-        self.inputs = [("Example Table", ExampleTable, self.setData)] #, ("Learner", orange.Learner, self.setLearner)]
-        self.outputs = [("Preprocess", orngWrap.PreprocessedLearner), ("Preprocessed Example Table", ExampleTable)] #, ("Preprocessor", orange.Preprocessor)]
+        self.inputs = [("Data", ExampleTable, self.setData)] #, ("Learner", orange.Learner, self.setLearner)]
+        self.outputs = [("Preprocess", orngWrap.PreprocessedLearner), ("Preprocessed Data", ExampleTable)] #, ("Preprocessor", orange.Preprocessor)]
         
         self.autoCommit = False
         self.changedFlag = False
@@ -720,7 +720,7 @@ class OWPreprocess(OWWidget):
         wrap = orngWrap.PreprocessedLearner(list(self.preprocessorsList))
         if self.data is not None:
             data = wrap.processData(self.data)
-            self.send("Preprocessed Example Table", data)
+            self.send("Preprocessed Data", data)
         self.send("Preprocess", wrap)
             
 #        self.send("Preprocessor", Preprocessor_preprocessorList(list(self.preprocessorsList)))

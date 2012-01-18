@@ -23,7 +23,7 @@ class OWLinearRegression(OWWidget):
     def __init__(self, parent=None, signalManager=None, title="Linear Regression"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
-        self.inputs = [("Training data", Orange.data.Table, self.set_data),
+        self.inputs = [("Data", Orange.data.Table, self.set_data),
                        ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]
         
         self.outputs = [("Learner", Orange.core.Learner), 

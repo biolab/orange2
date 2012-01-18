@@ -692,7 +692,7 @@ class OWPaintData(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Data Generator"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         
-        self.outputs = [("Example Table", ExampleTable)]
+        self.outputs = [("Data", ExampleTable)]
         
         self.addClassAsMeta = False
         self.attributes = []
@@ -894,7 +894,7 @@ class OWPaintData(OWWidget):
             # Remove the useless class variable.
             domain = orange.Domain(data.domain.attributes, None)
             data = orange.ExampleTable(domain, data)
-        self.send("Example Table", data)
+        self.send("Data", data)
         
         
 if __name__ == "__main__":

@@ -48,8 +48,8 @@ class OWMultiCorrespondenceAnalysis(OWCorrespondenceAnalysis):
     def __init__(self, parent=None, signalManager=None, title="Multiple Correspondence Analysis"):
         OWCorrespondenceAnalysis.__init__(self, parent, signalManager, title)
         
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Selected Data", ExampleTable), ("Remaining Data", ExampleTable)]
         
 #        self.allAttrs = []
         self.allAttributes = []
@@ -104,8 +104,8 @@ class OWMultiCorrespondenceAnalysis(OWCorrespondenceAnalysis):
         self.yAxisCB.clear()
         self.contributionInfo.setText("NA\nNA")
         self.graph.removeDrawingCurves(True, True, True)
-        self.send("Selected Examples", None)
-        self.send("Remaining Examples", None)
+        self.send("Selected Data", None)
+        self.send("Remaining Data", None)
         self.allAttrs = []
                 
     def runCA(self):
@@ -235,8 +235,8 @@ class OWMultiCorrespondenceAnalysis(OWCorrespondenceAnalysis):
             remaining = orange.ExampleTable(self.data.domain, remaining) if remaining else \
                             orange.ExampleTable(self.data.domain)
                         
-            self.send("Selected Examples", selected)
-            self.send("Remaining Examples", remaining)
+            self.send("Selected Data", selected)
+            self.send("Remaining Data", remaining)
         else:
-            self.send("Selected Examples", None)
-            self.send("Remaining Examples", None)
+            self.send("Selected Data", None)
+            self.send("Remaining Data", None)

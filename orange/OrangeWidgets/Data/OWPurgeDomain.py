@@ -16,8 +16,8 @@ class OWPurgeDomain(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'PurgeDomain', wantMainArea=False)
         self.settingsList=["removeValues", "removeAttributes", "removeClassAttribute", "removeClasses", "autoSend", "sortValues", "sortClasses"]
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable)]
 
         self.data = None
 
@@ -75,7 +75,7 @@ class OWPurgeDomain(OWWidget):
             self.process()
         else:
             self.reducedAttrs = self.removedAttrs = self.resortedAttrs = self.classAttr = ""
-            self.send("Examples", None)
+            self.send("Data", None)
             self.data = None
         self.dataChanged = False
 
@@ -212,7 +212,7 @@ class OWPurgeDomain(OWWidget):
         else:
             newData = self.data
 
-        self.send("Examples", newData)
+        self.send("Data", newData)
 
         self.dataChanged = False
 

@@ -22,7 +22,7 @@ class OWC45Tree(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]#, ("C45 Tree", orange.C45Classifier)]
 
         # Settings

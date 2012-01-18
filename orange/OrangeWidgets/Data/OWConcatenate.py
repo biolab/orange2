@@ -15,8 +15,8 @@ class OWConcatenate(OWWidget):
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Concatenate", wantMainArea=0)
-        self.inputs = [("Primary Table", orange.ExampleTable, self.setData), ("Additional Tables", orange.ExampleTable, self.setMoreData, Multiple)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.inputs = [("Primary Data", orange.ExampleTable, self.setData), ("Additional Data", orange.ExampleTable, self.setMoreData, Multiple)]
+        self.outputs = [("Data", ExampleTable)]
 
         self.mergeAttributes = 0
         self.dataSourceSelected = 1
@@ -175,7 +175,7 @@ class OWConcatenate(OWWidget):
             newTable = table1
 
         self.dataReport = self.prepareDataReport(newTable)
-        self.send("Examples", newTable)
+        self.send("Data", newTable)
 
     def sendReport(self):
         self.reportData(self.primary, "Primary table", 

@@ -27,10 +27,10 @@ class OWModelEmbedder(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Model Embedder")
         
-        self.inputs = [("Examples", orange.ExampleTable, self.setData),
+        self.inputs = [("Data", orange.ExampleTable, self.setData),
                        ("Model", orange.Example, self.setModel)]
         
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
+        self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable)]
         
         self.ow = None
         self.data = None

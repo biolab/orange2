@@ -30,7 +30,7 @@ class OWGaussianMixtures(OWWidget):
     def __init__(self, parent=None, signalManager=None, title="Gaussin Mixture"):
         OWWidget.__init__(self, parent, signalManager, title)
         
-        self.inputs = [("Data Instances", Orange.data.Table, self.set_data)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data)]
         self.outputs = [("Data with Indicator Matrix", Orange.data.Table)]
         
         self.init_method = 0

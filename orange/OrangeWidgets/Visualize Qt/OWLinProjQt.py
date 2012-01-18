@@ -35,13 +35,13 @@ class OWLinProjQt(OWVisWidget):
     def __init__(self,parent=None, signalManager = None, name = "Linear Projection (qt)", graphClass = None):
         OWVisWidget.__init__(self, parent, signalManager, name, TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default),
-                       ("Example Subset", ExampleTable, self.setSubsetData),
-                       ("Attribute Selection List", AttributeList, self.setShownAttributes),
+        self.inputs = [("Data", ExampleTable, self.setData, Default),
+                       ("Data Subset", ExampleTable, self.setSubsetData),
+                       ("Features", AttributeList, self.setShownAttributes),
                        ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults),
                        ("VizRank Learner", orange.Learner, self.setVizRankLearner),
                        ("Distances btw. Instances", orange.SymMatrix, self.setDistances)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("FreeViz Learner", orange.Learner)]
+        self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable), ("Features", AttributeList), ("FreeViz Learner", orange.Learner)]
 
         name_lower = name.lower()
         self._name_lower = name_lower
@@ -294,11 +294,11 @@ class OWLinProjQt(OWVisWidget):
         if not self.data: return
         (selected, unselected) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), addProjectedPositions = self.addProjectedPositions)
 
-        self.send("Selected Examples", selected)
-        self.send("Unselected Examples", unselected)
+        self.send("Selected Data", selected)
+        self.send("Other Data", unselected)
 
     def sendShownAttributes(self):
-        self.send("Attribute Selection List", [a[0] for a in self.shownAttributes])
+        self.send("Features", [a[0] for a in self.shownAttributes])
 
     # show selected interesting projection
     def showSelectedAttributes(self):

@@ -195,8 +195,8 @@ class OWImageViewer(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Image viewer"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         
-        self.inputs = [("Example Table", ExampleTable, self.setData)]
-        self.outputs = [("Example Table", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable)]
         
         self.imageAttr = 0
         self.titleAttr = 0
@@ -419,9 +419,9 @@ class OWImageViewer(OWWidget):
                 selected = orange.ExampleTable(self.data.domain, self.selectedExamples)
             else:
                 selected = None
-            self.send("Example Table", selected)
+            self.send("Data", selected)
         else:
-            self.send("Example Table", None)
+            self.send("Data", None)
         self.selectionChangedFlag = False
             
     def saveScene(self):

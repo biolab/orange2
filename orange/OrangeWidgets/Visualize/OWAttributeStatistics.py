@@ -41,8 +41,8 @@ class OWAttributeStatistics(OWWidget):
         self.canvas = None
         self.HighlightedAttribute = None
         #list inputs and outputs
-        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
-        self.outputs = [("Attribute Statistics", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
+        self.outputs = [("Feature Statistics", ExampleTable)]
 
         #GUI
 
@@ -100,7 +100,7 @@ class OWAttributeStatistics(OWWidget):
         if data==None:
             self.dataset = self.dist = self.stat = None
             self.canvasview.hide()
-            self.send("Attribute Statistics", None)
+            self.send("Feature Statistics", None)
         else:
             self.canvasview.show()
 
@@ -121,7 +121,7 @@ class OWAttributeStatistics(OWWidget):
             ndata[0][id] = "average"
             ndata[1][id] = "variance"
             ndata[2][id] = "modus"
-            self.send("Attribute Statistics", ndata)
+            self.send("Feature Statistics", ndata)
 
         self.HighlightedAttribute = 0
         self.openContext("", data)

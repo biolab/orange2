@@ -18,7 +18,7 @@ class OWRandomForest(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Random Forest'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False, resizingEnabled=False)
 
-        self.inputs = [("Examples", ExampleTable, self.setData),
+        self.inputs = [("Data", ExampleTable, self.setData),
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         
         self.outputs = [("Learner", orange.Learner),

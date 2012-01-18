@@ -350,8 +350,8 @@ class OWEditDomain(OWWidget):
     def __init__(self, parent=None, signalManager=None, title="Edit Domain"):
         OWWidget.__init__(self, parent, signalManager, title)
         
-        self.inputs = [("Input Data", Orange.data.Table, self.set_data)]
-        self.outputs = [("Output Data", Orange.data.Table)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data)]
+        self.outputs = [("Data", Orange.data.Table)]
         
         # Settings
         
@@ -633,7 +633,7 @@ class OWEditDomain(OWWidget):
                 
             new_data = Orange.data.Table(new_domain, self.data)
         
-        self.send("Output Data", new_data)
+        self.send("Data", new_data)
         self.changed_flag = False
             
         

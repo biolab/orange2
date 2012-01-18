@@ -48,8 +48,8 @@ class OWImpute(OWWidget):
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
-        self.outputs = [("Examples", ExampleTable), ("Imputer", orange.ImputerConstructor)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
+        self.outputs = [("Data", ExampleTable), ("Imputer", orange.ImputerConstructor)]
 
         self.attrIcons = self.createAttributeIconDict()
 
@@ -213,7 +213,7 @@ class OWImpute(OWWidget):
         if not data or not len(data.domain):
             self.indibox.setDisabled(True)
             self.data = None
-            self.send("Examples", data)
+            self.send("Data", data)
             self.attrList.clear()
         else:
             self.indibox.setDisabled(False)
@@ -413,7 +413,7 @@ class OWImpute(OWWidget):
                     data = None
             else:
                 data = None
-            self.send("Examples", data)
+            self.send("Data", data)
         else:
             self.dataChanged = False
 

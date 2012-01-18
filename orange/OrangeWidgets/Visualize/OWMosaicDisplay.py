@@ -94,8 +94,8 @@ class OWMosaicDisplay(OWWidget):
         self.subsetData = None
         self.names = []     # class values
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Learner", orange.Learner)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Data Subset", ExampleTable, self.setSubsetData)]
+        self.outputs = [("Selected Data", ExampleTable), ("Learner", orange.Learner)]
 
         #load settings
         self.colorSettings = None
@@ -810,7 +810,7 @@ class OWMosaicDisplay(OWWidget):
     # cell/example selection
     def sendSelectedData(self):
         # send the selected examples
-        self.send("Selected Examples", self.getSelectedExamples())
+        self.send("Selected Data", self.getSelectedExamples())
 
     # add a new rectangle. update the graph and see which mosaics does it intersect. add this mosaics to the recentlyAdded list
     def addSelection(self, rect):

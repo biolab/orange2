@@ -21,7 +21,7 @@ class OWEarth(OWWidget):
                  title="Earth"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
-        self.inputs = [("Training data", Orange.data.Table, self.set_data), ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data), ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]
         self.outputs = [("Learner", earth.EarthLearner), ("Predictor", earth.EarthClassifier)]
         
         self.name = "Earth Learner"

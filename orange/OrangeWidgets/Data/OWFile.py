@@ -50,7 +50,7 @@ class OWFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 1)
 
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Data", ExampleTable)]
 
         self.recentFiles=["(none)"]
         self.symbolDC = "?"
@@ -230,7 +230,7 @@ class OWFile(OWWidget):
         self.loadedFile = ""
         
         if fn == "(none)":
-            self.send("Examples", None)
+            self.send("Data", None)
             self.infoa.setText("No data loaded")
             self.infob.setText("")
             self.warnings.setText("")
@@ -324,7 +324,7 @@ class OWFile(OWWidget):
             data.name = fName
 
         self.dataReport = self.prepareDataReport(data)
-        self.send("Examples", data)
+        self.send("Data", data)
         if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
 
     def sendReport(self):

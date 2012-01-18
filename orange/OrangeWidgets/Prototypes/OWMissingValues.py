@@ -34,8 +34,8 @@ class OWMissingValues(OWWidget):
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Compare Examples", noReport=True)
-        self.inputs = [("Instances", ExampleTable, self.setData, Default)]
-        self.outputs = [("Instances", ExampleTable, Default), ("Selected Instances", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
+        self.outputs = [("Data", ExampleTable, Default), ("Selected Data", ExampleTable)]
         
         self.check = []
         self.resize(520, 560)
@@ -145,7 +145,7 @@ class OWMissingValues(OWWidget):
             self.dataout = orange.ExampleTable(orange.Domain(variables), dataout)
         else:
             self.dataout = None
-        self.send("Instances", self.dataout)
+        self.send("Data", self.dataout)
             
     def sendSelected(self):
         toSend = None
@@ -161,7 +161,7 @@ class OWMissingValues(OWWidget):
                 filt_unk.negate=1
                 filt_unk.check = [i==row for i in range(len(data.domain))]
                 toSend = data.filterref(filt_unk)
-        self.send("Selected Instances", toSend)
+        self.send("Selected Data", toSend)
 
     def sendReport(self):
         import OWReport

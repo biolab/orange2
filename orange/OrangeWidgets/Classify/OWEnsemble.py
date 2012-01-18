@@ -27,7 +27,7 @@ class OWEnsemble(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Ensemble"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
         
-        self.inputs = [("Learner", orange.Learner, self.setLearner), ("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Learner", orange.Learner, self.setLearner), ("Data", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier)]
         
         self.method = 0

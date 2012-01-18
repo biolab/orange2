@@ -41,8 +41,8 @@ class OWInteractionGraphProto(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list), ("Network", Network)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable), ("Interacting Features", list), ("Selected Features", list), ("Network", Network)]
 
 
         #set default settings
@@ -165,7 +165,7 @@ class OWInteractionGraphProto(OWWidget):
                 
             for (attr1, attr2, rect) in self.lines:
                 if self.clickInside(rect.rect(), ev.pos()) == 1:
-                    self.send("Attribute Pair", [attr1, attr2])
+                    self.send("Interacting Features", [attr1, attr2])
                     return
                 
         elif ev.button() == Qt.LeftButton and name == "interactions":
@@ -175,7 +175,7 @@ class OWInteractionGraphProto(OWWidget):
                 if 1 in [self.clickInside(item.rect(), ev.pos()) for item in [rect1, rect2, rect3, nbrect]]:
                     (rect1, rect2, rect3, nbrect, text1, text2) = rects
                     if rect2.pen().color() == Qt.green:
-                        self.send("Attribute Pair", [str(text1.text()), str(text2.text())])
+                        self.send("Interacting Features", [str(text1.text()), str(text2.text())])
                     
         elif ev.button() == Qt.LeftButton and name == "correlations":
             self.rest = None
@@ -184,7 +184,7 @@ class OWInteractionGraphProto(OWWidget):
                 if 1 in [self.clickInside(item.rect(), ev.pos()) for item in [rect1, rect2, rect3, nbrect]]:
                     (rect1, rect2, rect3, nbrect, text1, text2) = rects
                     if rect2.pen().color() != Qt.green:
-                        self.send("Attribute Pair", [str(text1.text()), str(text2.text())])
+                        self.send("Interacting Features", [str(text1.text()), str(text2.text())])
 
         elif ev.button() == Qt.RightButton and (name == "interactions" or name == "correlations") and self.mergeAttributes:
             found = 0
@@ -235,7 +235,7 @@ class OWInteractionGraphProto(OWWidget):
     def selectionClick(self):
         if self.data == None: return
         l = [str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())]
-        self.send("Selected Attributes List", l)
+        self.send("Selected Features", l)
 
 
     # receive new data and update all fields
@@ -326,7 +326,7 @@ class OWInteractionGraphProto(OWWidget):
 
         self.updateCanvas()
 
-        self.send("Examples", data)
+        self.send("Data", data)
         self.send("Network", self.graph)
 
     #########################################

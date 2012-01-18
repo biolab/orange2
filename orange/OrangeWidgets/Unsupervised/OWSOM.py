@@ -24,8 +24,8 @@ class OWSOM(OWWidget):
     def __init__(self ,parent=None , signalManager=None, name="SOM"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Classifier", orange.Classifier), ("Learner", orange.Learner), ("SOMMap", orngSOM.SOMMap)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Classifier", orange.Classifier), ("Learner", orange.Learner), ("SOM", orngSOM.SOMMap)]
 
         self.LearnerName="SOM Map"
         self.xdim = 5
@@ -110,7 +110,7 @@ class OWSOM(OWWidget):
             self.ApplySettings()
         else:
             self.send("Classifier", None)
-            self.send("SOMMap", None)
+            self.send("SOM", None)
             self.send("Learner", None)
         
 
@@ -133,7 +133,7 @@ class OWSOM(OWWidget):
             self.classifier.setattr("data", self.data)
             if self.data.domain.classVar:
                 self.send("Classifier", self.classifier)
-            self.send("SOMMap", self.classifier)
+            self.send("SOM", self.classifier)
         
 
     def sendReport(self):

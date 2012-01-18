@@ -244,8 +244,8 @@ class OWItemsetViz(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Itemset visualizer')
 
-        self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
-        self.outputs=[("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
+        self.inputs = [("Graph with Data", orange.Graph, self.setGraph), ("Data Subset", orange.ExampleTable, self.setExampleSubset)]
+        self.outputs=[("Selected Data", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -526,15 +526,15 @@ class OWItemsetViz(OWWidget):
         
         if graph != None:
             if graph.items != None:
-                self.send("Selected Examples", graph.items)
+                self.send("Selected Data", graph.items)
             else:
-                self.send("Selected Examples", self.graph.getSelectedExamples())
+                self.send("Selected Data", self.graph.getSelectedExamples())
                 
             self.send("Selected Graph", graph)
         else:
             items = self.graph.getSelectedExamples()
             if items != None:
-                self.send("Selected Examples", items)
+                self.send("Selected Data", items)
             self.send("Selected Graph", None)
    
     

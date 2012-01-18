@@ -13,7 +13,7 @@ class OWSQL(OWWidget):
     settingsList = ["host", "username", "password", "showPassword", "database", "query", "library", "lastDir", "databaseType"]
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Compare Examples", wantMainArea=0)
-        self.outputs = [("Examples", ExampleTable, Default)]
+        self.outputs = [("Data", ExampleTable, Default)]
 
         self.host = "localhost"
         self.username = "root"
@@ -90,7 +90,7 @@ class OWSQL(OWWidget):
                 self.error = "Error: " + str(d)
             self.errorIcon.setVisible(True)
             data = None
-        self.send("Examples", data)
+        self.send("Data", data)
         
     def saveToLibrary(self):
         ci = self.libraryList.currentItem()

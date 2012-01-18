@@ -162,8 +162,8 @@ class OWRank(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Rank")
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Reduced Example Table", ExampleTable, Default + Single)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Reduced Data", ExampleTable, Default + Single)]
 
         self.nDecimals = 3
         self.nIntervals = 4
@@ -778,12 +778,12 @@ class OWRank(OWWidget):
     def apply(self):
         selected = self.selectedAttrs()
         if not self.data or not selected:
-            self.send("Reduced Example Table", None)
+            self.send("Reduced Data", None)
         else:
             domain = orange.Domain(selected, self.data.domain.classVar)
             domain.addmetas(self.data.domain.getmetas())
             data = orange.ExampleTable(domain, self.data)
-            self.send("Reduced Example Table", data)
+            self.send("Reduced Data", data)
         self.dataChanged = False
         
     def selectedAttrs(self):

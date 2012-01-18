@@ -18,8 +18,8 @@ class OWDistanceFilter(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Distance Matrix Filter'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setSymMatrix, Default), ("Example Subset", ExampleTable, self.setExampleSubset)]
-        self.outputs = [("Distance Matrix", orange.SymMatrix)]
+        self.inputs = [("Distances", orange.SymMatrix, self.setSymMatrix, Default), ("Data Subset", ExampleTable, self.setExampleSubset)]
+        self.outputs = [("Distances", orange.SymMatrix)]
         
         self.matrix = None
         self.subset = None
@@ -63,7 +63,7 @@ class OWDistanceFilter(OWWidget):
                 print var.name
                 self.subsetAttrCombo.addItem(self.icons[var.varType], unicode(var.name))
         
-        self.send("Distance Matrix", self.matrix)
+        self.send("Distances", self.matrix)
         
     def filter(self):
         if self.subsetAttr > 0:
@@ -83,7 +83,7 @@ class OWDistanceFilter(OWWidget):
                     
             matrix.items = self.matrix.items.getitems(nodes)
                     
-            self.send("Distance Matrix", matrix)
+            self.send("Distances", matrix)
 
 if __name__=="__main__":
     import orange

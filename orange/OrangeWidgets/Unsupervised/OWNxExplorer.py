@@ -48,13 +48,13 @@ try:
             self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
                            ("Network", Orange.network.Graph, self.set_graph, Default),
                            ("Items", Orange.data.Table, self.set_items),
-                           ("Items Subset", Orange.data.Table, self.mark_items), 
-                           ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
+                           ("Item Subset", Orange.data.Table, self.mark_items), 
+                           ("Distances", Orange.core.SymMatrix, self.set_items_distance_matrix)]
             
             self.outputs = [("Selected Network", Orange.network.Graph),
-                            ("Selected Items Distance Matrix", Orange.core.SymMatrix),
+                            ("Distance Matrix", Orange.core.SymMatrix),
                             ("Selected Items", Orange.data.Table), 
-                            ("Unselected Items", Orange.data.Table), 
+                            ("Other Items", Orange.data.Table), 
                             ("Marked Items", Orange.data.Table)]
                             #("Attribute Selection List", AttributeList)]
             
@@ -552,21 +552,21 @@ try:
                                                 "Unselected Items", None)) > 0:
                         nodes = self.networkCanvas.not_selected_nodes()
                         if len(nodes) > 0 and self.graph_base.items() is not None:
-                            self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                            self.send("Other Items", self.graph_base.items().getitems(nodes))
                         else:
-                            self.send("Unselected Items", None)
+                            self.send("Other Items", None)
                         
                     self.send("Selected Network", graph)
                 else:
                     self.send("Selected Items", None)
-                    self.send("Unselected Items", None)
+                    self.send("Other Items", None)
                     self.send("Selected Network", None)
                     
             if len(self.signalManager.getLinks(self, None, \
                                 "Selected Items Distance Matrix", None)) > 0:
                 # signal connected
                 matrix = None if self.items_matrix is None else self.items_matrix.getitems(selected_nodes)
-                self.send("Selected Items Distance Matrix", matrix)
+                self.send("Distance Matrix", matrix)
         
         def send_marked_nodes(self):
             if self.checkSendMarkedNodes and \
@@ -1502,7 +1502,7 @@ try:
                 attributes = str(self.graph_base.items()[vertices[0]][att]).split(', ')
             else:
                 attributes = None
-            self.send("Attribute Selection List", attributes)
+            self.send("Features", attributes)
         
             
 except ImportError as err:
@@ -1541,16 +1541,16 @@ except ImportError as err:
             self.inputs = [("Network", Orange.network.Graph, self.set_graph, Default),
                            ("Nx View", Orange.network.NxView, self.set_network_view),
                            ("Items", Orange.data.Table, self.setItems),
-                           ("Items to Mark", Orange.data.Table, self.markItems), 
-                           ("Items Subset", Orange.data.Table, self.setExampleSubset), 
-                           ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
+                           ("Marked Itenms", Orange.data.Table, self.markItems), 
+                           ("Item Subset", Orange.data.Table, self.setExampleSubset), 
+                           ("Distances", Orange.core.SymMatrix, self.set_items_distance_matrix)]
             
             self.outputs = [("Selected Network", Orange.network.Graph),
-                            ("Selected Items Distance Matrix", Orange.core.SymMatrix),
+                            ("Distance Matrix", Orange.core.SymMatrix),
                             ("Selected Items", Orange.data.Table), 
-                            ("Unselected Items", Orange.data.Table), 
+                            ("Other Items", Orange.data.Table), 
                             ("Marked Items", Orange.data.Table),
-                            ("Attribute Selection List", AttributeList)]
+                            ("Features", AttributeList)]
             
             self.markerAttributes = []
             self.tooltipAttributes = []
@@ -1896,7 +1896,7 @@ except ImportError as err:
                 attributes = str(self.graph_base.items()[vertices[0]][att]).split(', ')
             else:
                 attributes = None
-            self.send("Attribute Selection List", attributes)
+            self.send("Features", attributes)
             
         def edit(self):
             if self.graph is None:
@@ -2618,9 +2618,9 @@ except ImportError as err:
                         
                     nodes = self.networkCanvas.getUnselectedExamples()
                     if len(nodes) > 0 and self.graph_base.items() is not None:
-                        self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                        self.send("Other Items", self.graph_base.items().getitems(nodes))
                     else:
-                        self.send("Unselected Items", None)
+                        self.send("Other Items", None)
                         
                     self.send("Selected Network", graph)
                 else:
@@ -2632,9 +2632,9 @@ except ImportError as err:
                         
                     nodes = self.networkCanvas.getUnselectedExamples()
                     if len(nodes) > 0 and self.graph_base.items() is not None:
-                        self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                        self.send("Other Items", self.graph_base.items().getitems(nodes))
                     else:
-                        self.send("Unselected Items", None)
+                        self.send("Other Items", None)
                 
             if len(self.signalManager.getLinks(self, None, \
                                 "Selected Items Distance Matrix", None)) > 0:
@@ -2643,7 +2643,7 @@ except ImportError as err:
                 if self.items_matrix is not None:
                     matrix = self.items_matrix.getitems(vertices)
         
-                self.send("Selected Items Distance Matrix", matrix)
+                self.send("Distance Matrix", matrix)
                     
         def setCombos(self):
             vars = self.graph_base.items_vars()

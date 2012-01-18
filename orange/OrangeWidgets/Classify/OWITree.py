@@ -24,8 +24,8 @@ class OWITree(OWClassificationTreeViewer):
 
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Tree Learner", orange.Learner, self.setLearner)]
-        self.outputs = [("Examples", ExampleTable), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Tree Learner", orange.Learner, self.setLearner)]
+        self.outputs = [("Data", ExampleTable), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
 
         self.attridx = 0
         self.cutoffPoint = 0.0
@@ -91,7 +91,7 @@ class OWITree(OWClassificationTreeViewer):
         self.learner = FixedTreeLearner(self.tree, self.captionTitle)
         self.infoa.setText("Number of nodes: %i" % orngTree.countNodes(self.tree))
         self.infob.setText("Number of leaves: %i" % orngTree.countLeaves(self.tree))
-#        self.send("Examples", self.tree)
+#        self.send("Data", self.tree)
         self.send("Classifier", self.tree)
         self.send("Tree Learner", self.learner)
 
@@ -203,7 +203,7 @@ class OWITree(OWClassificationTreeViewer):
             self.send("Tree Learner", self.learner)
             self.openContext("", None)
 
-        self.send("Examples", None)
+        self.send("Data", None)
         self.updateTree()
         self.v.invisibleRootItem().child(0).setSelected(1)
 

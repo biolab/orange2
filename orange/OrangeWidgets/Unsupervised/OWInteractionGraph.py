@@ -45,8 +45,8 @@ class OWInteractionGraph(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable), ("Interacting Features", list), ("Selected Features", list)]
 
 
         #set default settings
@@ -157,14 +157,14 @@ class OWInteractionGraph(OWWidget):
                     return
             for (attr1, attr2, rect) in self.lines:
                 if rect.contains(pos):
-                    self.send("Attribute Pair", [attr1, attr2])
+                    self.send("Interacting Features", [attr1, attr2])
                     return
         elif ev.button() == Qt.LeftButton and name == "interactions":
             self.rest = None
             for rects in self.interactionRects:
                 if 1 in [item.contains(pos) for item in rects]:
                     (rect1, rect2, rect3, nbrect, text1, text2) = rects
-                    self.send("Attribute Pair", [str(text1.toPlainText()), str(text2.toPlainText())])
+                    self.send("Interacting Features", [str(text1.toPlainText()), str(text2.toPlainText())])
 
         elif ev.button() == Qt.RightButton and name == "interactions" and self.mergeAttributes:
             found = 0
@@ -208,7 +208,7 @@ class OWInteractionGraph(OWWidget):
     def selectionClick(self):
         if self.data == None: return
         l = [str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())]
-        self.send("Selected Attributes List", l)
+        self.send("Selected Features", l)
 
 
     # receive new data and update all fields
@@ -347,7 +347,7 @@ class OWInteractionGraph(OWWidget):
         #self.canvasL.update()
         #self.canvasR.update()
 
-        self.send("Examples", data)
+        self.send("Data", data)
 
 
     #########################################

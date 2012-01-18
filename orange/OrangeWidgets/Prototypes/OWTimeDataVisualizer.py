@@ -29,8 +29,8 @@ class OWTimeDataVisualizer(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Time Data Visualizer", TRUE)
 
-        self.inputs =  [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute selection", AttributeList, self.setShownAttributes)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable)]
+        self.inputs =  [("Data", ExampleTable, self.setData, Default), ("Data Subset", ExampleTable, self.setSubsetData), ("Features", AttributeList, self.setShownAttributes)]
+        self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable)]
 
         # local variables
         self.autoSendSelection = 1
@@ -190,8 +190,8 @@ class OWTimeDataVisualizer(OWWidget):
     def sendSelections(self):
         pass
 #        (selected, unselected) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
-#        self.send("Selected Examples",selected)
-#        self.send("Unselected Examples",unselected)
+#        self.send("Selected Data",selected)
+#        self.send("Other Data",unselected)
 
 
     # ##############################################################################################################################################################

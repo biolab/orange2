@@ -48,16 +48,16 @@ class OWNxExplorerQt(OWWidget):
         self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
                        ("Network", Orange.network.Graph, self.set_graph, Default),
                        ("Items", Orange.data.Table, self.setItems),
-                       ("Items to Mark", Orange.data.Table, self.markItems), 
-                       ("Items Subset", Orange.data.Table, self.setExampleSubset), 
-                       ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
+                       ("Marked Itenms", Orange.data.Table, self.markItems), 
+                       ("Item Subset", Orange.data.Table, self.setExampleSubset), 
+                       ("Distances", Orange.core.SymMatrix, self.set_items_distance_matrix)]
         
         self.outputs = [("Selected Network", Orange.network.Graph),
-                        ("Selected Items Distance Matrix", Orange.core.SymMatrix),
+                        ("Distance Matrix", Orange.core.SymMatrix),
                         ("Selected Items", Orange.data.Table), 
-                        ("Unselected Items", Orange.data.Table), 
+                        ("Other Items", Orange.data.Table), 
                         ("Marked Items", Orange.data.Table),
-                        ("Attribute Selection List", AttributeList)]
+                        ("Features", AttributeList)]
         
         self.networkCanvas = NetworkCanvas(self, self.mainArea, "Net Explorer")
         
@@ -375,7 +375,7 @@ class OWNxExplorerQt(OWWidget):
             attributes = str(self.graph_base.items()[vertices[0]][att]).split(', ')
         else:
             attributes = None
-        self.send("Attribute Selection List", attributes)
+        self.send("Features", attributes)
         
     def edit(self):
         if self.graph is None:
@@ -736,18 +736,18 @@ class OWNxExplorerQt(OWWidget):
             
             nodes = self.networkCanvas.not_selected_nodes()
             if len(nodes) > 0 and self.graph_base.items() is not None:
-                self.send("Unselected Items", self.graph_base.items().getitems(nodes))
+                self.send("Other Items", self.graph_base.items().getitems(nodes))
             else:
-                self.send("Unselected Items", None)
+                self.send("Other Items", None)
                 
             self.send("Selected Network", graph)
         else:
             self.send("Selected Items", None)
-            self.send("Unselected Items", None)
+            self.send("Other Items", None)
             self.send("Selected Network", None)
             
         matrix = None if self.items_matrix is None else self.items_matrix.getitems(selected_nodes)
-        self.send("Selected Items Distance Matrix", matrix)
+        self.send("Distance Matrix", matrix)
                 
     def setCombos(self):
         vars = self.graph_base.items_vars()

@@ -17,8 +17,8 @@ class OWLogisticRegression(OWWidget):
     def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Attributes", list)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Features", list)]
 
         from orngTree import TreeLearner
         imputeByModel = orange.ImputerConstructor_model()

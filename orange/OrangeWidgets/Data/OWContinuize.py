@@ -40,8 +40,8 @@ class OWContinuize(OWWidget):
     def __init__(self,parent=None, signalManager = None, name = "Continuizer"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Preprocessor", PreprocessedLearner)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable), ("Preprocessor", PreprocessedLearner)]
 
         self.multinomialTreatment = 0
         self.targetValue = 0
@@ -99,7 +99,7 @@ class OWContinuize(OWWidget):
             self.data = None
             self.cbTargetValue.clear()
             self.openContext("", self.data)
-            self.send("Examples", None)
+            self.send("Data", None)
         else:
             if not self.data or data.domain.classVar != self.data.domain.classVar:
                 self.cbTargetValue.clear()
@@ -149,7 +149,7 @@ class OWContinuize(OWWidget):
             else:
                 domain = continuizer(self.data, 0)
             domain.addmetas(self.data.domain.getmetas())
-            self.send("Examples", orange.ExampleTable(domain, self.data))
+            self.send("Data", orange.ExampleTable(domain, self.data))
         self.dataChanged = False
         
     def sendReport(self):

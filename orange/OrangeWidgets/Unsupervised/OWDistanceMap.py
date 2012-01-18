@@ -72,8 +72,8 @@ class OWDistanceMap(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, 'Distance Map', wantGraph=True)
 
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute List", orange.VarList)]
+        self.inputs = [("Distances", orange.SymMatrix, self.setMatrix)]
+        self.outputs = [("Data", ExampleTable), ("Features", orange.VarList)]
 
         self.clicked = False
         self.offsetX = 5
@@ -312,8 +312,8 @@ class OWDistanceMap(OWWidget):
         tmp = []
 
         if len(self.selection.getSelection())==0:
-            self.send("Attribute List", None)
-            self.send("Examples", None)
+            self.send("Features", None)
+            self.send("Data", None)
         else:
             selection = self.selection.getSelection()
             
@@ -340,13 +340,13 @@ class OWDistanceMap(OWWidget):
                 selected = orange.VarList()
                 for i in selectedIndices:
                     selected.append(items[i])
-                self.send("Attribute List", selected)
+                self.send("Features", selected)
 
 
             if isinstance(items[0], orange.Example):
                 ex = [items[x] for x in selectedIndices]
                 selected = orange.ExampleTable(items[0].domain, ex)
-                self.send("Examples", selected)
+                self.send("Data", selected)
 
     def getGammaCorrectedPalette(self):
         return [QColor(*self.contPalette.getRGB(float(i)/250, gamma=self.Gamma)).rgb() for i in range(250)] + self.palette[-6:]
@@ -828,8 +828,8 @@ class OWDistanceMap(OWWidget):
         self.createDistanceMap()
 
     def setMatrix(self, matrix):
-        self.send("Examples", None)
-        self.send("Attribute List", None)
+        self.send("Data", None)
+        self.send("Features", None)
         self._clustering_cache.clear()
 
         if not matrix:

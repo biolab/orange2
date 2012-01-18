@@ -201,7 +201,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Data", ExampleTable)]
 
         self.scene=TreeGraphicsScene(self)
         self.sceneView=TreeGraphicsView(self, self.scene)
@@ -381,7 +381,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.scene.update()
 
     def ctree(self, tree=None):
-        self.send("Examples", None)
+        self.send("Data", None)
         self.closeContext()
         self.targetCombo.clear()
         if tree:

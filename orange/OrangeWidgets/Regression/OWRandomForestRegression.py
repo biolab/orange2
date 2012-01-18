@@ -14,7 +14,7 @@ class OWRandomForestRegression(OWRandomForest):
     def __init__(self, parent=None, signalManager=None, title="Random forest regression"):
         OWRandomForest.__init__(self, parent, signalManager, title)
         
-        self.inputs = [("Examples", ExampleTable, self.setData),
+        self.inputs = [("Data", ExampleTable, self.setData),
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         
         self.outputs = [("Learner", orange.Learner),

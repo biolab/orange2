@@ -34,8 +34,8 @@ class OWParallelCoordinatesQt(OWVisWidget):
 
         self.showAllAttributes = 0
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Data Subset", ExampleTable, self.setSubsetData), ("Features", AttributeList, self.setShownAttributes)]
+        self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable), ("Features", AttributeList)]
 
         #set default settings
         self.data = None
@@ -226,7 +226,7 @@ class OWParallelCoordinatesQt(OWVisWidget):
     def sendShownAttributes(self, attrList = None):
         if attrList == None:
             attrList = self.getShownAttributeList()
-        self.send("Attribute Selection List", attrList)
+        self.send("Features", attrList)
 
     def selectionChanged(self):
         self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
@@ -236,8 +236,8 @@ class OWParallelCoordinatesQt(OWVisWidget):
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
         (selected, unselected) = self.graph.getSelectionsAsExampleTables()
-        self.send("Selected Examples", selected)
-        self.send("Unselected Examples", unselected)
+        self.send("Selected Data", selected)
+        self.send("Other Data", unselected)
 
 
     # jittering options

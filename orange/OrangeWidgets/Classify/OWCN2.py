@@ -27,7 +27,7 @@ class OWCN2(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"CN2", wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Example Table", ExampleTable, self.dataset), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.inputs = [("Data", ExampleTable, self.dataset), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classifier",orange.Classifier),("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier)]
         self.QualityButton = 0
         self.CoveringButton = 0

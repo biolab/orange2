@@ -24,7 +24,7 @@ class OWPivot(OWWidget):
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Pivot")
-        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
         self.outputs = [("Selected Group", ExampleTable, Default)]
         self.settingsList = [a[1] for a in self.aggregates]
         self.icons = self.createAttributeIconDict() 

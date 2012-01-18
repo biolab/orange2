@@ -203,7 +203,7 @@ class OWCN2RulesViewer(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="CN2 Rules Viewer"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.inputs = [("Rule Classifier", orange.RuleClassifier, self.setRuleClassifier)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute List", AttributeList)]
+        self.outputs = [("Data", ExampleTable), ("Features", AttributeList)]
         
         self.show_Rule_length = True
         self.show_Rule_quality = True
@@ -392,12 +392,12 @@ class OWCN2RulesViewer(OWWidget):
             else:
                 selectedExamples = orange.ExampleTable(selectedExamples)
                 
-            self.send("Examples", selectedExamples)
-            self.send("Attribute List", orange.VarList(list(selectedAttrs)))
+            self.send("Data", selectedExamples)
+            self.send("Features", orange.VarList(list(selectedAttrs)))
         
         else:
-            self.send("Examples", None)
-            self.send("Attribute List", None)
+            self.send("Data", None)
+            self.send("Features", None)
         
         self.changedFlag = False
         

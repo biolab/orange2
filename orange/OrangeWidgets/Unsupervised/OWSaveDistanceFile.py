@@ -18,7 +18,7 @@ class OWSaveDistanceFile(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Distance File'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setData)]
+        self.inputs = [("Distances", orange.SymMatrix, self.setData)]
 
         self.recentFiles=[]
         self.fileIndex = 0

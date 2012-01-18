@@ -284,8 +284,8 @@ class OWDataDomain(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Select Attributes"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
         
-        self.inputs = [("Examples", ExampleTable, self.set_data)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute List", AttributeList)]
+        self.inputs = [("Data", ExampleTable, self.set_data)]
+        self.outputs = [("Data", ExampleTable), ("Features", AttributeList)]
         
         self.domain_role_hints = {}
         
@@ -633,12 +633,12 @@ class OWDataDomain(OWWidget):
             newdata = Orange.data.Table(domain, self.data)
             self.output_report = self.prepareDataReport(newdata)
             self.output_domain = domain
-            self.send("Examples", newdata)
-            self.send("Attribute List", orange.VarList(attributes))
+            self.send("Data", newdata)
+            self.send("Features", orange.VarList(attributes))
         else:
             self.output_report = []
-            self.send("Examples", None)
-            self.send("Attribute List", None)
+            self.send("Data", None)
+            self.send("Features", None)
     
     def reset(self):
         if self.data is not None:

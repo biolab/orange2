@@ -13,8 +13,8 @@ class OWKNNRegression(OWKNN):
     def __init__(self, parent=None, signalManager=None, title="kNN Regression"):
         OWKNN.__init__(self, parent, signalManager, title)
         
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.Learner),("KNN Classifier", orange.kNNClassifier)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner),("kNN Classifier", orange.kNNClassifier)]
             
     def setData(self,data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Continuous, checkMissing=True) and data or None

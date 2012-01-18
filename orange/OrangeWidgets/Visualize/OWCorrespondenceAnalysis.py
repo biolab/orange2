@@ -22,8 +22,8 @@ class OWCorrespondenceAnalysis(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Correspondence Analysis"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Selected Data", ExampleTable), ("Remaining Data", ExampleTable)]
         
         self.colAttr = 0
         self.rowAttr = 1
@@ -137,8 +137,8 @@ class OWCorrespondenceAnalysis(OWWidget):
         self.yAxisCB.clear()
         self.contributionInfo.setText("NA\nNA")
         self.graph.removeDrawingCurves(True, True, True)
-        self.send("Selected Examples", None)
-        self.send("Remaining Examples", None)
+        self.send("Selected Data", None)
+        self.send("Remaining Data", None)
         self.allAttrs = []
         
     def runCA(self):
@@ -312,11 +312,11 @@ class OWCorrespondenceAnalysis(OWWidget):
             remaining = orange.ExampleTable(self.data.domain, remaining) if remaining else \
                             orange.ExampleTable(self.data.domain)
                         
-            self.send("Selected Examples", selected)
-            self.send("Remaining Examples", remaining)
+            self.send("Selected Data", selected)
+            self.send("Remaining Data", remaining)
         else:
-            self.send("Selected Examples", None)
-            self.send("Remaining Examples", None)
+            self.send("Selected Data", None)
+            self.send("Remaining Data", None)
 
     
 if __name__ == "__main__":

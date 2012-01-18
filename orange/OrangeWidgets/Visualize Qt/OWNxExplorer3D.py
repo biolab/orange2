@@ -19,15 +19,15 @@ class OWNxExplorer3D(OWNxExplorerQt):
         self.inputs = [("Nx View", Orange.network.NxView, self.set_network_view),
                        ("Network", Orange.network.Graph, self.set_graph, Default),
                        ("Items", Orange.data.Table, self.setItems),
-                       ("Items to Mark", Orange.data.Table, self.markItems), 
-                       ("Items Subset", Orange.data.Table, self.setExampleSubset), 
-                       ("Items Distance Matrix", Orange.core.SymMatrix, self.set_items_distance_matrix)]
+                       ("Marked Itenms", Orange.data.Table, self.markItems), 
+                       ("Item Subset", Orange.data.Table, self.setExampleSubset), 
+                       ("Distances", Orange.core.SymMatrix, self.set_items_distance_matrix)]
 
         self.outputs = [("Selected Network", Orange.network.Graph),
-                        ("Selected Items Distance Matrix", Orange.core.SymMatrix),
+                        ("Distance Matrix", Orange.core.SymMatrix),
                         ("Selected Items", Orange.data.Table), 
-                        ("Unselected Items", Orange.data.Table), 
+                        ("Other Items", Orange.data.Table), 
                         ("Marked Items", Orange.data.Table),
-                        ("Attribute Selection List", AttributeList)]
+                        ("Features", AttributeList)]
 
 

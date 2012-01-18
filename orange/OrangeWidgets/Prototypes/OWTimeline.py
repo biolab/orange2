@@ -113,7 +113,7 @@ class OWTimeline(OWWidget):
 
     def __init__(self, parent=None, signalManager=None, name="Timeline"):
         OWWidget.__init__(self, parent, signalManager, name)
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
         self.outputs = []
         self.lineDistance = 40
         self.timeScale = 2

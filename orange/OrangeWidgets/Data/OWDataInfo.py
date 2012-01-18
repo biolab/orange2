@@ -14,7 +14,7 @@ class OWDataInfo(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Info"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=0)
         
-        self.inputs = [("Data Table", ExampleTable, self.data)]
+        self.inputs = [("Data", ExampleTable, self.data)]
         self.rowcount = 0
         self.columncount = 0
         self.discattrcount = 0

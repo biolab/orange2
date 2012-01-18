@@ -19,7 +19,7 @@ class OWOutliers(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Outlier'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata),("Distance matrix", orange.SymMatrix, self.cdistance)]
+        self.inputs = [("Data", ExampleTable, self.cdata),("Distances", orange.SymMatrix, self.cdistance)]
         self.outputs = [("Outliers", ExampleTable), ("Inliers", ExampleTable), ("Examples with Z-scores", ExampleTable)]
                
         # Settings

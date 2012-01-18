@@ -1003,8 +1003,8 @@ class OWSOMVisualizer(OWWidget):
     
     def __init__(self, parent=None, signalManager=None, name="SOM visualizer"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
-        self.inputs = [("SOMMap", orngSOM.SOMMap, self.setSomMap), ("Examples", ExampleTable, self.data)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.inputs = [("SOM", orngSOM.SOMMap, self.setSomMap), ("Data", ExampleTable, self.data)]
+        self.outputs = [("Data", ExampleTable)]
         
         self.drawMode = 2
         self.objSize = 15
@@ -1239,7 +1239,7 @@ class OWSOMVisualizer(OWWidget):
         self.scene.component = 0
         self.scene.setSom(None)
         self.update()
-        self.send("Examples", None)
+        self.send("Data", None)
         
     def invertSelection(self):
         self._invertingSelection = True
@@ -1270,9 +1270,9 @@ class OWSOMVisualizer(OWWidget):
             if isinstance(n, GraphicsSOMItem) and n.node and hasattr(n.node, "mappedExamples"):
                 ex.extend(n.node.mappedExamples)
         if len(ex):
-            self.send("Examples",ex)
+            self.send("Data",ex)
         else:
-            self.send("Examples",None)
+            self.send("Data",None)
             
         self.selectionChanged = False
 

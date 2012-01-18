@@ -272,7 +272,7 @@ class OWModelMapQt(OWNxExplorerQt, OWNxHist):
         OWNxExplorerQt.__init__(self, parent, signalManager, name, 
                                NetworkCanvas=OWModelMapCanvas)
         
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, Default),
+        self.inputs = [("Distances", orange.SymMatrix, self.setMatrix, Default),
                        ("Model Subset", orange.ExampleTable, self.setSubsetModels)]
         self.outputs = [("Model", orange.Example),
                         ("Classifier", orange.Classifier),

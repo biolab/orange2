@@ -46,7 +46,7 @@ class OWClassificationTreeViewer(OWWidget):
 #        self.callbackDeposit = []
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.setClassificationTree)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Data", ExampleTable)]
 
         # Settings
         for s in self.settingsList[:6]:
@@ -275,7 +275,7 @@ class OWClassificationTreeViewer(OWWidget):
         self.handleSelectionChanged(item)
         if self.tree and item:
             data = self.nodeClassDict[item].examples
-            self.send("Examples", data)
+            self.send("Data", data)
 
             tx = ""
             f = 1
@@ -296,7 +296,7 @@ class OWClassificationTreeViewer(OWWidget):
             else:
                 self.rule.setText("%(className)s = %(classLabel)s" % vars())
         else:
-            self.send("Examples", None)
+            self.send("Data", None)
             self.rule.setText("")
 
     def handleSelectionChanged(self, item):

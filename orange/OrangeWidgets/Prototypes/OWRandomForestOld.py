@@ -18,8 +18,8 @@ class OWRandomForestOld(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Random Forest'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False, resizingEnabled=False)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.Learner),("Random Forest Classifier", orange.Classifier),("Choosen Tree", orange.TreeClassifier) ]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner),("Random Forest Classifier", orange.Classifier),("Selected Tree", orange.TreeClassifier) ]
 
         self.name = 'Random Forest'
         self.trees = 10
@@ -88,7 +88,7 @@ class OWRandomForestOld(OWWidget):
         elif self.outtree >= self.claTrees: self.outtree = 0
 
     def extree(self):
-        self.send("Choosen Tree", self.classifier.classifiers[self.outtree])
+        self.send("Selected Tree", self.classifier.classifiers[self.outtree])
 
     def streeEnabled(self, status):
         if status:

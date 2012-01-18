@@ -28,8 +28,8 @@ class OWQuickSelect(OWWidget):
        
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Quick Select", wantMainArea=0)
-        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
-        self.outputs = [("Selected Examples", ExampleTable, Default), ("Remaining Examples", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
+        self.outputs = [("Selected Data", ExampleTable, Default), ("Remaining Data", ExampleTable)]
         self.icons = self.createAttributeIconDict()
 
         self.attributes = []
@@ -97,8 +97,8 @@ class OWQuickSelect(OWWidget):
         
     def updateOutput(self):
         if not self.data or not self.selectedAttribute or not self.selectedValues:
-            self.send("Selected Examples", None)
-            self.send("Remaining Examples", None)
+            self.send("Selected Data", None)
+            self.send("Remaining Data", None)
             self.outSelected = self.outRemaining = 0
             return
         
@@ -106,12 +106,12 @@ class OWQuickSelect(OWWidget):
         pp = orange.Preprocessor_take() 
         pp.values[attr] = [self.valuesList[j].encode("utf-8") for j in self.selectedValues]
         selected = pp(self.data)
-        self.send("Selected Examples", selected)
+        self.send("Selected Data", selected)
         
         pp = orange.Preprocessor_drop() 
         pp.values[attr] = [self.valuesList[j].encode("utf-8") for j in self.selectedValues]
         remaining = pp(self.data)
-        self.send("Remaining Examples", remaining)
+        self.send("Remaining Data", remaining)
 
         self.outSelected = len(selected)
         self.outRemaining = len(remaining)

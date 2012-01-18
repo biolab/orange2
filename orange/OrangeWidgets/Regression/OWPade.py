@@ -20,8 +20,8 @@ class OWPade(OWWidget):
     
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
-        self.inputs = [("Examples", ExampleTable, self.onDataInput)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.onDataInput)]
+        self.outputs = [("Data", ExampleTable)]
 
         self.attributes = []
         self.dimensions = []
@@ -157,7 +157,7 @@ class OWPade(OWWidget):
     def apply(self):
         data = self.data
         if not data or not self.contAttributes:
-            self.send("Examples", None)
+            self.send("Data", None)
             return
 
         if not self.deltas:
@@ -177,7 +177,7 @@ class OWPade(OWWidget):
                                                              not self.output and -1 or self.outputAttr,
                                                              self.enableThreshold and abs(self.threshold),
                                                              self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, False, self.originalAsMeta)
-        self.send("Examples", paded)
+        self.send("Data", paded)
 
 
 

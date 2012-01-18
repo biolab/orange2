@@ -35,8 +35,8 @@ class OWHierarchicalClustering(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering', wantGraph=True)
         
-        self.inputs = [("Distance matrix", orange.SymMatrix, self.set_matrix)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Centroids", ExampleTable)]
+        self.inputs = [("Distances", orange.SymMatrix, self.set_matrix)]
+        self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable), ("Centroids", ExampleTable)]
         self.linkage = [("Single linkage", orange.HierarchicalClustering.Single),
                         ("Average linkage", orange.HierarchicalClustering.Average),
                         ("Ward's linkage", orange.HierarchicalClustering.Ward),
@@ -252,8 +252,8 @@ class OWHierarchicalClustering(OWWidget):
             self.selectedExamples = None
             self.dendrogram.clear()
             self.labelCombo.clear()
-            self.send("Selected Examples", None)
-            self.send("Unselected Examples", None)
+            self.send("Selected Data", None)
+            self.send("Other Data", None)
             self.classificationBox.setDisabled(True)
             return
 
@@ -457,8 +457,8 @@ class OWHierarchicalClustering(OWWidget):
         unselected = [items[k] for k in unselected_indices]
         
         if not selected:
-            self.send("Selected Examples", None)
-            self.send("Unselected Examples", None)
+            self.send("Selected Data", None)
+            self.send("Other Data", None)
             self.send("Centroids", None)
             return
         
@@ -500,8 +500,8 @@ class OWHierarchicalClustering(OWWidget):
                 self.selectedExamples = orange.ExampleTable(selected) if selected else None
                 self.unselectedExamples = orange.ExampleTable(unselected) if unselected else None
                 
-            self.send("Selected Examples", self.selectedExamples)
-            self.send("Unselected Examples", self.unselectedExamples)
+            self.send("Selected Data", self.selectedExamples)
+            self.send("Other Data", self.unselectedExamples)
 
             self.centroids = None
             if self.selectedExamples:

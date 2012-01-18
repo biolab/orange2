@@ -42,16 +42,16 @@ class OWNetExplorer(OWWidget):
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", orngNetwork.Network, self.setGraph, Default), 
                        ("Items", orange.ExampleTable, self.setItems),
-                       ("Items to Mark", orange.ExampleTable, self.markItems), 
-                       ("Items Subset", orange.ExampleTable, self.setExampleSubset), 
+                       ("Marked Itenms", orange.ExampleTable, self.markItems), 
+                       ("Item Subset", orange.ExampleTable, self.setExampleSubset), 
                        ("Vertex Distance", orange.SymMatrix, self.setVertexDistance)]
         
         self.outputs = [("Selected Network", orngNetwork.Network),
                         ("Selected Distance Matrix", orange.SymMatrix),
-                        ("Selected Examples", ExampleTable), 
-                        ("Unselected Examples", ExampleTable), 
-                        ("Marked Examples", ExampleTable),
-                        ("Attribute Selection List", AttributeList)]
+                        ("Selected Data", ExampleTable), 
+                        ("Other Data", ExampleTable), 
+                        ("Marked Data", ExampleTable),
+                        ("Features", AttributeList)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -381,7 +381,7 @@ class OWNetExplorer(OWWidget):
             attributes = str(self.optimization.graph.items[vertices[0]][att]).split(', ')
         else:
             attributes = None
-        self.send("Attribute Selection List", attributes)
+        self.send("Features", attributes)
         
     def edit(self):
         if self.optimization is None:
@@ -569,20 +569,20 @@ class OWNetExplorer(OWWidget):
             self.networkCanvas.sendMarkedNodes = self.sendMarkedNodes
             self.sendMarkedNodes(self.networkCanvas.getMarkedVertices())
         else:
-            self.send("Marked Examples", None)
+            self.send("Marked Data", None)
             self.networkCanvas.sendMarkedNodes = None
         
     def sendMarkedNodes(self, markedNodes):        
         if len(markedNodes) == 0:
-            self.send("Marked Examples", None)
+            self.send("Marked Data", None)
             return
         
         if self.optimization != None and self.optimization.graph != None and self.optimization.graph.items != None:
             items = self.optimization.graph.items.getitems(markedNodes)
-            self.send("Marked Examples", items)
+            self.send("Marked Data", items)
             return
         
-        self.send("Marked Examples", None)
+        self.send("Marked Data", None)
 
     def _collapse(self):
         #print "collapse"
@@ -1121,19 +1121,19 @@ class OWNetExplorer(OWWidget):
         
         if graph != None:
             if graph.items != None:
-                self.send("Selected Examples", graph.items)
+                self.send("Selected Data", graph.items)
             else:
-                self.send("Selected Examples", self.networkCanvas.getSelectedExamples())
+                self.send("Selected Data", self.networkCanvas.getSelectedExamples())
             
             #print "sendData:", self.visualize.graph.items.domain
-            self.send("Unselected Examples", self.networkCanvas.getUnselectedExamples())    
+            self.send("Other Data", self.networkCanvas.getUnselectedExamples())    
             self.send("Selected Network", graph)
         else:
             items = self.networkCanvas.getSelectedExamples()
-            self.send("Selected Examples", items)
+            self.send("Selected Data", items)
                 
             items = self.networkCanvas.getUnselectedExamples()
-            self.send("Unselected Examples", items)
+            self.send("Other Data", items)
         
         matrix = None
         if self.vertexDistance != None:

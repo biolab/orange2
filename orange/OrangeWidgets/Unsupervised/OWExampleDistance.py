@@ -22,8 +22,8 @@ class OWExampleDistance(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, 'ExampleDistance', wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.dataset)]
-        self.outputs = [("Distance Matrix", orange.SymMatrix)]
+        self.inputs = [("Data", ExampleTable, self.dataset)]
+        self.outputs = [("Distances", orange.SymMatrix)]
 
         self.Metrics = 0
         self.Normalize = True
@@ -88,7 +88,7 @@ class OWExampleDistance(OWWidget):
         except orange.KernelException, ex:
             self.error(0, "Could not create distance matrix! %s" % str(ex))
             self.matrix = None
-            self.send("Distance Matrix", None)
+            self.send("Distances", None)
             return
         self.matrix.setattr('items', data)
         pb = OWGUI.ProgressBar(self, 100)
@@ -101,12 +101,12 @@ class OWExampleDistance(OWWidget):
                     pb.advance()
                 count += 1
         pb.finish()
-        self.send("Distance Matrix", self.matrix)
+        self.send("Distances", self.matrix)
 
     def setLabel(self):
         for d in self.data:
             d.name = str(d[str(self.Label)])
-        self.send("Distance Matrix", self.matrix)
+        self.send("Distances", self.matrix)
 
     def setLabelComboItems(self):
         d = self.data
@@ -125,7 +125,7 @@ class OWExampleDistance(OWWidget):
             self.setLabelComboItems()
             self.computeMatrix()
         else:
-            self.send("Distance Matrix", None)
+            self.send("Distances", None)
 
 ##################################################################################################
 # test script

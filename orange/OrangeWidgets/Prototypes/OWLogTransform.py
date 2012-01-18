@@ -14,8 +14,8 @@ class OWLogTransform(OWWidget):
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Compare Examples")
-        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
-        self.outputs = [("Examples", ExampleTable, Default)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
+        self.outputs = [("Data", ExampleTable, Default)]
         
         self.transformed = []
         self.controlArea.setFixedWidth(0)
@@ -70,4 +70,4 @@ class OWLogTransform(OWWidget):
             oldDomain = self.data.domain
             newDomain = orange.Domain([transs.get(attr.name, attr) for attr in oldDomain.attributes],
                                       transs.get(oldDomain.classVar.name, oldDomain.classVar))
-            self.send("Examples", orange.ExampleTable(newDomain, self.data))
+            self.send("Data", orange.ExampleTable(newDomain, self.data))

@@ -23,8 +23,8 @@ class OWNetworkFromDistances(OWWidget, OWNetworkHist):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         OWNetworkHist.__init__(self)
         
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Network", orngNetwork.Network), ("Examples", ExampleTable), ("Distance Matrix", orange.SymMatrix)]
+        self.inputs = [("Distances", orange.SymMatrix, self.setMatrix)]
+        self.outputs = [("Network", orngNetwork.Network), ("Data", ExampleTable), ("Distances", orange.SymMatrix)]
 
         self.addHistogramControls()
         
@@ -71,12 +71,12 @@ class OWNetworkFromDistances(OWWidget, OWNetworkHist):
         self.send("Network", self.graph)
         
         if self.matrix:
-            self.send("Distance Matrix", self.matrix)
+            self.send("Distances", self.matrix)
             
         if self.graph == None:
-            self.send("Examples", None)
+            self.send("Data", None)
         else:
-            self.send("Examples", self.graph.items)
+            self.send("Data", self.graph.items)
                                                                      
 if __name__ == "__main__":    
     appl = QApplication(sys.argv)

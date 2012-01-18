@@ -15,8 +15,8 @@ class OWShuffle(OWWidget):
         OWWidget.__init__(self, parent, signalManager, title,
                           wantMainArea=False)
         
-        self.inputs = [("Data Table", Orange.data.Table, self.set_data)]
-        self.outputs = [("Shuffled Data Table", Orange.data.Table)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data)]
+        self.outputs = [("Shuffled Data", Orange.data.Table)]
         
         self.seed = 0
         
@@ -39,5 +39,5 @@ class OWShuffle(OWWidget):
             rand.shuffle(shuffled)
             shuffled = Orange.data.Table(shuffled) if shuffled else \
                        Orange.data.Table(self.data.domain) # In case of empty table
-        self.send("Shuffled Data Table", shuffled)
+        self.send("Shuffled Data", shuffled)
     

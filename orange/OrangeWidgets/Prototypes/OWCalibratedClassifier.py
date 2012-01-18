@@ -49,7 +49,7 @@ class OWCalibratedClassifier(OWWidget):
     def __init__(self, parent=None, signalManager = None, title = "Calibrated Classifier"):
         OWWidget.__init__(self, parent, signalManager, title)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Base Learner", orange.Learner, self.setBaseLearner)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Base Learner", orange.Learner, self.setBaseLearner)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
 
         # Settings

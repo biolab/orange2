@@ -19,7 +19,7 @@ class OWDataSampler(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'SampleData', wantMainArea = 0)
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Sample", ExampleTable), ("Remaining Examples", ExampleTable)]
+        self.outputs = [("Data Sample", ExampleTable), ("Remaining Data", ExampleTable)]
 
         # initialization of variables
         self.data = None                        # dataset (incoming stream)
@@ -182,8 +182,8 @@ class OWDataSampler(OWWidget):
             self.infoa.setText('No data on input.')
             self.infob.setText('')
             self.infoc.setText('')
-            self.send("Sample", None)
-            self.send("Remaining Examples", None)
+            self.send("Data Sample", None)
+            self.send("Remaining Data", None)
             self.data = None
 
     # feeds the output stream
@@ -217,8 +217,8 @@ class OWDataSampler(OWWidget):
         # send data
         self.nSample = len(sample)
         self.nRemainder = len(remainder) if remainder is not None else 0
-        self.send("Sample", sample)
-        self.send("Remaining Examples", remainder)
+        self.send("Data Sample", sample)
+        self.send("Remaining Data", remainder)
         
         self.sampleButton.setEnabled(False)
 

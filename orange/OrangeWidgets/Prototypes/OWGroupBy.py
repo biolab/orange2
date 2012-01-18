@@ -52,8 +52,8 @@ class OWGroupBy(OWWidget):
         OWWidget.__init__(self, parent, signalManager, title, 
                           wantMainArea=False)
         
-        self.inputs = [("Input Data", Table, self.set_data)]
-        self.outputs = [("Output Data", Table)]
+        self.inputs = [("Data", Table, self.set_data)]
+        self.outputs = [("Data", Table)]
         
         self.auto_commit = False
         self.hints = {}
@@ -216,7 +216,7 @@ values to 'Aggregate Attributes' to remove them from this group).")
             data = utils.group_by(self.data, group, attr_aggregate=aggregates)
         else:
             data = None
-        self.send("Output Data", data)
+        self.send("Data", data)
         self.state_chaged_flag = False
         
 

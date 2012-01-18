@@ -48,7 +48,7 @@ class OWAssociationRules(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRules", wantMainArea = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
 
         self.useSparseAlgorithm = 0

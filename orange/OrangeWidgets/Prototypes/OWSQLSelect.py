@@ -69,9 +69,9 @@ class OWSubSQLSelect(OWWidget):
             self.sqlReader.execute(query)
         except Exception, e:
             self.setInfo(('Query failed:', str(e)))
-        self.send("Examples", self.sqlReader.data())
+        self.send("Data", self.sqlReader.data())
         self.setInfo(('Query returned', 'Read ' + str(len(self.sqlReader.data())) + ' examples!'))
-        self.send("Attribute Definitions", self.sqlReader.domain)
+        self.send("Feature Definitions", self.sqlReader.domain)
         self.setMeta()
         self.lastQuery = query
     
@@ -88,7 +88,7 @@ class OWSQLSelect(OWSubSQLSelect):
         OWSubSQLSelect.__init__(self, parent, signalManager, "SQL select")
         self.sqlReader = orngSQL.SQLReader()
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
+        self.outputs = [("Data", ExampleTable), ("Feature Definitions", orange.Domain)]
 
         #set default settings
         self.domain = None

@@ -21,7 +21,7 @@ class OWItemsets(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Itemsets", wantMainArea = 0)
 
         from OWItemsets import Itemsets
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
         self.outputs = [("Itemsets", Itemsets)]
 
         self.minSupport = 60

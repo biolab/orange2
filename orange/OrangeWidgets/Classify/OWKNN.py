@@ -18,8 +18,8 @@ class OWKNN(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.Learner),("KNN Classifier", orange.kNNClassifier)]
+        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner),("kNN Classifier", orange.kNNClassifier)]
 
         self.metricsList = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
                        ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
@@ -114,7 +114,7 @@ class OWKNN(OWWidget):
             except Exception, (errValue):
                 self.classifier = None
                 self.error(str(errValue))
-        self.send("KNN Classifier", self.classifier)
+        self.send("kNN Classifier", self.classifier)
 
 ##############################################################################
 # Test the widget, run from DOS prompt

@@ -36,8 +36,8 @@ class OWMDS(OWWidget):
     
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
-        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
-        self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
+        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Data Subset", ExampleTable, self.cselected)]
+        self.outputs=[("Data", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.StressFunc=3
         self.minStressDelta=5e-5
@@ -483,7 +483,7 @@ class OWMDS(OWWidget):
 
     def sendExampleTable(self, selectedInd):
         if self.selectionOptions==0:
-            self.send("Example Table", orange.ExampleTable(self.data.getitems(selectedInd)))
+            self.send("Data", orange.ExampleTable(self.data.getitems(selectedInd)))
         else:
             xAttr=orange.FloatVariable("X")
             yAttr=orange.FloatVariable("Y")
@@ -499,7 +499,7 @@ class OWMDS(OWWidget):
             for i in range(len(selectedInd)):
                 selection[i][xAttr]=self.mds.points[selectedInd[i]][0]
                 selection[i][yAttr]=self.mds.points[selectedInd[i]][1]
-            self.send("Example Table", selection)
+            self.send("Data", selection)
 
     def sendList(self, selectedInd):
         if self.data and type(self.data[0]) == str:
@@ -522,7 +522,7 @@ class OWMDS(OWWidget):
                     if self.selectionOptions:
                         selection[i][xAttr]=self.mds.points[selectedInd[i]][0]
                         selection[i][yAttr]=self.mds.points[selectedInd[i]][1]
-            self.send("Example Table", selection)
+            self.send("Data", selection)
             return
                
         if not selectedInd:

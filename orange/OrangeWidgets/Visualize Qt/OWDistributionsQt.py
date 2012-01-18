@@ -460,7 +460,7 @@ class OWDistributionsQt(OWWidget):
 
         # inputs
         # data and graph temp variables
-        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default)]
 
         self.data = None
         self.outcomenames = []

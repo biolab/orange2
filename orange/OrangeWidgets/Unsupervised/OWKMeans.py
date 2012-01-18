@@ -50,8 +50,8 @@ class OWKMeans(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering')
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Centroids", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Data", ExampleTable), ("Centroids", ExampleTable)]
 
         #set default settings
         self.K = 2
@@ -363,7 +363,7 @@ class OWKMeans(OWWidget):
         if km is None:
             km = self.bestRun[1] if self.optimized else self.km 
         if not self.data or not km:
-            self.send("Examples", None)
+            self.send("Data", None)
             self.send("Centroids", None)
             return
         clustVar = orange.EnumVariable(self.classifyName, values = ["C%d" % (x+1) for x in range(km.k)])
@@ -395,7 +395,7 @@ class OWKMeans(OWWidget):
             if origDomain.classVar:
                 c[origDomain.classVar] = "?"
 
-        self.send("Examples", new)
+        self.send("Data", new)
         self.send("Centroids", centroids)
         
     def setData(self, data):

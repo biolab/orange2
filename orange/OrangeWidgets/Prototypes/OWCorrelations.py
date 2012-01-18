@@ -153,7 +153,7 @@ class OWCorrelations(OWWidget):
         OWBaseWidget.__init__(self, parent, signalManager, title,)
 #                          wantMainAre=False, noReport=True)
         
-        self.inputs = [("Example Table", Orange.data.Table, self.set_data)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data)]
         
         self.outputs = [("Correlations", Orange.data.Table),
                         ("Variables", AttributeList)]

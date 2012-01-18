@@ -13,14 +13,14 @@ class OWLinProj3D(OWLinProjQt):
     def __init__(self, parent=None, signalManager=None):
         OWLinProjQt.__init__(self, parent, signalManager, "Linear Projection 3D", graphClass=OWLinProj3DPlot)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default),
-                       ("Example Subset", ExampleTable, self.setSubsetData),
-                       ("Attribute Selection List", AttributeList, self.setShownAttributes),
+        self.inputs = [("Data", ExampleTable, self.setData, Default),
+                       ("Data Subset", ExampleTable, self.setSubsetData),
+                       ("Features", AttributeList, self.setShownAttributes),
                        ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults),
                        ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTable),
-                        ("Unselected Examples", ExampleTable),
-                        ("Attribute Selection List", AttributeList)]
+        self.outputs = [("Selected Data", ExampleTable),
+                        ("Other Data", ExampleTable),
+                        ("Features", AttributeList)]
         self.resize(1000, 600)
 
 if __name__ == '__main__':

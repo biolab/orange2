@@ -24,8 +24,8 @@ class OWMergeData(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
 
         # set channels
-        self.inputs = [("Examples A", ExampleTable, self.onDataAInput),
-                       ("Examples B", ExampleTable, self.onDataBInput)]
+        self.inputs = [("Data", ExampleTable, self.onDataAInput),
+                       ("Data", ExampleTable, self.onDataBInput)]
         
         self.outputs = [("Merged Examples A+B", ExampleTable),
                         ("Merged Examples B+A", ExampleTable)]

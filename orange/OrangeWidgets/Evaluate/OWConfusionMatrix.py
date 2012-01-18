@@ -47,7 +47,7 @@ class OWConfusionMatrix(OWWidget):
 
         # inputs
         self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.setTestResults, Default)]
-        self.outputs=[("Selected Examples", ExampleTable, 8)]
+        self.outputs=[("Selected Data", ExampleTable, 8)]
 
         self.selectedLearner = []
         self.learnerNames = []
@@ -268,7 +268,7 @@ class OWConfusionMatrix(OWWidget):
         selected = [(x.row(), x.column()) for x in self.table.selectedIndexes()]
         res = self.res
         if not res or not selected or not self.selectedLearner:
-            self.send("Selected Examples", None)
+            self.send("Selected Data", None)
             return
 
         learnerI = self.selectedLearner[0]
@@ -298,7 +298,7 @@ class OWConfusionMatrix(OWWidget):
                     for id, p in zip(probIds, res.results[i].probabilities[learnerI]):
                         ex[id] = p
     
-        self.send("Selected Examples", data)
+        self.send("Selected Data", data)
 
 
 if __name__ == "__main__":

@@ -101,9 +101,9 @@ class OWDistanceFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 1)
         
         if inputItems: 
-            self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
+            self.inputs = [("Data", ExampleTable, self.getExamples, Default)]
             
-        self.outputs = [("Distance Matrix", orange.SymMatrix)]
+        self.outputs = [("Distances", orange.SymMatrix)]
 
         self.recentFiles=[]
         self.fileIndex = 0
@@ -232,7 +232,7 @@ class OWDistanceFile(OWWidget):
             matrix.setattr("items", [str(i) for i in range(matrix.dim)])
         
         self.matrix.matrixType = orange.SymMatrix.Symmetric
-        self.send("Distance Matrix", self.matrix)
+        self.send("Distances", self.matrix)
 
     def getExamples(self, data):
         self.data = data

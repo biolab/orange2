@@ -437,8 +437,8 @@ class OWDiscretize(OWWidget):
 
         self.loadSettings()
 
-        self.inputs=[("Examples", ExampleTable, self.setData)]
-        self.outputs=[("Examples", ExampleTable)]
+        self.inputs=[("Data", ExampleTable, self.setData)]
+        self.outputs=[("Data", ExampleTable)]
         self.measures=[("Information gain", orange.MeasureAttribute_info()),
                        #("Gain ratio", orange.MeasureAttribute_gainRatio),
                        ("Gini", orange.MeasureAttribute_gini()),
@@ -1074,7 +1074,7 @@ class OWDiscretize(OWWidget):
         else:
             newdata = None
 
-        self.send("Examples", newdata)
+        self.send("Data", newdata)
         dataChanged = False
 
 
