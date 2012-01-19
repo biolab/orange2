@@ -57,8 +57,10 @@ class MultitargetLearner(Orange.classification.Learner):
     
     def __init__(self, learner, **kwargs):
         """
-        :param learner: Base learner used to construct independent\
-            models for each class.
+
+        :param learner: Base learner used to construct independent
+                        models for each class.
+                        
         """
 
         self.learner = learner
