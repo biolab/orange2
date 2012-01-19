@@ -1,3 +1,34 @@
+"""
+Wrapper for constructing multi-target learners
+==============================================
+
+This module also contains a wrapper, an auxilary learner, that can be used
+to construct simple multi-target learners from standard learners designed
+for data with a single class. The wrapper uses the specified base learner
+to construct independent models for each class.
+
+.. index:: MultitargetLearner
+.. autoclass:: Orange.multitarget.MultitargetLearner
+    :members:
+    :show-inheritance:
+
+.. index:: MultitargetClassifier
+.. autoclass:: Orange.multitarget.MultitargetClassifier
+    :members:
+    :show-inheritance:
+
+Examples
+========
+
+The following example demonstrates how to build a prediction model for
+multi-target data and use it to predict (multiple) class values for
+a new instance (:download:`multitarget.py <code/multitarget.py>`,
+uses :download:`test-pls.tab <code/test-pls.tab>`):
+
+.. literalinclude:: code/multitarget.py
+
+"""
+
 import Orange
 
 # Other algorithms which also work with multitarget data
@@ -25,16 +56,24 @@ class MultitargetLearner(Orange.classification.Learner):
             return self
     
     def __init__(self, learner, **kwargs):
+        """
+        :param learner: Base learner used to construct independent\
+            models for each class.
+        """
+
         self.learner = learner
         self.__dict__.update(kwargs)
 
     def __call__(self, data, weight=0):
-        """Learn independent models of the base learner for each class.
+        """
+        Learn independent models of the base learner for each class.
 
         :param data: Multitarget data instances (with more than 1 class).
-        :type data: Orange.data.Table
+        :type data: :class:`Orange.data.Table`
+
         :param weight: Id of meta attribute with weights of instances
-        :type weight: int
+        :type weight: :obj:`int`
+
         :rtype: :class:`Orange.multitarget.MultitargetClassifier`
         """
 
@@ -63,6 +102,16 @@ class MultitargetClassifier(Orange.classification.Classifier):
         self.domains = domains
 
     def __call__(self, instance, return_type=Orange.core.GetValue):
+        """
+        :param instance: Instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+
+        :param return_type: One of
+            :class:`Orange.classification.Classifier.GetValue`,
+            :class:`Orange.classification.Classifier.GetProbabilities` or
+            :class:`Orange.classification.Classifier.GetBoth`
+        """
+
         predictions = [c(Orange.data.Instance(dom, instance), return_type)
                        for c, dom in zip(self.classifiers, self.domains)]
         return zip(*predictions) if return_type == Orange.core.GetBoth \

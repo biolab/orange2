@@ -77,14 +77,16 @@ Entire data table can be converted similarly::
      ['1', '2', '4', '0']
 
 
+.. _multiple-classes:
+
 Multiple classes
 ================
 
 A domain can have multiple additional class attributes. These are stored
 similarly to other features except that they are not used for learning. The
-list of such classes is stored in `class_vars`. When converting between
-domains, multiple classes can become ordinary features or the class, and
-vice versa.
+list of such classes is stored in :obj:`~Orange.data.Domain.class_vars`.
+When converting between domains, multiple classes can become ordinary
+features or the class, and vice versa.
 
 .. _meta-attributes:
 

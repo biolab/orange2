@@ -24,26 +24,26 @@ Examples
 The following example demonstrates how to build a prediction model with
 MultitargetTreeLearner and use it to predict (multiple) class values for
 a given instance (:download:`multitarget.py <code/multitarget.py>`,
-uses :download:`emotions.tab <code/emotions.tab>`):
+uses :download:`test-pls.tab <code/test-pls.tab>`):
 
 .. literalinclude:: code/multitarget.py
-   :lines: 1-4, 10-12
+    :lines: 1-4, 10-12
 
 
 .. index:: Multi-target Variance 
 .. autoclass:: Orange.multitarget.tree.MultitargetVariance
-   :members:
-   :show-inheritance:
+    :members:
+    :show-inheritance:
 
 .. index:: Multi-target Tree Learner
 .. autoclass:: Orange.multitarget.tree.MultiTreeLearner
-   :members:
-   :show-inheritance:
+    :members:
+    :show-inheritance:
 
 .. index:: Multi-target Tree Classifier
 .. autoclass:: Orange.multitarget.tree.MultiTree
-   :members:
-   :show-inheritance:
+    :members:
+    :show-inheritance:
 
 """
 
