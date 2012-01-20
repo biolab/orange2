@@ -19,5 +19,5 @@ did = -42
 nn = nnc(data, 0, did)
 
 print "*** Reference example: ", data[0]
-for ex in nn(data[0], 5):
+for ex in sorted(nn(data[0], 5)):
     print ex
