@@ -518,8 +518,17 @@ class Evaluation(object):
         return all_results
 
 
+    @deprecated_keywords({"strat": "stratification",
+                          "pps": "preprocessors",
+                          "indicesrandseed": "random_generator",
+                          "randseed": "random_generator",
+                          "randomGenerator": "random_generator"})
     def learning_curve_n(self, learners, examples, folds=10,
-                       proportions=Orange.core.frange(0.1), preprocessors=(), callback=None):
+                       proportions=Orange.core.frange(0.1),
+                       stratification = Orange.core.MakeRandomIndices
+                       .StratifiedIfPossible,
+                       preprocessors=(),
+                       random_generator=0, callback=None):
         """
         Compute a learning curve where each cross-validation has given number of folds
         and models are trained on specified proportion of training data.
@@ -533,19 +542,12 @@ class Evaluation(object):
         :return: list of :obj:`ExperimentResults`
         """
 
-        seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
-        if seed:
-            randomGenerator = Orange.core.RandomGenerator(seed)
-        else:
-            randomGenerator = argkw.get("randomGenerator", Orange.core.RandomGenerator())
-
-        if strat:
-            cv=Orange.core.MakeRandomIndicesCV(folds = folds, stratified = strat, randomGenerator = randomGenerator)
-            pick=Orange.core.MakeRandomIndices2(stratified = strat, randomGenerator = randomGenerator)
-        else:
-            cv=Orange.core.RandomIndicesCV(folds = folds, stratified = strat, randomGenerator = randomGenerator)
-            pick=Orange.core.RandomIndices2(stratified = strat, randomGenerator = randomGenerator)
-        return learning_curve(learners, examples, cv, pick, proportions, pps, **argkw)
+        cv=Orange.core.MakeRandomIndicesCV(folds = folds,
+            stratified = stratification, randomGenerator = random_generator)
+        pick=Orange.core.MakeRandomIndices2(stratified = stratification,
+            randomGenerator = random_generator)
+        return learning_curve(learners, examples, cv, pick, proportions,
+            preprocessors, callback=callback)
     
     def learning_curve_with_test_data(self, learners, learn_set, test_set,
             times=10, proportions=Orange.core.frange(0.1),
