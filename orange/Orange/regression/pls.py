@@ -422,8 +422,8 @@ class PLSRegression(Orange.classification.Classifier):
             def miss_2_0(x): return x if x != "?" else 0
             ins = map(miss_2_0, ins)
         ins = numpy.array(ins)
-        xc = (ins - self.mu_x) / self.sigma_x
-        predicted = dot(xc, self.coefs) * self.sigma_y + self.mu_y
+        xc = (ins - self.mu_x)
+        predicted = dot(xc, self.coefs) + self.mu_y
         y_hat = [var(val) for var, val in zip(self.y_vars, predicted)]
         if result_type == Orange.core.GetValue:
             return y_hat if self.multitarget else y_hat[0]
