@@ -53,15 +53,15 @@ class OWReliability(OWWidget):
         self.include_input_features = False
         self.auto_commit = False
         
-        # (selected attr name, getter function, count of returned estimators, index of estimator)
+        # (selected attr name, getter function, count of returned estimators, indices of estimator results to use)
         self.estimators = \
-            [("variance_checked", self.get_SAVar, 3, 0),
-             ("bias_checked", self.get_SABias, 3, 1),
-             ("bagged_variance", self.get_BAGV, 1, 0),
-             ("local_cv", self.get_LCV, 1, 0),
-             ("local_model_pred_error", self.get_CNK, 2, 0),
-             ("bagging_variance_cn", self.get_BVCK, 4, 0),
-             ("mahalanobis_distance", self.get_Mahalanobis, 1, 0)]
+            [("variance_checked", self.get_SAVar, 3, [0]),
+             ("bias_checked", self.get_SABias, 3, [1]),
+             ("bagged_variance", self.get_BAGV, 1, [0]),
+             ("local_cv", self.get_LCV, 1, [0]),
+             ("local_model_pred_error", self.get_CNK, 2, [0, 1]),
+             ("bagging_variance_cn", self.get_BVCK, 4, [0]),
+             ("mahalanobis_distance", self.get_Mahalanobis, 1, [0])]
         
         #####
         # GUI
@@ -245,9 +245,9 @@ class OWReliability(OWWidget):
     def run(self):
         plan = []
         estimate_index = 0
-        for i, (selected, method, count, offset) in enumerate(self.estimators):
+        for i, (selected, method, count, offsets) in enumerate(self.estimators):
             if self.results[i] is None and getattr(self, selected):
-                plan.append((i, method, estimate_index + offset))
+                plan.append((i, method, [estimate_index + offset for offset in offsets]))
                 estimate_index += count
                 
         estimators = [method() for _, method, _ in plan]
@@ -262,8 +262,9 @@ class OWReliability(OWWidget):
         self.predictions = [v for v, _ in estimates]
         estimates = [prob.reliability_estimate for _, prob in estimates]
         
-        for i, (index, method, estimate_index) in enumerate(plan):
-            self.results[index] = [e[estimate_index] for e in estimates]
+        for i, (index, method, estimate_indices) in enumerate(plan):
+            self.results[index] = [[e[est_index] for e in estimates] \
+                                   for est_index in estimate_indices]
         
     def _test_data(self):
         if self.test_data is not None:
@@ -354,12 +355,13 @@ class OWReliability(OWWidget):
                 
             for estimates, (selected, method, _, _) in zip(self.results, self.estimators):
                 if estimates is not None and getattr(self, selected):
-                    name = estimates[0].method_name
-                    name = name_mapper.get(name, name)
-                    var = variable.Continuous(name)
-                    features.append(var)
-                    score_vars.append(var)
-                    all_estimates.append(estimates)
+                    for estimate in estimates:
+                        name = estimate[0].method_name
+                        name = name_mapper.get(name, name)
+                        var = variable.Continuous(name)
+                        features.append(var)
+                        score_vars.append(var)
+                        all_estimates.append(estimate)
                     
             if self.include_input_features:
                 dom = self._test_data().domain
