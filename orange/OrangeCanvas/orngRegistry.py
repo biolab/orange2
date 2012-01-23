@@ -21,7 +21,7 @@ class WidgetDescription:
         if not self.addOn:  # A built-in widget
             dir, widgetDir = os.path.realpath(self.directory), os.path.realpath(orngEnviron.widgetDir)
             subDir = os.path.relpath(dir, widgetDir) if "relpath" in os.path.__dict__ else dir.replace(widgetDir, "")
-            return os.path.join(orngEnviron.orangeDocDir, "catalog", subDir)
+            return os.path.join(orngEnviron.orangeDocDir, "widgets", subDir)
         else:  # An add-on widget
             addOnDocDir = self.addOn.directory_documentation()
             return os.path.join(addOnDocDir, "widgets")
@@ -167,7 +167,8 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                              directory = directory,
                              addOn = addOn,
                              inputList = meta.inputList, outputList = meta.outputList,
-                             inputClasses = inputClasses, outputClasses = outputClasses
+                             inputClasses = inputClasses, outputClasses = outputClasses,
+                             tags=meta.tags
                              )
     
             for attr in ["contact", "icon", "priority", "description", "category"]:
