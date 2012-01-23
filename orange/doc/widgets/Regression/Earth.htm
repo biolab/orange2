@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>Earth</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Earth Learner</h1>
+
+<img class="screenshot" src="../icons/Unknown.png">
+<p>Earth Learner</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<dl class=attributes>
+<dt>Data (Table)</dt>
+<dd>A table with training instances</dd>
+</dl>
+
+<h3>Outputs</h3>
+<dl class=attributes>
+<dt>Learner</dt>
+<dd>The Earth learning algorithm with parameters as specified in the dialog.</dd>
+
+<dt>Predictor</dt>
+<dd>Trained regressor (a subtype of Classifier)</dd>
+</dl>
+
+<p>Signal <code>Predictor</code> sends data only if the input signal
+<code>Data</code> is present.</p>
+
+<h2>Description</h2>
+
+<p>This widget constructs a Earth learning algorithm (an implementation of the 
+<a href="http://en.wikipedia.org/wiki/Multivariate_adaptive_regression_splines">
+MARS - Multivariate Adaptive Regression Splines</a>). As all widgets for 
+classification and regression, this widget provides a learner and 
+classifier/regressor on the output. Learner is a learning algorithm with 
+settings as specified by the user. It can be fed into widgets for testing 
+learners, for instance <code>Test Learners</code>.</p>
+
+<img class="leftscreenshot" src="Earth.png" alt="Earth Widget" border=0/>
+
+<p>Learner can be given a name under which it will appear in, say, <code>Test Learners</code>. 
+The default name is "Earth Learner".</p>
+
+<p>The <code>Max. term degree</code> parameter specifies the degree of the terms induced in
+the forward pass. For instance, if set to <code>1</code> the resulting model will contain
+only linear terms.</p>
+
+<p>The <code>Max. terms</code> specifies how many terms can be induces in the forward pass.
+A special value <code>Automatic</code> instructs the learner to set the limit automatically
+based on the dimensionality of the data
+(<code>min(200, max(20, 2 * NumberOfAttributes)) + 1</code>).</p>  
+
+<p>The <code>Knot penalty</code> is used in the pruning pass (hinge function penalty for
+the GCV calculation)</p>
+
+<p>After changing one or more settings, you need to push <span class="option">Apply</span>, 
+which will put the new learner on the output and, if the training examples are given, 
+construct a new predictor and output it as well.</p>
+
+<h2>Examples</h2>
+
+<p>Lets use the learner to train a model on a data subset and test it on unseen instances.</p>
+
+<img class="screenshot" src="Earth-Schema.png">
+
+</body>
+</html>
