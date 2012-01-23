@@ -263,7 +263,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         
         kwargs = self.fit(x, y)
         return PLSRegression(domain=domain, x_vars=x_vars, y_vars=y_vars,
-                             **kwargs)
+                             multitarget=multitarget, **kwargs)
 
     def fit(self, X, Y):
         """ Fits all unknown parameters, i.e.
