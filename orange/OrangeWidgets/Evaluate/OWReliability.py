@@ -56,7 +56,7 @@ class OWReliability(OWWidget):
         # (selected attr name, getter function, count of returned estimators, indices of estimator results to use)
         self.estimators = \
             [("variance_checked", self.get_SAVar, 3, [0]),
-             ("bias_checked", self.get_SABias, 3, [1]),
+             ("bias_checked", self.get_SABias, 3, [1, 2]),
              ("bagged_variance", self.get_BAGV, 1, [0]),
              ("local_cv", self.get_LCV, 1, [0]),
              ("local_model_pred_error", self.get_CNK, 2, [0, 1]),
