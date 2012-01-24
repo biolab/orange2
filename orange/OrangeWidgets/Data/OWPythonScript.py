@@ -8,7 +8,8 @@
 from OWWidget import *
 
 import sys, traceback
-import OWGUI, orngNetwork
+import OWGUI
+import Orange
 
 import code
 
@@ -263,8 +264,8 @@ class OWPythonScript(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
-        self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_network", orngNetwork.Network, self.setNetwork), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
-        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", orngNetwork.Network), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier, Dynamic)]
+        self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_network", Orange.network.Graph, self.setNetwork), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
+        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", Orange.network.Graph), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier, Dynamic)]
         
         self.in_data = None
         self.in_network = None
