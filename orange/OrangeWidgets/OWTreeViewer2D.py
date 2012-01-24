@@ -598,7 +598,7 @@ class OWTreeViewer2D(OWWidget):
     def updateSelection(self):
         self.selectedNode = (self.scene.selectedItems() + [None])[0]
         self.centerNodeButton.setDisabled(not self.selectedNode)
-        self.send("Examples", self.selectedNode.tree.examples if self.selectedNode else None)
+        self.send("Data", self.selectedNode.tree.examples if self.selectedNode else None)
 
     def saveGraph(self, fileName = None):
         from OWDlgs import OWChooseImageSizeDlg
