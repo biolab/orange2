@@ -23,7 +23,7 @@ import glob
 
 from subprocess import check_call
 
-from types import *
+import types
 
 from distutils.dep_util import newer_group
 from distutils.file_util import copy_file
@@ -31,7 +31,7 @@ from distutils import log
 
 from distutils.sysconfig import get_python_inc, get_config_var
 import numpy
-numpy_include_dir = numpy.get_include();
+numpy_include_dir = numpy.get_include()
 python_include_dir = get_python_inc(plat_specific=1)
 
 include_dirs = [python_include_dir, numpy_include_dir, "source/include"]
@@ -90,7 +90,7 @@ class pyxtract_build_ext(build_ext):
         if not self.inplace:
             self.library_dirs.append(self.build_lib) 
         else:
-            self.library_dirs.append("./") 
+            self.library_dirs.append("./orange")
         
     def build_extension(self, ext):
         if isinstance(ext, LibStatic):
@@ -127,7 +127,7 @@ class pyxtract_build_ext(build_ext):
     def build_pyxtract(self, ext):
         ## mostly copied from build_extension
         sources = ext.sources
-        if sources is None or type(sources) not in (ListType, TupleType):
+        if sources is None or type(sources) not in (types.ListType, types.TupleType):
             raise DistutilsSetupError, \
                   ("in 'ext_modules' option (extension '%s'), " +
                    "'sources' must be present and must be " +
@@ -218,7 +218,7 @@ class pyxtract_build_ext(build_ext):
     def build_static(self, ext):
         ## mostly copied from build_extension, changed
         sources = ext.sources
-        if sources is None or type(sources) not in (ListType, TupleType):
+        if sources is None or type(sources) not in (types.ListType, types.TupleType):
             raise DistutilsSetupError, \
                   ("in 'ext_modules' option (extension '%s'), " +
                    "'sources' must be present and must be " +
@@ -468,10 +468,12 @@ statc_ext = Extension("statc", get_source_files("source/statc/"),
 
 import fnmatch
 matches = []
+os.chdir("orange")
 for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.py's
   for filename in fnmatch.filter(filenames, '__init__.py'):
       matches.append(os.path.join(root, filename))
 packages = [os.path.dirname(pkg).replace(os.path.sep, '.') for pkg in matches]
+os.chdir("..")
 
 if have_setuptools:
     setuptools_args = {"zip_safe": False,
@@ -492,7 +494,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       url = "http://orange.biolab.si",
       download_url = "http://orange.biolab.si/svn/orange/trunk",
       packages = packages + ["",
-                             "OrangeCanvas", 
+                             "OrangeCanvas",
                              "OrangeWidgets", 
                              "OrangeWidgets.Associate",
                              "OrangeWidgets.Classify",
@@ -507,7 +509,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                              "OrangeWidgets.plot.primitives",
                              "doc",
                              ],
-      package_dir = {"": "."},
+      package_dir = {"": "orange"},
       package_data = {"OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
                       "OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],
                       "OrangeWidgets.Associate": ["icons/*.png"],
@@ -521,11 +523,11 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                       "OrangeWidgets.plot": ["*.gs", "*.vs"],
                       "OrangeWidgets.plot.primitives": ["*.obj"],
                       "doc": ["datasets/*.tab", ],
-                      "": ["orangerc.cfg"] 
+                      "": ["orangerc.cfg"]
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
-      scripts = ["orange-canvas"],
+      scripts = ["orange/orange-canvas"],
       license = "GNU General Public License (GPL)",
       keywords = ["data mining", "machine learning", "artificial intelligence"],
       classifiers = ["Development Status :: 4 - Beta",
