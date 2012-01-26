@@ -1,0 +1,32 @@
+# Ignore files, generated during build.
+^source/.*/ppp$
+^source/.*/px$
+
+
+
+syntax: glob
+
+*.o
+*.a
+makefile.deps
+source/orangeqt/build
+source/_underscored
+source/orange/lib_vectors_auto.txt
+
+# Ignore build dir, created by setup.py build.
+build
+
+# Ignore dot files.
+.*
+
+# Ignore binaries.
+*.py[cod]
+*.so
+*.dll
+
+# Ignore temporary editor files.
+*.swp
+*~
+
+# Built documentation.
+docs/reference/html
