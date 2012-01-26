@@ -1,0 +1,6 @@
+[patterns]
+**.{py,rst,cpp,hpp,c,h,txt,cfg,tab,basket,net} = native
+Makefile = LF
+COPYING = native
+LICENSES = native
+MANIFEST.in = native
