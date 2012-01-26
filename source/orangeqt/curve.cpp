@@ -497,12 +497,25 @@ void Curve::pointMapFinished()
         if (m_pointItems[i]->pos().isNull())
         {
             m_pointItems[i]->setPos(m_pos_watcher.resultAt(i));
+            // move point label
+            if (m_pointItems[i]->label)
+			{
+            	m_pointItems[i]->label->setPos(m_pos_watcher.resultAt(i));
+			}
         }
         else
         {
             QPropertyAnimation* a = new QPropertyAnimation(m_pointItems[i], "pos", m_pointItems[i]);
             a->setEndValue(m_pos_watcher.resultAt(i));
             group->addAnimation(a);
+
+            // move point label
+            if (m_pointItems[i]->label)
+            {
+				QPropertyAnimation* b = new QPropertyAnimation(m_pointItems[i]->label, "pos", m_pointItems[i]->label);
+				b->setEndValue(m_pos_watcher.resultAt(i));
+				group->addAnimation(b);
+            }
         }
     }
     group->start(QAbstractAnimation::DeleteWhenStopped);
