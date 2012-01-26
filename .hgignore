@@ -3,7 +3,6 @@
 ^source/.*/px$
 
 
-
 syntax: glob
 
 *.o
@@ -12,6 +11,8 @@ makefile.deps
 source/orangeqt/build
 source/_underscored
 source/orange/lib_vectors_auto.txt
+source/orangeom/lib_vectors.cpp
+source/orangeom/lib_vectors_auto.txt
 
 # Ignore build dir, created by setup.py build.
 build
