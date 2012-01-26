@@ -14,8 +14,9 @@ source/orange/lib_vectors_auto.txt
 source/orangeom/lib_vectors.cpp
 source/orangeom/lib_vectors_auto.txt
 
-# Ignore build dir, created by setup.py build.
+# Ignore build and dist dir, created by setup.py build or setup.py bdist_* .
 build
+dist
 
 # Ignore dot files.
 .*
