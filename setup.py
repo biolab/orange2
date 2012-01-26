@@ -1,15 +1,6 @@
 #!usr/bin/env python
 
-import os, sys
-have_setuptools = False
-
-if "USE_SETUPTOOLS" in os.environ:
-    try:
-        from setuptools import setup
-        have_setuptools = True
-    except ImportError:
-        have_setuptools = False
-        
+import os, sys        
 import distutils.core
 from distutils.core import setup
 from distutils.core import Extension
@@ -17,6 +8,8 @@ from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib
 from distutils.msvccompiler import MSVCCompiler
 from distutils.unixccompiler import UnixCCompiler
+
+have_setuptools = getattr(distutils.core, "have_setuptools", False) # This is set in setupegg.py
 
 import re
 import glob
@@ -489,8 +482,6 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
       description = "Orange data mining library for python.",
       author = "Bioinformatics Laboratory, FRI UL",
       author_email = "orange@fri.uni-lj.si",
-      maintainer = "Ales Erjavec",
-      maintainer_email = "ales.erjavec@fri.uni-lj.si",
       url = "http://orange.biolab.si",
       download_url = "http://orange.biolab.si/svn/orange/trunk",
       packages = packages + ["",
@@ -527,7 +518,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": my_install_lib},
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
-      scripts = ["orange/orange-canvas"],
+      scripts = ["bin/orange-canvas"],
       license = "GNU General Public License (GPL)",
       keywords = ["data mining", "machine learning", "artificial intelligence"],
       classifiers = ["Development Status :: 4 - Beta",

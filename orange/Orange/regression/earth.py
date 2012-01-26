@@ -371,13 +371,13 @@ class EarthClassifier(Orange.core.ClassifierFD):
                             self.cuts, self.betas),
                 dict(self.__dict__))
         
-    def format(self, percision=3, indent=3):
+    def to_string(self, percision=3, indent=3):
         """ Return a string representation of the model.
         """
         return format_model(self, percision, indent)
         
     def __str__(self):
-        return self.format()
+        return self.to_string()
     
 
 """

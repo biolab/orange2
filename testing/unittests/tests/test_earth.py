@@ -16,7 +16,7 @@ class TestEarthLearner(testing.LearnerTestCase):
         if len(dataset) < 30:
             raise unittest.SkipTest("Not enough examples.")
         testing.LearnerTestCase.test_learner_on(self, dataset)
-        str = self.classifier.format_model()
+        str = self.classifier.to_string()
         evimp = self.classifier.evimp()
         
     @test_on_data

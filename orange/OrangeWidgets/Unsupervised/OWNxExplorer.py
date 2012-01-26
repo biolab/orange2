@@ -3,7 +3,7 @@
 <description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>6420</priority>
+<priority>6420</priorbity>
 """
 import math
 import operator
@@ -119,6 +119,7 @@ try:
             
             self.checkSendMarkedNodes = True
             self.checkSendSelectedNodes = True
+            self.explore_distances = False
             
             self.loadSettings()
             
@@ -192,7 +193,7 @@ try:
             OWGUI.checkBox(ib, self, 'networkCanvas.show_weights', 'Show weights', callback=self.networkCanvas.set_edge_labels)
             #OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback=(lambda: self._set_canvas_attr('showEdgeLabels', self.showEdgeLabels)))
             OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.set_edge_sizes)
-            self.cb_show_distances = OWGUI.checkBox(ib, self, 'networkCanvas.explore_distances', 'Explore node distances', callback=None, disabled=1)
+            self.cb_show_distances = OWGUI.checkBox(ib, self, 'explore_distances', 'Explore node distances', callback=self.set_explore_distances, disabled=1)
             self.cb_show_component_distances = OWGUI.checkBox(ib, self, 'networkCanvas.show_component_distances', 'Show component distances', callback=self.networkCanvas.set_show_component_distances, disabled=1)
             
             colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
@@ -924,7 +925,26 @@ try:
                 
                 self.markInputRadioButton.setEnabled(True)
                 self.set_mark_mode(9)
-                  
+        
+        def set_explore_distances(self):
+            QObject.disconnect(self.networkCanvas, SIGNAL('selection_changed()'), self.explore_focused)
+
+            if self.explore_distances:
+                QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self.explore_focused)
+                
+        def explore_focused(self):
+            sel = self.networkCanvas.selected_nodes()
+            if len(sel) == 1:
+                ndx_1 = sel[0]
+                self.networkCanvas.label_distances = [['%.2f' % \
+                                self.items_matrix[ndx_1][ndx_2]] \
+                                for ndx_2 in self.networkCanvas.graph.nodes()]
+            else:
+                self.networkCanvas.label_distances = None
+                
+            self.networkCanvas.set_node_labels(self.lastLabelColumns)
+            self.networkCanvas.replot()  
+      
         #######################################################################
         ### Layout Optimization                                             ###
         #######################################################################
@@ -963,7 +983,6 @@ try:
                 
             self.optButton.setChecked(False)
             self.networkCanvas.update_canvas()
-            qApp.processEvents()
             
         def graph_layout_method(self, method=None):
             self.information()
