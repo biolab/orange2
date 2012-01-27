@@ -901,3 +901,6 @@ class NxView(object):
         
     def nodes_selected(self):
         pass
+
+    #def node_selection_changed(self):
+    #    pass

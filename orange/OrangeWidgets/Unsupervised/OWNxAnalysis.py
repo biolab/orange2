@@ -109,9 +109,9 @@ class OWNxAnalysis(OWWidget):
             ("out_degree_centrality", False, "Out-degree centrality", NODELEVEL, nx.out_degree_centrality),
             ("closeness_centrality", False, "Closeness centrality", NODELEVEL, nx.closeness_centrality),
             ("betweenness_centrality", False, "Betweenness centrality", NODELEVEL, nx.betweenness_centrality),
-            ("current_flow_closeness_centrality", False, "Current flow closeness centrality", NODELEVEL, nx.current_flow_closeness_centrality),
-            ("current_flow_betweenness_centrality", False, "Current flow betweenness centrality", NODELEVEL, nx.current_flow_betweenness_centrality),
-            ("approximate_current_flow_betweenness_centrality", False, "Approximate current flow betweenness centrality", NODELEVEL, nx.approximate_current_flow_betweenness_centrality),
+            ("current_flow_closeness_centrality", False, "Information centrality", NODELEVEL, nx.current_flow_closeness_centrality),
+            ("current_flow_betweenness_centrality", False, "Random-walk betweenness centrality", NODELEVEL, nx.current_flow_betweenness_centrality),
+            ("approximate_current_flow_betweenness_centrality", False, "Approx. random-walk betweenness centrality", NODELEVEL, nx.approximate_current_flow_betweenness_centrality),
             ("eigenvector_centrality", False, "Eigenvector centrality", NODELEVEL, nx.eigenvector_centrality),
             ("eigenvector_centrality_numpy", False, "Eigenvector centrality (NumPy)", NODELEVEL, nx.eigenvector_centrality_numpy),
             ("load_centrality", False, "Load centrality", NODELEVEL, nx.load_centrality),
@@ -304,8 +304,10 @@ class OWNxAnalysis(OWWidget):
                 elif job.type == GRAPHLEVEL:
                     self.analdata[job.name] = job.result
                     setattr(self, "lbl_" + job.name, ("%.4f" % job.result).rstrip('0').rstrip('.'))
-                
-        self.job_working.remove(job)
+        
+        if job in self.job_working:
+            self.job_working.remove(job)
+
         self.send_data()
         self.mutex.unlock()
         

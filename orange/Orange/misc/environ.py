@@ -257,9 +257,10 @@ orange_no_deprecated_members = parser.getboolean("Orange", "orange_no_deprecated
 version = get_platform_option("Orange", "version")
     
 # Create the directories if missing
+# TODO: This are not needed if using orange without the GUI
+
 _directories_to_create = ["application_dir", "orange_settings_dir",
-        "buffer_dir", "widget_settings_dir", "canvas_settings_dir",
-        "default_reports_dir"]
+        "buffer_dir", "widget_settings_dir", "canvas_settings_dir"]
 
 for dname in _directories_to_create:
     dname = globals()[dname]

@@ -18,7 +18,7 @@ import OWColorPalette
 import OWNxCanvasQt
 
 from orngScaleLinProjData import *
-from OWNxExplorerQt import *
+from OWNxExplorer import *
 from OWkNNOptimization import OWVizRank
 from OWNxHist import *
 from OWDistributions import OWDistributionGraph
@@ -32,7 +32,9 @@ ICON_PATHS = [("TREE",              "Classify/icons/ClassificationTree"),
               ("SPCA",              "Visualize/icons/LinearProjection"),
               ("RADVIZ",            "Visualize/icons/Radviz"),
               ("POLYVIZ",           "Visualize/icons/Polyviz"),
+              ("NaiveLearner",      "Classify/icons/NaiveBayes"),
               ("BAYES",             "Classify/icons/NaiveBayes"),
+              ("kNNLearner",        "Classify/icons/kNearestNeighbours"),
               ("KNN",               "Classify/icons/kNearestNeighbours"),
               ("SVM",               "Classify/icons/BasicSVM")]
 
@@ -45,14 +47,6 @@ PIXMAP_CACHE = {}
 for size in ICON_SIZES:
     for model, path in ICON_PATHS:
         MODEL_IMAGES[model + size] = "%s%s_%s.png" % (dir, path, size)
-
-dir = os.path.dirname(__file__) + "/../icons/"
-dlg_mark2sel   = dir + "Dlg_Mark2Sel.png"
-dlg_sel2mark   = dir + "Dlg_Sel2Mark.png"
-dlg_selIsmark  = dir + "Dlg_SelisMark.png"
-dlg_selected   = dir + "Dlg_SelectedNodes.png"
-dlg_unselected = dir + "Dlg_UnselectedNodes.png"
-dlg_showall    = dir + "Dlg_clear.png"
 
 class ModelItem(orangeqt.ModelItem):
     def __init__(self, index, x=None, y=None, parent=None):
@@ -251,25 +245,42 @@ class OWModelMapCanvas(OWNxCanvasQt.OWNxCanvas):
                 PIXMAP_CACHE[fn] = QPixmap(fn)
             v.set_image(PIXMAP_CACHE[fn])
 
-class OWModelMapQt(OWNxExplorerQt, OWNxHist):
-    settingsList = ["vertexSize", "lastSizeAttribute", "lastColorAttribute", 
-                    "maxVertexSize", "minVertexSize", "tabIndex", 
-                    "colorSettings", "selectedSchemaIndex", "iterations", 
-                    "radius", "vizAccurancy", "vizAttributes", 
-                    "autoSendSelection", "spinExplicit", "spinPercentage",
-                    "maxLinkSize", "renderAntialiased", "labelsOnMarkedOnly",
-                    "invertSize", "optMethod", "lastVertexSizeColumn", 
-                    "lastColorColumn", "lastNameComponentAttribute", 
-                    "lastLabelColumns", "lastTooltipColumns", "showWeights",
-                    "showIndexes",  "showEdgeLabels", "edgeColorSettings", 
-                    "selectedEdgeSchemaIndex", "showMissingValues", "fontSize", 
-                    "mdsTorgerson", "mdsAvgLinkage", "mdsSteps", "mdsRefresh", 
-                    "mdsStressDelta", "organism","showTextMiningInfo", 
-                    "toolbarSelection", "minComponentEdgeWidth", 
-                    "maxComponentEdgeWidth", "mdsFromCurrentPos"]
+class OWModelMapQt(OWNxExplorer, OWNxHist):
+#    settingsList = ["vertexSize", "lastSizeAttribute", "lastColorAttribute", 
+#                    "maxVertexSize", "minVertexSize", "tabIndex", 
+#                    "colorSettings", "selectedSchemaIndex", "iterations", 
+#                    "radius", "vizAccurancy", "vizAttributes", 
+#                    "autoSendSelection", "spinExplicit", "spinPercentage",
+#                    "maxLinkSize", "renderAntialiased", "labelsOnMarkedOnly",
+#                    "invertSize", "optMethod", "lastVertexSizeColumn", 
+#                    "lastColorColumn", "lastNameComponentAttribute", 
+#                    "lastLabelColumns", "lastTooltipColumns", "showWeights",
+#                    "showIndexes",  "showEdgeLabels", "edgeColorSettings", 
+#                    "selectedEdgeSchemaIndex", "showMissingValues", "fontSize", 
+#                    "mdsTorgerson", "mdsAvgLinkage", "mdsSteps", "mdsRefresh", 
+#                    "mdsStressDelta", "organism","showTextMiningInfo", 
+#                    "toolbarSelection", "minComponentEdgeWidth", 
+#                    "maxComponentEdgeWidth", "mdsFromCurrentPos"]
+#    
+    settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
+        "maxLinkSize", "minVertexSize", "maxVertexSize", "networkCanvas.animate_plot",
+        "networkCanvas.animate_points", "networkCanvas.antialias_plot", 
+        "networkCanvas.antialias_points", "networkCanvas.antialias_lines", 
+        "networkCanvas.auto_adjust_performance", "invertSize", "optMethod", 
+        "lastVertexSizeColumn", "lastColorColumn", "networkCanvas.show_indices", "networkCanvas.show_weights",
+        "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
+        "showWeights", "showEdgeLabels", "colorSettings", 
+        "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
+        "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
+        "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
+        "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
+        "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex", 
+        "networkCanvas.trim_label_words", "opt_from_curr", "networkCanvas.explore_distances",
+        "networkCanvas.show_component_distances", "fontWeight", "networkCanvas.state",
+        "networkCanvas.selection_behavior"] 
     
     def __init__(self, parent=None, signalManager=None, name="Model Map"):
-        OWNxExplorerQt.__init__(self, parent, signalManager, name, 
+        OWNxExplorer.__init__(self, parent, signalManager, name, 
                                NetworkCanvas=OWModelMapCanvas)
         
         self.inputs = [("Distances", orange.SymMatrix, self.setMatrix, Default),
@@ -298,7 +309,8 @@ class OWModelMapQt(OWNxExplorerQt, OWNxHist):
         self.modelTab = OWGUI.widgetBox(self.tabs, addToLayout = 0, margin = 4)
         self.tabs.insertTab(0, self.matrixTab, "Matrix")
         self.tabs.insertTab(1, self.modelTab, "Model Info")
-
+        self.tabs.setCurrentIndex(self.tabIndex)
+        
         self.networkCanvas.appendToSelection = 0
         self.networkCanvas.minVertexSize = self.minVertexSize
         self.networkCanvas.maxVertexSize = self.maxVertexSize
@@ -328,15 +340,13 @@ class OWModelMapQt(OWNxExplorerQt, OWNxHist):
         self.attrIntersectionBox = OWGUI.listBox(vizPredAcc, self, "attrIntersection", "attrIntersectionList", "Attribute intersection", selectionMode=QListWidget.NoSelection)
         self.attrDifferenceBox = OWGUI.listBox(vizPredAcc, self, "attrDifference", "attrDifferenceList", "Attribute difference", selectionMode=QListWidget.NoSelection)
         
-        self.attBox.setVisible(0)
+        self.attBox.hide()
         self.visualizeInfo()
         
         QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self.node_selection_changed)
         
         self.matrixTab.layout().addStretch(1)
         self.modelTab.layout().addStretch(1)
-        self.setMinimumWidth(900)
-        self.controlArea.setMinimumWidth(378)
         
     def plotAccuracy(self, vertices=None):
         self.predGraph.tips.removeAll()
@@ -434,7 +444,7 @@ class OWModelMapQt(OWNxExplorerQt, OWNxHist):
         OWNxHist.setMatrix(self, matrix)
         
     def set_node_sizes(self):
-        OWNxExplorerQt.set_node_sizes(self)
+        OWNxExplorer.set_node_sizes(self)
         self.networkCanvas.loadIcons()
         self.networkCanvas.replot()
         
