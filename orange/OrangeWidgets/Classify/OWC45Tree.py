@@ -111,8 +111,13 @@ class OWC45Tree(OWWidget):
         except orange.KernelException, ex:
             self.error(0, "C45Loader: cannot load \c45.dll")
             import orngDebugging
-            if not orngDebugging.orngDebuggingEnabled and getattr(self, "__showMessageBox", True):  # Dont show the message box when running debugging scripts
-                QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://orange.biolab.si/doc/reference/C45Learner.htm', QMessageBox.Ok)
+            # Dont show the message box when running debugging scripts
+            if not orngDebugging.orngDebuggingEnabled and getattr(self, "__showMessageBox", True):  
+                # The message string must not have newlines otherwise it
+                # confuses Qt to show it in plain text not as rtf.
+                QMessageBox.warning( None, "C4.5 plug-in", '''File c45.dll not found.
+See <a href="http://orange.biolab.si/doc/reference/Orange.classification.tree/#c4-5-classifier-and-learner">this link</a>
+for the instructions on how to build the library.'''.replace("\n", " "), QMessageBox.Ok)
                 setattr(self, "__showMessageBox", False)
             return
         
