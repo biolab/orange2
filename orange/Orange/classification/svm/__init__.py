@@ -515,10 +515,6 @@ class SVMLearnerEasy(SVMLearner):
         return SVMClassifierWrapper(tunedLearner(newexamples,
                                                  verbose=self.verbose))
 
-SVMLearner = Orange.misc.deprecated_members({
-    "learnClassifier": "learn_classifier",
-    })(SVMLearner)
-
 class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
     def __init__(self, **kwds):
         SVMLearnerSparse.__init__(self, **kwds)
