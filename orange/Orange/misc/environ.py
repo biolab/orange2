@@ -148,17 +148,21 @@ def _get_default_env():
             home += "\\"
         application_dir = os.environ["APPDATA"]
         output_dir = os.path.join(application_dir, version)
-        default_reports_dir = os.path.join(home, "My Documents", "Orange Reports")
+        default_reports_dir = os.path.join(home, "My Documents")
     elif sys.platform == "darwin":
         application_dir = os.path.join(home, "Library", "Application Support")
         output_dir = os.path.join(application_dir, version)
-        default_reports_dir = os.path.join(home, "Library",
-                                           "Application Support",
-                                           version, "Reports")
+        default_reports_dir = os.path.join(home, "Documents")
     else:
         application_dir = home
         output_dir = os.path.join(home, "." + version)
-        default_reports_dir = os.path.join(home, "orange-reports")
+        
+        documents = os.path.join(home, "Documents")
+        # Need to make sure Documents folder actually exists
+        if os.path.exists(documents) and os.path.isdir(documents):
+            default_reports_dir = documents
+        else:
+            default_reports_dir = home
 
     add_ons_dir_user = os.path.join(output_dir, "add-ons")
 
