@@ -92,7 +92,7 @@ class ExperimentResults(object):
                           "baseClass": "base_class",
                           "numberOfIterations": "number_of_iterations",
                           "numberOfLearners": "number_of_learners"})
-    def __init__(self, iterations, classifier_names, class_values=None, weights=None, base_class=-1, domain=None, test_type=TEST_TYPE_SINGLE, **argkw):
+    def __init__(self, iterations, classifier_names, class_values=None, weights=None, base_class=-1, domain=None, test_type=TEST_TYPE_SINGLE, labels=None, **argkw):
         self.class_values = class_values
         self.classifier_names = classifier_names
         self.number_of_iterations = iterations
@@ -103,6 +103,7 @@ class ExperimentResults(object):
         self.base_class = base_class
         self.weights = weights
         self.test_type = test_type
+        self.labels = labels
 
         if domain is not None:
             self.base_class = self.class_values = None

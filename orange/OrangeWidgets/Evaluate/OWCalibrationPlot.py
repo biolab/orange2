@@ -12,6 +12,7 @@ import OWGUI
 
 import orngTest, orngStat
 import statc, math
+from Orange.evaluation.testing import TEST_TYPE_SINGLE
 
 class singleClassCalibrationPlotGraph(OWGraph):
     def __init__(self, parent = None, name = None, title = ""):
@@ -332,6 +333,11 @@ class OWCalibrationPlot(OWWidget):
         self.classCombo.clear()
 
         self.dres = dres
+        
+        if dres and dres.test_type != TEST_TYPE_SINGLE:
+            self.warning(0, "Calibration plot is supported only for single-target prediction problems.")
+            return
+        self.warning(0, None)
 
         self.graphs = []
         if self.dres <> None:

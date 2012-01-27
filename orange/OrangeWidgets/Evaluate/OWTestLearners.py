@@ -16,6 +16,8 @@ from orngWrap import PreprocessedLearner
 warnings.filterwarnings("ignore", "'id' is not a builtin attribute",
                         orange.AttributeWarning)
 
+import Orange
+
 ##############################################################################
 
 class Learner:
@@ -48,6 +50,7 @@ class OWTestLearners(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["targetClass"])}
     callbackDeposit = []
 
+    # Classification
     cStatistics = [Score(*s) for s in [\
         ('Classification accuracy', 'CA', 'CA(res)', True),
         ('Sensitivity', 'Sens', 'sens(cm)', True, True),
@@ -60,6 +63,7 @@ class OWTestLearners(OWWidget):
         ('Brier score', 'Brier', 'BrierScore(res)', True),
         ('Matthews correlation coefficient', 'MCC', 'MCC(cm)', False, True)]]
 
+    # Regression
     rStatistics = [Score(*s) for s in [\
         ("Mean squared error", "MSE", "MSE(res)", False),
         ("Root mean squared error", "RMSE", "RMSE(res)"),
@@ -68,18 +72,26 @@ class OWTestLearners(OWWidget):
         ("Root relative squared error", "RRSE", "RRSE(res)"),
         ("Relative absolute error", "RAE", "RAE(res)", False),
         ("R-squared", "R2", "R2(res)")]]
-
+    
+    # Multi-Label
+    mStatistics = [Score(*s) for s in [\
+        ('Hamming Loss', 'HammingLoss', 'mlc_hamming_loss(res)', False),
+        ('Accuracy', 'Accuracy', 'mlc_accuracy(res)', False),
+        ('Precision', 'Precision', 'mlc_precision(res)', False),
+        ('Recall', 'Recall', 'mlc_recall(res)', False),                               
+        ]]
+    
     resamplingMethods = ["Cross-validation", "Leave-one-out", "Random sampling",
                          "Test on train data", "Test on test data"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "TestLearners")
 
-        self.inputs = [("Data", ExampleTable, self.setData, Default), 
+        self.inputs = [("Data", ExampleTable, self.setData, Default),
                        ("Separate Test Data", ExampleTable, self.setTestData),
                        ("Learner", orange.Learner, self.setLearner, Multiple + Default),
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        
+
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
@@ -91,6 +103,7 @@ class OWTestLearners(OWWidget):
         self.applyOnAnyChange = True
         self.selectedCScores = [i for (i,s) in enumerate(self.cStatistics) if s.show]
         self.selectedRScores = [i for (i,s) in enumerate(self.rStatistics) if s.show]
+        self.selectedMScores = [i for (i,s) in enumerate(self.mStatistics) if s.show]
         self.targetClass = 0
         self.loadSettings()
         self.resampling = 0             # cross-validation
@@ -173,9 +186,16 @@ class OWTestLearners(OWWidget):
         self.rstatLB = OWGUI.listBox(self.rbox, self, 'selectedRScores', 'rStatLabels',
                                      selectionMode = QListWidget.MultiSelection,
                                      callback=self.newscoreselection)
+
+        self.mStatLabels = [s.name for s in self.mStatistics]
+        self.mbox = OWGUI.widgetBox(self.controlArea, "Performance scores", addToLayout=False)
+        self.mstatLB = OWGUI.listBox(self.mbox, self, 'selectedMScores', 'mStatLabels',
+                                     selectionMode = QListWidget.MultiSelection,
+                                     callback=self.newscoreselection)
         
         self.statLayout.addWidget(self.cbox)
         self.statLayout.addWidget(self.rbox)
+        self.statLayout.addWidget(self.mbox)
         self.controlArea.layout().addLayout(self.statLayout)
         
         self.statLayout.setCurrentWidget(self.cbox)
@@ -192,7 +212,18 @@ class OWTestLearners(OWWidget):
         if not self.data or not self.data.domain.classVar:
             return True
         return self.data.domain.classVar.varType == orange.VarTypes.Discrete
-        
+
+    def ismultilabel(self, data = 42):
+        if data==42:
+            data = self.data
+        if not data:
+            return False
+        return Orange.multilabel.is_multilabel(data)
+
+    def get_usestat(self):
+        return ([self.selectedRScores, self.selectedCScores, self.selectedMScores]
+                [2 if self.ismultilabel() else self.isclassification()])
+
     def paintscores(self):
         """paints the table with evaluation scores"""
 
@@ -223,7 +254,7 @@ class OWTestLearners(OWWidget):
         # adjust the width of the score table cloumns
         self.tab.resizeColumnsToContents()
         self.tab.resizeRowsToContents()
-        usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        usestat = self.get_usestat()
         for i in range(len(self.stat)):
             if i not in usestat:
                 self.tab.hideColumn(i+1)
@@ -236,10 +267,15 @@ class OWTestLearners(OWWidget):
             exset = [("Repetitions", self.pRepeat), ("Proportion of training instances", "%i%%" % self.pLearning)]
         else:
             exset = []
-        self.reportSettings("Validation method",
+        if not self.ismultilabel():
+            self.reportSettings("Validation method",
                             [("Method", self.resamplingMethods[self.resampling])]
                             + exset +
                             ([("Target class", self.data.domain.classVar.values[self.targetClass])] if self.data else []))
+        else:
+             self.reportSettings("Validation method",
+                            [("Method", self.resamplingMethods[self.resampling])]
+                            + exset)
         
         self.reportData(self.data)
 
@@ -248,8 +284,7 @@ class OWTestLearners(OWWidget):
             learners = [(l.time, l) for l in self.learners.values()]
             learners.sort()
             learners = [lt[1] for lt in learners]
-            usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
-            
+            usestat = self.get_usestat()
             res = "<table><tr><th></th>"+"".join("<th><b>%s</b></th>" % hr for hr in [s.label for i, s in enumerate(self.stat) if i in usestat])+"</tr>"
             for i, l in enumerate(learners):
                 res += "<tr><th><b>%s</b></th>" % l.name
@@ -276,6 +311,8 @@ class OWTestLearners(OWWidget):
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
         new = self.data.selectref(indices(self.data))
         
+        multilabel = self.ismultilabel()
+        
         self.warning(0)
         learner_exceptions = []
         for l in [self.learners[id] for id in ids]:
@@ -284,18 +321,18 @@ class OWTestLearners(OWWidget):
                 learner = self.preprocessor.wrapLearner(learner)
             try:
                 predictor = learner(new)
-                if predictor(new[0]).varType == new.domain.classVar.varType:
+                if (multilabel and isinstance(learner, Orange.multilabel.MultiLabelLearner)) or predictor(new[0]).varType == new.domain.classVar.varType:
                     learners.append(learner)
                     used_ids.append(l.id)
                 else:
                     l.scores = []
                     l.results = None
-                
+
             except Exception, ex:
                 learner_exceptions.append((l, ex))
                 l.scores = []
                 l.results = None
-        
+
         if learner_exceptions:
             text = "\n".join("Learner %s ends with exception: %s" % (l.name, str(ex)) \
                              for l, ex in learner_exceptions)
@@ -336,7 +373,7 @@ class OWTestLearners(OWWidget):
             res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata, storeExamples = True, callback=pb.advance)
             pb.finish()
             
-        if self.isclassification():
+        if not self.ismultilabel() and self.isclassification():
             cm = orngStat.computeConfusionMatrices(res, classIndex = self.targetClass)
         else:
             cm = None
@@ -373,7 +410,7 @@ class OWTestLearners(OWWidget):
                                    (res.classifierNames[0], ex.message))
                         scores_one.append(None)
                 scores.append(scores_one)
-                
+
         for i, (id, l) in enumerate(zip(used_ids, learners)):
             self.learners[id].scores = [s[i] if s else None for s in scores]
             
@@ -389,22 +426,28 @@ class OWTestLearners(OWWidget):
             for (i, l) in enumerate([l for l in self.learners.values() if l.scores]):
                 learner_indx = self.results.learners.index(l.learner)
                 l.scores[indx] = score[learner_indx]
-                
+
         self.paintscores()
         
     def clearScores(self, ids=None):
         if ids is None:
             ids = self.learners.keys()
-            
+
         for id in ids:
             self.learners[id].scores = []
             self.learners[id].results = None
-        
+
     # handle input signals
     def setData(self, data):
         """handle input train data set"""
         self.closeContext()
-        self.data = self.isDataWithClass(data, checkMissing=True) and data or None
+        
+        multilabel= self.ismultilabel(data)
+        if not multilabel:
+            self.data = self.isDataWithClass(data, checkMissing=True) and data or None
+        else:
+            self.data = data
+        
         self.fillClassCombo()
         if not self.data:
             # data was removed, remove the scores
@@ -413,15 +456,17 @@ class OWTestLearners(OWWidget):
         else:
             # new data has arrived
             self.clearScores()
-            
-            self.data = orange.Filter_hasClassValue(self.data)
-            self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
-            
-            self.stat = [self.rStatistics, self.cStatistics][self.isclassification()]
-            
+
+            if not multilabel:
+                self.data = orange.Filter_hasClassValue(self.data)
+
+            self.statLayout.setCurrentWidget([self.rbox, self.cbox, self.mbox][2 if self.ismultilabel() else self.isclassification()])
+
+            self.stat = [self.rStatistics, self.cStatistics, self.mStatistics][2 if self.ismultilabel() else self.isclassification()]
+
             if self.learners:
                 self.score([l.id for l in self.learners.values()])
-
+            
         self.openContext("", data)
         self.paintscores()
 
@@ -515,7 +560,7 @@ class OWTestLearners(OWWidget):
             if not l in [l.learner for l in self.learners.values()]:
                 results.remove(i)
                 del results.learners[i]
-            
+
         for r in rlist:
             for (i, l) in enumerate(r.learners):
                 learner_id = [l1.id for l1 in self.learners.values() if l1.learner is l][0]
@@ -538,7 +583,7 @@ class OWTestLearners(OWWidget):
 
     def newscoreselection(self):
         """handle change in set of scores to be displayed"""
-        usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        usestat = self.get_usestat()
         for i in range(len(self.stat)):
             if i in usestat:
                 self.tab.showColumn(i+1)
@@ -582,6 +627,7 @@ if __name__=="__main__":
     datar = orange.ExampleTable(r'../../auto-mpg')
     data3 = orange.ExampleTable(r'../../sailing-big')
     data4 = orange.ExampleTable(r'../../sailing-test')
+    data5 = orange.ExampleTable('emotions')
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 
@@ -598,6 +644,8 @@ if __name__=="__main__":
 
     import orngRegression as r
     r5 = r.LinearRegressionLearner(name="0 - lin reg")
+
+    l5 = Orange.multilabel.BinaryRelevanceLearner()
 
     testcase = 4
 
@@ -633,5 +681,8 @@ if __name__=="__main__":
         ow.setTestData(data4)
         ow.setLearner(l2, 5)
         ow.setTestData(None)
+    if testcase == 5: # MLC
+        ow.setData(data5)
+        ow.setLearner(l5, 6)
 
     ow.saveSettings()

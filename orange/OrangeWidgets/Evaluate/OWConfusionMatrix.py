@@ -10,6 +10,7 @@ import OWGUI
 import orngStat, orngTest
 import statc, math
 from operator import add
+from Orange.evaluation.testing import TEST_TYPE_SINGLE
             
 class TransformedLabel(QLabel):
     def __init__(self, text, parent=None):
@@ -109,6 +110,11 @@ class OWConfusionMatrix(OWWidget):
             self.table.setColumnCount(0)
             return
 
+        if res and res.test_type != TEST_TYPE_SINGLE:
+            self.warning(0, "Confusion matrix can be calculated only for single-target prediction problems.")
+            return
+        self.warning(0, None)
+        
         self.matrix = orngStat.confusionMatrices(res, -2)
 
         dim = len(res.classValues)

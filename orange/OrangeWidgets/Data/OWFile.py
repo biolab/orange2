@@ -283,33 +283,34 @@ class OWFile(OWWidget):
 
         warnings = ""
         metas = data.domain.getmetas()
-        for status, messageUsed, messageNotUsed in [
-                                (orange.Variable.MakeStatus.Incompatible,
-                                 "",
-                                 "The following attributes already existed but had a different order of values, so new attributes needed to be created"),
-                                (orange.Variable.MakeStatus.NoRecognizedValues,
-                                 "The following attributes were reused although they share no common values with the existing attribute of the same names",
-                                 "The following attributes were not reused since they share no common values with the existing attribute of the same names"),
-                                (orange.Variable.MakeStatus.MissingValues,
-                                 "The following attribute(s) were reused although some values needed to be added",
-                                 "The following attribute(s) were not reused since they miss some values")
-                                ]:
-            if self.createNewOn > status:
-                message = messageUsed
-            else:
-                message = messageNotUsed
-            if not message:
-                continue
-            attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
-                  + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
-            if attrs:
-                jattrs = ", ".join(attrs)
-                if len(jattrs) > 80:
-                    jattrs = jattrs[:80] + "..."
-                if len(jattrs) > 30: 
-                    warnings += "<li>%s:<br/> %s</li>" % (message, jattrs)
+        if hasattr(data, "attribute_load_status"):  # For some file formats, this is not populated
+            for status, messageUsed, messageNotUsed in [
+                                    (orange.Variable.MakeStatus.Incompatible,
+                                     "",
+                                     "The following attributes already existed but had a different order of values, so new attributes needed to be created"),
+                                    (orange.Variable.MakeStatus.NoRecognizedValues,
+                                     "The following attributes were reused although they share no common values with the existing attribute of the same names",
+                                     "The following attributes were not reused since they share no common values with the existing attribute of the same names"),
+                                    (orange.Variable.MakeStatus.MissingValues,
+                                     "The following attribute(s) were reused although some values needed to be added",
+                                     "The following attribute(s) were not reused since they miss some values")
+                                    ]:
+                if self.createNewOn > status:
+                    message = messageUsed
                 else:
-                    warnings += "<li>%s: %s</li>" % (message, jattrs)
+                    message = messageNotUsed
+                if not message:
+                    continue
+                attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
+                      + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
+                if attrs:
+                    jattrs = ", ".join(attrs)
+                    if len(jattrs) > 80:
+                        jattrs = jattrs[:80] + "..."
+                    if len(jattrs) > 30: 
+                        warnings += "<li>%s:<br/> %s</li>" % (message, jattrs)
+                    else:
+                        warnings += "<li>%s: %s</li>" % (message, jattrs)
 
         self.warnings.setText(warnings)
         #qApp.processEvents()

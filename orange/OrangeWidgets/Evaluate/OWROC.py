@@ -11,6 +11,8 @@ from OWGraph import *
 import OWGUI
 import orngStat, orngTest
 import statc, math
+import warnings
+from Orange.evaluation.testing import TEST_TYPE_SINGLE
 
 def TCconvexHull(curves):
     ## merge curves into one
@@ -972,6 +974,12 @@ class OWROC(OWWidget):
             self.removeGraphs()
             self.openContext("", dres)
             return
+
+        if dres and dres.test_type != TEST_TYPE_SINGLE:
+            self.warning(0, "ROC is implemented only for single-target prediction problems.")
+            return
+        self.warning(0, None)
+
         self.dres = dres
 
         self.classifiersQLB.clear()

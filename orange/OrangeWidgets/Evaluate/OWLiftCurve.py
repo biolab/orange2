@@ -13,6 +13,7 @@ from OWROC import *
 
 import orngStat, orngEval
 import statc, math
+from Orange.evaluation.testing import TEST_TYPE_SINGLE
 
 class singleClassLiftCurveGraph(singleClassROCgraph):
     def __init__(self, parent = None, name = None, title = ""):
@@ -345,6 +346,11 @@ class OWLiftCurve(OWROC):
             self.targetClass = None
             self.openContext("", dres)
             return
+
+        if dres and dres.test_type != TEST_TYPE_SINGLE:
+            self.warning(0, "Lift curve is supported only for single-target prediction problems.")
+            return
+        self.warning(0, None)
 
         self.defaultPerfLinePValues = []
         if self.dres <> None:
