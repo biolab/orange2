@@ -208,8 +208,10 @@ def geometric_mean(values):
     values = [float(v) for v in values if not v.is_special()]
     if values:
         prod = reduce(float.__mul__, values, 1.0)
-        print prod, len(values)
-        return math.pow(prod, 1.0/len(values))
+        if prod >= 0:
+            return math.pow(prod, 1.0/len(values))
+        else:
+            return "?"
     else:
         return "?"
     
