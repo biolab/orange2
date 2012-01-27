@@ -10,7 +10,7 @@ import OWGUI
 import Orange
 from Orange.clustering import mixture
 
-GM_PARAMS = [{"name": "n_centers",
+GM_PARAMS = [{"name": "n",
               "type": int,
               "default": 3,
               "range": range(1,11),
@@ -25,7 +25,7 @@ GM_PARAMS = [{"name": "n_centers",
              ]
 
 class OWGaussianMixtures(OWWidget):
-    settingsList = ["init_method", "n_centers"]
+    settingsList = ["init_method", "n"]
     
     def __init__(self, parent=None, signalManager=None, title="Gaussin Mixture"):
         OWWidget.__init__(self, parent, signalManager, title)
@@ -34,7 +34,7 @@ class OWGaussianMixtures(OWWidget):
         self.outputs = [("Data with Indicator Matrix", Orange.data.Table)]
         
         self.init_method = 0
-        self.n_centers = 3
+        self.n = 3
         self.auto_commit = True
         
         self.loadSettings()
@@ -43,7 +43,7 @@ class OWGaussianMixtures(OWWidget):
         # GUI
         #####
         
-        OWGUI.spin(self.controlArea, self, "n_centers", min=1, max=10, step=1,
+        OWGUI.spin(self.controlArea, self, "n", min=1, max=10, step=1,
                    box="Settings",
                    label="Number of gaussians", 
                    tooltip="The number of gaussians in the mixture ",
@@ -69,9 +69,12 @@ class OWGaussianMixtures(OWWidget):
         init_function = mixture.init_kmeans if self.init_method == 1 else mixture.init_random
         
         gmm = mixture.GaussianMixture(self.input_data,
-                                      n_centers=self.n_centers,
+                                      n=self.n,
                                       init_function=init_function)
-        input_matrix, _, _ = self.input_data.to_numpy_MA()
+        
+        data = self.input_data.translate(gmm.domain)
+        
+        input_matrix, _, _ = data.to_numpy_MA()
         self.gmm = gmm
         
         self.indicator_matrix = mixture.prob_est(input_matrix, gmm.weights,

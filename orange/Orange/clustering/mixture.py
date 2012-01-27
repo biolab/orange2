@@ -1,8 +1,13 @@
-""" Implements a Gaussian mixture model.
+""" 
+*******************************
+Gaussian Mixtures (``mixture``)
+*******************************
+
+This module implements a Gaussian mixture model.
 
 Example ::
     
-    >>> mixture = GaussianMixture(data, n_centers=3)
+    >>> mixture = GaussianMixture(data, n=3)
     >>> print mixture.means
     >>> print mixture.weights
     >>> print mixture.covariances
@@ -13,38 +18,54 @@ Example ::
 import sys, os
 import numpy
 import random
-import Orange.data
+import Orange
 
 class GMModel(object):
     """ Gaussian mixture model
     """
-    def __init__(self, weights, means, covariances):
+    def __init__(self, weights, means, covariances, inv_covariances=None,
+                 cov_determinants=None):
         self.weights = weights
         self.means = means
         self.covariances = covariances
-        self.inverse_covariances = [numpy.linalg.pinv(cov) for cov in covariances]
+        if inv_covariances is None:
+            self.inv_covariances = [numpy.linalg.pinv(cov) for cov in covariances]
+        else:
+            self.inv_covariances = inv_covariances
+            
+        if cov_determinants is None:
+            self.cov_determinants = [numpy.linalg.det(cov) for cov in covariances]
+        else:
+            self.cov_determinants = cov_determinants
+        
         
     def __call__(self, instance):
         """ Return the probability of instance.
         """
-        return numpy.sum(prob_est([instance], self.weights, self.means, self.covariances))
+        return numpy.sum(prob_est([instance], self.weights, self.means,
+                                  self.covariances,
+                                  self.inv_covariances,
+                                  self.cov_determinants))
         
     def __getitem__(self, index):
         """ Return the index-th gaussian.
         """ 
-        return GMModel([1.0], self.means[index: index + 1], self.covariances[index: index + 1])
+        return GMModel([1.0], self.means[index: index + 1],
+                       self.covariances[index: index + 1],
+                       self.inv_covariances[index: index + 1],
+                       self.cov_determinants[index: index + 1])
 
     def __len__(self):
         return len(self.weights)
     
     
-def init_random(data, n_centers, *args, **kwargs):
+def init_random(data, n, *args, **kwargs):
     """ Init random means and correlations from a data table.
     
     :param data: data table
     :type data: :class:`Orange.data.Table`
-    :param n_centers: Number of centers and correlations to return.
-    :type n_centers: int
+    :param n: Number of centers and correlations to return.
+    :type n: int
     
     """
     if isinstance(data, Orange.data.Table):
@@ -54,37 +75,37 @@ def init_random(data, n_centers, *args, **kwargs):
         
     min, max = array.max(0), array.min(0)
     dim = array.shape[1]
-    means = numpy.zeros((n_centers, dim))
-    for i in range(n_centers):
+    means = numpy.zeros((n, dim))
+    for i in range(n):
         means[i] = [numpy.random.uniform(low, high) for low, high in zip(min, max)]
         
-    correlations = [numpy.asmatrix(numpy.eye(dim)) for i in range(n_centers)]
+    correlations = [numpy.asmatrix(numpy.eye(dim)) for i in range(n)]
     return means, correlations
 
-def init_kmeans(data, n_centers, *args, **kwargs):
+def init_kmeans(data, n, *args, **kwargs):
     """ Init with k-means algorithm.
     
     :param data: data table
     :type data: :class:`Orange.data.Table`
-    :param n_centers: Number of centers and correlations to return.
-    :type n_centers: int
+    :param n: Number of centers and correlations to return.
+    :type n: int
     
     """
     if not isinstance(data, Orange.data.Table):
         raise TypeError("Orange.data.Table instance expected!")
     from Orange.clustering.kmeans import Clustering
-    km = Clustering(data, centroids=n_centers, maxiters=20, nstart=3)
+    km = Clustering(data, centroids=n, maxiters=20, nstart=3)
     centers = Orange.data.Table(km.centroids)
     centers, w, c = centers.toNumpyMA()
     dim = len(data.domain.attributes)
-    correlations = [numpy.asmatrix(numpy.eye(dim)) for i in range(n_centers)]
+    correlations = [numpy.asmatrix(numpy.eye(dim)) for i in range(n)]
     return centers, correlations
     
-def prob_est1(data, mean, covariance, inv_covariance=None):
+def prob_est1(data, mean, covariance, inv_covariance=None, det=None):
     """ Return the probability of data given mean and covariance matrix
     """
     data = numpy.asmatrix(data)
-     
+    mean = numpy.asmatrix(mean) 
     if inv_covariance is None:
         inv_covariance = numpy.linalg.pinv(covariance)
         
@@ -99,25 +120,31 @@ def prob_est1(data, mean, covariance, inv_covariance=None):
     p *= -0.5
     p = numpy.exp(p)
     p /= numpy.power(2 * numpy.pi, numpy.rank(covariance) / 2.0)
-    det = numpy.linalg.det(covariance)
+    if det is None:
+        det = numpy.linalg.det(covariance)
     assert(det != 0.0)
     p /= det
     return p
 
 
-def prob_est(data, weights, means, covariances, inv_covariances=None):
-    """ Return the probability estimation of data given weights, means and
-    covariances.
+def prob_est(data, weights, means, covariances, inv_covariances=None, cov_determinants=None):
+    """ Return the probability estimation of data for each
+    gausian given weights, means and covariances.
       
     """
     if inv_covariances is None:
         inv_covariances = [numpy.linalg.pinv(cov) for cov in covariances]
         
+    if cov_determinants is None:
+        cov_determinants = [numpy.linalg.det(cov) for cov in covariances]
+        
     data = numpy.asmatrix(data)
     probs = numpy.zeros((data.shape[0], len(weights)))
     
-    for i, (w, mean, cov, inv_cov) in enumerate(zip(weights, means, covariances, inv_covariances)):
-        probs[:, i] = w * prob_est1(data, mean, cov, inv_cov)
+    for i, (w, mean, cov, inv_cov, det) in enumerate(zip(weights, means,
+                                        covariances, inv_covariances,
+                                        cov_determinants)):
+        probs[:, i] = w * prob_est1(data, mean, cov, inv_cov, det)
         
     return probs
 
@@ -132,14 +159,19 @@ class EMSolver(object):
         self.means = means
         self.covariances = covariances
         self.inv_covariances = [numpy.matrix(numpy.linalg.pinv(cov)) for cov in covariances]
-        
+        self.cov_determinants = [numpy.linalg.det(cov) for cov in self.covariances]
         self.n_clusters = len(self.weights)
         self.data_dim = self.data.shape[1]
         
-        self.probs = prob_est(data, weights, means, covariances, self.inv_covariances)
+        self.probs = prob_est(data, weights, means, covariances,
+                              self.inv_covariances, self.cov_determinants)
         
         self.log_likelihood = self._log_likelihood()
-        
+#        print "W", self.weights
+#        print "P", self.probs
+#        print "L", self.log_likelihood 
+#        print "C", self.covariances
+#        print "Det", self.cov_determinants
         
     def _log_likelihood(self):
         """ Compute the log likelihood of the current solution.
@@ -153,6 +185,8 @@ class EMSolver(object):
         self.probs = prob_est(self.data, self.weights, self.means,
                          self.covariances, self.inv_covariances)
         
+#        print "PPP", self.probs
+#        print "P sum", numpy.sum(self.probs, axis=1).reshape((-1, 1))
         self.probs /= numpy.sum(self.probs, axis=1).reshape((-1, 1))
         
         # Update the Q
@@ -170,31 +204,42 @@ class EMSolver(object):
 #        print self.Q
                 
         self.log_likelihood = self._log_likelihood()
-        
+#        print "Prob:", self.probs
+#        print "Log like.:", self.log_likelihood
         
     def M_step(self):
         """ M step
         """
-        # Update the weights
+        # Compute the new weights
         prob_sum = numpy.sum(self.probs, axis=0)
+        weights = prob_sum / numpy.sum(prob_sum)
         
-        self.weights = prob_sum / numpy.sum(prob_sum)
-        
-        # Update the means
+        # Compute the new means
+        means = []
         for j in range(self.n_clusters):
-            self.means[j] = numpy.sum(self.probs[:, j].reshape((-1, 1)) * self.data, axis=0) /  prob_sum[j] 
+            means.append(numpy.sum(self.probs[:, j].reshape((-1, 1)) * self.data, axis=0) /  prob_sum[j]) 
         
-        # Update the covariances
+        # Compute the new covariances
+        covariances = []
+        cov_determinants = []
         for j in range(self.n_clusters):
             cov = numpy.zeros(self.covariances[j].shape)
-            diff = self.data - self.means[j]
+            diff = self.data - means[j]
             diff = numpy.asmatrix(diff)
             for i in range(len(self.data)): # TODO: speed up
                 cov += self.probs[i, j] * diff[i].T * diff[i]
                 
             cov *= 1.0 / prob_sum[j]
-            self.covariances[j] = cov
-            self.inv_covariances[j] = numpy.linalg.pinv(cov)
+            det = numpy.linalg.det(cov)
+            
+            covariances.append(numpy.asmatrix(cov))
+            cov_determinants.append(det)
+#            self.inv_covariances[j] = numpy.linalg.pinv(cov)
+#            self.cov_determinants[j] = det
+        self.weights = weights
+        self.means = numpy.asmatrix(means)
+        self.covariances = covariances
+        self.cov_determinants = cov_determinants
         
     def one_step(self):
         """ One iteration of both M and E step.
@@ -226,28 +271,7 @@ class EMSolver(object):
 #            print curr_iter
 #            print abs(old_objective - self.log_likelihood)
             if abs(old_objective - self.log_likelihood) < eps or curr_iter > max_iter:
-                break
-        
-        
-#class GASolver(object):
-#    """ A toy genetic algorithm solver 
-#    """
-#    def __init__(self, data, weights, means, covariances):
-#        raise NotImplementedError
-#
-#
-#class PSSolver(object):
-#    """ A toy particle swarm solver
-#    """
-#    def __init__(self, data, weights, means, covariances):
-#        raise NotImplementedError
-#
-#class HybridSolver(object):
-#    """ A hybrid solver
-#    """
-#    def __init__(self, data, weights, means, covariances):
-#        raise NotImplementedError
-    
+                break    
     
 class GaussianMixture(object):
     """ Computes the gaussian mixture model from an Orange data-set.
@@ -260,18 +284,66 @@ class GaussianMixture(object):
         else:
             return self
         
-    def __init__(self, n_centers=3, init_function=init_kmeans):
-        self.n_centers = n_centers
+    def __init__(self, n=3, init_function=init_kmeans):
+        self.n = n
         self.init_function = init_function
         
     def __call__(self, data, weightId=None):
-        means, correlations = self.init_function(data, self.n_centers)
+        from Orange.preprocess import Preprocessor_impute, DomainContinuizer
+#        data = Preprocessor_impute(data)
+        dc = DomainContinuizer()
+        dc.multinomial_treatment = DomainContinuizer.AsOrdinal
+        dc.continuous_treatment = DomainContinuizer.NormalizeByVariance
+        dc.class_treatment = DomainContinuizer.Ignore
+        domain = dc(data)
+        data = data.translate(domain)
+        
+        means, correlations = self.init_function(data, self.n)
         means = numpy.asmatrix(means)
         array, _, _ = data.to_numpy_MA()
-        solver = EMSolver(array, numpy.ones((self.n_centers)) / self.n_centers,
+#        avg = numpy.mean(array, axis=0)
+#        array -= avg.reshape((1, -1))
+#        means -= avg.reshape((1, -1))
+#        std = numpy.std(array, axis=0)
+#        array /= std.reshape((1, -1))
+#        means /= std.reshape((1, -1))
+        solver = EMSolver(array, numpy.ones((self.n)) / self.n,
                           means, correlations)
         solver.run()
-        return GMModel(solver.weights, solver.means, solver.covariances)
+        norm_model = GMModel(solver.weights, solver.means, solver.covariances)
+        return GMClusterModel(domain, norm_model)
+    
+        
+class GMClusterModel(object):
+    """ 
+    """
+    def __init__(self, domain, norm_model):
+        self.domain = domain
+        self.norm_model = norm_model
+        self.cluster_vars = [Orange.data.variable.Continuous("cluster %i" % i)\
+                             for i in range(len(norm_model))]
+        self.weights = self.norm_model.weights
+        self.means = self.norm_model.means
+        self.covariances = self.norm_model.covariances
+        self.inv_covariances = self.norm_model.inv_covariances
+        self.cov_determinants = self.norm_model.cov_determinants
+        
+    def __call__(self, instance, *args):
+        data = Orange.data.Table(self.domain, [instance])
+        data,_,_ = data.to_numpy_MA()
+#        print data
+        
+        p = prob_est(data, self.norm_model.weights,
+                     self.norm_model.means,
+                     self.norm_model.covariances,
+                     self.norm_model.inv_covariances,
+                     self.norm_model.cov_determinants)
+#        print p
+        p /= numpy.sum(p)
+        vals = []
+        for p, var in zip(p[0], self.cluster_vars):
+            vals.append(var(p))
+        return vals
         
         
 def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
@@ -284,6 +356,10 @@ def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
     import matplotlib.cm as cm
     
     axis = list(axis)
+    
+    if isinstance(mixture, GMClusterModel):
+        mixture = mixture.norm_model
+    
     if isinstance(data_array, Orange.data.Table):
         data_array, _, _ = data_array.to_numpy_MA()
     array = data_array[:, axis]
@@ -291,7 +367,7 @@ def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
     weights = mixture.weights
     means = mixture.means[:, axis]
     
-    covariances = [cov[axis,:][:, axis] for cov in mixture.covariances] 
+    covariances = [cov[axis,:][:, axis] for cov in mixture.covariances] # TODO: Need the whole marginal distribution. 
     
     gmm = GMModel(weights, means, covariances)
     
@@ -319,15 +395,17 @@ def plot_model(data_array, mixture, axis=(0, 1), samples=20, contour_lines=20):
     plt.show()
     
 def test(seed=0):
-#    data = Orange.data.Table(os.path.expanduser("../../doc/datasets/brown-selected.tab"))
+#    data = Orange.data.Table(os.path.expanduser("brown-selected.tab"))
 #    data = Orange.data.Table(os.path.expanduser("~/Documents/brown-selected-fss.tab"))
-    data = Orange.data.Table(os.path.expanduser("~/Documents/brown-selected-fss-1.tab"))
-    data = Orange.data.Table("../../doc/datasets/iris.tab")
+#    data = Orange.data.Table(os.path.expanduser("~/Documents/brown-selected-fss-1.tab"))
+#    data = Orange.data.Table(os.path.expanduser("~/ozone1"))
+    data = Orange.data.Table("iris.tab")
 #    data = Orange.data.Table(Orange.data.Domain(data.domain[:2], None), data)
     numpy.random.seed(seed)
     random.seed(seed)
-    gmm = GaussianMixture(data, n_centers=3, init_function=init_kmeans)
-    plot_model(data, gmm, axis=(0, 1), samples=40, contour_lines=100)
+    gmm = GaussianMixture(data, n=3, init_function=init_kmeans)
+    data = data.translate(gmm.domain)
+    plot_model(data, gmm, axis=(0, 2), samples=40, contour_lines=100)
 
     
     
