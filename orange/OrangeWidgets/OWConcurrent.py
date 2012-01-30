@@ -3,7 +3,8 @@ OWConcurent
 ===========
 
 General helper functions and classes for Orange Canvas
-concurent programming
+concurrent programming
+
 """
 from __future__ import with_statement
 from functools import partial
@@ -36,6 +37,12 @@ class AsyncCall(QObject):
         self._args = args
         self._kwargs = kwargs
         self.threadPool = None
+        
+        self._connected = True
+        self._cancelRequested = False
+        self._started = False
+        self._cancelled = False
+        
         if thread is not None:
             self.moveToThread(thread)
         else:
@@ -48,7 +55,7 @@ class AsyncCall(QObject):
             return
             
         self.connect(self, SIGNAL("_async_start()"), self.execute, Qt.QueuedConnection)
-        self._connected = True
+        
 
 
     @pyqtSignature("execute()")
@@ -56,6 +63,12 @@ class AsyncCall(QObject):
         """ Never call directly, use `__call__` or `apply_async` instead
         """
         assert(self.thread() is QThread.currentThread())
+        if self._cancelRequested:
+            self._cancelled = True
+            self._status = 2
+            self.emit(SIGNAL("finished(QString)"), QString("Cancelled"))
+            return
+        self._started = True
         self.emit(SIGNAL("starting()"))
         try:
             self.result  = self.func(*self._args, **self._kwargs)
@@ -117,7 +130,7 @@ class AsyncCall(QObject):
         it. 
         """
         self.join(processEvents=processEvents)
-        if self.poll() != 0:
+        if self.poll() != 0: 
             # re-raise the error
             raise self._exc_info[0], self._exc_info[1]
         else:
@@ -268,6 +281,8 @@ OWBaseWidget.threadPool = threadPool
 """\
 A multiprocessing like API
 ==========================
+
+Incomplette
 """
 
 class Process(AsyncCall):
@@ -328,4 +343,4 @@ class Pool(QObject):
         
     def start(self, ):
         pass
-
+    
