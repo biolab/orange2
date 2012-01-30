@@ -40,12 +40,18 @@ class ContextHandler:
                 self.settingsToWidget(widget, context)
         return context
 
-    def initLocalContext(self, widget):
+    def initLocalContext(self, widget, parentContext=None):
         if not hasattr(widget, self.localContextName):
-            if self.syncWithGlobal:
-                setattr(widget, self.localContextName, self.globalContexts)
+            if parentContext is None:
+                globalContexts = self.globalContexts
             else:
-                setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
+                # parentContext is a Schema level context repo 
+                globalContexts = parentContext.globalContexts
+                
+            if self.syncWithGlobal:
+                setattr(widget, self.localContextName, globalContexts)
+            else:
+                setattr(widget, self.localContextName, copy.deepcopy(globalContexts))
         
     def findOrCreateContext(self, widget, *arg, **argkw):        
         index, context, score = self.findMatch(widget, self.findImperfect, *arg, **argkw)
