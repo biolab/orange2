@@ -61,7 +61,7 @@ Probability distributions for continuous features are estimated with \
 .. literalinclude:: code/bayes-plot-iris.py
     :lines: 4-
 
-.. image:: code/bayes-iris.png
+.. image:: files/bayes-iris.png
    :scale: 50 %
 
 If petal lengths are shorter, the most probable class is "setosa". Irises with

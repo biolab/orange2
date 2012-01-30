@@ -44,5 +44,5 @@ uses :download:`iris.tab <code/iris.tab>`):
 .. literalinclude:: code/pca-scree.py
    :lines: 7-
 
-.. image:: code/pca-scree.png
+.. image:: files/pca-scree.png
    :scale: 50 %
