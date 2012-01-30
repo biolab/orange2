@@ -1461,11 +1461,11 @@ class C45Learner(Orange.classification.Learner):
     _rename_new_old = { "min_objs": "minObjs", "probTresh": "prob_tresh",
             "gain_ratio": "gainRatio" }
     #_rename_new_old = {}
-    _rename_old_new = dict((a,b) for b,a in _rename_new_old.items())
+    _rename_old_new = dict((a, b) for b, a in _rename_new_old.items())
 
     @classmethod
     def _rename_dict(cls, dic):
-        return dict((cls._rename_arg(a),b) for a,b in dic.items())
+        return dict((cls._rename_arg(a), b) for a, b in dic.items())
 
     @classmethod
     def _rename_arg(cls, a):
@@ -1473,14 +1473,14 @@ class C45Learner(Orange.classification.Learner):
             Orange.misc.deprecation_warning(a, cls._rename_old_new[a], stacklevel=4)
         return cls._rename_new_old.get(a, a)
 
-    def __new__(cls, instances = None, weightID = 0, **argkw):
+    def __new__(cls, instances=None, weightID=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **cls._rename_dict(argkw))
         if instances:
             self.__init__(**cls._rename_dict(argkw))
             return self.__call__(instances, weightID)
         else:
             return self
-        
+
     def __init__(self, **kwargs):
         self.base = _C45Learner(**self._rename_dict(kwargs))
 
@@ -1506,8 +1506,8 @@ class C45Learner(Orange.classification.Learner):
         Set the arguments with a C4.5 command line.
         """
         self.base.commandline(ln)
-    
- 
+
+
 class C45Classifier(Orange.classification.Classifier):
     """
     A faithful reimplementation of Quinlan's C4.5, but
@@ -1523,7 +1523,7 @@ class C45Classifier(Orange.classification.Classifier):
         self.nativeClassifier = base_classifier
         for k, v in self.nativeClassifier.__dict__.items():
             self.__dict__[k] = v
-  
+
     def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
                  *args, **kwdargs):
         """Classify a new instance.
@@ -1550,9 +1550,9 @@ class C45Classifier(Orange.classification.Classifier):
 
     def __str__(self):
         return self.dump()
-   
 
-    def dump(self):  
+
+    def dump(self):
         """
         Print the tree in the same form as Ross Quinlan's 
         C4.5 program.
@@ -1605,27 +1605,27 @@ def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
     str_ = ""
     if node.node_type == 1:
-        str_ += "\n"+"|   "*lev + "%s = %s:" % (var.name, var.values[i])
-        str_ += _c45_printTree0(node.branch[i], classvar, lev+1)
+        str_ += "\n" + "|   "*lev + "%s = %s:" % (var.name, var.values[i])
+        str_ += _c45_printTree0(node.branch[i], classvar, lev + 1)
     elif node.node_type == 2:
-        str_ += "\n"+"|   "*lev + "%s %s %.1f:" % (var.name, ["<=", ">"][i], node.cut)
-        str_ += _c45_printTree0(node.branch[i], classvar, lev+1)
+        str_ += "\n" + "|   "*lev + "%s %s %.1f:" % (var.name, ["<=", ">"][i], node.cut)
+        str_ += _c45_printTree0(node.branch[i], classvar, lev + 1)
     else:
-        inset = filter(lambda a:a[1]==i, enumerate(node.mapping))
+        inset = filter(lambda a:a[1] == i, enumerate(node.mapping))
         inset = [var.values[j[0]] for j in inset]
-        if len(inset)==1:
-            str_ += "\n"+"|   "*lev + "%s = %s:" % (var.name, inset[0])
+        if len(inset) == 1:
+            str_ += "\n" + "|   "*lev + "%s = %s:" % (var.name, inset[0])
         else:
-            str_ +=  "\n"+"|   "*lev + "%s in {%s}:" % (var.name, ", ".join(inset))
-        str_ += _c45_printTree0(node.branch[i], classvar, lev+1)
+            str_ += "\n" + "|   "*lev + "%s in {%s}:" % (var.name, ", ".join(inset))
+        str_ += _c45_printTree0(node.branch[i], classvar, lev + 1)
     return str_
-        
-        
+
+
 def _c45_printTree0(node, classvar, lev):
     var = node.tested
     str_ = ""
     if node.node_type == 0:
-        str_ += "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items) 
+        str_ += "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items)
     else:
         for i, branch in enumerate(node.branch):
             if not branch.node_type:
@@ -1817,13 +1817,13 @@ class TreeLearner(Orange.core.Learner):
             return self.__call__(data, weightID)
         else:
             return self
-    
+
     def __init__(self, **kw):
 
         #name, buildfunction, parameters
         #buildfunctions are not saved as function references
         #because that would make problems with object copies
-        for n,(fn,_) in self._built_fn.items():
+        for n, (fn, _) in self._built_fn.items():
             self.__dict__["_handset_" + n] = False
 
         #measure has to be before split
@@ -1831,13 +1831,13 @@ class TreeLearner(Orange.core.Learner):
         self.split = None
         self.stop = None
         self.splitter = None
-        
-        for n,(fn,_) in self._built_fn.items():
+
+        for n, (fn, _) in self._built_fn.items():
             self.__dict__[n] = fn(self)
 
-        for k,v in kw.items():
-            self.__setattr__(k,v)
-      
+        for k, v in kw.items():
+            self.__setattr__(k, v)
+
     def __call__(self, instances, weight=0):
         """
         Return a classifier from the given instances.
@@ -1852,7 +1852,7 @@ class TreeLearner(Orange.core.Learner):
                 else fscoring.MSE()
             bl.split.continuous_split_constructor.measure = measure
             bl.split.discrete_split_constructor.measure = measure
-         
+
         if self.splitter != None:
             bl.example_splitter = self.splitter
 
@@ -1863,11 +1863,11 @@ class TreeLearner(Orange.core.Learner):
         if getattr(self, "m_pruning", 0):
             tree = Pruner_m(tree, m=self.m_pruning)
 
-        return TreeClassifier(base_classifier=tree) 
+        return TreeClassifier(base_classifier=tree)
 
     def __setattr__(self, name, value):
         self.__dict__[name] = value
-        for n,(fn,v) in self._built_fn.items():
+        for n, (fn, v) in self._built_fn.items():
             if name in v:
                 if not self.__dict__["_handset_" + n]:
                     self.__dict__[n] = fn(self)
@@ -1930,7 +1930,7 @@ class TreeLearner(Orange.core.Learner):
         relM = getattr(self, "relief_m", None)
         if relM and measureIsRelief:
             measure.m = relM
-        
+
         relK = getattr(self, "relief_k", None)
         if relK and measureIsRelief:
             measure.k = relK
@@ -1979,9 +1979,9 @@ class TreeLearner(Orange.core.Learner):
 
         return learner
 
-    _built_fn = { 
+    _built_fn = {
             "split": [ _build_split, [ "binarization", "measure", "relief_m", "relief_k", "worst_acceptable", "min_subset" ] ], \
-            "stop": [ _build_stop, ["max_majority", "min_instances" ] ] 
+            "stop": [ _build_stop, ["max_majority", "min_instances" ] ]
         }
 
 
@@ -2023,19 +2023,19 @@ opd = r'(?P<op>=|(!=))"(?P<cls>[^"]*)"'
 intrvl = r'((\((?P<intp>\d+)%?\))|(\(0?\.(?P<intv>\d+)\))|)'
 fromto = r"(?P<out>!?)(?P<lowin>\(|\[)(?P<lower>\d*\.?\d+)\s*,\s*(?P<upper>\d*\.?\d+)(?P<upin>\]|\))"
 re_V = re.compile("%V")
-re_N = re.compile("%"+fs+"N"+by)
-re_M = re.compile("%"+fs+"M"+by)
-re_m = re.compile("%"+fs+"m"+by)
-re_Ccont = re.compile("%"+fs+"C"+by+opc)
-re_Cdisc = re.compile("%"+fs+"C"+by+opd)
-re_ccont = re.compile("%"+fs+"c"+by+opc)
-re_cdisc = re.compile("%"+fs+"c"+by+opd)
-re_Cconti = re.compile("%"+fs+"C"+by+fromto)
-re_cconti = re.compile("%"+fs+"c"+by+fromto)
-re_D = re.compile("%"+fs+"D"+by)
-re_d = re.compile("%"+fs+"d"+by)
-re_AE = re.compile("%"+fs+"(?P<AorE>A|E)"+bysub)
-re_I = re.compile("%"+fs+"I"+intrvl)
+re_N = re.compile("%" + fs + "N" + by)
+re_M = re.compile("%" + fs + "M" + by)
+re_m = re.compile("%" + fs + "m" + by)
+re_Ccont = re.compile("%" + fs + "C" + by + opc)
+re_Cdisc = re.compile("%" + fs + "C" + by + opd)
+re_ccont = re.compile("%" + fs + "c" + by + opc)
+re_cdisc = re.compile("%" + fs + "c" + by + opd)
+re_Cconti = re.compile("%" + fs + "C" + by + fromto)
+re_cconti = re.compile("%" + fs + "c" + by + fromto)
+re_D = re.compile("%" + fs + "D" + by)
+re_d = re.compile("%" + fs + "d" + by)
+re_AE = re.compile("%" + fs + "(?P<AorE>A|E)" + bysub)
+re_I = re.compile("%" + fs + "I" + intrvl)
 
 def insert_str(s, mo, sub):
     """ Replace the part of s which is covered by mo 
@@ -2072,7 +2072,7 @@ def by_whom(by, parent, tree):
     ``tree.tree``. This is used to find what to divide the quantity 
     with, when division is required.
     """
-    if by=="bP":
+    if by == "bP":
         return parent
     else:
         return tree.tree
@@ -2091,7 +2091,7 @@ def replaceN(strg, mo, node, parent, tree):
         else:
             return insert_dot(strg, mo)
     return insert_num(strg, mo, N)
-        
+
 
 def replaceM(strg, mo, node, parent, tree):
     by = mo.group("by")
@@ -2105,7 +2105,7 @@ def replaceM(strg, mo, node, parent, tree):
         else:
             return insert_dot(strg, mo)
     return insert_num(strg, mo, N)
-        
+
 
 def replacem(strg, mo, node, parent, tree):
     by = mo.group("by")
@@ -2127,7 +2127,7 @@ def replacem(strg, mo, node, parent, tree):
 def replaceCdisc(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
         return insert_dot(strg, mo)
-    
+
     by, op, cls = mo.group("by", "op", "cls")
     N = node.distribution[cls]
     if op == "!=":
@@ -2141,11 +2141,11 @@ def replaceCdisc(strg, mo, node, parent, tree):
             return insert_dot(strg, mo)
     return insert_num(strg, mo, N)
 
-    
+
 def replacecdisc(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
         return insert_dot(strg, mo)
-    
+
     op, by, cls = mo.group("op", "by", "cls")
     N = node.distribution[cls]
     if node.distribution.abs > 1e-30:
@@ -2167,7 +2167,7 @@ __opdict = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operato
 def replaceCcont(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
         return insert_dot(strg, mo)
-    
+
     by, op, num = mo.group("by", "op", "num")
     op = __opdict[op]
     num = float(num)
@@ -2182,12 +2182,12 @@ def replaceCcont(strg, mo, node, parent, tree):
             return insert_dot(strg, mo)
 
     return insert_num(strg, mo, N)
-    
-    
+
+
 def replaceccont(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
         return insert_dot(strg, mo)
-    
+
     by, op, num = mo.group("by", "op", "num")
     op = __opdict[op]
     num = float(num)
@@ -2199,7 +2199,7 @@ def replaceccont(strg, mo, node, parent, tree):
         if whom and whom.distribution:
             byN = sum([x[1] for x in whom.distribution.items() if op(x[0], num)], 0.)
             if byN > 1e-30:
-                N /= byN/whom.distribution.abs # abs > byN, so byN>1e-30 => abs>1e-30
+                N /= byN / whom.distribution.abs # abs > byN, so byN>1e-30 => abs>1e-30
         else:
             return insert_dot(strg, mo)
     return insert_num(strg, mo, N)
@@ -2217,7 +2217,7 @@ def extractInterval(mo, dist):
         hop = upin == ")" and operator.lt or operator.le
         return filter(lambda x:lop(x[0], lower) and hop(x[0], upper), dist.items())
 
-    
+
 def replaceCconti(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
         return insert_dot(strg, mo)
@@ -2232,10 +2232,10 @@ def replaceCconti(strg, mo, node, parent, tree):
                 N /= byN
         else:
             return insert_dot(strg, mo)
-        
+
     return insert_num(strg, mo, N)
 
-            
+
 def replacecconti(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Continuous:
         return insert_dot(strg, mo)
@@ -2251,13 +2251,13 @@ def replacecconti(strg, mo, node, parent, tree):
         if whom and whom.distribution:
             byN = sum([x[1] for x in extractInterval(mo, whom.distribution)])
             if byN > 1e-30:
-                N /= byN/whom.distribution.abs
+                N /= byN / whom.distribution.abs
         else:
             return insert_dot(strg, mo)
-        
+
     return insert_num(strg, mo, N)
 
-    
+
 def replaceD(strg, mo, node, parent, tree):
     if tree.class_var.var_type != Orange.data.Type.Discrete:
         return insert_dot(strg, mo)
@@ -2274,7 +2274,7 @@ def replaceD(strg, mo, node, parent, tree):
             return insert_dot(strg, mo)
     mul = m100 and 100 or 1
     fs = fs or (m100 and ".0" or "5.3")
-    return insert_str(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
+    return insert_str(strg, mo, "[" + ", ".join(["%%%sf" % fs % (N * mul) for N in dist]) + "]")
 
 
 def replaced(strg, mo, node, parent, tree):
@@ -2285,18 +2285,18 @@ def replaced(strg, mo, node, parent, tree):
     dist = list(node.distribution)
     ab = node.distribution.abs
     if ab > 1e-30:
-        dist = [d/ab for d in dist]
+        dist = [d / ab for d in dist]
     if by:
         whom = by_whom(by, parent, tree)
         if whom:
             for i, d in enumerate(whom.distribution):
                 if d > 1e-30:
-                    dist[i] /= d/whom.distribution.abs # abs > d => d>1e-30 => abs>1e-30
+                    dist[i] /= d / whom.distribution.abs # abs > d => d>1e-30 => abs>1e-30
         else:
             return insert_dot(strg, mo)
     mul = m100 and 100 or 1
     fs = fs or (m100 and ".0" or "5.3")
-    return insert_str(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
+    return insert_str(strg, mo, "[" + ", ".join(["%%%sf" % fs % (N * mul) for N in dist]) + "]")
 
 
 def replaceAE(strg, mo, node, parent, tree):
@@ -2304,13 +2304,13 @@ def replaceAE(strg, mo, node, parent, tree):
         return insert_dot(strg, mo)
 
     AorE, bysub, by = mo.group("AorE", "bysub", "by")
-    
+
     if AorE == "A":
         A = node.distribution.average()
     else:
         A = node.distribution.error()
     if by:
-        whom = by_whom("b"+by, parent, tree)
+        whom = by_whom("b" + by, parent, tree)
         if whom:
             if AorE == "A":
                 avg = whom.distribution.average()
@@ -2333,15 +2333,15 @@ def replaceI(strg, mo, node, parent, tree):
         return insert_dot(strg, mo)
 
     fs = mo.group("fs") or "5.3"
-    intrvl = float(mo.group("intp") or mo.group("intv") or "95")/100.
+    intrvl = float(mo.group("intp") or mo.group("intv") or "95") / 100.
     mul = mo.group("m100") and 100 or 1
 
     if not Z.has_key(intrvl):
         raise SystemError, "Cannot compute %5.3f% confidence intervals" % intrvl
 
-    av = node.distribution.average()    
+    av = node.distribution.average()
     il = node.distribution.error() * Z[intrvl]
-    return insert_str(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av-il)*mul, (av+il)*mul))
+    return insert_str(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av - il) * mul, (av + il) * mul))
 
 
 # This class is more a collection of function, merged into a class so 
@@ -2349,17 +2349,17 @@ def replaceI(strg, mo, node, parent, tree):
 # constructed, used and discarded, it is not meant to store any information.
 class _TreeDumper:
     defaultStringFormats = [(re_V, replaceV), (re_N, replaceN),
-         (re_M, replaceM), (re_m, replacem), 
+         (re_M, replaceM), (re_m, replacem),
          (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
          (re_Ccont, replaceCcont), (re_ccont, replaceccont),
          (re_Cconti, replaceCconti), (re_cconti, replacecconti),
-         (re_D, replaceD), (re_d, replaced), (re_AE, replaceAE), 
+         (re_D, replaceD), (re_d, replaced), (re_AE, replaceAE),
          (re_I, replaceI) ]
 
     def node(self):
         return self.tree.tree if "tree" in self.tree.__dict__ else self.tree
 
-    def __init__(self, leafStr, nodeStr, stringFormats, minExamples, 
+    def __init__(self, leafStr, nodeStr, stringFormats, minExamples,
         maxDepth, simpleFirst, tree, **kw):
         self.stringFormats = stringFormats
         self.minExamples = minExamples
@@ -2381,15 +2381,15 @@ class _TreeDumper:
             self.nodeStr = self.leafStr
         else:
             self.nodeStr = nodeStr
-        
+
 
     def formatString(self, strg, node, parent):
         if hasattr(strg, "__call__"):
             return strg(node, parent, self.tree)
-        
+
         if not node:
             return "<null node>"
-        
+
         for rgx, replacer in self.stringFormats:
             if not node.distribution:
                 strg = rgx.sub(".", strg)
@@ -2400,10 +2400,10 @@ class _TreeDumper:
                     if not mo:
                         break
                     strg = replacer(strg, mo, node, parent, self.tree)
-                    strt = mo.start()+1
-                        
+                    strt = mo.start() + 1
+
         return strg
-        
+
 
     def showBranch(self, node, parent, lev, i):
         bdes = node.branch_descriptions[i]
@@ -2415,17 +2415,17 @@ class _TreeDumper:
         else:
             nodedes = "<null node>"
         return "|    "*lev + bdes + nodedes
-        
-        
+
+
     def dumpTree0(self, node, parent, lev):
         if node.branches:
             if node.distribution.abs < self.minExamples or \
                 lev > self.maxDepth:
                 return "|    "*lev + ". . .\n"
-            
+
             res = ""
             if self.leafStr and self.nodeStr and self.leafStr != self.nodeStr:
-                leafsep = "\n"+("|    "*lev)+"    "
+                leafsep = "\n" + ("|    "*lev) + "    "
             else:
                 leafsep = ""
             if self.simpleFirst:
@@ -2437,19 +2437,19 @@ class _TreeDumper:
                         else:
                             res += "%s: %s\n" % \
                                 (self.showBranch(node, parent, lev, i),
-                                 leafsep + 
+                                 leafsep +
                                  self.formatString(self.leafStr, branch, node))
             for i, branch in enumerate(node.branches):
                 if branch and branch.branches:
                     res += "%s\n%s" % (self.showBranch(node, parent, lev, i),
-                                       self.dumpTree0(branch, node, lev+1))
+                                       self.dumpTree0(branch, node, lev + 1))
                 elif not self.simpleFirst:
                     if self.leafStr == self.nodeStr:
                         res += "%s\n" % self.showBranch(node, parent, lev, i)
                     else:
                         res += "%s: %s\n" % \
                             (self.showBranch(node, parent, lev, i),
-                             leafsep + 
+                             leafsep +
                              self.formatString(self.leafStr, branch, node))
             return res
         else:
@@ -2465,34 +2465,34 @@ class _TreeDumper:
         else:
             lev, res = 0, ""
         return res + self.dumpTree0(node, None, lev)
-        
+
 
     def dotTree0(self, node, parent, internalName):
         if node.branches:
             if node.distribution.abs < self.minExamples or \
-                len(internalName)-1 > self.maxDepth:
+                len(internalName) - 1 > self.maxDepth:
                 self.fle.write('%s [ shape="plaintext" label="..." ]\n' % \
                     _quoteName(internalName))
                 return
-                
+
             label = node.branch_selector.class_var.name
             if self.nodeStr:
                 label += "\\n" + self.formatString(self.nodeStr, node, parent)
             self.fle.write('%s [ shape=%s label="%s"]\n' % \
                 (_quoteName(internalName), self.nodeShape, label))
-            
+
             for i, branch in enumerate(node.branches):
                 if branch:
-                    internalBranchName = "%s-%d" % (internalName,i)
+                    internalBranchName = "%s-%d" % (internalName, i)
                     self.fle.write('%s -> %s [ label="%s" ]\n' % \
-                        (_quoteName(internalName), 
-                         _quoteName(internalBranchName), 
+                        (_quoteName(internalName),
+                         _quoteName(internalBranchName),
                          node.branch_descriptions[i]))
                     self.dotTree0(branch, node, internalBranchName)
-                    
+
         else:
             self.fle.write('%s [ shape=%s label="%s"]\n' % \
-                (_quoteName(internalName), self.leafShape, 
+                (_quoteName(internalName), self.leafShape,
                 self.formatString(self.leafStr, node, parent)))
 
 
@@ -2533,13 +2533,13 @@ class TreeClassifier(Orange.classification.Classifier):
         A :obj:`Descender` used to descend an instance from the root as
         deeply as possible according to the instance's feature values.
     """
-    
+
     def __init__(self, base_classifier=None):
         if not base_classifier: base_classifier = _TreeClassifier()
         self.nativeClassifier = base_classifier
         for k, v in self.nativeClassifier.__dict__.items():
             self.__dict__[k] = v
-  
+
     def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
                  *args, **kwdargs):
         """Classify a new instance.
@@ -2564,7 +2564,7 @@ class TreeClassifier(Orange.classification.Classifier):
         if name in self.nativeClassifier.__dict__:
             self.nativeClassifier.__dict__[name] = value
         self.__dict__[name] = value
-    
+
     def __str__(self):
         return self.to_string()
 
@@ -2572,7 +2572,7 @@ class TreeClassifier(Orange.classification.Classifier):
         "leafStr": "leaf_str", "nodeStr": "node_str", \
         "userFormats": "user_formats", "minExamples": "min_examples", \
         "maxDepth": "max_depth", "simpleFirst": "simple_first"})
-    def to_string(self, leaf_str = "", node_str = "", \
+    def to_string(self, leaf_str="", node_str="", \
             user_formats=[], min_examples=0, max_depth=1e10, \
             simple_first=True):
         """
@@ -2602,8 +2602,8 @@ class TreeClassifier(Orange.classification.Classifier):
           function through which the user can print out other specific 
           information in the nodes.
         """
-        return _TreeDumper(leaf_str, node_str, user_formats + 
-            _TreeDumper.defaultStringFormats, min_examples, 
+        return _TreeDumper(leaf_str, node_str, user_formats +
+            _TreeDumper.defaultStringFormats, min_examples,
             max_depth, simple_first, self).dumpTree()
 
     dump = to_string
@@ -2613,7 +2613,7 @@ class TreeClassifier(Orange.classification.Classifier):
         "leafShape": "leaf_shape", "nodeShape": "node_shape", \
         "userFormats": "user_formats", "minExamples": "min_examples", \
         "maxDepth": "max_depth", "simpleFirst": "simple_first"})
-    def dot(self, file_name, leaf_str = "", node_str = "", \
+    def dot(self, file_name, leaf_str="", node_str="", \
             leaf_shape="plaintext", node_shape="plaintext", \
             user_formats=[], min_examples=0, max_depth=1e10, \
             simple_first=True):
@@ -2634,8 +2634,8 @@ class TreeClassifier(Orange.classification.Classifier):
         """
         fle = type(file_name) == str and open(file_name, "wt") or file_name
 
-        _TreeDumper(leaf_str, node_str, user_formats + 
-            _TreeDumper.defaultStringFormats, min_examples, 
+        _TreeDumper(leaf_str, node_str, user_formats +
+            _TreeDumper.defaultStringFormats, min_examples,
             max_depth, simple_first, self,
             leafShape=leaf_shape, nodeShape=node_shape, fle=fle).dotTree()
 
@@ -2664,7 +2664,8 @@ class TreeClassifier(Orange.classification.Classifier):
         domain = Orange.data.Domain(domain)
         data = Orange.data.Table(domain)
         self.to_network0(self.tree, net, data)
-        return net, data
+        net.set_items(data)
+        return net
 
     def to_network0(self, node, net, table):
         node_id = len(table)
@@ -2673,9 +2674,9 @@ class TreeClassifier(Orange.classification.Classifier):
         maj = node.node_classifier.default_value
         if self.class_var.var_type == Orange.data.Type.Discrete:
             if d.abs > 1e-6:
-                table.append([maj, d.abs, d[maj]] + [x/d.abs for x in d])
+                table.append([maj, d.abs, d[maj]] + [x / d.abs for x in d])
             else:
-                table.append([maj] + [0]*(2 + len(d)))
+                table.append([maj] + [0] * (2 + len(d)))
         else:
             table.append([maj, d.error(), d.abs])
         if node.branches:
