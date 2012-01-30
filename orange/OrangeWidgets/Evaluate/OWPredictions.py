@@ -225,18 +225,18 @@ class OWPredictions(OWWidget):
         self.predictionsView.verticalHeader().hide()
         
         
-        def syncVertical(value):
-            """ sync vertical scroll positions of the two views
-            """
-            v1 = self.predictionsView.verticalScrollBar().value()
-            if v1 != value:
-                self.predictionsView.verticalScrollBar().setValue(value)
-            v2 = self.dataView.verticalScrollBar().value()
-            if v2 != value:
-                self.dataView.verticalScrollBar().setValue(v1)
+#        def syncVertical(value):
+#            """ sync vertical scroll positions of the two views
+#            """
+#            v1 = self.predictionsView.verticalScrollBar().value()
+#            if v1 != value:
+#                self.predictionsView.verticalScrollBar().setValue(value)
+#            v2 = self.dataView.verticalScrollBar().value()
+#            if v2 != value:
+#                self.dataView.verticalScrollBar().setValue(v1)
                 
-        self.connect(self.dataView.verticalScrollBar(), SIGNAL("valueChanged(int)"), syncVertical)
-        self.connect(self.predictionsView.verticalScrollBar(), SIGNAL("valueChanged(int)"), syncVertical)
+        self.connect(self.dataView.verticalScrollBar(), SIGNAL("valueChanged(int)"), self.syncVertical)
+        self.connect(self.predictionsView.verticalScrollBar(), SIGNAL("valueChanged(int)"), self.syncVertical)
         
         splitter.addWidget(self.dataView)
         splitter.addWidget(self.predictionsView)
@@ -252,6 +252,15 @@ class OWPredictions(OWWidget):
         
         self.handledAllSignalsFlag = False
         
+    def syncVertical(self, value):
+        """ sync vertical scroll positions of the two views
+        """
+        v1 = self.predictionsView.verticalScrollBar().value()
+        if v1 != value:
+            self.predictionsView.verticalScrollBar().setValue(value)
+        v2 = self.dataView.verticalScrollBar().value()
+        if v2 != value:
+            self.dataView.verticalScrollBar().setValue(v1)
         
     def updateSpliter(self):
         if not (self.dataModel and self.dataModel.columnCount() and \
