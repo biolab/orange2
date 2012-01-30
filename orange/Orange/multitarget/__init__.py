@@ -20,12 +20,21 @@ to construct independent models for each class.
 Examples
 ========
 
-The following example demonstrates how to build a prediction model for
-multi-target data and use it to predict (multiple) class values for
-a new instance (:download:`multitarget.py <code/multitarget.py>`,
-uses :download:`test-pls.tab <code/test-pls.tab>`):
+The following example uses a simple multi-target data set (generated with
+:download:`generate_multitarget.py <code/generate_multitarget.py>`) to show
+some basic functionalities (part of
+:download:`multitarget.py <code/multitarget.py>`, uses
+:download:`multitarget-synthetic.tab <code/multitarget-synthetic.tab>`).
 
 .. literalinclude:: code/multitarget.py
+    :lines: 1-6
+
+Multi-target learners can be used to build prediction models (classifiers)
+which then predict (multiple) class values for a new instance (continuation of
+:download:`multitarget.py <code/multitarget.py>`):
+
+.. literalinclude:: code/multitarget.py
+    :lines: 8-
 
 """
 
