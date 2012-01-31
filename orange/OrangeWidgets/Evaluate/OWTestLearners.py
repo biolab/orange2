@@ -85,7 +85,7 @@ class OWTestLearners(OWWidget):
                          "Test on train data", "Test on test data"]
 
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "TestLearners")
+        OWWidget.__init__(self, parent, signalManager, "Test Learners")
 
         self.inputs = [("Data", ExampleTable, self.setData, Default),
                        ("Separate Test Data", ExampleTable, self.setTestData),
