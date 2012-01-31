@@ -26,7 +26,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
-        self.outputs = [("Association Rules", orange.AssociationRules), ("Covered Data", ExampleTable), ("Merged Data", ExampleTable), ("Mismatched Data", ExampleTable)]
+        self.outputs = [("Association Rules", orange.AssociationRules), ("Covered Data", ExampleTable), ("Matching Data", ExampleTable), ("Mismatched Data", ExampleTable)]
 
         self.showWholeRules = 1
         self.treeDepth = 2
@@ -213,7 +213,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
             coveredExamples = matchingExamples = mismatchingExamples = None
 
         self.send("Covered Data", coveredExamples)
-        self.send("Merged Data", matchingExamples)
+        self.send("Matching Data", matchingExamples)
         self.send("Mismatched Data", mismatchingExamples)
         
 
