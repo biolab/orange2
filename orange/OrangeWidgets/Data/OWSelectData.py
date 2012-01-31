@@ -18,7 +18,7 @@ class OWSelectData(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Merged Data", ExampleTable, Default), ("Non-Matching Examples", ExampleTable)]
+        self.outputs = [("Matching Data", ExampleTable, Default), ("Unmatched Data", ExampleTable)]
 
         self.name2var = {}   # key: variable name, item: orange.Variable
         self.Conditions = []
@@ -265,8 +265,8 @@ class OWSelectData(OWWidget):
                 if newDomain != nonMatchingOutput.domain:
                     nonmatchingOutput = orange.ExampleTable(newDomain, nonMatchingOutput)
 
-        self.send("Merged Data", matchingOutput)
-        self.send("Non-Matching Examples", nonMatchingOutput)
+        self.send("Matching Data", matchingOutput)
+        self.send("Unmatched Data", nonMatchingOutput)
 
         self.updateInfoOut(matchingOutput)
 
