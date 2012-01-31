@@ -10,6 +10,8 @@ import orngTree, OWGUI
 from orngWrap import PreprocessedLearner
 from exceptions import Exception
 
+import Orange
+
 import warnings
 warnings.filterwarnings("ignore", ".*this class is not optimized for 'candidates' list and can be very slow.*", orange.KernelWarning, ".*orngTree", 34)
 
@@ -21,17 +23,17 @@ class OWClassificationTree(OWWidget):
                     "bin", "subset",
                     "preLeafInst", "preNodeInst", "preNodeMaj",
                     "preLeafInstP", "preNodeInstP", "preNodeMajP",
-                    "postMaj", "postMPruning", "postM", 
+                    "postMaj", "postMPruning", "postM",
                     "limitDepth", "maxDepth"]
 
     measures = (("Information Gain", "infoGain"), ("Gain Ratio", "gainRatio"), ("Gini Index", "gini"), ("ReliefF", "relief"))
     binarizationOpts = ["No binarization", "Exhaustive search for optimal split", "One value against others"]
 
-    def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
+    def __init__(self, parent=None, signalManager=None, name='Classification Tree'):
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=0, resizingEnabled=0)
 
         self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.TreeLearner),("Classification Tree", orange.TreeClassifier)]
+        self.outputs = [("Learner", orange.TreeLearner), ("Classification Tree", orange.TreeClassifier), ("Classification Tree Graph", Orange.network.Graph)]
 
         self.name = 'Classification Tree'
         self.estim = 0; self.relK = 5; self.relM = 100; self.limitRef = True
@@ -51,15 +53,15 @@ class OWClassificationTree(OWWidget):
 
         qBox = OWGUI.widgetBox(self.controlArea, 'Attribute selection criterion')
 
-        self.qMea = OWGUI.comboBox(qBox, self, "estim", items = [m[0] for m in self.measures], callback = self.measureChanged)
+        self.qMea = OWGUI.comboBox(qBox, self, "estim", items=[m[0] for m in self.measures], callback=self.measureChanged)
 
-        b1 = OWGUI.widgetBox(qBox, orientation = "horizontal")
+        b1 = OWGUI.widgetBox(qBox, orientation="horizontal")
         OWGUI.separator(b1, 16, 0)
         b2 = OWGUI.widgetBox(b1)
         self.cbLimitRef, self.hbxRel1 = OWGUI.checkWithSpin(b2, self, "Limit the number of reference examples to ", 1, 1000, "limitRef", "relM")
         OWGUI.separator(b2)
         self.hbxRel2 = OWGUI.spin(b2, self, "relK", 1, 50, orientation="horizontal", label="Number of neighbours in ReliefF  ")
- 
+
         OWGUI.separator(self.controlArea)
 
         OWGUI.radioButtonsInBox(self.controlArea, self, 'bin', self.binarizationOpts, "Binarization")
@@ -80,12 +82,12 @@ class OWClassificationTree(OWWidget):
         self.postMPruningBox, self.postMPruningPBox = OWGUI.checkWithSpin(self.mBox, self, "Pruning with m-estimate, m=", 0, 1000, 'postMPruning', 'postM')
 
         OWGUI.separator(self.controlArea)
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0, default=True)
-        
-        OWGUI.rubber(self.controlArea)
-        self.resize(200,200)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback=self.setLearner, disabled=0, default=True)
 
-    
+        OWGUI.rubber(self.controlArea)
+        self.resize(200, 200)
+
+
     def sendReport(self):
         self.reportSettings("Learning parameters",
                             [("Attribute selection", self.measures[self.estim][0]),
@@ -104,7 +106,7 @@ class OWClassificationTree(OWWidget):
     def setPreprocessor(self, preprocessor):
         self.preprocessor = preprocessor
         self.setLearner()
-        
+
     def setLearner(self):
         if hasattr(self, "btnApply"):
             self.btnApply.setFocus()
@@ -112,20 +114,20 @@ class OWClassificationTree(OWWidget):
             mDepth = {}
         else:
             mDepth = {'maxDepth': self.maxDepth}
-        self.learner = orngTree.TreeLearner(measure = self.measures[self.estim][1],
-            reliefK = self.relK, reliefM = self.limitRef and self.relM or -1,
-            binarization = self.bin,
-            minExamples = self.preNodeInst and self.preNodeInstP,
-            minSubset = self.preLeafInst and self.preLeafInstP,
-            maxMajority = self.preNodeMaj and self.preNodeMajP/100.0 or 1.0,
-            sameMajorityPruning = self.postMaj,
-            mForPruning = self.postMPruning and self.postM,
-            storeExamples = 1, **mDepth)
+        self.learner = orngTree.TreeLearner(measure=self.measures[self.estim][1],
+            reliefK=self.relK, reliefM=self.limitRef and self.relM or -1,
+            binarization=self.bin,
+            minExamples=self.preNodeInst and self.preNodeInstP,
+            minSubset=self.preLeafInst and self.preLeafInstP,
+            maxMajority=self.preNodeMaj and self.preNodeMajP / 100.0 or 1.0,
+            sameMajorityPruning=self.postMaj,
+            mForPruning=self.postMPruning and self.postM,
+            storeExamples=1, **mDepth)
 
         self.learner.name = self.name
         if self.preprocessor:
             self.learner = self.preprocessor.wrapLearner(self.learner)
-        
+
         self.send("Learner", self.learner)
 
         self.error()
@@ -139,7 +141,12 @@ class OWClassificationTree(OWWidget):
         else:
             self.classifier = None
 
+        tree_graph = None
+        if self.classifier is not None:
+            tree_graph = self.classifier.to_network()
+
         self.send("Classification Tree", self.classifier)
+        self.send("Classification Tree Graph", tree_graph)
 
 
     def measureChanged(self):
@@ -148,7 +155,7 @@ class OWClassificationTree(OWWidget):
         self.hbxRel2.setEnabled(relief)
         self.cbLimitRef.setEnabled(relief)
 
-    def setData(self,data):
+    def setData(self, data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
         self.setLearner()
 
@@ -158,9 +165,9 @@ class OWClassificationTree(OWWidget):
 # > python OWDataTable.py)
 # Make sure that a sample data set (adult_sample.tab) is in the directory
 
-if __name__=="__main__":
-    a=QApplication(sys.argv)
-    ow=OWClassificationTree()
+if __name__ == "__main__":
+    a = QApplication(sys.argv)
+    ow = OWClassificationTree()
 
     #d = orange.ExampleTable('adult_sample')
     #ow.setData(d)
