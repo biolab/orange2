@@ -224,7 +224,7 @@ class MultiTree(Orange.classification.tree.TreeClassifier):
 
 
 if __name__ == '__main__':
-    data = Orange.data.Table('test-pls')
+    data = Orange.data.Table('multitarget-synthetic')
     print 'Actual classes:\n', data[0].get_classes()
     
     majority = Orange.classification.majority.MajorityLearner()
