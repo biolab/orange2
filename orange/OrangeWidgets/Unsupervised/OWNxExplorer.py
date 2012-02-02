@@ -3,7 +3,7 @@
 <description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>6420</priorbity>
+<priority>6420</priority>
 """
 import math
 import operator
