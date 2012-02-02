@@ -513,25 +513,36 @@ try:
             self.nMarked = len(self.networkCanvas.marked_nodes())
 
         def save_network(self):
-    #        if self.networkCanvas is None or self.graph is None:
-    #            return
-    #        
-    #        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'NetworkX graph as Python pickle (*.gpickle)\nPajek network (*.net)\nGML network (*.gml)')
-    #        if filename:
-    #            fn = ""
-    #            head, tail = os.path.splitext(str(filename))
-    #            if not tail:
-    #                fn = head + ".net"
-    #            else:
-    #                fn = str(filename)
-    #            
-    #            for i in range(self.graph.number_of_nodes()):
-    #                node = self.graph.node[i]
-    #                node['x'] = self.layout.coors[0][i]
-    #                node['y'] = self.layout.coors[1][i]
-    #
-    #            Orange.network.readwrite.write(self.graph, fn)
-            pass
+            if self.networkCanvas is None or self.graph is None:
+                return
+
+            filename = QFileDialog.getSaveFileName(self, 'Save Network File', \
+                '', 'NetworkX graph as Python pickle (*.gpickle)\nPajek ' + \
+                'network (*.net)\nGML network (*.gml)')
+            if filename:
+                fn = ""
+                head, tail = os.path.splitext(str(filename))
+                if not tail:
+                    fn = head + ".net"
+                else:
+                    fn = str(filename)
+
+                items = self.graph.items()
+                for i in range(self.graph.number_of_nodes()):
+                    graph_node = self.graph.node[i]
+                    plot_node = self.networkCanvas.networkCurve.nodes()[i]
+
+                    if items is not None:
+                        ex = items[i]
+                        if 'x' in ex.domain:
+                            ex['x'] = plot_node.x()
+                        if 'y' in ex.domain:
+                            ex['y'] = plot_node.y()
+
+                    graph_node['x'] = plot_node.x()
+                    graph_node['y'] = plot_node.y()
+
+                Orange.network.readwrite.write(self.graph, fn)
 
         def send_data(self):
             if len(self.signalManager.getLinks(self, None, \
