@@ -9,31 +9,32 @@ Partial least sqaures regression (``PLS``)
 
 Implementation is based on `Scikit learn python implementation`_
 
-Example ::
+Example
+-------
 
-    >>> import Orange
-    >>> from Orange.regression import pls
-    >>> data = Orange.data.Table("test-pls.tab")
-    >>> # set independent and response variables
-    >>> x = data.domain.features
-    >>> y = data.domain.class_vars
-    >>> print x
-        [FloatVariable 'X1', FloatVariable 'X2', FloatVariable 'X3']
-    >>> print y
-        [FloatVariable 'Y1', FloatVariable 'Y2', FloatVariable 'Y3', FloatVariable 'Y4']
-    >>> # The information which variables are independent and which are responses
-    >>> # can be provided in the data definition.
-    >>> # If a variable var has key "label" in dictionary Orange.data.Domain[var].attributes
-    >>> # it is considered as a response variable.
-    >>> # In such situation x and y do not need to be specified.
-    >>> l = pls.PLSRegressionLearner()
-    >>> c = l(data, x_vars=x, y_vars=y)
-    >>> print c
-           Y1     Y2     Y3     Y4     
-    X1     0.513  0.915  0.341  -0.069  
-    X2     0.641  -1.044  0.249  -0.015  
-    X3     1.393  0.050  0.729  -0.108  
-    >>> 
+The following code shows how to fit a PLS regression model on a multi-target data set.
+
+.. literalinclude:: code/pls-example.py
+
+Output ::
+
+    Input variables:     <FloatVariable 'X1', FloatVariable 'X2', FloatVariable 'X3'>
+    Response variables:  <FloatVariable 'Y1', FloatVariable 'Y2', FloatVariable 'Y3', FloatVariable 'Y4'>
+    Prediction for the first 2 data instances: 
+
+    Actual     [<orange.Value 'Y1'='0.490'>, <orange.Value 'Y2'='1.237'>, <orange.Value 'Y3'='1.808'>, <orange.Value 'Y4'='0.422'>]
+    Predicted  [<orange.Value 'Y1'='0.613'>, <orange.Value 'Y2'='0.826'>, <orange.Value 'Y3'='1.084'>, <orange.Value 'Y4'='0.534'>]
+
+    Actual     [<orange.Value 'Y1'='0.167'>, <orange.Value 'Y2'='-0.664'>, <orange.Value 'Y3'='-1.378'>, <orange.Value 'Y4'='0.589'>]
+    Predicted  [<orange.Value 'Y1'='0.058'>, <orange.Value 'Y2'='-0.706'>, <orange.Value 'Y3'='-1.420'>, <orange.Value 'Y4'='0.599'>]
+
+    Regression coefficients:
+                       Y1           Y2           Y3           Y4
+          X1        0.714        2.153        3.590       -0.078 
+          X2       -0.238       -2.500       -4.797       -0.036 
+          X3        0.230       -0.314       -0.880       -0.060 
+
+
 
 .. autoclass:: PLSRegressionLearner
     :members:
@@ -214,11 +215,14 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         :type table: :class:`Orange.data.Table`
 
         :param x_vars, y_vars: List of input and response variables
-            (`Orange.data.variable.Continuous` or `Orange.data.variable.Discrete`).
-            If None (default) it is assumed that data definition provides information
-            which variables are reponses and which not. If a variable var
-            has key "label" in dictionary Orange.data.Domain[var].attributes
-            it is treated as a response variable
+            (:obj:`Orange.data.variable.Continuous` or
+            :obj:`Orange.data.variable.Discrete`). If None (default) it is
+            assumed that the data domain provides information which variables
+            are reponses and which are not. If data has
+            :obj:`~Orange.data.Domain.class_var` defined in its domain, a
+            single-target regression learner is constructed. Otherwise a
+            multi-target learner predicting response variables defined by
+            :obj:`~Orange.data.Domain.class_vars` is constructed.
         :type x_vars, y_vars: list            
 
         """     
@@ -443,8 +447,8 @@ class PLSRegression(Orange.classification.Classifier):
         """ Pretty-prints the coefficient of the PLS regression model.
         """       
         x_vars, y_vars = [x.name for x in self.x_vars], [y.name for y in self.y_vars]
-        fmt = "%-6s " + "%-5.3f  " * len(y_vars)
-        first = [" " * 7 + "%-6s " * len(y_vars) % tuple(y_vars)]
+        fmt = "%8s " + "%12.3f " * len(y_vars)
+        first = [" " * 8 + "%13s" * len(y_vars) % tuple(y_vars)]
         lines = [fmt % tuple([x_vars[i]] + list(coef))
                  for i, coef in enumerate(self.coefs)]
         return '\n'.join(first + lines)
@@ -482,7 +486,7 @@ if __name__ == "__main__":
     import Orange
     from Orange.regression import pls
 
-    data = Orange.data.Table("test-pls.tab")
+    data = Orange.data.Table("multitarget-synthetic")
     l = pls.PLSRegressionLearner()
 
     x = data.domain.features
