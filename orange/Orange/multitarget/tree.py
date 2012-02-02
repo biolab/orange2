@@ -49,8 +49,8 @@ uses :download:`test-pls.tab <code/test-pls.tab>`):
 
 from operator import itemgetter
 
-import numpy as np
 import Orange
+import numpy as np
 
 
 def weighted_variance(X, weights=None):
