@@ -153,6 +153,10 @@ class NetworkCurve(orangeqt.NetworkCurve):
         if avgLinkage:
             distances = distances.avgLinkage(components)
 
+        # if only one component
+        if distances.dim == 1:
+            return 0
+
         mds = Orange.projection.mds.MDS(distances)
         mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
         rect = self.data_rect()
@@ -168,6 +172,11 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
         animate_points = p.animate_points
         p.animate_points = False
+
+        # if only one component
+        if d_mds == 0 or d_fr == 0:
+            d_mds = 1
+            d_fr = 1
 
         self.set_node_coordinates(dict(
            (n, (nodes[n].x() * d_mds / d_fr, nodes[n].y() * d_mds / d_fr)) for n in nodes))
@@ -407,7 +416,7 @@ class OWNxCanvas(OWPlot):
             newNeighbours = tNewNeighbours - neighbours
             neighbours |= newNeighbours
         return neighbours
-            
+
     def mark_on_selection_changed(self):
         toMark = set()
         for ndx in self.selected_nodes():
@@ -520,14 +529,14 @@ class OWNxCanvas(OWPlot):
         indices = [[] for u in nodes]
         if self.show_indices:
             indices = [[str(u)] for u in nodes]
-        
+
         distances = [[] for u in nodes]
         show_distances = False
         if self.label_distances is not None and type(self.label_distances) == \
                            type([]) and len(self.label_distances) == len(nodes):
             distances = self.label_distances
             show_distances = True
-            
+
         if len(label_attributes) == 0 and \
                         not self.show_indices and not show_distances:
             self.networkCurve.set_node_labels({})
@@ -538,7 +547,7 @@ class OWNxCanvas(OWPlot):
                           [' '.join(str(self.items[node][att]).split(' ')[:min(self.trim_label_words, len(str(self.items[node][att]).split(' ')))])
                 for att in label_attributes])) for i, node in enumerate(nodes)))
         else:
-            self.networkCurve.set_node_labels(dict((node, ', '.join( \
+            self.networkCurve.set_node_labels(dict((node, ', '.join(\
                         distances[i] + indices[i] + \
                            [str(self.items[node][att]) for att in \
                            label_attributes])) for i, node in enumerate(nodes)))

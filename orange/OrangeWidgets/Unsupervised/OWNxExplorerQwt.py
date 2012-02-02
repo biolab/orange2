@@ -1,5 +1,6 @@
 import OWToolbars
 import OWColorPalette
+import orngMDS
 
 from OWWidget import *
 from OWNxCanvas import *

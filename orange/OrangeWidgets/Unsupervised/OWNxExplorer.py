@@ -13,7 +13,6 @@ import time
 import Orange
 import OWGUI
 import OWColorPalette
-#import OWToolbars
 import orngMDS
 
 from OWWidget import *
