@@ -1,7 +1,7 @@
 import itertools
 
 import Orange
-from Orange.misc import demangle_examples, getobjectname, printVerbose, deprecated_keywords, deprecated_members
+from Orange.misc import demangle_examples, getobjectname, deprecated_keywords, deprecated_members
 
 #### Data structures
 
