@@ -606,8 +606,10 @@ try:
             self.edgeAttributes = [(var.name, var.varType) for var in edgeVars]
 
             for var in vars:
-                if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
-                    self.colorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
+                if var.varType in [Orange.data.Type.Discrete, \
+                                   Orange.data.Type.Continuous]:
+                    self.colorCombo.addItem(self.icons.get(var.varType, \
+                                            self.icons[-1]), unicode(var.name))
 
                 if var.varType in [Orange.data.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
 
@@ -637,22 +639,28 @@ try:
                     self.edgeColorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
             for i in range(self.vertexSizeCombo.count()):
-                if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
+                if self.lastVertexSizeColumn == \
+                        self.vertexSizeCombo.itemText(i):
                     self.vertexSize = i
+                    self.set_node_sizes()
                     break
 
             for i in range(self.colorCombo.count()):
                 if self.lastColorColumn == self.colorCombo.itemText(i):
                     self.color = i
+                    self.set_node_colors()
                     break
 
             for i in range(self.attListBox.count()):
                 if str(self.attListBox.item(i).text()) in lastLabelColumns:
                     self.attListBox.item(i).setSelected(1)
+                self._clicked_att_lstbox()
 
             for i in range(self.tooltipListBox.count()):
-                if str(self.tooltipListBox.item(i).text()) in lastTooltipColumns:
+                if str(self.tooltipListBox.item(i).text()) \
+                                                    in lastTooltipColumns:
                     self.tooltipListBox.item(i).setSelected(1)
+                self._clicked_tooltip_lstbox()
 
             self.lastLabelColumns = lastLabelColumns
             self.lastTooltipColumns = lastTooltipColumns
@@ -768,7 +776,8 @@ try:
                 self.information('I\'m not really in a mood to visualize just one node. Try again tomorrow.')
                 return
 
-            if graph == self.graph_base and self.graph is not None and self._network_view is None:
+            if graph == self.graph_base and self.graph is not None and \
+                                                    self._network_view is None:
                 self.set_items(graph.items())
                 return
 
@@ -890,7 +899,7 @@ try:
                 return
 
             if len(items) != self.graph_base.number_of_nodes():
-                self.error('ExampleTable items must have one example for each vertex.')
+                self.error('Table items must have one example for each node.')
                 return
 
             self.graph_base.set_items(items)
