@@ -20,7 +20,7 @@ def file_name_match(name, patterns):
             return True
     return False
 
-def test_scripts(complete, just_print, module="orange", root_directory=".", 
+def test_scripts(complete, just_print, module="orange", root_directory=".",
                 test_files=None, directories=None):
     """Test the scripts in the given directory."""
     global error_status
@@ -31,12 +31,13 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
     caller_directory = os.getcwd()
     os.chdir(root_directory) # directory to start the testing in
     for dirname, dir in directories:
+        dir = os.path.join(root_directory, dir)
         os.chdir(dir)
         if module <> dirname:
             outputsdir = "%s/results/%s/%s" % (regtestdir, module, dirname)
         else:
             outputsdir = "%s/results/%s" % (regtestdir, module)
-            
+
         print "DIR %s (%s)" % (dirname, dir)
         if not os.path.exists(outputsdir):
             os.mkdir(outputsdir)
@@ -48,7 +49,7 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
         test_set = []
 
         # file name filtering
-        names = [name for name in os.listdir('.') if name[-3:]==".py"]
+        names = [name for name in os.listdir('.') if name[-3:] == ".py"]
         if test_files:
             names = [name for name in names if file_name_match(name, test_files)]
         names = [name for name in names if name not in dont_test]
@@ -87,30 +88,30 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
 
         if just_print == "report-html":
             for name, lastResult in test_set:
-                if lastResult =="OK":
+                if lastResult == "OK":
                     result = "results/%s/%s/%s.txt" % (module, dirname, name)
                     print '''  <tr><td><a href="http://orange.biolab.si/trac/browser/trunk/orange/doc/%(dir)s/%(name)s">%(name)s</a></td>
     <td><a href="%(result)s">%(lastResult)s</a></td>
   </tr>''' % {"dir":dir, "name":name, "lastResult":lastResult, "result":result}
-    
+
 #                    print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dirname, name, name, lastResult)
                 elif lastResult in ["changed", "crash", "random"]:
 #                else:
                     if lastResult == "random":
-                        result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult+"1")
+                        result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult + "1")
                     else:
                         result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult)
                     original = "results/%s/%s/%s.txt" % (module, dirname, name)
                     print '''  <tr><td><a href="http://orange.biolab.si/trac/browser/trunk/orange/doc/%(dir)s/%(name)s">%(name)s</a>
     </td><td><a href="%(result)s">%(lastResult)s</a></td>
     <td><a href="%(original)s">original</a></td>
-  </tr>''' %  {"dir":dir, "name":name, "lastResult":lastResult, "result":result, "original":original}
-  
+  </tr>''' % {"dir":dir, "name":name, "lastResult":lastResult, "result":result, "original":original}
+
             print "</table>"
         elif just_print:
             for name, lastResult in test_set:
                 print "%-30s %s" % (name, lastResult)
-                
+
         else:
             if dont_test:
                 print "Skipped: %s\n" % ", ".join(dont_test)
@@ -124,10 +125,10 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                               (outputsdir, name, platform, pyversion, state)
                     if os.path.exists(remname):
                         os.remove(remname)
-                    
+
                 titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
-                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest_one.py", name, str(titerations), outputsdir)
-                
+                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir + "/xtest_one.py", name, str(titerations), outputsdir)
+
                 result = open("xtest1_report", "rt").readline().rstrip() or "crash"
                 error_status = max(error_status, states.index(result))
                 os.remove("xtest1_report")
@@ -153,12 +154,12 @@ def usage():
     print "--module=<module>: defines a module to test"
     print "--dir=<dir>: a comma-separated list of names where any should match the directory to be tested"
     print "<files>: space separated list of string matching the file names to be tested"
-    
-    
+
+
 def main(argv):
     """Process the argument list and run the regression test."""
     global iterations
-    
+
     command = "update"
     if argv:
         if argv[0] in ["update", "test", "report", "report-html", "errors", "help"]:
@@ -177,20 +178,20 @@ def main(argv):
     if "--help" in opts or '-h' in opts:
         usage()
         sys.exit(0)
-    
+
     module = opts.get("--module", "orange")
     if module in ["orange"]:
-        root = "%s/doc" % orngEnviron.orangeDir
+        root = "%s/.." % orngEnviron.orangeDir
         module = "orange"
-        dirs = [("modules", "modules"), ("reference", "reference"), ("ofb", "ofb-rst/code")]
+        dirs = [("modules", "orange/doc/modules"), ("reference", "orange/doc/reference"), ("ofb", "docs/tutorial/rst/code")]
     elif module in ["ofb-rst"]:
-        root = "%s/doc" % orngEnviron.orangeDir
+        root = "%s/.." % orngEnviron.orangeDir
         module = "orange"
-        dirs = [("ofb", "ofb-rst/code")]
+        dirs = [("ofb", "docs/tutorial/rst/code")]
     elif module in ["orange25"]:
-        root = "%s/doc" % orngEnviron.orangeDir
+        root = "%s/.." % orngEnviron.orangeDir
         module = "orange25"
-        dirs = [("orange25", "Orange/rst/code")]
+        dirs = [("orange25", "docs/reference/rst/code")]
     elif module == "obi":
         root = orngEnviron.addOnsDirSys + "/Bioinformatics/doc"
         dirs = [("modules", "modules")]
@@ -200,10 +201,10 @@ def main(argv):
     else:
         print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
         sys.exit(1)
-    
-    test_scripts(command=="test", command=="report" or (command=="report-html" and command or False), 
+
+    test_scripts(command == "test", command == "report" or (command == "report-html" and command or False),
                  module=module, root_directory=root,
                  test_files=test_files, directories=dirs)
     # sys.exit(error_status)
-    
+
 main(sys.argv[1:])
