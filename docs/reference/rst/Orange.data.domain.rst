@@ -4,77 +4,113 @@
 Domain description (``Domain``)
 ===============================
 
-In Orange, the term `domain` denotes a set of features, which will be
-used to describe the data instances, the class variables, meta
-attributes and similar. Each data instance, as well as many
-classifiers and other objects are associated with a domain descriptor,
-which defines the object's content and/or its input and output data
-format.
+In Orange, the term `domain` denotes a set of features,
+meta attributes and class attribute that describe data. Domain
+descriptors are attached to data instances, data tables,
+classifiers and other objects.
 
-Domain descriptors are also responsible for converting data instances
-from one domain to another, e.g. from the original feature space to
-one with different set of features which are selected or constructed
-from the original set.
+Besides describing the data, domain descriptors contain methods for
+converting data instances from one domain to another,
+e.g. from the original feature space to one with different set of
+features that are selected or constructed from the original set.
 
-Domains as lists
-================
+The following examples will use domain constructed when reading the data
+set `zoo`::
 
-Domains resemble lists: the length of domain is the number of
-variables, including the class variable. Iterating through domain
-goes through features and the class variable, but not through meta
-attributes. Domains can be indexed by integer indices, variable names
-or instances of :obj:`Orange.data.variables.Variable`. Domain has a
-method :obj:`Domain.index` that returns the index of a variable
-specified by a descriptor, name. Slices can be retrieved, but not
-set. ::
+    >>> data = Orange.data.Table("zoo")
+    >>> domain = data.domain
+    >>> domain
+    [hair, feathers, eggs, milk, airborne, aquatic, predator, toothed,
+    backbone, breathes, venomous, fins, legs, tail, domestic, catsize,
+    type], {-2:name}
 
-    >>> print d2
-    [a, b, e, y], {-4:c, -5:d, -6:f, -7:X}
-    >>> d2[1]
-    EnumVariable 'b'
-    >>> d2["e"]
-    EnumVariable 'e'
-    >>> d2["d"]
-    EnumVariable 'd'
-    >>> d2[-4]
-    EnumVariable 'c'
-    >>> for attr in d2:
+Domains consists of ordinary features and the class attribute,
+if there is one, and of meta attributes. We will refer to features and
+the class attribute as *variables*. Variables are printed out
+in a form similar to a list whose elements are attribute names,
+and meta attributes are printed like a dictionary whose "keys" are meta
+attribute id's and "values" are attribute names. In the above case,
+each data instance corresponds to an animal and is described by the
+animal's properties and its type (the class); the meta attribute contains
+the animal's name.
+
+Domains as lists and dictionaries
+=================================
+
+Domains behave like lists: the length of domain is the number of
+variables including the class variable. Domains can be indexed by integer
+indices, variable names or instances of
+:obj:`Orange.data.variables.Variable`::
+
+    >>> domain["feathers"]
+    EnumVariable 'feathers'
+    >>> domain[1]
+    EnumVariable 'feathers'
+    >>> feathers = domain[1]
+    >>> domain[feathers]
+    EnumVariable 'feathers'
+
+Meta attributes are indexed similarly::
+
+    >>> domain[-2]
+    StringVariable 'name'
+    >>> domain["name"]
+    StringVariable 'name'
+
+Method :obj:`Domain.index` returns the index of a variable specified by a
+descriptor or name::
+
+    >>> domain.index("feathers")
+    1
+    >>> domain.index(feathers)
+    1
+    >>> domain.index("name")
+    -2
+
+Slices can be retrieved, but not set.
+
+Iterating through domain goes through features and the class variable,
+but not through meta attributes::
+
+    >>> for attr in domain:
     ...     print attr.name,
     ...
-    a b e y 
+    hair feathers eggs milk airborne aquatic predator toothed backbone
+    breathes venomous fins legs tail domestic catsize type
+
 
 Conversions between domains
 ===========================
 
-Domain descriptors are used to convert instances from one domain to
-another. ::
+Domain descriptors can convert instances from one domain to another
+(details on construction of domains are described later). ::
 
-     >>> data = Orange.data.Table("monk1")
-     >>> d2 = Orange.data.Domain(["a", "b", "e", "y"], data.domain)
-     >>> 
+     >>> new_domain = Orange.data.Domain(["feathers", "legs", "type"],
+     domain)
      >>> inst = data[55]
-     >>> print inst
-     ['1', '2', '1', '1', '4', '2', '0']
-     >>> inst2 = d2(inst)
-     >>>  print inst2
-     ['1', '2', '4', '0']
+     >>> inst
+     ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0', '4',
+     '1', '0', '1', 'mammal'], {"name":'oryx'}
+     >>> inst2 = new_domain(inst)
+     >>> inst2
+     ['0', '4', 'mammal']
 
 This is used, for instance, in classifiers: classifiers are often
-trained on a preprocessed domain (e.g. with a subset of features or
-with discretized data) and later used on instances from the original
+trained on a preprocessed domain (e.g. on a subset of features or
+on discretized data) and later used on instances from the original
 domain. Classifiers store the training domain descriptor and use it
 for converting new instances.
 
-Equivalently, instances can be converted by passing the new domain to
-the constructor::
+Alternatively, instances can be converted by constructing a new instance
+and pass the new domain to the constructor::
 
-     >>> inst2 = Orange.data.Instance(d2, inst)
+     >>> inst2 = Orange.data.Instance(new_domain, inst)
 
-Entire data table can be converted similarly::
+Entire data table can be converted in a similar way::
 
-     >>> data2 = Orange.data.Table(d2, data)
-     >>> print data2[55]
-     ['1', '2', '4', '0']
+     >>> data2 = Orange.data.Table(new_domain, data)
+     >>> data2[55]
+     ['0', '4', 'mammal']
 
 
 .. _multiple-classes:
@@ -95,17 +131,18 @@ Meta attributes
 
 Meta-values are additional values that can be attached to instances.
 It is not necessary that all instances in the same table (or even all
-instances from the same domain) have certain meta-value. See documentation
-on :obj:`Orange.data.Instance` for a more thorough description of meta-values.
+instances from the same domain) have the same meta attributes. See
+documentation on :obj:`Orange.data.Instance` for a more thorough
+description of meta-values.
 
 Meta attributes that appear in instances can, but don't need to be
-registered in the domain. Typically, the meta attribute will be
-registered for the following reasons.
+listed in the domain. Typically, the meta attribute will be included in
+the domain for the following reasons.
 
      * If the domain knows about a meta attribute, their values can be
        obtained with indexing by names and variable descriptors,
-       e.g. ``inst["age"]``. Values of unregistered meta attributes can
-       be obtained only through integer indices (e.g. inst[id], where
+       e.g. ``inst["age"]``. Values of unknown meta attributes
+       can be obtained only through integer indices (e.g. inst[id], where
        id needs to be an integer).
 
      * When printing out an instance, the symbolic values of discrete
@@ -114,36 +151,28 @@ registered for the following reasons.
        out example will show a (more informative) attribute's name
        instead of a meta-id.
 
-     * Registering an attribute provides a way to attach a descriptor
-       to a meta-id. See how the basket file format uses this feature.
-
      * When saving instances to a file, only the values of registered
        meta attributes are saved.
 
-     * When a new data instance is constructed, it is automatically
-       assigned the meta attributes listed in the domain, with their
-       values set to unknown.
+     * When a new data instance is constructed, it will have all the
+       meta attributes listed in the domain, with their values set to
+       unknown.
 
 For the latter two points - saving to a file and construction of new
 instances - there is an additional flag: a meta attribute can be
 marked as "optional". Such meta attributes are not saved and not added
-to newly constructed data instances. This functionality is used in,
-for instance, the above mentioned basket format, where new meta
-attributes are created while loading the file and new instances to
-contain all words from the past examples.
+to newly constructed data instances.
 
-There is another distinction between the optional and non-optional
-meta attributes: the latter are `expected to be` present in all
-examples of that domain. Saving to files expects them and will fail if
-a non-optional meta value is missing. Optional attributes may be
-missing. In most other places, these rules are not strictly enforced,
-so adhering to them is rather up to choice.
+Another distinction between the optional and non-optional meta
+attributes is that the latter are *expected to be* present in all
+data instances from that domain. Saving to files expects will fail
+if a non-optional meta value is missing; in most other places,
+these rules are not strictly enforced, so adhering to them is rather up
+to choice.
 
-Meta attributes can be added and removed even after the domain is
-constructed and instances of that domain already exist. For instance,
-if data contains the Monk 1 data set, we can add a new continuous
-attribute named "misses" with the following code (a detailed
-desription of methods related to meta attributes is given below)::
+While the list of features and the class value are constant,
+meta attributes can be added and removed at any time (a detailed
+description of methods related to meta attributes is given below)::
 
      >>> misses = Orange.data.variable.Continuous("misses")
      >>> id = Orange.data.new_meta_id()
@@ -179,35 +208,32 @@ A meta-attribute can be used, for instance, to record the number of
 misclassifications by a given ``classifier``::
 
      >>> for inst in data:
-     ... if inst.get_class() != classifier(example):
-     ...     example[misses] += 1
+     ... if inst.get_class() != classifier(inst):
+     ...     inst[misses] += 1
 
 The other effect of registering meta attributes is that they appear in
 converted instances: whenever an instances is converted to some
 domain, it will have all the meta attributes that are registered in
 that domain. If the meta attributes occur in the original domain of
 the instance or if they can be computed from them, they will have
-appropriate values, otherwise they will have a "don't know" value. ::
+appropriate values, otherwise their value will be missing. ::
 
-     domain = data.domain
-     d2 = Orange.data.Domain(["a", "b", "e", "y"], domain)
-     for attr in ["c", "d", "f"]:
-	 d2.add_meta(Orange.data.new_meta_id(), domain[attr])
-     d2.add_meta(Orange.data.new_meta_id(), orange.data.variable.Discrete("X"))
-     data2 = Orange.data.Table(d2, data)
+    new_domain = Orange.data.Domain(["feathers", "legs"], domain)
+    new_domain.add_meta(Orange.data.new_meta_id(), domain["type"])
+    new_domain.add_meta(Orange.data.new_meta_id(), domain["legs"])
+    new_domain.add_meta(
+        Orange.data.new_meta_id(), Orange.data.variable.Discrete("X"))
+    data2 = Orange.data.Table(new_domain, data)
 
-Domain ``d2`` in this example has variables ``a``, ``b``, ``e`` and the
-class, while the other three variables are added as meta
-attributes, together with additional attribute X. Results are as
-follows. ::
+Domain ``new_domain`` in this example has variables ``feathers`` and
+``legs`` and meta attributes ``type``, ``legs`` (again) and ``X`` which
+is a new feature with no relation to the existing ones. ::
 
-     >>> print data[55]
-     ['1', '2', '1', '1', '4', '2', '0'], {"misses":0.000000}
-     >>> print data2[55]
-     ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?'}
-
-After conversion, the three attributes are moved to meta attributes
-and the new attribute appears as unknown.
+    >>> data[55]
+    ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0',
+    '4', '1', '0', '1', 'mammal'], {"name":'oryx'}
+    >>> data2[55]
+    ['0', '4'], {"type":'mammal', "legs":'4', "X":'?'}
 
 
 
@@ -237,121 +263,128 @@ and the new attribute appears as unknown.
      .. attribute:: version
 
 	 An integer value that is changed when the domain is
-	 modified. Can be also used as unique domain identifier; two
-	 different domains also have different versions.
+	 modified. The value can be also used as unique domain identifier; two
+	 different domains have different value of ``version``.
 
      .. method:: __init__(variables[, class_vars=])
 
-	 Construct a domain with the given variables specified; the
+	 Construct a domain with the given variables; the
 	 last one is used as the class variable. ::
 
-	     >>> a, b, c = [Orange.data.variable.Discrete(x)
-			    for x in ["a", "b", "c"]]
-	     >>> d = Orange.data.Domain([a, b, c])
-	     >>> print d.features
+	     >>> a, b, c = [Orange.data.variable.Discrete(x) for x in "abc"]
+	     >>> domain = Orange.data.Domain([a, b, c])
+	     >>> domain.features
 	     <EnumVariable 'a', EnumVariable 'b'>
-	     >>> print d.class_var
+	     >>> domain.class_var
 	     EnumVariable 'c'
 
-	 :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
-         :param class_vars: A list of multiple classes; must be a keword argument
+     :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
 	 :type variables: list
+     :param class_vars: A list of multiple classes; must be a keword argument
+     :type class_vars: list
 
-     .. method:: __init__(features, class_variable[, classVars=])
+     .. method:: __init__(features, class_variable[, class_vars=])
 
 	 Construct a domain with the given list of features and the
 	 class variable. ::
 
-	     >>> d = Orange.data.Domain([a, b], c)
-	     >>> print d.features
+	     >>> domain = Orange.data.Domain([a, b], c)
+	     >>> domain.features
 	     <EnumVariable 'a', EnumVariable 'b'>
-	     >>> print d.class_var EnumVariable 'c'
+	     >>> domain.class_var
+	     EnumVariable 'c'
 
-	 :param features: List of features (instances of :obj:`Orange.data.variable.Variable`)
-	 :type features: list
-	 :param class_variable: Class variable
-         :param class_vars: A list of multiple classes; must be a keword argument
-	 :type features: Orange.data.variable.Variable
+     :param features: List of features (instances of :obj:`Orange.data.variable.Variable`)
+     :type features: list
+     :param class_variable: Class variable
+     :type class_variable: Orange.data.variable.Variable
+     :param class_vars: A list of multiple classes; must be a keyword argument
+     :type class_vars: list
 
      .. method:: __init__(variables, has_class[, class_vars=])
 
-	 Construct a domain with the given variables. If has_class is
+	 Construct a domain with the given variables. If `has_class` is
 	 :obj:`True`, the last one is used as the class variable. ::
 
-	     >>> d = Orange.data.Domain([a, b, c], False)
-	     >>> print d.features
+	     >>> domain = Orange.data.Domain([a, b, c], False)
+	     >>> domain.features
 	     <EnumVariable 'a', EnumVariable 'b'>
-	     >>> print d.class_var
+	     >>> domain.class_var
 	     EnumVariable 'c'
 
 	 :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
 	 :type features: list
 	 :param has_class: A flag telling whether the domain has a class
-         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type has_class: bool
+     :param class_vars: A list of multiple classes; must be a keyword argument
+     :type class_vars: list
 
      .. method:: __init__(variables, source[, class_vars=])
 
-	 Construct a domain with the given variables, which can also be
-	 specified by names, provided that the variables with that
-	 names exist in the source list. The last variable from the
-	 list is used as the class variable. ::
+	 Construct a domain with the given variables that can also be
+	 specified by names if the variables with that names exist in the
+	 source list. The last variable from the list is used as the class
+	 variable. ::
 
-	     >>> d1 = orange.Domain([a, b])
-	     >>> d2 = orange.Domain(["a", b, c], d1) 
+	     >>> domain1 = orange.Domain([a, b])
+	     >>> domain2 = orange.Domain(["a", b, c], domain)
 
 	 :param variables: List of variables (strings or instances of :obj:`Orange.data.variable.Variable`)
 	 :type variables: list
 	 :param source: An existing domain or a list of variables
-         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type source: Orange.data.Domain or list of :obj:`Orange.data.variable.Variable`
+     :param class_vars: A list of multiple classes; must be a keyword argument
+     :type class_vars: list
 
      .. method:: __init__(variables, has_class, source[, class_vars=])
 
 	 Similar to above except for the flag which tells whether the
 	 last variable should be used as the class variable. ::
 
-	     >>> d1 = orange.Domain([a, b])
-	     >>> d2 = orange.Domain(["a", b, c], d1) 
+	     >>> domain1 = orange.Domain([a, b], False)
+	     >>> domain2 = orange.Domain(["a", b, c], False, domain)
 
 	 :param variables: List of variables (strings or instances of :obj:`Orange.data.variable.Variable`)
 	 :type variables: list
 	 :param has_class: A flag telling whether the domain has a class
 	 :type has_class: bool
 	 :param source: An existing domain or a list of variables
-         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type source: Orange.data.Domain or list of :obj:`Orange.data.variable.Variable`
+     :param class_vars: A list of multiple classes; must be a keyword argument
+     :type class_vars: list
 
      .. method:: __init__(domain, class_var[, class_vars=])
 
-	 Construct a domain as a shallow copy of an existing domain
+	 Construct a copy of an existing domain
 	 except that the class variable is replaced with the given one
-	 and the class variable of the existing domain becoems an
+	 and the class variable of the existing domain becomes an
 	 ordinary feature. If the new class is one of the original
 	 domain's features, it can also be specified by a name.
 
 	 :param domain: An existing domain
 	 :type domain: :obj:`Orange.variable.Domain`
 	 :param class_var: Class variable for the new domain
-         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type class_var: string or :obj:`Orange.data.variable.Variable`
+     :param class_vars: A list of multiple classes; must be a keword argument
+     :type class_vars: list
 
      .. method:: __init__(domain, has_class=False[, class_vars=])
 
-	 Construct a shallow copy of the domain. If the ``has_class``
-	 flag is given and equals :obj:`False`, it moves the class
+	 Construct a copy of the domain. If the ``has_class``
+	 flag is given and is :obj:`False`, it moves the class
 	 attribute to ordinary features.
 
 	 :param domain: An existing domain
 	 :type domain: :obj:`Orange.variable.Domain`
 	 :param has_class: A flag telling whether the domain has a class
-         :param class_vars: A list of multiple classes; must be a keword argument
 	 :type has_class: bool
+     :param class_vars: A list of multiple classes; must be a keword argument
+     :type class_vars: list
 
      .. method:: has_discrete_attributes(include_class=True)
 
 	 Return :obj:`True` if the domain has any discrete variables;
-	 class is considered unless ``include_class`` is ``False``.
+	 class is included unless ``include_class`` is ``False``.
 
 	 :param has_class: Tells whether to consider the class variable
 	 :type has_class: bool
@@ -360,7 +393,7 @@ and the new attribute appears as unknown.
      .. method:: has_continuous_attributes(include_class=True)
 
 	 Return :obj:`True` if the domain has any continuous variables;
-	 class is considered unless ``include_class`` is ``False``.
+	 class is included unless ``include_class`` is ``False``.
 
 	 :param has_class: Tells whether to consider the class variable
 	 :type has_class: bool
@@ -370,7 +403,7 @@ and the new attribute appears as unknown.
 
 	 Return :obj:`True` if the domain has any variables which are
 	 neither discrete nor continuous, such as, for instance string variables.
-	 class is considered unless ``include_class`` is ``False``.
+	 class is included unless ``include_class`` is ``False``.
 
 	 :param has_class: Tells whether to consider the class variable
 	 :type has_class: bool
@@ -380,20 +413,22 @@ and the new attribute appears as unknown.
      .. method:: add_meta(id, variable, optional=0)
 
 	 Register a meta attribute with the given id (obtained by
-	 :obj:`Orange.data.new_meta_id`). The same meta attribute can (and
-	 should) have the same id when registered in different domains. ::
+	 :obj:`Orange.data.new_meta_id`). The same meta attribute should
+	 have the same id in all domain in which it is registered. ::
 
 	     >>> newid = Orange.data.new_meta_id()
-	     >>> d2.add_meta(newid, Orange.data.variable.String("name"))
-	     >>> d2[55]["name"] = "Joe"
-	     >>> print data2[55]
-	     ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?', "name":'Joe'}
+	     >>> domain.add_meta(newid, Orange.data.variable.String("origin"))
+	     >>> data[55]["origin"] = "Nepal"
+	     >>> data[55]
+	     ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0',
+	     '4', '1', '0', '1', 'mammal'], {"name":'oryx', "origin":'Nepal'}
 
 	 The third argument tells whether the meta attribute is optional or
 	 not. The parameter is an integer, with any non-zero value meaning that
 	 the attribute is optional. Different values can be used to distinguish
-	 between various optional attributes; the meaning of the value is not
-	 defined in advance and can be used arbitrarily by the application.
+	 between various types optional attributes; the meaning of the value
+	 is not defined in advance and can be used arbitrarily by the
+	 application.
 
 	 :param id: id of the new meta attribute
 	 :type id: int
@@ -405,10 +440,11 @@ and the new attribute appears as unknown.
      .. method:: add_metas(attributes, optional=0)
 
 	 Add multiple meta attributes at once. The dictionary contains id's as
-	 keys and variables as the corresponding values. The following example
-	 shows how to add all meta attributes from one domain to another::
+	 keys and variables (:obj:~Orange.data.variable as the corresponding
+	 values. The following example shows how to add all meta attributes
+	 from one domain to another::
 
-	      newdomain.add_metas(domain.get_metas)
+	      newdomain.add_metas(domain.get_metas())
 
 	 The optional second argument has the same meaning as in :obj:`add_meta`.
 
@@ -457,7 +493,7 @@ and the new attribute appears as unknown.
      .. method:: get_metas(optional)
 
 	  Return a dictionary with meta attribute id's as keys and corresponding
-	  variable descriptors as values; the dictionary contains only meta
+	  variable descriptors as values. The dictionary contains only meta
 	  attributes for which the argument ``optional`` matches the flag given
 	  when the attributes were added using :obj:`add_meta` or :obj:`add_metas`.
 
