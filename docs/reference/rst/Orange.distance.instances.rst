@@ -112,14 +112,14 @@ two unknown values is always 0.5.
 .. class:: Manhattan
 
     Manhattan distance between two instances is a sum of absolute values
-    of distances between pairs of features, e.g. ``apply(add, [abs(x) for x in dist])``
+    of distances between pairs of features, e.g. ``sum(abs(x) for x in dist)``
     where dist is the result of ExamplesDistance_Normalized.attributeDistances.
 
 .. class:: EuclideanConstructor
 .. class:: Euclidean
 
     Euclidean distance is a square root of sum of squared per-feature distances,
-    i.e. ``sqrt(apply(add, [x*x for x in dist]))``, where dist is the result of
+    i.e. ``sqrt(sum(x*x for x in dist))``, where dist is the result of
     ExamplesDistance_Normalized.attributeDistances.
 
     .. method:: distributions
@@ -141,7 +141,7 @@ two unknown values is always 0.5.
         - A known and unknown continuous attribute equals squared distance
           between the known and the average, plus variance
         - Two unknown continuous attributes equals double variance
-        - A known and unknown discrete attribute equals the probabilit
+        - A known and unknown discrete attribute equals the probability
           that the unknown attribute has different value than the known
           (i.e., 1 - probability of the known value)
         - Two unknown discrete attributes equals the probability that two
