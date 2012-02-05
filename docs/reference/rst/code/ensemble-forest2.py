@@ -6,14 +6,14 @@
 
 import Orange
 
-table = Orange.data.Table('bupa.tab')
+bupa = Orange.data.Table('bupa.tab')
 
 tree = Orange.classification.tree.TreeLearner()
 tree.minExamples = 5
 tree.maxDepth = 5
 
 forest_learner = Orange.ensemble.forest.RandomForestLearner(base_learner=tree, trees=50, attributes=3)
-forest = forest_learner(table)
+forest = forest_learner(bupa)
 
 for c in forest.classifiers:
     print c.countNodes(),

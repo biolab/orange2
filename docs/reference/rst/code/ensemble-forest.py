@@ -12,8 +12,8 @@ tree = Orange.classification.tree.TreeLearner(minExamples=2, mForPrunning=2, \
 learners = [tree, forest]
 
 print "Classification: bupa.tab"
-table = Orange.data.Table("bupa.tab")
-results = Orange.evaluation.testing.cross_validation(learners, table, folds=3)
+bupa = Orange.data.Table("bupa.tab")
+results = Orange.evaluation.testing.cross_validation(learners, bupa, folds=3)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
@@ -22,8 +22,8 @@ for i in range(len(learners)):
         Orange.evaluation.scoring.AUC(results)[i])
 
 print "Regression: housing.tab"
-table = Orange.data.Table("housing.tab")
-results = Orange.evaluation.testing.cross_validation(learners, table, folds=3)
+bupa = Orange.data.Table("housing.tab")
+results = Orange.evaluation.testing.cross_validation(learners, bupa, folds=3)
 print "Learner  MSE    RSE    R2"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \

@@ -8,10 +8,10 @@ import Orange
 from Orange.classification import bayes
 from Orange.evaluation import testing, scoring
 
-table = Orange.data.Table("adult_sample.tab")
+adult = Orange.data.Table("adult_sample.tab")
 
 nb = bayes.NaiveLearner(name="Naive Bayes")
 adjusted_nb = bayes.NaiveLearner(adjust_threshold=True, name="Adjusted Naive Bayes")
 
-results = testing.cross_validation([nb, adjusted_nb], table)
+results = testing.cross_validation([nb, adjusted_nb], adult)
 print scoring.CA(results)

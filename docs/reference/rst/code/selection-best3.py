@@ -5,10 +5,10 @@
 # Classes:     Orange.feature.scoring.score_all, Orange.feature.selection.bestNAtts
 
 import Orange
-table = Orange.data.Table("voting")
+voting = Orange.data.Table("voting")
 
 n = 3
-ma = Orange.feature.scoring.score_all(table)
+ma = Orange.feature.scoring.score_all(voting)
 best = Orange.feature.selection.bestNAtts(ma, n)
 print 'Best %d features:' % n
 for s in best:

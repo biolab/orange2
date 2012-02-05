@@ -1,7 +1,7 @@
 import Orange
 
-myData = Orange.data.Table("iris.tab")
-bas = Orange.statistics.basic.Domain(myData) 
+iris = Orange.data.Table("iris.tab")
+bas = Orange.statistics.basic.Domain(iris) 
 
 print "%20s %5s %5s %5s" % ("feature", "min", "max", "avg")
 for a in bas:

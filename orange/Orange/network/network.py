@@ -777,9 +777,9 @@ class GraphLayout(orangeom.GraphLayout):
                        minStressDelta=0, avgLinkage=False, rotationOnly=False, \
                        mdsType=MdsType.componentMDS, scalingRatio=0, \
                        mdsFromCurrentPos=0):
-        """Position the network components according to similarities among 
+        """Position the network components according to similarities among
         them.
-        
+
         """
 
         if self.items_matrix == None:

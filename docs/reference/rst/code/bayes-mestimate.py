@@ -6,12 +6,12 @@
 
 import Orange
 
-table = Orange.data.Table("lenses.tab")
+lenses = Orange.data.Table("lenses.tab")
 
 bayes_L = Orange.classification.bayes.NaiveLearner(name="Naive Bayes")
 bayesWithM_L = Orange.classification.bayes.NaiveLearner(m=2, name="Naive Bayes w/ m-estimate")
-bayes = bayes_L(table)
-bayesWithM = bayesWithM_L(table)
+bayes = bayes_L(lenses)
+bayesWithM = bayesWithM_L(lenses)
 
 print bayes.conditional_distributions
 # prints: <<'pre-presbyopic': <0.625, 0.125, 0.250>, 'presbyopic': <0.750, 0.125, 0.125>, ...>>

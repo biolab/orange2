@@ -5,9 +5,9 @@
 # Classes:     Orange.data.io.toARFF
 
 import Orange
-table = Orange.data.Table('iris.tab')
-Orange.data.io.toARFF('iris.testsave.arff', table)
-table.save('iris.testsave.arff')
+iris = Orange.data.Table('iris.tab')
+Orange.data.io.toARFF('iris.testsave.arff', iris)
+iris.save('iris.testsave.arff')
 f = open('iris.testsave.arff')
 for line in f:
     print line.strip()

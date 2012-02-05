@@ -5,12 +5,12 @@
 # Referenced:  kNNLearner.htm
 
 import Orange
-table = Orange.data.Table("iris")
+iris = Orange.data.Table("iris")
 
 print "Testing using euclidean distance"
-rndind = Orange.core.MakeRandomIndices2(table, p0=0.8)
-train = table.select(rndind, 0)
-test = table.select(rndind, 1)
+rndind = Orange.core.MakeRandomIndices2(iris, p0=0.8)
+train = iris.select(rndind, 0)
+test = iris.select(rndind, 1)
 
 knn = Orange.classification.knn.kNNLearner(train, k=10)
 for i in range(5):
@@ -19,7 +19,7 @@ for i in range(5):
 
 print "\n"
 print "Testing using hamming distance"
-table = Orange.data.Table("iris")
+iris = Orange.data.Table("iris")
 knn = Orange.classification.knn.kNNLearner()
 knn.k = 10
 knn.distanceConstructor = Orange.core.ExamplesDistanceConstructor_Hamming()
