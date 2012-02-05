@@ -50,7 +50,7 @@ Learner and Classifier
 
         Complete contingency matrices for the learning instances.
 
-    .. attribute:: examples, weightID
+    .. attribute:: instances, weightID
 
         Learning instances and the ID of weight meta attribute. The root
         of the tree actually stores all instances, while other nodes
@@ -216,7 +216,7 @@ example :obj:`~TreeLearner.splitter`. The default ``stop`` is set with:
 
 The default stopping parameters are:
 
-    >>> print learner.stop.max_majority, learner.stop.min_examples
+    >>> print learner.stop.max_majority, learner.stop.min_instances
     1.0 0.0
 
 The defaults only stop splitting when no instances are left or all of
@@ -1960,7 +1960,7 @@ class TreeLearner(Orange.core.Learner):
             stop.max_majority = self.max_majority
         me = getattr(self, "min_instances", 0)
         if me:
-            stop.min_examples = self.min_instances
+            stop.min_instances = self.min_instances
         return stop
 
     def _base_learner(self):
@@ -2570,10 +2570,11 @@ class TreeClassifier(Orange.classification.Classifier):
 
     @Orange.misc.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \
-        "userFormats": "user_formats", "minExamples": "min_examples", \
+        "userFormats": "user_formats", "minExamples": "min_instances", \
+        "min_examples": "min_instances", \
         "maxDepth": "max_depth", "simpleFirst": "simple_first"})
     def to_string(self, leaf_str="", node_str="", \
-            user_formats=[], min_examples=0, max_depth=1e10, \
+            user_formats=[], min_instances=0, max_depth=1e10, \
             simple_first=True):
         """
         Return a string representation of a tree.
@@ -2590,9 +2591,9 @@ class TreeClassifier(Orange.classification.Classifier):
         :arg max_depth: If set, it limits the depth to which the tree is
           printed out.
         :type max_depth: integer
-        :arg min_examples: If set, the subtrees with less than the given 
+        :arg min_instances: If set, the subtrees with less than the given 
           number of examples are not printed.
-        :type min_examples: integer
+        :type min_instances: integer
         :arg simple_first: If True (default), the branches with a single 
           node are printed before the branches with larger subtrees. 
           If False, the branches are printed in order of
@@ -2603,7 +2604,7 @@ class TreeClassifier(Orange.classification.Classifier):
           information in the nodes.
         """
         return _TreeDumper(leaf_str, node_str, user_formats +
-            _TreeDumper.defaultStringFormats, min_examples,
+            _TreeDumper.defaultStringFormats, min_instances,
             max_depth, simple_first, self).dumpTree()
 
     dump = to_string
@@ -2611,11 +2612,13 @@ class TreeClassifier(Orange.classification.Classifier):
     @Orange.misc.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \
         "leafShape": "leaf_shape", "nodeShape": "node_shape", \
-        "userFormats": "user_formats", "minExamples": "min_examples", \
+        "userFormats": "user_formats", \
+        "minExamples": "min_instances", \
+        "min_examples": "min_instances", \
         "maxDepth": "max_depth", "simpleFirst": "simple_first"})
     def dot(self, file_name, leaf_str="", node_str="", \
             leaf_shape="plaintext", node_shape="plaintext", \
-            user_formats=[], min_examples=0, max_depth=1e10, \
+            user_formats=[], min_instances=0, max_depth=1e10, \
             simple_first=True):
         """ Print the tree to a file in a format used by `GraphViz
         <http://www.research.att.com/sw/tools/graphviz>`_.  Uses the
@@ -2635,7 +2638,7 @@ class TreeClassifier(Orange.classification.Classifier):
         fle = type(file_name) == str and open(file_name, "wt") or file_name
 
         _TreeDumper(leaf_str, node_str, user_formats +
-            _TreeDumper.defaultStringFormats, min_examples,
+            _TreeDumper.defaultStringFormats, min_instances,
             max_depth, simple_first, self,
             leafShape=leaf_shape, nodeShape=node_shape, fle=fle).dotTree()
 

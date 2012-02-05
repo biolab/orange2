@@ -31,7 +31,7 @@ filterlist filter_list
 filterref filter_ref
 filterbool filter_bool
 randomexample random_example
-randomexample random_instance
+random_instance random_example
 
 ClassifierByExampleTable
 boundset bound_set
@@ -46,6 +46,10 @@ add_attrclass add_var_class
 TreeNode
 treesize tree_size
 removestoredinfo remove_stored_info
+instances examples
+
+TreeStopCriteria_common
+min_instances min_examples
 
 TreeClassifier
 treesize tree_size
