@@ -31,6 +31,7 @@ filterlist filter_list
 filterref filter_ref
 filterbool filter_bool
 randomexample random_example
+randomexample random_instance
 
 ClassifierByExampleTable
 boundset bound_set

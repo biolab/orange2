@@ -284,6 +284,8 @@ These attributes can only be saved to a .tab file. They are listed in the
 third line in <name>=<value> format, after other attribute specifications
 (such as "meta" or "class"), and are separated by spaces. 
 
+.. _variable_descriptor_reuse:
+
 Reuse of descriptors
 --------------------
 

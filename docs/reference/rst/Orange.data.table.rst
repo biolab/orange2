@@ -5,13 +5,23 @@ Data table (``Table``)
 ======================
 
 Class `Orange.data.Table` holds a list of data instances of type
-:obj:`Orange.data.Instance`. All instances belong to the same domain.
+:obj:`Orange.data.Instance`. All instances belong to the same domain
+(:obj:`Orange.data.Domain`).
+
+Data tables are usually loaded from a file (see :doc:`/Orange.data.formats`)::
+
+    import Orange
+    data = Orange.data.Table("titanic")
+
+Data tables can also be created programmatically, as in the :ref:`code
+below <example-table-prog1>`.
+
 
 -------------------
 List-like behaviour
 -------------------
 
-:obj:`Table` supports most list-like operations: gettins, setting,
+:obj:`Table` supports most list-like operations: getting, setting,
 removing data instances, as well as methods :obj:`append` and
 :obj:`extend`. The limitation is that table contain instances of
 :obj:`Orange.data.Instance`. When setting items, the item must be
@@ -28,8 +38,6 @@ not a new Table.
 
 As usual in Python, the data table is considered False, when empty.
 
------------
- 
 .. class:: Table
 
     .. attribute:: domain
@@ -37,7 +45,7 @@ As usual in Python, the data table is considered False, when empty.
         The domain to which the instances correspond. This
         attribute is read-only.
 
-    .. attribute:: owns_examples
+    .. attribute:: owns_instances
 
         True, if the table contains the data instances, False if it
         contains just references to instances owned by another table.
@@ -51,7 +59,7 @@ As usual in Python, the data table is considered False, when empty.
 
         An integer that is increased whenever the table is
         changed. This is not foolproof, since the object cannot
-        detect when individual examples are changed. It will, however,
+        detect when individual instances are changed. It will, however,
         catch any additions and removals from the table.
 
     .. attribute:: random_generator
@@ -65,7 +73,7 @@ As usual in Python, the data table is considered False, when empty.
 
        If the table was loaded from a file, this list of flags tells
        whether the feature descriptors were reused and how they
-       matched. See :ref:`file-formats` for details.
+       matched. See :ref:`descriptor reuse <variable_descriptor_reuse>` for details.
 
     .. attribute:: meta_attribute_load_status
 
@@ -76,28 +84,33 @@ As usual in Python, the data table is considered False, when empty.
 
         Read data from the given file. If the name includes the
         extension it must be one of the known file formats (see
-        :ref:`file-formats`). If no extension is given, the directory
+        :doc:`/Orange.data.formats`). If no extension is given, the directory
         is searched for any file with recognized extensions. If the
         file is not found, Orange will also search the directories
         specified in the environment variable `ORANGE_DATA_PATH`.
 
         The optional flag `create_new_on` decides when variable
-        descriptors are reused. See :ref:`file-formats` for more details.
+        descriptors are reused. See :ref:`descriptor reuse
+        <variable_descriptor_reuse>` for more details.
 
         :param filename: the name of the file
         :type filename: str
         :param create_new_on: flag specifying when to reuse existing descriptors
         :type create_new_on: int
 
+    .. _example-table-prog1:
+
     .. method:: __init__(domain)
 
         Construct an empty data table with the given domain.
 
+        .. literalinclude:: code/datatable1.py
+            :lines: 7-16
+
+        The example :ref:`continues <example-table-prog2>`.
+
         :param domain: domain descriptor
         :type domain: Orange.data.Domain
-
-        ..literalinclude:: code/datatable1.py
-        :lines: 7-16
 
     .. method:: __init__(instances[, references])
 
@@ -116,6 +129,8 @@ As usual in Python, the data table is considered False, when empty.
         :param references: if True, the new table contains references
         :type references: bool
 
+    .. _example-table-prog2:
+
     .. method:: __init__(domain, instances)
 
         Construct a new data table with a given domain and initialize
@@ -129,8 +144,8 @@ As usual in Python, the data table is considered False, when empty.
         :param instances: data instances
         :type instances: Table or list or numpy.array
 
-        The following example fills the data table created above with
-        some data from a list.
+        The following example fills the data table created :ref:`above
+        <example-table-prog1>` with some data from a list.
 
         .. literalinclude:: code/datatable1.py
             :lines: 29-34
@@ -185,7 +200,7 @@ As usual in Python, the data table is considered False, when empty.
         The two tables can be loaded, merged and printed out by the
         following script.
 
-        ..literalinclude:: code/datatable_merge.py
+        .. literalinclude:: code/datatable_merge.py
 
         This is what the output looks like::
 
@@ -207,7 +222,7 @@ As usual in Python, the data table is considered False, when empty.
             -> [9, 10, 10.5], {"m1":11, "m2":12, "m3":12.5}
 
         Merging succeeds since the values of `a1` and `m1` are the
-        same for all matching examples from both tables.
+        same for all matching instances from both tables.
 
     .. method:: append(inst)
 
@@ -248,7 +263,7 @@ As usual in Python, the data table is considered False, when empty.
 
         :param filt: filter list
         :type filt: list of integers
-        :param idx: selects which examples to pick
+        :param idx: selects which instances to pick
         :type idx: int
         :param negate: negates the selection
         :type negate: bool
@@ -305,7 +320,7 @@ As usual in Python, the data table is considered False, when empty.
 
         :param filt: filter list
         :type filt: list of integers
-        :param idx: selects which examples to pick
+        :param idx: selects which instances to pick
         :type idx: int
         :param negate: negates the selection
         :type negate: bool
@@ -314,11 +329,11 @@ As usual in Python, the data table is considered False, when empty.
     .. method:: select_list(filt[, idx, negate=False])
 
         Same as :obj:`select`, except that it returns a Python list
-	with data instances.
+    with data instances.
 
         :param filt: filter list
         :type filt: list of integers
-        :param idx: selects which examples to pick
+        :param idx: selects which instances to pick
         :type idx: int
         :param negate: negates the selection
         :type negate: bool
@@ -448,9 +463,9 @@ As usual in Python, the data table is considered False, when empty.
 
             Return True if any instance has a missing class value.
 
-    .. method:: random_example()
+    .. method:: random_instance()
 
-            Return a random example from the
+            Return a random instance from the
             table. Data table's own :obj:`random_generator` is used,
             which is initially seeded to 0, so results are
             deterministic.
