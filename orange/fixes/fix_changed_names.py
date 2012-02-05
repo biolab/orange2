@@ -589,6 +589,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ConditionalProbabilityEstimatorConstructor_ByRows": "Orange.statistics.estimate.ConditionalByRows",
            "orange.ConditionalProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.ConditionalLoess",
 
+           "orange.RandomGenerator": "Orange.misc.random.RandomGenerator",
+
            }
 
 for k, v in MAPPING.items():
