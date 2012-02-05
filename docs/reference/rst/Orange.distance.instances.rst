@@ -91,14 +91,16 @@ two unknown values is always 0.5.
         feature values of the two instances.
 
 
-.. class:: Hamming, HammingConstructor
+.. class:: HammingConstructor
+.. class:: Hamming
 
     Hamming distance between two instances is defined as the number of
     features in which the two instances differ. Note that this measure
     is not really appropriate for instances that contain continuous features.
 
 
-.. class:: Maximal, MaximalConstructor
+.. class:: MaximalConstructor
+.. class:: Maximal
 
     The maximal between two instances is defined as the maximal distance
     between two feature values. If dist is the result of
@@ -106,14 +108,15 @@ two unknown values is always 0.5.
     then Maximal returns max(dist).
 
 
-.. class:: Manhattan, ManhattanConstructor
+.. class:: ManhattanConstructor
+.. class:: Manhattan
 
     Manhattan distance between two instances is a sum of absolute values
     of distances between pairs of features, e.g. ``apply(add, [abs(x) for x in dist])``
     where dist is the result of ExamplesDistance_Normalized.attributeDistances.
 
-.. class:: Euclidean, EuclideanConstructor
-
+.. class:: EuclideanConstructor
+.. class:: Euclidean
 
     Euclidean distance is a square root of sum of squared per-feature distances,
     i.e. ``sqrt(apply(add, [x*x for x in dist]))``, where dist is the result of
@@ -122,7 +125,7 @@ two unknown values is always 0.5.
     .. method:: distributions
 
         An object of type
-        :obj:`Orange.statistics.distribution.Distribution` that holds
+        :obj:`~Orange.statistics.distribution.Distribution` that holds
         the distributions for all discrete features used for
         computation of distances between known and unknown values.
 
@@ -150,7 +153,8 @@ two unknown values is always 0.5.
     distributions (used for unknown vs. known value) and in bothSpecial
     (the precomputed distance between two unknown values).
 
-.. class:: Relief, ReliefConstructor
+.. class:: ReliefConstructor
+.. class:: Relief
 
     Relief is similar to Manhattan distance, but incorporates a more
     correct treatment of undefined values, which is used by ReliefF measure.
