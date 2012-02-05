@@ -1,6 +1,6 @@
 import Orange
-data = Orange.data.Table("lenses")
-domain = data.domain
+lenses = Orange.data.Table("lenses")
+domain = lenses.domain
 inst = Orange.data.Instance(domain, ["young", "myope",
                                "yes", "reduced", "soft"])
 print inst

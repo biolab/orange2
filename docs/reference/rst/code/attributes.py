@@ -1,6 +1,6 @@
 import Orange
-data = Orange.data.Table("titanic.tab")
-var = data.domain[0]
+titanic = Orange.data.Table("titanic.tab")
+var = titanic.domain[0]
 print var
 print "Attributes", var.attributes
 var.attributes["a"] = "12"

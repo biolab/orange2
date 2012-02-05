@@ -5,15 +5,15 @@
 # Classes:     Orange.data.io.loadARFF
 
 import Orange
-table = Orange.data.io.loadARFF('iris.arff')
-print table.attribute_load_status
-print table.domain
-print table.domain.attributes
-print "\n".join(["\t".join([str(value) for value in row]) for row in table])
+iris = Orange.data.io.loadARFF('iris.arff')
+print iris.attribute_load_status
+print iris.domain
+print iris.domain.attributes
+print "\n".join(["\t".join([str(value) for value in row]) for row in iris])
 print
 
-table = Orange.data.Table('iris.arff')
-print table.attribute_load_status
-print table.domain
-print table.domain.attributes
-print "\n".join(["\t".join([str(value) for value in row]) for row in table])
+iris = Orange.data.Table('iris.arff')
+print iris.attribute_load_status
+print iris.domain
+print iris.domain.attributes
+print "\n".join(["\t".join([str(value) for value in row]) for row in iris])
