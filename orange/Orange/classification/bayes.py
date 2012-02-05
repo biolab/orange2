@@ -21,14 +21,14 @@ class NaiveLearner(Orange.classification.Learner):
     .. attribute:: m
     
         m for m-estimate. If set, m-estimation of probabilities
-        will be used using :class:`Orange.statistics.estimate.M`.
+        will be used using :class:`~Orange.statistics.estimate.M`.
         This attribute is ignored if you also set :obj:`estimator_constructor`.
         
     .. attribute:: estimator_constructor
     
         Probability estimator constructor for
         prior class probabilities. Defaults to
-        :class:`Orange.statistics.estimate.RelativeFrequency`.
+        :class:`~Orange.statistics.estimate.RelativeFrequency`.
         Setting this attribute disables the above described attribute :obj:`m`.
         
     .. attribute:: conditional_estimator_constructor
@@ -41,7 +41,7 @@ class NaiveLearner(Orange.classification.Learner):
     
         Probability estimator constructor for conditional probabilities for
         continuous features. Defaults to 
-        :class:`Orange.statistics.estimate.Loess`.
+        :class:`~Orange.statistics.estimate.Loess`.
     """
     
     def __new__(cls, data = None, weight_id = 0, **argkw):
@@ -66,10 +66,10 @@ class NaiveLearner(Orange.classification.Learner):
         """Learn from the given table of data instances.
         
         :param data: Data instances to learn from.
-        :type data: Orange.data.Table
+        :type data: :class:`~Orange.data.Table`
         :param weight: Id of meta attribute with weights of instances
         :type weight: int
-        :rtype: :class:`Orange.classification.bayes.NaiveClassifier`
+        :rtype: :class:`~Orange.classification.bayes.NaiveClassifier`
         """
         bayes = _BayesLearner()
         if self.estimator_constructor:
@@ -139,13 +139,14 @@ class NaiveClassifier(Orange.classification.Classifier):
         """Classify a new instance.
         
         :param instance: instance to be classified.
-        :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
-              :class:`Orange.classification.Classifier.GetProbabilities` or
-              :class:`Orange.classification.Classifier.GetBoth`
+        :type instance: :class:`~Orange.data.Instance`
+        :param result_type: :class:`~Orange.classification.Classifier.GetValue` or
+              :class:`~Orange.classification.Classifier.GetProbabilities` or
+              :class:`~Orange.classification.Classifier.GetBoth`
         
-        :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.distribution.Distribution` or a tuple with both
+        :rtype: :class:`~Orange.data.Value`,
+              :class:`~Orange.statistics.distribution.Distribution` or a
+              tuple with both
         """
         return self.native_bayes_classifier(instance, result_type, *args, **kwdargs)
 
@@ -165,9 +166,9 @@ class NaiveClassifier(Orange.classification.Classifier):
         
         :param class_: class value for which the probability should be
                 output.
-        :type class_: :class:`Orange.data.Value`
+        :type class_: :class:`~Orange.data.Value`
         :param instance: instance to be classified.
-        :type instance: :class:`Orange.data.Instance`
+        :type instance: :class:`~Orange.data.Instance`
         
         """
         return self.native_bayes_classifier.p(class_, instance)

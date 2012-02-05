@@ -19,6 +19,8 @@ Module Orange.misc contains common functions and classes which are used in other
 
 .. automodule:: Orange.misc.r
 
+.. automodule:: Orange.misc.random
+
 """
 import environ
 import counters

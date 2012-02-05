@@ -150,7 +150,7 @@ class OWPredictions(OWWidget):
         self.predictorlabel = "N/A"
         self.tasklabel = "N/A"
         self.precision = 2
-        self.doPrediction = True
+        self.doPrediction = False
         self.outvar = None # current output variable (set by the first predictor/data set send in)
 
         self.data = None

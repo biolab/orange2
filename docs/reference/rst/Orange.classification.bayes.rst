@@ -10,7 +10,7 @@ Naive Bayes classifier (``bayes``)
 **********************************
 
 A `Naive Bayes classifier
-<http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_ is a simple
+<http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_ is a
 probabilistic classifier that estimates conditional probabilities of the
 dependant variable from training data and uses them for classification
 of new data instances. The algorithm is very fast for discrete features, but
@@ -56,7 +56,7 @@ bayesian classifier, and one with an adjusted threshold::
     [0.7901746265516516, 0.8280138859667578]
 
 Probability distributions for continuous features are estimated with \
-:class:`Orange.statistics.estimate.Loess`.
+:class:`~Orange.statistics.estimate.Loess`.
 
 .. literalinclude:: code/bayes-plot-iris.py
     :lines: 4-
