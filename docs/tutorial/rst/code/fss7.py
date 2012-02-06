@@ -13,7 +13,7 @@
 
 import orange, orngDisc, orngTest, orngStat, orngFSS
 
-data = orange.ExampleTable("../../datasets/crx")
+data = orange.ExampleTable("crx.tab")
 
 bayes = orange.BayesLearner()
 dBayes = orngDisc.DiscretizedLearner(bayes, name='disc bayes')
@@ -30,7 +30,7 @@ for fold in range(results.numberOfIterations):
   for lrn in range(len(learners)):
     natt[lrn] += len(results.classifiers[fold][lrn].domain.attributes)
 for lrn in range(len(learners)):
-  natt[lrn] = natt[lrn]/10.
+  natt[lrn] = natt[lrn] / 10.
 
 print "\nLearner         Accuracy  #Atts"
 for i in range(len(learners)):

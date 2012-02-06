@@ -6,7 +6,7 @@
 # Referenced:  o_fss.htm
 
 import orange, orngFSS
-data = orange.ExampleTable("../../datasets/adult_sample")
+data = orange.ExampleTable("adult_sample.tab")
 
 def report_relevance(data):
   m = orngFSS.attMeasure(data)
@@ -15,7 +15,7 @@ def report_relevance(data):
 
 print "Before feature subset selection (%d attributes):" % len(data.domain.attributes)
 report_relevance(data)
-data = orange.ExampleTable("../../datasets/adult_sample")
+data = orange.ExampleTable("adult_sample.tab")
 
 marg = 0.01
 filter = orngFSS.FilterRelief(margin=marg)
