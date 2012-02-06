@@ -26,7 +26,6 @@ import numpy
 from numpy import linalg
 
 class PearsonR(DistanceConstructor):
-    """Constructs an instance of :obj:`PearsonRDistance`. Not all the data needs to be given."""
     
     def __new__(cls, data=None, **argkw):
         self = DistanceConstructor.__new__(cls, **argkw)
@@ -45,7 +44,7 @@ class PearsonRDistance(Distance):
     """
     `Pearson correlation coefficient
     <http://en.wikipedia.org/wiki/Pearson_product-moment\
-    _correlation_coefficient>`_
+    _correlation_coefficient>`_.
     """
 
     def __init__(self, **argkw):
@@ -57,7 +56,7 @@ class PearsonRDistance(Distance):
         :param e2: data instances.
         
         Returns Pearson's disimilarity between e1 and e2,
-        i.e. (1-r)/2 where r is Sprearman's rank coefficient.
+        i.e. (1-r)/2 where r is Pearson's rank coefficient.
         """
         X1 = []
         X2 = []
@@ -73,7 +72,6 @@ class PearsonRDistance(Distance):
             return 1.0
 
 class SpearmanR(DistanceConstructor):
-    """Constructs an instance of SpearmanR. Not all the data needs to be given."""
     
     def __new__(cls, data=None, **argkw):
         self = DistanceConstructor.__new__(cls, **argkw)
@@ -92,7 +90,7 @@ class SpearmanRDistance(Distance):
 
     """`Spearman's rank correlation coefficient
     <http://en.wikipedia.org/wiki/Spearman%27s_rank_\
-    correlation_coefficient>`_"""
+    correlation_coefficient>`_."""
 
     def __init__(self, **argkw):
         self.__dict__.update(argkw)
@@ -118,7 +116,6 @@ class SpearmanRDistance(Distance):
             return 1.0
 
 class Mahalanobis(DistanceConstructor):
-    """ Construct instance of Mahalanobis. """
     
     def __new__(cls, data=None, **argkw):
         self = DistanceConstructor.__new__(cls, **argkw)

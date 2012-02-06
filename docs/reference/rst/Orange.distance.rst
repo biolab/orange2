@@ -4,30 +4,36 @@
 Distance (``distance``)
 ##########################################
 
-Distance measures typically have to be adjusted to the data. For instance,
-when the data set contains continuous features, the distances between
-continuous values should be normalized to ensure that all features have
-similar impats, e.g. by dividing the distance with the range.
+The following example demonstrates how to compute distances between two instances:
 
-Distance measures thus appear in pairs - a class that measures
-the distance (:obj:`Distance`) and a class that constructs it based on the
-data (:obj:`DistanceConstructor`).
+.. literalinclude:: code/distance-simple.py
+    :lines: 1-7
 
-Since most measures work on normalized distances between corresponding
-features, an abstract class `DistanceNormalized` takes care of
-normalizing.
+A matrix with all pairwise distances can be computed with :obj:`distance_matrix`:
+
+.. literalinclude:: code/distance-simple.py
+    :lines: 9-11
 
 Unknown values are treated correctly only by Euclidean and Relief
 distance.  For other measures, a distance between unknown and known or
 between two unknown values is always 0.5.
 
-.. autofunction:: distance_matrix
+===================
+Computing distances 
+===================
 
-.. class:: Distance
+Distance measures typically have to be adjusted to the data. For instance,
+when the data set contains continuous features, the distances between
+continuous values should be normalized to ensure that all features have
+similar impats, e.g. by dividing the distance with the range.
 
-    .. method:: __call__(instance1, instance2)
+Distance measures thus appear in pairs:
 
-        Return a distance between the given instances (as a floating point number).
+- a class that constructs the distance measure based on the
+  data (subclass of :obj:`DistanceConstructor`, for
+  example :obj:`Euclidean`), and returns is as
+- a class that measures the distance between two instances
+  (subclass of :obj:`Distance`, for example :obj:`EuclideanDistance`).
 
 .. class:: DistanceConstructor
 
@@ -37,37 +43,23 @@ between two unknown values is always 0.5.
         Most measures can be constructed from basic_var_stat; if it is
         not given, instances or distributions can be used.
 
-.. class:: DistanceNormalized
+.. class:: Distance
 
-    An abstract class that provides normalization.
+    .. method:: __call__(instance1, instance2)
 
-    .. attribute:: normalizers
+        Return a distance between the given instances (as a floating point number).
 
-        A precomputed list of normalizing factors for feature values. They are:
+Pairwise distances
+==================
 
-        - 1/(max_value-min_value) for continuous and 1/number_of_values
-          for ordinal features.
-          If either feature is unknown, the distance is 0.5. Such factors
-          are used to multiply differences in feature's values.
-        - ``-1`` for nominal features; the distance
-          between two values is 0 if they are same (or at least one is
-          unknown) and 1 if they are different.
-        - ``0`` for ignored features.
+.. autofunction:: distance_matrix
 
-    .. attribute:: bases, averages, variances
+=========
+Measures
+=========
 
-        The minimal values, averages and variances
-        (continuous features only).
-
-    .. attribute:: domain_version
-
-        The domain version changes each time a domain description is
-        changed (i.e. features are added or removed).
-
-    .. method:: feature_distances(instance1, instance2)
-
-        Return a list of floats representing normalized distances between
-        pairs of feature values of the two instances.
+Distance measures are defined with two classes: a subclass of obj:`DistanceConstructor`
+and a subclass of :obj:`Distance`.
 
 .. class:: Hamming
 .. class:: HammingDistance
@@ -80,7 +72,7 @@ between two unknown values is always 0.5.
 
     The maximal distance
     between two feature values. If dist is the result of
-    ~:obj:`DistanceNormalized.feature_distances`,
+    :obj:`~DistanceNormalized.feature_distances`,
     then :class:`Maximal` returns ``max(dist)``.
 
 .. class:: Manhattan
@@ -88,14 +80,14 @@ between two unknown values is always 0.5.
 
     The sum of absolute values
     of distances between pairs of features, e.g. ``sum(abs(x) for x in dist)``
-    where dist is the result of ~:obj:`DistanceNormalized.feature_distances`.
+    where dist is the result of :obj:`~DistanceNormalized.feature_distances`.
 
 .. class:: Euclidean
 .. class:: EuclideanDistance
 
     The square root of sum of squared per-feature distances,
     i.e. ``sqrt(sum(x*x for x in dist))``, where dist is the result of
-    ~:obj:`DistanceNormalized.feature_distances`.
+    :obj:`~DistanceNormalized.feature_distances`.
 
     .. method:: distributions
 
@@ -136,7 +128,6 @@ between two unknown values is always 0.5.
 
     This class is derived directly from :obj:`Distance`.
 
-
 .. autoclass:: PearsonR
     :members:
 
@@ -146,7 +137,49 @@ between two unknown values is always 0.5.
 .. autoclass:: SpearmanR
     :members:
 
-.. autoclass:: SpearmanRConstructor
+.. autoclass:: SpearmanRDistance
     :members:
+
+.. autoclass:: Mahalanobis
+    :members:
+
+.. autoclass:: MahalanobisDistance
+    :members:
+
+=========
+Utilities
+=========
+
+.. class:: DistanceNormalized
+
+    An abstract class that provides normalization.
+
+    .. attribute:: normalizers
+
+        A precomputed list of normalizing factors for feature values. They are:
+
+        - 1/(max_value-min_value) for continuous and 1/number_of_values
+          for ordinal features.
+          If either feature is unknown, the distance is 0.5. Such factors
+          are used to multiply differences in feature's values.
+        - ``-1`` for nominal features; the distance
+          between two values is 0 if they are same (or at least one is
+          unknown) and 1 if they are different.
+        - ``0`` for ignored features.
+
+    .. attribute:: bases, averages, variances
+
+        The minimal values, averages and variances
+        (continuous features only).
+
+    .. attribute:: domain_version
+
+        The domain version changes each time a domain description is
+        changed (i.e. features are added or removed).
+
+    .. method:: feature_distances(instance1, instance2)
+
+        Return a list of floats representing normalized distances between
+        pairs of feature values of the two instances.
 
 
