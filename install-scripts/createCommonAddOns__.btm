@@ -17,7 +17,7 @@ for %pyver in (%PYTHONVERSIONS) do (
   echo *************************************
   echo *************************************
   echo *** Compiling Orange Bioinformatics for Python %pyver
-  cdd %TMPDIR\add-ons\Bioinformatics
+  cdd %TMPDIR\Bioinformatics
   del /syeq build
   del /syeq dist
 
@@ -27,14 +27,14 @@ for %pyver in (%PYTHONVERSIONS) do (
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst > %COMPILELOG
   break_on_error
-rem when compiled:  move /z %TMPDIR\add-ons\Bioinformatics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
-  move /z %TMPDIR\add-ons\Bioinformatics\dist\*.win32.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
+rem when compiled:  move /z %TMPDIR\Bioinformatics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
+  move /z %TMPDIR\Bioinformatics\dist\*.win32.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
   set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Bioinformatics
   if not direxist %TMPBINDIR mkdir /s %TMPBINDIR
   
-  cdd %TMPDIR\add-ons\Bioinformatics\build\lib.win32-%npver
+  cdd %TMPDIR\Bioinformatics\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
     copy %pydf %TMPBINDIR
     set MD5=%@MD5[%pydf]
@@ -48,7 +48,7 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
   echo *************************************
   echo *************************************
   echo *** Compiling TEXT MINING for Python %pyver 
-  cdd %TMPDIR\add-ons\Text
+  cdd %TMPDIR\Text
   del /syeq build
   del /syeq dist
 
@@ -58,13 +58,13 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst > %COMPILELOG
   rem break_on_error
-  move /z %TMPDIR\add-ons\Text\dist\*.win32-py%npver.exe %TMPDIR\%PKG_TEXT-py%npver.exe
+  move /z %TMPDIR\Text\dist\*.win32-py%npver.exe %TMPDIR\%PKG_TEXT-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
   set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Text
   if not direxist %TMPBINDIR mkdir /s %TMPBINDIR
 
-  cdd %TMPDIR\add-ons\Text\build\lib.win32-%npver
+  cdd %TMPDIR\Text\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
     copy %pydf %TMPBINDIR
     set MD5=%@MD5[%pydf]

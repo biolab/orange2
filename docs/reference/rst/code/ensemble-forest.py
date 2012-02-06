@@ -7,8 +7,8 @@
 import Orange
 
 forest = Orange.ensemble.forest.RandomForestLearner(trees=50, name="forest")
-tree = Orange.classification.tree.TreeLearner(minExamples=2, mForPrunning=2, \
-                            sameMajorityPruning=True, name='tree')
+tree = Orange.classification.tree.TreeLearner(min_examples=2, m_prunning=2, \
+                            same_majority_pruning=True, name='tree')
 learners = [tree, forest]
 
 print "Classification: bupa.tab"

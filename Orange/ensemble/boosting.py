@@ -26,11 +26,11 @@ class BoostedLearner(orange.Learner):
     :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier` or 
             :class:`Orange.ensemble.boosting.BoostedLearner`
     """
-    def __new__(cls, learner, instances=None, weightId=None, **kwargs):
+    def __new__(cls, learner, instances=None, weight_id=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
         if instances is not None:
             self.__init__(self, learner, **kwargs)
-            return self.__call__(instances, weightId)
+            return self.__call__(instances, weight_id)
         else:
             return self
 
@@ -39,22 +39,22 @@ class BoostedLearner(orange.Learner):
         self.name = name
         self.learner = learner
 
-    def __call__(self, instances, origWeight = 0):
+    def __call__(self, instances, orig_weight = 0):
         """
         Learn from the given table of data instances.
         
         :param instances: data instances to learn from.
         :type instances: Orange.data.Table
-        :param origWeight: weight.
-        :type origWeight: int
+        :param orig_weight: weight.
+        :type orig_weight: int
         :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier`
         
         """
         import math
         weight = Orange.data.new_meta_id()
-        if origWeight:
+        if orig_weight:
             for i in instances:
-                i.setweight(weight, i.getweight(origWeight))
+                i.setweight(weight, i.getweight(orig_weight))
         else:
             instances.addMetaAttribute(weight, 1.0)
             
@@ -79,7 +79,7 @@ class BoostedLearner(orange.Learner):
                     del classifiers[-1]
                 instances.removeMetaAttribute(weight)
                 return BoostedClassifier(classifiers = classifiers, 
-                    name=self.name, classVar=instances.domain.classVar)
+                    name=self.name, class_var=instances.domain.class_var)
             beta = epsilon/(1-epsilon)
             for e in range(n):
                 if corr[e]:
@@ -90,7 +90,8 @@ class BoostedLearner(orange.Learner):
 
         instances.removeMetaAttribute(weight)
         return BoostedClassifier(classifiers = classifiers, name=self.name, 
-            classVar=instances.domain.classVar)
+            class_var=instances.domain.class_var)
+BoostedLearner = Orange.misc.deprecated_members({"examples":"instances", "classVar":"class_var", "weightId":"weigth_id", "origWeight":"orig_weight"})(BoostedLearner)
 
 class BoostedClassifier(orange.Classifier):
     """
@@ -107,18 +108,18 @@ class BoostedClassifier(orange.Classifier):
     :param name: name of the resulting classifier.
     :type name: str
     
-    :param classVar: the class feature.
-    :type classVar: :class:`Orange.data.variable.Variable`
+    :param class_var: the class feature.
+    :type class_var: :class:`Orange.data.variable.Variable`
     
     """
 
-    def __init__(self, classifiers, name, classVar, **kwds):
+    def __init__(self, classifiers, name, class_var, **kwds):
         self.classifiers = classifiers
         self.name = name
-        self.classVar = classVar
+        self.class_var = class_var
         self.__dict__.update(kwds)
 
-    def __call__(self, instance, resultType = orange.GetValue):
+    def __call__(self, instance, result_type = orange.GetValue):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -130,24 +131,25 @@ class BoostedClassifier(orange.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        votes = Orange.statistics.distribution.Discrete(self.classVar)
+        votes = Orange.statistics.distribution.Discrete(self.class_var)
         for c, e in self.classifiers:
             votes[int(c(instance))] += e
-        index = Orange.misc.selection.selectBestIndex(votes)
+        index = Orange.misc.selection.select_best_index(votes)
         # TODO
-        value = Orange.data.Value(self.classVar, index)
-        if resultType == orange.GetValue:
+        value = Orange.data.Value(self.class_var, index)
+        if result_type == orange.GetValue:
             return value
         sv = sum(votes)
         for i in range(len(votes)):
             votes[i] = votes[i]/sv
-        if resultType == orange.GetProbabilities:
+        if result_type == orange.GetProbabilities:
             return votes
-        elif resultType == orange.GetBoth:
+        elif result_type == orange.GetBoth:
             return (value, votes)
         else:
             return value
         
     def __reduce__(self):
-        return type(self), (self.classifiers, self.name, self.classVar), dict(self.__dict__)
-    
+        return type(self), (self.classifiers, self.name, self.class_var), dict(self.__dict__)
+
+BoostedClassifier = Orange.misc.deprecated_members({"classVar":"class_var", "resultType":"result_type"})(BoostedClassifier)

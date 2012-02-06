@@ -309,7 +309,7 @@ Example 2 - Clustering of examples
 
 The most common things to cluster are certainly examples. To show how to
 this is done, we shall now load the Iris data set, initialize a distance
-matrix with the distances measure by :class:`ExamplesDistance_Euclidean`
+matrix with the distances measure by :class:`Euclidean`
 and cluster it with average linkage. Since we don't need the matrix,
 we shall let the clustering overwrite it (not that it's needed for
 such a small data set as Iris). ::
@@ -320,7 +320,7 @@ such a small data set as Iris). ::
     data = Orange.data.Table("iris")
     matrix = Orange.core.SymMatrix(len(data))
     matrix.setattr("objects", data)
-    distance = Orange.distance.EuclideanConstructor(data)
+    distance = Orange.distance.Euclidean(data)
     for i1, instance1 in enumerate(data):
         for i2 in range(i1+1, len(data)):
             matrix[i1, i2] = distance(instance1, data[i2])
@@ -474,7 +474,7 @@ COMPLETE = HierarchicalClustering.Complete
 WARD = HierarchicalClustering.Ward
 
 def clustering(data,
-               distance_constructor=orange.ExamplesDistanceConstructor_Euclidean,
+               distance_constructor=Orange.distance.Euclidean,
                linkage=AVERAGE,
                order=False,
                progress_callback=None):
@@ -483,7 +483,7 @@ def clustering(data,
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
     :param distance_constructor: Instance distance constructor
-    :type distance_constructor: :class:`Orange.distance.ExamplesDistanceConstructor`
+    :type distance_constructor: :class:`Orange.distance.DistanceConstructor`
     :param linkage: Linkage flag. Must be one of global module level flags:
     
         - SINGLE
@@ -1510,7 +1510,7 @@ def cluster_depths(cluster):
 
 
 def instance_distance_matrix(data,
-            distance_constructor=orange.ExamplesDistanceConstructor_Euclidean,
+            distance_constructor=Orange.distance.Euclidean,
             progress_callback=None):
     """ A helper function that computes an :class:`Orange.core.SymMatrix` of all
     pairwise distances between instances in `data`.
@@ -1518,8 +1518,8 @@ def instance_distance_matrix(data,
     :param data: A data table
     :type data: :class:`Orange.data.Table`
     
-    :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :class:`Orange.distance.ExampleDistConstructor`
+    :param distance_constructor: An DistanceConstructor instance.
+    :type distance_constructor: :class:`Orange.distance.DistanceConstructor`
     
     :param progress_callback: A function (taking one argument) to use for
         reporting the on the progress.

@@ -3,7 +3,7 @@ from Orange.misc.testing import test_on_data, datasets_driven
 
 import unittest
 from Orange.projection import mds
-from Orange.distance.instances import distance_matrix, EuclideanConstructor
+from Orange.distance import distance_matrix, Euclidean
     
 @datasets_driven
 class TestMDS(unittest.TestCase):

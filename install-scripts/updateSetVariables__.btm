@@ -6,6 +6,7 @@ REM - pythonbase
 REM # set paths to orange sources and format date
 set SCRIPTDIR=%_CWD
 set TMPDIR=%SCRIPTDIR\%1
+set SOURCEDIR=%TMPDIR\source
 set DOWNLOADDIR=Z:\Volumes\download\
 
 REM # read filenames of current packages

@@ -448,11 +448,12 @@ Machine Learning, vol.39, no.2/3, pp:135-68.
 
 """
 
-import statc, operator, math
+import operator, math
 from operator import add
 import numpy
 
 import Orange
+from Orange import statc
 
 
 #### Private stuff

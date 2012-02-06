@@ -1,30 +1,30 @@
 Traceback (most recent call last):
-  File "/home/miha/work/orange/testing/regressionTests/xtest_one.py", line 97, in <module>
+  File "/home/miha/work/orange/Orange/testing/regression/xtest_one.py", line 97, in <module>
     execfile(t__name)
   File "ensemble.py", line 16, in <module>
     results = Orange.evaluation.testing.cross_validation(learners, lymphography, folds=3)
-  File "/home/miha/work/orange/orange/Orange/misc/__init__.py", line 454, in wrap_call
+  File "/home/miha/work/orange/Orange/misc/__init__.py", line 511, in wrap_call
     return func(*args, **kwargs)
-  File "/home/miha/work/orange/orange/Orange/evaluation/testing.py", line 228, in cross_validation
+  File "/home/miha/work/orange/Orange/evaluation/testing.py", line 227, in cross_validation
     store_examples=store_examples)
-  File "/home/miha/work/orange/orange/Orange/misc/__init__.py", line 454, in wrap_call
+  File "/home/miha/work/orange/Orange/misc/__init__.py", line 511, in wrap_call
     return func(*args, **kwargs)
-  File "/home/miha/work/orange/orange/Orange/evaluation/testing.py", line 295, in test_with_indices
+  File "/home/miha/work/orange/Orange/evaluation/testing.py", line 294, in test_with_indices
     results, classifiers = self.one_fold_with_indices(learners, examples, fold, indices, preprocessors, weight)
-  File "/home/miha/work/orange/orange/Orange/evaluation/testing.py", line 326, in one_fold_with_indices
+  File "/home/miha/work/orange/Orange/evaluation/testing.py", line 325, in one_fold_with_indices
     results = self._test_on_data(classifiers, test_set, testset_ids)
-  File "/home/miha/work/orange/orange/Orange/evaluation/testing.py", line 669, in _test_on_data
+  File "/home/miha/work/orange/Orange/evaluation/testing.py", line 668, in _test_on_data
     result = classifier(ex2, Orange.core.GetBoth)
-  File "/home/miha/work/orange/orange/Orange/ensemble/boosting.py", line 136, in __call__
+  File "/home/miha/work/orange/Orange/ensemble/boosting.py", line 136, in __call__
     index = Orange.misc.selection.selectBestIndex(votes)
-  File "/home/miha/work/orange/orange/Orange/misc/__init__.py", line 526, in wrapped
+  File "/home/miha/work/orange/Orange/misc/__init__.py", line 583, in wrapped
     return func(*args, **kwargs)
-  File "/home/miha/work/orange/orange/Orange/misc/__init__.py", line 454, in wrap_call
+  File "/home/miha/work/orange/Orange/misc/__init__.py", line 511, in wrap_call
     return func(*args, **kwargs)
-  File "/home/miha/work/orange/orange/Orange/misc/selection.py", line 209, in select_best_index
+  File "/home/miha/work/orange/Orange/misc/selection.py", line 209, in select_best_index
     bs=BestOnTheFly(compare, seed, call_compare_on_1st)
-  File "/home/miha/work/orange/orange/Orange/misc/__init__.py", line 454, in wrap_call
+  File "/home/miha/work/orange/Orange/misc/__init__.py", line 511, in wrap_call
     return func(*args, **kwargs)
-  File "/home/miha/work/orange/orange/Orange/misc/selection.py", line 105, in __init__
+  File "/home/miha/work/orange/Orange/misc/selection.py", line 105, in __init__
     self.randomGenerator = random.Random(seed)
 AttributeError: 'module' object has no attribute 'Random'

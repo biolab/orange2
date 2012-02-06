@@ -4,11 +4,11 @@ import Orange
 iris = Orange.data.Table("iris.tab")
 
 # Euclidean distance constructor
-d2Constr = Orange.distance.EuclideanConstructor()
+d2Constr = Orange.distance.Euclidean()
 d2 = d2Constr(iris)
 
 # Constructs 
-dPears = Orange.distance.PearsonRConstructor(iris)
+dPears = Orange.distance.PearsonR(iris)
 
 #reference instance
 ref = iris[0]

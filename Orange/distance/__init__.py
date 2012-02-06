@@ -1,39 +1,55 @@
 import Orange
 
+#%s/ExamplesDistanceConstructor/DistanceConstructor/gc
+#%s/ExamplesDistance_Normalized/DistanceNormalized/gc
+#ExampleDistance -> Distance
+#Hamming -> HammingDistance
+#DTW -> DTWDistance
+#Euclidean -> EuclideanDistance
+#Manhattan -> ...
+#Maximal -> ...
+#Relief -> ..
+#DTWConstructor
+#EuclideanConstructor
+#HammingConstructor
+#ManhattanConstructor
+#MaximalConstructor
+#ReliefConstructor
+#PearsonRConstructor -> PearsonR
+#PearsonR -> PearsonRDistance
+#SpearmanRConstructor -> SpearmanR
+#SpearmanR -> SpearmanRDistance
+#MahalanobisConstructor ->  Mahalanobis
+#Mahalanobis -> MahalanobisDistance
+
 from Orange.core import \
-     AlignmentList, \
-     DistanceMap, \
-     DistanceMapConstructor, \
-     ExampleDistConstructor, \
-     ExampleDistBySorting, \
-     ExampleDistVector, \
-     ExamplesDistance, \
-     ExamplesDistance_Normalized, \
-     ExamplesDistanceConstructor
+    DistanceMap, \
+    DistanceMapConstructor, \
+    ExamplesDistance as Distance, \
+    ExamplesDistance_Normalized as DistanceNormalized, \
+    ExamplesDistanceConstructor as DistanceConstructor, \
+    ExamplesDistance_Hamming as HammingDistance, \
+    ExamplesDistance_DTW as DTWDistance, \
+    ExamplesDistance_Euclidean as EuclideanDistance, \
+    ExamplesDistance_Manhattan as ManhattanDistance, \
+    ExamplesDistance_Maximal as MaximalDistance, \
+    ExamplesDistance_Relief as ReliefDistance, \
+    ExamplesDistanceConstructor_DTW as DTW, \
+    ExamplesDistanceConstructor_Euclidean as Euclidean, \
+    ExamplesDistanceConstructor_Hamming as Hamming, \
+    ExamplesDistanceConstructor_Manhattan as Manhattan, \
+    ExamplesDistanceConstructor_Maximal as Maximal, \
+    ExamplesDistanceConstructor_Relief as Relief
 
-from Orange.core import ExamplesDistance_Hamming as Hamming
-from Orange.core import ExamplesDistance_DTW as DTW
-from Orange.core import ExamplesDistance_Euclidean as Euclidean
-from Orange.core import ExamplesDistance_Manhattan as Manhattan
-from Orange.core import ExamplesDistance_Maximal as Maximal
-from Orange.core import ExamplesDistance_Relief as Relief
-
-from Orange.core import ExamplesDistanceConstructor_DTW as DTWConstructor
-from Orange.core import ExamplesDistanceConstructor_Euclidean as EuclideanConstructor
-from Orange.core import ExamplesDistanceConstructor_Hamming as HammingConstructor
-from Orange.core import ExamplesDistanceConstructor_Manhattan as ManhattanConstructor
-from Orange.core import ExamplesDistanceConstructor_Maximal as MaximalConstructor
-from Orange.core import ExamplesDistanceConstructor_Relief as ReliefConstructor
-
-import statc
+from Orange import statc
 import numpy
 from numpy import linalg
 
-class PearsonRConstructor(ExamplesDistanceConstructor):
-    """Constructs an instance of PearsonR. Not all the data needs to be given."""
+class PearsonR(DistanceConstructor):
+    """Constructs an instance of :obj:`PearsonRDistance`. Not all the data needs to be given."""
     
     def __new__(cls, data=None, **argkw):
-        self = ExamplesDistanceConstructor.__new__(cls, **argkw)
+        self = DistanceConstructor.__new__(cls, **argkw)
         self.__dict__.update(argkw)
         if data:
             return self.__call__(data)
@@ -43,9 +59,9 @@ class PearsonRConstructor(ExamplesDistanceConstructor):
     def __call__(self, table):
         indxs = [i for i, a in enumerate(table.domain.attributes) \
                  if a.varType==Orange.data.Type.Continuous]
-        return PearsonR(domain=table.domain, indxs=indxs)
+        return PearsonRDistance(domain=table.domain, indxs=indxs)
 
-class PearsonR(ExamplesDistance):
+class PearsonRDistance(Distance):
     """
     `Pearson correlation coefficient
     <http://en.wikipedia.org/wiki/Pearson_product-moment\
@@ -76,11 +92,11 @@ class PearsonR(ExamplesDistance):
         except:
             return 1.0
 
-class SpearmanRConstructor(ExamplesDistanceConstructor):
+class SpearmanR(DistanceConstructor):
     """Constructs an instance of SpearmanR. Not all the data needs to be given."""
     
     def __new__(cls, data=None, **argkw):
-        self = ExamplesDistanceConstructor.__new__(cls, **argkw)
+        self = DistanceConstructor.__new__(cls, **argkw)
         self.__dict__.update(argkw)
         if data:
             return self.__call__(data)
@@ -90,9 +106,9 @@ class SpearmanRConstructor(ExamplesDistanceConstructor):
     def __call__(self, table):
         indxs = [i for i, a in enumerate(table.domain.attributes) \
                  if a.varType==Orange.data.Type.Continuous]
-        return SpearmanR(domain=table.domain, indxs=indxs)
+        return SpearmanRDistance(domain=table.domain, indxs=indxs)
 
-class SpearmanR(ExamplesDistance):  
+class SpearmanRDistance(Distance):  
 
     """`Spearman's rank correlation coefficient
     <http://en.wikipedia.org/wiki/Spearman%27s_rank_\
@@ -121,11 +137,11 @@ class SpearmanR(ExamplesDistance):
         except:
             return 1.0
 
-class MahalanobisConstructor(ExamplesDistanceConstructor):
+class Mahalanobis(DistanceConstructor):
     """ Construct instance of Mahalanobis. """
     
     def __new__(cls, data=None, **argkw):
-        self = ExamplesDistanceConstructor.__new__(cls, **argkw)
+        self = DistanceConstructor.__new__(cls, **argkw)
         self.__dict__.update(argkw)
         if data:
             return self.__call__(data)
@@ -148,9 +164,9 @@ class MahalanobisConstructor(ExamplesDistanceConstructor):
         covariance_matrix = numpy.cov(data, rowvar=0, bias=1)
         inverse_covariance_matrix = linalg.pinv(covariance_matrix, rcond=1e-10)
         
-        return Mahalanobis(domain=newdomain, icm=inverse_covariance_matrix)
+        return MahalanobisDistance(domain=newdomain, icm=inverse_covariance_matrix)
 
-class Mahalanobis(ExamplesDistance):
+class MahalanobisDistance(Distance):
     """`Mahalanobis distance
     <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_"""
 
@@ -177,16 +193,16 @@ class Mahalanobis(ExamplesDistance):
         return res[0,0]**0.5
     
     
-class PearsonRAbsoluteConstructor(PearsonRConstructor):
+class PearsonRAbsolute(PearsonR):
     """ Construct an instance of PearsonRAbsolute example distance estimator.
     """
     def __call__(self, data):
         indxs = [i for i, a in enumerate(data.domain.attributes) \
                  if a.varType==Orange.data.Type.Continuous]
-        return PearsonRAbsolute(domain=data.domain, indxs=indxs)
+        return PearsonRAbsoluteDistance(domain=data.domain, indxs=indxs)
     
     
-class PearsonRAbsolute(PearsonR):
+class PearsonRAbsoluteDistance(PearsonRDistance):
     """ An example distance estimator using absolute value of Pearson
     correlation coefficient.
     """
@@ -212,16 +228,16 @@ class PearsonRAbsolute(PearsonR):
             return 1.0
         
         
-class SpearmanRAbsoluteConstructor(SpearmanRConstructor):
+class SpearmanRAbsolute(SpearmanR):
     """ Construct an instance of SpearmanRAbsolute example distance estimator.
     """
     def __call__(self, data):
         indxs = [i for i, a in enumerate(data.domain.attributes) \
                  if a.varType==Orange.data.Type.Continuous]
-        return SpearmanRAbsolute(domain=data.domain, indxs=indxs)
+        return SpearmanRAbsoluteDistance(domain=data.domain, indxs=indxs)
     
     
-class SpearmanRAbsolute(SpearmanR):
+class SpearmanRAbsoluteDistance(SpearmanRDistance):
     def __call__(self, e1, e2):
         """
         Return absolute Spearman's dissimilarity between e1 and e2,
@@ -251,8 +267,8 @@ def distance_matrix(data, distance_constructor, progress_callback=None):
     :param data: A data table
     :type data: :obj:`Orange.data.Table`
     
-    :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :obj:`Orange.distances.ExampleDistConstructor`
+    :param distance_constructor: An DistanceConstructor instance.
+    :type distance_constructor: :obj:`Orange.distances.DistanceConstructor`
     
     """
     from Orange.misc import progressBarMilestones as progress_milestones
