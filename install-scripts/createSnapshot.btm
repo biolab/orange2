@@ -3,16 +3,16 @@ rem # %1 - folder with 3rd party software
 rem # - SVN is updated to head
 
 call updateSetVariables__.btm snapshot
-set WIN_SNAPSHOT=orange-win-snapshot-%daystr
-set WIN_PYTHON_SNAPSHOT=orange-win-w-python-snapshot-%daystr
+set WIN_SNAPSHOT=orange-win-snapshot-hg-%daystr
+set WIN_PYTHON_SNAPSHOT=orange-win-w-python-snapshot-hg-%daystr
 set ADDON_BIOINFORMATICS_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-%daystr
 set ADDON_TEXT_SNAPSHOT=orangeAddOn-text-snapshot-%daystr
 set SOURCE_SNAPSHOT=orange-source-snapshot-%daystr.zip
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
-svn cleanup
-svn update --ignore-externals
+
+hg pull --update
 
 rem # build core
 cdd %SCRIPTDIR
@@ -26,25 +26,23 @@ break_on_error
 
 rem # if no errors then publish on web (everything at the same time)
 rem # remove any old files
-except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+REM except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
 
 rem # pack sources
 cdd %TMPDIR
 del /syeqtx sourcestopack
-mkdir sourcestopack
+
+hg archive sourcestopack
+
 cd sourcestopack
-svn export --native-eol LF -q http://orange.biolab.si/svn/orange/trunk/orange
-cd orange
-del *.pyd *.dll *.bat
-svn export --native-eol LF -q http://orange.biolab.si/svn/orange/trunk/source 
-copy doc\LICENSES .
-copy doc\COPYING .
-copy doc\LICENSES source
-copy doc\COPYING source
+
 rem # build source distribution
-e:\Python26\python.exe setup.py sdist 
-del %DOWNLOADDIR\orange-source-snapshot-????-??-??.zip
+e:\Python27\python.exe setup.py sdist
+rem # build msi file
+e:\Python27\python.exe setup.py bdist_msi
+rem del %DOWNLOADDIR\orange-source-snapshot-????-??-??.zip
 move /z dist\Orange-?.*.zip %DOWNLOADDIR\%SOURCE_SNAPSHOT
+move /z dist\Orange-?.*.msi %DOWNLOADDIR\%WIN_SNAPSHOT.msi
 
 rem # publish
 cdd %TMPDIR
@@ -54,4 +52,5 @@ move /sdz binaries %DOWNLOADDIR\binaries
 
 rem # remember new filenames
 cdd %SCRIPTDIR
-call updateVersionsPy__.btm
+rem # Don't update the visible versions for now
+rem call updateVersionsPy__.btm
