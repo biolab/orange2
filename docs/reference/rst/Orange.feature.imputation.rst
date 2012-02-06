@@ -27,11 +27,11 @@ Imputers
 =================
 
 :obj:`ImputerConstructor` is the abstract root in the hierarchy of classes
-that get training data and construct an instance of a class derived from
+that accept training data and construct an instance of a class derived from
 :obj:`Imputer`. When an :obj:`Imputer` is called with an
-:obj:`Orange.data.Instance` it will return a new example with the
+:obj:`Orange.data.Instance` it returns a new example with the
 missing values imputed (leaving the original example intact). If imputer is
-called with an :obj:`Orange.data.Table` it will return a new example table
+called with an :obj:`Orange.data.Table` it returns a new example table
 with imputed instances.
 
 .. class:: ImputerConstructor
@@ -56,46 +56,27 @@ disregarding the values of other attributes. They all use the same class
     .. attribute::  defaults
 
     An instance :obj:`Orange.data.Instance` with the default values to be
-    imputed instead of missing. Examples to be imputed must be from the same
-    domain as :obj:`defaults`.
+    imputed instead of missing value. Examples to be imputed must be from the
+    same :obj:`~Orange.data.Domain` as :obj:`defaults`.
 
 Instances of this class can be constructed by
-:obj:`Orange.feature.imputation.ImputerConstructor_minimal`,
-:obj:`Orange.feature.imputation.ImputerConstructor_maximal`,
-:obj:`Orange.feature.imputation.ImputerConstructor_average`.
+:obj:`~Orange.feature.imputation.ImputerConstructor_minimal`,
+:obj:`~Orange.feature.imputation.ImputerConstructor_maximal`,
+:obj:`~Orange.feature.imputation.ImputerConstructor_average`.
 
-For continuous features, they will impute the smallest,
-largest or the average values encountered in the training examples.
+For continuous features, they will impute the smallest, largest or the average
+values encountered in the training examples. For discrete,
+they will impute the lowest (the one with index 0, e. g. attr.values[0]),
+the highest (attr.values[-1]), and the most common value encountered in the
+data.
 
-For discrete, they will impute the lowest (the one with index 0,
-e. g. attr.values[0]), the highest (attr.values[-1]),
-and the most common value encountered in the data.
+If values of discrete features are be ordered according to their
+impact on class (for example, possible values for symptoms of some
+disease can be ordered according to their seriousness),
+the minimal and maximal imputers will then represent optimistic and
+pessimistic imputations.
 
-The first two imputers
-will mostly be used when the discrete values are ordered according to their
-impact on the class (for instance, possible values for symptoms of some
-disease can be ordered according to their seriousness). The minimal and maximal
-imputers will then represent optimistic and pessimistic imputations.
-
-The following code will load the bridges data, and first impute the values
-in a single examples and then in the whole table.
-
-:download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
-
-.. literalinclude:: code/imputation-complex.py
-    :lines: 9-23
-
-This is example shows what the imputer does, not how it is to be used. Don't
-impute all the data and then use it for cross-validation. As warned at the top
-of this page, see the instructions for actual `use of
-imputers <#using-imputers>`_.
-
-.. note:: The :obj:`ImputerConstructor` are another class with schizophrenic
-  constructor: if you give the constructor the data, it will return an \
-  :obj:`Imputer` - the above call is equivalent to calling \
-  :obj:`Orange.feature.imputation.ImputerConstructor_minimal()(data)`.
-
-You can also construct the :obj:`Orange.feature.imputation.Imputer_defaults`
+To construct the :obj:`~Orange.feature.imputation.Imputer_defaults`
 yourself and specify your own defaults. Or leave some values unspecified, in
 which case the imputer won't impute them, as in the following example. Here,
 the only attribute whose values will get imputed is "LENGTH"; the imputed value
