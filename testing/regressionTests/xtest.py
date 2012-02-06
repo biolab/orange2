@@ -179,11 +179,20 @@ def main(argv):
         usage()
         sys.exit(0)
 
-    module = opts.get("--module", "orange")
-    if module in ["orange"]:
+    module = opts.get("--module", "all")
+    if module in ["all"]:
         root = "%s/.." % orngEnviron.orangeDir
         module = "orange"
-        dirs = [("modules", "orange/doc/modules"), ("reference", "orange/doc/reference"), ("ofb", "docs/tutorial/rst/code")]
+        dirs = [("modules", "orange/doc/modules"),
+                ("reference", "orange/doc/reference"),
+                ("ofb", "docs/tutorial/rst/code"),
+                ("orange25", "docs/reference/rst/code")]
+    elif module in ["orange"]:
+        root = "%s/.." % orngEnviron.orangeDir
+        module = "orange"
+        dirs = [("modules", "orange/doc/modules"),
+                ("reference", "orange/doc/reference"),
+                ("ofb", "docs/tutorial/rst/code")]
     elif module in ["ofb-rst"]:
         root = "%s/.." % orngEnviron.orangeDir
         module = "orange"
