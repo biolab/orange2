@@ -101,7 +101,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ImputerConstructor_maximal": "Orange.feature.imputation.ImputerConstructor_maximal",
            "orange.ImputerConstructor_average": "Orange.feature.imputation.ImputerConstructor_average",
 
-           "orange.ExampleDistance": "Orange.distance.Distance",
+           "orange.ExamplesDistance": "Orange.distance.Distance",
            "orange.ExamplesDistance_Normalized": "Orange.distance.DistanceNormalized",
            "orange.ExamplesDistanceConstructor": "Orange.distance.DistanceConstructor",
            "orange.ExamplesDistance_Hamming": "Orange.distance.HammingDistance",
@@ -185,7 +185,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.C45Learner": "Orange.classification.tree.C45Learner",
            "orange.C45Classifier": "Orange.classification.tree.C45Classifier",
            "orange.C45TreeNode": "Orange.classification.tree.C45Node",
-           "orange.C45TreeNodeList": "C45NodeList",
+           "orange.C45TreeNodeList": "Orange.classification.tree.C45NodeList",
            "orange.TreeDescender": "Orange.classification.tree.Descender",
            "orange.TreeDescender_UnknownMergeAsBranchSizes": "Orange.classification.tree.Descender_UnknownMergeAsBranchSizes",
            "orange.TreeDescender_UnknownMergeAsSelector": "Orange.classification.tree.Descender_UnknownMergeAsSelector",
@@ -275,10 +275,10 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
 #           "orngCN2.var": "Orange.classification.rules.var",
 #           "orngCN2.median": "Orange.classification.rules.median",
 #           "orngCN2.perc": "Orange.classification.rules.perc",
-           "orngCN2.createRandomDataSet": "Orange.classification.rules.createRandomDataSet",
-           "orngCN2.compParameters": "Orange.classification.rules.compParameters",
-           "orngCN2.computeDists": "Orange.classification.rules.computeDists",
-           "orngCN2.createEVDistList": "Orange.classification.rules.createEVDistList",
+#           "orngCN2.createRandomDataSet": "Orange.classification.rules.createRandomDataSet",
+#           "orngCN2.compParameters": "Orange.classification.rules.compParameters",
+#           "orngCN2.computeDists": "Orange.classification.rules.computeDists",
+#           "orngCN2.createEVDistList": "Orange.classification.rules.createEVDistList",
            "orngCN2.CovererAndRemover_Prob": "Orange.classification.rules.CovererAndRemover_Prob",
            "orngCN2.add_sub_rules": "Orange.classification.rules.add_sub_rules",
            "orngCN2.CN2EVCUnorderedLearner": "Orange.classification.rules.CN2EVCUnorderedLearner",
@@ -584,7 +584,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.Loess",
            "orange.ProbabilityEstimatorConstructor_m": "Orange.statistics.estimate.M",
            "orange.ProbabilityEstimatorConstructor_relative": "Orange.statistics.estimate.RelativeFrequency",
-           "orange.onditionalProbabilityEstimator": "Orange.statistics.estimate.ConditionalEstimator",
+           "orange.ConditionalProbabilityEstimator": "Orange.statistics.estimate.ConditionalEstimator",
            "orange.ConditionalProbabilityEstimator_FromDistribution": "Orange.statistics.estimate.ConditionalEstimatorFromDistribution",
            "orange.ConditionalProbabilityEstimator_ByRows": "Orange.statistics.estimate.ConditionalEstimatorByRows",
            "orange.ConditionalProbabilityEstimatorConstructor_ByRows": "Orange.statistics.estimate.ConditionalByRows",
@@ -593,20 +593,6 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.RandomGenerator": "Orange.misc.Random",
 
            }
-
-for k, v in MAPPING.items():
-    if k.startswith('orngTest.'):
-        orig = k.split('.')[-1]
-        new = v.split('.')[-1]
-        if orig != new:
-            MAPPING['Orange.evaluation.testing.' + orig] = 'Orange.evaluation.testing.' + new
-
-for k, v in MAPPING.items():
-    if k.startswith('orngStat.'):
-        orig = k.split('.')[-1]
-        new = v.split('.')[-1]
-        if orig != new:
-            MAPPING['Orange.evaluation.scoring.' + orig] = 'Orange.evaluation.scoring.' + new
 
 def build_pattern(mapping=MAPPING):
     PATTERN = """
