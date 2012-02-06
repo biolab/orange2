@@ -1,124 +1,124 @@
 Continuous attributes:
-  age, mean=39.63
-  fnlwgt, mean=198892.33
-  education-num, mean=10.63
-  capital-gain, mean=378.40
-  capital-loss, mean=207.73
-  hours-per-week, mean=39.87
+  age, mean=38.91
+  fnlwgt, mean=187280.26
+  education-num, mean=9.98
+  capital-gain, mean=1041.83
+  capital-loss, mean=96.18
+  hours-per-week, mean=39.91
 
 Nominal attributes (contingency matrix for classes: <>50K, <=50K> )
   workclass:
-    Private, total 22, <4.000, 18.000>
-    Self-emp-not-inc, total 1, <1.000, 0.000>
-    Self-emp-inc, total 1, <0.000, 1.000>
-    Federal-gov, total 1, <1.000, 0.000>
-    Local-gov, total 1, <1.000, 0.000>
-    State-gov, total 1, <1.000, 0.000>
-    Without-pay, total 0, <0.000, 0.000>
+    Private, total 685, <147.000, 538.000>
+    Self-emp-not-inc, total 72, <23.000, 49.000>
+    Self-emp-inc, total 28, <11.000, 17.000>
+    Federal-gov, total 29, <15.000, 14.000>
+    Local-gov, total 59, <18.000, 41.000>
+    State-gov, total 43, <15.000, 28.000>
+    Without-pay, total 2, <0.000, 2.000>
     Never-worked, total 0, <0.000, 0.000>
 
   education:
-    Bachelors, total 6, <2.000, 4.000>
-    Some-college, total 6, <1.000, 5.000>
-    11th, total 0, <0.000, 0.000>
-    HS-grad, total 7, <0.000, 7.000>
-    Prof-school, total 0, <0.000, 0.000>
-    Assoc-acdm, total 3, <2.000, 1.000>
-    Assoc-voc, total 1, <0.000, 1.000>
-    9th, total 1, <0.000, 1.000>
-    7th-8th, total 2, <0.000, 2.000>
-    12th, total 0, <0.000, 0.000>
-    Masters, total 3, <3.000, 0.000>
-    1st-4th, total 0, <0.000, 0.000>
-    10th, total 0, <0.000, 0.000>
-    Doctorate, total 1, <0.000, 1.000>
-    5th-6th, total 0, <0.000, 0.000>
+    Bachelors, total 152, <69.000, 83.000>
+    Some-college, total 193, <33.000, 160.000>
+    11th, total 34, <2.000, 32.000>
+    HS-grad, total 327, <61.000, 266.000>
+    Prof-school, total 9, <7.000, 2.000>
+    Assoc-acdm, total 39, <13.000, 26.000>
+    Assoc-voc, total 41, <5.000, 36.000>
+    9th, total 18, <1.000, 17.000>
+    7th-8th, total 30, <2.000, 28.000>
+    12th, total 22, <0.000, 22.000>
+    Masters, total 57, <33.000, 24.000>
+    1st-4th, total 8, <1.000, 7.000>
+    10th, total 24, <1.000, 23.000>
+    Doctorate, total 15, <7.000, 8.000>
+    5th-6th, total 8, <1.000, 7.000>
     Preschool, total 0, <0.000, 0.000>
 
   marital-status:
-    Married-civ-spouse, total 12, <7.000, 5.000>
-    Divorced, total 4, <0.000, 4.000>
-    Never-married, total 8, <0.000, 8.000>
-    Separated, total 3, <0.000, 3.000>
-    Widowed, total 3, <1.000, 2.000>
-    Married-spouse-absent, total 0, <0.000, 0.000>
-    Married-AF-spouse, total 0, <0.000, 0.000>
+    Married-civ-spouse, total 452, <201.000, 251.000>
+    Divorced, total 132, <11.000, 121.000>
+    Never-married, total 297, <16.000, 281.000>
+    Separated, total 41, <3.000, 38.000>
+    Widowed, total 37, <4.000, 33.000>
+    Married-spouse-absent, total 17, <1.000, 16.000>
+    Married-AF-spouse, total 1, <0.000, 1.000>
 
   occupation:
-    Tech-support, total 1, <0.000, 1.000>
-    Craft-repair, total 3, <1.000, 2.000>
-    Other-service, total 3, <0.000, 3.000>
-    Sales, total 4, <1.000, 3.000>
-    Exec-managerial, total 7, <3.000, 4.000>
-    Prof-specialty, total 5, <3.000, 2.000>
-    Handlers-cleaners, total 0, <0.000, 0.000>
-    Machine-op-inspct, total 0, <0.000, 0.000>
-    Adm-clerical, total 2, <0.000, 2.000>
-    Farming-fishing, total 0, <0.000, 0.000>
-    Transport-moving, total 2, <0.000, 2.000>
-    Priv-house-serv, total 0, <0.000, 0.000>
-    Protective-serv, total 0, <0.000, 0.000>
-    Armed-Forces, total 0, <0.000, 0.000>
+    Tech-support, total 33, <13.000, 20.000>
+    Craft-repair, total 117, <30.000, 87.000>
+    Other-service, total 103, <1.000, 102.000>
+    Sales, total 92, <31.000, 61.000>
+    Exec-managerial, total 125, <53.000, 72.000>
+    Prof-specialty, total 110, <44.000, 66.000>
+    Handlers-cleaners, total 40, <3.000, 37.000>
+    Machine-op-inspct, total 62, <7.000, 55.000>
+    Adm-clerical, total 115, <20.000, 95.000>
+    Farming-fishing, total 29, <5.000, 24.000>
+    Transport-moving, total 61, <16.000, 45.000>
+    Priv-house-serv, total 10, <0.000, 10.000>
+    Protective-serv, total 20, <6.000, 14.000>
+    Armed-Forces, total 1, <0.000, 1.000>
 
   relationship:
-    Wife, total 1, <1.000, 0.000>
-    Own-child, total 3, <0.000, 3.000>
-    Husband, total 11, <6.000, 5.000>
-    Not-in-family, total 8, <0.000, 8.000>
-    Other-relative, total 0, <0.000, 0.000>
-    Unmarried, total 7, <1.000, 6.000>
+    Wife, total 63, <33.000, 30.000>
+    Own-child, total 146, <3.000, 143.000>
+    Husband, total 384, <166.000, 218.000>
+    Not-in-family, total 249, <25.000, 224.000>
+    Other-relative, total 27, <2.000, 25.000>
+    Unmarried, total 108, <7.000, 101.000>
 
   race:
-    White, total 27, <7.000, 20.000>
-    Asian-Pac-Islander, total 0, <0.000, 0.000>
-    Amer-Indian-Eskimo, total 0, <0.000, 0.000>
-    Other, total 0, <0.000, 0.000>
-    Black, total 3, <1.000, 2.000>
+    White, total 825, <214.000, 611.000>
+    Asian-Pac-Islander, total 32, <8.000, 24.000>
+    Amer-Indian-Eskimo, total 8, <0.000, 8.000>
+    Other, total 12, <1.000, 11.000>
+    Black, total 100, <13.000, 87.000>
 
   sex:
-    Female, total 13, <2.000, 11.000>
-    Male, total 17, <6.000, 11.000>
+    Female, total 353, <51.000, 302.000>
+    Male, total 624, <185.000, 439.000>
 
   native-country:
-    United-States, total 29, <8.000, 21.000>
-    Cuba, total 0, <0.000, 0.000>
-    Jamaica, total 0, <0.000, 0.000>
-    India, total 0, <0.000, 0.000>
-    Mexico, total 0, <0.000, 0.000>
-    South, total 0, <0.000, 0.000>
-    Puerto-Rico, total 0, <0.000, 0.000>
+    United-States, total 864, <215.000, 649.000>
+    Cuba, total 1, <0.000, 1.000>
+    Jamaica, total 2, <1.000, 1.000>
+    India, total 3, <1.000, 2.000>
+    Mexico, total 25, <2.000, 23.000>
+    South, total 1, <0.000, 1.000>
+    Puerto-Rico, total 1, <0.000, 1.000>
     Honduras, total 0, <0.000, 0.000>
-    England, total 1, <0.000, 1.000>
-    Canada, total 0, <0.000, 0.000>
-    Germany, total 0, <0.000, 0.000>
-    Iran, total 0, <0.000, 0.000>
-    Philippines, total 0, <0.000, 0.000>
-    Italy, total 0, <0.000, 0.000>
-    Poland, total 0, <0.000, 0.000>
-    Columbia, total 0, <0.000, 0.000>
-    Cambodia, total 0, <0.000, 0.000>
+    England, total 4, <0.000, 4.000>
+    Canada, total 5, <1.000, 4.000>
+    Germany, total 7, <2.000, 5.000>
+    Iran, total 1, <0.000, 1.000>
+    Philippines, total 4, <1.000, 3.000>
+    Italy, total 3, <1.000, 2.000>
+    Poland, total 2, <0.000, 2.000>
+    Columbia, total 2, <1.000, 1.000>
+    Cambodia, total 1, <0.000, 1.000>
     Thailand, total 0, <0.000, 0.000>
     Ecuador, total 0, <0.000, 0.000>
-    Laos, total 0, <0.000, 0.000>
-    Taiwan, total 0, <0.000, 0.000>
-    Haiti, total 0, <0.000, 0.000>
+    Laos, total 1, <0.000, 1.000>
+    Taiwan, total 4, <1.000, 3.000>
+    Haiti, total 2, <1.000, 1.000>
     Portugal, total 0, <0.000, 0.000>
-    Dominican-Republic, total 0, <0.000, 0.000>
-    El-Salvador, total 0, <0.000, 0.000>
+    Dominican-Republic, total 1, <0.000, 1.000>
+    El-Salvador, total 3, <0.000, 3.000>
     France, total 0, <0.000, 0.000>
-    Guatemala, total 0, <0.000, 0.000>
-    China, total 0, <0.000, 0.000>
-    Japan, total 0, <0.000, 0.000>
+    Guatemala, total 1, <0.000, 1.000>
+    China, total 3, <1.000, 2.000>
+    Japan, total 1, <1.000, 0.000>
     Yugoslavia, total 0, <0.000, 0.000>
-    Peru, total 0, <0.000, 0.000>
-    Outlying-US(Guam-USVI-etc), total 0, <0.000, 0.000>
-    Scotland, total 0, <0.000, 0.000>
+    Peru, total 1, <0.000, 1.000>
+    Outlying-US(Guam-USVI-etc), total 1, <0.000, 1.000>
+    Scotland, total 1, <0.000, 1.000>
     Trinadad&Tobago, total 0, <0.000, 0.000>
-    Greece, total 0, <0.000, 0.000>
-    Nicaragua, total 0, <0.000, 0.000>
-    Vietnam, total 0, <0.000, 0.000>
+    Greece, total 1, <0.000, 1.000>
+    Nicaragua, total 2, <0.000, 2.000>
+    Vietnam, total 3, <0.000, 3.000>
     Hong, total 0, <0.000, 0.000>
-    Ireland, total 0, <0.000, 0.000>
+    Ireland, total 3, <1.000, 2.000>
     Hungary, total 0, <0.000, 0.000>
     Holand-Netherlands, total 0, <0.000, 0.000>
 
