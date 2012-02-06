@@ -4,11 +4,12 @@
 Classification (``classification``)
 ###################################
 
-All classifiers in Orange consist of two parts, a Learner and a Classifier. A
-learner is constructed with all parameters that will be used for learning.
-When a data table is passed to its __call__ method, a model is fitted to the
-data and return in a form of a Classifier, which is then used for predicting
-the dependent variable(s) of new instances.
+To facilitate correct evaluation, all classifiers in Orange consist of two
+parts, a Learner and a Classifier. A learner is constructed with all
+parameters that will be used for learning. When a data table is passed to its
+__call__ method, a model is fitted to the data and return in a form of a
+Classifier, which is then used for predicting the dependent variable(s) of
+new instances.
 
 .. class:: Learner()
 
@@ -55,38 +56,17 @@ the dependent variable(s) of new instances.
               :class:`~Orange.statistics.distribution.Distribution` or a
               tuple with both
 
-You can often program learners and classifiers as classes or functions written
-entirely in Python and independent from Orange. Such classes can participate,
-for instance, in the common evaluation functions like those available in
-modules :obj:`Orange.evaluation.testing` and :obj:`Orange.evaluation.scoring`.
 
-On the other hand, these classes can't be used as components for pure C++
-classes. For instance, :obj:`Orange.classification.tree.TreeLearner`'s
-attribute nodeLearner should contain a (wrapped) C++ object derived from
-:obj:`Learner`, such as :obj:`Orange.classification.majority.MajorityLearner`
-or :obj:`Orange.classification.bayes.NaiveLearner`. They cannot accommodate
-Python's classes or even functions.
+When developing new prediction models, one should extend :obj:`Learner` and
+:obj:`Classifier`\. Code that infers the model from the data should be placed
+in Learners's :obj:`~Learner.__call__` method. This method should
+return a :obj:`Classifier`. Classifiers' :obj:`~Classifier.__call__` method
+should  return the predicition; :class:`~Orange.data.Value`,
+:class:`~Orange.statistics.distribution.Distribution` or a tuple with both
+based on the value of the parameter :obj:`return_type`.
 
-There's a workaround, though. You can subtype Orange classes :obj:`Learner` or
-:obj:`Classifier` as if the two classes were defined in Python, but later use your
-derived Python classes as if they were written in Orange's core. That is, you
-can define your class in a Python script like this::
-
-    class MyLearner(Orange.classifier.Learner): 
-        def __call__(self, examples, weightID = 0): 
-            <do something smart here>
-
-Such a learner can then be used as any regular learner written in
-Orange. You can, for instance, construct a tree learner and use your
-learner to learn node classifier::
-
-    treeLearner = Orange.classification.tree.TreeLearner()
-    treeLearner.nodeLearner = MyLearner()
-
------
-
-Orange contains implementations of various classifiers that are described in
-detail on separate pages.
+Orange implements various classifiers that are described in detail on
+separate pages.
 
 .. toctree::
    :maxdepth: 2
