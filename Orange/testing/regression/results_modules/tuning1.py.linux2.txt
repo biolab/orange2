@@ -1,112 +1,112 @@
-*** orngWrap  1: [0.97389426388686473]:
-*** orngWrap  2: [0.98438566202162203]:
-*** orngWrap  3: [0.98933022418039074]:
-*** orngWrap  4: [0.98681431406181686]:
-*** orngWrap  5: [0.98934149735111632]:
-*** orngWrap  10: [0.98749332017922464]:
-*** orngWrap  15: [0.97869912592443098]:
-*** orngWrap  20: [0.97643577219973809]:
+*** optimization  1: [0.9706992853681718]:
+*** optimization  2: [0.9743207136103917]:
+*** optimization  3: [0.9833880175537593]:
+*** optimization  4: [0.987881777448925]:
+*** optimization  5: [0.9889423897378024]:
+*** optimization  10: [0.9869203192362646]:
+*** optimization  15: [0.9884223913820658]:
+*** optimization  20: [0.9780406731017164]:
 *** Optimal parameter: minSubset = 5
 Optimal setting:  5
-*** orngWrap  1: [0.98227150537634411]:
-*** orngWrap  2: [0.98884632616487456]:
-*** orngWrap  3: [0.98196684587813621]:
-*** orngWrap  4: [0.98714157706093197]:
-*** orngWrap  5: [0.98870071684587824]:
-*** orngWrap  10: [0.99331541218638009]:
-*** orngWrap  15: [0.98403225806451622]:
-*** orngWrap  20: [0.98103718637992832]:
-*** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.9721774193548387]:
-*** orngWrap  2: [0.97903449820788524]:
-*** orngWrap  3: [0.97773297491039424]:
-*** orngWrap  4: [0.98494623655913971]:
-*** orngWrap  5: [0.98368055555555567]:
-*** orngWrap  10: [0.98751792114695336]:
-*** orngWrap  15: [0.98764336917562734]:
-*** orngWrap  20: [0.97993503584229402]:
-*** Optimal parameter: minSubset = 15
-*** orngWrap  1: [0.97510976702508967]:
-*** orngWrap  2: [0.98159722222222223]:
-*** orngWrap  3: [0.9877195340501792]:
-*** orngWrap  4: [0.98523969534050182]:
-*** orngWrap  5: [0.98771281362007168]:
-*** orngWrap  10: [0.98413306451612903]:
-*** orngWrap  15: [0.98579077060931897]:
-*** orngWrap  20: [0.98620743727598559]:
-*** Optimal parameter: minSubset = 3
-*** orngWrap  1: [0.98101478494623651]:
-*** orngWrap  2: [0.98487679211469537]:
-*** orngWrap  3: [0.97858870967741929]:
-*** orngWrap  4: [0.97706989247311826]:
-*** orngWrap  5: [0.98056227598566303]:
-*** orngWrap  10: [0.9883445340501793]:
-*** orngWrap  15: [0.9849955197132616]:
-*** orngWrap  20: [0.97957885304659498]:
-*** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.98168682795698925]:
-*** orngWrap  2: [0.97799955197132604]:
-*** orngWrap  3: [0.97411962365591387]:
-*** orngWrap  4: [0.97952956989247308]:
-*** orngWrap  5: [0.98509856630824366]:
-*** orngWrap  10: [0.98796818996415769]:
-*** orngWrap  15: [0.98650985663082436]:
-*** orngWrap  20: [0.98688396057347694]:
-*** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.96630568356374802]:
-*** orngWrap  2: [0.97954840538365873]:
-*** orngWrap  3: [0.98871493489869067]:
-*** orngWrap  4: [0.98763294565137882]:
-*** orngWrap  5: [0.98682562541145491]:
-*** orngWrap  10: [0.98980839916611818]:
-*** orngWrap  15: [0.98934916977543708]:
-*** orngWrap  20: [0.9792515635286374]:
-*** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.98249318813546926]:
-*** orngWrap  2: [0.98558659754224276]:
-*** orngWrap  3: [0.98151488552410227]:
-*** orngWrap  4: [0.98538201302026196]:
-*** orngWrap  5: [0.98703907907248922]:
-*** orngWrap  10: [0.98863081522931762]:
-*** orngWrap  15: [0.98741281727744856]:
-*** orngWrap  20: [0.98465748665057429]:
-*** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.9719187513715164]:
-*** orngWrap  2: [0.98035691427108484]:
-*** orngWrap  3: [0.98524586716407003]:
-*** orngWrap  4: [0.98530296796137806]:
-*** orngWrap  5: [0.98528710408894737]:
-*** orngWrap  10: [0.98397593445980536]:
-*** orngWrap  15: [0.97878424219150029]:
-*** orngWrap  20: [0.97961757552483364]:
+*** optimization  1: [0.9832190860215053]:
+*** optimization  2: [0.9781989247311826]:
+*** optimization  3: [0.9912679211469535]:
+*** optimization  4: [0.9937656810035842]:
+*** optimization  5: [0.9907504480286738]:
+*** optimization  10: [0.9872647849462366]:
+*** optimization  15: [0.9897692652329749]:
+*** optimization  20: [0.9910506272401434]:
 *** Optimal parameter: minSubset = 4
-*** orngWrap  1: [0.97421370967741927]:
-*** orngWrap  2: [0.97873207885304669]:
-*** orngWrap  3: [0.98434363799283142]:
-*** orngWrap  4: [0.98370295698924737]:
-*** orngWrap  5: [0.98571684587813613]:
-*** orngWrap  10: [0.98856182795698921]:
-*** orngWrap  15: [0.98699148745519705]:
-*** orngWrap  20: [0.98391353046594976]:
-*** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.97618951612903238]:
-*** orngWrap  2: [0.98268817204301073]:
-*** orngWrap  3: [0.98288754480286733]:
-*** orngWrap  4: [0.98426523297491042]:
-*** orngWrap  5: [0.98400313620071667]:
-*** orngWrap  10: [0.98561379928315396]:
-*** orngWrap  15: [0.98575268817204287]:
-*** orngWrap  20: [0.98252240143369174]:
+*** optimization  1: [0.9729637096774194]:
+*** optimization  2: [0.9727867383512546]:
+*** optimization  3: [0.9808624551971327]:
+*** optimization  4: [0.9820990143369175]:
+*** optimization  5: [0.9854368279569893]:
+*** optimization  10: [0.9885685483870967]:
+*** optimization  15: [0.9916263440860216]:
+*** optimization  20: [0.986008064516129]:
 *** Optimal parameter: minSubset = 15
-Untuned tree: 0.930
-Tuned tree: 0.986
-*** orngWrap  1: [0.97389426388686473]:
-*** orngWrap  2: [0.98438566202162203]:
-*** orngWrap  3: [0.98933022418039074]:
-*** orngWrap  4: [0.98681431406181686]:
-*** orngWrap  5: [0.98934149735111632]:
-*** orngWrap  10: [0.98749332017922464]:
-*** orngWrap  15: [0.97869912592443098]:
-*** orngWrap  20: [0.97643577219973809]:
+*** optimization  1: [0.9802307347670249]:
+*** optimization  2: [0.9830689964157706]:
+*** optimization  3: [0.9824529569892473]:
+*** optimization  4: [0.9896012544802868]:
+*** optimization  5: [0.9847267025089605]:
+*** optimization  10: [0.9896527777777778]:
+*** optimization  15: [0.9874350358422939]:
+*** optimization  20: [0.9743794802867383]:
+*** Optimal parameter: minSubset = 10
+*** optimization  1: [0.9682504480286739]:
+*** optimization  2: [0.9763328853046596]:
+*** optimization  3: [0.974834229390681]:
+*** optimization  4: [0.980266577060932]:
+*** optimization  5: [0.9795676523297492]:
+*** optimization  10: [0.9769332437275986]:
+*** optimization  15: [0.9773454301075268]:
+*** optimization  20: [0.9740815412186381]:
+*** Optimal parameter: minSubset = 4
+*** optimization  1: [0.9640591397849462]:
+*** optimization  2: [0.9741397849462365]:
+*** optimization  3: [0.9783467741935483]:
+*** optimization  4: [0.9872110215053763]:
+*** optimization  5: [0.9868839605734767]:
+*** optimization  10: [0.987806899641577]:
+*** optimization  15: [0.9802083333333333]:
+*** optimization  20: [0.9767137096774194]:
+*** Optimal parameter: minSubset = 10
+*** optimization  1: [0.9743570788530466]:
+*** optimization  2: [0.9743370547143588]:
+*** optimization  3: [0.977821071977178]:
+*** optimization  4: [0.9755929522346574]:
+*** optimization  5: [0.9834564497842148]:
+*** optimization  10: [0.984518277741204]:
+*** optimization  15: [0.9816068228366615]:
+*** optimization  20: [0.9802781892326824]:
+*** Optimal parameter: minSubset = 10
+*** optimization  1: [0.9764701740911419]:
+*** optimization  2: [0.9851986870016823]:
+*** optimization  3: [0.9877503017335967]:
+*** optimization  4: [0.9894257461048936]:
+*** optimization  5: [0.9890922847633676]:
+*** optimization  10: [0.9826276881720429]:
+*** optimization  15: [0.9815133768561187]:
+*** optimization  20: [0.9825131208397337]:
+*** Optimal parameter: minSubset = 4
+*** optimization  1: [0.980901680564699]:
+*** optimization  2: [0.9916655694535879]:
+*** optimization  3: [0.9883444426157559]:
+*** optimization  4: [0.9884388029405311]:
+*** optimization  5: [0.9908789591105258]:
+*** optimization  10: [0.9896376910979445]:
+*** optimization  15: [0.9890296979006656]:
+*** optimization  20: [0.9841350760734402]:
+*** Optimal parameter: minSubset = 2
+*** optimization  1: [0.971771953405018]:
+*** optimization  2: [0.9794041218637994]:
+*** optimization  3: [0.9802464157706093]:
+*** optimization  4: [0.9802710573476703]:
+*** optimization  5: [0.9831070788530465]:
+*** optimization  10: [0.9841397849462366]:
+*** optimization  15: [0.9865120967741937]:
+*** optimization  20: [0.9799551971326166]:
+*** Optimal parameter: minSubset = 15
+*** optimization  1: [0.9708422939068101]:
+*** optimization  2: [0.9755510752688172]:
+*** optimization  3: [0.9838418458781363]:
+*** optimization  4: [0.9772222222222224]:
+*** optimization  5: [0.984285394265233]:
+*** optimization  10: [0.989247311827957]:
+*** optimization  15: [0.987780017921147]:
+*** optimization  20: [0.980741487455197]:
+*** Optimal parameter: minSubset = 10
+Untuned tree: 0.926
+Tuned tree: 0.983
+*** optimization  1: [0.9706992853681718]:
+*** optimization  2: [0.9743207136103917]:
+*** optimization  3: [0.9833880175537593]:
+*** optimization  4: [0.987881777448925]:
+*** optimization  5: [0.9889423897378024]:
+*** optimization  10: [0.9869203192362646]:
+*** optimization  15: [0.9884223913820658]:
+*** optimization  20: [0.9780406731017164]:
 *** Optimal parameter: ['split.continuousSplitConstructor.minSubset', 'split.discreteSplitConstructor.minSubset'] = 5
 Optimal setting:  5.0
