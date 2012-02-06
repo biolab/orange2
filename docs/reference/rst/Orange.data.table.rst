@@ -8,7 +8,7 @@ Class `Orange.data.Table` holds a list of data instances of type
 :obj:`Orange.data.Instance`. All instances belong to the same domain
 (:obj:`Orange.data.Domain`).
 
-Data tables are usually loaded from a file (see :doc:`/Orange.data.formats`)::
+Data tables are usually loaded from a file (see :doc:`Orange.data.formats`)::
 
     import Orange
     data = Orange.data.Table("titanic")
