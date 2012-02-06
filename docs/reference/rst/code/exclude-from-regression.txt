@@ -3,3 +3,4 @@ network-widget-nx.py
 serverfiles1.py
 serverfiles2.py
 statistics-contingency6.py
+correspondence.py
