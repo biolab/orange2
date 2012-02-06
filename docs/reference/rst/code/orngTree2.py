@@ -26,8 +26,8 @@ def replaceB(strg, mo, node, parent, tree):
         else:
             return Orange.classification.tree.insert_dot(strg, mo)
     return Orange.classification.tree.insert_num(strg, mo, margin)
-    
-my_format = [(re.compile("%"+Orange.classification.tree.fs
-    +"B"+Orange.classification.tree.by), replaceB)]
-            
-print tree.format(leaf_str="%V %^B% (%^3.2BbP%)", user_formats=my_format)
+
+my_format = [(re.compile("%" + Orange.classification.tree.fs
+    + "B" + Orange.classification.tree.by), replaceB)]
+
+print tree.to_string(leaf_str="%V %^B% (%^3.2BbP%)", user_formats=my_format)
