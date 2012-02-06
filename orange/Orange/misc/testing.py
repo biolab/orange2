@@ -483,7 +483,7 @@ class PreprocessorTestCase(DataTestCase):
         prep = pickle.loads(s)
         
         
-from Orange.distance.instances import distance_matrix
+from Orange.distance import distance_matrix
 from Orange.misc import member_set
 
 
