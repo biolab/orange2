@@ -19,6 +19,24 @@ if [ ! -x /usr/bin/xcodebuild ]; then
 	exit 2
 fi
 
+# Clone hg repo if not yet local.
+if [ ! -e orange ]; then
+	hg clone https://bitbucket.org/biolab/orange
+fi
+
+cd orange
+hg pull --update
+
+if [ -e ../orange_archive ]; then
+	rm -rf ../orange_archive
+fi
+
+hg archive ../orange_archive
+cd ..
+
+ORANGE_REPO=`pwd`/orange
+ORANGE_ARCHIVE=`pwd`/orange_archive
+
 # Defaults are current latest revisions in stable branch and trunk
 STABLE_REVISION_1=${1:-`svn info --non-interactive http://orange.biolab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
@@ -31,17 +49,19 @@ if [[ $STABLE_REVISION_1 -gt $STABLE_REVISION_2 ]]; then
 else
     STABLE_REVISION=$STABLE_REVISION_2
 fi
-DAILY_REVISION_1=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
-# svn info does not return proper exit status on an error so we check it this way
-[ "$DAILY_REVISION_1" ] || exit 4
-DAILY_REVISION_2=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
-# svn info does not return proper exit status on an error so we check it this way
-[ "$DAILY_REVISION_2" ] || exit 4
-if [[ $DAILY_REVISION_1 -gt $DAILY_REVISION_2 ]]; then
-    DAILY_REVISION=$DAILY_REVISION_1
-else
-    DAILY_REVISION=$DAILY_REVISION_2
-fi
+
+DAILY_REVISION_1 = `hg log -l1 daily | grep 'changeset:' | cut -d ' ' -f 4 | cut -d ':' -f 1`
+
+#TODO: versions of hg and svn repos are no longer in sync
+
+#DAILY_REVISION_2=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+## svn info does not return proper exit status on an error so we check it this way
+#[ "$DAILY_REVISION_2" ] || exit 4
+#if [[ $DAILY_REVISION_1 -gt $DAILY_REVISION_2 ]]; then
+#    DAILY_REVISION=$DAILY_REVISION_1
+#else
+#    DAILY_REVISION=$DAILY_REVISION_2
+#fi
 
 echo "Preparing temporary directory."
 rm -rf /private/tmp/bundle/
@@ -53,6 +73,11 @@ export PATH=/private/tmp/bundle/Orange.app/Contents/MacOS/:$PATH
 export CFLAGS="-arch ppc -arch i386"
 export CXXFLAGS="-arch ppc -arch i386"
 export LDFLAGS="-arch ppc -arch i386"
+
+
+###########################
+# Stable orange-1.0  bundle
+###########################
 
 if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	echo "Downloading bundle template."
@@ -173,49 +198,39 @@ fi
 # TODO: Should be called only on a daily build server and not if building locally
 /Users/ailabc/mount-dirs.sh
 
-if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
+#########################
+# Daily orange 2.* bundle
+#########################
+
+if [ ! -e /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg ]; then
 	echo "Downloading bundle template."
 	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ /private/tmp/bundle/
 	
-	echo "Downloading Orange daily source code revision $DAILY_REVISION."
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/source/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/
-	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/orngCRS/src/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/crs/
-	
-	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/COPYING
-	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/LICENSES
-	
-	ln -s ../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/ /private/tmp/bundle/Orange.app/Contents/Resources/orange
-	ln -s ../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/ /private/tmp/bundle/Orange.app/Contents/Resources/doc
-	
-	echo "Compiling."
-	cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/
-	make EXCLUDE_ORANGEQT=1
-	cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/crs/
-	make
-	mv _orngCRS.so ../../
-	cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/
-	
-	echo "Correcting install names for modules."
-	for module in *.so ; do
-		[ -L $module ] && continue
+	echo "Building and installing orange into the bundle."
+	cd $ORANGE_ARCHIVE
+	/private/tmp/bundle/Orange.app/Contents/MacOS/python setup.py install
 		
-		install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/$module $module
-		
-		perl -MFile::Spec::Functions=abs2rel -e '
-		for (`/usr/bin/otool -L -X $ARGV[0]`) {
-			next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
-			system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
-		}
-		' $module
-	done
+#	echo "Correcting install names for modules."
+#	for module in *.so ; do
+#		[ -L $module ] && continue
+#		
+#		install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/$module $module
+#		
+#		perl -MFile::Spec::Functions=abs2rel -e '
+#		for (`/usr/bin/otool -L -X $ARGV[0]`) {
+#			next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
+#			system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
+#		}
+#		' $module
+#	done
 	
-	echo "Cleaning up."
-	rm -rf source/ c45.dll liborange_include.a updateOrange.py
+#	echo "Cleaning up."
+#	rm -rf source/ c45.dll liborange_include.a updateOrange.py
 	
 	# Installation registration
-	echo "orange" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange.pth
+#	echo "orange" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange.pth
 	
+	# TODO: hg repos for addons
 	for addon in $DAILY_ADDONS ; do
 		echo "Downloading Orange add-on $addon daily source code revision $DAILY_REVISION."
 		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/$addon/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/
@@ -244,8 +259,8 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 			done
 		fi
 		
-		echo "Cleaning up."
-		rm -rf source/ setup.py
+#		echo "Cleaning up."
+#		rm -rf source/ setup.py
 		
 		# Installation registration
 		echo "orange/add-ons/$addon" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange-`echo $addon | tr "[:upper:]" "[:lower:]"`.pth
@@ -281,8 +296,8 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	hdiutil detach "$DEV_NAME" -force
 	
 	echo "Converting temporary image to a compressed image."
-	rm -f /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg
-	hdiutil convert /private/tmp/bundle.dmg -format UDZO -imagekey zlib-level=9 -o /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg
+	rm -f /private/tmp/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
+	hdiutil convert /private/tmp/bundle.dmg -format UDZO -imagekey zlib-level=9 -o /private/tmp/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
 	
 	echo "Cleaning up."
 	rm -f /private/tmp/bundle.dmg
@@ -294,21 +309,23 @@ fi
 
 echo "Removing old versions of bundles."
 # (Keeps last 5 versions.)
-perl -e 'unlink ((reverse sort </Volumes/download/orange-bundle-svn-0*.dmg>)[5..10000])'
+perl -e 'unlink ((reverse sort </Volumes/download/orange-bundle-hg-0*.dmg>)[5..10000])'
 perl -e 'unlink ((reverse sort </Volumes/download/orange-bundle-1*.dmg>)[5..10000])'
 
-if [ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ] || [ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
+if [ -e /private/tmp/orange-bundle-hg-0.0.$DAILY_REVISION.dmg ] || [ -e /private/tmp/orange-bundle-hg-0.0.$DAILY_REVISION.dmg ]; then
 	echo "Moving bundles to the download directory."
 	[ -e /private/tmp/orange-bundle-1.0b.$STABLE_REVISION.dmg ] && mv /private/tmp/orange-bundle-1.0b.$STABLE_REVISION.dmg /Volumes/download/
-	[ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ] && mv /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg /Volumes/download/
+	[ -e /private/tmp/orange-bundle-hg-0.0.$DAILY_REVISION.dmg ] && mv /private/tmp/orange-bundle-hg-0.0.$DAILY_REVISION.dmg /Volumes/download/
 	
 	echo "Setting permissions."
 	chmod +r /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg
-	chmod +r /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg
+	chmod +r /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
+
+# Don't register the bundles until hg version stabilizes
 	
-	echo "Registering new bundles."
-	egrep -v '^(MAC_STABLE|MAC_DAILY)=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
-	echo "MAC_STABLE=orange-bundle-1.0b.$STABLE_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
-	echo "MAC_DAILY=orange-bundle-svn-0.0.$DAILY_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
-	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
+#	echo "Registering new bundles."
+#	egrep -v '^(MAC_STABLE|MAC_DAILY)=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+#	echo "MAC_STABLE=orange-bundle-1.0b.$STABLE_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
+#	echo "MAC_DAILY=orange-bundle-svn-0.0.$DAILY_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
+#	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 fi

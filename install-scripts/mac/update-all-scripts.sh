@@ -3,18 +3,28 @@
 # Should be run as: ./update-all-scripts.sh
 #
 
-curl --silent --output update-all-scripts.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/update-all-scripts.sh
-curl --silent --output bundle-64bit-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/bundle-64bit-daily-build.sh
-curl --silent --output bundle-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/bundle-daily-build.sh
-curl --silent --output dailyrun.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun.sh
-curl --silent --output dailyrun-finkonly-withsource.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun-finkonly-withsource.sh
-curl --silent --output dailyrun-finkonly.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun-finkonly.sh
-curl --silent --output dailyrun-bundleonly.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun-bundleonly.sh
-curl --silent --output fink-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-daily-build.sh
-curl --silent --output fink-restore-selections.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-restore-selections.sh
-curl --silent --output fink-selfupdate-orange.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-selfupdate-orange.sh
-curl --silent --output force-fink-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/force-fink-daily-build.sh
-curl --silent --output mount-dirs.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/mount-dirs.sh
+# Clone the orange repo if not already present
+if [ ! -e orange ]; then
+	hg clone https://bitbucket.org/biolab/orange
+fi
+
+# Pull all changesets and update to latest
+cd orange
+hg pull --update
+cd ..
+
+cp orange/install-scripts/mac/update-all-scripts.sh ./
+cp orange/install-scripts/mac/bundle-64bit-daily-build.sh ./
+cp orange/install-scripts/mac/bundle-daily-build.sh ./
+cp orange/install-scripts/mac/dailyrun.sh ./
+cp orange/install-scripts/mac/dailyrun-finkonly-withsource.sh ./
+cp orange/install-scripts/mac/dailyrun-finkonly.sh ./
+cp orange/install-scripts/mac/dailyrun-bundleonly.sh ./
+cp orange/install-scripts/mac/fink-daily-build.sh ./
+cp orange/install-scripts/mac/fink-restore-selections.sh ./
+cp orange/install-scripts/mac/fink-selfupdate-orange.sh ./
+cp orange/install-scripts/mac/force-fink-daily-build.sh ./
+cp orange/install-scripts/mac/mount-dirs.sh ./
 
 chmod +x *.sh
 
