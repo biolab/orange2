@@ -36,7 +36,7 @@ imputed instances.
 
 .. class:: ImputerConstructor
 
-    .. attribute:: imputeClass
+    .. attribute:: impute_class
 
     Indicates whether to impute the class value. Defaults to True.
 
