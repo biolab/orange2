@@ -158,28 +158,22 @@ just remembers the average) for continuous attributes:
 .. literalinclude:: code/imputation-complex.py
     :lines: 91-94
 
-To construct a  yourself. You will do
-this if different attributes need different treatment. Brace for an
-example that will be a bit more complex. First we shall construct an
-:class:`Imputer_model` and initialize an empty list of models.
-
 To construct a user-defined :class:`Imputer_model`:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 108-112
 
-A list of empty models is first initialized. Continuous feature "LANES" is
-imputed with value 2, using :obj:`DefaultClassifier` with the default value
-2.0. A float must be given, because integer values are interpreted as indexes
-of discrete features. Discrete feature "T-OR-D" is imputed using
-:class:`Orange.classification.ConstantClassifier` which is given the index
-of value "THROUGH" as an argument. Both classifiers are stored at the
-appropriate places in :obj:`Imputer_model.models`.
+A list of empty models is first initialized :obj:`Imputer_model.models`.
+Continuous feature "LANES" is imputed with value 2 using
+:obj:`DefaultClassifier`. A float must be given, because integer values are
+interpreted as indexes of discrete features. Discrete feature "T-OR-D" is
+imputed using :class:`Orange.classification.ConstantClassifier` which is
+given the index of value "THROUGH" as an argument.
 
 Feature "LENGTH" is computed with a regression tree induced from "MATERIAL",
 "SPAN" and "ERECTED" (feature "LENGTH" is used as class attribute here).
-The domain is initialized by simply giving a list of feature names and
-domain as an additional argument where Orange will look for features.
+Domain is initialized by giving a list of feature names and domain as an
+additional argument where Orange will look for features.
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 114-119
@@ -193,67 +187,59 @@ This is how the inferred tree should look like::
     |    ERECTED>=1908.500: 1528
     </XMP>
 
-Small and nice. Now for the "SPAN". Wooden bridges and walkways are short,
-while the others are mostly medium. This could be done by
-:class:`Orange.classifier.ClassifierByLookupTable` - this would be faster
-than what we plan here. See the corresponding documentation on lookup
-classifier. Here we are going to do it with a Python function.
+Wooden bridges and walkways are short, while the others are mostly
+medium. This could be encoded in feature "SPAN" using
+:class:`Orange.classifier.ClassifierByLookupTable`, which is faster than the
+Python function used here:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 121-128
 
-:obj:`compute_span` could also be written as a class, if you'd prefer
-it. It's important that it behaves like a classifier, that is, gets an example
-and returns a value. The second element tells, as usual, what the caller expect
-the classifier to return - a value, a distribution or both. Since the caller,
-:obj:`Imputer_model`, always wants values, we shall ignore the argument
-(at risk of having problems in the future when imputers might handle
-distribution as well).
+If :obj:`compute_span` is written as a class it must behave like a
+classifier: it accepts an example and returns a value. The second
+argument tells what the caller expects the classifier to return - a value,
+a distribution or both. Currently, :obj:`Imputer_model`,
+always expects values and the argument can be ignored.
 
 Missing values as special values
 ================================
 
-Missing values sometimes have a special meaning. The fact that something was
-not measured can sometimes tell a lot. Be, however, cautious when using such
-values in decision models; it the decision not to measure something (for
-instance performing a laboratory test on a patient) is based on the expert's
-knowledge of the class value, such unknown values clearly should not be used
-in models.
+Missing values sometimes have a special meaning. Cautious is needed when
+using such values in decision models. When the decision not to measure
+something (for example, performing a laboratory test on a patient) is based
+on the expert's knowledge of the class value, such missing values clearly
+should not be used in models.
 
 .. class:: ImputerConstructor_asValue
 
-    Constructs a new domain in which each
-    discrete attribute is replaced with a new attribute that has one value more:
-    "NA". The new attribute will compute its values on the fly from the old one,
+    Constructs a new domain in which each discrete feature is replaced
+    with a new feature that has one more value: "NA". The new feature
+    computes its values on the fly from the old one,
     copying the normal values and replacing the unknowns with "NA".
 
-    For continuous attributes, it will
-    construct a two-valued discrete attribute with values "def" and "undef",
-    telling whether the continuous attribute was defined or not. The attribute's
-    name will equal the original's with "_def" appended. The original continuous
-    attribute will remain in the domain and its unknowns will be replaced by
-    averages.
+    For continuous attributes, it constructs a two-valued discrete attribute
+    with values "def" and "undef", telling whether the value is defined or
+    not.  The features's name will equal the original's with "_def" appended.
+    The original continuous feature will remain in the domain and its
+    unknowns will be replaced by averages.
 
     :class:`ImputerConstructor_asValue` has no specific attributes.
 
-    It constructs :class:`Imputer_asValue` (I bet you
-    wouldn't guess). It converts the example into the new domain, which imputes
-    the values for discrete attributes. If continuous attributes are present, it
-    will also replace their values by the averages.
+    It constructs :class:`Imputer_asValue` that converts the example into
+    the new domain.
 
 .. class:: Imputer_asValue
 
     .. attribute:: domain
 
-        The domain with the new attributes constructed by
+        The domain with the new feature constructed by
         :class:`ImputerConstructor_asValue`.
 
     .. attribute:: defaults
 
-        Default values for continuous attributes. Present only if there are any.
+        Default values for continuous features.
 
-The following code shows what this imputer actually does to the domain.
-Part of :download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
+The following code shows what the imputer actually does to the domain:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 137-151
@@ -277,61 +263,52 @@ The script's output looks like this::
     TYPE: SIMPLE-T -> SIMPLE-T
 
 Seemingly, the two examples have the same attributes (with
-:samp:`imputed` having a few additional ones). If you check this by
-:samp:`original.domain[0] == imputed.domain[0]`, you shall see that this
-first glance is False. The attributes only have the same names,
-but they are different attributes. If you read this page (which is already a
-bit advanced), you know that Orange does not really care about the attribute
-names).
+:samp:`imputed` having a few additional ones). Comparing
+:samp:`original.domain[0] == imputed.domain[0]` will result in False. While
+the names are same, they represent different features. Writting,
+:samp:`imputed[i]`  would fail since :samp:`imputed` has no attribute
+:samp:`i`, but it has an attribute with the same name. Using
+:samp:`i.name` to index the attributes of
+:samp:`imputed` will work, yet it is not fast. If a frequently used, it is
+better to compute the index with :samp:`imputed.domain.index(i.name)`.
 
-Therefore, if we wrote :samp:`imputed[i]` the program would fail
-since :samp:`imputed` has no attribute :samp:`i`. But it has an
-attribute with the same name (which even usually has the same value). We
-therefore use :samp:`i.name` to index the attributes of
-:samp:`imputed`. (Using names for indexing is not fast, though; if you do
-it a lot, compute the integer index with
-:samp:`imputed.domain.index(i.name)`.)</P>
-
-For continuous attributes, there is an additional attribute with "_def"
-appended; we get it by :samp:`i.name+"_def"`.
-
-The first continuous attribute, "ERECTED" is defined. Its value remains 1874
-and the additional attribute "ERECTED_def" has value "def". Not so for
-"LENGTH". Its undefined value is replaced by the average (1567) and the new
-attribute has value "undef". The undefined discrete attribute "CLEAR-G" (and
-all other undefined discrete attributes) is assigned the value "NA".
+For continuous features, there is an additional feature with name prefix
+"_def", which is accessible by :samp:`i.name+"_def"`. The value of the first
+continuous feature "ERECTED" remains 1874, and the additional attribute
+"ERECTED_def" has value "def". The undefined value  in "LENGTH" is replaced
+by the average (1567) and the new attribute has value "undef". The
+undefined discrete attribute  "CLEAR-G" (and all other undefined discrete
+attributes) is assigned the value "NA".
 
 Using imputers
 ==============
 
-To properly use the imputation classes in learning process, they must be
-trained on training examples only. Imputing the missing values and subsequently
-using the data set in cross-validation will give overly optimistic results.
+Imputation must run on training data only. Imputing the missing values
+and subsequently using the data in cross-validation will give overly
+optimistic results.
 
 Learners with imputer as a component
 ------------------------------------
 
-Orange learners that cannot handle missing values will generally provide a slot
-for the imputer component. An example of such a class is
-:obj:`Orange.classification.logreg.LogRegLearner` with an attribute called
-:obj:`Orange.classification.logreg.LogRegLearner.imputerConstructor`. To it you
-can assign an imputer constructor - one of the above constructors or a specific
-constructor you wrote yourself. When given learning examples,
-:obj:`Orange.classification.logreg.LogRegLearner` will pass them to
-:obj:`Orange.classification.logreg.LogRegLearner.imputerConstructor` to get an
-imputer (again some of the above or a specific imputer you programmed). It will
-immediately use the imputer to impute the missing values in the learning data
-set, so it can be used by the actual learning algorithm. Besides, when the
-classifier :obj:`Orange.classification.logreg.LogRegClassifier` is constructed,
-the imputer will be stored in its attribute
-:obj:`Orange.classification.logreg.LogRegClassifier.imputer`. At
-classification, the imputer will be used for imputation of missing values in
-(testing) examples.
+Learners that cannot handle missing values provide a slot for the imputer
+component. An example of such a class is
+:obj:`~Orange.classification.logreg.LogRegLearner` with an attribute called
+:obj:`~Orange.classification.logreg.LogRegLearner.imputerConstructor`.
 
-Although details may vary from algorithm to algorithm, this is how the
-imputation is generally used in Orange's learners. Also, if you write your own
-learners, it is recommended that you use imputation according to the described
-procedure.
+When given learning instances,
+:obj:`~Orange.classification.logreg.LogRegLearner` will pass them to
+:obj:`~Orange.classification.logreg.LogRegLearner.imputerConstructor` to get
+an imputer and used it to impute the missing values in the learning data.
+Imputed data is then used by the actual learning algorithm. Also, when a
+classifier :obj:`Orange.classification.logreg.LogRegClassifier` is constructed,
+the imputer is stored in its attribute
+:obj:`Orange.classification.logreg.LogRegClassifier.imputer`. At
+classification, the same imputer is used for imputation of missing values
+in (testing) examples.
+
+Details may vary from algorithm to algorithm, but this is how the imputation
+is generally used. When write user-defined learners,
+it is recommended to use imputation according to the described procedure.
 
 Wrapper for learning algorithms
 ===============================
