@@ -1,5 +1,14 @@
-import Orange
+# Description: Reliability estimation
+# Category:    evaluation
+# Uses:        prostate
+# Referenced:  Orange.evaluation.reliability
+# Classes:     Orange.evaluation.reliability.Learner
 
+import Orange
+Orange.evaluation.reliability.select_with_repeat.random_generator = None
+Orange.evaluation.reliability.select_with_repeat.randseed = 42
+
+import Orange
 table = Orange.data.Table("prostate.tab")
 
 knn = Orange.classification.knn.kNNLearner()
@@ -12,7 +21,7 @@ reliability_res = Orange.evaluation.reliability.get_pearson_r(res)
 print
 print "Estimate               r       p"
 for estimate in reliability_res:
-    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
+    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
                                  estimate[0], estimate[1])
 
 reliability = Orange.evaluation.reliability.Learner(knn, estimators=[Orange.evaluation.reliability.SensitivityAnalysis()])
@@ -24,7 +33,7 @@ reliability_res = Orange.evaluation.reliability.get_pearson_r(res)
 print
 print "Estimate               r       p"
 for estimate in reliability_res:
-    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
+    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
                                  estimate[0], estimate[1])
 
 indices = Orange.core.MakeRandomIndices2(table, p0=0.7)

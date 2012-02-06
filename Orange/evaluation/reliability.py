@@ -1,177 +1,3 @@
-"""
-########################################
-Reliability estimation (``reliability``)
-########################################
-
-.. index:: Reliability Estimation
-
-.. index::
-   single: reliability; Reliability Estimation for Regression
-
-*************************************
-Reliability Estimation for Regression
-*************************************
-
-This module includes different implementations of algorithm used for
-predicting reliability of single predictions. Most of the algorithm are taken
-from Comparison of approaches for estimating reliability of individual
-regression predictions, Zoran Bosnic 2008.
-
-Next example shows basic reliability estimation usage 
-(:download:`reliability-basic.py <code/reliability-basic.py>`, uses :download:`housing.tab <code/housing.tab>`):
-
-.. literalinclude:: code/reliability_basic.py
-
-First we load our desired data table and choose on learner we want to use 
-reliability estimation on. We also want to calculate only the Mahalanobis and 
-local cross validation estimates with desired parameters. We learn our 
-estimator on data, and estimate the reliability for first instance of data table.
-We output the estimates used and the numbers.
-
-We can also do reliability estimation on whole data table not only on single
-instance. Example shows us doing cross validation on the desired data table,
-using default reliability estimates, and at the ending output reliability
-estimates for the first instance of data table.
-(:download:`reliability-run.py <code/reliability-run.py>`, uses :download:`housing.tab <code/housing.tab>`):
-
-.. literalinclude:: code/reliability-run.py
-
-Reliability estimation methods are computationally quite hard so it may take
-a bit of time for this script to produce a result. In the above example we
-first create a learner that we're interested in, in this example
-k-nearest-neighbors, and use it inside reliability learner and do cross
-validation to get the results. Now we output for the first example in the
-data table all the reliability estimates and their names.
-
-Reliability Methods
-===================
-
-Sensitivity Analysis (SAvar and SAbias)
----------------------------------------
-.. autoclass:: SensitivityAnalysis
-
-Variance of bagged models (BAGV)
---------------------------------
-.. autoclass:: BaggingVariance
-
-Local cross validation reliability estimate (LCV)
--------------------------------------------------
-.. autoclass:: LocalCrossValidation
-
-Local modeling of prediction error (CNK)
-----------------------------------------
-.. autoclass:: CNeighbours
-
-Bagging variance c-neighbours (BVCK)
-------------------------------------
-
-.. autoclass:: BaggingVarianceCNeighbours
-
-Mahalanobis distance
---------------------
-
-.. autoclass:: Mahalanobis
-
-Mahalanobis to center
----------------------
-
-.. autoclass:: MahalanobisToCenter
-
-Reliability estimate learner
-============================
-
-.. autoclass:: Learner
-    :members:
-
-Reliability estimation scoring methods
-======================================
-
-.. autofunction:: get_pearson_r
-
-.. autofunction:: get_pearson_r_by_iterations
-
-.. autofunction:: get_spearman_r
-
-Referencing
-===========
-
-There is a dictionary named :data:`METHOD_NAME` which has stored names of
-all the reliability estimates::
-
-  METHOD_NAME = {0: "SAvar absolute", 1: "SAbias signed", 2: "SAbias absolute",
-                 3: "BAGV absolute", 4: "CNK signed", 5: "CNK absolute",
-                 6: "LCV absolute", 7: "BVCK_absolute", 8: "Mahalanobis absolute",
-                 10: "ICV"}
-
-and also two constants for saying whether the estimate is signed or it's an
-absolute value::
-
-  SIGNED = 0
-  ABSOLUTE = 1
-
-Example of usage
-================
-
-Here we will walk through a bit longer example of how to use the reliability
-estimate module (:download:`reliability-long.py <code/reliability-long.py>`, uses :download:`prostate.tab <code/prostate.tab>`):
-
-.. literalinclude:: code/reliability-long.py
-    :lines: 1-16
-
-After loading the Orange library we open out dataset. We chose to work with
-the kNNLearner, that also works on regression problems. Create out reliability
-estimate learner and test it with cross validation. 
-Estimates are then compared using Pearson's coefficient to the prediction error.
-The p-values are also computed::
-
-  Estimate               r       p
-  SAvar absolute        -0.077   0.454
-  SAbias signed         -0.165   0.105
-  SAbias absolute       -0.099   0.333
-  BAGV absolute          0.104   0.309
-  CNK signed             0.233   0.021
-  CNK absolute           0.057   0.579
-  LCV absolute           0.069   0.504
-  BVCK_absolute          0.092   0.368
-  Mahalanobis absolute   0.091   0.375
-
-.. literalinclude:: code/reliability-long.py
-    :lines: 18-28
-
-Outputs::
-
-  Estimate               r       p
-  BAGV absolute          0.126   0.220
-  CNK signed             0.233   0.021
-  CNK absolute           0.057   0.579
-  LCV absolute           0.069   0.504
-  BVCK_absolute          0.105   0.305
-  Mahalanobis absolute   0.091   0.375
-
-
-As you can see in the above code you can also chose with reliability estimation
-method do you want to use. You might want to do this to reduce computation time 
-or because you think they don't perform good enough.
-
-
-References
-==========
-
-Bosnic Z, Kononenko I (2007) `Estimation of individual prediction reliability using local
-sensitivity analysis. <http://www.springerlink.com/content/e27p2584387532g8/>`_
-*Applied Intelligence* 29(3), 187-203.
-
-Bosnic Z, Kononenko I (2008) `Comparison of approaches for estimating reliability of 
-individual regression predictions.
-<http://www.sciencedirect.com/science/article/pii/S0169023X08001080>`_
-*Data & Knowledge Engineering* 67(3), 504-516.
-
-Bosnic Z, Kononenko I (2010) `Automatic selection of reliability estimates for individual 
-regression predictions.
-<http://journals.cambridge.org/abstract_S0269888909990154>`_
-*The Knowledge Engineering Review* 25(1), 27-47.
-
-"""
 import Orange
 
 import random
@@ -235,8 +61,12 @@ def get_description_list(res, i):
 
 def get_pearson_r(res):
     """
-    Returns Pearsons coefficient between the prediction error and each of the
-    used reliability estimates. Function also return the p-value of each of
+    :param res: results of evaluation, done using learners,
+        wrapped into :class:`Orange.evaluation.reliability.Classifier`.
+    :type res: :class:`Orange.evaluation.testing.ExperimentResults`
+
+    Return Pearson's coefficient between the prediction error and each of the
+    used reliability estimates. Also, return the p-value of each of
     the coefficients.
     """
     prediction_error = get_prediction_error_list(res)
@@ -255,8 +85,12 @@ def get_pearson_r(res):
 
 def get_spearman_r(res):
     """
-    Returns Spearmans coefficient between the prediction error and each of the
-    used reliability estimates. Function also return the p-value of each of
+    :param res: results of evaluation, done using learners,
+        wrapped into :class:`Orange.evaluation.reliability.Classifier`.
+    :type res: :class:`Orange.evaluation.testing.ExperimentResults`
+
+    Return Spearman's coefficient between the prediction error and each of the
+    used reliability estimates. Also, return the p-value of each of
     the coefficients.
     """
     prediction_error = get_prediction_error_list(res)
@@ -275,12 +109,16 @@ def get_spearman_r(res):
 
 def get_pearson_r_by_iterations(res):
     """
-    Returns average Pearsons coefficient over all folds between prediction error
+    :param res: results of evaluation, done using learners,
+        wrapped into :class:`Orange.evaluation.reliability.Classifier`.
+    :type res: :class:`Orange.evaluation.testing.ExperimentResults`
+
+    Return average Pearson's coefficient over all folds between prediction error
     and each of the used estimates.
     """
     results_by_fold = Orange.evaluation.scoring.split_by_iterations(res)
     number_of_estimates = len(res.results[0].probabilities[0].reliability_estimate)
-    number_of_examples = len(res.results)
+    number_of_instances = len(res.results)
     number_of_folds = len(results_by_fold)
     results = [0 for _ in xrange(number_of_estimates)]
     sig = [0 for _ in xrange(number_of_estimates)]
@@ -303,7 +141,7 @@ def get_pearson_r_by_iterations(res):
     
     # Calculate p-values
     results = [float(res) / number_of_folds for res in results]
-    ps = [p_value_from_r(r, number_of_examples) for r in results]
+    ps = [p_value_from_r(r, number_of_instances) for r in results]
     
     return zip(results, ps, sig, method_list)
 
@@ -316,6 +154,39 @@ def p_value_from_r(r, n):
     return statc.betai (df * 0.5, 0.5, df/(df + t*t))
 
 class Estimate:
+    """
+    Reliability estimate. Contains attributes that describe the results of
+    reliability estimation.
+
+    .. attribute:: estimate
+
+        A numerical reliability estimate.
+
+    .. attribute:: signed_or_absolute
+
+        Determines whether the method used gives a signed or absolute result.
+        Has a value of either :obj:`SIGNED` or :obj:`ABSOLUTE`.
+
+    .. attribute:: method
+
+        An integer ID of reliability estimation method used.
+
+    .. attribute:: method_name
+
+        Name (string) of reliability estimation method used.
+
+    .. attribute:: icv_method
+
+        An integer ID of reliability estimation method that performed best,
+        as determined by ICV, and of which estimate is stored in the
+        :obj:`estimate` field. (:obj:`None` when ICV was not used.)
+
+    .. attribute:: icv_method_name
+
+        Name (string) of reliability estimation method that performed best,
+        as determined by ICV. (:obj:`None` when ICV was not used.)
+
+    """
     def __init__(self, estimate, signed_or_absolute, method, icv_method = -1):
         self.estimate = estimate
         self.signed_or_absolute = signed_or_absolute
@@ -331,10 +202,10 @@ class DescriptiveAnalysis:
         self.procentage = procentage
         self.estimator = estimator
     
-    def __call__(self, examples, weight=None, **kwds):
+    def __call__(self, instances, weight=None, **kwds):
         
         # Calculate borders using cross validation
-        res = Orange.evaluation.testing.cross_validation([self.estimator], examples)
+        res = Orange.evaluation.testing.cross_validation([self.estimator], instances)
         all_borders = []
         for i in xrange(len(res.results[0].probabilities[0].reliability_estimate)):
             estimates, signed_or_absolute, method = get_reliability_estimation_list(res, i)
@@ -343,7 +214,7 @@ class DescriptiveAnalysis:
             all_borders.append(borders)
         
         # Learn on whole train data
-        estimator_classifier = self.estimator(examples)
+        estimator_classifier = self.estimator(instances)
         
         return DescriptiveAnalysisClassifier(estimator_classifier, all_borders, self.desc)
 
@@ -353,8 +224,8 @@ class DescriptiveAnalysisClassifier:
         self.all_borders = all_borders
         self.desc = desc
     
-    def __call__(self, example, result_type=Orange.core.GetValue):
-        predicted, probabilities = self.estimator_classifier(example, Orange.core.GetBoth)
+    def __call__(self, instance, result_type=Orange.core.GetValue):
+        predicted, probabilities = self.estimator_classifier(instance, Orange.core.GetBoth)
         
         for borders, estimate in zip(self.all_borders, probabilities.reliability_estimate):
             estimate.text_description = self.desc[0]
@@ -373,18 +244,21 @@ class DescriptiveAnalysisClassifier:
 class SensitivityAnalysis:
     """
     
-    :param e: List of possible e values for SAvar and SAbias reliability estimates, the default value is [0.01, 0.1, 0.5, 1.0, 2.0].
+    :param e: List of possible :math:`\epsilon` values for SAvar and SAbias
+        reliability estimates.
     :type e: list of floats
     
     :rtype: :class:`Orange.evaluation.reliability.SensitivityAnalysisClassifier`
     
-    To estimate the reliabilty for given example we extend the learning set 
-    with given example and labeling it with :math:`K + \epsilon (l_{max} - l_{min})`,
-    where K denotes the initial prediction, :math:`\epsilon` is sensitivity parameter and
-    :math:`l_{min}` and :math:`l_{max}` denote lower and the upper bound of
-    the learning examples. After computing different sensitivity predictions
-    using different values of e, the prediction are combined into SAvar and SAbias.
-    SAbias can be used as signed estimate or as absolute value of SAbias. 
+    To estimate the reliability of prediction for given instance,
+    the learning set is extended with this instance, labeled with
+    :math:`K + \epsilon (l_{max} - l_{min})`,
+    where :math:`K` denotes the initial prediction,
+    :math:`\epsilon` is sensitivity parameter and :math:`l_{min}` and
+    :math:`l_{max}` denote lower and the upper bound of the learning
+    instances' labels. After computing different sensitivity predictions
+    using different values of :math:`\epsilon`, the prediction are combined
+    into SAvar and SAbias. SAbias can be used in a signed or absolute form.
 
     :math:`SAvar = \\frac{\sum_{\epsilon \in E}(K_{\epsilon} - K_{-\epsilon})}{|E|}`
 
@@ -395,32 +269,32 @@ class SensitivityAnalysis:
     def __init__(self, e=[0.01, 0.1, 0.5, 1.0, 2.0]):
         self.e = e
     
-    def __call__(self, examples, learner):
-        min_value = max_value = examples[0].getclass().value
-        for ex in examples:
+    def __call__(self, instances, learner):
+        min_value = max_value = instances[0].getclass().value
+        for ex in instances:
             if ex.getclass().value > max_value:
                 max_value = ex.getclass().value
             if ex.getclass().value < min_value:
                 min_value = ex.getclass().value
-        return SensitivityAnalysisClassifier(self.e, examples, min_value, max_value, learner)
+        return SensitivityAnalysisClassifier(self.e, instances, min_value, max_value, learner)
     
 class SensitivityAnalysisClassifier:
-    def __init__(self, e, examples, min_value, max_value, learner):
+    def __init__(self, e, instances, min_value, max_value, learner):
         self.e = e
-        self.examples = examples
+        self.instances = instances
         self.max_value = max_value
         self.min_value = min_value
         self.learner = learner
     
-    def __call__(self, example, predicted, probabilities):
+    def __call__(self, instance, predicted, probabilities):
         # Create new dataset
-        r_data = Orange.data.Table(self.examples)
+        r_data = Orange.data.Table(self.instances)
         
-        # Create new example
-        modified_example = Orange.data.Instance(example)
+        # Create new instance
+        modified_instance = Orange.data.Instance(instance)
         
         # Append it to the data
-        r_data.append(modified_example)
+        r_data.append(modified_instance)
         
         # Calculate SAvar & SAbias
         SAvar = SAbias = 0
@@ -429,12 +303,12 @@ class SensitivityAnalysisClassifier:
             # +epsilon
             r_data[-1].setclass(predicted.value + eps*(self.max_value - self.min_value))
             c = self.learner(r_data)
-            k_plus = c(example, Orange.core.GetValue)
+            k_plus = c(instance, Orange.core.GetValue)
             
             # -epsilon
             r_data[-1].setclass(predicted.value - eps*(self.max_value - self.min_value))
             c = self.learner(r_data)
-            k_minus = c(example, Orange.core.GetValue)
+            k_minus = c(instance, Orange.core.GetValue)
             #print len(r_data)
             #print eps*(self.max_value - self.min_value)
             #print k_plus
@@ -453,32 +327,31 @@ class SensitivityAnalysisClassifier:
 class BaggingVariance:
     """
     
-    :param m: Number of bagged models to be used with BAGV estimate
+    :param m: Number of bagging models to be used with BAGV estimate
     :type m: int
     
     :rtype: :class:`Orange.evaluation.reliability.BaggingVarianceClassifier`
     
-    We construct m different bagging models of the original chosen learner and use
-    those predictions (:math:`K_i, i = 1, ..., m`) of given example to calculate the variance, which we use as
-    reliability estimator.
+    :math:`m` different bagging models are constructed and used to estimate
+    the value of dependent variable for a given instance. The variance of
+    those predictions is used as a prediction reliability estimate.
 
     :math:`BAGV = \\frac{1}{m} \sum_{i=1}^{m} (K_i - K)^2`
 
-    where
-
-    :math:`K = \\frac{\sum_{i=1}^{m} K_i}{m}`
+    where :math:`K = \\frac{\sum_{i=1}^{m} K_i}{m}` and :math:`K_i` are
+    predictions of individual constructed models.
     
     """
     def __init__(self, m=50):
         self.m = m
     
-    def __call__(self, examples, learner):
+    def __call__(self, instances, learner):
         classifiers = []
         
         # Create bagged classifiers using sampling with replacement
         for _ in xrange(self.m):
-            selection = select_with_repeat(len(examples))
-            data = examples.select(selection)
+            selection = select_with_repeat(len(instances))
+            data = instances.select(selection)
             classifiers.append(learner(data))
         return BaggingVarianceClassifier(classifiers)
 
@@ -486,11 +359,11 @@ class BaggingVarianceClassifier:
     def __init__(self, classifiers):
         self.classifiers = classifiers
     
-    def __call__(self, example, *args):
+    def __call__(self, instance, *args):
         BAGV = 0
         
         # Calculate the bagging variance
-        bagged_values = [c(example, Orange.core.GetValue).value for c in self.classifiers if c is not None]
+        bagged_values = [c(instance, Orange.core.GetValue).value for c in self.classifiers if c is not None]
         
         k = sum(bagged_values) / len(bagged_values)
         
@@ -506,35 +379,33 @@ class LocalCrossValidation:
     
     :rtype: :class:`Orange.evaluation.reliability.LocalCrossValidationClassifier`
     
-    We find k nearest neighbours to the given example and put them in
-    seperate dataset. On this dataset we do leave one out
-    validation using given model. Reliability estimate is then distance
-    weighted absolute prediction error.
+    :math:`k` nearest neighbours to the given instance are found and put in
+    a separate data set. On this data set, a leave-one-out validation is
+    performed. Reliability estimate is then the distance weighted absolute
+    prediction error.
+
+    If a special value 0 is passed as :math:`k` (as is by default),
+    it is set as 1/20 of data set size (or 5, whichever is greater).
     
-    1. define the set of k nearest neighours :math:`N = { (x_1, x_1),..., (x_k, c_k)}`
-    2. FOR EACH :math:`(x_i, c_i) \in N`
-    
-      2.1. generare model M on :math:`N \\backslash (x_i, c_i)`
-    
-      2.2. for :math:`(x_i, c_i)` compute LOO prediction :math:`K_i`
-    
-      2.3. for :math:`(x_i, c_i)` compute LOO error :math:`E_i = | C_i - K_i |`
-    
+    1. Determine the set of k nearest neighours :math:`N = { (x_1, c_1),...,
+       (x_k, c_k)}`.
+    2. On this set, compute leave-one-out predictions :math:`K_i` and
+       prediction errors :math:`E_i = | C_i - K_i |`.
     3. :math:`LCV(x) = \\frac{ \sum_{(x_i, c_i) \in N} d(x_i, x) * E_i }{ \sum_{(x_i, c_i) \in N} d(x_i, x) }`
     
     """
     def __init__(self, k=0):
         self.k = k
     
-    def __call__(self, examples, learner):
+    def __call__(self, instances, learner):
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.EuclideanConstructor()
         
         distance_id = Orange.data.new_meta_id()
-        nearest_neighbours = nearest_neighbours_constructor(examples, 0, distance_id)
+        nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
         
         if self.k == 0:
-            self.k = max(5, len(examples)/20)
+            self.k = max(5, len(instances)/20)
         
         return LocalCrossValidationClassifier(distance_id, nearest_neighbours, self.k, learner)
 
@@ -545,13 +416,13 @@ class LocalCrossValidationClassifier:
         self.k = k
         self.learner = learner
     
-    def __call__(self, example, *args):
+    def __call__(self, instance, *args):
         LCVer = 0
         LCVdi = 0
         
         # Find k nearest neighbors
         
-        knn = [ex for ex in self.nearest_neighbours(example, self.k)]
+        knn = [ex for ex in self.nearest_neighbours(instance, self.k)]
         
         # leave one out of prediction error
         for i in xrange(len(knn)):
@@ -580,25 +451,25 @@ class CNeighbours:
     
     :rtype: :class:`Orange.evaluation.reliability.CNeighboursClassifier`
     
-    Estimate CNK is defined for unlabeled example as difference between
-    average label of the nearest neighbours and the examples prediction. CNK can
-    be used as a signed estimate or only as absolute value. 
+    CNK is defined for an unlabeled instance as a difference between average
+    label of its nearest neighbours and its prediction. CNK can be used as a
+    signed or absolute estimate.
     
     :math:`CNK = \\frac{\sum_{i=1}^{k}C_i}{k} - K`
     
-    Where k denotes number of neighbors, C :sub:`i` denotes neighbours' labels and
-    K denotes the example's prediction.
+    where :math:`k` denotes number of neighbors, C :sub:`i` denotes neighbours'
+    labels and :math:`K` denotes the instance's prediction.
     
     """
     def __init__(self, k=5):
         self.k = k
     
-    def __call__(self, examples, learner):
+    def __call__(self, instances, learner):
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.EuclideanConstructor()
         
         distance_id = Orange.data.new_meta_id()
-        nearest_neighbours = nearest_neighbours_constructor(examples, 0, distance_id)
+        nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
         return CNeighboursClassifier(nearest_neighbours, self.k)
 
 class CNeighboursClassifier:
@@ -606,12 +477,12 @@ class CNeighboursClassifier:
         self.nearest_neighbours = nearest_neighbours
         self.k = k
     
-    def __call__(self, example, predicted, probabilities):
+    def __call__(self, instance, predicted, probabilities):
         CNK = 0
         
         # Find k nearest neighbors
         
-        knn = [ex for ex in self.nearest_neighbours(example, self.k)]
+        knn = [ex for ex in self.nearest_neighbours(instance, self.k)]
         
         # average label of neighbors
         for ex in knn:
@@ -626,25 +497,26 @@ class CNeighboursClassifier:
 class Mahalanobis:
     """
     
-    :param k: Number of nearest neighbours used in Mahalanobis estimate
+    :param k: Number of nearest neighbours used in Mahalanobis estimate.
     :type k: int
     
     :rtype: :class:`Orange.evaluation.reliability.MahalanobisClassifier`
     
-    Mahalanobis distance estimate is defined as `mahalanobis distance <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_ to the
-    k nearest neighbours of chosen example.
+    Mahalanobis distance reliability estimate is defined as
+    `mahalanobis distance <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_
+    to the evaluated instance's :math:`k` nearest neighbours.
 
     
     """
     def __init__(self, k=3):
         self.k = k
     
-    def __call__(self, examples, *args):
+    def __call__(self, instances, *args):
         nnm = Orange.classification.knn.FindNearestConstructor()
         nnm.distanceConstructor = Orange.distance.MahalanobisConstructor()
         
         mid = Orange.data.new_meta_id()
-        nnm = nnm(examples, 0, mid)
+        nnm = nnm(instances, 0, mid)
         return MahalanobisClassifier(self.k, nnm, mid)
 
 class MahalanobisClassifier:
@@ -653,10 +525,10 @@ class MahalanobisClassifier:
         self.nnm = nnm
         self.mid = mid
     
-    def __call__(self, example, *args):
+    def __call__(self, instance, *args):
         mahalanobis_distance = 0
         
-        mahalanobis_distance = sum(ex[self.mid].value for ex in self.nnm(example, self.k))
+        mahalanobis_distance = sum(ex[self.mid].value for ex in self.nnm(instance, self.k))
         
         return [ Estimate(mahalanobis_distance, ABSOLUTE, MAHAL_ABSOLUTE) ]
 
@@ -664,44 +536,45 @@ class MahalanobisToCenter:
     """
     :rtype: :class:`Orange.evaluation.reliability.MahalanobisToCenterClassifier`
     
-    Mahalanobis distance to center estimate is defined as `mahalanobis distance <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_ to the
-    centroid of the data.
+    Mahalanobis distance to center reliability estimate is defined as a
+    `mahalanobis distance <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_
+    between the predicted instance and the centroid of the data.
 
     
     """
     def __init__(self):
         pass
     
-    def __call__(self, examples, *args):
+    def __call__(self, instances, *args):
         dc = Orange.core.DomainContinuizer()
         dc.classTreatment = Orange.core.DomainContinuizer.Ignore
         dc.continuousTreatment = Orange.core.DomainContinuizer.NormalizeBySpan
         dc.multinomialTreatment = Orange.core.DomainContinuizer.NValues
         
-        new_domain = dc(examples)
-        new_examples = examples.translate(new_domain)
+        new_domain = dc(instances)
+        new_instances = instances.translate(new_domain)
         
-        X, _, _ = new_examples.to_numpy()
-        example_avg = numpy.average(X, 0)
+        X, _, _ = new_instances.to_numpy()
+        instance_avg = numpy.average(X, 0)
         
         distance_constructor = Orange.distance.MahalanobisConstructor()
-        distance = distance_constructor(new_examples)
+        distance = distance_constructor(new_instances)
         
-        average_example = Orange.data.Instance(new_examples.domain, list(example_avg) + ["?"])
+        average_instance = Orange.data.Instance(new_instances.domain, list(instance_avg) + ["?"])
         
-        return MahalanobisToCenterClassifier(distance, average_example, new_domain)
+        return MahalanobisToCenterClassifier(distance, average_instance, new_domain)
 
 class MahalanobisToCenterClassifier:
-    def __init__(self, distance, average_example, new_domain):
+    def __init__(self, distance, average_instance, new_domain):
         self.distance = distance
-        self.average_example = average_example
+        self.average_instance = average_instance
         self.new_domain = new_domain
     
-    def __call__(self, example, *args):
+    def __call__(self, instance, *args):
         
-        ex = Orange.data.Instance(self.new_domain, example)
+        inst = Orange.data.Instance(self.new_domain, instance)
         
-        mahalanobis_to_center = self.distance(ex, self.average_example)
+        mahalanobis_to_center = self.distance(inst, self.average_instance)
         
         return [ Estimate(mahalanobis_to_center, ABSOLUTE, MAHAL_TO_CENTER_ABSOLUTE) ]
 
@@ -717,17 +590,17 @@ class BaggingVarianceCNeighbours:
     
     :rtype: :class:`Orange.evaluation.reliability.BaggingVarianceCNeighboursClassifier`
     
-    BVCK is a combination of Bagging variance and local modeling of prediction
-    error, for this estimate we take the average of both.
+    BVCK is a combination (average) of Bagging variance and local modeling of
+    prediction error.
     
     """
     def __init__(self, bagv=BaggingVariance(), cnk=CNeighbours()):
         self.bagv = bagv
         self.cnk = cnk
     
-    def __call__(self, examples, learner):
-        bagv_classifier = self.bagv(examples, learner)
-        cnk_classifier = self.cnk(examples, learner)
+    def __call__(self, instances, learner):
+        bagv_classifier = self.bagv(instances, learner)
+        cnk_classifier = self.cnk(instances, learner)
         return BaggingVarianceCNeighboursClassifier(bagv_classifier, cnk_classifier)
 
 class BaggingVarianceCNeighboursClassifier:
@@ -735,9 +608,9 @@ class BaggingVarianceCNeighboursClassifier:
         self.bagv_classifier = bagv_classifier
         self.cnk_classifier = cnk_classifier
     
-    def __call__(self, example, predicted, probabilities):
-        bagv_estimates = self.bagv_classifier(example, predicted, probabilities)
-        cnk_estimates = self.cnk_classifier(example, predicted, probabilities)
+    def __call__(self, instance, predicted, probabilities):
+        bagv_estimates = self.bagv_classifier(instance, predicted, probabilities)
+        cnk_estimates = self.cnk_classifier(instance, predicted, probabilities)
         
         bvck_value = (bagv_estimates[0].estimate + cnk_estimates[1].estimate)/2
         bvck_estimates = [ Estimate(bvck_value, ABSOLUTE, BVCK_ABSOLUTE) ]
@@ -749,15 +622,15 @@ class ErrorPredicting:
     def __init__(self):
         pass
     
-    def __call__(self, examples, learner):
-        res = Orange.evaluation.testing.cross_validation([learner], examples)
+    def __call__(self, instances, learner):
+        res = Orange.evaluation.testing.cross_validation([learner], instances)
         prediction_errors = get_prediction_error_list(res)
         
-        new_domain = Orange.data.Domain(examples.domain.attributes, Orange.core.FloatVariable("pe"))
-        new_dataset = Orange.data.Table(new_domain, examples)
+        new_domain = Orange.data.Domain(instances.domain.attributes, Orange.core.FloatVariable("pe"))
+        new_dataset = Orange.data.Table(new_domain, instances)
         
-        for example, prediction_error in izip(new_dataset, prediction_errors):
-            example.set_class(prediction_error)
+        for instance, prediction_error in izip(new_dataset, prediction_errors):
+            instance.set_class(prediction_error)
         
         rf = Orange.ensemble.forest.RandomForestLearner()
         rf_classifier = rf(new_dataset)
@@ -769,9 +642,9 @@ class ErrorPredictingClassification:
         self.rf_classifier = rf_classifier
         self.new_domain = new_domain
     
-    def __call__(self, example, predicted, probabilities):
-        new_example = Orange.data.Instance(self.new_domain, example)
-        value = self.rf_classifier(new_example, Orange.core.GetValue)
+    def __call__(self, instance, predicted, probabilities):
+        new_instance = Orange.data.Instance(self.new_domain, instance)
+        value = self.rf_classifier(new_instance, Orange.core.GetValue)
         
         return [Estimate(value.value, SIGNED, SABIAS_SIGNED)]
 
@@ -779,15 +652,12 @@ class Learner:
     """
     Reliability estimation wrapper around a learner we want to test.
     Different reliability estimation algorithms can be used on the
-    chosen learner. This learner works as any other and can be used as one.
-    The only difference is when the classifier is called with a given
-    example instead of only return the value and probabilities, it also
-    attaches a list of reliability estimates to 
-    :data:`probabilities.reliability_estimate`.
-    Each reliability estimate consists of a tuple 
-    (estimate, signed_or_absolute, method).
+    chosen learner. This learner works as any other and can be used as one,
+    but it returns the classifier, wrapped into an instance of
+    :class:`Orange.evaluation.reliability.Classifier`.
     
-    :param box_learner: Learner we want to wrap into reliability estimation
+    :param box_learner: Learner we want to wrap into a reliability estimation
+        classifier.
     :type box_learner: learner
     
     :param estimators: List of different reliability estimation methods we
@@ -814,7 +684,7 @@ class Learner:
         self.blending = False
         
     
-    def __call__(self, examples, weight=None, **kwds):
+    def __call__(self, instances, weight=None, **kwds):
         """Learn from the given table of data instances.
         
         :param instances: Data instances to learn from.
@@ -827,34 +697,51 @@ class Learner:
         blending_classifier = None
         new_domain = None
         
-        if examples.domain.class_var.var_type != Orange.data.variable.Continuous.Continuous:
+        if instances.domain.class_var.var_type != Orange.data.variable.Continuous.Continuous:
             raise Exception("This method only works on data with continuous class.")
         
-        return Classifier(examples, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
+        return Classifier(instances, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
     
-    def internal_cross_validation(self, examples, folds=10):
-        """ Performs the ususal internal cross validation for getting the best
-        reliability estimate. It uses the reliability estimators defined in 
-        estimators attribute. Returns the id of the method that scored the 
-        best. """
-        res = Orange.evaluation.testing.cross_validation([self], examples, folds=folds)
+    def internal_cross_validation(self, instances, folds=10):
+        """ Perform the internal cross validation for getting the best
+        reliability estimate. It uses the reliability estimators defined in
+        estimators attribute.
+
+        Returns the id of the method that scored the best.
+
+        :param instances: Data instances to use for ICV.
+        :type instances: :class:`Orange.data.Table`
+        :param folds: number of folds for ICV.
+        :type folds: int
+        :rtype: int
+
+        """
+        res = Orange.evaluation.testing.cross_validation([self], instances, folds=folds)
         results = get_pearson_r(res)
         sorted_results = sorted(results)
         return sorted_results[-1][3]
     
-    def internal_cross_validation_testing(self, examples, folds=10):
-        """ Performs internal cross validation (as in Automatic selection of
+    def internal_cross_validation_testing(self, instances, folds=10):
+        """ Perform internal cross validation (as in Automatic selection of
         reliability estimates for individual regression predictions,
-        Zoran Bosnic 2010) and return id of the method
-        that scored best on this data. """
-        cv_indices = Orange.core.MakeRandomIndicesCV(examples, folds)
+        Zoran Bosnic, 2010) and return id of the method
+        that scored best on this data.
+
+        :param instances: Data instances to use for ICV.
+        :type instances: :class:`Orange.data.Table`
+        :param folds: number of folds for ICV.
+        :type folds: int
+        :rtype: int
+
+        """
+        cv_indices = Orange.core.MakeRandomIndicesCV(instances, folds)
         
         list_of_rs = []
         
         sum_of_rs = defaultdict(float)
         
         for fold in xrange(folds):
-            data = examples.select(cv_indices, fold)
+            data = instances.select(cv_indices, fold)
             if len(data) < 10:
                 res = Orange.evaluation.testing.leave_one_out([self], data)
             else:
@@ -868,9 +755,20 @@ class Learner:
     labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
 
 class Classifier:
-    def __init__(self, examples, box_learner, estimators, blending, blending_domain, rf_classifier, **kwds):
+    """
+    A reliability estimation wrapper for classifiers.
+
+    What distinguishes this classifier is that the returned probabilities (if
+    :obj:`Orange.classification.Classifier.GetProbabilities` or
+    :obj:`Orange.classification.Classifier.GetBoth` is passed) contain an
+    additional attribute :obj:`reliability_estimate`, which is an instance of
+     :class:`~Orange.evaluation.reliability.Estimate`.
+
+    """
+
+    def __init__(self, instances, box_learner, estimators, blending, blending_domain, rf_classifier, **kwds):
         self.__dict__.update(kwds)
-        self.examples = examples
+        self.instances = instances
         self.box_learner = box_learner
         self.estimators = estimators
         self.blending = blending
@@ -878,16 +776,21 @@ class Classifier:
         self.rf_classifier = rf_classifier
         
         # Train the learner with original data
-        self.classifier = box_learner(examples)
+        self.classifier = box_learner(instances)
         
         # Train all the estimators and create their classifiers
-        self.estimation_classifiers = [estimator(examples, box_learner) for estimator in estimators]
+        self.estimation_classifiers = [estimator(instances, box_learner) for estimator in estimators]
     
-    def __call__(self, example, result_type=Orange.core.GetValue):
+    def __call__(self, instance, result_type=Orange.core.GetValue):
         """
-        Classify and estimate a new instance. When you chose 
-        Orange.core.GetBoth or Orange.core.getProbabilities, you can access 
-        the reliability estimates inside probabilities.reliability_estimate.
+        Classify and estimate reliability of estimation for a new instance.
+        When :obj:`result_type` is set to
+        :obj:`Orange.classification.Classifier.GetBoth` or
+        :obj:`Orange.classification.Classifier.GetProbabilities`,
+        an additional attribute :obj:`reliability_estimate`,
+        which is an instance of
+        :class:`~Orange.evaluation.reliability.Estimate`,
+        is added to the distribution object.
         
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -898,7 +801,7 @@ class Classifier:
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        predicted, probabilities = self.classifier(example, Orange.core.GetBoth)
+        predicted, probabilities = self.classifier(instance, Orange.core.GetBoth)
         
         # Create a place holder for estimates
         if probabilities is None:
@@ -909,7 +812,7 @@ class Classifier:
         
         # Calculate all the estimates and add them to the results
         for estimate in self.estimation_classifiers:
-            probabilities.reliability_estimate.extend(estimate(example, predicted, probabilities))
+            probabilities.reliability_estimate.extend(estimate(instance, predicted, probabilities))
         
         # Return the appropriate type of result
         if result_type == Orange.core.GetValue:

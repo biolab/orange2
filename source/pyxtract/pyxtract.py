@@ -928,8 +928,11 @@ def writeInitialization(functions, constants):
 
   if len(myclasses):
     for classname in ks:
+      exportedname = "OrangeBase" if classname=="Orange" else classname
       if not classdefs[i].hidden:
-        functionsfile.write('     PyModule_AddObject(mod, "%s", (PyObject *)&PyOr%s_Type);\n' % (classname, classname))
+        functionsfile.write('     PyModule_AddObject(mod, "%s", ' \
+                            '(PyObject *)&PyOr%s_Type);\n' %
+                            (exportedname, classname))
 
   for type, fields in myclasses.items():
       if fields.subconstants:

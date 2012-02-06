@@ -67,7 +67,7 @@ lesson in <a href="../ofb/default.htm">Orange for Beginners</a>). The
 script compares this filtered learner with one that uses a complete
 set of features.
 
-:download:`selection-bayes.py <code/selection-bayes.py>` (uses :download:`voting.tab <code/voting.tab>`):
+:download:`selection-bayes.py<code/selection-bayes.py>`
 
 .. literalinclude:: code/selection-bayes.py
     :lines: 7-
@@ -95,7 +95,7 @@ from previous example, and compares naive Bayesian classifier to the
 same classifier when only a single most important attribute is
 used.
 
-:download:`selection-filtered-learner.py <code/selection-filtered-learner.py>` (uses :download:`voting.tab <code/voting.tab>`):
+:download:`selection-filtered-learner.py<code/selection-filtered-learner.py>`
 
 .. literalinclude:: code/selection-filtered-learner.py
     :lines: 13-16

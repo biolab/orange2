@@ -123,16 +123,10 @@ def _get_default_env():
     version_display = "Orange 2.5"
     orange_no_deprecated_members = "False"
     
-    try:
-        install_dir = os.path.dirname(os.path.abspath(__file__)) # Orange/misc
-        install_dir = os.path.dirname(install_dir) # Orange/
-        install_dir = os.path.dirname(install_dir) # 
-    except Exception: # Why should this happen??
-        raise
-        import orange
-        install_dir = os.path.dirname(os.path.abspath(orange.__file__))
+    install_dir = os.path.dirname(os.path.abspath(__file__)) # Orange/misc
+    install_dir = os.path.dirname(install_dir) # Orange/
 
-    doc_install_dir = os.path.join(install_dir, "doc") 
+    doc_install_dir = os.path.join(install_dir, "doc")
     dataset_install_dir = os.path.join(install_dir, "doc", "datasets") 
     network_install_dir = os.path.join(install_dir, "doc", "networks")
 
