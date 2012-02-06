@@ -29,26 +29,26 @@ Imputers
 :obj:`ImputerConstructor` is the abstract root in the hierarchy of classes
 that accept training data and construct an instance of a class derived from
 :obj:`Imputer`. When an :obj:`Imputer` is called with an
-:obj:`Orange.data.Instance` it returns a new example with the
-missing values imputed (leaving the original example intact). If imputer is
-called with an :obj:`Orange.data.Table` it returns a new example table
-with imputed instances.
+:obj:`Orange.data.Instance` it returns a new instance with the
+missing values imputed (leaving the original instance intact). If imputer is
+called with an :obj:`Orange.data.Table` it returns a new data table with
+imputed instances.
 
 .. class:: ImputerConstructor
 
     .. attribute:: imputeClass
 
-    Indicates whether to impute the class value. Default is True.
+    Indicates whether to impute the class value. Defaults to True.
 
     .. attribute:: deterministic
 
-    Indicates whether to initialize random by example's CRC. Default is False.
+    Indicates whether to initialize random by example's CRC. Defaults to False.
 
 Simple imputation
 =================
 
-Simple imputers always impute the same value for a particular attribute,
-disregarding the values of other attributes. They all use the same class
+Simple imputers always impute the same value for a particular feature,
+disregarding the values of other features. They all use the same class
 :obj:`Imputer_defaults`.
 
 .. class:: Imputer_defaults
@@ -68,29 +68,25 @@ For continuous features, they will impute the smallest, largest or the average
 values encountered in the training examples. For discrete,
 they will impute the lowest (the one with index 0, e. g. attr.values[0]),
 the highest (attr.values[-1]), and the most common value encountered in the
-data.
-
-If values of discrete features are be ordered according to their
-impact on class (for example, possible values for symptoms of some
+data, respectively. If values of discrete features are ordered according to
+their impact on class (for example, possible values for symptoms of some
 disease can be ordered according to their seriousness),
-the minimal and maximal imputers will then represent optimistic and
+the minimal and maximal imputers  will then represent optimistic and
 pessimistic imputations.
 
-To construct the :obj:`~Orange.feature.imputation.Imputer_defaults`
-yourself and specify your own defaults. Or leave some values unspecified, in
-which case the imputer won't impute them, as in the following example. Here,
-the only attribute whose values will get imputed is "LENGTH"; the imputed value
-will be 1234.
+User-define defaults can be given when constructing a :obj:`~Orange.feature
+.imputation.Imputer_defaults`. Values that are left unspecified do not get
+imputed. In the following example "LENGTH" is the
+only attribute to get imputed with value 1234:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 56-69
 
-:obj:`Orange.feature.imputation.Imputer_defaults`'s constructor will accept an
-argument of type :obj:`Orange.data.Domain` (in which case it will construct an
-empty instance for :obj:`defaults`) or an example. (Be careful with this:
-:obj:`Orange.feature.imputation.Imputer_defaults` will have a reference to the
-instance and not a copy. But you can make a copy yourself to avoid problems:
-instead of `Imputer_defaults(data[0])` you may want to write
+If :obj:`~Orange.feature.imputation.Imputer_defaults`'s constructor is given
+an argument of type :obj:`~Orange.data.Domain` it constructs an empty instance
+for :obj:`defaults`. If an instance is given, the reference to the
+instance will be kept. To avoid problems associated with `Imputer_defaults
+(data[0])`, it is better to provide a copy of the instance:
 `Imputer_defaults(Orange.data.Instance(data[0]))`.
 
 Random imputation
@@ -107,107 +103,88 @@ Random imputation
 
     .. attribute:: deterministic
 
-    If true (default is False), random generator is initialized for each
-    example using the example's hash value as a seed. This results in same
-    examples being always imputed the same values.
+    If true (defaults to False), random generator is initialized for each
+    instance using the instance's hash value as a seed. This results in same
+    instances being always imputed with the same (random) values.
 
 Model-based imputation
 ======================
 
 .. class:: ImputerConstructor_model
 
-    Model-based imputers learn to predict the attribute's value from values of
-    other attributes. :obj:`ImputerConstructor_model` are given a learning
-    algorithm (two, actually - one for discrete and one for continuous
-    attributes) and they construct a classifier for each attribute. The
-    constructed imputer :obj:`Imputer_model` stores a list of classifiers which
-    are used when needed.
+    Model-based imputers learn to predict the features's value from values of
+    other features. :obj:`ImputerConstructor_model` are given two learning
+    algorithms and they construct a classifier for each attribute. The
+    constructed imputer :obj:`Imputer_model` stores a list of classifiers that
+    are used for imputation.
 
     .. attribute:: learner_discrete, learner_continuous
 
     Learner for discrete and for continuous attributes. If any of them is
-    missing, the attributes of the corresponding type won't get imputed.
+    missing, the attributes of the corresponding type will not get imputed.
 
     .. attribute:: use_class
 
-    Tells whether the imputer is allowed to use the class value. As this is
-    most often undesired, this option is by default set to False. It can
-    however be useful for a more complex design in which we would use one
-    imputer for learning examples (this one would use the class value) and
-    another for testing examples (which would not use the class value as this
-    is unavailable at that moment).
+    Tells whether the imputer can use the class attribute. Defaults to
+    False. It is useful in more complex designs in which one imputer is used
+    on learning instances, where it uses the class value,
+    and a second imputer on testing instances, where class is not available.
 
 .. class:: Imputer_model
 
-    .. attribute: models
+    .. attribute:: models
 
-    A list of classifiers, each corresponding to one attribute of the examples
-    whose values are to be imputed. The :obj:`classVar`'s of the models should
-    equal the examples' attributes. If any of classifier is missing (that is,
-    the corresponding element of the table is :obj:`None`, the corresponding
-    attribute's values will not be imputed.
+    A list of classifiers, each corresponding to one attribute to be imputed.
+    The :obj:`class_var`'s of the models should equal the instances'
+    attributes. If an element is :obj:`None`, the corresponding attribute's
+    values are not imputed.
 
 .. rubric:: Examples
 
-The following imputer predicts the missing attribute values using
-classification and regression trees with the minimum of 20 examples in a leaf.
-Part of :download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
+Examples are taken from :download:`imputation-complex.py
+<code/imputation-complex.py>`. The following imputer predicts the missing
+attribute values using classification and regression trees with the minimum
+of 20 examples in a leaf.
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 74-76
 
-We could even use the same learner for discrete and continuous attributes,
-as :class:`Orange.classification.tree.TreeLearner` checks the class type
-and constructs regression or classification trees accordingly. The
-common parameters, such as the minimal number of
-examples in leaves, are used in both cases.
-
-You can also use different learning algorithms for discrete and
-continuous attributes. Probably a common setup will be to use
-:class:`Orange.classification.bayes.BayesLearner` for discrete and
-:class:`Orange.regression.mean.MeanLearner` (which
-just remembers the average) for continuous attributes. Part of
-:download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
+A common setup, where different learning algorithms are used for discrete
+and continuous features, is to use
+:class:`~Orange.classification.bayes.NaiveLearner` for discrete and
+:class:`~Orange.regression.mean.MeanLearner` (which
+just remembers the average) for continuous attributes:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 91-94
 
-You can also construct an :class:`Imputer_model` yourself. You will do
+To construct a  yourself. You will do
 this if different attributes need different treatment. Brace for an
 example that will be a bit more complex. First we shall construct an
 :class:`Imputer_model` and initialize an empty list of models.
-The following code snippets are from
-:download:`imputation-complex.py <code/imputation-complex.py>` (uses :download:`bridges.tab <code/bridges.tab>`):
+
+To construct a user-defined :class:`Imputer_model`:
 
 .. literalinclude:: code/imputation-complex.py
-    :lines: 108-109
+    :lines: 108-112
 
-Attributes "LANES" and "T-OR-D" will always be imputed values 2 and
-"THROUGH". Since "LANES" is continuous, it suffices to construct a
-:obj:`DefaultClassifier` with the default value 2.0 (don't forget the
-decimal part, or else Orange will think you talk about an index of a discrete
-value - how could it tell?). For the discrete attribute "T-OR-D", we could
-construct a :class:`Orange.classification.ConstantClassifier` and give the index of value
-"THROUGH" as an argument. But we shall do it nicer, by constructing a
-:class:`Orange.data.Value`. Both classifiers will be stored at the appropriate places
-in :obj:`imputer.models`.
+A list of empty models is first initialized. Continuous feature "LANES" is
+imputed with value 2, using :obj:`DefaultClassifier` with the default value
+2.0. A float must be given, because integer values are interpreted as indexes
+of discrete features. Discrete feature "T-OR-D" is imputed using
+:class:`Orange.classification.ConstantClassifier` which is given the index
+of value "THROUGH" as an argument. Both classifiers are stored at the
+appropriate places in :obj:`Imputer_model.models`.
 
-.. literalinclude:: code/imputation-complex.py
-    :lines: 110-112
-
-
-"LENGTH" will be computed with a regression tree induced from "MATERIAL",
-"SPAN" and "ERECTED" (together with "LENGTH" as the class attribute, of
-course). Note that we initialized the domain by simply giving a list with
-the names of the attributes, with the domain as an additional argument
-in which Orange will look for the named attributes.
+Feature "LENGTH" is computed with a regression tree induced from "MATERIAL",
+"SPAN" and "ERECTED" (feature "LENGTH" is used as class attribute here).
+The domain is initialized by simply giving a list of feature names and
+domain as an additional argument where Orange will look for features.
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 114-119
 
-We printed the tree just to see what it looks like.
-
-::
+This is how the inferred tree should look like::
 
     <XMP class=code>SPAN=SHORT: 1158
     SPAN=LONG: 1907

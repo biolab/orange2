@@ -15,6 +15,5 @@ print bridges[10]
 print "Imputed values:"
 print imputer(bridges[10])
 
-impdata = imputer(bridges)
-print impdata[10]
-
+imputed_bridges = imputer(bridges)
+print imputed_bridges[10]
