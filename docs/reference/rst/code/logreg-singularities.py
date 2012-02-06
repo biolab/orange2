@@ -1,8 +1,8 @@
-from Orange import *
+import Orange
 
-table = data.Table("adult_sample")
-lr = classification.logreg.LogRegLearner(table, removeSingular=1)
+table = Orange.data.Table("adult_sample")
+lr = Orange.classification.logreg.LogRegLearner(table, remove_singular=1)
 
 for ex in table[:5]:
     print ex.getclass(), lr(ex)
-classification.logreg.dump(lr)
+Orange.classification.logreg.dump(lr)

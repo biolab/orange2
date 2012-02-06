@@ -1,297 +1,29 @@
-"""
-.. index: logistic regression
-.. index:
-   single: classification; logistic regression
-
-********************************
-Logistic regression (``logreg``)
-********************************
-
-Implements `logistic regression
-<http://en.wikipedia.org/wiki/Logistic_regression>`_ with an extension for
-proper treatment of discrete features.  The algorithm can handle various
-anomalies in features, such as constant variables and singularities, that
-could make fitting of logistic regression almost impossible. Stepwise
-logistic regression, which iteratively selects the most informative
-features, is also supported.
-
-Logistic regression is a popular classification method that comes
-from statistics. The model is described by a linear combination of
-coefficients,
-
-.. math::
-    
-    F = \\beta_0 + \\beta_1*X_1 + \\beta_2*X_2 + ... + \\beta_k*X_k
-
-and the probability (p) of a class value is  computed as:
-
-.. math::
-
-    p = \\frac{\exp(F)}{1 + \exp(F)}
-
-
-.. class :: LogRegClassifier
-
-    :obj:`LogRegClassifier` stores estimated values of regression
-    coefficients and their significances, and uses them to predict
-    classes and class probabilities using the equations described above.
-
-    .. attribute :: beta
-
-        Estimated regression coefficients.
-
-    .. attribute :: beta_se
-
-        Estimated standard errors for regression coefficients.
-
-    .. attribute :: wald_Z
-
-        Wald Z statistics for beta coefficients. Wald Z is computed
-        as beta/beta_se.
-
-    .. attribute :: P
-
-        List of P-values for beta coefficients, that is, the probability
-        that beta coefficients differ from 0.0. The probability is
-        computed from squared Wald Z statistics that is distributed with
-        Chi-Square distribution.
-
-    .. attribute :: likelihood
-
-        The probability of the sample (ie. learning examples) observed on
-        the basis of the derived model, as a function of the regression
-        parameters.
-
-    .. attribute :: fitStatus
-
-        Tells how the model fitting ended - either regularly
-        (:obj:`LogRegFitter.OK`), or it was interrupted due to one of beta
-        coefficients escaping towards infinity (:obj:`LogRegFitter.Infinity`)
-        or since the values didn't converge (:obj:`LogRegFitter.Divergence`). The
-        value tells about the classifier's "reliability"; the classifier
-        itself is useful in either case.
-
-.. autoclass:: LogRegLearner
-
-.. class:: LogRegFitter
-
-    :obj:`LogRegFitter` is the abstract base class for logistic fitters. It
-    defines the form of call operator and the constants denoting its
-    (un)success:
-
-    .. attribute:: OK
-
-        Fitter succeeded to converge to the optimal fit.
-
-    .. attribute:: Infinity
-
-        Fitter failed due to one or more beta coefficients escaping towards infinity.
-
-    .. attribute:: Divergence
-
-        Beta coefficients failed to converge, but none of beta coefficients escaped.
-
-    .. attribute:: Constant
-
-        There is a constant attribute that causes the matrix to be singular.
-
-    .. attribute:: Singularity
-
-        The matrix is singular.
-
-
-    .. method:: __call__(examples, weightID)
-
-        Performs the fitting. There can be two different cases: either
-        the fitting succeeded to find a set of beta coefficients (although
-        possibly with difficulties) or the fitting failed altogether. The
-        two cases return different results.
-
-        `(status, beta, beta_se, likelihood)`
-            The fitter managed to fit the model. The first element of
-            the tuple, result, tells about the problems occurred; it can
-            be either :obj:`OK`, :obj:`Infinity` or :obj:`Divergence`. In
-            the latter cases, returned values may still be useful for
-            making predictions, but it's recommended that you inspect
-            the coefficients and their errors and make your decision
-            whether to use the model or not.
-
-        `(status, attribute)`
-            The fitter failed and the returned attribute is responsible
-            for it. The type of failure is reported in status, which
-            can be either :obj:`Constant` or :obj:`Singularity`.
-
-        The proper way of calling the fitter is to expect and handle all
-        the situations described. For instance, if fitter is an instance
-        of some fitter and examples contain a set of suitable examples,
-        a script should look like this::
-
-            res = fitter(examples)
-            if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
-               status, beta, beta_se, likelihood = res
-               < proceed by doing something with what you got >
-            else:
-               status, attr = res
-               < remove the attribute or complain to the user or ... >
-
-
-.. class :: LogRegFitter_Cholesky
-
-    :obj:`LogRegFitter_Cholesky` is the sole fitter available at the
-    moment. It is a C++ translation of `Alan Miller's logistic regression
-    code <http://users.bigpond.net.au/amiller/>`_. It uses Newton-Raphson
-    algorithm to iteratively minimize least squares error computed from
-    learning examples.
-
-
-.. autoclass:: StepWiseFSS
-.. autofunction:: dump
-
-
-
-Examples
---------
-
-The first example shows a very simple induction of a logistic regression
-classifier (:download:`logreg-run.py <code/logreg-run.py>`, uses :download:`titanic.tab <code/titanic.tab>`).
-
-.. literalinclude:: code/logreg-run.py
-
-Result::
-
-    Classification accuracy: 0.778282598819
-
-    class attribute = survived
-    class values = <no, yes>
-
-        Attribute       beta  st. error     wald Z          P OR=exp(beta)
-
-        Intercept      -1.23       0.08     -15.15      -0.00
-     status=first       0.86       0.16       5.39       0.00       2.36
-    status=second      -0.16       0.18      -0.91       0.36       0.85
-     status=third      -0.92       0.15      -6.12       0.00       0.40
-        age=child       1.06       0.25       4.30       0.00       2.89
-       sex=female       2.42       0.14      17.04       0.00      11.25
-
-The next examples shows how to handle singularities in data sets
-(:download:`logreg-singularities.py <code/logreg-singularities.py>`, uses :download:`adult_sample.tab <code/adult_sample.tab>`).
-
-.. literalinclude:: code/logreg-singularities.py
-
-The first few lines of the output of this script are::
-
-    <=50K <=50K
-    <=50K <=50K
-    <=50K <=50K
-    >50K >50K
-    <=50K >50K
-
-    class attribute = y
-    class values = <>50K, <=50K>
-
-                               Attribute       beta  st. error     wald Z          P OR=exp(beta)
-
-                               Intercept       6.62      -0.00       -inf       0.00
-                                     age      -0.04       0.00       -inf       0.00       0.96
-                                  fnlwgt      -0.00       0.00       -inf       0.00       1.00
-                           education-num      -0.28       0.00       -inf       0.00       0.76
-                 marital-status=Divorced       4.29       0.00        inf       0.00      72.62
-            marital-status=Never-married       3.79       0.00        inf       0.00      44.45
-                marital-status=Separated       3.46       0.00        inf       0.00      31.95
-                  marital-status=Widowed       3.85       0.00        inf       0.00      46.96
-    marital-status=Married-spouse-absent       3.98       0.00        inf       0.00      53.63
-        marital-status=Married-AF-spouse       4.01       0.00        inf       0.00      55.19
-                 occupation=Tech-support      -0.32       0.00       -inf       0.00       0.72
-
-If :obj:`removeSingular` is set to 0, inducing a logistic regression
-classifier would return an error::
-
-    Traceback (most recent call last):
-      File "logreg-singularities.py", line 4, in <module>
-        lr = classification.logreg.LogRegLearner(table, removeSingular=0)
-      File "/home/jure/devel/orange/Orange/classification/logreg.py", line 255, in LogRegLearner
-        return lr(examples, weightID)
-      File "/home/jure/devel/orange/Orange/classification/logreg.py", line 291, in __call__
-        lr = learner(examples, weight)
-    orange.KernelException: 'orange.LogRegLearner': singularity in workclass=Never-worked
-
-We can see that the attribute workclass is causing a singularity.
-
-The example below shows, how the use of stepwise logistic regression can help to
-gain in classification performance (:download:`logreg-stepwise.py <code/logreg-stepwise.py>`, uses :download:`ionosphere.tab <code/ionosphere.tab>`):
-
-.. literalinclude:: code/logreg-stepwise.py
-
-The output of this script is::
-
-    Learner      CA
-    logistic     0.841
-    filtered     0.846
-
-    Number of times attributes were used in cross-validation:
-     1 x a21
-    10 x a22
-     8 x a23
-     7 x a24
-     1 x a25
-    10 x a26
-    10 x a27
-     3 x a28
-     7 x a29
-     9 x a31
-     2 x a16
-     7 x a12
-     1 x a32
-     8 x a15
-    10 x a14
-     4 x a17
-     7 x a30
-    10 x a11
-     1 x a10
-     1 x a13
-    10 x a34
-     2 x a19
-     1 x a18
-    10 x a3
-    10 x a5
-     4 x a4
-     4 x a7
-     8 x a6
-    10 x a9
-    10 x a8
-
-"""
-
-from Orange.core import LogRegLearner, LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
-
 import Orange
-import math, os
-import warnings
-from numpy import *
-from numpy.linalg import *
-
-
-##########################################################################
-## Print out methods
+from Orange.misc import deprecated_keywords, deprecated_members
+import math
+from numpy import dot, array, identity, reshape, diagonal, \
+    transpose, concatenate, sqrt, sign
+from numpy.linalg import inv
+from Orange.core import LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
 
 def dump(classifier):
-    """ Formatted string of all major features in logistic
-    regression classifier. 
+    """ Return a formatted string of all major features in logistic regression
+    classifier.
 
-    :param classifier: logistic regression classifier
+    :param classifier: logistic regression classifier.
     """
 
     # print out class values
     out = ['']
-    out.append("class attribute = " + classifier.domain.classVar.name)
-    out.append("class values = " + str(classifier.domain.classVar.values))
+    out.append("class attribute = " + classifier.domain.class_var.name)
+    out.append("class values = " + str(classifier.domain.class_var.values))
     out.append('')
     
     # get the longest attribute name
     longest=0
-    for at in classifier.continuizedDomain.attributes:
+    for at in classifier.continuized_domain.features:
         if len(at.name)>longest:
-            longest=len(at.name);
+            longest=len(at.name)
 
     # print out the head
     formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
@@ -300,98 +32,128 @@ def dump(classifier):
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
     out.append(formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0]))
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
-    for i in range(len(classifier.continuizedDomain.attributes)):
-        out.append(formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1])))
+    for i in range(len(classifier.continuized_domain.features)):
+        out.append(formatstr % (classifier.continuized_domain.features[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1])))
 
     return '\n'.join(out)
         
 
 def has_discrete_values(domain):
-    for at in domain.attributes:
-        if at.varType == Orange.core.VarTypes.Discrete:
-            return 1
-    return 0
+    """
+    Return 1 if the given domain contains any discrete features, else 0.
+
+    :param domain: domain.
+    :type domain: :class:`Orange.data.Domain`
+    """
+    return any(at.var_type == Orange.data.Type.Discrete
+               for at in domain.features)
+
 
 class LogRegLearner(Orange.classification.Learner):
     """ Logistic regression learner.
 
-    Implements logistic regression. If data instances are provided to
+    If data instances are provided to
     the constructor, the learning algorithm is called and the resulting
     classifier is returned instead of the learner.
 
-    :param table: data table with either discrete or continuous features
-    :type table: Orange.data.Table
-    :param weightID: the ID of the weight meta attribute
-    :type weightID: int
-    :param removeSingular: set to 1 if you want automatic removal of disturbing features, such as constants and singularities
-    :type removeSingular: bool
-    :param fitter: the fitting algorithm (by default the Newton-Raphson fitting algorithm is used)
-    :param stepwiseLR: set to 1 if you wish to use stepwise logistic regression
-    :type stepwiseLR: bool
-    :param addCrit: parameter for stepwise feature selection
-    :type addCrit: float
-    :param deleteCrit: parameter for stepwise feature selection
-    :type deleteCrit: float
-    :param numFeatures: parameter for stepwise feature selection
-    :type numFeatures: int
+    :param instances: data table with either discrete or continuous features
+    :type instances: Orange.data.Table
+    :param weight_id: the ID of the weight meta attribute
+    :type weight_id: int
+    :param remove_singular: set to 1 if you want automatic removal of
+        disturbing features, such as constants and singularities
+    :type remove_singular: bool
+    :param fitter: the fitting algorithm (by default the Newton-Raphson
+        fitting algorithm is used)
+    :param stepwise_lr: set to 1 if you wish to use stepwise logistic
+        regression
+    :type stepwise_lr: bool
+    :param add_crit: parameter for stepwise feature selection
+    :type add_crit: float
+    :param delete_crit: parameter for stepwise feature selection
+    :type delete_crit: float
+    :param num_features: parameter for stepwise feature selection
+    :type num_features: int
     :rtype: :obj:`LogRegLearner` or :obj:`LogRegClassifier`
 
     """
-    def __new__(cls, instances=None, weightID=0, **argkw):
+
+    @deprecated_keywords({"weightID": "weight_id"})
+    def __new__(cls, instances=None, weight_id=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances, weightID)
+            return self.__call__(instances, weight_id)
         else:
             return self
 
-    def __init__(self, removeSingular=0, fitter = None, **kwds):
+    @deprecated_keywords({"removeSingular": "remove_singular"})
+    def __init__(self, remove_singular=0, fitter = None, **kwds):
         self.__dict__.update(kwds)
-        self.removeSingular = removeSingular
+        self.remove_singular = remove_singular
         self.fitter = None
 
-    def __call__(self, examples, weight=0):
+    @deprecated_keywords({"examples": "instances"})
+    def __call__(self, instances, weight=0):
+        """Learn from the given table of data instances.
+
+        :param instances: Data instances to learn from.
+        :type instances: :class:`~Orange.data.Table`
+        :param weight: Id of meta attribute with weights of instances
+        :type weight: int
+        :rtype: :class:`~Orange.classification.logreg.LogRegClassifier`
+        """
         imputer = getattr(self, "imputer", None) or None
-        if getattr(self, "removeMissing", 0):
-            examples = Orange.core.Preprocessor_dropMissing(examples)
+        if getattr(self, "remove_missing", 0):
+            instances = Orange.core.Preprocessor_dropMissing(instances)
 ##        if hasDiscreteValues(examples.domain):
 ##            examples = createNoDiscTable(examples)
-        if not len(examples):
+        if not len(instances):
             return None
-        if getattr(self, "stepwiseLR", 0):
-            addCrit = getattr(self, "addCrit", 0.2)
-            removeCrit = getattr(self, "removeCrit", 0.3)
-            numFeatures = getattr(self, "numFeatures", -1)
-            attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numFeatures = numFeatures)
-            tmpDomain = Orange.core.Domain(attributes, examples.domain.classVar)
-            tmpDomain.addmetas(examples.domain.getmetas())
-            examples = examples.select(tmpDomain)
-        learner = Orange.core.LogRegLearner()
-        learner.imputerConstructor = imputer
+        if getattr(self, "stepwise_lr", 0):
+            add_crit = getattr(self, "add_crit", 0.2)
+            delete_crit = getattr(self, "delete_crit", 0.3)
+            num_features = getattr(self, "num_features", -1)
+            attributes = StepWiseFSS(instances, add_crit= add_crit,
+                delete_crit=delete_crit, imputer = imputer, num_features= num_features)
+            tmp_domain = Orange.data.Domain(attributes,
+                instances.domain.class_var)
+            tmp_domain.addmetas(instances.domain.getmetas())
+            instances = instances.select(tmp_domain)
+        learner = Orange.core.LogRegLearner() # Yes, it has to be from core.
+        learner.imputer_constructor = imputer
         if imputer:
-            examples = self.imputer(examples)(examples)
-        examples = Orange.core.Preprocessor_dropMissing(examples)
+            instances = self.imputer(instances)(instances)
+        instances = Orange.core.Preprocessor_dropMissing(instances)
         if self.fitter:
             learner.fitter = self.fitter
-        if self.removeSingular:
-            lr = learner.fitModel(examples, weight)
+        if self.remove_singular:
+            lr = learner.fit_model(instances, weight)
         else:
-            lr = learner(examples, weight)
-        while isinstance(lr, Orange.core.Variable):
+            lr = learner(instances, weight)
+        while isinstance(lr, Orange.data.variable.Variable):
             if isinstance(lr.getValueFrom, Orange.core.ClassifierFromVar) and isinstance(lr.getValueFrom.transformer, Orange.core.Discrete2Continuous):
                 lr = lr.getValueFrom.variable
-            attributes = examples.domain.attributes[:]
+            attributes = instances.domain.features[:]
             if lr in attributes:
                 attributes.remove(lr)
             else:
                 attributes.remove(lr.getValueFrom.variable)
-            newDomain = Orange.core.Domain(attributes, examples.domain.classVar)
-            newDomain.addmetas(examples.domain.getmetas())
-            examples = examples.select(newDomain)
-            lr = learner.fitModel(examples, weight)
+            new_domain = Orange.data.Domain(attributes, 
+                instances.domain.class_var)
+            new_domain.addmetas(instances.domain.getmetas())
+            instances = instances.select(new_domain)
+            lr = learner.fit_model(instances, weight)
         return lr
 
-
+LogRegLearner = deprecated_members({"removeSingular": "remove_singular",
+                                    "weightID": "weight_id",
+                                    "stepwiseLR": "stepwise_lr",
+                                    "addCrit": "add_crit",
+                                    "deleteCrit": "delete_crit",
+                                    "numFeatures": "num_features",
+                                    "removeMissing": "remove_missing"
+                                    })(LogRegLearner)
 
 class UnivariateLogRegLearner(Orange.classification.Learner):
     def __new__(cls, instances=None, **argkw):
@@ -405,23 +167,27 @@ class UnivariateLogRegLearner(Orange.classification.Learner):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def __call__(self, examples):
-        examples = createFullNoDiscTable(examples)
-        classifiers = map(lambda x: LogRegLearner(Orange.core.Preprocessor_dropMissing(examples.select(Orange.core.Domain(x, examples.domain.classVar)))), examples.domain.attributes)
-        maj_classifier = LogRegLearner(Orange.core.Preprocessor_dropMissing(examples.select(Orange.core.Domain(examples.domain.classVar))))
+    @deprecated_keywords({"examples": "instances"})
+    def __call__(self, instances):
+        instances = createFullNoDiscTable(instances)
+        classifiers = map(lambda x: LogRegLearner(Orange.core.Preprocessor_dropMissing(
+            instances.select(Orange.data.Domain(x, 
+            instances.domain.class_var)))), instances.domain.features)
+        maj_classifier = LogRegLearner(Orange.core.Preprocessor_dropMissing
+            (instances.select(Orange.data.Domain(instances.domain.class_var))))
         beta = [maj_classifier.beta[0]] + [x.beta[1] for x in classifiers]
         beta_se = [maj_classifier.beta_se[0]] + [x.beta_se[1] for x in classifiers]
         P = [maj_classifier.P[0]] + [x.P[1] for x in classifiers]
         wald_Z = [maj_classifier.wald_Z[0]] + [x.wald_Z[1] for x in classifiers]
-        domain = examples.domain
+        domain = instances.domain
 
         return Univariate_LogRegClassifier(beta = beta, beta_se = beta_se, P = P, wald_Z = wald_Z, domain = domain)
 
-class UnivariateLogRegClassifier(Orange.core.Classifier):
+class UnivariateLogRegClassifier(Orange.classification.Classifier):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def __call__(self, example, resultType = Orange.core.GetValue):
+    def __call__(self, instance, resultType = Orange.classification.Classifier.GetValue):
         # classification not implemented yet. For now its use is only to provide regression coefficients and its statistics
         pass
     
@@ -435,57 +201,61 @@ class LogRegLearnerGetPriors(object):
         else:
             return self
 
-    def __init__(self, removeSingular=0, **kwds):
+    @deprecated_keywords({"removeSingular": "remove_singular"})
+    def __init__(self, remove_singular=0, **kwds):
         self.__dict__.update(kwds)
-        self.removeSingular = removeSingular
-    def __call__(self, examples, weight=0):
+        self.remove_singular = remove_singular
+
+    @deprecated_keywords({"examples": "instances"})
+    def __call__(self, instances, weight=0):
         # next function changes data set to a extended with unknown values 
-        def createLogRegExampleTable(data, weightID):
-            setsOfData = []
-            for at in data.domain.attributes:
-                # za vsak atribut kreiraj nov newExampleTable newData
-                # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
-                if at.varType == Orange.core.VarTypes.Continuous:
-                    atDisc = Orange.core.FloatVariable(at.name + "Disc")
-                    newDomain = Orange.core.Domain(data.domain.attributes+[atDisc,data.domain.classVar])
-                    newDomain.addmetas(data.domain.getmetas())
-                    newData = Orange.core.ExampleTable(newDomain,data)
-                    altData = Orange.core.ExampleTable(newDomain,data)
-                    for i,d in enumerate(newData):
-                        d[atDisc] = 0
-                        d[weightID] = 1*data[i][weightID]
-                    for i,d in enumerate(altData):
-                        d[atDisc] = 1
+        def createLogRegExampleTable(data, weight_id):
+            sets_of_data = []
+            for at in data.domain.features:
+                # za vsak atribut kreiraj nov newExampleTable new_data
+                # v dataOrig, dataFinal in new_data dodaj nov atribut -- continuous variable
+                if at.var_type == Orange.data.Type.Continuous:
+                    at_disc = Orange.data.variable.Continuous(at.name+ "Disc")
+                    new_domain = Orange.data.Domain(data.domain.features+[at_disc,data.domain.class_var])
+                    new_domain.addmetas(data.domain.getmetas())
+                    new_data = Orange.data.Table(new_domain,data)
+                    alt_data = Orange.data.Table(new_domain,data)
+                    for i,d in enumerate(new_data):
+                        d[at_disc] = 0
+                        d[weight_id] = 1*data[i][weight_id]
+                    for i,d in enumerate(alt_data):
+                        d[at_disc] = 1
                         d[at] = 0
-                        d[weightID] = 0.000001*data[i][weightID]
-                elif at.varType == Orange.core.VarTypes.Discrete:
-                # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
-                    atNew = Orange.core.EnumVariable(at.name, values = at.values + [at.name+"X"])
-                    newDomain = Orange.core.Domain(filter(lambda x: x!=at, data.domain.attributes)+[atNew,data.domain.classVar])
-                    newDomain.addmetas(data.domain.getmetas())
-                    newData = Orange.core.ExampleTable(newDomain,data)
-                    altData = Orange.core.ExampleTable(newDomain,data)
-                    for i,d in enumerate(newData):
-                        d[atNew] = data[i][at]
-                        d[weightID] = 1*data[i][weightID]
-                    for i,d in enumerate(altData):
-                        d[atNew] = at.name+"X"
-                        d[weightID] = 0.000001*data[i][weightID]
-                newData.extend(altData)
-                setsOfData.append(newData)
-            return setsOfData
+                        d[weight_id] = 0.000001*data[i][weight_id]
+                elif at.var_type == Orange.data.Type.Discrete:
+                # v dataOrig, dataFinal in new_data atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
+                    at_new = Orange.data.variable.Discrete(at.name, values = at.values + [at.name+"X"])
+                    new_domain = Orange.data.Domain(filter(lambda x: x!=at, data.domain.features)+[at_new,data.domain.class_var])
+                    new_domain.addmetas(data.domain.getmetas())
+                    new_data = Orange.data.Table(new_domain,data)
+                    alt_data = Orange.data.Table(new_domain,data)
+                    for i,d in enumerate(new_data):
+                        d[at_new] = data[i][at]
+                        d[weight_id] = 1*data[i][weight_id]
+                    for i,d in enumerate(alt_data):
+                        d[at_new] = at.name+"X"
+                        d[weight_id] = 0.000001*data[i][weight_id]
+                new_data.extend(alt_data)
+                sets_of_data.append(new_data)
+            return sets_of_data
                   
-        learner = LogRegLearner(imputer = Orange.core.ImputerConstructor_average(), removeSingular = self.removeSingular)
+        learner = LogRegLearner(imputer=Orange.feature.imputation.ImputerConstructor_average(),
+            remove_singular = self.remove_singular)
         # get Original Model
-        orig_model = learner(examples,weight)
+        orig_model = learner(instances,weight)
         if orig_model.fit_status:
             print "Warning: model did not converge"
 
         # get extended Model (you should not change data)
         if weight == 0:
             weight = Orange.data.new_meta_id()
-            examples.addMetaAttribute(weight, 1.0)
-        extended_set_of_examples = createLogRegExampleTable(examples, weight)
+            instances.addMetaAttribute(weight, 1.0)
+        extended_set_of_examples = createLogRegExampleTable(instances, weight)
         extended_models = [learner(extended_examples, weight) \
                            for extended_examples in extended_set_of_examples]
 
@@ -493,9 +263,9 @@ class LogRegLearnerGetPriors(object):
 ##        printOUT(orig_model)
 ##        print orig_model.domain
 ##        print orig_model.beta
-##        print orig_model.beta[orig_model.continuizedDomain.attributes[-1]]
+##        print orig_model.beta[orig_model.continuized_domain.features[-1]]
 ##        for i,m in enumerate(extended_models):
-##            print examples.domain.attributes[i]
+##            print examples.domain.features[i]
 ##            printOUT(m)
             
         
@@ -504,7 +274,7 @@ class LogRegLearnerGetPriors(object):
         beta = 0
         betas_ap = []
         for m in extended_models:
-            beta_add = m.beta[m.continuizedDomain.attributes[-1]]
+            beta_add = m.beta[m.continuized_domain.features[-1]]
             betas_ap.append(beta_add)
             beta = beta + beta_add
         
@@ -513,14 +283,14 @@ class LogRegLearnerGetPriors(object):
         logistic_prior = orig_model.beta[0]+beta
         
         # compare it to bayes prior
-        bayes = Orange.core.BayesLearner(examples)
+        bayes = Orange.classification.bayes.NaiveLearner(instances)
         bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
 
         # normalize errors
 ##        print "bayes", bayes_prior
 ##        print "lr", orig_model.beta[0]
 ##        print "lr2", logistic_prior
-##        print "dist", Orange.core.Distribution(examples.domain.classVar,examples)
+##        print "dist", Orange.statistics.distribution.Distribution(examples.domain.class_var,examples)
 ##        print "prej", betas_ap
 
         # error normalization - to avoid errors due to assumption of independence of unknown values
@@ -543,28 +313,35 @@ class LogRegLearnerGetPriors(object):
 
         # vrni originalni model in pripadajoce apriorne niclele
         return (orig_model, betas_ap)
-        #return (bayes_prior,orig_model.beta[examples.domain.classVar],logistic_prior)
+        #return (bayes_prior,orig_model.beta[examples.domain.class_var],logistic_prior)
+
+LogRegLearnerGetPriors = deprecated_members({"removeSingular":
+                                                 "remove_singular"}
+)(LogRegLearnerGetPriors)
 
 class LogRegLearnerGetPriorsOneTable:
-    def __init__(self, removeSingular=0, **kwds):
+    @deprecated_keywords({"removeSingular": "remove_singular"})
+    def __init__(self, remove_singular=0, **kwds):
         self.__dict__.update(kwds)
-        self.removeSingular = removeSingular
-    def __call__(self, examples, weight=0):
+        self.remove_singular = remove_singular
+
+    @deprecated_keywords({"examples": "instances"})
+    def __call__(self, instances, weight=0):
         # next function changes data set to a extended with unknown values 
         def createLogRegExampleTable(data, weightID):
-            finalData = Orange.core.ExampleTable(data)
-            origData = Orange.core.ExampleTable(data)
-            for at in data.domain.attributes:
+            finalData = Orange.data.Table(data)
+            orig_data = Orange.data.Table(data)
+            for at in data.domain.features:
                 # za vsak atribut kreiraj nov newExampleTable newData
                 # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
-                if at.varType == Orange.core.VarTypes.Continuous:
-                    atDisc = Orange.core.FloatVariable(at.name + "Disc")
-                    newDomain = Orange.core.Domain(origData.domain.attributes+[atDisc,data.domain.classVar])
+                if at.var_type == Orange.data.Type.Continuous:
+                    atDisc = Orange.data.variable.Continuous(at.name + "Disc")
+                    newDomain = Orange.data.Domain(orig_data.domain.features+[atDisc,data.domain.class_var])
                     newDomain.addmetas(newData.domain.getmetas())
-                    finalData = Orange.core.ExampleTable(newDomain,finalData)
-                    newData = Orange.core.ExampleTable(newDomain,origData)
-                    origData = Orange.core.ExampleTable(newDomain,origData)
-                    for d in origData:
+                    finalData = Orange.data.Table(newDomain,finalData)
+                    newData = Orange.data.Table(newDomain,orig_data)
+                    orig_data = Orange.data.Table(newDomain,orig_data)
+                    for d in orig_data:
                         d[atDisc] = 0
                     for d in finalData:
                         d[atDisc] = 0
@@ -573,35 +350,35 @@ class LogRegLearnerGetPriorsOneTable:
                         d[at] = 0
                         d[weightID] = 100*data[i][weightID]
                         
-                elif at.varType == Orange.core.VarTypes.Discrete:
+                elif at.var_type == Orange.data.Type.Discrete:
                 # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
-                    atNew = Orange.core.EnumVariable(at.name, values = at.values + [at.name+"X"])
-                    newDomain = Orange.core.Domain(filter(lambda x: x!=at, origData.domain.attributes)+[atNew,origData.domain.classVar])
-                    newDomain.addmetas(origData.domain.getmetas())
-                    temp_finalData = Orange.core.ExampleTable(finalData)
-                    finalData = Orange.core.ExampleTable(newDomain,finalData)
-                    newData = Orange.core.ExampleTable(newDomain,origData)
-                    temp_origData = Orange.core.ExampleTable(origData)
-                    origData = Orange.core.ExampleTable(newDomain,origData)
-                    for i,d in enumerate(origData):
-                        d[atNew] = temp_origData[i][at]
+                    at_new = Orange.data.variable.Discrete(at.name, values = at.values + [at.name+"X"])
+                    newDomain = Orange.data.Domain(filter(lambda x: x!=at, orig_data.domain.features)+[at_new,orig_data.domain.class_var])
+                    newDomain.addmetas(orig_data.domain.getmetas())
+                    temp_finalData = Orange.data.Table(finalData)
+                    finalData = Orange.data.Table(newDomain,finalData)
+                    newData = Orange.data.Table(newDomain,orig_data)
+                    temp_origData = Orange.data.Table(orig_data)
+                    orig_data = Orange.data.Table(newDomain,orig_data)
+                    for i,d in enumerate(orig_data):
+                        d[at_new] = temp_origData[i][at]
                     for i,d in enumerate(finalData):
-                        d[atNew] = temp_finalData[i][at]                        
+                        d[at_new] = temp_finalData[i][at]
                     for i,d in enumerate(newData):
-                        d[atNew] = at.name+"X"
+                        d[at_new] = at.name+"X"
                         d[weightID] = 10*data[i][weightID]
                 finalData.extend(newData)
             return finalData
                   
-        learner = LogRegLearner(imputer = Orange.core.ImputerConstructor_average(), removeSingular = self.removeSingular)
+        learner = LogRegLearner(imputer = Orange.feature.imputation.ImputerConstructor_average(), removeSingular = self.remove_singular)
         # get Original Model
-        orig_model = learner(examples,weight)
+        orig_model = learner(instances,weight)
 
         # get extended Model (you should not change data)
         if weight == 0:
             weight = Orange.data.new_meta_id()
-            examples.addMetaAttribute(weight, 1.0)
-        extended_examples = createLogRegExampleTable(examples, weight)
+            instances.addMetaAttribute(weight, 1.0)
+        extended_examples = createLogRegExampleTable(instances, weight)
         extended_model = learner(extended_examples, weight)
 
 ##        print examples[0]
@@ -615,7 +392,7 @@ class LogRegLearnerGetPriorsOneTable:
         beta = 0
         betas_ap = []
         for m in extended_models:
-            beta_add = m.beta[m.continuizedDomain.attributes[-1]]
+            beta_add = m.beta[m.continuized_domain.features[-1]]
             betas_ap.append(beta_add)
             beta = beta + beta_add
         
@@ -624,14 +401,14 @@ class LogRegLearnerGetPriorsOneTable:
         logistic_prior = orig_model.beta[0]+beta
         
         # compare it to bayes prior
-        bayes = Orange.core.BayesLearner(examples)
+        bayes = Orange.classification.bayes.NaiveLearner(instances)
         bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
 
         # normalize errors
         #print "bayes", bayes_prior
         #print "lr", orig_model.beta[0]
         #print "lr2", logistic_prior
-        #print "dist", Orange.core.Distribution(examples.domain.classVar,examples)
+        #print "dist", Orange.statistics.distribution.Distribution(examples.domain.class_var,examples)
         k = (bayes_prior-orig_model.beta[0])/(logistic_prior-orig_model.beta[0])
         #print "prej", betas_ap
         betas_ap = [k*x for x in betas_ap]                
@@ -639,7 +416,11 @@ class LogRegLearnerGetPriorsOneTable:
 
         # vrni originalni model in pripadajoce apriorne niclele
         return (orig_model, betas_ap)
-        #return (bayes_prior,orig_model.beta[data.domain.classVar],logistic_prior)
+        #return (bayes_prior,orig_model.beta[data.domain.class_var],logistic_prior)
+
+LogRegLearnerGetPriorsOneTable = deprecated_members({"removeSingular":
+                                                         "remove_singular"}
+)(LogRegLearnerGetPriorsOneTable)
 
 
 ######################################
@@ -654,46 +435,47 @@ def lh(x,y,betas):
     llh = 0.0
     for i,x_i in enumerate(x):
         pr = pr(x_i,betas)
-        llh += y[i]*log(max(pr,1e-6)) + (1-y[i])*log(max(1-pr,1e-6))
+        llh += y[i]*math.log(max(pr,1e-6)) + (1-y[i])*log(max(1-pr,1e-6))
     return llh
 
 
 def diag(vector):
-    mat = identity(len(vector), Float)
+    mat = identity(len(vector))
     for i,v in enumerate(vector):
         mat[i][i] = v
     return mat
     
-class SimpleFitter(Orange.core.LogRegFitter):
+class SimpleFitter(LogRegFitter):
     def __init__(self, penalty=0, se_penalty = False):
         self.penalty = penalty
         self.se_penalty = se_penalty
+
     def __call__(self, data, weight=0):
         ml = data.native(0)
-        for i in range(len(data.domain.attributes)):
-          a = data.domain.attributes[i]
-          if a.varType == Orange.core.VarTypes.Discrete:
+        for i in range(len(data.domain.features)):
+          a = data.domain.features[i]
+          if a.var_type == Orange.data.Type.Discrete:
             for m in ml:
               m[i] = a.values.index(m[i])
         for m in ml:
-          m[-1] = data.domain.classVar.values.index(m[-1])
+          m[-1] = data.domain.class_var.values.index(m[-1])
         Xtmp = array(ml)
         y = Xtmp[:,-1]   # true probabilities (1's or 0's)
         one = reshape(array([1]*len(data)), (len(data),1)) # intercept column
         X=concatenate((one, Xtmp[:,:-1]),1)  # intercept first, then data
 
-        betas = array([0.0] * (len(data.domain.attributes)+1))
-        oldBetas = array([1.0] * (len(data.domain.attributes)+1))
+        betas = array([0.0] * (len(data.domain.features)+1))
+        oldBetas = array([1.0] * (len(data.domain.features)+1))
         N = len(data)
 
-        pen_matrix = array([self.penalty] * (len(data.domain.attributes)+1))
+        pen_matrix = array([self.penalty] * (len(data.domain.features)+1))
         if self.se_penalty:
             p = array([pr(X[i], betas) for i in range(len(data))])
-            W = identity(len(data), Float)
+            W = identity(len(data))
             pp = p * (1.0-p)
             for i in range(N):
                 W[i,i] = pp[i]
-            se = sqrt(diagonal(inverse(matrixmultiply(transpose(X), matrixmultiply(W, X)))))
+            se = sqrt(diagonal(inv(dot(transpose(X), dot(W, X)))))
             for i,p in enumerate(pen_matrix):
                 pen_matrix[i] *= se[i]
         # predict the probability for an instance, x and betas are vectors
@@ -705,37 +487,37 @@ class SimpleFitter(Orange.core.LogRegFitter):
             oldBetas = betas
             p = array([pr(X[i], betas) for i in range(len(data))])
 
-            W = identity(len(data), Float)
+            W = identity(len(data))
             pp = p * (1.0-p)
             for i in range(N):
                 W[i,i] = pp[i]
 
-            WI = inverse(W)
-            z = matrixmultiply(X, betas) + matrixmultiply(WI, y - p)
+            WI = inv(W)
+            z = dot(X, betas) + dot(WI, y - p)
 
-            tmpA = inverse(matrixmultiply(transpose(X), matrixmultiply(W, X))+diag(pen_matrix))
-            tmpB = matrixmultiply(transpose(X), y-p)
-            betas = oldBetas + matrixmultiply(tmpA,tmpB)
-#            betaTemp = matrixmultiply(matrixmultiply(matrixmultiply(matrixmultiply(tmpA,transpose(X)),W),X),oldBetas)
+            tmpA = inv(dot(transpose(X), dot(W, X))+diag(pen_matrix))
+            tmpB = dot(transpose(X), y-p)
+            betas = oldBetas + dot(tmpA,tmpB)
+#            betaTemp = dot(dot(dot(dot(tmpA,transpose(X)),W),X),oldBetas)
 #            print betaTemp
-#            tmpB = matrixmultiply(transpose(X), matrixmultiply(W, z))
-#            betas = matrixmultiply(tmpA, tmpB)
+#            tmpB = dot(transpose(X), dot(W, z))
+#            betas = dot(tmpA, tmpB)
             likelihood_new = lh(X,y,betas)-self.penalty*sum([b*b for b in betas])
             print likelihood_new
 
             
             
-##        XX = sqrt(diagonal(inverse(matrixmultiply(transpose(X),X))))
+##        XX = sqrt(diagonal(inv(dot(transpose(X),X))))
 ##        yhat = array([pr(X[i], betas) for i in range(len(data))])
-##        ss = sum((y - yhat) ** 2) / (N - len(data.domain.attributes) - 1)
+##        ss = sum((y - yhat) ** 2) / (N - len(data.domain.features) - 1)
 ##        sigma = math.sqrt(ss)
         p = array([pr(X[i], betas) for i in range(len(data))])
-        W = identity(len(data), Float)
+        W = identity(len(data))
         pp = p * (1.0-p)
         for i in range(N):
             W[i,i] = pp[i]
-        diXWX = sqrt(diagonal(inverse(matrixmultiply(transpose(X), matrixmultiply(W, X)))))
-        xTemp = matrixmultiply(matrixmultiply(inverse(matrixmultiply(transpose(X), matrixmultiply(W, X))),transpose(X)),y)
+        diXWX = sqrt(diagonal(inv(dot(transpose(X), dot(W, X)))))
+        xTemp = dot(dot(inv(dot(transpose(X), dot(W, X))),transpose(X)),y)
         beta = []
         beta_se = []
         print "likelihood ridge", likelihood
@@ -751,7 +533,7 @@ def pr_bx(bx):
         return 0
     return exp(bx)/(1+exp(bx))
 
-class BayesianFitter(Orange.core.LogRegFitter):
+class BayesianFitter(LogRegFitter):
     def __init__(self, penalty=0, anch_examples=[], tau = 0):
         self.penalty = penalty
         self.anch_examples = anch_examples
@@ -762,12 +544,12 @@ class BayesianFitter(Orange.core.LogRegFitter):
             return (array([]),array([]))
         # convert data to numeric
         ml = data.native(0)
-        for i,a in enumerate(data.domain.attributes):
-          if a.varType == Orange.core.VarTypes.Discrete:
+        for i,a in enumerate(data.domain.features):
+          if a.var_type == Orange.data.Type.Discrete:
             for m in ml:
               m[i] = a.values.index(m[i])
         for m in ml:
-          m[-1] = data.domain.classVar.values.index(m[-1])
+          m[-1] = data.domain.class_var.values.index(m[-1])
         Xtmp = array(ml)
         y = Xtmp[:,-1]   # true probabilities (1's or 0's)
         one = reshape(array([1]*len(data)), (len(data),1)) # intercept column
@@ -777,17 +559,17 @@ class BayesianFitter(Orange.core.LogRegFitter):
     def __call__(self, data, weight=0):
         (X,y)=self.create_array_data(data)
 
-        exTable = Orange.core.ExampleTable(data.domain)
+        exTable = Orange.data.Table(data.domain)
         for id,ex in self.anch_examples:
-            exTable.extend(Orange.core.ExampleTable(ex,data.domain))
+            exTable.extend(Orange.data.Table(ex,data.domain))
         (X_anch,y_anch)=self.create_array_data(exTable)
 
-        betas = array([0.0] * (len(data.domain.attributes)+1))
+        betas = array([0.0] * (len(data.domain.features)+1))
 
         likelihood,betas = self.estimate_beta(X,y,betas,[0]*(len(betas)),X_anch,y_anch)
 
         # get attribute groups atGroup = [(startIndex, number of values), ...)
-        ats = data.domain.attributes
+        ats = data.domain.features
         atVec=reduce(lambda x,y: x+[(y,not y==x[-1][0])], [a.getValueFrom and a.getValueFrom.whichVar or a for a in ats],[(ats[0].getValueFrom and ats[0].getValueFrom.whichVar or ats[0],0)])[1:]
         atGroup=[[0,0]]
         for v_i,v in enumerate(atVec):
@@ -807,7 +589,7 @@ class BayesianFitter(Orange.core.LogRegFitter):
             print "finBetas", betas, betas_temp
             print "betas", betas[0], betas_temp[0]
             sumB += betas[0]-betas_temp[0]
-        apriori = Orange.core.Distribution(data.domain.classVar, data)
+        apriori = Orange.statistics.distribution.Distribution(data.domain.class_var, data)
         aprioriProb = apriori[0]/apriori.abs
         
         print "koncni rezultat", sumB, math.log((1-aprioriProb)/aprioriProb), betas[0]
@@ -838,11 +620,11 @@ class BayesianFitter(Orange.core.LogRegFitter):
             betas_temp = [b for b in betas]
             for j in range(len(betas)):
                 if const_betas[j]: continue
-                dl = matrixmultiply(X[:,j],transpose(y-p))
+                dl = dot(X[:,j], transpose(y-p))
                 for xi,x in enumerate(X_anch):
                     dl += self.penalty*x[j]*(y_anch[xi] - pr_bx(r_anch[xi]*self.penalty))
 
-                ddl = matrixmultiply(X_sq[:,j],transpose(p*(1-p)))
+                ddl = dot(X_sq[:,j], transpose(p*(1-p)))
                 for xi,x in enumerate(X_anch):
                     ddl += self.penalty*x[j]*pr_bx(r[xi]*self.penalty)*(1-pr_bx(r[xi]*self.penalty))
 
@@ -886,33 +668,36 @@ class BayesianFitter(Orange.core.LogRegFitter):
 ############################################################
 #  Feature subset selection for logistic regression
 
-def get_likelihood(fitter, examples):
-    res = fitter(examples)
+@deprecated_keywords({"examples": "instances"})
+def get_likelihood(fitter, instances):
+    res = fitter(instances)
     if res[0] in [fitter.OK]: #, fitter.Infinity, fitter.Divergence]:
        status, beta, beta_se, likelihood = res
        if sum([abs(b) for b in beta])<sum([abs(b) for b in beta_se]):
-           return -100*len(examples)
+           return -100*len(instances)
        return likelihood
     else:
-       return -100*len(examples)
+       return -100*len(instances)
         
 
 
 class StepWiseFSS(Orange.classification.Learner):
-  """Implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000].
+  """
+  Algorithm described in Hosmer and Lemeshow,
+  Applied Logistic Regression, 2000.
 
   Perform stepwise logistic regression and return a list of the
   most "informative" features. Each step of the algorithm is composed
   of two parts. The first is backward elimination, where each already
   chosen feature is tested for a significant contribution to the overall
   model. If the worst among all tested features has higher significance
-  than is specified in :obj:`deleteCrit`, the feature is removed from
+  than is specified in :obj:`delete_crit`, the feature is removed from
   the model. The second step is forward selection, which is similar to
   backward elimination. It loops through all the features that are not
   in the model and tests whether they contribute to the common model
-  with significance lower that :obj:`addCrit`. The algorithm stops when
+  with significance lower that :obj:`add_crit`. The algorithm stops when
   no feature in the model is to be removed and no feature not in the
-  model is to be added. By setting :obj:`numFeatures` larger than -1,
+  model is to be added. By setting :obj:`num_features` larger than -1,
   the algorithm will stop its execution when the number of features in model
   exceeds that number.
 
@@ -922,20 +707,25 @@ class StepWiseFSS(Orange.classification.Learner):
 
   If :obj:`table` is specified, stepwise logistic regression implemented
   in :obj:`StepWiseFSS` is performed and a list of chosen features
-  is returned. If :obj:`table` is not specified an instance of
-  :obj:`StepWiseFSS` with all parameters set is returned.
+  is returned. If :obj:`table` is not specified, an instance of
+  :obj:`StepWiseFSS` with all parameters set is returned and can be called
+  with data later.
 
-  :param table: data set
+  :param table: data set.
   :type table: Orange.data.Table
 
-  :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then features is added if its P is lower than 0.2)
-  :type addCrit: float
+  :param add_crit: "Alpha" level to judge if variable has enough importance to
+       be added in the new set. (e.g. if add_crit is 0.2,
+       then features is added if its P is lower than 0.2).
+  :type add_crit: float
 
-  :param deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
-  :type deleteCrit: float
+  :param delete_crit: Similar to add_crit, just that it is used at backward
+      elimination. It should be higher than add_crit!
+  :type delete_crit: float
 
-  :param numFeatures: maximum number of selected features, use -1 for infinity.
-  :type numFeatures: int
+  :param num_features: maximum number of selected features,
+      use -1 for infinity.
+  :type num_features: int
   :rtype: :obj:`StepWiseFSS` or list of features
 
   """
@@ -948,29 +738,32 @@ class StepWiseFSS(Orange.classification.Learner):
       else:
           return self
 
-
-  def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1, **kwds):
+  @deprecated_keywords({"addCrit": "add_crit", "deleteCrit": "delete_crit",
+                        "numFeatures": "num_features"})
+  def __init__(self, add_crit=0.2, delete_crit=0.3, num_features = -1, **kwds):
     self.__dict__.update(kwds)
-    self.addCrit = addCrit
-    self.deleteCrit = deleteCrit
-    self.numFeatures = numFeatures
+    self.add_crit = add_crit
+    self.delete_crit = delete_crit
+    self.num_features = num_features
+
   def __call__(self, examples):
     if getattr(self, "imputer", 0):
         examples = self.imputer(examples)(examples)
     if getattr(self, "removeMissing", 0):
         examples = Orange.core.Preprocessor_dropMissing(examples)
-    continuizer = Orange.core.DomainContinuizer(zeroBased=1,continuousTreatment=Orange.core.DomainContinuizer.Leave,
-                                           multinomialTreatment = Orange.core.DomainContinuizer.FrequentIsBase,
-                                           classTreatment = Orange.core.DomainContinuizer.Ignore)
+    continuizer = Orange.preprocess.DomainContinuizer(zeroBased=1,
+        continuousTreatment=Orange.preprocess.DomainContinuizer.Leave,
+                                           multinomialTreatment = Orange.preprocess.DomainContinuizer.FrequentIsBase,
+                                           classTreatment = Orange.preprocess.DomainContinuizer.Ignore)
     attr = []
-    remain_attr = examples.domain.attributes[:]
+    remain_attr = examples.domain.features[:]
 
     # get LL for Majority Learner 
-    tempDomain = Orange.core.Domain(attr,examples.domain.classVar)
+    tempDomain = Orange.data.Domain(attr,examples.domain.class_var)
     #tempData  = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
     tempData  = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
 
-    ll_Old = get_likelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
+    ll_Old = get_likelihood(LogRegFitter_Cholesky(), tempData)
     ll_Best = -1000000
     length_Old = float(len(tempData))
 
@@ -988,31 +781,31 @@ class StepWiseFSS(Orange.classification.Learner):
                 # check all attribute whether its presence enough increases LL?
 
                 tempAttr = filter(lambda x: x!=at, attr)
-                tempDomain = Orange.core.Domain(tempAttr,examples.domain.classVar)
+                tempDomain = Orange.data.Domain(tempAttr,examples.domain.class_var)
                 tempDomain.addmetas(examples.domain.getmetas())
                 # domain, calculate P for LL improvement.
                 tempDomain  = continuizer(Orange.core.Preprocessor_dropMissing(examples.select(tempDomain)))
                 tempData = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
 
-                ll_Delete = get_likelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
+                ll_Delete = get_likelihood(LogRegFitter_Cholesky(), tempData)
                 length_Delete = float(len(tempData))
                 length_Avg = (length_Delete + length_Old)/2.0
 
                 G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old)
 
-                # set new worst attribute                
+                # set new worst attribute
                 if G<minG:
                     worstAt = at
                     minG=G
                     ll_Best = ll_Delete
                     length_Best = length_Delete
             # deletion of attribute
-            
-            if worstAt.varType==Orange.core.VarTypes.Continuous:
+
+            if worstAt.var_type==Orange.data.Type.Continuous:
                 P=lchisqprob(minG,1);
             else:
                 P=lchisqprob(minG,len(worstAt.values)-1);
-            if P>=self.deleteCrit:
+            if P>=self.delete_crit:
                 attr.remove(worstAt)
                 remain_attr.append(worstAt)
                 nodeletion=0
@@ -1023,11 +816,11 @@ class StepWiseFSS(Orange.classification.Learner):
         else:
             nodeletion = 1
             # END OF DELETION PART
-            
+
         # if enough attributes has been chosen, stop the procedure
-        if self.numFeatures>-1 and len(attr)>=self.numFeatures:
+        if self.num_features>-1 and len(attr)>=self.num_features:
             remain_attr=[]
-         
+
         # for each attribute in the remaining
         maxG=-1
         ll_Best = ll_Old
@@ -1035,12 +828,12 @@ class StepWiseFSS(Orange.classification.Learner):
         bestAt = None
         for at in remain_attr:
             tempAttr = attr + [at]
-            tempDomain = Orange.core.Domain(tempAttr,examples.domain.classVar)
+            tempDomain = Orange.data.Domain(tempAttr,examples.domain.class_var)
             tempDomain.addmetas(examples.domain.getmetas())
             # domain, calculate P for LL improvement.
             tempDomain  = continuizer(Orange.core.Preprocessor_dropMissing(examples.select(tempDomain)))
             tempData = Orange.core.Preprocessor_dropMissing(examples.select(tempDomain))
-            ll_New = get_likelihood(Orange.core.LogRegFitter_Cholesky(), tempData)
+            ll_New = get_likelihood(LogRegFitter_Cholesky(), tempData)
 
             length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood
 
@@ -1055,22 +848,26 @@ class StepWiseFSS(Orange.classification.Learner):
         if not bestAt:
             stop = 1
             continue
-        
-        if bestAt.varType==Orange.core.VarTypes.Continuous:
+
+        if bestAt.var_type==Orange.data.Type.Continuous:
             P=lchisqprob(maxG,1);
         else:
             P=lchisqprob(maxG,len(bestAt.values)-1);
         # Add attribute with smallest P to attributes(attr)
-        if P<=self.addCrit:
+        if P<=self.add_crit:
             attr.append(bestAt)
             remain_attr.remove(bestAt)
             ll_Old = ll_Best
             length_Old = length_Best
 
-        if (P>self.addCrit and nodeletion) or (bestAt == worstAt):
+        if (P>self.add_crit and nodeletion) or (bestAt == worstAt):
             stop = 1
 
     return attr
+
+StepWiseFSS = deprecated_members({"addCrit": "add_crit",
+                                   "deleteCrit": "delete_crit",
+                                   "numFeatures": "num_features"})(StepWiseFSS)
 
 
 class StepWiseFSSFilter(object):
@@ -1081,16 +878,25 @@ class StepWiseFSSFilter(object):
             return self.__call__(instances)
         else:
             return self
-    
-    def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1):
-        self.addCrit = addCrit
-        self.deleteCrit = deleteCrit
-        self.numFeatures = numFeatures
 
-    def __call__(self, examples):
-        attr = StepWiseFSS(examples, addCrit=self.addCrit, deleteCrit = self.deleteCrit, numFeatures = self.numFeatures)
-        return examples.select(Orange.core.Domain(attr, examples.domain.classVar))
-                
+    @deprecated_keywords({"addCrit": "add_crit", "deleteCrit": "delete_crit",
+                          "numFeatures": "num_features"})
+    def __init__(self, add_crit=0.2, delete_crit=0.3, num_features = -1):
+        self.add_crit = add_crit
+        self.delete_crit = delete_crit
+        self.num_features = num_features
+
+    @deprecated_keywords({"examples": "instances"})
+    def __call__(self, instances):
+        attr = StepWiseFSS(instances, add_crit=self.add_crit,
+            delete_crit= self.delete_crit, num_features= self.num_features)
+        return instances.select(Orange.data.Domain(attr, instances.domain.class_var))
+
+StepWiseFSSFilter = deprecated_members({"addCrit": "add_crit",
+                                        "deleteCrit": "delete_crit",
+                                        "numFeatures": "num_features"})\
+    (StepWiseFSSFilter)
+
 
 ####################################
 ##  PROBABILITY CALCULATIONS
