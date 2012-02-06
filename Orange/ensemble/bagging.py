@@ -29,11 +29,11 @@ class BaggedLearner(orange.Learner):
     :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier` or 
             :class:`Orange.ensemble.bagging.BaggedLearner`
     """
-    def __new__(cls, learner, instances=None, weightId=None, **kwargs):
+    def __new__(cls, learner, instances=None, weight_id=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
         if instances is not None:
             self.__init__(self, learner, **kwargs)
-            return self.__call__(instances, weightId)
+            return self.__call__(instances, weight_id)
         else:
             return self
         
@@ -66,7 +66,8 @@ class BaggedLearner(orange.Learner):
             data = instances.getitems(selection)
             classifiers.append(self.learner(data, weight))
         return BaggedClassifier(classifiers = classifiers, name=self.name,\
-                    classVar=instances.domain.classVar)
+                    class_var=instances.domain.class_var)
+BaggedLearner = Orange.misc.deprecated_members({"weightId":"weight_id", "examples":"instances"})(BaggedLearner)
 
 class BaggedClassifier(orange.Classifier):
     """
@@ -83,18 +84,18 @@ class BaggedClassifier(orange.Classifier):
     :param name: name of the resulting classifier.
     :type name: str
     
-    :param classVar: the class feature.
-    :type classVar: :class:`Orange.data.variable.Variable`
+    :param class_var: the class feature.
+    :type class_var: :class:`Orange.data.variable.Variable`
 
     """
 
-    def __init__(self, classifiers, name, classVar, **kwds):
+    def __init__(self, classifiers, name, class_var, **kwds):
         self.classifiers = classifiers
         self.name = name
-        self.classVar = classVar
+        self.class_var = class_var
         self.__dict__.update(kwds)
 
-    def __call__(self, instance, resultType = orange.GetValue):
+    def __call__(self, instance, result_type = orange.GetValue):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -106,30 +107,30 @@ class BaggedClassifier(orange.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        if self.classVar.varType == Orange.data.Type.Discrete:
-            freq = [0.] * len(self.classVar.values)
+        if self.class_var.var_type == Orange.data.Type.Discrete:
+            freq = [0.] * len(self.class_var.values)
             for c in self.classifiers:
                 freq[int(c(instance))] += 1
             index = freq.index(max(freq))
-            value = Orange.data.Value(self.classVar, index)
-            if resultType == orange.GetValue:
+            value = Orange.data.Value(self.class_var, index)
+            if result_type == orange.GetValue:
                 return value
             for i in range(len(freq)):
                 freq[i] = freq[i]/len(self.classifiers)
             freq = Orange.statistics.distribution.Discrete(freq)
-            if resultType == orange.GetProbabilities:
+            if result_type == orange.GetProbabilities:
                 return freq
-            elif resultType == orange.GetBoth:
+            elif result_type == orange.GetBoth:
                 return (value, freq)
             else:
                 return value
             
-        elif self.classVar.varType ==Orange.data.Type.Continuous:
-            votes = [c(instance, orange.GetBoth if resultType==\
-                orange.GetProbabilities else resultType) \
+        elif self.class_var.var_type ==Orange.data.Type.Continuous:
+            votes = [c(instance, orange.GetBoth if result_type==\
+                orange.GetProbabilities else result_type) \
                 for c in self.classifiers]
             wsum = float(len(self.classifiers))
-            if resultType in [orange.GetBoth, orange.GetProbabilities]:
+            if result_type in [orange.GetBoth, orange.GetProbabilities]:
                 pred = sum([float(c) for c, p in votes]) / wsum
 #               prob = sum([float(p.modus()) for c, p in votes]) / wsum
                 from collections import defaultdict
@@ -139,12 +140,12 @@ class BaggedClassifier(orange.Classifier):
                         prob[float(val)] += val_p / wsum
                     
                 prob = Orange.statistics.distribution.Continuous(prob)
-                return (self.classVar(pred), prob) if resultType == orange.GetBoth\
+                return (self.class_var(pred), prob) if result_type == orange.GetBoth\
                     else prob
-            elif resultType == orange.GetValue:
+            elif result_type == orange.GetValue:
                 pred = sum([float(c) for c in votes]) / wsum
-                return self.classVar(pred)
+                return self.class_var(pred)
             
     def __reduce__(self):
-        return type(self), (self.classifiers, self.name, self.classVar), dict(self.__dict__)
-    
+        return type(self), (self.classifiers, self.name, self.class_var), dict(self.__dict__)
+BaggedClassifier = Orange.misc.deprecated_members({"example":"instance", "classVar":"class_var","resultType":"result_type"})(BaggedClassifier)

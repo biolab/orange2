@@ -4,6 +4,7 @@ import Orange
 import Orange.feature.scoring
 import random
 import copy
+from Orange.misc import deprecated_keywords
 
 def _default_small_learner(attributes=None, rand=None, base=None):
     # tree learner assembled as suggested by Breiman (2001)
@@ -28,15 +29,15 @@ def _wrap_learner(base, rand, randorange):
         notRightLearnerToWrap()
  
 class _RandomForestSimpleTreeLearner(Orange.core.Learner):
-    """ A learner which wraps an ordinary SimpleTreeLearner.  Sets the
+    """A learner which wraps an ordinary SimpleTreeLearner.  Sets the
     skip_prob so that the number of randomly chosen features for each
-    split is  (on average) as specified.  """
+    split is  (on average) as specified."""
 
-    def __new__(cls, examples = None, weightID = 0, **argkw):
+    def __new__(cls, instances = None, weight_id = 0, **argkw):
         self = Orange.core.Learner.__new__(cls, **argkw)
-        if examples:
+        if instances:
             self.__init__(**argkw)
-            return self.__call__(examples, weightID)
+            return self.__call__(instances, weight_id)
         else:
             return self
       
@@ -45,13 +46,14 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         self.attributes = None
         self.rand = rand
     
-    def __call__(self, examples, weight=0):
+    def __call__(self, instances, weight=0):
         osp,orand = self.base.skip_prob, self.base.random_generator
-        self.base.skip_prob = 1-float(self.attributes)/len(examples.domain.attributes)
+        self.base.skip_prob = 1-float(self.attributes)/len(instances.domain.attributes)
         self.base.random_generator = self.rand
-        r = self.base(examples, weight)
+        r = self.base(instances, weight)
         self.base.skip_prob, self.base.random_generator = osp, orand
         return r
+_RandomForestSimpleTreeLearner = Orange.misc.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
    
 class RandomForestLearner(orange.Learner):
     """
@@ -169,7 +171,7 @@ class RandomForestLearner(orange.Learner):
 
         return RandomForestClassifier(classifiers = classifiers, name=self.name,\
                     domain=instances.domain, class_var=instances.domain.class_var)
- 
+RandomForestLearner = Orange.misc.deprecated_members({"examples":"instances"})(RandomForestLearner)
 
 class RandomForestClassifier(orange.Classifier):
     """
@@ -201,7 +203,7 @@ class RandomForestClassifier(orange.Classifier):
         self.class_var = class_var
         self.__dict__.update(kwds)
 
-    def __call__(self, instance, resultType = orange.GetValue):
+    def __call__(self, instance, result_type = orange.GetValue):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -220,7 +222,7 @@ class RandomForestClassifier(orange.Classifier):
         if self.class_var.var_type == Orange.data.variable.Discrete.Discrete:
         
             # voting for class probabilities
-            if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
+            if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
                 prob = [0.] * len(self.domain.class_var.values)
                 for c in self.classifiers:
                     a = [x for x in c(instance, orange.GetProbabilities)]
@@ -233,22 +235,22 @@ class RandomForestClassifier(orange.Classifier):
             # voting for crisp class membership, notice that
             # this may not be the same class as one obtaining the
             # highest probability through probability voting
-            if resultType == orange.GetValue or resultType == orange.GetBoth:
+            if result_type == orange.GetValue or result_type == orange.GetBoth:
                 cfreq = [0] * len(self.domain.class_var.values)
                 for c in self.classifiers:
                     cfreq[int(c(instance))] += 1
                 index = cfreq.index(max(cfreq))
                 cvalue = Orange.data.Value(self.domain.class_var, index)
     
-            if resultType == orange.GetValue: return cvalue
-            elif resultType == orange.GetProbabilities: return cprob
+            if result_type == orange.GetValue: return cvalue
+            elif result_type == orange.GetProbabilities: return cprob
             else: return (cvalue, cprob)
         
         else:
             # Handle continuous class
         
             # voting for class probabilities
-            if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
+            if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
                 probs = [c(instance, orange.GetBoth) for c in self.classifiers]
                 cprob = dict()
                 for val,prob in probs:
@@ -261,17 +263,17 @@ class RandomForestClassifier(orange.Classifier):
                 cprob.normalize()
                 
             # gather average class value
-            if resultType == orange.GetValue or resultType == orange.GetBoth:
+            if result_type == orange.GetValue or result_type == orange.GetBoth:
                 values = [c(instance).value for c in self.classifiers]
                 cvalue = Orange.data.Value(self.domain.class_var, sum(values) / len(self.classifiers))
             
-            if resultType == orange.GetValue: return cvalue
-            elif resultType == orange.GetProbabilities: return cprob
+            if result_type == orange.GetValue: return cvalue
+            elif result_type == orange.GetProbabilities: return cprob
             else: return (cvalue, cprob)
             
     def __reduce__(self):
         return type(self), (self.classifiers, self.name, self.domain, self.class_var), dict(self.__dict__)
-
+RandomForestClassifier = Orange.misc.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
 ### MeasureAttribute_randomForests
 
 class ScoreFeature(orange.MeasureAttribute):
@@ -325,8 +327,9 @@ class ScoreFeature(orange.MeasureAttribute):
             self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
         else:
             self.learner = learner
-  
-    def __call__(self, feature, instances, apriorClass=None):
+
+    @deprecated_keywords({"apriorClass":"aprior_class"})
+    def __call__(self, feature, instances, aprior_class=None):
         """
         Return importance of a given feature.
         Only the first call on a given data set is computationally expensive.
@@ -338,7 +341,7 @@ class ScoreFeature(orange.MeasureAttribute):
         :param instances: data instances to use for importance evaluation.
         :type instances: :class:`Orange.data.Table`
         
-        :param apriorClass: not used!
+        :param aprior_class: not used!
         
         """
         attrNo = None
@@ -353,7 +356,7 @@ class ScoreFeature(orange.MeasureAttribute):
           attrNo = atrs.index(feature)
         else:
           raise Exception("MeasureAttribute_rf can not be called with (\
-                contingency,classDistribution, apriorClass) as fuction arguments.")
+                contingency,classDistribution, aprior_class) as fuction arguments.")
 
         self._buffer(instances)
 
@@ -481,12 +484,12 @@ class _RandomForestTreeLearner(Orange.core.Learner):
     """ A learner which wraps an ordinary TreeLearner with
     a new split constructor.
     """
-
-    def __new__(cls, examples = None, weightID = 0, **argkw):
+    @deprecated_keywords({"weightID":"weight_id", "examples":"instances"})
+    def __new__(cls, instances = None, weight_id = 0, **argkw):
         self = Orange.core.Learner.__new__(cls, **argkw)
-        if examples:
+        if instances:
             self.__init__(**argkw)
-            return self.__call__(examples, weightID)
+            return self.__call__(instances, weight_id)
         else:
             return self
       
@@ -496,8 +499,9 @@ class _RandomForestTreeLearner(Orange.core.Learner):
         self.rand = rand
         if not self.rand: #for all the built trees
             self.rand = random.Random(0)
-    
-    def __call__(self, examples, weight=0):
+
+    @deprecated_keywords({"examples":"instances"})
+    def __call__(self, instances, weight=0):
         """ A current tree learner is copied, modified and then used.
         Modification: set a different split constructor, which uses
         a random subset of attributes.
@@ -507,13 +511,13 @@ class _RandomForestTreeLearner(Orange.core.Learner):
         #if base tree learner has no measure set
         if not bcopy.measure:
             bcopy.measure = Orange.feature.scoring.Gini() \
-                if isinstance(examples.domain.class_var, Orange.data.variable.Discrete) \
+                if isinstance(instances.domain.class_var, Orange.data.variable.Discrete) \
                 else Orange.feature.scoring.MSE()
 
         bcopy.split = SplitConstructor_AttributeSubset(\
             bcopy.split, self.attributes, self.rand)
 
-        return bcopy(examples, weight=weight)
+        return bcopy(instances, weight=weight)
 
 class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
     def __init__(self, scons, attributes, rand = None):
@@ -523,11 +527,12 @@ class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
         if not self.rand:
             self.rand = random.Random(0)
 
-    def __call__(self, gen, weightID, contingencies, apriori, candidates, clsfr):
+    @deprecated_keywords({"weightID":"weight_id"})
+    def __call__(self, gen, weight_id, contingencies, apriori, candidates, clsfr):
         # if number of features for subset is not set, use square root
         cand = [1]*int(self.attributes) + [0]*(len(candidates) - int(self.attributes))
         self.rand.shuffle(cand)
         # instead with all features, we will invoke split constructor 
         # only for the subset of a features
-        t = self.scons(gen, weightID, contingencies, apriori, cand, clsfr)
+        t = self.scons(gen, weight_id, contingencies, apriori, cand, clsfr)
         return t
