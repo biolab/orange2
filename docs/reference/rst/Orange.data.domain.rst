@@ -4,18 +4,10 @@
 Domain description (``Domain``)
 ===============================
 
-In Orange, the term `domain` denotes a set of features,
-meta attributes and class attribute that describe data. Domain
-descriptors are attached to data instances, data tables,
-classifiers and other objects.
-
-Besides describing the data, domain descriptors contain methods for
-converting data instances from one domain to another,
-e.g. from the original feature space to one with different set of
-features that are selected or constructed from the original set.
-
-The following examples will use domain constructed when reading the data
-set `zoo`::
+In Orange, the term `domain` denotes a set of variables and meta
+attributes that describe data. A domain descriptor is attached to data
+instances, data tables, classifiers and other objects. A descriptor is
+constructed, for instance, after reading data from a file.
 
     >>> data = Orange.data.Table("zoo")
     >>> domain = data.domain
@@ -24,15 +16,15 @@ set `zoo`::
     backbone, breathes, venomous, fins, legs, tail, domestic, catsize,
     type], {-2:name}
 
-Domains consists of ordinary features and the class attribute,
-if there is one, and of meta attributes. We will refer to features and
-the class attribute as *variables*. Variables are printed out
-in a form similar to a list whose elements are attribute names,
-and meta attributes are printed like a dictionary whose "keys" are meta
-attribute id's and "values" are attribute names. In the above case,
-each data instance corresponds to an animal and is described by the
-animal's properties and its type (the class); the meta attribute contains
-the animal's name.
+Domains consists of ordinary features (from "hair" to "catsize" in the
+above example), the class attribute ("type"), and meta attributes
+("name"). We will refer to features and the class attribute as
+*variables*. Variables are printed out in a form similar to a list whose
+elements are attribute names, and meta attributes are printed like a
+dictionary whose "keys" are meta attribute id's and "values" are
+attribute names. In the above case, each data instance corresponds to an
+animal and is described by the animal's properties and its type (the
+class); the meta attribute contains the animal's name.
 
 Domains as lists and dictionaries
 =================================
@@ -40,7 +32,7 @@ Domains as lists and dictionaries
 Domains behave like lists: the length of domain is the number of
 variables including the class variable. Domains can be indexed by integer
 indices, variable names or instances of
-:obj:`Orange.data.variables.Variable`::
+:obj:`Orange.data.variable.Variable`::
 
     >>> domain["feathers"]
     EnumVariable 'feathers'
@@ -50,12 +42,22 @@ indices, variable names or instances of
     >>> domain[feathers]
     EnumVariable 'feathers'
 
-Meta attributes are indexed similarly::
+Meta attributes work the same::
 
     >>> domain[-2]
     StringVariable 'name'
     >>> domain["name"]
     StringVariable 'name'
+
+
+Slices can be retrieved, but not set. Iterating through domain goes
+through features and the class variable, but not through meta attributes::
+
+    >>> for attr in domain:
+    ...     print attr.name,
+    ...
+    hair feathers eggs milk airborne aquatic predator toothed backbone
+    breathes venomous fins legs tail domestic catsize type
 
 Method :obj:`Domain.index` returns the index of a variable specified by a
 descriptor or name::
@@ -67,17 +69,6 @@ descriptor or name::
     >>> domain.index("name")
     -2
 
-Slices can be retrieved, but not set.
-
-Iterating through domain goes through features and the class variable,
-but not through meta attributes::
-
-    >>> for attr in domain:
-    ...     print attr.name,
-    ...
-    hair feathers eggs milk airborne aquatic predator toothed backbone
-    breathes venomous fins legs tail domestic catsize type
-
 
 Conversions between domains
 ===========================
@@ -85,8 +76,7 @@ Conversions between domains
 Domain descriptors can convert instances from one domain to another
 (details on construction of domains are described later). ::
 
-     >>> new_domain = Orange.data.Domain(["feathers", "legs", "type"],
-     domain)
+     >>> new_domain = Orange.data.Domain(["feathers", "legs", "type"], domain)
      >>> inst = data[55]
      >>> inst
      ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0', '4',
@@ -129,11 +119,11 @@ features or the class, and vice versa.
 Meta attributes
 ===============
 
-Meta-values are additional values that can be attached to instances.
-It is not necessary that all instances in the same table (or even all
-instances from the same domain) have the same meta attributes. See
-documentation on :obj:`Orange.data.Instance` for a more thorough
-description of meta-values.
+Meta attributes hold additional data attached to individual
+instances. Different instances from the same domain or even the same
+table may have different meta attributes. See documentation on
+:obj:`Orange.data.Instance` for a more thorough description of meta
+values.
 
 Meta attributes that appear in instances can, but don't need to be
 listed in the domain. Typically, the meta attribute will be included in
