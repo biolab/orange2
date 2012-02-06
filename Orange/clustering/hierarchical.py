@@ -320,7 +320,7 @@ such a small data set as Iris). ::
     data = Orange.data.Table("iris")
     matrix = Orange.core.SymMatrix(len(data))
     matrix.setattr("objects", data)
-    distance = Orange.distance.instances.EuclideanConstructor(data)
+    distance = Orange.distance.EuclideanConstructor(data)
     for i1, instance1 in enumerate(data):
         for i2 in range(i1+1, len(data)):
             matrix[i1, i2] = distance(instance1, data[i2])
@@ -483,7 +483,7 @@ def clustering(data,
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
     :param distance_constructor: Instance distance constructor
-    :type distance_constructor: :class:`Orange.distance.instances.ExamplesDistanceConstructor`
+    :type distance_constructor: :class:`Orange.distance.ExamplesDistanceConstructor`
     :param linkage: Linkage flag. Must be one of global module level flags:
     
         - SINGLE
@@ -1519,7 +1519,7 @@ def instance_distance_matrix(data,
     :type data: :class:`Orange.data.Table`
     
     :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :class:`Orange.distance.instances.ExampleDistConstructor`
+    :type distance_constructor: :class:`Orange.distance.ExampleDistConstructor`
     
     :param progress_callback: A function (taking one argument) to use for
         reporting the on the progress.

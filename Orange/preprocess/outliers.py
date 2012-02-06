@@ -72,7 +72,7 @@ class OutlierDetection:
         self._clear()
         self.examples = examples
         if (distance == None):
-          distance = Orange.distance.instances.ManhattanConstructor(self.examples)
+          distance = Orange.distance.ManhattanConstructor(self.examples)
         self.distance = distance
 
     def set_distance_matrix(self, distances):

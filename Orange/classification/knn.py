@@ -7,89 +7,71 @@
 k-nearest neighbors (``knn``)
 *****************************
 
-This module includes implementation of the `nearest neighbors 
-algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ and classes
-for finding the nearest instances according to chosen distance metrics.
-
-k-nearest neighbor algorithm
-============================
-
-The nearest neighbors algorithm is one of the most basic, 
+The `nearest neighbors
+algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ is one of the most basic,
 `lazy <http://en.wikipedia.org/wiki/Lazy_learning>`_ machine learning algorithms.
 The learner only needs to store the instances of training data, while the classifier
-does all the work by searching this list for the instances most similar to 
+does all the work by searching this list for the instances most similar to
 the data instance being classified:
 
 .. literalinclude:: code/knnExample0.py
 
-.. class:: kNNLearner(k, distanceConstructor, weightID)
+.. class:: kNNLearner(k, distance_constructor, weight_id)
 
-    :param instances: table of instances
-    :type instances: Orange.data.Table
-    
-    :param k: number of nearest neighbors used in classification
-    :type k: int
-    
-    :param weightID: id of meta attribute with instance weights
-    :type weightID: int
-    
-    :rtype: :class:`kNNLearner`
-    
-    .. method:: __call__(instances)
-        
-        Return instance of :class:`kNNClassifier` that learns from the
-        :obj:`instances`.
-        
-        :param instances: table of instances
-        :type instances: Orange.data.Table
-        
-        :rtype: :class:`kNNClassifier`
-
+    Lazy classifier that stores instances from the training set. Constructor
+    parameters set the corresponding attributes.
 
     .. attribute:: k
-    
-        Number of neighbors. If set to 0 (which is also the default value), 
-        the square root of the number of instances is used.
-    
-    .. attribute:: rank_weight
-    
-        Enables weighting by ranks (default: :obj:`true`)
-    
+
+        number of nearest neighbors used in classification. If set to 0
+        (default), the square root of the numbers of instances is used.
+
     .. attribute:: distance_constructor
+
+        component that constructs the object for measuring distances between
+        instances. Defaults to :class:`~Orange.distance.instances.EuclideanConstructor`.
+
+    .. attribute:: weight_id
     
-        component that constructs the object for measuring distances between 
-        instances.
+        id of meta attribute with instance weights
 
-kNNLearner first constructs an object for measuring distances between 
-instances. distance_constructor is used if given; otherwise, Euclidean 
-metrics will be used. :class:`kNNLearner` then constructs an instance of 
-:class:`FindNearest_BruteForce`. Together with the ID of the meta feature with 
-weights of instances, :attr:`kNNLearner.k` and :attr:`kNNLearner.rank_weight`,
-it is passed to a :class:`kNNClassifier`.
+    .. attribute:: rank_weight
 
-.. class:: kNNClassifier(domain, weightID, k, FindNearest, rankWeight, \
-nExamples)
+        Enables weighting by ranks (default: :obj:`true`)
 
-    .. method:: __call__(instance)
-    
+    .. method:: __call__(instances)
+
+        Return a learned :class:`~kNNClassifier`. Learning consists of
+        constructing a distance measure and passing it to the classifier
+        along with :obj:`instances` and all attributes.
+
+        :param instances: training instances
+        :type instances: :class:`~Orange.data.Table`
+
+
+.. class:: kNNClassifier(domain, weight_id, k, find_nearest, rank_weight, n_examples)
+
+    .. method:: __call__(instance, return_type)
+
         :param instance: given instance to be classified
         :type instance: Orange.data.Instance
         
         :param return_type: return value and probabilities, only value or only
                             probabilities
-        :type return_type: Orange.classification.Classifier.GetBoth, 
-                           Orange.classification.Classifier.GetValue,
-                           Orange.classification.Classifier.GetProbilities
+        :type return_type: :obj:`~Orange.classification.Classifier.GetBoth`,
+                           :obj:`~Orange.classification.Classifier.GetValue`,
+                           :obj:`~Orange.classification.Classifier.GetProbabilities`
         
-        :rtype: :class:`Orange.data.Value`,
-                :class:`Orange.statistics.distribution`, or a tuple with both
+        :rtype: :class:`~Orange.data.Value`,
+              :class:`~Orange.statistics.distribution.Distribution` or a
+              tuple with both
         
     .. method:: find_nearest(instance)
     
     A component which finds the nearest neighbors of a given instance.
         
     :param instance: given instance
-    :type instance: Orange.data.Instance
+    :type instance: :class:`~Orange.data.Instance`
         
     :rtype: :class:`Orange.data.Instance`
     
@@ -103,7 +85,7 @@ nExamples)
     
         Enables weighting by rank (default: :obj:`true`).
     
-    .. attribute:: weight_ID
+    .. attribute:: weight_id
     
         ID of meta attribute with weights of examples
     
@@ -192,7 +174,7 @@ The result is still perfect.
 
 
 Finding nearest neighbors
-=========================
+-------------------------
 
 Orange provides classes for finding the nearest neighbors of a given
 reference instance. While we might add some smarter classes in the future, we

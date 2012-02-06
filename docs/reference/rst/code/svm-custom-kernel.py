@@ -2,8 +2,8 @@ from Orange import data
 from Orange import evaluation
 
 from Orange.classification.svm import SVMLearner, kernels
-from Orange.distance.instances import EuclideanConstructor
-from Orange.distance.instances import HammingConstructor
+from Orange.distance import EuclideanConstructor
+from Orange.distance import HammingConstructor
 
 table = data.Table("iris.tab")
 l1 = SVMLearner()
