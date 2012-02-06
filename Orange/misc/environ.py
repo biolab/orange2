@@ -126,9 +126,7 @@ def _get_default_env():
     install_dir = os.path.dirname(os.path.abspath(__file__)) # Orange/misc
     install_dir = os.path.dirname(install_dir) # Orange/
 
-    print install_dir
-
-    doc_install_dir = os.path.join(install_dir, "doc") 
+    doc_install_dir = os.path.join(install_dir, "doc")
     dataset_install_dir = os.path.join(install_dir, "doc", "datasets") 
     network_install_dir = os.path.join(install_dir, "doc", "networks")
 
