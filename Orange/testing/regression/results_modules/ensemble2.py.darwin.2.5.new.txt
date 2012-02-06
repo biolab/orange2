@@ -1,3 +1,0 @@
-Learner  CA     Brier  AUC
-tree     0.588  0.602  0.577
-forest   0.710  0.399  0.767
