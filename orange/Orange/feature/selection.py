@@ -156,14 +156,15 @@ import Orange.core as orange
 
 from Orange.feature.scoring import score_all
 
+
 def best_n(scores, N):
     """Return the best N features (without scores) from the list returned
     by :obj:`Orange.feature.scoring.score_all`.
-    
-    :param scores: a list such as returned by 
+
+    :param scores: a list such as returned by
       :obj:`Orange.feature.scoring.score_all`
     :type scores: list
-    :param N: number of best features to select. 
+    :param N: number of best features to select.
     :type N: int
     :rtype: :obj:`list`
 
@@ -172,11 +173,12 @@ def best_n(scores, N):
 
 bestNAtts = best_n
 
+
 def above_threshold(scores, threshold=0.0):
     """Return features (without scores) from the list returned by
     :obj:`Orange.feature.scoring.score_all` with score above or
     equal to a specified threshold.
-    
+
     :param scores: a list such as one returned by
       :obj:`Orange.feature.scoring.score_all`
     :type scores: list
@@ -186,7 +188,7 @@ def above_threshold(scores, threshold=0.0):
 
     """
     pairs = filter(lambda x, t=threshold: x[1] > t, scores)
-    return map(lambda x:x[0], pairs)
+    return map(lambda x: x[0], pairs)
 
 attsAboveThreshold = above_threshold
 
@@ -194,10 +196,10 @@ attsAboveThreshold = above_threshold
 def select_best_n(data, scores, N):
     """Construct and return a new set of examples that includes a
     class and only N best features from a list scores.
-    
+
     :param data: an example table
     :type data: Orange.data.table
-    :param scores: a list such as one returned by 
+    :param scores: a list such as one returned by
       :obj:`Orange.feature.scoring.score_all`
     :type scores: list
     :param N: number of features to select
@@ -211,31 +213,32 @@ selectBestNAtts = select_best_n
 
 
 def select_above_threshold(data, scores, threshold=0.0):
-    """Construct and return a new set of examples that includes a class and 
-    features from the list returned by 
-    :obj:`Orange.feature.scoring.score_all` that have the score above or 
+    """Construct and return a new set of examples that includes a class and
+    features from the list returned by
+    :obj:`Orange.feature.scoring.score_all` that have the score above or
     equal to a specified threshold.
-    
+
     :param data: an example table
     :type data: Orange.data.table
     :param scores: a list such as one returned by
-      :obj:`Orange.feature.scoring.score_all`    
+      :obj:`Orange.feature.scoring.score_all`
     :type scores: list
     :param threshold: score threshold for attribute selection. Defaults to 0.
     :type threshold: float
     :rtype: :obj:`list` first N features (without measures)
-  
+
     """
-    return data.select(above_threshold(scores, threshold) + [data.domain.classVar.name])
+    return data.select(above_threshold(scores, threshold) + \
+                       [data.domain.classVar.name])
 
 selectAttsAboveThresh = select_above_threshold
 
 
 def select_relief(data, measure=orange.MeasureAttribute_relief(k=20, m=50), margin=0):
-    """Take the data set and use an attribute measure to remove the worst 
+    """Take the data set and use an attribute measure to remove the worst
     scored attribute (those below the margin). Repeats, until no attribute has
     negative or zero score.
-    
+
     .. note:: Notice that this filter procedure was originally designed for \
     measures such as Relief, which are context dependent, i.e., removal of \
     features may change the scores of other remaining features. Hence the \
@@ -243,22 +246,22 @@ def select_relief(data, measure=orange.MeasureAttribute_relief(k=20, m=50), marg
 
     :param data: an data table
     :type data: Orange.data.table
-    :param measure: an attribute measure (derived from 
-      :obj:`Orange.feature.scoring.Measure`). Defaults to 
+    :param measure: an attribute measure (derived from
+      :obj:`Orange.feature.scoring.Measure`). Defaults to
       :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.
     :param margin: if score is higher than margin, attribute is not removed.
       Defaults to 0.
     :type margin: float
-    
+
     """
     measl = score_all(data, measure)
     while len(data.domain.attributes) > 0 and measl[-1][1] < margin:
-        data = (data, measl, len(data.domain.attributes) - 1)
+        data = select_best_n(data, measl, len(data.domain.attributes) - 1)
 #        print 'remaining ', len(data.domain.attributes)
         measl = score_all(data, measure)
     return data
 
-select_relief = filterRelieff
+filterRelieff = select_relief
 
 
 class FilterAboveThreshold(object):
@@ -336,25 +339,27 @@ class FilterBestN(object):
             self = cls(measure=measure, n=n)
             return self(data)
 
-    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50), n=5):
+    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50),
+                 n=5):
         self.measure = measure
         self.n = n
 
     def __call__(self, data):
         ma = score_all(data, self.measure)
         self.n = min(self.n, len(data.domain.attributes))
-        return (data, ma, self.n)
+        return select_best_n(data, ma, self.n)
 
 FilterBestNAtts = FilterBestN
 FilterBestNAtts_Class = FilterBestN
 
+
 class FilterRelief(object):
-    """Similarly to :obj:`FilterBestNAtts`, wrap around class 
+    """Similarly to :obj:`FilterBestNAtts`, wrap around class
     :obj:`FilterRelief_Class`.
-    
-    :param measure: an attribute measure (derived from 
-      :obj:`Orange.feature.scoring.Measure`). Defaults to 
-      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.  
+
+    :param measure: an attribute measure (derived from
+      :obj:`Orange.feature.scoring.Measure`). Defaults to
+      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.
     :param margin: margin for Relief scoring. Defaults to 0.
     :type margin: float
 
@@ -370,7 +375,8 @@ class FilterRelief(object):
             self = cls(measure=measure, margin=margin)
             return self(data)
 
-    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50), margin=0):
+    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50),
+                 margin=0):
         self.measure = measure
         self.margin = margin
 
@@ -383,49 +389,59 @@ FilterRelief_Class = FilterRelief
 # wrapped learner
 
 
-def FilteredLearner(baseLearner, examples=None, weight=None, **kwds):
-    """Return the corresponding learner that wraps 
-    :obj:`Orange.classification.baseLearner` and a data selection method. 
-    
-    When such learner is presented a data table, data is first filtered and 
-    then passed to :obj:`Orange.classification.baseLearner`. This comes handy 
+class FilteredLearner(object):
+    """Return the corresponding learner that wraps
+    :obj:`Orange.classification.baseLearner` and a data selection method.
+
+    When such learner is presented a data table, data is first filtered and
+    then passed to :obj:`Orange.classification.baseLearner`. This comes handy
     when one wants to test the schema of feature-subset-selection-and-learning
-    by some repetitive evaluation method, e.g., cross validation. 
-    
+    by some repetitive evaluation method, e.g., cross validation.
+
     :param filter: defatuls to
-      :obj:`Orange.feature.selection.FilterAttsAboveThresh`
-    :type filter: Orange.feature.selection.FilterAttsAboveThresh
+      :obj:`Orange.feature.selection.FilterAboveThreshold`
+    :type filter: Orange.feature.selection.FilterAboveThreshold
 
     Here is an example of how to build a wrapper around naive Bayesian learner
     and use it on a data set::
 
         nb = Orange.classification.bayes.NaiveBayesLearner()
-        learner = Orange.feature.selection.FilteredLearner(nb, 
+        learner = Orange.feature.selection.FilteredLearner(nb,
                   filter=Orange.feature.selection.FilterBestNAtts(n=5), name='filtered')
         classifier = learner(data)
 
     """
-    learner = apply(FilteredLearner_Class, [baseLearner], kwds)
-    if examples:
-        return learner(examples, weight)
-    else:
-        return learner
+    def __new__(cls, baseLearner, data=None, weight=0,
+                filter=FilterAboveThreshold(), name='filtered'):
 
-class FilteredLearner_Class:
-    def __init__(self, baseLearner, filter=FilterAttsAboveThresh(), name='filtered'):
+        if data is None:
+            self = object.__new__(cls, baseLearner, filter=filter, name=name)
+            return self
+        else:
+            self = cls(baseLearner, filter=filter, name=name)
+            return self(data, weight)
+
+    def __init__(self, baseLearner, filter=FilterAboveThreshold(),
+                 name='filtered'):
         self.baseLearner = baseLearner
         self.filter = filter
         self.name = name
+
     def __call__(self, data, weight=0):
         # filter the data and then learn
         fdata = self.filter(data)
         model = self.baseLearner(fdata, weight)
         return FilteredClassifier(classifier=model, domain=model.domain)
 
+FilteredLearner_Class = FilteredLearner
+
+
 class FilteredClassifier:
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
+
     def __call__(self, example, resultType=orange.GetValue):
         return self.classifier(example, resultType)
+
     def atts(self):
         return self.domain.attributes
