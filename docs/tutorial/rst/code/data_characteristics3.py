@@ -5,7 +5,7 @@
 # Referenced:  basic_exploration.htm
 
 import orange
-data = orange.ExampleTable("../../datasets/adult_sample")
+data = orange.ExampleTable("adult_sample.tab")
 
 print "Continuous attributes:"
 for a in range(len(data.domain.attributes)):
@@ -15,7 +15,7 @@ for a in range(len(data.domain.attributes)):
             if not e[a].isSpecial():
                 d += e[a]
                 n += 1
-        print "  %s, mean=%3.2f" % (data.domain.attributes[a].name, d/n)
+        print "  %s, mean=%3.2f" % (data.domain.attributes[a].name, d / n)
 
 print "\nNominal attributes (contingency matrix for classes:", data.domain.classVar.values, ")"
 cont = orange.DomainContingency(data)

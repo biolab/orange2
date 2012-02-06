@@ -4,7 +4,7 @@
 # Referenced:  basic_exploration.htm
 
 import orange
-data = orange.ExampleTable("../../datasets/adult_sample")
+data = orange.ExampleTable("adult_sample.tab")
 dist = orange.DomainDistributions(data)
 
 print "Average values and mean square errors:"

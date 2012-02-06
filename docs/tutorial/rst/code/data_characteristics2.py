@@ -4,12 +4,12 @@
 # Referenced:  basic_exploration.htm
 
 import orange
-data = orange.ExampleTable("../../datasets/adult_sample")
+data = orange.ExampleTable("adult_sample.tab")
 print "Classes:", len(data.domain.classVar.values)
 print "Attributes:", len(data.domain.attributes), ",",
 
 # count number of continuous and discrete attributes
-ncont=0; ndisc=0
+ncont = 0; ndisc = 0
 for a in data.domain.attributes:
     if a.varType == orange.VarTypes.Discrete:
         ndisc = ndisc + 1
@@ -24,7 +24,7 @@ for e in data:
 print "Instances: ", len(data), "total",
 r = [0.] * len(c)
 for i in range(len(c)):
-    r[i] = c[i]*100./len(data)
+    r[i] = c[i] * 100. / len(data)
 for i in range(len(data.domain.classVar.values)):
     print ", %d(%4.1f%s) with class %s" % (c[i], r[i], '%', data.domain.classVar.values[i]),
 print
