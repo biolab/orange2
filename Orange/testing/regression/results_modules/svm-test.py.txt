@@ -1,4 +1,4 @@
            Name      CA     AUC
-SVM - Linear      0.973   0.999
+SVM - Linear      0.967   0.999
 SVM - Poly        0.933   0.995
 SVM - RBF         0.967   0.999
