@@ -140,7 +140,7 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
     os.chdir(caller_directory)
 
 
-iterations = 3
+iterations = 1
 directories = []
 error_status = 0
 
