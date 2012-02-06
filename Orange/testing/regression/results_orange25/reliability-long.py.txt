@@ -4,8 +4,8 @@ SAvar absolute        -0.077   0.454
 SAbias signed         -0.165   0.105
 SAbias absolute        0.095   0.352
 LCV absolute           0.069   0.504
-BVCK_absolute          0.060   0.562
-BAGV absolute          0.078   0.448
+BVCK_absolute          0.058   0.574
+BAGV absolute            nan     nan
 CNK signed             0.233   0.021
 CNK absolute           0.058   0.574
 Mahalanobis absolute   0.091   0.375
