@@ -1,27 +1,5 @@
 import Orange
 
-#%s/ExamplesDistanceConstructor/DistanceConstructor/gc
-#%s/ExamplesDistance_Normalized/DistanceNormalized/gc
-#ExampleDistance -> Distance
-#Hamming -> HammingDistance
-#DTW -> DTWDistance
-#Euclidean -> EuclideanDistance
-#Manhattan -> ...
-#Maximal -> ...
-#Relief -> ..
-#DTWConstructor
-#EuclideanConstructor
-#HammingConstructor
-#ManhattanConstructor
-#MaximalConstructor
-#ReliefConstructor
-#PearsonRConstructor -> PearsonR
-#PearsonR -> PearsonRDistance
-#SpearmanRConstructor -> SpearmanR
-#SpearmanR -> SpearmanRDistance
-#MahalanobisConstructor ->  Mahalanobis
-#Mahalanobis -> MahalanobisDistance
-
 from Orange.core import \
     DistanceMap, \
     DistanceMapConstructor, \
@@ -41,7 +19,13 @@ from Orange.core import \
     ExamplesDistanceConstructor_Maximal as Maximal, \
     ExamplesDistanceConstructor_Relief as Relief
 
+<<<<<<< local
 from Orange import statc
+=======
+from Orange.misc import progress_bar_milestones
+
+import statc
+>>>>>>> other
 import numpy
 from numpy import linalg
 
@@ -259,31 +243,41 @@ class SpearmanRAbsoluteDistance(SpearmanRDistance):
         except:
             return 1.0
     
-    
-def distance_matrix(data, distance_constructor, progress_callback=None):
-    """ A helper function that computes an obj:`Orange.core.SymMatrix` of all
+def _pairs(seq, same = False):
+    """ Return all pairs from elements of `seq`.
+    """
+    seq = list(seq)
+    same = 0 if same else 1
+    for i in range(len(seq)):
+        for j in range(i + same, len(seq)):
+            yield seq[i], seq[j]
+   
+def distance_matrix(data, distance_constructor=Euclidean, progress_callback=None):
+    """ A helper function that computes an :obj:`Orange.data.SymMatrix` of all
     pairwise distances between instances in `data`.
     
     :param data: A data table
     :type data: :obj:`Orange.data.Table`
     
-    :param distance_constructor: An DistanceConstructor instance.
+    :param distance_constructor: An DistanceConstructor instance (defaults to :obj:`Euclidean`).
     :type distance_constructor: :obj:`Orange.distances.DistanceConstructor`
+
+    :param progress_callback: A function (taking one argument) to use for
+        reporting the on the progress.
+    :type progress_callback: function
+    
+    :rtype: :class:`Orange.data.SymMatrix`
     
     """
-    from Orange.misc import progressBarMilestones as progress_milestones
-    matrix = Orange.core.SymMatrix(len(data))
+    matrix = Orange.data.SymMatrix(len(data))
     dist = distance_constructor(data)
+
+    iter_count = matrix.dim * (matrix.dim - 1) / 2
+    milestones = progress_bar_milestones(iter_count, 100)
     
-    msize = len(data)*(len(data) - 1)/2
-    milestones = progress_milestones(msize, 100)
-    count = 0
-    for i in range(len(data)):
-        for j in range(i + 1, len(data)):
-            matrix[i, j] = dist(data[i], data[j])
+    for count, ((i, ex1), (j, ex2)) in enumerate(_pairs(enumerate(data))):
+        matrix[i, j] = dist(ex1, ex2)
+        if progress_callback and count in milestones:
+            progress_callback(100.0 * count / iter_count)
             
-            if progress_callback and count in milestones:
-                progress_callback(100.0 * count / msize)
-            count += 1
-            
-    return matrix
+    return matrix 

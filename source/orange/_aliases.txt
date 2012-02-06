@@ -65,3 +65,6 @@ getmetas get_metas
 addmeta add_meta
 addmetas add_metas
 removemeta remove_meta
+
+ExamplesDistance_Normalized
+feature_distances attribute_distances

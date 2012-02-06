@@ -450,7 +450,6 @@ Utility Functions
 .. autofunction:: prune
 .. autofunction:: pruned
 .. autofunction:: cluster_depths
-.. autofunction:: instance_distance_matrix
 .. autofunction:: feature_distance_matrix
 .. autofunction:: joining_cluster
 .. autofunction:: cophenetic_distances
@@ -1508,39 +1507,7 @@ def cluster_depths(cluster):
             depths.update(dict.fromkeys(cluster.branches, cl_depth + 1))
     return depths
 
-
-def instance_distance_matrix(data,
-            distance_constructor=Orange.distance.Euclidean,
-            progress_callback=None):
-    """ A helper function that computes an :class:`Orange.core.SymMatrix` of all
-    pairwise distances between instances in `data`.
-    
-    :param data: A data table
-    :type data: :class:`Orange.data.Table`
-    
-    :param distance_constructor: An DistanceConstructor instance.
-    :type distance_constructor: :class:`Orange.distance.DistanceConstructor`
-    
-    :param progress_callback: A function (taking one argument) to use for
-        reporting the on the progress.
-    :type progress_callback: function
-    
-    :rtype: :class:`Orange.core.SymMatrix`
-    
-    """
-    matrix = orange.SymMatrix(len(data))
-    dist = distance_constructor(data)
-    
-    iter_count = matrix.dim * (matrix.dim - 1) / 2
-    milestones = progress_bar_milestones(iter_count, 100)
-    
-    for count, ((i, ex1), (j, ex2)) in enumerate(_pairs(enumerate(data))):
-        matrix[i, j] = dist(ex1, ex2)
-        if progress_callback and count in milestones:
-            progress_callback(100.0 * count / iter_count)
-            
-    return matrix 
-
+instance_distance_matrix = Orange.distance.distance_matrix
 
 def feature_distance_matrix(data, distance=None, progress_callback=None):
     """ A helper function that computes an :class:`Orange.core.SymMatrix` of

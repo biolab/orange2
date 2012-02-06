@@ -1,7 +1,5 @@
 .. py:currentmodule:: Orange.distance
 
-.. automodule:: Orange.distance
-
 ##########################################
 Distance (``distance``)
 ##########################################
@@ -23,6 +21,8 @@ Unknown values are treated correctly only by Euclidean and Relief
 distance.  For other measures, a distance between unknown and known or
 between two unknown values is always 0.5.
 
+.. autofunction:: distance_matrix
+
 .. class:: Distance
 
     .. method:: __call__(instance1, instance2)
@@ -33,126 +33,120 @@ between two unknown values is always 0.5.
 
     .. method:: __call__([instances, weightID][, distributions][, basic_var_stat])
 
-        Constructs an :obj:`Distance`.  Not all the data needs to be
-        given. Most measures can be constructed from basic_var_stat;
-        if it is not given, they can help themselves either by instances
-        or distributions. Some do not need any arguments.
+        Constructs an :obj:`Distance`. Not all arguments are required.
+        Most measures can be constructed from basic_var_stat; if it is
+        not given, instances or distributions can be used.
 
 .. class:: DistanceNormalized
 
-    This abstract class provides a function which is given two instances
-    and returns a list of normalized distances between values of their
-    features. Many distance measuring classes need such a function and are
-    therefore derived from this class
+    An abstract class that provides normalization.
 
     .. attribute:: normalizers
 
-        A precomputed list of normalizing factors for feature values
+        A precomputed list of normalizing factors for feature values. They are:
 
-        - If a factor positive, differences in feature's values
-          are multiplied by it; for continuous features the factor
-          would be 1/(max_value-min_value) and for ordinal features
-          the factor is 1/number_of_values. If either (or both) of
-          features are unknown, the distance is 0.5
-        - If a factor is -1, the feature is nominal; the distance
-          between two values is 0 if they are same (or at least
-          one is unknown) and 1 if they are different.
-        - If a factor is 0, the feature is ignored.
+        - 1/(max_value-min_value) for continuous and 1/number_of_values
+          for ordinal features.
+          If either feature is unknown, the distance is 0.5. Such factors
+          are used to multiply differences in feature's values.
+        - ``-1`` for nominal features; the distance
+          between two values is 0 if they are same (or at least one is
+          unknown) and 1 if they are different.
+        - ``0`` for ignored features.
 
     .. attribute:: bases, averages, variances
 
         The minimal values, averages and variances
-        (continuous features only)
+        (continuous features only).
 
     .. attribute:: domain_version
 
-        The domain version increases each time a domain description is
-        changed (i.e. features are added or removed); this checks 
-        that the user is not attempting to measure distances between
-        instances that do not correspond to normalizers.
+        The domain version changes each time a domain description is
+        changed (i.e. features are added or removed).
 
-    .. method:: attribute_distances(instance1, instance2)
+    .. method:: feature_distances(instance1, instance2)
 
-        Return a list of floats representing distances between pairs of
-        feature values of the two instances.
+        Return a list of floats representing normalized distances between
+        pairs of feature values of the two instances.
 
-.. class:: HammingConstructor
 .. class:: Hamming
+.. class:: HammingDistance
 
-    Hamming distance between two instances is defined as the number of
-    features in which the two instances differ. Note that this measure
-    is not really appropriate for instances that contain continuous features.
+    The number of features in which the two instances differ. This measure
+    is not appropriate for instances that contain continuous features.
 
-.. class:: MaximalConstructor
 .. class:: Maximal
+.. class:: MaximalDistance
 
-    The maximal between two instances is defined as the maximal distance
+    The maximal distance
     between two feature values. If dist is the result of
-    DistanceNormalized.attribute_distances,
-    then Maximal returns max(dist).
+    ~:obj:`DistanceNormalized.feature_distances`,
+    then :class:`Maximal` returns ``max(dist)``.
 
-.. class:: ManhattanConstructor
 .. class:: Manhattan
+.. class:: ManhattanDistance
 
-    Manhattan distance between two instances is a sum of absolute values
+    The sum of absolute values
     of distances between pairs of features, e.g. ``sum(abs(x) for x in dist)``
-    where dist is the result of ExamplesDistance_Normalized.attributeDistances.
+    where dist is the result of ~:obj:`DistanceNormalized.feature_distances`.
 
-.. class:: EuclideanConstructor
 .. class:: Euclidean
+.. class:: EuclideanDistance
 
-    Euclidean distance is a square root of sum of squared per-feature distances,
+    The square root of sum of squared per-feature distances,
     i.e. ``sqrt(sum(x*x for x in dist))``, where dist is the result of
-    ExamplesDistance_Normalized.attributeDistances.
+    ~:obj:`DistanceNormalized.feature_distances`.
 
     .. method:: distributions
 
-        An object of type
-        :obj:`~Orange.statistics.distribution.Distribution` that holds
+        A :obj:`~Orange.statistics.distribution.Distribution` containing
         the distributions for all discrete features used for
         computation of distances between known and unknown values.
 
-    .. method:: bothSpecialDist
+    .. method:: both_special_dist
 
         A list containing the distance between two unknown values for each
         discrete feature.
 
-    This measure of distance deals with unknown values by computing the
-    expected square of distance based on the distribution obtained from the
+    Unknown values are handled by computing the
+    expected square of distance based on the distribution from the
     "training" data. Squared distance between
 
-        - A known and unknown continuous attribute equals squared distance
-          between the known and the average, plus variance
-        - Two unknown continuous attributes equals double variance
-        - A known and unknown discrete attribute equals the probability
-          that the unknown attribute has different value than the known
-          (i.e., 1 - probability of the known value)
-        - Two unknown discrete attributes equals the probability that two
+        - A known and unknown continuous feature equals squared distance
+          between the known and the average, plus variance.
+        - Two unknown continuous features equals double variance.
+        - A known and unknown discrete feature equals the probability
+          that the unknown feature has different value than the known
+          (i.e., 1 - probability of the known value).
+        - Two unknown discrete features equals the probability that two
           random chosen values are equal, which can be computed as
           1 - sum of squares of probabilities.
 
-    Continuous cases can be handled by averages and variances inherited from
-    ExamplesDistance_normalized. The data for discrete cases are stored in
-    distributions (used for unknown vs. known value) and in bothSpecial
-    (the precomputed distance between two unknown values).
+    Continuous cases are handled as inherited from
+    :class:`DistanceNormalized`. The data for discrete cases are
+    stored in distributions (used for unknown vs. known value) and
+    in :obj:`both_special_dist` (the precomputed distance between two
+    unknown values).
 
-.. class:: ReliefConstructor
 .. class:: Relief
+.. class:: ReliefDistance
 
-    Relief is similar to Manhattan distance, but incorporates a more
-    correct treatment of undefined values, which is used by ReliefF measure.
+    Relief is similar to Manhattan distance, but incorporates the
+    treatment of undefined values, which is used by ReliefF measure.
 
-This class is derived directly from ExamplesDistance, not from ExamplesDistance_Normalized.
+    This class is derived directly from :obj:`Distance`.
 
 
 .. autoclass:: PearsonR
     :members:
 
-.. autoclass:: SpearmanR
+.. autoclass:: PearsonRDistance
     :members:
 
-.. autoclass:: PearsonRConstructor
+.. autoclass:: SpearmanR
     :members:
 
 .. autoclass:: SpearmanRConstructor
     :members:
+
+
