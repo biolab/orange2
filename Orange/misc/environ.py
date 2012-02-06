@@ -277,7 +277,6 @@ def samepath(path1, path2):
 def add_orange_directories_to_path():
     """Add orange directory paths to sys.path."""
 
-    return
     paths_to_add = [install_dir]
 
     if canvas_install_dir is not None:
