@@ -23,20 +23,16 @@ List-like behaviour
 
 :obj:`Table` supports most list-like operations: getting, setting,
 removing data instances, as well as methods :obj:`append` and
-:obj:`extend`. The limitation is that table contain instances of
-:obj:`Orange.data.Instance`. When setting items, the item must be
+:obj:`extend`. When setting items, the item must be
 either the instance of the correct type or a Python list of
 appropriate length and content to be converted into a data instance of
-the corresponding domain.
+the corresponding domain. Retrieving data instances returns references
+and not copies: changing the retrieved instance changes the data in the
+table. Slicing returns ordinary Python lists containing references to
+data instances, not a new :obj:`Orange.data.Table`.
 
-When retrieving data instances, what we get are references and not
-copies. Changing the retrieved instance changes the data in the table,
-too.
-
-Slicing returns ordinary Python lists containing the data instance,
-not a new Table.
-
-As usual in Python, the data table is considered False, when empty.
+According to a Python convention, the data table is considered ``False``
+when empty.
 
 .. class:: Table
 
@@ -47,38 +43,37 @@ As usual in Python, the data table is considered False, when empty.
 
     .. attribute:: owns_instances
 
-        True, if the table contains the data instances, False if it
-        contains just references to instances owned by another table.
+        ``True``, if the table contains the data instances and ``False`` if
+        it contains references to instances owned by another table.
 
     .. attribute:: owner
 
-        If the table does not own the data instances, this attribute
-        gives the actual owner.
+        The actual owner of the data when ``own_instances`` is ``False``.
 
     .. attribute:: version
 
-        An integer that is increased whenever the table is
-        changed. This is not foolproof, since the object cannot
-        detect when individual instances are changed. It will, however,
-        catch any additions and removals from the table.
+        An integer that is increased when instances are added or
+        removed from the table. It does not detect changes of the data.
 
     .. attribute:: random_generator
 
        Random generator that is used by method
        :obj:`random_instance`. If the method is called and
-       random_generator is None, a new generator is constructed with
-       random seed 0, and stored here for subsequent use.
+       ``random_generator`` is ``None``, a new generator is constructed
+       with random seed 0 and stored here for future use.
 
     .. attribute:: attribute_load_status
 
        If the table was loaded from a file, this list of flags tells
        whether the feature descriptors were reused and how they
-       matched. See :ref:`descriptor reuse <variable_descriptor_reuse>` for details.
+       matched. See :ref:`descriptor reuse <variable_descriptor_reuse>`
+       for details.
 
     .. attribute:: meta_attribute_load_status
 
-       Same as above, except that this is a dictionary for meta
-       attributes, with keys corresponding to their ids.
+       A dictionary holding this same information for meta
+       attributes, with keys corresponding to their ids and values to
+       load statuses.
 
     .. method:: __init__(filename[, create_new_on])
 
@@ -89,7 +84,7 @@ As usual in Python, the data table is considered False, when empty.
         file is not found, Orange will also search the directories
         specified in the environment variable `ORANGE_DATA_PATH`.
 
-        The optional flag `create_new_on` decides when variable
+        The optional flag ``create_new_on`` decides when variable
         descriptors are reused. See :ref:`descriptor reuse
         <variable_descriptor_reuse>` for more details.
 
