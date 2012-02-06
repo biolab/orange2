@@ -262,15 +262,14 @@ The script's output looks like this::
     REL-L: ? -> NA
     TYPE: SIMPLE-T -> SIMPLE-T
 
-Seemingly, the two examples have the same attributes (with
-:samp:`imputed` having a few additional ones). Comparing
-:samp:`original.domain[0] == imputed.domain[0]` will result in False. While
-the names are same, they represent different features. Writting,
-:samp:`imputed[i]`  would fail since :samp:`imputed` has no attribute
-:samp:`i`, but it has an attribute with the same name. Using
-:samp:`i.name` to index the attributes of
-:samp:`imputed` will work, yet it is not fast. If a frequently used, it is
-better to compute the index with :samp:`imputed.domain.index(i.name)`.
+The two examples have the same attribute, :samp:`imputed` having a few
+additional ones. Comparing :samp:`original.domain[0] == imputed.domain[0]`
+will result in False. While the names are same, they represent different
+features. Writting, :samp:`imputed[i]`  would fail since :samp:`imputed` has
+ no attribute :samp:`i`, but it has an attribute with the same name. Using
+:samp:`i.name` to index the attributes of :samp:`imputed` will work,
+yet it is not fast. If a frequently used, it is better to compute the index
+with :samp:`imputed.domain.index(i.name)`.
 
 For continuous features, there is an additional feature with name prefix
 "_def", which is accessible by :samp:`i.name+"_def"`. The value of the first
@@ -307,17 +306,16 @@ classification, the same imputer is used for imputation of missing values
 in (testing) examples.
 
 Details may vary from algorithm to algorithm, but this is how the imputation
-is generally used. When write user-defined learners,
+is generally used. When writing user-defined learners,
 it is recommended to use imputation according to the described procedure.
 
 Wrapper for learning algorithms
 ===============================
 
 Imputation is used by learning algorithms and other methods that are not
-capable of handling unknown values. It will impute missing values,
-call the learner and, if imputation is also needed by the classifier,
-it will wrap the classifier into a wrapper that imputes missing values in
-examples to classify.
+capable of handling unknown values. It imputes missing values,
+calls the learner and, if imputation is also needed by the classifier,
+it wraps the classifier that imputes missing values in instances to classify.
 
 .. literalinclude:: code/imputation-logreg.py
    :lines: 7-
@@ -329,7 +327,8 @@ The output of this code is::
 
 Even so, the module is somewhat redundant, as all learners that cannot handle
 missing values should, in principle, provide the slots for imputer constructor.
-For instance, :obj:`Orange.classification.logreg.LogRegLearner` has an attribute
+For instance, :obj:`Orange.classification.logreg.LogRegLearner` has an
+attribute
 :obj:`Orange.classification.logreg.LogRegLearner.imputerConstructor`, and even
 if you don't set it, it will do some imputation by default.
 

@@ -16,6 +16,5 @@ voting = Orange.data.Table("voting")
 res = Orange.evaluation.testing.cross_validation([lr, imlr], voting)
 CAs = Orange.evaluation.scoring.CA(res)
 
-print "Without imputation: %5.3f" % \
-      CAs[0]
+print "Without imputation: %5.3f" % CAs[0]
 print "With imputation: %5.3f" % CAs[1]
