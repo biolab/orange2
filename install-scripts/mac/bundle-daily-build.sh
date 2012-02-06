@@ -7,7 +7,7 @@
 
 # Lists of add-ons to include
 STABLE_ADDONS=""
-DAILY_ADDONS="Bioinformatics Text"
+DAILY_ADDONS="bioinformatics text"
 
 # Sets error handler
 trap "echo \"Script failed\"" ERR
@@ -19,7 +19,7 @@ if [ ! -x /usr/bin/xcodebuild ]; then
 	exit 2
 fi
 
-# Clone hg repo if not yet local.
+# Clone hg repos if not yet local.
 if [ ! -e orange ]; then
 	hg clone https://bitbucket.org/biolab/orange
 fi
@@ -32,9 +32,32 @@ if [ -e ../orange_archive ]; then
 fi
 
 hg archive ../orange_archive
+
+DAILY_REVISION_1=`hg log -l1 daily | grep 'changeset:' | cut -d ' ' -f 4 | cut -d ':' -f 1`
+
 cd ..
 
-ORANGE_REPO=`pwd`/orange
+
+for addon in $DAILY_ADDONS ; do
+	if [ ! -e $addon ]; then
+		hg clone https://bitbucket.org/biolab/orange-addon-$addon $addon
+	fi
+
+	cd $addon
+	hg pull --update
+	
+	# This is where the addons will be build, so they don't 
+	# pollute the hg repos
+	if [ -e ../${addon}_archive ]; then
+		rm -rf ../${addon}_archive
+	fi
+
+	hg archive ../${addon}_archive
+	
+	cd ..
+done
+
+
 ORANGE_ARCHIVE=`pwd`/orange_archive
 
 # Defaults are current latest revisions in stable branch and trunk
@@ -50,9 +73,8 @@ else
     STABLE_REVISION=$STABLE_REVISION_2
 fi
 
-DAILY_REVISION_1 = `hg log -l1 daily | grep 'changeset:' | cut -d ' ' -f 4 | cut -d ':' -f 1`
 
-#TODO: versions of hg and svn repos are no longer in sync
+# versions of hg and svn repos are no longer in sync
 
 #DAILY_REVISION_2=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 ## svn info does not return proper exit status on an error so we check it this way
@@ -210,60 +232,11 @@ if [ ! -e /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg ]; then
 	cd $ORANGE_ARCHIVE
 	/private/tmp/bundle/Orange.app/Contents/MacOS/python setup.py install
 		
-#	echo "Correcting install names for modules."
-#	for module in *.so ; do
-#		[ -L $module ] && continue
-#		
-#		install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/$module $module
-#		
-#		perl -MFile::Spec::Functions=abs2rel -e '
-#		for (`/usr/bin/otool -L -X $ARGV[0]`) {
-#			next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
-#			system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
-#		}
-#		' $module
-#	done
-	
-#	echo "Cleaning up."
-#	rm -rf source/ c45.dll liborange_include.a updateOrange.py
-	
-	# Installation registration
-#	echo "orange" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange.pth
-	
-	# TODO: hg repos for addons
 	for addon in $DAILY_ADDONS ; do
-		echo "Downloading Orange add-on $addon daily source code revision $DAILY_REVISION."
-		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/$addon/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/
+		cd $REPO_DIR/${addon}_archive
+		echo "Building $addon addon."
+		/private/tmp/bundle/Orange.app/Contents/MacOS/python setup.py install
 		
-		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/COPYING
-		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/LICENSES
-		
-		if [ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/source/ ]; then
-			echo "Compiling add-on."
-			cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/source/
-			make
-			cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/
-			
-			echo "Correcting install names for modules."
-			for module in *.so ; do
-				[ -L $module ] && continue
-			
-				install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/$module $module
-				
-				perl -MFile::Spec::Functions=abs2rel -e '
-				for (`/usr/bin/otool -L -X $ARGV[0]`) {
-					next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
-					system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
-				}
-				' $module
-			done
-		fi
-		
-#		echo "Cleaning up."
-#		rm -rf source/ setup.py
-		
-		# Installation registration
-		echo "orange/add-ons/$addon" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange-`echo $addon | tr "[:upper:]" "[:lower:]"`.pth
 	done
 	
 	echo "Removing unnecessary files."
