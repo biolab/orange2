@@ -262,8 +262,8 @@ The two examples have the same attribute, :samp:`imputed` having a few
 additional ones. Comparing :samp:`original.domain[0] == imputed.domain[0]`
 will result in False. While the names are same, they represent different
 features. Writting, :samp:`imputed[i]`  would fail since :samp:`imputed` has
- no attribute :samp:`i`, but it has an attribute with the same name. Using
-:samp:`i.name` to index the attributes of :samp:`imputed` will work,
+no attribute :samp:`i`, but it has an attribute with the same name.
+Using :samp:`i.name` to index the attributes of :samp:`imputed` will work,
 yet it is not fast. If a frequently used, it is better to compute the index
 with :samp:`imputed.domain.index(i.name)`.
 
