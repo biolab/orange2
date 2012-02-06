@@ -19,13 +19,9 @@ from Orange.core import \
     ExamplesDistanceConstructor_Maximal as Maximal, \
     ExamplesDistanceConstructor_Relief as Relief
 
-<<<<<<< local
 from Orange import statc
-=======
 from Orange.misc import progress_bar_milestones
 
-import statc
->>>>>>> other
 import numpy
 from numpy import linalg
 
