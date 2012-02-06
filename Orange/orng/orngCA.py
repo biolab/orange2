@@ -1,3 +1,6 @@
+# This has to be seriously outdated, as it uses matrixmultiply, which is not
+# present in numpy since, like, 2006.     Matija Polajnar, 2012 a.d.
+
 """
 Correspondence analysis is a descriptive/exploratory technique designed to analyze simple two-way and 
 multi-way tables containing some measure of correspondence between the rows and columns. 
