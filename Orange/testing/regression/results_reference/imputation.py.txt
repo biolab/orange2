@@ -96,7 +96,7 @@ Imputed:
 Example w/ missing values
 ['M', 1874, 'RR', ?, 2, '?', 'THROUGH', 'IRON', '?', '?', 'SIMPLE-T']
 Imputed:
-['M', 1874, 'RR', 1000, 2, 'N', 'THROUGH', 'IRON', 'MEDIUM', 'S', 'SIMPLE-T']
+['M', 1874, 'RR', 1257, 2, 'N', 'THROUGH', 'IRON', 'MEDIUM', 'S', 'SIMPLE-T']
 
 ['M', 1876, 'HIGHWAY', 1245, ?, '?', 'THROUGH', 'STEEL', 'LONG', 'F', 'SUSPEN']
 ['M', 1876, 'HIGHWAY', 1245, 2, 'N', 'THROUGH', 'STEEL', 'LONG', 'F', 'SUSPEN']
@@ -105,13 +105,13 @@ Imputed:
 ['A', 1876, 'HIGHWAY', 1200, 4, 'G', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
 
 ['O', 1878, 'RR', ?, 2, 'G', '?', 'STEEL', '?', '?', 'SIMPLE-T']
-['O', 1878, 'RR', 804, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'S', 'SIMPLE-T']
+['O', 1878, 'RR', 1257, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'S', 'SIMPLE-T']
 
 ['M', 1882, 'RR', ?, 2, 'G', '?', 'STEEL', '?', '?', 'SIMPLE-T']
-['M', 1882, 'RR', 1000, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
+['M', 1882, 'RR', 1257, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
 
 ['A', 1883, 'RR', ?, 2, 'G', 'THROUGH', 'STEEL', '?', 'F', 'SIMPLE-T']
-['A', 1883, 'RR', 1000, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
+['A', 1883, 'RR', 1257, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
 
 
 *** BAYES and AVERAGE IMPUTATION ***
@@ -139,11 +139,11 @@ Imputed:
 
 *** CUSTOM IMPUTATION BY MODELS ***
 
-SPAN=SHORT: 1158
-SPAN=LONG: 1907
-SPAN=MEDIUM
-|    ERECTED<1911.500: 1325
-|    ERECTED>=1911.500: 1528
+ERECTED<=1894.500: 1257
+ERECTED>1894.500
+|    SPAN=SHORT<null node>: <null node>
+|    SPAN=MEDIUM: 1571
+|    SPAN=LONG: 1829
 
 ['M', 1876, 'HIGHWAY', 1245, ?, '?', 'THROUGH', 'STEEL', 'LONG', 'F', 'SUSPEN']
 ['M', 1876, 'HIGHWAY', 1245, 3, 'G', 'THROUGH', 'STEEL', 'LONG', 'F', 'SUSPEN']
