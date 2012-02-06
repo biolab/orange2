@@ -762,7 +762,7 @@ class Classifier:
     :obj:`Orange.classification.Classifier.GetProbabilities` or
     :obj:`Orange.classification.Classifier.GetBoth` is passed) contain an
     additional attribute :obj:`reliability_estimate`, which is an instance of
-     :class:`~Orange.evaluation.reliability.Estimate`.
+    :class:`~Orange.evaluation.reliability.Estimate`.
 
     """
 
