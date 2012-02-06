@@ -38,9 +38,7 @@ The script should output this::
 .. autoclass:: Orange.feature.selection.FilterRelief
    :members:
 
-.. automethod:: Orange.feature.selection.FilteredLearner
-
-.. autoclass:: Orange.feature.selection.FilteredLearner_Class
+.. autoclass:: Orange.feature.selection.FilteredLearner
    :members:
 
 .. autoclass:: Orange.feature.selection.FilteredClassifier
@@ -81,18 +79,18 @@ helps. This is the output that we get::
     Naive Bayes  0.903
     with FSS     0.940
 
-Now, a much simpler example. Although perhaps educational, we can do all of 
-the above by wrapping the learner using <code>FilteredLearner</code>, thus 
+We can do all of  he above by wrapping the learner using
+<code>FilteredLearner</code>, thus
 creating an object that is assembled from data filter and a base learner. When
-given the data, this learner uses attribute filter to construct a new
+given a data table, this learner uses attribute filter to construct a new
 data set and base learner to construct a corresponding
 classifier. Attribute filters should be of the type like
-<code>orngFSS.FilterAttsAboveThresh</code> or
-<code>orngFSS.FilterBestNAtts</code> that can be initialized with the
+<code>orngFSS.FilterAboveThresh</code> or
+<code>orngFSS.FilterBestN</code> that can be initialized with the
 arguments and later presented with a data, returning new reduced data
 set.
 
-The following code fragment essentially replaces the bulk of code
+The following code fragment replaces the bulk of code
 from previous example, and compares naive Bayesian classifier to the
 same classifier when only a single most important attribute is
 used.
@@ -265,10 +263,10 @@ filterRelieff = select_relief
 
 
 class FilterAboveThreshold(object):
-    """Store filter parameters and can be later called with the data to
+    """Store filter parameters that are later called with the data to
     return the data table with only selected features.
 
-    This class uses the function :obj:`select_above_threshold`.
+    This class uses :obj:`select_above_threshold`.
 
     :param measure: an attribute measure (derived from
       :obj:`Orange.feature.scoring.Measure`). Defaults to
@@ -306,7 +304,7 @@ class FilterAboveThreshold(object):
     def __call__(self, data):
         """Take data and return features with scores above given threshold.
 
-        :param data: an data table
+        :param data: data table
         :type data: Orange.data.table
 
         """
@@ -318,7 +316,7 @@ FilterAttsAboveThresh_Class = FilterAboveThreshold
 
 
 class FilterBestN(object):
-    """Store filter parameters and can be later called with the data to
+    """Store filter parameters that are later called with the data to
     return the data table with only selected features.
 
     :param measure: an attribute measure (derived from
@@ -354,8 +352,8 @@ FilterBestNAtts_Class = FilterBestN
 
 
 class FilterRelief(object):
-    """Similarly to :obj:`FilterBestNAtts`, wrap around class
-    :obj:`FilterRelief_Class`.
+    """Store filter parameters that are later called with the data to
+    return the data table with only selected features.
 
     :param measure: an attribute measure (derived from
       :obj:`Orange.feature.scoring.Measure`). Defaults to
@@ -390,10 +388,10 @@ FilterRelief_Class = FilterRelief
 
 
 class FilteredLearner(object):
-    """Return the corresponding learner that wraps
-    :obj:`Orange.classification.baseLearner` and a data selection method.
+    """Return the learner that wraps :obj:`Orange.classification.baseLearner` 
+    and a data selection method.
 
-    When such learner is presented a data table, data is first filtered and
+    When calling the learner with a data table, data is first filtered and
     then passed to :obj:`Orange.classification.baseLearner`. This comes handy
     when one wants to test the schema of feature-subset-selection-and-learning
     by some repetitive evaluation method, e.g., cross validation.
@@ -407,7 +405,7 @@ class FilteredLearner(object):
 
         nb = Orange.classification.bayes.NaiveBayesLearner()
         learner = Orange.feature.selection.FilteredLearner(nb,
-                  filter=Orange.feature.selection.FilterBestNAtts(n=5), name='filtered')
+            filter=Orange.feature.selection.FilterBestN(n=5), name='filtered')
         classifier = learner(data)
 
     """
