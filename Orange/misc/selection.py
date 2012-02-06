@@ -102,7 +102,7 @@ class BestOnTheFly:
     """
     
     def __init__(self, compare=cmp, seed = 0, call_compare_on_1st = False):
-        self.randomGenerator = random.RandomGenerator(seed)
+        self.randomGenerator = random.Random(seed)
         self.compare=compare
         self.wins=0
         self.bestIndex, self.index = -1, -1
@@ -133,7 +133,7 @@ class BestOnTheFly:
                 return 1
             elif cmpr==0:
                 self.wins=self.wins+1
-                if not self.randomGenerator(self.wins):
+                if not self.randomGenerator.randint(0, self.wins-1):
                     self.best=x
                     self.bestIndex=self.index
                     return 1
