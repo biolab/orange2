@@ -10,10 +10,10 @@ import Orange
 iris = Orange.data.Table("iris.tab")
 
 # Construct a distance matrix using Euclidean distance
-euclidean = Orange.distance.instances.EuclideanConstructor(iris)
+euclidean = Orange.distance.Euclidean(iris)
 distance = Orange.core.SymMatrix(len(iris))
 for i in range(len(iris)):
-   for j in range(i+1):
+   for j in range(i + 1):
        distance[i, j] = euclidean(iris[i], iris[j])
 
 # Run 100 steps of MDS optimization
