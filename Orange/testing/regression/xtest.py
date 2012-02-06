@@ -33,10 +33,12 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
     for dirname, dir in directories:
         dir = os.path.join(root_directory, dir)
         os.chdir(dir)
-        if module <> dirname:
-            outputsdir = "%s/results/%s/%s" % (regtestdir, module, dirname)
-        else:
-            outputsdir = "%s/results/%s" % (regtestdir, module)
+        #if module <> dirname:
+        #    outputsdir = "%s/results/%s/%s" % (regtestdir, module, dirname)
+        #else:
+        #    outputsdir = "%s/results/%s" % (regtestdir, module)
+
+        outputsdir = "%s/results_%s" % (regtestdir, dirname)
 
         print "DIR %s (%s)" % (dirname, dir)
         if not os.path.exists(outputsdir):
@@ -183,15 +185,15 @@ def main(argv):
     if module in ["all"]:
         root = "%s/.." % orngEnviron.orangeDir
         module = "orange"
-        dirs = [("modules", "orange/doc/modules"),
-                ("reference", "orange/doc/reference"),
+        dirs = [("modules", "Orange/doc/modules"),
+                ("reference", "Orange/doc/reference"),
                 ("ofb", "docs/tutorial/rst/code"),
                 ("orange25", "docs/reference/rst/code")]
     elif module in ["orange"]:
         root = "%s/.." % orngEnviron.orangeDir
         module = "orange"
-        dirs = [("modules", "orange/doc/modules"),
-                ("reference", "orange/doc/reference"),
+        dirs = [("modules", "Orange/doc/modules"),
+                ("reference", "Orange/doc/reference"),
                 ("ofb", "docs/tutorial/rst/code")]
     elif module in ["ofb-rst"]:
         root = "%s/.." % orngEnviron.orangeDir
