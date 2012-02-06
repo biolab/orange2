@@ -1,3 +1,9 @@
+# Description: Reliability estimation
+# Category:    evaluation
+# Uses:        prostate
+# Referenced:  Orange.evaluation.reliability
+# Classes:     Orange.evaluation.reliability.Learner
+
 import Orange
 
 table = Orange.data.Table("prostate.tab")

@@ -21,6 +21,7 @@ Zoran Bosnić, 2008.
 The following example shows basic usage of reliability estimation methods:
 
 .. literalinclude:: code/reliability-basic.py
+    :lines: 7-
 
 The important points of this example are:
  * construction of reliability estimators using classes,
@@ -40,6 +41,7 @@ cross-validation technique for reliability estimation. Reliability estimations
 for first 10 instances get printed:
 
 .. literalinclude:: code/reliability-run.py
+    :lines: 7-
 
 Reliability Methods
 ===================
@@ -113,7 +115,7 @@ Example of usage
 ================
 
 .. literalinclude:: code/reliability-long.py
-    :lines: 1-16
+    :lines: 7-22
 
 This script prints out Pearson's R coefficient between reliability estimates
 and actual prediction errors, and a corresponding p-value, for each of the

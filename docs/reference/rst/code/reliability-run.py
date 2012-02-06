@@ -1,3 +1,9 @@
+# Description: Reliability estimation with cross-validation
+# Category:    evaluation
+# Uses:        housing
+# Referenced:  Orange.evaluation.reliability
+# Classes:     Orange.evaluation.reliability.Learner
+
 import Orange
 table = Orange.data.Table("housing.tab")
 

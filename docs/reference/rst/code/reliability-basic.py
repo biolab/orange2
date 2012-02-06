@@ -1,3 +1,9 @@
+# Description: Reliability estimation - basic & fast
+# Category:    evaluation
+# Uses:        housing
+# Referenced:  Orange.evaluation.reliability
+# Classes:     Orange.evaluation.reliability.Mahalanobis, Orange.evaluation.reliability.LocalCrossValidation, Orange.evaluation.reliability.Learner
+
 import Orange
 
 data = Orange.data.Table("housing.tab")
