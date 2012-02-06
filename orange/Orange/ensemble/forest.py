@@ -125,7 +125,7 @@ class RandomForestLearner(orange.Learner):
 
         if not self.rand:
             self.rand = random.Random(0)
-        self.randorange = Orange.core.RandomGenerator(self.rand.randint(0,2**31-1))
+        self.randorange = Orange.misc.Random(self.rand.randint(0,2**31-1))
 
         if learner == None:
             self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
@@ -319,7 +319,7 @@ class ScoreFeature(orange.MeasureAttribute):
 
         if not self.rand:
             self.rand = random.Random(0)
-        self.randorange = Orange.core.RandomGenerator(self.rand.randint(0,2**31-1))
+        self.randorange = Orange.misc.Random(self.rand.randint(0,2**31-1))
 
         if learner == None:
             self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)

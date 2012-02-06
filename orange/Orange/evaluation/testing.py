@@ -203,8 +203,7 @@ class Evaluation(object):
         :param folds: number of folds to perform
         :param stratified: sets, whether indices should be stratified
         :param preprocessors: a list of preprocessors to be used on data.
-        :param random_generator: random seed or random generator for selection
-               of indices
+        :param random_generator: :obj:`Orange.misc.RandomGenerator` object.
         :param callback: a function that will be called after each fold is
                computed.
         :param store_classifiers: if True, classifiers will be accessible in

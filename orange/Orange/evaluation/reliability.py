@@ -222,7 +222,7 @@ METHOD_NAME = {0: "SAvar absolute", 1: "SAbias signed", 2: "SAbias absolute",
                13: "Mahalanobis to center"}
 
 select_with_repeat = Orange.core.MakeRandomIndicesMultiple()
-select_with_repeat.random_generator = Orange.core.RandomGenerator()
+select_with_repeat.random_generator = Orange.misc.Random()
 
 def get_reliability_estimation_list(res, i):
     return [result.probabilities[0].reliability_estimate[i].estimate for result in res.results], res.results[0].probabilities[0].reliability_estimate[i].signed_or_absolute, res.results[0].probabilities[0].reliability_estimate[i].method

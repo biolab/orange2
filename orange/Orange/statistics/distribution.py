@@ -83,9 +83,9 @@ distributions of discrete and continuous variables.
 
         :obj:`True` if distribution is normalized.
 
-    .. attribute:: randomGenerator
+    .. attribute:: random_generator
 
-        A pseudo-random number generator used for method :obj:`random`.
+        A pseudo-random number generator used for method :obj:`Orange.misc.Random`.
 
     .. method:: __init__(variable[, data[, weightId=0]])
 
@@ -149,7 +149,7 @@ distributions of discrete and continuous variables.
         the values which actually appeared (e.g. one of the values from
         :obj:`keys`).
 
-        The method uses :obj:`randomGenerator`. If none has been constructed or
+        The method uses :obj:`random_generator`. If none has been constructed or
         assigned yet, a new one is constructed and stored for further use.
 
 
