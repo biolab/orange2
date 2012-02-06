@@ -50,29 +50,29 @@ class OutlierDetection:
     used for averaging distances can be set. The default 0 means 
     that all examples are used when calculating average distances.
     """
- 
+
     def __init__(self):
         self._clear()
         self.set_knn()
-  
+
     def _clear(self):
         #distmatrix not calculated yet
         self.distmatrixC = 0
-        
+
         #using distance measurment
         self.distance = None
-        
+
         self.examples = None
         self.distmatrix = None
-            
-    def set_examples(self, examples, distance = None):
+
+    def set_examples(self, examples, distance=None):
         """Set examples on which the outlier detection will be
         performed. Distance is a distance constructor for distances
         between examples. If omitted, Manhattan distance is used."""
         self._clear()
         self.examples = examples
         if (distance == None):
-          distance = Orange.distance.ManhattanConstructor(self.examples)
+          distance = Orange.distance.Manhattan(self.examples)
         self.distance = distance
 
     def set_distance_matrix(self, distances):
@@ -88,47 +88,47 @@ class OutlierDetection:
         Set the number of nearest neighbours considered in determinating.
         """
         self.knn = knn
-  
+
     def _calc_distance_matrix(self):
         """
         other distance measures
         """
         self.distmatrix = Orange.core.SymMatrix(len(self.examples)) #FIXME 
         for i in range(len(self.examples)):
-            for j in range(i+1):
+            for j in range(i + 1):
                 self.distmatrix[i, j] = self.distance(self.examples[i],
                                                       self.examples[j])
         self.distmatrixC = 1
-      
+
     def distance_matrix(self):
         """
         Return the distance matrix of the dataset.
         """
-        if (self.distmatrixC == 0): 
+        if (self.distmatrixC == 0):
             self._calc_distance_matrix()
         return self.distmatrix
-       
+
     def _average_means(self):
         means = []
         dm = self.distance_matrix()
-        for i,dist in enumerate(dm):
+        for i, dist in enumerate(dm):
             nearest = self._find_nearest_limited(i, dist, self.knn)
             means.append(statc.mean(nearest))
         return means
-      
+
     def _find_nearest_limited(self, i, dist, knn):
         copy = []
         for el in dist:
             copy.append(el)
         #remove distance to same element
-        copy[i:i+1] = []
+        copy[i:i + 1] = []
         if (knn == 0):
             return copy
         else:
-            takelimit = min(len(dist)-1, knn)
+            takelimit = min(len(dist) - 1, knn)
             copy.sort()
             return copy[:takelimit]
-        
+
     def z_values(self):
         """ Return a list of Z values of average distances for each element 
         to others. N-th number in the list is the Z-value of N-th example. 
@@ -137,10 +137,10 @@ class OutlierDetection:
         return [statc.z(list, e) for e in list]
 
 Orange.misc.deprecated_members(
-    {"setKNN": "set_knn", 
-    "setExamples": "set_examples", 
-    "setDistanceMatrix": "set_distance_matrix", 
-    "distanceMatrix": "distance_matrix", 
+    {"setKNN": "set_knn",
+    "setExamples": "set_examples",
+    "setDistanceMatrix": "set_distance_matrix",
+    "distanceMatrix": "distance_matrix",
     "zValues": "z_values"
     })(OutlierDetection)
 
