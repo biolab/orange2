@@ -124,7 +124,7 @@ import bisect
 import platform
 
 import Orange.misc.environ
-import widgetParser
+import widgetparser
 from fileutil import *
 from fileutil import _zip_open
 from zipfile import ZipFile
@@ -462,7 +462,7 @@ class OrangeRegisteredAddOn():
         Return an HTML skeleton for documentation of a widget.
         
         :param widget: widget metadata.
-        :type widget: :class:`widgetParser.WidgetMetaData`
+        :type widget: :class:`widgetparser.WidgetMetaData`
         
         :param prototype: determines, whether this is a prototype widget. This
             is important to generate appropriate relative paths to the icons and
@@ -667,7 +667,7 @@ function setElColors(t, id, color) {
             if os.path.isdir(filename):
                 continue
             try:
-                meta = widgetParser.WidgetMetaData(file(filename).read(),
+                meta =widgetparser.WidgetMetaData(file(filename).read(),
                                                    "Prototypes" if prototype else "Uncategorized",
                                                    enforceDefaultCategory=prototype,
                                                    filename=filename)
@@ -832,7 +832,7 @@ class OrangeAddOn():
         
         self.preferred_directory = None
         
-        self.widgets = []  # List of widgetParser.WidgetMetaData objects
+        self.widgets = []  # List of widgetparser.WidgetMetaData objects
         
         if xmlfile:
             xml_doc_root = xmlfile if xmlfile.__class__ is xml.dom.minidom.Element else\
@@ -898,17 +898,17 @@ class OrangeAddOn():
                 
             if node.tagName in textnodes:
                 setattr(self, textnodes[node.tagName],
-                        widgetParser.xml_text_of(node))
+                        widgetparser.xml_text_of(node))
             elif node.tagName == "meta":
                 for node in [n for n in node.childNodes
                              if n.nodeType==n.ELEMENT_NODE]:
                     if node.tagName == "description":
-                        self.description = widgetParser.xml_text_of(node, True)
+                        self.description = widgetparser.xml_text_of(node, True)
                     elif node.tagName == "tags":
                         for tagNode in [n for n in node.childNodes
                                         if n.nodeType==n.ELEMENT_NODE and
                                         n.tagName == "tag"]:
-                            self.tags.append(widgetParser.xml_text_of(tagNode))
+                            self.tags.append(widgetparser.xml_text_of(tagNode))
                     elif node.tagName == "authors":
                         authorTypes = {"organization": self.author_organizations,
                                        "creator": self.author_creators,
@@ -916,12 +916,12 @@ class OrangeAddOn():
                         for authorNode in [n for n in node.childNodes
                                            if n.nodeType==n.ELEMENT_NODE and
                                            n.tagName in authorTypes]:
-                            authorTypes[authorNode.tagName].append(widgetParser.xml_text_of(authorNode))
+                            authorTypes[authorNode.tagName].append(widgetparser.xml_text_of(authorNode))
             elif node.tagName == "widgets":
                 for node in [n for n in node.childNodes
                              if n.nodeType==n.ELEMENT_NODE]:
                     if node.tagName == "widget":
-                        self.widgets.append(widgetParser.WidgetMetaData(node))
+                        self.widgets.append(widgetparser.WidgetMetaData(node))
         
         if "afterparse" in self.__class__.__dict__:
             self.afterparse(root)
@@ -1264,7 +1264,7 @@ class OrangeAddOnRepository:
         try:
             manifestfile = _zip_open(pack, 'addon.xml')
             manifest = xml.dom.minidom.parse(manifestfile).documentElement
-            manifest.appendChild(widgetParser.widgets_xml(pack))
+            manifest.appendChild(widgetparser.widgets_xml(pack))
             addon = OrangeAddOnInRepo(self, filename, xmlfile=manifest)
             self._add_addon(addon)
         except Exception, e:
