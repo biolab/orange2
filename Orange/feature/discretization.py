@@ -56,9 +56,9 @@ class EntropyDiscretization_wrapper:
     set for discretization, or if invoked with the data set, would return a
     discretized data set::
 
-        discretizer = Orange.feature.dicretization.EntropyDiscretization()
+        discretizer = Orange.feature.dicretization.Entropy()
         disc_data = discretizer(table)
-        another_disc_data = Orange.feature.dicretization.EntropyDiscretization(table)
+        another_disc_data = Orange.feature.dicretization.Entropy(table)
 
     """
     def __call__(self, data):
@@ -84,7 +84,7 @@ class DiscretizedLearner_Class:
     
     :param discretizer: a discretizer that converts continuous values into
       discrete. Defaults to
-      :obj:`Orange.feature.discretization.EntropyDiscretization`.
+      :obj:`Orange.feature.discretization.Entropy`.
     :type discretizer: Orange.feature.discretization.Discretization
     
     :param name: name to assign to learner 

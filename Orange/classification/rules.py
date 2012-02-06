@@ -1148,7 +1148,7 @@ class ABCN2(RuleLearner):
             max_rule_complexity = 10
         self.rule_finder.rule_stoppingValidator = RuleValidator_LRS(alpha=1.0, min_quality=0., max_rule_complexity=max_rule_complexity - 1, min_coverage=min_coverage)
         self.refiner = RuleBeamRefiner_Selector()
-        self.refiner_arguments = SelectorAdder(discretizer=Orange.feature.discretization.EntropyDiscretization(forceAttribute=1,
+        self.refiner_arguments = SelectorAdder(discretizer=Orange.feature.discretization.Entropy(forceAttribute=1,
                                                                                            maxNumberOfIntervals=2))
         self.prune_arguments = prune_arguments
         # evc evaluator
@@ -2220,7 +2220,7 @@ class SelectorAdder(Orange.core.RuleBeamRefiner):
        - refined rules are not consistent with any of negative arguments.
     """
     def __init__(self, example=None, not_allowed_selectors=[], argument_id=None,
-                 discretizer=Orange.core.EntropyDiscretization(forceAttribute=True)):
+                 discretizer=Orange.feature.discretization.Entropy(forceAttribute=True)):
         # required values - needed values of attributes
         self.example = example
         self.argument_id = argument_id
