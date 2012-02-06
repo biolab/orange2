@@ -21,7 +21,7 @@ Distribution of 'workclass' (through items)
         Never-worked: 0.000
 
 Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private
-Private Self-emp-not-inc Self-emp-not-inc Private Private Self-emp-not-inc Self-emp-not-inc Private Self-emp-not-inc Private Private Self-emp-not-inc Self-emp-not-inc Private Private Self-emp-not-inc Self-emp-not-inc Private Private Self-emp-not-inc
+Private Self-emp-not-inc Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private Private
 Private:  685.0
 Private:  685.0
 Private:  685.0
