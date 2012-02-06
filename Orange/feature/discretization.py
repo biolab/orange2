@@ -41,7 +41,7 @@ def entropyDiscretization_wrapper(data):
             attrlist.append(i)
         else:
             nrem=nrem+1
-    attrlist.append(tablen.domain.classVar)
+    attrlist.append(data_new.domain.classVar)
     return data_new.select(attrlist)
 
 
