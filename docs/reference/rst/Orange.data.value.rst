@@ -10,52 +10,67 @@ Values (``Value``)
     continuous or of some other type, like discrete or continuous
     distribution, or a string.
 
-    Values are not references. For instance, when taking a value from
-    a data instance (e.g. ``value = data[2]``), the result is a copy of
-    the value; changing it does not affect the original data instance.
+    Values are not assigned as references. For instance,
+    when taking a value from a data instance (e.g. ``value = data[2]``),
+    the result is a copy of the value; changing it does not affect the
+    original data instance.
 
     .. attribute:: value
 
-        The actual value. Values of discrete and continuous variables
-        are internally stored as integers or floating point numbers,
-        respectively. This attribute gives a number for continuous
-        variables and strings for discrete. If variable descriptor
-        (:obj:`variable`) is not :obj:`None`, the string is a symbolic value
-        for the attribute, otherwise it contains a number enclosed in
-        <> brackets. If value unknown, the result is a string '?', '~'
-        or '.'  for don't know, don't care and other, respectively.
+        The actual value.
+
+        * If the `Value` is numeric, `value` is a number.
+
+        * If it is discrete and the variable descriptor is present
+          (:obj:`variable` is not :obj:`None`), `value` is a string with
+          the symbolic value (as retrieved from
+          :obj:`Orange.data.variable.Discrete.values`).
+
+        * If it is discrete and the variable descriptor is unknown,
+          `value` is a string with the number representing the value
+          index, enclosed in brackets.
+
+        * If the value is missing, `value` is a string ``'?'``, ``'~'``
+          or ``'.'``  for don't know, don't care and other, respectively.
 
     .. attribute:: svalue
 
-        Instance of :obj:`Orange.core.SomeValue`, such as
-        :obj:`Orange.data.StringValue`,
+        Stores a value that corresponds to a variable that is neither
+        :obj:`Orange.data.variable.Discrete` nor
+        :obj:`Orange.data.variable.Continuous` or a distribution of a
+        discrete or continuous value.
+
+        This attribute is most often used for values of
+        :obj:`Orange.data.variable.StringVariable`; in that case `svalue`
+        is an instance of :obj:`Orange.data.StringValue`. Distributions
+        are seldom used; when `svalue` contains a distribution, it is
+        represented with an instance of
         :obj:`Orange.statistics.distribution.Discrete` or
-        :obj:`Orange.statistics.distribution.Continuous`, which is
-        used for storing values of non-numeric and non-discrete types.
+        :obj:`Orange.statistics.distribution.Continuous`.
 
     .. attribute:: variable 
 
-        Descriptor related to the value. Can be :obj:`None`.
+        Descriptor related to the value. Can be ``None``.
 
     .. attribute:: var_type
 
         Read-only descriptor that gives the variable type. Can be
-        ``Orange.data.Type.Discrete``, ``Orange.data.Type.Continuous``,
-        ``Orange.data.Type.String`` or ``Orange.data.Type.Other``.
+        :obj:`Orange.data.Type.Discrete`, :obj:`Orange.data.Type.Continuous`,
+        :obj:`Orange.data.Type.String` or :obj:`Orange.data.Type.Other`.
 
     .. attribute:: value_type
 
-        Tells whether the value is known or not. Can be
-        ``Orange.data.Value.Regular``, ``Orange.data.Value.DC``,
-        ``Orange.data.Value.DK``.
+        Tells whether the value is known
+        (:obj:`Orange.data.Value.Regular`) or not
+        (:obj:`Orange.data.Value.DC`. :obj:`Orange.data.Value.DK`).
 
     .. method:: __init__(variable[, value])
 
-	 Construct a value with the given descriptor. Value can be any
-	 object, that the descriptor understands. For discrete
-	 variables, this can be a string or an index, for continuous
-	 it can be a string or a number. If the value is omitted, it
-	 is set to unknown (DK). ::
+         Construct a value with the given descriptor. Value can be any
+         object that the descriptor understands. For discrete
+         variables, this can be a string or an index (an integer number),
+         for continuous it can be a string or a number. If the value is
+         omitted, it is set to unknown (:obj:`Orange.data.Value.DK`). ::
 
              import Orange
              v = Orange.data.variable.Discrete("fruit", values=["plum", "orange", "apple"])
@@ -70,14 +85,14 @@ Values (``Value``)
 
         :param variable: variable descriptor
         :type variables: Orange.data.variable.Variable
-	:param value: A value
-	:type value: int, float or string, or another type accepted by the given descriptor
+        :param value: A value
+        :type value: int, float or string, or another type accepted by descriptor
 
     .. method:: __init__(value)
 
         Construct either a discrete value, if the argument is an
         integer, or a continuous one, if the argument is a
-        floating-point number.
+        floating-point number. Descriptor is set to ``None``.
 
 	:param value: A value
 	:type value: int or float
@@ -90,46 +105,50 @@ Values (``Value``)
 
     .. method:: is_DC()
 
-        Return :obj:`True` if value is "don't care".
+        Return ``True`` if value is "don't care".
 
     .. method:: is_DK()
 
-        Return :obj:`True` if value is "don't know".
+        Return ``True`` if value is "don't know".
 
     .. method:: is_special()
 
-        Return :obj:`True` if value is either "don't know" or "don't
-        care".
+        Return ``True`` if value is either "don't know" or "don't care".
 
-    Discrete and continuous values can be cast to Python types :obj:`int`,
-    :obj:`float`, :obj:`long`, to strings and to boolean values. A value is
-    considered true if it is not undefined. Continuous values support arithmetic
-    operations.
+Casting and comparison of values
+--------------------------------
 
-    Values can be compared between themselves or with ordinary
-    numbers. All discrete variables are treated as ordinal; values are
-    compared by their respective indices and not in alphabetical order
-    of their symbolic representations. When comparing values
-    corresponding to different descriptors, Orange checks whether the
-    order is unambiguous. Here are two such values::
+Discrete and continuous values can be cast to Python types :obj:`int`,
+:obj:`float`, :obj:`long`, to strings and to boolean values. A value is
+considered true if it is not undefined. Continuous values support
+arithmetic operations.
 
-        deg3 = Orange.data.variable.Discrete("deg3",
-                                       values=["little", "medium", "big"])
-        deg4 = orange.data.variable.Discrete("deg4",
-                                       values=["tiny", "little", "big", "huge"])
-        val3 = orange.Value(deg3)
-        val4 = orange.Value(deg4)
-        val3.value = "medium"
-        val4.value = "little"
+Values can be compared with each other or with ordinary numbers.
+All discrete variables are treated as ordinal; values are
+compared by their respective indices and not in alphabetical order
+of their symbolic representations. When comparing values
+corresponding to different descriptors, Orange checks whether the
+order is unambiguous. Here are two such values::
 
-    Given this order, "medium" and "little" can be compared, since it is known,
-    from ``deg3``, that "little" is less than "medium". ::
+    deg3 = Orange.data.variable.Discrete(
+        "deg3", values=["little", "medium", "big"])
+    deg4 = orange.data.variable.Discrete(
+        "deg4", values=["tiny", "little", "big", "huge"])
+    val3 = orange.Value(deg3)
+    val4 = orange.Value(deg4)
+    val3.value = "medium"
+    val4.value = "little"
 
-        val3.value = "medium"
-        val4.value = "huge"
+Given this order, "medium" and "little" can be compared since it is known,
+from ``deg3``, that "little" is less than "medium". ::
 
-    These two values cannot be compared since they do not appear in the same
-    variable. (Orange is not smart enough to discover that medium is less than
-    big and huge is more than big.)
+    val3.value = "medium"
+    val4.value = "huge"
 
-    Two values also cannot be compared when they have different order in the two variables. 
+These two values cannot be compared since they do not appear in the same
+variable. (Orange cannot use transitivity to conclude that medium is
+less than huge since medium is less than big and big is less than
+huge.)
+
+Two values also cannot be compared when they have different order in
+the two variables.
