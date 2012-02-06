@@ -1,4 +1,3 @@
-<function create_dichotomous_class at 0x1cad758>
 IF TRUE THEN survived=no<1490.000, 711.000>
 IF sex=['female'] THEN survived=yes<126.000, 344.000>
 IF status=['third'] THEN survived=no<528.000, 178.000>
