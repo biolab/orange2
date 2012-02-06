@@ -141,7 +141,7 @@ class DiscretizeTable(object):
     :param method: feature discretization method.
     :type method: :class:`Discretization`
     """
-    def __new__(cls, data=None, features=None, discretize_class=False, method=EqualFreq(n_intervals=3)):
+    def __new__(cls, data=None, features=None, discretize_class=False, method=EqualFreq(n=3)):
         if data is None:
             self = object.__new__(cls, features=features, discretize_class=discretize_class, method=method)
             return self
@@ -149,7 +149,7 @@ class DiscretizeTable(object):
             self = cls(features=features, discretize_class=discretize_class, method=method)
             return self(data)
 
-    def __init__(self, features=None, discretize_class=False, method=EqualFreq(n_intervals=3)):
+    def __init__(self, features=None, discretize_class=False, method=EqualFreq(n=3)):
         self.features = features
         self.discretize_class = discretize_class
         self.method = method
