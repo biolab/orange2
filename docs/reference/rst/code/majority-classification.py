@@ -6,14 +6,14 @@
 
 import Orange
 
-table = Orange.data.Table("monks-1")
+monks = Orange.data.Table("monks-1")
 
 treeLearner = Orange.classification.tree.TreeLearner()
 bayesLearner = Orange.classification.bayes.NaiveLearner()
 majorityLearner = Orange.classification.majority.MajorityLearner()
 learners = [treeLearner, bayesLearner, majorityLearner]
 
-res = Orange.evaluation.testing.cross_validation(learners, table)
+res = Orange.evaluation.testing.cross_validation(learners, monks)
 CAs = Orange.evaluation.scoring.CA(res, reportSE=True)
 
 print "Tree:    %5.3f+-%5.3f" % CAs[0]

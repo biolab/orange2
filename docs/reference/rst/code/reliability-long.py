@@ -1,44 +1,35 @@
-# Description: Reliability estimation
-# Category:    evaluation
-# Uses:        prostate
-# Referenced:  Orange.evaluation.reliability
-# Classes:     Orange.evaluation.reliability.Learner
-
 import Orange
-Orange.evaluation.reliability.select_with_repeat.random_generator = None
-Orange.evaluation.reliability.select_with_repeat.randseed = 42
 
-import Orange
-table = Orange.data.Table("prostate.tab")
+prostate = Orange.data.Table("prostate.tab")
 
 knn = Orange.classification.knn.kNNLearner()
 reliability = Orange.evaluation.reliability.Learner(knn)
 
-res = Orange.evaluation.testing.cross_validation([reliability], table)
+res = Orange.evaluation.testing.cross_validation([reliability], prostate)
 
 reliability_res = Orange.evaluation.reliability.get_pearson_r(res)
 
 print
 print "Estimate               r       p"
 for estimate in reliability_res:
-    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
+    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
                                  estimate[0], estimate[1])
 
 reliability = Orange.evaluation.reliability.Learner(knn, estimators=[Orange.evaluation.reliability.SensitivityAnalysis()])
 
-res = Orange.evaluation.testing.cross_validation([reliability], table)
+res = Orange.evaluation.testing.cross_validation([reliability], prostate)
 
 reliability_res = Orange.evaluation.reliability.get_pearson_r(res)
 
 print
 print "Estimate               r       p"
 for estimate in reliability_res:
-    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
+    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
                                  estimate[0], estimate[1])
 
-indices = Orange.core.MakeRandomIndices2(table, p0=0.7)
-train = table.select(indices, 0)
-test = table.select(indices, 1)
+indices = Orange.core.MakeRandomIndices2(prostate, p0=0.7)
+train = prostate.select(indices, 0)
+test = prostate.select(indices, 1)
 
 reliability = Orange.evaluation.reliability.Learner(knn, icv=True)
 res = Orange.evaluation.testing.learn_and_test_on_test_data([reliability], train, test)

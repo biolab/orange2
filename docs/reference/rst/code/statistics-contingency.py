@@ -1,7 +1,7 @@
-import Orange.statistics.contingency
+import Orange
 
-table = Orange.data.Table("monks-1.tab")
-cont = Orange.statistics.contingency.VarClass("e", table)
+monks = Orange.data.Table("monks-1.tab")
+cont = Orange.statistics.contingency.VarClass("e", monks)
 for val, dist in cont.items():
     print val, dist
 

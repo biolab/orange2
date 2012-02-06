@@ -6,13 +6,13 @@
 # Referenced:   orngTree.htm
 
 import Orange
-data = Orange.data.Table("iris.tab")
+iris = Orange.data.Table("iris.tab")
 
 print "BIG TREE:"
-tree1 = Orange.classification.tree.TreeLearner(data)
+tree1 = Orange.classification.tree.TreeLearner(iris)
 print tree1.to_string(leaf_str="%m", node_str=".")
 
 print "\nPRE-PRUNED TREE:"
-tree2 = Orange.classification.tree.TreeLearner(data, max_majority=0.7)
+tree2 = Orange.classification.tree.TreeLearner(iris, max_majority=0.7)
 print tree2.to_string(leaf_str="%m", node_str=".")
 

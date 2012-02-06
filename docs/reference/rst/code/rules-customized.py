@@ -10,8 +10,8 @@ learner = Orange.classification.rules.RuleLearner()
 learner.rule_finder = Orange.classification.rules.RuleBeamFinder()
 learner.rule_finder.evaluator = Orange.classification.rules.MEstimateEvaluator(m=50)
 
-table =  Orange.data.Table("titanic")
-classifier = learner(table)
+titanic =  Orange.data.Table("titanic")
+classifier = learner(titanic)
 
 for r in classifier.rules:
     print Orange.classification.rules.rule_to_string(r)
@@ -22,7 +22,7 @@ learner.rule_finder.rule_stopping_validator = \
 learner.rule_finder.rule_filter = \
     Orange.classification.rules.RuleBeamFilter_Width(width = 50)
 
-classifier = learner(table)
+classifier = learner(titanic)
 
 for r in classifier.rules:
     print Orange.classification.rules.rule_to_string(r)

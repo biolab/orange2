@@ -1,6 +1,6 @@
 import Orange
 
-table = Orange.data.Table("housing.tab")
+housing = Orange.data.Table("housing.tab")
 learner = Orange.regression.tree.SimpleTreeLearner
-res = Orange.evaluation.testing.cross_validation([learner], table)
+res = Orange.evaluation.testing.cross_validation([learner], housing)
 print Orange.evaluation.scoring.MSE(res)[0]

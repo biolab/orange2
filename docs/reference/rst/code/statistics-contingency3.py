@@ -1,7 +1,7 @@
 import Orange.statistics.contingency
 
-table = Orange.data.Table("monks-1.tab")
-cont = Orange.statistics.contingency.VarClass("e", table)
+monks = Orange.data.Table("monks-1.tab")
+cont = Orange.statistics.contingency.VarClass("e", monks)
 
 print "Inner variable: ", cont.inner_variable.name
 print "Outer variable: ", cont.outer_variable.name
@@ -23,9 +23,9 @@ for val in cont.variable:
                                   cont.p_class(val, first_class))
 print
 
-cont = Orange.statistics.contingency.VarClass(table.domain["e"],
-                                              table.domain.class_var)
-for ins in table:
+cont = Orange.statistics.contingency.VarClass(monks.domain["e"],
+                                              monks.domain.class_var)
+for ins in monks:
     cont.add_var_class(ins["e"], ins.getclass())
 
 print "Distributions from a matrix computed manually:"

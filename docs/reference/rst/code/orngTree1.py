@@ -1,7 +1,7 @@
 import Orange
 
-data = Orange.data.Table("iris")
-tree = Orange.classification.tree.TreeLearner(data, max_depth=3)
+iris = Orange.data.Table("iris")
+tree = Orange.classification.tree.TreeLearner(iris, max_depth=3)
 
 formats = ["", "%V (%M out of %N)", "%V (%^MbA%, %^MbP%)",
            '%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)',
@@ -16,8 +16,8 @@ for fl, fn in formats2:
     print tree.to_string(leaf_str=fl, node_str=fn)
 
 
-data = Orange.data.Table("housing")
-tree = Orange.classification.tree.TreeLearner(data, max_depth=3)
+housing = Orange.data.Table("housing")
+tree = Orange.classification.tree.TreeLearner(housing, max_depth=3)
 formats = ["", "%V"]
 for format in formats:
     print '\n\n*** FORMAT: "%s"\n' % format

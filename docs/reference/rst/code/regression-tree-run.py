@@ -5,6 +5,6 @@
 # Classes:     Orange.regression.tree.TreeLearner
 
 import Orange
-table = Orange.data.Table("servo.tab")
-tree = Orange.regression.tree.TreeLearner(table)
+servo = Orange.data.Table("servo.tab")
+tree = Orange.regression.tree.TreeLearner(servo)
 print tree

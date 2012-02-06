@@ -3,22 +3,22 @@
 
 import Orange
 
-data = Orange.data.Table('emotions')
+emotions = Orange.data.Table('emotions')
 learner = Orange.multilabel.BRkNNLearner(k=5)
-classifier = learner(data)
-print classifier(data[0])
+classifier = learner(emotions)
+print classifier(emotions[0])
 
 learner = Orange.multilabel.MLkNNLearner(k=5)
-classifier = learner(data)
-print classifier(data[0])
+classifier = learner(emotions)
+print classifier(emotions[0])
 
 learner = Orange.multilabel.BinaryRelevanceLearner()
-classifier = learner(data)
-print classifier(data[0])
+classifier = learner(emotions)
+print classifier(emotions[0])
 
 learner = Orange.multilabel.LabelPowersetLearner()
-classifier = learner(data)
-print classifier(data[0])
+classifier = learner(emotions)
+print classifier(emotions[0])
 
 def test_mlc(data, learners):
     for l in learners:

@@ -1,8 +1,8 @@
 import Orange
 import re
 
-data = Orange.data.Table("iris")
-tree = Orange.classification.tree.TreeLearner(data, max_depth=3)
+iris = Orange.data.Table("iris")
+tree = Orange.classification.tree.TreeLearner(iris, max_depth=3)
 
 def get_margin(dist):
     if dist.abs < 1e-30:

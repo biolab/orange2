@@ -5,12 +5,12 @@
 # Referenced:  MeasureAttribute.htm
 
 import orange
-data = orange.ExampleTable("iris")
+iris = orange.ExampleTable("iris")
 
 r1 = orange.MeasureAttribute_relief()
 r2 = orange.MeasureAttribute_relief(check_cached_data = False)
 
-print "%.3f\t%.3f" % (r1(0, data), r2(0, data))
-for ex in data:
+print "%.3f\t%.3f" % (r1(0, iris), r2(0, iris))
+for ex in iris:
     ex[0] = 0
-print "%.3f\t%.3f" % (r1(0, data), r2(0, data))
+print "%.3f\t%.3f" % (r1(0, iris), r2(0, iris))

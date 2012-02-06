@@ -7,15 +7,15 @@
 import Orange
 
 # Load some data
-table = Orange.data.Table("iris.tab")
+iris = Orange.data.Table("iris.tab")
 
 # Construct a distance matrix using Euclidean distance
-dist = Orange.distance.Euclidean(table)
-matrix = Orange.core.SymMatrix(len(table))
-matrix.setattr('items', table)
-for i in range(len(table)):
+dist = Orange.distance.instances.EuclideanConstructor(iris)
+matrix = Orange.core.SymMatrix(len(iris))
+matrix.setattr('items', iris)
+for i in range(len(iris)):
     for j in range(i+1):
-        matrix[i, j] = dist(table[i], table[j])
+        matrix[i, j] = dist(iris[i], iris[j])
 
 # Run the MDS
 mds = Orange.projection.mds.MDS(matrix, dim=3)

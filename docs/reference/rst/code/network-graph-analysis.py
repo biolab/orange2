@@ -59,4 +59,4 @@ y = [coordinate for coordinate in subnet.coors[1]]
 
 # plot vertices of subnetwork
 plt.plot(x, y, 'ro')
-plt.savefig("network-graph-analysis.py.png")
+plt.savefig("network-graph-analysis.png")

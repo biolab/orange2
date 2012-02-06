@@ -1,8 +1,8 @@
 from Orange import data 
 from Orange.classification import svm
 
-table = data.Table("brown-selected")
-classifier = svm.SVMLearner(table, 
+brown = data.Table("brown-selected")
+classifier = svm.SVMLearner(brown, 
                             kernel_type=svm.kernels.Linear, 
                             normalization=False)
 

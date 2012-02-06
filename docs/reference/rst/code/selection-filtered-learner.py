@@ -7,20 +7,19 @@
 # Referenced:  Orange.feature.html#selection
 # Classes:     Orange.feature.selection.FilteredLearner
 
-import Orange
-
+import Orange, orngTest, orngStat
 voting = Orange.data.Table("voting")
 
 nb = Orange.classification.bayes.NaiveLearner()
-fl = Orange.feature.selection.FilteredLearner(nb,
-     filter=Orange.feature.selection.FilterBestN(n=1), name='filtered')
+fl = Orange.feature.selection.FilteredLearner(nb, 
+     filter=Orange.feature.selection.FilterBestNAtts(n=1), name='filtered')
 learners = (Orange.classification.bayes.NaiveLearner(name='bayes'), fl)
-results = Orange.evaluation.testing.cross_validation(learners, voting, storeClassifiers=1)
+results = orngTest.crossValidation(learners, voting, storeClassifiers=1)
 
 # output the results
 print "Learner      CA"
 for i in range(len(learners)):
-    print "%-12s %5.3f" % (learners[i].name, Orange.evaluation.scoring.CA(results)[i])
+    print "%-12s %5.3f" % (learners[i].name, orngStat.CA(results)[i])
 
 # find out which attributes were retained by filtering
 

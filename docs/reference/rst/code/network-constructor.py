@@ -22,4 +22,4 @@ y = net.coors[1]
 
 # plot vertices
 plt.plot(x, y, 'ro')
-plt.savefig("network-constructor.py.png")
+plt.savefig("network-constructor.png")

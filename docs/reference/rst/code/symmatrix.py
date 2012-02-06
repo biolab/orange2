@@ -1,4 +1,4 @@
-import Orange.data
+import Orange
 
 m = Orange.data.SymMatrix(4)
 for i in range(4):

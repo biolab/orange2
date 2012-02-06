@@ -6,8 +6,8 @@
 
 import Orange
 
-data = Orange.data.Table("lenses")
-tree_classifier = Orange.classification.tree.TreeLearner(data)
+lenses = Orange.data.Table("lenses")
+tree_classifier = Orange.classification.tree.TreeLearner(lenses)
 
 def tree_size(node):
     if not node:

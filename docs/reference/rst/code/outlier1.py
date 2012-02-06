@@ -1,6 +1,6 @@
 import Orange
 
-data = Orange.data.Table("bridges")
+bridges = Orange.data.Table("bridges")
 outlierDet = Orange.preprocess.outliers.OutlierDetection()
-outlierDet.set_examples(data)
+outlierDet.set_examples(bridges)
 print outlierDet.z_values()

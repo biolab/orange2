@@ -30,4 +30,4 @@ y = net_layout.coors[1]
 
 # plot vertices
 plt.plot(x, y, 'ro')
-plt.savefig("network-optimization-nx.py.png")
+plt.savefig("network-optimization-nx.png")

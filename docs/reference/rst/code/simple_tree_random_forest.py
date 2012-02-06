@@ -25,8 +25,8 @@ rf_simple = Orange.ensemble.forest.RandomForestLearner(learner=stp, trees=50, na
 
 learners = [ rf_def, rf_simple ]
 
-table = Orange.data.Table("iris")
-results = Orange.evaluation.testing.cross_validation(learners, table, folds=3)
+iris = Orange.data.Table("iris")
+results = Orange.evaluation.testing.cross_validation(learners, iris, folds=3)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
@@ -39,5 +39,5 @@ print
 print "Runtimes:"
 for l in learners:
     t = time.time()
-    l(table)
+    l(iris)
     print l.name, time.time() - t

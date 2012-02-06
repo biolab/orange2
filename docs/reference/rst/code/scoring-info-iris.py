@@ -5,15 +5,15 @@
 # Classes:     Orange.feature.discretization.EntropyDiscretization, Orange.feature.scoring.Measure, Orange.feature.scoring.InfoGain, Orange.feature.scoring.Relief
 
 import Orange
-table = Orange.data.Table("iris")
+iris = Orange.data.Table("iris")
 
-d1 = Orange.feature.discretization.EntropyDiscretization("petal length", table)
-print Orange.feature.scoring.InfoGain(d1, table)
+d1 = Orange.feature.discretization.EntropyDiscretization("petal length", iris)
+print Orange.feature.scoring.InfoGain(d1, iris)
 
-table = Orange.data.Table("iris")
+iris = Orange.data.Table("iris")
 meas = Orange.feature.scoring.Relief()
-for t in meas.threshold_function("petal length", table):
+for t in meas.threshold_function("petal length", iris):
     print "%5.3f: %5.3f" % t
 
-thresh, score, distr = meas.best_threshold("petal length", table)
+thresh, score, distr = meas.best_threshold("petal length", iris)
 print "\nBest threshold: %5.3f (score %5.3f)" % (thresh, score)

@@ -12,22 +12,22 @@ def checkE(inst, return_what):
     else:
         return e2("not 1") 
 
-data = Orange.data.Table("monks-1")
+monks = Orange.data.Table("monks-1")
 e2 = Orange.data.variable.Discrete("e2", values=["not 1", "1"])    
 e2.get_value_from = checkE 
 
-print Orange.core.MeasureAttribute_info(e2, data)
+print Orange.core.MeasureAttribute_info(e2, monks)
 
-dist = Orange.core.Distribution(e2, data)
+dist = Orange.core.Distribution(e2, monks)
 print dist 
 
 # Split the data into training and testing set
-indices = Orange.core.MakeRandomIndices2(data, p0=0.7)
-train_data = data.select(indices, 0)
-test_data = data.select(indices, 1)
+indices = Orange.core.MakeRandomIndices2(monks, p0=0.7)
+train_data = monks.select(indices, 0)
+test_data = monks.select(indices, 1)
 
 # Convert the training set to a new domain
-new_domain = Orange.data.Domain([data.domain["a"], data.domain["b"], e2, data.domain.class_var])
+new_domain = Orange.data.Domain([monks.domain["a"], monks.domain["b"], e2, monks.domain.class_var])
 new_train = Orange.data.Table(new_domain, train_data)
 
 # Construct a tree and classify unmodified instances

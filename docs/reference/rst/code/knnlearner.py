@@ -14,7 +14,7 @@ test = iris.select(rndind, 1)
 
 knn = Orange.classification.knn.kNNLearner(train, k=10)
 for i in range(5):
-    instance = test.random_instance()
+    instance = test.randomexample()
     print instance.getclass(), knn(instance)
 
 print "\n"
@@ -22,8 +22,8 @@ print "Testing using hamming distance"
 iris = Orange.data.Table("iris")
 knn = Orange.classification.knn.kNNLearner()
 knn.k = 10
-knn.distance_constructor = Orange.distance.Hamming()
+knn.distanceConstructor = Orange.core.ExamplesDistanceConstructor_Hamming()
 knn = knn(train)
 for i in range(5):
-    instance = test.random_instance()
+    instance = test.randomexample()
     print instance.getclass(), knn(instance)

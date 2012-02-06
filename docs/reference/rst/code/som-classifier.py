@@ -7,8 +7,8 @@
 import Orange
 import random
 learner = Orange.projection.som.SOMSupervisedLearner(map_shape=(4, 4))
-data = Orange.data.Table("iris.tab")
-classifier = learner(data)
+iris = Orange.data.Table("iris.tab")
+classifier = learner(iris)
 random.seed(50)
-for d in random.sample(data, 5):
+for d in random.sample(iris, 5):
     print "%-15s originally %-15s" % (classifier(d), d.getclass())

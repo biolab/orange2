@@ -7,14 +7,14 @@
 import Orange
 
 # Load some data
-table = Orange.data.Table("iris.tab")
+iris = Orange.data.Table("iris.tab")
 
 # Construct a distance matrix using Euclidean distance
-euclidean = Orange.distance.EuclideanConstructor(table)
-distance = Orange.core.SymMatrix(len(table))
-for i in range(len(table)):
+euclidean = Orange.distance.instances.EuclideanConstructor(iris)
+distance = Orange.core.SymMatrix(len(iris))
+for i in range(len(iris)):
    for j in range(i+1):
-       distance[i, j] = euclidean(table[i], table[j])
+       distance[i, j] = euclidean(iris[i], iris[j])
 
 # Run 100 steps of MDS optimization
 mds = Orange.projection.mds.MDS(distance)
@@ -26,11 +26,11 @@ colors = ["red", "yellow", "blue"]
 
 # Construct points (x, y, instanceClass)
 points = []
-for (i, d) in enumerate(table):
+for (i, d) in enumerate(iris):
    points.append((mds.points[i][0], mds.points[i][1], d.getclass()))
 
 # Paint each class separately
-for c in range(len(table.domain.class_var.values)):
+for c in range(len(iris.domain.class_var.values)):
     sel = filter(lambda x: x[-1] == c, points)
     x = [s[0] for s in sel]
     y = [s[1] for s in sel]

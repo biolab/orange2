@@ -13,9 +13,6 @@ for i in range(4):
 # vertices are placed randomly in NetworkOptimization constructor
 networkOptimization = Orange.network.NetworkOptimization(net)
 
-# optimize verices layout with one of included algorithms
-networkOptimization.radial_fruchterman_reingold(100, 1000)
-
 # read all edges and plot a line
 for u, v in net.get_edges():
     x1, y1 = net.coors[0][u], net.coors[1][u]
@@ -28,4 +25,4 @@ y = net.coors[1]
 
 # plot vertices
 plt.plot(x, y, 'ro')
-plt.savefig("network-optimization.py.png")
+plt.savefig("network-optimization.png")

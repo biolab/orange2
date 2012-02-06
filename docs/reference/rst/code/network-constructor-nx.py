@@ -26,4 +26,4 @@ y = net_layout.coors[1]
 
 # plot vertices
 plt.plot(x, y, 'ro')
-plt.savefig("network-constructor-nx.py.png")
+plt.savefig("network-constructor-nx.png")

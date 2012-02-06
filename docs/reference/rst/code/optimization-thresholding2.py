@@ -1,9 +1,9 @@
 import Orange
 
-table = Orange.data.Table("bupa")
-ri2 = Orange.core.MakeRandomIndices2(table, 0.7)
-train = table.select(ri2, 0)
-test = table.select(ri2, 1)
+bupa = Orange.data.Table("bupa")
+ri2 = Orange.core.MakeRandomIndices2(bupa, 0.7)
+train = bupa.select(ri2, 0)
+test = bupa.select(ri2, 1)
 
 bayes = Orange.classification.bayes.NaiveLearner(train)
 

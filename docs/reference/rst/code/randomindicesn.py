@@ -6,14 +6,14 @@
 
 import Orange
 
-data = Orange.data.Table("lenses")
+lenses = Orange.data.Table("lenses")
 
 indicesn = Orange.data.sample.SubsetIndicesN(p=[0.5, 0.25])
 
-ind = indicesn(data)
+ind = indicesn(lenses)
 print ind
 
 indicesn = Orange.data.sample.SubsetIndicesN(p=[12, 6])
 
-ind = indicesn(data)
+ind = indicesn(lenses)
 print ind

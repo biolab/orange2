@@ -1,7 +1,7 @@
 import Orange
 
-table = Orange.data.Table("bridges.tab")
-cont = Orange.statistics.contingency.VarVar("SPAN", "MATERIAL", table)
+bridges = Orange.data.Table("bridges.tab")
+cont = Orange.statistics.contingency.VarVar("SPAN", "MATERIAL", bridges)
 
 print "Distributions:"
 for val in cont.outer_variable:
@@ -16,8 +16,8 @@ for val in cont.outer_variable:
             print "   %s (%i%%)" % (inval, int(100*p+0.5))
     print
 
-cont = Orange.statistics.contingency.VarVar(table.domain["SPAN"], table.domain["MATERIAL"])
-for ins in table:
+cont = Orange.statistics.contingency.VarVar(bridges.domain["SPAN"], bridges.domain["MATERIAL"])
+for ins in bridges:
     cont.add(ins["SPAN"], ins["MATERIAL"])
 
 print "Distributions from a matrix computed manually:"

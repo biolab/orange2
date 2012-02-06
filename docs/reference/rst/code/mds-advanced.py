@@ -8,14 +8,14 @@ import Orange
 import math
 
 # Load some data
-table = Orange.data.Table("iris.tab")
+iris = Orange.data.Table("iris.tab")
 
 # Construct a distance matrix using Euclidean distance
-dist = Orange.distance.Euclidean(table)
-matrix = Orange.core.SymMatrix(len(table))
-for i in range(len(table)):
+dist = Orange.core.ExamplesDistanceConstructor_Euclidean(iris)
+matrix = Orange.core.SymMatrix(len(iris))
+for i in range(len(iris)):
    for j in range(i+1):
-       matrix[i, j] = dist(table[i], table[j])
+       matrix[i, j] = dist(iris[i], iris[j])
 
 # Run the Torgerson approximation and calculate stress
 mds = Orange.projection.mds.MDS(matrix)
@@ -33,5 +33,5 @@ for i in range(100):
         break
 
 # Print the points out
-for (p, e) in zip(mds.points, table):
+for (p, e) in zip(mds.points, iris):
     print p, e

@@ -1,7 +1,7 @@
 import Orange
 
-table = Orange.data.Table("iris")
-cont = Orange.statistics.contingency.ClassVar("sepal length", table)
+iris = Orange.data.Table("iris")
+cont = Orange.statistics.contingency.ClassVar("sepal length", iris)
 
 print "Inner variable: ", cont.inner_variable.name
 print "Outer variable: ", cont.outer_variable.name
@@ -20,9 +20,9 @@ for val in cont.class_var:
     print "  f(%s|%s) = %5.3f" % (5.5, val.native(), cont.p_attr(5.5, val))
 print
 
-cont = Orange.statistics.contingency.ClassVar(table.domain["sepal length"], 
-                                              table.domain.class_var)
-for ins in table:
+cont = Orange.statistics.contingency.ClassVar(iris.domain["sepal length"], 
+                                              iris.domain.class_var)
+for ins in iris:
     cont.add_var_class(ins["sepal length"], ins.get_class())
 
 print "Distributions from a matrix computed manually:"

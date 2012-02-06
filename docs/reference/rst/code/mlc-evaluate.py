@@ -12,17 +12,17 @@ def print_results(res):
     print
 
 learners = [Orange.multilabel.MLkNNLearner(k=5)]
-data = Orange.data.Table("emotions.tab")
+emotions = Orange.data.Table("emotions.tab")
 
-res = Orange.evaluation.testing.cross_validation(learners, data)
+res = Orange.evaluation.testing.cross_validation(learners, emotions)
 print_results(res)
 
-res = Orange.evaluation.testing.leave_one_out(learners, data)
+res = Orange.evaluation.testing.leave_one_out(learners, emotions)
 print_results(res)
 
-res = Orange.evaluation.testing.proportion_test(learners, data, 0.5)
+res = Orange.evaluation.testing.proportion_test(learners, emotions, 0.5)
 print_results(res)
 
-reses = Orange.evaluation.testing.learning_curve(learners, data)
+reses = Orange.evaluation.testing.learning_curve(learners, emotions)
 for res in reses:
     print_results(res)
