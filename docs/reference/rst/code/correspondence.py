@@ -6,18 +6,18 @@ import Orange, numpy
 from Orange.projection import correspondence
 from Orange.statistics import contingency
 
-data = Orange.data.Table("../../../../doc/datasets/smokers_ct.tab")
+data = Orange.data.Table("smokers_ct.tab")
 staff = data.domain["Staff group"]
 smoking = data.domain["Smoking category"]
 
 # Compute the contingency
-cont = contingency.VarVar(staff, smoking, data) 
+cont = contingency.VarVar(staff, smoking, data)
 
 c = correspondence.CA(cont, staff.values, smoking.values)
 
 print "Row profiles"
 print c.row_profiles()
-print 
+print
 print "Column profiles"
 print c.column_profiles()
 
@@ -30,7 +30,7 @@ print
 
 print "Principal row coordinates:"
 print c.row_factors()
-print 
+print
 print "Decomposition Of Inertia:"
 print c.column_inertia()
 
