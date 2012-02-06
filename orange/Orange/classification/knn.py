@@ -14,7 +14,6 @@ The learner only needs to store the instances of training data, while the classi
 does all the work by searching this list for the instances most similar to
 the data instance being classified:
 
-
 .. literalinclude:: code/knnExample0.py
 
 .. class:: kNNLearner(k, distance_constructor, weight_id)
@@ -50,19 +49,18 @@ the data instance being classified:
         :type instances: :class:`~Orange.data.Table`
 
 
-.. class:: kNNClassifier(domain, weight_id, k, find_nearest, rank_weight, \
-n_examples)
+.. class:: kNNClassifier(domain, weight_id, k, find_nearest, rank_weight, n_examples)
 
-    .. method:: __call__(instance)
-    
+    .. method:: __call__(instance, return_type)
+
         :param instance: given instance to be classified
         :type instance: Orange.data.Instance
         
         :param return_type: return value and probabilities, only value or only
                             probabilities
-        :type return_type: :class:`Orange.classification.Classifier.GetBoth`,
-                           :class:`Orange.classification.Classifier.GetValue`,
-                           :class:`Orange.classification.Classifier.GetProbabilities`
+        :type return_type: :obj:`~Orange.classification.Classifier.GetBoth`,
+                           :obj:`~Orange.classification.Classifier.GetValue`,
+                           :obj:`~Orange.classification.Classifier.GetProbabilities`
         
         :rtype: :class:`~Orange.data.Value`,
               :class:`~Orange.statistics.distribution.Distribution` or a
