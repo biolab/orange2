@@ -199,7 +199,7 @@ def main(argv):
         dirs = [("ofb", "docs/tutorial/rst/code")]
     elif module in ["orange25"]:
         root = "%s/.." % orngEnviron.orangeDir
-        module = "orange25"
+        module = "orange"
         dirs = [("orange25", "docs/reference/rst/code")]
     elif module == "obi":
         root = orngEnviron.addOnsDirSys + "/Bioinformatics/doc"
