@@ -7,34 +7,17 @@ Partial least sqaures regression (``PLS``)
 
 .. _`Parital Least Squares Regression`: http://en.wikipedia.org/wiki/Partial_least_squares_regression
 
-Implementation is based on `Scikit learn python implementation`_
-
-Example
--------
+`Partial least squares
+<http://en.wikipedia.org/wiki/Partial_least_squares_regression>`_
+regression is a statistical method which can be used to predict
+multiple response variables simultaniously. Implementation is based on
+`Scikit learn python implementation
+<https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/pls.py>`_.
 
 The following code shows how to fit a PLS regression model on a multi-target data set.
 
 .. literalinclude:: code/pls-example.py
-
-Output ::
-
-    Input variables:     <FloatVariable 'X1', FloatVariable 'X2', FloatVariable 'X3'>
-    Response variables:  <FloatVariable 'Y1', FloatVariable 'Y2', FloatVariable 'Y3', FloatVariable 'Y4'>
-    Prediction for the first 2 data instances: 
-
-    Actual     [<orange.Value 'Y1'='0.490'>, <orange.Value 'Y2'='1.237'>, <orange.Value 'Y3'='1.808'>, <orange.Value 'Y4'='0.422'>]
-    Predicted  [<orange.Value 'Y1'='0.613'>, <orange.Value 'Y2'='0.826'>, <orange.Value 'Y3'='1.084'>, <orange.Value 'Y4'='0.534'>]
-
-    Actual     [<orange.Value 'Y1'='0.167'>, <orange.Value 'Y2'='-0.664'>, <orange.Value 'Y3'='-1.378'>, <orange.Value 'Y4'='0.589'>]
-    Predicted  [<orange.Value 'Y1'='0.058'>, <orange.Value 'Y2'='-0.706'>, <orange.Value 'Y3'='-1.420'>, <orange.Value 'Y4'='0.599'>]
-
-    Regression coefficients:
-                       Y1           Y2           Y3           Y4
-          X1        0.714        2.153        3.590       -0.078 
-          X2       -0.238       -2.500       -4.797       -0.036 
-          X3        0.230       -0.314       -0.880       -0.060 
-
-
+    :lines: 7,9,13,14
 
 .. autoclass:: PLSRegressionLearner
     :members:
@@ -51,7 +34,43 @@ Utility functions
 
 .. autofunction:: svd_xy
 
-.. _`Scikit learn python implementation`: https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/pls.py
+
+========
+Examples
+========
+
+To predict values for the first two data instances
+use the followin code 
+
+.. literalinclude:: code/pls-example.py
+    :lines: 16-20
+
+Output
+
+::
+
+    Actual     [<orange.Value 'Y1'='0.490'>, <orange.Value 'Y2'='1.237'>, <orange.Value 'Y3'='1.808'>, <orange.Value 'Y4'='0.422'>]
+    Predicted  [<orange.Value 'Y1'='0.613'>, <orange.Value 'Y2'='0.826'>, <orange.Value 'Y3'='1.084'>, <orange.Value 'Y4'='0.534'>]
+
+    Actual     [<orange.Value 'Y1'='0.167'>, <orange.Value 'Y2'='-0.664'>, <orange.Value 'Y3'='-1.378'>, <orange.Value 'Y4'='0.589'>]
+    Predicted  [<orange.Value 'Y1'='0.058'>, <orange.Value 'Y2'='-0.706'>, <orange.Value 'Y3'='-1.420'>, <orange.Value 'Y4'='0.599'>]
+
+To see the coefficient of the model (in this case they are stored in a matrix)
+print the model
+
+.. literalinclude:: code/pls-example.py
+    :lines: 22
+
+The ouptut looks like
+
+::
+
+    Regression coefficients:
+                       Y1           Y2           Y3           Y4
+          X1        0.714        2.153        3.590       -0.078 
+          X2       -0.238       -2.500       -4.797       -0.036 
+          X3        0.230       -0.314       -0.880       -0.060 
+
 
 """
 
@@ -389,11 +408,11 @@ class PLSRegression(Orange.classification.Classifier):
 
     .. attribute:: x_vars
     
-        list of independent variables
+        Predictor variables
 
     .. attribute:: y_vars
     
-        list of response variables 
+        Response variables 
         
     """
     def __init__(self, domain=None, multitarget=False, coefs=None, sigma_x=None, sigma_y=None,

@@ -1,3 +1,9 @@
+# Description: Partial least squares regression
+# Category:    regression
+# Uses:        multitarget-synthetic
+# Referenced:  Orange.regression.pls
+# Classes:     Orange.regression.pls.PLSRegressionLearner, Orange.regression.pls.PLSRegression
+
 import Orange
 
 data = Orange.data.Table("multitarget-synthetic.tab")

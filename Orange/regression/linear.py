@@ -5,16 +5,71 @@ Linear regression (``linear``)
 
 .. index:: regression, linear model
 
-.. _`Linear regression`: http://en.wikipedia.org/wiki/Linear_regression
+.. `Linear regression`: http://en.wikipedia.org/wiki/Linear_regression
 
-Example ::
 
-    >>> from Orange.regression import linear
-    >>> table = Orange.data.Table("housing")
-    >>> c = linear.LinearRegressionLearner(table)
-    >>> print c
-    
-      Variable  Coeff Est  Std Error    t-value          p
+`Linear regression <http://en.wikipedia.org/wiki/Linear_regression>`_ is a statistical regression method
+which tries to predict a value of a continuous response (class) variable based on the values of several predictors.
+The model assumes that the response variable is a linear combination of the predictors, the task of linear regression
+is therefore to fit the unknown coefficients.
+
+To fit the regression parameters on housing data set use the following code:
+
+.. literalinclude:: code/linear-example.py
+   :lines: 7,9,10,11
+   
+
+.. autoclass:: LinearRegressionLearner
+    :members:
+
+.. autoclass:: LinearRegression
+    :members:
+
+Utility functions
+-----------------
+
+.. autofunction:: stepwise
+
+
+========
+Examples
+========
+
+==========
+Prediction
+==========
+
+Predict values of the first 5 data instances
+
+.. literalinclude:: code/linear-example.py
+   :lines: 13-15
+
+The output of this code is
+
+::
+
+    Actual: 24.000, predicted: 30.004 
+    Actual: 21.600, predicted: 25.026 
+    Actual: 34.700, predicted: 30.568 
+    Actual: 33.400, predicted: 28.607 
+    Actual: 36.200, predicted: 27.944   
+
+=========================
+Poperties of fitted model
+=========================
+
+
+Print regression coefficients with standard errors, t-scores, p-values
+and significances 
+
+.. literalinclude:: code/linear-example.py
+   :lines: 17
+
+The code output is
+
+::
+
+    Variable  Coeff Est  Std Error    t-value          p
      Intercept     36.459      5.103      7.144      0.000   ***
           CRIM     -0.108      0.033     -3.287      0.001    **
             ZN      0.046      0.014      3.382      0.001   ***
@@ -30,20 +85,40 @@ Example ::
              B      0.009      0.003      3.467      0.001   ***
          LSTAT     -0.525      0.051    -10.347      0.000   ***
     Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
-       
-    >>> 
 
 
-.. autoclass:: LinearRegressionLearner
-    :members:
 
-.. autoclass:: LinearRegression
-    :members:
+===================
+Stepwise regression
+===================
 
-Utility functions
------------------
+To use stepwise regression initialize learner with stepwise=True.
+The upper and lower bound for significance are contolled with
+add_sig and remove_sig.
 
-.. autofunction:: stepwise
+.. literalinclude:: code/linear-example.py
+   :lines: 20-23,25
+
+As you can see from the output the non-significant coefficients
+have been removed from the output
+
+::
+
+    Variable  Coeff Est  Std Error    t-value          p
+     Intercept     36.341      5.067      7.171      0.000   ***
+         LSTAT     -0.523      0.047    -11.019      0.000   ***
+            RM      3.802      0.406      9.356      0.000   ***
+       PTRATIO     -0.947      0.129     -7.334      0.000   ***
+           DIS     -1.493      0.186     -8.037      0.000   ***
+           NOX    -17.376      3.535     -4.915      0.000   ***
+          CHAS      2.719      0.854      3.183      0.002    **
+             B      0.009      0.003      3.475      0.001   ***
+            ZN      0.046      0.014      3.390      0.001   ***
+          CRIM     -0.108      0.033     -3.307      0.001    **
+           RAD      0.300      0.063      4.726      0.000   ***
+           TAX     -0.012      0.003     -3.493      0.001   ***
+    Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
+
 
 
 """
@@ -56,7 +131,7 @@ import numpy
 try:
     from scipy import stats
 except ImportError:
-    import Orange.statc as stats
+    import statc as stats
 
 from numpy import dot, sqrt
 from numpy.linalg import inv, pinv
@@ -96,8 +171,8 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         :param use_vars: the list of independent varaiables included in
             regression model. If None (default) all variables are used
         :type use_vars: list of Orange.data.variable or None
-        :param stepwise: if True, _`stepwise regression`:
-            http://en.wikipedia.org/wiki/Stepwise_regression
+        :param stepwise: if True, `stepwise regression
+            <http://en.wikipedia.org/wiki/Stepwise_regression>`_
             based on F-test is performed. The significance parameters are
             add_sig and remove_sig
         :type stepwise: boolean
@@ -267,69 +342,70 @@ class LinearRegression(Orange.classification.Classifier):
 
     .. attribute:: coefficients
 
-        list of regression coefficients. If the intercept is included
-        the first item corresponds to the estimated intercept
+        Regression coefficients stored in list. If the intercept is included
+        the first item corresponds to the estimated intercept.
 
     .. attribute:: std_error
 
-        list of standard errors of the coefficient estimator.    
+        Standard errors of the coefficient estimator, stored in list.    
 
     .. attribute:: t_scores
 
-        list of t-scores for the estimated regression coefficients    
+        List of t-scores for the estimated regression coefficients.    
 
     .. attribute:: p_vals
 
-        list of p-values for the null hypothesis that the regression
+        List of p-values for the null hypothesis that the regression
         coefficients equal 0 based on t-scores and two sided
-        alternative hypothesis    
+        alternative hypothesis.    
 
     .. attribute:: dict_model
 
-        dictionary of statistical properties of the model.
+        Statistical properties of the model in a dictionary:
         Keys - names of the independent variables (or "Intercept")
         Values - tuples (coefficient, standard error,
         t-value, p-value)
 
     .. attribute:: fitted
 
-        estimated values of the dependent variable for all instances
-        from the training table
+        Estimated values of the dependent variable for all instances
+        from the training table.
 
     .. attribute:: residuals
 
-        differences between estimated and actual values of the
-        dependent variable for all instances from the training table
+        Differences between estimated and actual values of the
+        dependent variable for all instances from the training table.
 
     .. attribute:: m
 
-        number of independent variables    
+        Number of independent (predictor) variables.    
 
     .. attribute:: n
 
-        number of instances    
+        Number of instances.    
 
     .. attribute:: mu_y
 
-        the sample mean of the dependent variable    
+        Sample mean of the dependent variable.    
 
     .. attribute:: r2
 
-        _`coefficient of determination`:
-        http://en.wikipedia.org/wiki/Coefficient_of_determination
+        `Coefficient of determination
+        <http://en.wikipedia.org/wiki/Coefficient_of_determination>`_.
+
 
     .. attribute:: r2adj
 
-        adjusted coefficient of determination
+        Adjusted coefficient of determination.
 
     .. attribute:: sst, sse, ssr
 
-        total sum of squares, explained sum of squares and
-        residual sum of squares respectively
+        Total sum of squares, explained sum of squares and
+        residual sum of squares respectively.
 
     .. attribute:: std_coefficients
 
-        standardized regression coefficients
+        Standardized regression coefficients.
 
     """   
 
@@ -466,8 +542,8 @@ def compare_models(c1, c2):
 
 @deprecated_keywords({"addSig": "add_sig", "removeSig": "remove_sig"})
 def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
-    """ Performs _`stepwise linear regression`:
-    http://en.wikipedia.org/wiki/Stepwise_regression
+    """ Performs `stepwise linear regression
+    <http://en.wikipedia.org/wiki/Stepwise_regression>`_:
     on table and returns the list of remaing independent variables
     which fit a significant linear regression model.coefficients
 

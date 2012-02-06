@@ -9,34 +9,20 @@ Lasso regression (``lasso``)
     http://www-stat.stanford.edu/~tibs/lasso/lasso.pdf
 
 
-Example ::
+`The Lasso <http://www-stat.stanford.edu/~tibs/lasso/lasso.pdf>`_ is a shrinkage
+and selection method for linear regression. It minimizes the usual sum of squared
+errors, with a bound on the sum of the absolute values of the coefficients. 
 
-    >>> from Orange.regression import lasso
-    >>> table = Orange.data.Table("housing")
-    >>> c = lasso.LassoRegressionLearner(table)
-    >>> print c
-    
-      Variable  Coeff Est  Std Error          p
-     Intercept     22.533
-          CRIM     -0.044      0.030      0.510      
-            ZN      0.013      0.010      0.660      
-         INDUS     -0.003      0.023      0.980      
-          CHAS      2.318      1.304      0.200      
-           NOX     -7.530      2.803      0.370      
-            RM      4.231      0.819      0.000   ***
-           DIS     -0.710      0.130      0.070     .
-           RAD      0.074      0.029      0.510      
-           TAX     -0.004      0.002      0.560      
-       PTRATIO     -0.821      0.095      0.000   ***
-             B      0.007      0.002      0.170      
-         LSTAT     -0.503      0.085      0.000   ***
-    Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
+To fit the regression parameters on housing data set use the following code:
 
+.. literalinclude:: code/lasso-example.py
+   :lines: 7,9,10,11
 
-    For 1 variable the regression coefficient equals 0: 
-    AGE
-       
-    >>> 
+.. autoclass:: LassoRegressionLearner
+    :members:
+
+.. autoclass:: LassoRegression
+    :members:
 
 
 .. autoclass:: LassoRegressionLearner
@@ -53,6 +39,62 @@ Utility functions
 .. autofunction:: get_bootstrap_sample
 
 .. autofunction:: permute_responses
+
+
+========
+Examples
+========
+
+To predict values of the response for the first five instances
+use the code
+
+.. literalinclude:: code/lasso-example.py
+   :lines: 14,15
+
+Output
+
+::
+
+    Actual: 24.00, predicted: 24.58 
+    Actual: 21.60, predicted: 23.30 
+    Actual: 34.70, predicted: 24.98 
+    Actual: 33.40, predicted: 24.78 
+    Actual: 36.20, predicted: 24.66 
+
+To see the fitted regression coefficients, print the model
+
+.. literalinclude:: code/lasso-example.py
+   :lines: 17
+
+The output
+
+::
+
+    Variable  Coeff Est  Std Error          p
+     Intercept     22.533
+          CRIM     -0.000      0.023      0.480      
+         INDUS     -0.010      0.023      0.300      
+            RM      1.303      0.994      0.000   ***
+           AGE     -0.002      0.000      0.320      
+       PTRATIO     -0.191      0.209      0.050     .
+         LSTAT     -0.126      0.105      0.000   ***
+    Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
+
+
+    For 7 variables the regression coefficient equals 0: 
+    ZN
+    CHAS
+    NOX
+    DIS
+    RAD
+    TAX
+    B
+
+shows that some of the regression coefficients are equal to 0.    
+
+
+
+
 
 """
 
@@ -264,32 +306,32 @@ class LassoRegression(Orange.classification.Classifier):
 
     .. attribute:: coef0
 
-        intercept (sample mean of the response variable)    
+        Intercept (sample mean of the response variable).    
 
     .. attribute:: coefficients
 
-        list of regression coefficients. 
+        Regression coefficients, sotred in list. 
 
     .. attribute:: std_errors_fixed_t
 
-        list of standard errors of the coefficient estimator for the fixed
+        Standard errors of the coefficient estimator for the fixed
         tuning parameter t. The standard errors are estimated using
         bootstrapping method.
 
     .. attribute:: p_vals
 
-        list of p-values for the null hypothesis that the regression
-        coefficients equal 0 based on non-parametric permutation test
+        List of p-values for the null hypothesis that the regression
+        coefficients equal 0 based on non-parametric permutation test.
 
     .. attribute:: dict_model
 
-        dictionary of statistical properties of the model.
+        Statistical properties of the model stored in dictionary:
         Keys - names of the independent variables
         Values - tuples (coefficient, standard error, p-value) 
 
     .. attribute:: mu_x
 
-        the sample mean of the all independent variables    
+        Sample mean of the all independent variables.    
 
     """ 
     def __init__(self, domain=None, class_var=None, coef0=None,
