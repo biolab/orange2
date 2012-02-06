@@ -7,6 +7,6 @@ MSE
          - unknowns to common:         0.2360         0.1072         0.1593         0.1591
 
 Relief
-                - no unknowns:         0.1609         0.0337         0.1219         0.0266
-              - with unknowns:         0.0878         0.0989         0.3216         0.0830
+                - no unknowns:         0.6167         0.2816         0.1425         0.0532
+              - with unknowns:         0.5056         0.3881         0.1849         0.0857
 
