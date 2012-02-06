@@ -183,7 +183,7 @@ def main(argv):
 
     module = opts.get("--module", "all")
     if module in ["all"]:
-        root = "%s/.." % orngEnviron.orangeDir
+        root = "%s" % orngEnviron.orangeDir
         module = "orange"
         dirs = [("modules", "Orange/doc/modules"),
                 ("reference", "Orange/doc/reference"),
