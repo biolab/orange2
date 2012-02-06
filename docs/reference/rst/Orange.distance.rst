@@ -64,21 +64,17 @@ between two unknown values is always 0.5.
         The minimal values, averages and variances
         (continuous features only)
 
-    .. attribute:: domainVersion
+    .. attribute:: domain_version
 
-        Stores a domain version for which the normalizers were computed.
-        The domain version is increased each time a domain description is
-        changed (i.e. features are added or removed); this is used for a quick
-        check that the user is not attempting to measure distances between
+        The domain version increases each time a domain description is
+        changed (i.e. features are added or removed); this checks 
+        that the user is not attempting to measure distances between
         instances that do not correspond to normalizers.
-        Since domains are practicably immutable (especially from Python),
-        you don't need to care about this anyway.
 
-    .. method:: attributeDistances(instance1, instance2)
+    .. method:: attribute_distances(instance1, instance2)
 
-        Returns a list of floats representing distances between pairs of
+        Return a list of floats representing distances between pairs of
         feature values of the two instances.
-
 
 .. class:: HammingConstructor
 .. class:: Hamming
@@ -87,15 +83,13 @@ between two unknown values is always 0.5.
     features in which the two instances differ. Note that this measure
     is not really appropriate for instances that contain continuous features.
 
-
 .. class:: MaximalConstructor
 .. class:: Maximal
 
     The maximal between two instances is defined as the maximal distance
     between two feature values. If dist is the result of
-    ExamplesDistance_Normalized.attributeDistances,
+    DistanceNormalized.attribute_distances,
     then Maximal returns max(dist).
-
 
 .. class:: ManhattanConstructor
 .. class:: Manhattan
