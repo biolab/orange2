@@ -3,28 +3,11 @@
 
 Module Orange.misc contains common functions and classes which are used in other modules.
 
-.. automodule:: Orange.misc.counters
-  :members:
-
-.. automodule:: Orange.misc.render
-  :members:
-
-.. automodule:: Orange.misc.selection
-
-.. automodule:: Orange.misc.addons
-
-.. automodule:: Orange.misc.serverfiles
-
-.. automodule:: Orange.misc.environ
-
-.. automodule:: Orange.misc.r
-
-
 .. index: Random number generator
 
-***********************
+-----------------------
 Random number generator
-***********************
+-----------------------
 
 :obj:`Random` uses the 
 `Mersenne twister <http://en.wikipedia.org/wiki/Mersenne_twister>`_ algorithm
@@ -76,6 +59,23 @@ to generate random numbers.
 
 Two examples or random number generator uses found in the documentation
 are :obj:`Orange.evaluation.testing` and :obj:`Orange.data.Table`.
+
+.. automodule:: Orange.misc.counters
+  :members:
+
+.. automodule:: Orange.misc.render
+  :members:
+
+.. automodule:: Orange.misc.selection
+
+.. automodule:: Orange.misc.addons
+
+.. automodule:: Orange.misc.serverfiles
+
+.. automodule:: Orange.misc.environ
+
+.. automodule:: Orange.misc.r
+
 
 """
 import environ
