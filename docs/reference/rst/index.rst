@@ -5,13 +5,13 @@ Orange Scripting Reference
 .. toctree::
    :maxdepth: 3
 
+   Orange.data
+
    Orange.associate
 
    Orange.classification
 
    Orange.clustering
-
-   Orange.data
 
    Orange.distance
 
