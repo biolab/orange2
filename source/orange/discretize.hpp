@@ -146,7 +146,7 @@ class ORANGE_API TEquiDistDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
-  int numberOfIntervals; //P number of intervals
+  int numberOfIntervals; //P(+n) number of intervals
 
   TEquiDistDiscretization(const int anumber=4);
   virtual PVariable operator()(PExampleGenerator, PVariable, const long &weightID=0);
@@ -175,7 +175,7 @@ class ORANGE_API TEquiNDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
-  int numberOfIntervals; //P number of intervals
+  int numberOfIntervals; //P(+n) number of intervals
   bool recursiveDivision; //P find cut-off points by recursive division (default = true)
 
   TEquiNDiscretization(int anumber =4);

@@ -181,9 +181,9 @@ The output shows that all attributes are discretized onto three intervals::
     .. attribute:: split_in_two
 
         Decides whether the resulting attribute should have three or two values.
-        If ``True`` (default), the feature will be discretized to three intervals and the discretizer
-         is of type :class:`BiModalDiscretizer`. If ``False`` the result is the
-        ordinary :class:`IntervalDiscretizer`.
+        If ``True`` (default), the feature will be discretized to three
+        intervals and the discretizer is of type :class:`BiModalDiscretizer`.
+        If ``False`` the result is the ordinary :class:`IntervalDiscretizer`.
 
 Iris dataset has three-valued class attribute. The figure below, drawn using LOESS probability estimation, shows that
 sepal lenghts of versicolors are between lengths of setosas and virginicas.
@@ -358,10 +358,11 @@ continuous attribute), ``sep_w`` and the class attribute::
     [3.1, '(2.90, 3.30]', 'Iris-setosa']
     [3.6, '>3.30', 'Iris-setosa']
 
-The name of the new categorical variable derives from the name of original continuous variable by adding a prefix
-"D_". The values of the new attributes are computed automatically when they are needed using a transformation function
-:obj:`~Orange.data.variable.Variable.get_value_from` (see :class:`Orange.data.variable.Variable`) which encodes the
-discretization::
+The name of the new categorical variable derives from the name of original
+continuous variable by adding a prefix ``D_``. The values of the new attributes
+are computed automatically when they are needed using a transformation
+function :obj:`~Orange.data.variable.Variable.get_value_from`
+(see :class:`Orange.data.variable.Variable`) which encodes the discretization::
 
     >>> sep_w
     EnumVariable 'D_sepal width'
