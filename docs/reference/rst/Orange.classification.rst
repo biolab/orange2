@@ -55,55 +55,35 @@ the dependent variable(s) of new instances.
               :class:`~Orange.statistics.distribution.Distribution` or a
               tuple with both
 
-You can often program learners and classifiers as classes or functions
-written entirely in Python and independent from Orange, as shown in
-Orange for Beginners. Such classes can participate, for instance, in
-the common evaluation functions like those available in modules orngTest
-and orngStat.
+You can often program learners and classifiers as classes or functions written
+entirely in Python and independent from Orange. Such classes can participate,
+for instance, in the common evaluation functions like those available in
+modules :obj:`Orange.evaluation.testing` and :obj:`Orange.evaluation.scoring`.
 
 On the other hand, these classes can't be used as components for pure C++
-classes. For instance, TreeLearner's attribute nodeLearner should contain
-a (wrapped) C++ object derived from Learner, such as MajorityLearner
-or BayesLearner, and Variables's getValueFrom can only store classes
-derived from Classifier, like for instance ClassifierFromVar. They cannot
-accommodate Python's classes or even functions.
+classes. For instance, :obj:`Orange.classification.tree.TreeLearner`'s
+attribute nodeLearner should contain a (wrapped) C++ object derived from
+:obj:`Learner`, such as :obj:`Orange.classification.majority.MajorityLearner`
+or :obj:`Orange.classification.bayes.NaiveLearner`. They cannot accommodate
+Python's classes or even functions.
 
-There's a workaround, though. You can subtype Orange classes Learner
-or Classifier as if the two classes were defined in Python, but later
-use your derived Python classes as if they were written in Orange's
-core. That is, you can define your class in a Python script like this:
+There's a workaround, though. You can subtype Orange classes :obj:`Learner` or
+:obj:`Classifier` as if the two classes were defined in Python, but later use your
+derived Python classes as if they were written in Orange's core. That is, you
+can define your class in a Python script like this::
 
-    class MyLearner(orange.Learner): 
+    class MyLearner(Orange.classifier.Learner): 
         def __call__(self, examples, weightID = 0): 
             <do something smart here>
 
 Such a learner can then be used as any regular learner written in
 Orange. You can, for instance, construct a tree learner and use your
-learner to learn node classifier:
+learner to learn node classifier::
 
-    treeLearner = orange.TreeLearner()
+    treeLearner = Orange.classification.tree.TreeLearner()
     treeLearner.nodeLearner = MyLearner()
 
-If your learner or classifier is simple enough, you even don't need
-to derive a class yourself. You can define the learner or classifier
-as an ordinary Python function and assign it to an attribute of Orange
-class that would expect a Learner or a Classifier. Wrapping into a class
-derived from Learner or Classifier is done by Orange. :: 
-
-    def myLearner(examples, weightID = 0): 
-        <do something less smart here>
-    
-    treeLearner = orange.TreeLearner()
-    treeLearner.nodeLearner = myLearner
-
-Finally, if your learner is really simple (that is, trivial :-), you
-can even stuff it into a lambda function. ::
-
-    treeLearner = orange.TreeLearner()
-    treeLearner.nodeLearner = lambda examples, weightID = 0: <do something trivial>
-
-Detailed description of the mechanisms involved and example scripts are
-given in a separate documentation on subtyping Orange classes in Python.
+-----
 
 Orange contains implementations of various classifiers that are described in
 detail on separate pages.

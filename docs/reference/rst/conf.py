@@ -254,7 +254,7 @@ epub_exclude_files = ["index.html", "genindex.html", "py-modindex.html", "search
 #epub_tocdup = True
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None, '../tutorial': None}
+intersphinx_mapping = {'http://docs.python.org/': None}
 
 import types
 
