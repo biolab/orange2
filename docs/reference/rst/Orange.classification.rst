@@ -99,3 +99,4 @@ detail on separate pages.
    Orange.classification.rules
    Orange.classification.svm
    Orange.classification.tree
+   Orange.classification.random   
