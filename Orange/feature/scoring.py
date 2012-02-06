@@ -205,7 +205,7 @@ Feature scoring in classification problems
 
     Assesses features' ability to distinguish between very similar
     instances from different classes. This scoring method was first
-    developed by Kira and Rendell and then improved by Kononenko. The
+    developed by Kira and Rendell and then improved by  Kononenko. The
     class :obj:`Relief` works on discrete and continuous classes and
     thus implements ReliefF and RReliefF.
 
