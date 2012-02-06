@@ -1,17 +1,14 @@
 Start with Python and Orange
 ============================
 
-To start Orange scripting, you will need to `download
-<http://orange.biolab.si/download/>`_ and install Orange. Python can
-be run in a window with a terminal, special integrated environments
-(like PythonWin), or shells like `iPython
-<http://ipython.scipy.org/moin/>`_. If you are a windows user,
-PythonWin comes with *full package* Orange instalation. Just like
-iPython (which, if you chose so, will need to install separately),
-PythonWin includes support for code completion feature. Orange come
-with many classes and functions, and it helps if editor can help you
-find the right names for them. Here is a screenshot of PythonWin
-with this feature:
+To start with Python and Orange scripting, you will first need to `download
+<http://orange.biolab.si/download/>`_ and install Orange. Python scripts can
+be run in a terminal window, integrated environments
+like `PyCharm<http://www.jetbrains.com/pycharm/>`_ and `PythonWin<http://wiki.python.org/moin/PythonWin>`_,
+or shells like `iPython<http://ipython.scipy.org/moin/>`_. This tutorial will run the
+Python code in the
+terminal
+window:
 
 .. image:: files/python_win.png
    :alt: Orange in PythonWin
