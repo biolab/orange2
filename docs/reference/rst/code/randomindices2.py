@@ -21,7 +21,7 @@ for i in range(5):
     print indices2(data)
 
 print "\nIndices with random generator"
-indices2.random_generator = Orange.core.RandomGenerator(42)    
+indices2.random_generator = Orange.misc.Random(42)    
 for i in range(5):
     print indices2(data)
 

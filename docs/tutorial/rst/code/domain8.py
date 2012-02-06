@@ -14,7 +14,7 @@ datasets = [data]
 add_noise = orange.Preprocessor_addClassNoise()
 for noiselevel in (0.2, 0.4, 0.6):
   add_noise.proportion = noiselevel
-  add_noise.randomGenerator = 42
+  add_noise.random_generator = 42
   d = add_noise(data)
   d.name = "class noise %4.2f" % noiselevel
   datasets.append(d)

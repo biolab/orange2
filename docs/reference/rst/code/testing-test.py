@@ -23,10 +23,10 @@ for i in range(3):
 
 print "\nproportionsTest that will give different results, \
 but the same each time the script is run"
-myRandom = Orange.core.RandomGenerator()
+myRandom = Orange.misc.Random()
 for i in range(3):
     res = Orange.evaluation.testing.proportion_test(learners, table, 0.7,
-        randomGenerator=myRandom)
+        random_generator=myRandom)
     printResults(res)
 # End
 

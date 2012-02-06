@@ -27,4 +27,4 @@ of random forests, but can also be used as a standalone tree.
 
     .. attribute:: random_generator
         
-        :obj:`Orange.core.RandomGenerator` to use.
+        Provide your own :obj:`Orange.misc.Random`.

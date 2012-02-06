@@ -26,8 +26,7 @@ available at the end of this page.
     will generally give the same results, unless special care is taken to
     randomize it. This is opposed to the previous versions where special
     care needed to be taken to make experiments repeatable.
-    See arguments :obj:`randseed` and :obj:`randomGenerator` for the
-    explanation.
+    See argument obj:`random_generator` for the explanation.
 
 Example scripts in this section suppose that the data is loaded and a
 list of learning algorithms is prepared.
@@ -71,24 +70,24 @@ Many function in this module use a set of common arguments, which we define here
     :obj:`orange.StratifiedIfPossible` which stratifies selections
     if the class variable is discrete and has no unknown values.
 
-*randseed (obsolete: indicesrandseed), randomGenerator*
-    Random seed (``randseed``) or random generator (``randomGenerator``) for
+*randseed (obsolete: indicesrandseed), random_generator*
+    Random seed (``randseed``) or random generator (``random_generator``) for
     random selection of examples. If omitted, random seed of 0 is used and
     the same test will always select the same examples from the example
     set. There are various slightly different ways to randomize it.
 
     *
-      Set ``randomGenerator`` to :obj:`orange.globalRandom`. The function's
+      Set ``random_generator`` to :obj:`orange.globalRandom`. The function's
       selection will depend upon Orange's global random generator that
       is reset (with random seed 0) when Orange is imported. The Script's
       output will therefore depend upon what you did after Orange was
       first imported in the current Python session. ::
 
           res = Orange.evaluation.testing.proportion_test(learners, data, 0.7,
-              randomGenerator=orange.globalRandom)
+              random_generator=orange.globalRandom)
 
     *
-      Construct a new :obj:`orange.RandomGenerator`. The code below,
+      Construct a new :obj:`Orange.misc.Random`. The code below,
       for instance, will produce different results in each iteration,
       but overall the same results each time it's run.
 
