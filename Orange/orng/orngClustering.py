@@ -1,34 +1,29 @@
 from Orange.clustering.kmeans import * 
 # from Orange.cluster.hierarchical import * 
 
-from Orange.distance import \
-     AlignmentList, \
+from Orange.core import \
      DistanceMap, \
      DistanceMapConstructor, \
-     ExampleDistConstructor, \
-     ExampleDistBySorting, \
-     ExampleDistVector, \
      ExamplesDistance, \
      ExamplesDistance_Normalized, \
      ExamplesDistanceConstructor
 
-from Orange.distance import Hamming as ExamplesDistance_Hamming, \
-    DTW as ExamplesDistance_DTW, \
-    Euclidean as ExamplesDistance_Euclidean, \
-    Manhattan as ExamplesDistance_Manhattan, \
-    Maximal as ExamplesDistance_Maximal, \
-    Relief as ExamplesDistance_Relief, \
-    DTWConstructor as ExamplesDistanceConstructor_DTW, \
-    EuclideanConstructor as ExamplesDistanceConstructor_Euclidean, \
-    HammingConstructor as ExamplesDistanceConstructor_Hamming, \
-    ManhattanConstructor as ExamplesDistanceConstructor_Manhattan, \
-    MaximalConstructor as ExamplesDistanceConstructor_Maximal, \
-    ReliefConstructor as ExamplesDistanceConstructor_Relief, \
-    PearsonRConstructor as ExamplesDistanceConstructor_PearsonR, \
-    PearsonR as ExamplesDistance_PearsonR, \
-    SpearmanRConstructor as ExamplesDistanceConstructor_SpearmanR, \
-    SpearmanR as ExamplesDistance_SpearmanR
-
+from Orange.distance import HammingDistance as ExamplesDistance_Hamming, \
+    DTWDistance as ExamplesDistance_DTW, \
+    EuclideanDistance as ExamplesDistance_Euclidean, \
+    ManhattanDistance as ExamplesDistance_Manhattan, \
+    MaximalDistance as ExamplesDistance_Maximal, \
+    ReliefDistance as ExamplesDistance_Relief, \
+    DTW as ExamplesDistanceConstructor_DTW, \
+    Euclidean as ExamplesDistanceConstructor_Euclidean, \
+    Hamming as ExamplesDistanceConstructor_Hamming, \
+    Manhattan as ExamplesDistanceConstructor_Manhattan, \
+    Maximal as ExamplesDistanceConstructor_Maximal, \
+    Relief as ExamplesDistanceConstructor_Relief, \
+    PearsonR as ExamplesDistanceConstructor_PearsonR, \
+    PearsonRDistance as ExamplesDistance_PearsonR, \
+    SpearmanR as ExamplesDistanceConstructor_SpearmanR, \
+    SpearmanRDistance as ExamplesDistance_SpearmanR
 
 from Orange.clustering.kmeans import Clustering as KMeans
 from Orange.clustering.kmeans import init_random as kmeans_init_random

@@ -23,12 +23,8 @@ import Orange
 #Mahalanobis -> MahalanobisDistance
 
 from Orange.core import \
-    AlignmentList, \
     DistanceMap, \
     DistanceMapConstructor, \
-    ExampleDistConstructor, \
-    ExampleDistBySorting, \
-    ExampleDistVector, \
     ExamplesDistance as Distance, \
     ExamplesDistance_Normalized as DistanceNormalized, \
     ExamplesDistanceConstructor as DistanceConstructor, \

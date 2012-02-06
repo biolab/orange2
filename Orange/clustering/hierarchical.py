@@ -1519,7 +1519,7 @@ def instance_distance_matrix(data,
     :type data: :class:`Orange.data.Table`
     
     :param distance_constructor: An ExamplesDistance_Constructor instance.
-    :type distance_constructor: :class:`Orange.distance.ExampleDistConstructor`
+    :type distance_constructor: :class:`Orange.distance.DistanceConstructor`
     
     :param progress_callback: A function (taking one argument) to use for
         reporting the on the progress.
