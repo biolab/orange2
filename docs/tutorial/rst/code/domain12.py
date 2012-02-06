@@ -5,12 +5,12 @@
 # Referenced:  domain.htm
 
 import orange
-data = orange.ExampleTable('../../datasets/car')
+data = orange.ExampleTable('car.tab')
 
 # add attribute price = f(buying, maint)
 # see also http://www.ailab.si/hint/car_dataset.asp
 
-priceTable={}
+priceTable = {}
 priceTable['v-high:v-high'] = 'v-high'
 priceTable['high:v-high'] = 'v-high'
 priceTable['med:v-high'] = 'high'
@@ -33,14 +33,14 @@ def f(price, buying, maint):
 
 price = orange.EnumVariable("price", values=["v-high", "high", "med", "low"])
 price.getValueFrom = lambda e, getWhat: f(price, e['buying'], e['maint'])
-newdomain = orange.Domain(data.domain.attributes+[price, data.domain.classVar])
+newdomain = orange.Domain(data.domain.attributes + [price, data.domain.classVar])
 newdata = data.select(newdomain)
 
 print
 for a in newdata.domain.attributes:
   print "%10s" % a.name,
 print "%10s" % newdata.domain.classVar.name
-for i in [1,200,300,1200,1700]:
+for i in [1, 200, 300, 1200, 1700]:
   for a in newdata.domain.attributes:
     print "%10s" % newdata[i][a],
   print "%10s" % newdata[i].getclass()
