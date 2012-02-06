@@ -1,1 +1,1 @@
-from Orange.orng import *
+from Orange.orange import *
