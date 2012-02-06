@@ -41,7 +41,7 @@ cross-validation technique for reliability estimation. Reliability estimations
 for first 10 instances get printed:
 
 .. literalinclude:: code/reliability-run.py
-    :lines: 7-
+    :lines: 11-
 
 Reliability Methods
 ===================
@@ -115,7 +115,7 @@ Example of usage
 ================
 
 .. literalinclude:: code/reliability-long.py
-    :lines: 7-22
+    :lines: 11-26
 
 This script prints out Pearson's R coefficient between reliability estimates
 and actual prediction errors, and a corresponding p-value, for each of the

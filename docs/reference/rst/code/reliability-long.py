@@ -5,7 +5,10 @@
 # Classes:     Orange.evaluation.reliability.Learner
 
 import Orange
+Orange.evaluation.reliability.select_with_repeat.random_generator = None
+Orange.evaluation.reliability.select_with_repeat.randseed = 42
 
+import Orange
 table = Orange.data.Table("prostate.tab")
 
 knn = Orange.classification.knn.kNNLearner()
