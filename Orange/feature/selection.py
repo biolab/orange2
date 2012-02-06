@@ -289,7 +289,7 @@ class FilterAboveThreshold(object):
                 threshold=0.0):
 
         if data is None:
-            self = object.__new__(cls, measure=measure, threshold=threshold)
+            self = object.__new__(cls)
             return self
         else:
             self = cls(measure=measure, threshold=threshold)
@@ -331,7 +331,7 @@ class FilterBestN(object):
                 n=5):
 
         if data is None:
-            self = object.__new__(cls, measure=measure, n=n)
+            self = object.__new__(cls)
             return self
         else:
             self = cls(measure=measure, n=n)
@@ -367,7 +367,7 @@ class FilterRelief(object):
                 margin=0):
 
         if data is None:
-            self = object.__new__(cls, measure=measure, margin=margin)
+            self = object.__new__(cls)
             return self
         else:
             self = cls(measure=measure, margin=margin)
@@ -413,7 +413,7 @@ class FilteredLearner(object):
                 filter=FilterAboveThreshold(), name='filtered'):
 
         if data is None:
-            self = object.__new__(cls, baseLearner, filter=filter, name=name)
+            self = object.__new__(cls)
             return self
         else:
             self = cls(baseLearner, filter=filter, name=name)

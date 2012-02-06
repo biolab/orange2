@@ -4,7 +4,7 @@ import orngRegression
 
 class MultiClassPredictionLearner(object):
     def __new__(self, data=None, name='PLS regression', **kwds):
-        learner = object.__new__(self, **kwds)
+        learner = object.__new__(self)
         if data:
             learner.__init__(name) # force init
             return learner(data)

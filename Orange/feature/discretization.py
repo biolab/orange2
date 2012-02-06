@@ -143,7 +143,7 @@ class DiscretizeTable(object):
     """
     def __new__(cls, data=None, features=None, discretize_class=False, method=EqualFreq(n=3)):
         if data is None:
-            self = object.__new__(cls, features=features, discretize_class=discretize_class, method=method)
+            self = object.__new__(cls)
             return self
         else:
             self = cls(features=features, discretize_class=discretize_class, method=method)

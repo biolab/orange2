@@ -81,7 +81,7 @@ of :download:`nbdisc.py <code/nbdisc.py>`)::
 
    class Learner(object):
        def __new__(cls, examples=None, name='discretized bayes', **kwds):
-           learner = object.__new__(cls, **kwds)
+           learner = object.__new__(cls)
            if examples:
                learner.__init__(name) # force init
                return learner(examples)

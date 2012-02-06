@@ -6,7 +6,7 @@ import orange
 
 class Learner(object):
     def __new__(cls, examples=None, **kwds):
-        learner = object.__new__(cls, **kwds)
+        learner = object.__new__(cls)
         if examples:
             learner.__init__(**kwds)
             return learner(examples)

@@ -9,7 +9,7 @@ import Orange
 
 class BayesFSS(object):
     def __new__(cls, examples=None, **kwds):
-        learner = object.__new__(cls, **kwds)
+        learner = object.__new__(cls)
         if examples:
             return learner(examples)
         else:

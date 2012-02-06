@@ -69,7 +69,7 @@ on for classification. Here is a <code>Learner</code>: class</p>
 "bayes.py">bayes.py</a></p>
 <xmp class="code">class Learner(object):
     def __new__(cls, examples=None, **kwds):
-        learner = object.__new__(cls, **kwds)
+        learner = object.__new__(cls)
         if examples:
             learner.__init__(**kwds)
             return learner(examples)

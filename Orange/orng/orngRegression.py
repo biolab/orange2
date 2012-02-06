@@ -10,7 +10,7 @@ from string import join
 
 class LinearRegressionLearner(object):
     def __new__(self, data=None, name='linear regression', **kwds):
-        learner = object.__new__(self, **kwds)
+        learner = object.__new__(self)
         if data:
             learner.__init__(name,**kwds) # force init
             return learner(data)
@@ -235,7 +235,7 @@ def normalize(vector):
 class PLSRegressionLearner(object):
     """PLSRegressionLearner(data, y, x=None, nc=None)"""
     def __new__(self, data=None, **kwds):
-        learner = object.__new__(self, **kwds)
+        learner = object.__new__(self)
         if data:
             learner.__init__(**kwds) # force init
             return learner(data, **kwds)

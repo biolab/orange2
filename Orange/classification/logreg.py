@@ -194,7 +194,7 @@ class UnivariateLogRegClassifier(Orange.classification.Classifier):
 
 class LogRegLearnerGetPriors(object):
     def __new__(cls, instances=None, weightID=0, **argkw):
-        self = object.__new__(cls, **argkw)
+        self = object.__new__(cls)
         if instances:
             self.__init__(**argkw)
             return self.__call__(instances, weightID)
@@ -872,7 +872,7 @@ StepWiseFSS = deprecated_members({"addCrit": "add_crit",
 
 class StepWiseFSSFilter(object):
     def __new__(cls, instances=None, **argkw):
-        self = object.__new__(cls, **argkw)
+        self = object.__new__(cls)
         if instances:
             self.__init__(**argkw)
             return self.__call__(instances)
