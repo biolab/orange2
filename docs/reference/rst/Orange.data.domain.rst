@@ -424,7 +424,7 @@ is a new feature with no relation to the existing ones. ::
          Add multiple meta attributes at once. The dictionary contains id's as
          keys and variables (:obj:`~Orange.data.variable.Variable`) as the
          corresponding values. The following example shows how to add all
-          meta attributes from another domain::
+         meta attributes from another domain::
 
               >>> newdomain.add_metas(domain.get_metas())
 
