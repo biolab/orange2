@@ -69,8 +69,8 @@ import random
 import numpy
 
 from numpy.linalg import inv, pinv, eig      # matrix inverse and eigenvectors
-from orngScaleLinProjData import orngScaleLinProjData
-import orngVisFuncts
+from Orange.preprocess.scaling import ScaleLinProjData
+from Orange.misc import visfuncts
 from Orange.misc import deprecated_keywords
 from Orange.misc import deprecated_members
 
@@ -160,7 +160,7 @@ class FreeViz:
     
     def __init__(self, graph = None):
         if not graph:
-            graph = orngScaleLinProjData()
+            graph = ScaleLinProjData()
         self.graph = graph
 
         self.implementation = 0
@@ -904,8 +904,8 @@ class FreeViz:
 
         # compute the quality of attributes only once
         if self.s2n_mix_data == None:
-            ranked_attrs, ranked_attrs_by_class = orngVisFuncts.findAttributeGroupsForRadviz(self.graph.rawData,
-                                                                                             orngVisFuncts.S2NMeasureMix())
+            ranked_attrs, ranked_attrs_by_class = visfuncts.findAttributeGroupsForRadviz(self.graph.rawData,
+                                                                                         visfuncts.S2NMeasureMix())
             self.s2n_mix_data = (ranked_attrs, ranked_attrs_by_class)
             class_count = len(ranked_attrs_by_class)
             attrs = ranked_attrs[:(self.s2n_place_attributes/class_count)*
