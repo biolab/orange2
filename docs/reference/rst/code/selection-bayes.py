@@ -2,7 +2,7 @@
 # Category:    feature selection
 # Uses:        voting
 # Referenced:  Orange.feature.html#selection
-# Classes:     Orange.feature.scoring.score_all, Orange.feature.selection.bestNAtts
+# Classes:     Orange.feature.scoring.score_all, Orange.feature.selection.best_n
 
 import Orange
 
@@ -14,30 +14,30 @@ class BayesFSS(object):
             return learner(examples)
         else:
             return learner
-    
+
     def __init__(self, name='Naive Bayes with FSS', N=5):
         self.name = name
         self.N = 5
-      
-    def __call__(self, table, weight=None):
-        ma = Orange.feature.scoring.score_all(table)
-        filtered = Orange.feature.selection.selectBestNAtts(table, ma, self.N)
+
+    def __call__(self, data, weight=None):
+        ma = Orange.feature.scoring.score_all(data)
+        filtered = Orange.feature.selection.select_best_n(data, ma, self.N)
         model = Orange.classification.bayes.NaiveLearner(filtered)
         return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)
 
 class BayesFSS_Classifier:
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
-    
-    def __call__(self, example, resultType = Orange.core.GetValue):
+
+    def __call__(self, example, resultType=Orange.core.GetValue):
         return self.classifier(example, resultType)
 
 
 # test above wraper on a data set
-table = Orange.data.Table("voting")
+voting = Orange.data.Table("voting")
 learners = (Orange.classification.bayes.NaiveLearner(name='Naive Bayes'),
             BayesFSS(name="with FSS"))
-results = Orange.evaluation.testing.cross_validation(learners, table)
+results = Orange.evaluation.testing.cross_validation(learners, voting)
 
 # output the results
 print "Learner      CA"
