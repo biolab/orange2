@@ -3,5 +3,5 @@ for_gain 0.947  0.078  0.995
 for_simp 0.933  0.079  0.995
 
 Runtimes:
-for_gain 0.0932638645172
-for_simp 0.0247650146484
+for_gain 0.093346118927
+for_simp 0.0253021717072
