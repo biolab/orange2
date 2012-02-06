@@ -1,107 +1,107 @@
 
 method	CA	AP	Brier	IS
-bayes	0.903	0.902	0.176	 0.758
-tree	0.825	0.824	0.326	 0.599
+bayes	0.903	0.902	0.175	 0.759
+tree	0.846	0.845	0.286	 0.641
 majrty	0.614	0.526	0.474	-0.000
 
 method	CA	AP	Brier	IS
-bayes	0.903+-0.008	0.902+-0.008	0.176+-0.016	 0.758+-0.017
-tree	0.825+-0.016	0.824+-0.016	0.326+-0.033	 0.599+-0.034
+bayes	0.903+-0.019	0.902+-0.019	0.175+-0.036	 0.759+-0.039
+tree	0.846+-0.016	0.845+-0.015	0.286+-0.030	 0.641+-0.032
 majrty	0.614+-0.003	0.526+-0.001	0.474+-0.001	-0.000+-0.000
 
 Confusion matrix for naive Bayes:
 TP: 238, FP: 13, FN: 29.0, TN: 155
 
 Confusion matrix for naive Bayes:
-TP: 240, FP: 18, FN: 27.0, TN: 150
+TP: 239, FP: 18, FN: 28.0, TN: 150
 
 Confusion matrix for naive Bayes for 'van':
-TP: 192, FP: 151, FN: 7.0, TN: 496
+TP: 189, FP: 241, FN: 10.0, TN: 406
 
 Confusion matrix for naive Bayes for 'opel':
-TP: 79, FP: 75, FN: 133.0, TN: 559
+TP: 86, FP: 112, FN: 126.0, TN: 522
 
 	bus	van	saab	opel
-bus	156	19	17	26
-van	4	192	2	1
-saab	8	68	93	48
-opel	8	64	61	79
+bus	56	95	21	46
+van	6	189	4	0
+saab	3	75	73	66
+opel	4	71	51	86
 
 Sensitivity and specificity for 'voting'
 method	sens	spec
 bayes	0.891	0.923
-tree	0.801	0.863
+tree	0.816	0.893
 majrty	1.000	0.000
 
 Sensitivity and specificity for 'vehicle=van'
 method	sens	spec
-bayes	0.965	0.767
-tree	0.834	0.966
+bayes	0.950	0.628
+tree	0.809	0.966
 majrty	0.000	1.000
 
 AUC (voting)
      bayes: 0.974
-      tree: 0.926
+      tree: 0.930
     majrty: 0.500
 
 AUC for vehicle using weighted single-out method
 bayes	tree	majority
-0.840	0.816	0.500
+0.783	0.800	0.500
 
 AUC for vehicle, using different methods
                            	bayes	tree	majority
-       by pairs, weighted: 	0.861	0.883	0.500
-                 by pairs: 	0.863	0.884	0.500
-    one vs. all, weighted: 	0.840	0.816	0.500
-              one vs. all: 	0.840	0.816	0.500
+       by pairs, weighted: 	0.789	0.870	0.500
+                 by pairs: 	0.791	0.871	0.500
+    one vs. all, weighted: 	0.783	0.800	0.500
+              one vs. all: 	0.783	0.800	0.500
 
 AUC for detecting class 'van' in 'vehicle'
-0.923	0.900	0.500
+0.858	0.888	0.500
 
 AUCs for detecting various classes in 'vehicle'
-bus (218.000) vs others: 	0.952	0.936	0.500
-van (199.000) vs others: 	0.923	0.900	0.500
-saab (217.000) vs others: 	0.737	0.707	0.500
-opel (212.000) vs others: 	0.749	0.718	0.500
+bus (218.000) vs others: 	0.894	0.932	0.500
+van (199.000) vs others: 	0.858	0.888	0.500
+saab (217.000) vs others: 	0.699	0.687	0.500
+opel (212.000) vs others: 	0.682	0.694	0.500
 
 	bus	van	saab
-van	0.987
-saab	0.927	0.860
-opel	0.921	0.894	0.587
+van	0.933
+saab	0.820	0.828
+opel	0.822	0.825	0.519
 
 AUCs for detecting various pairs of classes in 'vehicle'
-van vs bus: 	0.987	0.976	0.500
-saab vs bus: 	0.927	0.936	0.500
-saab vs van: 	0.860	0.906	0.500
-opel vs bus: 	0.921	0.951	0.500
-opel vs van: 	0.894	0.915	0.500
-opel vs saab: 	0.587	0.622	0.500
+van vs bus: 	0.933	0.978	0.500
+saab vs bus: 	0.820	0.938	0.500
+saab vs van: 	0.828	0.879	0.500
+opel vs bus: 	0.822	0.932	0.500
+opel vs van: 	0.825	0.903	0.500
+opel vs saab: 	0.519	0.599	0.500
 
 AUC and SE for voting
-bayes: 0.982+-0.008
-tree: 0.888+-0.025
+bayes: 0.968+-0.015
+tree: 0.924+-0.022
 majrty: 0.500+-0.045
 
-Difference between naive Bayes and tree: 0.065+-0.066
+Difference between naive Bayes and tree: 0.014+-0.062
 
 ROC (first 20 points) for bayes on 'voting'
 1.000	1.000
 0.970	1.000
-0.940	1.000
 0.910	1.000
-0.896	1.000
 0.881	1.000
-0.836	1.000
 0.821	1.000
 0.806	1.000
+0.791	1.000
 0.761	1.000
 0.746	1.000
 0.731	1.000
 0.701	1.000
 0.687	1.000
 0.672	1.000
-0.627	1.000
-0.612	1.000
-0.597	1.000
-0.582	1.000
-0.567	1.000
+0.672	0.991
+0.657	0.991
+0.642	0.991
+0.552	0.991
+0.537	0.991
+0.522	0.991
+0.507	0.991
