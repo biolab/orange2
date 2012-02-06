@@ -78,9 +78,9 @@ when empty.
     .. method:: __init__(filename[, create_new_on])
 
         Read data from the given file. If the name includes the
-        extension it must be one of the known file formats (see
-        :doc:`/Orange.data.formats`). If no extension is given, the directory
-        is searched for any file with recognized extensions. If the
+        extension it must be one of the known file formats
+        (see :doc:`/Orange.data.formats`). If no extension is given, the
+        directory is searched for any file with recognized extensions. If the
         file is not found, Orange will also search the directories
         specified in the environment variable `ORANGE_DATA_PATH`.
 
@@ -253,8 +253,8 @@ when empty.
         keyword. Its effect is to negate the selection.
 
         Note: This method should be used when the selected data
-        instances are going to be modified. In all other cases, method
-        :obj:`select_ref` is preferred.
+        instances are going to be modified. In all other cases,
+        method :obj:`select_ref` is preferred.
 
         :param filt: filter list
         :type filt: list of integers
@@ -324,7 +324,7 @@ when empty.
     .. method:: select_list(filt[, idx, negate=False])
 
         Same as :obj:`select`, except that it returns a Python list
-    with data instances.
+        with data instances.
 
         :param filt: filter list
         :type filt: list of integers

@@ -113,8 +113,8 @@ constructs a new one.
             The size of the list is also used to indicate the number of
             possible values for this variable. Changing the size - especially
             shrinking the list - can crash Python. Also, do not add values
-            to the list by calling its append or extend method: use
-             :obj:`add_value` method instead.
+            to the list by calling its append or extend method:
+            use :obj:`add_value` method instead.
 
             It is also assumed that this attribute is always defined (but can
             be empty), so never set it to ``None``.
