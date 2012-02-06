@@ -13,6 +13,8 @@ for i in range(4):
 # vertices are placed randomly in NetworkOptimization constructor
 networkOptimization = Orange.network.NetworkOptimization(net)
 
+
+
 # read all edges and plot a line
 for u, v in net.get_edges():
     x1, y1 = net.coors[0][u], net.coors[1][u]
