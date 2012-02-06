@@ -12,7 +12,7 @@ reliability_res = Orange.evaluation.reliability.get_pearson_r(res)
 print
 print "Estimate               r       p"
 for estimate in reliability_res:
-    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
+    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
                                  estimate[0], estimate[1])
 
 reliability = Orange.evaluation.reliability.Learner(knn, estimators=[Orange.evaluation.reliability.SensitivityAnalysis()])
@@ -24,7 +24,7 @@ reliability_res = Orange.evaluation.reliability.get_pearson_r(res)
 print
 print "Estimate               r       p"
 for estimate in reliability_res:
-    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]], \
+    print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
                                  estimate[0], estimate[1])
 
 indices = Orange.core.MakeRandomIndices2(table, p0=0.7)

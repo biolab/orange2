@@ -1,2 +1,0 @@
-Mahalanobis absolute 3.75335383415
-LCV absolute 5.12060896214

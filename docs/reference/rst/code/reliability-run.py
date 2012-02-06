@@ -6,5 +6,7 @@ reliability = Orange.evaluation.reliability.Learner(knn)
 
 results = Orange.evaluation.testing.cross_validation([reliability], table)
 
-for estimate in results.results[0].probabilities[0].reliability_estimate:
-    print estimate.method_name, estimate.estimate
+for i, instance in enumerate(results.results[:10]):
+    print "Instance", i
+    for estimate in instance.probabilities[0].reliability_estimate:
+        print "  ", estimate.method_name, estimate.estimate

@@ -1,10 +1,110 @@
-SAvar absolute 10.701260376
-SAbias signed -0.0246158599854
-SAbias absolute 0.0246158599854
-LCV absolute 5.16450013273
-BVCK_absolute 0.0697603345819
-BAGV absolute 0.0221634151355
-CNK signed -0.117357254028
-CNK absolute 0.117357254028
-Mahalanobis absolute 5.70795369148
-Mahalanobis to center 2.74633686492
+Instance 0
+   SAvar absolute 10.701260376
+   SAbias signed -0.0246158599854
+   SAbias absolute 0.0246158599854
+   LCV absolute 5.16450013273
+   BVCK_absolute 0.0697603345819
+   BAGV absolute 0.0221634151355
+   CNK signed -0.117357254028
+   CNK absolute 0.117357254028
+   Mahalanobis absolute 5.70795369148
+   Mahalanobis to center 2.74633686492
+Instance 1
+   SAvar absolute 10.7012599945
+   SAbias signed -0.0270875930786
+   SAbias absolute 0.0270875930786
+   LCV absolute 2.99310729294
+   BVCK_absolute 0.531783116131
+   BAGV absolute 0.00305025630936
+   CNK signed 1.06051597595
+   CNK absolute 1.06051597595
+   Mahalanobis absolute 4.45522534847
+   Mahalanobis to center 2.11993694001
+Instance 2
+   SAvar absolute 10.7012619019
+   SAbias signed -0.0769199371338
+   SAbias absolute 0.0769199371338
+   LCV absolute 4.46030248588
+   BVCK_absolute 0.805066890698
+   BAGV absolute 0.0025318526845
+   CNK signed -1.60760192871
+   CNK absolute 1.60760192871
+   Mahalanobis absolute 4.45998907089
+   Mahalanobis to center 2.20910797014
+Instance 3
+   SAvar absolute 10.7012609482
+   SAbias signed 0.00884370803833
+   SAbias absolute 0.00884370803833
+   LCV absolute 3.63051784733
+   BVCK_absolute 0.0919738920925
+   BAGV absolute 3.02787884721e-08
+   CNK signed 0.183947753906
+   CNK absolute 0.183947753906
+   Mahalanobis absolute 4.43703401089
+   Mahalanobis to center 2.66496913406
+Instance 4
+   SAvar absolute 10.701257515
+   SAbias signed 0.0423228263855
+   SAbias absolute 0.0423228263855
+   LCV absolute 3.32640218766
+   BVCK_absolute 0.561947292901
+   BAGV absolute 4.66539472109e-07
+   CNK signed 1.12389411926
+   CNK absolute 1.12389411926
+   Mahalanobis absolute 4.91473317146
+   Mahalanobis to center 2.69116657497
+Instance 5
+   SAvar absolute 10.7012573242
+   SAbias signed 0.273178482056
+   SAbias absolute 0.273178482056
+   LCV absolute 3.18996776229
+   BVCK_absolute 0.0292111702193
+   BAGV absolute 0.000202812240257
+   CNK signed 0.0582195281982
+   CNK absolute 0.0582195281982
+   Mahalanobis absolute 4.46615076065
+   Mahalanobis to center 2.58802566358
+Instance 6
+   SAvar absolute 10.7012595177
+   SAbias signed -0.101607465744
+   SAbias absolute 0.101607465744
+   LCV absolute 2.95812406923
+   BVCK_absolute 0.364750828033
+   BAGV absolute 0.00759766436671
+   CNK signed -0.721903991699
+   CNK absolute 0.721903991699
+   Mahalanobis absolute 4.64355945587
+   Mahalanobis to center 2.50879836044
+Instance 7
+   SAvar absolute 10.701257515
+   SAbias signed -0.133856678009
+   SAbias absolute 0.133856678009
+   LCV absolute 2.64825094326
+   BVCK_absolute 0.244493027281
+   BAGV absolute 0.0150492106905
+   CNK signed -0.473936843872
+   CNK absolute 0.473936843872
+   Mahalanobis absolute 3.15618926287
+   Mahalanobis to center 3.76633615153
+Instance 8
+   SAvar absolute 10.687993145
+   SAbias signed -0.0223073482513
+   SAbias absolute 0.0223073482513
+   LCV absolute 3.23505105569
+   BVCK_absolute 0.163932395748
+   BAGV absolute 2.24266747828e-06
+   CNK signed -0.327862548828
+   CNK absolute 0.327862548828
+   Mahalanobis absolute 6.07192790508
+   Mahalanobis to center 5.21631597918
+Instance 9
+   SAvar absolute 10.7012593269
+   SAbias signed 0.0480660915375
+   SAbias absolute 0.0480660915375
+   LCV absolute 3.09854127044
+   BVCK_absolute 0.283781303455
+   BAGV absolute 0.0357186585455
+   CNK signed -0.531843948364
+   CNK absolute 0.531843948364
+   Mahalanobis absolute 4.02153724432
+   Mahalanobis to center 3.93183348061
