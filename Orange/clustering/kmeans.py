@@ -293,9 +293,7 @@ def init_random(data, k, _):
     :type data: :class:`orange.ExampleTable`
     :param k: the number of clusters.
     :type k: integer
-    :param distfun: a distance function.
-    :type distfun: :class:`orange.ExamplesDistance`
-     """
+    """
     return data.getitems(random.sample(range(len(data)), k))
 
 def init_diversity(data, k, distfun):
@@ -306,7 +304,7 @@ def init_diversity(data, k, distfun):
     :param k: the number of clusters.
     :type k: integer
     :param distfun: a distance function.
-    :type distfun: :class:`orange.ExamplesDistance`
+    :type distfun: :class:`Orange.distance.Distance`
     """
     center = data_center(data)
     # the first seed should be the farthest point from the center
@@ -337,7 +335,7 @@ class init_hclustering():
         :param k: the number of clusters.
         :type k: integer
         :param distfun: a distance function.
-        :type distfun: :class:`orange.ExamplesDistance`
+        :type distfun: :class:`Orange.distance.Distance`
         """
         sample = orange.ExampleTable(random.sample(data, min(self.n, len(data))))
         root = Orange.clustering.hierarchical.clustering(sample)
@@ -392,7 +390,7 @@ class Clustering:
 
     def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,
                  stopchanges=0, nstart=1, initialization=init_random,
-                 distance=orange.ExamplesDistanceConstructor_Euclidean,
+                 distance=Orange.distance.Euclidean,
                  scoring=score_distance_to_centroids, inner_callback = None,
                  outer_callback = None):
         """
@@ -403,7 +401,7 @@ class Clustering:
         :param nstart: If greater than one, nstart runs of the clustering algorithm will be executed, returning the clustering with the best (lowest) score.
         :type nstart: integer
         :param distance: an example distance constructor, which measures the distance between two instances.
-        :type distance: :class:`orange.ExamplesDistanceConstructor`
+        :type distance: :class:`Orange.distance.DistanceConstructor`
         :param initialization: a function to select centroids given data instances, k and a example distance function. This module implements different approaches (:func:`init_random`, :func:`init_diversity`, :class:`init_hclustering`). 
         :param scoring: a function that takes clustering object and returns the clustering score. It could be used, for instance, in procedure that repeats the clustering nstart times, returning the clustering with the lowest score.
         :param inner_callback: invoked after every clustering iteration.

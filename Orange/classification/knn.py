@@ -29,7 +29,7 @@ the data instance being classified:
     .. attribute:: distance_constructor
 
         component that constructs the object for measuring distances between
-        instances. Defaults to :class:`~Orange.distance.instances.EuclideanConstructor`.
+        instances. Defaults to :class:`~Orange.distance.Euclidean`.
 
     .. attribute:: weight_id
     

@@ -2,7 +2,7 @@ import unittest
 from Orange.misc import testing
 from Orange.clustering import kmeans
 from Orange.clustering.kmeans import Clustering
-from Orange.distance.instances import *
+from Orange.distance import *
 
 @testing.datasets_driven
 class TestKMeans(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestKMeans(unittest.TestCase):
         
     @testing.test_on_data
     def test_init_functs(self, table):
-        distfunc = EuclideanConstructor(table)
+        distfunc = Euclidean(table)
         for k in [1, 5, 10]:
             self._test_init_func(table, k, distfunc)
         

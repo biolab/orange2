@@ -11,7 +11,7 @@ import math
 table = Orange.data.Table("iris.tab")
 
 # Construct a distance matrix using Euclidean distance
-dist = Orange.core.ExamplesDistanceConstructor_Euclidean(table)
+dist = Orange.distance.Euclidean(table)
 matrix = Orange.core.SymMatrix(len(table))
 for i in range(len(table)):
    for j in range(i+1):

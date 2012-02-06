@@ -4,7 +4,7 @@ from Orange.clustering.hierarchical import clustering, \
     order_leaves_cpp, instance_distance_matrix
                       
 from Orange.clustering import hierarchical as hier     
-from Orange.distance.instances import *
+from Orange.distance import *
                            
 import Orange.misc.testing as testing
 import Orange
@@ -16,7 +16,7 @@ import cPickle as pickle
 class TestHClustering(testing.DataTestCase):    
     @testing.test_on_data
     def test_example_clustering_on(self, data):
-        constructors = [EuclideanConstructor, ManhattanConstructor]
+        constructors = [Euclidean, Manhattan]
         for distance_constructor in constructors:
             clust = clustering(data, distance_constructor, HierarchicalClustering.Single)
             clust = clustering(data, distance_constructor, HierarchicalClustering.Average)
@@ -32,7 +32,7 @@ class TestHClustering(testing.DataTestCase):
             
     @testing.test_on_datasets(datasets=["iris"])
     def test_pickling_on(self, data):
-        cluster = clustering(data, EuclideanConstructor, HierarchicalClustering.Single)
+        cluster = clustering(data, Euclidean, HierarchicalClustering.Single)
         s = pickle.dumps(cluster)
         cluster_clone = pickle.loads(s)
         self.assertEqual(len(cluster), len(cluster_clone))
@@ -43,7 +43,7 @@ class TestHClustering(testing.DataTestCase):
         def p(val, obj=None):
             self.assert_(val >= 0 and val <=100)
             self.assertIsInstance(val, float)
-        matrix = instance_distance_matrix(data, EuclideanConstructor(), progress_callback=p)
+        matrix = instance_distance_matrix(data, Euclidean(), progress_callback=p)
         root1 = HierarchicalClustering(matrix, progress_callback=p)
         root2 = hier.clone(root1)
         

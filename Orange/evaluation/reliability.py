@@ -399,7 +399,7 @@ class LocalCrossValidation:
     
     def __call__(self, instances, learner):
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
-        nearest_neighbours_constructor.distanceConstructor = Orange.distance.EuclideanConstructor()
+        nearest_neighbours_constructor.distanceConstructor = Orange.distance.Euclidean()
         
         distance_id = Orange.data.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
@@ -466,7 +466,7 @@ class CNeighbours:
     
     def __call__(self, instances, learner):
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
-        nearest_neighbours_constructor.distanceConstructor = Orange.distance.EuclideanConstructor()
+        nearest_neighbours_constructor.distanceConstructor = Orange.distance.Euclidean()
         
         distance_id = Orange.data.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
@@ -513,7 +513,7 @@ class Mahalanobis:
     
     def __call__(self, instances, *args):
         nnm = Orange.classification.knn.FindNearestConstructor()
-        nnm.distanceConstructor = Orange.distance.MahalanobisConstructor()
+        nnm.distanceConstructor = Orange.distance.Mahalanobis()
         
         mid = Orange.data.new_meta_id()
         nnm = nnm(instances, 0, mid)
@@ -557,7 +557,7 @@ class MahalanobisToCenter:
         X, _, _ = new_instances.to_numpy()
         instance_avg = numpy.average(X, 0)
         
-        distance_constructor = Orange.distance.MahalanobisConstructor()
+        distance_constructor = Orange.distance.Mahalanobis()
         distance = distance_constructor(new_instances)
         
         average_instance = Orange.data.Instance(new_instances.domain, list(instance_avg) + ["?"])
