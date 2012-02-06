@@ -21,7 +21,7 @@ Try to add as much name mappings as possible (This fixer is prefered
 from lib2to3 import fixer_base
 from lib2to3 import fixer_util
 from lib2to3 import pytree
-from lib2to3.fixer_util import Name, Dot, Node, attr_chain, touch_import
+from lib2to3.fixer_util import Name, Dot, touch_import
 
 # Keys must be in the form of 'orange.name' not name or orange.bla.name 
 # If the values name a doted name inside of the package the package and name
@@ -182,8 +182,6 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.GraphAsList":"Orange.network.GraphAsList",
            "orange.GraphAsMatrix":"Orange.network.GraphAsMatrix",
            "orange.GraphAsTree":"Orange.network.GraphAsTree",
-
-           "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
 
            "orange.TreeLearner": "Orange.classification.tree.TreeLearner",
            "orange.TreeClassifier": "Orange.classification.tree.TreeClassifier",
@@ -399,7 +397,6 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngMisc.BestOnTheFly":"Orange.misc.selection.BestOnTheFly",
            "orngMisc.selectBest":"Orange.misc.selection.select_best",
            "orngMisc.selectBestIndex":"Orange.misc.selection.select_best_index",
-           "orngMisc.compare2_firstBigger":"Orange.misc.selection.compare_first_bigger",
            "orngMisc.compare2_firstBigger":"Orange.misc.selection.compare_first_bigger",
            "orngMisc.compare2_firstSmaller":"Orange.misc.selection.compare_first_smaller",
            "orngMisc.compare2_lastBigger":"Orange.misc.selection.compare_last_bigger",
@@ -626,8 +623,7 @@ class FixChangedNames(fixer_base.BaseFix):
             [Name('Orange'), trailer('.' 'feature'), trailer('.', 'scoring')]
         """
         path = package.split('.')
-        nodes = []
-        nodes.append(Name(path[0]))
+        nodes = [Name(path[0])]
         for name in path[1:]:
             new = pytree.Node(self.syms.trailer, [Dot(), Name(name)])
             nodes.append(new)
