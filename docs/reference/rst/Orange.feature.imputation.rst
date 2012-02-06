@@ -26,7 +26,7 @@ The output of this code is::
 Imputers
 =================
 
-:obj:`ImputerConstructor` is the abstract root in the hierarchy of classes
+:obj:`ImputerConstructor` is the abstract root in a hierarchy of classes
 that accept training data and construct an instance of a class derived from
 :obj:`Imputer`. When an :obj:`Imputer` is called with an
 :obj:`Orange.data.Instance` it returns a new instance with the
@@ -39,10 +39,6 @@ imputed instances.
     .. attribute:: imputeClass
 
     Indicates whether to impute the class value. Defaults to True.
-
-    .. attribute:: deterministic
-
-    Indicates whether to initialize random by example's CRC. Defaults to False.
 
 Simple imputation
 =================
@@ -292,11 +288,11 @@ Learners with imputer as a component
 Learners that cannot handle missing values provide a slot for the imputer
 component. An example of such a class is
 :obj:`~Orange.classification.logreg.LogRegLearner` with an attribute called
-:obj:`~Orange.classification.logreg.LogRegLearner.imputerConstructor`.
+:obj:`~Orange.classification.logreg.LogRegLearner.imputer_constructor`.
 
 When given learning instances,
 :obj:`~Orange.classification.logreg.LogRegLearner` will pass them to
-:obj:`~Orange.classification.logreg.LogRegLearner.imputerConstructor` to get
+:obj:`~Orange.classification.logreg.LogRegLearner.imputer_constructor` to get
 an imputer and used it to impute the missing values in the learning data.
 Imputed data is then used by the actual learning algorithm. Also, when a
 classifier :obj:`Orange.classification.logreg.LogRegClassifier` is constructed,
@@ -312,7 +308,7 @@ it is recommended to use imputation according to the described procedure.
 Wrapper for learning algorithms
 ===============================
 
-Imputation is used by learning algorithms and other methods that are not
+Imputation is also used by learning algorithms and other methods that are not
 capable of handling unknown values. It imputes missing values,
 calls the learner and, if imputation is also needed by the classifier,
 it wraps the classifier that imputes missing values in instances to classify.
@@ -329,8 +325,8 @@ Even so, the module is somewhat redundant, as all learners that cannot handle
 missing values should, in principle, provide the slots for imputer constructor.
 For instance, :obj:`Orange.classification.logreg.LogRegLearner` has an
 attribute
-:obj:`Orange.classification.logreg.LogRegLearner.imputerConstructor`, and even
-if you don't set it, it will do some imputation by default.
+:obj:`Orange.classification.logreg.LogRegLearner.imputer_constructor`,
+and even if you don't set it, it will do some imputation by default.
 
 .. class:: ImputeLearner
 
@@ -426,7 +422,8 @@ if you don't set it, it will do some imputation by default.
 :obj:`Orange.feature.imputation.ImputeLearner` puts the keyword arguments into
 the instance's  dictionary. You are expected to call it like
 :obj:`ImputeLearner(base_learner=<someLearner>,
-imputer=<someImputerConstructor>)`. When the learner is called with examples, it
+imputer=<someImputerConstructor>)`. When the learner is called with
+examples, it
 trains the imputer, imputes the data, induces a :obj:`base_classifier` by the
 :obj:`base_cearner` and constructs :obj:`ImputeClassifier` that stores the
 :obj:`base_classifier` and the :obj:`imputer`. For classification, the missing
