@@ -57,7 +57,7 @@ import Orange
 import Orange.core
 import Orange.preprocess
 import Orange.data
-from orngDataCaching import *
+from Orange.misc import caching
 
 import warnings
 
@@ -288,7 +288,7 @@ class ScaleData:
         self.have_subset_data = bool(self.raw_subset_data and
                                      len(self.raw_subset_data) > 0)
         
-        self.domain_data_stat = getCached(full_data,
+        self.domain_data_stat = caching.getCached(full_data,
                                           Orange.core.DomainBasicAttrStat,
                                           (full_data,))
 
@@ -308,8 +308,8 @@ class ScaleData:
         # compute it. The scaled_data on the other hand has to be computed for
         # each widget separately because of different
         # jitter_continuous and jitter_size values
-        if getCached(data, "visualizationData") and subset_data == None:
-            self.original_data, self.no_jittering_scaled_data, self.valid_data_array = getCached(data, "visualizationData")
+        if caching.getCached(data, "visualizationData") and subset_data == None:
+            self.original_data, self.no_jittering_scaled_data, self.valid_data_array = caching.getCached(data,"visualizationData")
             self.original_subset_data = self.no_jittering_scaled_subset_data = self.valid_subset_data_array = numpy.array([]).reshape([len(self.original_data), 0])
         else:
             no_jittering_data = full_data.toNumpyMA("ac")[0].T
@@ -349,10 +349,10 @@ class ScaleData:
             self.no_jittering_scaled_data = no_jittering_data[:,:len_data]; self.no_jittering_scaled_subset_data = no_jittering_data[:,len_data:]
             self.valid_data_array = valid_data_array[:,:len_data]; self.valid_subset_data_array = valid_data_array[:,len_data:]
         
-        if data: setCached(data, "visualizationData",
+        if data: caching.setCached(data, "visualizationData",
                            (self.original_data, self.no_jittering_scaled_data,
                             self.valid_data_array))
-        if subset_data: setCached(subset_data, "visualizationData",
+        if subset_data: caching.setCached(subset_data, "visualizationData",
                                   (self.original_subset_data,
                                    self.no_jittering_scaled_subset_data,
                                    self.valid_subset_data_array))
