@@ -80,7 +80,7 @@ class ORANGE_API TEquiDistDiscretizer : public TDiscretizer {
 public:
   __REGISTER_CLASS
 
-  int   numberOfIntervals; //P number of intervals
+  int   numberOfIntervals; //P(+n_intervals) number of intervals
   float firstCut; //P the first cut-off point
   float step; //P step (width of interval)
 
