@@ -1,3 +1,4 @@
 network-widget.py
 network-widget-nx.py
 serverfiles2.py
+statistics-contingency6.py
