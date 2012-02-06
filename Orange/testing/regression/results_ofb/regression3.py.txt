@@ -1,4 +1,4 @@
 Learner        MSE
 default         84.777
-regression tree 40.096
+regression tree 39.705
 k-NN (k=5)      17.532

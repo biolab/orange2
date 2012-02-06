@@ -1,3 +1,3 @@
 Classification accuracies:
 bayes 0.93119266055
-tree 0.876146788991
+tree 0.871559633028
