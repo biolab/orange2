@@ -1,0 +1,10 @@
+Features: <FloatVariable 'X1', FloatVariable 'X2', FloatVariable 'X3'>
+Classes: <FloatVariable 'Y1', FloatVariable 'Y2', FloatVariable 'Y3', FloatVariable 'Y4'>
+First instance: [0.628, 0.095, 0.652] (0.490, 1.237, 1.808, 0.422)
+Actual classes: [<orange.Value 'Y1'='0.490'>, <orange.Value 'Y2'='1.237'>, <orange.Value 'Y3'='1.808'>, <orange.Value 'Y4'='0.422'>]
+Majority predictions:
+[<orange.Value 'Y1'='0.514'>, <orange.Value 'Y2'='-0.587'>, <orange.Value 'Y3'='-1.666'>, <orange.Value 'Y4'='0.506'>]
+PLS predictions:
+[<orange.Value 'Y1'='0.613'>, <orange.Value 'Y2'='0.826'>, <orange.Value 'Y3'='1.084'>, <orange.Value 'Y4'='0.534'>]
+Multi-target Tree predictions:
+[<orange.Value 'Y1'='0.745'>, <orange.Value 'Y2'='0.994'>, <orange.Value 'Y3'='1.318'>, <orange.Value 'Y4'='0.518'>]

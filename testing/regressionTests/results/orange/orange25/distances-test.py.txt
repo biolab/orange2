@@ -1,0 +1,4 @@
+Euclidean distances from the first data instance: 
+0.0000 0.2156 0.1681 0.2176 0.0501
+Pearson correlation distance from the first data instance: 
+0.0000 0.0020 0.0000 0.0009 0.0003

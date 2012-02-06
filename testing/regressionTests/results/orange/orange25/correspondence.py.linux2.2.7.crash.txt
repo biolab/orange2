@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/miha/work/orange/testing/regressionTests/xtest_one.py", line 97, in <module>
+    execfile(t__name)
+  File "correspondence.py", line 9, in <module>
+    data = Orange.data.Table("../../../../doc/datasets/smokers_ct.tab")
+SystemError: FileExampleGenerator: cannot open file '../../../../doc/datasets/smokers_ct.tab'

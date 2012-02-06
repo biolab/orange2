@@ -1,0 +1,24 @@
+Inner variable:  y
+Outer variable:  e
+
+Class variable:  y
+Feature:       e
+
+Distributions:
+  p(.|1) = <0.000, 1.000>
+  p(.|2) = <0.662, 0.338>
+  p(.|3) = <0.659, 0.341>
+  p(.|4) = <0.669, 0.331>
+
+Probabilities of class '1'
+  p(1|1) = 1.000
+  p(1|2) = 0.338
+  p(1|3) = 0.341
+  p(1|4) = 0.331
+
+Distributions from a matrix computed manually:
+  p(.|1) = <0.000, 1.000>
+  p(.|2) = <0.662, 0.338>
+  p(.|3) = <0.659, 0.341>
+  p(.|4) = <0.669, 0.331>
+

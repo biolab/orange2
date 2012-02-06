@@ -1,0 +1,10 @@
+SAvar absolute 10.701260376
+SAbias signed -0.0246158599854
+SAbias absolute 0.0246158599854
+LCV absolute 5.16450013273
+BVCK_absolute 0.0586793036741
+BAGV absolute 1.35331978672e-06
+CNK signed -0.117357254028
+CNK absolute 0.117357254028
+Mahalanobis absolute 5.70795369148
+Mahalanobis to center 2.74633686492

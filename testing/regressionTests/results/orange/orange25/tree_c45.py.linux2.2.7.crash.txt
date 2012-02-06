@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/miha/work/orange/testing/regressionTests/xtest_one.py", line 97, in <module>
+    execfile(t__name)
+  File "tree_c45.py", line 10, in <module>
+    tree = Orange.classification.tree.C45Learner(data)
+  File "/home/miha/work/orange/orange/Orange/classification/tree.py", line 1479, in __new__
+    self.__init__(**cls._rename_dict(argkw))
+  File "/home/miha/work/orange/orange/Orange/classification/tree.py", line 1485, in __init__
+    self.base = _C45Learner(**self._rename_dict(kwargs))
+KernelException: C45Loader: /home/miha/work/orange/c45.so: cannot open shared object file: No such file or directory

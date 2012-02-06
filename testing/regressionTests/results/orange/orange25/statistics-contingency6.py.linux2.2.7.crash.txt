@@ -1,0 +1,17 @@
+Contingency items:
+4.30000019073 <1.000, 0.000, 0.000>
+4.40000009537 <3.000, 0.000, 0.000>
+4.5 <1.000, 0.000, 0.000>
+4.59999990463 <4.000, 0.000, 0.000>
+4.69999980927 <2.000, 0.000, 0.000>
+
+Contingency keys:  [4.300000190734863, 4.400000095367432, 4.5]
+Contingency values:  [<1.000, 0.000, 0.000>, <3.000, 0.000, 0.000>, <1.000, 0.000, 0.000>]
+Contingency items:  [(4.300000190734863, <1.000, 0.000, 0.000>), (4.400000095367432, <3.000, 0.000, 0.000>), (4.5, <1.000, 0.000, 0.000>)]
+
+cont[4.350] =Traceback (most recent call last):
+  File "/home/miha/work/orange/testing/regressionTests/xtest_one.py", line 97, in <module>
+    execfile(t__name)
+  File "statistics-contingency6.py", line 18, in <module>
+    print "cont[%5.3f] =" % midkey, cont[midkey]
+IndexError: invalid index (%5.3f)

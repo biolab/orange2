@@ -1,0 +1,13 @@
+
+DATA:iris.tab
+
+first: 2.77, second: 0.98
+
+different random seed
+first: 2.61, second: 0.72
+
+All importances:
+   sepal length:   2.61
+    sepal width:   0.72
+   petal length:  32.66
+    petal width:  23.73

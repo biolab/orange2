@@ -1,0 +1,7 @@
+Learner  CA     Brier  AUC
+for_gain 0.933  0.080  0.994
+for_simp 0.933  0.079  0.995
+
+Runtimes:
+for_gain 0.0959219932556
+for_simp 0.0247950553894

@@ -1,0 +1,14 @@
+Testing using euclidean distance
+Iris-setosa Iris-setosa
+Iris-versicolor Iris-versicolor
+Iris-versicolor Iris-versicolor
+Iris-setosa Iris-setosa
+Iris-setosa Iris-setosa
+
+
+Testing using hamming distance
+Iris-virginica Iris-virginica
+Iris-setosa Iris-setosa
+Iris-versicolor Iris-versicolor
+Iris-setosa Iris-setosa
+Iris-setosa Iris-setosa

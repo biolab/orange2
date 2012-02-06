@@ -1,0 +1,9 @@
+Feature scores for best three features (with score_all):
+0.613 physician-fee-freeze
+0.255 el-salvador-aid
+0.228 synfuels-corporation-cutback
+
+Feature scores for best three features (scored individually):
+0.613 physician-fee-freeze
+0.255 el-salvador-aid
+0.228 synfuels-corporation-cutback

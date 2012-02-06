@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/miha/work/orange/testing/regressionTests/xtest_one.py", line 97, in <module>
+    execfile(t__name)
+  File "misc-selection-bestonthefly.py", line 11, in <module>
+    find_best = Orange.misc.selection.BestOnTheFly(call_compare_on_1st = True)
+  File "/home/miha/work/orange/orange/Orange/misc/__init__.py", line 454, in wrap_call
+    return func(*args, **kwargs)
+  File "/home/miha/work/orange/orange/Orange/misc/selection.py", line 105, in __init__
+    self.randomGenerator = random.Random(seed)
+AttributeError: 'module' object has no attribute 'Random'
