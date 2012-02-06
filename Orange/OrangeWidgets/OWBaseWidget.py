@@ -3,7 +3,8 @@
 # Orange Widget
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
-import orngEnviron
+from Orange.misc import environ
+from Orange.orng.orngEnviron import directoryNames as old_directory_names
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -19,9 +20,10 @@ if not hasattr(QObject, "pyqtConfigure"):
     QObject.pyqtConfigure = pyqtConfigure
 
 from OWContexts import *
-import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
+import sys, time, random, user, os, os.path, cPickle, copy
 import orange
-import orngDebugging
+from Orange import misc
+from Orange.misc import debugging
 from string import *
 from orngSignalManager import *
 import OWGUI
@@ -146,7 +148,7 @@ class OWBaseWidget(QDialog):
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown", "savedWidgetGeometry"]
 
         # directories are better defined this way, otherwise .ini files get written in many places
-        self.__dict__.update(orngEnviron.directoryNames)
+        self.__dict__.update(old_directory_names)
         try:
             self.__dict__["thisWidgetDir"] = os.path.dirname(sys.modules[self.__class__.__module__].__file__)
         except:
@@ -847,8 +849,9 @@ class OWBaseWidget(QDialog):
     @classmethod
     def getWidgetStateIcons(cls):
         if not hasattr(cls, "_cached__widget_state_icons"):
-            iconsDir = os.path.join(orngEnviron.canvasDir, "icons")
-            QDir.addSearchPath("canvasIcons",os.path.join(orngEnviron.canvasDir, "icons/"))
+            iconsDir = os.path.join(environ.canvas_install_dir, "icons")
+            QDir.addSearchPath("canvasIcons",os.path.join(environ.canvas_install_dir,
+                "icons/"))
             info = QPixmap("canvasIcons:information.png")
             warning = QPixmap("canvasIcons:warning.png")
             error = QPixmap("canvasIcons:error.png")

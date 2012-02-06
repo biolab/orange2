@@ -8,7 +8,7 @@ import logging
 import logging.handlers
 
 import orange
-import orngDebugging
+from Orange.misc import debugging
 
 Single = 2
 Multiple = 4
@@ -123,16 +123,17 @@ class SignalManager(object):
 
     def __init__(self, *args):
         self.debugFile = None
-        self.verbosity = orngDebugging.orngVerbosity
+        self.verbosity = debugging.orngVerbosity
         self.stderr = sys.stderr
         self._seenExceptions = {}
         self.widgetQueue = []
         self.asyncProcessingEnabled = False
         
-        import orngEnviron
+        from Orange.misc import environ
         if not hasattr(self, "log"):
             SignalManager.log = logging.getLogger("SignalManager")
-            self.logFileName = os.path.join(orngEnviron.canvasSettingsDir, "signalManager.log")
+            self.logFileName = os.path.join(environ.canvas_settings_dir,
+                "signalManager.log")
             try:
                 self.log.addHandler(logging.handlers.RotatingFileHandler(self.logFileName, maxBytes=2**20, backupCount=2))
             except:
@@ -150,10 +151,11 @@ class SignalManager(object):
                 pass
         self.myerr = err()
             
-        if orngDebugging.orngDebuggingEnabled:
-            self.debugHandler = logging.FileHandler(orngDebugging.orngDebuggingFileName, mode="wb")
+        if debugging.orngDebuggingEnabled:
+            self.debugHandler = logging.FileHandler(debugging.orngDebuggingFileName, mode="wb")
             self.log.addHandler(self.debugHandler)
-            self.log.setLevel(logging.DEBUG if orngDebugging.orngVerbosity > 0 else logging.INFO) 
+            self.log.setLevel(logging.DEBUG if debugging.orngVerbosity > 0
+            else logging.INFO)
             sys.excepthook = self.exceptionHandler
             sys.stderr = self.myerr
 

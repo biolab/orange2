@@ -22,6 +22,8 @@ from OWWidget import *
 from OWWidget import *
 from PyQt4.QtWebKit import *
 
+from Orange.misc import environ
+
 import os, time, tempfile, shutil, re, shutil, pickle, binascii
 import xml.dom.minidom
 
@@ -47,7 +49,7 @@ class MyListWidget(QListWidget):
 
     
 class ReportWindow(OWWidget):
-    indexfile = os.path.join(orngEnviron.widgetDir, "report", "index.html")
+    indexfile = os.path.join(environ.widget_install_dir, "report", "index.html")
     
     def __init__(self):
         OWWidget.__init__(self, None, None, "Report")

@@ -2,7 +2,7 @@
 
 import os, re, sys, time, subprocess
 import getopt
-import orngEnviron
+from Orange.misc import environ
 
 regtestdir = os.getcwd().replace("\\", "/")
 re_israndom = re.compile(r"#\s*xtest\s*:\s*RANDOM")
@@ -183,31 +183,31 @@ def main(argv):
 
     module = opts.get("--module", "all")
     if module in ["all"]:
-        root = "%s/.." % orngEnviron.orangeDir
+        root = "%s/.." % environ.install_dir
         module = "orange"
         dirs = [("modules", "Orange/doc/modules"),
                 ("reference", "Orange/doc/reference"),
                 ("ofb", "docs/tutorial/rst/code"),
                 ("orange25", "docs/reference/rst/code")]
     elif module in ["orange"]:
-        root = "%s/.." % orngEnviron.orangeDir
+        root = "%s/.." % environ.install_dir
         module = "orange"
         dirs = [("modules", "Orange/doc/modules"),
                 ("reference", "Orange/doc/reference"),
                 ("ofb", "docs/tutorial/rst/code")]
     elif module in ["ofb-rst"]:
-        root = "%s/.." % orngEnviron.orangeDir
+        root = "%s/.." % environ.install_dir
         module = "orange"
         dirs = [("ofb", "docs/tutorial/rst/code")]
     elif module in ["orange25"]:
-        root = "%s/.." % orngEnviron.orangeDir
+        root = "%s/.." % environ.install_dir
         module = "orange"
         dirs = [("orange25", "docs/reference/rst/code")]
     elif module == "obi":
-        root = orngEnviron.addOnsDirSys + "/Bioinformatics/doc"
+        root = environ.add_ons_dir + "/Bioinformatics/doc"
         dirs = [("modules", "modules")]
     elif module == "text":
-        root = orngEnviron.addOnsDirSys + "/Text/doc"
+        root = environ.add_ons_dir + "/Text/doc"
         dirs = [("modules", "modules")]
     else:
         print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
