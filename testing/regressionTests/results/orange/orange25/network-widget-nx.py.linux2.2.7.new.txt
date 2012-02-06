@@ -1,1 +1,0 @@
-No handlers could be found for logger "SignalManager"

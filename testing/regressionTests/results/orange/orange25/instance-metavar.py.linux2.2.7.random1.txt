@@ -1,1 +1,0 @@
-['young', 'myope', 'no', 'reduced', 'none'], {-2:0.64}

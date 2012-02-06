@@ -1,5 +1,0 @@
-['M', 1838, 'HIGHWAY', ?, 2, 'N', 'THROUGH', 'WOOD', '?', 'S', 'WOOD'] Z-score: 1.732
-['M', 1818, 'HIGHWAY', ?, 2, 'N', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD'] Z-score: 1.732
-['A', 1853, 'RR', ?, 2, 'N', 'DECK', 'WOOD', '?', 'S', 'WOOD'] Z-score: 1.732
-['A', 1829, 'AQUEDUCT', ?, 1, 'N', 'THROUGH', 'WOOD', '?', 'S', 'WOOD'] Z-score: 1.733
-['A', 1848, 'AQUEDUCT', ?, 1, 'N', 'DECK', 'WOOD', '?', 'S', 'WOOD'] Z-score: 1.733

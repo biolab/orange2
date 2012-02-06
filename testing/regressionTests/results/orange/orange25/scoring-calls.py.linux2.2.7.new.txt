@@ -1,6 +1,0 @@
-Call with variable and data table
-0.0321507193148
-Call with variable and domain contingency
-0.0321507193148
-Call with contingency and class distribution
-0.0321507193148

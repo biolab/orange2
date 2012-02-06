@@ -1,4 +1,0 @@
-EnumVariable 'status'
-Attributes {'a': '12'}
-Set a=12
-Attributes {'a': '12'}

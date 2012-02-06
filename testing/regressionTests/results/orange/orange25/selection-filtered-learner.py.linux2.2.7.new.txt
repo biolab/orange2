@@ -1,6 +1,0 @@
-Learner      CA
-bayes        0.903
-filtered     0.956
-
-Number of times attributes were used in cross-validation:
-10 x physician-fee-freeze
