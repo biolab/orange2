@@ -1,5 +1,5 @@
 m = 0.000: 239 nodes, 134 leaves
-m = 0.000: 228 nodes, 128 leaves
+m = 0.000: 183 nodes, 104 leaves
 m = 0.100: 173 nodes, 99 leaves
 m = 0.500: 179 nodes, 102 leaves
 m = 1.000: 175 nodes, 100 leaves

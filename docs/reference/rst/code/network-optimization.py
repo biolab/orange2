@@ -8,10 +8,11 @@ net = Orange.network.Network(5, 0)
 # set edges
 for i in range(4):
     for j in range(i + 1, 5):
-        net[i,j] = 1
+        net[i, j] = 1
 
 # vertices are placed randomly in NetworkOptimization constructor
 networkOptimization = Orange.network.NetworkOptimization(net)
+
 
 # read all edges and plot a line
 for u, v in net.get_edges():

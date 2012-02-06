@@ -1,132 +1,132 @@
 Average values and mean square errors:
-age, mean=38.91 +-  0.44
-fnlwgt, mean=187280.29 +- 3464.37
-education-num, mean= 9.98 +-  0.08
-capital-gain, mean=1041.83 +- 218.78
-capital-loss, mean=96.18 +- 13.68
-hours-per-week, mean=39.91 +-  0.41
+age, mean=39.63 +-  2.75
+fnlwgt, mean=198892.33 +- 19629.05
+education-num, mean=10.63 +-  0.53
+capital-gain, mean=378.40 +- 201.02
+capital-loss, mean=207.73 +- 156.10
+hours-per-week, mean=39.87 +-  2.34
 
 Frequencies for values of discrete attributes:
 workclass:
-  Private: 685
-  Self-emp-not-inc: 72
-  Self-emp-inc: 28
-  Federal-gov: 29
-  Local-gov: 59
-  State-gov: 43
-  Without-pay: 2
+  Private: 22
+  Self-emp-not-inc: 1
+  Self-emp-inc: 1
+  Federal-gov: 1
+  Local-gov: 1
+  State-gov: 1
+  Without-pay: 0
   Never-worked: 0
 education:
-  Bachelors: 152
-  Some-college: 193
-  11th: 34
-  HS-grad: 327
-  Prof-school: 9
-  Assoc-acdm: 39
-  Assoc-voc: 41
-  9th: 18
-  7th-8th: 30
-  12th: 22
-  Masters: 57
-  1st-4th: 8
-  10th: 24
-  Doctorate: 15
-  5th-6th: 8
+  Bachelors: 6
+  Some-college: 6
+  11th: 0
+  HS-grad: 7
+  Prof-school: 0
+  Assoc-acdm: 3
+  Assoc-voc: 1
+  9th: 1
+  7th-8th: 2
+  12th: 0
+  Masters: 3
+  1st-4th: 0
+  10th: 0
+  Doctorate: 1
+  5th-6th: 0
   Preschool: 0
 marital-status:
-  Married-civ-spouse: 452
-  Divorced: 132
-  Never-married: 297
-  Separated: 41
-  Widowed: 37
-  Married-spouse-absent: 17
-  Married-AF-spouse: 1
+  Married-civ-spouse: 12
+  Divorced: 4
+  Never-married: 8
+  Separated: 3
+  Widowed: 3
+  Married-spouse-absent: 0
+  Married-AF-spouse: 0
 occupation:
-  Tech-support: 33
-  Craft-repair: 117
-  Other-service: 103
-  Sales: 92
-  Exec-managerial: 125
-  Prof-specialty: 110
-  Handlers-cleaners: 40
-  Machine-op-inspct: 62
-  Adm-clerical: 115
-  Farming-fishing: 29
-  Transport-moving: 61
-  Priv-house-serv: 10
-  Protective-serv: 20
-  Armed-Forces: 1
+  Tech-support: 1
+  Craft-repair: 3
+  Other-service: 3
+  Sales: 4
+  Exec-managerial: 7
+  Prof-specialty: 5
+  Handlers-cleaners: 0
+  Machine-op-inspct: 0
+  Adm-clerical: 2
+  Farming-fishing: 0
+  Transport-moving: 2
+  Priv-house-serv: 0
+  Protective-serv: 0
+  Armed-Forces: 0
 relationship:
-  Wife: 63
-  Own-child: 146
-  Husband: 384
-  Not-in-family: 249
-  Other-relative: 27
-  Unmarried: 108
+  Wife: 1
+  Own-child: 3
+  Husband: 11
+  Not-in-family: 8
+  Other-relative: 0
+  Unmarried: 7
 race:
-  White: 825
-  Asian-Pac-Islander: 32
-  Amer-Indian-Eskimo: 8
-  Other: 12
-  Black: 100
+  White: 27
+  Asian-Pac-Islander: 0
+  Amer-Indian-Eskimo: 0
+  Other: 0
+  Black: 3
 sex:
-  Female: 353
-  Male: 624
+  Female: 13
+  Male: 17
 native-country:
-  United-States: 864
-  Cuba: 1
-  Jamaica: 2
-  India: 3
-  Mexico: 25
-  South: 1
-  Puerto-Rico: 1
+  United-States: 29
+  Cuba: 0
+  Jamaica: 0
+  India: 0
+  Mexico: 0
+  South: 0
+  Puerto-Rico: 0
   Honduras: 0
-  England: 4
-  Canada: 5
-  Germany: 7
-  Iran: 1
-  Philippines: 4
-  Italy: 3
-  Poland: 2
-  Columbia: 2
-  Cambodia: 1
+  England: 1
+  Canada: 0
+  Germany: 0
+  Iran: 0
+  Philippines: 0
+  Italy: 0
+  Poland: 0
+  Columbia: 0
+  Cambodia: 0
   Thailand: 0
   Ecuador: 0
-  Laos: 1
-  Taiwan: 4
-  Haiti: 2
+  Laos: 0
+  Taiwan: 0
+  Haiti: 0
   Portugal: 0
-  Dominican-Republic: 1
-  El-Salvador: 3
+  Dominican-Republic: 0
+  El-Salvador: 0
   France: 0
-  Guatemala: 1
-  China: 3
-  Japan: 1
+  Guatemala: 0
+  China: 0
+  Japan: 0
   Yugoslavia: 0
-  Peru: 1
-  Outlying-US(Guam-USVI-etc): 1
-  Scotland: 1
+  Peru: 0
+  Outlying-US(Guam-USVI-etc): 0
+  Scotland: 0
   Trinadad&Tobago: 0
-  Greece: 1
-  Nicaragua: 2
-  Vietnam: 3
+  Greece: 0
+  Nicaragua: 0
+  Vietnam: 0
   Hong: 0
-  Ireland: 3
+  Ireland: 0
   Hungary: 0
   Holand-Netherlands: 0
 
 Number of instances where attribute is not defined:
    0 age
-  59 workclass
+   3 workclass
    0 fnlwgt
    0 education
    0 education-num
    0 marital-status
-  59 occupation
+   3 occupation
    0 relationship
    0 race
    0 sex
    0 capital-gain
    0 capital-loss
    0 hours-per-week
-  23 native-country
+   0 native-country

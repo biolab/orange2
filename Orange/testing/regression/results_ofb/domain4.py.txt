@@ -1,6 +1,6 @@
-Size of original data set: 977 instances
-p(>50K)=0.242
-Size of data1: 624 instances
-p(>50K)=0.296
-Size of data2: 38 instances
-p(>50K)=0.632
+Size of original data set: 30 instances
+p(>50K)=0.267
+Size of data1: 17 instances
+p(>50K)=0.353
+Size of data2: 1 instances
+p(>50K)=1.000
