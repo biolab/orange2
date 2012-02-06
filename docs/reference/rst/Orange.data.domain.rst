@@ -121,21 +121,20 @@ Meta attributes
 
 Meta attributes hold additional data attached to individual
 instances. Different instances from the same domain or even the same
-table may have different meta attributes. See documentation on
-:obj:`Orange.data.Instance` for a more thorough description of meta
-values.
+table may have different meta attributes. (See documentation on
+:obj:`Orange.data.Instance` for details about meta values.)
 
-Meta attributes that appear in instances can, but don't need to be
+Meta attributes that appear in instances can - but don't need to - be
 listed in the domain. Typically, the meta attribute will be included in
 the domain for the following reasons.
 
-     * If the domain knows about a meta attribute, their values can be
+     * If the domain knows about meta attributes, their values can be
        obtained with indexing by names and variable descriptors,
        e.g. ``inst["age"]``. Values of unknown meta attributes
        can be obtained only through integer indices (e.g. inst[id], where
        id needs to be an integer).
 
-     * When printing out an instance, the symbolic values of discrete
+     * When printing out a data instance, the symbolic values of discrete
        meta attributes can only be printed if the attribute is
        registered. Also, if the attribute is registered, the printed
        out example will show a (more informative) attribute's name
@@ -148,28 +147,24 @@ the domain for the following reasons.
        meta attributes listed in the domain, with their values set to
        unknown.
 
-For the latter two points - saving to a file and construction of new
-instances - there is an additional flag: a meta attribute can be
-marked as "optional". Such meta attributes are not saved and not added
-to newly constructed data instances.
+Meta attribute can be marked as "optional". Non-optional meta
+attributes are *expected to be* present in all data instances from that
+domain. This rule is not strictly enforced. As one of the few places
+where the difference matters, saving to files fails if a non-optional
+meta value is missing; optional attributes are not written to the file
+at all. Also, newly constructed data instances initially have all the
+non-optional meta attributes.
 
-Another distinction between the optional and non-optional meta
-attributes is that the latter are *expected to be* present in all
-data instances from that domain. Saving to files expects will fail
-if a non-optional meta value is missing; in most other places,
-these rules are not strictly enforced, so adhering to them is rather up
-to choice.
-
-While the list of features and the class value are constant,
-meta attributes can be added and removed at any time (a detailed
-description of methods related to meta attributes is given below)::
+While the list of features and the class value are immutable,
+meta attributes can be added and removed at any time::
 
      >>> misses = Orange.data.variable.Continuous("misses")
      >>> id = Orange.data.new_meta_id()
      >>> data.domain.add_meta(id, misses)
 
 This does not change the data: no attributes are added to data
-instances.
+instances. Methods related to meta attributes are described in more
+details later.
 
 Registering meta attributes enables addressing by indexing, either by
 name or by descriptor. For instance, the following snippet sets the new
@@ -231,60 +226,60 @@ is a new feature with no relation to the existing ones. ::
 
      .. attribute:: features
 
-	 List of domain attributes
-	 (:obj:`Orange.data.variable.Variables`) without the class
-	 variable. Read only.
+         List of domain attributes
+         (:obj:`Orange.data.variable.Variables`) without the class
+         variable. Read only.
 
      .. attribute:: variables
 
-	 List of domain attributes
-	 (:obj:`Orange.data.variable.Variables`) including the class
-	 variable. Read only.
+     List of domain attributes
+     (:obj:`~Orange.data.variable.Variables`) including the class
+     variable. Read only.
 
      .. attribute:: class_var
 
-	 The class variable (:obj:`Orange.data.variable.Variable`), or
-	 :obj:`None` if there is none. Read only.
+     The class variable (:obj:`~Orange.data.variable.Variable`), or
+     :obj:`None` if there is none. Read only.
 
      .. attribute:: class_vars
 
-	 A list of additional class attributes. Read only.
+     A list of additional class attributes. Read only.
 
      .. attribute:: version
 
-	 An integer value that is changed when the domain is
-	 modified. The value can be also used as unique domain identifier; two
-	 different domains have different value of ``version``.
+     An integer value that is changed when the domain is
+     modified. The value can be also used as unique domain identifier; two
+     different domains have different value of ``version``.
 
      .. method:: __init__(variables[, class_vars=])
 
-	 Construct a domain with the given variables; the
-	 last one is used as the class variable. ::
+     Construct a domain with the given variables; the
+     last one is used as the class variable. ::
 
-	     >>> a, b, c = [Orange.data.variable.Discrete(x) for x in "abc"]
-	     >>> domain = Orange.data.Domain([a, b, c])
-	     >>> domain.features
-	     <EnumVariable 'a', EnumVariable 'b'>
-	     >>> domain.class_var
-	     EnumVariable 'c'
+         >>> a, b, c = [Orange.data.variable.Discrete(x) for x in "abc"]
+         >>> domain = Orange.data.Domain([a, b, c])
+         >>> domain.features
+         <EnumVariable 'a', EnumVariable 'b'>
+         >>> domain.class_var
+         EnumVariable 'c'
 
-     :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
-	 :type variables: list
+     :param variables: List of variables (instances of :obj:`~Orange.data.variable.Variable`)
+     :type variables: list
      :param class_vars: A list of multiple classes; must be a keword argument
      :type class_vars: list
 
      .. method:: __init__(features, class_variable[, class_vars=])
 
-	 Construct a domain with the given list of features and the
-	 class variable. ::
+     Construct a domain with the given list of features and the
+     class variable. ::
 
-	     >>> domain = Orange.data.Domain([a, b], c)
-	     >>> domain.features
-	     <EnumVariable 'a', EnumVariable 'b'>
-	     >>> domain.class_var
-	     EnumVariable 'c'
+         >>> domain = Orange.data.Domain([a, b], c)
+         >>> domain.features
+         <EnumVariable 'a', EnumVariable 'b'>
+         >>> domain.class_var
+         EnumVariable 'c'
 
-     :param features: List of features (instances of :obj:`Orange.data.variable.Variable`)
+     :param features: List of features (instances of :obj:`~Orange.data.variable.Variable`)
      :type features: list
      :param class_variable: Class variable
      :type class_variable: Orange.data.variable.Variable
@@ -293,209 +288,209 @@ is a new feature with no relation to the existing ones. ::
 
      .. method:: __init__(variables, has_class[, class_vars=])
 
-	 Construct a domain with the given variables. If `has_class` is
-	 :obj:`True`, the last one is used as the class variable. ::
+     Construct a domain with the given variables. If `has_class` is
+     :obj:`True`, the last one is used as the class variable. ::
 
-	     >>> domain = Orange.data.Domain([a, b, c], False)
-	     >>> domain.features
-	     <EnumVariable 'a', EnumVariable 'b'>
-	     >>> domain.class_var
-	     EnumVariable 'c'
+         >>> domain = Orange.data.Domain([a, b, c], False)
+         >>> domain.features
+         <EnumVariable 'a', EnumVariable 'b'>
+         >>> domain.class_var
+         EnumVariable 'c'
 
-	 :param variables: List of variables (instances of :obj:`Orange.data.variable.Variable`)
-	 :type features: list
-	 :param has_class: A flag telling whether the domain has a class
-	 :type has_class: bool
+     :param variables: List of variables (instances of :obj:`~Orange.data.variable.Variable`)
+     :type features: list
+     :param has_class: A flag telling whether the domain has a class
+     :type has_class: bool
      :param class_vars: A list of multiple classes; must be a keyword argument
      :type class_vars: list
 
      .. method:: __init__(variables, source[, class_vars=])
 
-	 Construct a domain with the given variables that can also be
-	 specified by names if the variables with that names exist in the
-	 source list. The last variable from the list is used as the class
-	 variable. ::
+     Construct a domain with the given variables that can also be
+     specified by names if the variables with that names exist in the
+     source list. The last variable from the list is used as the class
+     variable. ::
 
-	     >>> domain1 = orange.Domain([a, b])
-	     >>> domain2 = orange.Domain(["a", b, c], domain)
+         >>> domain1 = orange.Domain([a, b])
+         >>> domain2 = orange.Domain(["a", b, c], domain)
 
-	 :param variables: List of variables (strings or instances of :obj:`Orange.data.variable.Variable`)
-	 :type variables: list
-	 :param source: An existing domain or a list of variables
-	 :type source: Orange.data.Domain or list of :obj:`Orange.data.variable.Variable`
+     :param variables: List of variables (strings or instances of :obj:`~Orange.data.variable.Variable`)
+     :type variables: list
+     :param source: An existing domain or a list of variables
+     :type source: Orange.data.Domain or list of :obj:`~Orange.data.variable.Variable`
      :param class_vars: A list of multiple classes; must be a keyword argument
      :type class_vars: list
 
      .. method:: __init__(variables, has_class, source[, class_vars=])
 
-	 Similar to above except for the flag which tells whether the
-	 last variable should be used as the class variable. ::
+     Similar to above except for the flag which tells whether the
+     last variable should be used as the class variable. ::
 
-	     >>> domain1 = orange.Domain([a, b], False)
-	     >>> domain2 = orange.Domain(["a", b, c], False, domain)
+         >>> domain1 = orange.Domain([a, b], False)
+         >>> domain2 = orange.Domain(["a", b, c], False, domain)
 
-	 :param variables: List of variables (strings or instances of :obj:`Orange.data.variable.Variable`)
-	 :type variables: list
-	 :param has_class: A flag telling whether the domain has a class
-	 :type has_class: bool
-	 :param source: An existing domain or a list of variables
-	 :type source: Orange.data.Domain or list of :obj:`Orange.data.variable.Variable`
+     :param variables: List of variables (strings or instances of :obj:`~Orange.data.variable.Variable`)
+     :type variables: list
+     :param has_class: A flag telling whether the domain has a class
+     :type has_class: bool
+     :param source: An existing domain or a list of variables
+     :type source: Orange.data.Domain or list of :obj:`~Orange.data.variable.Variable`
      :param class_vars: A list of multiple classes; must be a keyword argument
      :type class_vars: list
 
      .. method:: __init__(domain, class_var[, class_vars=])
 
-	 Construct a copy of an existing domain
-	 except that the class variable is replaced with the given one
-	 and the class variable of the existing domain becomes an
-	 ordinary feature. If the new class is one of the original
-	 domain's features, it can also be specified by a name.
+     Construct a copy of an existing domain
+     except that the class variable is replaced with the given one
+     and the class variable of the existing domain becomes an
+     ordinary feature. If the new class is one of the original
+     domain's features, it can also be specified by a name.
 
-	 :param domain: An existing domain
-	 :type domain: :obj:`Orange.variable.Domain`
-	 :param class_var: Class variable for the new domain
-	 :type class_var: string or :obj:`Orange.data.variable.Variable`
-     :param class_vars: A list of multiple classes; must be a keword argument
+     :param domain: An existing domain
+     :type domain: :obj:`~Orange.variable.Domain`
+     :param class_var: Class variable for the new domain
+     :type class_var: string or :obj:`~Orange.data.variable.Variable`
+     :param class_vars: A list of multiple classes; must be a keyword argument
      :type class_vars: list
 
      .. method:: __init__(domain, has_class=False[, class_vars=])
 
-	 Construct a copy of the domain. If the ``has_class``
-	 flag is given and is :obj:`False`, it moves the class
-	 attribute to ordinary features.
+     Construct a copy of the domain. If the ``has_class``
+     flag is given and is :obj:`False`, it moves the class
+     attribute to ordinary features.
 
-	 :param domain: An existing domain
-	 :type domain: :obj:`Orange.variable.Domain`
-	 :param has_class: A flag telling whether the domain has a class
-	 :type has_class: bool
+     :param domain: An existing domain
+     :type domain: :obj:`~Orange.variable.Domain`
+     :param has_class: A flag telling whether the domain has a class
+     :type has_class: bool
      :param class_vars: A list of multiple classes; must be a keword argument
      :type class_vars: list
 
      .. method:: has_discrete_attributes(include_class=True)
 
-	 Return :obj:`True` if the domain has any discrete variables;
-	 class is included unless ``include_class`` is ``False``.
+     Return :obj:`True` if the domain has any discrete variables;
+     class is included unless ``include_class`` is ``False``.
 
-	 :param has_class: Tells whether to consider the class variable
-	 :type has_class: bool
-	 :rtype: bool
+     :param has_class: Tells whether to consider the class variable
+     :type has_class: bool
+     :rtype: bool
 
      .. method:: has_continuous_attributes(include_class=True)
 
-	 Return :obj:`True` if the domain has any continuous variables;
-	 class is included unless ``include_class`` is ``False``.
+     Return :obj:`True` if the domain has any continuous variables;
+     class is included unless ``include_class`` is ``False``.
 
-	 :param has_class: Tells whether to consider the class variable
-	 :type has_class: bool
-	 :rtype: bool
+     :param has_class: Tells whether to consider the class variable
+     :type has_class: bool
+     :rtype: bool
 
      .. method:: has_other_attributes(include_class=True)
 
-	 Return :obj:`True` if the domain has any variables which are
-	 neither discrete nor continuous, such as, for instance string variables.
-	 class is included unless ``include_class`` is ``False``.
+     Return :obj:`True` if the domain has any variables which are
+     neither discrete nor continuous, such as, for instance string variables.
+     class is included unless ``include_class`` is ``False``.
 
-	 :param has_class: Tells whether to consider the class variable
-	 :type has_class: bool
-	 :rtype: bool
+     :param has_class: Tells whether to consider the class variable
+     :type has_class: bool
+     :rtype: bool
 
 
      .. method:: add_meta(id, variable, optional=0)
 
-	 Register a meta attribute with the given id (obtained by
-	 :obj:`Orange.data.new_meta_id`). The same meta attribute should
-	 have the same id in all domain in which it is registered. ::
+     Register a meta attribute with the given id (obtained by
+     :obj:`Orange.data.new_meta_id`). The same meta attribute should
+     have the same id in all domain in which it is registered. ::
 
-	     >>> newid = Orange.data.new_meta_id()
-	     >>> domain.add_meta(newid, Orange.data.variable.String("origin"))
-	     >>> data[55]["origin"] = "Nepal"
-	     >>> data[55]
-	     ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0',
-	     '4', '1', '0', '1', 'mammal'], {"name":'oryx', "origin":'Nepal'}
+         >>> newid = Orange.data.new_meta_id()
+         >>> domain.add_meta(newid, Orange.data.variable.String("origin"))
+         >>> data[55]["origin"] = "Nepal"
+         >>> data[55]
+         ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0',
+         '4', '1', '0', '1', 'mammal'], {"name":'oryx', "origin":'Nepal'}
 
-	 The third argument tells whether the meta attribute is optional or
-	 not. The parameter is an integer, with any non-zero value meaning that
-	 the attribute is optional. Different values can be used to distinguish
-	 between various types optional attributes; the meaning of the value
-	 is not defined in advance and can be used arbitrarily by the
-	 application.
+     The third argument tells whether the meta attribute is optional or
+     not. The parameter is an integer, with any non-zero value meaning that
+     the attribute is optional. Different values can be used to distinguish
+     between various types optional attributes; the meaning of the value
+     is not defined in advance and can be used arbitrarily by the
+     application.
 
-	 :param id: id of the new meta attribute
-	 :type id: int
-	 :param variable: variable descriptor
-	 :type variable: Orange.data.variable.Variable
-	 :param optional: tells whether the meta attribute is optional
-	 :type optional: int
+     :param id: id of the new meta attribute
+     :type id: int
+     :param variable: variable descriptor
+     :type variable: Orange.data.variable.Variable
+     :param optional: tells whether the meta attribute is optional
+     :type optional: int
 
      .. method:: add_metas(attributes, optional=0)
 
-	 Add multiple meta attributes at once. The dictionary contains id's as
-	 keys and variables (:obj:~Orange.data.variable as the corresponding
-	 values. The following example shows how to add all meta attributes
-	 from one domain to another::
+     Add multiple meta attributes at once. The dictionary contains id's as
+     keys and variables (:obj:~Orange.data.variable as the corresponding
+     values. The following example shows how to add all meta attributes
+     from one domain to another::
 
-	      newdomain.add_metas(domain.get_metas())
+          newdomain.add_metas(domain.get_metas())
 
-	 The optional second argument has the same meaning as in :obj:`add_meta`.
+     The optional second argument has the same meaning as in :obj:`add_meta`.
 
-	 :param attributes: dictionary of id's and variables
-	 :type attributes: dict
-	 :param optional: tells whether the meta attribute is optional
-	 :type optional: int
+     :param attributes: dictionary of id's and variables
+     :type attributes: dict
+     :param optional: tells whether the meta attribute is optional
+     :type optional: int
 
      .. method:: remove_meta(attribute)
 
-	 Removes one or multiple meta attributes. Removing a meta attribute has
-	 no effect on data instances.
+     Removes one or multiple meta attributes. Removing a meta attribute has
+     no effect on data instances.
 
-	 :param attribute: attribute(s) to be removed, given as name, id, variable descriptor or a list of them
-	 :type attribute: string, int, Orange.data.variable.Variable; or a list
+     :param attribute: attribute(s) to be removed, given as name, id, variable descriptor or a list of them
+     :type attribute: string, int, Orange.data.variable.Variable; or a list
 
      .. method:: has_attribute(attribute)
 
-	 Return True if the domain contains the specified meta attribute.
+     Return True if the domain contains the specified meta attribute.
 
-	 :param attribute: attribute to be checked
-	 :type attribute: string, int, Orange.data.variable.Variable
-	 :rtype: bool
+     :param attribute: attribute to be checked
+     :type attribute: string, int, Orange.data.variable.Variable
+     :rtype: bool
 
      .. method:: meta_id(attribute)
 
-	 Return an id of a meta attribute.
+     Return an id of a meta attribute.
 
-	 :param attribute: name or variable descriptor of the attribute
-	 :type attribute: string or Orange.data.variable.Variable
-	 :rtype: int
+     :param attribute: name or variable descriptor of the attribute
+     :type attribute: string or Orange.data.variable.Variable
+     :rtype: int
 
      .. method:: get_meta(attribute)
 
-	 Return a variable descriptor corresponding to the meta attribute.
+     Return a variable descriptor corresponding to the meta attribute.
 
-	 :param attribute: name or id of the attribute
-	 :type attribute: string or int
-	 :rtype: Orange.data.variable.Variable
+     :param attribute: name or id of the attribute
+     :type attribute: string or int
+     :rtype: Orange.data.variable.Variable
 
      .. method:: get_metas()
 
-	  Return a dictionary with meta attribute id's as keys and corresponding
-	  variable descriptors as values.
+      Return a dictionary with meta attribute id's as keys and corresponding
+      variable descriptors as values.
 
      .. method:: get_metas(optional)
 
-	  Return a dictionary with meta attribute id's as keys and corresponding
-	  variable descriptors as values. The dictionary contains only meta
-	  attributes for which the argument ``optional`` matches the flag given
-	  when the attributes were added using :obj:`add_meta` or :obj:`add_metas`.
+      Return a dictionary with meta attribute id's as keys and corresponding
+      variable descriptors as values. The dictionary contains only meta
+      attributes for which the argument ``optional`` matches the flag given
+      when the attributes were added using :obj:`add_meta` or :obj:`add_metas`.
 
-	  :param optional: flag that specifies the attributes to be returned
-	  :type optional: int
-	  :rtype: dict
+      :param optional: flag that specifies the attributes to be returned
+      :type optional: int
+      :rtype: dict
 
      .. method:: is_optional_meta(attribute)
 
-	 Return True if the given meta attribute is optional, and False if it is
-	 not.
+     Return True if the given meta attribute is optional, and False if it is
+     not.
 
-	 :param attribute: attribute to be checked
-	 :type attribute: string, int, Orange.data.variable.Variable
-	 :rtype: bool
+     :param attribute: attribute to be checked
+     :type attribute: string, int, Orange.data.variable.Variable
+     :rtype: bool
