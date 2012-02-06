@@ -19,7 +19,6 @@ Try to add as much name mappings as possible (This fixer is prefered
     
 """
 from lib2to3 import fixer_base
-from lib2to3 import fixer_util
 from lib2to3 import pytree
 from lib2to3.fixer_util import Name, Dot, touch_import
 
@@ -486,7 +485,6 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.EquiDistDiscretizer": "Orange.feature.discretization.EquiDistDiscretizer",
            "orange.IntervalDiscretizer": "Orange.feature.discretization.IntervalDiscretizer",
            "orange.ThresholdDiscretizer": "Orange.feature.discretization.ThresholdDiscretizer",
-           "orange.EntropyDiscretization": "Orange.feature.discretization.Entropy",
            "orange.Discrete2Continuous": "Orange.feature.discretization.Discrete2Continuous",
 
            "orange.DomainContinuizer": "Orange.feature.continuization.DomainContinuizer",
@@ -520,14 +518,6 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngDisc.entropyDiscretization": "Orange.feature.discretization.entropyDiscretization_wrapper",
            "orngDisc.EntropyDiscretization": "Orange.feature.discretization.EntropyDiscretization_wrapper",
 
-           "orange.ProbabilityEstimator": "Orange.statistics.estimate.ProbabilityEstimator",
-           "orange.ProbabilityEstimator_FromDistribution": "Orange.statistics.estimate.ProbabilityEstimator_FromDistribution",
-           "orange.ProbabilityEstimatorConstructor": "Orange.statistics.estimate.ProbabilityEstimatorConstructor",
-           "orange.ProbabilityEstimatorConstructor_Laplace": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_Laplace",
-           "orange.ProbabilityEstimatorConstructor_kernel": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_kernel",
-           "orange.ProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_loess",
-           "orange.ProbabilityEstimatorConstructor_m": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_m",
-           "orange.ProbabilityEstimatorConstructor_relative": "Orange.statistics.estimate.ProbabilityEstimatorConstructor_relative",
            "orange.ProbabilityEstimatorList": "Orange.statistics.estimate.ProbabilityEstimatorList",
 
            "orange.FilterList": "Orange.preprocess.FilterList",
