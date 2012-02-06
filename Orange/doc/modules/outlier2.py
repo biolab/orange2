@@ -4,20 +4,15 @@
 # Uses:        bridges
 # Referenced:  OutlierDetection.htm
 
-try: 
-	import pstat, stats
-except:
-	print "Could not import library pstat or stats!"
-else:
-	import orange, orngOutlier
+import orange, orngOutlier
 
-	data = orange.ExampleTable("bridges")
-	outlierDet = orngOutlier.OutlierDetection()
-	outlierDet.setExamples(data, orange.ExamplesDistanceConstructor_Euclidean(data))
-	outlierDet.setKNN(3)
-	zValues = outlierDet.zValues()
-	sorted = []
-	for el in zValues: sorted.append(el)
-	sorted.sort()
-	for i,el in enumerate(zValues):
-		if el > sorted[-6]: print  data[i], "Z-score: %5.3f" % el
+data = orange.ExampleTable("bridges")
+outlierDet = orngOutlier.OutlierDetection()
+outlierDet.setExamples(data, orange.ExamplesDistanceConstructor_Euclidean(data))
+outlierDet.setKNN(3)
+zValues = outlierDet.zValues()
+sorted = []
+for el in zValues: sorted.append(el)
+sorted.sort()
+for i, el in enumerate(zValues):
+	if el > sorted[-6]: print  data[i], "Z-score: %5.3f" % el
