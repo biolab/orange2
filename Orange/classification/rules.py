@@ -609,7 +609,6 @@ from Orange.core import \
 from Orange.misc import deprecated_keywords
 from Orange.misc import deprecated_members
 
-from orngABML import *
 
 class LaplaceEvaluator(RuleEvaluator):
     """
