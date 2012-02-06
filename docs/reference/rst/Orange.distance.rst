@@ -146,7 +146,7 @@ between two unknown values is always 0.5.
 .. autoclass:: SpearmanR
     :members:
 
-.. autoclass:: SpearmanRConstructor
+.. autoclass:: SpearmanRDistance
     :members:
 
 
