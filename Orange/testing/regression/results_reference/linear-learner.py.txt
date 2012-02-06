@@ -1,0 +1,6 @@
+Attribute weights for Iris-setosa vs. rest classification:
+	sepal length: 0.463  sepal width: 1.464  petal length: -2.251  petal width: -1.025 
+Attribute weights for Iris-versicolor vs. rest classification:
+	sepal length: 0.566  sepal width: -1.482  petal length: 0.548  petal width: -1.415 
+Attribute weights for Iris-virginica vs. rest classification:
+	sepal length: -1.862  sepal width: -1.640  petal length: 2.474  petal width: 2.587 
