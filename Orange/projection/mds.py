@@ -101,7 +101,7 @@ from numpy import *
 from numpy.linalg import svd
 
 import Orange.core
-import orangeom as orangemds
+from Orange import orangeom as orangemds
 from Orange.misc import deprecated_keywords
 from Orange.misc import deprecated_members
 

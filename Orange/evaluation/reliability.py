@@ -1,7 +1,7 @@
 import Orange
 
 import random
-import statc
+from Orange import statc
 import math
 import warnings
 import numpy

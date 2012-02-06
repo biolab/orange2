@@ -1,6 +1,7 @@
-import orange, statc, random
+import orange, random
 from Orange.feature import scoring
 from Orange.misc import progress_bar_milestones
+from Orange import statc
 import copy
 from math import ceil
 ##import numpy

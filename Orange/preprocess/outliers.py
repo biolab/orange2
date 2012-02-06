@@ -35,7 +35,7 @@ The output::
 """
 
 import Orange
-import statc
+from Orange import statc
 
 class OutlierDetection:
     """

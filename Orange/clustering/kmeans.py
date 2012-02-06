@@ -119,7 +119,7 @@ import math
 import sys
 import orange
 import random
-import statc
+from Orange import statc
 
 import Orange.clustering.hierarchical
 

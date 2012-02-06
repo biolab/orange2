@@ -41,7 +41,7 @@ from Orange.core import \
     ExamplesDistanceConstructor_Maximal as Maximal, \
     ExamplesDistanceConstructor_Relief as Relief
 
-import statc
+from Orange import statc
 import numpy
 from numpy import linalg
 

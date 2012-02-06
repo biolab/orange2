@@ -63,7 +63,7 @@ Learner and Classifier
 
 
 import Orange
-import orangeom
+from Orange import orangeom
 import math
 import random
 import numpy
