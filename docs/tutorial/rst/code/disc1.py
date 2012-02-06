@@ -9,16 +9,16 @@ import orange
 
 def show_values(data, heading):
   for a in data.domain.attributes:
-    print "%s/%d: %s" % (a.name, len(a.values), reduce(lambda x,y: x+', '+y, [i for i in a.values]))
-        
-data = orange.ExampleTable("../../datasets/wdbc")
+    print "%s/%d: %s" % (a.name, len(a.values), reduce(lambda x, y: x + ', ' + y, [i for i in a.values]))
+
+data = orange.ExampleTable("wdbc.tab")
 print '%d features in original data set, discretized:' % len(data.domain.attributes)
 data_ent = orange.Preprocessor_discretize(data, method=orange.EntropyDiscretization())
 show_values(data_ent, "Entropy based discretization")
 
 print '\nFeatures with sole value after discretization:'
 for a in data_ent.domain.attributes:
-  if len(a.values)==1:
+  if len(a.values) == 1:
     print a.name
 
 import orngDisc
