@@ -5,7 +5,7 @@ from Orange.classification.logreg import \
     LogRegLearner as LogRegLearnerClass,\
     UnivariateLogRegLearner as Univariate_LogRegLearner,\
     UnivariateLogRegLearner as Univariate_LogRegLearner_Class,\
-    UnivariateLogRegClassifier as UnivariateLogRegClassifier,\
+    UnivariateLogRegClassifier as Univariate_LogRegClassifier,\
     LogRegLearnerGetPriors as LogRegLearner_getPriors,\
     LogRegLearnerGetPriors as LogRegLearnerClass_getPriors,\
     LogRegLearnerGetPriorsOneTable as LogRegLearnerClass_getPriors_OneTable,\
