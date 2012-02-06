@@ -27,12 +27,8 @@
 
 .. class:: RemoveUnusedValues(variable, data, remove_one_valued=False)
 
-    Often the definition of a discrete attribute declares values that
-    do not actually appear in the data, either originally or as a
-    consequence of some preprocessing. Such anomalies are taken
-    care of by class RemoveUnusedValues that, given an attribute and the
-    data, determines whether there are any unused values and reduces the
-    attribute if needed.
+    Removes unused values and reduces the variable, if a variable
+    declares values that do not appear in the data.
 
     :param variable: :class:`Orange.data.variable.Variable`
     :param data: :class:`Orange.data.Table`
