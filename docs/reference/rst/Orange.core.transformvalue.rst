@@ -7,7 +7,8 @@ opposite. Classification trees use transformers for binarization where
 values of discrete attributes are converted into binary.
 
 These objects are most often constructed by other classes and only seldom
-manually.
+manually. See information on :file:`Orange.data.discretization` and
+:file:`Orange.data.continuization`.
 
 .. class TransformValue
 
