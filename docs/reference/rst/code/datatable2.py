@@ -11,7 +11,7 @@ data = Orange.data.Table(domain)
 for i in range(10):
     data.append([i])
 
-cv_indices = Orange.core.MakeRandomIndicesCV(data, 4)
+cv_indices = Orange.data.sample.SubsetIndicesCV(data, 4)
 print "Indices: ", cv_indices, "\n"
 
 for fold in range(4):

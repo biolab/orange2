@@ -36,7 +36,7 @@ for estimate in reliability_res:
     print "%-20s %7.3f %7.3f" % (Orange.evaluation.reliability.METHOD_NAME[estimate[3]],
                                  estimate[0], estimate[1])
 
-indices = Orange.core.MakeRandomIndices2(prostate, p0=0.7)
+indices = Orange.data.sample.SubsetIndices2(prostate, p0=0.7)
 train = prostate.select(indices, 0)
 test = prostate.select(indices, 1)
 

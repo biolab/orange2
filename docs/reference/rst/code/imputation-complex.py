@@ -144,7 +144,7 @@ print
 
 for i in original.domain:
     print "%s: %s -> %s" % (original.domain[i].name, original[i], imputed[i.name]),
-    if original.domain[i].varType == Orange.core.VarTypes.Continuous:
+    if original.domain[i].var_type == Orange.feature.Type.Continuous:
         print "(%s)" % imputed[i.name+"_def"]
     else:
         print
