@@ -193,7 +193,7 @@ class RandomForestClassifier(orange.Classifier):
     :type domain: :class:`Orange.data.Domain`
     
     :param class_var: the class feature.
-    :type class_var: :class:`Orange.data.variable.Variable`
+    :type class_var: :class:`Orange.feature.Descriptor`
 
     """
     def __init__(self, classifiers, name, domain, class_var, **kwds):
@@ -219,7 +219,7 @@ class RandomForestClassifier(orange.Classifier):
         
         # handle discreete class
         
-        if self.class_var.var_type == Orange.data.variable.Discrete.Discrete:
+        if self.class_var.var_type == Orange.feature.Discrete.Discrete:
         
             # voting for class probabilities
             if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
@@ -335,8 +335,8 @@ class ScoreFeature(orange.MeasureAttribute):
         Only the first call on a given data set is computationally expensive.
         
         :param feature: feature to evaluate (by index, name or
-            :class:`Orange.data.variable.Variable` object).
-        :type feature: int, str or :class:`Orange.data.variable.Variable`.
+            :class:`Orange.feature.Descriptor` object).
+        :type feature: int, str or :class:`Orange.feature.Descriptor`.
         
         :param instances: data instances to use for importance evaluation.
         :type instances: :class:`Orange.data.Table`
@@ -351,7 +351,7 @@ class ScoreFeature(orange.MeasureAttribute):
         elif type(feature) == type("a"): #by attr. name
           attrName = feature
           attrNo = instances.domain.index(attrName)
-        elif isinstance(feature, Orange.data.variable.Variable):
+        elif isinstance(feature, Orange.feature.Descriptor):
           atrs = [a for a in instances.domain.attributes]
           attrNo = atrs.index(feature)
         else:
@@ -511,7 +511,7 @@ class _RandomForestTreeLearner(Orange.core.Learner):
         #if base tree learner has no measure set
         if not bcopy.measure:
             bcopy.measure = Orange.feature.scoring.Gini() \
-                if isinstance(instances.domain.class_var, Orange.data.variable.Discrete) \
+                if isinstance(instances.domain.class_var, Orange.feature.Discrete) \
                 else Orange.feature.scoring.MSE()
 
         bcopy.split = SplitConstructor_AttributeSubset(\

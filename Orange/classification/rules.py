@@ -626,7 +626,7 @@ class ConvertClass:
 
 def create_dichotomous_class(domain, att, value, negate, removeAtt=None):
     # create new variable
-    newClass = Orange.data.variable.Discrete(att.name + "_", values=[str(value) + "_", "not " + str(value)])
+    newClass = Orange.feature.Discrete(att.name + "_", values=[str(value) + "_", "not " + str(value)])
     positive = Orange.data.Value(newClass, str(value) + "_")
     negative = Orange.data.Value(newClass, "not " + str(value))
     newClass.getValueFrom = ConvertClass(att, str(value), newClass)
@@ -1732,11 +1732,11 @@ class CovererAndRemover_MultWeights(RuleCovererAndRemover):
         if not weights:
             weights = Orange.data.new_meta_id()
             instances.addMetaAttribute(weights, 1.)
-            instances.domain.addmeta(weights, Orange.data.variable.\
+            instances.domain.addmeta(weights, Orange.feature.\
                 Continuous("weights-" + str(weights)), True)
         newWeightsID = Orange.data.new_meta_id()
         instances.addMetaAttribute(newWeightsID, 1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.variable.\
+        instances.domain.addmeta(newWeightsID, Orange.feature.\
             Continuous("weights-" + str(newWeightsID)), True)
         for instance in instances:
             if rule(instance) and instance.getclass() == rule.classifier(\
@@ -1757,17 +1757,17 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
         if not weights:
             weights = Orange.data.new_meta_id()
             instances.addMetaAttribute(weights, 1.)
-            instances.domain.addmeta(weights, Orange.data.variable.\
+            instances.domain.addmeta(weights, Orange.feature.\
                 Continuous("weights-" + str(weights)), True)
         try:
             coverage = instances.domain.getmeta("Coverage")
         except:
-            coverage = Orange.data.variable.Continuous("Coverage")
+            coverage = Orange.feature.Continuous("Coverage")
             instances.domain.addmeta(Orange.data.new_meta_id(), coverage, True)
             instances.addMetaAttribute(coverage, 0.0)
         newWeightsID = Orange.data.new_meta_id()
         instances.addMetaAttribute(newWeightsID, 1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.variable.\
+        instances.domain.addmeta(newWeightsID, Orange.feature.\
             Continuous("weights-" + str(newWeightsID)), True)
         for instance in instances:
             if rule(instance) and instance.getclass() == rule.classifier(instance, \
@@ -1790,7 +1790,7 @@ class CovererAndRemover_Prob(RuleCovererAndRemover):
         self.apriori_prob = apriori[target_class] / apriori.abs
         examples.addMetaAttribute(self.prob_attribute, self.apriori_prob)
         examples.domain.addmeta(self.prob_attribute,
-            Orange.data.variable.Continuous("Probs"))
+            Orange.feature.Continuous("Probs"))
         self.argument_id = argument_id
 
     def getBestRules(self, current_rules, examples, weight_id):

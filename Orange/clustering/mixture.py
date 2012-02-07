@@ -320,7 +320,7 @@ class GMClusterModel(object):
     def __init__(self, domain, norm_model):
         self.domain = domain
         self.norm_model = norm_model
-        self.cluster_vars = [Orange.data.variable.Continuous("cluster %i" % i)\
+        self.cluster_vars = [Orange.feature.Continuous("cluster %i" % i)\
                              for i in range(len(norm_model))]
         self.weights = self.norm_model.weights
         self.means = self.norm_model.means

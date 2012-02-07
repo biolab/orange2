@@ -1015,7 +1015,7 @@ the 90% confidence intervals in the leaves, use::
 The predicted value (``%V``) and the average (``%A``) may differ because
 a regression tree does not always predict the leaf average, but whatever
 the :obj:`~Node.node_classifier` in a leaf returns.  As ``%V`` uses the
-:obj:`Orange.data.variable.Continuous`' function for printing the
+:obj:`Orange.feature.Continuous`' function for printing the
 value, the number has the same number of decimals as in the data file.
 
 Regression trees cannot print the distributions in the same way
@@ -2658,11 +2658,11 @@ class TreeClassifier(Orange.classification.Classifier):
         net = Orange.network.DiGraph()
         if self.class_var.var_type == Orange.data.Type.Discrete:
             domain = Orange.data.Domain([self.class_var] +
-                [Orange.data.variable.Continuous(name) for name in
+                [Orange.feature.Continuous(name) for name in
                  ["instances", "majority proportion"] + list(self.class_var.values)], None)
         else:
             domain = Orange.data.Domain([self.class_var] +
-                [Orange.data.variable.Continuous(name) for name in
+                [Orange.feature.Continuous(name) for name in
                  ["error", "instances"]], None)
         domain = Orange.data.Domain(domain)
         data = Orange.data.Table(domain)

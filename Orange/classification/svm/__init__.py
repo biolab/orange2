@@ -293,11 +293,11 @@ class SVMLearner(_SVMLearner):
         
         # Fix the svm_type parameter if we have a class_var/svm_type mismatch
         if self.svm_type in [0,1] and \
-            isinstance(class_var, Orange.data.variable.Continuous):
+            isinstance(class_var, Orange.feature.Continuous):
             self.svm_type += 3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
         if self.svm_type in [3,4] and \
-            isinstance(class_var, Orange.data.variable.Discrete):
+            isinstance(class_var, Orange.feature.Discrete):
             self.svm_type -= 3
             #raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
         if self.kernel_type == kernels.Custom and not self.kernel_func:
@@ -646,7 +646,7 @@ def get_linear_svm_weights(classifier, sum=True):
             coef_ind = j - 1
             for sv_ind in range(*sv_ranges[i]):
                 attributes = SVs.domain.attributes + \
-                SVs[sv_ind].getmetas(False, Orange.data.variable.Variable).keys()
+                SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
                     if attr.varType == Orange.data.Type.Continuous:
                         update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
@@ -654,7 +654,7 @@ def get_linear_svm_weights(classifier, sum=True):
             coef_ind=i
             for sv_ind in range(*sv_ranges[j]):
                 attributes = SVs.domain.attributes + \
-                SVs[sv_ind].getmetas(False, Orange.data.variable.Variable).keys()
+                SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
                     if attr.varType==Orange.data.Type.Continuous:
                         update_weights(w, attr, to_float(SVs[sv_ind][attr]), \

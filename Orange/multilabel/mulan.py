@@ -2,7 +2,7 @@ import Orange
 import xml.dom.minidom
 from xml.dom.minidom import Node
 
-def trans_mulan_data(xml_name,arff_name, create_on_new = Orange.data.variable.Variable.MakeStatus.Incompatible, **kwargs):
+def trans_mulan_data(xml_name,arff_name, create_on_new = Orange.feature.MakeStatus.Incompatible, **kwargs):
     """ Transform the mulan data format to Tab file.
     
         :param xml: a text file in XML format, specifying the labels and any hierarchical relationship among them. 

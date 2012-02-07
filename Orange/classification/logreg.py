@@ -131,7 +131,7 @@ class LogRegLearner(Orange.classification.Learner):
             lr = learner.fit_model(instances, weight)
         else:
             lr = learner(instances, weight)
-        while isinstance(lr, Orange.data.variable.Variable):
+        while isinstance(lr, Orange.feature.Descriptor):
             if isinstance(lr.getValueFrom, Orange.core.ClassifierFromVar) and isinstance(lr.getValueFrom.transformer, Orange.core.Discrete2Continuous):
                 lr = lr.getValueFrom.variable
             attributes = instances.domain.features[:]
@@ -215,7 +215,7 @@ class LogRegLearnerGetPriors(object):
                 # za vsak atribut kreiraj nov newExampleTable new_data
                 # v dataOrig, dataFinal in new_data dodaj nov atribut -- continuous variable
                 if at.var_type == Orange.data.Type.Continuous:
-                    at_disc = Orange.data.variable.Continuous(at.name+ "Disc")
+                    at_disc = Orange.feature.Continuous(at.name+ "Disc")
                     new_domain = Orange.data.Domain(data.domain.features+[at_disc,data.domain.class_var])
                     new_domain.addmetas(data.domain.getmetas())
                     new_data = Orange.data.Table(new_domain,data)
@@ -229,7 +229,7 @@ class LogRegLearnerGetPriors(object):
                         d[weight_id] = 0.000001*data[i][weight_id]
                 elif at.var_type == Orange.data.Type.Discrete:
                 # v dataOrig, dataFinal in new_data atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
-                    at_new = Orange.data.variable.Discrete(at.name, values = at.values + [at.name+"X"])
+                    at_new = Orange.feature.Discrete(at.name, values = at.values + [at.name+"X"])
                     new_domain = Orange.data.Domain(filter(lambda x: x!=at, data.domain.features)+[at_new,data.domain.class_var])
                     new_domain.addmetas(data.domain.getmetas())
                     new_data = Orange.data.Table(new_domain,data)
@@ -335,7 +335,7 @@ class LogRegLearnerGetPriorsOneTable:
                 # za vsak atribut kreiraj nov newExampleTable newData
                 # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
                 if at.var_type == Orange.data.Type.Continuous:
-                    atDisc = Orange.data.variable.Continuous(at.name + "Disc")
+                    atDisc = Orange.feature.Continuous(at.name + "Disc")
                     newDomain = Orange.data.Domain(orig_data.domain.features+[atDisc,data.domain.class_var])
                     newDomain.addmetas(newData.domain.getmetas())
                     finalData = Orange.data.Table(newDomain,finalData)
@@ -352,7 +352,7 @@ class LogRegLearnerGetPriorsOneTable:
                         
                 elif at.var_type == Orange.data.Type.Discrete:
                 # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
-                    at_new = Orange.data.variable.Discrete(at.name, values = at.values + [at.name+"X"])
+                    at_new = Orange.feature.Discrete(at.name, values = at.values + [at.name+"X"])
                     newDomain = Orange.data.Domain(filter(lambda x: x!=at, orig_data.domain.features)+[at_new,orig_data.domain.class_var])
                     newDomain.addmetas(orig_data.domain.getmetas())
                     temp_finalData = Orange.data.Table(finalData)

@@ -697,7 +697,7 @@ class Learner:
         blending_classifier = None
         new_domain = None
         
-        if instances.domain.class_var.var_type != Orange.data.variable.Continuous.Continuous:
+        if instances.domain.class_var.var_type != Orange.feature.Continuous.Continuous:
             raise Exception("This method only works on data with continuous class.")
         
         return Classifier(instances, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
