@@ -198,7 +198,7 @@ class ORANGE_API TEntropyDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
-  int maxNumberOfIntervals; //P maximal number of intervals; default = 0 (no limits)
+  int maxNumberOfIntervals; //P(+n) maximal number of intervals; default = 0 (no limits)
   bool forceAttribute; //P minimal number of intervals; default = 0 (no limits)
 
   TEntropyDiscretization();
