@@ -628,7 +628,7 @@ def rank_difference(res, statistics, **argkw):
 
 @deprecated_keywords({"res": "test_results",
                       "classIndex": "class_index"})
-def confusion_matrices(test_results, class_index=1,
+def confusion_matrices(test_results, class_index=-1,
                        unweighted=False, cutoff=.5):
     """
     Return confusion matrices for test_results.
