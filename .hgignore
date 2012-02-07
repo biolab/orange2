@@ -39,6 +39,10 @@ docs/*/html
 Orange/testing/regression/*/*.changed.txt
 Orange/testing/regression/*/*.crash.txt
 Orange/testing/regression/*/*.new.txt
+Orange/testing/regression/*/*.timedout.txt
+Orange/testing/regression/*/*.png
+Orange/testing/regression/tests_20/*.tab
+Orange/testing/regression/tests_20/*.dot
 Orange/doc/modules/*.png
 docs/reference/rst/code/*.png
 
