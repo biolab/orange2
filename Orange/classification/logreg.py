@@ -187,17 +187,18 @@ class UnivariateLogRegClassifier(Orange.classification.Classifier):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def __call__(self, instance, resultType = Orange.classification.Classifier.GetValue):
-        # classification not implemented yet. For now its use is only to provide regression coefficients and its statistics
-        pass
+    def __call__(self, instance, result_type = Orange.classification.Classifier.GetValue):
+        # classification not implemented yet. For now its use is only to
+        # provide regression coefficients and its statistics
+        raise NotImplemented
     
 
 class LogRegLearnerGetPriors(object):
-    def __new__(cls, instances=None, weightID=0, **argkw):
+    def __new__(cls, instances=None, weight_id=0, **argkw):
         self = object.__new__(cls)
         if instances:
             self.__init__(**argkw)
-            return self.__call__(instances, weightID)
+            return self.__call__(instances, weight_id)
         else:
             return self
 
