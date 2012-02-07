@@ -4,11 +4,11 @@
 # Uses:        iris
 # Referenced:  MeasureAttribute.htm
 
-import orange
-iris = orange.ExampleTable("iris")
+import Orange
+iris = Orange.data.Table("iris")
 
-r1 = orange.MeasureAttribute_relief()
-r2 = orange.MeasureAttribute_relief(check_cached_data = False)
+r1 = Orange.feature.scoring.Relief()
+r2 = Orange.feature.scoring.Relief(check_cached_data = False)
 
 print "%.3f\t%.3f" % (r1(0, iris), r2(0, iris))
 for ex in iris:

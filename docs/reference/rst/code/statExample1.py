@@ -1,21 +1,21 @@
-import orange, orngTest, orngTree
+import Orange
 
-learners = [orange.BayesLearner(name = "bayes"),
-            orngTree.TreeLearner(name="tree"),
-            orange.MajorityLearner(name="majrty")]
+learners = [ Orange.classification.bayes.NaiveLearner(name = "bayes"),
+             Orange.classification.tree.TreeLearner(name="tree"),
+             Orange.classification.majority.MajorityLearner(name="majrty")]
 
-voting = orange.ExampleTable("voting")
-res = orngTest.crossValidation(learners, voting)
+voting = Orange.data.Table("voting")
+res = Orange.evaluation.testing.cross_validation(learners, voting)
 
-vehicle = orange.ExampleTable("vehicle")
-resVeh = orngTest.crossValidation(learners, vehicle)
+vehicle = Orange.data.Table("vehicle")
+resVeh = Orange.evaluation.testing.cross_validation(learners, vehicle)
 
 import orngStat
 
-CAs = orngStat.CA(res)
-APs = orngStat.AP(res)
-Briers = orngStat.BrierScore(res)
-ISs = orngStat.IS(res)
+CAs = Orange.evaluation.scoring.CA(res)
+APs = Orange.evaluation.scoring.AP(res)
+Briers = Orange.evaluation.scoring.Brier_score(res)
+ISs = Orange.evaluation.scoring.IS(res)
 
 print
 print "method\tCA\tAP\tBrier\tIS"

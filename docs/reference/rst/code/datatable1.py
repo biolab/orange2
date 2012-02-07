@@ -1,4 +1,4 @@
-# Description: Shows how to construct an orange.ExampleTable out of nothing
+# Description: Shows how to construct an Orange.data.Table out of nothing
 # Category:    basic classes
 # Classes:     ExampleTable, Domain
 # Uses:        
