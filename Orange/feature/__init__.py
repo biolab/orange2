@@ -15,8 +15,6 @@ from Orange.core import FloatVariable as Continuous
 from Orange.core import PythonVariable as Python
 from Orange.core import StringVariable as String
 
-from Orange.core import VarList as Descriptors
-
 from Orange.core import newmetaid as new_meta_id
 
 from Orange.core import Variable as V
