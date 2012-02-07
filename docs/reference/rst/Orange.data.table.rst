@@ -38,17 +38,18 @@ when empty.
 
     .. attribute:: domain
 
-        The domain to which the instances correspond. This
+        The domain to which the instances belong. This
         attribute is read-only.
 
     .. attribute:: owns_instances
 
-        ``True``, if the table contains the data instances and ``False`` if
+        ``True`` if the table contains the data instances and ``False`` if
         it contains references to instances owned by another table.
 
     .. attribute:: owner
 
-        The actual owner of the data when ``own_instances`` is ``False``.
+        The actual owner of the data when ``own_instances`` is ``False``;
+        ``None`` otherwise.
 
     .. attribute:: version
 
@@ -111,24 +112,24 @@ when empty.
 
         Construct a new data table containing the given data
         instances. These can be given either as another :obj:`Table`
-        or as Python list containing instances of
+        or as list of instances represented by list of value or as
         :obj:`Orange.data.Instance`.
 
-        If the optional second argument is True, the first argument
+        If the optional second argument is ``True``, the first argument
         must be a :obj:`Table`. The new table will contain references
         to data stored in the given table. If the second argument is
-        omitted or False, data instances are copied.
+        omitted or ``False``, data instances are copied.
 
         :param instances: data instances
         :type instances: Table or list
-        :param references: if True, the new table contains references
+        :param references: if ``True``, the new table contains references
         :type references: bool
 
     .. _example-table-prog2:
 
     .. method:: __init__(domain, instances)
 
-        Construct a new data table with a given domain and initialize
+        Construct a new data table with the given domain and initialize
         it with the given instances. Instances can be given as a
         :obj:`Table` (if domains do not match, they are converted),
         as a list containing either instances of
@@ -163,13 +164,15 @@ when empty.
         attributes for the new domain are merged based on id's: if the
         same attribute appears under two id's it will be added
         twice. If, on the opposite, same id appears two different
-        attributes in two tables, this throws an exception. As
-        instances are merged, Orange checks the features and meta
-        attributes that appear in multiple tables have the same value
-        on all. Missing values are allowed.
+        attributes in two tables, this raises an exception. As
+        instances are merged, exception is raised if a features or
+        a meta attribute that appears in multiple tables does not have the
+        same value on all of them; the feature is allowed to have a
+        missing value on one or more (or all) tables.
 
         Note that this is not the SQL's join operator as it doesn't
-        try to find matches between the tables.
+        try to find matches between the tables but instead merges them
+        row by row.
 
         :param tables: tables to be merged into the new table
         :type tables: list of instances of :obj:`Table`
@@ -237,7 +240,7 @@ when empty.
         :type instances: list
 
 
-    .. method:: select(filt[, idx, negate=False])
+    .. method:: select(filter[, idx, negate=False])
 
         Return a subset of instances as a new :obj:`Table`. The first
         argument should be a list of the same length as the table; its
@@ -247,7 +250,7 @@ when empty.
 
         If the second argument is given, it must be an integer;
         select will then return the data instances for which the
-        corresponding `filt`'s elements match `idx`.
+        corresponding `filter`'s elements match `idx`.
 
         The third argument, `negate`, can only be given as a
         keyword. Its effect is to negate the selection.
@@ -266,7 +269,7 @@ when empty.
 
         One common use of this method is to split the data into
         folds. A list for the first argument can be prepared using
-        `Orange.core.MakeRandomIndicesCV`. The following example
+        `Orange.data.sample.SubsetIndicesCV`. The following example
         prepares a simple data table and indices for four-fold cross
         validation, and then selects the training and testing sets for
         each fold.
@@ -308,10 +311,10 @@ when empty.
 
         Same as :obj:`select`, except that the resulting table
         contains references to data instances in the original table
-        instead of its own copies.
+        instead of its own copy of data.
 
         In most cases, this function is preferred over the former
-        since it consumes much less memory.
+        since it consumes less memory.
 
         :param filt: filter list
         :type filt: list of integers
@@ -337,7 +340,7 @@ when empty.
     .. method:: get_items(indices)
 
         Return a table with data instances indicated by indices. For
-        instance, `data.get_items([0, 1, 9]` returns a table with
+        instance, `data.get_items([0, 1, 9])` returns a table with
         instances with indices 0, 1 and 9.
 
         This function is useful when data is going to be modified. If
@@ -350,7 +353,7 @@ when empty.
     .. method:: get_items_ref(indices)
 
          Same as above, except that it returns a table with references
-         to data instances instead of copies. This method is normally
+         to data instances. This method is usually
          preferred over the above one.
 
         :param indices: indices of selected data instances
@@ -361,14 +364,13 @@ when empty.
 
         Return a table with data instances matching the
         criteria. These can be given in form of keyword arguments or a
-        dictionary; with the latter, additional keyword argument negate
-        can be given for selection reversal. 
+        dictionary; with the latter, additional keyword argument ``negate``
+        can be given to reverse the selection.
 
         Note that method :obj:`filter_ref` is more memory efficient and
         should be preferred when data is not going to be modified.
 
-        For example, young patients from the lenses data set can be
-        selected by ::
+        Young patients from the lenses data set can be selected by ::
 
             young = data.filter(age="young")
 
@@ -383,8 +385,8 @@ when empty.
             young = data.filter({"age": ["young", "presbyopic"], 
                                 "astigm": "y"})
 
-        Selection can be reversed only with the latter form, by adding
-        a keyword argument `negate` with value 1::
+        Selection can be reversed only in the latter form, by adding
+        a keyword argument ``negate`` with value 1::
 
             young = data.filter({"age": ["young", "presbyopic"], 
                                 "astigm": "y"},
@@ -413,7 +415,7 @@ when empty.
 
     .. method:: filter_list(conditions), filter_list(filter)
 
-            As above, except that it return a pure Python list with
+            As above, except that it returns a pure Python list with
             data instances.
 
     .. method:: filter_bool(conditions), filter_bool(filter)
@@ -433,7 +435,7 @@ when empty.
     .. method:: translate(features[, keep_metas])
 
             Similar to above, except that the domain is given by a
-            list of features. If keep_metas is True, the new data
+            list of features. If ``keep_metas`` is ``True``, the new data
             instances will also have all the meta attributes from the
             original domain.
 
@@ -444,30 +446,29 @@ when empty.
     .. method:: checksum()
 
             Return a CRC32 computed over all discrete and continuous
-            features and class attributes of all data instances. Meta
-            attributes and features of other types are ignored.
+            features and class attributes of all data instances.
 
             :rtype: int
 
     .. method:: has_missing_values()
 
-            Return True if any of data instances has any missing
+            Return ``True`` if any of data instances has any missing
             values. Meta attributes are not checked.
 
     .. method:: has_missing_classes()
 
-            Return True if any instance has a missing class value.
+            Return ``True`` if any instance miss the class value.
 
     .. method:: random_instance()
 
             Return a random instance from the
-            table. Data table's own :obj:`random_generator` is used,
+            table. Data table's :obj:`random_generator` is used,
             which is initially seeded to 0, so results are
             deterministic.
 
     .. method:: remove_duplicates([weightID])
 
-            Remove duplicates of data instances. If weightID is given,
+            Remove duplicates of data instances. If ``weightID`` is given,
             a meta attribute is added which contains the number of
             instances merged into each new instance.
 
@@ -500,4 +501,4 @@ when empty.
 
     .. method:: remove_meta_attribute(id)
 
-            Removes a meta attribute from all data instances.
+            Remove a meta attribute from all data instances.

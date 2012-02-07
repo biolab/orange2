@@ -6,11 +6,11 @@
 
 import Orange
 
-card = [3, 3, 2, 3, 4, 2]
+cards = [3, 3, 2, 3, 4, 2]
 values = ["1", "2", "3", "4"]
 
-features = [Orange.data.variable.Discrete(chr(97+i), values = values[:card[i]])
-              for i in range(6)]
+features = [Orange.data.variable.Discrete(name, values = values[:card])
+              for name, card in zip("abcdef", cards)]
 classattr = Orange.data.variable.Discrete("y", values = ["0", "1"])
 domain = Orange.data.Domain(features + [classattr])
 data = Orange.data.Table(domain)
