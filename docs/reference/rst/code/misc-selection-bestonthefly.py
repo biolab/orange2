@@ -6,9 +6,9 @@
 
 import Orange
 
-lymphography = Orange.data.Table("lymphography")
+lymphography = Orange.data.Table("zoo")
 
-find_best = Orange.misc.selection.BestOnTheFly(call_compare_on_1st = True)
+find_best = Orange.misc.selection.BestOnTheFly(call_compare_on_1st=True)
 
 for attr in lymphography.domain.attributes:
     find_best.candidate((Orange.feature.scoring.GainRatio(attr, lymphography), attr))
