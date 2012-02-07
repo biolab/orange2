@@ -81,7 +81,7 @@ for attr in data.domain.attributes:
 print
 
 
-newclass = Orange.data.variable.Discrete("is versicolor", values = ["no", "yes"])
+newclass = Orange.feature.Discrete("is versicolor", values = ["no", "yes"])
 newclass.get_value_from = lambda ex, w: ex["iris"]=="Iris-versicolor"
 newdomain = Orange.data.Domain(data.domain.attributes, newclass)
 data_v = Orange.data.Table(newdomain, data)

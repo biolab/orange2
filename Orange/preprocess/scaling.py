@@ -676,14 +676,14 @@ class ScaleLinProjData(ScaleData):
         """
         if self.data_domain.class_var:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                         Orange.data.variable.Continuous("yVar"),
-                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                     Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                         Orange.feature.Continuous("yVar"),
+                                         Orange.feature.Discrete(self.data_domain.class_var.name,
                                                                        values = get_variable_values_sorted(self.data_domain.class_var))])
         else:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                         Orange.data.variable.Continuous("yVar")])
+                     Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                         Orange.feature.Continuous("yVar")])
         data = self.create_projection_as_numeric_array(attr_indices,
                                                        **settings_dict)
         if data != None:
@@ -1002,16 +1002,16 @@ class ScaleLinProjData3D(ScaleData):
         """
         if self.data_domain.class_var:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                         Orange.data.variable.Continuous("yVar"),
-                                         Orange.data.variable.Continuous("zVar"),
-                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                     Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                         Orange.feature.Continuous("yVar"),
+                                         Orange.feature.Continuous("zVar"),
+                                         Orange.feature.Discrete(self.data_domain.class_var.name,
                                                                        values=get_variable_values_sorted(self.data_domain.class_var))])
         else:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                         Orange.data.variable.Continuous("yVar"),
-                                         Orange.data.variable.Continuous("zVar")])
+                     Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                         Orange.feature.Continuous("yVar"),
+                                         Orange.feature.Continuous("zVar")])
         data = self.create_projection_as_numeric_array(attr_indices,
                                                        **settings_dict)
         if data != None:
@@ -1186,14 +1186,14 @@ class ScalePolyvizData(ScaleLinProjData):
     def create_projection_as_example_table(self, attr_list, **settings_dict):
         if self.data_domain.class_var:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                         Orange.data.variable.Continuous("yVar"),
-                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                     Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                         Orange.feature.Continuous("yVar"),
+                                         Orange.feature.Discrete(self.data_domain.class_var.name,
                                                                        values = get_variable_values_sorted(self.data_domain.class_var))])
         else:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                         Orange.data.variable.Continuous("yVar")])
+                     Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                         Orange.feature.Continuous("yVar")])
         data = self.create_projection_as_numeric_array(attr_list, **settings_dict)
         if data != None:
             return Orange.data.Table(domain, data)
@@ -1412,14 +1412,14 @@ class ScaleScatterPlotData(ScaleData):
         """
         if self.data_has_class:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
-                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
-                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                     Orange.data.Domain([Orange.feature.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.feature.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.feature.Discrete(self.data_domain.class_var.name,
                                                                        values = get_variable_values_sorted(self.data_domain.class_var))])
         else:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
-                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name)])
+                     Orange.data.Domain([Orange.feature.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.feature.Continuous(self.data_domain[attr_indices[1]].name)])
 
         data = self.create_projection_as_numeric_array(attr_indices,
                                                        **settings_dict)
@@ -1440,16 +1440,16 @@ class ScaleScatterPlotData(ScaleData):
         """
         if self.data_has_class:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
-                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
-                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[2]].name),
-                                         Orange.data.variable.Discrete(self.data_domain.class_var.name,
+                     Orange.data.Domain([Orange.feature.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.feature.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.feature.Continuous(self.data_domain[attr_indices[2]].name),
+                                         Orange.feature.Discrete(self.data_domain.class_var.name,
                                                                        values = get_variable_values_sorted(self.data_domain.class_var))])
         else:
             domain = settings_dict.get("domain") or \
-                     Orange.data.Domain([Orange.data.variable.Continuous(self.data_domain[attr_indices[0]].name),
-                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[1]].name),
-                                         Orange.data.variable.Continuous(self.data_domain[attr_indices[2]].name)])
+                     Orange.data.Domain([Orange.feature.Continuous(self.data_domain[attr_indices[0]].name),
+                                         Orange.feature.Continuous(self.data_domain[attr_indices[1]].name),
+                                         Orange.feature.Continuous(self.data_domain[attr_indices[2]].name)])
 
         data = self.create_projection_as_numeric_array_3D(attr_indices,
                                                           **settings_dict)
@@ -1527,8 +1527,8 @@ class ScaleScatterPlotData(ScaleData):
             return
         
         jitter_size = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation
-        domain = Orange.data.Domain([Orange.data.variable.Continuous("xVar"),
-                                     Orange.data.variable.Continuous("yVar"),
+        domain = Orange.data.Domain([Orange.feature.Continuous("xVar"),
+                                     Orange.feature.Continuous("yVar"),
                                     self.data_domain.class_var])
 
         # init again, in case that the attribute ordering took too much time

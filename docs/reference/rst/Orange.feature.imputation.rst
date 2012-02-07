@@ -281,8 +281,8 @@ Using imputers
 Imputation is also used by learning algorithms and other methods that are not
 capable of handling unknown values.
 
-Learners with imputer as a component
-====================================
+Imputer as a component
+======================
 
 Learners that cannot handle missing values should provide a slot
 for imputer constructor. An example of such class is
@@ -291,21 +291,20 @@ for imputer constructor. An example of such class is
 which imputes to average value by default. When given learning instances,
 :obj:`~Orange.classification.logreg.LogRegLearner` will pass them to
 :obj:`~Orange.classification.logreg.LogRegLearner.imputer_constructor` to get
-an imputer and used it to impute the missing values in the learning data.
-Imputed data is then used by the actual learning algorithm. Also, when a
+an imputer and use it to impute the missing values in the learning data.
+Imputed data is then used by the actual learning algorithm. When a
 classifier :obj:`~Orange.classification.logreg.LogRegClassifier` is
-constructed,
-the imputer is stored in its attribute
-:obj:`~Orange.classification.logreg.LogRegClassifier.imputer`. At
-classification, the same imputer is used for imputation of missing values
+constructed, the imputer is stored in its attribute
+:obj:`~Orange.classification.logreg.LogRegClassifier.imputer`. During
+classification the same imputer is used for imputation of missing values
 in (testing) examples.
 
 Details may vary from algorithm to algorithm, but this is how the imputation
 is generally used. When writing user-defined learners,
 it is recommended to use imputation according to the described procedure.
 
-The choice of which imputer to use depends on the problem domain. In this
-example we want to impute the minimal value of each feature.
+The choice of the imputer depends on the problem domain. In this example the
+minimal value of each feature is imputed:
 
 .. literalinclude:: code/imputation-logreg.py
    :lines: 7-
@@ -317,7 +316,7 @@ The output of this code is::
 
 .. note::
 
-   Note that just one instance of
+   Just one instance of
    :obj:`~Orange.classification.logreg.LogRegLearner` is constructed and then
    used twice in each fold. Once it is given the original instances as they
    are. It returns an instance of
@@ -328,11 +327,11 @@ The output of this code is::
    learner, which produces two different classifiers in each round of
    testing.
 
-Wrapper for learning algorithms
-===============================
+Wrappers for learning
+=====================
 
 In a learning/classification process, imputation is needed on two occasions.
-Before learning, the imputer needs to process the training examples.
+Before learning, the imputer needs to process the training instances.
 Afterwards, the imputer is called for each instance to be classified. For
 example, in cross validation, imputation should be done on training folds
 only. Imputing the missing values on all data and subsequently performing
@@ -342,10 +341,8 @@ Most of Orange's learning algorithms do not use imputers because they can
 appropriately handle the missing values. Bayesian classifier, for instance,
 simply skips the corresponding attributes in the formula, while
 classification/regression trees have components for handling the missing
-values in various ways.
-
-If for any reason you want to use these algorithms to run on imputed data,
-you can use this wrapper.
+values in various ways. A wrapper is provided for learning algorithms that
+require imputed data.
 
 .. class:: ImputeLearner
 

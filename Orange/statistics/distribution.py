@@ -91,7 +91,7 @@ distributions of discrete and continuous variables.
 
         Construct either :obj:`DiscDistribution` or :obj:`ContDistribution`,
         depending on the variable type. If the variable is the only argument, it
-        must be an instance of :obj:`Orange.data.variable.Variable`. In that case,
+        must be an instance of :obj:`Orange.feature.Descriptor`. In that case,
         an empty distribution is constructed. If data is given as well, the
         variable can also be specified by name or index in the
         domain. Constructor then computes the distribution of the specified
@@ -164,7 +164,7 @@ distributions of discrete and continuous variables.
         attribute.
 
         :param variable: A discrete variable
-        :type variable: Orange.data.variable.Discrete
+        :type variable: Orange.feature.Discrete
 
     .. method:: __init__(frequencies)
 
@@ -206,7 +206,7 @@ distributions of discrete and continuous variables.
         attribute.
 
         :param variable: A continuous variable
-        :type variable: Orange.data.variable.Continuous
+        :type variable: Orange.feature.Continuous
 
     .. method:: __init__(frequencies)
 
@@ -355,7 +355,7 @@ prints out distributions for discrete and averages for continuous attributes. ::
     dist = Orange.statistics.distribution.Domain(data)
 
     for d in dist:
-        if d.variable.var_type == Orange.data.Type.Discrete:
+        if d.variable.var_type == Orange.feature.Type.Discrete:
              print "%30s: %s" % (d.variable.name, d)
         else:
              print "%30s: avg. %5.3f" % (d.variable.name, d.average())

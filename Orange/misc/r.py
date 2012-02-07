@@ -49,11 +49,11 @@ def variable_to_vector(data, attr):
     def cv(value, fn, na):
         return na if value.isSpecial() else fn(value)
     
-    if attr.var_type == Orange.data.variable.Variable.Continuous:
+    if attr.var_type == Orange.feature.Descriptor.Continuous:
         return robjects.FloatVector([cv(ex[attr], float, NA_Real) for ex in data])
-    elif attr.var_type == Orange.data.variable.Variable.Discrete:
+    elif attr.var_type == Orange.feature.Descriptor.Discrete:
         return robjects.r("factor")(robjects.StrVector([cv(ex[attr], str, NA_Char) for ex in data]))
-    elif attr.var_type == Orange.data.variable.Variable.String:
+    elif attr.var_type == Orange.feature.Descriptor.String:
         return robjects.StrVector([cv(ex[attr], str, NA_Char) for ex in data])
     else:
         return None
@@ -65,9 +65,9 @@ def dataframe(data, variables=None):
     """
     if not variables:
         variables = [ attr for attr in data.domain.variables if attr.var_type in \
-                 [ Orange.data.variable.Variable.Continuous, 
-                   Orange.data.variable.Variable.Discrete, 
-                   Orange.data.variable.Variable.String ] ]
+                 [ Orange.feature.Descriptor.Continuous, 
+                   Orange.feature.Descriptor.Discrete, 
+                   Orange.feature.Descriptor.String ] ]
            
     odata = []
     for attr in variables:

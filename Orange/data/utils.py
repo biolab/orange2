@@ -14,7 +14,9 @@ from operator import itemgetter
 
 from collections import defaultdict
 
-from Orange.data import Table, Domain, Instance, variable 
+from Orange.data import Table, Domain, Instance
+
+import feature as variable
 
 def table_map(table, attrs, exclude_special=True):
     map = defaultdict(list)
@@ -159,7 +161,8 @@ def uuid_generator():
     while True:
         yield str(uuid.uuid4())
 
-from Orange.data import new_meta_id, variable
+import Orange.feature
+new_meta_id = Orange.feature.Descriptor.new_meta_id
 
 _row_meta_id = new_meta_id()
 _id_variable = variable.String("Row Id")

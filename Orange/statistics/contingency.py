@@ -56,12 +56,12 @@ Contingency tables
 
     .. attribute:: outerVariable
 
-       Outer variable (:class:`Orange.data.variable.Variable`) whose values are
+       Outer variable (:class:`Orange.feature.Descriptor`) whose values are
        used as the first, outer index.
 
     .. attribute:: innerVariable
 
-       Inner variable(:class:`Orange.data.variable.Variable`), whose values are
+       Inner variable(:class:`Orange.feature.Descriptor`), whose values are
        used as the second, inner index.
  
     .. attribute:: outerDistribution
@@ -81,9 +81,9 @@ Contingency tables
       
     .. attribute:: varType
 
-        The type of the outer variable (:obj:`Orange.data.Type`, usually
-        :obj:`Orange.data.variable.Discrete` or
-        :obj:`Orange.data.variable.Continuous`); equals
+        The type of the outer variable (:obj:`Orange.feature.Type`, usually
+        :obj:`Orange.feature.Discrete` or
+        :obj:`Orange.feature.Continuous`); equals
         ``outerVariable.varType`` and ``outerDistribution.varType``.
 
     .. method:: __init__(outer_variable, inner_variable)
@@ -92,9 +92,9 @@ Contingency tables
         variables.
      
         :param outer_variable: Descriptor of the outer variable
-        :type outer_variable: Orange.data.variable.Variable
+        :type outer_variable: Orange.feature.Descriptor
         :param outer_variable: Descriptor of the inner variable
-        :type inner_variable: Orange.data.variable.Variable
+        :type inner_variable: Orange.feature.Descriptor
         
     .. method:: add(outer_value, inner_value[, weight=1])
     
@@ -209,16 +209,16 @@ Contingency tables
         variables. Inherited from :obj:`Table`.
 
         :param feature: Outer variable
-        :type feature: Orange.data.variable.Variable
+        :type feature: Orange.feature.Descriptor
         :param class_attribute: Class variable; used as ``innerVariable``
-        :type class_attribute: Orange.data.variable.Variable
+        :type class_attribute: Orange.feature.Descriptor
         
     .. method:: __init__(feature, data[, weightId])
 
         Compute the contingency table from data.
 
         :param feature: Outer variable
-        :type feature: Orange.data.variable.Variable
+        :type feature: Orange.feature.Descriptor
         :param data: A set of instances
         :type data: Orange.data.Table
         :param weightId: meta attribute with weights of instances
@@ -298,16 +298,16 @@ Contingency tables
         order of arguments.
 
         :param feature: Outer variable
-        :type feature: Orange.data.variable.Variable
+        :type feature: Orange.feature.Descriptor
         :param class_variable: Class variable
-        :type class_variable: Orange.data.variable.Variable
+        :type class_variable: Orange.feature.Descriptor
         
     .. method:: __init__(feature, data[, weightId])
 
         Compute contingency table from the data.
 
         :param feature: Descriptor of the outer variable
-        :type feature: Orange.data.variable.Variable
+        :type feature: Orange.feature.Descriptor
         :param data: A set of instances
         :type data: Orange.data.Table
         :param weightId: meta attribute with weights of instances
@@ -373,9 +373,9 @@ Contingency tables
         Compute the contingency from the given instances.
 
         :param outer_variable: Outer variable
-        :type outer_variable: Orange.data.variable.Variable
+        :type outer_variable: Orange.feature.Descriptor
         :param inner_variable: Inner variable
-        :type inner_variable: Orange.data.variable.Variable
+        :type inner_variable: Orange.feature.Descriptor
         :param data: A set of instances
         :type data: Orange.data.Table
         :param weightId: meta attribute with weights of instances

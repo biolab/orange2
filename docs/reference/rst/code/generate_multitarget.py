@@ -12,8 +12,8 @@ def generate_data_set(n, sigma=0.1, seed=42):
     :param seed: Seed for the random number generator.
 
     """
-    vars = [Orange.data.variable.Continuous('X%i' % i) for i in range(1, 4)]
-    cvars = [Orange.data.variable.Continuous('Y%i' % i) for i in range(1, 5)]
+    vars = [Orange.feature.Continuous('X%i' % i) for i in range(1, 4)]
+    cvars = [Orange.feature.Continuous('Y%i' % i) for i in range(1, 5)]
     domain = Orange.data.Domain(vars, False, class_vars=cvars)
     data = Orange.data.Table(domain)
     err = lambda: random.gauss(0, sigma)

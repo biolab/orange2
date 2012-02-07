@@ -30,7 +30,7 @@
     Removes unused values and reduces the variable, if a variable
     declares values that do not appear in the data.
 
-    :param variable: :class:`Orange.data.variable.Variable`
+    :param variable: :class:`Orange.feature.Descriptor`
     :param data: :class:`Orange.data.Table`
     :param remove_one_valued: Decides whether to remove or to retain
         the attributes with only one value defined (default: False).

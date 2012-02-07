@@ -92,7 +92,7 @@ class DiscretizedLearner_Class:
     is given below::
 
         from Orange.feature import discretization
-        bayes = Orange.classification.bayes.NaiveBayesLearner()
+        bayes = Orange.classification.bayes.Learner()
         disc = orange.Preprocessor_discretize(method=discretization.EquiNDiscretization(numberOfIntervals=10))
         dBayes = discretization.DiscretizedLearner(bayes, name='disc bayes')
         dbayes2 = discretization.DiscretizedLearner(bayes, name="EquiNBayes", discretizer=disc)

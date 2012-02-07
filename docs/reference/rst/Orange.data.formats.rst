@@ -4,6 +4,8 @@
 Loading and saving data
 =======================
 
+.. _tab-delimited:
+
 Tab-delimited format
 ====================
 Orange prefers to open data files in its native, tab-delimited format. This format allows us to specify type of features
@@ -19,9 +21,9 @@ Example of iris dataset in tab-delimited format (:download:`iris.tab <code/iris.
 
 Feature types
 -------------
- * discrete (or d) - imported as Orange.data.variable.Discrete
- * continuous (or c) - imported as Orange.data.variable.Continuous
- * string - imported as Orange.data.variable.String
+ * discrete (or d) - imported as :obj:`Orange.feature.Discrete`
+ * continuous (or c) - imported as :obj:`Orange.feature.Continuous`
+ * string - imported as :obj:`Orange.feature.String`
  * basket - used for storing sparse data. More on basket formats in a dedicated section.
 
 Optional flags

@@ -401,7 +401,7 @@ class LocalCrossValidation:
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.Euclidean()
         
-        distance_id = Orange.data.new_meta_id()
+        distance_id = Orange.feature.Descriptor.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
         
         if self.k == 0:
@@ -468,7 +468,7 @@ class CNeighbours:
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.Euclidean()
         
-        distance_id = Orange.data.new_meta_id()
+        distance_id = Orange.feature.Descriptor.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
         return CNeighboursClassifier(nearest_neighbours, self.k)
 
@@ -515,7 +515,7 @@ class Mahalanobis:
         nnm = Orange.classification.knn.FindNearestConstructor()
         nnm.distanceConstructor = Orange.distance.Mahalanobis()
         
-        mid = Orange.data.new_meta_id()
+        mid = Orange.feature.Descriptor.new_meta_id()
         nnm = nnm(instances, 0, mid)
         return MahalanobisClassifier(self.k, nnm, mid)
 
@@ -697,7 +697,7 @@ class Learner:
         blending_classifier = None
         new_domain = None
         
-        if instances.domain.class_var.var_type != Orange.data.variable.Continuous.Continuous:
+        if instances.domain.class_var.var_type != Orange.feature.Continuous.Continuous:
             raise Exception("This method only works on data with continuous class.")
         
         return Classifier(instances, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)

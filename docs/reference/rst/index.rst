@@ -39,8 +39,6 @@ Orange Scripting Reference
    
    Orange.misc
 
-   OrangeWidgets.plot
-
 ****************
 Index and search
 ****************

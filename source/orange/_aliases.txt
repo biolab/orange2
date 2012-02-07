@@ -68,3 +68,10 @@ removemeta remove_meta
 
 ExamplesDistance_Normalized
 feature_distances attribute_distances
+
+TransformValue
+sub_transformer subtransformer
+
+ImputerConstructor
+impute_class imputeClass
+

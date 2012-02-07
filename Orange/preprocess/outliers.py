@@ -93,7 +93,7 @@ class OutlierDetection:
         """
         other distance measures
         """
-        self.distmatrix = Orange.core.SymMatrix(len(self.examples)) #FIXME 
+        self.distmatrix = Orange.misc.SymMatrix(len(self.examples)) #FIXME 
         for i in range(len(self.examples)):
             for j in range(i + 1):
                 self.distmatrix[i, j] = self.distance(self.examples[i],

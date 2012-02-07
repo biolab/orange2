@@ -32,7 +32,7 @@ Domains as lists and dictionaries
 Domains behave like lists: the length of domain is the number of
 variables including the class variable. Domains can be indexed by integer
 indices, variable names or instances of
-:obj:`Orange.data.variable.Variable`::
+:obj:`Orange.feature.Descriptor`::
 
     >>> domain["feathers"]
     EnumVariable 'feathers'
@@ -158,8 +158,8 @@ non-optional meta attributes.
 While the list of features and the class value are immutable,
 meta attributes can be added and removed at any time::
 
-     >>> misses = Orange.data.variable.Continuous("misses")
-     >>> id = Orange.data.new_meta_id()
+     >>> misses = Orange.feature.Continuous("misses")
+     >>> id = Orange.feature.Descriptor.new_meta_id()
      >>> data.domain.add_meta(id, misses)
 
 This does not change the data: no attributes are added to data
@@ -204,10 +204,10 @@ the instance or if they can be computed from them, they will have
 appropriate values, otherwise their value will be missing. ::
 
     new_domain = Orange.data.Domain(["feathers", "legs"], domain)
-    new_domain.add_meta(Orange.data.new_meta_id(), domain["type"])
-    new_domain.add_meta(Orange.data.new_meta_id(), domain["legs"])
+    new_domain.add_meta(Orange.feature.Descriptor.new_meta_id(), domain["type"])
+    new_domain.add_meta(Orange.feature.Descriptor.new_meta_id(), domain["legs"])
     new_domain.add_meta(
-        Orange.data.new_meta_id(), Orange.data.variable.Discrete("X"))
+        Orange.feature.Descriptor.new_meta_id(), Orange.feature.Discrete("X"))
     data2 = Orange.data.Table(new_domain, data)
 
 Domain ``new_domain`` in this example has variables ``feathers`` and
@@ -226,8 +226,7 @@ is a new feature with no relation to the existing ones. ::
 
      .. attribute:: features
 
-         List of domain attributes
-         (of type :obj:`Orange.data.variable.Variables`) without the class
+         Immutable list of domain attributes without the class
          variable. Read only.
 
      .. attribute:: variables
@@ -236,7 +235,7 @@ is a new feature with no relation to the existing ones. ::
 
      .. attribute:: class_var
 
-         The class variable (:obj:`~Orange.data.variable.Variable`) or
+         The class variable (:obj:`~Orange.feature.Descriptor`) or
          ``None``. Read only.
 
      .. attribute:: class_vars
@@ -254,14 +253,14 @@ is a new feature with no relation to the existing ones. ::
          Construct a domain with the given variables; the
          last one is used as the class variable. ::
 
-             >>> a, b, c = [Orange.data.variable.Discrete(x) for x in "abc"]
+             >>> a, b, c = [Orange.feature.Discrete(x) for x in "abc"]
              >>> domain = Orange.data.Domain([a, b, c])
              >>> domain.features
              <EnumVariable 'a', EnumVariable 'b'>
              >>> domain.class_var
              EnumVariable 'c'
 
-         :param variables: List of variables (instances of :obj:`~Orange.data.variable.Variable`)
+         :param variables: List of variables (instances of :obj:`~Orange.feature.Descriptor`)
          :type variables: list
          :param class_vars: A list of multiple classes; must be a keword argument
          :type class_vars: list
@@ -277,10 +276,10 @@ is a new feature with no relation to the existing ones. ::
              >>> domain.class_var
              EnumVariable 'c'
 
-         :param features: List of features (instances of :obj:`~Orange.data.variable.Variable`)
+         :param features: List of features (instances of :obj:`~Orange.feature.Descriptor`)
          :type features: list
          :param class_variable: Class variable
-         :type class_variable: Orange.data.variable.Variable
+         :type class_variable: Orange.feature.Descriptor
          :param class_vars: A list of multiple classes; must be a keyword argument
          :type class_vars: list
 
@@ -295,7 +294,7 @@ is a new feature with no relation to the existing ones. ::
              >>> domain.class_var
              EnumVariable 'c'
 
-         :param variables: List of variables (instances of :obj:`~Orange.data.variable.Variable`)
+         :param variables: List of variables (instances of :obj:`~Orange.feature.Descriptor`)
          :type features: list
          :param has_class: A flag telling whether the domain has a class
          :type has_class: bool
@@ -311,10 +310,10 @@ is a new feature with no relation to the existing ones. ::
              >>> domain1 = orange.Domain([a, b])
              >>> domain2 = orange.Domain(["a", b, c], domain)
 
-         :param variables: List of variables (strings or instances of :obj:`~Orange.data.variable.Variable`)
+         :param variables: List of variables (strings or instances of :obj:`~Orange.feature.Descriptor`)
          :type variables: list
          :param source: An existing domain or a list of variables
-         :type source: Orange.data.Domain or list of :obj:`~Orange.data.variable.Variable`
+         :type source: Orange.data.Domain or list of :obj:`~Orange.feature.Descriptor`
          :param class_vars: A list of multiple classes; must be a keyword argument
          :type class_vars: list
 
@@ -326,12 +325,12 @@ is a new feature with no relation to the existing ones. ::
              >>> domain1 = orange.Domain([a, b], False)
              >>> domain2 = orange.Domain(["a", b, c], False, domain)
 
-         :param variables: List of variables (strings or instances of :obj:`~Orange.data.variable.Variable`)
+         :param variables: List of variables (strings or instances of :obj:`~Orange.feature.Descriptor`)
          :type variables: list
          :param has_class: A flag telling whether the domain has a class
          :type has_class: bool
          :param source: An existing domain or a list of variables
-         :type source: Orange.data.Domain or list of :obj:`~Orange.data.variable.Variable`
+         :type source: Orange.data.Domain or list of :obj:`~Orange.feature.Descriptor`
          :param class_vars: A list of multiple classes; must be a keyword argument
          :type class_vars: list
 
@@ -346,7 +345,7 @@ is a new feature with no relation to the existing ones. ::
          :param domain: An existing domain
          :type domain: :obj:`~Orange.variable.Domain`
          :param class_var: Class variable for the new domain
-         :type class_var: :obj:`~Orange.data.variable.Variable` or string
+         :type class_var: :obj:`~Orange.feature.Descriptor` or string
          :param class_vars: A list of multiple classes; must be a keyword argument
          :type class_vars: list
 
@@ -396,11 +395,11 @@ is a new feature with no relation to the existing ones. ::
      .. method:: add_meta(id, variable, optional=0)
 
          Register a meta attribute with the given id (see
-         :obj:`Orange.data.new_meta_id`). The same meta attribute should
+         :obj:`Orange.feature.Descriptor.new_meta_id`). The same meta attribute should
          have the same id in all domains in which it is registered. ::
 
-             >>> newid = Orange.data.new_meta_id()
-             >>> domain.add_meta(newid, Orange.data.variable.String("origin"))
+             >>> newid = Orange.feature.Descriptor.new_meta_id()
+             >>> domain.add_meta(newid, Orange.feature.String("origin"))
              >>> data[55]["origin"] = "Nepal"
              >>> data[55]
              ['1', '0', '0', '1', '0', '0', '0', '1', '1', '1', '0', '0',
@@ -415,14 +414,14 @@ is a new feature with no relation to the existing ones. ::
          :param id: id of the new meta attribute
          :type id: int
          :param variable: variable descriptor
-         :type variable: Orange.data.variable.Variable
+         :type variable: Orange.feature.Descriptor
          :param optional: indicates whether the meta attribute is optional
          :type optional: int
 
      .. method:: add_metas(attributes, optional=0)
 
          Add multiple meta attributes at once. The dictionary contains id's as
-         keys and variables (:obj:`~Orange.data.variable.Variable`) as the
+         keys and variables (:obj:`~Orange.feature.Descriptor`) as the
          corresponding values. The following example shows how to add all
          meta attributes from another domain::
 
@@ -441,7 +440,7 @@ is a new feature with no relation to the existing ones. ::
          no effect on data instances.
 
          :param attribute: attribute(s) to be removed, given as name, id, variable descriptor or a list of them
-         :type attribute: string, int, Orange.data.variable.Variable; or a list
+         :type attribute: string, int, Orange.feature.Descriptor; or a list
 
      .. method:: has_attribute(attribute)
 
@@ -449,7 +448,7 @@ is a new feature with no relation to the existing ones. ::
          attribute.
 
          :param attribute: attribute to be checked
-         :type attribute: string, int, Orange.data.variable.Variable
+         :type attribute: string, int, Orange.feature.Descriptor
          :rtype: bool
 
      .. method:: meta_id(attribute)
@@ -457,7 +456,7 @@ is a new feature with no relation to the existing ones. ::
          Return an id of a meta attribute.
 
          :param attribute: name or variable descriptor of the attribute
-         :type attribute: string or Orange.data.variable.Variable
+         :type attribute: string or Orange.feature.Descriptor
          :rtype: int
 
      .. method:: get_meta(attribute)
@@ -466,7 +465,7 @@ is a new feature with no relation to the existing ones. ::
 
          :param attribute: name or id of the attribute
          :type attribute: string or int
-         :rtype: Orange.data.variable.Variable
+         :rtype: Orange.feature.Descriptor
 
      .. method:: get_metas()
 
@@ -491,5 +490,5 @@ is a new feature with no relation to the existing ones. ::
          and ``False`` if it is not.
 
          :param attribute: attribute to be checked
-         :type attribute: string, int, Orange.data.variable.Variable
+         :type attribute: string, int, Orange.feature.Descriptor
          :rtype: bool

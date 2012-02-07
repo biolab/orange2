@@ -91,7 +91,7 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         and scores them.
         
         :param feature: Continuous feature to be split.
-        :type feature: :class:`Orange.data.variable`
+        :type feature: :class:`Orange.feature.Descriptor`
 
         :param data: The data set to be split using the given continuous feature.
         :type data: :class:`Orange.data.Table`
@@ -118,7 +118,7 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         Computes the best threshold for a split of a continuous feature.
 
         :param feature: Continuous feature to be split.
-        :type feature: :class:`Orange.data.variable`
+        :type feature: :class:`Orange.feature.Descriptor`
 
         :param data: The data set to be split using the given continuous feature.
         :type data: :class:`Orange.data.Table`
@@ -133,7 +133,7 @@ class MultitargetVariance(Orange.feature.scoring.Score):
     def __call__(self, feature, data, apriori_class_distribution=None, weightID=0):
         """
         :param feature: The feature to be scored.
-        :type feature: :class:`Orange.data.variable`
+        :type feature: :class:`Orange.feature.Descriptor`
 
         :param data: The data set on which to score the feature.
         :type data: :class:`Orange.data.Table`

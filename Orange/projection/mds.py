@@ -176,7 +176,7 @@ class MDS(object):
     Main class for performing multidimensional scaling.
     
     :param distances: original dissimilarity - a distance matrix to operate on.
-    :type distances: :class:`Orange.core.SymMatrix`
+    :type distances: :class:`Orange.misc.SymMatrix`
     
     :param dim: dimension of the projected space.
     :type dim: int
@@ -193,22 +193,22 @@ class MDS(object):
        
     .. attribute:: distances
     
-       An :class:`Orange.core.SymMatrix` containing the distances that we
+       An :class:`Orange.misc.SymMatrix` containing the distances that we
        want to achieve (lsmt changes these).
        
     .. attribute:: projected_distances
 
-       An :class:`Orange.core.SymMatrix` containing the distances between
+       An :class:`Orange.misc.SymMatrix` containing the distances between
        projected points.
        
     .. attribute:: original_distances
 
-       An :class:`Orange.core.SymMatrix` containing the original distances
+       An :class:`Orange.misc.SymMatrix` containing the original distances
        between points.
        
     .. attribute:: stress
        
-       An :class:`Orange.core.SymMatrix` holding the stress.
+       An :class:`Orange.misc.SymMatrix` holding the stress.
     
     .. attribute:: dim
 
@@ -231,7 +231,7 @@ class MDS(object):
     
     def __init__(self, distances=None, dim=2, **kwargs):
         self.mds=orangemds.MDS(distances, dim, **kwargs)
-        self.original_distances=Orange.core.SymMatrix([m for m in self.distances])
+        self.original_distances=Orange.misc.SymMatrix([m for m in self.distances])
 
     def __getattr__(self, name):
         if name in ["points", "projected_distances", "distances" ,"stress",

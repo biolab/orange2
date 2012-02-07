@@ -25,7 +25,7 @@ def add_results_to_items(G, lblhistory):
                    'clustering label propagation']
         items = Orange.core.Preprocessor_ignore(items, attributes=exclude)
 
-    attrs = [Orange.data.variable.Discrete('clustering label propagation',
+    attrs = [Orange.feature.Discrete('clustering label propagation',
                             values=list(set([l for l in lblhistory[-1]])))]
 
     dom = Orange.data.Domain(attrs, 0)
@@ -44,7 +44,7 @@ def add_history_to_items(G, lblhistory):
                    ['c' + str(i) for i in range(1000)]]
         items = Orange.core.Preprocessor_ignore(items, attributes=exclude)
 
-    attrs = [Orange.data.variable.Discrete('c' + str(i), values=list(set(\
+    attrs = [Orange.feature.Discrete('c' + str(i), values=list(set(\
             [l for l in lblhistory[0]]))) for i, _ in enumerate(lblhistory)]
 
     dom = Orange.data.Domain(attrs, 0)

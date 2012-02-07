@@ -615,7 +615,7 @@ class Network(Orange.core.Network):
         
         :param matrix: number of objects in a matrix must match the number 
             of vertices in a network.
-        :type matrix: Orange.core.SymMatrix
+        :type matrix: Orange.misc.SymMatrix
         :param lower: lower distance bound.
         :type lower: float
         :param upper: upper distance bound.
@@ -1453,7 +1453,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         self.mdsRefresh = mdsRefresh
         self.mdsStep = 0
         self.stopMDS = 0
-        self.vertexDistance.matrixType = Orange.core.SymMatrix.Symmetric
+        self.vertexDistance.matrixType = Orange.misc.SymMatrix.Symmetric
         self.diag_coors = math.sqrt((min(self.graph.coors[0]) -  \
                                      max(self.graph.coors[0]))**2 + \
                                      (min(self.graph.coors[1]) - \
@@ -1781,7 +1781,7 @@ class NetworkClustering():
                 if stop: break
                     
         if results2items and not resultHistory2items:
-            attrs = [Orange.data.variable.Discrete(
+            attrs = [Orange.feature.Discrete(
                                         'clustering label propagation',
                                         values=list(set([l for l \
                                                         in lblhistory[-1]])))]
@@ -1792,7 +1792,7 @@ class NetworkClustering():
             else: 
                 self.net.items = Orange.data.Table([self.net.items, data])
         if resultHistory2items:
-            attrs = [Orange.data.variable.Discrete('c'+ str(i),
+            attrs = [Orange.feature.Discrete('c'+ str(i),
                 values=list(set([l for l in lblhistory[0]]))) for i,labels \
                 in enumerate(lblhistory)]
             dom = Orange.data.Domain(attrs, 0)

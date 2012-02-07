@@ -18,7 +18,7 @@ class BooleanCounter:
 
     One way to use the counter is within a for-loop:
 
-    >>> for r in Orange.misc.counters.BooleanCounter(3):
+    >>> for r in BooleanCounter(3):
     ...    print r
     [0, 0, 0]
     [0, 0, 1]
@@ -31,7 +31,7 @@ class BooleanCounter:
 
     You can also call it manually.
 
-    >>> r = Orange.misc.counters.BooleanCounter(3)
+    >>> r = BooleanCounter(3)
     >>> r.next()
     [0, 0, 0]
     >>> r.next()
@@ -79,22 +79,23 @@ class LimitedCounter:
     This class is similar to :class:`~Orange.misc.counters.BooleanCounter` except that the digits do not count
     from 0 to 1, but to the limits that are specified individually for each digit.
 
-    >>> for t in Orange.misc.counters.LimitedCounter([3, 5, 2]):
+    >>> for t in LimitedCounter([3, 5]):
     ...     print t
-    [0, 0, 0]
-    [0, 0, 1]
-    [0, 1, 0]
-    [0, 1, 1]
-    [0, 2, 0]
-    [0, 2, 1]
-    [0, 3, 0]
-    [0, 3, 1]
-    [0, 4, 0]
-    [0, 4, 1]
-    [1, 0, 0]
-    [1, 0, 1]
-    [1, 1, 0]
-    [1, 1, 1]
+    [0, 0]
+    [0, 1]
+    [0, 2]
+    [0, 3]
+    [0, 4]
+    [1, 0]
+    [1, 1]
+    [1, 2]
+    [1, 3]
+    [1, 4]
+    [2, 0]
+    [2, 1]
+    [2, 2]
+    [2, 3]
+    [2, 4]
 
     .. attribute:: state
 
@@ -138,7 +139,7 @@ class MofNCounter:
     """
     Counter returns all consecutive subset lists of length ``m`` out of ``n`` where ``m`` <= ``n``.
 
-    >>> for t in Orange.misc.counters.MofNCounter(3,7):
+    >>> for t in MofNCounter(3,7):
     ...     print t
     ...
     [0, 1, 2]
@@ -202,7 +203,7 @@ class NondecreasingCounter:
     [0, 0, 1, 0] is illegal since it decreases, and [0, 0, 2, 2] is illegal since it has 2 without having 1 first.
     Or, with an example
 
-    >>> for t in Orange.misc.counters.NondecreasingCounter(4):
+    >>> for t in NondecreasingCounter(4):
     ...     print t
     ...
     [0, 0, 0, 0]
@@ -257,7 +258,7 @@ class CanonicFuncCounter:
 
     The sequences generated are equivalent to all possible functions from a set of cardinality of the sequences length.
 
-    >>> for t in Orange.misc.counters.CanonicFuncCounter(4):
+    >>> for t in CanonicFuncCounter(4):
     ...     print t
     ...
     [0, 0, 0, 0]

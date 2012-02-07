@@ -78,7 +78,7 @@ SVM Based feature selection and scoring
 
 .. autoclass:: Orange.classification.svm.RFE
 
-.. autoclass:: Orange.classification.svm.Score_SVMWeights
+.. autoclass:: Orange.classification.svm.ScoreSVMWeights
     :show-inheritance:
  
  
@@ -252,7 +252,7 @@ class SVMLearner(_SVMLearner):
                  kernel_func=None, C=1.0, nu=0.5, p=0.1, gamma=0.0, degree=3, 
                  coef0=0, shrinking=True, probability=True, verbose=False, 
                  cache_size=200, eps=0.001, normalization=True,
-                 weight=[], **kwargs):
+                 weight=(), **kwargs):
         self.svm_type = svm_type
         self.kernel_type = kernel_type
         self.kernel_func = kernel_func
@@ -293,11 +293,11 @@ class SVMLearner(_SVMLearner):
         
         # Fix the svm_type parameter if we have a class_var/svm_type mismatch
         if self.svm_type in [0,1] and \
-            isinstance(class_var, Orange.data.variable.Continuous):
+            isinstance(class_var, Orange.feature.Continuous):
             self.svm_type += 3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
         if self.svm_type in [3,4] and \
-            isinstance(class_var, Orange.data.variable.Discrete):
+            isinstance(class_var, Orange.feature.Discrete):
             self.svm_type -= 3
             #raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
         if self.kernel_type == kernels.Custom and not self.kernel_func:
@@ -646,17 +646,17 @@ def get_linear_svm_weights(classifier, sum=True):
             coef_ind = j - 1
             for sv_ind in range(*sv_ranges[i]):
                 attributes = SVs.domain.attributes + \
-                SVs[sv_ind].getmetas(False, Orange.data.variable.Variable).keys()
+                SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
-                    if attr.varType == Orange.data.Type.Continuous:
+                    if attr.varType == Orange.feature.Type.Continuous:
                         update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
                                        classifier.coef[coef_ind][sv_ind])
             coef_ind=i
             for sv_ind in range(*sv_ranges[j]):
                 attributes = SVs.domain.attributes + \
-                SVs[sv_ind].getmetas(False, Orange.data.variable.Variable).keys()
+                SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
-                    if attr.varType==Orange.data.Type.Continuous:
+                    if attr.varType==Orange.feature.Type.Continuous:
                         update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
                                        classifier.coef[coef_ind][sv_ind])
             weights.append(w)
@@ -683,28 +683,28 @@ def example_weighted_sum(example, weights):
         
 exampleWeightedSum = example_weighted_sum
 
-class Score_SVMWeights(Orange.feature.scoring.Score):
+class ScoreSVMWeights(Orange.feature.scoring.Score):
     """Score feature by training a linear SVM classifier, using a squared sum of 
     weights (of each binary classifier) as the returned score.
         
     Example:
     
-        >>> score = Score_SVMWeights()
+        >>> score = ScoreSVMWeights()
         >>> for feature in table.domain.features:
             ...   print "%15s: %.3f" % (feature.name, score(feature, table))
           
     """
     
-    def __new__(cls, attr=None, data=None, weightId=None, **kwargs):
+    def __new__(cls, attr=None, data=None, weight_id=None, **kwargs):
         self = Orange.feature.scoring.Score.__new__(cls, **kwargs)
         if data is not None and attr is not None:
             self.__init__(**kwargs)
-            return self.__call__(attr, data, weightId)
+            return self.__call__(attr, data, weight_id)
         else:
             return self
         
     def __reduce__(self):
-        return Score_SVMWeights, (), dict(self.__dict__)
+        return ScoreSVMWeights, (), dict(self.__dict__)
     
     def __init__(self, learner=None, **kwargs):
         """
@@ -721,11 +721,11 @@ class Score_SVMWeights(Orange.feature.scoring.Score):
              
         self._cached_examples = None
         
-    def __call__(self, attr, data, weightId=None):
+    def __call__(self, attr, data, weight_id=None):
         if data is self._cached_examples:
             weights = self._cached_weights
         else:
-            classifier = self.learner(data, weightId)
+            classifier = self.learner(data, weight_id)
             self._cached_examples = data
             import numpy
             weights = numpy.array(classifier.weights)
@@ -734,7 +734,7 @@ class Score_SVMWeights(Orange.feature.scoring.Score):
             self._cached_weights = weights
         return weights.get(attr, 0.0)
 
-MeasureAttribute_SVMWeights = Score_SVMWeights
+MeasureAttribute_SVMWeights = ScoreSVMWeights
 
 class RFE(object):
     
@@ -825,12 +825,12 @@ def table_to_svm_format(data, file):
     
     attrs = data.domain.attributes + data.domain.getmetas().values()
     attrs = [attr for attr in attrs if attr.varType 
-             in [Orange.data.Type.Continuous, 
-                 Orange.data.Type.Discrete]]
+             in [Orange.feature.Type.Continuous, 
+                 Orange.feature.Type.Discrete]]
     cv = data.domain.classVar
     
     for ex in data:
-        if cv.varType == Orange.data.Type.Discrete:
+        if cv.varType == Orange.feature.Type.Discrete:
             file.write(str(int(ex[cv])))  
         else:
             file.write(str(float(ex[cv])))

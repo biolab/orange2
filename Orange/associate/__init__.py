@@ -148,7 +148,7 @@ words "surprise" and "our". The examples supporting it are those with
 indices 1,2, 3, 6 and 9.
 
 This way of representing the itemsets is memory efficient and faster than using
-objects like :obj:`~Orange.data.variable.Variable` and :obj:`~Orange.data.Instance`.
+objects like :obj:`~Orange.feature.Descriptor` and :obj:`~Orange.data.Instance`.
 
 .. _non-sparse-examples:
 
