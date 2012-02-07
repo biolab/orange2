@@ -90,7 +90,7 @@ for instance, only supports the form with instances on the input.
 
     :param attribute: the chosen feature, either as a descriptor, 
       index, or a name.
-    :type attribute: :class:`Orange.data.variable.Variable` or int or string
+    :type attribute: :class:`Orange.feature.Descriptor` or int or string
     :param data: data.
     :type data: `Orange.data.Table`
     :param weightID: id for meta-feature with weight.
@@ -101,7 +101,7 @@ for instance, only supports the form with instances on the input.
 
     :param attribute: the chosen feature, either as a descriptor, 
       index, or a name.
-    :type attribute: :class:`Orange.data.variable.Variable` or int or string
+    :type attribute: :class:`Orange.feature.Descriptor` or int or string
     :param domain_contingency: 
     :type domain_contingency: :obj:`Orange.statistics.contingency.Domain`
 
@@ -468,7 +468,7 @@ class OrderAttributes:
         :type data: Orange.data.Table
 
         :param weight: meta attribute that stores weights of instances
-        :type weight: Orange.data.variable.Variable
+        :type weight: Orange.feature.Descriptor
 
         """
         if self.score:
@@ -507,7 +507,7 @@ class Distance(Score):
         """Score the given feature.
 
         :param attr: feature to score
-        :type attr: Orange.data.variable.Variable
+        :type attr: Orange.feature.Descriptor
 
         :param data: a data table used to score features
         :type data: Orange.data.table
@@ -516,7 +516,7 @@ class Distance(Score):
         :type apriori_dist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.data.variable.Variable
+        :type weightID: Orange.feature.Descriptor
 
         """
         import numpy
@@ -564,7 +564,7 @@ class MDL(Score):
         """Score the given feature.
 
         :param attr: feature to score
-        :type attr: Orange.data.variable.Variable
+        :type attr: Orange.feature.Descriptor
 
         :param data: a data table used to score the feature
         :type data: Orange.data.table
@@ -573,7 +573,7 @@ class MDL(Score):
         :type apriori_dist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.data.variable.Variable
+        :type weightID: Orange.feature.Descriptor
 
         """
         attrClassCont = orange.ContingencyAttrClass(attr, data)

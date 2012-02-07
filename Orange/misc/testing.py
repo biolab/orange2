@@ -357,7 +357,7 @@ class LearnerTestCase(DataTestCase):
     def test_learner_on(self, dataset):
         """ Default test case for Orange learners.
         """
-        if isinstance(dataset.domain.class_var, Orange.data.variable.Discrete):
+        if isinstance(dataset.domain.class_var, Orange.feature.Discrete):
             indices = _MakeRandomIndices2(p0=0.3, stratified=True)(dataset)
         else:
             indices = _MakeRandomIndices2(p0=0.3)(dataset)
@@ -409,7 +409,7 @@ class LearnerTestCase(DataTestCase):
         test = dataset.select(indices, 0)
         
         for ex in test:
-            if isinstance(dataset.domain.class_var, Orange.data.variable.Continuous):
+            if isinstance(dataset.domain.class_var, Orange.feature.Continuous):
                 # Test to third digit after the decimal point
                 self.assertAlmostEqual(classifier(ex, orange.GetValue).native(),
                                        classifier_clone(ex, orange.GetValue).native(),

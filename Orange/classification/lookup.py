@@ -18,7 +18,7 @@ to instances in the table.
    single: feature construction; lookup classifiers
 
 A natural habitat for these classifiers is feature construction:
-they usually reside in :obj:`~Orange.data.variable.Variable.get_value_from` fields of constructed
+they usually reside in :obj:`~Orange.feature.Descriptor.get_value_from` fields of constructed
 features to facilitate their automatic computation. For instance,
 the following script shows how to translate the :download:`monks-1.tab <code/monks-1.tab>` data set
 features into a more useful subset that will only include the features
@@ -301,11 +301,11 @@ and none in the other.
     ['1', '3', '1', '1'] <0.000, 12.000>
     ['1', '3', '2', '0'] <12.000, 0.000>
 
-ClassifierByDataTable will usually be used by :obj:`Orange.data.variable.Variable.get_value_from`. So, we
+ClassifierByDataTable will usually be used by :obj:`Orange.feature.Descriptor.get_value_from`. So, we
 would probably continue this by constructing a new feature and put the
-classifier into its :obj:`Orange.data.variable.Variable.get_value_from`.
+classifier into its :obj:`Orange.feature.Descriptor.get_value_from`.
 
-    >>> y2 = Orange.data.variable.Discrete("y2", values = ["0", "1"])
+    >>> y2 = Orange.feature.Discrete("y2", values = ["0", "1"])
     >>> y2.get_value_from = abe
 
 There's something disturbing here. Although abe determines the value of
@@ -320,7 +320,7 @@ The whole story can be greatly simplified. LookupLearner can also be
 called differently than other learners. Besides instances, you can pass
 the new class variable and the features that should be used for
 classification. This saves us from constructing data_s and reassigning
-the class_var. It doesn't set the :obj:`Orange.data.variable.Variable.get_value_from`, though.
+the class_var. It doesn't set the :obj:`Orange.feature.Descriptor.get_value_from`, though.
 
 part of :download:`lookup-table.py <code/lookup-table.py>` (uses: :download:`monks-1.tab <code/monks-1.tab>`)::
 
@@ -329,7 +329,7 @@ part of :download:`lookup-table.py <code/lookup-table.py>` (uses: :download:`mon
     table = Orange.data.Table("monks-1")
     a, b, e = table.domain["a"], table.domain["b"], table.domain["e"]
 
-    y2 = Orange.data.variable.Discrete("y2", values = ["0", "1"])
+    y2 = Orange.feature.Discrete("y2", values = ["0", "1"])
     abe2 = Orange.classification.lookup.LookupLearner(y2, [a, b, e], table)
 
 Let us, for the end, show another use of LookupLearner. With the
@@ -379,7 +379,7 @@ three features (besides the class variable).
     construct a new feature from features a and b, you can call this function
     as follows.
     
-        >>> newvar = Orange.data.variable.Discrete()
+        >>> newvar = Orange.feature.Discrete()
         >>> bound = [table.domain[name] for name in ["a", "b"]]
         >>> lookup = lookup_from_bound(newvar, bound)
         >>> print lookup.lookup_table
@@ -406,7 +406,7 @@ three features (besides the class variable).
     add the feature to the data set.
     
         >>> bound = [table.domain[name] for name in ["a", "b"]]
-        >>> newVar = Orange.data.variable.Discrete("a=b", values=["no", "yes"])
+        >>> newVar = Orange.feature.Discrete("a=b", values=["no", "yes"])
         >>> lookup = lookup_from_function(newVar, bound, lambda x: x[0] == x[1])
         >>> newVar.get_value_from = lookup
         >>> import orngCI
@@ -428,7 +428,7 @@ three features (besides the class variable).
     newVar.get_value_from to lookup we state that when converting domains
     (either when needed by addAnAttribute or at some other place), lookup
     should be used to compute newVar's value. (A bit off topic, but
-    important: you should never call :obj:`Orange.data.variable.Variable.get_value_from` directly, but always call
+    important: you should never call :obj:`Orange.feature.Descriptor.get_value_from` directly, but always call
     it through computeValue.)
 
 .. function:: lookup_from_data(examples [, weight])
@@ -449,7 +449,7 @@ three features (besides the class variable).
 
     dump_lookup_function returns a string with a lookup function in
     tab-delimited format. Argument func can be any of the above-mentioned
-    classifiers or a feature whose :obj:`Orange.data.variable.Variable.get_value_from` points to one of such
+    classifiers or a feature whose :obj:`Orange.feature.Descriptor.get_value_from` points to one of such
     classifiers.
 
     For instance, if lookup is such as constructed in the example for
@@ -535,7 +535,7 @@ def lookup_from_data(examples, weight=0, learnerForUnknown=None):
         
         
 def dump_lookup_function(func):
-    if isinstance(func, Orange.data.variable.Variable):
+    if isinstance(func, Orange.feature.Descriptor):
         if not func.get_value_from:
             raise TypeError, "attribute '%s' does not have an associated function" % func.name
         else:
