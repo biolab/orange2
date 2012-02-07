@@ -37,15 +37,15 @@ class TestedExample:
     def add_result(self, aclass, aprob):
         """Appends a new result (class and probability prediction by a single classifier) to the classes and probabilities field."""
     
-        if type(aclass)==list:
-            self.classes.append(aclass)
-            self.probabilities.append(aprob)
+        if type(aclass)==int:
+            self.classes.append(int(aclass))
+            self.probabilities.append(list(aprob))
         elif type(aclass.value)==float:
             self.classes.append(float(aclass))
             self.probabilities.append(aprob)
         else:
-            self.classes.append(int(aclass))
-            self.probabilities.append(list(aprob))
+            self.classes.append(aclass)
+            self.probabilities.append(aprob)
 
     def set_result(self, i, aclass, aprob):
         """Sets the result of the i-th classifier to the given values."""
