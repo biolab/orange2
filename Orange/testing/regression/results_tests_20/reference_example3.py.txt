@@ -7,7 +7,7 @@ Some weights...
 ['young', 'myope', 'yes', 'reduced', 'none'], {"w":3.000}
 ['young', 'myope', 'yes', 'normal', 'hard'], {"ok?":'no'}
 ['young', 'hypermetrope', 'no', 'reduced', 'none'], {"ok?":'yes'}
-['young', 'hypermetrope', 'no', 'normal', 'soft'], {"ok?":'no'}
+['young', 'hypermetrope', 'no', 'normal', 'soft'], {"ok?":'yes'}
 
 
 ... and without them
@@ -16,4 +16,4 @@ Some weights...
 ['young', 'myope', 'yes', 'reduced', 'none']
 ['young', 'myope', 'yes', 'normal', 'hard'], {"ok?":'no'}
 ['young', 'hypermetrope', 'no', 'reduced', 'none'], {"ok?":'yes'}
-['young', 'hypermetrope', 'no', 'normal', 'soft'], {"ok?":'no'}
+['young', 'hypermetrope', 'no', 'normal', 'soft'], {"ok?":'yes'}

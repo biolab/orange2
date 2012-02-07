@@ -16,16 +16,16 @@ Confusion matrix for naive Bayes:
 TP: 240, FP: 18, FN: 27.0, TN: 150
 
 Confusion matrix for naive Bayes for 'van':
-TP: 192, FP: 151, FN: 7.0, TN: 496
+TP: 192, FP: 152, FN: 7.0, TN: 495
 
 Confusion matrix for naive Bayes for 'opel':
-TP: 79, FP: 75, FN: 133.0, TN: 559
+TP: 80, FP: 71, FN: 132.0, TN: 563
 
-	bus	van	saab	opel
-bus	156	19	17	26
-van	4	192	2	1
-saab	8	68	93	48
-opel	8	64	61	79
+	bus	opel	saab	van
+bus	156	25	17	20
+opel	6	80	61	65
+saab	7	46	97	67
+van	4	0	3	192
 
 Sensitivity and specificity for 'voting'
 method	sens	spec
@@ -35,8 +35,8 @@ majrty	1.000	0.000
 
 Sensitivity and specificity for 'vehicle=van'
 method	sens	spec
-bayes	0.965	0.767
-tree	0.834	0.966
+bayes	0.965	0.765
+tree	0.794	0.969
 majrty	0.000	1.000
 
 AUC (voting)
@@ -46,36 +46,36 @@ AUC (voting)
 
 AUC for vehicle using weighted single-out method
 bayes	tree	majority
-0.840	0.816	0.500
+0.841	0.795	0.500
 
 AUC for vehicle, using different methods
                            	bayes	tree	majority
-       by pairs, weighted: 	0.861	0.883	0.500
-                 by pairs: 	0.863	0.884	0.500
-    one vs. all, weighted: 	0.840	0.816	0.500
-              one vs. all: 	0.840	0.816	0.500
+       by pairs, weighted: 	0.858	0.869	0.500
+                 by pairs: 	0.859	0.870	0.500
+    one vs. all, weighted: 	0.841	0.795	0.500
+              one vs. all: 	0.841	0.795	0.500
 
 AUC for detecting class 'van' in 'vehicle'
-0.923	0.900	0.500
+0.924	0.881	0.500
 
 AUCs for detecting various classes in 'vehicle'
-bus (218.000) vs others: 	0.952	0.936	0.500
-van (199.000) vs others: 	0.923	0.900	0.500
-saab (217.000) vs others: 	0.737	0.707	0.500
-opel (212.000) vs others: 	0.749	0.718	0.500
+bus (218.000) vs others: 	0.954	0.943	0.500
+opel (212.000) vs others: 	0.749	0.685	0.500
+saab (217.000) vs others: 	0.739	0.672	0.500
+van (199.000) vs others: 	0.924	0.881	0.500
 
-	bus	van	saab
-van	0.987
-saab	0.927	0.860
-opel	0.921	0.894	0.587
+	bus	opel	saab
+opel	0.922
+saab	0.927	0.561
+van	0.991	0.898	0.857
 
 AUCs for detecting various pairs of classes in 'vehicle'
-van vs bus: 	0.987	0.976	0.500
-saab vs bus: 	0.927	0.936	0.500
-saab vs van: 	0.860	0.906	0.500
-opel vs bus: 	0.921	0.951	0.500
-opel vs van: 	0.894	0.915	0.500
-opel vs saab: 	0.587	0.622	0.500
+opel vs bus: 	0.922	0.949	0.500
+saab vs bus: 	0.927	0.941	0.500
+saab vs opel: 	0.561	0.578	0.500
+van vs bus: 	0.991	0.977	0.500
+van vs opel: 	0.898	0.902	0.500
+van vs saab: 	0.857	0.872	0.500
 
 AUC and SE for voting
 bayes: 0.982+-0.008
