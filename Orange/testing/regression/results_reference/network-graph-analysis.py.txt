@@ -1,0 +1,21 @@
+Connected components
+[[0, 1, 2, 3, 4, 5, 6, 7, 8], [13, 14, 15, 16, 17, 18], [9, 10, 11, 12]]
+
+Degree distribution
+{1: 5, 2: 4, 3: 8, 4: 1, 5: 1}
+
+Degrees
+[4, 3, 3, 2, 2, 3, 2, 3, 2, 3, 3, 3, 3, 5, 1, 1, 1, 1, 1]
+
+Hubs
+[13, 0, 1]
+
+Shortest path
+[2, 0]
+
+Distance
+1
+
+Diameter
+4
+

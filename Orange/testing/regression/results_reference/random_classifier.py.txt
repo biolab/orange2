@@ -1,0 +1,18 @@
+['young', 'myope', 'no', 'reduced', 'none'] hard
+['young', 'myope', 'no', 'normal', 'soft'] hard
+['young', 'myope', 'yes', 'reduced', 'none'] hard
+['young', 'myope', 'yes', 'normal', 'hard'] hard
+['young', 'hypermetrope', 'no', 'reduced', 'none'] hard
+
+['young', 'myope', 'no', 'reduced', 'none'] hard
+['young', 'myope', 'no', 'normal', 'soft'] hard
+['young', 'myope', 'yes', 'reduced', 'none'] hard
+['young', 'myope', 'yes', 'normal', 'hard'] hard
+['young', 'hypermetrope', 'no', 'reduced', 'none'] hard
+
+['young', 'myope', 'no', 'reduced', 'none'] hard
+['young', 'myope', 'no', 'normal', 'soft'] hard
+['young', 'myope', 'yes', 'reduced', 'none'] hard
+['young', 'myope', 'yes', 'normal', 'hard'] hard
+['young', 'hypermetrope', 'no', 'reduced', 'none'] hard
+
