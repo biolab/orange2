@@ -80,7 +80,7 @@ clusters as well).
         See examples section for details.
         
         :param matrix: A distance matrix to perform the clustering on.
-        :type matrix: :class:`Orange.core.SymMatrix`
+        :type matrix: :class:`Orange.misc.SymMatrix`
 
 
 .. class:: HierarchicalCluster
@@ -156,33 +156,15 @@ Example 1 - Toy matrix
 ----------------------
 
 Let us construct a simple distance matrix and run clustering on it.
-::
 
-    import Orange
-    from Orange.clustering import hierarchical
-    m = [[],
-         [ 3],
-         [ 2, 4],
-         [17, 5, 4],
-         [ 2, 8, 3, 8],
-         [ 7, 5, 10, 11, 2],
-         [ 8, 4, 1, 5, 11, 13],
-         [ 4, 7, 12, 8, 10, 1, 5],
-         [13, 9, 14, 15, 7, 8, 4, 6],
-         [12, 10, 11, 15, 2, 5, 7, 3, 1]]
-    matrix = Orange.core.SymMatrix(m)
-    root = hierarchical.HierarchicalClustering(matrix,
-            linkage=hierarchical.HierarchicalClustering.Average)
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 1-14
     
 Root is a root of the cluster hierarchy. We can print using a
 simple recursive function.
-::
 
-    def printClustering(cluster):
-        if cluster.branches:
-            return "(%s%s)" % (printClustering(cluster.left), printClustering(cluster.right))
-        else:
-            return str(cluster[0])
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 16-20
             
 The output is not exactly nice, but it will have to do. Our clustering,
 printed by calling printClustering(root) looks like this 
@@ -210,20 +192,15 @@ while). The one above supposed that each leaf contains a single object.
 This is not necessarily so; instead of printing out the first (and
 supposedly the only) element of cluster, cluster[0], we shall print
 it out as a tuple. 
-::
 
-    def printClustering2(cluster):
-        if cluster.branches:
-            return "(%s%s)" % (printClustering2(cluster.left), printClustering2(cluster.right))
-        else:
-            return str(tuple(cluster))
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 22-26
             
 The distance matrix could have been given a list of objects. We could,
 for instance, put
-::
     
-    matrix.objects = ["Ann", "Bob", "Curt", "Danny", "Eve",
-                      "Fred", "Greg", "Hue", "Ivy", "Jon"]
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 28-29
 
 above calling the HierarchicalClustering.
 
@@ -233,9 +210,9 @@ above calling the HierarchicalClustering.
 
 If we've forgotten to store the objects into matrix prior to clustering,
 nothing is lost. We can add it into clustering later, by
-::
 
-    root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"]
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 31
     
 So, what do these "objects" do? Call printClustering(root) again and you'll
 see. Or, let us print out the elements of the first left cluster, as we did
@@ -268,15 +245,10 @@ and ``root.permute([1, 0])`` (which is equivalent to ``root.swap`` - there
 aren't many possible permutations of two elements) reverses the order
 of ``root.left`` and ``root.right``.
 
-Let us write function for cluster pruning. ::
+Let us write function for cluster pruning.
 
-    def prune(cluster, togo):
-        if cluster.branches:
-            if togo<0:
-                cluster.branches = None
-            else:
-                for branch in cluster.branches:
-                    prune(branch, togo-cluster.height)
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 33-39
 
 We shall use ``printClustering2`` here, since we can have multiple elements
 in a leaf of the clustering hierarchy. ::
@@ -286,19 +258,10 @@ in a leaf of the clustering hierarchy. ::
     ((('Bob', 'Curt', 'Greg')('Danny',))(('Fred', 'Hue', 'Ivy', 'Jon')('Ann', 'Eve')))
     
 We've ended up with four clusters. Need a list of clusters?
-Here's the function. ::
-    
-    def listOfClusters0(cluster, alist):
-        if not cluster.branches:
-            alist.append(list(cluster))
-        else:
-            for branch in cluster.branches:
-                listOfClusters0(branch, alist)
-                
-    def listOfClusters(root):
-        l = []
-        listOfClusters0(root, l)
-        return l
+Here's the function.
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 41-51
         
 The function returns a list of lists, in our case
 ``[['Bob', 'Curt', 'Greg'], ['Danny'], ['Fred', 'Hue', 'Ivy', 'Jon'], ['Ann', 'Eve']]``    
@@ -312,43 +275,24 @@ this is done, we shall now load the Iris data set, initialize a distance
 matrix with the distances measure by :class:`Euclidean`
 and cluster it with average linkage. Since we don't need the matrix,
 we shall let the clustering overwrite it (not that it's needed for
-such a small data set as Iris). ::
+such a small data set as Iris).
 
-    import Orange
-    from Orange.clustering import hierarchical
-
-    data = Orange.data.Table("iris")
-    matrix = Orange.core.SymMatrix(len(data))
-    matrix.setattr("objects", data)
-    distance = Orange.distance.Euclidean(data)
-    for i1, instance1 in enumerate(data):
-        for i2 in range(i1+1, len(data)):
-            matrix[i1, i2] = distance(instance1, data[i2])
-            
-    clustering = hierarchical.HierarchicalClustering()
-    clustering.linkage = clustering.Average
-    clustering.overwrite_matrix = 1
-    root = clustering(matrix)
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 1-15
 
 Note that we haven't forgotten to set the ``matrix.objects``. We did it
 through ``matrix.setattr`` to avoid the warning. Let us now prune the
 clustering using the function we've written above, and print out the
-clusters. ::
+clusters.
     
-    prune(root, 1.4)
-    for n, cluster in enumerate(listOfClusters(root)):
-        print "\n\n Cluster %i \n" % n
-        for instance in cluster:
-            print instance
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 16-20
             
 Since the printout is pretty long, it might be more informative to just
-print out the class distributions for each cluster. ::
+print out the class distributions for each cluster.
     
-    for cluster in listOfClusters(root):
-        dist = Orange.core.get_class_distribution(cluster)
-        for e, d in enumerate(dist):
-            print "%s: %3.0f " % (data.domain.class_var.values[e], d),
-        print
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 22-26
         
 Here's what it shows. ::
 
@@ -364,9 +308,10 @@ it gets converted to it automatically when the function is called.
 Most Orange functions will do this for you automatically. You can, for
 instance, call a learning algorithms, passing a cluster as an argument.
 It won't mind. If you, however, want to have a list of table, you can
-easily convert the list by ::
+easily convert the list by
 
-    tables = [Orange.data.Table(cluster) for cluster in listOfClusters(root)]
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 28
     
 Finally, if you are dealing with examples, you may want to take the function
 ``listOfClusters`` and replace ``alist.append(list(cluster))`` by
@@ -501,7 +446,7 @@ def clustering(data,
     
     """
     distance = distance_constructor(data)
-    matrix = orange.SymMatrix(len(data))
+    matrix = Orange.misc.SymMatrix(len(data))
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
@@ -539,7 +484,7 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
     :rtype: :class:`HierarchicalCluster`
     
     """
-    matrix = orange.SymMatrix(len(data.domain.attributes))
+    matrix = Orange.misc.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
             matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
@@ -617,7 +562,7 @@ def order_leaves_py(tree, matrix, progress_callback=None):
     :param tree: Binary hierarchical clustering tree.
     :type tree: :class:`HierarchicalCluster`
     :param matrix: SymMatrix that was used to compute the clustering.
-    :type matrix: :class:`Orange.core.SymMatrix`
+    :type matrix: :class:`Orange.misc.SymMatrix`
     :param progress_callback: Function used to report on progress.
     :type progress_callback: function
     
@@ -810,7 +755,7 @@ def order_leaves_cpp(tree, matrix, progress_callback=None):
     :param tree: Binary hierarchical clustering tree.
     :type tree: :class:`HierarchicalCluster`
     :param matrix: SymMatrix that was used to compute the clustering.
-    :type matrix: :class:`Orange.core.SymMatrix`
+    :type matrix: :class:`Orange.misc.SymMatrix`
     :param progress_callback: Function used to report on progress.
     :type progress_callback: function
     
@@ -1510,7 +1455,7 @@ def cluster_depths(cluster):
 instance_distance_matrix = Orange.distance.distance_matrix
 
 def feature_distance_matrix(data, distance=None, progress_callback=None):
-    """ A helper function that computes an :class:`Orange.core.SymMatrix` of
+    """ A helper function that computes an :class:`Orange.misc.SymMatrix` of
     all pairwise distances between features in `data`.
     
     :param data: A data table
@@ -1523,11 +1468,11 @@ def feature_distance_matrix(data, distance=None, progress_callback=None):
         reporting the on the progress.
     :type progress_callback: function
     
-    :rtype: :class:`Orange.core.SymMatrix`
+    :rtype: :class:`Orange.misc.SymMatrix`
     
     """
     attributes = data.domain.attributes
-    matrix = orange.SymMatrix(len(attributes))
+    matrix = Orange.misc.SymMatrix(len(attributes))
     iter_count = matrix.dim * (matrix.dim - 1) / 2
     milestones = progress_bar_milestones(iter_count, 100)
     
@@ -1580,12 +1525,12 @@ def cophenetic_distances(cluster):
     :param cluster: Clustering.
     :type cluster: :class:`HierarchicalCluster`
     
-    :rtype: :class:`Orange.core.SymMatrix`
+    :rtype: :class:`Orange.misc.SymMatrix`
     
     """
 
     mapping = cluster.mapping  
-    matrix = Orange.core.SymMatrix(len(mapping))
+    matrix = Orange.misc.SymMatrix(len(mapping))
     for cluster in postorder(cluster):
         if cluster.branches:
             for branch1, branch2 in _pairs(cluster.branches):
@@ -1623,16 +1568,3 @@ def cophenetic_correlation(cluster, matrix):
     return numpy.corrcoef(cophenetic, original)[0, 1]
     
     
-if __name__=="__main__":
-    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-#    data = orange.ExampleTable("doc//datasets//iris.tab")
-    root = hierarchicalClustering(data, order=True) #, linkage=orange.HierarchicalClustering.Single)
-    attr_root = hierarchicalClustering_attributes(data, order=True)
-#    print root
-#    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], dendrogram_width=0.4, heatmap_width=0.3,  params={}, cmap=None)
-#    d.plot(show=True, filename="graph.png")
-
-    dendrogram_draw("graph.eps", root, attr_tree=attr_root, data=data, labels=[str(e.getclass()) for e in data], tree_height=50, #width=500, height=500,
-                          cluster_colors={root.right:(255,0,0), root.right.right:(0,255,0)}, 
-                          color_palette=ColorPalette([(255, 0, 0), (0,0,0), (0, 255,0)], gamma=0.5, 
-                                                     overflow=(255, 255, 255), underflow=(255, 255, 255))) #, minv=-0.5, maxv=0.5)
