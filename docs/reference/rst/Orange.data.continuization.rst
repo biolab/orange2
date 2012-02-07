@@ -10,7 +10,7 @@ operates on the entire domain; documentation on
 :file:`Orange.core.transformvalue.rst` explains how to treat each
 variable separately.
 
-.. class DomainContinuizer
+.. class:: DomainContinuizer
 
     Returns a new domain containing only continuous attributes given a
     domain or data table. Some options are available only if the data is
@@ -28,7 +28,14 @@ variable separately.
     * multinomial variables are treated according to the flag
       ``multinomial_treatment``.
 
-    .. attribute zero_based
+    The typical use of the class is as follows::
+
+        continuizer = orange.DomainContinuizer()
+        continuizer.multinomialTreatment = continuizer.LowestIsBase
+        domain0 = continuizer(data)
+        data0 = data.translate(domain0)
+
+    .. attribute:: zero_based
 
         Determines the value used as the "low" value of the variable. When
         binary variables are transformed into continuous or when multivalued
@@ -37,7 +44,7 @@ variable separately.
         is ``True``) or -1.0 and 1.0 (``zero_based`` is ``False``). The
         following text assumes the default case.
 
-    .. attribute multinomial_treatment
+    .. attribute:: multinomial_treatment
 
        Decides the treatment of multinomial variables. Let N be the
        number of the variables's values.
@@ -53,6 +60,13 @@ variable separately.
            Note that these variables are not independent, so they cannot be
            used (directly) in, for instance, linear or logistic regression.
 
+           For example, data set "bridges" has feature "RIVER" with
+           values "M", "A", "O" and "Y", in that order. Its value for
+           the 15th row is "M". Continuization replaces the variable
+           with variables "RIVER=M", "RIVER=A", "RIVER=O" and
+           "RIVER=Y". For the 15th row, the first has value 1 and
+           others are 0.
+
        DomainContinuizer.LowestIsBase
            Similar to the above except that it creates only N-1
            variables. The missing indicator belongs to the lowest value:
@@ -62,14 +76,20 @@ variable separately.
 	   If the variable descriptor has the ``base_value`` defined, the
            specified value is used as base instead of the lowest one.
 
-       DomainContinuizer.FrequentIsBase
+           Continuizing the variable "RIVER" gives similar results as
+           above except that it would omit "RIVER=M"; all three
+           variables would be zero for the 15th data instance.
 
+       DomainContinuizer.FrequentIsBase
            Like above, except that the most frequent value is used as the
            base (this can again be overidden by setting the descriptor's
            ``base_value``). If there are multiple most frequent values, the
            one with the lowest index is used. The frequency of values is
            extracted from data, so this option cannot be used if constructor
            is given only a domain.
+
+           Variable "RIVER" would be continuized similarly to above
+           except that it omits "RIVER=A", which is the most frequent value.
            
        DomainContinuizer.Ignore
            Multivalued variables are omitted.
@@ -86,7 +106,7 @@ variable separately.
            range 0 to 1, e.g. 0, 0.25, 0.5, 0.75, 1 for a five-valued
            variable.
 
-    .. attribute normalize_continuous
+    .. attribute:: normalize_continuous
 
         If ``False`` (default), continues variables are left unchanged. If
         ``True``, they are replaced with normalized values by subtracting
