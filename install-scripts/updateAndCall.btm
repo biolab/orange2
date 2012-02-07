@@ -8,25 +8,25 @@ REM hg pull --update
 
 REM hg clone https://bitbucket.org/biolab/orange snapshot
 cdd snapshot
-hg pull --update
+hg pull
+hg update
+
 
 REM hg clone https://bitbucket.org/biolab/orange-addon-bioinformatics Bioinformatics
 cdd Bioinformatics
-hg pull --update
+hg pull
+hg update
 
 cdd  e:\orange\scripts\snapshot
 
 REM hg clone https://bitbucket.org/biolab/orange-addon-text Text
 cdd Text
-hg pull --update
+hg pull 
+hg update
 
 cdd e:\orange\scripts
 
-copy /r snapshot\install-scripts\* .
+copy /q snapshot\install-scripts\* .
 
-#svn update -N
-#svn export http://orange.biolab.si/svn/orange/trunk/orange/doc/LICENSES license.txt
-#svn
- 
 call callCreateSnapshot.btm
 shutdown -s
