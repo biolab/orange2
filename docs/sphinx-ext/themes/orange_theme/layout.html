@@ -1,5 +1,9 @@
 {% extends "basic/layout.html" %}
 
+{% block extrahead %}
+    <script type="text/javascript" src="{{ pathto('_static/copybutton.js', 1) }}"></script>
+{% endblock %}
+
 {% block header %}
 	{% include 'header.html' %}
 {% endblock %}
