@@ -510,7 +510,9 @@ def lookup_from_function(attribute, bound, function):
         return LookupLearner(examples)
       
 
-def lookup_from_data(examples, weight=0, learnerForUnknown=None):
+from Orange.misc import deprecated_keywords
+@deprecated_keywords({"learnerForUnknown":"learner_for_unknown"})
+def lookup_from_data(examples, weight=0, learner_for_unknown=None):
     if len(examples.domain.attributes) <= 3:
         lookup = lookup_from_bound(examples.domain.class_var,
                                  examples.domain.attributes)
@@ -527,11 +529,11 @@ def lookup_from_data(examples, weight=0, learnerForUnknown=None):
         # there are ambiguities; a backup plan is
         # ClassifierByDataTable, let it deal with them
         return LookupLearner(examples, weight,
-                             learnerForUnknown=learnerForUnknown)
+                             learner_for_unknown=learner_for_unknown)
 
     else:
         return LookupLearner(examples, weight,
-                             learnerForUnknown=learnerForUnknown)
+                             learner_for_unknown=learner_for_unknown)
         
         
 def dump_lookup_function(func):
