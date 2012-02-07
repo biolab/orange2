@@ -11,7 +11,7 @@ majority = Orange.classification.majority.MajorityLearner(name="default")
 learners = [bayes, tree, majority]
 
 def printResults(res):
-    CAs = Orange.evaluation.scoring.CA(res, reportSE=1)
+    CAs = Orange.evaluation.scoring.CA(res, report_se=1)
     for name, ca in zip(res.classifierNames, CAs):
         print "%s: %5.3f+-%5.3f" % (name, ca[0], 1.96 * ca[1]),
     print

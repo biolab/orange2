@@ -7,6 +7,8 @@ Orange Scripting Reference
 
    Orange.data
 
+   Orange.feature
+
    Orange.associate
 
    Orange.classification
@@ -18,8 +20,6 @@ Orange Scripting Reference
    Orange.ensemble
 
    Orange.evaluation
-
-   Orange.feature
 
    Orange.multilabel
    
