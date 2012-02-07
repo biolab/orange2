@@ -183,7 +183,7 @@ def score_within_cluster_distance(km):
     """UNIMPLEMENTED weighted average within-cluster pairwise distance"""
     raise NotImplemented
 
-score_withinClusterDistance.minimize = True
+score_within_cluster_distance.minimize = True
 
 def score_between_cluster_distance(km):
     """Sum of distances from elements to 'nearest miss' centroids"""
