@@ -6,16 +6,156 @@ Method scoring (``scoring``)
 
 .. index: scoring
 
-This module contains various measures of quality for classification and
-regression. Most functions require an argument named :obj:`res`, an instance of
-:class:`Orange.evaluation.testing.ExperimentResults` as computed by
-functions from :mod:`Orange.evaluation.testing` and which contains
-predictions obtained through cross-validation,
-leave one-out, testing on training data or test set instances.
+Scoring plays and integral role in evaluation of any prediction model. Orange
+implements various scores for evaluation of classification,
+regression and multi-label models. Most of the methods needs to be called
+with an instance of :obj:`ExperimentResults`.
+
+.. literalinclude:: code/statExample0.py
 
 ==============
 Classification
 ==============
+
+Many scores for evaluation of classification models can be computed solely
+from the confusion matrix constructed manually with the
+:obj:`confusion_matrices` function. If class variable has more than two
+values, the index of the value to calculate the confusion matrix for should
+be passed as well.
+
+Calibration scores
+==================
+
+.. autofunction:: CA
+.. autofunction:: sens
+.. autofunction:: spec
+.. autofunction:: PPV
+.. autofunction:: NPV
+.. autofunction:: precision
+.. autofunction:: recall
+.. autofunction:: F1
+.. autofunction:: Falpha
+.. autofunction:: MCC
+.. autofunction:: AP
+.. autofunction:: IS
+.. autofunction::
+
+Discriminatory scores
+=====================
+
+.. autofunction:: Brier_score
+
+.. autofunction:: AUC
+
+    .. attribute:: AUC.ByWeightedPairs (or 0)
+
+      Computes AUC for each pair of classes (ignoring instances of all other
+      classes) and averages the results, weighting them by the number of
+      pairs of instances from these two classes (e.g. by the product of
+      probabilities of the two classes). AUC computed in this way still
+      behaves as concordance index, e.g., gives the probability that two
+      randomly chosen instances from different classes will be correctly
+      recognized (this is of course true only if the classifier knows
+      from which two classes the instances came).
+
+   .. attribute:: AUC.ByPairs (or 1)
+
+      Similar as above, except that the average over class pairs is not
+      weighted. This AUC is, like the binary, independent of class
+      distributions, but it is not related to concordance index any more.
+
+   .. attribute:: AUC.WeightedOneAgainstAll (or 2)
+
+      For each class, it computes AUC for this class against all others (that
+      is, treating other classes as one class). The AUCs are then averaged by
+      the class probabilities. This is related to concordance index in which
+      we test the classifier's (average) capability for distinguishing the
+      instances from a specified class from those that come from other classes.
+      Unlike the binary AUC, the measure is not independent of class
+      distributions.
+
+   .. attribute:: AUC.OneAgainstAll (or 3)
+
+      As above, except that the average is not weighted.
+
+   In case of multiple folds (for instance if the data comes from cross
+   validation), the computation goes like this. When computing the partial
+   AUCs for individual pairs of classes or singled-out classes, AUC is
+   computed for each fold separately and then averaged (ignoring the number
+   of instances in each fold, it's just a simple average). However, if a
+   certain fold doesn't contain any instances of a certain class (from the
+   pair), the partial AUC is computed treating the results as if they came
+   from a single-fold. This is not really correct since the class
+   probabilities from different folds are not necessarily comparable,
+   yet this will most often occur in a leave-one-out experiments,
+   comparability shouldn't be a problem.
+
+   Computing and printing out the AUC's looks just like printing out
+   classification accuracies (except that we call AUC instead of
+   CA, of course)::
+
+       AUCs = Orange.evaluation.scoring.AUC(res)
+       for l in range(len(learners)):
+           print "%10s: %5.3f" % (learners[l].name, AUCs[l])
+
+   For vehicle, you can run exactly this same code; it will compute AUCs
+   for all pairs of classes and return the average weighted by probabilities
+   of pairs. Or, you can specify the averaging method yourself, like this::
+
+       AUCs = Orange.evaluation.scoring.AUC(resVeh, Orange.evaluation.scoring.AUC.WeightedOneAgainstAll)
+
+   The following snippet tries out all four. (We don't claim that this is
+   how the function needs to be used; it's better to stay with the default.)::
+
+       methods = ["by pairs, weighted", "by pairs", "one vs. all, weighted", "one vs. all"]
+       print " " *25 + "  \tbayes\ttree\tmajority"
+       for i in range(4):
+           AUCs = Orange.evaluation.scoring.AUC(resVeh, i)
+           print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i], ) + tuple(AUCs))
+
+   As you can see from the output::
+
+                                   bayes   tree    majority
+              by pairs, weighted:  0.789   0.871   0.500
+                        by pairs:  0.791   0.872   0.500
+           one vs. all, weighted:  0.783   0.800   0.500
+                     one vs. all:  0.783   0.800   0.500
+
+.. autofunction:: AUC_single
+
+.. autofunction:: AUC_pair
+
+.. autofunction:: AUC_matrix
+
+The remaining functions, which plot the curves and statistically compare
+them, require that the results come from a test with a single iteration,
+and they always compare one chosen class against all others. If you have
+cross validation results, you can either use split_by_iterations to split the
+results by folds, call the function for each fold separately and then sum
+the results up however you see fit, or you can set the ExperimentResults'
+attribute number_of_iterations to 1, to cheat the function - at your own
+responsibility for the statistical correctness. Regarding the multi-class
+problems, if you don't chose a specific class, Orange.evaluation.scoring will use the class
+attribute's baseValue at the time when results were computed. If baseValue
+was not given at that time, 1 (that is, the second class) is used as default.
+
+We shall use the following code to prepare suitable experimental results::
+
+    ri2 = Orange.core.MakeRandomIndices2(voting, 0.6)
+    train = voting.selectref(ri2, 0)
+    test = voting.selectref(ri2, 1)
+    res1 = Orange.evaluation.testing.learnAndTestOnTestData(learners, train, test)
+
+
+.. autofunction:: AUCWilcoxon
+
+.. autofunction:: compute_ROC
+
+
+.. autofunction:: confusion_matrices
+
+.. autoclass:: ConfusionMatrix
+
 
 To prepare some data for examples on this page, we shall load the voting data
 set (problem of predicting the congressman's party (republican, democrat)
@@ -28,8 +168,6 @@ extracted from a picture is a van, bus, or Opel or Saab car).
 Basic cross validation example is shown in the following part of
 (:download:`statExamples.py <code/statExamples.py>`, uses :download:`voting.tab <code/voting.tab>` and :download:`vehicle.tab <code/vehicle.tab>`):
 
-.. literalinclude:: code/statExample0.py
-
 If instances are weighted, weights are taken into account. This can be
 disabled by giving :obj:`unweighted=1` as a keyword argument. Another way of
 disabling weights is to clear the
@@ -38,13 +176,9 @@ disabling weights is to clear the
 General Measures of Quality
 ===========================
 
-.. autofunction:: CA
 
-.. autofunction:: AP
 
-.. autofunction:: Brier_score
 
-.. autofunction:: IS
 
 So, let's compute all this in part of
 (:download:`statExamples.py <code/statExamples.py>`, uses :download:`voting.tab <code/voting.tab>` and :download:`vehicle.tab <code/vehicle.tab>`) and print it out:
@@ -57,7 +191,7 @@ The output should look like this::
     method  CA      AP      Brier    IS
     bayes   0.903   0.902   0.175    0.759
     tree    0.846   0.845   0.286    0.641
-    majorty  0.614   0.526   0.474   -0.000
+    majority  0.614   0.526   0.474   -0.000
 
 Script :download:`statExamples.py <code/statExamples.py>` contains another example that also prints out
 the standard errors.
@@ -162,15 +296,7 @@ Confusion Matrix
    there were more instances misclassified as vans than correctly classified
    instances. The classifier is obviously quite biased to vans.
 
-   .. method:: sens(confm)
-   .. method:: spec(confm)
-   .. method:: PPV(confm)
-   .. method:: NPV(confm)
-   .. method:: precision(confm)
-   .. method:: recall(confm)
-   .. method:: F2(confm)
-   .. method:: Falpha(confm, alpha=2.0)
-   .. method:: MCC(conf)
+
 
    With the confusion matrix defined in terms of positive and negative
    classes, you can also compute the
