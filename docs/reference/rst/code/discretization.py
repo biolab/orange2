@@ -19,7 +19,7 @@ print "Continuous attribute:", sep_w.get_value_from.whichVar #FIXME not which_va
 print "Cut-off points:", sep_w.get_value_from.transformer.points
 
 print "\nManual construction of Interval discretizer - single attribute"
-idisc = Orange.feature.discretization.Interval(points = [3.0, 5.0])
+idisc = Orange.feature.discretization.IntervalDiscretizer(points = [3.0, 5.0])
 sep_l = idisc.construct_variable(data.domain["sepal length"])
 data2 = data.select([data.domain["sepal length"], sep_l, data.domain.classVar])
 for ex in data2[:10]:
@@ -27,7 +27,7 @@ for ex in data2[:10]:
 
 
 print "\nManual construction of Interval discretizer - all attributes"
-idisc = Orange.feature.discretization.Interval(points = [3.0, 5.0])
+idisc = Orange.feature.discretization.IntervalDiscretizer(points = [3.0, 5.0])
 newattrs = [idisc.construct_variable(attr) for attr in data.domain.attributes]
 data2 = data.select(newattrs + [data.domain.class_var])
 for ex in data2[:10]:
@@ -66,7 +66,7 @@ print
 
 
 print "\nManual construction of EqualWidth - all attributes"
-edisc = Orange.feature.discretization.EqualWidth(first_cut = 2.0, step = 1.0, number_of_intervals = 5)
+edisc = Orange.feature.discretization.EqualWidthDiscretizer(first_cut=2.0, step=1.0, n=5)
 newattrs = [edisc.constructVariable(attr) for attr in data.domain.attributes]
 data2 = data.select(newattrs + [data.domain.classVar])
 for ex in data2[:10]:
