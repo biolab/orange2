@@ -7,7 +7,7 @@ $(document).ready(function() {
     var pre = div.find('pre');
 
     // get the styles from the current theme
-    pre.parent().parent().css('position', 'relative');
+//    pre.parent().parent().css('position', 'relative');
     var hide_text = 'Hide the prompts and output';
     var show_text = 'Show the prompts and output';
     var border_width = pre.css('border-top-width');
