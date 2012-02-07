@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.feature.discretization
 
-###################################
-Discretization (``discretization``)
-###################################
+###########################################
+Feature discretization (``discretization``)
+###########################################
 
 .. index:: discretization
 

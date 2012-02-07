@@ -126,34 +126,3 @@ class DiscretizedClassifier:
     self.__dict__.update(kwds)
   def __call__(self, example, resultType = orange.GetValue):
     return self.classifier(example, resultType)
-
-class DiscretizeTable(object):
-    """Discretizes all continuous features of the data table.
-
-    :param data: data to discretize.
-    :type data: :class:`Orange.data.Table`
-
-    :param features: data features to discretize. None (default) to discretize all features.
-    :type features: list of :class:`Orange.data.variable.Variable`
-
-    :param method: feature discretization method.
-    :type method: :class:`Discretization`
-    """
-    def __new__(cls, data=None, features=None, discretize_class=False, method=EqualFreq(n=3)):
-        if data is None:
-            self = object.__new__(cls)
-            return self
-        else:
-            self = cls(features=features, discretize_class=discretize_class, method=method)
-            return self(data)
-
-    def __init__(self, features=None, discretize_class=False, method=EqualFreq(n=3)):
-        self.features = features
-        self.discretize_class = discretize_class
-        self.method = method
-
-    def __call__(self, data):
-        pp = Preprocessor_discretize(attributes=self.features, discretizeClass=self.discretize_class)
-        pp.method = self.method
-        return pp(data)
-
