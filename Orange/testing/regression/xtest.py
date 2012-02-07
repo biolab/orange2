@@ -11,7 +11,7 @@ date = "%2.2i-%2.2i-%2.2i" % time.localtime()[:3]
 
 platform = sys.platform
 pyversion = sys.version[:3]
-states = ["OK", "changed", "random", "error", "crash"]
+states = ["OK", "timedout", "changed", "random", "error", "crash"]
 
 def file_name_match(name, patterns):
     """Is any of the string in patterns a substring of name?"""
@@ -21,7 +21,7 @@ def file_name_match(name, patterns):
     return False
 
 def test_scripts(complete, just_print, module="orange", root_directory=".",
-                test_files=None, directories=None):
+                test_files=None, directories=None, timeout=5):
     """Test the scripts in the given directory."""
     global error_status
     if sys.platform == "win32" and sys.executable[-6:].upper() != "_D.EXE":
@@ -122,16 +122,41 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                 print "%s (%s): " % (name, lastResult == "new" and lastResult or ("last: %s" % lastResult)),
                 sys.stdout.flush()
 
-                for state in ["crash", "error", "new", "changed", "random1", "random2"]:
+                for state in states:
                     remname = "%s/%s.%s.%s.%s.txt" % \
                               (outputsdir, name, platform, pyversion, state)
                     if os.path.exists(remname):
                         os.remove(remname)
 
                 titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
-                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir + "/xtest_one.py", name, str(titerations), outputsdir)
+                #os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir + "/xtest_one.py", name, str(titerations), outputsdir)
+                p = subprocess.Popen([sys.executable, regtestdir + "/xtest_one.py", name, str(titerations), outputsdir])
 
-                result = open("xtest1_report", "rt").readline().rstrip() or "crash"
+                passed_time = 0
+                while passed_time < timeout:
+                    time.sleep(0.01)
+                    passed_time += 0.01
+
+                    if p.poll() is not None:
+                        break
+
+                if p.poll() is None:
+                    p.kill()
+                    result2 = "timedout"
+                    print "timedout"
+                    # remove output file and change it for *.timedout.*
+                    for state in states:
+                        remname = "%s/%s.%s.%s.%s.txt" % \
+                                  (outputsdir, name, platform, pyversion, state)
+                        if os.path.exists(remname):
+                            os.remove(remname)
+
+                    timeoutname = "%s/%s.%s.%s.%s.txt" % (outputsdir, name, sys.platform, sys.version[:3], "timedout")
+                    open(timeoutname, "wt").close()
+                else:
+                    stdout, stderr = p.communicate()
+                    result = open("xtest1_report", "rt").readline().rstrip() or "crash"
+
                 error_status = max(error_status, states.index(result))
                 os.remove("xtest1_report")
 
@@ -139,21 +164,21 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
 
     os.chdir(caller_directory)
 
-
 iterations = 1
 directories = []
 error_status = 0
 
 def usage():
     """Print out help."""
-    print "%s [update|test|report|report-html|errors] -[h|s] [--single|--module=[orange|obi|text]|--dir=<dir>|] <files>" % sys.argv[0]
-    print "  test:   regression tests on all scripts"
-    print "  update: regression tests on all previously failed scripts (default)"
+    print "%s [test|update|report|report-html|errors] -[h|s] [--single|--module=[orange|docs]|--timeout=<#>|--dir=<dir>|] <files>" % sys.argv[0]
+    print "  test:   regression tests on all scripts (default)"
+    print "  update: regression tests on all previously failed scripts"
     print "  report: report on testing results"
     print "  errors: report on errors from regression tests"
     print
     print "-s, --single: runs a single test on each script"
     print "--module=<module>: defines a module to test"
+    print "--timeout=<#seconds>: defines max. execution time"
     print "--dir=<dir>: a comma-separated list of names where any should match the directory to be tested"
     print "<files>: space separated list of string matching the file names to be tested"
 
@@ -162,14 +187,14 @@ def main(argv):
     """Process the argument list and run the regression test."""
     global iterations
 
-    command = "update"
+    command = "test"
     if argv:
         if argv[0] in ["update", "test", "report", "report-html", "errors", "help"]:
             command = argv[0]
             del argv[0]
 
     try:
-        opts, test_files = getopt.getopt(argv, "hs", ["single", "module=", "help", "files=", "verbose="])
+        opts, test_files = getopt.getopt(argv, "hs", ["single", "module=", "timeout=", "help", "files=", "verbose="])
     except getopt.GetoptError:
         print "Warning: Wrong argument"
         usage()
@@ -191,31 +216,32 @@ def main(argv):
                 ("orange25", "docs/reference/rst/code")]
     elif module in ["orange"]:
         root = "%s/.." % environ.install_dir
-        module = "orange"
+        module = "docs"
         dirs = [("modules", "Orange/doc/modules"),
                 ("reference", "Orange/doc/reference"),
                 ("ofb", "docs/tutorial/rst/code")]
-    elif module in ["ofb-rst"]:
-        root = "%s/.." % environ.install_dir
-        module = "orange"
-        dirs = [("ofb", "docs/tutorial/rst/code")]
-    elif module in ["orange25"]:
-        root = "%s/.." % environ.install_dir
-        module = "orange"
-        dirs = [("orange25", "docs/reference/rst/code")]
-    elif module == "obi":
-        root = environ.add_ons_dir + "/Bioinformatics/doc"
-        dirs = [("modules", "modules")]
-    elif module == "text":
-        root = environ.add_ons_dir + "/Text/doc"
-        dirs = [("modules", "modules")]
+    elif module in ["orange20"]:
+        pass
     else:
-        print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
+        print "Error: %s is wrong name of the module, should be in [orange|docs]" % module
+        sys.exit(1)
+
+    timeout = 5
+    try:
+        _t = opts.get("--timeout", "5")
+        timeout = int(_t)
+        if timeout <= 0 or timeout >= 120:
+            raise AttributeError()
+    except AttributeError:
+        print "Error: timeout out of range (0 < # < 120)"
+        sys.exit(1)
+    except:
+        print "Error: %s wrong timeout" % opts.get("--timeout", "5")
         sys.exit(1)
 
     test_scripts(command == "test", command == "report" or (command == "report-html" and command or False),
                  module=module, root_directory=root,
-                 test_files=test_files, directories=dirs)
+                 test_files=test_files, directories=dirs, timeout=timeout)
     # sys.exit(error_status)
 
 main(sys.argv[1:])
