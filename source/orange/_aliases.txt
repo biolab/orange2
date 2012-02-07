@@ -71,3 +71,6 @@ feature_distances attribute_distances
 
 ImputerConstructor
 impute_class imputeClass
+
+Filter_random
+random_generator randomGenerator

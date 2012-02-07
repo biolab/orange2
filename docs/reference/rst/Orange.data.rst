@@ -9,5 +9,6 @@ Data description (``data``)
     Orange.data.instance
     Orange.data.table
     Orange.data.sample
+    Orange.data.filter
     Orange.data.formats
     Orange.data.discretization
