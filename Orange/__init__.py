@@ -20,6 +20,7 @@ _import("data.io")
 _import("data.sample")
 _import("data.utils")
 _import("data.discretization")
+_import("data.filter")
 
 _import("network")
 

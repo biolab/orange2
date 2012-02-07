@@ -24,7 +24,7 @@ The output of this code is::
     ['A', 1853, 'RR', 804, 2, 'N', 'DECK', 'WOOD', 'SHORT', 'S', 'WOOD']
 
 Imputers
------------------
+--------
 
 :obj:`ImputerConstructor` is the abstract root in a hierarchy of classes
 that accept training data and construct an instance of a class derived from
