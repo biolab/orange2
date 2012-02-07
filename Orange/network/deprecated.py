@@ -615,7 +615,7 @@ class Network(Orange.core.Network):
         
         :param matrix: number of objects in a matrix must match the number 
             of vertices in a network.
-        :type matrix: Orange.core.SymMatrix
+        :type matrix: Orange.misc.SymMatrix
         :param lower: lower distance bound.
         :type lower: float
         :param upper: upper distance bound.
@@ -1453,7 +1453,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         self.mdsRefresh = mdsRefresh
         self.mdsStep = 0
         self.stopMDS = 0
-        self.vertexDistance.matrixType = Orange.core.SymMatrix.Symmetric
+        self.vertexDistance.matrixType = Orange.misc.SymMatrix.Symmetric
         self.diag_coors = math.sqrt((min(self.graph.coors[0]) -  \
                                      max(self.graph.coors[0]))**2 + \
                                      (min(self.graph.coors[1]) - \

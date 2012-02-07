@@ -396,7 +396,7 @@ class FreeViz:
 
         if distances:
             if n_valid != len(valid_data):
-                classes = Orange.core.SymMatrix(n_valid)
+                classes = Orange.misc.SymMatrix(n_valid)
                 r = 0
                 for ro, vr in enumerate(valid_data):
                     if not vr:

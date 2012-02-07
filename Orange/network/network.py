@@ -796,7 +796,7 @@ class GraphLayout(orangeom.GraphLayout):
         self.mdsRefresh = mdsRefresh
         self.mdsStep = 0
         self.stopMDS = 0
-        self.items_matrix.matrixType = Orange.core.SymMatrix.Symmetric
+        self.items_matrix.matrixType = Orange.misc.SymMatrix.Symmetric
         self.diag_coors = math.sqrt((min(self.coors[0]) - \
                                      max(self.coors[0])) ** 2 + \
                                      (min(self.coors[1]) - \

@@ -246,7 +246,7 @@ def _pairs(seq, same = False):
             yield seq[i], seq[j]
    
 def distance_matrix(data, distance_constructor=Euclidean, progress_callback=None):
-    """ A helper function that computes an :obj:`Orange.data.SymMatrix` of all
+    """ A helper function that computes an :obj:`Orange.misc.SymMatrix` of all
     pairwise distances between instances in `data`.
     
     :param data: A data table
@@ -259,10 +259,10 @@ def distance_matrix(data, distance_constructor=Euclidean, progress_callback=None
         reporting the on the progress.
     :type progress_callback: function
     
-    :rtype: :class:`Orange.data.SymMatrix`
+    :rtype: :class:`Orange.misc.SymMatrix`
     
     """
-    matrix = Orange.data.SymMatrix(len(data))
+    matrix = Orange.misc.SymMatrix(len(data))
     dist = distance_constructor(data)
 
     iter_count = matrix.dim * (matrix.dim - 1) / 2
