@@ -17,6 +17,9 @@ algorithm.
 The following code builds a :obj:`TreeClassifier` on the Iris data set
 (with the depth limited to three levels):
 
+>>> 1 + 1
+2
+
 .. literalinclude:: code/orngTree1.py
    :lines: 1-4
 
@@ -107,13 +110,30 @@ Tree Structure
 
 This example works with the lenses data set:
 
-.. literalinclude:: code/treestructure.py
-   :lines: 7-10
+..
+    .. literalinclude:: code/treestructure.py
+       :lines: 7-10
+
+>>> import Orange
+>>> lenses = Orange.data.Table("lenses")
+>>> tree_classifier = Orange.classification.tree.TreeLearner(lenses)
 
 The following function counts the number of nodes in a tree:
 
-.. literalinclude:: code/treestructure.py
-   :lines: 12-21
+..
+    .. literalinclude:: code/treestructure.py
+       :lines: 12-21
+
+>>> def tree_size(node):
+...    if not node:
+...        return 0
+...
+...    size = 1
+...    if node.branch_selector:
+...        for branch in node.branches:
+...            size += tree_size(branch)
+...
+...    return size
 
 If node is None, the function above return 0. Otherwise, the size is 1
 (this node) plus the sizes of all subtrees. The algorithm need to check
@@ -121,7 +141,7 @@ if a node is internal (it has a :obj:`~Node.branch_selector`), as leaves
 don't have the :obj:`~Node.branches` attribute.
 
     >>> tree_size(tree_classifier.tree)
-    10
+    15
 
 Note that a :obj:`Node` already has a built-in method
 :func:`~Node.tree_size`.
@@ -153,8 +173,8 @@ separately handles three node types:
 The wrapper function that accepts either a
 :obj:`TreeClassifier` or a :obj:`Node` can be written as follows:
 
-.. literalinclude:: code/treestructure.py
-   :lines: 43-49
+    .. literalinclude:: code/treestructure.py
+       :lines: 43-49
 
 It's straightforward: if ``x`` is a
 :obj:`TreeClassifier`, it prints ``x.tree``; if it's :obj:`Node` it

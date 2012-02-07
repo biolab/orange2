@@ -55,5 +55,5 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == '__main__':
-    base_dirs = [os.path.abspath('../../misc')]
+    base_dirs = [os.path.abspath('../../classification')]
     unittest.main()
