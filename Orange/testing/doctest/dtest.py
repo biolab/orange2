@@ -37,11 +37,11 @@ def get_files(base_dirs, exts):
 
 
 def load_tests(loader, tests, ignore):
-    exclude_dirs = ['/orng/', '/doc/', '/unit/', '/testing/', '/multilabel/']
+    exclude_dirs = ['/orng/', '/doc/', '/unit/', '/testing/', '/multilabel/', '/OrangeWidgets/']
     for fname in get_files(base_dirs, ['.py']):
         if any(dir in fname for dir in exclude_dirs):
             continue
-        print(fname)
+        #print(fname)
         path, package = getpackage(fname)
         sys.path.insert(0, os.path.split(fname)[0])
         __import__(package)
@@ -55,5 +55,5 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == '__main__':
-    base_dirs = [os.path.abspath('../..')]
+    base_dirs = [os.path.abspath('../../misc')]
     unittest.main()
