@@ -4,6 +4,8 @@
 Loading and saving data
 =======================
 
+.. _tab-delimited:
+
 Tab-delimited format
 ====================
 Orange prefers to open data files in its native, tab-delimited format. This format allows us to specify type of features
