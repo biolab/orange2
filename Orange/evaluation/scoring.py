@@ -5,6 +5,7 @@ import numpy
 import Orange
 from Orange import statc, corn
 from Orange.misc import deprecated_keywords
+from Orange.evaluation import testing
 
 #### Private stuff
 
@@ -124,6 +125,52 @@ def ME(res, **argkw):
     return [x/totweight for x in MEs]
 
 MAE = ME
+
+
+class ConfusionMatrix:
+    """
+    Classification result summary
+
+    .. attribute:: TP
+
+        True Positive predictions
+
+    .. attribute:: TN
+
+        True Negative predictions
+
+    .. attribute:: FP
+
+        False Positive predictions
+
+    .. attribute:: FN
+
+        False Negative predictions
+    """
+    def __init__(self):
+        self.TP = self.FN = self.FP = self.TN = 0.0
+
+    @deprecated_keywords({"predictedPositive": "predicted_positive",
+                          "isPositive": "is_positive"})
+    def addTFPosNeg(self, predicted_positive, is_positive, weight = 1.0):
+        """
+        Update confusion matrix with result of a single classification
+
+        :param predicted_positive: positive class value was predicted
+        :param is_positive: correct class value is positive
+        :param weight: weight of the selected instance
+         """
+        if predicted_positive:
+            if is_positive:
+                self.TP += weight
+            else:
+                self.FP += weight
+        else:
+            if is_positive:
+                self.FN += weight
+            else:
+                self.TN += weight
+
 
 #########################################################################
 # PERFORMANCE MEASURES:
@@ -304,67 +351,91 @@ def RMSE_old(res, **argkw):
 # PERFORMANCE MEASURES:
 # Scores for evaluation of classifiers
 
-@deprecated_keywords({"reportSE": "report_se"})
-def CA(test_results, report_se = False, **argkw):
-    """Return percentage of matches between predicted and actual class.
+class CAClass(object):
+    CONFUSION_MATRIX = 0
+    CONFUSION_MATRIX_LIST = 1
+    CLASSIFICATION = 2
+    CROSS_VALIDATION = 3
 
-    :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
-                         or :obj:`ConfusionMatrix`.
-    :param report_se: include standard error in result.
-    :rtype: list of scores, one for each learner.
+    @deprecated_keywords({"reportSE": "report_se"})
+    def __call__(self, test_results, report_se = False, unweighted=False):
+        """Return percentage of matches between predicted and actual class.
 
-    Standard errors are estimated from deviation of CAs across folds (if
-    test_results were produced by cross_validation) or approximated under
-    the assumption of normal distribution otherwise.
-    """
-    if isinstance(test_results, list) and len(test_results) > 0 \
-                             and isinstance(test_results[0], ConfusionMatrix):
-        results = []
-        for cm in test_results:
-            div = cm.TP+cm.FN+cm.FP+cm.TN
-            check_non_zero(div)
-            results.append((cm.TP+cm.TN)/div)
-        return results
-    elif test_results.number_of_iterations==1:
-        CAs = [0.0]*test_results.number_of_learners
-        if argkw.get("unweighted", 0) or not test_results.weights:
-            totweight = gettotsize(test_results)
-            for tex in test_results.results:
-                CAs = map(lambda res, cls: res+(cls==tex.actual_class), CAs, tex.classes)
+        :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
+                             or :obj:`ConfusionMatrix`.
+        :param report_se: include standard error in result.
+        :rtype: list of scores, one for each learner.
+
+        Standard errors are estimated from deviation of CAs across folds (if
+        test_results were produced by cross_validation) or approximated under
+        the assumption of normal distribution otherwise.
+        """
+        input_type = self.get_input_type(test_results)
+        if input_type == self.CONFUSION_MATRIX:
+            return self.from_confusion_matrix(test_results, report_se)
+        elif input_type == self.CONFUSION_MATRIX_LIST:
+            return self.from_confusion_matrix_list(test_results, report_se)
+        elif input_type == self.CLASSIFICATION:
+            return self.from_classification_results(
+                                        test_results, report_se, unweighted)
+        elif input_type == self.CROSS_VALIDATION:
+            return self.from_crossvalidation_results(
+                                        test_results, report_se, unweighted)
+
+    def from_confusion_matrix(self, cm, report_se):
+        all_predictions = cm.TP+cm.FN+cm.FP+cm.TN
+        check_non_zero(all_predictions)
+        ca = (cm.TP+cm.TN)/all_predictions
+
+        if report_se:
+            return ca, ca*(1-ca)/math.sqrt(all_predictions)
         else:
-            totweight = 0.
-            for tex in test_results.results:
-                CAs = map(lambda res, cls: res+(cls==tex.actual_class and tex.weight), CAs, tex.classes)
-                totweight += tex.weight
+            return ca
+
+    def from_confusion_matrix_list(self, confusion_matrices, report_se):
+        return map(self.from_confusion_matrix, confusion_matrices) # TODO: report_se
+
+    def from_classification_results(self, test_results, report_se, unweighted):
+        CAs = [0.0]*test_results.number_of_learners
+        totweight = 0.
+        for tex in test_results.results:
+            w = 1. if unweighted else tex.weight
+            CAs = map(lambda res, cls: res+(cls==tex.actual_class and w), CAs, tex.classes)
+            totweight += w
         check_non_zero(totweight)
         ca = [x/totweight for x in CAs]
-            
+
         if report_se:
             return [(x, x*(1-x)/math.sqrt(totweight)) for x in ca]
         else:
             return ca
-        
-    else:
+
+    def from_crossvalidation_results(self, test_results, report_se, unweighted):
         CAsByFold = [[0.0]*test_results.number_of_iterations for i in range(test_results.number_of_learners)]
         foldN = [0.0]*test_results.number_of_iterations
 
-        if argkw.get("unweighted", 0) or not test_results.weights:
-            for tex in test_results.results:
-                for lrn in range(test_results.number_of_learners):
-                    CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class)
-                foldN[tex.iteration_number] += 1
-        else:
-            for tex in test_results.results:
-                for lrn in range(test_results.number_of_learners):
-                    CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class) and tex.weight
-                foldN[tex.iteration_number] += tex.weight
+        for tex in test_results.results:
+            w = 1. if unweighted else tex.weight
+            for lrn in range(test_results.number_of_learners):
+                CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class) and w
+            foldN[tex.iteration_number] += w
 
         return statistics_by_folds(CAsByFold, foldN, report_se, False)
 
+    def get_input_type(self, test_results):
+        if isinstance(test_results, ConfusionMatrix):
+            return self.CONFUSION_MATRIX
+        elif isinstance(test_results, testing.ExperimentResults):
+            if test_results.number_of_iterations == 1:
+                return self.CLASSIFICATION
+            else:
+                return self.CROSS_VALIDATION
+        elif isinstance(test_results, list):
+            return self.CONFUSION_MATRIX_LIST
 
-# Obsolete, but kept for compatibility
-def CA_se(res, **argkw):
-    return CA(res, True, **argkw)
+
+
+CA = CAClass
 
 @deprecated_keywords({"reportSE": "report_se"})
 def AP(res, report_se = False, **argkw):
@@ -553,50 +624,7 @@ def rank_difference(res, statistics, **argkw):
         return apply(Wilcoxon, (res, statistics), argkw)
     else:
         return apply(Friedman, (res, statistics), argkw)
-    
-class ConfusionMatrix:
-    """
-    Classification result summary
 
-    .. attribute:: TP
-
-        True Positive predictions
-
-    .. attribute:: TN
-
-        True Negative predictions
-
-    .. attribute:: FP
-
-        False Positive predictions
-
-    .. attribute:: FN
-
-        False Negative predictions
-    """
-    def __init__(self):
-        self.TP = self.FN = self.FP = self.TN = 0.0
-
-    @deprecated_keywords({"predictedPositive": "predicted_positive",
-                          "isPositive": "is_positive"})
-    def addTFPosNeg(self, predicted_positive, is_positive, weight = 1.0):
-        """
-        Update confusion matrix with result of a single classification
-
-        :param predicted_positive: positive class value was predicted
-        :param is_positive: correct class value is positive
-        :param weight: weight of the selected instance
-         """
-        if predicted_positive:
-            if is_positive:
-                self.TP += weight
-            else:
-                self.FP += weight
-        else:
-            if is_positive:
-                self.FN += weight
-            else:
-                self.TN += weight
 
 @deprecated_keywords({"res": "test_results",
                       "classIndex": "class_index"})

@@ -26,7 +26,7 @@ be passed as well.
 Calibration scores
 ==================
 
-.. autofunction:: CA
+.. autoclass:: CAClass
 .. autofunction:: sens
 .. autofunction:: spec
 .. autofunction:: PPV
@@ -38,7 +38,6 @@ Calibration scores
 .. autofunction:: MCC
 .. autofunction:: AP
 .. autofunction:: IS
-.. autofunction::
 
 Discriminatory scores
 =====================
