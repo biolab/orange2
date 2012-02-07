@@ -175,19 +175,22 @@ def score_distance_to_centroids(km):
 
 score_distance_to_centroids.minimize = True
 
-def score_conditionalEntropy(km):
+def score_conditional_entropy(km):
     """UNIMPLEMENTED cluster quality measured by conditional entropy"""
-    pass
+    raise NotImplemented
 
-def score_withinClusterDistance(km):
+def score_within_cluster_distance(km):
     """UNIMPLEMENTED weighted average within-cluster pairwise distance"""
-    pass
+    raise NotImplemented
 
-score_withinClusterDistance.minimize = True
+score_within_cluster_distance.minimize = True
 
-def score_betweenClusterDistance(km):
+def score_between_cluster_distance(km):
     """Sum of distances from elements to 'nearest miss' centroids"""
     return sum(min(km.distance(c, d) for j,c in enumerate(km.centroids) if j!=km.clusters[i]) for i,d in enumerate(km.data))
+
+from Orange.misc import deprecated_function_name
+score_betweenClusterDistance = deprecated_function_name(score_between_cluster_distance)
 
 def score_silhouette(km, index=None):
     """Returns an average silhouette score of data instances.

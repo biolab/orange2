@@ -13,9 +13,7 @@ def test_inducer_on(self, table):
         self.assertIsNotNone(rules[0].examples)
         
     self.assertLessEqual(len(rules), self.inducer.max_item_sets)
-    print "\n%5s   %5s" % ("supp", "conf")
     for r in rules:
-        print "%5.3f   %5.3f   %s" % (r.support, r.confidence, r)
         self.assertGreaterEqual(r.support, self.inducer.support)
         self.assertIsNotNone(r.left)
         self.assertIsNotNone(r.right)
