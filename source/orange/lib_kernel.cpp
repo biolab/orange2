@@ -280,6 +280,19 @@ PyObject *Variable_getExisting(PyObject *, PyObject *args) PYARGS(METH_VARARGS |
 }
 
 
+PyObject *Variable_retrieve(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues, failOn]]) -> (Variable|None, status)")
+{
+    return Variable_getExisting(NULL, args);
+}
+
+
+PyObject *newmetaid(PyObject *, PyObject *args);
+
+PyObject *Variable_new_meta_id(PyObject *, PyObject *args)  PYARGS(METH_VARARGS,"([Variable]) -> int")
+{
+    return newmetaid(NULL, args);
+}
+
 PyObject *Variable_make(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues, createNewOn]]) -> (Variable|None, status)")
 {
   PyTRY
