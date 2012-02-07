@@ -5,7 +5,7 @@ age = data.domain["age"]
 
 age_b = Orange.feature.Discrete("age_c", values = ['young', 'old'])
 age_b.getValueFrom = Orange.core.ClassifierFromVar(whichVar = age)
-age_b.getValueFrom.transformer = Orange.core.MapIntValue()
+age_b.getValueFrom.transformer = Orange.data.utils.MapIntValue()
 age_b.getValueFrom.transformer.mapping = [0, 1, 1]
 
 newDomain = Orange.data.Domain([age_b, age], data.domain.classVar)

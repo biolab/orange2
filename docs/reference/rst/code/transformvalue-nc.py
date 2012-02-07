@@ -7,7 +7,7 @@ newattrs = []
 for attr in data.domain.features:
     attr_c = Orange.feature.Continous(attr.name+"_n")
     attr_c.getValueFrom = Orange.core.ClassifierFromVar(whichVar = attr)
-    transformer = Orange.core.NormalizeContinuous()
+    transformer = Orange.data.utils.NormalizeContinuous()
     attr_c.getValueFrom.transformer = transformer
     transformer.average = domstat[attr].avg
     transformer.span = domstat[attr].dev

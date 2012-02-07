@@ -585,6 +585,12 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
 
            "orange.RandomGenerator": "Orange.misc.Random",
 
+           "orange.TransformValue": "Orange.data.utils.TransformValue",
+           "orange.Ordinal2Continuous": "Orange.data.utils.Ordinal2Continuous",
+           "orange.Discrete2Continuous": "Orange.data.utils.Discrete2Continuous",
+           "orange.NormalizeContinuous": "Orange.data.utils.NormalizeContinuous",
+           "orange.MapIntValue": "Orange.data.utils.MapIntValue",
+
            }
 
 def build_pattern(mapping=MAPPING):
