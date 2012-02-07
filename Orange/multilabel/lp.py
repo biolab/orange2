@@ -49,7 +49,7 @@ def get_label_bitstream(e):
     return ''.join(lv.value for lv in e.get_classes())
 
 def transform_to_powerset(instances):
-    new_class = Orange.data.variable.Discrete("label")
+    new_class = Orange.feature.Discrete("label")
     
     for e in instances:
         class_value = get_label_bitstream(e)

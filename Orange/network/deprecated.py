@@ -1781,7 +1781,7 @@ class NetworkClustering():
                 if stop: break
                     
         if results2items and not resultHistory2items:
-            attrs = [Orange.data.variable.Discrete(
+            attrs = [Orange.feature.Discrete(
                                         'clustering label propagation',
                                         values=list(set([l for l \
                                                         in lblhistory[-1]])))]
@@ -1792,7 +1792,7 @@ class NetworkClustering():
             else: 
                 self.net.items = Orange.data.Table([self.net.items, data])
         if resultHistory2items:
-            attrs = [Orange.data.variable.Discrete('c'+ str(i),
+            attrs = [Orange.feature.Discrete('c'+ str(i),
                 values=list(set([l for l in lblhistory[0]]))) for i,labels \
                 in enumerate(lblhistory)]
             dom = Orange.data.Domain(attrs, 0)
