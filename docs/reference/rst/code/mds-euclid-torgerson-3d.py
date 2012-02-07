@@ -11,7 +11,7 @@ iris = Orange.data.Table("iris.tab")
 
 # Construct a distance matrix using Euclidean distance
 dist = Orange.distance.Euclidean(iris)
-matrix = Orange.core.SymMatrix(len(iris))
+matrix = Orange.misc.SymMatrix(len(iris))
 matrix.setattr('items', iris)
 for i in range(len(iris)):
     for j in range(i + 1):

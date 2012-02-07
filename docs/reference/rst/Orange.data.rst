@@ -11,4 +11,3 @@ Data description (``data``)
     Orange.data.table
     Orange.data.sample
     Orange.data.formats
-    Orange.data.symmatrix
