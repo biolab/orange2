@@ -70,7 +70,7 @@ import numpy
 
 from numpy.linalg import inv, pinv, eig      # matrix inverse and eigenvectors
 from Orange.preprocess.scaling import ScaleLinProjData
-from Orange.misc import visfuncts
+from Orange.orng import orngVisFuncts as visfuncts
 from Orange.misc import deprecated_keywords
 from Orange.misc import deprecated_members
 
