@@ -1,5 +1,0 @@
-[], {"our":1.000, "chief":1.000, "weapon":1.000, "is":1.000, "surprise":3.000, "and":2.000, "fear":2.000}
-[], {"our":1.000, "two":1.000, "weapons":1.000, "are":1.000, "fear":1.000, "and":2.000, "surprise":1.000, "ruthless":1.000, "efficiency":1.000}
-[], {"our":1.000, "three":1.000, "weapons":1.000, "are":1.000, "fear":1.000, "surprise":1.000, "and":2.000, "ruthless":1.000, "efficiency":1.000, "an":1.000, "almost":1.000, "fanatical":1.000, "devotion":1.000, "to":1.000, "the":1.000, "Pope":1.000}
-[], {"amongst":1.000, "our":1.000, "weaponry":1.000, "are":1.000, "such":1.000, "elements":1.000, "as":1.000, "fear":1.000, "surprise":1.000}
-[], {"amongst":1.000, "our":1.000, "weaponry":1.000, "are":1.000, "such":1.000, "diverse":1.000, "elements":1.000, "as":1.000, "fear":1.000, "surprise":1.000, "ruthless":1.000, "efficiency":1.000, "an":1.000, "almost":1.000, "fanatical":1.000, "devotion":1.000, "to":1.000, "the":1.000, "Pope":1.000, "and":1.000, "nice":1.000, "red":1.000, "uniforms":1.000, "oh damn":1.000}
