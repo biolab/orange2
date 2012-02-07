@@ -4,7 +4,6 @@ Data description (``data``)
 
 .. toctree::
 
-    Orange.data.variable
     Orange.data.domain
     Orange.data.value
     Orange.data.instance

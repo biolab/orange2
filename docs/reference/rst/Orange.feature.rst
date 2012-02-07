@@ -7,6 +7,7 @@ Feature (``feature``)
 .. toctree::
    :maxdepth: 2
 
+   Orange.feature.descriptor
    Orange.feature.scoring
    Orange.feature.selection
    Orange.feature.discretization
