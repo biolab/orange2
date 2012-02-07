@@ -1,0 +1,5 @@
+False False False True True True
+True True False False False True
+True
+'orange.Value(degb, "black") < orange.Value(degd, "white")' failed (as it should)
+

@@ -1,0 +1,139 @@
+
+               RIVER: <M, A, O, Y>
+             ERECTED: continuous
+             PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
+              LENGTH: continuous
+               LANES: continuous
+             CLEAR-G: <N, G>
+              T-OR-D: <THROUGH, DECK>
+            MATERIAL: <WOOD, IRON, STEEL>
+                SPAN: <SHORT, MEDIUM, LONG>
+               REL-L: <S, S-F, F>
+                TYPE: <WOOD, SUSPEN, SIMPLE-T, ARCH, CANTILEV, NIL, CONT-T>
+
+Original 15th example:
+           RIVER: M
+         ERECTED: 1863
+         PURPOSE: RR
+          LENGTH: 1000
+           LANES: 2
+         CLEAR-G: N
+          T-OR-D: THROUGH
+        MATERIAL: IRON
+            SPAN: MEDIUM
+           REL-L: ?
+            TYPE: SIMPLE-T
+
+Lowest is base
+         RIVER=A: 0.000
+         RIVER=O: 0.000
+         RIVER=Y: 0.000
+         ERECTED: 1863
+PURPOSE=AQUEDUCT: 0.000
+      PURPOSE=RR: 1.000
+    PURPOSE=WALK: 0.000
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=G: 0.000
+     T-OR-D=DECK: 0.000
+   MATERIAL=IRON: 1.000
+  MATERIAL=STEEL: 0.000
+     SPAN=MEDIUM: 1.000
+       SPAN=LONG: 0.000
+       REL-L=S-F: ?
+         REL-L=F: ?
+     TYPE=SUSPEN: 0.000
+   TYPE=SIMPLE-T: 1.000
+       TYPE=ARCH: 0.000
+   TYPE=CANTILEV: 0.000
+        TYPE=NIL: 0.000
+     TYPE=CONT-T: 0.000
+
+Frequent is base
+         RIVER=M: 1.000
+         RIVER=O: 0.000
+         RIVER=Y: 0.000
+         ERECTED: 1863
+PURPOSE=AQUEDUCT: 0.000
+      PURPOSE=RR: 1.000
+    PURPOSE=WALK: 0.000
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=N: 1.000
+     T-OR-D=DECK: 0.000
+   MATERIAL=WOOD: 0.000
+   MATERIAL=IRON: 1.000
+      SPAN=SHORT: 0.000
+       SPAN=LONG: 0.000
+         REL-L=S: ?
+       REL-L=S-F: ?
+       TYPE=WOOD: 0.000
+     TYPE=SUSPEN: 0.000
+       TYPE=ARCH: 0.000
+   TYPE=CANTILEV: 0.000
+        TYPE=NIL: 0.000
+     TYPE=CONT-T: 0.000
+
+NValues
+         RIVER=M: 1.000
+         RIVER=A: 0.000
+         RIVER=O: 0.000
+         RIVER=Y: 0.000
+         ERECTED: 1863
+ PURPOSE=HIGHWAY: 0.000
+PURPOSE=AQUEDUCT: 0.000
+      PURPOSE=RR: 1.000
+    PURPOSE=WALK: 0.000
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=G: 0.000
+     T-OR-D=DECK: 0.000
+   MATERIAL=WOOD: 0.000
+   MATERIAL=IRON: 1.000
+  MATERIAL=STEEL: 0.000
+      SPAN=SHORT: 0.000
+     SPAN=MEDIUM: 1.000
+       SPAN=LONG: 0.000
+         REL-L=S: ?
+       REL-L=S-F: ?
+         REL-L=F: ?
+       TYPE=WOOD: 0.000
+     TYPE=SUSPEN: 0.000
+   TYPE=SIMPLE-T: 1.000
+       TYPE=ARCH: 0.000
+   TYPE=CANTILEV: 0.000
+        TYPE=NIL: 0.000
+     TYPE=CONT-T: 0.000
+
+Ignore
+         ERECTED: 1863
+          LENGTH: 1000
+           LANES: 2
+       CLEAR-G=G: 0.000
+     T-OR-D=DECK: 0.000
+
+As ordinal
+         C_RIVER: 0.000
+         ERECTED: 1863
+       C_PURPOSE: 2.000
+          LENGTH: 1000
+           LANES: 2
+       C_CLEAR-G: 0.000
+        C_T-OR-D: 0.000
+      C_MATERIAL: 1.000
+          C_SPAN: 1.000
+         C_REL-L: ?
+          C_TYPE: 2.000
+
+As normalized ordinal
+         C_RIVER: 0.000
+         ERECTED: 1863
+       C_PURPOSE: 0.667
+          LENGTH: 1000
+           LANES: 2
+       C_CLEAR-G: 0.000
+        C_T-OR-D: 0.000
+      C_MATERIAL: 0.500
+          C_SPAN: 0.500
+         C_REL-L: ?
+          C_TYPE: 0.333

@@ -1,0 +1,85 @@
+
+Without m: 0.617
+With m=2: 0.517
+                     republican   democrat
+class probabilities       0.386      0.614
+
+Attribute handicapped-infants
+                     republican   democrat
+                   n      0.568      0.432
+                   y      0.166      0.834
+
+Attribute water-project-cost-sharing
+                     republican   democrat
+                   n      0.380      0.620
+                   y      0.385      0.615
+
+Attribute adoption-of-the-budget-resolution
+                     republican   democrat
+                   n      0.830      0.170
+                   y      0.087      0.913
+
+Attribute physician-fee-freeze
+                     republican   democrat
+                   n      0.008      0.992
+                   y      0.921      0.079
+
+Attribute el-salvador-aid
+                     republican   democrat
+                   n      0.038      0.962
+                   y      0.741      0.259
+
+Attribute religious-groups-in-schools
+                     republican   democrat
+                   n      0.112      0.888
+                   y      0.548      0.452
+
+Attribute anti-satellite-test-ban
+                     republican   democrat
+                   n      0.676      0.324
+                   y      0.163      0.837
+
+Attribute aid-to-nicaraguan-contras
+                     republican   democrat
+                   n      0.747      0.253
+                   y      0.099      0.901
+
+Attribute mx-missile
+                     republican   democrat
+                   n      0.709      0.291
+                   y      0.092      0.908
+
+Attribute immigration
+                     republican   democrat
+                   n      0.344      0.656
+                   y      0.426      0.574
+
+Attribute synfuels-corporation-cutback
+                     republican   democrat
+                   n      0.523      0.477
+                   y      0.140      0.860
+
+Attribute education-spending
+                     republican   democrat
+                   n      0.086      0.914
+                   y      0.789      0.211
+
+Attribute superfund-right-to-sue
+                     republican   democrat
+                   n      0.109      0.891
+                   y      0.651      0.349
+
+Attribute crime
+                     republican   democrat
+                   n      0.018      0.982
+                   y      0.637      0.363
+
+Attribute duty-free-exports
+                     republican   democrat
+                   n      0.609      0.391
+                   y      0.080      0.920
+
+Attribute export-administration-act-south-africa
+                     republican   democrat
+                   n      0.806      0.194
+                   y      0.357      0.643

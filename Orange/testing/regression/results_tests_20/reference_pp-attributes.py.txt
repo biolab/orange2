@@ -1,0 +1,20 @@
+
+
+Preprocessor_select
+
+Attributes: <EnumVariable 'age', EnumVariable 'tear_rate'>, classVar None
+['young', 'reduced']
+['young', 'normal']
+['young', 'reduced']
+['young', 'normal']
+['young', 'reduced']
+
+
+Preprocessor_ignore
+
+Attributes: <EnumVariable 'prescription', EnumVariable 'astigmatic'>, classVar EnumVariable 'lenses'
+['myope', 'no', 'none']
+['myope', 'no', 'soft']
+['myope', 'yes', 'none']
+['myope', 'yes', 'hard']
+['hypermetrope', 'no', 'none']

@@ -1,0 +1,57 @@
+PCA on all data:
+PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8433            3.0540            3.7587            1.1987  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8253            0.4321            1.7585            0.7606  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       3.1416         0.7854         0.7854
+       0.7317         0.1829         0.9683
+
+PCA on attributes sepal.length, sepal.width, petal.length, petal.width:
+PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8433            3.0540            3.7587            1.1987  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8253            0.4321            1.7585            0.7606  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       2.9108         0.7277         0.7277
+       0.9212         0.2303         0.9580
+
+PCA on every second row:
+PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8400            3.0640            3.7760            1.2173  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8005            0.4326            1.7710            0.7873  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       3.2310         0.8078         0.8078
+       0.6101         0.1525         0.9603
+

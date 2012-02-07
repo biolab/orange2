@@ -1,0 +1,21 @@
+astigmaticxtear_rate=no-reduced: none (100.00%)
+astigmaticxtear_rate=yes-reduced: none (100.00%)
+astigmaticxtear_rate=no-normal
+|    agexprescription=pre-presbyopic-hypermetrope: soft (100.00%)
+|    agexprescription=pre-presbyopic-myope: soft (100.00%)
+|    agexprescription=presbyopic-hypermetrope: soft (100.00%)
+|    agexprescription=presbyopic-myope: none (100.00%)
+|    agexprescription=young-hypermetrope: soft (100.00%)
+|    agexprescription=young-myope: soft (100.00%)
+astigmaticxtear_rate=yes-normal
+|    prescriptionxastigmatic=hypermetrope-no<null node>: <null node>
+|    prescriptionxastigmatic=myope-no<null node>: <null node>
+|    prescriptionxastigmatic=myope-yes: hard (100.00%)
+|    prescriptionxastigmatic=hypermetrope-yes
+|    |    agexprescription=pre-presbyopic-hypermetrope: none (100.00%)
+|    |    agexprescription=pre-presbyopic-myope<null node>: <null node>
+|    |    agexprescription=presbyopic-hypermetrope: none (100.00%)
+|    |    agexprescription=presbyopic-myope<null node>: <null node>
+|    |    agexprescription=young-hypermetrope: hard (100.00%)
+|    |    agexprescription=young-myope<null node>: <null node>
+

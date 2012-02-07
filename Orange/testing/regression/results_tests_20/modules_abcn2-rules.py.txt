@@ -1,0 +1,39 @@
+IF TRUE THEN survived=no<1490.000, 711.000>
+IF sex=['female'] THEN survived=yes<126.000, 344.000>
+IF status=['third'] THEN survived=no<528.000, 178.000>
+IF status=['first'] THEN survived=yes<122.000, 203.000>
+IF status=['crew'] THEN survived=no<673.000, 212.000>
+IF age=['adult'] THEN survived=no<1438.000, 654.000>
+IF age=['child'] THEN survived=yes<52.000, 57.000>
+IF status=['second'] AND age=['child'] THEN survived=yes<0.000, 24.000>
+IF sex=['female'] AND status=['first'] THEN survived=yes<4.000, 141.000>
+IF sex=['female'] AND status=['second'] THEN survived=yes<13.000, 93.000>
+IF sex=['female'] AND status=['crew'] THEN survived=yes<3.000, 20.000>
+IF status=['first'] AND age=['child'] THEN survived=yes<0.000, 6.000>
+IF sex=['female'] AND age=['adult'] THEN survived=yes<109.000, 316.000>
+IF sex=['male'] AND age=['adult'] THEN survived=no<1329.000, 338.000>
+IF status=['third'] AND age=['adult'] THEN survived=no<476.000, 151.000>
+IF sex=['male'] AND status=['third'] THEN survived=no<422.000, 88.000>
+IF sex=['male'] AND status=['second'] AND age=['adult'] THEN survived=no<154.000, 14.000>
+IF sex=['male'] AND status=['third'] AND age=['adult'] THEN survived=no<387.000, 75.000>
+*****
+*****
+IF sex=['male'] AND age=['adult'] THEN survived=no<1329.000, 338.000>
+IF age=['adult'] THEN survived=no<1438.000, 654.000>
+IF sex=['male'] AND status=['second'] AND age=['adult'] THEN survived=no<154.000, 14.000>
+IF sex=['male'] AND status=['third'] AND age=['adult'] THEN survived=no<387.000, 75.000>
+IF status=['third'] AND age=['adult'] THEN survived=no<476.000, 151.000>
+IF sex=['male'] AND status=['third'] THEN survived=no<422.000, 88.000>
+IF status=['third'] THEN survived=no<528.000, 178.000>
+IF status=['crew'] THEN survived=no<673.000, 212.000>
+IF status=['first'] THEN survived=yes<122.000, 203.000>
+IF sex=['female'] AND status=['first'] THEN survived=yes<4.000, 141.000>
+IF status=['first'] AND age=['child'] THEN survived=yes<0.000, 6.000>
+IF status=['second'] THEN survived=yes<167.000, 118.000>
+IF sex=['female'] AND status=['second'] THEN survived=yes<13.000, 93.000>
+IF status=['second'] AND age=['child'] THEN survived=yes<0.000, 24.000>
+IF sex=['female'] AND age=['adult'] THEN survived=yes<109.000, 316.000>
+IF age=['child'] THEN survived=yes<52.000, 57.000>
+IF sex=['female'] THEN survived=yes<126.000, 344.000>
+IF sex=['female'] AND status=['crew'] THEN survived=yes<3.000, 20.000>
+*****

@@ -1,0 +1,62 @@
+['0', '0', '0']
+['1', '1', '1']
+['?', '?', '1']
+['~', '~', '~']
+['?', '?', '?']
+['?', '?', '?']
+['?', '?', '?']
+['~', '~', '~']
+['X', 'X', 'X']
+['UNK', 'UNK', 'UNK']
+['UNAVAILABLE', 'UNAVAILABLE', 'UNAVAILABLE']
+Default saving
+
+a	b	c
+0 1 UNAVAILABLE UNK X	0 1 UNAVAILABLE UNK X	0 1 UNAVAILABLE UNK X
+		
+0	0	0
+1	1	1
+?	?	1
+~	~	~
+?	?	?
+?	?	?
+?	?	?
+~	~	~
+X	X	X
+UNK	UNK	UNK
+UNAVAILABLE	UNAVAILABLE	UNAVAILABLE
+
+Saving with all undefined as NA
+
+a	b	c
+0 1 UNAVAILABLE UNK X	0 1 UNAVAILABLE UNK X	0 1 UNAVAILABLE UNK X
+		
+0	0	0
+1	1	1
+?	?	1
+~	~	~
+?	?	?
+?	?	?
+?	?	?
+~	~	~
+X	X	X
+UNK	UNK	UNK
+UNAVAILABLE	UNAVAILABLE	UNAVAILABLE
+
+Saving with all undefined as NA
+
+a	b	c
+0 1 UNAVAILABLE UNK X	0 1 UNAVAILABLE UNK X	0 1 UNAVAILABLE UNK X
+		
+0	0	0
+1	1	1
+?	?	1
+~	~	~
+?	?	?
+?	?	?
+?	?	?
+~	~	~
+X	X	X
+UNK	UNK	UNK
+UNAVAILABLE	UNAVAILABLE	UNAVAILABLE
+

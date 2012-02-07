@@ -1,0 +1,66 @@
+Call 'to_numeric' failed
+Call 'to_numarray' failed
+<type 'numpy.ndarray'> <type 'numpy.ndarray'> <type 'NoneType'>
+(150, 4) (150,)
+[[ 5.0999999   3.5         1.39999998  0.2       ]
+ [ 4.9000001   3.          1.39999998  0.2       ]
+ [ 4.69999981  3.20000005  1.29999995  0.2       ]
+ [ 4.5999999   3.0999999   1.5         0.2       ]
+ [ 5.          3.5999999   1.39999998  0.2       ]]
+[ 0.  0.  0.  0.  0.]
+
+
+
+<type 'numpy.ndarray'> <type 'NoneType'>
+(150, 5)
+[ 1.          7.4000001   2.79999995  6.0999999   1.89999998]
+
+
+
+
+
+
+<type 'numpy.ndarray'>
+(150, 9)
+[ 2.          7.4000001   2.79999995  6.0999999   1.89999998  1.          2.
+  2.          0.        ]
+
+
+
+
+
+
+Converting heart_disease with toNumpy failed (as it should)
+Call 'to_numeric_MA' failed
+Call 'to_numarray_MA' failed
+<class 'numpy.ma.core.MaskedArray'>
+[63.0 1.0 3.0 145.0 233.0 1.0 1.0 150.0 0.0 2.29999995232 2.0 0.0 2.0]
+Exception thrown for 'to_numeric'
+
+Exception thrown for 'to_numarray'
+
+<FloatVariable 'a1', FloatVariable 'a2', FloatVariable 'a3', FloatVariable 'a4', FloatVariable 'a5'> None
+[5.100, 3.500, 1.400, 0.200, 0.000]
+<FloatVariable 'sepal length', FloatVariable 'sepal width', FloatVariable 'petal length', FloatVariable 'petal width'> EnumVariable 'iris'
+[5.1, 3.5, 1.4, 0.2, 'Iris-setosa']
+<FloatVariable 'sep length', FloatVariable 'sep width', FloatVariable 'pet length', FloatVariable 'pet width'> EnumVariable 'type'
+[5.100, 3.500, 1.400, 0.200, 'setosa']
+
+/home/miha/work/orange/Orange/testing/regression/xtest_one.py:76: KernelWarning: attribute 'name' is of unsupported type
+  
+[[  1.00000000e+00   0.00000000e+00   0.00000000e+00 ...,   0.00000000e+00
+    1.00000000e+00  -1.00000002e+30]
+ [  1.00000000e+00   0.00000000e+00   0.00000000e+00 ...,   0.00000000e+00
+    1.00000000e+00  -1.00000002e+30]
+ [  0.00000000e+00   0.00000000e+00   1.00000000e+00 ...,   0.00000000e+00
+    0.00000000e+00  -1.00000002e+30]
+ ..., 
+ [  1.00000000e+00   0.00000000e+00   0.00000000e+00 ...,   0.00000000e+00
+    1.00000000e+00  -1.00000002e+30]
+ [  0.00000000e+00   0.00000000e+00   1.00000000e+00 ...,   0.00000000e+00
+    0.00000000e+00  -1.00000002e+30]
+ [  0.00000000e+00   1.00000000e+00   1.00000000e+00 ...,   0.00000000e+00
+    0.00000000e+00  -1.00000002e+30]]
+/home/miha/work/orange/Orange/testing/regression/xtest_one.py:78: KernelWarning: attribute 'name' is of unsupported type
+  t__officialname = "%s/%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform)
+[1.0 0.0 0.0 1.0 0.0 0.0 1.0 1.0 1.0 1.0 0.0 0.0 2.0 0.0 0.0 1.0 --]
