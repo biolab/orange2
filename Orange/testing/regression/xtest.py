@@ -143,7 +143,7 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                 if p.poll() is None:
                     p.kill()
                     result2 = "timedout"
-                    print "timedout"
+                    print "timedout (use: --timeout #)"
                     # remove output file and change it for *.timedout.*
                     for state in states:
                         remname = "%s/%s.%s.%s.%s.txt" % \
