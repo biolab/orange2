@@ -9,45 +9,65 @@ Feature discretization (``discretization``)
 .. index::
    single: feature; discretization
 
-Continues features can be discretized either one feature at a time, or, as demonstrated in the following script,
-using a single discretization method on entire set of data features:
+Feature discretization module provides rutines that consider continuous features and
+introduce a new discretized feature based on the training data set. Most often such procedure would be executed
+on all the features of the data set using implementations from :doc:`Orange.feature.discretization`. Implementation
+in this module are concerned with discretization of one feature at the time, and do not provide wrappers for
+whole-data set discretization. The discretization is data-specific, and consist of learning of discretization
+procedure (see `Discretization Algorithms`_) and actual discretization (see Discretizers_) of the data. Splitting of
+these
+two phases is intentional,
+as in machine learing discretization may be learned from the training set and executed on the test set.
 
-.. literalinclude:: code/discretization-table.py
+Consider a following example (part of :download:`discretization.py <code/discretization.py>`):
 
-Discretization introduces new categorical features and computes their values in accordance to
-selected (or default) discretization method::
+.. literalinclude:: code/discretization.py
+    :lines: 7-15
 
-    Original data set:
-    [5.1, 3.5, 1.4, 0.2, 'Iris-setosa']
-    [4.9, 3.0, 1.4, 0.2, 'Iris-setosa']
-    [4.7, 3.2, 1.3, 0.2, 'Iris-setosa']
+The discretized attribute ``sep_w`` is constructed with a call to
+:class:`Entropy`; instead of constructing it and calling
+it afterwards, we passed the arguments for calling to the constructor. We then constructed a new
+:class:`Orange.data.Table` with attributes "sepal width" (the original
+continuous attribute), ``sep_w`` and the class attribute::
 
-    Discretized data set:
-    ['<=5.45', '>3.15', '<=2.45', '<=0.80', 'Iris-setosa']
-    ['<=5.45', '(2.85, 3.15]', '<=2.45', '<=0.80', 'Iris-setosa']
-    ['<=5.45', '>3.15', '<=2.45', '<=0.80', 'Iris-setosa']
+    Entropy discretization, first 5 data instances
+    [3.5, '>3.30', 'Iris-setosa']
+    [3.0, '(2.90, 3.30]', 'Iris-setosa']
+    [3.2, '(2.90, 3.30]', 'Iris-setosa']
+    [3.1, '(2.90, 3.30]', 'Iris-setosa']
+    [3.6, '>3.30', 'Iris-setosa']
 
-The following discretization methods are supported:
+The name of the new categorical variable derives from the name of original
+continuous variable by adding a prefix ``D_``. The values of the new attributes
+are computed automatically when they are needed using a transformation
+function :obj:`~Orange.feature.Descriptor.get_value_from`
+(see :class:`Orange.feature.Descriptor`) which encodes the discretization::
 
-* equal width discretization, where the domain of continuous feature is split to intervals of the same
-  width equal-sized intervals (:class:`EqualWidth`),
-* equal frequency discretization, where each intervals contains equal number of data instances (:class:`EqualFreq`),
-* entropy-based, as originally proposed by [FayyadIrani1993]_ that infers the intervals to minimize
-  within-interval entropy of class distributions (:class:`Entropy`),
-* bi-modal, using three intervals to optimize the difference of the class distribution in
-  the middle with the distribution outside it (:class:`BiModal`),
-* fixed, with the user-defined cut-off points.
+    >>> sep_w
+    EnumVariable 'D_sepal width'
+    >>> sep_w.get_value_from
+    <ClassifierFromVar instance at 0x01BA7DC0>
+    >>> sep_w.get_value_from.whichVar
+    FloatVariable 'sepal width'
+    >>> sep_w.get_value_from.transformer
+    <IntervalDiscretizer instance at 0x01BA2100>
+    >>> sep_w.get_value_from.transformer.points
+    <2.90000009537, 3.29999995232>
 
-The above script used the default discretization method (equal frequency with three intervals). This can be changed
-as demonstrated below:
-
-.. literalinclude:: code/discretization-table-method.py
-    :lines: 3-5
+The ``select`` statement in the discretization script converted all data instances
+from ``data`` to the new domain. This includes a new feature
+``sep_w`` whose values are computed on the fly by calling ``sep_w.get_value_from`` for each data instance.
+The original, continuous sepal width
+is passed to the ``transformer`` that determines the interval by its field
+``points``. Transformer returns the discrete value which is in turn returned
+by ``get_value_from`` and stored in the new example.
 
 With exception to fixed discretization, discretization approaches infer the cut-off points from the
 training data set and thus construct a discretizer to convert continuous values of this feature into categorical
 value according to the rule found by discretization. In this respect, the discretization behaves similar to
 :class:`Orange.classification.Learner`.
+
+.. _`Discretization Algorithms`
 
 Discretization Algorithms
 =========================
@@ -192,8 +212,10 @@ The middle intervals are printed::
 
 Judging by the graph, the cut-off points inferred by discretization for "sepal length" make sense.
 
+.. _Discretizers:
+
 Discretizers
-============
+=============
 
 Discretizers construct a categorical feature from the continuous feature according to the method they implement and
 its parameters. The most general is
@@ -315,53 +337,6 @@ Each feature has its own instance of :class:`ClassifierFromVar` stored in
     .. attribute:: high
 
         Upper boundary of the interval (not included in the interval).
-
-
-Implementational details
-========================
-
-Consider a following example (part of :download:`discretization.py <code/discretization.py>`):
-
-.. literalinclude:: code/discretization.py
-    :lines: 7-15
-
-The discretized attribute ``sep_w`` is constructed with a call to
-:class:`Entropy`; instead of constructing it and calling
-it afterwards, we passed the arguments for calling to the constructor. We then constructed a new
-:class:`Orange.data.Table` with attributes "sepal width" (the original
-continuous attribute), ``sep_w`` and the class attribute::
-
-    Entropy discretization, first 5 data instances
-    [3.5, '>3.30', 'Iris-setosa']
-    [3.0, '(2.90, 3.30]', 'Iris-setosa']
-    [3.2, '(2.90, 3.30]', 'Iris-setosa']
-    [3.1, '(2.90, 3.30]', 'Iris-setosa']
-    [3.6, '>3.30', 'Iris-setosa']
-
-The name of the new categorical variable derives from the name of original
-continuous variable by adding a prefix ``D_``. The values of the new attributes
-are computed automatically when they are needed using a transformation
-function :obj:`~Orange.feature.Descriptor.get_value_from`
-(see :class:`Orange.feature.Descriptor`) which encodes the discretization::
-
-    >>> sep_w
-    EnumVariable 'D_sepal width'
-    >>> sep_w.get_value_from
-    <ClassifierFromVar instance at 0x01BA7DC0>
-    >>> sep_w.get_value_from.whichVar
-    FloatVariable 'sepal width'
-    >>> sep_w.get_value_from.transformer
-    <IntervalDiscretizer instance at 0x01BA2100>
-    >>> sep_w.get_value_from.transformer.points
-    <2.90000009537, 3.29999995232>
-
-The ``select`` statement in the discretization script converted all data instances
-from ``data`` to the new domain. This includes a new feature
-``sep_w`` whose values are computed on the fly by calling ``sep_w.get_value_from`` for each data instance.
-The original, continuous sepal width
-is passed to the ``transformer`` that determines the interval by its field
-``points``. Transformer returns the discrete value which is in turn returned
-by ``get_value_from`` and stored in the new example.
 
 References
 ==========
