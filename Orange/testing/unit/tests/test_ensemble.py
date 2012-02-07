@@ -22,6 +22,7 @@ class TestBagging(testing.LearnerTestCase):
     def test_pickling_on(self, dataset):
         testing.LearnerTestCase.test_pickling_on(self, dataset)
 
+
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestRandomForest(testing.LearnerTestCase):
     def setUp(self): 
@@ -30,7 +31,9 @@ class TestRandomForest(testing.LearnerTestCase):
         
     @test_on_datasets(datasets=["iris"])
     def test_pickling_on(self, dataset):
-        testing.LearnerTestCase.test_pickling_on(self, dataset)
+        raise NotImplemented("SmallTreeLearner pickling is not implemented")
+#        testing.LearnerTestCase.test_pickling_on(self, dataset)
+        
         
         
 if __name__ == "__main__":
