@@ -153,6 +153,7 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
 
                     timeoutname = "%s/%s.%s.%s.%s.txt" % (outputsdir, name, sys.platform, sys.version[:3], "timedout")
                     open(timeoutname, "wt").close()
+                    result = "timedout"
                 else:
                     stdout, stderr = p.communicate()
                     result = open("xtest1_report", "rt").readline().rstrip() or "crash"
