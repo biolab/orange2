@@ -90,7 +90,7 @@ where the id (-2) is a key and 0.84 is a value (of type
 To tell the learning algorithm to use the weights, the id needs to be
 passed along with the data::
 
-    bayes = orange.BayesLearner(data, id)
+    bayes = Orange.classification.bayes.NaiveLearner(data, id)
 
 Many other functions accept weights in similar fashion.
 
@@ -111,7 +111,7 @@ Registering the meta attribute using :obj:`Orange.data.Domain.add_meta`
 changes how the data instance is printed out and how it can be
 accessed::
 
-    w = orange.FloatVariable("w")
+    w = Orange.feature.Continuous("w")
     data.domain.addmeta(id, w)
 
 Meta-attribute can now be indexed just like ordinary features. The
@@ -124,7 +124,7 @@ following three statements are equivalent::
 Another consequence of registering the meta attribute is that it
 allows for conversion from Python native types::
 
-    ok = orange.EnumVariable("ok?", values=["no", "yes"])
+    ok = Orange.feature.Discrete("ok?", values=["no", "yes"])
     ok_id = Orange.feature.Descriptor.new_meta_id()
     data.domain.addmeta(ok_id, ok)
     data[0][ok_id] = "yes"
@@ -236,7 +236,7 @@ keys in dictionaries or collected to Python data sets.
 
         Convert the instance into an ordinary Python list. If the
         optional argument `level` is 1 (default), the result is a list of
-        instances of :obj:`orange.data.Value`. If it is 0, it contains
+        instances of :obj:`Orange.data.Value`. If it is 0, it contains
         pure Python objects, that is, strings for discrete variables
         and numbers for continuous ones.
 
@@ -280,12 +280,12 @@ keys in dictionaries or collected to Python data sets.
         variable descriptors. In the latter two cases, only registered
         attributes are returned. ::
 
-            data = orange.ExampleTable("inquisition2")
+            data = Orange.data.Table("inquisition2")
             example = data[4]
-            print example.getmetas()
-            print example.getmetas(int)
-            print example.getmetas(str)
-            print example.getmetas(orange.Variable)
+            print example.get_metas()
+            print example.get_metas(int)
+            print example.get_metas(str)
+            print example.get_metas(Orange.feature.Descriptor)
 
         :param key_type: the key type; either ``int``, ``str`` or :obj:`~Orange.feature.Descriptor`
         :type key_type: ``type``

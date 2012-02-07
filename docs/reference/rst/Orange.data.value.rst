@@ -132,10 +132,10 @@ order is unambiguous. Here are two such values::
 
     deg3 = Orange.feature.Discrete(
         "deg3", values=["little", "medium", "big"])
-    deg4 = orange.feature.Discrete(
+    deg4 = Orange.feature.Discrete(
         "deg4", values=["tiny", "little", "big", "huge"])
-    val3 = orange.Value(deg3)
-    val4 = orange.Value(deg4)
+    val3 = Orange.data.Value(deg3)
+    val4 = Orange.data.Value(deg4)
     val3.value = "medium"
     val4.value = "little"
 

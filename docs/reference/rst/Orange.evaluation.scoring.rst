@@ -320,7 +320,7 @@ was not given at that time, 1 (that is, the second class) is used as default.
 
 We shall use the following code to prepare suitable experimental results::
 
-    ri2 = Orange.core.MakeRandomIndices2(voting, 0.6)
+    ri2 = Orange.data.sample.SubsetIndices2(voting, 0.6)
     train = voting.selectref(ri2, 0)
     test = voting.selectref(ri2, 1)
     res1 = Orange.evaluation.testing.learnAndTestOnTestData(learners, train, test)
