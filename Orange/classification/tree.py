@@ -17,9 +17,6 @@ algorithm.
 The following code builds a :obj:`TreeClassifier` on the Iris data set
 (with the depth limited to three levels):
 
->>> 1 + 1
-2
-
 .. literalinclude:: code/orngTree1.py
    :lines: 1-4
 
