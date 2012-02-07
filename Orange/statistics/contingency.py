@@ -81,7 +81,7 @@ Contingency tables
       
     .. attribute:: varType
 
-        The type of the outer variable (:obj:`Orange.data.Type`, usually
+        The type of the outer variable (:obj:`Orange.feature.Type`, usually
         :obj:`Orange.data.variable.Discrete` or
         :obj:`Orange.data.variable.Continuous`); equals
         ``outerVariable.varType`` and ``outerDistribution.varType``.

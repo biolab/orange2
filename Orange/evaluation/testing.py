@@ -108,7 +108,7 @@ class ExperimentResults(object):
         if domain is not None:
             self.base_class = self.class_values = None
             if test_type==TEST_TYPE_SINGLE:
-                if domain.class_var.var_type == Orange.data.Type.Discrete:
+                if domain.class_var.var_type == Orange.feature.Type.Discrete:
                     self.class_values = list(domain.class_var.values)
                     self.base_class = domain.class_var.base_value
                     self.converter = int
@@ -116,7 +116,7 @@ class ExperimentResults(object):
                     self.converter = float
             elif test_type==TEST_TYPE_MLC:
                 self.labels = [var.name for var in domain.class_vars]
-                self.converter = lambda vals: [int(val) if val.variable.var_type == Orange.data.Type.Discrete
+                self.converter = lambda vals: [int(val) if val.variable.var_type == Orange.feature.Type.Discrete
                                                else float(val) for val in vals]
 
         self.__dict__.update(argkw)

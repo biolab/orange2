@@ -107,7 +107,7 @@ class BaggedClassifier(orange.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        if self.class_var.var_type == Orange.data.Type.Discrete:
+        if self.class_var.var_type == Orange.feature.Type.Discrete:
             freq = [0.] * len(self.class_var.values)
             for c in self.classifiers:
                 freq[int(c(instance))] += 1
@@ -125,7 +125,7 @@ class BaggedClassifier(orange.Classifier):
             else:
                 return value
             
-        elif self.class_var.var_type ==Orange.data.Type.Continuous:
+        elif self.class_var.var_type ==Orange.feature.Type.Continuous:
             votes = [c(instance, orange.GetBoth if result_type==\
                 orange.GetProbabilities else result_type) \
                 for c in self.classifiers]

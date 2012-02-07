@@ -37,7 +37,7 @@ class PearsonR(DistanceConstructor):
 
     def __call__(self, table):
         indxs = [i for i, a in enumerate(table.domain.attributes) \
-                 if a.varType==Orange.data.Type.Continuous]
+                 if a.varType==Orange.feature.Type.Continuous]
         return PearsonRDistance(domain=table.domain, indxs=indxs)
 
 class PearsonRDistance(Distance):
@@ -83,7 +83,7 @@ class SpearmanR(DistanceConstructor):
 
     def __call__(self, table):
         indxs = [i for i, a in enumerate(table.domain.attributes) \
-                 if a.varType==Orange.data.Type.Continuous]
+                 if a.varType==Orange.feature.Type.Continuous]
         return SpearmanRDistance(domain=table.domain, indxs=indxs)
 
 class SpearmanRDistance(Distance):  
@@ -175,7 +175,7 @@ class PearsonRAbsolute(PearsonR):
     """
     def __call__(self, data):
         indxs = [i for i, a in enumerate(data.domain.attributes) \
-                 if a.varType==Orange.data.Type.Continuous]
+                 if a.varType==Orange.feature.Type.Continuous]
         return PearsonRAbsoluteDistance(domain=data.domain, indxs=indxs)
     
     
@@ -210,7 +210,7 @@ class SpearmanRAbsolute(SpearmanR):
     """
     def __call__(self, data):
         indxs = [i for i, a in enumerate(data.domain.attributes) \
-                 if a.varType==Orange.data.Type.Continuous]
+                 if a.varType==Orange.feature.Type.Continuous]
         return SpearmanRAbsoluteDistance(domain=data.domain, indxs=indxs)
     
     

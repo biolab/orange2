@@ -355,7 +355,7 @@ prints out distributions for discrete and averages for continuous attributes. ::
     dist = Orange.statistics.distribution.Domain(data)
 
     for d in dist:
-        if d.variable.var_type == Orange.data.Type.Discrete:
+        if d.variable.var_type == Orange.feature.Type.Discrete:
              print "%30s: %s" % (d.variable.name, d)
         else:
              print "%30s: avg. %5.3f" % (d.variable.name, d.average())

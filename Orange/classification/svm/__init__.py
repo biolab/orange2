@@ -648,7 +648,7 @@ def get_linear_svm_weights(classifier, sum=True):
                 attributes = SVs.domain.attributes + \
                 SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
-                    if attr.varType == Orange.data.Type.Continuous:
+                    if attr.varType == Orange.feature.Type.Continuous:
                         update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
                                        classifier.coef[coef_ind][sv_ind])
             coef_ind=i
@@ -656,7 +656,7 @@ def get_linear_svm_weights(classifier, sum=True):
                 attributes = SVs.domain.attributes + \
                 SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
-                    if attr.varType==Orange.data.Type.Continuous:
+                    if attr.varType==Orange.feature.Type.Continuous:
                         update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
                                        classifier.coef[coef_ind][sv_ind])
             weights.append(w)
@@ -825,12 +825,12 @@ def table_to_svm_format(data, file):
     
     attrs = data.domain.attributes + data.domain.getmetas().values()
     attrs = [attr for attr in attrs if attr.varType 
-             in [Orange.data.Type.Continuous, 
-                 Orange.data.Type.Discrete]]
+             in [Orange.feature.Type.Continuous, 
+                 Orange.feature.Type.Discrete]]
     cv = data.domain.classVar
     
     for ex in data:
-        if cv.varType == Orange.data.Type.Discrete:
+        if cv.varType == Orange.feature.Type.Discrete:
             file.write(str(int(ex[cv])))  
         else:
             file.write(str(float(ex[cv])))

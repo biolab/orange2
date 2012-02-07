@@ -45,7 +45,7 @@ def has_discrete_values(domain):
     :param domain: domain.
     :type domain: :class:`Orange.data.Domain`
     """
-    return any(at.var_type == Orange.data.Type.Discrete
+    return any(at.var_type == Orange.feature.Type.Discrete
                for at in domain.features)
 
 
@@ -214,7 +214,7 @@ class LogRegLearnerGetPriors(object):
             for at in data.domain.features:
                 # za vsak atribut kreiraj nov newExampleTable new_data
                 # v dataOrig, dataFinal in new_data dodaj nov atribut -- continuous variable
-                if at.var_type == Orange.data.Type.Continuous:
+                if at.var_type == Orange.feature.Type.Continuous:
                     at_disc = Orange.feature.Continuous(at.name+ "Disc")
                     new_domain = Orange.data.Domain(data.domain.features+[at_disc,data.domain.class_var])
                     new_domain.addmetas(data.domain.getmetas())
@@ -227,7 +227,7 @@ class LogRegLearnerGetPriors(object):
                         d[at_disc] = 1
                         d[at] = 0
                         d[weight_id] = 0.000001*data[i][weight_id]
-                elif at.var_type == Orange.data.Type.Discrete:
+                elif at.var_type == Orange.feature.Type.Discrete:
                 # v dataOrig, dataFinal in new_data atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
                     at_new = Orange.feature.Discrete(at.name, values = at.values + [at.name+"X"])
                     new_domain = Orange.data.Domain(filter(lambda x: x!=at, data.domain.features)+[at_new,data.domain.class_var])
@@ -334,7 +334,7 @@ class LogRegLearnerGetPriorsOneTable:
             for at in data.domain.features:
                 # za vsak atribut kreiraj nov newExampleTable newData
                 # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
-                if at.var_type == Orange.data.Type.Continuous:
+                if at.var_type == Orange.feature.Type.Continuous:
                     atDisc = Orange.feature.Continuous(at.name + "Disc")
                     newDomain = Orange.data.Domain(orig_data.domain.features+[atDisc,data.domain.class_var])
                     newDomain.addmetas(newData.domain.getmetas())
@@ -350,7 +350,7 @@ class LogRegLearnerGetPriorsOneTable:
                         d[at] = 0
                         d[weightID] = 100*data[i][weightID]
                         
-                elif at.var_type == Orange.data.Type.Discrete:
+                elif at.var_type == Orange.feature.Type.Discrete:
                 # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
                     at_new = Orange.feature.Discrete(at.name, values = at.values + [at.name+"X"])
                     newDomain = Orange.data.Domain(filter(lambda x: x!=at, orig_data.domain.features)+[at_new,orig_data.domain.class_var])
@@ -454,7 +454,7 @@ class SimpleFitter(LogRegFitter):
         ml = data.native(0)
         for i in range(len(data.domain.features)):
           a = data.domain.features[i]
-          if a.var_type == Orange.data.Type.Discrete:
+          if a.var_type == Orange.feature.Type.Discrete:
             for m in ml:
               m[i] = a.values.index(m[i])
         for m in ml:
@@ -545,7 +545,7 @@ class BayesianFitter(LogRegFitter):
         # convert data to numeric
         ml = data.native(0)
         for i,a in enumerate(data.domain.features):
-          if a.var_type == Orange.data.Type.Discrete:
+          if a.var_type == Orange.feature.Type.Discrete:
             for m in ml:
               m[i] = a.values.index(m[i])
         for m in ml:
@@ -801,7 +801,7 @@ class StepWiseFSS(Orange.classification.Learner):
                     length_Best = length_Delete
             # deletion of attribute
 
-            if worstAt.var_type==Orange.data.Type.Continuous:
+            if worstAt.var_type==Orange.feature.Type.Continuous:
                 P=lchisqprob(minG,1);
             else:
                 P=lchisqprob(minG,len(worstAt.values)-1);
@@ -849,7 +849,7 @@ class StepWiseFSS(Orange.classification.Learner):
             stop = 1
             continue
 
-        if bestAt.var_type==Orange.data.Type.Continuous:
+        if bestAt.var_type==Orange.feature.Type.Continuous:
             P=lchisqprob(maxG,1);
         else:
             P=lchisqprob(maxG,len(bestAt.values)-1);

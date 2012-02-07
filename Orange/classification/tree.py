@@ -1848,7 +1848,7 @@ class TreeLearner(Orange.core.Learner):
         #set by the user
         if not self._handset_split and not self.measure:
             measure = fscoring.GainRatio() \
-                if instances.domain.class_var.var_type == Orange.data.Type.Discrete \
+                if instances.domain.class_var.var_type == Orange.feature.Type.Discrete \
                 else fscoring.MSE()
             bl.split.continuous_split_constructor.measure = measure
             bl.split.discrete_split_constructor.measure = measure
@@ -2125,7 +2125,7 @@ def replacem(strg, mo, node, parent, tree):
 
 
 def replaceCdisc(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Discrete:
+    if tree.class_var.var_type != Orange.feature.Type.Discrete:
         return insert_dot(strg, mo)
 
     by, op, cls = mo.group("by", "op", "cls")
@@ -2143,7 +2143,7 @@ def replaceCdisc(strg, mo, node, parent, tree):
 
 
 def replacecdisc(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Discrete:
+    if tree.class_var.var_type != Orange.feature.Type.Discrete:
         return insert_dot(strg, mo)
 
     op, by, cls = mo.group("op", "by", "cls")
@@ -2165,7 +2165,7 @@ def replacecdisc(strg, mo, node, parent, tree):
 __opdict = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge, "=": operator.eq, "!=": operator.ne}
 
 def replaceCcont(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Continuous:
+    if tree.class_var.var_type != Orange.feature.Type.Continuous:
         return insert_dot(strg, mo)
 
     by, op, num = mo.group("by", "op", "num")
@@ -2185,7 +2185,7 @@ def replaceCcont(strg, mo, node, parent, tree):
 
 
 def replaceccont(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Continuous:
+    if tree.class_var.var_type != Orange.feature.Type.Continuous:
         return insert_dot(strg, mo)
 
     by, op, num = mo.group("by", "op", "num")
@@ -2219,7 +2219,7 @@ def extractInterval(mo, dist):
 
 
 def replaceCconti(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Continuous:
+    if tree.class_var.var_type != Orange.feature.Type.Continuous:
         return insert_dot(strg, mo)
 
     by = mo.group("by")
@@ -2237,7 +2237,7 @@ def replaceCconti(strg, mo, node, parent, tree):
 
 
 def replacecconti(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Continuous:
+    if tree.class_var.var_type != Orange.feature.Type.Continuous:
         return insert_dot(strg, mo)
 
     N = sum([x[1] for x in extractInterval(mo, node.distribution)])
@@ -2259,7 +2259,7 @@ def replacecconti(strg, mo, node, parent, tree):
 
 
 def replaceD(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Discrete:
+    if tree.class_var.var_type != Orange.feature.Type.Discrete:
         return insert_dot(strg, mo)
 
     fs, by, m100 = mo.group("fs", "by", "m100")
@@ -2278,7 +2278,7 @@ def replaceD(strg, mo, node, parent, tree):
 
 
 def replaced(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Discrete:
+    if tree.class_var.var_type != Orange.feature.Type.Discrete:
         return insert_dot(strg, mo)
 
     fs, by, m100 = mo.group("fs", "by", "m100")
@@ -2300,7 +2300,7 @@ def replaced(strg, mo, node, parent, tree):
 
 
 def replaceAE(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Continuous:
+    if tree.class_var.var_type != Orange.feature.Type.Continuous:
         return insert_dot(strg, mo)
 
     AorE, bysub, by = mo.group("AorE", "bysub", "by")
@@ -2329,7 +2329,7 @@ def replaceAE(strg, mo, node, parent, tree):
 Z = { 0.75:1.15, 0.80:1.28, 0.85:1.44, 0.90:1.64, 0.95:1.96, 0.99:2.58 }
 
 def replaceI(strg, mo, node, parent, tree):
-    if tree.class_var.var_type != Orange.data.Type.Continuous:
+    if tree.class_var.var_type != Orange.feature.Type.Continuous:
         return insert_dot(strg, mo)
 
     fs = mo.group("fs") or "5.3"
@@ -2372,7 +2372,7 @@ class _TreeDumper:
             self.leafStr = leafStr
         else:
             if self.node().node_classifier.class_var.var_type == \
-                    Orange.data.Type.Discrete:
+                    Orange.feature.Type.Discrete:
                 self.leafStr = "%V (%^.2m%)"
             else:
                 self.leafStr = "%V"
@@ -2656,7 +2656,7 @@ class TreeClassifier(Orange.classification.Classifier):
 
     def to_network(self):
         net = Orange.network.DiGraph()
-        if self.class_var.var_type == Orange.data.Type.Discrete:
+        if self.class_var.var_type == Orange.feature.Type.Discrete:
             domain = Orange.data.Domain([self.class_var] +
                 [Orange.feature.Continuous(name) for name in
                  ["instances", "majority proportion"] + list(self.class_var.values)], None)
@@ -2675,7 +2675,7 @@ class TreeClassifier(Orange.classification.Classifier):
         net.add_node(node_id)
         d = node.distribution
         maj = node.node_classifier.default_value
-        if self.class_var.var_type == Orange.data.Type.Discrete:
+        if self.class_var.var_type == Orange.feature.Type.Discrete:
             if d.abs > 1e-6:
                 table.append([maj, d.abs, d[maj]] + [x / d.abs for x in d])
             else:
