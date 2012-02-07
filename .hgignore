@@ -51,3 +51,4 @@ docs/reference/rst/code/iris.testsave.arff
 docs/tutorial/rst/code/adult_sample_sampled.tab
 docs/tutorial/rst/code/tree.dot
 
+source/orangeqt/Makefile

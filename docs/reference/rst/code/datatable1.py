@@ -9,9 +9,9 @@ import Orange
 cards = [3, 3, 2, 3, 4, 2]
 values = ["1", "2", "3", "4"]
 
-features = [Orange.data.variable.Discrete(name, values = values[:card])
+features = [Orange.feature.Discrete(name, values = values[:card])
               for name, card in zip("abcdef", cards)]
-classattr = Orange.data.variable.Discrete("y", values = ["0", "1"])
+classattr = Orange.feature.Discrete("y", values = ["0", "1"])
 domain = Orange.data.Domain(features + [classattr])
 data = Orange.data.Table(domain)
 
@@ -36,7 +36,7 @@ d2 = Orange.data.Table(domain, loe)
 d2[0] = ["1", "1", 1, "1", "1", "1", "1"]
 
 import numpy
-d = Orange.data.Domain([Orange.data.variable.Continuous('a%i'%x) for x in range(5)])
+d = Orange.data.Domain([Orange.feature.Continuous('a%i'%x) for x in range(5)])
 a = numpy.array([[1, 2, 3, 4, 5], [5, 4, 3, 2, 1]])
 t = Orange.data.Table(a)
 print len(t)

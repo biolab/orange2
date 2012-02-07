@@ -54,7 +54,7 @@ Utility functions
 """
 
 import Orange
-from Orange.data.variable import Discrete, Continuous
+from Orange.feature import Discrete, Continuous
 from Orange.data import Table, Domain
 from Orange.preprocess import Preprocessor_continuize, \
                               Preprocessor_impute, \
@@ -1221,7 +1221,7 @@ class ScoreRSS(scoring.Score):
 #    
 #    def __call__(self, example, what=Orange.core.GetValue):
 #        value = self.predict(example)
-#        if isinstance(self.class_var, Orange.data.variable.Continuous):
+#        if isinstance(self.class_var, Orange.feature.Continuous):
 #            value = self.class_var(value)
 #        else:
 #            value = self.class_var(int(round(value)))

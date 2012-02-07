@@ -234,8 +234,8 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         :type table: :class:`Orange.data.Table`
 
         :param x_vars, y_vars: List of input and response variables
-            (:obj:`Orange.data.variable.Continuous` or
-            :obj:`Orange.data.variable.Discrete`). If None (default) it is
+            (:obj:`Orange.feature.Continuous` or
+            :obj:`Orange.feature.Discrete`). If None (default) it is
             assumed that the data domain provides information which variables
             are reponses and which are not. If data has
             :obj:`~Orange.data.Domain.class_var` defined in its domain, a

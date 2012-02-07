@@ -6,7 +6,7 @@
 
 import Orange
 
-domain = Orange.data.Domain([Orange.data.variable.Continuous()])
+domain = Orange.data.Domain([Orange.feature.Continuous()])
 data = Orange.data.Table(domain)
 for i in range(10):
     data.append([i])

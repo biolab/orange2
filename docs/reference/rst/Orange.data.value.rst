@@ -24,7 +24,7 @@ Values (``Value``)
         * If it is discrete and the variable descriptor is present
           (:obj:`variable` is not :obj:`None`), `value` is a string with
           the symbolic value (as retrieved from
-          :obj:`Orange.data.variable.Discrete.values`).
+          :obj:`Orange.feature.Discrete.values`).
 
         * If it is discrete and the variable descriptor is unknown,
           `value` is a string with the number representing the value
@@ -36,12 +36,12 @@ Values (``Value``)
     .. attribute:: svalue
 
         Stores a value that corresponds to a variable that is neither
-        :obj:`Orange.data.variable.Discrete` nor
-        :obj:`Orange.data.variable.Continuous` or a distribution of a
+        :obj:`Orange.feature.Discrete` nor
+        :obj:`Orange.feature.Continuous` or a distribution of a
         discrete or continuous value.
 
         This attribute is most often used for values of
-        :obj:`Orange.data.variable.StringVariable`; in that case `svalue`
+        :obj:`Orange.feature.StringVariable`; in that case `svalue`
         is an instance of :obj:`Orange.data.StringValue`. Distributions
         are seldom used; when `svalue` contains a distribution, it is
         represented with an instance of
@@ -55,8 +55,8 @@ Values (``Value``)
     .. attribute:: var_type
 
         Read-only descriptor that gives the variable type. Can be
-        :obj:`Orange.data.Type.Discrete`, :obj:`Orange.data.Type.Continuous`,
-        :obj:`Orange.data.Type.String` or :obj:`Orange.data.Type.Other`.
+        :obj:`Orange.feature.Type.Discrete`, :obj:`Orange.feature.Type.Continuous`,
+        :obj:`Orange.feature.Type.String` or :obj:`Orange.feature.Type.Other`.
 
     .. attribute:: value_type
 
@@ -73,18 +73,18 @@ Values (``Value``)
          omitted, it is set to unknown (:obj:`Orange.data.Value.DK`). ::
 
              import Orange
-             v = Orange.data.variable.Discrete("fruit", values=["plum", "orange", "apple"])
+             v = Orange.feature.Discrete("fruit", values=["plum", "orange", "apple"])
              an_apple = Orange.data.Value(v, "apple")
              another_apple = Orange.data.Value(v, 2)
              unknown_fruit = Orange.data.Value(v)
 
-             v2 = Orange.data.variable.Continuous("iq")
+             v2 = Orange.feature.Continuous("iq")
              genius = Orange.data.Value(v2, 180)
              troll = Orange.data.Value(v2, "42")
              stranger = Orange.data.value(v2)
 
         :param variable: variable descriptor
-        :type variables: Orange.data.variable.Variable
+        :type variables: Orange.feature.Descriptor
         :param value: A value
         :type value: int, float or string, or another type accepted by descriptor
 
@@ -130,9 +130,9 @@ of their symbolic representations. When comparing values
 corresponding to different descriptors, Orange checks whether the
 order is unambiguous. Here are two such values::
 
-    deg3 = Orange.data.variable.Discrete(
+    deg3 = Orange.feature.Discrete(
         "deg3", values=["little", "medium", "big"])
-    deg4 = orange.data.variable.Discrete(
+    deg4 = orange.feature.Discrete(
         "deg4", values=["tiny", "little", "big", "huge"])
     val3 = orange.Value(deg3)
     val4 = orange.Value(deg4)

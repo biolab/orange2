@@ -170,7 +170,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         :type ridge_lambda: integer or None
         :param use_vars: the list of independent varaiables included in
             regression model. If None (default) all variables are used
-        :type use_vars: list of Orange.data.variable or None
+        :type use_vars: list of Orange.feature.Descriptor or None
         :param stepwise: if True, `stepwise regression
             <http://en.wikipedia.org/wiki/Stepwise_regression>`_
             based on F-test is performed. The significance parameters are
@@ -204,7 +204,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         :param weight: the weights for instances. Default: None, i.e.
             all data instances are eqaully important in fitting
             the regression parameters
-        :type weight: None or list of Orange.data.variable.Continuous
+        :type weight: None or list of Orange.feature.Continuous
             which stores weights for instances
         """       
         if not self.use_vars is None:
@@ -551,7 +551,7 @@ def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
     :type table: :class:`Orange.data.Table`
     :param weight: the weights for instances. Default: None, i.e. all data
         instances are eqaully important in fitting the regression parameters
-    :type weight: None or list of Orange.data.variable.Continuous
+    :type weight: None or list of Orange.feature.Continuous
         which stores the weights
     :param add_sig: lower bound of significance for which the variable
         is included in regression model

@@ -482,7 +482,7 @@ when empty.
             features ordered by importance. If omitted, the order from
             the domain is used. Note that the values of discrete
             features are not ordered alphabetically but according to
-            the :obj:`Orange.data.variable.Discrete.values`.
+            the :obj:`Orange.feature.Discrete.values`.
 
             This sorts the data from the bridges data set by the lengths
             and years of their construction::

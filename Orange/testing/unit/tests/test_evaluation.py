@@ -3,7 +3,7 @@ from collections import Counter
 
 import Orange
 
-example_no = Orange.data.variable.new_meta_id()
+example_no = Orange.feature.Descriptor.new_meta_id()
 
 class DummyLearner(Orange.classification.majority.MajorityLearner):
     def __init__(self, id=None):
@@ -65,10 +65,10 @@ class TestEvaluation(unittest.TestCase):
         for i, inst in enumerate(self.examples):
             inst[self.example_no] = i
 
-        self.preprocessed_with_both = Orange.data.variable.new_meta_id()
-        self.preprocessed_with_learn = Orange.data.variable.new_meta_id()
-        self.preprocessed_with_test = Orange.data.variable.new_meta_id()
-        self.preprocessed_with_learn_test = Orange.data.variable.new_meta_id()
+        self.preprocessed_with_both = Orange.feature.Descriptor.new_meta_id()
+        self.preprocessed_with_learn = Orange.feature.Descriptor.new_meta_id()
+        self.preprocessed_with_test = Orange.feature.Descriptor.new_meta_id()
+        self.preprocessed_with_learn_test = Orange.feature.Descriptor.new_meta_id()
         self.preprocessors = (("B", DummyPreprocessor(self.preprocessed_with_both)),
                               ("L", DummyPreprocessor(self.preprocessed_with_learn)),
                               ("T", DummyPreprocessor(self.preprocessed_with_test)),
