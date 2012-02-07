@@ -288,7 +288,7 @@ PyObject *Variable_retrieve(PyObject *, PyObject *args) PYARGS(METH_VARARGS | ME
 
 PyObject *newmetaid(PyObject *, PyObject *args);
 
-PyObject *Variable_new_meta_id(PyObject *, PyObject *args)  PYARGS(METH_VARARGS,"([Variable]) -> int")
+PyObject *Variable_new_meta_id(PyObject *, PyObject *args)  PYARGS(METH_VARARGS | METH_STATIC, "([Variable]) -> int")
 {
     return newmetaid(NULL, args);
 }
