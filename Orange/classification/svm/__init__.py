@@ -165,7 +165,7 @@ from Orange.preprocess import Preprocessor_impute, \
                               Preprocessor_preprocessorList, \
                               DomainContinuizer
 
-from Orange.data import variable
+from Orange import feature as variable
 
 from Orange.misc import _orange__new__
 
