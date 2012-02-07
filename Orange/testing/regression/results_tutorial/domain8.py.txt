@@ -1,0 +1,4 @@
+           unspoiled   0.859
+    class noise 0.20   0.804
+    class noise 0.40   0.642
+    class noise 0.60   0.575

@@ -1,0 +1,4 @@
+Area under ROC:
+bayes 0.98
+tree 0.96
+majority 0.50

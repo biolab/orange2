@@ -1,0 +1,11 @@
+Entropy based discretization
+D_sepal length: <=5.50, (5.50, 6.10], >6.10
+D_sepal width: <=2.90, (2.90, 3.30], >3.30
+D_petal length: <=1.90, (1.90, 4.70], >4.70
+D_petal width: <=0.60, (0.60, 1.70], >1.70
+
+Equal-frequency intervals
+D_sepal length: <=5.45, (5.45, 6.25], >6.25
+D_sepal width: <=2.85, (2.85, 3.15], >3.15
+D_petal length: <=2.45, (2.45, 4.85], >4.85
+D_petal width: <=0.80, (0.80, 1.55], >1.55

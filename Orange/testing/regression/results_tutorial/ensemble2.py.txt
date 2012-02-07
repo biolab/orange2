@@ -1,0 +1,5 @@
+Classification Accuracy:
+        default: 0.473
+    class. tree: 0.791
+    naive bayes: 0.859
+         winner: 0.829
