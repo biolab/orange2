@@ -8,8 +8,9 @@ Tab-delimited format
 ====================
 Orange prefers to open data files in its native, tab-delimited format. This format allows us to specify type of features
 and optional flags along with the feature names, which can ofter result in shorter loading times. This additional data
-is provided in a form of a 3-line header. First line contains feature names, followed by type of features and optional
-flags in that order.
+is provided in a form of a 3-line header. First line contains variable
+names, followed by their types in the second line and optional
+flags in the third.
 
 Example of iris dataset in tab-delimited format (:download:`iris.tab <code/iris.tab>`)
 
