@@ -233,10 +233,10 @@ def main(argv):
     try:
         _t = opts.get("--timeout", "5")
         timeout = int(_t)
-        if timeout <= 0 or timeout >= 120:
+        if timeout <= 0 or timeout > 300:
             raise AttributeError()
     except AttributeError:
-        print "Error: timeout out of range (0 < # < 120)"
+        print "Error: timeout out of range (0 < # < 300)"
         sys.exit(1)
     except:
         print "Error: %s wrong timeout" % opts.get("--timeout", "5")
