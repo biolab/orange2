@@ -25,7 +25,7 @@ This "learning algorithm" will most often be used to establish
 whether some other learning algorithm is better than "nothing".
 Here's a simple example.
 
-:download:`mean-regression.py <code/mean-regression.py>` (uses: :download:`housing.tab <code/housing.tab>`):
+:download:`mean-regression.py <code/mean-regression.py>`:
 
 .. literalinclude:: code/mean-regression.py
     :lines: 7-

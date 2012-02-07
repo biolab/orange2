@@ -96,7 +96,7 @@ the above class for all variables in the domain.
         truncates the list, so the indices do not respond to indices of
         variables in the domain.
     
-    part of :download:`distributions-basic-stat.py <code/distributions-basic-stat.py>` (uses :download:`monks-1.tab <code/monks-1.tab>`)
+    part of :download:`distributions-basic-stat.py <code/distributions-basic-stat.py>`
     
     .. literalinclude:: code/distributions-basic-stat.py
         :lines: 1-10
@@ -110,7 +110,7 @@ the above class for all variables in the domain.
          petal width 0.100 2.500 1.199
 
 
-    part of :download:`distributions-basic-stat.py <code/distributions-basic-stat.py>` (uses :download:`iris.tab <code/iris.tab>`)
+    part of :download:`distributions-basic-stat.py <code/distributions-basic-stat.py>`
     
     .. literalinclude:: code/distributions-basic-stat.py
         :lines: 11-

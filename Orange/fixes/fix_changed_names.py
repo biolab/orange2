@@ -236,6 +236,9 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.MajorityLearner":"Orange.classification.majority.MajorityLearner",
            "orange.DefaultClassifier":"Orange.classification.ConstantClassifier",
 
+           "orngSQL.SQLReader": "Orange.data.sql.SQLReader",
+           "orngSQL.SQLWriter": "Orange.data.sql.SQLWriter",
+
            "orange.LookupLearner":"Orange.classification.lookup.LookupLearner",
            "orange.ClassifierByLookupTable":"Orange.classification.lookup.ClassifierByLookupTable",
            "orange.ClassifierByLookupTable1":"Orange.classification.lookup.ClassifierByLookupTable1",
@@ -584,6 +587,12 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ConditionalProbabilityEstimatorConstructor_loess": "Orange.statistics.estimate.ConditionalLoess",
 
            "orange.RandomGenerator": "Orange.misc.Random",
+
+           "orange.TransformValue": "Orange.data.utils.TransformValue",
+           "orange.Ordinal2Continuous": "Orange.data.utils.Ordinal2Continuous",
+           "orange.Discrete2Continuous": "Orange.data.utils.Discrete2Continuous",
+           "orange.NormalizeContinuous": "Orange.data.utils.NormalizeContinuous",
+           "orange.MapIntValue": "Orange.data.utils.MapIntValue",
 
            }
 

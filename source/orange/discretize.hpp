@@ -199,7 +199,7 @@ public:
   __REGISTER_CLASS
 
   int maxNumberOfIntervals; //P(+n) maximal number of intervals; default = 0 (no limits)
-  bool forceAttribute; //P minimal number of intervals; default = 0 (no limits)
+  bool forceAttribute; //P(+forced) minimal number of intervals; default = 0 (no limits)
 
   TEntropyDiscretization();
   typedef map<float, TDiscDistribution> TS;

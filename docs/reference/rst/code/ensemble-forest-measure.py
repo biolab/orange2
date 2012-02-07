@@ -17,7 +17,7 @@ for fn in files:
 
     #call by attribute index
     imp0 = measure(0, iris) 
-    #call by orange.Variable
+    #call with a Descriptor
     imp1 = measure(iris.domain.attributes[1], iris)
     print "first: %0.2f, second: %0.2f\n" % (imp0, imp1)
 

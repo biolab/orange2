@@ -31,7 +31,7 @@ the required behavior.
 
 Usage is consistent with typical learner usage in Orange:
 
-:download:`rules-cn2.py <code/rules-cn2.py>` (uses :download:`titanic.tab <code/titanic.tab>`)
+:download:`rules-cn2.py <code/rules-cn2.py>`
 
 .. literalinclude:: code/rules-cn2.py
     :lines: 7-
@@ -154,7 +154,7 @@ can in fact be fine-tuned to specific needs by replacing individual components.
 Here is a simple example, while a detailed architecture can be observed
 in description of classes that follows it:
 
-part of :download:`rules-customized.py <code/rules-customized.py>` (uses :download:`titanic.tab <code/titanic.tab>`)
+part of :download:`rules-customized.py <code/rules-customized.py>`
 
 .. literalinclude:: code/rules-customized.py
     :lines: 7-17
@@ -180,7 +180,7 @@ learner finishes, it destructs all *default* components. Continuing with our
 example, assume that we wish to set a different validation function and a
 different bean width. This is simply written as:
 
-part of :download:`rules-customized.py <code/rules-customized.py>` (uses :download:`titanic.tab <code/titanic.tab>`)
+part of :download:`rules-customized.py <code/rules-customized.py>`
 
 .. literalinclude:: code/rules-customized.py
     :lines: 19-23

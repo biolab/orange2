@@ -1,4 +1,4 @@
-# Description: Shows how to construct an orange.ClassifierFromExampleTable
+# Description: Shows how to construct an Orange.classification.lookup.LookupLearner
 # Category:    classification, lookup classifiers, constructive induction, feature construction
 # Classes:     ClassifierByExampleTable, LookupLearner
 # Uses:        monk1

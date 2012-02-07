@@ -31,7 +31,7 @@ available at the end of this page.
 Example scripts in this section suppose that the data is loaded and a
 list of learning algorithms is prepared.
 
-part of :download:`testing-test.py <code/testing-test.py>` (uses :download:`voting.tab <code/voting.tab>`)
+part of :download:`testing-test.py <code/testing-test.py>`
 
 .. literalinclude:: code/testing-test.py
     :start-after: import random

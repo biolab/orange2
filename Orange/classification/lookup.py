@@ -20,11 +20,11 @@ to instances in the table.
 A natural habitat for these classifiers is feature construction:
 they usually reside in :obj:`~Orange.feature.Descriptor.get_value_from` fields of constructed
 features to facilitate their automatic computation. For instance,
-the following script shows how to translate the :download:`monks-1.tab <code/monks-1.tab>` data set
+the following script shows how to translate the `monks-1.tab` data set
 features into a more useful subset that will only include the features
 ``a``, ``b``, ``e``, and features that will tell whether ``a`` and ``b`` are equal and
 whether ``e`` is 1 (don't bother about the details, they follow later; 
-:download:`lookup-lookup.py <code/lookup-lookup.py>`, uses: :download:`monks-1.tab <code/monks-1.tab>`):
+:download:`lookup-lookup.py <code/lookup-lookup.py>`):
 
 .. literalinclude:: code/lookup-lookup.py
     :lines: 7-21
@@ -157,7 +157,7 @@ constructed.
 
         Let's see some indices for randomly chosen examples from the original table.
         
-        part of :download:`lookup-lookup.py <code/lookup-lookup.py>` (uses: :download:`monks-1.tab <code/monks-1.tab>`):
+        part of :download:`lookup-lookup.py <code/lookup-lookup.py>`:
 
         .. literalinclude:: code/lookup-lookup.py
             :lines: 26-29
@@ -253,7 +253,7 @@ features.
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
 
-part of :download:`lookup-table.py <code/lookup-table.py>` (uses: :download:`monks-1.tab <code/monks-1.tab>`):
+part of :download:`lookup-table.py <code/lookup-table.py>`:
 
 .. literalinclude:: code/lookup-table.py
     :lines: 7-13
@@ -322,7 +322,7 @@ the new class variable and the features that should be used for
 classification. This saves us from constructing data_s and reassigning
 the class_var. It doesn't set the :obj:`Orange.feature.Descriptor.get_value_from`, though.
 
-part of :download:`lookup-table.py <code/lookup-table.py>` (uses: :download:`monks-1.tab <code/monks-1.tab>`)::
+part of :download:`lookup-table.py <code/lookup-table.py>`::
 
     import Orange
 
@@ -335,7 +335,7 @@ part of :download:`lookup-table.py <code/lookup-table.py>` (uses: :download:`mon
 Let us, for the end, show another use of LookupLearner. With the
 alternative call arguments, it offers an easy way to observe feature
 interactions. For this purpose, we shall omit e, and construct a
-ClassifierByDataTable from a and b only (part of :download:`lookup-table.py <code/lookup-table.py>`; uses: :download:`monks-1.tab <code/monks-1.tab>`):
+ClassifierByDataTable from a and b only (part of :download:`lookup-table.py <code/lookup-table.py>`):
 
 .. literalinclude:: code/lookup-table.py
     :lines: 32-35
@@ -510,7 +510,9 @@ def lookup_from_function(attribute, bound, function):
         return LookupLearner(examples)
       
 
-def lookup_from_data(examples, weight=0, learnerForUnknown=None):
+from Orange.misc import deprecated_keywords
+@deprecated_keywords({"learnerForUnknown":"learner_for_unknown"})
+def lookup_from_data(examples, weight=0, learner_for_unknown=None):
     if len(examples.domain.attributes) <= 3:
         lookup = lookup_from_bound(examples.domain.class_var,
                                  examples.domain.attributes)
@@ -527,11 +529,11 @@ def lookup_from_data(examples, weight=0, learnerForUnknown=None):
         # there are ambiguities; a backup plan is
         # ClassifierByDataTable, let it deal with them
         return LookupLearner(examples, weight,
-                             learnerForUnknown=learnerForUnknown)
+                             learner_for_unknown=learner_for_unknown)
 
     else:
         return LookupLearner(examples, weight,
-                             learnerForUnknown=learnerForUnknown)
+                             learner_for_unknown=learner_for_unknown)
         
         
 def dump_lookup_function(func):

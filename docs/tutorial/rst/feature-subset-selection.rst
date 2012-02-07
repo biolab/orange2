@@ -84,7 +84,7 @@ has feature subset selection up-front, i.e., before it actually
 learns. For a learner, we will use Naive Bayes with categorization (a
 particular wrapper from orngDisc). The code is quite short since we
 will also use a wrapper called FilteredLearner from orngFSS module
-(part of :download:`fss7.py <code/fss7.py>`, uses :download:`adult_sample.tab <code/adult_sample.tab>`)::
+(part of :download:`fss7.py <code/fss7.py>`)::
 
    import orange, orngDisc, orngTest, orngStat, orngFSS
    

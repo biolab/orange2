@@ -23,8 +23,7 @@ Examples
 
 The following example demonstrates how to build a prediction model with
 MultitargetTreeLearner and use it to predict (multiple) class values for
-a given instance (:download:`multitarget.py <code/multitarget.py>`,
-uses :download:`test-pls.tab <code/test-pls.tab>`):
+a given instance (:download:`multitarget.py <code/multitarget.py>`):
 
 .. literalinclude:: code/multitarget.py
     :lines: 1-4, 10-12

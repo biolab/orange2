@@ -121,9 +121,9 @@ print len_tree
 span_var = bridges.domain["SPAN"]
 def compute_span(ex, rw):
     if ex["TYPE"] == "WOOD" or ex["PURPOSE"] == "WALK":
-        return orange.Value(span_var, "SHORT")
+        return Orange.data.Value(span_var, "SHORT")
     else:
-        return orange.Value(span_var, "MEDIUM")
+        return Orange.data.Value(span_var, "MEDIUM")
 
 imputer.models[bridges.domain.index("SPAN")] = compute_span
 
@@ -144,7 +144,7 @@ print
 
 for i in original.domain:
     print "%s: %s -> %s" % (original.domain[i].name, original[i], imputed[i.name]),
-    if original.domain[i].varType == Orange.core.VarTypes.Continuous:
+    if original.domain[i].var_type == Orange.feature.Type.Continuous:
         print "(%s)" % imputed[i.name+"_def"]
     else:
         print

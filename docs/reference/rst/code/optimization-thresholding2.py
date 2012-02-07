@@ -1,7 +1,7 @@
 import Orange
 
 bupa = Orange.data.Table("bupa")
-ri2 = Orange.core.MakeRandomIndices2(bupa, 0.7)
+ri2 = Orange.data.sample.SubsetIndices2(bupa, 0.7)
 train = bupa.select(ri2, 0)
 test = bupa.select(ri2, 1)
 

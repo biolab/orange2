@@ -3,8 +3,9 @@ from operator import add
 import numpy
 
 import Orange
-from Orange import statc
+from Orange import statc, corn
 from Orange.misc import deprecated_keywords
+from Orange.evaluation import testing
 
 #### Private stuff
 
@@ -124,6 +125,52 @@ def ME(res, **argkw):
     return [x/totweight for x in MEs]
 
 MAE = ME
+
+
+class ConfusionMatrix:
+    """
+    Classification result summary
+
+    .. attribute:: TP
+
+        True Positive predictions
+
+    .. attribute:: TN
+
+        True Negative predictions
+
+    .. attribute:: FP
+
+        False Positive predictions
+
+    .. attribute:: FN
+
+        False Negative predictions
+    """
+    def __init__(self):
+        self.TP = self.FN = self.FP = self.TN = 0.0
+
+    @deprecated_keywords({"predictedPositive": "predicted_positive",
+                          "isPositive": "is_positive"})
+    def addTFPosNeg(self, predicted_positive, is_positive, weight = 1.0):
+        """
+        Update confusion matrix with result of a single classification
+
+        :param predicted_positive: positive class value was predicted
+        :param is_positive: correct class value is positive
+        :param weight: weight of the selected instance
+         """
+        if predicted_positive:
+            if is_positive:
+                self.TP += weight
+            else:
+                self.FP += weight
+        else:
+            if is_positive:
+                self.FN += weight
+            else:
+                self.TN += weight
+
 
 #########################################################################
 # PERFORMANCE MEASURES:
@@ -304,75 +351,91 @@ def RMSE_old(res, **argkw):
 # PERFORMANCE MEASURES:
 # Scores for evaluation of classifiers
 
-@deprecated_keywords({"reportSE": "report_se"})
-def CA(res, report_se = False, **argkw):
-    """ Computes classification accuracy, i.e. percentage of matches between
-    predicted and actual class. The function returns a list of classification
-    accuracies of all classifiers tested. If reportSE is set to true, the list
-    will contain tuples with accuracies and standard errors.
-    
-    If results are from multiple repetitions of experiments (like those
-    returned by Orange.evaluation.testing.crossValidation or
-    Orange.evaluation.testing.proportionTest) the
-    standard error (SE) is estimated from deviation of classification
-    accuracy accross folds (SD), as SE = SD/sqrt(N), where N is number
-    of repetitions (e.g. number of folds).
-    
-    If results are from a single repetition, we assume independency of
-    instances and treat the classification accuracy as distributed according
-    to binomial distribution. This can be approximated by normal distribution,
-    so we report the SE of sqrt(CA*(1-CA)/N), where CA is classification
-    accuracy and N is number of test instances.
-    
-    Instead of ExperimentResults, this function can be given a list of
-    confusion matrices (see below). Standard errors are in this case
-    estimated using the latter method.
-    """
-    if res.number_of_iterations==1:
-        if type(res)==ConfusionMatrix:
-            div = nm.TP+nm.FN+nm.FP+nm.TN
-            check_non_zero(div)
-            ca = [(nm.TP+nm.TN)/div]
+class CAClass(object):
+    CONFUSION_MATRIX = 0
+    CONFUSION_MATRIX_LIST = 1
+    CLASSIFICATION = 2
+    CROSS_VALIDATION = 3
+
+    @deprecated_keywords({"reportSE": "report_se"})
+    def __call__(self, test_results, report_se = False, unweighted=False):
+        """Return percentage of matches between predicted and actual class.
+
+        :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
+                             or :obj:`ConfusionMatrix`.
+        :param report_se: include standard error in result.
+        :rtype: list of scores, one for each learner.
+
+        Standard errors are estimated from deviation of CAs across folds (if
+        test_results were produced by cross_validation) or approximated under
+        the assumption of normal distribution otherwise.
+        """
+        input_type = self.get_input_type(test_results)
+        if input_type == self.CONFUSION_MATRIX:
+            return self.from_confusion_matrix(test_results, report_se)
+        elif input_type == self.CONFUSION_MATRIX_LIST:
+            return self.from_confusion_matrix_list(test_results, report_se)
+        elif input_type == self.CLASSIFICATION:
+            return self.from_classification_results(
+                                        test_results, report_se, unweighted)
+        elif input_type == self.CROSS_VALIDATION:
+            return self.from_crossvalidation_results(
+                                        test_results, report_se, unweighted)
+
+    def from_confusion_matrix(self, cm, report_se):
+        all_predictions = cm.TP+cm.FN+cm.FP+cm.TN
+        check_non_zero(all_predictions)
+        ca = (cm.TP+cm.TN)/all_predictions
+
+        if report_se:
+            return ca, ca*(1-ca)/math.sqrt(all_predictions)
         else:
-            CAs = [0.0]*res.number_of_learners
-            if argkw.get("unweighted", 0) or not res.weights:
-                totweight = gettotsize(res)
-                for tex in res.results:
-                    CAs = map(lambda res, cls: res+(cls==tex.actual_class), CAs, tex.classes)
-            else:
-                totweight = 0.
-                for tex in res.results:
-                    CAs = map(lambda res, cls: res+(cls==tex.actual_class and tex.weight), CAs, tex.classes)
-                    totweight += tex.weight
-            check_non_zero(totweight)
-            ca = [x/totweight for x in CAs]
-            
+            return ca
+
+    def from_confusion_matrix_list(self, confusion_matrices, report_se):
+        return map(self.from_confusion_matrix, confusion_matrices) # TODO: report_se
+
+    def from_classification_results(self, test_results, report_se, unweighted):
+        CAs = [0.0]*test_results.number_of_learners
+        totweight = 0.
+        for tex in test_results.results:
+            w = 1. if unweighted else tex.weight
+            CAs = map(lambda res, cls: res+(cls==tex.actual_class and w), CAs, tex.classes)
+            totweight += w
+        check_non_zero(totweight)
+        ca = [x/totweight for x in CAs]
+
         if report_se:
             return [(x, x*(1-x)/math.sqrt(totweight)) for x in ca]
         else:
             return ca
-        
-    else:
-        CAsByFold = [[0.0]*res.number_of_iterations for i in range(res.number_of_learners)]
-        foldN = [0.0]*res.number_of_iterations
 
-        if argkw.get("unweighted", 0) or not res.weights:
-            for tex in res.results:
-                for lrn in range(res.number_of_learners):
-                    CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class)
-                foldN[tex.iteration_number] += 1
-        else:
-            for tex in res.results:
-                for lrn in range(res.number_of_learners):
-                    CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class) and tex.weight
-                foldN[tex.iteration_number] += tex.weight
+    def from_crossvalidation_results(self, test_results, report_se, unweighted):
+        CAsByFold = [[0.0]*test_results.number_of_iterations for i in range(test_results.number_of_learners)]
+        foldN = [0.0]*test_results.number_of_iterations
+
+        for tex in test_results.results:
+            w = 1. if unweighted else tex.weight
+            for lrn in range(test_results.number_of_learners):
+                CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class) and w
+            foldN[tex.iteration_number] += w
 
         return statistics_by_folds(CAsByFold, foldN, report_se, False)
 
+    def get_input_type(self, test_results):
+        if isinstance(test_results, ConfusionMatrix):
+            return self.CONFUSION_MATRIX
+        elif isinstance(test_results, testing.ExperimentResults):
+            if test_results.number_of_iterations == 1:
+                return self.CLASSIFICATION
+            else:
+                return self.CROSS_VALIDATION
+        elif isinstance(test_results, list):
+            return self.CONFUSION_MATRIX_LIST
 
-# Obsolete, but kept for compatibility
-def CA_se(res, **argkw):
-    return CA(res, True, **argkw)
+
+
+CA = CAClass()
 
 @deprecated_keywords({"reportSE": "report_se"})
 def AP(res, report_se = False, **argkw):
@@ -561,51 +624,38 @@ def rank_difference(res, statistics, **argkw):
         return apply(Wilcoxon, (res, statistics), argkw)
     else:
         return apply(Friedman, (res, statistics), argkw)
-    
-class ConfusionMatrix:
-    """ Class ConfusionMatrix stores data about false and true
-    predictions compared to real class. It stores the number of
-    True Negatives, False Positive, False Negatives and True Positives.
+
+
+@deprecated_keywords({"res": "test_results",
+                      "classIndex": "class_index"})
+def confusion_matrices(test_results, class_index=-1,
+                       unweighted=False, cutoff=.5):
     """
-    def __init__(self):
-        self.TP = self.FN = self.FP = self.TN = 0.0
+    Return confusion matrices for test_results.
 
-    def addTFPosNeg(self, predictedPositive, isPositive, weight = 1.0):
-        if predictedPositive:
-            if isPositive:
-                self.TP += weight
-            else:
-                self.FP += weight
-        else:
-            if isPositive:
-                self.FN += weight
-            else:
-                self.TN += weight
+    :param test_results: test results
+    :param class_index: index of class value for which the confusion matrices
+                        are to be computed.
+    :param unweighted: ignore instance weights.
+    :params cutoff: cutoff for probability
 
-
-@deprecated_keywords({"classIndex": "class_index"})
-def confusion_matrices(res, class_index=-1, **argkw):
-    """ This function can compute two different forms of confusion matrix:
-    one in which a certain class is marked as positive and the other(s)
-    negative, and another in which no class is singled out. The way to
-    specify what we want is somewhat confusing due to backward
-    compatibility issues.
+    :rtype: list of :obj:`ConfusionMatrix`
     """
-    tfpns = [ConfusionMatrix() for i in range(res.number_of_learners)]
+    tfpns = [ConfusionMatrix() for i in range(test_results.number_of_learners)]
     
     if class_index<0:
-        numberOfClasses = len(res.class_values)
+        numberOfClasses = len(test_results.class_values)
         if class_index < -1 or numberOfClasses > 2:
-            cm = [[[0.0] * numberOfClasses for i in range(numberOfClasses)] for l in range(res.number_of_learners)]
-            if argkw.get("unweighted", 0) or not res.weights:
-                for tex in res.results:
+            cm = [[[0.0] * numberOfClasses for i in range(numberOfClasses)] for l in range(test_results.number_of_learners)]
+            if unweighted or not test_results.weights:
+                for tex in test_results.results:
                     trueClass = int(tex.actual_class)
                     for li, pred in enumerate(tex.classes):
                         predClass = int(pred)
                         if predClass < numberOfClasses:
                             cm[li][trueClass][predClass] += 1
             else:
-                for tex in enumerate(res.results):
+                for tex in enumerate(test_results.results):
                     trueClass = int(tex.actual_class)
                     for li, pred in tex.classes:
                         predClass = int(pred)
@@ -613,33 +663,32 @@ def confusion_matrices(res, class_index=-1, **argkw):
                             cm[li][trueClass][predClass] += tex.weight
             return cm
             
-        elif res.baseClass>=0:
-            class_index = res.baseClass
+        elif test_results.baseClass>=0:
+            class_index = test_results.baseClass
         else:
             class_index = 1
-            
-    cutoff = argkw.get("cutoff")
-    if cutoff:
-        if argkw.get("unweighted", 0) or not res.weights:
-            for lr in res.results:
+
+    if cutoff != .5:
+        if unweighted or not test_results.weights:
+            for lr in test_results.results:
                 isPositive=(lr.actual_class==class_index)
-                for i in range(res.number_of_learners):
+                for i in range(test_results.number_of_learners):
                     tfpns[i].addTFPosNeg(lr.probabilities[i][class_index]>cutoff, isPositive)
         else:
-            for lr in res.results:
+            for lr in test_results.results:
                 isPositive=(lr.actual_class==class_index)
-                for i in range(res.number_of_learners):
+                for i in range(test_results.number_of_learners):
                     tfpns[i].addTFPosNeg(lr.probabilities[i][class_index]>cutoff, isPositive, lr.weight)
     else:
-        if argkw.get("unweighted", 0) or not res.weights:
-            for lr in res.results:
+        if unweighted or not test_results.weights:
+            for lr in test_results.results:
                 isPositive=(lr.actual_class==class_index)
-                for i in range(res.number_of_learners):
+                for i in range(test_results.number_of_learners):
                     tfpns[i].addTFPosNeg(lr.classes[i]==class_index, isPositive)
         else:
-            for lr in res.results:
+            for lr in test_results.results:
                 isPositive=(lr.actual_class==class_index)
-                for i in range(res.number_of_learners):
+                for i in range(test_results.number_of_learners):
                     tfpns[i].addTFPosNeg(lr.classes[i]==class_index, isPositive, lr.weight)
     return tfpns
 
@@ -650,9 +699,23 @@ compute_confusion_matrices = confusion_matrices
 
 @deprecated_keywords({"confusionMatrix": "confusion_matrix"})
 def confusion_chi_square(confusion_matrix):
+    """
+    Return chi square statistic of the confusion matrix
+    (higher value indicates that prediction is not by chance).
+    """
+    if isinstance(confusion_matrix, ConfusionMatrix) or \
+       not isinstance(confusion_matrix[1], list):
+        return _confusion_chi_square(confusion_matrix)
+    else:
+        return map(_confusion_chi_square, confusion_matrix)
+
+def _confusion_chi_square(confusion_matrix):
+    if isinstance(confusion_matrix, ConfusionMatrix):
+        c = confusion_matrix
+        confusion_matrix = [[c.TP, c.FN], [c.FP, c.TN]]
     dim = len(confusion_matrix)
     rowPriors = [sum(r) for r in confusion_matrix]
-    colPriors = [sum([r[i] for r in confusion_matrix]) for i in range(dim)]
+    colPriors = [sum(r[i] for r in confusion_matrix) for i in range(dim)]
     total = sum(rowPriors)
     rowPriors = [r/total for r in rowPriors]
     colPriors = [r/total for r in colPriors]
@@ -665,76 +728,100 @@ def confusion_chi_square(confusion_matrix):
             ss += (o-e)**2 / e
     df = (dim-1)**2
     return ss, df, statc.chisqprob(ss, df)
-        
-    
-def sens(confm):
-    """Return sensitivity (recall rate) over the given confusion matrix."""
-    if type(confm) == list:
-        return [sens(cm) for cm in confm]
+
+@deprecated_keywords({"confm": "confusion_matrix"})
+def sens(confusion_matrix):
+    """
+    Return `sensitivity <http://en.wikipedia.org/wiki/Sensitivity_and_specificity>`_
+    (proportion of actual positives which are correctly identified as such).
+    """
+    if type(confusion_matrix) == list:
+        return [sens(cm) for cm in confusion_matrix]
     else:
-        tot = confm.TP+confm.FN
+        tot = confusion_matrix.TP+confusion_matrix.FN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute sensitivity: one or both classes have no instances")
             return -1
 
-        return confm.TP/tot
-
-def recall(confm):
-    """Return recall rate (sensitivity) over the given confusion matrix."""
-    return sens(confm)
+        return confusion_matrix.TP/tot
 
 
-def spec(confm):
-    """Return specificity over the given confusion matrix."""
-    if type(confm) == list:
-        return [spec(cm) for cm in confm]
+@deprecated_keywords({"confm": "confusion_matrix"})
+def recall(confusion_matrix):
+    """
+    Return `recall <http://en.wikipedia.org/wiki/Precision_and_recall>`_
+    (fraction of relevant instances that are retrieved).
+    """
+    return sens(confusion_matrix)
+
+
+@deprecated_keywords({"confm": "confusion_matrix"})
+def spec(confusion_matrix):
+    """
+    Return `specificity <http://en.wikipedia.org/wiki/Sensitivity_and_specificity>`_
+    (proportion of negatives which are correctly identified).
+    """
+    if type(confusion_matrix) == list:
+        return [spec(cm) for cm in confusion_matrix]
     else:
-        tot = confm.FP+confm.TN
+        tot = confusion_matrix.FP+confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute specificity: one or both classes have no instances")
             return -1
-        return confm.TN/tot
-  
+        return confusion_matrix.TN/tot
 
-def PPV(confm):
-    """Return positive predictive value (precision rate) over the given confusion matrix."""
-    if type(confm) == list:
-        return [PPV(cm) for cm in confm]
+
+@deprecated_keywords({"confm": "confusion_matrix"})
+def PPV(confusion_matrix):
+    """
+    Return `positive predictive value <http://en.wikipedia.org/wiki/Positive_predictive_value>`_
+    (proportion of subjects with positive test results who are correctly diagnosed)."""
+    if type(confusion_matrix) == list:
+        return [PPV(cm) for cm in confusion_matrix]
     else:
-        tot = confm.TP+confm.FP
+        tot = confusion_matrix.TP+confusion_matrix.FP
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute PPV: one or both classes have no instances")
             return -1
-        return confm.TP/tot
+        return confusion_matrix.TP/tot
 
 
-def precision(confm):
-    """Return precision rate (positive predictive value) over the given confusion matrix."""
-    return PPV(confm)
+@deprecated_keywords({"confm": "confusion_matrix"})
+def precision(confusion_matrix):
+    """
+    Return `precision <http://en.wikipedia.org/wiki/Precision_and_recall>`_
+    (retrieved instances that are relevant).
+    """
+    return PPV(confusion_matrix)
 
-
-def NPV(confm):
-    """Return negative predictive value over the given confusion matrix."""
-    if type(confm) == list:
-        return [NPV(cm) for cm in confm]
+@deprecated_keywords({"confm": "confusion_matrix"})
+def NPV(confusion_matrix):
+    """Return `negative predictive value <http://en.wikipedia.org/wiki/Negative_predictive_value>`_
+     (proportion of subjects with a negative test result who are correctly
+     diagnosed).
+     """
+    if type(confusion_matrix) == list:
+        return [NPV(cm) for cm in confusion_matrix]
     else:
-        tot = confm.FN+confm.TN
+        tot = confusion_matrix.FN+confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute NPV: one or both classes have no instances")
             return -1
-        return confm.TN/tot
+        return confusion_matrix.TN/tot
 
-def F1(confm):
-    """Return F1 score (harmonic mean of precision and recall) over the given confusion matrix."""
-    if type(confm) == list:
-        return [F1(cm) for cm in confm]
+@deprecated_keywords({"confm": "confusion_matrix"})
+def F1(confusion_matrix):
+    """Return `F1 score <http://en.wikipedia.org/wiki/F1_score>`_
+    (harmonic mean of precision and recall)."""
+    if type(confusion_matrix) == list:
+        return [F1(cm) for cm in confusion_matrix]
     else:
-        p = precision(confm)
-        r = recall(confm)
+        p = precision(confusion_matrix)
+        r = recall(confusion_matrix)
         if p + r > 0:
             return 2. * p * r / (p + r)
         else:
@@ -742,34 +829,32 @@ def F1(confm):
             warnings.warn("Can't compute F1: P + R is zero or not defined")
             return -1
 
-def Falpha(confm, alpha=1.0):
+
+@deprecated_keywords({"confm": "confusion_matrix"})
+def Falpha(confusion_matrix, alpha=1.0):
     """Return the alpha-mean of precision and recall over the given confusion matrix."""
-    if type(confm) == list:
-        return [Falpha(cm, alpha=alpha) for cm in confm]
+    if type(confusion_matrix) == list:
+        return [Falpha(cm, alpha=alpha) for cm in confusion_matrix]
     else:
-        p = precision(confm)
-        r = recall(confm)
+        p = precision(confusion_matrix)
+        r = recall(confusion_matrix)
         return (1. + alpha) * p * r / (alpha * p + r)
-    
-def MCC(confm):
-    '''
-    Return Mattew correlation coefficient over the given confusion matrix.
 
-    MCC is calculated as follows:
-    MCC = (TP*TN - FP*FN) / sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) )
-    
-    [1] Matthews, B.W., Comparison of the predicted and observed secondary 
-    structure of T4 phage lysozyme. Biochim. Biophys. Acta 1975, 405, 442-451
 
-    code by Boris Gorelik
-    '''
-    if type(confm) == list:
-        return [MCC(cm) for cm in confm]
+@deprecated_keywords({"confm": "confusion_matrix"})
+def MCC(confusion_matrix):
+    """
+    Return `Matthew correlation coefficient <http://en.wikipedia.org/wiki/Matthews_correlation_coefficient>`_
+    (correlation coefficient between the observed and predicted binary classifications)
+    """
+    # code by Boris Gorelik
+    if type(confusion_matrix) == list:
+        return [MCC(cm) for cm in confusion_matrix]
     else:
-        truePositive = confm.TP
-        trueNegative = confm.TN
-        falsePositive = confm.FP
-        falseNegative = confm.FN 
+        truePositive = confusion_matrix.TP
+        trueNegative = confusion_matrix.TN
+        falsePositive = confusion_matrix.FP
+        falseNegative = confusion_matrix.FN
           
         try:   
             r = (((truePositive * trueNegative) - (falsePositive * falseNegative))/ 
@@ -790,14 +875,14 @@ def MCC(confm):
 
 
 @deprecated_keywords({"bIsListOfMatrices": "b_is_list_of_matrices"})
-def scotts_pi(confm, b_is_list_of_matrices=True):
+def scotts_pi(confusion_matrix, b_is_list_of_matrices=True):
    """Compute Scott's Pi for measuring inter-rater agreement for nominal data
 
    http://en.wikipedia.org/wiki/Scott%27s_Pi
    Scott's Pi is a statistic for measuring inter-rater reliability for nominal
    raters.
 
-   @param confm: confusion matrix, or list of confusion matrices. To obtain
+   @param confusion_matrix: confusion matrix, or list of confusion matrices. To obtain
                            non-binary confusion matrix, call
                            Orange.evaluation.scoring.compute_confusion_matrices and set the
                            classIndex parameter to -2.
@@ -810,29 +895,29 @@ def scotts_pi(confm, b_is_list_of_matrices=True):
 
    if b_is_list_of_matrices:
        try:
-           return [scotts_pi(cm, b_is_list_of_matrices=False) for cm in confm]
+           return [scotts_pi(cm, b_is_list_of_matrices=False) for cm in confusion_matrix]
        except TypeError:
            # Nevermind the parameter, maybe this is a "conventional" binary
            # confusion matrix and bIsListOfMatrices was specified by mistake
-           return scottsPiSingle(confm, bIsListOfMatrices=False)
+           return scottsPiSingle(confusion_matrix, bIsListOfMatrices=False)
    else:
-       if isinstance(confm, ConfusionMatrix):
-           confm = numpy.array( [[confm.TP, confm.FN],
-                   [confm.FP, confm.TN]], dtype=float)
+       if isinstance(confusion_matrix, ConfusionMatrix):
+           confusion_matrix = numpy.array( [[confusion_matrix.TP, confusion_matrix.FN],
+                   [confusion_matrix.FP, confusion_matrix.TN]], dtype=float)
        else:
-           confm = numpy.array(confm, dtype=float)
+           confusion_matrix = numpy.array(confusion_matrix, dtype=float)
 
-       marginalSumOfRows = numpy.sum(confm, axis=0)
-       marginalSumOfColumns = numpy.sum(confm, axis=1)
+       marginalSumOfRows = numpy.sum(confusion_matrix, axis=0)
+       marginalSumOfColumns = numpy.sum(confusion_matrix, axis=1)
        jointProportion = (marginalSumOfColumns + marginalSumOfRows)/ \
-                           (2.0 * numpy.sum(confm, axis=None))
+                           (2.0 * numpy.sum(confusion_matrix, axis=None))
        # In the eq. above, 2.0 is what the Wikipedia page calls
        # the number of annotators. Here we have two annotators:
        # the observed (true) labels (annotations) and the predicted by
        # the learners.
 
        prExpected = numpy.sum(jointProportion ** 2, axis=None)
-       prActual = numpy.sum(numpy.diag(confm), axis=None)/numpy.sum(confm, axis=None)
+       prActual = numpy.sum(numpy.diag(confusion_matrix), axis=None)/numpy.sum(confusion_matrix, axis=None)
 
        ret = (prActual - prExpected) / (1.0 - prExpected)
        return ret
@@ -845,7 +930,6 @@ def AUCWilcoxon(res, class_index=-1, **argkw):
     "the positive" and others are negative. The result is a list of
     tuples (aROC, standard error).
     """
-    import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
     problists, tots = corn.computeROCCumulative(res, class_index, useweights)
 
@@ -878,7 +962,6 @@ AROC = AUCWilcoxon # for backward compatibility, AROC is obsolote
 
 @deprecated_keywords({"classIndex": "class_index"})
 def compare_2_AUCs(res, lrn1, lrn2, class_index=-1, **argkw):
-    import corn
     return corn.compare2ROCs(res, lrn1, lrn2, class_index, res.weights and not argkw.get("unweighted"))
 
 compare_2_AROCs = compare_2_AUCs # for backward compatibility, compare_2_AROCs is obsolote
@@ -889,7 +972,6 @@ def compute_ROC(res, class_index=-1):
     """ Computes a ROC curve as a list of (x, y) tuples, where x is 
     1-specificity and y is sensitivity.
     """
-    import corn
     problists, tots = corn.computeROCCumulative(res, class_index)
 
     results = []
@@ -925,7 +1007,7 @@ def ROC_slope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
 
 @deprecated_keywords({"keepConcavities": "keep_concavities"})
 def ROC_add_point(P, R, keep_concavities=1):
-    if keepConcavities:
+    if keep_concavities:
         R.append(P)
     else:
         while (1):
@@ -945,7 +1027,6 @@ def ROC_add_point(P, R, keep_concavities=1):
 @deprecated_keywords({"classIndex": "class_index",
                       "keepConcavities": "keep_concavities"})
 def TC_compute_ROC(res, class_index=-1, keep_concavities=1):
-    import corn
     problists, tots = corn.computeROCCumulative(res, class_index)
 
     results = []
@@ -1170,7 +1251,6 @@ def TC_threshold_average_ROC(roc_curves, samples = 10):
 ##  - noClassRugPoints is an array of (x, 0) points
 @deprecated_keywords({"classIndex": "class_index"})
 def compute_calibration_curve(res, class_index=-1):
-    import corn
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded, test_type=res.test_type, labels=res.labels)
     for te in res.results:
@@ -1233,7 +1313,6 @@ def compute_calibration_curve(res, class_index=-1):
 ##  - curve is an array of points ((TP+FP)/(P + N), TP/P, (th, FP/N)) on the Lift Curve
 @deprecated_keywords({"classIndex": "class_index"})
 def compute_lift_curve(res, class_index=-1):
-    import corn
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names, res.class_values, res.weights, classifiers=res.classifiers, loaded=res.loaded, test_type=res.test_type, labels=res.labels)
     for te in res.results:
@@ -1270,7 +1349,6 @@ def is_CDT_empty(cdt):
 @deprecated_keywords({"classIndex": "class_index"})
 def compute_CDT(res, class_index=-1, **argkw):
     """Obsolete, don't use"""
-    import corn
     if class_index<0:
         if res.baseClass>=0:
             class_index = res.baseClass
@@ -1360,7 +1438,6 @@ def AUC_x(cdtComputer, ite, all_ite, divide_by_if_ite, computer_args):
                       "useWeights": "use_weights",
                       "divideByIfIte": "divide_by_if_ite"})
 def AUC_ij(ite, class_index1, class_index2, use_weights = True, all_ite = None, divide_by_if_ite = 1.0):
-    import corn
     return AUC_x(corn.computeCDTPair, ite, all_ite, divide_by_if_ite, (class_index1, class_index2, use_weights))
 
 
@@ -1368,8 +1445,8 @@ def AUC_ij(ite, class_index1, class_index2, use_weights = True, all_ite = None, 
 @deprecated_keywords({"classIndex": "class_index",
                       "useWeights": "use_weights",
                       "divideByIfIte": "divide_by_if_ite"})
-def AUC_i(ite, class_index, use_weights = True, all_ite = None, divide_by_if_ite = 1.0):
-    import corn
+def AUC_i(ite, class_index, use_weights = True, all_ite = None,
+          divide_by_if_ite = 1.0):
     return AUC_x(corn.computeCDT, ite, all_ite, divide_by_if_ite, (class_index, use_weights))
 
 

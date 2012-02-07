@@ -12,3 +12,6 @@ Data description (``data``)
     Orange.data.formats
     Orange.data.discretization
     Orange.data.continuization
+    Orange.data.utils
+    Orange.data.continuization
+    Orange.data.sql

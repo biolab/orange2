@@ -1,12 +1,11 @@
-"""\
-**************************
-Data Utilities (``utils``)
-**************************
-
-Common operations on :class:`Orange.data.Table`.
-
-"""
 #from __future__ import absolute_import
+
+from Orange.core import TransformValue, \
+    Ordinal2Continuous, \
+    Discrete2Continuous, \
+    NormalizeContinuous, \
+    MapIntValue
+
 
 import random
 import math

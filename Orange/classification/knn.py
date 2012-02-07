@@ -135,7 +135,7 @@ Examples
 The learner will be tested on an 'iris' data set. The data will be split 
 into training (80%) and testing (20%) instances. We will use the former 
 for "training" the classifier and test it on five testing instances 
-randomly selected from a part of (:download:`knnlearner.py <code/knnlearner.py>`, uses :download:`iris.tab <code/iris.tab>`):
+randomly selected from a part of (:download:`knnlearner.py <code/knnlearner.py>`):
 
 .. literalinclude:: code/knnExample1.py
 
@@ -156,7 +156,7 @@ has neither a greater nor more predictable effect on the performance of kNN
 classifiers. Therefore there is not much point in changing the default. If you
 decide to do so, the distance_constructor must be set to an instance
 of one of the classes for distance measuring. This can be seen in the following
-part of (:download:`knnlearner.py <code/knnlearner.py>`, uses :download:`iris.tab <code/iris.tab>`):
+part of (:download:`knnlearner.py <code/knnlearner.py>`):
 
 .. literalinclude:: code/knnExample2.py
 
@@ -270,7 +270,7 @@ searching) (:class:`FindNearestConstructor`).
 Examples
 --------
 
-The following script (:download:`knnInstanceDistance.py <code/knnInstanceDistance.py>`, uses :download:`lenses.tab <code/lenses.tab>`)
+The following script (:download:`knnInstanceDistance.py <code/knnInstanceDistance.py>`)
 shows how to find the five nearest neighbors of the first instance
 in the lenses dataset.
 

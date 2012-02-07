@@ -39,9 +39,9 @@ def trans_mulan_data(xml_name,arff_name, create_on_new = Orange.feature.Descript
 # assume the data file is in proper directory
 
 if __name__=="__main__":
-    table = trans_mulan_data("../../doc/datasets/emotions.xml","../../doc/datasets/emotions.arff")
+    table = trans_mulan_data("../doc/datasets/emotions.xml","../doc/datasets/emotions.arff")
     
     for i in range(10):
         print table[i]
     
-    table.save("emotions.tab")
+    table.save("/tmp/emotions.tab")

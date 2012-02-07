@@ -23,10 +23,10 @@ for i in range(3):
 
 print "\nproportionsTest that will give different results, \
 but the same each time the script is run"
-myRandom = Orange.core.RandomGenerator()
+myRandom = Orange.misc.Random()
 for i in range(3):
     res = Orange.evaluation.testing.proportion_test(learners, voting, 0.7,
-        randomGenerator=myRandom)
+        random_generator=myRandom)
     printResults(res)
 # End
 
@@ -58,7 +58,7 @@ for i in range(len(prop)):
 # End
 
 print "\nLearning curve with pre-separated data"
-indices = Orange.core.MakeRandomIndices2(voting, p0=0.7)
+indices = Orange.data.sample.SubsetIndices2(voting, p0=0.7)
 train = voting.select(indices, 0)
 test = voting.select(indices, 1)
 res = Orange.evaluation.testing.learning_curve_with_test_data(learners, train,

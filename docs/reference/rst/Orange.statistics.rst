@@ -17,4 +17,3 @@ tables of pairs of variables.
    Orange.statistics.contingency
    Orange.statistics.distribution
    Orange.statistics.estimate
-   Orange.statistics.evd

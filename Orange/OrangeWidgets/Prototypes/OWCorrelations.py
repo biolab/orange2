@@ -114,7 +114,7 @@ def matrix_to_table(matrix, items=None):
     attrs = [variable.Continuous(name) for name in items]
     domain = Orange.data.Domain(attrs, None)
     row_name = variable.String("Row name")
-    domain.addmeta(Orange.data.new_meta_id(), row_name)
+    domain.addmeta(Orange.feature.Descriptor.new_meta_id(), row_name)
     
     table = Orange.data.Table(domain, [list(r) for r in matrix])
     for item, row in zip(items, table):
@@ -444,7 +444,7 @@ class OWCorrelations(OWWidget):
                 row_name, _ = variable.make("Variable", Orange.core.VarTypes.String)
                 
                 domain = Orange.data.Domain([pearson, spearman], None)
-                domain.addmeta(Orange.data.new_meta_id(), row_name)
+                domain.addmeta(Orange.feature.Descriptor.new_meta_id(), row_name)
                 table = Orange.data.Table(domain, self.target_correlations)
                 for inst, name in zip(table, self.var_names):
                     inst[row_name] = name

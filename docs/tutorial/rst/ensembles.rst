@@ -17,8 +17,7 @@ is included in Orange distribution (:py:mod:`Orange.ensemble` module), and
 then, for a somehow more advanced example build our own ensemble
 learner. Using this module, using it is very easy: you have to define
 a learner, give it to bagger or booster, which in turn returns a new
-(boosted or bagged) learner. Here goes an example (:download:`ensemble3.py <code/ensemble3.py>`,
-uses :download:`promoters.tab <code/promoters.tab>`)::
+(boosted or bagged) learner. Here goes an example (:download:`ensemble3.py <code/ensemble3.py>`)::
 
    import orange, orngTest, orngStat, orngEnsemble
    data = orange.ExampleTable("promoters")

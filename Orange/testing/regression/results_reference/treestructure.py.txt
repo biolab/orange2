@@ -1,27 +1,27 @@
-Tree size: 10
+Tree size: 15
 
 
 Unpruned tree
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no
+|    |    age=pre-presbyopic: soft (100.00%)
+|    |    age=young: soft (100.00%)
+|    |    age=presbyopic
+|    |    |    prescription=hypermetrope: soft (100.00%)
+|    |    |    prescription=myope: none (100.00%)
+|    astigmatic=yes
+|    |    prescription=myope: hard (100.00%)
+|    |    prescription=hypermetrope
+|    |    |    age=pre-presbyopic: none (100.00%)
+|    |    |    age=presbyopic: none (100.00%)
+|    |    |    age=young: hard (100.00%)
 
-tear_rate (<15.000, 4.000, 5.000>) 
-: normal 
-   astigmatic (<3.000, 4.000, 5.000>) 
-   : no 
-      age (<1.000, 0.000, 5.000>) 
-      : pre-presbyopic --> soft (<0.000, 0.000, 2.000>)  
-      : presbyopic --> none (<1.000, 0.000, 1.000>)  
-      : young --> soft (<0.000, 0.000, 2.000>)  
-   : yes 
-      prescription (<2.000, 4.000, 0.000>) 
-      : hypermetrope --> none (<2.000, 1.000, 0.000>)  
-      : myope --> hard (<0.000, 3.000, 0.000>)  
-: reduced --> none (<12.000, 0.000, 0.000>)  
+
 
 Pruned tree
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no: soft (83.33%)
+|    astigmatic=yes: hard (66.67%)
 
-tear_rate (<15.000, 4.000, 5.000>) 
-: normal 
-   astigmatic (<3.000, 4.000, 5.000>) 
-   : no --> soft (<1.000, 0.000, 5.000>)  
-   : yes --> hard (<2.000, 4.000, 0.000>)  
-: reduced --> none (<12.000, 0.000, 0.000>) 

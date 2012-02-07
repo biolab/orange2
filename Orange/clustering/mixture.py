@@ -276,11 +276,11 @@ class EMSolver(object):
 class GaussianMixture(object):
     """ Computes the gaussian mixture model from an Orange data-set.
     """
-    def __new__(cls, data=None, weightId=None, **kwargs):
+    def __new__(cls, data=None, weight_id=None, **kwargs):
         self = object.__new__(cls)
         if data is not None:
             self.__init__(**kwargs)
-            return self.__call__(data, weightId)
+            return self.__call__(data, weight_id)
         else:
             return self
         
@@ -288,7 +288,7 @@ class GaussianMixture(object):
         self.n = n
         self.init_function = init_function
         
-    def __call__(self, data, weightId=None):
+    def __call__(self, data, weight_id=None):
         from Orange.preprocess import Preprocessor_impute, DomainContinuizer
 #        data = Preprocessor_impute(data)
         dc = DomainContinuizer()

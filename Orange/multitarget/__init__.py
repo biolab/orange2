@@ -23,8 +23,7 @@ Examples
 The following example uses a simple multi-target data set (generated with
 :download:`generate_multitarget.py <code/generate_multitarget.py>`) to show
 some basic functionalities (part of
-:download:`multitarget.py <code/multitarget.py>`, uses
-:download:`multitarget-synthetic.tab <code/multitarget-synthetic.tab>`).
+:download:`multitarget.py <code/multitarget.py>`).
 
 .. literalinclude:: code/multitarget.py
     :lines: 1-6

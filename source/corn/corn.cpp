@@ -514,7 +514,7 @@ PyObject *computeCDTList(vector<TCummulativeROC> &cummlists)
     vector<TCDT> cdts;
     C_computeCDT(cummlists, cdts);
 
-    PyObject *orngStatModule = PyImport_ImportModule("orngStat");
+    PyObject *orngStatModule = PyImport_ImportModule("Orange.evaluation.scoring");
     if (!orngStatModule)
       return PYNULL;
 

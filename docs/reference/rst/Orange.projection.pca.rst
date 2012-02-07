@@ -30,7 +30,7 @@ Examples
 ========
 
 The following example demonstrates a straightforward invocation of PCA
-(:download:`pca-run.py <code/pca-run.py>`, uses :download:`iris.tab <code/iris.tab>`):
+(:download:`pca-run.py <code/pca-run.py>`):
 
 .. literalinclude:: code/pca-run.py
    :lines: 7-
@@ -38,8 +38,7 @@ The following example demonstrates a straightforward invocation of PCA
 The call to the Pca constructor returns an instance of PcaClassifier, which is later used to transform data to PCA
 feature space. Printing the classifier displays how much variance is covered with the first few components. Classifier
 can also be used to access transformation vectors (eigen_vectors) and variance of the pca components (eigen_values).
-Scree plot can be used when deciding, how many components to keep (:download:`pca-scree.py <code/pca-scree.py>`,
-uses :download:`iris.tab <code/iris.tab>`):
+Scree plot can be used when deciding, how many components to keep (:download:`pca-scree.py <code/pca-scree.py>`):
 
 .. literalinclude:: code/pca-scree.py
    :lines: 7-

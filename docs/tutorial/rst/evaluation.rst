@@ -28,7 +28,7 @@ classifer and classification tree) and scores their predictive
 performance on a single data set using ten-fold cross validation. The
 script reports on four different scores: classification accuracy,
 information score, Brier score and area under ROC curve
-(:download:`accuracy7.py <code/accuracy7.py>`, uses :download:`voting.tab <code/voting.tab>`)::
+(:download:`accuracy7.py <code/accuracy7.py>`)::
 
    import orange, orngTest, orngStat, orngTree
    
@@ -134,7 +134,7 @@ Let us extend the code with a function that is given a data set and a
 set of classifiers (e.g., ``accuracy(test_data, classifiers)``) and
 computes the classification accuracies for each of the classifier. By
 this means, let us compare naive Bayes and classification trees
-(:download:`accuracy2.py <code/accuracy2.py>`, uses :download:`voting.tab <code/voting.tab>`)::
+(:download:`accuracy2.py <code/accuracy2.py>`)::
 
    import orange, orngTree
    
@@ -187,7 +187,7 @@ In machine learning, one should not learn and test classifiers on the
 same data set. For this reason, let us split our data in half, and use
 first half of the data for training and the rest for testing. The
 script is similar to the one above, with a part which is different
-shown below (part of :download:`accuracy3.py <code/accuracy3.py>`, uses :download:`voting.tab <code/voting.tab>`)::
+shown below (part of :download:`accuracy3.py <code/accuracy3.py>`)::
 
    # set up the classifiers
    data = orange.ExampleTable("voting")

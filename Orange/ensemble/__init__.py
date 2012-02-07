@@ -45,7 +45,7 @@ Let us try boosting and bagging on Lymphography data set and use TreeLearner
 with post-pruning as a base learner. For testing, we use 10-fold cross
 validation and observe classification accuracy.
 
-:download:`ensemble.py <code/ensemble.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
+:download:`ensemble.py <code/ensemble.py>`
 
 .. literalinclude:: code/ensemble.py
   :lines: 7-
@@ -81,7 +81,7 @@ Example
 The following script assembles a random forest learner and compares it
 to a tree learner on a liver disorder (bupa) and housing data sets.
 
-:download:`ensemble-forest.py <code/ensemble-forest.py>` (uses :download:`bupa.tab <code/bupa.tab>`, :download:`housing.tab <code/housing.tab>`)
+:download:`ensemble-forest.py <code/ensemble-forest.py>`
 
 .. literalinclude:: code/ensemble-forest.py
   :lines: 7-
@@ -105,7 +105,7 @@ random forests. In the following example the best feature for decision
 nodes is selected among three randomly chosen features, and maxDepth
 and minExamples are both set to 5.
 
-:download:`ensemble-forest2.py <code/ensemble-forest2.py>` (uses :download:`bupa.tab <code/bupa.tab>`)
+:download:`ensemble-forest2.py <code/ensemble-forest2.py>`
 
 .. literalinclude:: code/ensemble-forest2.py
   :lines: 7-
@@ -143,7 +143,7 @@ not foolproof; it will not detect if you change values of existing instances,
 but will notice adding and removing instances; see the page on 
 :class:`Orange.data.Table` for details).
 
-:download:`ensemble-forest-measure.py <code/ensemble-forest-measure.py>` (uses :download:`iris.tab <code/iris.tab>`)
+:download:`ensemble-forest-measure.py <code/ensemble-forest-measure.py>`
 
 .. literalinclude:: code/ensemble-forest-measure.py
   :lines: 7-

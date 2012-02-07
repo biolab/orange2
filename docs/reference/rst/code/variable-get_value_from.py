@@ -18,11 +18,11 @@ e2.get_value_from = checkE
 
 print Orange.feature.scoring.InfoGain(e2, monks)
 
-dist = Orange.core.Distribution(e2, monks)
+dist = Orange.statistics.distribution.Distribution(e2, monks)
 print dist 
 
 # Split the data into training and testing set
-indices = Orange.core.MakeRandomIndices2(monks, p0=0.7)
+indices = Orange.data.sample.SubsetIndices2(monks, p0=0.7)
 train_data = monks.select(indices, 0)
 test_data = monks.select(indices, 1)
 
@@ -31,6 +31,6 @@ new_domain = Orange.data.Domain([monks.domain["a"], monks.domain["b"], e2, monks
 new_train = Orange.data.Table(new_domain, train_data)
 
 # Construct a tree and classify unmodified instances
-tree = Orange.core.TreeLearner(new_train)
+tree = Orange.classification.tree.TreeLearner(new_train)
 for ex in test_data[:10]:
     print ex.getclass(), tree(ex)

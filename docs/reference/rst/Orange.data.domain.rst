@@ -307,8 +307,8 @@ is a new feature with no relation to the existing ones. ::
          by names are sought for in the ``source`` argument. The last
          variable from the list is used as the class variable. ::
 
-             >>> domain1 = orange.Domain([a, b])
-             >>> domain2 = orange.Domain(["a", b, c], domain)
+             >>> domain1 = Orange.data.Domain([a, b])
+             >>> domain2 = Orange.data.Domain(["a", b, c], domain)
 
          :param variables: List of variables (strings or instances of :obj:`~Orange.feature.Descriptor`)
          :type variables: list
@@ -322,8 +322,8 @@ is a new feature with no relation to the existing ones. ::
          Similar to above except for the flag which tells whether the
          last variable should be used as the class variable. ::
 
-             >>> domain1 = orange.Domain([a, b], False)
-             >>> domain2 = orange.Domain(["a", b, c], False, domain)
+             >>> domain1 = Orange.data.Domain([a, b], False)
+             >>> domain2 = Orange.data.Domain(["a", b, c], False, domain)
 
          :param variables: List of variables (strings or instances of :obj:`~Orange.feature.Descriptor`)
          :type variables: list
