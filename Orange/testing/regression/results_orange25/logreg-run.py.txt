@@ -1,1 +1,0 @@
-Classification accuracy: 0.778282598819

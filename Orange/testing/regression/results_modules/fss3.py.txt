@@ -1,3 +1,0 @@
-Learner      CA
-Naive Bayes  0.903
-with FSS     0.938

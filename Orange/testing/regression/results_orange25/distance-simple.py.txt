@@ -1,2 +1,0 @@
-Distance between first two examples: 0.215613514185
-Distance between first two examples: 0.215613514185

@@ -1,9 +1,0 @@
-Attribute scores for best three attributes:
-0.613 physician-fee-freeze
-0.255 el-salvador-aid
-0.228 synfuels-corporation-cutback
-
-Best 3 attributes:
-physician-fee-freeze
-el-salvador-aid
-synfuels-corporation-cutback

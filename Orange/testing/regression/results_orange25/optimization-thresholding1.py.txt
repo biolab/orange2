@@ -1,3 +1,0 @@
-W/out threshold adjustement: 0.658
-With adjusted thredhold: 0.666
-With threshold at 0.80: 0.475

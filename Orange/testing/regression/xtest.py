@@ -210,15 +210,15 @@ def main(argv):
     if module == "all":
         root = "%s/.." % environ.install_dir
         module = "orange"
-        dirs = [("tests", "Orange/testing/tests"),
-                ("tests_20", "Orange/testing/tests_20"),
+        dirs = [("tests", "Orange/testing/regression/tests"),
+                ("tests_20", "Orange/testing/regression/tests_20"),
                 ("tutorial", "docs/tutorial/rst/code"),
                 ("reference", "docs/reference/rst/code")]
     elif module == "orange":
         root = "%s" % environ.install_dir
         module = "orange"
-        dirs = [("tests", "testing/tests"),
-                ("tests_20", "testing/tests_20")]
+        dirs = [("tests", "testing/regression/tests"),
+                ("tests_20", "testing/regression/tests_20")]
     elif module == "docs":
         root = "%s/.." % environ.install_dir
         module = "orange"

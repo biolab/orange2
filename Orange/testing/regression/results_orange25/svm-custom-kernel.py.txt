@@ -1,3 +1,0 @@
-SVM - RBF(Euclidean) CA: 0.966666666667
-SVM - RBF(Hamming) CA: 0.873333333333
-SVM - Composite CA: 0.94

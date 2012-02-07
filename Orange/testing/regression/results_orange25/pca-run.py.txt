@@ -1,8 +1,0 @@
-PCA SUMMARY
-
-Std. deviation of components:
-                   Comp.1     Comp.2     Comp.3     Comp.4
-Std. deviation    436.623    138.183     22.103      3.091
-Proportion Var     72.770     23.031      3.684      0.515
-Cumulative Var     72.770     95.801     99.485    100.000
-

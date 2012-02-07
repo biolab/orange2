@@ -1,6 +1,0 @@
-Relief GainRt Feature
-0.613  0.752  physician-fee-freeze
-0.255  0.444  el-salvador-aid
-0.228  0.414  synfuels-corporation-cutback
-0.189  0.382  crime
-0.166  0.345  adoption-of-the-budget-resolution
