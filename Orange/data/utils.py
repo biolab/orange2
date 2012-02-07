@@ -161,7 +161,8 @@ def uuid_generator():
     while True:
         yield str(uuid.uuid4())
 
-from Orange.feature import new_meta_id
+import Orange.feature
+new_meta_id = Orange.feature.Descriptor.new_meta_id
 
 _row_meta_id = new_meta_id()
 _id_variable = variable.String("Row Id")

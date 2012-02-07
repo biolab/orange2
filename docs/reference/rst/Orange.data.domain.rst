@@ -159,7 +159,7 @@ While the list of features and the class value are immutable,
 meta attributes can be added and removed at any time::
 
      >>> misses = Orange.feature.Continuous("misses")
-     >>> id = Orange.feature.new_meta_id()
+     >>> id = Orange.feature.Descriptor.new_meta_id()
      >>> data.domain.add_meta(id, misses)
 
 This does not change the data: no attributes are added to data
@@ -204,10 +204,10 @@ the instance or if they can be computed from them, they will have
 appropriate values, otherwise their value will be missing. ::
 
     new_domain = Orange.data.Domain(["feathers", "legs"], domain)
-    new_domain.add_meta(Orange.feature.new_meta_id(), domain["type"])
-    new_domain.add_meta(Orange.feature.new_meta_id(), domain["legs"])
+    new_domain.add_meta(Orange.feature.Descriptor.new_meta_id(), domain["type"])
+    new_domain.add_meta(Orange.feature.Descriptor.new_meta_id(), domain["legs"])
     new_domain.add_meta(
-        Orange.feature.new_meta_id(), Orange.feature.Discrete("X"))
+        Orange.feature.Descriptor.new_meta_id(), Orange.feature.Discrete("X"))
     data2 = Orange.data.Table(new_domain, data)
 
 Domain ``new_domain`` in this example has variables ``feathers`` and
@@ -395,10 +395,10 @@ is a new feature with no relation to the existing ones. ::
      .. method:: add_meta(id, variable, optional=0)
 
          Register a meta attribute with the given id (see
-         :obj:`Orange.feature.new_meta_id`). The same meta attribute should
+         :obj:`Orange.feature.Descriptor.new_meta_id`). The same meta attribute should
          have the same id in all domains in which it is registered. ::
 
-             >>> newid = Orange.feature.new_meta_id()
+             >>> newid = Orange.feature.Descriptor.new_meta_id()
              >>> domain.add_meta(newid, Orange.feature.String("origin"))
              >>> data[55]["origin"] = "Nepal"
              >>> data[55]

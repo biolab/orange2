@@ -51,7 +51,7 @@ class BoostedLearner(orange.Learner):
         
         """
         import math
-        weight = Orange.feature.new_meta_id()
+        weight = Orange.feature.Descriptor.new_meta_id()
         if orig_weight:
             for i in instances:
                 i.setweight(weight, i.getweight(orig_weight))

@@ -40,7 +40,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.StringVariable": "Orange.feature.String",
            "orange.PythonVariable": "Orange.feature.Python",
 
-           "orange.newmetaid": "Orange.feature.new_meta_id",
+           "orange.newmetaid": "Orange.feature:Variable.new_meta_id"
 
            "orange.SymMatrix": "Orange.misc.SymMatrix",
 
