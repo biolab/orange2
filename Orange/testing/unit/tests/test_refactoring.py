@@ -2,7 +2,6 @@
 Tests for orange2to25 fixers.
 
 """
-import sys, os
 import unittest
 
 from Orange.fixes import fix_changed_names
@@ -25,6 +24,8 @@ def q_name_split(name):
     
     
 def rhasattr(obj, name):
+    """ Recursive hasattr.
+    """
     while "." in name:
         first, name = name.split(".", 1)
         if hasattr(obj, first):
@@ -34,6 +35,8 @@ def rhasattr(obj, name):
     return hasattr(obj, name)
 
 def rgetattr(obj, name):
+    """ Recursive getattr 
+    """
     while "." in name:
         first, name = name.split(".", 1)
         if hasattr(obj, first):
@@ -44,6 +47,8 @@ def rgetattr(obj, name):
     return getattr(obj, name)
 
 def import_package(name):
+    """ Import a package and return it.
+    """
     mod = __import__(name)
     if "." in name:
         _, name = name.split(".", 1)
@@ -65,8 +70,10 @@ class TestMapping(unittest.TestCase):
             new_mod = import_package(new_mod)
             
             
-            self.assertTrue(rhasattr(old_mod, old_name), "{0} is missing".format(old))
-            self.assertTrue(rhasattr(new_mod, new_name), "{0} is missing".format(new))
+            self.assertTrue(rhasattr(old_mod, old_name), 
+                            "{0} is missing".format(old))
+            self.assertTrue(rhasattr(new_mod, new_name),
+                            "{0} is missing".format(new))
             
     def test_import_mapping(self):
         for old_import, new_import in IMPORT_MAPPING.items():
@@ -74,7 +81,6 @@ class TestMapping(unittest.TestCase):
             __import__(new_import)
             
     
-            
             
 if __name__ == "__main__":
     unittest.main()
