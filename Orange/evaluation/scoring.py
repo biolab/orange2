@@ -435,7 +435,7 @@ class CAClass(object):
 
 
 
-CA = CAClass
+CA = CAClass()
 
 @deprecated_keywords({"reportSE": "report_se"})
 def AP(res, report_se = False, **argkw):
