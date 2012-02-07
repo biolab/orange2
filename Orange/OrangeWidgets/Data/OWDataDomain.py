@@ -628,7 +628,7 @@ class OWDataDomain(OWWidget):
                 if meta in original_metas:
                     mid = original_metas[meta]
                 else:
-                    mid = Orange.data.new_meta_id()
+                    mid = Orange.feature.Descriptor.new_meta_id()
                 domain.addmeta(mid, meta)
             newdata = Orange.data.Table(domain, self.data)
             self.output_report = self.prepareDataReport(newdata)
