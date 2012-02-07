@@ -61,6 +61,3 @@ Exception thrown for 'to_numarray'
     0.00000000e+00  -1.00000002e+30]
  [  0.00000000e+00   1.00000000e+00   1.00000000e+00 ...,   0.00000000e+00
     0.00000000e+00  -1.00000002e+30]]
-/home/miha/work/orange/Orange/testing/regression/xtest_one.py:78: KernelWarning: attribute 'name' is of unsupported type
-  t__officialname = "%s/%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform)
-[1.0 0.0 0.0 1.0 0.0 0.0 1.0 1.0 1.0 1.0 0.0 0.0 2.0 0.0 0.0 1.0 --]

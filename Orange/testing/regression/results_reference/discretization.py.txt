@@ -15,7 +15,7 @@ Discretized attribute: EnumVariable 'D_sepal width'
 Continuous attribute: FloatVariable 'sepal width'
 Cut-off points: <2.90000009537, 3.29999995232>
 
-Manual construction of IntervalDiscretizer - single attribute
+Manual construction of Interval discretizer - single attribute
 [5.1, '>5.00', 'Iris-setosa']
 [4.9, '(3.00, 5.00]', 'Iris-setosa']
 [4.7, '(3.00, 5.00]', 'Iris-setosa']
@@ -27,7 +27,7 @@ Manual construction of IntervalDiscretizer - single attribute
 [4.4, '(3.00, 5.00]', 'Iris-setosa']
 [4.9, '(3.00, 5.00]', 'Iris-setosa']
 
-Manual construction of IntervalDiscretizer - all attributes
+Manual construction of Interval discretizer - all attributes
 ['>5.00', '(3.00, 5.00]', '<=3.00', '<=3.00', 'Iris-setosa']
 ['(3.00, 5.00]', '<=3.00', '<=3.00', '<=3.00', 'Iris-setosa']
 ['(3.00, 5.00]', '(3.00, 5.00]', '<=3.00', '<=3.00', 'Iris-setosa']
@@ -40,7 +40,7 @@ Manual construction of IntervalDiscretizer - all attributes
 ['(3.00, 5.00]', '(3.00, 5.00]', '<=3.00', '<=3.00', 'Iris-setosa']
 
 
-Equal interval size discretization
+Discretization with equal width intervals
 D_sepal length: <<4.90, [4.90, 5.50), [5.50, 6.10), [6.10, 6.70), [6.70, 7.30), >7.30>
 D_sepal width: <<2.40, [2.40, 2.80), [2.80, 3.20), [3.20, 3.60), [3.60, 4.00), >4.00>
 D_petal length: <<1.98, [1.98, 2.96), [2.96, 3.94), [3.94, 4.92), [4.92, 5.90), >5.90>
@@ -57,7 +57,7 @@ D_petal width: <<0.50, [0.50, 0.90), [0.90, 1.30), [1.30, 1.70), [1.70, 2.10), >
 
 
 
-Quartile discretization
+Quartile (equal frequency) discretization
 D_sepal length: <<=4.95, (4.95, 5.35], (5.35, 5.75], (5.75, 6.25], (6.25, 6.65], >6.65>
 D_sepal width: <<=2.65, (2.65, 2.85], (2.85, 3.05], (3.05, 3.25], (3.25, 3.45], >3.45>
 D_petal length: <<=1.45, (1.45, 1.80], (1.80, 4.25], (4.25, 4.85], (4.85, 5.55], >5.55>
@@ -69,7 +69,7 @@ D_petal width: <<=0.25, (0.25, 1.05], (1.05, 1.35], (1.35, 1.65], (1.65, 2.05], 
                  cutoffs at 0.250, 1.050, 1.350, 1.650, 2.050
 
 
-Manual construction of EquiDistDiscretizer - all attributes
+Manual construction of EqualWidth - all attributes
 ['>5.00', '[3.00, 4.00)', '<2.00', '<2.00', 'Iris-setosa']
 ['[4.00, 5.00)', '[3.00, 4.00)', '<2.00', '<2.00', 'Iris-setosa']
 ['[4.00, 5.00)', '[3.00, 4.00)', '<2.00', '<2.00', 'Iris-setosa']
@@ -81,28 +81,28 @@ Manual construction of EquiDistDiscretizer - all attributes
 ['[4.00, 5.00)', '[2.00, 3.00)', '<2.00', '<2.00', 'Iris-setosa']
 ['[4.00, 5.00)', '[3.00, 4.00)', '<2.00', '<2.00', 'Iris-setosa']
 
-Fayyad-Irani discretization
+Fayyad-Irani entropy-based discretization
 sepal length: <5.5, 6.09999990463>
 sepal width: <2.90000009537, 3.29999995232>
 petal length: <1.89999997616, 4.69999980927>
 petal width: <0.600000023842, 1.70000004768>
 
 
-Bi-Modal discretization on binary problem
+Bi-modal discretization on a binary problem
 sepal length: <5.40000009537, 6.19999980927>
 sepal width: <2.0, 2.90000009537>
 petal length: <1.89999997616, 4.69999980927>
 petal width: <0.600000023842, 1.60000002384>
 
 
-Bi-Modal discretization on binary problem
+Bi-modal discretization on a binary problem
 sepal length: (5.400, 6.200]
 sepal width: (2.000, 2.900]
 petal length: (1.900, 4.700]
 petal width: (0.600, 1.600]
 
 
-Entropy discretization on binary problem
+Entropy-based discretization on a binary problem
 sepal length: <5.40000009537, 7.0>
 sepal width: <2.90000009537>
 petal length: <1.89999997616, 4.69999980927>

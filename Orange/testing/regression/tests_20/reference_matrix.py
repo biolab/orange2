@@ -45,7 +45,7 @@ for meth in [data_h.toNumericMA, data_h.toNumarrayMA, data_h.toNumpyMA]:
         print a[0]
     except:
         print "Call '%s' failed" % meth.__name__
-        
+
 
 
 for meth in [data.toNumeric, data.toNumarray, data.toNumpy]:
@@ -66,14 +66,12 @@ for meth in [data.toNumeric, data.toNumarray, data.toNumpy]:
         t4 = orange.ExampleTable(d4, a)
         print t4.domain.attributes, t4.domain.classVar
         print t4[0]
-        
+
         print
     except:
         print "Exception thrown for '%s'\n" % meth.__name__
 
 zoo = orange.ExampleTable("../datasets/zoo")
-zoo_s = orange.ExampleTable(orange.Domain(zoo.domain.attributes+zoo.domain.getmetas().values(), zoo.domain.classVar), zoo)
+zoo_s = orange.ExampleTable(orange.Domain(zoo.domain.attributes + zoo.domain.getmetas().values(), zoo.domain.classVar), zoo)
 n = zoo_s.toNumpy()
 print n[0]
-n = zoo_s.toNumpyMA()
-print n[0][0]

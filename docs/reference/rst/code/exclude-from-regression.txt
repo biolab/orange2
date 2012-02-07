@@ -4,3 +4,4 @@ serverfiles1.py
 serverfiles2.py
 statistics-contingency6.py
 correspondence.py
+simple_tree_random_forest.py
