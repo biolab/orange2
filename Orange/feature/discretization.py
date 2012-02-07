@@ -15,8 +15,6 @@ from Orange.core import \
     Discretization, \
     Preprocessor_discretize
 
-
-
 def entropyDiscretization_wrapper(data):
     """Discretize all continuous features in class-labeled data set with the entropy-based discretization
     :obj:`Entropy`.
