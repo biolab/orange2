@@ -113,8 +113,7 @@ Confusion Matrix
    To observe how good are the classifiers in detecting vans in the vehicle
    data set, we would compute the matrix like this::
 
-      cm = Orange.evaluation.scoring.confusion_matrices(resVeh, \
-vehicle.domain.classVar.values.index("van"))
+      cm = Orange.evaluation.scoring.confusion_matrices(resVeh, vehicle.domain.classVar.values.index("van"))
 
    and get the results like these::
 
@@ -176,12 +175,9 @@ vehicle.domain.classVar.values.index("van"))
    With the confusion matrix defined in terms of positive and negative
    classes, you can also compute the
    `sensitivity <http://en.wikipedia.org/wiki/Sensitivity_(tests)>`_
-   [TP/(TP+FN)], `specificity \
-<http://en.wikipedia.org/wiki/Specificity_%28tests%29>`_
-   [TN/(TN+FP)], `positive predictive value \
-<http://en.wikipedia.org/wiki/Positive_predictive_value>`_
-   [TP/(TP+FP)] and `negative predictive value \
-<http://en.wikipedia.org/wiki/Negative_predictive_value>`_ [TN/(TN+FN)].
+   [TP/(TP+FN)], `specificity <http://en.wikipedia.org/wiki/Specificity_%28tests%29>`_
+   [TN/(TN+FP)], `positive predictive value <http://en.wikipedia.org/wiki/Positive_predictive_value>`_
+   [TP/(TP+FP)] and `negative predictive value <http://en.wikipedia.org/wiki/Negative_predictive_value>`_ [TN/(TN+FN)].
    In information retrieval, positive predictive value is called precision
    (the ratio of the number of relevant records retrieved to the total number
    of irrelevant and relevant records retrieved), and sensitivity is called
@@ -194,8 +190,7 @@ vehicle.domain.classVar.values.index("van"))
    on the ratio of the weight between precision and recall is implemented
    as F1 [2*precision*recall/(precision+recall)] or, for a general case,
    Falpha [(1+alpha)*precision*recall / (alpha*precision + recall)].
-   The `Matthews correlation coefficient \
-<http://en.wikipedia.org/wiki/Matthews_correlation_coefficient>`_
+   The `Matthews correlation coefficient <http://en.wikipedia.org/wiki/Matthews_correlation_coefficient>`_
    in essence a correlation coefficient between
    the observed and predicted binary classifications; it returns a value
    between -1 and +1. A coefficient of +1 represents a perfect prediction,
