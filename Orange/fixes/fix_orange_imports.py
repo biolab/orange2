@@ -57,6 +57,7 @@ MAPPING = {"orange": "Orange.core",
            "orngLookup": "Orange.classification.lookup",
            "orngLinProj": "Orange.projection.linear",
            "orngEnviron": "Orange.misc.environ",
+           "orngSQL": "Orange.data.sql"
            }
 
 def alternates(members):

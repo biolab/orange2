@@ -236,6 +236,9 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.MajorityLearner":"Orange.classification.majority.MajorityLearner",
            "orange.DefaultClassifier":"Orange.classification.ConstantClassifier",
 
+           "orngSQL.SQLReader": "Orange.data.sql.SQLReader",
+           "orngSQL.SQLWriter": "Orange.data.sql.SQLWriter",
+
            "orange.LookupLearner":"Orange.classification.lookup.LookupLearner",
            "orange.ClassifierByLookupTable":"Orange.classification.lookup.ClassifierByLookupTable",
            "orange.ClassifierByLookupTable1":"Orange.classification.lookup.ClassifierByLookupTable1",
