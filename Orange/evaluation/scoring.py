@@ -2399,6 +2399,60 @@ def mlc_recall(res):
 #def mlc_hierarchical_loss(res):
 #    pass
 
+
+def mt_average_scores(res, score, weights=None):
+    """
+    Average the scores of individual targets.
+
+    :param score: Single-target scoring method.
+    :param weights: List of real weights, one for each target,
+                    for a weighted average.
+
+    """
+    if not len(res.results):
+        raise ValueError, "Cannot compute the score: no examples."
+    if res.number_of_learners < 1:
+        return []
+    if weights is None:
+        weights = [1. for _ in res.results[0].actual_class]
+    # save original classes
+    clsss = [te.classes for te in res.results]
+    aclsss = [te.actual_class for te in res.results]
+    # compute single target scores
+    single_scores = []
+    for i in range(len(clsss[0][0])):
+        for te, clss, aclss in zip(res.results, clsss, aclsss):
+            te.classes = [cls[i] for cls in clss]
+            te.actual_class = aclss[i]
+        single_scores.append(score(res))
+    # restore original classes
+    for te, clss, aclss in zip(res.results, clsss, aclsss):
+        te.classes = clss
+        te.actual_class = aclss
+    return [sum(w * s for w, s in zip(weights, scores)) / sum(weights)
+        for scores in zip(*single_scores)]
+
+def mt_flattened_score(res, score):
+    """
+    Flatten the predictions of multiple targets
+    and compute a single-target score.
+    
+    :param score: Single-target scoring method.
+    """
+    res2 = Orange.evaluation.testing.ExperimentResults(res.number_of_iterations,
+        res.classifier_names, class_values=res.class_values,
+        weights=res.weights, classifiers=res.classifiers, loaded=res.loaded,
+        test_type=Orange.evaluation.testing.TEST_TYPE_SINGLE, labels=res.labels)
+    for te in res.results:
+        for i, ac in enumerate(te.actual_class):
+            te2 = Orange.evaluation.testing.TestedExample(
+                iteration_number=te.iteration_number, actual_class=ac)
+            for c, p in zip(te.classes, te.probabilities):
+                te2.add_result(c[i], p[i])
+            res2.results.append(te2)
+    return score(res2)
+
+
 #########################################################################################
 if __name__ == "__main__":
     avranks =  [3.143, 2.000, 2.893, 1.964]

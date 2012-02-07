@@ -24,10 +24,10 @@ class TestedExample:
                           "actualClass": "actual_class"})
     def __init__(self, iteration_number=None, actual_class=None, n=0, weight=1.0):
         """
-        :param iteration_number:
-        :param actual_class:
-        :param n:
-        :param weight:
+        :param iteration_number: The iteration number of TestedExample.
+        :param actual_class: The actual class of TestedExample.
+        :param n: The number of learners.
+        :param weight: The weight of the TestedExample.
         """
         self.classes = [None]*n
         self.probabilities = [None]*n
