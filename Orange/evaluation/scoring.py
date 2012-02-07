@@ -925,7 +925,7 @@ def ROC_slope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
 
 @deprecated_keywords({"keepConcavities": "keep_concavities"})
 def ROC_add_point(P, R, keep_concavities=1):
-    if keepConcavities:
+    if keep_concavities:
         R.append(P)
     else:
         while (1):
