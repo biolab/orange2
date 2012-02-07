@@ -170,7 +170,7 @@ error_status = 0
 
 def usage():
     """Print out help."""
-    print "%s [test|update|report|report-html|errors] -[h|s] [--single|--module=[orange|docs]|--timeout=<#>|--dir=<dir>|] <files>" % sys.argv[0]
+    print "%s [test|update|report|report-html|errors] -[h|s] [--single|--module=[all|orange|docs]|--timeout=<#>|--dir=<dir>|] <files>" % sys.argv[0]
     print "  test:   regression tests on all scripts (default)"
     print "  update: regression tests on all previously failed scripts"
     print "  report: report on testing results"
@@ -207,21 +207,23 @@ def main(argv):
         sys.exit(0)
 
     module = opts.get("--module", "all")
-    if module in ["all"]:
+    if module == "all":
         root = "%s/.." % environ.install_dir
         module = "orange"
-        dirs = [("modules", "Orange/doc/modules"),
-                ("reference", "Orange/doc/reference"),
-                ("ofb", "docs/tutorial/rst/code"),
-                ("orange25", "docs/reference/rst/code")]
-    elif module in ["orange"]:
+        dirs = [("tests", "Orange/testing/tests"),
+                ("tests_20", "Orange/testing/tests_20"),
+                ("tutorial", "docs/tutorial/rst/code"),
+                ("reference", "docs/reference/rst/code")]
+    elif module == "orange":
+        root = "%s" % environ.install_dir
+        module = "orange"
+        dirs = [("tests", "testing/tests"),
+                ("tests_20", "testing/tests_20")]
+    elif module == "docs":
         root = "%s/.." % environ.install_dir
-        module = "docs"
-        dirs = [("modules", "Orange/doc/modules"),
-                ("reference", "Orange/doc/reference"),
-                ("ofb", "docs/tutorial/rst/code")]
-    elif module in ["orange20"]:
-        pass
+        module = "orange"
+        dirs = [("tutorial", "docs/tutorial/rst/code"),
+                ("reference", "docs/reference/rst/code")]
     else:
         print "Error: %s is wrong name of the module, should be in [orange|docs]" % module
         sys.exit(1)
