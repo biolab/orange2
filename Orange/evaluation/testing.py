@@ -7,6 +7,7 @@ from Orange.misc import demangle_examples, getobjectname, deprecated_keywords, d
 
 TEST_TYPE_SINGLE = 0
 TEST_TYPE_MLC = 1
+TEST_TYPE_MULTITARGET = 2
 
 class TestedExample:
     """
@@ -37,19 +38,19 @@ class TestedExample:
     def add_result(self, aclass, aprob):
         """Appends a new result (class and probability prediction by a single classifier) to the classes and probabilities field."""
     
-        if type(aclass)==int:
-            self.classes.append(int(aclass))
-            self.probabilities.append(list(aprob))
+        if isinstance(aclass, (list, tuple)):
+            self.classes.append(aclass)
+            self.probabilities.append(aprob)
         elif type(aclass.value)==float:
             self.classes.append(float(aclass))
             self.probabilities.append(aprob)
         else:
-            self.classes.append(aclass)
-            self.probabilities.append(aprob)
+            self.classes.append(int(aclass))
+            self.probabilities.append(list(aprob))
 
     def set_result(self, i, aclass, aprob):
         """Sets the result of the i-th classifier to the given values."""
-        if type(aclass)==list:
+        if isinstance(aclass, (list, tuple)):
             self.classes[i] = aclass
             self.probabilities[i] = aprob
         elif type(aclass.value)==float:
@@ -107,14 +108,14 @@ class ExperimentResults(object):
 
         if domain is not None:
             self.base_class = self.class_values = None
-            if test_type==TEST_TYPE_SINGLE:
+            if test_type == TEST_TYPE_SINGLE:
                 if domain.class_var.var_type == Orange.feature.Type.Discrete:
                     self.class_values = list(domain.class_var.values)
                     self.base_class = domain.class_var.base_value
                     self.converter = int
                 else:
                     self.converter = float
-            elif test_type==TEST_TYPE_MLC:
+            elif test_type in (TEST_TYPE_MLC, TEST_TYPE_MULTITARGET):
                 self.labels = [var.name for var in domain.class_vars]
                 self.converter = lambda vals: [int(val) if val.variable.var_type == Orange.feature.Type.Discrete
                                                else float(val) for val in vals]
@@ -703,13 +704,15 @@ class Evaluation(object):
         multi_label = any(model_is_mlc)
         if multi_label and not all(model_is_mlc):
             raise ValueError("Test on mixed types of learners (MLC and non-MLC) not possible")
+        multi_target = instances.domain.class_vars and not multi_label
 
-        if multi_label and not instances.domain.class_vars:
+        if (multi_label or multi_target) and not instances.domain.class_vars:
             raise ValueError("Test data with multiple labels (class vars) expected")
-        if not multi_label and not instances.domain.class_var:
+        if not (multi_label or multi_target or instances.domain.class_var):
             raise ValueError("Test data set without class attributes")
 
-        return TEST_TYPE_MLC if multi_label else TEST_TYPE_SINGLE
+        return TEST_TYPE_MLC if multi_label else (
+            TEST_TYPE_MULTITARGET if multi_target else TEST_TYPE_SINGLE)
     
 default_evaluation = _default_evaluation = Evaluation()
 
