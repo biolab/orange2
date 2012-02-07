@@ -14,7 +14,7 @@ majorityLearner = Orange.classification.majority.MajorityLearner()
 learners = [treeLearner, bayesLearner, majorityLearner]
 
 res = Orange.evaluation.testing.cross_validation(learners, monks)
-CAs = Orange.evaluation.scoring.CA(res, reportSE=True)
+CAs = Orange.evaluation.scoring.CA(res, report_se=True)
 
 print "Tree:    %5.3f+-%5.3f" % CAs[0]
 print "Bayes:   %5.3f+-%5.3f" % CAs[1]
