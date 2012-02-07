@@ -3,7 +3,7 @@ import Orange
 
 ############ THIS IS WHAT YOU CAN DO WITH DISCRETE ATTRIBUTES
 
-data = Orange.data.Table("lenses.tab")
+data = Orange.data.Table("lenses")
 
 ############ THIS IS WHAT YOU CAN DO WITH DISCRETE ATTRIBUTES
 
@@ -91,8 +91,8 @@ for ex in fcont(data):
 ############ THIS IS WHAT YOU CAN DO WITH STRING ATTRIBUTES
 
 data.domain.addmeta(
-    Orange.data.feature.Descriptor.new_meta_id(),
-    Orange.data.StringVariable("name")
+    Orange.feature.Descriptor.new_meta_id(),
+    Orange.feature.String("name")
 )
 for ex in data:
     ex["name"] = str(ex.getclass())
