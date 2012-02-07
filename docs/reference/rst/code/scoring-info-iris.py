@@ -7,7 +7,7 @@
 import Orange
 iris = Orange.data.Table("iris")
 
-d1 = Orange.feature.discretization.EntropyDiscretization("petal length", iris)
+d1 = Orange.feature.discretization.Entropy("petal length", iris)
 print Orange.feature.scoring.InfoGain(d1, iris)
 
 iris = Orange.data.Table("iris")

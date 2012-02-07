@@ -1,7 +1,7 @@
 import Orange
 
-data1 = Orange.data.Table("merge1")
-data2 = Orange.data.Table("merge2")
+data1 = Orange.data.Table("merge1.tab")
+data2 = Orange.data.Table("merge2.tab")
 
 merged = Orange.data.Table([data1, data2])
 
@@ -14,4 +14,4 @@ for i in range(len(data1)):
     print " +", data2[i]
     print "->", merged[i]
     print
-    
+
