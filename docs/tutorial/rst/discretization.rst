@@ -33,7 +33,7 @@ Data set discretization
 -----------------------
 
 Here is a script which demonstraters the basics of discretization in
-Orange (:download:`disc.py <code/disc.py>`, uses :download:`iris.tab <code/iris.tab>`)::
+Orange (:download:`disc.py <code/disc.py>`)::
 
    import orange
    
@@ -95,7 +95,7 @@ width`` by quartile-discretized attribute called ``pl``. For ``sepal
 length``, we'll keep the original attribute, but add the attribute
 discretized using quartiles (``sl``) and using Fayyad-Irani's
 algorithm (``sl_ent``). We shall also keep the original (continuous)
-attribute ``sepal width`` (from :download:`disc2.py <code/disc2.py>`, uses :download:`iris.tab <code/iris.tab>`)::
+attribute ``sepal width`` (from :download:`disc2.py <code/disc2.py>`)::
 
    def printexamples(data, inxs, msg="First %i examples"):
      print msg % len(inxs)
@@ -179,7 +179,7 @@ it.
 
 Both, ``EquiNDiscretization`` and ``EntropyDiscretization`` construct
 transformer objects of type ``IntervalDiscretizer``. It's cut-off
-points are stored in a list points (:download:`disc4.py <code/disc4.py>`, uses :download:`iris.tab <code/iris.tab>`)::
+points are stored in a list points (:download:`disc4.py <code/disc4.py>`)::
 
    import orange
    iris = orange.ExampleTable("iris")
@@ -210,7 +210,7 @@ domain of the attribute and how it is derived. We did not created a
 data set with this attribute yet, so before this, it is well time to
 change anything the discretization will actually do to the data. In
 the following example, we have rounded the cut-off points for the
-attribute ``pl`` (:download:`disc5.py <code/disc5.py>`, uses :download:`iris.tab <code/iris.tab>`)::
+attribute ``pl`` (:download:`disc5.py <code/disc5.py>`)::
 
    import orange
    iris = orange.ExampleTable("iris")
@@ -255,7 +255,7 @@ algorithms. We need to define a descriptor, among with the ``name``,
 be ``IntervalDiscretizer`` and with it we specify the cut-off points.
 
 Let's now discretize Iris' attribute pl using three intervals with
-cut-off points 2.0 and 4.0 (:download:`disc6.py <code/disc6.py>`, uses :download:`iris.tab <code/iris.tab>`)::
+cut-off points 2.0 and 4.0 (:download:`disc6.py <code/disc6.py>`)::
 
    import orange
    
@@ -298,7 +298,7 @@ does one then apply the same discretization on the test set?  For
 discretized attributes Orange remembers the how they were converted
 from their original continuous versions, so you need only to convert
 the testing examples to a new (discretized) domain. Following code
-shows how (:download:`disc7.py <code/disc7.py>`, uses :download:`iris.tab <code/iris.tab>`)::
+shows how (:download:`disc7.py <code/disc7.py>`)::
 
    import orange
    data = orange.ExampleTable("iris")

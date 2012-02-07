@@ -151,8 +151,8 @@ Here are now a few lines to test our code::
 
 For a more elaborate test that also shows the use of a learner (that
 is not given the data at its initialization), here is a script that
-does 10-fold cross validation (:download:`nbdisc_test.py <code/nbdisc_test.py>`, uses :download:`iris.tab <code/iris.tab>` and
-:download:`nbdisc.py <code/nbdisc.py>`)::
+does 10-fold cross validation (:download:`nbdisc_test.py <code/nbdisc_test.py>`,
+uses :download:`nbdisc.py <code/nbdisc.py>`)::
 
    import orange, orngEval, nbdisc
    data = orange.ExampleTable("iris")
@@ -442,8 +442,7 @@ not probabilities are used).
 
 Here is the code that tests our bagging we have just implemented. It
 compares a decision tree and its bagged variant.  Run it yourself to
-see which one is better (:download:`bagging_test.py <code/bagging_test.py>`, uses :download:`bagging.py <code/bagging.py>` and
-:download:`adult_sample.tab <code/adult_sample.tab>`)::
+see which one is better (:download:`bagging_test.py <code/bagging_test.py>`)::
 
    import orange, orngTree, orngEval, bagging
    data = orange.ExampleTable("adult_sample")

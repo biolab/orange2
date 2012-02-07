@@ -245,7 +245,7 @@ proportion of the instances with that attribute unknown. We have
 already learned that if a function isSpecial() can be used to
 determine if for specific instances and attribute the value is not
 defined. Let us use this function to compute the proportion of missing
-values per each attribute (:download:`report_missing.py <code/report_missing.py>`, uses :download:`adult_sample.tab <code/adult_sample.tab>`)::
+values per each attribute (:download:`report_missing.py <code/report_missing.py>`)::
 
    import orange
    data = orange.ExampleTable("adult_sample")
@@ -314,8 +314,7 @@ For some of the tasks above, Orange can provide a shortcut by means of
 holds averages and mean square errors for continuous attributes, value
 frequencies for discrete attributes, and for both number of instances
 where specific attribute has a missing value.  The use of this object
-is exemplified in the following script (:download:`data_characteristics4.py <code/data_characteristics4.py>`,
-uses :download:`adult_sample.tab <code/adult_sample.tab>`)::
+is exemplified in the following script (:download:`data_characteristics4.py <code/data_characteristics4.py>`)::
 
    import orange
    data = orange.ExampleTable("adult_sample")

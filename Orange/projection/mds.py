@@ -54,7 +54,7 @@ The following script computes the Euclidean distance between the data
 instances and runs MDS. Final coordinates are plotted with matplotlib
 (not included with orange, http://matplotlib.sourceforge.net/).
 
-Example (:download:`mds-scatterplot.py <code/mds-scatterplot.py>`, uses :download:`iris.tab <code/iris.tab>`)
+Example (:download:`mds-scatterplot.py <code/mds-scatterplot.py>`)
 
 .. literalinclude:: code/mds-scatterplot.py
     :lines: 7-
@@ -75,7 +75,7 @@ The following script performs 10 steps of Smacof optimization before computing
 the stress. This is suitable if you have a large dataset and want to save some
 time.
 
-Example (:download:`mds-advanced.py <code/mds-advanced.py>`, uses :download:`iris.tab <code/iris.tab>`)
+Example (:download:`mds-advanced.py <code/mds-advanced.py>`)
 
 .. literalinclude:: code/mds-advanced.py
     :lines: 7-

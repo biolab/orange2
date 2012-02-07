@@ -22,7 +22,7 @@ Reading and writing a network
 This example demonstrates reading a network. Network class can read or write 
 Pajek (.net) or GML file format.
 
-:download:`network-read-nx.py <code/network-read-nx.py>` (uses: :download:`K5.net <code/K5.net>`):
+:download:`network-read-nx.py <code/network-read-nx.py>`:
 
 .. literalinclude:: code/network-read.py
     :lines: 5-6

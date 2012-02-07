@@ -33,8 +33,7 @@ Examples
 ========
 
 The following example demonstrates a straightforward invocation of
-this algorithm (:download:`mlc-classify.py <code/mlc-classify.py>`, uses
-:download:`emotions.tab <code/emotions.tab>`):
+this algorithm (:download:`mlc-classify.py <code/mlc-classify.py>`):
 
 .. literalinclude:: code/mlc-classify.py
    :lines: 6, 19-21

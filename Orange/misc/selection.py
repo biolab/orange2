@@ -31,7 +31,7 @@ Example
 The following snippet loads the data set lymphography and prints out the
 feature with the highest information gain.
 
-part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
+part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>`
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 7-16
@@ -41,7 +41,7 @@ Our candidates are tuples gain ratios and features, so we set
 element (gain ratios). We could achieve the same by initializing the object
 like this:
 
-part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
+part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>`
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 18-18
@@ -49,7 +49,7 @@ part of :download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthe
 
 The other way to do it is through indices.
 
-:download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>` (uses :download:`lymphography.tab <code/lymphography.tab>`)
+:download:`misc-selection-bestonthefly.py <code/misc-selection-bestonthefly.py>`
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 25-

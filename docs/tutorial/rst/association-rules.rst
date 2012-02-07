@@ -87,7 +87,7 @@ functions. The one in our example uses ``support`` and ``lift``.
    requested in our example should be passed as function
    arguments. 
 
-Here goes the code (part of :download:`assoc2.py <code/assoc2.py>`, uses :download:`imports-85.tab <code/imports-85.tab>`)::
+Here goes the code (part of :download:`assoc2.py <code/assoc2.py>`)::
 
    rules = orange.AssociationRulesInducer(data, support = 0.4)
    

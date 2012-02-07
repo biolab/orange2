@@ -20,7 +20,7 @@ Example
 -------
 
 Data table given below represents smoking habits of different employees
-in a company (computed from :download:`smokers_ct.tab <code/smokers_ct.tab>`).
+in a company (computed from `smokers_ct.tab`).
 
     ================  ====  =====  ======  =====  ==========
                            Smoking category
@@ -55,7 +55,7 @@ correspondence analysis (e.g., represent the 10 consumer items in a
 of the table.
 
 So lets load the data, compute the contingency and do the analysis
-(:download:`correspondence.py <code/correspondence.py>`, uses :download:`smokers_ct.tab <code/smokers_ct.tab>`)::
+(:download:`correspondence.py <code/correspondence.py>`)::
     
     from Orange.projection import correspondence
     from Orange.statistics import contingency

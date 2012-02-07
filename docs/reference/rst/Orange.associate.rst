@@ -106,7 +106,7 @@ Data example (:download:`inquisition.basket <code/inquisition.basket>`):
 
 .. literalinclude:: code/inquisition.basket
 
-Inducing the rules is trivial (uses :download:`inquisition.basket <code/inquisition.basket>`)::
+Inducing the rules is trivial::
 
     import Orange
     data = Orange.data.Table("inquisition")

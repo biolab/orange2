@@ -15,7 +15,7 @@ Examples
 ========
 
 The following code runs k-means clustering and prints out the cluster indexes
-for the last 10 data instances (:download:`kmeans-run.py <code/kmeans-run.py>`, uses :download:`iris.tab <code/iris.tab>`):
+for the last 10 data instances (:download:`kmeans-run.py <code/kmeans-run.py>`):
 
 .. literalinclude:: code/kmeans-run.py
 
@@ -28,7 +28,7 @@ Below is a code that uses an :obj:`inner_callback` to report on the number of in
 that have changed the cluster and to report on the clustering score. For the score 
 o be computed at each iteration we have to set :obj:`minscorechange`, but we can
 leave it at 0 or even set it to a negative value, which allows the score to deteriorate
-by some amount (:download:`kmeans-run-callback.py <code/kmeans-run-callback.py>`, uses :download:`iris.tab <code/iris.tab>`):
+by some amount (:download:`kmeans-run-callback.py <code/kmeans-run-callback.py>`):
 
 .. literalinclude:: code/kmeans-run-callback.py
 
@@ -43,7 +43,7 @@ The convergence on Iris data set is fast::
     Iteration: 7, changes: 2, score: 9.8624
     Iteration: 8, changes: 0, score: 9.8624
 
-Call-back above is used for reporting of the progress, but may as well call a function that plots a selection data projection with corresponding centroid at a given step of the clustering. This is exactly what we did with the following script (:download:`kmeans-trace.py <code/kmeans-trace.py>`, uses :download:`iris.tab <code/iris.tab>`):
+Call-back above is used for reporting of the progress, but may as well call a function that plots a selection data projection with corresponding centroid at a given step of the clustering. This is exactly what we did with the following script (:download:`kmeans-trace.py <code/kmeans-trace.py>`):
 
 .. literalinclude:: code/kmeans-trace.py
 
@@ -81,8 +81,7 @@ Typically, the choice of seeds has a large impact on the k-means clustering,
 with better initialization methods yielding a clustering that converges faster 
 and finds more optimal centroids. The following code compares three different 
 initialization methods (random, diversity-based and hierarchical clustering-based) 
-in terms of how fast they converge (:download:`kmeans-cmp-init.py <code/kmeans-cmp-init.py>`, uses :download:`iris.tab <code/iris.tab>`,
-:download:`housing.tab <code/housing.tab>`, :download:`vehicle.tab <code/vehicle.tab>`):
+in terms of how fast they converge (:download:`kmeans-cmp-init.py <code/kmeans-cmp-init.py>`):
 
 .. literalinclude:: code/kmeans-cmp-init.py
 
@@ -95,7 +94,7 @@ initialization that with random seed selection::
        vehicle  11   4   3
 
 The following code computes the silhouette score for k=2..7 and plots a 
-silhuette plot for k=3 (:download:`kmeans-silhouette.py <code/kmeans-silhouette.py>`, uses :download:`iris.tab <code/iris.tab>`):
+silhuette plot for k=3 (:download:`kmeans-silhouette.py <code/kmeans-silhouette.py>`):
 
 .. literalinclude:: code/kmeans-silhouette.py
 
