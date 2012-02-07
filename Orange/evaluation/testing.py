@@ -19,8 +19,8 @@ class TestedExample:
     :var weight: Example's weight. Even if the example set was not weighted, this attribute is present and equals 1.0.
     """
 
-    @deprecated_keywords({"iteration_number": "iteration_number",
-                          "actual_class": "actual_class"})
+    @deprecated_keywords({"iterationNumber": "iteration_number",
+                          "actualClass": "actual_class"})
     def __init__(self, iteration_number=None, actual_class=None, n=0, weight=1.0):
         """
         :param iteration_number:
