@@ -152,9 +152,6 @@ from orange import \
          RemoveRedundantOneValue, \
     RemoveUnusedValues
 
-import outliers
-
-
 import math
 
 import orange
