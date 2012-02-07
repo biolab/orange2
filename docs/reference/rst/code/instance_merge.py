@@ -17,8 +17,8 @@ n2 = Orange.feature.Continuous("n2")
 
 new_domain = Orange.data.Domain([a1, a3, m1, n1])
 new_domain.addmeta(m2i, m2)
-new_domain.addmeta(Orange.data.new_meta_id(), a2)
-new_domain.addmeta(Orange.data.new_meta_id(), n2)
+new_domain.addmeta(Orange.feature.new_meta_id(), a2)
+new_domain.addmeta(Orange.feature.new_meta_id(), n2)
 
 merge = Orange.data.Instance(new_domain, [data1[0], data2[0]])
 print "First example: ", data1[0]

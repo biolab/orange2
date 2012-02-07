@@ -58,7 +58,7 @@ an existing descriptor or constructs a new one.
         A proposed (but not guaranteed) meta id to be used for that variable.
         For instance, when a tab-delimited contains meta attributes and
         the existing variables are reused, they will have this id
-        (instead of a new one assigned by :obj:`Orange.data.new_meta_id()`).
+        (instead of a new one assigned by :obj:`Orange.feature.new_meta_id()`).
 
     .. attribute:: attributes
 
