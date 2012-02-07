@@ -823,9 +823,12 @@ ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
                                        "createXAnchors": "create_xanchors",
                                        "createYAnchors": "create_yanchors",
                                        "saveProjectionAsTabData": "save_projection_as_tab_data",
-                                       "get_projected_point_position": "get_projected_point_position",
-                                       "create_projection_as_example_table": "create_projection_as_example_table",
-                                       "create_projection_as_numeric_array": "create_projection_as_numeric_array",
+                                       "getProjectedPointPosition":
+                                           "get_projected_point_position",
+                                       "createProjectionAsExampleTable":
+                                           "create_projection_as_example_table",
+                                       "createProjectionAsNumericArray":
+                                           "create_projection_as_numeric_array",
                                        "_getSum_i": "_getsum_i",
                                        "normalizeExamples": "normalize_examples",
                                        "anchorData": "anchor_data",
@@ -1163,9 +1166,12 @@ class ScaleLinProjData3D(ScaleData):
 ScaleLinProjData3D = deprecated_members({"setAnchors": "set_anchors",
                                        "createAnchors": "create_anchors",
                                        "saveProjectionAsTabData": "save_projection_as_tab_data",
-                                       "get_projected_point_position": "get_projected_point_position",
-                                       "create_projection_as_example_table": "create_projection_as_example_table",
-                                       "create_projection_as_numeric_array": "create_projection_as_numeric_array",
+                                       "getProjectedPointPosition":
+                                           "get_projected_point_position",
+                                       "createProjectionAsExampleTable":
+                                           "create_projection_as_example_table",
+                                       "createProjectionAsNumericArray":
+                                           "create_projection_as_numeric_array",
                                        "_getSum_i": "_getsum_i",
                                        "normalizeExamples": "normalize_examples",
                                        "anchorData": "anchor_data",
@@ -1319,9 +1325,12 @@ class ScalePolyvizData(ScaleLinProjData):
     
     getProjectedPointPosition = get_projected_point_position
 
-ScalePolyvizData = deprecated_members({"create_projection_as_example_table": "create_projection_as_example_table",
-                                       "create_projection_as_numeric_array": "create_projection_as_numeric_array",
-                                       "get_projected_point_position": "get_projected_point_position"
+ScalePolyvizData = deprecated_members({"createProjectionAsExampleTable":
+                                           "create_projection_as_example_table",
+                                       "createProjectionAsNumericArray":
+                                           "create_projection_as_numeric_array",
+                                       "getProjectedPointPosition":
+                                           "get_projected_point_position"
                                        })(ScalePolyvizData)
 
 class ScaleScatterPlotData(ScaleData):
