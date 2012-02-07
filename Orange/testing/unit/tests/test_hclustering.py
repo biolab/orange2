@@ -73,7 +73,7 @@ class TestHClusteringUtility(unittest.TestCase):
              [ 4,  7, 12,  8, 10,  1,  5],
              [13,  9, 14, 15,  7,  8,  4,  6],
              [12, 10, 11, 15,  2,  5,  7,  3,  1]]
-        self.matrix = Orange.core.SymMatrix(m)
+        self.matrix = Orange.misc.SymMatrix(m)
         self.matrix.setattr("objects", ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"])
         self.cluster = hier.HierarchicalClustering(self.matrix)
         
