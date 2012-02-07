@@ -213,7 +213,7 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         :param weight: the weights for instances. Default: None, i.e.
             all data instances are eqaully important in fitting
             the regression parameters
-        :type weight: None or list of Orange.data.variable.Continuous
+        :type weight: None or list of Orange.feature.Continuous
             which stores weights for instances
         
         """  

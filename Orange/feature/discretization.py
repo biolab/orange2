@@ -134,7 +134,7 @@ class DiscretizeTable(object):
     :type data: :class:`Orange.data.Table`
 
     :param features: data features to discretize. None (default) to discretize all features.
-    :type features: list of :class:`Orange.data.variable.Variable`
+    :type features: list of :class:`Orange.feature.Descriptor`
 
     :param method: feature discretization method.
     :type method: :class:`Discretization`

@@ -341,8 +341,8 @@ continuous attribute), ``sep_w`` and the class attribute::
 The name of the new categorical variable derives from the name of original
 continuous variable by adding a prefix ``D_``. The values of the new attributes
 are computed automatically when they are needed using a transformation
-function :obj:`~Orange.data.variable.Variable.get_value_from`
-(see :class:`Orange.data.variable.Variable`) which encodes the discretization::
+function :obj:`~Orange.feature.Descriptor.get_value_from`
+(see :class:`Orange.feature.Descriptor`) which encodes the discretization::
 
     >>> sep_w
     EnumVariable 'D_sepal width'

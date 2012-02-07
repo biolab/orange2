@@ -1,5 +1,5 @@
 import Orange.data
-import Orange.data.variable
+import Orange.feature
 import numpy as np
     
 #color table for biplot
@@ -89,7 +89,7 @@ class Pca(object):
             D = D[:self.max_components]
         
         n, m = U.shape
-        pc_domain = Orange.data.Domain([Orange.data.variable.Continuous("Comp.%d"%(i+1)) for i in range(n)], False)
+        pc_domain = Orange.data.Domain([Orange.feature.Continuous("Comp.%d"%(i+1)) for i in range(n)], False)
         
         return PcaClassifier(input_domain = dataset.domain,
                              pc_domain = pc_domain,

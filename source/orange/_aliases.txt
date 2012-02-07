@@ -76,4 +76,4 @@ ImputerConstructor
 impute_class imputeClass
 
 Variable
-retrieve get_existing
+retrieve getExisting

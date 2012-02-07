@@ -30,9 +30,9 @@ an existing descriptor or constructs a new one.
 
     .. attribute:: var_type
 
-        Variable type; it can be :obj:`~Orange.data.Type.Discrete`,
-        :obj:`~Orange.data.Type.Continuous`,
-        :obj:`~Orange.data.Type.String` or :obj:`~Orange.data.Type.Other`.
+        Variable type; it can be :obj:`~Orange.feature.Type.Discrete`,
+        :obj:`~Orange.feature.Type.Continuous`,
+        :obj:`~Orange.feature.Type.String` or :obj:`~Orange.feature.Type.Other`.
 
     .. attribute:: get_value_from
 
@@ -242,30 +242,33 @@ third line in <name>=<value> format, after other attribute specifications
 Reuse of descriptors
 --------------------
 
-There are situations when variable descriptors need to be reused. Typically, the
-user loads some training examples, trains a classifier, and then loads a separate
-test set. For the classifier to recognize the variables in the second data set,
-the descriptors, not just the names, need to be the same.
+There are situations when variable descriptors need to be
+reused. Typically, the user loads some training examples, trains a
+classifier, and then loads a separate test set. For the classifier to
+recognize the variables in the second data set, the descriptors, not
+just the names, need to be the same.
 
-When constructing new descriptors for data read from a file or during unpickling,
-Orange checks whether an appropriate descriptor (with the same name and, in case
-of discrete variables, also values) already exists and reuses it. When new
-descriptors are constructed by explicitly calling the above constructors, this
-always creates new descriptors and thus new variables, although a variable with
-the same name may already exist.
+When constructing new descriptors for data read from a file or during
+unpickling, Orange checks whether an appropriate descriptor (with the same
+name and, in case of discrete variables, also values) already exists and
+reuses it. When new descriptors are constructed by explicitly calling
+the above constructors, this always creates new descriptors and thus
+new variables, although a variable with the same name may already exist.
 
-The search for an existing variable is based on four attributes: the variable's name,
-type, ordered values, and unordered values. As for the latter two, the values can
-be explicitly ordered by the user, e.g. in the second line of the tab-delimited
-file. For instance, sizes can be ordered as small, medium, or big.
+The search for an existing variable is based on four attributes: the
+variable's name, type, ordered values, and unordered values. As for the
+latter two, the values can be explicitly ordered by the user, e.g. in
+the second line of the tab-delimited file. For instance, sizes can be
+ordered as small, medium, or big.
 
-The search for existing variables can end with one of the following statuses.
+The search for existing variables can end with one of the following
+statuses.
 
-.. data:: MakeStatus.NotFound (4)
+.. data:: Descriptor.MakeStatus.NotFound (4)
 
     The variable with that name and type does not exist.
 
-.. data:: MakeStatus.Incompatible (3)
+.. data:: Descriptor.MakeStatus.Incompatible (3)
 
     There are variables with matching name and type, but their
     values are incompatible with the prescribed ordered values. For example,
@@ -275,7 +278,7 @@ The search for existing variables can end with one of the following statuses.
     succeed. Likewise a search for ["a"] would be successful, since the extra existing value
     does not matter. The formal rule is thus that the values are compatible iff ``existing_values[:len(ordered_values)] == ordered_values[:len(existing_values)]``.
 
-.. data:: MakeStatus.NoRecognizedValues (2)
+.. data:: Descriptor.MakeStatus.NoRecognizedValues (2)
 
     There is a matching variable, yet it has none of the values that the new
     variable will have (this is obviously possible only if the new variable has
@@ -287,55 +290,55 @@ The search for existing variables can end with one of the following statuses.
     old variable will get some unneeded new values and the new one will inherit
     some from the old.
 
-.. data:: MakeStatus.MissingValues (1)
+.. data:: Descriptor.MakeStatus.MissingValues (1)
 
     There is a matching variable with some of the values that the new one
     requires, but some values are missing. This situation is neither uncommon
     nor suspicious: in case of separate training and testing data sets there may
     be values which occur in one set but not in the other.
 
-.. data:: MakeStatus.OK (0)
+.. data:: Descriptor.MakeStatus.OK (0)
 
     There is a perfect match which contains all the prescribed values in the
     correct order. The existing variable may have some extra values, though.
 
 Continuous variables can obviously have only two statuses,
-:obj:`~MakeStatus.NotFound` or :obj:`~MakeStatus.OK`.
+:obj:`~Descriptor.MakeStatus.NotFound` or :obj:`~Descriptor.MakeStatus.OK`.
 
 When loading the data using :obj:`Orange.data.Table`, Orange takes the safest
 approach and, by default, reuses everything that is compatible up to
-and including :obj:`~MakeStatus.NoRecognizedValues`. Unintended reuse would be obvious from the
+and including :obj:`~Descriptor.MakeStatus.NoRecognizedValues`. Unintended reuse would be obvious from the
 variable having too many values, which the user can notice and fix. More on that
 in the page on :doc:`Orange.data.formats`.
 
 There are two functions for reusing the variables instead of creating new ones.
 
-.. function:: make(name, type, ordered_values, unordered_values[, create_new_on])
+.. function:: Descriptor.make(name, type, ordered_values, unordered_values[, create_new_on])
 
     Find and return an existing variable or create a new one if none of the existing
     variables matches the given name, type and values.
 
     The optional `create_new_on` specifies the status at which a new variable is
-    created. The status must be at most :obj:`~MakeStatus.Incompatible` since incompatible (or
+    created. The status must be at most :obj:`~Descriptor.MakeStatus.Incompatible` since incompatible (or
     non-existing) variables cannot be reused. If it is set lower, for instance
-    to :obj:`~MakeStatus.MissingValues`, a new variable is created even if there exists
-    a variable which is only missing the same values. If set to :obj:`~MakeStatus.OK`, the function
+    to :obj:`~Descriptor.MakeStatus.MissingValues`, a new variable is created even if there exists
+    a variable which is only missing the same values. If set to :obj:`~Descriptor.MakeStatus.OK`, the function
     always creates a new variable.
 
     The function returns a tuple containing a variable descriptor and the
     status of the best matching variable. So, if ``create_new_on`` is set to
-    :obj:`~MakeStatus.MissingValues`, and there exists a variable whose status is, say,
-    :obj:`~MakeStatus.NoRecognizedValues`, a variable would be created, while the second
-    element of the tuple would contain :obj:`~MakeStatus.NoRecognizedValues`. If, on the other
+    :obj:`~Descriptor.MakeStatus.MissingValues`, and there exists a variable whose status is, say,
+    :obj:`~Descriptor.MakeStatus.NoRecognizedValues`, a variable would be created, while the second
+    element of the tuple would contain :obj:`~Descriptor.MakeStatus.NoRecognizedValues`. If, on the other
     hand, there exists a variable which is perfectly OK, its descriptor is
-    returned and the returned status is :obj:`~MakeStatus.OK`. The function returns no
+    returned and the returned status is :obj:`~Descriptor.MakeStatus.OK`. The function returns no
     indicator whether the returned variable is reused or not. This can be,
     however, read from the status code: if it is smaller than the specified
     ``create_new_on``, the variable is reused, otherwise a new descriptor has been constructed.
 
     The exception to the rule is when ``create_new_on`` is OK. In this case, the
     function does not search through the existing variables and cannot know the
-    status, so the returned status in this case is always :obj:`~MakeStatus.OK`.
+    status, so the returned status in this case is always :obj:`~Descriptor.MakeStatus.OK`.
 
     :param name: Descriptor name
     :param type: Descriptor type
@@ -348,7 +351,7 @@ There are two functions for reusing the variables instead of creating new ones.
 
     :return_type: a tuple (:class:`~Descriptor`, int)
 
-.. function:: retrieve(name, type, ordered_values, onordered_values[, create_new_on])
+.. function:: Descriptor.retrieve(name, type, ordered_values, onordered_values[, create_new_on])
 
     Find and return an existing variable, or :obj:`None` if no match is found.
 
@@ -368,57 +371,56 @@ executed only once (in a Python session) and in this order.
 
 :func:`make` can be used for the construction of new variables. ::
 
-    >>> v1, s = Orange.feature.make("a", Orange.data.Type.Discrete, ["a", "b"])
+    >>> v1, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, ["a", "b"])
     >>> print s, v1.values
     NotFound <a, b>
 
-A new variable was created and the status is :obj:`~Orange.data.variable
-.MakeStatus.NotFound`. ::
+A new variable was created and the status is :obj:`~Descriptor.MakeStatus.NotFound`. ::
 
-    >>> v2, s = Orange.feature.make("a", Orange.data.Type.Discrete, ["a"], ["c"])
+    >>> v2, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, ["a"], ["c"])
     >>> print s, v2 is v1, v1.values
     MissingValues True <a, b, c>
 
-The status is :obj:`~MakeStatus.MissingValues`,
+The status is :obj:`~Descriptor.MakeStatus.MissingValues`,
 yet the variable is reused (``v2 is v1``). ``v1`` gets a new value,
 ``"c"``, which was given as an unordered value. It does
 not matter that the new variable does not need the value ``b``. ::
 
-    >>> v3, s = Orange.feature.make("a", Orange.data.Type.Discrete, ["a", "b", "c", "d"])
+    >>> v3, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, ["a", "b", "c", "d"])
     >>> print s, v3 is v1, v1.values
     MissingValues True <a, b, c, d>
 
 This is like before, except that the new value, ``d`` is not among the
 ordered values. ::
 
-    >>> v4, s = Orange.feature.make("a", Orange.data.Type.Discrete, ["b"])
+    >>> v4, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, ["b"])
     >>> print s, v4 is v1, v1.values, v4.values
     Incompatible, False, <b>, <a, b, c, d>
 
 The new variable needs to have ``b`` as the first value, so it is incompatible
 with the existing variables. The status is
-:obj:`~MakeStatus.Incompatible` and
+:obj:`~Descriptor.MakeStatus.Incompatible` and
 a new variable is created; the two variables are not equal and have
 different lists of values. ::
 
-    >>> v5, s = Orange.feature.make("a", Orange.data.Type.Discrete, None, ["c", "a"])
+    >>> v5, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, None, ["c", "a"])
     >>> print s, v5 is v1, v1.values, v5.values
     OK True <a, b, c, d> <a, b, c, d>
 
 The new variable has values ``c`` and ``a``, but the order is not important,
-so the existing attribute is :obj:`~MakeStatus.OK`. ::
+so the existing attribute is :obj:`~Descriptor.MakeStatus.OK`. ::
 
-    >>> v6, s = Orange.feature.make("a", Orange.data.Type.Discrete, None, ["e"]) "a"])
+    >>> v6, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, None, ["e"]) "a"])
     >>> print s, v6 is v1, v1.values, v6.values
     NoRecognizedValues True <a, b, c, d, e> <a, b, c, d, e>
 
 The new variable has different values than the existing variable (status
-is :obj:`~MakeStatus.NoRecognizedValues`),
+is :obj:`~Descriptor.MakeStatus.NoRecognizedValues`),
 but the existing one is nonetheless reused. Note that we
 gave ``e`` in the list of unordered values. If it was among the ordered, the
 reuse would fail. ::
 
-    >>> v7, s = Orange.feature.make("a", Orange.data.Type.Discrete, None,
+    >>> v7, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, None,
             ["f"], Orange.feature.MakeStatus.NoRecognizedValues)))
     >>> print s, v7 is v1, v1.values, v7.values
     Incompatible False <a, b, c, d, e> <f>
@@ -427,7 +429,7 @@ This is the same as before, except that we prohibited reuse when there are no
 recognized values. Hence a new variable is created, though the returned status is
 the same as before::
 
-    >>> v8, s = Orange.feature.make("a", Orange.data.Type.Discrete,
+    >>> v8, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete,
             ["a", "b", "c", "d", "e"], None, Orange.feature.MakeStatus.OK)
     >>> print s, v8 is v1, v1.values, v8.values
     OK False <a, b, c, d, e> <a, b, c, d, e>
