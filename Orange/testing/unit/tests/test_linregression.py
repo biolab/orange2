@@ -13,7 +13,7 @@ class TestLinearRegressionLearner(testing.LearnerTestCase):
     @test_on_data
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
-        linear.print_linear_regression_model(self.classifier)
+        self.assertTrue(isinstance(self.classifier.to_string(), str))
         
 @datasets_driven(datasets=testing.REGRESSION_DATASETS)
 class TestRidgeRegressionLearner(testing.LearnerTestCase):
@@ -25,7 +25,7 @@ class TestRidgeRegressionLearner(testing.LearnerTestCase):
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         if self.classifier.p_vals:
-            linear.print_linear_regression_model(self.classifier)
+            self.assertTrue(isinstance(self.classifier.to_string(), str))
     
         
 if __name__ == "__main__":

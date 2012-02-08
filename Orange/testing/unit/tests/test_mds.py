@@ -10,7 +10,7 @@ class TestMDS(unittest.TestCase):
     
     @test_on_data
     def test_mds_on(self, data):
-        matrix = distance_matrix(data, EuclideanConstructor)
+        matrix = distance_matrix(data, Euclidean)
         self.__mds_test_helper(matrix, proj_dim=1)
         self.__mds_test_helper(matrix, proj_dim=2)
         self.__mds_test_helper(matrix, proj_dim=3)
