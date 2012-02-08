@@ -12,7 +12,7 @@ import OWGUI
 import OWGraph
 
 import Orange
-from Orange.data import variable
+import Orange.feature as variable
 
 def is_continuous(var):
     return isinstance(var, variable.Continuous)
@@ -103,7 +103,6 @@ def target_spearman_correlations(data, vars=None, target_var=None):
 
     
 def matrix_to_table(matrix, items=None):
-    from Orange.data import variable
     if items is None:
         items = getattr(matrix, "items", None)
     if items is None:
@@ -439,9 +438,9 @@ class OWCorrelations(OWWidget):
         if self.data is not None:
             if self.correlations_type == 2 and \
                     is_continuous(self.target_variable):
-                pearson, _ = variable.make("Pearson", Orange.core.VarTypes.Continuous)
-                spearman, _ = variable.make("Spearman", Orange.core.VarTypes.Continuous)
-                row_name, _ = variable.make("Variable", Orange.core.VarTypes.String)
+                pearson, _ = variable.Descriptor.make("Pearson", Orange.core.VarTypes.Continuous)
+                spearman, _ = variable.Descriptor.make("Spearman", Orange.core.VarTypes.Continuous)
+                row_name, _ = variable.Descriptor.make("Variable", Orange.core.VarTypes.String)
                 
                 domain = Orange.data.Domain([pearson, spearman], None)
                 domain.addmeta(Orange.feature.Descriptor.new_meta_id(), row_name)
