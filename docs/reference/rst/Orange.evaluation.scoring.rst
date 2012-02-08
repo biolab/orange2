@@ -194,8 +194,6 @@ the sucess of numeric prediction:
 The following code (:download:`statExamples.py <code/statExamples.py>`) uses most of the above measures to
 score several regression methods.
 
-.. literalinclude:: code/statExamplesRegression.py
-
 The code above produces the following output::
 
     Learner   MSE     RMSE    MAE     RSE     RRSE    RAE     R2
