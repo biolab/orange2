@@ -100,7 +100,8 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                 elif lastResult in ["changed", "crash", "random"]:
 #                else:
                     if lastResult == "random":
-                        result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult + "1")
+                        result = "results/%s/%s/%s.%s.%s.%s.txt" % \
+                        (module, dirname, name, platform, pyversion, lastResult + "1")
                     else:
                         result = "results/%s/%s/%s.%s.%s.%s.txt" % (module, dirname, name, platform, pyversion, lastResult)
                     original = "results/%s/%s/%s.txt" % (module, dirname, name)
@@ -119,7 +120,8 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                 print "Skipped: %s\n" % ", ".join(dont_test)
 
             for name, lastResult in test_set:
-                print "%s (%s): " % (name, lastResult == "new" and lastResult or ("last: %s" % lastResult)),
+                print "%s (%s): " % (name, lastResult == "new" and lastResult \
+                                     or ("last: %s" % lastResult)),
                 sys.stdout.flush()
 
                 for state in states:
@@ -130,7 +132,8 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
 
                 titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
                 #os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir + "/xtest_one.py", name, str(titerations), outputsdir)
-                p = subprocess.Popen([sys.executable, regtestdir + "/xtest_one.py", name, str(titerations), outputsdir])
+                p = subprocess.Popen([sys.executable, regtestdir + "/xtest_one.py", \
+                                      name, str(titerations), outputsdir])
 
                 passed_time = 0
                 while passed_time < timeout:
@@ -151,7 +154,9 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                         if os.path.exists(remname):
                             os.remove(remname)
 
-                    timeoutname = "%s/%s.%s.%s.%s.txt" % (outputsdir, name, sys.platform, sys.version[:3], "timedout")
+                    timeoutname = "%s/%s.%s.%s.%s.txt" % \
+                                    (outputsdir, name, sys.platform, \
+                                     sys.version[:3], "timedout")
                     open(timeoutname, "wt").close()
                     result = "timedout"
                 else:

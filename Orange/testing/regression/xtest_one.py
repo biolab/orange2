@@ -32,20 +32,20 @@ def t__samefiles(name1, name2):
             while i < len(line1):
                 if line1[i] != line2[i]:
                     j = i
-                    while i<len(line1) and t__isdigit(line1[i]):
+                    while i < len(line1) and t__isdigit(line1[i]):
                         i += 1
-                    if i==j:
+                    if i == j:
                         return 0
-                    while j>=0 and t__isdigit(line1[j]):
+                    while j >= 0 and t__isdigit(line1[j]):
                         j -= 1
-                    if j<0 or line1[j] != ".":
+                    if j < 0 or line1[j] != ".":
                         return 0
                     j -= 1
-                    while j>=0 and t__isdigit(line1[j]):
+                    while j >= 0 and t__isdigit(line1[j]):
                         j -= 1
                     if (j >= 0) and (line1[j] in "+-"):
                         j -= 1
-                    n1, n2 = line1[j+1:i], line2[j+1:i]
+                    n1, n2 = line1[j + 1:i], line2[j + 1:i]
                     if n1.count(".") != n2.count("."):
                         return 0
                     for c in n2:
@@ -74,7 +74,7 @@ t__name = t__sys.argv[1]
 t__iterations = int(t__sys.argv[2])
 t__outputsdir = t__sys.argv[3]
 
-t__crashname, t__errorname, t__newname, t__changedname, t__random1name, t__random2name = ["%s/%s.%s.%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform, t__sys.version[:3], t) for t in ["crash", "error", "new", "changed", "random1", "random2"]]
+t__timedoutname, t__crashname, t__errorname, t__newname, t__changedname, t__random1name, t__random2name = ["%s/%s.%s.%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform, t__sys.version[:3], t) for t in ["timedout", "crash", "error", "new", "changed", "random1", "random2"]]
 t__officialname = "%s/%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform)
 if not t__os.path.exists(t__officialname):
     t__officialname = "%s/%s.txt" % (t__outputsdir, t__name)
@@ -86,8 +86,8 @@ t__message = open("xtest1_report", "wt")
 t__isChanged = False
 
 for t__iteration in range(t__iterations):
-    if t__iterations>1:
-        print t__iteration+1,
+    if t__iterations > 1:
+        print t__iteration + 1,
 
     t__fnew = open(t__crashname, "wt")
     t__sout = t__sys.stdout
@@ -105,7 +105,7 @@ for t__iteration in range(t__iterations):
 
         t__message.write("error\n%i\n" % t__iteration)
         print "error"
-        t__message.write(reduce(lambda x,y: x+y, apply(t__traceback.format_exception, t__sys.exc_info())))
+        t__message.write(reduce(lambda x, y: x + y, apply(t__traceback.format_exception, t__sys.exc_info())))
         t__message.close()
         t__sys.exit(1)
 
@@ -114,6 +114,7 @@ for t__iteration in range(t__iterations):
     t__fnew.close()
 
     if not t__iteration:
+        # first iteration
         if t__isNewFile:
             # the file is a new files and this has been the first iteration
             t__os.rename(t__crashname, t__newname)
