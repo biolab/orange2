@@ -1,10 +1,10 @@
 # Description: Lasso regression
 # Category:    regression
-# Uses:        housing
-# Referenced:  Orange.regression.lasso
-# Classes:     Orange.regression.lasso.LassoRegressionLearner Orange.regression.lasso.LassoRegression
 
 import Orange
+import numpy
+
+numpy.random.seed(0)
 
 housing = Orange.data.Table("housing")
 learner = Orange.regression.lasso.LassoRegressionLearner()
