@@ -105,7 +105,7 @@ our data set looks like (:download:`inquisition.basket <code/inquisition.basket>
 
 The following script induces the association rules:
 
-.. literalinclude:: code/associate-inquistion.py
+.. literalinclude:: code/associate-inquisition.py
 
 The induced rules are surprisingly fear-full::
 
@@ -205,7 +205,7 @@ Script reports the following rules (first colon is support, second confidence)::
 
 To infer classification rules we can use a similar script but set `classificationRules` to 1:
 
-.. literalinclude:: code/association-lenses-classification.py
+.. literalinclude:: code/associate-lenses-classification.py
     :lines: 4-5
 
 These rules are a subset of association rules that in a consequent include only a class variable::
@@ -218,7 +218,7 @@ Frequent itemsets are induced in a similar fashion as for sparse data, except th
 first element of the tuple, the item set, is represented not by indices of
 features, as before, but with tuples (feature-index, value-index):
 
-.. literalinclude:: code/association-lenses-itemsets.py
+.. literalinclude:: code/associate-lenses-itemsets.py
     :lines: 4-6
 
 The script prints out::
