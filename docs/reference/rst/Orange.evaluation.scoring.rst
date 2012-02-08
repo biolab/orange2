@@ -26,6 +26,7 @@ be passed as well.
 Calibration scores
 ==================
 
+.. autosingleton:: CA
 .. autoclass:: CAClass
 .. autofunction:: sens
 .. autofunction:: spec

@@ -257,6 +257,7 @@ epub_exclude_files = ["index.html", "genindex.html", "py-modindex.html", "search
 intersphinx_mapping = {'http://docs.python.org/': None}
 
 import types
+from sphinx.ext import autodoc
 
 def maybe_skip_member(app, what, name, obj, skip, options):
     #print app, what, name, obj, skip, options
@@ -269,6 +270,25 @@ def maybe_skip_member(app, what, name, obj, skip, options):
         and (obj.__doc__ != None or options.get("undoc-members", False)):
             return False
 
+class SingletonDocumenter(autodoc.ModuleLevelDocumenter):
+    """
+    Specialized Documenter subclass for singleton items.
+    """
+    objtype = 'singleton'
+    directivetype = 'data'
+
+    member_order = 40
+
+    @classmethod
+    def can_document_member(cls, member, membername, isattr, parent):
+        return isinstance(parent, autodoc.ModuleDocumenter) and isattr
+
+    def document_members(self, all_members=False):
+        pass
+
+    def add_content(self, more_content, no_docstring=False):
+        self.add_line(u'Singleton instance of :py:class:`~%s`.' % (self.object.__class__.__name__,), '<autodoc>')
+
 def setup(app):
     app.connect('autodoc-skip-member', maybe_skip_member)
-
+    app.add_autodocumenter(SingletonDocumenter)
