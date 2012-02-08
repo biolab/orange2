@@ -11,7 +11,7 @@ Feature discretization (``discretization``)
 
 Feature discretization module provides rutines that consider continuous features and
 introduce a new discretized feature based on the training data set. Most often such procedure would be executed
-on all the features of the data set using implementations from :doc:`Orange.feature.discretization`. Implementation
+on all the features of the data set using implementations from :doc:`Orange.data.discretization`. Implementation
 in this module are concerned with discretization of one feature at the time, and do not provide wrappers for
 whole-data set discretization. The discretization is data-specific, and consist of learning of discretization
 procedure (see `Discretization Algorithms`_) and actual discretization (see Discretizers_) of the data. Splitting of
