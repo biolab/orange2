@@ -24,10 +24,7 @@ a discrete interval for a continuous value of the original variable.
 ClassifierFromVar
 =================
 
-.. index::
-   single: feature; classifier
-
-.. class:: ClassifierFromVar(which_var, transformer) 
+.. class:: ClassifierFromVar(which_var, transformer)
     
     Compute variable's values from variable which_var using
     transformation defined by transformer.        
@@ -41,10 +38,9 @@ ClassifierFromVar
         The transformer for the value. It should be a class derived from
         TransformValue, but you can also use a callback function.
 
-    .. distribution_for_unknown::
+    .. attribute:: distribution_for_unknown
 
-        The distribution that is returned when the which_var's value is undefined.    
-
+        The distribution that is returned when the which_var's value is undefined.
 
 When given an instance, :obj:`~Orange.classification.ClassifierFromVar` will return
 transformer(instance[which_var]). Attribute which_var can be either an ordinary variable,
@@ -87,7 +83,7 @@ ClassifierFromVarFD
 
         The position of the attribute in the domain or its meta-id.
 
-    .. attriubte:: transformer
+    .. attribute:: transformer
 
         The transformer for the value.
 
