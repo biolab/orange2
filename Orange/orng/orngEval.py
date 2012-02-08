@@ -12,8 +12,10 @@ TestWithIndices = testWithIndices
 TestWithTestData = testOnData
 LearnAndTestWithTestData = learnAndTestOnTestData
 
+# obsolete
+def CA_dev(res, **argkw):
+    return CA(res, True, **argkw)
 
-CA_dev = CA_se
 CA2 = CA
 computeAROC = AROC
 aROC = AROCFromCDT
