@@ -4,7 +4,7 @@ from collections import defaultdict
 def getCached(data, funct, params = (), kwparams = {}):
     if not data: return None
     if getattr(data, "info", None) == None or data.info["__version__"] != data.version:
-        setattr(data, "info", {"__version__": data.version})
+        data.setattr("info", {"__version__": data.version})
 
     if data.info.has_key(funct):
         return data.info[funct]
@@ -19,7 +19,7 @@ def getCached(data, funct, params = (), kwparams = {}):
 def setCached(data, name, info):
     if not data: return
     if getattr(data, "info", None) == None or data.info["__version__"] != data.version:
-        setattr(data, "info", {"__version__": data.version})
+        data.setattr("info", {"__version__": data.version})
     data.info[name] = info
 
 def delCached(data, name):
