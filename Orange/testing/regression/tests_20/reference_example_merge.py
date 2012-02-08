@@ -3,7 +3,7 @@
 import orange
 
 data1 = orange.ExampleTable("merge1")
-data2 = orange.ExampleTable("merge2", use = data1.domain)
+data2 = orange.ExampleTable("merge2", use=data1.domain)
 
 a1, a2 = data1.domain.attributes
 
@@ -23,4 +23,4 @@ newdomain.addmeta(orange.newmetaid(), n2)
 merge = orange.Example(newdomain, [data1[0], data2[0]])
 print "First example: ", data1[0]
 print "Second example: ", data2[0]
-print "Merge: ", merge
+print "Merge: ", merge.domain.features

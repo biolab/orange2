@@ -6,10 +6,9 @@
 
 import orange, random
 
-random.seed(0)
 
 data = orange.ExampleTable("lenses")
-
+random.seed(0)
 id = -42
 # Note that this is wrong. Id should be assigned by
 # id = orange.newmetaid()
