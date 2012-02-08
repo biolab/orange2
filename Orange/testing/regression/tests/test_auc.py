@@ -20,8 +20,9 @@ def test(measures, test_results):
     print "=" * 8 * n
     for tr in test_results:
         print "%8.4f"*n % tuple(m[0](tr)[0] for m in measures)
+    print
 
-def run_tests(datasets, measures, tests, iterations=100):
+def run_tests(datasets, measures, tests, iterations=10):
     for ds, ds_name in datasets:
         for t, t_name in tests:
             print "Testing %s on %s" % (t_name, ds_name)
