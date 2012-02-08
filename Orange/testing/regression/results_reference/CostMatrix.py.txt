@@ -1,0 +1,8 @@
+classVar = None
+0.0 1.0 1.0
+1.0 0.0 1.0
+1.0 1.0 0.0
+age: 0.000
+prescription: 0.000
+astigmatic: 0.000
+tear_rate: 0.083
