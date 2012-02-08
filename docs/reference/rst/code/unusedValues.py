@@ -1,5 +1,5 @@
 import Orange
-data = Orange.data.Table("unusedValues")
+data = Orange.data.Table("unusedValues.tab")
 
 new_variables = [Orange.preprocess.RemoveUnusedValues(var, data) for var in data.domain.variables]
 
