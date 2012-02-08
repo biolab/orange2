@@ -174,7 +174,6 @@ class EarthLearner(Orange.core.LearnerFD):
                                                      [impute, cont])
         
     def __call__(self, instances, weight_id=None):
-        original_domain = instances.domain # Needed by classifier and evimp
         instances = self.preproc(instances)
         expanded_class = None
         if self.multi_label:
@@ -504,7 +503,6 @@ def forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
                   fast_k=21, fast_beta=1, new_var_penalty=2):
     """ Do earth forward pass.
     """
-    import ctypes, orange
     x = numpy.asfortranarray(x, dtype=ctypes.c_double)
     y = numpy.asfortranarray(y, dtype=ctypes.c_double)
     if x.shape[0] != y.shape[0]:
@@ -623,7 +621,7 @@ def subset_selection_xtx_numpy(X, Y):
     X = numpy.asarray(X)
     Y = numpy.asarray(Y)
     
-    var_count= X.shape[1]
+    var_count = X.shape[1]
     rss_vec = numpy.zeros(var_count)
     working_set = range(var_count)
     subsets = numpy.zeros((var_count, var_count), dtype=int)
@@ -719,7 +717,6 @@ Printing functions.
 def format_model(model, percision=3, indent=3):
     """ Return a formated string representation of the earth model.
     """
-    mask = model.label_mask
     if model.multi_flag:
         r_vars = [v for v, m in zip(model.domain.variables,
                                     model.label_mask)
@@ -900,11 +897,11 @@ def plot_evimp(evimp):
     imp = [s for _, s in evimp]
     imp = numpy.array(imp)
     X = range(len(attrs))
-    l1 = axes1.plot(X, imp[:,0], "b-",)
+    l1 = axes1.plot(X, imp[:, 0], "b-",)
     axes2 = axes1.twinx()
     
-    l2 = axes2.plot(X, imp[:,1], "g-",)
-    l3 = axes2.plot(X, imp[:,2], "r-",)
+    l2 = axes2.plot(X, imp[:, 1], "g-",)
+    l3 = axes2.plot(X, imp[:, 2], "r-",)
     
     x_axis = axes1.xaxis
     x_axis.set_ticks(X)
@@ -931,7 +928,7 @@ def bagged_evimp(classifier, used_only=True):
     def assert_type(object, class_):
         if not isinstance(object, class_):
             raise TypeError("Instance of %r expected." % (class_))
-    from collections import defaultdict
+    
     from Orange.ensemble.bagging import BaggedClassifier
     
     assert_type(classifier, BaggedClassifier)
@@ -949,7 +946,8 @@ def bagged_evimp(classifier, used_only=True):
         bagged_imp[attr] = tuple(scores)
     
     
-    bagged_imp = sorted(bagged_imp.items(), key=lambda t: (t[1][0],t[1][1]),
+    bagged_imp = sorted(bagged_imp.items(),
+                        key=lambda t: (t[1][0], t[1][1]),
                         reverse=True)
     
     bagged_imp = [(attrs_by_name[name][0], scores) for name, scores in bagged_imp]
@@ -1015,6 +1013,7 @@ class ScoreEarthImportance(scoring.Score):
         self.score_what = score_what
         self.cached = cached
         self._cache_ref = None
+        self._cached_evimp = None
         
     def __call__(self, attr, data, weight_id=None):
         ref = self._cache_ref
