@@ -26,8 +26,8 @@ Discretization introduces new categorical features with discretized values::
     ['<=5.45', '(2.85, 3.15]', '<=2.45', '<=0.80', 'Iris-setosa']
     ['<=5.45', '>3.15', '<=2.45', '<=0.80', 'Iris-setosa']
 
-Data discretization uses feature discretization classes from :doc:`Orange.feature
-.discretization` and applies them on entire data set. The suported discretization methods are:
+Data discretization uses feature discretization classes from :doc:`Orange.feature.discretization`
+and applies them on entire data set. The suported discretization methods are:
 
 * equal width discretization, where the domain of continuous feature is split to intervals of the same
   width equal-sized intervals (uses :class:`Orange.feature.discretization.EqualWidth`),
