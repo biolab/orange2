@@ -73,7 +73,7 @@ the minimal and maximal imputers  will then represent optimistic and
 pessimistic imputations.
 
 User-define defaults can be given when constructing a
-:obj:`~Orange.feature.imputation.Defauls`. Values that are left
+:obj:`~Orange.feature.imputation.Defaults`. Values that are left
 unspecified do not get imputed. In the following example "LENGTH" is the
 only attribute to get imputed with value 1234:
 
