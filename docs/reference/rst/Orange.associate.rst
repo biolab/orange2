@@ -1,8 +1,8 @@
 .. py:currentmodule:: Orange.associate
 
-=======================================================
+#######################################################
 Association rules and frequent itemsets (``associate``)
-=======================================================
+#######################################################
 
 Orange provides two algorithms for induction of
 `association rules <http://en.wikipedia.org/wiki/Association_rule_learning>`_,
@@ -145,9 +145,8 @@ objects like :obj:`~Orange.feature.Descriptor` and :obj:`~Orange.data.Instance`.
 
 .. _non-sparse-examples:
 
-====================================
 Feature-value (non-sparse) data sets
-====================================
+------------------------------------
 
 :class:`AssociationRulesInducer` works with non-sparse data.
 
@@ -211,9 +210,9 @@ To infer classification rules we can use a similar script but set `classificatio
 
 These rules are a subset of association rules that in a consequent include only a class variable::
 
-0.333  0.667  prescription=hypermetrope -> lenses=none
-0.333  0.667  astigmatic=yes -> lenses=none
-0.500  1.000  tear_rate=reduced -> lenses=none
+    0.333  0.667  prescription=hypermetrope -> lenses=none
+    0.333  0.667  astigmatic=yes -> lenses=none
+    0.500  1.000  tear_rate=reduced -> lenses=none
 
 Frequent itemsets are induced in a similar fashion as for sparse data, except that the
 first element of the tuple, the item set, is represented not by indices of
@@ -221,10 +220,6 @@ features, as before, but with tuples (feature-index, value-index):
 
 .. literalinclude:: code/association-lenses-itemsets.py
     :lines: 4-6
-
-    inducer = Orange.associate.AssociationRulesInducer(support = 0.3, store_examples = True)
-    itemsets = inducer.get_itemsets(data)
-    print itemsets[8]
 
 The script prints out::
 
@@ -344,16 +339,15 @@ to compute this is::
     >>> set(rule.match_left) - set(rule.match_both)
     set([0, 2, 8, 10, 16, 17, 18])
 
-===============
+=========
 Utilities
-===============
+=========
 
 .. autofunction:: print_rules
 
 .. autofunction:: sort
 
-References
-----------
+.. rubric:: References
 
 .. [AgrawalSrikant1994] R Agrawal and R Srikant: Fast algorithms for mining association
    rules in large databases. In Proc. 20th International Conference on Very Large Data Bases, pages 487-499,
