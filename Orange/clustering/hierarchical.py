@@ -1,10 +1,11 @@
-r"""
+"""
 ******************************************
 Hierarchical clustering (``hierarchical``)
 ******************************************
 
 .. index::
-   single: clustering, hierarchical, dendrogram
+    single: clustering, hierarchical, dendrogram
+
 .. index:: aglomerative clustering
 
 For hierarchical clustering we need to compute distances between
@@ -23,7 +24,8 @@ and cluster it with average linkage.
 .. literalinclude:: code/hierarchical-example-2.py
     :lines: 1-12
 
-Data instances belonging to the top-most four clusters could be printed out
+Data instances belonging to the top-most four clusters 
+(obtained with :obj:`top_clusters`) could be printed out
 with:
 
 .. literalinclude:: code/hierarchical-example-2.py
@@ -48,7 +50,6 @@ The same results could also be obtained with:
 .. literalinclude:: code/hierarchical-example-3.py
     :lines: 1-7
  
-
 Basic functionality
 -------------------
 
@@ -93,9 +94,31 @@ Basic functionality
         :param matrix: A distance matrix to perform the clustering on.
         :type matrix: :class:`Orange.misc.SymMatrix`
 
+Drawing
+--------------
 
-    
+.. autofunction:: dendrogram_draw
 
+.. rubric:: Example
+
+The following scripts clusters a subset of 20 instances from the Iris data set.
+The leaves are labelled with the class value.
+
+.. literalinclude:: code/hierarchical-draw.py
+    :lines: 1-8
+
+The resulting dendrogram is shown below.
+
+.. image:: files/hclust-dendrogram.png
+
+The following code, that produces the dendrogram below, also colors the
+three topmost branches and represents attribute values with a custom color
+schema, (spanning red - black - green with custom gamma minv and maxv).
+
+.. literalinclude:: code/hierarchical-draw.py
+    :lines: 10-16
+
+.. image:: files/hclust-colored-dendrogram.png
    
 Cluster analysis
 -----------------
@@ -300,19 +323,15 @@ would contains indices instead of names.
     >>> print list_of_clusters(root)
     [[1, 2, 6], [3], [5, 7, 8, 9], [0, 4]]
 
-Output
---------------
-
-.. autofunction:: dendrogram_layout
-.. autofunction:: dendrogram_draw
-
 Utility Functions
 -----------------
 
 .. autofunction:: clustering_features
 .. autofunction:: feature_distance_matrix
+.. autofunction:: dendrogram_layout
 
 """
+
 
 import orange
 import Orange
@@ -1094,7 +1113,8 @@ def dendrogram_draw(file, cluster, attr_cluster = None, labels=None, data=None,
                     format=None):
     """ Plot the dendrogram to ``file``.
     
-    :param file: An  open file or a filename to store the image to.
+    :param file: An  open file or a filename to store the image to. The output format
+    is chosen according to the extension. Supported formats: PNG, EPS, SVG.
     :type file: str or an file-like object suitable for writing.
     
     :param cluster: An instance of :class:`HierarcicalCluster`
