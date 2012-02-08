@@ -8,6 +8,7 @@ import selection
 import discretization
 import continuization
 import imputation
+import classifier
 
 from Orange.core import Variable as Descriptor
 from Orange.core import EnumVariable as Discrete
