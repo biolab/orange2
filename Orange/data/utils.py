@@ -15,7 +15,7 @@ from collections import defaultdict
 
 from Orange.data import Table, Domain, Instance
 
-import feature as variable
+import Orange.feature as variable
 
 def table_map(table, attrs, exclude_special=True):
     map = defaultdict(list)
