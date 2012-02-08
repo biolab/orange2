@@ -17,9 +17,9 @@ package`_ by Stephen Milborrow.
 
 Example ::
 
-    >>> from Orange.regression import earth
+    >>> import Orange
     >>> data = Orange.data.Table("housing")
-    >>> c = earth.EarthLearner(data, degree=2)
+    >>> c = Orange.regression.earth.EarthLearner(data, degree=2)
     >>> print c
     MEDV =
        23.587
@@ -29,8 +29,6 @@ Example ::
        -228.795 * max(0, NOX - 0.647) * max(0, RM - 6.431)
        +0.023 * max(0, TAX - 307.000) * max(0, 6.120 - LSTAT)
        +0.029 * max(0, 307.000 - TAX) * max(0, 6.120 - LSTAT)
-       
-    >>> 
 
 
 .. autoclass:: EarthLearner
@@ -876,10 +874,13 @@ def plot_evimp(evimp):
     """ Plot the variable importances as returned from
     :obj:`EarthClassifier.evimp` call.
     
-        >>> data = Orange.data.Table("housing")
-        >>> c = EarthLearner(data, degree=3)
-        >>> plot_evimp(c.evimp())
-        
+    ::
+
+        import Orange
+        data = Orange.data.Table("housing")
+        c = Orange.regression.earth.EarthLearner(data, degree=3)
+        Orange.regression.earth.plot_evimp(c.evimp())
+
     .. image:: files/earth-evimp.png
      
     The left axis is the nsubsets measure an on the right are the normalized
@@ -920,12 +921,12 @@ def plot_evimp(evimp):
 def bagged_evimp(classifier, used_only=True):
     """ Extract combined (average) evimp from an instance of BaggedClassifier
     
-    Example ::
-    
-        >>> from Orange.ensemble.bagging import BaggedLearner
-        >>> bc = BaggedLearner(EarthLearner(degree=3, terms=10), data)
-        >>> bagged_evimp(bc)
-        
+    Example::
+
+        from Orange.ensemble.bagging import BaggedLearner
+        bc = BaggedLearner(EarthLearner(degree=3, terms=10), data)
+        bagged_evimp(bc)
+
     """
     def assert_type(object, class_):
         if not isinstance(object, class_):

@@ -236,7 +236,8 @@ class SVMLearner(_SVMLearner):
         >>> table = Orange.data.Table("vehicle.tab")
         >>> learner = svm.SVMLearner()
         >>> results = testing.cross_validation([learner], table, folds=5)
-        >>> print scoring.CA(results)
+        >>> print scoring.CA(results)[0]
+        0.789613644274
     
     """
     __new__ = _orange__new__(_SVMLearner)
@@ -350,10 +351,10 @@ class SVMLearner(_SVMLearner):
         :type progress_callback: callback function
             
         An example that tunes the `gamma` parameter on `data` using 3-fold cross 
-        validation.
-        
-            >>> svm = Orange.classification.svm.SVMLearner()
-            >>> svm.tune_parameters(table, parameters=["gamma"], folds=3)
+        validation. ::
+
+        svm = Orange.classification.svm.SVMLearner()
+        svm.tune_parameters(table, parameters=["gamma"], folds=3)
                     
         """
         
@@ -689,10 +690,28 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         
     Example:
     
-        >>> score = ScoreSVMWeights()
+        >>> score = Orange.classification.svm.ScoreSVMWeights()
         >>> for feature in table.domain.features:
-            ...   print "%15s: %.3f" % (feature.name, score(feature, table))
-          
+        ...     print "%15s: %.3f" % (feature.name, score(feature, table))
+            compactness: 0.019
+            circularity: 0.026
+        distance circularity: 0.007
+           radius ratio: 0.010
+        pr.axis aspect ratio: 0.076
+        max.length aspect ratio: 0.010
+          scatter ratio: 0.046
+          elongatedness: 0.094
+        pr.axis rectangularity: 0.006
+        max.length rectangularity: 0.031
+        scaled variance along major axis: 0.001
+        scaled variance along minor axis: 0.000
+        scaled radius of gyration: 0.002
+        skewness about major axis: 0.004
+        skewness about minor axis: 0.003
+        kurtosis about minor axis: 0.001
+        kurtosis about major axis: 0.060
+          hollows ratio: 0.028
+              
     """
     
     def __new__(cls, attr=None, data=None, weight_id=None, **kwargs):
@@ -741,11 +760,15 @@ class RFE(object):
     """Recursive feature elimination using linear SVM derived attribute 
     weights.
     
-    Example:
+    Example::
     
-        >>> rfe = RFE(SVMLearner(kernel_type=kernels.Linear, \
-normalization=False)) # normalization=False -> do not change the domain 
-        >>> data_with_removed_features = rfe(table, 5) # table with 5 best attributes
+        import Orange
+        table = Orange.data.Table("vehicle.tab")
+        l = Orange.classification.svm.SVMLearner(
+            kernel_type=Orange.classification.svm.kernels.Linear, 
+            normalization=False) # normalization=False will not change the domain
+        rfe = Orange.classification.svm.RFE(l)
+        data_with_removed_features = rfe(table, 5)
         
     """
     
