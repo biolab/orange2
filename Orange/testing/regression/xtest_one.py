@@ -14,11 +14,14 @@ def t__isdigit(c):
 
 def t__samefiles(name1, name2):
     equal = 1
-    fnew, fold = open(name1, "rt"), open(name2, "rt")
-    lines1 = [t__string.rstrip(x) for x in fnew.readlines()]
-    lines2 = [t__string.rstrip(x) for x in fold.readlines()]
-    fnew.close()
-    fold.close()
+    try:
+        fnew, fold = open(name1, "rt"), open(name2, "rt")
+        lines1 = [t__string.rstrip(x) for x in fnew.readlines()]
+        lines2 = [t__string.rstrip(x) for x in fold.readlines()]
+    finally:
+        fnew.close()
+        fold.close()
+
     if lines1 == lines2:
         return 1
     if len(lines1) != len(lines2):
@@ -60,11 +63,13 @@ def t__samefiles(name1, name2):
 
 
 def t__copyfile(src, dst):
-    srcf = open(src, "rt")
-    dstf = open(dst, "wt")
-    dstf.write(srcf.read())
-    srcf.close()
-    dstf.close()
+    try:
+        srcf = open(src, "rt")
+        dstf = open(dst, "wt")
+        dstf.write(srcf.read())
+    finally:
+        srcf.close()
+        dstf.close()
 
 t__sys.path.append(".")
 
@@ -89,29 +94,31 @@ for t__iteration in range(t__iterations):
     if t__iterations > 1:
         print t__iteration + 1,
 
-    t__fnew = open(t__crashname, "wt")
-    t__sout = t__sys.stdout
-    t__serr = t__sys.stderr
     try:
-        t__sys.stdout = t__sys.stderr = t__fnew
-        execfile(t__name)
+        t__fnew = open(t__crashname, "wt")
+        t__sout = t__sys.stdout
+        t__serr = t__sys.stderr
+        try:
+            t__sys.stdout = t__sys.stderr = t__fnew
+            execfile(t__name)
 
-    except Exception, e:
-        # execution ended with an error
-        apply(t__traceback.print_exception, t__sys.exc_info())
+        except Exception, e:
+            # execution ended with an error
+            apply(t__traceback.print_exception, t__sys.exc_info())
+            t__sys.stdout = t__sout
+            t__sys.stderr = t__serr
+            t__fnew.close()
+
+            t__message.write("error\n%i\n" % t__iteration)
+            print "error"
+            t__message.write(reduce(lambda x, y: x + y, apply(t__traceback.format_exception, t__sys.exc_info())))
+            t__message.close()
+            t__sys.exit(1)
+
         t__sys.stdout = t__sout
         t__sys.stderr = t__serr
+    finally:
         t__fnew.close()
-
-        t__message.write("error\n%i\n" % t__iteration)
-        print "error"
-        t__message.write(reduce(lambda x, y: x + y, apply(t__traceback.format_exception, t__sys.exc_info())))
-        t__message.close()
-        t__sys.exit(1)
-
-    t__sys.stdout = t__sout
-    t__sys.stderr = t__serr
-    t__fnew.close()
 
     if not t__iteration:
         # first iteration
