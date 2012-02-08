@@ -22,6 +22,6 @@ def is_multilabel(data):
     if not data.domain.class_vars:
         return False
     for c in data.domain.class_vars:
-        if type(c) is not Orange.data.variable.Discrete or sorted(c.values) != ['0', '1']:
+        if type(c) is not Orange.feature.Discrete or sorted(c.values) != ['0', '1']:
             return False
     return True
