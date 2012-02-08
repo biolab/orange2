@@ -39,10 +39,15 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.FloatVariable": "Orange.feature.Continuous",
            "orange.StringVariable": "Orange.feature.String",
            "orange.PythonVariable": "Orange.feature.Python",
+           
+           "orngOutlier.OutlierDetection" : "Orange.data.outliers.OutlierDetection",
 
            "orange.newmetaid": "Orange.feature:Variable.new_meta_id",
 
            "orange.SymMatrix": "Orange.misc.SymMatrix",
+           "orange.ClassifierFromVar": "Orange.classification.ClassifierFromVar",
+           "orange.ClassifierFromVarFD": "Orange.classification.ClassifierFromVarFD",
+           
 
            "orange.GetValue": "Orange.classification:Classifier.GetValue",
            "orange.GetProbabilities": "Orange.classification:Classifier.GetProbabilities",

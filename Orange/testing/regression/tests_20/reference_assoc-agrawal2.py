@@ -2,7 +2,7 @@ import orange
 
 data = orange.ExampleTable("inquisition")
 rules = orange.AssociationRulesSparseInducer(data,
-            support = 0.5, storeExamples = True)
+            support=0.5, storeExamples=True)
 
 rule0 = rules[10]
 
@@ -12,6 +12,8 @@ print [rule0.examples[i] for i in rule0.matchLeft]
 print "\nMatch both: "
 print [rule0.examples[i] for i in rule0.matchBoth]
 
-inducer = orange.AssociationRulesSparseInducer(support = 0.5)
+inducer = orange.AssociationRulesSparseInducer(support=0.5)
 itemsets = inducer.getItemsets(data)
-print itemsets[5]
+attrs, _ = itemsets[5]
+print [data.domain[a].name for a in attrs]
+

@@ -58,7 +58,7 @@ for ex in Orange.data.filter.HasClassValue(data2, negate=1):
 filteryoung = Orange.data.filter.SameValue()
 age = data.domain["age"]
 filteryoung.value = Orange.data.Value(age, "young")
-filteryoung.position = data.domain.attributes.index(age)
+filteryoung.position = data.domain.features.index(age)
 print "\nYoung instances"
 for ex in filteryoung(data):
     print ex
@@ -70,13 +70,13 @@ age, astigm = data.domain["age"], data.domain["astigmatic"]
 fya.domain = data.domain
 fya.conditions.append(
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(age),
+        position=data.domain.features.index(age),
         values=[Orange.data.Value(age, "young"),
                 Orange.data.Value(age, "presbyopic")])
 )
 fya.conditions.append(
     Orange.data.filter.ValueFilterDiscrete(
-        position = data.domain.attributes.index(astigm),
+        position = data.domain.features.index(astigm),
         values=[Orange.data.Value(astigm, "yes")]))
 for ex in fya(data):
     print ex
@@ -85,11 +85,11 @@ print "\nYoung or presbyopic with astigmatism"
 fya = Orange.data.filter.Values(domain=data.domain, conditions=
     [
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(age),
+        position=data.domain.features.index(age),
         values=[Orange.data.Value(age, "young"),
                 Orange.data.Value(age, "presbyopic")]),
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(astigm),
+        position=data.domain.features.index(astigm),
         values=[Orange.data.Value(astigm, "yes")])
     ])
 for ex in fya(data):
@@ -100,11 +100,11 @@ print "\nYoung or presbyopic with astigmatism"
 fya = Orange.data.filter.Values(domain=data.domain, conditions=
     [
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(age),
+        position=data.domain.features.index(age),
         values=[Orange.data.Value(age, "young"),
                 Orange.data.Value(age, "presbyopic")], acceptSpecial = 0),
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(astigm),
+        position=data.domain.features.index(astigm),
         values=[Orange.data.Value(astigm, "yes")])
     ])
 for ex in fya(data):
@@ -114,12 +114,12 @@ print "\nYoung or presbyopic with astigmatism"
 fya = Orange.data.filter.Values(domain=data.domain, conditions=
     [
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(age),
+        position=data.domain.features.index(age),
         values=[Orange.data.Value(age, "young"),
                 Orange.data.Value(age, "presbyopic")
                 ], acceptSpecial = 1),
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(astigm),
+        position=data.domain.features.index(astigm),
         values=[Orange.data.Value(astigm, "yes")])
     ])
 for ex in fya(data):
@@ -129,12 +129,12 @@ print "\nYoung or presbyopic or astigmatic"
 fya = Orange.data.filter.Values(domain=data.domain, conditions=
     [
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(age),
+        position=data.domain.features.index(age),
         values=[Orange.data.Value(age, "young"),
                 Orange.data.Value(age, "presbyopic")
                 ], acceptSpecial = 1),
     Orange.data.filter.ValueFilterDiscrete(
-        position=data.domain.attributes.index(astigm),
+        position=data.domain.features.index(astigm),
         values=[Orange.data.Value(astigm, "yes")])
     ],
     conjunction = 0

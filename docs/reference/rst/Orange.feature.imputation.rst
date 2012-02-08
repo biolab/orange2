@@ -32,7 +32,7 @@ a class derived from :obj:`~Orange.feature.imputation.Imputer`. When an
 :obj:`~Orange.feature.imputation.Imputer` is called with an
 :obj:`~Orange.data.Instance` it returns a new instance with the
 missing values imputed (leaving the original instance intact). If imputer is
-called with an :obj:`~Orange.data.Table` it returns a new data table with
+called with a :obj:`~Orange.data.Table` it returns a new data table with
 imputed instances.
 
 .. class:: Constructor
@@ -73,7 +73,7 @@ the minimal and maximal imputers  will then represent optimistic and
 pessimistic imputations.
 
 User-define defaults can be given when constructing a
-:obj:`~Orange.feature.imputation.Defauls`. Values that are left
+:obj:`~Orange.feature.imputation.Defaults`. Values that are left
 unspecified do not get imputed. In the following example "LENGTH" is the
 only attribute to get imputed with value 1234:
 

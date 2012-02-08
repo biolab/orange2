@@ -1,0 +1,17 @@
+(((0 4) ((5 7) (8 9))) ((1 (2 6)) 3))
+9.0
+(((Ann Eve) ((Fred Hue) (Ivy Jon))) ((Bob (Curt Greg)) Danny))
+Ann
+Eve
+Fred
+Hue
+Ivy
+Jon
+(((Ann Eve) ((Fred Hue) (Ivy Jon))) ((Bob (Curt Greg)) Danny))
+((((Fred Hue) (Ivy Jon)) (Ann Eve)) ((Bob (Curt Greg)) Danny))
+(((Bob (Curt Greg)) Danny) (((Fred Hue) (Ivy Jon)) (Ann Eve)))
+(('Bob', 'Curt', 'Greg', 'Danny') ((('Fred', 'Hue') ('Ivy', 'Jon')) ('Ann', 'Eve')))
+[['Bob', 'Curt', 'Greg', 'Danny'], ['Fred', 'Hue'], ['Ivy', 'Jon'], ['Ann', 'Eve']]
+[[1, 2, 6, 3], [5, 7], [8, 9], [0, 4]]
+4
+4

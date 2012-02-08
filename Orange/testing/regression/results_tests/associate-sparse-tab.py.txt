@@ -1,0 +1,6 @@
+Supp Conf  Rule
+ 0.6  0.8  Bread=#RNGE -> Milk=#RNGE
+ 0.6  0.8  Milk=#RNGE -> Bread=#RNGE
+ 0.4  0.5  Bread=#RNGE -> Milk=#RNGE Diapers=#RNGE
+ 0.4  0.7  Bread=#RNGE Milk=#RNGE -> Diapers=#RNGE
+ 0.4  0.7  Bread=#RNGE Diapers=#RNGE -> Milk=#RNGE

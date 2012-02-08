@@ -391,12 +391,13 @@ class SOMLearner(orange.Learner):
     :param solver: a class with the optimization algorithm
     
     """
-    @deprecated_keywords({"weightId": "weight_id"})
-    def __new__(cls, examples=None, weight_id=0, **kwargs):
+    @deprecated_keywords({"examples": "data",
+                          "weightId": "weight_id"})
+    def __new__(cls, data=None, weight_id=0, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
-        if examples is not None:
+        if data is not None:
             self.__init__(**kwargs)
-            return self.__call__(examples, weight_id)
+            return self.__call__(data, weight_id)
         else:
             return self
         
@@ -443,31 +444,35 @@ class SOMMap(orange.Classifier):
     
     def __init__(self, map=[], data=[]):
         self.map = map
-        self.examples = data
+        self.data = data
         for node in map:
-            node.reference_example = orange.Example(orange.Domain(self.examples.domain.attributes, False),
+            node.reference_instance = orange.Example(orange.Domain(self.data.domain.attributes, False),
                                                  [(var(value) if var.varType == orange.VarTypes.Continuous else var(int(value))) \
-                                                  for var, value in zip(self.examples.domain.attributes, node.vector)])
-            node.examples = orange.ExampleTable(self.examples.domain)
+                                                  for var, value in zip(self.data.domain.attributes, node.vector)])
+            
+            node.instances = orange.ExampleTable(self.data.domain)
 
-        for ex in self.examples:
-            node = self.get_best_matching_node(ex)
-            node.examples.append(ex)
+        for inst in self.data:
+            node = self.get_best_matching_node(inst)
+            node.instances.append(inst)
 
-        if self.examples and self.examples.domain.classVar:
+        if self.data and self.data.domain.class_var:
             for node in self.map:
-                node.classifier = orange.MajorityLearner(node.examples if node.examples else self.examples)
+                node.classifier = orange.MajorityLearner(node.instances if node.instances else self.data)
                      
-            self.classVar = self.examples.domain.classVar
+            self.class_var = self.data.domain.class_var
         else:
-            self.classVar = None
+            self.class_var = None
+            
+    classVar = deprecated_attribute("classVar", "class_var")
+    examples = deprecated_attribute("examples", "data")
 
-    def get_best_matching_node(self, example):
+    def get_best_matching_node(self, instance):
         """Return the best matching node for a given data instance
         """
-        example, c, w = orange.ExampleTable([example]).toNumpyMA()
+        instance, c, w = orange.ExampleTable([instance]).toNumpyMA()
         vectors = self.map.vectors()
-        Dist = vectors - example
+        Dist = vectors - instance
         bmu = ma.argmin(ma.sum(Dist**2, 1))
         return list(self.map)[bmu]
     
@@ -475,9 +480,9 @@ class SOMMap(orange.Classifier):
         deprecated_attribute("getBestMatchingNode",
                              "get_best_matching_node")
         
-    def __call__(self, example, what=orange.GetValue):
-        bmu = self.get_best_matching_node(example)
-        return bmu.classifier(example, what)
+    def __call__(self, instance, what=orange.GetValue):
+        bmu = self.get_best_matching_node(instance)
+        return bmu.classifier(instance, what)
 
     def __getattr__(self, name):
         try:
@@ -514,23 +519,23 @@ class SOMSupervisedLearner(SOMLearner):
     """
     @deprecated_keywords({"weightID": "weight_id",
                           "progressCallback": "progress_callback"})
-    def __call__(self, examples, weight_id=0, progress_callback=None):
-        data, classes, w = examples.toNumpyMA()
-        nval = len(examples.domain.classVar.values)
-        ext = ma.zeros((len(data), nval))
+    def __call__(self, data, weight_id=0, progress_callback=None):
+        array, classes, w = data.toNumpyMA()
+        nval = len(data.domain.class_var.values)
+        ext = ma.zeros((len(array), nval))
         ext[([i for i, m in enumerate(classes.mask) if m], [int(c) for c, m in zip(classes, classes.mask) if m])] = 1.0
-        data = ma.hstack((data, ext))
+        array = ma.hstack((array, ext))
         map = Map(self.map_shape, topology=self.topology)
         if self.initialize == Map.InitializeLinear:
-            map.initialize_map_linear(data)
+            map.initialize_map_linear(array)
         else:
-            map.initialize_map_random(data)
+            map.initialize_map_random(array)
         map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
                      radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
-                     epoch=self.epochs)(data, map, progress_callback=progress_callback)
+                     epoch=self.epochs)(array, map, progress_callback=progress_callback)
         for node in map:
             node.vector = node.vector[:-nval]
-        return SOMMap(map, examples)
+        return SOMMap(map, data)
 
 ##########################################################################
 # Supporting Classes 
@@ -542,34 +547,41 @@ class Node(object):
 
         Node position.
 
-    .. attribute:: reference_example
+    .. attribute:: reference_instance
 
         Reference data instance (a prototype).
         
-    .. attribute:: examples
+    .. attribute:: instances
     
-        Data set with instances training instances that were mapped 
-        to the node.
+        Data set with training instances that were mapped to the node.
          
     """
     def __init__(self, pos, map=None, vector=None):
         self.pos = pos
         self.map = map
         self.vector = vector
+        self.reference_instance = None
+        self.instances = None
         
-    referenceExample = deprecated_attribute("referenceExample", "reference_example")
+    referenceExample = deprecated_attribute("referenceExample", "reference_instance")
+    examples = deprecated_attribute("examples", "instances")
 
 class Map(object):
     """Self organizing map (the structure). Includes methods for
     data initialization.
     
+    .. attribute:: map_shape
+    
+        A two element tuple containing the map width and height.
+         
+    .. attribute:: topology
+    
+        Topology of the map (``HexagonalTopology`` or 
+        ``RectangularTopology``)
+        
     .. attribute:: map
 
         Self orginzing map. A list of lists of :obj:`Node`.
-        
-    .. attribute:: examples
-    
-        Data set that was considered when optimizing the map.
         
     """
     

@@ -39,5 +39,5 @@ Indices with p0 set as probability (not 'a number of')
 ... stratified 'if possible'
 <1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1>
 
-... stratified 'if possible', after removing the first example's class
+... stratified 'if possible', after removing the first instance's class
 <0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1>

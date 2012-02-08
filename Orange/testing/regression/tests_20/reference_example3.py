@@ -5,10 +5,9 @@
 # Referenced:  Example.htm
 
 import orange, random
-random.seed(0)
 
 data = orange.ExampleTable("lenses")
-
+random.seed(0)
 #id2 = orange.newmetaid()
 #w2 = orange.FloatVariable("ww")
 #The below two lines fail (and SHOULD fail):

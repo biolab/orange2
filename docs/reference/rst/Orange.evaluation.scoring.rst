@@ -241,11 +241,9 @@ and :math:`Z_i=H(x_i)` be the set of labels predicted by :math:`H` for example :
 .. autofunction:: mlc_precision
 .. autofunction:: mlc_recall
 
-So, let's compute all this and print it out (part of
-:download:`mlc-evaluate.py <code/mlc-evaluate.py>`):
+The following script demonstrates the use of those evaluation measures:
 
 .. literalinclude:: code/mlc-evaluate.py
-   :lines: 1-15
 
 The output should look like this::
 

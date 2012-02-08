@@ -18,6 +18,8 @@ delimit_char_read="$"  # delimiter used when reading attribute names mysql table
 reserved_words=['select','condition','while','insert','update','alter','join']
 char_sql="CHAR(200)"   # for length of string fields in MySQL
 
+print "This module is deprecated. Please use Orange.data.sql instead."
+
 class Connect:
   
   def __init__(self, host, user, passwd, db):

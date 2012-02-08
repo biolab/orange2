@@ -1,0 +1,6 @@
+Supp Conf  Rule
+ 0.4  1.0  Cola -> Diapers
+ 0.4  0.5  Diapers -> Cola
+ 0.4  1.0  Cola -> Diapers Milk
+ 0.4  1.0  Cola Diapers -> Milk
+ 0.4  1.0  Cola Milk -> Diapers
