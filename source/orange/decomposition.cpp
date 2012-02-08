@@ -131,7 +131,8 @@ void TSortedExamples_nodeIndices::sortByAttr_Mult(int attrNo, vector<TEnIIterato
   }
 
   int id = 0;
-  for(vector<int>::iterator ni(valf.begin()), ne(valf.end()); ni!=ne; *(ni++) = (id+=*ni)-*ni);
+  for(vector<int>::iterator ni=valf.begin(); ni!=valf.end(); ++ni)
+	  *ni = (id+=*ni)-*ni;
 
   vector<TEnIIterator> *newPtrs = mlnew vector<TEnIIterator>(sorting->size(), sorting->front());
   ITERATE(vector<TEnIIterator>, si, *sorting) {
@@ -155,7 +156,8 @@ void TSortedExamples_nodeIndices::sortByAttr(int attrNo, vector<TEnIIterator> *&
   }
 
   int id = 0;
-  for(vector<int>::iterator ni=valf.begin(); ni!=valf.end(); *(ni++) = (id+=*ni)-*ni);
+  for(vector<int>::iterator ni=valf.begin(); ni!=valf.end(); ++ni)
+	  *ni = (id+=*ni)-*ni;
 
   vector<TEnIIterator> *newPtrs = mlnew vector<TEnIIterator>(sorting->size(), sorting->front());
   ITERATE(vector<TEnIIterator>, si, *sorting)
