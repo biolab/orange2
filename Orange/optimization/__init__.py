@@ -14,9 +14,9 @@ Tuning parameters
 Two classes support tuning parameters.
 :obj:`Orange.optimization.Tune1Parameter` for fitting a single parameter and
 :obj:`Orange.optimization.TuneMParameters` fitting multiple parameters at once,
-trying all possible combinations. When called with examples and, optionally, id
+trying all possible combinations. When called with data and, optionally, id
 of meta attribute with weights, they find the optimal setting of arguments
-using the cross validation. The classes can also be used as ordinary learning
+using cross validation. The classes can also be used as ordinary learning
 algorithms - they are in fact derived from
 :obj:`Orange.classification.Learner`.
 
@@ -37,7 +37,7 @@ Setting Optimal Thresholds
 **************************
 
 Some models may perform well in terms of AUC which measures the ability to
-distinguish between examples of two classes, but have low classifications
+distinguish between instances of two classes, but have low classifications
 accuracies. The reason may be in the threshold: in binary problems, classifiers
 usually classify into the more probable class, while sometimes, when class
 distributions are highly skewed, a modified threshold would give better
@@ -64,18 +64,14 @@ The output::
     With adjusted thredhold: 0.659
     With threshold at 0.80: 0.449
 
-shows that fitting threshold is good (well, although 2.5 percent increase in
-the accuracy absolutely guarantees you a publication at ICML, the difference is
-still unimportant), while setting it at 80% is a bad idea. Or is it?
-
 part of :download:`optimization-thresholding2.py <code/optimization-thresholding2.py>`
 
 .. literalinclude:: code/optimization-thresholding2.py
 
-The script first divides the data into training and testing examples. It trains
+The script first divides the data into training and testing subsets. It trains
 a naive Bayesian classifier and than wraps it into
 :obj:`Orange.optimization.ThresholdClassifiers` with thresholds of .2, .5 and
-.8. The three models are tested on the left-out examples, and we compute the
+.8. The three models are tested on the left-out data, and we compute the
 confusion matrices from the results. The printout::
 
     0.20: TP 60.000, TN 1.000
@@ -96,24 +92,23 @@ import Orange.evaluation.scoring
 import Orange.evaluation.testing
 import Orange.misc
 
+from Orange.misc import (deprecated_class_attribute, deprecated_keywords,
+                         deprecated_members)
+
 class TuneParameters(Orange.classification.Learner):
     
-    """.. attribute:: examples
+    """.. attribute:: data
     
         Data table with either discrete or continuous features
     
-    .. attribute:: weightID
+    .. attribute:: weight_id
     
-        The ID of the weight meta attribute
+        The id of the weight meta attribute
     
-    .. attribute:: object
+    .. attribute:: learner
     
         The learning algorithm whose parameters are to be tuned. This can be,
-        for instance, :obj:`Orange.classification.tree.TreeLearner`. You will
-        usually use the wrapped learners from modules, not the built-in
-        classifiers, such as :obj:`Orange.classification.tree.TreeLearner`
-        directly, since the arguments to be fitted are easier to address in the
-        wrapped versions. But in principle it doesn't matter.
+        for instance, :obj:`Orange.classification.tree.TreeLearner`.
     
     .. attribute:: evaluate
     
@@ -134,23 +129,23 @@ class TuneParameters(Orange.classification.Learner):
     
         The function used to compare the results. The function should accept
         two arguments (e.g. two classification accuracies, AUCs or whatever the
-        result of evaluate is) and return a positive value if the first
+        result of ``evaluate`` is) and return a positive value if the first
         argument is better, 0 if they are equal and a negative value if the
-        first is worse than the second. The default compare function is cmp.
-        You don't need to change this if evaluate is such that higher values
-        mean a better classifier.
+        first is worse than the second. The default compare function is 
+        ``cmp``. You don't need to change this if evaluate is such that higher
+        values mean a better classifier.
     
-    .. attribute:: returnWhat
+    .. attribute:: return_what
     
         Decides what should be result of tuning. Possible values are:
     
-        * TuneParameters.returnNone (or 0): tuning will return nothing,
-        * TuneParameters.returnParameters (or 1): return the optimal value(s) of parameter(s),
-        * TuneParameters.returnLearner (or 2): return the learner set to optimal parameters,
-        * TuneParameters.returnClassifier (or 3): return a classifier trained with the optimal parameters on the entire data set. This is the default setting.
+        * ``TuneParameters.RETURN_NONE`` (or 0): tuning will return nothing,
+        * ``TuneParameters.RETURN_PARAMETERS`` (or 1): return the optimal value(s) of parameter(s),
+        * ``TuneParameters.RETURN_LEARNER`` (or 2): return the learner set to optimal parameters,
+        * ``TuneParameters.RETURN_CLASSIFIER`` (or 3): return a classifier trained with the optimal parameters on the entire data set. This is the default setting.
         
-        Regardless of this, the learner (given as object) is left set to the
-        optimal parameters.
+        Regardless of this, the learner (given as parameter ``learner``) is 
+        left set to the optimal parameters.
     
     .. attribute:: verbose
     
@@ -159,37 +154,56 @@ class TuneParameters(Orange.classification.Learner):
         tried values and the related
     
     If tuner returns the classifier, it behaves as a learning algorithm. As the
-    examples below will demonstrate, it can be called, given the examples and
+    examples below will demonstrate, it can be called, given the data and
     the result is a "trained" classifier. It can, for instance, be used in
     cross-validation.
 
-    Out of these attributes, the only necessary argument is object. The real
-    tuning classes add two additional - the attributes that tell what
-    parameter(s) to optimize and which values to use.
+    Out of these attributes, the only necessary argument is ``learner``. The
+    real tuning classes (subclasses of this class) add two additional - 
+    the attributes that tell what parameter(s) to optimize and which values
+    to use.
     
     """
     
-    returnNone=0
-    returnParameters=1
-    returnLearner=2
-    returnClassifier=3
+    RETURN_NONE = 0
+    RETURN_PARAMETERS = 1
+    RETURN_LEARNER = 2
+    RETURN_CLASSIFIER = 3
     
-    def __new__(cls, examples = None, weightID = 0, **argkw):
+    returnNone = \
+        deprecated_class_attribute("returnNone", "RETURN_NONE")
+    returnParameters = \
+        deprecated_class_attribute("returnParameters", "RETURN_PARAMETERS")
+    returnLearner = \
+        deprecated_class_attribute("returnLearner", "RETURN_LEARNER")
+    returnClassifier = \
+        deprecated_class_attribute("returnClassifier", "RETURN_CLASSIFIER")
+    
+    @deprecated_keywords({"examples": "data","weightID": "weight_id"})
+    def __new__(cls, data = None, weight_id = 0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        self.__dict__.update(argkw)
-        if examples:
-            return self.__call__(examples, weightID)
+        if data:
+            for name, value in argkw.items():
+                setattr(self, name, value)
+            self.__init__(**argkw)
+            return self.__call__(data, weight_id)
         else:
             return self
 
     def findobj(self, name):
         import string
-        names=string.split(name, ".")
-        lastobj=self.object
+        names = string.split(name, ".")
+        lastobj = self.object
         for i in names[:-1]:
-            lastobj=getattr(lastobj, i)
+            lastobj = getattr(lastobj, i)
         return lastobj, names[-1]
-        
+    
+TuneParameters = deprecated_members(
+    {"returnWhat": "return_what",
+     "object": "learner"},
+    )(TuneParameters)
+    
+    
 class Tune1Parameter(TuneParameters):
     
     """Class :obj:`Orange.optimization.Tune1Parameter` tunes a single parameter.
@@ -211,19 +225,19 @@ class Tune1Parameter(TuneParameters):
     .. literalinclude:: code/optimization-tuning1.py
         :lines: 3-11
 
-    Set up like this, when the tuner is called, set learner.minSubset to 1, 2,
-    3, 4, 5, 10, 15 and 20, and measure the AUC in 5-fold cross validation. It
-    will then reset the learner.minSubset to the optimal value found and, since
-    we left returnWhat at the default (returnClassifier), construct and return
-    the classifier from the entire data set. So, what we get is a classifier,
-    but if we'd also like to know what the optimal value was, we can get it
-    from learner.minSubset.
+    Set up like this, when the tuner is called, set ``learner.min_subset`` to 
+    1, 2, 3, 4, 5, 10, 15 and 20, and measure the AUC in 5-fold cross 
+    validation. It will then reset the learner.minSubset to the optimal value
+    found and, since we left ``return_what`` at the default 
+    (``RETURN_CLASSIFIER``), construct and return the classifier from the 
+    entire data set. So, what we get is a  classifier, but if we'd also like 
+    to know what the optimal value was, we can get it from
+    ``learner.min_subset``.
 
     Tuning is of course not limited to setting numeric parameters. You can, for
     instance, try to find the optimal criteria for assessing the quality of
-    attributes by tuning parameter="measure", trying settings like
-    values=[orange.MeasureAttribute_gainRatio(),
-    orange.MeasureAttribute_gini()].
+    attributes by tuning ``parameter="measure"``, trying settings like
+    ``values=[Orange.feature.scoring.GainRatio(), Orange.feature.scoring.Gini()]``
     
     Since the tuner returns a classifier and thus behaves like a learner, it
     can be used in a cross-validation. Let us see whether a tuning tree indeed
@@ -235,24 +249,25 @@ class Tune1Parameter(TuneParameters):
     .. literalinclude:: code/optimization-tuning1.py
         :lines: 13-18
     
-    This will take some time: for each of 8 values for minSubset it will
+    This can be time consuming: for each of 8 values for ``min_subset`` it will
     perform 5-fold cross validation inside a 10-fold cross validation -
     altogether 400 trees. Plus, it will learn the optimal tree afterwards for
-    each fold. Add a tree without tuning, and you get 420 trees build.
+    each fold. Adding a tree without tuning, that makes 420 trees build in 
+    total.
     
-    Well, not that long, and the results are good::
+    Nevertheless, results are good::
     
         Untuned tree: 0.930
         Tuned tree: 0.986
     
     """
     
-    def __call__(self, table, weight=None, verbose=0):
+    def __call__(self, data, weight=None, verbose=0):
         verbose = verbose or getattr(self, "verbose", 0)
         evaluate = getattr(self, "evaluate", Orange.evaluation.scoring.CA)
         folds = getattr(self, "folds", 5)
         compare = getattr(self, "compare", cmp)
-        returnWhat = getattr(self, "returnWhat", 
+        return_what = getattr(self, "return_what", 
                              Tune1Parameter.returnClassifier)
 
         if (type(self.parameter)==list) or (type(self.parameter)==tuple):
@@ -260,10 +275,10 @@ class Tune1Parameter(TuneParameters):
         else:
             to_set = [self.findobj(self.parameter)]
 
-        cvind = Orange.core.MakeRandomIndicesCV(table, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed = table.checksum(), 
+        cvind = Orange.core.MakeRandomIndicesCV(data, folds)
+        findBest = Orange.misc.selection.BestOnTheFly(seed = data.checksum(), 
                                          callCompareOn1st = True)
-        tableAndWeight = weight and (table, weight) or table
+        tableAndWeight = weight and (data, weight) or data
         for par in self.values:
             for i in to_set:
                 setattr(i[0], i[1], par)
@@ -280,15 +295,17 @@ class Tune1Parameter(TuneParameters):
         if verbose:
             print "*** Optimal parameter: %s = %s" % (self.parameter, bestpar)
 
-        if returnWhat==Tune1Parameter.returnNone:
+        if return_what==Tune1Parameter.returnNone:
             return None
-        elif returnWhat==Tune1Parameter.returnParameters:
+        elif return_what==Tune1Parameter.returnParameters:
             return bestpar
-        elif returnWhat==Tune1Parameter.returnLearner:
+        elif return_what==Tune1Parameter.returnLearner:
             return self.object
         else:
-            classifier = self.object(table)
-            classifier.setattr("fittedParameter", bestpar)
+            classifier = self.object(data)
+            if not Orange.misc.environ.orange_no_deprecated_members:
+                classifier.setattr("fittedParameter", bestpar)
+            classifier.setattr("fitted_parameter", bestpar)
             return classifier
 
 class TuneMParameters(TuneParameters):
@@ -302,26 +319,22 @@ class TuneMParameters(TuneParameters):
         A list of two-element tuples, each containing the name of a parameter
         and its possible values.
     
-    For exercise we can try to tune both settings mentioned above, the minimal
-    number of examples in leaves and the splitting criteria by setting the
-    tuner as follows:
+    For example we can try to tune both the minimal number of instances in 
+    leaves and the splitting criteria by setting the tuner as follows:
     
     :download:`optimization-tuningm.py <code/optimization-tuningm.py>`
 
     .. literalinclude:: code/optimization-tuningm.py
-        
-    Everything else stays like above, in examples for
-    :obj:`Orange.optimization.Tune1Parameter`.
     
     """
     
-    def __call__(self, table, weight=None, verbose=0):
+    def __call__(self, data, weight=None, verbose=0):
         evaluate = getattr(self, "evaluate", Orange.evaluation.scoring.CA)
         folds = getattr(self, "folds", 5)
         compare = getattr(self, "compare", cmp)
         verbose = verbose or getattr(self, "verbose", 0)
-        returnWhat=getattr(self, "returnWhat", Tune1Parameter.returnClassifier)
-        progressCallback = getattr(self, "progressCallback", lambda i: None)
+        return_what = getattr(self, "return_what", Tune1Parameter.returnClassifier)
+        progress_callback = getattr(self, "progress_callback", lambda i: None)
         
         to_set = []
         parnames = []
@@ -334,10 +347,10 @@ class TuneMParameters(TuneParameters):
                 parnames.append([par[0]])
 
 
-        cvind = Orange.core.MakeRandomIndicesCV(table, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed = table.checksum(), 
+        cvind = Orange.core.MakeRandomIndicesCV(data, folds)
+        findBest = Orange.misc.selection.BestOnTheFly(seed = data.checksum(), 
                                          callCompareOn1st = True)
-        tableAndWeight = weight and (table, weight) or table
+        tableAndWeight = weight and (data, weight) or data
         numOfTests = sum([len(x[1]) for x in self.parameters])
         milestones = set(range(0, numOfTests, max(numOfTests / 100, 1)))
         for itercount, valueindices in enumerate(Orange.misc.counters.LimitedCounter( \
@@ -353,7 +366,7 @@ class TuneMParameters(TuneParameters):
             res = evaluate(Orange.evaluation.testing.test_with_indices(
                                         [self.object], tableAndWeight, cvind))
             if itercount in milestones:
-                progressCallback(100.0 * itercount / numOfTests)
+                progress_callback(100.0 * itercount / numOfTests)
             
             findBest.candidate((res, values))
             if verbose==2:
@@ -370,34 +383,38 @@ class TuneMParameters(TuneParameters):
         if verbose:
             print
 
-        if returnWhat==Tune1Parameter.returnNone:
+        if return_what==Tune1Parameter.returnNone:
             return None
-        elif returnWhat==Tune1Parameter.returnParameters:
+        elif return_what==Tune1Parameter.returnParameters:
             return bestpar
-        elif returnWhat==Tune1Parameter.returnLearner:
+        elif return_what==Tune1Parameter.returnLearner:
             return self.object
         else:
-            classifier = self.object(table)
-            classifier.fittedParameters = bestpar
+            classifier = self.object(data)
+            if Orange.misc.environ.orange_no_deprecated_members:
+                classifier.fittedParameters = bestpar
+            classifier.fitted_parameters = bestpar
             return classifier
+        
+TuneMParameters = deprecated_members(
+    {"progressCallback": "progress_callback"},
+    )(TuneMParameters)
 
 class ThresholdLearner(Orange.classification.Learner):
     
-    """:obj:`Orange.optimization.ThresholdLearner` is a class that wraps around 
+    """:obj:`Orange.optimization.ThresholdLearner` is a class that wraps 
     another learner. When given the data, it calls the wrapped learner to build
     a classifier, than it uses the classifier to predict the class
-    probabilities on the training examples. Storing the probabilities, it
+    probabilities on the training instances. Storing the probabilities, it
     computes the threshold that would give the optimal classification accuracy.
     Then it wraps the classifier and the threshold into an instance of
     :obj:`Orange.optimization.ThresholdClassifier`.
 
     Note that the learner doesn't perform internal cross-validation. Also, the
-    learner doesn't work for multivalued classes. If you don't understand why,
-    think harder. If you still don't, try to program it yourself, this should
-    help. :)
+    learner doesn't work for multivalued classes.
 
     :obj:`Orange.optimization.ThresholdLearner` has the same interface as any
-    learner: if the constructor is given examples, it returns a classifier,
+    learner: if the constructor is given data, it returns a classifier,
     else it returns a learner. It has two attributes.
     
     .. attribute:: learner
@@ -405,7 +422,7 @@ class ThresholdLearner(Orange.classification.Learner):
         The wrapped learner, for example an instance of
         :obj:`Orange.classification.bayes.NaiveLearner`.
     
-    .. attribute:: storeCurve
+    .. attribute:: store_curve
     
         If `True`, the resulting classifier will contain an attribute curve, with
         a list of tuples containing thresholds and classification accuracies at
@@ -413,51 +430,60 @@ class ThresholdLearner(Orange.classification.Learner):
     
     """
     
-    def __new__(cls, examples = None, weightID = 0, **kwds):
+    @deprecated_keywords({"examples": "data","weightID": "weight_id"})
+    def __new__(cls, data = None, weight_id = 0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
-        if examples:
+        if data:
             self.__init__(**kwargs)
-            return self.__call__(examples, weightID)
+            return self.__call__(data, weight_id)
         else:
             return self
         
-    def __init__(self, learner=None, storeCurve=False, **kwds):
+    @deprecated_keywords({"storeCurve": "store_curve"})
+    def __init__(self, learner=None, store_curve=False, **kwds):
         self.learner = learner
-        self.storeCurve = storeCurve
-        self.__dict__.update(kwds)
+        self.store_curve = store_curve
+        for name, value in kwds.items():
+            setattr(self, name, value)
 
-    def __call__(self, examples, weightID = 0):
+    @deprecated_keywords({"examples": "data","weightID": "weight_id"})
+    def __call__(self, data, weight_id = 0):
         if self.learner is None:
             raise AttributeError("Learner not set.")
         
-        classifier = self.learner(examples, weightID)
+        classifier = self.learner(data, weight_id)
         threshold, optCA, curve = Orange.wrappers.ThresholdCA(classifier, 
-                                                          examples, 
-                                                          weightID)
-        if self.storeCurve:
+                                                          data, 
+                                                          weight_id)
+        if self.store_curve:
             return ThresholdClassifier(classifier, threshold, curve = curve)
         else:
             return ThresholdClassifier(classifier, threshold)
 
+ThresholdLearner = deprecated_members(
+    {"storeCurve": "store_curve"}, 
+    wrap_methods=["__init__"]
+    )(ThresholdLearner)
+    
 class ThresholdClassifier(Orange.classification.Classifier):
     
     """:obj:`Orange.optimization.ThresholdClassifier`, used by both 
     :obj:`Orange.optimization.ThredholdLearner` and
     :obj:`Orange.optimization.ThresholdLearner_fixed` is therefore another
     wrapper class, containing a classifier and a threshold. When it needs to
-    classify an example, it calls the wrapped classifier to predict
+    classify an instance, it calls the wrapped classifier to predict
     probabilities. The example will be classified into the second class only if
     the probability of that class is above the threshold.
 
     .. attribute:: classifier
     
-    The wrapped classifier, normally the one related to the ThresholdLearner's
-    learner, e.g. an instance of
-    :obj:`Orange.classification.bayes.NaiveLearner`.
+        The wrapped classifier, normally the one related to the ThresholdLearner's
+        learner, e.g. an instance of
+        :obj:`Orange.classification.bayes.NaiveLearner`.
     
     .. attribute:: threshold
     
-    The threshold for classification into the second class.
+        The threshold for classification into the second class.
     
     The two attributes can be specified set as attributes or given to the
     constructor as ordinary arguments.
@@ -467,10 +493,11 @@ class ThresholdClassifier(Orange.classification.Classifier):
     def __init__(self, classifier, threshold, **kwds):
         self.classifier = classifier
         self.threshold = threshold
-        self.__dict__.update(kwds)
+        for name, value in kwds.items():
+            setattr(self, name, value)
 
-    def __call__(self, example, what = Orange.classification.Classifier.GetValue):
-        probs = self.classifier(example, self.GetProbabilities)
+    def __call__(self, instance, what = Orange.classification.Classifier.GetValue):
+        probs = self.classifier(instance, self.GetProbabilities)
         if what == self.GetProbabilities:
             return probs
         value = Orange.data.Value(self.classifier.classVar, probs[1] > \
@@ -482,48 +509,49 @@ class ThresholdClassifier(Orange.classification.Classifier):
         
     
 class ThresholdLearner_fixed(Orange.classification.Learner):
-    """ There's also a dumb variant of 
-    :obj:`Orange.optimization.ThresholdLearner`, a class called
-    :obj:`Orange.optimization.ThreshholdLearner_fixed`. Instead of finding the
-    optimal threshold it uses a prescribed one. So, it has the following two
+    """ This is a convinience  variant of 
+    :obj:`Orange.optimization.ThresholdLearner`. Instead of finding the
+    optimal threshold it uses a prescribed one. It has the following two
     attributes.
     
     .. attribute:: learner
     
-    The wrapped learner, for example an instance of
-    :obj:`Orange.classification.bayes.NaiveLearner`.
+        The wrapped learner, for example an instance of
+        :obj:`~Orange.classification.bayes.NaiveLearner`.
     
     .. attribute:: threshold
     
-    Threshold to use in classification.
+        Threshold to use in classification.
     
-    What this guy does is therefore simple: to learn, it calls the learner and
-    puts the resulting classifier together with the threshold into an instance
-    of ThresholdClassifier.
+    This class calls its base learner and puts the resulting classifier
+    together with the threshold into an instance of :obj:`ThresholdClassifier`.
     
     """
-    def __new__(cls, examples = None, weightID = 0, **kwds):
+    @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
+    def __new__(cls, data = None, weight_id = 0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
-        if examples:
+        if data:
             self.__init__(**kwds)
-            return self.__call__(examples, weightID)
+            return self.__call__(data, weight_id)
         else:
             return self
         
     def __init__(self, learner=None, threshold=None, **kwds):
         self.learner = learner
         self.threshold = threshold
-        self.__dict__.update(kwds)
-
-    def __call__(self, examples, weightID = 0):
+        for name, value in kwds.items():
+            setattr(name, value)
+            
+    @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
+    def __call__(self, data, weight_id = 0):
         if self.learner is None:
             raise AttributeError("Learner not set.")
         if self.threshold is None:
             raise AttributeError("Threshold not set.")
-        if len(examples.domain.classVar.values) != 2:
+        if len(data.domain.classVar.values) != 2:
             raise ValueError("ThresholdLearner handles binary classes only.")
         
-        return ThresholdClassifier(self.learner(examples, weightID), 
+        return ThresholdClassifier(self.learner(data, weight_id), 
                                    self.threshold)
 
 class PreprocessedLearner(object):
