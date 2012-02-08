@@ -353,8 +353,8 @@ class SVMLearner(_SVMLearner):
         An example that tunes the `gamma` parameter on `data` using 3-fold cross 
         validation. ::
 
-        svm = Orange.classification.svm.SVMLearner()
-        svm.tune_parameters(table, parameters=["gamma"], folds=3)
+            svm = Orange.classification.svm.SVMLearner()
+            svm.tune_parameters(table, parameters=["gamma"], folds=3)
                     
         """
         
