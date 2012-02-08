@@ -77,3 +77,6 @@ impute_class imputeClass
 
 Filter_random
 random_generator randomGenerator
+
+ValueFilter
+accept_special acceptSpecial
