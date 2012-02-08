@@ -956,8 +956,8 @@ from Orange.misc.render import EPSRenderer, ColorPalette
 class DendrogramPlot(object):
     """ A class for drawing dendrograms.
     
-    ``dendrogram_draw`` function is a more convinient interface
-        to the functionality provided by this class and.   
+    ``dendrogram_draw`` function is a more convenient interface
+    to the functionality provided by this class and.
         
     Example::
     
@@ -1114,7 +1114,7 @@ def dendrogram_draw(file, cluster, attr_cluster = None, labels=None, data=None,
     """ Plot the dendrogram to ``file``.
     
     :param file: An  open file or a filename to store the image to. The output format
-    is chosen according to the extension. Supported formats: PNG, EPS, SVG.
+        is chosen according to the extension. Supported formats: PNG, EPS, SVG.
     :type file: str or an file-like object suitable for writing.
     
     :param cluster: An instance of :class:`HierarcicalCluster`
