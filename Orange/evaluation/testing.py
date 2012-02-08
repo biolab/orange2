@@ -280,7 +280,7 @@ class Evaluation(object):
 
         niterations = max(indices)+1
         test_result = ExperimentResults(niterations,
-                                        classifierNames = [getobjectname(l) for l in learners],
+                                        classifier_names = [getobjectname(l) for l in learners],
                                         domain=examples.domain,
                                         weights=weight,
                                         test_type=test_type)
@@ -452,7 +452,7 @@ class Evaluation(object):
         test_type = self.check_test_type(examples, learners)
         
         test_results = ExperimentResults(times,
-                                        classifierNames = [getobjectname(l) for l in learners],
+                                        classifier_names = [getobjectname(l) for l in learners],
                                         domain=examples.domain,
                                         test_type = test_type,
                                         weights=weight)
@@ -577,7 +577,7 @@ class Evaluation(object):
         all_results=[]
         for p in proportions:
             test_results = ExperimentResults(times,
-                                        classifierNames = [getobjectname(l) for l in learners],
+                                        classifier_names = [getobjectname(l) for l in learners],
                                         domain=test_set.domain,
                                         test_type = test_type,
                                         weights=test_weight)
@@ -613,7 +613,7 @@ class Evaluation(object):
         test_type = self.check_test_type(examples, classifiers)
 
         test_results = ExperimentResults(1,
-                                        classifierNames = [getobjectname(l) for l in classifiers],
+                                        classifier_names = [getobjectname(l) for l in classifiers],
                                         domain=examples.domain,
                                         test_type = test_type,
                                         weights=weight)
