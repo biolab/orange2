@@ -404,7 +404,7 @@ class OWNxExplorerQwt(OWWidget):
         if len(vertices) == 0:
             return
 
-        if self.graph_base.items().domain[att].var_type == Orange.data.Type.Continuous:
+        if self.graph_base.items().domain[att].var_type == Orange.feature.Type.Continuous:
             for v in vertices:
                 self.graph_base.items()[v][att] = float(self.editValue)
         else:
@@ -1150,10 +1150,10 @@ class OWNxExplorerQwt(OWWidget):
         self.edgeAttributes = [(var.name, var.varType) for var in edgeVars]
 
         for var in vars:
-            if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
+            if var.varType in [Orange.feature.Type.Discrete, Orange.feature.Type.Continuous]:
                 self.colorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
-            if var.varType in [Orange.data.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
+            if var.varType in [Orange.feature.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
 
                 value = self.graph_base.items()[0][var].value
 
@@ -1168,7 +1168,7 @@ class OWNxExplorerQwt(OWWidget):
                 if len(value.split(',')) > 1:
                     self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), "num of " + unicode(var.name))
 
-            elif var.varType in [Orange.data.Type.Continuous]:
+            elif var.varType in [Orange.feature.Type.Continuous]:
                 self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
             self.nameComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
@@ -1177,7 +1177,7 @@ class OWNxExplorerQwt(OWWidget):
             self.comboAttSelection.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
         for var in edgeVars:
-            if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
+            if var.varType in [Orange.feature.Type.Discrete, Orange.feature.Type.Continuous]:
                 self.edgeColorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
         for i in range(self.vertexSizeCombo.count()):
@@ -1467,7 +1467,7 @@ class OWNxExplorerQwt(OWWidget):
                     orgVar = self.graph_base.items().domain[var]
                     mrkVar = items.domain[var]
 
-                    if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.data.Type.String:
+                    if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.feature.Type.String:
                         self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
                         self.markInputRadioButton.setEnabled(True)
 

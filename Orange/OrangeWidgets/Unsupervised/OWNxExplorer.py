@@ -368,7 +368,7 @@ try:
                 return
 
             items = self.graph_base.items()
-            if items.domain[att].var_type == Orange.data.Type.Continuous:
+            if items.domain[att].var_type == Orange.feature.Type.Continuous:
                 for v in vertices:
                     items[v][att] = float(self.editValue)
             else:
@@ -606,12 +606,12 @@ try:
             self.edgeAttributes = [(var.name, var.varType) for var in edgeVars]
 
             for var in vars:
-                if var.varType in [Orange.data.Type.Discrete, \
-                                   Orange.data.Type.Continuous]:
+                if var.varType in [Orange.feature.Type.Discrete, \
+                                   Orange.feature.Type.Continuous]:
                     self.colorCombo.addItem(self.icons.get(var.varType, \
                                             self.icons[-1]), unicode(var.name))
 
-                if var.varType in [Orange.data.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
+                if var.varType in [Orange.feature.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
 
                     value = self.graph_base.items()[0][var].value
 
@@ -626,7 +626,7 @@ try:
                     if len(value.split(',')) > 1:
                         self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), "num of " + unicode(var.name))
 
-                elif var.varType in [Orange.data.Type.Continuous]:
+                elif var.varType in [Orange.feature.Type.Continuous]:
                     self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
                 self.nameComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
@@ -635,7 +635,7 @@ try:
                 self.comboAttSelection.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
             for var in edgeVars:
-                if var.varType in [Orange.data.Type.Discrete, Orange.data.Type.Continuous]:
+                if var.varType in [Orange.feature.Type.Discrete, Orange.feature.Type.Continuous]:
                     self.edgeColorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
             for i in range(self.vertexSizeCombo.count()):
@@ -932,14 +932,14 @@ try:
                 lstNewDomain = [x.name for x in items.domain] + [items.domain[x].name for x in items.domain.getmetas()]
                 commonVars = set(lstNewDomain) & set(lstOrgDomain)
 
-                self.markInputCombo.addItem(self.icons[Orange.data.Type.Discrete], unicode("ID"))
+                self.markInputCombo.addItem(self.icons[Orange.feature.Type.Discrete], unicode("ID"))
 
                 if len(commonVars) > 0:
                     for var in commonVars:
                         orgVar = self.graph_base.items().domain[var]
                         mrkVar = items.domain[var]
 
-                        if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.data.Type.String:
+                        if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.feature.Type.String:
                             self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
 
                 self.markInputRadioButton.setEnabled(True)
