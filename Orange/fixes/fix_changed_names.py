@@ -43,6 +43,9 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.newmetaid": "Orange.feature:Variable.new_meta_id",
 
            "orange.SymMatrix": "Orange.misc.SymMatrix",
+           "orange.ClassifierFromVar": "Orange.classification.ClassifierFromVar",
+           "orange.ClassifierFromVarFD": "Orange.classification.ClassifierFromVarFD",
+           
 
            "orange.GetValue": "Orange.classification:Classifier.GetValue",
            "orange.GetProbabilities": "Orange.classification:Classifier.GetProbabilities",
