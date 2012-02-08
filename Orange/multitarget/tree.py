@@ -170,7 +170,7 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
 
     def __init__(self, **kwargs):
         """
-        The constructor simply passes all given arguments to
+        The constructor passes all arguments to
         :class:`~Orange.classification.tree.TreeLearner`'s constructor
         :obj:`Orange.classification.tree.TreeLearner.__init__`.
         """
@@ -190,6 +190,10 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
         :type weight: :obj:`int`
         """
         
+        for ins in data:
+            for cval in ins.get_classes():
+                if cval.is_special():
+                    raise ValueError('Data has missing class values.')
         # TreeLearner does not work on class-less domains,
         # so we set the class if necessary
         if data.domain.class_var is None:
