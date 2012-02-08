@@ -20,10 +20,10 @@ class BaseRegressionLearner(Orange.core.Learner):
     def __new__(cls, table=None, weight_id=None, **kwds):
         learner = Orange.core.Learner.__new__(cls, **kwds)
         if table is not None:
-            learner.__init__(**kwds) 
+            learner.__init__(**kwds)
             return learner(table, weight_id)
         else:
-            return learner      
+            return learner
 
     def __init__(self):
         pass
@@ -33,13 +33,13 @@ class BaseRegressionLearner(Orange.core.Learner):
 
         :param imputer: function which imputes the missing values,
             if None, the default imputer: mean for the continuous variables
-            and most frequent value (majority) for discrete variables 
-        :type imputer: None or Orange.feature.imputation.ImputerConstructor_model    
+            and most frequent value (majority) for discrete variables
+        :type imputer: None or Orange.feature.imputation.ModelConstructor
         """
         if imputer is not None:
             imputer = imputer
         else: # default imputer
-            self.imputer = Orange.feature.imputation.ImputerConstructor_model()
+            self.imputer = Orange.feature.imputation.ModelConstructor()
             self.imputer.learner_continuous = Orange.regression.mean.MeanLearner()
             self.imputer.learner_discrete = Orange.classification.majority.MajorityLearner()
 

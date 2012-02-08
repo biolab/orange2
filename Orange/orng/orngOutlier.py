@@ -1,1 +1,1 @@
-from Orange.preprocess.outliers import *
+from Orange.data.outliers import *
