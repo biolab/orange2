@@ -1,5 +1,3 @@
-.. automodule:: Orange.classification.classfromvar
-
 .. index: classification from variable
 .. index:
    single: classification; classification from variable
