@@ -170,7 +170,7 @@ public:
 
 public:
 
-  TAssociationRulesInducer(float asupp=0.1, float aconf=0.5);
+  TAssociationRulesInducer(float asupp=0.3, float aconf=0.5);
   PAssociationRules operator()(PExampleGenerator, const int &weightID = 0);
 
   void buildTrees(PExampleGenerator, const int &weightID, TItemSetNode *&, int &depth, int &nOfExamples, TDiscDistribution &);
@@ -274,7 +274,7 @@ public:
 
   bool storeExamples; //P stores examples corresponding to rules
 
-  TAssociationRulesSparseInducer(float asupp=0.1, float aconf=0, int awei=0);
+  TAssociationRulesSparseInducer(float asupp=0.3, float aconf=0, int awei=0);
   TSparseItemsetTree *TAssociationRulesSparseInducer::buildTree(PExampleGenerator examples, const int &weightID, long &i, float &fullWeight);
   PAssociationRules operator()(PExampleGenerator, const int &weightID);
 
@@ -296,7 +296,7 @@ public:
 
   bool storeExamples; //P stores examples corresponding to itemsets
 
-  TItemsetsSparseInducer(float asupp=0.1, int awei=0);
+  TItemsetsSparseInducer(float asupp=0.3, int awei=0);
   PSparseItemsetTree operator()(PExampleGenerator, const int &weightID);
 
 private:

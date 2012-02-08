@@ -262,7 +262,7 @@ is a new feature with no relation to the existing ones. ::
 
          :param variables: List of variables (instances of :obj:`~Orange.feature.Descriptor`)
          :type variables: list
-         :param class_vars: A list of multiple classes; must be a keword argument
+         :param class_vars: A list of multiple classes; must be a keyword argument
          :type class_vars: list
 
      .. method:: __init__(features, class_variable[, class_vars=])

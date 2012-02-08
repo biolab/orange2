@@ -1,61 +1,69 @@
-====================================
-Association rules (``associate``)
-====================================
+.. py:currentmodule:: Orange.associate
 
-==============================
-Induction of association rules
-==============================
+=======================================================
+Association rules and frequent itemsets (``associate``)
+=======================================================
 
 Orange provides two algorithms for induction of
-`association rules <http://en.wikipedia.org/wiki/Association_rule_learning>`_.
-One is the basic Agrawal's algorithm with dynamic induction of supported
-itemsets and rules that is designed specifically for datasets with a
-large number of different items. This is, however, not really suitable
-for feature-based machine learning problems.
-We have adapted the original algorithm for efficiency
-with the latter type of data, and to induce the rules where,
-both sides don't only contain features
-(like "bread, butter -> jam") but also their values
-("bread = wheat, butter = yes -> jam = plum").
+`association rules <http://en.wikipedia.org/wiki/Association_rule_learning>`_,
+a standard `Apriori algorithm <http://en.wikipedia.org/wiki/Apriori_algorithm>`_ [AgrawalSrikant1994]_ for sparse (basket) data analysis
+and a variant of Apriori for attribute-value data sets. Both algorithms also support mining of frequent itemsets.
 
-It is also possible to extract item sets instead of association rules. These
-are often more interesting than the rules themselves.
+For example, consider a simple market basket data::
 
-Besides association rule inducer, Orange also provides a rather simplified
-method for classification by association rules.
+    Bread, Milk
+    Bread, Diapers, Beer, Eggs
+    Milk, Diapers, Beer, Cola
+    Bread, Milk, Diapers, Beer
+    Bread, Milk, Diapers, Cola
 
-===================
-Agrawal's algorithm
-===================
+The following script induces association rules with items that appear in at least 30% of data instances
+(transactions):
 
-The class that induces rules by Agrawal's algorithm, accepts the data examples
-of two forms. The first is the standard form in which each example is
-described by values of a fixed list of features (defined in domain).
-The algorithm, however, disregards the feature values and only checks whether
-the value is defined or not. The rule shown above ("bread, butter -> jam")
-actually means that if "bread" and "butter" are defined, then "jam" is defined
-as well. It is expected that most of values will be undefined - if this is not
-so, use the :class:`~AssociationRulesInducer`.
+.. literalinclude:: code/associate-market.py
 
-:class:`AssociationRulesSparseInducer` can also use sparse data.
-Sparse examples have no fixed
-features - the domain is empty. All values assigned to example are given as meta attributes.
-All meta attributes need to be registered with the :obj:`~Orange.data.Domain`.
-The most suitable format fot this kind of data it is the basket format.
+The code reports on support and confidence first five rules found::
 
-The algorithm first dynamically builds all itemsets (sets of features) that have
-at least the prescribed support. Each of these is then used to derive rules
-with requested confidence.
+    Supp Conf  Rule
+     0.4  1.0  Cola -> Diapers
+     0.4  0.5  Diapers -> Cola
+     0.4  1.0  Cola -> Diapers Milk
+     0.4  1.0  Cola Diapers -> Milk
+     0.4  1.0  Cola Milk -> Diapers
 
-If examples were given in the sparse form, so are the left and right side
-of the induced rules. If examples were given in the standard form, so are
-the examples in association rules.
+In Apriori, association rule induction is two-stage algorithm first finds itemsets that frequently appear in
+the data and have sufficient support, and then splits them to rules of sufficient confidence. Function `getItemsets`
+reports on itemsets alone and skips rule induction:
+
+.. literalinclude:: code/associate-frequent-itemsets.py
+
+The above script lists frequent itemsets and their support::
+
+    (0.40) Cola
+    (0.40) Cola Diapers
+    (0.40) Cola Diapers Milk
+    (0.40) Cola Milk
+    (0.60) Beer
+
+======================================
+Association rules induction algorithms
+======================================
+
+:class:`AssociationRulesSparseInducer` induces frequent itemsets and association rules from sparse data sets. These
+can be either provided in the basket format (see :doc:`Orange.data.formats`) or in an attribute-value format where any
+entry in the data table is considered as presence of a feature in the transaction (an item),
+and any unknown (empty) entry signifies its absence. :class:`AssociationRulesInducer` works feature-value data,
+where am item is a combination of feature and its value (e.g., `astigmatic=yes`).
+
+Sparse (basket) data sets
+-------------------------
 
 .. class:: AssociationRulesSparseInducer
 
     .. attribute:: support
 
-        Minimal support for the rule.
+        Minimal support for the rule. Depending on the data set it should be set to sufficiently high value
+        to avoid running out of working memory (default: 0.3).
 
     .. attribute:: confidence
 
@@ -68,56 +76,38 @@ the examples in association rules.
 
     .. attribute:: max_item_sets
 
-        The maximal number of itemsets. The algorithm's
-        running time (and its memory consumption) depends on the minimal support;
-        the lower the requested support, the more eligible itemsets will be found.
-        There is no general rule for setting support - perhaps it
-        should be around 0.3, but this depends on the data set.
-        If the supoort was set too low, the algorithm could run out of memory.
-        Therefore, Orange limits the number of generated rules to
-        :obj:`max_item_sets`. If Orange reports, that the prescribed
-        :obj:`max_item_sets` was exceeded, increase the requered support
-        or alternatively, increase :obj:`max_item_sets` to as high as you computer
-        can handle.
+        The maximal number of itemsets induced. Orange will stop with inference of
+        frequent itemsets once this number of itemsets is reached.
 
     .. method:: __call__(data, weight_id)
 
-        Induce rules from the data set.
-
+        Induce rules from the provided data set.
 
     .. method:: get_itemsets(data)
 
-        Returns a list of pairs. The first element of a pair is a tuple with
-        indices of features in the item set (negative for sparse data).
-        The second element is a list of indices supporting the item set, that is,
-        all the items in the set. If :obj:`store_examples` is False, the second
+        For a given data set, return a list of frequent itemsets. List elements are pairs,
+        where the first element includes indices of features in the item set (negative for sparse data) and
+        the second element a list of indices supporting the itemset.
+        If :obj:`store_examples` is False, the second
         element is None.
 
-We shall test the rule inducer on a dataset consisting of a brief description
-of Spanish Inquisition, given by Palin et al:
+To test this rule inducer, we will first create a sparse data sets consisting of list of words in sentences from a brief description
+of Spanish Inquisition, given by Palin et al.:
 
     NOBODY expects the Spanish Inquisition! Our chief weapon is surprise...surprise and fear...fear and surprise.... Our two weapons are fear and surprise...and ruthless efficiency.... Our *three* weapons are fear, surprise, and ruthless efficiency...and an almost fanatical devotion to the Pope.... Our *four*...no... *Amongst* our weapons.... Amongst our weaponry...are such elements as fear, surprise.... I'll come in again.
 
     NOBODY expects the Spanish Inquisition! Amongst our weaponry are such diverse elements as: fear, surprise, ruthless efficiency, an almost fanatical devotion to the Pope, and nice red uniforms - Oh damn!
 
-The text needs to be cleaned of punctuation marks and capital letters at beginnings of the sentences, each sentence needs to be put in a new line and commas need to be inserted between the words.
-
-Data example (:download:`inquisition.basket <code/inquisition.basket>`):
+After some cleaning (e.g., removal of stopwords and punctuation marks),
+our data set looks like (:download:`inquisition.basket <code/inquisition.basket>`):
 
 .. literalinclude:: code/inquisition.basket
 
-Inducing the rules is trivial::
+The following script induces the association rules:
 
-    import Orange
-    data = Orange.data.Table("inquisition")
+.. literalinclude:: code/associate-inquistion.py
 
-    rules = Orange.associate.AssociationRulesSparseInducer(data, support = 0.5)
-
-    print "%5s   %5s" % ("supp", "conf")
-    for r in rules:
-        print "%5.3f   %5.3f   %s" % (r.support, r.confidence, r)
-
-The induced rules are surprisingly fear-full: ::
+The induced rules are surprisingly fear-full::
 
     0.500   1.000   fear -> surprise
     0.500   1.000   surprise -> fear
@@ -155,66 +145,57 @@ objects like :obj:`~Orange.feature.Descriptor` and :obj:`~Orange.data.Instance`.
 
 .. _non-sparse-examples:
 
-===================
-Non-sparse data
-===================
+====================================
+Feature-value (non-sparse) data sets
+====================================
 
 :class:`AssociationRulesInducer` works with non-sparse data.
-Unknown values are ignored, while values of features are not (as opposite to
-the algorithm for sparse rules). In addition, the algorithm
-can be directed to search only for classification rules, in which the only
-feature on the right-hand side is the class variable.
+
 
 .. class:: AssociationRulesInducer
 
-    All attributes can be set with the constructor.
+    Association rule induction from non-sparse data sets. An item is a feature-value combination. Unknown values in
+    the data table are ignored. The algorithm can also be used to search only for classification rules where the
+    feature on the right-hand side is the class variable.
 
     .. attribute:: support
 
-       Minimal support for the rule.
+       Minimal support of the induced rule (default: 0.3)
 
     .. attribute:: confidence
 
-        Minimal confidence for the rule.
+        Minimal confidence of the induced rule.
 
     .. attribute:: classification_rules
 
-        If True (default is False), the classification rules are constructed instead
-        of general association rules.
+        If True, the classification rules are constructed instead
+        of general association rules (default: False).
 
     .. attribute:: store_examples
 
         Store the examples covered by each rule and those
-        confirming it
+        confirming it.
 
     .. attribute:: max_item_sets
 
-        The maximal number of itemsets.
+        The maximal number of itemsets induced. After reaching this limit the inference algorithm will stop.
 
     .. method:: __call__(data, weight_id)
 
-        Induce rules from the data set.
+        Induce rules from the given data set.
 
     .. method:: get_itemsets(data)
 
-        Returns a list of pairs. The first element of a pair is a tuple with
-        indices of features in the item set (negative for sparse data).
-        The second element is a list of indices supporting the item set, that is,
-        all the items in the set. If :obj:`store_examples` is False, the second
+        For a given data set, return a list of frequent itemsets. The list consists of pairs, where
+        the first element includes indices of features in the item set (negative for sparse data), and
+        the second element a list of indices supporting the item set. If :obj:`store_examples` is False, the second
         element is None.
 
-The example::
+Following is an example script that uses :class:`AssociationRulesInducer`:
 
-    import Orange
+.. literalinclude:: code/associate-lenses.py
 
-    data = Orange.data.Table("lenses")
-
-    print "Association rules"
-    rules = Orange.associate.AssociationRulesInducer(data, support = 0.5)
-    for r in rules:
-        print "%5.3f  %5.3f  %s" % (r.support, r.confidence, r)
-
-The found rules are: ::
+Script reports the following rules (first colon is support, second confidence)::
 
     0.333  0.533  lenses=none -> prescription=hypermetrope
     0.333  0.667  prescription=hypermetrope -> lenses=none
@@ -223,82 +204,80 @@ The found rules are: ::
     0.500  0.800  lenses=none -> tear_rate=reduced
     0.500  1.000  tear_rate=reduced -> lenses=none
 
-To limit the algorithm to classification rules, set classificationRules to 1: ::
+To infer classification rules we can use a similar script but set `classificationRules` to 1:
 
-    print "\\nClassification rules"
-    rules = orange.AssociationRulesInducer(data, support = 0.3, classificationRules = 1)
-    for r in rules:
-        print "%5.3f  %5.3f  %s" % (r.support, r.confidence, r)
+.. literalinclude:: code/association-lenses-classification.py
+    :lines: 4-5
 
-The found rules are, naturally, a subset of the above rules: ::
+These rules are a subset of association rules that in a consequent include only a class variable::
 
-    0.333  0.667  prescription=hypermetrope -> lenses=none
-    0.333  0.667  astigmatic=yes -> lenses=none
-    0.500  1.000  tear_rate=reduced -> lenses=none
+0.333  0.667  prescription=hypermetrope -> lenses=none
+0.333  0.667  astigmatic=yes -> lenses=none
+0.500  1.000  tear_rate=reduced -> lenses=none
 
-Itemsets are induced in a similar fashion as for sparse data, except that the
+Frequent itemsets are induced in a similar fashion as for sparse data, except that the
 first element of the tuple, the item set, is represented not by indices of
-features, as before, but with tuples (feature-index, value-index): ::
+features, as before, but with tuples (feature-index, value-index):
+
+.. literalinclude:: code/association-lenses-itemsets.py
+    :lines: 4-6
 
     inducer = Orange.associate.AssociationRulesInducer(support = 0.3, store_examples = True)
     itemsets = inducer.get_itemsets(data)
     print itemsets[8]
 
-This prints out ::
+The script prints out::
 
     (((2, 1), (4, 0)), [2, 6, 10, 14, 15, 18, 22, 23])
 
-meaning that the ninth itemset contains the second value of the third feature
+reporting that the ninth itemset contains the second value of the third feature
 (2, 1), and the first value of the fifth (4, 0).
 
 =======================
 Representation of rules
 =======================
 
-An :class:`AssociationRule` represents a rule. In Orange, methods for
-induction of association rules return the induced rules in
+Methods for induction of association rules return the induced rules in
 :class:`AssociationRules`, which is basically a list of :class:`AssociationRule` instances.
 
 .. class:: AssociationRule
 
     .. method:: __init__(left, right, n_applies_left, n_applies_right, n_applies_both, n_examples)
 
-        Constructs an association rule and computes all measures listed above.
+        Construct an association rule and compute evaluation scores (see below) based on counts given in the
+        arguments of the call.
 
     .. method:: __init__(left, right, support, confidence)
 
-        Construct association rule and sets its support and confidence. If
-        you intend to pass on such a rule you should set other attributes
-        manually - AssociationRules's constructor cannot compute anything
-        from arguments support and confidence.
+        Construct association rule and compute its support and confidence. For manual construction of such such a rule set other attributes
+        manually, as AssociationRules's constructor cannot compute anything only from support and
+        confidence.
 
     .. method:: __init__(rule)
 
-        Given an association rule as the argument, constructor copies of the
-        rule.
+        Given an association rule as the argument, constructor a copy of the rule.
 
     .. attribute:: left, right
 
         The left and the right side of the rule. Both are given as :class:`Orange.data.Instance`.
-        In rules created by :class:`AssociationRulesSparseInducer` from examples that
-        contain all values as meta-values, left and right are examples in the
+        In rules created by :class:`AssociationRulesSparseInducer` from data instances that
+        contain all values as meta-values, left and right are data instances in the
         same form. Otherwise, values in left that do not appear in the rule
         are "don't care", and value in right are "don't know". Both can,
         however, be tested by :meth:`~Orange.data.Value.is_special`.
 
     .. attribute:: n_left, n_right
 
-        The number of features (i.e. defined values) on the left and on the
+        The number of items on the left and on the
         right side of the rule.
 
     .. attribute:: n_applies_left, n_applies_right, n_applies_both
 
-        The number of (learning) examples that conform to the left, the right
-        and to both sides of the rule.
+        The number of data instances matching the left, right and both sides of the rule, correspondingly.
 
     .. attribute:: n_examples
 
-        The total number of learning examples.
+        The total number of training instances.
 
     .. attribute:: support
 
@@ -326,61 +305,39 @@ induction of association rules return the induced rules in
 
     .. attribute:: examples, match_left, match_both
 
-        If store_examples was True during induction, examples contains a copy
-        of the example table used to induce the rules. Attributes match_left
-        and match_both are lists of integers, representing the indices of
-        examples which match the left-hand side of the rule and both sides,
-        respectively.
+        If store_examples was `True` during induction, examples contain a copy
+        of the data table used to induce the rules. Attributes `match_left`
+        and `match_both` are lists of indices of data instances that match the left,
+        right and both sides of the rule, respectively.
 
-    .. method:: applies_left(example)
+    .. method:: applies_left(data_instance)
 
-    .. method:: applies_right(example)
+    .. method:: applies_right(data_instance)
 
-    .. method:: applies_both(example)
+    .. method:: applies_both(data_instance)
 
-        Tells whether the example fits into the left, right or both sides of
-        the rule, respectively. If the rule is represented by sparse examples,
-        the given example must be sparse as well.
+        Tests if data instance is matched by the left, right or both sides of
+        the rule, respectively. The data instance must be in the same representation as data from which the rule
+        was inferred.
 
-Association rule inducers do not store evidence about which example supports
-which rule. Let us write a function that finds the examples that
-confirm the rule (fit both sides of it) and those that contradict it (fit the
-left-hand side but not the right). The example::
+Association rule inducers do not store information on supporting data instances from training data set.
+Let us write a script that finds the data instances that
+match the rule (fit both sides of it) and those that contradict it (fit the
+left-hand side but not the right):
 
-    import Orange
-
-    data = Orange.data.Table("lenses")
-
-    rules = Orange.associate.AssociationRulesInducer(data, supp = 0.3)
-    rule = rules[0]
-
-    print
-    print "Rule: ", rule
-    print
-
-    print "Supporting examples:"
-    for example in data:
-        if rule.appliesBoth(example):
-            print example
-    print
-
-    print "Contradicting examples:"
-    for example in data:
-        if rule.applies_left(example) and not rule.applies_right(example):
-            print example
-    print
+.. literalinclude:: code/associate-traceback.py
 
 The latter printouts get simpler and faster if we instruct the inducer to
-store the examples. We can then do, for instance, this: ::
+store the examples::
 
     print "Match left: "
-    print "\\n".join(str(rule.examples[i]) for i in rule.match_left)
-    print "\\nMatch both: "
-    print "\\n".join(str(rule.examples[i]) for i in rule.match_both)
+    print "\n".join(str(rule.examples[i]) for i in rule.match_left)
+    print "\nMatch both: "
+    print "\n".join(str(rule.examples[i]) for i in rule.match_both)
 
-The "contradicting" examples are then those whose indices are found in
+The "contradicting" examples are those whose indices are found in
 match_left but not in match_both. The memory friendlier and the faster way
-to compute this is as follows: ::
+to compute this is::
 
     >>> [x for x in rule.match_left if not x in rule.match_both]
     [0, 2, 8, 10, 16, 17, 18]
@@ -394,3 +351,14 @@ Utilities
 .. autofunction:: print_rules
 
 .. autofunction:: sort
+
+References
+----------
+
+.. [AgrawalSrikant1994] R Agrawal and R Srikant: Fast algorithms for mining association
+   rules in large databases. In Proc. 20th International Conference on Very Large Data Bases, pages 487-499,
+   Santiago, Chile, September 1994.
+
+.. [TanSteinbachKumar2005] P-N Tan, M Steinbach and V Kumar: Introduction to Data Mining,
+   chapter on `Association analysis: basic concepts and algorithms
+   <http://www-users.cs.umn.edu/~kumar/dmbook/ch6.pdf>`_, Addison Wesley, 2005.
