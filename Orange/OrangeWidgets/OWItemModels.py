@@ -312,11 +312,11 @@ class VariableListModel(PyListModel):
             return PyListModel.data(self, index, role)
         
     def variable_tooltip(self, var):
-        if isinstance(var, Orange.data.variable.Discrete):
+        if isinstance(var, Orange.feature.Discrete):
             return self.discrete_variable_tooltip(var)
-        elif isinstance(var, Orange.data.variable.Continuous):
+        elif isinstance(var, Orange.feature.Continuous):
             return self.continuous_variable_toltip(var)
-        elif isinstance(var, Orange.data.variable.String):
+        elif isinstance(var, Orange.feature.String):
             return self.string_variable_tooltip(var)
         
     def variable_labels_tooltip(self, var):

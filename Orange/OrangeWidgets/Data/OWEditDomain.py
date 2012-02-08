@@ -15,10 +15,10 @@ import OWGUI
 import Orange
 
 def is_discrete(var):
-    return isinstance(var, Orange.data.variable.Discrete)
+    return isinstance(var, Orange.feature.Discrete)
 
 def is_continuous(var):
-    return isinstance(var, Orange.data.variable.Continuous)
+    return isinstance(var, Orange.feature.Continuous)
 
 def get_qualified(module, name):
     """ Return a qualified module member ``name`` inside the named 

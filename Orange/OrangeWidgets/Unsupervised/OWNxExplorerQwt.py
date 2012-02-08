@@ -643,7 +643,7 @@ class OWNxExplorerQwt(OWWidget):
         if 'component name' in self.graph_base.items().domain:
             keyword_table = self.graph_base.items()
         else:
-            keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variable.String('component name')), [[''] for i in range(len(self.graph_base.items()))])
+            keyword_table = Orange.data.Table(Orange.data.Domain(Orange.feature.String('component name')), [[''] for i in range(len(self.graph_base.items()))])
 
         import obiGO
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet)
@@ -772,7 +772,7 @@ class OWNxExplorerQwt(OWWidget):
             return
 
         components = Orange.network.nx.algorithms.components.connected_components(self.graph)
-        keyword_table = Orange.data.Table(Orange.data.Domain(Orange.data.variables.String('component name')), [[''] for i in range(len(self.graph_base.items()))])
+        keyword_table = Orange.data.Table(Orange.data.Domain(Orange.feature.String('component name')), [[''] for i in range(len(self.graph_base.items()))])
 
         excludeWord = ["AND", "OF", "KEGG", "ST", "IN", "SIG"]
         excludePart = ["HSA"]

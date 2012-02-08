@@ -184,7 +184,7 @@ class OWNxHist():
                     graph.set_items(self.matrix.items)
                 else:
                     data = [[str(x)] for x in self.matrix.items]
-                    items = Orange.data.Table(Orange.data.Domain(Orange.data.variable.String('label'), 0), data)
+                    items = Orange.data.Table(Orange.data.Domain(Orange.feature.String('label'), 0), data)
                     graph.set_items(items)
 
             # set the threshold

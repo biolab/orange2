@@ -262,7 +262,7 @@ class OWNxAnalysis(OWWidget):
             if job.name in self.analdata:
                 if job.type == NODELEVEL:
                     self.analfeatures.append((job.name, \
-                                Orange.data.variable.Continuous(job.label)))
+                                Orange.feature.Continuous(job.label)))
                     setattr(self, "lbl_" + job.name, "  finished")
                     
                 elif job.type == GRAPHLEVEL:
@@ -298,7 +298,7 @@ class OWNxAnalysis(OWWidget):
                 
             elif job.result is not None:
                 if job.type == NODELEVEL:
-                    self.analfeatures.append((job.name, Orange.data.variable.Continuous(job.label)))
+                    self.analfeatures.append((job.name, Orange.feature.Continuous(job.label)))
                     self.analdata[job.name] = [job.result[node] for node in sorted(job.result.iterkeys())]
                     
                 elif job.type == GRAPHLEVEL:

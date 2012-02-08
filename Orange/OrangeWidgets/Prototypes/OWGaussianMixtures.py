@@ -82,7 +82,7 @@ class OWGaussianMixtures(OWWidget):
         
         vars = []
         for i, w in enumerate(self.gmm.weights):
-            var = Orange.data.variable.Continuous("Cluster {0}".format(i))
+            var = Orange.feature.Continuous("Cluster {0}".format(i))
             var.attributes["weight"] = str(w)
             vars.append(var)
         input_domain = self.input_data.domain

@@ -7,33 +7,19 @@ Hierarchical clustering (``hierarchical``)
    single: clustering, hierarchical, dendrogram
 .. index:: aglomerative clustering
 
-The method for hierarchical clustering, encapsulated in class
-:class:`HierarchicalClustering` works on a distance matrix stored as
-:class:`SymMatrix`. The method works in approximately O(n2) time (with
-the worst case O(n3)). For orientation, clustering ten thousand of 
-elements should take roughly 15 seconds on a 2 GHz computer. 
-The algorithm can either make a copy of the distances matrix and work on 
-it, or work on the original distance matrix, destroying it in the process. 
-The latter is useful for clustering larger number of objects. Since the 
-distance matrix stores (n+1)(n+2)/2 floats (cca 2 MB for 1000 objects and 
-200 MB for 10000, assuming the a float takes 4 bytes), by copying it we 
-would quickly run out of physical memory. Using virtual memory is not 
-an option since the matrix is accessed in a random manner.
+For hierarchical clustering we need to compute distances between
+instances. The method works in approximately O(n2) time (with the worst
+case O(n3)).  
 
-The distance should contain no negative elements. This limitation is
-due to implementation details of the algorithm (it is not absolutely 
-necessary and can be lifted in future versions if often requested; it 
-only helps the algorithm run a bit faster). The elements on the diagonal 
-(representing the element's distance from itself) are ignored.
+The distance should contain no negative elements. This limitation is due
+to implementation details of the algorithm and helpt the algorithm to
+run a bit faste. The elements on the diagonal (representing the element's
+distance from itself) are ignored.
 
-Distance matrix can have the attribute objects describing the objects we 
-are clustering (this is available only in Python). This can be any sequence 
-of the same length as the matrix - an ExampleTable, a list of examples, a 
-list of attributes (if you're clustering attributes), or even a string of 
-the correct length. This attribute is not used in clustering but is only 
-passed to the clusters' attribute ``mapping`` (see below), which will hold a 
-reference to it (if you modify the list, the changes will affect the 
-clusters as well).
+Basic functionality
+-------------------
+
+.. autofunction:: clustering
 
 .. class:: HierarchicalClustering
     
@@ -56,28 +42,20 @@ clusters as well).
             
     .. attribute:: overwrite_matrix
 
-        If true (default is false), the algorithm will work on the original
-        distance matrix, destroying it in the process. The benefit is that it
-        will need much less memory (not much more than what is needed to store
-        the tree of clusters).
-        
+        If True (default is False), the algorithm will save memory
+        by working on the original distance matrix, destroying it in
+        the process.
+
     .. attribute:: progress_callback
         
-        A callback function (None by default). It can be any function or
-        callable class in Python, which accepts a single float as an
-        argument. The function only gets called if the number of objects
-        being clustered is at least 1000. It will be called for 101 times,
-        and the argument will give the proportion of the work been done.
-        The time intervals between the function calls won't be equal (sorry
-        about that...) since the clustering proceeds faster as the number
-        of clusters decreases.
+        A callback function (None by default), which will be called 101 times.
+        The function only gets called if the number of objects is at least 1000. 
         
     .. method:: __call__(matrix)
           
         The ``HierarchicalClustering`` is called with a distance matrix as an
         argument. It returns an instance of HierarchicalCluster representing
         the root of the hierarchy (instance of :class:`HierarchicalCluster`).
-        See examples section for details.
         
         :param matrix: A distance matrix to perform the clustering on.
         :type matrix: :class:`Orange.misc.SymMatrix`
@@ -96,14 +74,12 @@ clusters as well).
     .. attribute:: left
     
         The left sub-cluster (defined only if there are only two branches).
-        
-        .. note:: Same as ``branches[0]``
+        Same as ``branches[0]``.
         
     .. attribute:: right
     
         The right sub-cluster (defined only if there are only two branches).
-        
-        .. note:: Same as ``branches[1]``
+        Same as ``branches[1]``.
         
     .. attribute:: height
     
@@ -114,14 +90,18 @@ clusters as well).
         A list of indices to the original distance matrix. It is the same
         for all clusters in the hierarchy - it simply represents the indices
         ordered according to the clustering.
-        
+    
+    .. attribute:: mapping.objects
+
+        A sequence describing objects - an :obj:`Orange.data.Table`, a
+        list of instance, a list of features (when clustering features),
+        or even a string of the same length as the number of elements.
+
     .. attribute:: first
     .. attribute:: last
     
         ``first`` and ``last`` are indices into the elements of ``mapping`` that
-        belong to that cluster. (Seems weird, but is trivial - wait for the
-        examples. On the other hand, you probably won't need to understand this
-        anyway).
+        belong to that cluster.
 
     .. method:: __len__()
     
@@ -166,8 +146,8 @@ simple recursive function.
 .. literalinclude:: code/hierarchical-example.py
     :lines: 16-20
             
-The output is not exactly nice, but it will have to do. Our clustering,
-printed by calling printClustering(root) looks like this 
+Our clustering,
+printed by calling printClustering(root) looks like 
 ::
     
     (((04)((57)(89)))((1(26))3))
@@ -185,39 +165,20 @@ left subcluster of root.
         ... print el,
     0 4 5 7 8 9 
     
-Everything that can be iterated over, can as well be cast into a list or
-tuple. Let us demonstrate this by writing a better function for printing
-out the clustering (which will also come handy for something else in a
-while). The one above supposed that each leaf contains a single object.
-This is not necessarily so; instead of printing out the first (and
+Let us write a better function for printing
+out the clustering: instead of printing out the first (and
 supposedly the only) element of cluster, cluster[0], we shall print
 it out as a tuple. 
 
 .. literalinclude:: code/hierarchical-example.py
     :lines: 22-26
             
-The distance matrix could have been given a list of objects. We could,
-for instance, put
-    
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 28-29
-
-above calling the HierarchicalClustering.
-
-.. note:: This code will actually trigger a warning;
-    to avoid it, use matrix.setattr("objects", ["Ann", "Bob"....
-..    Why this is needed is explained in the page on `Orange peculiarities`_. TODO: Create page on Orange Peculiarities.
-
-If we've forgotten to store the objects into matrix prior to clustering,
-nothing is lost. We can add it into clustering later, by
+We can add object description into clustering by
 
 .. literalinclude:: code/hierarchical-example.py
     :lines: 31
     
-So, what do these "objects" do? Call printClustering(root) again and you'll
-see. Or, let us print out the elements of the first left cluster, as we did
-before. 
-::
+As before, let us print out the elements of the first left cluster::
 
     >>> for el in root.left:
         ... print el,
@@ -319,7 +280,7 @@ Finally, if you are dealing with examples, you may want to take the function
 it will fail if objects are not of type :class:`Orange.data.Instance`.
 However, instead of list of lists, it will return a list of tables.
 
-How the data in ``HierarchicalCluster`` is really stored?
+Exploring hierarchical clusters
 ---------------------------------------------------------
 
 To demonstrate how the data in clusters is stored, we shall continue with
@@ -352,18 +313,16 @@ returns ``cluster.mapping[cluster.first+i]`` or, if objects are specified,
 is minimal since all clusters share the same objects ``mapping`` and
 ``objects``.
 
-
 Subclusters are ordered so that ``cluster.left.last`` always equals
 ``cluster.right.first`` or, in general, ``cluster.branches[i].last``
 equals ``cluster.branches[i+1].first``.
 
-
-Swapping and permutation do three things: change the order of elements in
-``branches``, permute the corresponding regions in ``mapping`` and adjust
-the ``first`` and ``last`` for all the clusters below. For the latter, when
-subclusters of cluster are permuted, the entire subtree starting at
-``cluster.branches[i]`` is moved by the same offset.
-
+Swapping and permutation do three things: change the order of
+elements in ``branches``, permute the corresponding regions in
+:obj:`~HierarchicalCluster.mapping` and adjust the ``first`` and ``last``
+for all the clusters below. For the latter, when subclusters of cluster
+are permuted, the entire subtree starting at ``cluster.branches[i]``
+is moved by the same offset.
 
 The hierarchy of objects that represent a clustering is open, everything is
 accessible from Python. You can write your own clustering algorithms that
@@ -380,7 +339,6 @@ But don't blame it on me then.
 Utility Functions
 -----------------
 
-.. autofunction:: clustering
 .. autofunction:: clustering_features
 .. autofunction:: cluster_to_list
 .. autofunction:: top_clusters
@@ -465,8 +423,7 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
     
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
-    :param distance: Attribute distance constructor 
-        .. note:: currently not used.
+    :param distance: Attribute distance constructor  (currently not used).
     :param linkage: Linkage flag. Must be one of global module level flags:
     
         - SINGLE

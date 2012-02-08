@@ -190,7 +190,7 @@ class OWReliability(OWWidget):
                 if not data.domain.class_var:
                     self.train_data_has_no_class = True
                 elif not isinstance(data.domain.class_var,
-                                    Orange.data.variable.Continuous):
+                                    Orange.feature.Continuous):
                     self.train_data_has_discrete_class = True
                     
                 data = None
