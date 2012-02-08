@@ -234,12 +234,12 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             n, m = numpy.shape(A)
      
         if self.intercept:
-             if A is None:
-                 X = numpy.ones([n,1])
-             else:
-                 X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
+            if A is None:
+                X = numpy.ones([n,1])
+            else:
+                X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
         else:
-             X = A
+            X = A
              
         domain = table.domain
         
@@ -442,7 +442,7 @@ class LinearRegression(Orange.classification.Classifier):
         self.intercept = intercept
 
     def __call__(self, instance, \
-                 resultType=Orange.classification.Classifier.GetValue):
+                 result_type=Orange.classification.Classifier.GetValue):
         """
         :param instance: data instance for which the value of the response
             variable will be predicted
@@ -470,9 +470,9 @@ class LinearRegression(Orange.classification.Classifier):
         y_hat = self.class_var(y_hat)
         dist = Orange.statistics.distribution.Continuous(self.class_var)
         dist[y_hat] = 1.0
-        if resultType == Orange.classification.Classifier.GetValue:
+        if result_type == Orange.classification.Classifier.GetValue:
             return y_hat
-        if resultType == Orange.classification.Classifier.GetProbabilities:
+        if result_type == Orange.classification.Classifier.GetProbabilities:
             return dist
         return (y_hat, dist)
 
