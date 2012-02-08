@@ -1,0 +1,8 @@
+Original data set:
+['M', 1818, 'HIGHWAY', ?, 2, 'N', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
+['A', 1819, 'HIGHWAY', 1037, 2, 'N', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
+['A', 1829, 'AQUEDUCT', ?, 1, 'N', 'THROUGH', 'WOOD', '?', 'S', 'WOOD']
+Imputed data set:
+['M', 1818, 'HIGHWAY', 1300, 2, 'N', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
+['A', 1819, 'HIGHWAY', 1037, 2, 'N', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
+['A', 1829, 'AQUEDUCT', 1300, 1, 'N', 'THROUGH', 'WOOD', 'MEDIUM', 'S', 'WOOD']
