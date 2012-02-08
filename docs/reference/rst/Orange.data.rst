@@ -14,5 +14,4 @@ Data description (``data``)
     Orange.data.continuization
     Orange.data.imputation
     Orange.data.utils
-    Orange.data.continuization
     Orange.data.sql
