@@ -1,4 +1,4 @@
-# Description: Shows how to sample example by random divisions into two groups
+# Description: Shows how to sample by random divisions into two groups
 # Category:    sampling
 # Classes:     SubsetIndices2, RandomGenerator
 # Uses:        lenses
@@ -65,6 +65,6 @@ print "\n... stratified 'if possible'"
 indices2.stratified = indices2.StratifiedIfPossible
 print indices2(lenses)
 
-print "\n... stratified 'if possible', after removing the first example's class"
+print "\n... stratified 'if possible', after removing the first instance's class"
 lenses[0].setclass("?")
 print indices2(lenses)
