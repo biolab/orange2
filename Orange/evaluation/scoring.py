@@ -352,6 +352,7 @@ def RMSE_old(res, **argkw):
 # Scores for evaluation of classifiers
 
 class CAClass(object):
+    """Computation of CA from different types of test_results"""
     CONFUSION_MATRIX = 0
     CONFUSION_MATRIX_LIST = 1
     CLASSIFICATION = 2
@@ -364,6 +365,7 @@ class CAClass(object):
         :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
                              or :obj:`ConfusionMatrix`.
         :param report_se: include standard error in result.
+        :param unweighted: ignore instance weights.
         :rtype: list of scores, one for each learner.
 
         Standard errors are estimated from deviation of CAs across folds (if
@@ -432,7 +434,6 @@ class CAClass(object):
                 return self.CROSS_VALIDATION
         elif isinstance(test_results, list):
             return self.CONFUSION_MATRIX_LIST
-
 
 
 CA = CAClass()
@@ -1524,6 +1525,10 @@ def AUC_multi(res, use_weights = True, method = 0):
         sum_aucs = [x/usefulClassPairs for x in sum_aucs]
 
     return sum_aucs
+
+class AucClass(object):
+    pass
+
 
 def AUC():
     pass

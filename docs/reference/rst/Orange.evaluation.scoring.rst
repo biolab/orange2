@@ -28,6 +28,7 @@ Calibration scores
 
 .. autosingleton:: CA
 .. autoclass:: CAClass
+    :members:
 .. autofunction:: sens
 .. autofunction:: spec
 .. autofunction:: PPV
