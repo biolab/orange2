@@ -697,7 +697,7 @@ pruning, internal nodes must have :obj:`~Node.node_classifier` defined
     majority class.
 
     This pruner will only prune the nodes in which the node classifier
-    is a :obj:`~Orange.classification.majority.ConstantClassifier`
+    is a :obj:`~Orange.classification.ConstantClassifier`
     (or a derived class).
 
     The pruning works from leaves to the root.

@@ -1586,7 +1586,7 @@ class DefaultLearner(Orange.core.Learner):
     def __init__(self, default_value=None):
         self.default_value = default_value
     def __call__(self, examples, weight_id=0):
-        return Orange.classification.majority.ConstantClassifier(self.default_value, defaultDistribution=Orange.core.Distribution(examples.domain.class_var, examples, weight_id))
+        return Orange.classification.ConstantClassifier(self.default_value, defaultDistribution=Orange.core.Distribution(examples.domain.class_var, examples, weight_id))
 
 class ABCN2Ordered(ABCN2):
     """

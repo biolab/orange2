@@ -33,4 +33,3 @@ Here's a simple example.
 """
 
 from Orange.core import MajorityLearner as MeanLearner
-from Orange.core import DefaultClassifier as ConstantClassifier
