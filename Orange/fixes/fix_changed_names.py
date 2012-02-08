@@ -39,6 +39,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.FloatVariable": "Orange.feature.Continuous",
            "orange.StringVariable": "Orange.feature.String",
            "orange.PythonVariable": "Orange.feature.Python",
+           
+           "orngOutlier.OutlierDetection" : "Orange.data.outliers.OutlierDetection",
 
            "orange.newmetaid": "Orange.feature:Variable.new_meta_id",
 

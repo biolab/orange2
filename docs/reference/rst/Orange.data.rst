@@ -16,3 +16,4 @@ Data description (``data``)
     Orange.data.imputation
     Orange.data.utils
     Orange.data.sql
+    Orange.data.outliers
