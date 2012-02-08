@@ -45,7 +45,7 @@ measures = (
 
 tests = (
     (lambda l, ds: testing.cross_validation([l],ds), "CV"),
-    (lambda l, ds: testing.proportion_test([l], ds, .7, 1), "CV"),
+    (lambda l, ds: testing.proportion_test([l], ds, .7, 1), "Proportion test"),
 )
 
 run_tests(datasets, measures, tests)
