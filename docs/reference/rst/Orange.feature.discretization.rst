@@ -67,10 +67,8 @@ training data set and thus construct a discretizer to convert continuous values 
 value according to the rule found by discretization. In this respect, the discretization behaves similar to
 :class:`Orange.classification.Learner`.
 
-.. _`Discretization Algorithms`
-
-Discretization Algorithms
-=========================
+_`Discretization Algorithms`
+============================
 
 Instances of discretization classes are all derived from :class:`Discretization`.
 
@@ -141,7 +139,7 @@ that store the inferred cut-offs.
 
 .. class:: Entropy
 
-    Entropy-based discretization as originally proposed by [FayyadIrani1993]_. The approach infers the most
+    Entropy-based discretization as originally proposed by [FayyadIrani93]_. The approach infers the most
     appropriate number of intervals by recursively splitting the domain of continuous feature to minimize the
     class-entropy of training examples. The splitting is repeated until the entropy decrease is smaller than the
     increase of minimal descripton length (MDL) induced by the new cut-off point.
@@ -341,6 +339,6 @@ Each feature has its own instance of :class:`ClassifierFromVar` stored in
 References
 ==========
 
-.. [FayyadIrani1993] UM Fayyad and KB Irani. Multi-interval discretization of continuous valued
+.. [FayyadIrani93] UM Fayyad and KB Irani. Multi-interval discretization of continuous valued
   attributes for classification learning. In Proc. 13th International Joint Conference on Artificial Intelligence, pages
   1022--1029, Chambery, France, 1993.
