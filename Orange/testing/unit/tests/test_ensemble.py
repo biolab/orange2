@@ -1,3 +1,5 @@
+import unittest
+
 from Orange.misc import testing
 from Orange.misc.testing import datasets_driven, test_on_datasets
 
@@ -30,6 +32,7 @@ class TestRandomForest(testing.LearnerTestCase):
         self.learner = orngEnsemble.RandomForestLearner()
         
     @test_on_datasets(datasets=["iris"])
+    @unittest.expectedFailure
     def test_pickling_on(self, dataset):
         raise NotImplemented("SmallTreeLearner pickling is not implemented")
 #        testing.LearnerTestCase.test_pickling_on(self, dataset)
