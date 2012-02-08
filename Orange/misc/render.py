@@ -81,7 +81,7 @@ def with_gc_disabled(func):
 class ColorPalette(object):
     def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
         self.colors = colors
-        self.gammaFunc = lambda x, gamma:((math.exp(gamma*math.log(2*x-1)) if x > 0.5 else -math.exp(gamma*math.log(-2*x+1)) if x!=0.5 else 0.0)+1)/2.0
+        self.gamma_func = lambda x, gamma:((math.exp(gamma*math.log(2*x-1)) if x > 0.5 else -math.exp(gamma*math.log(-2*x+1)) if x!=0.5 else 0.0)+1)/2.0
         self.gamma = gamma
         self.overflow = overflow
         self.underflow = underflow
@@ -103,7 +103,7 @@ class ColorPalette(object):
             red2, green2, blue2 = [self.colors[index + 1][i] for i in range(3)] #, self.colors[index + 1].green(), self.colors[index + 1].blue()
             x = val * (len(self.colors) - 1) - index
             if gamma is not None:
-                x = self.gammaFunc(x, gamma)
+                x = self.gamma_func(x, gamma)
             return [(c2 - c1) * x + c1 for c1, c2 in [(red1, red2), (green1, green2), (blue1, blue2)]]
         
     def __call__(self, val, gamma=None):
