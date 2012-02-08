@@ -27,14 +27,33 @@ features into a more useful subset that will only include the features
 are equal and whether ``e`` is 1 (part of
 :download:`lookup-lookup.py <code/lookup-lookup.py>`):
 
-.. literalinclude:: code/lookup-lookup.py
-    :lines: 7-21
+..
+    .. literalinclude:: code/lookup-lookup.py
+        :lines: 7-21
+
+.. testcode::
+
+    import Orange
+
+    monks = Orange.data.Table("monks-1")
+
+    a, b, e = monks.domain["a"], monks.domain["b"], monks.domain["e"]
+
+    ab = Orange.feature.Discrete("a==b", values = ["no", "yes"])
+    ab.get_value_from = Orange.classification.lookup.ClassifierByLookupTable(ab, a, b,
+                        ["yes", "no", "no",  "no", "yes", "no",  "no", "no", "yes"])
+
+    e1 = Orange.feature.Discrete("e==1", values = ["no", "yes"])
+    e1.get_value_from = Orange.classification.lookup.ClassifierByLookupTable(e1, e,
+                        ["yes", "no", "no", "no", "?"])
+
+    monks2 = monks.select([a, b, ab, e, e1, monks.domain.class_var])
     
 We can check the correctness of the script by printing out several
 random examples from ``data2``.
 
     >>> for i in range(5):
-    ...     print table2.randomexample()
+    ...     print monks2.randomexample()
     ['3', '2', 'no', '2', 'no', '0']
     ['2', '2', 'yes', '2', 'no', '1']
     ['1', '2', 'no', '2', 'no', '0']
@@ -254,8 +273,19 @@ features.
 
 part of :download:`lookup-table.py <code/lookup-table.py>`:
 
-.. literalinclude:: code/lookup-table.py
-    :lines: 7-13
+..
+    .. literalinclude:: code/lookup-table.py
+        :lines: 7-13
+
+.. testcode::
+        
+    import Orange
+
+    table = Orange.data.Table("monks-1")
+    a, b, e = table.domain["a"], table.domain["b"], table.domain["e"]
+
+    table_s = table.select([a, b, e, table.domain.class_var])
+    abe = Orange.classification.lookup.LookupLearner(table_s)
 
 
 In ``table_s``, we have prepared a table in which instances are described
@@ -268,7 +298,7 @@ there are no duplicates.
     556
     >>> print len(abe.sorted_examples)
     36
-    >>> for i in abe.sorted_examples[:10]:
+    >>> for i in abe.sorted_examples[:10]:  # doctest: +SKIP
     ...     print i
     ['1', '1', '1', '1']
     ['1', '1', '2', '1']
@@ -288,7 +318,7 @@ unambiguously determine the classes and, since instances covered the
 entire space, all distributions have 12 instances in one of the class
 and none in the other.
 
-    >>> for i in abe.sorted_examples[:10]:
+    >>> for i in abe.sorted_examples[:10]:  # doctest: +SKIP
     ...     print i, i.get_class().svalue
     ['1', '1', '1', '1'] <0.000, 12.000>
     ['1', '1', '2', '1'] <0.000, 12.000>
@@ -413,7 +443,7 @@ three features (besides the class variable).
         >>> import orngCI
         >>> table2 = orngCI.addAnAttribute(new_var, table)
         >>> for i in table2[:30]:
-            ... print i
+        ...     print i
         ['1', '1', '1', '1', '3', '1', 'yes', '1']
         ['1', '1', '1', '1', '3', '2', 'yes', '1']
         ['1', '1', '1', '3', '2', '1', 'yes', '1']
