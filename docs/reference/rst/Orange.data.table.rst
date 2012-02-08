@@ -15,7 +15,7 @@ Data tables are usually loaded from a file (see :doc:`Orange.data.formats`)::
 
 Data tables can also be created programmatically, as in the :ref:`code
 below <example-table-prog1>`.
-s
+
 :obj:`Table` supports most list-like operations: getting, setting,
 removing data instances, as well as methods :obj:`append` and
 :obj:`extend`. When setting items, the item must be
@@ -128,7 +128,11 @@ when empty.
         it with the given instances. Instances can be given as a
         :obj:`Table` (if domains do not match, they are converted),
         as a list containing either instances of
-        :obj:`Orange.data.Instance` or lists, or as a numpy array.
+        :obj:`Orange.data.Instance` or lists.
+
+        This constructor can also be used for conversion from numpy
+        arrays. The argument ``instances`` can be a numpy array. The number
+        of variables in the domain must match the number of columns.
 
         :param domain: domain descriptor
         :type domain: Orange.data.Domain
@@ -438,6 +442,105 @@ when empty.
             :type domain: list
             :rtype: :obj:`Orange.data.Table`
 
+    .. method:: to_numpy(content, weightID, multinominal)
+
+        Convert a data table to numpy array. Raises an exception if the data
+        contains undefined values. :obj:`to_numpyMA` converts to a masked
+        array where the mask denotes the defined values. (For conversion
+        from numpy, see the constructor.)
+
+        The function returns a tuple with the array and, depending on
+        arguments, some vectors. The argument ``content`` is a string
+        separated in two parts with a slash. The part to the left of slash
+        describes the content of the array; in the part on the right side
+        lists the vectors. The content is described with the following
+        characters:
+
+        ``a``
+            features (without the class); can only appear on the left
+
+        ``A``
+            like ``a``, but raises exception if there are no features
+
+        ``c``
+            class value represented as an index of the value (0, 1, 2...);
+            if the data has no class, the column is omitted (if ``c`` is to
+            the left of the slash) or the tuple will contain ``None``
+            instead of the vector.
+
+        ``C``
+            like ``c``, but raises exception if the data has no class
+
+        ``w``
+            instance weight; like for ``c`` the column is omitted or
+            ``None`` is returned instead of the vector if the argument
+            ``weightID`` is missing.
+
+        ``W``
+            instance weight; raise an exception if ``weightID``
+            is missing.
+
+        ``0``
+            a vector of zeros
+
+        ``1``
+            a vector of ones
+
+	The default content is ``a/cw``: an array with feature values and
+	separate vectors with classes and weights. Specifying an empty string
+	has the same effect. If the elements to the right of the slash repeat,
+	the function returns the same Python object, e.g. in ``acc000/cwww`` the
+	three weight vectors are one and the same Python object, so modifying
+	one will change all three of them.
+
+        This is the default behaviour on data set iris with 150 data
+        instances described by four features and a class value::
+
+	    >>> data = orange.ExampleTable("../datasets/iris")
+	    >>> a, c, w = data.toNumpy()
+	    >>> a.shape
+	    (150, 4)
+	    >>> c.shape
+	    (150,)
+	    >>> print w
+            None
+	    >>> a[0]
+	    array([ 5.0999999 ,  3.5       ,  1.39999998,  0.2       ])
+	    >>> c[0]
+	    0.0
+
+        For a more complicated example, the array will contain a column with
+        class, features, a vector of ones, two vectors with classes and
+        another vector of zeroes::
+
+	    >>> a, = data.toNumpy("ca1cc0")
+	    >>> a[0]
+	    array([ 0., 5.0999999, 3.5       , 1.39999998, 0.2       , 1., 0., 0., 0.])
+	    >>> a[130]
+	    array([ 2., 7.4000001, 2.79999995, 6.0999999 , 1.89999998, 1., 2., 2., 0.])
+	    >>> c[120]
+	    2.0
+
+	The third argument specifies the treatment of non-continuous
+	non-binary values (binary values are always translated to 0.0 or
+	1.0). The argument's value can be
+	:obj:`Orange.data.Table.Multinomial_Ignore` (such features are
+	omitted), :obj:`Orange.data.Table.Multinomial_AsOrdinal` (the
+	values' indices are treated as continuous numbers) or
+	:obj:`Orange.data.Table.Multinomial_Error` (an exception is raised
+	if such features are encountered). Default treatment is
+	:obj:`Orange.data.Table.ExampleTable.Multinomial_AsOrdinal`.
+
+	When the class attribute is discrete and has more than two values,
+	an exception is raised unless multinomial attributes are treated as
+	ordinal. More options for treating multinominal values are available
+	in :obj:`Orange.data.continuization`.
+
+    .. method:: to_numpyMA(content, weightID, multinominal)
+
+        Similar to :obj:`to_numpy` except that it returns a masked array
+        with mask representing the (un)defined values.
+
     .. method:: checksum()
 
             Return a CRC32 computed over all discrete and continuous
@@ -497,3 +600,5 @@ when empty.
     .. method:: remove_meta_attribute(id)
 
             Remove a meta attribute from all data instances.
+
+
