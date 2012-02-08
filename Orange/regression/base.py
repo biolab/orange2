@@ -25,8 +25,13 @@ class BaseRegressionLearner(Orange.core.Learner):
         else:
             return learner
 
-    def __init__(self):
-        pass
+    def __init__(self, imputer=None, continuizer=None):
+        self.imputer = None
+        self.continuizer = None
+        
+        self.set_imputer(imputer)
+        self.set_continuizer(continuizer)
+        
 
     def set_imputer(self, imputer=None):
         """ Sets the imputer for missing values.
@@ -37,7 +42,7 @@ class BaseRegressionLearner(Orange.core.Learner):
         :type imputer: None or Orange.feature.imputation.ModelConstructor
         """
         if imputer is not None:
-            imputer = imputer
+            self.imputer = imputer
         else: # default imputer
             self.imputer = Orange.feature.imputation.ModelConstructor()
             self.imputer.learner_continuous = Orange.regression.mean.MeanLearner()
@@ -78,6 +83,6 @@ class BaseRegressionLearner(Orange.core.Learner):
         :type table: :class:`Orange.data.Table` 
         """
         if table.domain.has_discrete_attributes():
-            newDomain = self.continuizer(table)
-            table = table.translate(newDomain)
+            new_domain = self.continuizer(table)
+            table = table.translate(new_domain)
         return table
