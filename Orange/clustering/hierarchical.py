@@ -14,6 +14,41 @@ case O(n3)).
 The distance matrix has to contain no negative elements, as this helps
 the algorithm to run faster. The elements on the diagonal are ignored.
 
+.. rubric:: Example
+
+The following example show clustering of the Iris data, Distance matrix
+is computed with the :class:`Orange.distance.Euclidean` distance measure
+and cluster it with average linkage.
+
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 1-12
+
+Data instances belonging to the top-most four clusters could be printed out
+with:
+
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 14-19
+            
+It could be more informative to
+print out the class distributions for each cluster.
+    
+.. literalinclude:: code/hierarchical-example-2.py
+    :lines: 21-26
+        
+Here is the output. 
+::
+
+    Iris-setosa:   0  Iris-versicolor:  50  Iris-virginica:  17 
+    Iris-setosa:  49  Iris-versicolor:   0  Iris-virginica:   0 
+    Iris-setosa:   0  Iris-versicolor:   0  Iris-virginica:  33 
+    Iris-setosa:   1  Iris-versicolor:   0  Iris-virginica:   0
+
+The same results could also be obtained with:
+
+.. literalinclude:: code/hierarchical-example-3.py
+    :lines: 1-7
+ 
+
 Basic functionality
 -------------------
 
@@ -60,150 +95,8 @@ Basic functionality
 
 
     
-Example 1 - Toy matrix
-----------------------
 
-Let us construct a simple distance matrix and run clustering on it.
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 1-14
-    
-Root is a root of the cluster hierarchy. We can print using a
-simple recursive function.
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 16-20
-            
-Our clustering,
-printed by calling printClustering(root) looks like 
-::
-    
-    (((04)((57)(89)))((1(26))3))
-    
-The elements are separated into two groups, the first containing elements
-0, 4, 5, 7, 8, 9, and the second 1, 2, 6, 3. The difference between them
-equals ``root.height``, 9.0 in our case. The first cluster is further
-divided onto 0 and 4 in one, and 5, 7, 8, 9 in the other subcluster...
-
-It is easy to print out the cluster's objects. Here's what's in the
-left subcluster of root.
-::
-
-    >>> for el in root.left:
-        ... print el,
-    0 4 5 7 8 9 
-    
-Let us write a better function for printing
-out the clustering: instead of printing out the first (and
-supposedly the only) element of cluster, cluster[0], we shall print
-it out as a tuple. 
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 22-26
-            
-We can add object description into clustering by
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 31
-    
-As before, let us print out the elements of the first left cluster::
-
-    >>> for el in root.left:
-        ... print el,
-    Ann Eve Fred Hue Ivy Jon
-    
-If objects are given, the cluster's elements, as got by indexing
-(eg root.left[2]) or by iteration, as in the above case, won't be
-indices but the elements we clustered. If we put an ExampleTable
-into objects, root.left[-1] will be the last example of the first
-left cluster.
-
-Now for swapping and permutations. ::
-
-    >>> printClustering(root)
-    ((('Ann''Eve')(('Fred''Hue')('Ivy''Jon')))(('Bob'('Curt''Greg'))'Danny'))
-    >>> root.left.swap()
-    >>> printClustering(root)
-    (((('Fred''Hue')('Ivy''Jon'))('Ann''Eve'))(('Bob'('Curt''Greg'))'Danny'))
-    >>> root.permute([1, 0])
-    >>> printClustering(root)
-    ((('Bob'('Curt''Greg'))'Danny')((('Fred''Hue')('Ivy''Jon'))('Ann''Eve')))
-    
-Calling ``root.left.swap`` reversed the order of subclusters of ``root.left``
-and ``root.permute([1, 0])`` (which is equivalent to ``root.swap`` - there
-aren't many possible permutations of two elements) reverses the order
-of ``root.left`` and ``root.right``.
-
-Let us write function for cluster pruning.
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 33-39
-
-We shall use ``printClustering2`` here, since we can have multiple elements
-in a leaf of the clustering hierarchy. ::
-    
-    >>> prune(root, 9)
-    >>> print printClustering2(root)
-    ((('Bob', 'Curt', 'Greg')('Danny',))(('Fred', 'Hue', 'Ivy', 'Jon')('Ann', 'Eve')))
-    
-We've ended up with four clusters. Need a list of clusters?
-Here's the function.
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 41-51
-        
-The function returns a list of lists, in our case
-``[['Bob', 'Curt', 'Greg'], ['Danny'], ['Fred', 'Hue', 'Ivy', 'Jon'], ['Ann', 'Eve']]``    
-If there were no ``objects`` the list would contains indices instead of names.
-
-Example 2 - Clustering of examples
-----------------------------------
-
-Clustering of examples is shown on the Iris data set, initialize a distance
-matrix with the :class:`Euclidean` distance measure
-and cluster it with average linkage. Since we don't need the matrix,
-we shall let the clustering overwrite it.
-
-.. literalinclude:: code/hierarchical-example-2.py
-    :lines: 1-15
-
-Let us now prune the clustering using the function we've written above,
-and print out the clusters.
-
-.. literalinclude:: code/hierarchical-example-2.py
-    :lines: 16-20
-            
-Since the printout is pretty long, it might be more informative to just
-print out the class distributions for each cluster.
-    
-.. literalinclude:: code/hierarchical-example-2.py
-    :lines: 22-26
-        
-Here's what it shows. ::
-
-    Iris-setosa:  49    Iris-versicolor:   0    Iris-virginica:   0
-    Iris-setosa:   1    Iris-versicolor:   0    Iris-virginica:   0
-    Iris-setosa:   0    Iris-versicolor:  50    Iris-virginica:  17
-    Iris-setosa:   0    Iris-versicolor:   0    Iris-virginica:  33
-    
-Note something else: ``listOfClusters`` does not return a list of
-:class:`Orange.data.Table`, but a list of lists of instances. Therefore,
-in the above script, cluster is a list of examples, not an ``Table``, but
-it gets converted to it automatically when the function is called.
-Most Orange functions will do this for you automatically. You can, for
-instance, call a learning algorithms, passing a cluster as an argument.
-It won't mind. If you, however, want to have a list of table, you can
-easily convert the list by
-
-.. literalinclude:: code/hierarchical-example-2.py
-    :lines: 28
-    
-Finally, if you are dealing with examples, you may want to take the function
-``listOfClusters`` and replace ``alist.append(list(cluster))`` by
-``alist.append(Orange.data.Table(cluster))``. This function is less general,
-it will fail if objects are not of type :class:`Orange.data.Instance`.
-However, instead of list of lists, it will return a list of tables.
-
+   
 Cluster analysis
 -----------------
 
@@ -263,6 +156,10 @@ Results of clustering are stored in a hierarchy of
         A sequence describing objects - an :obj:`Orange.data.Table`, a
         list of instance, a list of features (when clustering features),
         or even a string of the same length as the number of elements.
+        If objects are given, the cluster's elements, as got by indexing
+        or interacion, are not indices but corresponding objects.  It we
+        put an :obj:`Orange.data.Table` into objects, ``root.left[-1]``
+        is the last instance of the first left cluster.
 
     .. attribute:: first
     .. attribute:: last
@@ -295,56 +192,119 @@ Results of clustering are stored in a hierarchy of
         Permutes the subclusters. Permutation gives the order in which the
         subclusters will be arranged. As for swap, this function changes the
         mapping and first and last of all clusters below this one. 
-    
-To demonstrate how the data in clusters is stored, we shall continue with
-the clustering we got in the first example. ::
-    
-    >>> del root.mapping.objects
-    >>> print printClustering(root)
-    (((1(26))3)(((57)(89))(04)))
-    >>> print root.mapping
-    <1, 2, 6, 3, 5, 7, 8, 9, 0, 4>
-    >>> print root.left.first
-    0
-    >>> print root.left.last
-    4
-    >>> print root.left.mapping[root.left.first:root.left.last]
-    <1, 2, 6, 3>
-    >>> print root.left.left.first
-    0
-    >>> print root.left.left.last
-    3
-    
-We removed objects to just to see more clearly what is going on.
-``mapping`` is an ordered list of indices to the rows/columns of distance
-matrix (and, at the same time, indices into objects, if they exist). Each
-cluster's fields ``first`` and ``last`` are indices into mapping, so the
-clusters elements are actually
-``cluster.mapping[cluster.first:cluster.last]``. ``cluster[i]`` therefore
-returns ``cluster.mapping[cluster.first+i]`` or, if objects are specified,
-``cluster.objects[cluster.mapping[cluster.first+i]]``.
 
 Subclusters are ordered so that ``cluster.left.last`` always equals
 ``cluster.right.first`` or, in general, ``cluster.branches[i].last``
 equals ``cluster.branches[i+1].first``.
 
-Swapping and permutation do three things: change the order of
+Swapping and permutation change the order of
 elements in ``branches``, permute the corresponding regions in
 :obj:`~HierarchicalCluster.mapping` and adjust the ``first`` and ``last``
-for all the clusters below. For the latter, when subclusters of cluster
-are permuted, the entire subtree starting at ``cluster.branches[i]``
-is moved by the same offset.
+for all the clusters below.
 
-When building the structure of :obj:`HierarchicalCluster`\s yourself.
-However, it is easy to do things wrong: shuffle the mapping, for
-instance, and forget to adjust the ``first`` and ``last`` pointers.
+.. rubric:: An example
+
+The following example constructs a simple distance matrix and runs clustering
+on it.
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 1-16
+    
+``root`` is the root of the cluster hierarchy. We can print it with a
+simple recursive function.
+
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 18-22
+            
+The clustering looks like
+::
+
+    >>> print print_clustering(root)
+    (((0 4) ((5 7) (8 9))) ((1 (2 6)) 3))
+    
+The elements form two groups, the first with elements 0, 4, 5, 7, 8, 9,
+and the second with 1, 2, 6, 3. The difference between them equals to
+
+    >>> print root.height
+    9.0
+
+The first cluster is further divided onto 0 and 4 in one, and 5, 7, 8,
+9 in the other subcluster.
+
+The following code prints the left subcluster of root.
+::
+
+    >>> for el in root.left:
+        ... print el,
+    0 4 5 7 8 9 
+    
+Instead of printing out the first (and supposedly the only) element of
+cluster, cluster[0], we shall print it out as a tuple.
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 24-28
+            
+Object descriptions can be added with
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 28-29
+    
+As before, let us print out the elements of the first left cluster::
+
+    >>> for el in root.left:
+        ... print el,
+    Ann Eve Fred Hue Ivy Jon
+
+Calling ``root.left.swap`` reverses the order of subclusters of
+``root.left``::
+
+    >>> print_clustering(root)
+    (((Ann Eve) ((Fred Hue) (Ivy Jon))) ((Bob (Curt Greg)) Danny))
+    >>> root.left.swap()
+    >>> print_clustering(root)
+    ((((Fred Hue) (Ivy Jon)) (Ann Eve)) ((Bob (Curt Greg)) Danny))
+    
+Let us write function for cluster pruning.
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 42-48
+
+Here we need a function that can plot leafs with multiple elements.
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 50-54
+
+Four clusters remain.
+
+    >>> prune(root, 5)
+    >>> print print_clustering2(root)
+    (('Bob', 'Curt', 'Greg', 'Danny') ((('Fred', 'Hue') ('Ivy', 'Jon')) ('Ann', 'Eve')))
+    
+The following function returns a list of lists.
+
+.. literalinclude:: code/hierarchical-example.py
+    :lines: 59-69
+        
+The function returns a list of lists, in our case
+::
+
+    >>> list_of_clusters(root)
+    [['Bob', 'Curt', 'Greg'], ['Danny'], ['Fred', 'Hue', 'Ivy', 'Jon'], ['Ann', 'Eve']]
+
+If :obj:`~HierarchicalCluster.mapping.objects` were not defined the list
+would contains indices instead of names.
+::
+
+    >>> root.mapping.objects = None
+    >>> print list_of_clusters(root)
+    [[1, 2, 6], [3], [5, 7, 8, 9], [0, 4]]
 
 Output
 --------------
 
 .. autofunction:: dendrogram_layout
 .. autofunction:: dendrogram_draw
-
 
 Utility Functions
 -----------------
@@ -517,7 +477,7 @@ def order_leaves_py(tree, matrix, progress_callback=None):
     :param progress_callback: Function used to report on progress.
     :type progress_callback: function
     
-    .. note:: The ordering is done inplace. 
+    The ordering is done inplace. 
     
     """
     
@@ -710,7 +670,7 @@ def order_leaves_cpp(tree, matrix, progress_callback=None):
     :param progress_callback: Function used to report on progress.
     :type progress_callback: function
     
-    .. note:: The ordering is done inplace.
+    The ordering is done inplace.
     
     """
     node_count = iter(range(len(tree)))
@@ -977,7 +937,7 @@ from Orange.misc.render import EPSRenderer, ColorPalette
 class DendrogramPlot(object):
     """ A class for drawing dendrograms.
     
-    .. note:: ``dendrogram_draw`` function is a more convinient interface
+    ``dendrogram_draw`` function is a more convinient interface
         to the functionality provided by this class and.   
         
     Example::
@@ -1308,10 +1268,9 @@ def clone(cluster):
     return clones[cluster]
     
 def pruned(cluster, level=None, height=None, condition=None):
-    """ Return a new pruned clustering instance.
-    
-    .. note:: This uses :obj:`clone` to create a copy of the `cluster`
-        instance.
+    """ Return a new pruned clustering instance.    
+    It uses :obj:`clone` to create a copy of the `cluster`
+    instance.
     
     :param cluster: Cluster to prune.
     :type cluster: :class:`HierarchicalCluster`
