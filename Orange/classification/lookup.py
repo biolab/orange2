@@ -21,7 +21,7 @@ A natural habitat for these classifiers is feature construction:
 they usually reside in :obj:`~Orange.feature.Descriptor.get_value_from`
 fields of constructed
 features to facilitate their automatic computation. For instance,
-the following script shows how to translate the `monks-1.tab` data set
+the following script shows how to translate the ``monks-1.tab`` data set
 features into a more useful subset that will only include the features
 ``a``, ``b``, ``e``, and features that will tell whether ``a`` and ``b``
 are equal and whether ``e`` is 1 (part of
@@ -258,9 +258,9 @@ part of :download:`lookup-table.py <code/lookup-table.py>`:
     :lines: 7-13
 
 
-In `table_s`, we have prepared a table in which instances are described
-only by `a`, `b`, `e` and the class. The learner constructs a
-:obj:`ClassifierByDataTable` and stores instances from `table_s` into its
+In ``table_s``, we have prepared a table in which instances are described
+only by ``a``, ``b``, ``e`` and the class. The learner constructs a
+:obj:`ClassifierByDataTable` and stores instances from ``table_s`` into its
 :obj:`~ClassifierByDataTable.sorted_examples`. Instances are merged so that
 there are no duplicates.
 
@@ -309,7 +309,7 @@ classifier into its :obj:`~Orange.feature.Descriptor.get_value_from`.
     >>> y2 = Orange.feature.Discrete("y2", values = ["0", "1"])
     >>> y2.get_value_from = abe
 
-Although `abe` determines the value of `y2`, `abe.class_var` is still `y`.
+Although ``abe`` determines the value of ``y2``, ``abe.class_var`` is still ``y``.
 Orange doesn't mind (the whole example is artificial - the entire data set
 will seldom be packed in an :obj:`ClassifierByDataTable`), but this can still
 be solved by
@@ -335,15 +335,15 @@ part of :download:`lookup-table.py <code/lookup-table.py>`::
 
 Let us, for the end, show another use of :obj:`LookupLearner`. With the
 alternative call arguments, it offers an easy way to observe feature
-interactions. For this purpose, we shall omit `e`, and construct a
-:obj:`ClassifierByDataTable` from `a` and `b` only (part of
+interactions. For this purpose, we shall omit ``e``, and construct a
+:obj:`ClassifierByDataTable` from ``a`` and ``b`` only (part of
 :download:`lookup-table.py <code/lookup-table.py>`):
 
 .. literalinclude:: code/lookup-table.py
     :lines: 32-35
 
 The script's output show how the classes are distributed for different
-values of `a` and `b`::
+values of ``a`` and ``b``::
 
     ['1', '1', '1'] <0.000, 48.000>
     ['1', '2', '0'] <36.000, 12.000>
@@ -355,7 +355,7 @@ values of `a` and `b`::
     ['3', '2', '0'] <36.000, 12.000>
     ['3', '3', '1'] <0.000, 48.000>
 
-For instance, when `a` is '1' and `b` is '3', the majority class is '0',
+For instance, when ``a`` is '1' and ``b`` is '3', the majority class is '0',
 and the class distribution is 36:12 in favor of '0'.
 
 
@@ -375,10 +375,10 @@ three features (besides the class variable).
     three features. If there are more, it returns None. The resulting
     classifier is of type :obj:`ClassifierByLookupTable`,
     :obj:`ClassifierByLookupTable2` or :obj:`ClassifierByLookupTable3`, with
-    `class_var` and bound set set as given.
+    ``class_var`` and bound set set as given.
 
-    For example, using the data set `monks-1.tab`, to construct a new feature
-    from features `a` and `b`, this function can be called as follows.
+    For example, using the data set ``monks-1.tab``, to construct a new feature
+    from features ``a`` and ``b``, this function can be called as follows.
     
         >>> new_var = Orange.feature.Discrete()
         >>> bound = [table.domain[name] for name in ["a", "b"]]
@@ -386,24 +386,24 @@ three features (besides the class variable).
         >>> print lookup.lookup_table
         <?, ?, ?, ?, ?, ?, ?, ?, ?>
 
-    Function `lookup_from_bound` does not initialize neither `new_var` nor
+    Function ``lookup_from_bound`` does not initialize neither ``new_var`` nor
     the lookup table...
 
 .. function:: lookup_from_function(class_var, bound, function)
 
-    ... and that's exactly where `lookup_from_function` differs from
-    :obj:`lookup_from_bound`. `lookup_from_function` first calls
+    ... and that's exactly where ``lookup_from_function`` differs from
+    :obj:`lookup_from_bound`. ``lookup_from_function`` first calls
     :obj:`lookup_from_bound` and then uses the function to initialize the
     lookup table. The other difference between this and the previous function
-    is that `lookup_from_function` also accepts bound sets with more than three
+    is that ``lookup_from_function`` also accepts bound sets with more than three
     features. In this case, it construct a :obj:`ClassifierByDataTable`.
 
     The function gets the values of features as integer indices and should
     return an integer index of the "class value". The class value must be
     properly initialized.
 
-    For exercise, let us construct a new feature called `a=b` whose value will
-    be "yes" when `a` and `b` are equal and "no" when they are not. We will then
+    For exercise, let us construct a new feature called ``a=b`` whose value will
+    be "yes" when ``a`` and ``b`` are equal and "no" when they are not. We will then
     add the feature to the data set.
     
         >>> bound = [table.domain[name] for name in ["a", "b"]]
@@ -423,10 +423,10 @@ three features (besides the class variable).
         ['1', '2', '1', '1', '3', '1', 'no', '0']
         ...
 
-    The feature was inserted with use of `orngCI.addAnAttribute`. By setting
-    `new_var.get_value_from` to `lookup` we state that when converting domains
-    (either when needed by `addAnAttribute` or at some other place), `lookup`
-    should be used to compute `new_var`'s value. (A bit off topic, but
+    The feature was inserted with use of ``orngCI.addAnAttribute``. By setting
+    ``new_var.get_value_from`` to ``lookup`` we state that when converting domains
+    (either when needed by ``addAnAttribute`` or at some other place), ``lookup``
+    should be used to compute ``new_var``'s value. (A bit off topic, but
     important: you should never call
     :obj:`~Orange.feature.Descriptor.get_value_from` directly, but always 
     through :obj:`~Orange.feature.Descriptor.compute_value`.)
@@ -447,14 +447,14 @@ three features (besides the class variable).
     
 .. function:: dump_lookup_function(func)
 
-    `dump_lookup_function` returns a string with a lookup function in
-    tab-delimited format. Argument `func` can be any of the above-mentioned
+    ``dump_lookup_function`` returns a string with a lookup function in
+    tab-delimited format. Argument ``func`` can be any of the above-mentioned
     classifiers or a feature whose
     :obj:`~Orange.feature.Descriptor.get_value_from` points to one of such
     classifiers.
 
-    For instance, if `lookup` is such as constructed in the example for
-    `lookup_from_function`, it can be printed by::
+    For instance, if ``lookup`` is such as constructed in the example for
+    ``lookup_from_function``, it can be printed by::
     
         >>> print dump_lookup_function(lookup)
         a      b      a=b
