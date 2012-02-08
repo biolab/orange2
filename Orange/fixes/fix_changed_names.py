@@ -70,6 +70,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.MeasureAttribute_relief": "Orange.feature.scoring.Relief",
            "orange.MeasureAttribute_info": "Orange.feature.scoring.InfoGain",
            "orange.MeasureAttribute_gini": "Orange.feature.scoring.Gini",
+           
+           "orange.CostMatrix" : "Orange.misc.CostMatrix",
 
            "orange.MeasureAttribute_relevance": "Orange.feature.scoring.Relevance",
            "orange.MeasureAttribute_cost": "Orange.feature.scoring.Cost",
