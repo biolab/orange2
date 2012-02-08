@@ -1,6 +1,7 @@
 import os
 import urllib
 import Orange
+import orange
 from Orange.misc import deprecated_keywords, deprecated_members
 from Orange.feature import Descriptor
 
@@ -105,7 +106,6 @@ def _connection(uri):
             return (quirks, dbmod.connect(host))
 
         dbArgDict = {}
-        print host
         if user:
             dbArgDict[argTrans['user']] = user
         if password:
@@ -132,8 +132,8 @@ class SQLReader(object):
         :param domain_depot: Domain depot
         :type domain_depot: :class:`orange.DomainDepot`
         """
-        if uri is not None:
-            self.connect(uri)
+        if addr is not None:
+            self.connect(addr)
         if domain_depot is not None:
             self.domainDepot = domain_depot
         else:
@@ -156,7 +156,9 @@ class SQLReader(object):
         """
         Disconnect from the database.
         """
-        self.conn.disconnect()
+        func = getattr(self.conn, "disconnect", None)
+        if callable(func):
+            self.conn.disconnect()
 
     def getClassName(self):
         self.update()
@@ -261,10 +263,8 @@ class SQLReader(object):
             typ = i[1]
             if name in discreteNames:
                 attrName = 'D#' + name
-            elif typ == self.quirks.dbmod.STRING:
+            elif typ is None or typ in [self.quirks.dbmod.STRING, self.quirks.dbmod.DATETIME]:
                     attrName = 'S#' + name
-            elif typ == self.quirks.dbmod.DATETIME:
-                attrName = 'S#' + name
             else:
                 attrName = 'C#' + name
             
@@ -405,7 +405,6 @@ class SQLWriter(object):
                 d = query % (table,
                     ", ".join(colSList),
                     ", ".join ([self.quirks.parameter] * len(valList)))
-                print d, valList
                 cursor.execute(d, tuple(valList))
             cursor.close()
             self.connection.commit()
@@ -462,7 +461,9 @@ class SQLWriter(object):
         """
         Disconnect from the database.
         """
-        self.conn.disconnect()
+        func = getattr(self.conn, "disconnect", None)
+        if callable(func):
+            self.conn.disconnect()
 
 def loadSQL(filename, dontCheckStored = False, domain = None):
     f = open(filename)
