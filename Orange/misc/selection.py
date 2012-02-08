@@ -102,10 +102,10 @@ class BestOnTheFly:
     """
     
     def __init__(self, compare=cmp, seed = 0, call_compare_on_1st = False):
-        self.randomGenerator = random.Random(seed)
-        self.compare=compare
-        self.wins=0
-        self.bestIndex, self.index = -1, -1
+        self.random_generator = random.Random(seed)
+        self.compare = compare
+        self.wins = 0
+        self.best_index, self.index = -1, -1
         self.best = None
         self.call_compare_on_1st = call_compare_on_1st
 
@@ -117,25 +117,25 @@ class BestOnTheFly:
         """
         self.index += 1
         if not self.wins:
-            self.best=x
-            self.wins=1
-            self.bestIndex=self.index
+            self.best = x
+            self.wins = 1
+            self.best_index = self.index
             return 1
         else:
             if self.call_compare_on_1st:
-                cmpr=self.compare(x[0], self.best[0])
+                cmpr = self.compare(x[0], self.best[0])
             else:
-                cmpr=self.compare(x, self.best)
-            if cmpr>0:
-                self.best=x
-                self.wins=1
-                self.bestIndex=self.index
+                cmpr = self.compare(x, self.best)
+            if cmpr > 0:
+                self.best = x
+                self.wins = 1
+                self.best_index = self.index
                 return 1
-            elif cmpr==0:
-                self.wins=self.wins+1
-                if not self.randomGenerator.randint(0, self.wins-1):
-                    self.best=x
-                    self.bestIndex=self.index
+            elif cmpr == 0:
+                self.wins = self.wins + 1
+                if not self.random_generator.randint(0, self.wins - 1):
+                    self.best = x
+                    self.best_index = self.index
                     return 1
         return 0
 
@@ -154,12 +154,14 @@ class BestOnTheFly:
         :rtype: int
         """
         if self.best is not None:
-            return self.bestIndex
+            return self.best_index
         else:
             return None
 
 BestOnTheFly = deprecated_members({"callCompareOn1st": "call_compare_on_1st",
                                    "winnerIndex": "winner_index",
+                                   "randomGenerator": "random_generator",
+                                   "bestIndex": "best_index"
                                    },
                                    wrap_methods=["__init__"])(BestOnTheFly)
 
