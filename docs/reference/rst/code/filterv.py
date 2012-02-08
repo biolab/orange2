@@ -8,7 +8,7 @@ data = Orange.data.Table("lenses")
 ############ THIS IS WHAT YOU CAN DO WITH DISCRETE ATTRIBUTES
 
 print "\nYoung or presbyopic with astigmatism"
-fya = Orange.data.filter.Values(domain = data.domain)
+fya = Orange.data.filter.Values(domain=data.domain)
 fya["age"] = "young"
 print "\nYoung examples\n"
 for ex in fya(data):
@@ -31,7 +31,7 @@ print "\n\nYoung and presbyopic examples that are astigmatic\n"
 for ex in fya(data):
     print ex
 
-fr = Orange.data.filter.Values(domain = data.domain)
+fr = Orange.data.filter.Values(domain=data.domain)
 fr[3] = "reduced"
 
 # Conjunction is not necessary here - we could still do this with a single filter
@@ -47,9 +47,9 @@ for ex in fcon(data):
 
 ############ THIS IS WHAT YOU CAN DO WITH CONTINUOUS ATTRIBUTES
 
-data = Orange.data.Table("/Users/tomazc/workspace/orange/Orange/doc/reference/iris.tab")
+data = Orange.data.Table("iris.tab")
 
-fcont = Orange.data.filter.Values(domain = data.domain)
+fcont = Orange.data.filter.Values(domain=data.domain)
 
 fcont[0] = (Orange.data.filter.ValueFilter.Equal, 4.59999999999999) # This is
 # to check that rounding errors don't hurt
@@ -97,7 +97,7 @@ data.domain.addmeta(
 for ex in data:
     ex["name"] = str(ex.getclass())
 
-fstr = Orange.data.filter.Values(domain = data.domain)
+fstr = Orange.data.filter.Values(domain=data.domain)
 fstr["name"] = "Iris-setosa"
 print "\n\nSetosae"
 d = fstr(data)
@@ -199,7 +199,7 @@ else:
 data = Orange.data.Table("lenses")
 
 print "\nYoung or presbyopic with astigmatism - as references"
-fya = Orange.data.filter.Values(domain = data.domain)
+fya = Orange.data.filter.Values(domain=data.domain)
 fya["age"] = "young"
 print "\nYoung examples\n"
 d2 = fya(data, 1)
@@ -218,6 +218,6 @@ print data[1]
 ###### COUNTS OF EXAMPLES
 
 data = Orange.data.Table("lenses")
-fya = Orange.data.filter.Values(domain = data.domain)
+fya = Orange.data.filter.Values(domain=data.domain)
 fya["age"] = "young"
 print "The data contains %i young fellows" % fya.count(data)
