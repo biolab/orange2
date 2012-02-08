@@ -1,6 +1,7 @@
 import os
 import urllib
 import Orange
+import orange
 from Orange.misc import deprecated_keywords, deprecated_members
 from Orange.feature import Descriptor
 
@@ -93,12 +94,18 @@ def _connection(uri):
             import psycopg2 as dbmod
             argTrans["database"] = "db"
             quirks = __PostgresQuirkFix(dbmod)
+            quirks.parameter = "%s"
         elif schema == 'mysql':
             import MySQLdb as dbmod
             quirks = __MySQLQuirkFix(dbmod)
+            quirks.parameter = "%s"
+        elif schema == "sqlite":
+            import sqlite3 as dbmod
+            quirks = __PostgresQuirkFix(dbmod)
+            quirks.parameter = "?"
+            return (quirks, dbmod.connect(host))
 
         dbArgDict = {}
-
         if user:
             dbArgDict[argTrans['user']] = user
         if password:
@@ -125,8 +132,8 @@ class SQLReader(object):
         :param domain_depot: Domain depot
         :type domain_depot: :class:`orange.DomainDepot`
         """
-        if uri is not None:
-            self.connect(uri)
+        if addr is not None:
+            self.connect(addr)
         if domain_depot is not None:
             self.domainDepot = domain_depot
         else:
@@ -149,7 +156,9 @@ class SQLReader(object):
         """
         Disconnect from the database.
         """
-        self.conn.disconnect()
+        func = getattr(self.conn, "disconnect", None)
+        if callable(func):
+            self.conn.disconnect()
 
     def getClassName(self):
         self.update()
@@ -254,10 +263,8 @@ class SQLReader(object):
             typ = i[1]
             if name in discreteNames:
                 attrName = 'D#' + name
-            elif typ == self.quirks.dbmod.STRING:
+            elif typ is None or typ in [self.quirks.dbmod.STRING, self.quirks.dbmod.DATETIME]:
                     attrName = 'S#' + name
-            elif typ == self.quirks.dbmod.DATETIME:
-                attrName = 'S#' + name
             else:
                 attrName = 'C#' + name
             
@@ -395,10 +402,10 @@ class SQLWriter(object):
                 for (i, name) in enumerate(colList):
                     colSList.append('"%s"'% name)
                     valList.append(self.__attrVal2sql(d[l[i]]))
-                valStr = ', '.join(["%s"]*len(colList))
-                cursor.execute(query % (table,
+                d = query % (table,
                     ", ".join(colSList),
-                    ", ".join (["%s"] * len(valList))), tuple(valList))
+                    ", ".join ([self.quirks.parameter] * len(valList)))
+                cursor.execute(d, tuple(valList))
             cursor.close()
             self.connection.commit()
         except Exception, e:
@@ -407,7 +414,7 @@ class SQLWriter(object):
             self.connection.rollback()
 
     @deprecated_keywords({"renameDict":"rename_dict", "typeDict":"type_dict"})
-    def create(self, table, instances, rename_dict = None, type_dict = None):
+    def create(self, table, instances, rename_dict = {}, type_dict = {}):
         """
         Create the required SQL table, then write the data into it.
 
@@ -430,11 +437,11 @@ class SQLWriter(object):
         l += [(i.name, i.var_type ) for i in instances.domain.get_metas().values()]
         if instances.domain.class_var:
             l.append((instances.domain.class_var.name, instances.domain.class_var.var_type))
-        if rename_dict is None:
-            renameDict = {}
+        #if rename_dict is None:
+        #    rename_dict = {}
         colNameList = [rename_dict.get(str(i[0]), str(i[0])) for i in l]
-        if type_dict is None:
-            typeDict = {}
+        #if type_dict is None:
+        #    typeDict = {}
         colTypeList = [type_dict.get(str(i[0]), self.__attrType2sql(i[1])) for i in l]
         try:
             cursor = self.connection.cursor()
@@ -445,7 +452,6 @@ class SQLWriter(object):
             query = """CREATE TABLE "%s" ( %s );""" % (table, colStr)
             self.quirks.beforeCreate(cursor)
             cursor.execute(query)
-            print query
             self.write(table, instances, rename_dict)
             self.connection.commit()
         except Exception, e:
@@ -455,7 +461,9 @@ class SQLWriter(object):
         """
         Disconnect from the database.
         """
-        self.conn.disconnect()
+        func = getattr(self.conn, "disconnect", None)
+        if callable(func):
+            self.conn.disconnect()
 
 def loadSQL(filename, dontCheckStored = False, domain = None):
     f = open(filename)

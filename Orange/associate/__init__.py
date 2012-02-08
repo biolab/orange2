@@ -8,8 +8,14 @@ from orange import \
 
 def print_rules(rules, ms = []):
     """
-    Print the rules. If ms is left empty, only the rules are printed. If ms
-    contains rules' attributes, e.g. ``["support", "confidence"]``, these are printed out as well.
+    Print the association rules.
+
+    :param rules: Association rules.
+    :type rules: AssociationRules
+
+    :param ms: Attributes of the rule to be printed with the rule (default: []). To report on confidence and support
+     use ``ms=["support", "confidence"]``
+    :type ms: list
     """
     if ms:
         print "\t".join([m[:4] for m in ms]) + "\trule"
@@ -32,6 +38,12 @@ class __Cmp:
 
 def sort(rules, ms = ["support"]):
     """
-    Sort the rules according to the given criteria. The default key is "support"; list multiple keys in a list.
+    Sort the rules according to the given criteria.
+
+    :param rules: Association rules.
+    :type rules: AssociationRules
+
+    :param ms: Sort keys (list of association rules' attributes, default: `["support"]`.
+    :type ms: list
     """
     rules.sort(__Cmp(ms))
