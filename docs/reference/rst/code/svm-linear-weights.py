@@ -7,7 +7,7 @@ classifier = svm.SVMLearner(brown,
                             normalization=False)
 
 weights = svm.get_linear_svm_weights(classifier)
-print sorted(weights)
+print sorted(weights.values())
 
 import pylab as plt
 plt.hist(weights.values())
