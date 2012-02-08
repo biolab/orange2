@@ -3,6 +3,7 @@ Data description (``data``)
 ===========================
 
 .. toctree::
+
     Orange.data.table
     Orange.data.domain
     Orange.data.instance
