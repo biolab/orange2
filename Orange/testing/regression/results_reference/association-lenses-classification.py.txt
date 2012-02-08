@@ -1,0 +1,4 @@
+Classification rules
+0.333  0.667  prescription=hypermetrope -> lenses=none
+0.333  0.667  astigmatic=yes -> lenses=none
+0.500  1.000  tear_rate=reduced -> lenses=none
