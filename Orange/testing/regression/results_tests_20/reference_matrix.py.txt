@@ -47,7 +47,7 @@ Exception thrown for 'to_numarray'
 [5.100, 3.500, 1.400, 0.200, 'setosa']
 
 /home/miha/work/orange/Orange/testing/regression/xtest_one.py:76: KernelWarning: attribute 'name' is of unsupported type
-  
+  # Arguments: name, #iterations, runNo, isNewFile, outputsdir
 [[  1.00000000e+00   0.00000000e+00   0.00000000e+00 ...,   0.00000000e+00
     1.00000000e+00  -1.00000002e+30]
  [  1.00000000e+00   0.00000000e+00   0.00000000e+00 ...,   0.00000000e+00

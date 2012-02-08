@@ -1,4 +1,4 @@
-import orange, orngTest, orngStat
+import orange, orngTest, orngStat, orngBayes
 data = orange.ExampleTable("lung-cancer")
 bayes = orngBayes.BayesLearner()
 bayes_m = orngBayes.BayesLearner(m=2)
