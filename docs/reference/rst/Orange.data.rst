@@ -3,14 +3,13 @@ Data description (``data``)
 ===========================
 
 .. toctree::
-
-    Orange.data.domain
-    Orange.data.value
-    Orange.data.instance
     Orange.data.table
+    Orange.data.domain
+    Orange.data.instance
+    Orange.data.value
+    Orange.data.formats
     Orange.data.sample
     Orange.data.filter
-    Orange.data.formats
     Orange.data.discretization
     Orange.data.continuization
     Orange.data.utils
