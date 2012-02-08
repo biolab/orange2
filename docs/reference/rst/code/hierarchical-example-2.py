@@ -2,7 +2,6 @@ import Orange
 
 iris = Orange.data.Table("iris")
 matrix = Orange.misc.SymMatrix(len(iris))
-matrix.setattr("objects", iris)
 distance = Orange.distance.Euclidean(iris)
 for i1, instance1 in enumerate(iris):
     for i2 in range(i1 + 1, len(iris)):
@@ -12,6 +11,7 @@ clustering = Orange.clustering.hierarchical.HierarchicalClustering()
 clustering.linkage = clustering.Average
 clustering.overwrite_matrix = 1
 root = clustering(matrix)
+root.mapping.objects = iris
 
 def prune(cluster, togo):
     if cluster.branches:

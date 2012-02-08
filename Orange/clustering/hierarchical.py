@@ -11,10 +11,8 @@ For hierarchical clustering we need to compute distances between
 instances. The method works in approximately O(n2) time (with the worst
 case O(n3)).  
 
-The distance should contain no negative elements. This limitation is due
-to implementation details of the algorithm and helpt the algorithm to
-run a bit faste. The elements on the diagonal (representing the element's
-distance from itself) are ignored.
+The distance matrix has to contain no negative elements, as this helps
+the algorithm to run faster. The elements on the diagonal are ignored.
 
 Basic functionality
 -------------------
@@ -61,76 +59,6 @@ Basic functionality
         :type matrix: :class:`Orange.misc.SymMatrix`
 
 
-.. class:: HierarchicalCluster
-
-    Represents a node in the clustering tree, as returned by
-    :obj:`HierarchicalClustering`
-
-    .. attribute:: branches
-    
-        A list of sub-clusters (:class:`HierarchicalCluster` instances). If this
-        is a leaf node this attribute is `None`
-        
-    .. attribute:: left
-    
-        The left sub-cluster (defined only if there are only two branches).
-        Same as ``branches[0]``.
-        
-    .. attribute:: right
-    
-        The right sub-cluster (defined only if there are only two branches).
-        Same as ``branches[1]``.
-        
-    .. attribute:: height
-    
-        Height of the cluster (distance between the sub-clusters).
-        
-    .. attribute:: mapping
-    
-        A list of indices to the original distance matrix. It is the same
-        for all clusters in the hierarchy - it simply represents the indices
-        ordered according to the clustering.
-    
-    .. attribute:: mapping.objects
-
-        A sequence describing objects - an :obj:`Orange.data.Table`, a
-        list of instance, a list of features (when clustering features),
-        or even a string of the same length as the number of elements.
-
-    .. attribute:: first
-    .. attribute:: last
-    
-        ``first`` and ``last`` are indices into the elements of ``mapping`` that
-        belong to that cluster.
-
-    .. method:: __len__()
-    
-        Asking for the length of the cluster gives the number of the objects
-        belonging to it. This equals ``last - first``.
-    
-    .. method:: __getitem__(index)
-    
-        By indexing the cluster we address its elements; these are either 
-        indices or objects (you'll understand this after seeing the examples).
-        For instance cluster[2] gives the third element of the cluster, and
-        list(cluster) will return the cluster elements as a list. The cluster
-        elements are read-only. To actually modify them, you'll have to go
-        through mapping, as described below. This is intentionally complicated
-        to discourage a naive user from doing what he does not understand.
-    
-    .. method:: swap()
-    
-        Swaps the ``left`` and the ``right`` subcluster; obviously this will
-        report an error when the cluster has more than two subclusters. This 
-        function changes the mapping and first and last of all clusters below
-        this one and thus needs O(len(cluster)) time.
-        
-    .. method:: permute(permutation)
-    
-        Permutes the subclusters. Permutation gives the order in which the
-        subclusters will be arranged. As for swap, this function changes the
-        mapping and first and last of all clusters below this one. 
-    
     
 Example 1 - Toy matrix
 ----------------------
@@ -231,21 +159,17 @@ If there were no ``objects`` the list would contains indices instead of names.
 Example 2 - Clustering of examples
 ----------------------------------
 
-The most common things to cluster are certainly examples. To show how to
-this is done, we shall now load the Iris data set, initialize a distance
-matrix with the distances measure by :class:`Euclidean`
+Clustering of examples is shown on the Iris data set, initialize a distance
+matrix with the :class:`Euclidean` distance measure
 and cluster it with average linkage. Since we don't need the matrix,
-we shall let the clustering overwrite it (not that it's needed for
-such a small data set as Iris).
+we shall let the clustering overwrite it.
 
 .. literalinclude:: code/hierarchical-example-2.py
     :lines: 1-15
 
-Note that we haven't forgotten to set the ``matrix.objects``. We did it
-through ``matrix.setattr`` to avoid the warning. Let us now prune the
-clustering using the function we've written above, and print out the
-clusters.
-    
+Let us now prune the clustering using the function we've written above,
+and print out the clusters.
+
 .. literalinclude:: code/hierarchical-example-2.py
     :lines: 16-20
             
@@ -280,9 +204,98 @@ Finally, if you are dealing with examples, you may want to take the function
 it will fail if objects are not of type :class:`Orange.data.Instance`.
 However, instead of list of lists, it will return a list of tables.
 
-Exploring hierarchical clusters
----------------------------------------------------------
+Cluster analysis
+-----------------
 
+.. autofunction:: cluster_to_list
+.. autofunction:: top_clusters
+.. autofunction:: top_cluster_membership
+.. autofunction:: order_leaves
+.. autofunction:: postorder
+.. autofunction:: preorder
+.. autofunction:: prune
+.. autofunction:: pruned
+.. autofunction:: clone
+.. autofunction:: cluster_depths
+.. autofunction:: cophenetic_distances
+.. autofunction:: cophenetic_correlation
+.. autofunction:: joining_cluster
+
+
+HierarchicalCluster hierarchy
+-----------------------------
+
+Results of clustering are stored in a hierarchy of
+:obj:`HierarchicalCluster` objects.
+
+.. class:: HierarchicalCluster
+
+    A node in the clustering tree, as returned by
+    :obj:`HierarchicalClustering`.
+
+    .. attribute:: branches
+    
+        A list of sub-clusters (:class:`HierarchicalCluster` instances). If this
+        is a leaf node this attribute is `None`
+        
+    .. attribute:: left
+    
+        The left sub-cluster (defined only if there are only two branches).
+        Same as ``branches[0]``.
+        
+    .. attribute:: right
+    
+        The right sub-cluster (defined only if there are only two branches).
+        Same as ``branches[1]``.
+        
+    .. attribute:: height
+    
+        Height of the cluster (distance between the sub-clusters).
+        
+    .. attribute:: mapping
+    
+        A list of indices to the original distance matrix. It is the same
+        for all clusters in the hierarchy - it simply represents the indices
+        ordered according to the clustering.
+    
+    .. attribute:: mapping.objects
+
+        A sequence describing objects - an :obj:`Orange.data.Table`, a
+        list of instance, a list of features (when clustering features),
+        or even a string of the same length as the number of elements.
+
+    .. attribute:: first
+    .. attribute:: last
+    
+        ``first`` and ``last`` are indices into the elements of ``mapping`` that
+        belong to that cluster.
+
+    .. method:: __len__()
+    
+        Asking for the length of the cluster gives the number of the objects
+        belonging to it. This equals ``last - first``.
+    
+    .. method:: __getitem__(index)
+    
+        By indexing the cluster we address its elements; these are either 
+        indices or objects.
+        For instance cluster[2] gives the third element of the cluster, and
+        list(cluster) will return the cluster elements as a list. The cluster
+        elements are read-only.
+    
+    .. method:: swap()
+    
+        Swaps the ``left`` and the ``right`` subcluster; it will
+        report an error when the cluster has more than two subclusters. This 
+        function changes the mapping and first and last of all clusters below
+        this one and thus needs O(len(cluster)) time.
+        
+    .. method:: permute(permutation)
+    
+        Permutes the subclusters. Permutation gives the order in which the
+        subclusters will be arranged. As for swap, this function changes the
+        mapping and first and last of all clusters below this one. 
+    
 To demonstrate how the data in clusters is stored, we shall continue with
 the clustering we got in the first example. ::
     
@@ -309,9 +322,7 @@ cluster's fields ``first`` and ``last`` are indices into mapping, so the
 clusters elements are actually
 ``cluster.mapping[cluster.first:cluster.last]``. ``cluster[i]`` therefore
 returns ``cluster.mapping[cluster.first+i]`` or, if objects are specified,
-``cluster.objects[cluster.mapping[cluster.first+i]]``. Space consumption
-is minimal since all clusters share the same objects ``mapping`` and
-``objects``.
+``cluster.objects[cluster.mapping[cluster.first+i]]``.
 
 Subclusters are ordered so that ``cluster.left.last`` always equals
 ``cluster.right.first`` or, in general, ``cluster.branches[i].last``
@@ -324,39 +335,22 @@ for all the clusters below. For the latter, when subclusters of cluster
 are permuted, the entire subtree starting at ``cluster.branches[i]``
 is moved by the same offset.
 
-The hierarchy of objects that represent a clustering is open, everything is
-accessible from Python. You can write your own clustering algorithms that
-build this same structure, or you can use Orange's clustering and then do to
-the structure anything you want. For instance prune it, as we have shown
-earlier. However, it is easy to do things wrong: shuffle the mapping, for
-instance, and forget to adjust the ``first`` and ``last`` pointers. Orange
-does some checking for the internal consistency, but you are surely smarter
-and can find a way to crash it. For instance, just create a cycle in the
-structure, call ``swap`` for some cluster above the cycle and you're there.
-But don't blame it on me then.
+When building the structure of :obj:`HierarchicalCluster`\s yourself.
+However, it is easy to do things wrong: shuffle the mapping, for
+instance, and forget to adjust the ``first`` and ``last`` pointers.
+
+Output
+--------------
+
+.. autofunction:: dendrogram_layout
+.. autofunction:: dendrogram_draw
 
 
 Utility Functions
 -----------------
 
 .. autofunction:: clustering_features
-.. autofunction:: cluster_to_list
-.. autofunction:: top_clusters
-.. autofunction:: top_cluster_membership
-.. autofunction:: order_leaves
-
-.. autofunction:: postorder
-.. autofunction:: preorder
-.. autofunction:: dendrogram_layout
-.. autofunction:: dendrogram_draw
-.. autofunction:: clone
-.. autofunction:: prune
-.. autofunction:: pruned
-.. autofunction:: cluster_depths
 .. autofunction:: feature_distance_matrix
-.. autofunction:: joining_cluster
-.. autofunction:: cophenetic_distances
-.. autofunction:: cophenetic_correlation
 
 """
 
@@ -437,7 +431,7 @@ def clustering_features(data, distance=None, linkage=orange.HierarchicalClusteri
     :param progress_callback: A function (taking one argument) to use for
         reporting the on the progress.
     :type progress_callback: function
-    
+
     :rtype: :class:`HierarchicalCluster`
     
     """
