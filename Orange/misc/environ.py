@@ -127,7 +127,7 @@ def _get_default_env():
     install_dir = os.path.dirname(install_dir) # Orange/
 
     doc_install_dir = os.path.join(install_dir, "doc")
-    dataset_install_dir = os.path.join(install_dir, "doc", "datasets") 
+    dataset_install_dir = os.path.join(install_dir, "doc", "datasets")
     network_install_dir = os.path.join(install_dir, "doc", "networks")
 
     canvas_install_dir = os.path.join(install_dir, "OrangeCanvas")
@@ -277,7 +277,7 @@ def samepath(path1, path2):
 def add_orange_directories_to_path():
     """Add orange directory paths to sys.path."""
 
-    paths_to_add = [install_dir]
+    paths_to_add = [] #[install_dir]
 
     if canvas_install_dir is not None:
         paths_to_add.append(canvas_install_dir)
