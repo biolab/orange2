@@ -15,12 +15,7 @@ Data tables are usually loaded from a file (see :doc:`Orange.data.formats`)::
 
 Data tables can also be created programmatically, as in the :ref:`code
 below <example-table-prog1>`.
-
-
--------------------
-List-like behaviour
--------------------
-
+s
 :obj:`Table` supports most list-like operations: getting, setting,
 removing data instances, as well as methods :obj:`append` and
 :obj:`extend`. When setting items, the item must be
