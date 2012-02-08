@@ -190,7 +190,8 @@ This is how the inferred tree should look like::
 
 Wooden bridges and walkways are short, while the others are mostly
 medium. This could be encoded in feature "SPAN" using
-:class:`Orange.classifier.ClassifierByLookupTable`, which is faster than the
+:class:`~Orange.classification.lookup.ClassifierByLookupTable`,
+which is faster than the
 Python function used here:
 
 .. literalinclude:: code/imputation-complex.py
