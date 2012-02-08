@@ -32,7 +32,7 @@ a class derived from :obj:`~Orange.feature.imputation.Imputer`. When an
 :obj:`~Orange.feature.imputation.Imputer` is called with an
 :obj:`~Orange.data.Instance` it returns a new instance with the
 missing values imputed (leaving the original instance intact). If imputer is
-called with an :obj:`~Orange.data.Table` it returns a new data table with
+called with a :obj:`~Orange.data.Table` it returns a new data table with
 imputed instances.
 
 .. class:: Constructor

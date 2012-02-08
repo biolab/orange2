@@ -12,6 +12,7 @@ Data description (``data``)
     Orange.data.filter
     Orange.data.discretization
     Orange.data.continuization
+    Orange.data.imputation
     Orange.data.utils
     Orange.data.continuization
     Orange.data.sql
