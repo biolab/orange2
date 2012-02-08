@@ -8,25 +8,28 @@ Self-organizing maps (``som``)
 .. index:: 
    single: projection; self-organizing map (SOM)
 
-An implementation of `self-organizing map <http://en.wikipedia.org/wiki/Self-organizing_map>`_ algorithm (SOM). 
-SOM is an unsupervised learning 
-algorithm that infers low, typically two-dimensional discretized representation of the input space,
-called a map. The map preserves topological properties of the input space, such that
-the cells that are close in the map include data instances that are similar to each other.
+An implementation of 
+`self-organizing map <http://en.wikipedia.org/wiki/Self-organizing_map>`_ algorithm (SOM). 
+SOM is an unsupervised learning  algorithm that infers low, 
+typically two-dimensional discretized representation of the input
+space, called a map. The map preserves topological properties of the
+input space, such that the cells that are close in the map include data 
+instances that are similar to each other.
 
 =================================
 Inference of Self-Organizing Maps
 =================================
 
-The main class for inference of self-organizing maps is :obj:`SOMLearner`. The class initializes
-the topology of the map and returns an inference objects which, given the data, performs the 
-optimization of the map:: 
+The main class for inference of self-organizing maps is :obj:`SOMLearner`. 
+The class initializes the topology of the map and returns an inference
+objects which, given the data, performs the optimization of the map:: 
 
    import Orange
    som = Orange.projection.som.SOMLearner(map_shape=(8, 8), 
             initialize=Orange.projection.som.InitializeRandom)
    data = Orange.data.table("iris.tab")
    map = som(data)
+
 
 .. autodata:: NeighbourhoodGaussian
 
@@ -58,11 +61,17 @@ Supervised Learning with Self-Organizing Maps
 =============================================
 
 Supervised learning requires class-labeled data. For training,
-class information is first added to data instances as a regular feature 
-by extending the feature vectors accordingly. Next, the map is trained, and the
-training data projected to nodes. Each node then classifies to the majority class.
-For classification, the data instance is projected the cell, returning the associated class.
-An example of the code that trains and then classifies on the same data set is::
+class information is first added to data instances as a regular
+feature by extending the feature vectors accordingly. Next, the
+map is trained, and the training data projected to nodes. Each
+node then classifies to the majority class. The dimensions 
+corresponding to the class features are then removed from the 
+prototype vector of each node in the map. For classification, 
+the data instance is projected to the best matching cell, returning 
+the associated class.
+
+An example of the code that trains and then classifies on the same
+data set is::
 
     import Orange
     import random
@@ -155,22 +164,34 @@ NeighbourhoodEpanechicov = 2
 ##########################################################################
 # Inference of Self-Organizing Maps 
 
+from Orange.misc import deprecated_keywords, \
+                        deprecated_attribute
+
 class Solver(object):
-    """ SOM Solver class used to train the map. Supports batch and sequential training.
-    Based on ideas from `SOM Toolkit for Matlab <http://www.cis.hut.fi/somtoolbox>`_.
+    """ SOM Solver class used to train the map. Supports batch 
+    and sequential training. Based on ideas from
+    `SOM Toolkit for Matlab <http://www.cis.hut.fi/somtoolbox>`_.
 
     :param neighbourhood: neighborhood function id
-    :type neighbourhood: :obj:`NeighbourhoodGaussian`, :obj:`NeighbourhoodBubble`, or :obj:`NeighbourhoodEpanechicov`
+    :type neighbourhood: :obj:`NeighbourhoodGaussian`, 
+        :obj:`NeighbourhoodBubble`, or :obj:`NeighbourhoodEpanechicov`
+        
     :param radius_ini: initial radius
     :type radius_ini: int
+    
     :param raduis_fin: final radius
     :type raduis_fin: int
+    
     :param epoch: number of training interactions
     :type epoch: int
-    :param batch_train: if True run the batch training algorithm (default), else use the sequential one
+    
+    :param batch_train: if True run the batch training algorithm 
+        (default), else use the sequential one
     :type batch_train: bool
+    
     :param learning_rate: learning rate for the sequential training algorithm
     :type learning_rate: float
+    
     """
     
     def __init__(self, **kwargs):
@@ -193,8 +214,9 @@ class Solver(object):
         """
         return (1 - epoch/self.epochs)*self.learning_rate
             
-    def __call__(self, data, map, progressCallback=None):
-        """ Train the map from data. Pass progressCallback function to report on the progress.
+    @deprecated_keywords({"progressCallback": "progress_callback"})
+    def __call__(self, data, map, progress_callback=None):
+        """ Train the map from data. Pass progress_callback function to report on the progress.
         """
         self.data = data
         self.map = map
@@ -202,12 +224,12 @@ class Solver(object):
         self.qerror = []
         self.bmu_cache = {}
         if self.batch_train:
-            self.train_batch(progressCallback)
+            self.train_batch(progress_callback)
         else:
-            self.train_sequential(progressCallback)
+            self.train_sequential(progress_callback)
         return self.map
 
-    def train_sequential(self, progressCallback):
+    def train_sequential(self, progress_callback):
         """Sequential training algorithm. 
         """
         self.vectors = self.map.vectors()
@@ -224,8 +246,8 @@ class Solver(object):
             if self.random_order:
                 random.shuffle(ind)
             self.train_step_sequential(epoch, ind)
-            if progressCallback:
-                progressCallback(100.0*epoch/self.epochs)
+            if progress_callback:
+                progress_callback(100.0*epoch/self.epochs)
             self.qerror.append(numpy.mean(numpy.sqrt(self.distances)))
 #            print epoch, "q error:", numpy.mean(numpy.sqrt(self.distances)), self.radius(epoch)
             if epoch > 5 and numpy.mean(numpy.abs(numpy.array(self.qerror[-5:-1]) - self.qerror[-1])) <= self.eps:
@@ -262,7 +284,8 @@ class Solver(object):
 
             self.vectors[nonzero] = self.vectors[nonzero] - Dx[nonzero] * numpy.reshape(h, (len(h), 1))
 
-    def train_batch(self, progressCallback=None):
+    @deprecated_keywords({"progressCallback": "progress_callback"})
+    def train_batch(self, progress_callback=None):
         """Batch training algorithm.
         """
         
@@ -279,8 +302,8 @@ class Solver(object):
         
         for epoch in range(self.epochs):
             self.train_step_batch(epoch)
-            if progressCallback:
-                progressCallback(100.0*epoch/self.epochs)
+            if progress_callback:
+                progress_callback(100.0*epoch/self.epochs)
             if False and epoch > 5 and numpy.mean(numpy.abs(numpy.array(self.qerror[-5:-1]) - self.qerror[-1])) <= self.eps:
                 break
 ##            vec_plot.set_xdata(self.vectors[:, 0])
@@ -323,43 +346,57 @@ class Solver(object):
         nonzero = (numpy.array(sorted(set(ma.nonzero(A)[0]))), )
         
         self.vectors[nonzero] = S[nonzero] / A[nonzero]
-
+        
 
 class SOMLearner(orange.Learner):
-    """An implementation of self-organizing map. Considers an input data set, projects the data 
-    instances onto a map, and returns a result in the form of a classifier holding projection
-    information together with an algorithm to project new data instances. Uses :obj:`Map` for
-    representation of projection space, :obj:`Solver` for training, and returns a trained 
-    map with information on projection of the training data as crafted by :obj:`SOMMap`.
+    """An implementation of self-organizing map. Considers 
+    an input data set, projects the data instances onto a map, 
+    and returns a result in the form of a classifier holding 
+    projection information together with an algorithm to project
+    new data instances. Uses :obj:`Map` for representation of 
+    projection space, :obj:`Solver` for training, and returns a 
+    trained map with information on projection of the training
+    data as crafted by :obj:`SOMMap`.
     
     :param map_shape: dimension of the map
     :type map_shape: tuple
-    :param initialize: initialization type id; linear 
-      initialization assigns the data to the cells according to its position in two-dimensional
-      principal component projection
+    
+    :param initialize: initialization type id; linear initialization 
+        assigns the data to the cells according to its position in
+        two-dimensional principal component projection    
     :type initialize: :obj:`InitializeRandom` or :obj:`InitializeLinear`
+    
     :param topology: topology type id
     :type topology: :obj:`HexagonalTopology` or :obj:`RectangularTopology`
+    
     :param neighbourhood: cell neighborhood type id
-    :type neighbourhood: :obj:`NeighbourhoodGaussian`, obj:`NeighbourhoodBubble`, or obj:`NeighbourhoodEpanechicov`
+    :type neighbourhood: :obj:`NeighbourhoodGaussian`, 
+        obj:`NeighbourhoodBubble`, or obj:`NeighbourhoodEpanechicov`
+        
     :param batch_train: perform batch training?
     :type batch_train: bool
+    
     :param learning_rate: learning rate
     :type learning_rate: float
+    
     :param radius_ini: initial radius
     :type radius_ini: int
+    
     :param radius_fin: final radius
     :type radius_fin: int
+    
     :param epochs: number of epochs (iterations of a training steps)
     :type epochs: int
-    :param solver: a class with the optimization algorithm
-    """
     
-    def __new__(cls, examples=None, weightId=0, **kwargs):
+    :param solver: a class with the optimization algorithm
+    
+    """
+    @deprecated_keywords({"weightId": "weight_id"})
+    def __new__(cls, examples=None, weight_id=0, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
         if examples is not None:
             self.__init__(**kwargs)
-            return self.__call__(examples, weightId)
+            return self.__call__(examples, weight_id)
         else:
             return self
         
@@ -380,7 +417,9 @@ class SOMLearner(orange.Learner):
         
         orange.Learner.__init__(self, **kwargs)
         
-    def __call__(self, data, weightID=0, progressCallback=None):
+    @deprecated_keywords({"weightID": "weight_id",
+                          "progressCallback": "progress_callback"})
+    def __call__(self, data, weight_id=0, progress_callback=None):
         numdata, classes, w = data.toNumpyMA()
         map = Map(self.map_shape, topology=self.topology)
         if self.initialize == Map.InitializeLinear:
@@ -389,7 +428,7 @@ class SOMLearner(orange.Learner):
             map.initialize_map_random(numdata)
         map = self.solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
                      radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
-                     epochs=self.epochs)(numdata, map, progressCallback=progressCallback)
+                     epochs=self.epochs)(numdata, map, progress_callback=progress_callback)
         return SOMMap(map, data)
 
 class SOMMap(orange.Classifier):
@@ -399,19 +438,20 @@ class SOMMap(orange.Classifier):
     :type map: :obj:`SOMMap`
     :param data: the data to be mapped on the map
     :type data: :obj:`Orange.data.Table`
+    
     """
     
     def __init__(self, map=[], data=[]):
         self.map = map
         self.examples = data
         for node in map:
-            node.referenceExample = orange.Example(orange.Domain(self.examples.domain.attributes, False),
+            node.reference_example = orange.Example(orange.Domain(self.examples.domain.attributes, False),
                                                  [(var(value) if var.varType == orange.VarTypes.Continuous else var(int(value))) \
                                                   for var, value in zip(self.examples.domain.attributes, node.vector)])
             node.examples = orange.ExampleTable(self.examples.domain)
 
         for ex in self.examples:
-            node = self.getBestMatchingNode(ex)
+            node = self.get_best_matching_node(ex)
             node.examples.append(ex)
 
         if self.examples and self.examples.domain.classVar:
@@ -422,7 +462,7 @@ class SOMMap(orange.Classifier):
         else:
             self.classVar = None
 
-    def getBestMatchingNode(self, example):
+    def get_best_matching_node(self, example):
         """Return the best matching node for a given data instance
         """
         example, c, w = orange.ExampleTable([example]).toNumpyMA()
@@ -430,9 +470,13 @@ class SOMMap(orange.Classifier):
         Dist = vectors - example
         bmu = ma.argmin(ma.sum(Dist**2, 1))
         return list(self.map)[bmu]
+    
+    getBestMatchingNode = \
+        deprecated_attribute("getBestMatchingNode",
+                             "get_best_matching_node")
         
     def __call__(self, example, what=orange.GetValue):
-        bmu = self.getBestMatchingNode(example)
+        bmu = self.get_best_matching_node(example)
         return bmu.classifier(example, what)
 
     def __getattr__(self, name):
@@ -455,16 +499,22 @@ class SOMMap(orange.Classifier):
 # Supervised learning
 
 class SOMSupervisedLearner(SOMLearner):
-    """SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
-    class information in the learning process. This is achieved by adding a value for each class
-    to the training instances, where 1.0 signals class membership and all other values are 0.0.
-    After the training, the new values are discarded from the node vectors.
+    """SOMSupervisedLearner is a class used to learn SOM from
+    orange.ExampleTable, by using the class information in the
+    learning process. This is achieved by adding a value for each
+    class to the training instances, where 1.0 signals class membership
+    and all other values are 0.0. After the training, the new values 
+    are discarded from the node vectors.
     
     :param data: class-labeled data set
     :type data: :obj:`Orange.data.Table`
-    :param progressCallback: a one argument function to report on inference progress (in %)
+    :param progress_callback: a one argument function to report 
+        on inference progress (in %)
+        
     """
-    def __call__(self, examples, weightID=0, progressCallback=None):
+    @deprecated_keywords({"weightID": "weight_id",
+                          "progressCallback": "progress_callback"})
+    def __call__(self, examples, weight_id=0, progress_callback=None):
         data, classes, w = examples.toNumpyMA()
         nval = len(examples.domain.classVar.values)
         ext = ma.zeros((len(data), nval))
@@ -477,7 +527,7 @@ class SOMSupervisedLearner(SOMLearner):
             map.initialize_map_random(data)
         map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
                      radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
-                     epoch=self.epochs)(data, map, progressCallback=progressCallback)
+                     epoch=self.epochs)(data, map, progress_callback=progress_callback)
         for node in map:
             node.vector = node.vector[:-nval]
         return SOMMap(map, examples)
@@ -492,21 +542,26 @@ class Node(object):
 
         Node position.
 
-    .. attribute:: referenceExample
+    .. attribute:: reference_example
 
         Reference data instance (a prototype).
         
     .. attribute:: examples
     
-        Data set with instances training instances that were mapped to the node. 
+        Data set with instances training instances that were mapped 
+        to the node.
+         
     """
     def __init__(self, pos, map=None, vector=None):
         self.pos = pos
         self.map = map
         self.vector = vector
+        
+    referenceExample = deprecated_attribute("referenceExample", "reference_example")
 
 class Map(object):
-    """Self organizing map (the structure). Includes methods for data initialization.
+    """Self organizing map (the structure). Includes methods for
+    data initialization.
     
     .. attribute:: map
 
@@ -515,6 +570,7 @@ class Map(object):
     .. attribute:: examples
     
         Data set that was considered when optimizing the map.
+        
     """
     
     HexagonalTopology = HexagonalTopology
@@ -550,8 +606,9 @@ class Map(object):
 
     def unit_distances(self):
         """Return a NxN numpy.array of internode distances (based on
-        node position in the map, not vector space) where N is the number of
-        nodes.
+        node position in the map, not vector space) where N is the 
+        number of nodes.
+        
         """
         nodes = list(self)
         dist = numpy.zeros((len(nodes), len(nodes)))
@@ -563,7 +620,9 @@ class Map(object):
         return numpy.array(dist)
 
     def unit_coords(self):
-        """ Return the unit coordinates of all nodes in the map as an numpy.array.
+        """ Return the unit coordinates of all nodes in the map 
+        as an numpy.array.
+        
         """
         nodes = list(self)
         coords = numpy.zeros((len(nodes), len(self.map_shape)))
@@ -581,6 +640,7 @@ class Map(object):
     def initialize_map_random(self, data=None, dimension=5):
         """Initialize the map nodes vectors randomly, by supplying
         either training data or dimension of the data.
+        
         """
         if data is not None:
             min, max = ma.min(data, 0), ma.max(data, 0);
@@ -594,6 +654,7 @@ class Map(object):
     def initialize_map_linear(self, data, map_shape=(10, 20)):
         """ Initialize the map node vectors linearly over the subspace
         of the two most significant eigenvectors.
+        
         """
         data = data.copy() #ma.array(data)
         dim = data.shape[1]
@@ -633,23 +694,31 @@ class Map(object):
         for i, node in enumerate(self):
             node.vector = vectors[i]
 
-    def getUMat(self):
+    def get_u_matrix(self):
         return getUMat(self)
+    
+    getUMat = deprecated_attribute("getUMat", "get_u_matrix")
         
 ##########################################################################
 # Supporting functions 
 
-def getUMat(som):
+def get_u_matrix(som):
     dim1=som.map_shape[0]*2-1
     dim2=som.map_shape[1]*2-1
 
     a=numpy.zeros((dim1, dim2))
     if som.topology == HexagonalTopology:
-        return __fillHex(a, som)
+        return __fill_hex(a, som)
     else:
-        return __fillRect(a, som)
+        return __fill_rect(a, som)
+    
+def getUMat(som):
+    import warnings
+    warnings.warn("Deprecated function name 'getUMat'. Use 'get_u_matrix' instead.",
+                  DeprecationWarning)
+    return get_u_matrix(som)
 
-def __fillHex(array, som):
+def __fill_hex(array, som):
     xDim, yDim = som.map_shape
 ##    for n in som.nodes:
 ##        d[tuple(n.pos)]=n
@@ -671,7 +740,7 @@ def __fillHex(array, som):
             array[i][j]=sum(l)/len(l)
     return array
 
-def __fillRect(array, som):
+def __fill_rect(array, som):
     xDim, yDim = som.map_shape
     d = dict([((i, j), som[i, j]) for i in range(xDim) for j in range(yDim)])
     check=lambda x,y:x>=0 and x<xDim*2-1 and y>=0 and y<yDim*2-1
@@ -697,7 +766,12 @@ def __fillRect(array, som):
 if __name__ == "__main__":
     data = orange.ExampleTable("iris.tab")
     learner = SOMLearner()
-    learner = SOMLearner(batch_train=True, initialize=InitializeLinear, radius_ini=3, radius_fin=1, neighbourhood=Map.NeighbourhoodGaussian, epochs=1000)
+    learner = SOMLearner(batch_train=True,
+                         initialize=InitializeLinear, 
+                         radius_ini=3,
+                         radius_fin=1,
+                         neighbourhood=Map.NeighbourhoodGaussian, 
+                         epochs=1000)
     map = learner(data)
     for e in data:
         print map(e), e.getclass()
