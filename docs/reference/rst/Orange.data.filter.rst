@@ -9,19 +9,41 @@
 Filtering (``filter``)
 **********************
 
-Filters are used to select instances. They see individual instances,
-not the entire table, and are limited to accepting or rejecting instances.
+Filters are used to select subsets of instances. Consider the following
+example, where instances with age="young" from lenses are
+selected:
 
-General behavior
-----------------
+.. literalinclude:: code/filter.py
+    :lines: 58-64
 
-All filters follow this structure:
+Outputs::
+
+    Young instances
+    ['young', 'myope', 'no', 'reduced', 'none']
+    ['young', 'myope', 'no', 'normal', 'soft']
+    ['young', 'myope', 'yes', 'reduced', 'none']
+    ['young', 'myope', 'yes', 'normal', 'hard']
+    ['young', 'hypermetrope', 'no', 'reduced', 'none']
+    ['young', 'hypermetrope', 'no', 'normal', 'soft']
+    ['young', 'hypermetrope', 'yes', 'reduced', 'none']
+    ['young', 'hypermetrope', 'yes', 'normal', 'hard']
+
+:obj:`~Orange.data.Domain.features` behaves as a list and provides method
+`index`, which is used to retrieve the position of feature `age`. Feature
+`age` is also used to construct a :obj:`~Orange.data.Value`.
+
+Structure
+---------
+
+Filters see individual instances, not the entire table,
+and are limited to accepting or rejecting instances. All filters have this
+structure:
 
 .. class:: Filter
 
     .. attribute:: negate
 
-    Inverts filters' decisions.
+    Inverts the selection. Defaults to :obj:`False`.
 
     .. attribute:: domain
 
@@ -40,7 +62,7 @@ All filters follow this structure:
 
     .. method:: selectionVector(table)
 
-    Returns a list of booleans of the same length as :obj:`table`,
+    Returns a list of :obj:`bool` of the same length as :obj:`table`,
     denoting which instances are accepted. Equivalent to
     `[filter(ex) for i in table]`.
 
@@ -75,7 +97,7 @@ In this script, :obj:`instance` should be some learning instance;
 you can load any data and set `instance = data[0]`. Although the probability
 of selecting an instance is set to 0.7, the filter accepted five out of ten
 instances. Because the filter only sees individual instances, it cannot be
-accurate in this regard. If exactly 70% of instances are need, then use
+accurate in this regard. If exactly 70% of instances are needed then use
 :obj:`~Orange.data.sample.SubsetIndices2`.
 
 Setting the random generator ensures that the filter will always select
@@ -89,8 +111,8 @@ individual example, use a filter like this::
 
     data70 = randomfilter(data)
 
-Filtering instances with(out) unknown values
---------------------------------------------
+Unknown values
+--------------
 
 .. class:: IsDefined
 
@@ -107,35 +129,39 @@ Filtering instances with(out) unknown values
 
 .. class:: HasClass
 
-    Selects instances with defined class value. You can use :obj:`negate` to
-    invert the selection, as shown in the script below.
+    Selects instances with defined class value. You can use
+    :obj:`~Orange.data.filter.Filter.negate` to invert the selection,
+    as shown in the script below.
 
     .. attribute:: check
 
-    A list of boolean elements specifying which features to check. Each
+    A list of :obj:`bool` elements specifying which features to check. Each
     element corresponds to a feature in the domain. By default,
     :obj:`check` is :obj:`None`, meaning that all features are checked. The
     list is initialized to a list of :obj:`True` when the filter's
-    :obj:`domain` is set unless the list already exists. You can also set
-    :obj:`check` manually, even without setting the :obj:`domain`. The list
+    :obj:`~Orange.data.filter.Filter.domain` is set unless the list
+    already exists. You can also set
+    :obj:`~Orange.data.filter.HasClass.check` manually,
+    even without setting the :obj:`~Orange.data.filter.Filter.domain`. The list
     can be indexed by ordinary integers (for example,
-    `check[0]`). If :obj:`domain` is set, you can also address the list by
-    feature names or descriptors.
+    `check[0]`). If :obj:`~Orange.data.filter.Filter.domain` is set,
+    you can also address the list by feature names or descriptors.
 
-After setting the :obj:`domain`, it should not be modified. Changes will
+After setting :obj:`~Orange.data.filter.Filter.domain`
+the :obj:`~Orange.data.Domain` should not be modified. Changes will
 disrupt the correspondence between the domain features and the
-list :obj:`check`, causing unpredictable behaviour.
+list :obj:`~Orange.data.filter.HasClass.check`, causing unpredictable
+behaviour.
 
 .. literalinclude:: code/filter.py
     :lines: 9, 20-55
 
-Filtering instances with(out) a meta value
-------------------------------------------
+Meta values
+-----------
 
 .. class:: HasMeta
 
-    This filters out features that don't have (or that *do have*,
-    when :obj:`negate`) a meta attribute with the given id.</P>
+    Filters out instances that don't have a meta attribute with the given id.
 
     .. attribute:: id
 
@@ -156,37 +182,29 @@ does not necessarily appear in all instances. This filter can be used in
 other situations involving meta values that appear only in some instances.
 The corresponding attributes do not need to be registered in the domain.
 
-Filtering by feature values
----------------------------
+Filtering by value
+------------------
 
-Fast filter for single values
-=============================
+Single values
+=============
 
 .. class:: SameValue
 
-    This is a fast filter for selecting instances with particular value of
-    some features.
+    This is a fast filter for selecting instances with particular value of a
+    feature.
 
     .. attribute:: position
 
-    Position of the feature in the domain. Mare sure that you index the
-    right :obj:`~Orange.data.Domain`.
+    Index of feature in the :obj:`~Orange.data.Domain`. Method `index`
+    provided by :obj:`~Orange.data.Domain` can be used to retrieve the
+    position of a feature.
 
     .. attribute:: value
 
     Features's value.
 
-.. literalinclude:: code/filter.py
-    :lines: 58-64
-
-This script select instances with age="young" from lenses dataset. Setting
-position is somewhat tricky: `data.domain.features` behaves as a list and
-provides method `index`, which we can use to retrieve the position of
-attribute `age`. Feature `age` is also needed to construct a
-:obj:`~Orange.data.Value`.
-
-Simple filter for continuous features
-=====================================
+Continuous features
+===================
 
 :obj:`ValueFilter` provides different methods for filtering values of
 countinuous features: :obj:`ValueFilter.Equal`,
@@ -201,8 +219,8 @@ In the following example two different filters are used:
 .. literalinclude:: code/filterv.py
     :lines: 52, 75-83
 
-Filter for multiple values and features
-=======================================
+Multiple values and features
+============================
 
 :obj:`~Orange.data.filter.Values` performs a similar function as
 :obj:`~Orange.data.filter.SameValue`, but can handle conjunctions and
@@ -212,16 +230,12 @@ disjunctions of more complex conditions.
 
     .. attribute:: conditions
 
-    A list of :obj:`Orange.data.filter.ValueFilterList` that contains
+    A list of :obj:`~Orange.data.filter.ValueFilterList` that contains
     conditions. Elements must be objects of type
     :obj:`~Orange.data.filter.ValueFilterDiscrete` for discrete and
     :obj:`~Orange.data.filter.ValueFilterContinuous` for continuous
     attributes; both are derived from
-    :obj:`Orange.data.filter.ValueFilter`. Both have fields :obj:`position`
-    denoting the position of the checked attribute (just as in
-    :obj:`Orange.data.filter.SameValue`) and
-    :obj:`acceptSpecial` that determines whether undefined values are
-    accepted (1), rejected (0) or simply ignored (-1, default).
+    :obj:`Orange.data.filter.ValueFilter`.
 
     .. attribute:: conjunction
 
@@ -230,18 +244,39 @@ disjunctions of more complex conditions.
     rejected. If :obj:`False`, instance is accepted if at least one value is
     accepted.
 
+.. class:: ValueFilter
 
-:obj:`~Orange.data.filter.ValueFilterDiscrete` has field
-:obj:`values` of type :obj:`~Orange.ValueList` that contains
-objects of type :obj:`~Orange.data.Value` that
-represent the acceptable values.
+    .. attribute:: position
 
-:obj:`~Orange.data.filter.ValueFilterContinous` has fields
-:obj:`~Orange.data.filter.ValueFilterContinous.min` and
-:obj:`~Orange.data.filter.ValueFilterContinous.max` that define
-an interval, and field
-:obj:`~Orange.data.filter.ValueFilterContinous.outside` that tells whether
-values outside or inside interval are accepted. Defaults to :obj:`False`.
+    Indicates the posiiton of the checked feature (similar to
+    :obj:`Orange.data.filter.SameValue`).
+
+    .. attribute:: accept_special
+
+    Determines whether undefined values are accepted (1),
+    rejected (0) or simply ignored (-1, default).
+
+.. class:: ValueFilterDiscrete
+
+    .. attribute:: values
+
+    An immutable :obj:`list` that contains objects of type
+    :obj:`~Orange.data.Value`, with values to accept.
+
+.. class:: ValueFilterContinous
+
+    .. attribute:: min
+
+    Lower bound of values to consider.
+
+    .. attribute:: max
+
+    Upper bound of values to consider.
+
+    .. attribute:: outside
+
+    Indicates whether instances outside the interval should be accepted.
+    Defaults to :obj:`False`.
 
 .. literalinclude:: code/filter.py
     :lines: 68-82
@@ -252,17 +287,18 @@ two features is missing, only the other is checked. If both are missing,
 instance is accepted.
 
 The filter is first constructed and assigned a domain. Then both
-conditions are appended to the filter's :obj:`conditions` field.
-Both are of type :obj:`~Orange.data.filter.ValueFilterDiscrete`,
-since the two attributes are discrete. Position of the attribute is obtained
-the same way as for :obj:`~Orange.data.filter.SameValue` described above.
+conditions are appended to the filter's
+:obj:`~Orange.data.filter.Values.conditions` field. Both are of type
+:obj:`~Orange.data.filter.ValueFilterDiscrete`, since the two attributes are
+discrete. Position of the attribute is obtained the same way as for
+:obj:`~Orange.data.filter.SameValue` described above.
 
 The list of conditions can also be given to a filter constructor. The
 following filter will accept examples whose age is "young" or "presbyopic"
-or who are astigmatic (<CODE>conjunction = 0</CODE>). For contrast from
+or who are astigmatic (`conjunction = 0`). For contrast from
 above filter, unknown age is not acceptable (but examples with unknown age
 can still be accepted if they are astigmatic). Meanwhile,
-examples with unknown astigmatism are always accepted.</P>
+examples with unknown astigmatism are always accepted.
 
 .. literalinclude:: code/filter.py
     :lines: 129-141
