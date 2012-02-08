@@ -7,7 +7,7 @@
 import Orange
 bridges = Orange.data.Table("bridges")
 
-imputer = Orange.feature.imputation.ImputerConstructor_minimal()
+imputer = Orange.feature.imputation.MinimalConstructor()
 imputer = imputer(bridges)
 
 print "Example with missing values"

@@ -1,21 +1,28 @@
 import Orange.core as orange
-from orange import ImputerConstructor_minimal 
-from orange import ImputerConstructor_maximal
-from orange import ImputerConstructor_average
-from orange import Imputer_defaults
-from orange import ImputerConstructor_model
-from orange import Imputer_model
-from orange import ImputerConstructor_asValue 
+from orange import\
+    Imputer as Imputer,\
+    ImputerConstructor as Constructor,\
+    ImputerConstructor_minimal as MinimalConstructor,\
+    ImputerConstructor_maximal as MaximalConstructor,\
+    ImputerConstructor_average as AverageConstructor,\
+    ImputerConstructor_model as ModelConstructor,\
+    ImputerConstructor_asValue as AsValueConstructor,\
+    ImputerConstructor_random as RandomConstructor,\
+    Imputer_defaults as Defaults,\
+    Imputer_model as Model,\
+    Imputer_random as Random,\
+    Imputer_asValue as AsValue,\
+    ImputeClassifier as Classifier
 
 import Orange.misc
 
 class ImputeLearner(orange.Learner):
-    def __new__(cls, examples = None, weight_id = 0, **keyw):
+    def __new__(cls, data = None, weight_id = 0, **keyw):
         self = orange.Learner.__new__(cls, **keyw)
         self.dont_impute_classifier = False
         self.__dict__.update(keyw)
-        if examples:
-            return self.__call__(examples, weight_id)
+        if data:
+            return self.__call__(data, weight_id)
         else:
             return self
         
@@ -43,8 +50,8 @@ class ImputeClassifier(orange.Classifier):
         self.imputer = imputer
         self.__dict__.update(argkw)
 
-    def __call__(self, ex, what=orange.GetValue):
-        return self.base_classifier(self.imputer(ex), what)
+    def __call__(self, i, what=orange.GetValue):
+        return self.base_classifier(self.imputer(i), what)
 
 ImputeClassifier = Orange.misc.deprecated_members(
   {

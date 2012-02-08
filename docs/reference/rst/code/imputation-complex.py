@@ -9,7 +9,7 @@ import Orange
 bridges = Orange.data.Table("bridges")
 
 print "*** IMPUTING MINIMAL VALUES ***"
-imputer = Orange.feature.imputation.ImputerConstructor_minimal(bridges)
+imputer = Orange.feature.imputation.MinimalConstructor(bridges)
 print "Example w/ missing values"
 print bridges[19]
 print "Imputed:"
@@ -24,7 +24,7 @@ for i in range(20, 25):
 
 
 print "*** IMPUTING MAXIMAL VALUES ***"
-imputer = Orange.feature.imputation.ImputerConstructor_maximal(bridges)
+imputer = Orange.feature.imputation.MaximalConstructor(bridges)
 print "Example w/ missing values"
 print bridges[19]
 print "Imputed:"
@@ -39,7 +39,7 @@ for i in range(20, 25):
 
 
 print "*** IMPUTING AVERAGE/MAJORITY VALUES ***"
-imputer = Orange.feature.imputation.ImputerConstructor_average(bridges)
+imputer = Orange.feature.imputation.AverageConstructor(bridges)
 print "Example w/ missing values"
 print bridges[19]
 print "Imputed:"
@@ -54,7 +54,7 @@ for i in range(20, 25):
 
 
 print "*** MANUALLY CONSTRUCTED IMPUTER ***"
-imputer = Orange.feature.imputation.Imputer_defaults(bridges.domain)
+imputer = Orange.feature.imputation.Defaults(bridges.domain)
 imputer.defaults["LENGTH"] = 1234
 print "Example w/ missing values"
 print bridges[19]
@@ -71,7 +71,7 @@ for i in range(20, 25):
 
 print "*** TREE-BASED IMPUTATION ***"
 
-imputer = Orange.feature.imputation.ImputerConstructor_model()
+imputer = Orange.feature.imputation.ModelConstructor()
 imputer.learner_continuous = imputer.learner_discrete = Orange.classification.tree.TreeLearner(minSubset=20)
 imputer = imputer(bridges)
 print "Example w/ missing values"
@@ -88,7 +88,7 @@ for i in range(20, 25):
 
 
 print "*** BAYES and AVERAGE IMPUTATION ***"
-imputer = Orange.feature.imputation.ImputerConstructor_model()
+imputer = Orange.feature.imputation.ModelConstructor()
 imputer.learner_continuous = Orange.regression.mean.MeanLearner()
 imputer.learner_discrete = Orange.classification.bayes.NaiveLearner()
 imputer = imputer(bridges)
@@ -105,7 +105,7 @@ for i in range(20, 25):
 
 
 print "*** CUSTOM IMPUTATION BY MODELS ***"
-imputer = Orange.feature.imputation.Imputer_model()
+imputer = Orange.feature.imputation.Model()
 imputer.models = [None] * len(bridges.domain)
 imputer.models[bridges.domain.index("LANES")] = Orange.classification.ConstantClassifier(2.0)
 tord = Orange.classification.ConstantClassifier(Orange.data.Value(bridges.domain["T-OR-D"], "THROUGH"))
@@ -134,7 +134,7 @@ for i in range(20, 25):
 
 
 print "*** IMPUTATION WITH SPECIAL VALUES ***"
-imputer = Orange.feature.imputation.ImputerConstructor_asValue(bridges)
+imputer = Orange.feature.imputation.AsValueConstructor(bridges)
 original = bridges[19]
 imputed = imputer(bridges[19])
 print original.domain

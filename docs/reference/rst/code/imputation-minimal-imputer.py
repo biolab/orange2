@@ -8,7 +8,7 @@ import Orange
 
 ba = Orange.classification.bayes.NaiveLearner()
 imba = Orange.feature.imputation.ImputeLearner(base_learner=ba, 
-       imputer_constructor=Orange.feature.imputation.ImputerConstructor_minimal)
+       imputer_constructor=Orange.feature.imputation.MinimalConstructor)
 
 voting = Orange.data.Table("voting")
 res = Orange.evaluation.testing.cross_validation([ba, imba], voting)

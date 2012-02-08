@@ -7,7 +7,7 @@
 import Orange
 
 lr = Orange.classification.logreg.LogRegLearner()
-imputer = Orange.feature.imputation.ImputerConstructor_minimal
+imputer = Orange.feature.imputation.MinimalConstructor
 
 imlr = Orange.feature.imputation.ImputeLearner(base_learner=lr,
     imputer_constructor=imputer)

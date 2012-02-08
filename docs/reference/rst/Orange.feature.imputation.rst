@@ -26,15 +26,16 @@ The output of this code is::
 Imputers
 --------
 
-:obj:`ImputerConstructor` is the abstract root in a hierarchy of classes
-that accept training data and construct an instance of a class derived from
-:obj:`Imputer`. When an :obj:`Imputer` is called with an
-:obj:`Orange.data.Instance` it returns a new instance with the
+:obj:`~Orange.feature.imputation.Constructor` is the abstract root in a
+hierarchy of classes that accept training data and construct an instance of
+a class derived from :obj:`~Orange.feature.imputation.Imputer`. When an
+:obj:`~Orange.feature.imputation.Imputer` is called with an
+:obj:`~Orange.data.Instance` it returns a new instance with the
 missing values imputed (leaving the original instance intact). If imputer is
-called with an :obj:`Orange.data.Table` it returns a new data table with
+called with an :obj:`~Orange.data.Table` it returns a new data table with
 imputed instances.
 
-.. class:: ImputerConstructor
+.. class:: Constructor
 
     .. attribute:: impute_class
 
@@ -45,23 +46,24 @@ Simple imputation
 
 Simple imputers always impute the same value for a particular feature,
 disregarding the values of other features. They all use the same class
-:obj:`Imputer_defaults`.
+:obj:`Defaults`.
 
-.. class:: Imputer_defaults
+.. class:: Defaults
 
     .. attribute::  defaults
 
     An instance :obj:`~Orange.data.Instance` with the default values to be
     imputed instead of missing value. Examples to be imputed must be from the
-    same :obj:`~Orange.data.Domain` as :obj:`defaults`.
+    same :obj:`~Orange.data.Domain` as
+    :obj:`~Orange.feature.imputation.Defaults.defaults`.
 
 Instances of this class can be constructed by
-:obj:`~Orange.feature.imputation.ImputerConstructor_minimal`,
-:obj:`~Orange.feature.imputation.ImputerConstructor_maximal`,
-:obj:`~Orange.feature.imputation.ImputerConstructor_average`.
+:obj:`~Orange.feature.imputation.MinimalConstructor`,
+:obj:`~Orange.feature.imputation.MaximalConstructor`,
+:obj:`~Orange.feature.imputation.AverageConstructor`.
 
 For continuous features, they will impute the smallest, largest or the average
-values encountered in the training examples. For discrete,
+values encountered in the training instances. For discrete,
 they will impute the lowest (the one with index 0, e. g. attr.values[0]),
 the highest (attr.values[-1]), and the most common value encountered in the
 data, respectively. If values of discrete features are ordered according to
@@ -71,27 +73,27 @@ the minimal and maximal imputers  will then represent optimistic and
 pessimistic imputations.
 
 User-define defaults can be given when constructing a
-:obj:`~Orange.feature.imputation.Imputer_defaults`. Values that are left
+:obj:`~Orange.feature.imputation.Defauls`. Values that are left
 unspecified do not get imputed. In the following example "LENGTH" is the
 only attribute to get imputed with value 1234:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 56-69
 
-If :obj:`~Orange.feature.imputation.Imputer_defaults`'s constructor is given
+If :obj:`~Orange.feature.imputation.Defaults`'s constructor is given
 an argument of type :obj:`~Orange.data.Domain` it constructs an empty instance
-for :obj:`defaults`. If an instance is given, the reference to the
-instance will be kept. To avoid problems associated with `Imputer_defaults
-(data[0])`, it is better to provide a copy of the instance:
-`Imputer_defaults(Orange.data.Instance(data[0]))`.
+for :obj:`~Orange.feature.imputation.Defaults.defaults`. If an
+instance is given, the reference to the instance is kept. To avoid problems
+associated with `Defaults(data[0])`, it is better to provide a copy
+of the instance: `Defaults(Orange.data.Instance(data[0]))`.
 
 Random imputation
 =================
 
-.. class:: Imputer_Random
+.. class:: Random
 
     Imputes random values. The corresponding constructor is
-    :obj:`ImputerConstructor_Random`.
+    :obj:`RandomConstructor`.
 
     .. attribute:: impute_class
 
@@ -106,13 +108,14 @@ Random imputation
 Model-based imputation
 ======================
 
-.. class:: ImputerConstructor_model
+.. class:: ModelConstructor
 
     Model-based imputers learn to predict the features's value from values of
-    other features. :obj:`ImputerConstructor_model` are given two learning
-    algorithms and they construct a classifier for each attribute. The
-    constructed imputer :obj:`Imputer_model` stores a list of classifiers that
-    are used for imputation.
+    other features. :obj:`~Orange.feature.imputation.ModelConstructor`
+    is given two learning algorithms and constructs a classifier for
+    each attribute. The constructed imputer
+    :obj:`~Orange.feature.imputation.Model` stores a list of
+    classifiers that are used for imputation.
 
     .. attribute:: learner_discrete, learner_continuous
 
@@ -126,7 +129,7 @@ Model-based imputation
     on learning instances, where it uses the class value,
     and a second imputer on testing instances, where class is not available.
 
-.. class:: Imputer_model
+.. class:: Model
 
     .. attribute:: models
 
@@ -154,17 +157,19 @@ just remembers the average) for continuous attributes:
 .. literalinclude:: code/imputation-complex.py
     :lines: 91-94
 
-To construct a user-defined :class:`Imputer_model`:
+To construct a user-defined :class:`~Orange.feature.imputation.Model`:
 
 .. literalinclude:: code/imputation-complex.py
     :lines: 108-112
 
-A list of empty models is first initialized :obj:`Imputer_model.models`.
+A list of empty models is first initialized
+:obj:`~Orange.feature.imputation.Model.models`.
 Continuous feature "LANES" is imputed with value 2 using
-:obj:`DefaultClassifier`. A float must be given, because integer values are
-interpreted as indexes of discrete features. Discrete feature "T-OR-D" is
-imputed using :class:`~Orange.classification.ConstantClassifier` which is
-given the index of value "THROUGH" as an argument.
+:obj:`~Orange.classification.ConstantClassifier`. A float must be
+given, because integer values are interpreted as indexes of discrete
+features. Discrete feature "T-OR-D" is imputed using
+:obj:`~Orange.classification.ConstantClassifier` which is given the index of
+value "THROUGH" as an argument.
 
 Feature "LENGTH" is computed with a regression tree induced from "MATERIAL",
 "SPAN" and "ERECTED" (feature "LENGTH" is used as class attribute here).
@@ -192,10 +197,11 @@ Python function used here:
     :lines: 121-128
 
 If :obj:`compute_span` is written as a class it must behave like a
-classifier: it accepts an example and returns a value. The second
+classifier: it accepts an instance and returns a value. The second
 argument tells what the caller expects the classifier to return - a value,
-a distribution or both. Currently, :obj:`Imputer_model`,
-always expects values and the argument can be ignored.
+a distribution or both. Currently,
+:obj:`~Orange.feature.imputation.Model`, always expects values and the
+argument can be ignored.
 
 Missing values as special values
 ================================
@@ -206,12 +212,15 @@ something (for example, performing a laboratory test on a patient) is based
 on the expert's knowledge of the class value, such missing values clearly
 should not be used in models.
 
-.. class:: ImputerConstructor_asValue
+.. class:: AsValueConstructor
+
+    It constructs :obj:`~Orange.feature.imputation.AsValue` that
+    converts the instance into the new domain.
 
     Constructs a new domain in which each discrete feature is replaced
-    with a new feature that has one more value: "NA". The new feature
-    computes its values on the fly from the old one,
-    copying the normal values and replacing the unknowns with "NA".
+    with a new feature that have one more value: "NA". The new feature
+    computes its values on the fly, copying the normal values from the old
+    one and replacing the unknowns with "NA".
 
     For continuous attributes, it constructs a two-valued discrete attribute
     with values "def" and "undef", telling whether the value is defined or
@@ -219,17 +228,12 @@ should not be used in models.
     The original continuous feature will remain in the domain and its
     unknowns will be replaced by averages.
 
-    :class:`ImputerConstructor_asValue` has no specific attributes.
-
-    It constructs :class:`Imputer_asValue` that converts the example into
-    the new domain.
-
-.. class:: Imputer_asValue
+.. class:: AsValue
 
     .. attribute:: domain
 
         The domain with the new feature constructed by
-        :class:`ImputerConstructor_asValue`.
+        :class:`~Orange.feature.imputation.AsValueConstructor`.
 
     .. attribute:: defaults
 
@@ -258,7 +262,7 @@ The script's output looks like this::
     REL-L: ? -> NA
     TYPE: SIMPLE-T -> SIMPLE-T
 
-The two examples have the same attribute, :samp:`imputed` having a few
+The two intances have the same attribute, :samp:`imputed` having a few
 additional ones. Comparing :samp:`original.domain[0] == imputed.domain[0]`
 will result in False. While the names are same, they represent different
 features. Writting, :samp:`imputed[i]`  would fail since :samp:`imputed` has
@@ -297,7 +301,7 @@ classifier :obj:`~Orange.classification.logreg.LogRegClassifier` is
 constructed, the imputer is stored in its attribute
 :obj:`~Orange.classification.logreg.LogRegClassifier.imputer`. During
 classification the same imputer is used for imputation of missing values
-in (testing) examples.
+in (testing) instances.
 
 Details may vary from algorithm to algorithm, but this is how the imputation
 is generally used. When writing user-defined learners,
@@ -348,9 +352,9 @@ require imputed data.
 
     Wraps a learner and performs data imputation before learning.
 
-    This is basically a learner, so the constructor will return either an
-    instance of :obj:`ImputerLearner` or, if called with examples, an instance
-    of some classifier.
+    This learner returns either an instance of
+    :obj:`~Orange.feature.imputation.ImputeLearner` or,
+    if called with :obj:`~Orange.data.Table`, an instance of a classifier.
 
     .. attribute:: base_learner
 
@@ -358,8 +362,9 @@ require imputed data.
 
     .. attribute:: imputer_constructor
 
-    An instance of a class derived from :obj:`ImputerConstructor` or a class
-    with the same call operator.
+    An instance of a class derived from
+    :obj:`~Orange.feature.imputation.Constructor` or a class with the
+    same call operator.
 
     .. attribute:: dont_impute_classifier
 
@@ -379,21 +384,23 @@ require imputed data.
             else:
                 return ImputeClassifier(base_classifier, trained_imputer)
 
-    During learning, :obj:`ImputeLearner` will first construct
-    the imputer. It will then impute the data and call the
-    given :obj:`baseLearner` to construct a classifier. For instance,
-    :obj:`baseLearner` could be a learner for logistic regression and the
+    During learning, :obj:`~Orange.feature.imputation.ImputeLearner`
+    will first construct the imputer. It will then impute the data and call the
+    given :obj:`base_learner` to construct a classifier. For instance,
+    :obj:`base_learner` could be a learner for logistic regression and the
     result would be a logistic regression model. If the classifier can handle
     unknown values (that is, if :obj:`dont_impute_classifier`,
     it is returned as is, otherwise it is wrapped into
-    :obj:`ImputeClassifier`, which holds the base classifier and
-    the imputer used to impute the missing values in (testing) data.
+    :obj:`~Orange.feature.imputation.ImputeClassifier`,
+    which holds the base classifier and the imputer used to impute the
+    missing values in (testing) data.
 
 .. class:: ImputeClassifier
 
-    Objects of this class are returned by :obj:`ImputeLearner` when given data.
+    Objects of this class are returned by
+    :obj:`~Orange.feature.imputation.ImputeLearner` when given data.
 
-    .. attribute:: baseClassifier
+    .. attribute:: base_classifier
 
     A wrapped classifier.
 
@@ -421,10 +428,11 @@ require imputed data.
 .. rubric:: Code of ImputeLearner and ImputeClassifier
 
 The learner is called with
-:obj:`Orange.feature.imputation.ImputeLearner(base_learner=<someLearner>, imputer=<someImputerConstructor>)`.
-When given examples, it trains the imputer, imputes the data,
+``Orange.feature.imputation.ImputeLearner(base_learner=<someLearner>, imputer=<someImputerConstructor>)``.
+When given data table, it trains the imputer, imputes the data,
 induces a :obj:`base_classifier` by the
-:obj:`base_learner` and constructs :obj:`ImputeClassifier` that stores the
+:obj:`base_learner` and constructs
+:obj:`~Orange.feature.imputation.ImputeClassifier` that stores the
 :obj:`base_classifier` and the :obj:`imputer`. For classification, the missing
 values are imputed and the classifier's prediction is returned.
 
@@ -432,10 +440,10 @@ This is a slightly simplified code, where details on how to handle
 non-essential technical issues that are unrelated to imputation::
 
     class ImputeLearner(orange.Learner):
-        def __new__(cls, examples = None, weightID = 0, **keyw):
+        def __new__(cls, data = None, weightID = 0, **keyw):
             self = orange.Learner.__new__(cls, **keyw)
             self.__dict__.update(keyw)
-            if examples:
+            if data:
                 return self.__call__(examples, weightID)
             else:
                 return self
@@ -451,8 +459,8 @@ non-essential technical issues that are unrelated to imputation::
             self.base_classifier = base_classifier
             self.imputer = imputer
 
-        def __call__(self, ex, what=orange.GetValue):
-            return self.base_classifier(self.imputer(ex), what)
+        def __call__(self, i, what=orange.GetValue):
+            return self.base_classifier(self.imputer(i), what)
 
 Write your own imputer
 ----------------------
@@ -465,7 +473,7 @@ data tables will then use that function.
 
 Special imputation procedures or separate procedures for various attributes,
 as demonstrated in the description of
-:obj:`~Orange.feature.imputation.ImputerConstructor_model`,
+:obj:`~Orange.feature.imputation.ModelConstructor`,
 are achieved by encoding it in a constructor that accepts a data table and
 id of the weight meta-attribute, and returns the imputer. The benefit of
 implementing an imputer constructor is that you can use is as a component
@@ -491,8 +499,8 @@ properly use the classifier in testing procedures.
     In general, imputer itself needs to be trained. This is, of course, not needed
     when the imputer imputes certain fixed value. However, when it imputes the
     average or majority value, it needs to compute the statistics on the training
-    examples, and use it afterwards for imputation of training and testing
-    examples.
+    instances, and use it afterwards for imputation of training and testing
+    instances.
 
     While reading this document, bear in mind that imputation is a part of the
     learning process. If we fit the imputation model, for instance, by learning
