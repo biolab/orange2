@@ -17,14 +17,14 @@ with an instance of :obj:`ExperimentResults`.
 Classification
 ==============
 
-Many scores for evaluation of classification models can be computed solely
-from the confusion matrix constructed manually with the
-:obj:`confusion_matrices` function. If class variable has more than two
-values, the index of the value to calculate the confusion matrix for should
-be passed as well.
-
 Calibration scores
 ==================
+Many scores for evaluation of the classification models measure whether the
+model assigns the correct class value to the test instances. Many of these
+scores can be computed solely from the confusion matrix constructed manually
+with the :obj:`confusion_matrices` function. If class variable has more than
+two values, the index of the value to calculate the confusion matrix for should
+be passed as well.
 
 .. autosingleton:: CA
 .. autoclass:: CAClass
@@ -40,9 +40,12 @@ Calibration scores
 .. autofunction:: MCC
 .. autofunction:: AP
 .. autofunction:: IS
+.. autofunction:: confusion_chi_square
 
 Discriminatory scores
 =====================
+Scores that measure how good can the prediction model separate instances with
+different classes are called discriminatory scores.
 
 .. autofunction:: Brier_score
 
@@ -50,34 +53,34 @@ Discriminatory scores
 
     .. attribute:: AUC.ByWeightedPairs (or 0)
 
-      Computes AUC for each pair of classes (ignoring instances of all other
-      classes) and averages the results, weighting them by the number of
-      pairs of instances from these two classes (e.g. by the product of
-      probabilities of the two classes). AUC computed in this way still
-      behaves as concordance index, e.g., gives the probability that two
-      randomly chosen instances from different classes will be correctly
-      recognized (this is of course true only if the classifier knows
-      from which two classes the instances came).
+        Computes AUC for each pair of classes (ignoring instances of all other
+        classes) and averages the results, weighting them by the number of
+        pairs of instances from these two classes (e.g. by the product of
+        probabilities of the two classes). AUC computed in this way still
+        behaves as concordance index, e.g., gives the probability that two
+        randomly chosen instances from different classes will be correctly
+        recognized (this is of course true only if the classifier knows
+        from which two classes the instances came).
 
-   .. attribute:: AUC.ByPairs (or 1)
+    .. attribute:: AUC.ByPairs (or 1)
 
-      Similar as above, except that the average over class pairs is not
-      weighted. This AUC is, like the binary, independent of class
-      distributions, but it is not related to concordance index any more.
+        Similar as above, except that the average over class pairs is not
+        weighted. This AUC is, like the binary, independent of class
+        distributions, but it is not related to concordance index any more.
 
-   .. attribute:: AUC.WeightedOneAgainstAll (or 2)
+    .. attribute:: AUC.WeightedOneAgainstAll (or 2)
 
-      For each class, it computes AUC for this class against all others (that
-      is, treating other classes as one class). The AUCs are then averaged by
-      the class probabilities. This is related to concordance index in which
-      we test the classifier's (average) capability for distinguishing the
-      instances from a specified class from those that come from other classes.
-      Unlike the binary AUC, the measure is not independent of class
-      distributions.
+        For each class, it computes AUC for this class against all others (that
+        is, treating other classes as one class). The AUCs are then averaged by
+        the class probabilities. This is related to concordance index in which
+        we test the classifier's (average) capability for distinguishing the
+        instances from a specified class from those that come from other classes.
+        Unlike the binary AUC, the measure is not independent of class
+        distributions.
 
-   .. attribute:: AUC.OneAgainstAll (or 3)
+    .. attribute:: AUC.OneAgainstAll (or 3)
 
-      As above, except that the average is not weighted.
+        As above, except that the average is not weighted.
 
    In case of multiple folds (for instance if the data comes from cross
    validation), the computation goes like this. When computing the partial

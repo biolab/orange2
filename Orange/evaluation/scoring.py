@@ -4,7 +4,7 @@ import numpy
 
 import Orange
 from Orange import statc, corn
-from Orange.misc import deprecated_keywords
+from Orange.misc import deprecated_keywords, deprecated_function_name
 from Orange.evaluation import testing
 
 #### Private stuff
@@ -1376,185 +1376,167 @@ def compute_CDT(res, class_index=-1, **argkw):
     else:
         return corn.computeCDT(res, class_index, useweights)
 
-## THIS FUNCTION IS OBSOLETE AND ITS AVERAGING OVER FOLDS IS QUESTIONABLE
-## DON'T USE IT
-def ROCs_from_CDT(cdt, **argkw):
-    """Obsolete, don't use"""
-    if type(cdt) == list:
-        return [ROCs_from_CDT(c) for c in cdt]
 
-    C, D, T = cdt.C, cdt.D, cdt.T
-    N = C+D+T
-    if N < 1e-6:
-        import warnings
-        warnings.warn("Can't compute AUC: one or both classes have no instances")
-        return (-1,)*8
-    if N < 2:
-        import warnings
-        warnings.warn("Can't compute AUC: one or both classes have too few examples")
+class AucClass(object):
+    ByWeightedPairs = 0
+    ByPairs = 1
+    WeightedOneAgainstAll = 2
+    OneAgainstAll = 3
 
-    som = (C-D)/N
-    c = 0.5*(1+som)
-  
-    if (C+D):
-        res = (C/N*100, D/N*100, T/N*100, N, som, (C-D)/(C+D), (C-D)/(N*(N-1)/2), 0.5*(1+som))
-    else:
-        res = (C/N*100, D/N*100, T/N*100, N, som, -1.0, (C-D)/(N*(N-1)/2), 0.5*(1+som))
+    @deprecated_keywords({"useWeights": "use_weights"})
+    def __call__(self, res, method = 0, use_weights = True):
+        """ Returns the area under ROC curve (AUC) given a set of experimental
+        results. For multivalued class problems, it will compute some sort of
+        average, as specified by the argument method.
+        """
+        if len(res.class_values) < 2:
+            raise ValueError("Cannot compute AUC on a single-class problem")
+        elif len(res.class_values) == 2:
+            return self.compute_for_binary_class(res, use_weights)
+        else:
+            return self.compute_for_multi_value_class(res, use_weights, method)
 
-    if argkw.get("print"):
-        print "Concordant  = %5.1f       Somers' D = %1.3f" % (res[0], res[4])
-        print "Discordant  = %5.1f       Gamma     = %1.3f" % (res[1], res[5]>0 and res[5] or "N/A")
-        print "Tied        = %5.1f       Tau-a     = %1.3f" % (res[2], res[6])
-        print " %6d pairs             c         = %1.3f"    % (res[3], res[7])
+    # AUC for binary classification problems
+    @deprecated_keywords({"useWeights": "use_weights"})
+    def compute_for_binary_class(self, res, use_weights = True):
+        """AUC for binary classification problems"""
+        if res.number_of_iterations > 1:
+            return self.compute_for_multiple_folds(
+                        self.compute_one_class_against_all,
+                        split_by_iterations(res),
+                        (-1, use_weights,res, res.number_of_iterations))
+        else:
+            return self.compute_one_class_against_all(res, -1, use_weights)[0]
 
-    return res
+    @deprecated_keywords({"useWeights": "use_weights"})
+    def compute_for_multi_value_class(self, res, use_weights = True,
+                                      method = 0):
+        """AUC for multiclass classification problems"""
+        numberOfClasses = len(res.class_values)
 
-AROC_from_CDT = ROCs_from_CDT  # for backward compatibility, AROC_from_CDT is obsolote
+        if res.number_of_iterations > 1:
+            iterations = split_by_iterations(res)
+            all_ite = res
+        else:
+            iterations = [res]
+            all_ite = None
 
+        # by pairs
+        sum_aucs = [0.] * res.number_of_learners
+        usefulClassPairs = 0.
 
+        if method in [0, 2]:
+            prob = class_probabilities_from_res(res)
 
-# computes AUC using a specified 'cdtComputer' function
-# It tries to compute AUCs from 'ite' (examples from a single iteration) and,
-# if C+D+T=0, from 'all_ite' (entire test set). In the former case, the AUCs
-# are divided by 'divideByIfIte'. Additional flag is returned which is True in
-# the former case, or False in the latter.
-@deprecated_keywords({"divideByIfIte": "divide_by_if_ite",
-                      "computerArgs": "computer_args"})
-def AUC_x(cdtComputer, ite, all_ite, divide_by_if_ite, computer_args):
-    cdts = cdtComputer(*(ite, ) + computer_args)
-    if not is_CDT_empty(cdts[0]):
-        return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T)/divide_by_if_ite for cdt in cdts], True
-        
-    if all_ite:
-        cdts = cdtComputer(*(all_ite, ) + computer_args)
-        if not is_CDT_empty(cdts[0]):
-            return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
-
-    return False, False
-
-    
-# computes AUC between classes i and j as if there we no other classes
-@deprecated_keywords({"classIndex1": "class_index1",
-                      "classIndex2": "class_index2",
-                      "useWeights": "use_weights",
-                      "divideByIfIte": "divide_by_if_ite"})
-def AUC_ij(ite, class_index1, class_index2, use_weights = True, all_ite = None, divide_by_if_ite = 1.0):
-    return AUC_x(corn.computeCDTPair, ite, all_ite, divide_by_if_ite, (class_index1, class_index2, use_weights))
-
-
-# computes AUC between class i and the other classes (treating them as the same class)
-@deprecated_keywords({"classIndex": "class_index",
-                      "useWeights": "use_weights",
-                      "divideByIfIte": "divide_by_if_ite"})
-def AUC_i(ite, class_index, use_weights = True, all_ite = None,
-          divide_by_if_ite = 1.0):
-    return AUC_x(corn.computeCDT, ite, all_ite, divide_by_if_ite, (class_index, use_weights))
-
-
-# computes the average AUC over folds using a "AUCcomputer" (AUC_i or AUC_ij)
-# it returns the sum of what is returned by the computer, unless at a certain
-# fold the computer has to resort to computing over all folds or even this failed;
-# in these cases the result is returned immediately
-
-@deprecated_keywords({"AUCcomputer": "auc_computer",
-                      "computerArgs": "computer_args"})
-def AUC_iterations(auc_computer, iterations, computer_args):
-    subsum_aucs = [0.] * iterations[0].number_of_learners
-    for ite in iterations:
-        aucs, foldsUsed = auc_computer(*(ite, ) + computer_args)
-        if not aucs:
-            return None
-        if not foldsUsed:
-            return aucs
-        subsum_aucs = map(add, subsum_aucs, aucs)
-    return subsum_aucs
-
-
-# AUC for binary classification problems
-@deprecated_keywords({"useWeights": "use_weights"})
-def AUC_binary(res, use_weights = True):
-    if res.number_of_iterations > 1:
-        return AUC_iterations(AUC_i, split_by_iterations(res), (-1, use_weights, res, res.number_of_iterations))
-    else:
-        return AUC_i(res, -1, use_weights)[0]
-
-# AUC for multiclass problems
-@deprecated_keywords({"useWeights": "use_weights"})
-def AUC_multi(res, use_weights = True, method = 0):
-    numberOfClasses = len(res.class_values)
-    
-    if res.number_of_iterations > 1:
-        iterations = split_by_iterations(res)
-        all_ite = res
-    else:
-        iterations = [res]
-        all_ite = None
-    
-    # by pairs
-    sum_aucs = [0.] * res.number_of_learners
-    usefulClassPairs = 0.
-
-    if method in [0, 2]:
-        prob = class_probabilities_from_res(res)
-        
-    if method <= 1:
-        for classIndex1 in range(numberOfClasses):
-            for classIndex2 in range(classIndex1):
-                subsum_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1, classIndex2, use_weights, all_ite, res.number_of_iterations))
+        if method <= 1:
+            for classIndex1 in range(numberOfClasses):
+                for classIndex2 in range(classIndex1):
+                    subsum_aucs = self.compute_for_multiple_folds(
+                                             self.compute_one_class_against_another,
+                                             iterations,
+                                             (classIndex1, classIndex2,
+                                             use_weights, all_ite,
+                                             res.number_of_iterations))
+                    if subsum_aucs:
+                        if method == 0:
+                            p_ij = prob[classIndex1] * prob[classIndex2]
+                            subsum_aucs = [x * p_ij  for x in subsum_aucs]
+                            usefulClassPairs += p_ij
+                        else:
+                            usefulClassPairs += 1
+                        sum_aucs = map(add, sum_aucs, subsum_aucs)
+        else:
+            for classIndex in range(numberOfClasses):
+                subsum_aucs = self.compute_for_multiple_folds(
+                    self.compute_one_class_against_all,
+                    iterations, (classIndex, use_weights, all_ite,
+                                 res.number_of_iterations))
                 if subsum_aucs:
                     if method == 0:
-                        p_ij = prob[classIndex1] * prob[classIndex2]
-                        subsum_aucs = [x * p_ij  for x in subsum_aucs]
-                        usefulClassPairs += p_ij
+                        p_i = prob[classIndex]
+                        subsum_aucs = [x * p_i  for x in subsum_aucs]
+                        usefulClassPairs += p_i
                     else:
                         usefulClassPairs += 1
                     sum_aucs = map(add, sum_aucs, subsum_aucs)
-    else:
-        for classIndex in range(numberOfClasses):
-            subsum_aucs = AUC_iterations(AUC_i, iterations, (classIndex, use_weights, all_ite, res.number_of_iterations))
-            if subsum_aucs:
-                if method == 0:
-                    p_i = prob[classIndex]
-                    subsum_aucs = [x * p_i  for x in subsum_aucs]
-                    usefulClassPairs += p_i
-                else:
-                    usefulClassPairs += 1
-                sum_aucs = map(add, sum_aucs, subsum_aucs)
-                    
-    if usefulClassPairs > 0:
-        sum_aucs = [x/usefulClassPairs for x in sum_aucs]
 
-    return sum_aucs
+        if usefulClassPairs > 0:
+            sum_aucs = [x/usefulClassPairs for x in sum_aucs]
 
-class AucClass(object):
-    pass
+        return sum_aucs
+
+    # computes the average AUC over folds using a "AUCcomputer" (AUC_i or AUC_ij)
+    # it returns the sum of what is returned by the computer, unless at a certain
+    # fold the computer has to resort to computing over all folds or even this failed;
+    # in these cases the result is returned immediately
+    @deprecated_keywords({"AUCcomputer": "auc_computer",
+                          "computerArgs": "computer_args"})
+    def compute_for_multiple_folds(self, auc_computer, iterations,
+                                 computer_args):
+        """Compute the average AUC over folds using :obj:`auc_computer`."""
+        subsum_aucs = [0.] * iterations[0].number_of_learners
+        for ite in iterations:
+            aucs, foldsUsed = auc_computer(*(ite, ) + computer_args)
+            if not aucs:
+                return None
+            if not foldsUsed:
+                return aucs
+            subsum_aucs = map(add, subsum_aucs, aucs)
+        return subsum_aucs
+
+    # computes AUC between class i and the other classes (treating them as the same class)
+    @deprecated_keywords({"classIndex": "class_index",
+                          "useWeights": "use_weights",
+                          "divideByIfIte": "divide_by_if_ite"})
+    def compute_one_class_against_all(self, ite, class_index,
+            use_weights = True, all_ite = None, divide_by_if_ite = 1.0):
+        """Compute AUC between class i and all the other classes)"""
+        return self.compute_auc(corn.computeCDT, ite, all_ite, divide_by_if_ite,
+            (class_index, use_weights))
 
 
-def AUC():
-    pass
+    # computes AUC between classes i and j as if there are no other classes
+    def compute_one_class_against_another(self, ite, class_index1,
+            class_index2, use_weights = True, all_ite = None,
+            divide_by_if_ite = 1.0):
+        """
+        Compute AUC between classes i and j as if there are no other classes.
+        """
+        return self.compute_auc(corn.computeCDTPair, ite, all_ite, divide_by_if_ite,
+            (class_index1, class_index2, use_weights))
 
-AUC.ByWeightedPairs = 0
+    # computes AUC using a specified 'cdtComputer' function
+    # It tries to compute AUCs from 'ite' (examples from a single iteration) and,
+    # if C+D+T=0, from 'all_ite' (entire test set). In the former case, the AUCs
+    # are divided by 'divideByIfIte'. Additional flag is returned which is True in
+    # the former case, or False in the latter.
+    @deprecated_keywords({"cdt_computer": "cdtComputer",
+                          "divideByIfIte": "divide_by_if_ite",
+                          "computerArgs": "computer_args"})
+    def compute_auc(self, cdt_computer, ite, all_ite, divide_by_if_ite,
+              computer_args):
+        """
+        Compute AUC using a :obj:`cdtComputer`.
+        """
+        cdts = cdt_computer(*(ite, ) + computer_args)
+        if not is_CDT_empty(cdts[0]):
+            return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T)/divide_by_if_ite for cdt in cdts], True
 
-# Computes AUC, possibly for multiple classes (the averaging method can be specified)
-# Results over folds are averages; if some folds examples from one class only, the folds are merged
-@deprecated_keywords({"useWeights": "use_weights"})
-def AUC(res, method = AUC.ByWeightedPairs, use_weights = True):
-    """ Returns the area under ROC curve (AUC) given a set of experimental
-    results. For multivalued class problems, it will compute some sort of
-    average, as specified by the argument method.
-    """
-    if len(res.class_values) < 2:
-        raise ValueError("Cannot compute AUC on a single-class problem")
-    elif len(res.class_values) == 2:
-        return AUC_binary(res, use_weights)
-    else:
-        return AUC_multi(res, use_weights, method)
+        if all_ite:
+            cdts = cdt_computer(*(all_ite, ) + computer_args)
+            if not is_CDT_empty(cdts[0]):
+                return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
 
-AUC.ByWeightedPairs = 0
-AUC.ByPairs = 1
-AUC.WeightedOneAgainstAll = 2
-AUC.OneAgainstAll = 3
+        return False, False
 
+
+AUC = AucClass()
+AUC_binary = deprecated_function_name(AUC.compute_for_binary_class)
+AUC_multi = deprecated_function_name(AUC.compute_for_multi_value_class)
+AUC_iterations = deprecated_function_name(AUC.compute_for_multiple_folds)
+AUC_x = deprecated_function_name(AUC.compute_auc)
+AUC_i = deprecated_function_name(AUC.compute_one_class_against_all)
+AUC_ij = deprecated_function_name(AUC.compute_one_class_against_another)
 
 # Computes AUC; in multivalued class problem, AUC is computed as one against all
 # Results over folds are averages; if some folds examples from one class only, the folds are merged
