@@ -79,7 +79,8 @@ separate pages.
    Orange.classification.rules
    Orange.classification.svm
    Orange.classification.tree
-
+   Orange.classification.classfromvar
+   
 Constant Classifier
 -------------------
 
