@@ -36,8 +36,8 @@ class OWSymMatrixCombine(OWWidget):
     def __init__(self, parent=None, signalManager=None, title="Combine Matrices"):
         OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
         
-        self.inputs = [("Matrices", Orange.data.SymMatrix, self.set_matrix, Multiple)]
-        self.outputs = [("Combined Matrix", Orange.data.SymMatrix, Multiple)]
+        self.inputs = [("Matrices", Orange.misc.SymMatrix, self.set_matrix, Multiple)]
+        self.outputs = [("Combined Matrix", Orange.misc.SymMatrix, Multiple)]
         
         self.selected_method = 0
         
@@ -79,7 +79,7 @@ class OWSymMatrixCombine(OWWidget):
         elif matrices:
             dim = matrices[0].dim
             method = self.METHODS[self.selected_method][1]
-            new = Orange.data.SymMatrix(dim)
+            new = Orange.misc.SymMatrix(dim)
             milestones = progress_bar_milestones(100, dim*(dim + 1) / 2)
             iter = 0
             for i in range(dim):
