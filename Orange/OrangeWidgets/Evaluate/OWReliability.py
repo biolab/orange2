@@ -327,7 +327,7 @@ class OWReliability(OWWidget):
             self.output_changed = True
             
     def commit(self):
-        from Orange.data import variable
+        from Orange import feature as variable
         name_mapper = {"Mahalanobis absolute": "Mahalanobis"}
         all_predictions = []
         all_estimates = []

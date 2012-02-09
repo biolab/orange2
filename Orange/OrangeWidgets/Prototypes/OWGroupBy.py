@@ -8,7 +8,8 @@ from OWWidget import *
 from OWItemModels import VariableListModel
 
 import Orange
-from Orange.data import Table, Domain, variable, utils
+from Orange.data import Table, Domain, utils
+from Orange import feature as variable
 
 AggregateMethodRole = OWGUI.OrangeUserRole.next()
 

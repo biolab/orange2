@@ -14,7 +14,7 @@ from OWWidget import *
 import Orange
 from Orange.regression import linear, lasso
 from orngWrap import PreprocessedLearner
-from Orange.data import variable
+from Orange import feature as variable
 
 class OWLinearRegression(OWWidget):
     settingsList = ["name", "use_ridge", "ridge_lambda", 
