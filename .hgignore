@@ -56,3 +56,6 @@ docs/tutorial/rst/code/adult_sample_sampled.tab
 docs/tutorial/rst/code/tree.dot
 
 source/orangeqt/Makefile
+
+#an attach point for system-wise installed add-ons
+Orange/add-ons
