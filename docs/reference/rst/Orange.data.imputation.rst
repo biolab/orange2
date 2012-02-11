@@ -28,9 +28,9 @@ The output of this code is::
     ['A', 1819, 'HIGHWAY', 1037, 2, 'N', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
     ['A', 1829, 'AQUEDUCT', 1300, 1, 'N', 'THROUGH', 'WOOD', 'MEDIUM', 'S', 'WOOD']
 
-The function uses feature imputation methods from :doc:`Orange.feature
-.imputation` and applies them on entire data set. The supported methods
-are:
+The function uses feature imputation methods from
+:doc:`Orange.feature.imputation` and applies them on entire data set. The
+supported methods are:
 
 * imputation of minimal, maximal, average value (uses :class:`Orange.feature.imputation.Defaults`),
 * imputation of random value (uses :class:`Orange.feature.imputation.Random`),

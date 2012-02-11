@@ -10,4 +10,5 @@ Clustering (``clustering``)
 
    Orange.clustering.kmeans
    Orange.clustering.hierarchical
+   Orange.clustering.consensus
    
