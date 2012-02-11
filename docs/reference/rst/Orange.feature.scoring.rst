@@ -10,36 +10,36 @@ Scoring (``scoring``)
    single: feature; feature scoring
 
 Feature score is an assessment of the usefulness of the feature for
-prediction of the dependant (class) variable.
+prediction of the dependant (class) variable. Orange provides classes
+that compute the common feature scores for :ref:`classification
+<classification>` and regression :ref:`regression <regression>`.
 
-To compute the information gain of feature "tear_rate" in the Lenses data set (loaded into ``data``) use:
-
-    >>> meas = Orange.feature.scoring.InfoGain()
-    >>> print meas("tear_rate", data)
-    0.548794925213
-
-Other scoring methods are listed in :ref:`classification` and
-:ref:`regression`. Various ways to call them are described on
-:ref:`callingscore`.
-
-Instead of first constructing the scoring object (e.g. ``InfoGain``) and
-then using it, it is usually more convenient to do both in a single step::
+The script below computes the information gain of feature "tear_rate"
+in the Lenses data set (loaded into ``data``):
 
     >>> print Orange.feature.scoring.InfoGain("tear_rate", data)
-    0.548794925213
+    0.548795044422
 
-This way is much slower for Relief that can efficiently compute scores
-for all features in parallel.
+Calling the scorer by passing the variable and the data to the
+constructor, like above is convenient. However, when scoring multiple
+variables, some methods run much faster if the scorer is constructed,
+stored and called for each variable.
 
-It is also possible to score features that do not appear in the data
-but can be computed from it. A typical case are discretized features:
+    >>> gain = Orange.feature.scoring.InfoGain()
+    >>> for feature in data.domain.features:
+    ...     print feature.name, gain(feature, data)
+    age 0.0393966436386
+    prescription 0.0395109653473
+    astigmatic 0.377005338669
+    tear_rate 0.548795044422
 
-.. literalinclude:: code/scoring-info-iris.py
-    :lines: 7-11
+The speed gain is most noticable in Relief, which computes the scores of
+all features in parallel.
 
-The following example computes feature scores, both with
-:obj:`score_all` and by scoring each feature individually, and prints out
-the best three features.
+The module also provides a convenience function :obj:`score_all` that
+computes the scores for all attributes. The following example computes
+feature scores, both with :obj:`score_all` and by scoring each feature
+individually, and prints out the best three features.
 
 .. literalinclude:: code/scoring-all.py
     :lines: 7-
@@ -71,6 +71,11 @@ The output::
         0.189  0.382  crime
         0.166  0.345  adoption-of-the-budget-resolution
 
+It is also possible to score features that do not appear in the data
+but can be computed from it. A typical case are discretized features:
+
+.. literalinclude:: code/scoring-info-iris.py
+    :lines: 7-11
 
 .. _callingscore:
 
@@ -78,11 +83,10 @@ The output::
 Calling scoring methods
 =======================
 
-To score a feature use :obj:`Score.__call__`. There are diferent
-function signatures, which enable optimization. For instance,
-most scoring methods first compute contingency tables from the
-data. If these are already computed, they can be passed to the scorer
-instead of the data.
+Scorers can be called with different type of arguments. For instance,
+when given the data, most scoring methods first compute the
+corresponding contingency tables. If these are already known, they can
+be given to the scorer instead of the data to save some time.
 
 Not all classes accept all kinds of arguments. :obj:`Relief`,
 for instance, only supports the form with instances on the input.
@@ -96,7 +100,7 @@ for instance, only supports the form with instances on the input.
     :type data: `Orange.data.Table`
     :param weightID: id for meta-feature with weight.
 
-    All scoring methods support the first signature.
+    All scoring methods support this form.
 
 .. method:: Score.__call__(attribute, domain_contingency[, apriori_class_distribution])
 
@@ -124,8 +128,8 @@ for instance, only supports the form with instances on the input.
       If the quality cannot be scored, return :obj:`Score.Rejected`.
     :rtype: float or :obj:`Score.Rejected`.
 
-The code below scores the same feature with :obj:`GainRatio`
-using different calls.
+The code demonstrates using the different call signatures by computing
+the score of the same feature with :obj:`GainRatio`.
 
 .. literalinclude:: code/scoring-calls.py
     :lines: 7-
@@ -182,7 +186,7 @@ Feature scoring in classification problems
 
     .. attribute:: cost
 
-        Cost matrix, see :obj:`Orange.classification.CostMatrix` for details.
+        Cost matrix, an instance of :obj:`Orange.misc.CostMatrix`.
 
     If the cost of predicting the first class of an instance that is actually in
     the second is 5, and the cost of the opposite error is 1, than an appropriate
@@ -270,7 +274,8 @@ Feature scoring in regression problems
 
     .. attribute:: unknowns_treatment
 
-        What to do with unknown values. See :obj:`Score.unknowns_treatment`.
+        Decides the treatment of unknown values. See
+        :obj:`Score.unknowns_treatment`.
 
     .. attribute:: m
 
