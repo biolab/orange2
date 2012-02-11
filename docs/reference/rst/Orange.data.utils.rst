@@ -6,20 +6,20 @@ Utilities (``utils``)
 Value transformers
 ==================
 
-Value transformers are objects that take care of simple transformations
-of values. Discretization, for instance, creates a transformer that
+Value transformers take care of simple transformations of
+values. Discretization, for instance, creates a transformer that
 converts continuous values into discrete, while continuizers do the
 opposite. Classification trees use transformers for binarization where
 values of discrete attributes are converted into binary.
 
-These objects are most often constructed by other classes and only seldom
-manually. See information on :file:`Orange.data.discretization` and
-:file:`Orange.data.continuization`.
+These objects are most often constructed by other classes and only
+seldom manually. See information on :doc:`Orange.data.discretization`
+and :doc:`Orange.data.continuization`.
 
 .. class:: TransformValue
 
-    The abstract root of the hierarchy of transformers provides the call
-    operator and chaining of transformers.
+    The abstract root of the hierarchy of transformers, which provides
+    the call operator and chaining of transformers.
 
     .. attribute:: subtransformer
 
@@ -56,53 +56,55 @@ manually. See information on :file:`Orange.data.discretization` and
 
     .. attribute:: value
 
-        The value that in converted to 1.0; others are converted to 0.0
-        or -1.0. Value needs to be specified by an integer index.
+        The value that is converted to 1.0; others are converted to
+        0.0 or -1.0, depending on :obj:`zero_based`. Value needs to be
+        specified by an integer index.
 
     .. attribute:: zero_based
 
         Decides whether the other values will be transformed to 0.0
         (``True``, default) or -1.0 (``False``).
-        When ``False`` undefined values are transformed to 0.0;
+        When ``False``, undefined values are transformed to 0.0;
         otherwise, undefined values yield an error.
 
     .. attribute:: invert
 
         If ``True`` (default is ``False``), the transformations are
-        reversed - the selected ``value<`` becomes 0.0 (or -1.0)
+        reversed - the selected ``value`` becomes 0.0 (or -1.0)
         and others 1.0.
 
 
-    The following script load the Monks 1 data set and constructs a new
-    attribute `e1` that will indicate whether `e` is 1 or not.
+    The following script loads the Monks 1 data set and constructs a
+    new attribute `e1` that will indicate whether `e` is 1 or not.
 
     .. literalinclude:: code/transformvalue-d2c.py
 
 
 .. class:: NormalizeContinuous
 
-    Takes a continuous values and subtracts the ``average`` and
-    divides the difference by half of the ``span``.
+    Normalizes continuous values by subtracting the ``average`` and
+    dividing the difference by half of the ``span``.
 
     .. attribute:: average
 
-        The value that is subtracted from the original.</DD>
+        The value that is subtracted from the original.
 
     .. attribute:: span
 
-        The divisor
+        Divisor
 
     The following script "normalizes" all attribute in the Iris dataset by
     subtracting the average value and dividing by the half of
     deviation.
 
-    .. literalinclude code/transformvalue-nc.py
-        :lines: 1-17
+    .. literalinclude:: code/transformvalue-nc.py
+        :lines: 7-19
 
 .. class:: MapIntValue
 
-    A discrete-to-discrete transformer that changes values according to the
-    given mapping. MapIntValue is used for binarization in decision trees.
+    A discrete-to-discrete transformer that changes values according
+    to the given mapping. MapIntValue is used for binarization in
+    decision trees.
 
     .. attribute:: mapping
 
