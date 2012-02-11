@@ -1,24 +1,25 @@
 .. py:currentmodule:: Orange.feature
 
-===========================
-Descriptor (``Descriptor``)
-===========================
+==========
+Descriptor
+==========
 
 Data instances in Orange can contain several types of variables:
 :ref:`discrete <discrete>`, :ref:`continuous <continuous>`,
-:ref:`strings <string>`, and :ref:`Python <Python>` and types derived from it.
-The latter represent arbitrary Python objects.
-The names, types, values (where applicable), functions for computing the
-variable value from values of other variables, and other properties of the
-variables are stored in descriptor classes derived from :obj:`Descriptor`.
+:ref:`strings <string>`, and :ref:`Python <Python>` and types derived
+from it.  The latter represent arbitrary Python objects.  The names,
+types, values (where applicable), functions for computing the variable
+value from values of other variables, and other properties of the
+variables are stored in descriptor classes derived from
+:obj:`Descriptor`.
 
 Orange considers two variables (e.g. in two different data tables) the
 same if they have the same descriptor. It is allowed - but not
 recommended - to have different descriptors with the same name.
 
 Descriptors can be constructed either by calling the corresponding
-constructors or by a factory function :func:`make`, which either retrieves
-an existing descriptor or constructs a new one.
+constructors or by a factory function :func:`make`, which either
+retrieves an existing descriptor or constructs a new one.
 
 .. class:: Descriptor
 
@@ -36,17 +37,18 @@ an existing descriptor or constructs a new one.
 
     .. attribute:: get_value_from
 
-        A function (an instance of :obj:`~Orange.classification.Classifier`)
-        that computes a value of the variable from values of one or more
-        other variables. This is used, for instance, in discretization,
+        A function (an instance of
+        :obj:`~Orange.classification.Classifier`) that computes a
+        value of the variable from values of one or more other
+        variables. This is used, for instance, in discretization,
         which computes the value of a discretized variable from the
         original continuous variable.
 
     .. attribute:: ordered
 
-        A flag telling whether the values of a discrete variable are ordered. At
-        the moment, no built-in method treats ordinal variables differently than
-        nominal ones.
+        A flag telling whether the values of a discrete variable are
+        ordered. At the moment, no built-in method treats ordinal
+        variables differently than nominal ones.
 
     .. attribute:: random_generator
 
@@ -55,21 +57,23 @@ an existing descriptor or constructs a new one.
 
     .. attribute:: default_meta_id
 
-        A proposed (but not guaranteed) meta id to be used for that variable.
-        For instance, when a tab-delimited contains meta attributes and
-        the existing variables are reused, they will have this id
-        (instead of a new one assigned by :obj:`Orange.feature.Descriptor.new_meta_id()`).
+        A proposed (but not guaranteed) meta id to be used for that
+        variable.  For instance, when a tab-delimited contains meta
+        attributes and the existing variables are reused, they will
+        have this id (instead of a new one assigned by
+        :obj:`Orange.feature.Descriptor.new_meta_id()`).
 
     .. attribute:: attributes
 
-        A dictionary which allows the user to store additional information
-        about the variable. All values should be strings. See the section
-        about :ref:`storing additional information <attributes>`.
+        A dictionary which allows the user to store additional
+        information about the variable. All values should be
+        strings. See the section about :ref:`storing additional
+        information <attributes>`.
 
     .. method:: __call__(obj)
 
-           Convert a string, number, or other suitable object into a variable
-           value.
+           Convert a string, number, or other suitable object into a
+           variable value.
 
            :param obj: An object to be converted into a variable value
            :type o: any suitable
@@ -83,15 +87,15 @@ an existing descriptor or constructs a new one.
 
     .. method:: compute_value(inst)
 
-           Compute the value of the variable given the instance by calling
-           obj:`~Descriptor.get_value_from` through a mechanism that
-           prevents infinite recursive calls.
+           Compute the value of the variable given the instance by
+           calling obj:`~Descriptor.get_value_from` through a
+           mechanism that prevents infinite recursive calls.
 
            :rtype: :class:`Orange.data.Value`
 
 
-``Discrete``
-------------
+Discrete variables
+------------------
 
 .. _discrete:
 .. class:: Discrete
@@ -132,8 +136,8 @@ an existing descriptor or constructs a new one.
             Add a value with symbolic name ``s`` to values. Always call
             this function instead of appending to ``values``.
 
-``Continuous``
---------------
+Continuous variables
+--------------------
 
 .. _continuous:
 .. class:: Continuous
@@ -183,8 +187,8 @@ an existing descriptor or constructs a new one.
 
         The range used for :obj:`randomvalue`.
 
-``String``
-----------
+String variables
+----------------
 
 .. _String:
 
@@ -209,8 +213,8 @@ an existing descriptor or constructs a new one.
     string, enclose the string in double quotes; these are removed when the
     string is loaded.
 
-``Python``
-----------
+Python objects as variables
+---------------------------
 
 .. _Python:
 .. class:: Python
@@ -270,75 +274,92 @@ statuses.
 
 .. data:: Descriptor.MakeStatus.Incompatible (3)
 
-    There are variables with matching name and type, but their
-    values are incompatible with the prescribed ordered values. For example,
-    if the existing variable already has values ["a", "b"] and the new one
-    wants ["b", "a"], the old variable cannot be reused. The existing list can,
-    however be appended with the new values, so searching for ["a", "b", "c"] would
-    succeed. Likewise a search for ["a"] would be successful, since the extra existing value
-    does not matter. The formal rule is thus that the values are compatible iff ``existing_values[:len(ordered_values)] == ordered_values[:len(existing_values)]``.
+    There are variables with matching name and type, but their values
+    are incompatible with the prescribed ordered values. For example,
+    if the existing variable already has values ["a", "b"] and the new
+    one wants ["b", "a"], the old variable cannot be reused. The
+    existing list can, however be appended with the new values, so
+    searching for ["a", "b", "c"] would succeed. Likewise a search for
+    ["a"] would be successful, since the extra existing value does not
+    matter. The formal rule is thus that the values are compatible iff
+    ``existing_values[:len(ordered_values)] ==
+    ordered_values[:len(existing_values)]``.
 
 .. data:: Descriptor.MakeStatus.NoRecognizedValues (2)
 
-    There is a matching variable, yet it has none of the values that the new
-    variable will have (this is obviously possible only if the new variable has
-    no prescribed ordered values). For instance, we search for a variable
-    "sex" with values "male" and "female", while there is a variable of the same
-    name with values "M" and "F" (or, well, "no" and "yes" :). Reuse of this
-    variable is possible, though this should probably be a new variable since it
-    obviously comes from a different data set. If we do decide to reuse the variable, the
-    old variable will get some unneeded new values and the new one will inherit
-    some from the old.
+    There is a matching variable, yet it has none of the values that
+    the new variable will have (this is obviously possible only if the
+    new variable has no prescribed ordered values). For instance, we
+    search for a variable "sex" with values "male" and "female", while
+    there is a variable of the same name with values "M" and "F" (or,
+    well, "no" and "yes" :). Reuse of this variable is possible,
+    though this should probably be a new variable since it obviously
+    comes from a different data set. If we do decide to reuse the
+    variable, the old variable will get some unneeded new values and
+    the new one will inherit some from the old.
 
 .. data:: Descriptor.MakeStatus.MissingValues (1)
 
-    There is a matching variable with some of the values that the new one
-    requires, but some values are missing. This situation is neither uncommon
-    nor suspicious: in case of separate training and testing data sets there may
-    be values which occur in one set but not in the other.
+    There is a matching variable with some of the values that the new
+    one requires, but some values are missing. This situation is
+    neither uncommon nor suspicious: in case of separate training and
+    testing data sets there may be values which occur in one set but
+    not in the other.
 
 .. data:: Descriptor.MakeStatus.OK (0)
 
-    There is a perfect match which contains all the prescribed values in the
-    correct order. The existing variable may have some extra values, though.
+    There is a perfect match which contains all the prescribed values
+    in the correct order. The existing variable may have some extra
+    values, though.
 
 Continuous variables can obviously have only two statuses,
 :obj:`~Descriptor.MakeStatus.NotFound` or :obj:`~Descriptor.MakeStatus.OK`.
 
-When loading the data using :obj:`Orange.data.Table`, Orange takes the safest
-approach and, by default, reuses everything that is compatible up to
-and including :obj:`~Descriptor.MakeStatus.NoRecognizedValues`. Unintended reuse would be obvious from the
-variable having too many values, which the user can notice and fix. More on that
-in the page on :doc:`Orange.data.formats`.
+When loading the data using :obj:`Orange.data.Table`, Orange takes the
+safest approach and, by default, reuses everything that is compatible
+up to and including
+:obj:`~Descriptor.MakeStatus.NoRecognizedValues`. Unintended reuse
+would be obvious from the variable having too many values, which the
+user can notice and fix. More on that in the page on
+:doc:`Orange.data.formats`.
 
-There are two functions for reusing the variables instead of creating new ones.
+There are two functions for reusing the variables instead of creating
+new ones.
 
 .. function:: Descriptor.make(name, type, ordered_values, unordered_values[, create_new_on])
 
-    Find and return an existing variable or create a new one if none of the existing
-    variables matches the given name, type and values.
+    Find and return an existing variable or create a new one if none
+    of the existing variables matches the given name, type and values.
 
-    The optional `create_new_on` specifies the status at which a new variable is
-    created. The status must be at most :obj:`~Descriptor.MakeStatus.Incompatible` since incompatible (or
-    non-existing) variables cannot be reused. If it is set lower, for instance
-    to :obj:`~Descriptor.MakeStatus.MissingValues`, a new variable is created even if there exists
-    a variable which is only missing the same values. If set to :obj:`~Descriptor.MakeStatus.OK`, the function
-    always creates a new variable.
+    The optional `create_new_on` specifies the status at which a new
+    variable is created. The status must be at most
+    :obj:`~Descriptor.MakeStatus.Incompatible` since incompatible (or
+    non-existing) variables cannot be reused. If it is set lower, for
+    instance to :obj:`~Descriptor.MakeStatus.MissingValues`, a new
+    variable is created even if there exists a variable which is only
+    missing the same values. If set to
+    :obj:`~Descriptor.MakeStatus.OK`, the function always creates a
+    new variable.
 
-    The function returns a tuple containing a variable descriptor and the
-    status of the best matching variable. So, if ``create_new_on`` is set to
-    :obj:`~Descriptor.MakeStatus.MissingValues`, and there exists a variable whose status is, say,
-    :obj:`~Descriptor.MakeStatus.NoRecognizedValues`, a variable would be created, while the second
-    element of the tuple would contain :obj:`~Descriptor.MakeStatus.NoRecognizedValues`. If, on the other
-    hand, there exists a variable which is perfectly OK, its descriptor is
-    returned and the returned status is :obj:`~Descriptor.MakeStatus.OK`. The function returns no
-    indicator whether the returned variable is reused or not. This can be,
-    however, read from the status code: if it is smaller than the specified
-    ``create_new_on``, the variable is reused, otherwise a new descriptor has been constructed.
+    The function returns a tuple containing a variable descriptor and
+    the status of the best matching variable. So, if ``create_new_on``
+    is set to :obj:`~Descriptor.MakeStatus.MissingValues`, and there
+    exists a variable whose status is, say,
+    :obj:`~Descriptor.MakeStatus.NoRecognizedValues`, a variable would
+    be created, while the second element of the tuple would contain
+    :obj:`~Descriptor.MakeStatus.NoRecognizedValues`. If, on the other
+    hand, there exists a variable which is perfectly OK, its
+    descriptor is returned and the returned status is
+    :obj:`~Descriptor.MakeStatus.OK`. The function returns no
+    indicator whether the returned variable is reused or not. This can
+    be, however, read from the status code: if it is smaller than the
+    specified ``create_new_on``, the variable is reused, otherwise a
+    new descriptor has been constructed.
 
-    The exception to the rule is when ``create_new_on`` is OK. In this case, the
-    function does not search through the existing variables and cannot know the
-    status, so the returned status in this case is always :obj:`~Descriptor.MakeStatus.OK`.
+    The exception to the rule is when ``create_new_on`` is OK. In this
+    case, the function does not search through the existing variables
+    and cannot know the status, so the returned status in this case is
+    always :obj:`~Descriptor.MakeStatus.OK`.
 
     :param name: Descriptor name
     :param type: Descriptor type
@@ -375,16 +396,17 @@ executed only once (in a Python session) and in this order.
     >>> print s, v1.values
     NotFound <a, b>
 
-A new variable was created and the status is :obj:`~Descriptor.MakeStatus.NotFound`. ::
+A new variable was created and the status is
+:obj:`~Descriptor.MakeStatus.NotFound`. ::
 
     >>> v2, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, ["a"], ["c"])
     >>> print s, v2 is v1, v1.values
     MissingValues True <a, b, c>
 
-The status is :obj:`~Descriptor.MakeStatus.MissingValues`,
-yet the variable is reused (``v2 is v1``). ``v1`` gets a new value,
-``"c"``, which was given as an unordered value. It does
-not matter that the new variable does not need the value ``b``. ::
+The status is :obj:`~Descriptor.MakeStatus.MissingValues`, yet the
+variable is reused (``v2 is v1``). ``v1`` gets a new value, ``"c"``,
+which was given as an unordered value. It does not matter that the new
+variable does not need the value ``b``. ::
 
     >>> v3, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, ["a", "b", "c", "d"])
     >>> print s, v3 is v1, v1.values
@@ -397,54 +419,56 @@ ordered values. ::
     >>> print s, v4 is v1, v1.values, v4.values
     Incompatible, False, <b>, <a, b, c, d>
 
-The new variable needs to have ``b`` as the first value, so it is incompatible
-with the existing variables. The status is
-:obj:`~Descriptor.MakeStatus.Incompatible` and
-a new variable is created; the two variables are not equal and have
-different lists of values. ::
+The new variable needs to have ``b`` as the first value, so it is
+incompatible with the existing variables. The status is
+:obj:`~Descriptor.MakeStatus.Incompatible` and a new variable is
+created; the two variables are not equal and have different lists of
+values. ::
 
     >>> v5, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, None, ["c", "a"])
     >>> print s, v5 is v1, v1.values, v5.values
     OK True <a, b, c, d> <a, b, c, d>
 
-The new variable has values ``c`` and ``a``, but the order is not important,
-so the existing attribute is :obj:`~Descriptor.MakeStatus.OK`. ::
+The new variable has values ``c`` and ``a``, but the order is not
+important, so the existing attribute is
+:obj:`~Descriptor.MakeStatus.OK`. ::
 
     >>> v6, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, None, ["e"]) "a"])
     >>> print s, v6 is v1, v1.values, v6.values
     NoRecognizedValues True <a, b, c, d, e> <a, b, c, d, e>
 
-The new variable has different values than the existing variable (status
-is :obj:`~Descriptor.MakeStatus.NoRecognizedValues`),
-but the existing one is nonetheless reused. Note that we
-gave ``e`` in the list of unordered values. If it was among the ordered, the
-reuse would fail. ::
+The new variable has different values than the existing variable
+(status is :obj:`~Descriptor.MakeStatus.NoRecognizedValues`), but the
+existing one is nonetheless reused. Note that we gave ``e`` in the
+list of unordered values. If it was among the ordered, the reuse would
+fail. ::
 
     >>> v7, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete, None,
             ["f"], Orange.feature.MakeStatus.NoRecognizedValues)))
     >>> print s, v7 is v1, v1.values, v7.values
     Incompatible False <a, b, c, d, e> <f>
 
-This is the same as before, except that we prohibited reuse when there are no
-recognized values. Hence a new variable is created, though the returned status is
-the same as before::
+This is the same as before, except that we prohibited reuse when there
+are no recognized values. Hence a new variable is created, though the
+returned status is the same as before::
 
     >>> v8, s = Orange.feature.Descriptor.make("a", Orange.feature.Type.Discrete,
             ["a", "b", "c", "d", "e"], None, Orange.feature.MakeStatus.OK)
     >>> print s, v8 is v1, v1.values, v8.values
     OK False <a, b, c, d, e> <a, b, c, d, e>
 
-Finally, this is a perfect match, but any reuse is prohibited, so a new
-variable is created.
+Finally, this is a perfect match, but any reuse is prohibited, so a
+new variable is created.
 
 
 
 Variables computed from other variables
 ---------------------------------------
 
-Values of variables are often computed from other variables, such as in
-discretization. The mechanism described below usually functions behind the scenes,
-so understanding it is required only for implementing specific transformations.
+Values of variables are often computed from other variables, for
+instance in. The mechanism described below usually functions behind
+the scenes, so understanding it is required only for implementing
+specific transformations.
 
 Monk 1 is a well-known dataset with target concept ``y := a==b or e==1``.
 It can help the learning algorithm if the four-valued attribute ``e`` is
@@ -454,42 +478,42 @@ new variable will be computed from the old one on the fly.
 .. literalinclude:: code/variable-get_value_from.py
     :lines: 7-17
 
-The new variable is named ``e2``; we define it with a descriptor of type
-:obj:`Discrete`, with appropriate name and values ``"not 1"`` and ``1`` (we
-chose this order so that the ``not 1``'s index is ``0``, which can be, if
-needed, interpreted as ``False``). Finally, we tell e2 to use
-``checkE`` to compute its value when needed, by assigning ``checkE`` to
-``e2.get_value_from``.
+The new variable is named ``e2``; we define it with a descriptor of
+type :obj:`Discrete`, with appropriate name and values ``"not 1"`` and
+``1`` (we chose this order so that the ``not 1``'s index is ``0``,
+which can be, if needed, interpreted as ``False``). Finally, we tell
+e2 to use ``checkE`` to compute its value when needed, by assigning
+``checkE`` to ``e2.get_value_from``.
 
-``checkE`` is a function that is passed an instance and another argument we
-do not care about here. If the instance's ``e`` equals ``1``, the function
-returns value ``1``, otherwise it returns ``not 1``. Both are returned as
-values, not plain strings.
+``checkE`` is a function that is passed an instance and another
+argument we do not care about here. If the instance's ``e`` equals
+``1``, the function returns value ``1``, otherwise it returns ``not
+1``. Both are returned as values, not plain strings.
 
-In most circumstances the value of ``e2`` can be computed on the fly - we can
-pretend that the variable exists in the data, although it does not (but
-can be computed from it). For instance, we can compute the information gain of
-variable ``e2`` or its distribution without actually constructing data containing
-the new variable.
+In most circumstances the value of ``e2`` can be computed on the fly -
+we can pretend that the variable exists in the data, although it does
+not (but can be computed from it). For instance, we can compute the
+information gain of variable ``e2`` or its distribution without
+actually constructing data containing the new variable.
 
 .. literalinclude:: code/variable-get_value_from.py
     :lines: 19-22
 
-There are methods which cannot compute values on the fly because it would be
-too complex or time consuming. In such cases, the data need to be converted
-to a new :obj:`Orange.data.Table`::
+There are methods which cannot compute values on the fly because it
+would be too complex or time consuming. In such cases, the data need
+to be converted to a new :obj:`Orange.data.Table`::
 
     new_domain = Orange.data.Domain([data.domain["a"], data.domain["b"], e2, data.domain.class_var])
     new_data = Orange.data.Table(new_domain, data)
 
-Automatic computation is useful when the data is split into training and
-testing examples. Training instances can be modified by adding, removing
-and transforming variables (in a typical setup, continuous variables
-are discretized prior to learning, therefore the original variables are
-replaced by new ones). Test instances, on the other hand, are left as they
-are. When they are classified, the classifier automatically converts the
-testing instances into the new domain, which includes recomputation of
-transformed variables.
+Automatic computation is useful when the data is split into training
+and testing examples. Training instances can be modified by adding,
+removing and transforming variables (in a typical setup, continuous
+variables are discretized prior to learning, therefore the original
+variables are replaced by new ones). Test instances, on the other
+hand, are left as they are. When they are classified, the classifier
+automatically converts the testing instances into the new domain,
+which includes recomputation of transformed variables.
 
 .. literalinclude:: code/variable-get_value_from.py
     :lines: 24-
