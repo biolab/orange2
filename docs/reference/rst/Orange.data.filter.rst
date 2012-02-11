@@ -149,11 +149,8 @@ Filtering instances with missing data
         :lines: 3, 5
 
 
-Filtering by values
--------------------
-
-Single values
-.............
+Filtering by value of a single feature
+--------------------------------------
 
 .. class:: SameValue
 
@@ -170,27 +167,10 @@ Single values
         Features's value.
 
 
-Continuous features
-...................
+Filtering by multiple values
+----------------------------
 
-:obj:`Orange.data.filter.Values` provides different methods for
-filtering values of countinuous features: :obj:`ValueFilter.Equal`,
-:obj:`ValueFilter.Less`, :obj:`ValueFilter.LessEqual`,
-:obj:`ValueFilter.Greater`, :obj:`ValueFilter.GreaterEqual`,
-:obj:`ValueFilter.Between`, :obj:`ValueFilter.Outside`.
-
-In the following example two different filters are used:
-:obj:`ValueFilter.GreaterEqual`, which needs only one parameter and
-:obj:`ValueFilter.Between`, which needs two.
-
-.. literalinclude:: code/filterv.py
-    :lines: 52, 75-83
-
-
-Multiple values and features
-............................
-
-:obj:`~Orange.data.filter.Values` filters by values of multuple
+:obj:`~Orange.data.filter.Values` filters by values of multiple
 features and can compute conjunctions and disjunctions of more complex
 conditions.
 
@@ -198,15 +178,12 @@ conditions.
 
     .. attribute:: conditions
 
-        A list of conditions described by instances of
-        :obj:`~Orange.data.filter.ValueFilterDiscrete` for discrete
-        features and :obj:`~Orange.data.filter.ValueFilterContinuous`
-        for continuous ones; both are derived from
+        A list of conditions described by instances of classes derived from 
         :obj:`Orange.data.filter.ValueFilter`.
 
     .. attribute:: conjunction
 
-        Decides whether the filter computes conjunction or disjunction
+        Indicates whether the filter computes conjunction or disjunction
         of conditions. If ``True``, instance is accepted if no
         values are rejected. If ``False``, instance is accepted if
         at least one value is accepted.
@@ -217,7 +194,7 @@ conditions.
 
     .. attribute:: position
 
-        The position of the checked feature (as returned by, for
+        The position of the feature in the domain (as returned by, for
         instance, :obj:`Orange.data.Domain.index`).
 
     .. attribute:: accept_special
@@ -227,33 +204,88 @@ conditions.
 
 .. class:: ValueFilterDiscrete
 
+    Accepts the listed discrete values.
+
     .. attribute:: values
 
-        An immutable ``list`` that contains objects of type
-        :obj:`~Orange.data.Value`, with values to accept.
+        An list of accepted values with elements of type
+        :obj:`~Orange.data.Value`.
 
 .. class:: ValueFilterContinous
 
-    .. attribute:: min
+    Accepts the continuous values within (or without) the given interval.
 
-        Lower bound of values to consider.
+    .. attribute:: min, ref
+
+        Lower bound of the interval (``min`` and ``ref`` are aliases
+        for the same attribute.
 
     .. attribute:: max
 
-        Upper bound of values to consider.
+        Upper bound of the interval.
 
-    .. attribute:: outside
+    .. attribute:: oper
 
-        Indicates whether instances outside the interval should be
-        accepted.  Defaults to :obj:`False`.
+        Comparison operator; should be one of the following:
+        :obj:`ValueFilter.Equal`, :obj:`ValueFilter.Less`,
+        :obj:`ValueFilter.LessEqual`, :obj:`ValueFilter.Greater`,
+        :obj:`ValueFilter.GreaterEqual`, :obj:`ValueFilter.Between`,
+        :obj:`ValueFilter.Outside`. Fields ``min`` and ``max`` to
+        define the interval for interval operators
+        (:obj:`ValueFilter.Between` and :obj:`ValueFilter.Outside`),
+        and ``ref`` (which is the same as ``min``) for the others.
 
-.. literalinclude:: code/filter.py
-    :lines: 68-82
 
-This script selects instances whose age is "young" or "presbyopic" and
+.. class:: ValueFilterString
+
+    Accepts the string values within (or without) the given interval.
+
+    .. attribute:: min, ref
+
+        Lower bound of the interval (``min`` and ``ref`` are aliases
+        for the same attribute.
+
+    .. attribute:: max
+
+        Upper bound of the interval.
+
+    .. attribute:: oper
+
+        Comparison operator; should be one of the following:
+        :obj:`ValueFilter.Equal`, :obj:`ValueFilter.Less`,
+        :obj:`ValueFilter.LessEqual`, :obj:`ValueFilter.Greater`,
+        :obj:`ValueFilter.GreaterEqual`, :obj:`ValueFilter.Between`,
+        :obj:`ValueFilter.Outside`, :obj:`Contains`,
+        :obj:`NotContains`, :obj:`BeginsWith`, :obj:`EndsWith`.
+
+        Fields ``min`` and ``max`` to define the interval for interval
+        operators (:obj:`ValueFilter.Between` and
+        :obj:`ValueFilter.Outside`), and ``ref`` (which is the same as
+        ``min``) for the others.
+    
+    .. attribute:: case_sensitive
+
+        Tells whether the comparisons are case sensitive. Default is ``True``.
+
+.. class:: ValueFilterStringList
+
+    Accepts string values from the list.
+
+    .. attribute:: values
+
+        An list of accepted values.
+
+    .. attribute:: case_sensitive
+
+        Tells whether the comparisons are case sensitive. Default is ``True``.
+
+The following script selects instances whose age is "young" or "presbyopic" and
 which are "astigmatic". Unknown values are ignored. If value for one of the
 two features is missing, only the other is checked. If both are missing,
 instance is accepted.
+
+.. literalinclude:: code/filter.py
+    :lines: 68-82
 
 The filter is first constructed and assigned a domain. Then both
 conditions are appended to the filter's
@@ -271,4 +303,3 @@ examples with unknown astigmatism are always accepted.
 
 .. literalinclude:: code/filter.py
     :lines: 129-141
-
