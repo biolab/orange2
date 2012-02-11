@@ -13,7 +13,7 @@ m = [[],
 
 matrix = Orange.misc.SymMatrix(m)
 root = Orange.clustering.hierarchical.HierarchicalClustering(matrix,
-        linkage=Orange.clustering.hierarchical.HierarchicalClustering.Average)
+        linkage=Orange.clustering.hierarchical.AVERAGE)
 
 def print_clustering(cluster):
     if cluster.branches:

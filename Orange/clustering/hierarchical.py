@@ -8,17 +8,8 @@ Hierarchical clustering (``hierarchical``)
 
 .. index:: aglomerative clustering
 
-For hierarchical clustering we need to compute distances between
-instances. The method works in approximately O(n2) time (with the worst
-case O(n3)).  
-
-The distance matrix has to contain no negative elements, as this helps
-the algorithm to run faster. The elements on the diagonal are ignored.
-
-.. rubric:: Example
-
-The following example show clustering of the Iris data, Distance matrix
-is computed with the :class:`Orange.distance.Euclidean` distance measure
+The following example show clustering of the Iris data, with distance matrix
+computed with the :class:`Orange.distance.Euclidean` distance measure
 and cluster it with average linkage.
 
 .. literalinclude:: code/hierarchical-example-2.py
@@ -59,21 +50,9 @@ Basic functionality
     
     .. attribute:: linkage
         
-        Specifies the linkage method, which can be either :
-        
-            1. ``HierarchicalClustering.Single`` (default), where distance
-                between groups is defined as the distance between the closest
-                pair of objects, one from each group,
-            2. ``HierarchicalClustering.Average`` , where the distance between
-                two clusters is defined as the average of distances between
-                all pairs of objects, where each pair is made up of one object
-                from each group, or
-            3. ``HierarchicalClustering.Complete``, where the distance between
-                groups is defined as the distance between the most distant
-                pair of objects, one from each group. Complete linkage is
-                also called farthest neighbor.
-            4. ``HierarchicalClustering.Ward`` uses Ward's distance.
-            
+        Specifies the linkage method, which can be either. Default is
+        :obj:`SINGLE`.
+
     .. attribute:: overwrite_matrix
 
         If True (default is False), the algorithm will save memory
@@ -87,13 +66,40 @@ Basic functionality
         
     .. method:: __call__(matrix)
           
-        The ``HierarchicalClustering`` is called with a distance matrix as an
-        argument. It returns an instance of HierarchicalCluster representing
+        Return an instance of HierarchicalCluster representing
         the root of the hierarchy (instance of :class:`HierarchicalCluster`).
-        
+
+        The distance matrix has to contain no negative elements, as
+        this helps the algorithm to run faster. The elements on the
+        diagonal are ignored. The method works in approximately O(n2)
+        time (with the worst case O(n3)).
+
         :param matrix: A distance matrix to perform the clustering on.
         :type matrix: :class:`Orange.misc.SymMatrix`
 
+.. rubric:: Linkage methods
+
+.. data:: SINGLE
+
+    Distance between groups is defined as the distance between the closest
+                pair of objects, one from each group.
+
+.. data:: AVERAGE
+
+    Distance between two clusters is defined as the average of distances
+    between all pairs of objects, where each pair is made up of one
+    object from each group.
+
+.. data:: COMPLETE
+
+    Distance between groups is defined as the distance between the most
+    distant pair of objects, one from each group. Complete linkage is
+    also called farthest neighbor.
+
+.. data:: WARD
+
+    Ward's distance.
+ 
 Drawing
 --------------
 
@@ -354,17 +360,18 @@ def clustering(data,
                order=False,
                progress_callback=None):
     """ Return a hierarchical clustering of the instances in a data set.
-    
+    The method works in approximately O(n2) time (with the worst case O(n3)).
+   
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
     :param distance_constructor: Instance distance constructor
     :type distance_constructor: :class:`Orange.distance.DistanceConstructor`
-    :param linkage: Linkage flag. Must be one of global module level flags:
+    :param linkage: Linkage flag. Must be one of module level flags:
     
-        - SINGLE
-        - AVERAGE
-        - COMPLETE
-        - WARD
+        - :obj:`SINGLE`
+        - :obj:`AVERAGE`
+        - :obj:`COMPLETE`
+        - :obj:`WARD`
         
     :type linkage: int
     :param order: If `True` run `order_leaves` on the resulting clustering.
@@ -391,13 +398,13 @@ clustering = \
                          "progressCallback": "progress_callback"})(clustering)
 
 
-def clustering_features(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progress_callback=None):
+def clustering_features(data, distance=None, linkage=AVERAGE, order=False, progress_callback=None):
     """ Return hierarchical clustering of attributes in a data set.
     
     :param data: Input data table for clustering.
     :type data: :class:`Orange.data.Table`
     :param distance: Attribute distance constructor  (currently not used).
-    :param linkage: Linkage flag. Must be one of global module level flags:
+    :param linkage: Linkage flag; one of global module level flags:
     
         - SINGLE
         - AVERAGE

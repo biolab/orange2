@@ -6,7 +6,7 @@ matrix = Orange.misc.SymMatrix(len(iris))
 matrix = Orange.distance.distance_matrix(iris, Orange.distance.Euclidean)
 
 clustering = Orange.clustering.hierarchical.HierarchicalClustering()
-clustering.linkage = clustering.Average
+clustering.linkage = Orange.clustering.hierarchical.AVERAGE
 root = clustering(matrix)
 
 root.mapping.objects = iris

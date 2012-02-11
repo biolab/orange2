@@ -4,7 +4,7 @@ iris = Orange.data.Table("iris")
 
 root = Orange.clustering.hierarchical.clustering(iris,
     distance_constructor=Orange.distance.Euclidean,
-    linkage=Orange.clustering.hierarchical.HierarchicalClustering.Average)
+    linkage=Orange.clustering.hierarchical.AVERAGE)
 
 root.mapping.objects = iris
 
