@@ -308,9 +308,9 @@ Filters can be combined into conjuctions or disjunctions using the following des
 
 .. class:: FilterConjunction
 
-    Conjunction of filters. Reject the instance if any of the
-    combined filters rejects it. Conjunction can be negated using the
-    inherited :obj:``~Filter.negate`` flag.
+    Reject the instance if any of the combined filters rejects
+    it. Conjunction can be negated using the inherited
+    :obj:``~Filter.negate`` flag.
 
     .. attribute:: filters
 
@@ -318,9 +318,9 @@ Filters can be combined into conjuctions or disjunctions using the following des
 
 .. class:: FilterDisjunction
 
-    Disjunction of filters. Accept the instance if any of the
-    combined filters accepts it. Disjunction can be negated using the
-    inherited :obj:``~Filter.negate`` flag.
+    Accept the instance if any of the combined filters accepts
+    it. Disjunction can be negated using the inherited
+    :obj:``~Filter.negate`` flag.
     
     .. attribute:: filters
 
