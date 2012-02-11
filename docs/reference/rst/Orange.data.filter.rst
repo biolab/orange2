@@ -9,33 +9,25 @@
 Filtering (``filter``)
 **********************
 
-Filters select subsets of instances. Consider the following
-example that selects instances with age="young" from data set lenses:
+Filters select subsets of instances. They are most typically used to
+select data instances from a table, for example to drop all
+instances that have no class value::
 
-.. literalinclude:: code/filter.py
-    :lines: 58-64
+    filtered = Orange.data.filter.HasClassValue(data)
 
-Output::
+Despite this typical use, filters operate on individual instances, not
+the entire data table: they can be called with an instance and return
+``True`` are ``False`` to accept or reject the instances. Most
+examples below use them like this for sake of demonstration.
 
-    Young instances
-    ['young', 'myope', 'no', 'reduced', 'none']
-    ['young', 'myope', 'no', 'normal', 'soft']
-    ['young', 'myope', 'yes', 'reduced', 'none']
-    ['young', 'myope', 'yes', 'normal', 'hard']
-    ['young', 'hypermetrope', 'no', 'reduced', 'none']
-    ['young', 'hypermetrope', 'no', 'normal', 'soft']
-    ['young', 'hypermetrope', 'yes', 'reduced', 'none']
-    ['young', 'hypermetrope', 'yes', 'normal', 'hard']
+An alternative way to apply a filter is to call
+:obj:`Orange.data.Table.filter` on the data table.
 
-``data.domain.``:obj:`~Orange.data.Domain.features` behaves as a list and provides method
-`index`, which is used to retrieve the position of feature `age`. Feature
-`age` is also used to construct a :obj:`~Orange.data.Value`.
-
-
-Filters operator on individual instances, not the entire data table,
-and are limited to accepting or rejecting instances. All filters are derived from the base class :obj:`Filter`.
+All filters are derived from the base class :obj:`Filter`.
 
 .. class:: Filter
+
+    Abstract base class for filters.
 
     .. attribute:: negate
 
@@ -43,20 +35,68 @@ and are limited to accepting or rejecting instances. All filters are derived fro
 
     .. attribute:: domain
 
-        Domain to which examples are converted prior to checking.
+        Domain to which data instances are converted before checking.
 
     .. method:: __call__(instance)
 
         Check whether the instance matches the filter's criterion and
-        return either :obj:`True` or :obj:`False`.
+        return either ``True`` or ``False``.
 
     .. method:: __call__(table)
 
         Return a new data table containing the instances that match
         the criterion.
 
-        An alternative way to apply a filter is to call
-        :obj:`~Orange.data.Table.filter` on the data table.
+
+
+Filtering missing data
+----------------------
+
+.. class:: IsDefined
+
+    Selects instances for which all feature values are defined.
+
+    .. attribute:: check
+
+	A list of ``bool``'s specifying which features to check. Each
+	element corresponds to a feature in the domain. By default,
+	:obj:`check` is ``None``, meaning that all features are
+	checked. The list is initialized to a list of ``True`` when
+	the filter's :obj:`~Orange.data.filter.Filter.domain` is set,
+	unless the list already exists. The list can be indexed by
+	ordinary integers (for example, `check[0]`); if
+	:obj:`~Orange.data.filter.Filter.domain` is set, feature names
+	or descriptors can also be used as indices.
+
+.. literalinclude:: code/filter.py
+    :lines: 9, 20-40
+
+
+.. class:: HasClassValue
+
+    Selects instances with defined class value. Setting
+    :obj:`~Orange.data.filter.Filter.negate` inverts the selection and
+    chooses examples with unknown class.
+
+.. literalinclude:: code/filter.py
+    :lines: 9, 49-55
+
+
+.. class:: HasMeta
+
+    Filters out instances that do not have a meta attribute with the given id.
+
+    .. attribute:: id
+
+        The id of the meta attribute to look for.
+
+This is filter is especially useful with instances from basket files,
+which have optional meta attributes. If they come, for example, from a
+text mining domain, we can use it to get the documents that contain a
+specific word:
+
+.. literalinclude:: code/filterm.py
+    :lines: 3, 5
 
 Random filter
 -------------
@@ -73,7 +113,9 @@ Random filter
 
         The random number generator used for making selections. If not
         set before filtering, a new generator is constructed and
-        stored here for later use.
+        stored here for later use. If the attribute is set to an
+        integer, Orange constructs a random generator and uses the
+        integer as a seed.
 
 .. literalinclude:: code/filter.py
     :lines: 12-14
@@ -86,71 +128,12 @@ Although the probability of selecting an instance is set to 0.7, the
 filter accepted five out of ten instances since the decision is made for each instance separately. To select exactly 70 % of instance (except for a rounding error), use :obj:`~Orange.data.sample.SubsetIndices2`.
 
 Setting the random generator ensures that the filter will always
-select the same instances. Setting `randomGenerator=24` is a shortcut
-for `randomGenerator = Orange.misc.Random(initseed=24)` or
-`randomGenerator = Orange.misc.Random(initseed=24)`.
-
-To select a subset of instances instead of calling the filter for each
-individual example, call::
-
-    data70 = randomfilter(data)
+select the same instances. Setting `random_generator=24` is a shortcut
+for `random_generator = Orange.misc.Random(initseed=24)`.
 
 
-Filtering instances with missing data
--------------------------------------
-
-.. class:: IsDefined
-
-    Selects instances for which all feature values are defined.  By
-    default, the filter checks all features; this can be changed by
-    setting the attribute :obj:`check`. The filter does not check meta
-    attributes.
-
-    .. attribute:: check
-
-	A list of ``bool``s specifying which features to check. Each
-	element corresponds to a feature in the domain. By default,
-	:obj:`check` is ``None``, meaning that all features are
-	checked. The list is initialized to a list of ``True`` when
-	the filter's :obj:`~Orange.data.filter.Filter.domain` is set,
-	unless the list already exists. The list can be indexed by
-	ordinary integers (for example, `check[0]`); if
-	:obj:`~Orange.data.filter.Filter.domain` is set, feature names
-	or descriptors can also be used as indices.
-
-    .. literalinclude:: code/filter.py
-        :lines: 9, 20-40
-
-
-.. class:: HasClass
-
-    Selects instances with defined class value. Setting
-    :obj:`~Orange.data.filter.Filter.negate` to inverts the selection.
-
-
-    .. literalinclude:: code/filter.py
-        :lines: 9, 49-55
-
-
-.. class:: HasMeta
-
-    Filters out instances that do not have a meta attribute with the given id.
-
-    .. attribute:: id
-
-        The id of the meta attribute to look for.
-
-    This is filter is especially useful with instances from basket
-    files, which have optional meta attributes. If they come, for
-    example, from a text mining domain, we can use it to get the
-    documents that contain a specific word:
-
-    .. literalinclude:: code/filterm.py
-        :lines: 3, 5
-
-
-Filtering by value of a single feature
---------------------------------------
+Filtering by single features
+----------------------------
 
 .. class:: SameValue
 
@@ -159,20 +142,31 @@ Filtering by value of a single feature
 
     .. attribute:: position
 
-        Index of feature in the :obj:`~Orange.data.Domain`, as
-        returned by :obj:`Orange.data.Domain.index`.
+        Index of feature in the :obj:`~Orange.data.Domain` as returned
+        by :obj:`Orange.data.Domain.index`.
 
     .. attribute:: value
 
         Features's value.
 
+The following example selects instances with age="young" from data set
+lenses:
 
-Filtering by multiple values
-----------------------------
+.. literalinclude:: code/filter.py
+    :lines: 58-64
+
+
+``data.domain.``:obj:`~Orange.data.Domain.features` behaves as a list and provides method
+`index`, which is used to retrieve the position of feature `age`. Feature
+`age` is also used to construct a :obj:`~Orange.data.Value`.
+
+
+Filtering by multiple features
+------------------------------
 
 :obj:`~Orange.data.filter.Values` filters by values of multiple
-features and can compute conjunctions and disjunctions of more complex
-conditions.
+features presented as subfilters derived from
+:obj:`Orange.data.filter.ValueFilter`.
 
 .. class:: Values
 
@@ -188,9 +182,11 @@ conditions.
         values are rejected. If ``False``, instance is accepted if
         at least one value is accepted.
 
+The attribute :obj:`conditions` contains subfilter instances of the following classes.
+
 .. class:: ValueFilter
 
-    The abstract base class for filters for discrete and continuous features.
+    The abstract base class for subfilters.
 
     .. attribute:: position
 
@@ -204,7 +200,7 @@ conditions.
 
 .. class:: ValueFilterDiscrete
 
-    Accepts the listed discrete values.
+    Subfilter for values of discrete features.
 
     .. attribute:: values
 
@@ -213,12 +209,12 @@ conditions.
 
 .. class:: ValueFilterContinous
 
-    Accepts the continuous values within (or without) the given interval.
+    Subfilter for values of continuous features.
 
-    .. attribute:: min, ref
+    .. attribute:: min / ref
 
         Lower bound of the interval (``min`` and ``ref`` are aliases
-        for the same attribute.
+        for the same attribute).
 
     .. attribute:: max
 
@@ -230,17 +226,18 @@ conditions.
         :obj:`ValueFilter.Equal`, :obj:`ValueFilter.Less`,
         :obj:`ValueFilter.LessEqual`, :obj:`ValueFilter.Greater`,
         :obj:`ValueFilter.GreaterEqual`, :obj:`ValueFilter.Between`,
-        :obj:`ValueFilter.Outside`. Fields ``min`` and ``max`` to
-        define the interval for interval operators
-        (:obj:`ValueFilter.Between` and :obj:`ValueFilter.Outside`),
-        and ``ref`` (which is the same as ``min``) for the others.
+        :obj:`ValueFilter.Outside`.
+
+    Attributes ``min`` and ``max`` define the interval for
+    operators :obj:`ValueFilter.Between` and :obj:`ValueFilter.Outside`
+    and ``ref`` (which is the same as ``min``) for the others.
 
 
 .. class:: ValueFilterString
 
-    Accepts the string values within (or without) the given interval.
+    Subfilter for values of discrete features.
 
-    .. attribute:: min, ref
+    .. attribute:: min / ref
 
         Lower bound of the interval (``min`` and ``ref`` are aliases
         for the same attribute.
@@ -257,15 +254,14 @@ conditions.
         :obj:`ValueFilter.GreaterEqual`, :obj:`ValueFilter.Between`,
         :obj:`ValueFilter.Outside`, :obj:`Contains`,
         :obj:`NotContains`, :obj:`BeginsWith`, :obj:`EndsWith`.
-
-        Fields ``min`` and ``max`` to define the interval for interval
-        operators (:obj:`ValueFilter.Between` and
-        :obj:`ValueFilter.Outside`), and ``ref`` (which is the same as
-        ``min``) for the others.
     
     .. attribute:: case_sensitive
 
         Tells whether the comparisons are case sensitive. Default is ``True``.
+
+    Attributes ``min`` and ``max`` define the interval for
+    operators :obj:`ValueFilter.Between` and :obj:`ValueFilter.Outside`
+    and ``ref`` (which is the same as ``min``) for the others.
 
 .. class:: ValueFilterStringList
 
@@ -273,11 +269,12 @@ conditions.
 
     .. attribute:: values
 
-        An list of accepted values.
+        A list of accepted strings.
 
     .. attribute:: case_sensitive
 
         Tells whether the comparisons are case sensitive. Default is ``True``.
+
 
 The following script selects instances whose age is "young" or "presbyopic" and
 which are "astigmatic". Unknown values are ignored. If value for one of the
@@ -303,3 +300,28 @@ examples with unknown astigmatism are always accepted.
 
 .. literalinclude:: code/filter.py
     :lines: 129-141
+
+Composition of filters
+----------------------
+
+Filters can be combined into conjuctions or disjunctions using the following descendants of :obj:`Filter`. It is possible to build hierarchies of filters (e.g. disjunction of conjuctions).
+
+.. class:: FilterConjunction
+
+    Conjunction of filters. Reject the instance if any of the
+    combined filters rejects it. Conjunction can be negated using the
+    inherited :obj:``~Filter.negate`` flag.
+
+    .. attribute:: filters
+
+        A list of filters (instances of :obj:`Filter`)
+
+.. class:: FilterDisjunction
+
+    Disjunction of filters. Accept the instance if any of the
+    combined filters accepts it. Disjunction can be negated using the
+    inherited :obj:``~Filter.negate`` flag.
+    
+    .. attribute:: filters
+
+        A list of filters (instances of :obj:`Filter`)
