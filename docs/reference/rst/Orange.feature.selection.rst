@@ -21,23 +21,12 @@ Feature selection module contains several functions for selecting features based
         el-salvador-aid
         synfuels-corporation-cutback
 
-.. autoclass:: Orange.feature.selection.FilterAboveThreshold(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), threshold=0.0)
-   :members:
+The module also includes a learner that incorporates feature subset
+selection.
 
-.. autoclass:: Orange.feature.selection.FilterBestN(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), n=5)
-   :members:
-
-.. autoclass:: Orange.feature.selection.FilterRelief(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), margin=0)
-   :members:
-
-.. autoclass:: Orange.feature.selection.FilteredLearner(baseLerner, filter=FilterAboveThreshold(), name=filtered)
-   :members:
-
-.. autoclass:: Orange.feature.selection.FilteredClassifier
-   :members:
-
-These functions support the design of feature subset selection for
-classification problems.
+--------------------------------------
+Functions for feature subset selection
+--------------------------------------
 
 .. automethod:: Orange.feature.selection.best_n
 
@@ -47,7 +36,33 @@ classification problems.
 
 .. automethod:: Orange.feature.selection.select_above_threshold
 
-.. automethod:: Orange.feature.selection.select_relief
+.. automethod:: Orange.feature.selection.select_relief(data, measure=Orange.feature.scoring.Relief(k=20, m=10), margin=0)
+
+--------------------------------------
+Learning with feature subset selection
+--------------------------------------
+
+.. autoclass:: Orange.feature.selection.FilteredLearner(base_learner, filter=FilterAboveThreshold(), name=filtered)
+   :members:
+
+.. autoclass:: Orange.feature.selection.FilteredClassifier
+   :members:
+
+
+--------------------------------------
+Class wrappers for selection functions
+--------------------------------------
+
+.. autoclass:: Orange.feature.selection.FilterAboveThreshold(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), threshold=0.0)
+   :members:
+
+.. autoclass:: Orange.feature.selection.FilterBestN(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), n=5)
+   :members:
+
+.. autoclass:: Orange.feature.selection.FilterRelief(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), margin=0)
+   :members:
+
+
 
 .. rubric:: Examples
 

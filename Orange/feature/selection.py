@@ -5,32 +5,30 @@ import Orange.core as orange
 from Orange.feature.scoring import score_all
 
 
-def best_n(scores, N):
-    """Return the best N features (without scores) from the list returned
-    by :obj:`Orange.feature.scoring.score_all`.
+def best_n(scores, n):
+    """Return the best features (without scores) from the list
 
     :param scores: a list such as the one returned by
-      :obj:`Orange.feature.scoring.score_all`
+      :obj:`~Orange.feature.scoring.score_all`
     :type scores: list
-    :param N: number of features to select.
-    :type N: int
+    :param n: number of features to select.
+    :type n: int
     :rtype: :obj:`list`
 
     """
-    return [x[0] for x in sorted(scores)[:N]]
+    return [x[0] for x in sorted(scores)[:n]]
 
 bestNAtts = best_n
 
 
 def above_threshold(scores, threshold=0.0):
-    """Return features (without scores) from the list returned by
-    :obj:`Orange.feature.scoring.score_all` with score above or
+    """Return features (without scores) with scores above or
     equal to a specified threshold.
 
     :param scores: a list such as one returned by
-      :obj:`Orange.feature.scoring.score_all`
+      :obj:`~Orange.feature.scoring.score_all`
     :type scores: list
-    :param threshold: threshold for selection. Defaults to 0.
+    :param threshold: threshold for selection
     :type threshold: float
     :rtype: :obj:`list`
 
@@ -41,21 +39,20 @@ def above_threshold(scores, threshold=0.0):
 attsAboveThreshold = above_threshold
 
 
-def select_best_n(data, scores, N):
+def select_best_n(data, scores, n):
     """Construct and return a new data table that includes a
-    class and only N best features from a list scores.
+    class and only the best features from a list scores.
 
-    :param data: an example table
-    :type data: Orange.data.table
+    :param data: a data table
+    :type data: :obj:`Orange.data.Table`
     :param scores: a list such as the one returned by
-      :obj:`Orange.feature.scoring.score_all`
+      :obj:`~Orange.feature.scoring.score_all`
     :type scores: list
-    :param N: number of features to select
-    :type N: int
-    :rtype: new data table
-
+    :param n: number of features to select
+    :type n: int
+    :rtype: :obj:`Orange.data.Table`
     """
-    return data.select(best_n(scores, N) + [data.domain.classVar.name])
+    return data.select(best_n(scores, n) + [data.domain.classVar.name])
 
 selectBestNAtts = select_best_n
 
@@ -63,18 +60,17 @@ selectBestNAtts = select_best_n
 def select_above_threshold(data, scores, threshold=0.0):
     """Construct and return a new data table that includes a class and
     features from the list returned by
-    :obj:`Orange.feature.scoring.score_all` that have the score above or
+    :obj:`~Orange.feature.scoring.score_all` that have the score above or
     equal to a specified threshold.
 
-    :param data: an example table
-    :type data: Orange.data.table
+    :param data: a data table
+    :type data: :obj:`Orange.data.Table`
     :param scores: a list such as the one returned by
-      :obj:`Orange.feature.scoring.score_all`
+      :obj:`~Orange.feature.scoring.score_all`
     :type scores: list
-    :param threshold: threshold for selection. Defaults to 0.
+    :param threshold: threshold for selection
     :type threshold: float
-    :rtype: new data table
-
+    :rtype: :obj:`Orange.data.Table`
     """
     return data.select(above_threshold(scores, threshold) + \
                        [data.domain.classVar.name])
@@ -89,11 +85,11 @@ def select_relief(data, measure=orange.MeasureAttribute_relief(k=20, m=50), marg
     i.e., removal of features may change the scores of other remaining
     features. The score is thus recomputed in each iteration.
 
-    :param data: an data table
-    :type data: Orange.data.table
-    :param measure: a feature scorer (derived from
-      :obj:`Orange.feature.scoring.Measure`)
-    :param margin: margin for removal. Defaults to 0.
+    :param data: a data table
+    :type data: :obj:`Orange.data.Table`
+    :param measure: a feature scorer
+    :type measure: :obj:`Orange.feature.scoring.Score`
+    :param margin: margin for removal
     :type margin: float
 
     """
@@ -107,18 +103,16 @@ filterRelieff = select_relief
 
 
 class FilterAboveThreshold(object):
-    """Store filter parameters that are later called with the data to
-    return the data table with only selected features.
+    """A class wrapper around :obj:`select_above_threshold`; the
+    constructor stores the filter parameters that are applied when the
+    function is called.
 
-    This class uses :obj:`select_above_threshold`.
-
-    :param measure: an attribute measure (derived from
-      :obj:`Orange.feature.scoring.Measure`). Defaults to
-      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.
-    :param threshold: score threshold for attribute selection. Defaults to 0.
+    :param measure: a feature scorer
+    :type measure: :obj:`Orange.feature.scoring.Score`
+    :param threshold: threshold for selection. Defaults to 0.
     :type threshold: float
 
-    Some examples of how to use this class are::
+    Some examples of how to use this class::
 
         filter = Orange.feature.selection.FilterAboveThreshold(threshold=.15)
         new_data = filter(data)
@@ -131,7 +125,6 @@ class FilterAboveThreshold(object):
     def __new__(cls, data=None,
                 measure=orange.MeasureAttribute_relief(k=20, m=50),
                 threshold=0.0):
-
         if data is None:
             self = object.__new__(cls)
             return self
@@ -141,15 +134,15 @@ class FilterAboveThreshold(object):
 
     def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50), \
                  threshold=0.0):
-
         self.measure = measure
         self.threshold = threshold
 
     def __call__(self, data):
-        """Return data table features with scores above given threshold.
+        """Return data table features that have scores above given
+        threshold.
 
         :param data: data table
-        :type data: Orange.data.table
+        :type data: Orange.data.Table
 
         """
         ma = score_all(data, self.measure)
@@ -160,13 +153,13 @@ FilterAttsAboveThresh_Class = FilterAboveThreshold
 
 
 class FilterBestN(object):
-    """Store filter parameters that are later called with the data to
-    return the data table with only selected features.
+    """A class wrapper around :obj:`select_best_n`; the
+    constructor stores the filter parameters that are applied when the
+    function is called.
 
-    :param measure: an attribute measure (derived from
-      :obj:`Orange.feature.scoring.Measure`). Defaults to
-      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.
-    :param n: number of best features to return. Defaults to 5.
+    :param measure: a feature scorer
+    :type measure: :obj:`Orange.feature.scoring.Score`
+    :param n: number of features to select
     :type n: int
 
     """
@@ -196,13 +189,13 @@ FilterBestNAtts_Class = FilterBestN
 
 
 class FilterRelief(object):
-    """Store filter parameters that are later called with the data to
-    return the data table with only selected features.
+    """A class wrapper around :obj:`select_best_n`; the
+    constructor stores the filter parameters that are applied when the
+    function is called.
 
-    :param measure: an attribute measure (derived from
-      :obj:`Orange.feature.scoring.Measure`). Defaults to
-      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.
-    :param margin: margin for Relief scoring. Defaults to 0.
+    :param measure: a feature scorer
+    :type measure: :obj:`Orange.feature.scoring.Score`
+    :param margin: margin for Relief scoring
     :type margin: float
 
     """
@@ -232,17 +225,8 @@ FilterRelief_Class = FilterRelief
 
 
 class FilteredLearner(object):
-    """Return the learner that wraps :obj:`Orange.classification.baseLearner` 
-    and a data selection method.
-
-    When calling the learner with a data table, data is first filtered and
-    then passed to :obj:`Orange.classification.baseLearner`. This comes handy
-    when one wants to test the schema of feature-subset-selection-and-learning
-    by some repetitive evaluation method, e.g., cross validation.
-
-    :param filter: defatuls to
-      :obj:`Orange.feature.selection.FilterAboveThreshold`
-    :type filter: Orange.feature.selection.FilterAboveThreshold
+    """A learner that applies the given features selection method and
+    then calls the base learner. This learner is needed to properly cross-validate a combination of feature selection and learning.
 
     Here is an example of how to build a wrapper around naive Bayesian learner
     and use it on a data set::
