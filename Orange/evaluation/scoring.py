@@ -11,6 +11,7 @@ try:
     import matplotlib
     HAS_MATPLOTLIB = True
 except ImportError:
+    matplotlib = None
     HAS_MATPLOTLIB = False
 
 #### Private stuff
@@ -601,22 +602,6 @@ def IS(res, apriori=None, report_se = False, **argkw):
             foldN[tex.iteration_number] += tex.weight
 
     return statistics_by_folds(ISs, foldN, report_se, False)
-
-
-def Friedman(res, statistics, **argkw):
-    sums = None
-    for ri in split_by_iterations(res):
-        ranks = statc.rankdata(apply(statistics, (ri,), argkw))
-        if sums:
-            sums = sums and [ranks[i]+sums[i] for i in range(k)] # TODO: What is k?
-        else:
-            sums = ranks
-            k = len(sums)
-    N = res.number_of_iterations
-    k = len(sums)
-    T = sum([x*x for x in sums])
-    F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
-    return F, statc.chisqprob(F, k-1)
     
 
 def Wilcoxon(res, statistics, **argkw):
@@ -658,7 +643,7 @@ def confusion_matrices(test_results, class_index=-1,
 
     :rtype: list of :obj:`ConfusionMatrix`
     """
-    tfpns = [ConfusionMatrix() for i in range(test_results.number_of_learners)]
+    tfpns = [ConfusionMatrix() for _ in range(test_results.number_of_learners)]
     
     if class_index<0:
         numberOfClasses = len(test_results.class_values)
@@ -1146,7 +1131,7 @@ def frange(start, end=None, inc=None):
 @deprecated_keywords({"ROCcurves": "roc_curves"})
 def TC_vertical_average_ROC(roc_curves, samples = 10):
     def INTERPOLATE((P1x, P1y, P1fscore), (P2x, P2y, P2fscore), X):
-        if (P1x == P2x) or ((X > P1x) and (X > P2x)) or ((X < P1x) and (X < P2x)):
+        if (P1x == P2x) or P1x < X > P2x or P1x > X < P2x:
             raise ValueError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
         dx = float(P2x) - float(P1x)
         dy = float(P2y) - float(P1y)
@@ -1262,7 +1247,7 @@ def TC_threshold_average_ROC(roc_curves, samples = 10):
         stdevV.append(TPstdV)
         stdevH.append(TPstdH)
 
-    return (average, stdevV, stdevH)
+    return average, stdevV, stdevH
 
 ## Calibration Curve
 ## returns an array of (curve, yesClassPredictions, noClassPredictions) elements, where:
@@ -1445,10 +1430,11 @@ class AucClass(object):
         sum_aucs = [0.] * res.number_of_learners
         usefulClassPairs = 0.
 
-        if method in [0, 2]:
+        prob = None
+        if method in [self.ByWeightedPairs, self.WeightedOneAgainstAll]:
             prob = class_probabilities_from_res(res)
 
-        if method <= 1:
+        if method in [self.ByWeightedPairs, self.ByPairs]:
             for classIndex1 in range(numberOfClasses):
                 for classIndex2 in range(classIndex1):
                     subsum_aucs = self.compute_for_multiple_folds(
@@ -1739,9 +1725,9 @@ def Friedman(res, stat=CA):
         ranks = [k-x+1 for x in statc.rankdata(r)]
         if stat==Brier_score: # reverse ranks for Brier_score (lower better)
             ranks = [k+1-x for x in ranks]
-        sums = [ranks[i]+sums[i] for i in range(k)]
+        sums = map(add, ranks, sums)
 
-    T = sum([x*x for x in sums])
+    T = sum(x*x for x in sums)
     sums = [x/N for x in sums]
 
     F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
