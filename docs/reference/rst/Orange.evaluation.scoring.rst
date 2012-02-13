@@ -49,81 +49,83 @@ different classes are called discriminatory scores.
 
 .. autofunction:: Brier_score
 
-.. autofunction:: AUC
+.. autosingleton::AUC
+.. autoclass:: AucClass
+    :members:
 
-    .. attribute:: AUC.ByWeightedPairs (or 0)
+*AUC.ByWeightedPairs (or 0)*
 
-        Computes AUC for each pair of classes (ignoring instances of all other
-        classes) and averages the results, weighting them by the number of
-        pairs of instances from these two classes (e.g. by the product of
-        probabilities of the two classes). AUC computed in this way still
-        behaves as concordance index, e.g., gives the probability that two
-        randomly chosen instances from different classes will be correctly
-        recognized (this is of course true only if the classifier knows
-        from which two classes the instances came).
+    Computes AUC for each pair of classes (ignoring instances of all other
+    classes) and averages the results, weighting them by the number of
+    pairs of instances from these two classes (e.g. by the product of
+    probabilities of the two classes). AUC computed in this way still
+    behaves as concordance index, e.g., gives the probability that two
+    randomly chosen instances from different classes will be correctly
+    recognized (this is of course true only if the classifier knows
+    from which two classes the instances came).
 
-    .. attribute:: AUC.ByPairs (or 1)
+*AUC.ByPairs (or 1)*
 
-        Similar as above, except that the average over class pairs is not
-        weighted. This AUC is, like the binary, independent of class
-        distributions, but it is not related to concordance index any more.
+    Similar as above, except that the average over class pairs is not
+    weighted. This AUC is, like the binary, independent of class
+    distributions, but it is not related to concordance index any more.
 
-    .. attribute:: AUC.WeightedOneAgainstAll (or 2)
+*AUC.WeightedOneAgainstAll (or 2)*
 
-        For each class, it computes AUC for this class against all others (that
-        is, treating other classes as one class). The AUCs are then averaged by
-        the class probabilities. This is related to concordance index in which
-        we test the classifier's (average) capability for distinguishing the
-        instances from a specified class from those that come from other classes.
-        Unlike the binary AUC, the measure is not independent of class
-        distributions.
+    For each class, it computes AUC for this class against all others (that
+    is, treating other classes as one class). The AUCs are then averaged by
+    the class probabilities. This is related to concordance index in which
+    we test the classifier's (average) capability for distinguishing the
+    instances from a specified class from those that come from other classes.
+    Unlike the binary AUC, the measure is not independent of class
+    distributions.
 
-    .. attribute:: AUC.OneAgainstAll (or 3)
+*AUC.OneAgainstAll (or 3)*
 
-        As above, except that the average is not weighted.
+    As above, except that the average is not weighted.
 
-   In case of multiple folds (for instance if the data comes from cross
-   validation), the computation goes like this. When computing the partial
-   AUCs for individual pairs of classes or singled-out classes, AUC is
-   computed for each fold separately and then averaged (ignoring the number
-   of instances in each fold, it's just a simple average). However, if a
-   certain fold doesn't contain any instances of a certain class (from the
-   pair), the partial AUC is computed treating the results as if they came
-   from a single-fold. This is not really correct since the class
-   probabilities from different folds are not necessarily comparable,
-   yet this will most often occur in a leave-one-out experiments,
-   comparability shouldn't be a problem.
+In case of multiple folds (for instance if the data comes from cross
+validation), the computation goes like this. When computing the partial
+AUCs for individual pairs of classes or singled-out classes, AUC is
+computed for each fold separately and then averaged (ignoring the number
+of instances in each fold, it's just a simple average). However, if a
+certain fold doesn't contain any instances of a certain class (from the
+pair), the partial AUC is computed treating the results as if they came
+from a single-fold. This is not really correct since the class
+probabilities from different folds are not necessarily comparable,
+yet this will most often occur in a leave-one-out experiments,
+comparability shouldn't be a problem.
 
-   Computing and printing out the AUC's looks just like printing out
-   classification accuracies (except that we call AUC instead of
-   CA, of course)::
+Computing and printing out the AUC's looks just like printing out
+classification accuracies (except that we call AUC instead of
+CA, of course)::
 
-       AUCs = Orange.evaluation.scoring.AUC(res)
-       for l in range(len(learners)):
-           print "%10s: %5.3f" % (learners[l].name, AUCs[l])
+   AUCs = Orange.evaluation.scoring.AUC(res)
+   for l in range(len(learners)):
+       print "%10s: %5.3f" % (learners[l].name, AUCs[l])
 
-   For vehicle, you can run exactly this same code; it will compute AUCs
-   for all pairs of classes and return the average weighted by probabilities
-   of pairs. Or, you can specify the averaging method yourself, like this::
+For vehicle, you can run exactly this same code; it will compute AUCs
+for all pairs of classes and return the average weighted by probabilities
+of pairs. Or, you can specify the averaging method yourself, like this::
 
-       AUCs = Orange.evaluation.scoring.AUC(resVeh, Orange.evaluation.scoring.AUC.WeightedOneAgainstAll)
+   AUCs = Orange.evaluation.scoring.AUC(resVeh, Orange.evaluation.scoring.AUC.WeightedOneAgainstAll)
 
-   The following snippet tries out all four. (We don't claim that this is
-   how the function needs to be used; it's better to stay with the default.)::
+The following snippet tries out all four. (We don't claim that this is
+how the function needs to be used; it's better to stay with the default.)::
 
-       methods = ["by pairs, weighted", "by pairs", "one vs. all, weighted", "one vs. all"]
-       print " " *25 + "  \tbayes\ttree\tmajority"
-       for i in range(4):
-           AUCs = Orange.evaluation.scoring.AUC(resVeh, i)
-           print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i], ) + tuple(AUCs))
+   methods = ["by pairs, weighted", "by pairs", "one vs. all, weighted", "one vs. all"]
+   print " " *25 + "  \tbayes\ttree\tmajority"
+   for i in range(4):
+       AUCs = Orange.evaluation.scoring.AUC(resVeh, i)
+       print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i], ) + tuple(AUCs))
 
-   As you can see from the output::
+As you can see from the output::
 
-                                   bayes   tree    majority
-              by pairs, weighted:  0.789   0.871   0.500
-                        by pairs:  0.791   0.872   0.500
-           one vs. all, weighted:  0.783   0.800   0.500
-                     one vs. all:  0.783   0.800   0.500
+                               bayes   tree    majority
+          by pairs, weighted:  0.789   0.871   0.500
+                    by pairs:  0.791   0.872   0.500
+       one vs. all, weighted:  0.783   0.800   0.500
+                 one vs. all:  0.783   0.800   0.500
 
 .. autofunction:: AUC_single
 
