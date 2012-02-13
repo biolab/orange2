@@ -560,11 +560,10 @@ class Evaluation(object):
         the second dataset.
 
         :param learners: list of learners to be tested
-        :param examples: a dataset used for evaluation
-        :param folds: number of folds for cross-validation
+        :param learn_set: a dataset used for learning
+        :param test_set: a dataset used for evaluation
         :param proportions: proportions of train data to be used
         :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that is called after each classifier is computed.
         :return: list of :obj:`ExperimentResults`
         """
         learn_set, learn_weight = demangle_examples(learn_set)
@@ -665,7 +664,8 @@ class Evaluation(object):
                 # Hide actual class to prevent cheating
                 ex2 = Orange.data.Instance(example)
                 if ex2.domain.class_var: ex2.setclass("?")
-                if ex2.domain.class_vars: ex2.set_classes(["?" for cv in ex2.domain.class_vars])
+                if ex2.domain.class_vars: ex2.set_classes(["?" for _ in ex2
+                .domain.class_vars])
                 result = classifier(ex2, Orange.core.GetBoth)
                 results.append((e, c, result))
         return results
@@ -688,9 +688,8 @@ class Evaluation(object):
 
 
     def encode_PP(self, pps):
-        pps=""
         for pp in pps:
-            objname = getobjectname(pp[1], "")
+            objname = getobjectname(pp[1])
             if len(objname):
                 pps+="_"+objname
             else:
