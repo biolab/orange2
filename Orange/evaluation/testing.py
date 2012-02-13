@@ -456,6 +456,8 @@ class Evaluation(object):
                                         domain=examples.domain,
                                         test_type = test_type,
                                         weights=weight)
+        if store_examples:
+            test_results.examples = []
         test_results.classifiers = []
         offset=0
         for time in xrange(times):
@@ -465,6 +467,8 @@ class Evaluation(object):
             classifiers, results = self._learn_and_test_on_test_data(learners, learn_set, weight, test_set, preprocessors)
             if store_classifiers:
                 test_results.classifiers.append(classifiers)
+            if store_examples:
+                test_results.examples.append(learn_set)
 
             test_results.results.extend(test_results.create_tested_example(time, example)
                                         for i, example in enumerate(test_set))
@@ -586,7 +590,7 @@ class Evaluation(object):
                                             for i, example in enumerate(test_set))
 
                 learn_examples = learn_set.selectref(indices(learn_set, p), 0)
-                classifiers, results = self._learn_and_test_on_test_data(learners, learn_examples, learn_weight, test_set)
+                classifiers, results = self._learn_and_test_on_test_data(learners, learn_examples, learn_weight, test_set, preprocessors=preprocessors)
 
                 for example, classifier, result in results:
                     test_results.results[offset+example].set_result(classifier, *result)
