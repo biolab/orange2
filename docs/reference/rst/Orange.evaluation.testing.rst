@@ -5,14 +5,13 @@
 Sampling and Testing (``testing``)
 ==================================
 
-This module includes functions for data sampling and splitting, and for
-testing learners. It implements cross-validation, leave-one out, random
-sampling and learning curves. All functions return their results in the same
-format - an instance of :obj:`ExperimentResults`, described at the end of the
-page, or, in case of learning curves, a list of :obj:`ExperimentResults`. This
-object(s) can be passed to statistical function for model evaluation
-(classification accuracy, Brier score, ROC analysis...) available in
-module :obj:`Orange.evaluation.scoring`.
+There are many ways to test prediction models on data. Orange includes
+methods for cross-validation, leave-one out, random sampling and learning
+curves. This methods handle learning of models and prediction of new
+examples; they return :obj:`ExperimentResults` which can be passed to
+:obj:`~Orange.evaluation.scoring` functions to evaluate model.
+
+
 
 Your scripts will thus basically conduct experiments using methods of
 :obj:`Evaluation` class and functions in  :obj:`Orange.evaluation.testing`,
@@ -21,12 +20,6 @@ covered on this page and then evaluate the results by functions in
 statistical measures of the quality of models,
 description of :obj:`TestedExample` and :obj:`ExperimentResults` are
 available at the end of this page.
-
-.. note:: Orange has been "de-randomized". Running the same script twice
-    will generally give the same results, unless special care is taken to
-    randomize it. This is opposed to the previous versions where special
-    care needed to be taken to make experiments repeatable.
-    See argument obj:`random_generator` for the explanation.
 
 Example scripts in this section suppose that the data is loaded and a
 list of learning algorithms is prepared.
