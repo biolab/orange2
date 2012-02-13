@@ -95,9 +95,7 @@ A few representative lines of the output are::
 
 """
 
-
-from math import *
-from numpy import *
+import numpy
 from numpy.linalg import svd
 
 import Orange.core
@@ -123,12 +121,12 @@ def _mycompare((a,aa),(b,bb)):
             
 class PivotMDS(object):
     def __init__(self, distances=None, pivots=50, dim=2, **kwargs):
-        self.dst = array([m for m in distances])
+        self.dst = numpy.array([m for m in distances])
         self.n = len(self.dst)
 
         if type(pivots) == type(1):
             self.k = pivots
-            self.pivots = random.permutation(len(self.dst))[:pivots]
+            self.pivots = numpy.random.permutation(len(self.dst))[:pivots]
             #self.pivots.sort()
         elif type(pivots) == type([]):
             self.pivots = pivots
@@ -152,22 +150,22 @@ class PivotMDS(object):
         d = self.dst[[self.pivots]].T
         C = d**2
         # double-center d
-        cavg = sum(d, axis=0)/(self.k+0.0)      # column sum
-        ravg = sum(d, axis=1)/(self.n+0.0)    # row sum
-        tavg = sum(cavg)/(self.n+0.0)   # total sum
+        cavg = numpy.sum(d, axis=0)/(self.k+0.0)      # column sum
+        ravg = numpy.sum(d, axis=1)/(self.n+0.0)    # row sum
+        tavg = numpy.sum(cavg)/(self.n+0.0)   # total sum
         # TODO: optimize
         for i in xrange(self.n):
             for j in xrange(self.k):
                 C[i,j] += -ravg[i] - cavg[j]
         
         C = -0.5 * (C + tavg)
-        w,v = linalg.eig(dot(C.T, C))
+        w,v = numpy.linalg.eig(numpy.dot(C.T, C))
         tmp = zip([float(val) for val in w], range(self.n))
         tmp.sort()
         w1, w2 = tmp[-1][0], tmp[-2][0]
         v1, v2 = v[:, tmp[-1][1]], v[:, tmp[-2][1]]
-        x = dot(C, v1)
-        y = dot(C, v2)
+        x = numpy.dot(C, v1)
+        y = numpy.dot(C, v2)
         return x, y
         
         
@@ -315,7 +313,7 @@ class MDS(object):
         
         """
         # Torgerson's initial approximation
-        O = array([m for m in self.distances])
+        O = numpy.array([m for m in self.distances])
         
 ##        #B = matrixmultiply(O,O)
 ##        # bug!? B = O**2
@@ -331,8 +329,8 @@ class MDS(object):
 ##        B = -0.5*(B+tavg)
 
         # B = double-center O**2 !!!
-        J = identity(self.n) - (1/float(self.n))
-        B = -0.5 * dot(dot(J, O**2), J)
+        J = numpy.identity(self.n) - (1/numpy.float(self.n))
+        B = -0.5 * numpy.dot(numpy.dot(J, O**2), J)
         
         # SVD-solve B = ULU'
         #(U,L,V) = singular_value_decomposition(B)
@@ -340,13 +338,13 @@ class MDS(object):
         # X = U(L^0.5)
         # # self.X = matrixmultiply(U,identity(self.n)*sqrt(L))
         # X is n-dimensional, we take the two dimensions with the largest singular values
-        idx = argsort(L)[-self.dim:].tolist()
+        idx = numpy.argsort(L)[-self.dim:].tolist()
         idx.reverse()
         
-        Lt = take(L,idx)   # take those singular values
-        Ut = take(U,idx,axis=1) # take those columns that are enabled
-        Dt = identity(self.dim)*sqrt(Lt)  # make a diagonal matrix, with squarooted values
-        self.points = Orange.core.FloatListList(dot(Ut,Dt))
+        Lt = numpy.take(L,idx)   # take those singular values
+        Ut = numpy.take(U,idx,axis=1) # take those columns that are enabled
+        Dt = numpy.identity(self.dim)*numpy.sqrt(Lt)  # make a diagonal matrix, with squarooted values
+        self.points = Orange.core.FloatListList(numpy.dot(Ut,Dt))
         self.freshD = 0
         
 #        D = identity(self.n)*sqrt(L)  # make a diagonal matrix, with squarooted values
@@ -416,7 +414,7 @@ class MDS(object):
         sum = 0.0
         for i in d:
             sum += i[2]*i[2]*i[1]
-        f = sqrt(distnorm/max(sum,1e-6))
+        f = numpy.sqrt(distnorm/numpy.max(sum,1e-6))
         # transform O
         k = 0
         for i in d:
