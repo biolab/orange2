@@ -44,7 +44,7 @@ def split_by_iterations(res):
                 1, res.classifier_names, res.class_values,
                 res.weights, classifiers=res.classifiers,
                 loaded=res.loaded, test_type=res.test_type, labels=res.labels)
-            for i in range(res.number_of_iterations)]
+            for _ in range(res.number_of_iterations)]
     for te in res.results:
         ress[te.iteration_number].results.append(te)
     return ress
@@ -187,7 +187,7 @@ def regression_error(res, **argkw):
     """regression_error(res) -> regression error (default: MSE)"""
     if argkw.get("SE", 0) and res.number_of_iterations > 1:
         # computes the scores for each iteration, then averages
-        scores = [[0.0] * res.number_of_iterations for i in range(res.number_of_learners)]
+        scores = [[0.0] * res.number_of_iterations for _ in range(res.number_of_learners)]
         if argkw.get("norm-abs", 0) or argkw.get("norm-sqr", 0):
             norm = [0.0] * res.number_of_iterations
 
@@ -399,7 +399,8 @@ class CAClass(object):
             return ca
 
     def from_confusion_matrix_list(self, confusion_matrices, report_se):
-        return map(self.from_confusion_matrix, confusion_matrices) # TODO: report_se
+        return [self.from_confusion_matrix(cm, report_se=report_se)
+                for cm in confusion_matrices]
 
     def from_classification_results(self, test_results, report_se, ignore_results):
         CAs = [0.0]*test_results.number_of_learners
@@ -417,7 +418,7 @@ class CAClass(object):
             return ca
 
     def from_crossvalidation_results(self, test_results, report_se, ignore_weights):
-        CAsByFold = [[0.0]*test_results.number_of_iterations for i in range(test_results.number_of_learners)]
+        CAsByFold = [[0.0]*test_results.number_of_iterations for _ in range(test_results.number_of_learners)]
         foldN = [0.0]*test_results.number_of_iterations
 
         for tex in test_results.results:
@@ -460,7 +461,7 @@ def AP(res, report_se = False, ignore_weights=False, **argkw):
         check_non_zero(totweight)
         return [AP/totweight for AP in APs]
 
-    APsByFold = [[0.0]*res.number_of_learners for i in range(res.number_of_iterations)]
+    APsByFold = [[0.0]*res.number_of_learners for _ in range(res.number_of_iterations)]
     foldN = [0.0] * res.number_of_iterations
     if ignore_weights or not res.weights:
         for tex in res.results:
@@ -535,8 +536,8 @@ def BSS(res, **argkw):
     return [1-x/2 for x in apply(Brier_score, (res, ), argkw)]
 
 def IS_ex(Pc, P):
-    "Pc aposterior probability, P aprior"
-    if (Pc>=P):
+    """Pc aposterior probability, P aprior"""
+    if Pc>=P:
         return -log2(P)+log2(Pc)
     else:
         return -(-log2(1-P)+log2(1-Pc))
@@ -574,7 +575,7 @@ def IS(res, apriori=None, report_se = False, **argkw):
             return [IS/totweight for IS in ISs]
 
         
-    ISs = [[0.0]*res.number_of_iterations for i in range(res.number_of_learners)]
+    ISs = [[0.0]*res.number_of_iterations for _ in range(res.number_of_learners)]
     foldN = [0.] * res.number_of_iterations
 
     # compute info scores for each fold    
@@ -599,7 +600,7 @@ def Friedman(res, statistics, **argkw):
     for ri in split_by_iterations(res):
         ranks = statc.rankdata(apply(statistics, (ri,), argkw))
         if sums:
-            sums = sums and [ranks[i]+sums[i] for i in range(k)]
+            sums = sums and [ranks[i]+sums[i] for i in range(k)] # TODO: What is k?
         else:
             sums = ranks
             k = len(sums)
@@ -613,8 +614,8 @@ def Friedman(res, statistics, **argkw):
 def Wilcoxon(res, statistics, **argkw):
     res1, res2 = [], []
     for ri in split_by_iterations(res):
-        stats = apply(statistics, (ri,), argkw)
-        if (len(stats) != 2):
+        stats = statistics(ri, **argkw)
+        if len(stats) != 2:
             raise TypeError, "Wilcoxon compares two classifiers, no more, no less"
         res1.append(stats[0])
         res2.append(stats[1])
@@ -663,7 +664,7 @@ def confusion_matrices(test_results, class_index=-1,
                         if predClass < numberOfClasses:
                             cm[li][trueClass][predClass] += 1
             else:
-                for tex in enumerate(test_results.results):
+                for tex in test_results.results:
                     trueClass = int(tex.actual_class)
                     for li, pred in tex.classes:
                         predClass = int(pred)
@@ -1011,7 +1012,7 @@ def compute_ROC(res, class_index=-1):
 ## TC's implementation of algorithms, taken from:
 ## T Fawcett: ROC Graphs: Notes and Practical Considerations for Data Mining Researchers, submitted to KDD Journal. 
 def ROC_slope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
-    if (P1x == P2x):
+    if P1x == P2x:
         return 1e300
     return (P1y - P2y) / (P1x - P2x)
 
@@ -1622,7 +1623,7 @@ def AUC_matrix(res, ignore_weights=False):
     else:
         iterations, all_ite = [res], None
     
-    aucs = [[[] for i in range(numberOfClasses)] for i in range(number_of_learners)]
+    aucs = [[[] for _ in range(numberOfClasses)] for _ in range(number_of_learners)]
     prob = class_probabilities_from_res(res)
         
     for classIndex1 in range(numberOfClasses):
@@ -1784,7 +1785,7 @@ def plot_learning_curve(file, all_results, proportions, legend, no_confidence=0)
     file.write("set yrange [0:1]\n")
     file.write("set xrange [%f:%f]\n" % (proportions[0], proportions[-1]))
     file.write("set multiplot\n\n")
-    CAs = [CA_dev(x) for x in all_results]
+    CAs = [CA(x, report_se=True) for x in all_results]
 
     file.write("plot \\\n")
     for i in range(len(legend)-1):
@@ -1812,7 +1813,7 @@ def plot_learning_curve(file, all_results, proportions, legend, no_confidence=0)
 def print_single_ROC_curve_coordinates(file, curve):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
@@ -1829,7 +1830,7 @@ def plot_ROC_learners(file, curves, learners):
 def plot_ROC(file, curves, legend):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
@@ -1865,7 +1866,7 @@ def plot_McNemar_curve(file, all_results, proportions, legend, reference=-1):
         
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
         
@@ -1899,12 +1900,12 @@ def learning_curve_learners_to_PiCTeX(file, all_results, proportions, **options)
 def learning_curve_to_PiCTeX(file, all_results, proportions, **options):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
     nexamples=len(all_results[0].results)
-    CAs = [CA_dev(x) for x in all_results]
+    CAs = [CA(x, report_se=True) for x in all_results]
 
     graphsize=float(options.get("graphsize", 10.0)) #cm
     difprop=proportions[-1]-proportions[0]
@@ -1979,7 +1980,7 @@ def legend_learners_to_PiCTeX(file, learners, **options):
 def legend_to_PiCTeX(file, legend, **options):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
@@ -2129,7 +2130,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         from matplotlib.figure import Figure
         from matplotlib.patches import Polygon
         from matplotlib.backends.backend_agg import FigureCanvasAgg
-    except:
+    except ImportError:
         import sys
         print >> sys.stderr, "Function requires matplotlib. Please install it."
         return
@@ -2145,9 +2146,9 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     sortidx = nth(tempsort, 1)
     nnames = [ names[x] for x in sortidx ]
     
-    if lowv == None:
+    if lowv is None:
         lowv = min(1, int(math.floor(min(ssums))))
-    if highv == None:
+    if highv is None:
         highv = max(len(avranks), int(math.ceil(max(ssums))))
 
     cline = 0.4
@@ -2169,7 +2170,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
 
     distanceh = 0.25
 
-    if cd and cdmethod == None:
+    if cd and cdmethod is None:
     
         #get pairs of non significant methods
 
@@ -2216,9 +2217,8 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     def wfl(l): 
         return [ a*wf for a in l ]
 
-    """
-    Upper left corner is (0,0).
-    """
+
+    # Upper left corner is (0,0).
 
     ax.plot([0,1], [0,1], c="w")
     ax.set_xlim(0, 1)
@@ -2261,7 +2261,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace+scalewidth+0.1, chei)], linewidth=0.7)
         text(textspace+scalewidth+0.2, chei, nnames[i], ha="left", va="center")
 
-    if cd and cdmethod == None:
+    if cd and cdmethod is None:
 
         #upper scale
         if not reverse:
@@ -2340,12 +2340,12 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
             union = 0.0
             for real, pred in zip(labels, aclass):
                 if real and pred:
-                    intersection = intersection+1
+                    intersection += 1
                 if real or pred:
-                    union = union+1
+                    union += 1
 
-            if union != 0:
-                accuracies[i] = accuracies[i] + intersection/union
+            if union:
+                accuracies[i] += intersection / union
             
     return [math.pow(x/example_num,forgiveness_rate) for x in accuracies]
 
@@ -2368,11 +2368,11 @@ def mlc_precision(res):
             predicted = 0.0
             for real, pred in zip(labels, aclass):
                 if real and pred:
-                    intersection = intersection+1
+                    intersection += 1
                 if real:
-                    predicted = predicted + 1
-            if predicted <> 0:
-                precisions[i] = precisions[i] + intersection/predicted
+                    predicted += 1
+            if predicted:
+                precisions[i] += intersection / predicted
             
     return [x/example_num for x in precisions]
 
@@ -2395,11 +2395,11 @@ def mlc_recall(res):
             actual = 0.0
             for real, pred in zip(labels, aclass):
                 if real and pred:
-                    intersection = intersection+1
+                    intersection += 1
                 if pred:
-                    actual = actual + 1
-            if actual <> 0:
-                recalls[i] = recalls[i] + intersection/actual
+                    actual += 1
+            if actual:
+                recalls[i] += intersection / actual
             
     return [x/example_num for x in recalls]
 
