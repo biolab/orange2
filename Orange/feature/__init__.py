@@ -3,11 +3,7 @@ Feature scoring, selection, discretization, continuzation, imputation,
 construction and feature interaction analysis.
 """
 
-import scoring
-import selection
-import discretization
-import continuization
-import imputation
+__all__ = ["Descriptor", "Discrete", "Continuous", "Python", "String", "Type"]
 
 from Orange.core import Variable as Descriptor
 from Orange.core import EnumVariable as Discrete
