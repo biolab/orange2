@@ -3,7 +3,7 @@ trees. It is faster than :obj:`TreeLearner` at the expense of flexibility.
 It uses gain ratio for classification and MSE for regression.
 
 :obj:`SimpleTreeLearner` was developed for speeding up the construction
-of random forests, but can also be used as a standalone tree.
+of random forests, but can also be used as a standalone tree learner.
 
 .. class:: SimpleTreeLearner
 
