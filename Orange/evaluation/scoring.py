@@ -7,6 +7,12 @@ from Orange import statc, corn
 from Orange.misc import deprecated_keywords, deprecated_function_name, deprecation_warning
 from Orange.evaluation import testing
 
+try:
+    import matplotlib
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+
 #### Private stuff
 
 def log2(x):
@@ -188,6 +194,7 @@ def regression_error(res, **argkw):
     if argkw.get("SE", 0) and res.number_of_iterations > 1:
         # computes the scores for each iteration, then averages
         scores = [[0.0] * res.number_of_iterations for _ in range(res.number_of_learners)]
+        norm=None
         if argkw.get("norm-abs", 0) or argkw.get("norm-sqr", 0):
             norm = [0.0] * res.number_of_iterations
 
@@ -254,6 +261,7 @@ def regression_error(res, **argkw):
             totweight = gettotsize(res)
         else:
             # UNFINISHED
+            MSEs = [0.]*res.number_of_learners
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac = float(tex.actual_class),
                            tw = tex.weight:
@@ -313,7 +321,7 @@ def R2(res, **argkw):
 def MSE_old(res, **argkw):
     """MSE(res) -> mean-squared error"""
     if argkw.get("SE", 0) and res.number_of_iterations > 1:
-        MSEs = [[0.0] * res.number_of_iterations for i in range(res.number_of_learners)]
+        MSEs = [[0.0] * res.number_of_iterations for _ in range(res.number_of_learners)]
         nIter = [0]*res.number_of_iterations
         if argkw.get("unweighted", 0) or not res.weights:
             for tex in res.results:
@@ -512,7 +520,7 @@ def Brier_score(res, report_se = False, ignore_weights=False, **argkw):
         else:
             return [max(x/totweight+1.0, 0) for x in MSEs]
 
-    BSs = [[0.0]*res.number_of_learners for i in range(res.number_of_iterations)]
+    BSs = [[0.0]*res.number_of_learners for _ in range(res.number_of_iterations)]
     foldN = [0.] * res.number_of_iterations
 
     if ignore_weights or not res.weights:
@@ -626,7 +634,7 @@ def rank_difference(res, statistics, **argkw):
         raise TypeError, "no experiments"
 
     k = len(res.results[0].classes)
-    if (k<2):
+    if k<2:
         raise TypeError, "nothing to compare (less than two classifiers given)"
     if k==2:
         return apply(Wilcoxon, (res, statistics), argkw)
@@ -655,7 +663,7 @@ def confusion_matrices(test_results, class_index=-1,
     if class_index<0:
         numberOfClasses = len(test_results.class_values)
         if class_index < -1 or numberOfClasses > 2:
-            cm = [[[0.0] * numberOfClasses for i in range(numberOfClasses)] for l in range(test_results.number_of_learners)]
+            cm = [[[0.0] * numberOfClasses for _ in range(numberOfClasses)] for _ in range(test_results.number_of_learners)]
             if ignore_weights or not test_results.weights:
                 for tex in test_results.results:
                     trueClass = int(tex.actual_class)
@@ -919,14 +927,14 @@ def scotts_pi(confusion_matrix, b_is_list_of_matrices=True):
        marginalSumOfRows = numpy.sum(confusion_matrix, axis=0)
        marginalSumOfColumns = numpy.sum(confusion_matrix, axis=1)
        jointProportion = (marginalSumOfColumns + marginalSumOfRows)/ \
-                           (2.0 * numpy.sum(confusion_matrix, axis=None))
+                           (2.0 * numpy.sum(confusion_matrix))
        # In the eq. above, 2.0 is what the Wikipedia page calls
        # the number of annotators. Here we have two annotators:
        # the observed (true) labels (annotations) and the predicted by
        # the learners.
 
-       prExpected = numpy.sum(jointProportion ** 2, axis=None)
-       prActual = numpy.sum(numpy.diag(confusion_matrix), axis=None)/numpy.sum(confusion_matrix, axis=None)
+       prExpected = numpy.sum(jointProportion ** 2)
+       prActual = numpy.sum(numpy.diag(confusion_matrix)) /numpy.sum(confusion_matrix)
 
        ret = (prActual - prExpected) / (1.0 - prExpected)
        return ret
@@ -1022,7 +1030,7 @@ def ROC_add_point(P, R, keep_concavities=1):
     if keep_concavities:
         R.append(P)
     else:
-        while (1):
+        while True:
             if len(R) < 2:
                 R.append(P)
                 return R
@@ -1109,11 +1117,11 @@ def TC_best_thresholds_on_ROC_curve(FPcost, FNcost, pval, curve):
 def frange(start, end=None, inc=None):
     "A range function, that does accept float increments..."
 
-    if end == None:
+    if end is None:
         end = start + 0.0
         start = 0.0
 
-    if inc == None or inc == 0:
+    if inc is None or inc == 0:
         inc = 1.0
 
     L = [start]
@@ -1149,7 +1157,7 @@ def TC_vertical_average_ROC(roc_curves, samples = 10):
         i = 0
         while i < npts - 1:
             (fp, _, _) = ROC[i + 1]
-            if (fp <= FPsample):
+            if fp <= FPsample:
                 i += 1
             else:
                 break
@@ -1187,7 +1195,7 @@ def TC_vertical_average_ROC(roc_curves, samples = 10):
         average.append(TPavg)
         stdev.append(TPstd)
 
-    return (average, stdev)
+    return average, stdev
 
 ## input ROCcurves are of form [ROCcurves1, ROCcurves2, ... ROCcurvesN],
 ## where ROCcurvesX is a set of ROC curves,
@@ -1201,7 +1209,7 @@ def TC_threshold_average_ROC(roc_curves, samples = 10):
         i = 0
         while i < npts - 1:
             (px, py, pfscore) = ROC[i]
-            if (pfscore > thresh):
+            if pfscore > thresh:
                 i += 1
             else:
                 break
@@ -1314,7 +1322,7 @@ def compute_calibration_curve(res, class_index=-1):
             curve = [loessCurve[i]  for i in range(0, clen, df)]
         else:
             curve = loessCurve
-        curve = [(c)[:2] for c in curve] ## remove the third value (variance of epsilon?) that suddenly appeared in the output of the statc.loess function
+        curve = [c[:2] for c in curve] ## remove the third value (variance of epsilon?) that suddenly appeared in the output of the statc.loess function
         results.append((curve, yesClassRugPoints, noClassRugPoints))
 
     return results
@@ -1371,7 +1379,7 @@ def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
     useweights = res.weights and not ignore_weights
     weightByClasses = argkw.get("weightByClasses", True)
 
-    if (res.number_of_iterations>1):
+    if res.number_of_iterations>1:
         CDTs = [CDT() for i in range(res.number_of_learners)]
         iterationExperiments = split_by_iterations(res)
         for exp in iterationExperiments:
@@ -1450,7 +1458,7 @@ class AucClass(object):
                                              not ignore_weights, all_ite,
                                              res.number_of_iterations))
                     if subsum_aucs:
-                        if method == 0:
+                        if method == self.ByWeightedPairs:
                             p_ij = prob[classIndex1] * prob[classIndex2]
                             subsum_aucs = [x * p_ij  for x in subsum_aucs]
                             usefulClassPairs += p_ij
@@ -1464,7 +1472,7 @@ class AucClass(object):
                     iterations, (classIndex, not ignore_weights, all_ite,
                                  res.number_of_iterations))
                 if subsum_aucs:
-                    if method == 0:
+                    if method == self.ByWeightedPairs:
                         p_i = prob[classIndex]
                         subsum_aucs = [x * p_i  for x in subsum_aucs]
                         usefulClassPairs += p_i
@@ -2037,15 +2045,21 @@ def compute_CD(avranks, N, alpha="0.05", type="nemenyi"):
 
     k = len(avranks)
    
-    d = {}
+    d = {("nemenyi", "0.05"): [0, 0, 1.959964, 2.343701, 2.569032, 2.727774,
+                               2.849705, 2.94832, 3.030879, 3.101730, 3.163684,
+                               3.218654, 3.268004, 3.312739, 3.353618, 3.39123,
+                               3.426041, 3.458425, 3.488685, 3.517073, 3.543799]
+        , ("nemenyi", "0.1"): [0, 0, 1.644854, 2.052293, 2.291341, 2.459516,
+                               2.588521, 2.692732, 2.779884, 2.854606, 2.919889,
+                               2.977768, 3.029694, 3.076733, 3.119693, 3.159199,
+                               3.195743, 3.229723, 3.261461, 3.291224, 3.319233]
+        , ("bonferroni-dunn", "0.05"): [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576,
+                                        2.638, 2.690, 2.724, 2.773],
+         ("bonferroni-dunn", "0.1"): [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326,
+                                      2.394, 2.450, 2.498, 2.539]}
 
     #can be computed in R as qtukey(0.95, n, Inf)**0.5
     #for (x in c(2:20)) print(qtukey(0.95, x, Inf)/(2**0.5)
-    d[("nemenyi", "0.05")] = [0, 0, 1.959964, 2.343701, 2.569032, 2.727774, 2.849705, 2.94832, 3.030879, 3.101730, 3.163684, 3.218654, 3.268004, 3.312739, 3.353618, 3.39123, 3.426041, 3.458425, 3.488685, 3.517073, 3.543799 ]
-    d[("nemenyi", "0.1")] = [0, 0, 1.644854, 2.052293, 2.291341, 2.459516, 2.588521, 2.692732, 2.779884, 2.854606, 2.919889, 2.977768, 3.029694, 3.076733, 3.119693, 3.159199, 3.195743, 3.229723, 3.261461, 3.291224, 3.319233 ]
-
-    d[("bonferroni-dunn", "0.05")] =  [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576, 2.638, 2.690, 2.724, 2.773 ]
-    d[("bonferroni-dunn", "0.1")] = [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326, 2.394, 2.450, 2.498, 2.539 ]
 
     q = d[(type, alpha)]
 
@@ -2075,11 +2089,15 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     :param width: Width of the drawn figure in inches, default 6 in.
     :param textspace: Space on figure sides left for the description
                       of methods, default 1 in.
-    :param reverse:  If True, the lowest rank is on the right. Default: False.
+    :param reverse:  If True, the lowest rank is on the right. Default\: False.
     :param cdmethod: None by default. It can be an index of element in avranks
                      or or names which specifies the method which should be
                      marked with an interval.
     """
+    if not HAS_MATPLOTLIB:
+        import sys
+        print >> sys.stderr, "Function requires matplotlib. Please install it."
+        return
 
     width = float(width)
     textspace = float(textspace)
@@ -2115,7 +2133,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         [(3, 9), (3, 6), (3, 3), (4, 9), (4, 6), (4, 3)]
 
         """
-        if len(lr) == 0:
+        if not len(lr):
             yield ()
         else:
             #it can work with single numbers
@@ -2126,14 +2144,9 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
                 for b in mxrange(lr[1:]):
                     yield tuple([a] + list(b))
 
-    try:
-        from matplotlib.figure import Figure
-        from matplotlib.patches import Polygon
-        from matplotlib.backends.backend_agg import FigureCanvasAgg
-    except ImportError:
-        import sys
-        print >> sys.stderr, "Function requires matplotlib. Please install it."
-        return
+
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
 
     def print_figure(fig, *args, **kwargs):
         canvas = FigureCanvasAgg(fig)
@@ -2252,7 +2265,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     k = len(ssums)
 
     for i in range((k+1)/2):
-        chei = cline+ minnotsignificant + (i)*0.2
+        chei = cline+ minnotsignificant + i *0.2
         line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace-0.1, chei)], linewidth=0.7)
         text(textspace-0.2, chei, nnames[i], ha="right", va="center")
 
