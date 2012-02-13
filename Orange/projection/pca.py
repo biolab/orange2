@@ -144,7 +144,14 @@ class PcaClassifier(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
     
-    def __call__(self, dataset):
+    def __call__(self, data):
+        """
+        Project data into PCA feature space.
+
+        :param data: input dataset
+
+        :rtype: :obj:`~Orange.data.Table`
+        """
         if type(dataset) != Orange.data.Table:
             dataset = Orange.data.Table([dataset])
 
