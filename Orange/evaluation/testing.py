@@ -560,7 +560,7 @@ class Evaluation(object):
         the second dataset.
 
         :param learners: list of learners to be tested
-        :param learn_set: a dataset used for learning
+        :param learn_set: a dataset used for evaluation
         :param test_set: a dataset used for evaluation
         :param proportions: proportions of train data to be used
         :param preprocessors: a list of preprocessors to be used on data.
