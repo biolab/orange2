@@ -1100,7 +1100,7 @@ def TC_best_thresholds_on_ROC_curve(FPcost, FNcost, pval, curve):
     return closestPoints          
 
 def frange(start, end=None, inc=None):
-    "A range function, that does accept float increments..."
+    """A range function, that does accept float increments..."""
 
     if end is None:
         end = start + 0.0
@@ -1264,7 +1264,6 @@ def compute_calibration_curve(res, class_index=-1):
     problists, tots = corn.computeROCCumulative(mres, class_index)
 
     results = []
-    P, N = tots[1], tots[0]
 
     bins = 10 ## divide interval between 0.0 and 1.0 into N bins
 
@@ -1365,7 +1364,7 @@ def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
     weightByClasses = argkw.get("weightByClasses", True)
 
     if res.number_of_iterations>1:
-        CDTs = [CDT() for i in range(res.number_of_learners)]
+        CDTs = [CDT() for _ in range(res.number_of_learners)]
         iterationExperiments = split_by_iterations(res)
         for exp in iterationExperiments:
             expCDTs = corn.computeCDT(exp, class_index, useweights)
@@ -1618,7 +1617,6 @@ def AUC_matrix(res, ignore_weights=False):
         iterations, all_ite = [res], None
     
     aucs = [[[] for _ in range(numberOfClasses)] for _ in range(number_of_learners)]
-    prob = class_probabilities_from_res(res)
         
     for classIndex1 in range(numberOfClasses):
         for classIndex2 in range(classIndex1):
@@ -2155,7 +2153,6 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     k = len(sums)
 
     lines = None
-    sums = sorted(sums)
 
     linesblank = 0
     scalewidth = width - 2*textspace
@@ -2239,7 +2236,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
 
 
     import numpy
-
+    tick = None
     for a in list(numpy.arange(lowv, highv, 0.5)) + [highv]:
         tick = smalltick
         if a == int(a): tick = bigtick
@@ -2325,7 +2322,6 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
     :math:`Accuracy(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} (\\frac{|Y_i \\cap Z_i|}{|Y_i \\cup Z_i|})^{\\alpha}`
     """
     accuracies = [0.0]*res.number_of_learners
-    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
@@ -2353,7 +2349,6 @@ def mlc_precision(res):
     :math:`Precision(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Z_i|}`
     """
     precisions = [0.0]*res.number_of_learners
-    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
@@ -2380,7 +2375,6 @@ def mlc_recall(res):
     :math:`Recall(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Y_i|}`
     """
     recalls = [0.0]*res.number_of_learners
-    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
