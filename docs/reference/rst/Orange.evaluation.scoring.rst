@@ -9,7 +9,7 @@ Method scoring (``scoring``)
 Scoring plays and integral role in evaluation of any prediction model. Orange
 implements various scores for evaluation of classification,
 regression and multi-label models. Most of the methods needs to be called
-with an instance of :obj:`ExperimentResults`.
+with an instance of :obj:`~Orange.evaluation.testing.ExperimentResults`.
 
 .. literalinclude:: code/statExample0.py
 
@@ -49,7 +49,7 @@ different classes are called discriminatory scores.
 
 .. autofunction:: Brier_score
 
-.. autosingleton::AUC
+.. autosingleton:: AUC
 .. autoclass:: AucClass
     :members:
 
