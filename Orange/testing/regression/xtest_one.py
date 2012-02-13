@@ -112,6 +112,7 @@ for t__iteration in range(t__iterations):
             t__message.write("error\n%i\n" % t__iteration)
             print "error"
             t__message.write(reduce(lambda x, y: x + y, apply(t__traceback.format_exception, t__sys.exc_info())))
+            t__sys.stderr.write(reduce(lambda x, y: x + y, apply(t__traceback.format_exception, t__sys.exc_info())))
             t__message.close()
             t__sys.exit(1)
 
@@ -151,8 +152,10 @@ for t__iteration in range(t__iterations):
 if t__isChanged:
     t__message.write("changed")
     print "changed"
+    t__message.close()
     t__sys.exit(3)
 
 t__message.write("OK")
-t__message.close()
 print "OK"
+t__message.close()
+t__sys.exit(0)
