@@ -97,7 +97,7 @@ NaiveLearner = Orange.misc.deprecated_members(
       "conditionalEstimatorConstructor": "conditional_estimator_constructor",
       "conditionalEstimatorConstructorContinuous":"conditional_estimator_constructor_continuous",
       "weightID": "weight_id"
-}, in_place=True)(NaiveLearner)
+})(NaiveLearner)
 
 
 class NaiveClassifier(Orange.classification.Classifier):
