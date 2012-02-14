@@ -11,7 +11,7 @@ implements various scores for evaluation of classification,
 regression and multi-label models. Most of the methods needs to be called
 with an instance of :obj:`~Orange.evaluation.testing.ExperimentResults`.
 
-.. literalinclude:: code/statExample0.py
+.. literalinclude:: code/scoring-example.py
 
 ==============
 Classification
@@ -55,73 +55,9 @@ different classes are called discriminatory scores.
               weighted_one_against_all, one_against_all, single_class, pair,
               matrix
 
-In case of multiple folds (for instance if the data comes from cross
-validation), the computation goes like this. When computing the partial
-AUCs for individual pairs of classes or singled-out classes, AUC is
-computed for each fold separately and then averaged (ignoring the number
-of instances in each fold, it's just a simple average). However, if a
-certain fold doesn't contain any instances of a certain class (from the
-pair), the partial AUC is computed treating the results as if they came
-from a single-fold. This is not really correct since the class
-probabilities from different folds are not necessarily comparable,
-yet this will most often occur in a leave-one-out experiments,
-comparability shouldn't be a problem.
-
-Computing and printing out the AUC's looks just like printing out
-classification accuracies (except that we call AUC instead of
-CA, of course)::
-
-   AUCs = Orange.evaluation.scoring.AUC(res)
-   for l in range(len(learners)):
-       print "%10s: %5.3f" % (learners[l].name, AUCs[l])
-
-For vehicle, you can run exactly this same code; it will compute AUCs
-for all pairs of classes and return the average weighted by probabilities
-of pairs. Or, you can specify the averaging method yourself, like this::
-
-   AUCs = Orange.evaluation.scoring.AUC(resVeh, Orange.evaluation.scoring.AUC.WeightedOneAgainstAll)
-
-The following snippet tries out all four. (We don't claim that this is
-how the function needs to be used; it's better to stay with the default.)::
-
-   methods = ["by pairs, weighted", "by pairs", "one vs. all, weighted", "one vs. all"]
-   print " " *25 + "  \tbayes\ttree\tmajority"
-   for i in range(4):
-       AUCs = Orange.evaluation.scoring.AUC(resVeh, i)
-       print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i], ) + tuple(AUCs))
-
-As you can see from the output::
-
-                               bayes   tree    majority
-          by pairs, weighted:  0.789   0.871   0.500
-                    by pairs:  0.791   0.872   0.500
-       one vs. all, weighted:  0.783   0.800   0.500
-                 one vs. all:  0.783   0.800   0.500
-
-The remaining functions, which plot the curves and statistically compare
-them, require that the results come from a test with a single iteration,
-and they always compare one chosen class against all others. If you have
-cross validation results, you can either use split_by_iterations to split the
-results by folds, call the function for each fold separately and then sum
-the results up however you see fit, or you can set the ExperimentResults'
-attribute number_of_iterations to 1, to cheat the function - at your own
-responsibility for the statistical correctness. Regarding the multi-class
-problems, if you don't chose a specific class, Orange.evaluation.scoring will use the class
-attribute's baseValue at the time when results were computed. If baseValue
-was not given at that time, 1 (that is, the second class) is used as default.
-
-We shall use the following code to prepare suitable experimental results::
-
-    ri2 = Orange.core.MakeRandomIndices2(voting, 0.6)
-    train = voting.selectref(ri2, 0)
-    test = voting.selectref(ri2, 1)
-    res1 = Orange.evaluation.testing.learnAndTestOnTestData(learners, train, test)
-
-
 .. autofunction:: AUCWilcoxon
 
 .. autofunction:: compute_ROC
-
 
 .. autofunction:: confusion_matrices
 
@@ -129,7 +65,7 @@ We shall use the following code to prepare suitable experimental results::
 
 
 Comparison of Algorithms
-------------------------
+========================
 
 .. autofunction:: McNemar
 
@@ -200,11 +136,13 @@ Utility Functions
 Scoring for multilabel classification
 =====================================
 
-Multi-label classification requries different metrics than those used in traditional single-label
-classification. This module presents the various methrics that have been proposed in the literature.
-Let :math:`D` be a multi-label evaluation data set, conisting of :math:`|D|` multi-label examples
-:math:`(x_i,Y_i)`, :math:`i=1..|D|`, :math:`Y_i \\subseteq L`. Let :math:`H` be a multi-label classifier
-and :math:`Z_i=H(x_i)` be the set of labels predicted by :math:`H` for example :math:`x_i`.
+Multi-label classification requires different metrics than those used in
+traditional single-label classification. This module presents the various
+metrics that have been proposed in the literature. Let :math:`D` be a
+multi-label evaluation data set, conisting of :math:`|D|` multi-label examples
+:math:`(x_i,Y_i)`, :math:`i=1..|D|`, :math:`Y_i \\subseteq L`. Let :math:`H`
+be a multi-label classifier and :math:`Z_i=H(x_i)` be the set of labels
+predicted by :math:`H` for example :math:`x_i`.
 
 .. autofunction:: mlc_hamming_loss
 .. autofunction:: mlc_accuracy
