@@ -152,10 +152,10 @@ class PcaClassifier(object):
 
         :rtype: :obj:`~Orange.data.Table`
         """
-        if type(dataset) != Orange.data.Table:
-            dataset = Orange.data.Table([dataset])
+        if type(data) != Orange.data.Table:
+            data = Orange.data.Table([data])
 
-        X = dataset.to_numpy_MA("a")[0]
+        X = data.to_numpy_MA("a")[0]
         Xm, U = self.mean, self.eigen_vectors
         n, m = X.shape
         

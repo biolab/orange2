@@ -4,8 +4,16 @@ import numpy
 
 import Orange
 from Orange import statc, corn
-from Orange.misc import deprecated_keywords, deprecated_function_name, deprecation_warning
+from Orange.misc import deprecated_keywords, deprecated_function_name, \
+    deprecation_warning, environ
 from Orange.evaluation import testing
+
+try:
+    import matplotlib
+    HAS_MATPLOTLIB = True
+except ImportError:
+    matplotlib = None
+    HAS_MATPLOTLIB = False
 
 #### Private stuff
 
@@ -44,7 +52,7 @@ def split_by_iterations(res):
                 1, res.classifier_names, res.class_values,
                 res.weights, classifiers=res.classifiers,
                 loaded=res.loaded, test_type=res.test_type, labels=res.labels)
-            for i in range(res.number_of_iterations)]
+            for _ in range(res.number_of_iterations)]
     for te in res.results:
         ress[te.iteration_number].results.append(te)
     return ress
@@ -187,7 +195,8 @@ def regression_error(res, **argkw):
     """regression_error(res) -> regression error (default: MSE)"""
     if argkw.get("SE", 0) and res.number_of_iterations > 1:
         # computes the scores for each iteration, then averages
-        scores = [[0.0] * res.number_of_iterations for i in range(res.number_of_learners)]
+        scores = [[0.0] * res.number_of_iterations for _ in range(res.number_of_learners)]
+        norm=None
         if argkw.get("norm-abs", 0) or argkw.get("norm-sqr", 0):
             norm = [0.0] * res.number_of_iterations
 
@@ -254,6 +263,7 @@ def regression_error(res, **argkw):
             totweight = gettotsize(res)
         else:
             # UNFINISHED
+            MSEs = [0.]*res.number_of_learners
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac = float(tex.actual_class),
                            tw = tex.weight:
@@ -313,7 +323,7 @@ def R2(res, **argkw):
 def MSE_old(res, **argkw):
     """MSE(res) -> mean-squared error"""
     if argkw.get("SE", 0) and res.number_of_iterations > 1:
-        MSEs = [[0.0] * res.number_of_iterations for i in range(res.number_of_learners)]
+        MSEs = [[0.0] * res.number_of_iterations for _ in range(res.number_of_learners)]
         nIter = [0]*res.number_of_iterations
         if argkw.get("unweighted", 0) or not res.weights:
             for tex in res.results:
@@ -399,7 +409,8 @@ class CAClass(object):
             return ca
 
     def from_confusion_matrix_list(self, confusion_matrices, report_se):
-        return map(self.from_confusion_matrix, confusion_matrices) # TODO: report_se
+        return [self.from_confusion_matrix(cm, report_se=report_se)
+                for cm in confusion_matrices]
 
     def from_classification_results(self, test_results, report_se, ignore_results):
         CAs = [0.0]*test_results.number_of_learners
@@ -417,7 +428,7 @@ class CAClass(object):
             return ca
 
     def from_crossvalidation_results(self, test_results, report_se, ignore_weights):
-        CAsByFold = [[0.0]*test_results.number_of_iterations for i in range(test_results.number_of_learners)]
+        CAsByFold = [[0.0]*test_results.number_of_iterations for _ in range(test_results.number_of_learners)]
         foldN = [0.0]*test_results.number_of_iterations
 
         for tex in test_results.results:
@@ -460,7 +471,7 @@ def AP(res, report_se = False, ignore_weights=False, **argkw):
         check_non_zero(totweight)
         return [AP/totweight for AP in APs]
 
-    APsByFold = [[0.0]*res.number_of_learners for i in range(res.number_of_iterations)]
+    APsByFold = [[0.0]*res.number_of_learners for _ in range(res.number_of_iterations)]
     foldN = [0.0] * res.number_of_iterations
     if ignore_weights or not res.weights:
         for tex in res.results:
@@ -511,7 +522,7 @@ def Brier_score(res, report_se = False, ignore_weights=False, **argkw):
         else:
             return [max(x/totweight+1.0, 0) for x in MSEs]
 
-    BSs = [[0.0]*res.number_of_learners for i in range(res.number_of_iterations)]
+    BSs = [[0.0]*res.number_of_learners for _ in range(res.number_of_iterations)]
     foldN = [0.] * res.number_of_iterations
 
     if ignore_weights or not res.weights:
@@ -535,8 +546,8 @@ def BSS(res, **argkw):
     return [1-x/2 for x in apply(Brier_score, (res, ), argkw)]
 
 def IS_ex(Pc, P):
-    "Pc aposterior probability, P aprior"
-    if (Pc>=P):
+    """Pc aposterior probability, P aprior"""
+    if Pc>=P:
         return -log2(P)+log2(Pc)
     else:
         return -(-log2(1-P)+log2(1-Pc))
@@ -574,7 +585,7 @@ def IS(res, apriori=None, report_se = False, **argkw):
             return [IS/totweight for IS in ISs]
 
         
-    ISs = [[0.0]*res.number_of_iterations for i in range(res.number_of_learners)]
+    ISs = [[0.0]*res.number_of_iterations for _ in range(res.number_of_learners)]
     foldN = [0.] * res.number_of_iterations
 
     # compute info scores for each fold    
@@ -592,29 +603,13 @@ def IS(res, apriori=None, report_se = False, **argkw):
             foldN[tex.iteration_number] += tex.weight
 
     return statistics_by_folds(ISs, foldN, report_se, False)
-
-
-def Friedman(res, statistics, **argkw):
-    sums = None
-    for ri in split_by_iterations(res):
-        ranks = statc.rankdata(apply(statistics, (ri,), argkw))
-        if sums:
-            sums = sums and [ranks[i]+sums[i] for i in range(k)]
-        else:
-            sums = ranks
-            k = len(sums)
-    N = res.number_of_iterations
-    k = len(sums)
-    T = sum([x*x for x in sums])
-    F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
-    return F, statc.chisqprob(F, k-1)
     
 
 def Wilcoxon(res, statistics, **argkw):
     res1, res2 = [], []
     for ri in split_by_iterations(res):
-        stats = apply(statistics, (ri,), argkw)
-        if (len(stats) != 2):
+        stats = statistics(ri, **argkw)
+        if len(stats) != 2:
             raise TypeError, "Wilcoxon compares two classifiers, no more, no less"
         res1.append(stats[0])
         res2.append(stats[1])
@@ -625,7 +620,7 @@ def rank_difference(res, statistics, **argkw):
         raise TypeError, "no experiments"
 
     k = len(res.results[0].classes)
-    if (k<2):
+    if k<2:
         raise TypeError, "nothing to compare (less than two classifiers given)"
     if k==2:
         return apply(Wilcoxon, (res, statistics), argkw)
@@ -649,12 +644,12 @@ def confusion_matrices(test_results, class_index=-1,
 
     :rtype: list of :obj:`ConfusionMatrix`
     """
-    tfpns = [ConfusionMatrix() for i in range(test_results.number_of_learners)]
+    tfpns = [ConfusionMatrix() for _ in range(test_results.number_of_learners)]
     
     if class_index<0:
         numberOfClasses = len(test_results.class_values)
         if class_index < -1 or numberOfClasses > 2:
-            cm = [[[0.0] * numberOfClasses for i in range(numberOfClasses)] for l in range(test_results.number_of_learners)]
+            cm = [[[0.0] * numberOfClasses for _ in range(numberOfClasses)] for _ in range(test_results.number_of_learners)]
             if ignore_weights or not test_results.weights:
                 for tex in test_results.results:
                     trueClass = int(tex.actual_class)
@@ -663,7 +658,7 @@ def confusion_matrices(test_results, class_index=-1,
                         if predClass < numberOfClasses:
                             cm[li][trueClass][predClass] += 1
             else:
-                for tex in enumerate(test_results.results):
+                for tex in test_results.results:
                     trueClass = int(tex.actual_class)
                     for li, pred in tex.classes:
                         predClass = int(pred)
@@ -918,14 +913,14 @@ def scotts_pi(confusion_matrix, b_is_list_of_matrices=True):
        marginalSumOfRows = numpy.sum(confusion_matrix, axis=0)
        marginalSumOfColumns = numpy.sum(confusion_matrix, axis=1)
        jointProportion = (marginalSumOfColumns + marginalSumOfRows)/ \
-                           (2.0 * numpy.sum(confusion_matrix, axis=None))
+                           (2.0 * numpy.sum(confusion_matrix))
        # In the eq. above, 2.0 is what the Wikipedia page calls
        # the number of annotators. Here we have two annotators:
        # the observed (true) labels (annotations) and the predicted by
        # the learners.
 
-       prExpected = numpy.sum(jointProportion ** 2, axis=None)
-       prActual = numpy.sum(numpy.diag(confusion_matrix), axis=None)/numpy.sum(confusion_matrix, axis=None)
+       prExpected = numpy.sum(jointProportion ** 2)
+       prActual = numpy.sum(numpy.diag(confusion_matrix)) /numpy.sum(confusion_matrix)
 
        ret = (prActual - prExpected) / (1.0 - prExpected)
        return ret
@@ -1011,7 +1006,7 @@ def compute_ROC(res, class_index=-1):
 ## TC's implementation of algorithms, taken from:
 ## T Fawcett: ROC Graphs: Notes and Practical Considerations for Data Mining Researchers, submitted to KDD Journal. 
 def ROC_slope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
-    if (P1x == P2x):
+    if P1x == P2x:
         return 1e300
     return (P1y - P2y) / (P1x - P2x)
 
@@ -1021,7 +1016,7 @@ def ROC_add_point(P, R, keep_concavities=1):
     if keep_concavities:
         R.append(P)
     else:
-        while (1):
+        while True:
             if len(R) < 2:
                 R.append(P)
                 return R
@@ -1106,13 +1101,13 @@ def TC_best_thresholds_on_ROC_curve(FPcost, FNcost, pval, curve):
     return closestPoints          
 
 def frange(start, end=None, inc=None):
-    "A range function, that does accept float increments..."
+    """A range function, that does accept float increments..."""
 
-    if end == None:
+    if end is None:
         end = start + 0.0
         start = 0.0
 
-    if inc == None or inc == 0:
+    if inc is None or inc == 0:
         inc = 1.0
 
     L = [start]
@@ -1137,7 +1132,7 @@ def frange(start, end=None, inc=None):
 @deprecated_keywords({"ROCcurves": "roc_curves"})
 def TC_vertical_average_ROC(roc_curves, samples = 10):
     def INTERPOLATE((P1x, P1y, P1fscore), (P2x, P2y, P2fscore), X):
-        if (P1x == P2x) or ((X > P1x) and (X > P2x)) or ((X < P1x) and (X < P2x)):
+        if (P1x == P2x) or P1x < X > P2x or P1x > X < P2x:
             raise ValueError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
         dx = float(P2x) - float(P1x)
         dy = float(P2y) - float(P1y)
@@ -1148,7 +1143,7 @@ def TC_vertical_average_ROC(roc_curves, samples = 10):
         i = 0
         while i < npts - 1:
             (fp, _, _) = ROC[i + 1]
-            if (fp <= FPsample):
+            if fp <= FPsample:
                 i += 1
             else:
                 break
@@ -1186,7 +1181,7 @@ def TC_vertical_average_ROC(roc_curves, samples = 10):
         average.append(TPavg)
         stdev.append(TPstd)
 
-    return (average, stdev)
+    return average, stdev
 
 ## input ROCcurves are of form [ROCcurves1, ROCcurves2, ... ROCcurvesN],
 ## where ROCcurvesX is a set of ROC curves,
@@ -1200,7 +1195,7 @@ def TC_threshold_average_ROC(roc_curves, samples = 10):
         i = 0
         while i < npts - 1:
             (px, py, pfscore) = ROC[i]
-            if (pfscore > thresh):
+            if pfscore > thresh:
                 i += 1
             else:
                 break
@@ -1253,7 +1248,7 @@ def TC_threshold_average_ROC(roc_curves, samples = 10):
         stdevV.append(TPstdV)
         stdevH.append(TPstdH)
 
-    return (average, stdevV, stdevH)
+    return average, stdevV, stdevH
 
 ## Calibration Curve
 ## returns an array of (curve, yesClassPredictions, noClassPredictions) elements, where:
@@ -1270,7 +1265,6 @@ def compute_calibration_curve(res, class_index=-1):
     problists, tots = corn.computeROCCumulative(mres, class_index)
 
     results = []
-    P, N = tots[1], tots[0]
 
     bins = 10 ## divide interval between 0.0 and 1.0 into N bins
 
@@ -1313,7 +1307,7 @@ def compute_calibration_curve(res, class_index=-1):
             curve = [loessCurve[i]  for i in range(0, clen, df)]
         else:
             curve = loessCurve
-        curve = [(c)[:2] for c in curve] ## remove the third value (variance of epsilon?) that suddenly appeared in the output of the statc.loess function
+        curve = [c[:2] for c in curve] ## remove the third value (variance of epsilon?) that suddenly appeared in the output of the statc.loess function
         results.append((curve, yesClassRugPoints, noClassRugPoints))
 
     return results
@@ -1370,8 +1364,8 @@ def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
     useweights = res.weights and not ignore_weights
     weightByClasses = argkw.get("weightByClasses", True)
 
-    if (res.number_of_iterations>1):
-        CDTs = [CDT() for i in range(res.number_of_learners)]
+    if res.number_of_iterations>1:
+        CDTs = [CDT() for _ in range(res.number_of_learners)]
         iterationExperiments = split_by_iterations(res)
         for exp in iterationExperiments:
             expCDTs = corn.computeCDT(exp, class_index, useweights)
@@ -1387,6 +1381,19 @@ def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
     else:
         return corn.computeCDT(res, class_index, useweights)
 
+# Backward compatibility
+def replace_use_weights(fun):
+    if environ.orange_no_deprecated_members:
+        return fun
+
+    @functools.wraps(fun)
+    def wrapped(*args, **kwargs):
+        use_weights = kwargs.pop("useWeights", None)
+        if use_weights is not None:
+            deprecation_warning("useWeights", "ignore_weights")
+            kwargs["ignore_weights"] = not use_weights
+        return fun(*args, **kwargs)
+    return wrapped
 
 class AucClass(object):
     ByWeightedPairs = 0
@@ -1394,33 +1401,138 @@ class AucClass(object):
     WeightedOneAgainstAll = 2
     OneAgainstAll = 3
 
-    def __call__(self, res, method=0, ignore_weights=False, useWeights=None):
-        """ Returns the area under ROC curve (AUC) given a set of experimental
-        results. For multivalued class problems, it will compute some sort of
-        average, as specified by the argument method.
+    @replace_use_weights
+    def __call__(self, test_results, method=0, ignore_weights=False):
         """
-        if useWeights is not None:
-            deprecation_warning("useWeights", "ignore_weights")
-            ignore_weights = not useWeights
+        Return the area under ROC curve given a set of experimental results.
+        For multivalued class problems, return the result of :obj:`by_weighted_pairs`.
 
-        if len(res.class_values) < 2:
+        :param test_results: test results to score
+        :param ignore_weights: ignore instance weights when calculating score
+        :param method: DEPRECATED, call the appropriate method directly.
+        """
+        if len(test_results.class_values) < 2:
             raise ValueError("Cannot compute AUC on a single-class problem")
-        elif len(res.class_values) == 2:
-            return self.compute_for_binary_class(res, ignore_weights)
+        elif len(test_results.class_values) == 2:
+            return self._compute_for_binary_class(test_results, ignore_weights)
         else:
-            return self.compute_for_multi_value_class(res, ignore_weights, method)
+            return self._compute_for_multi_value_class(test_results, ignore_weights, method)
 
-    def compute_for_binary_class(self, res, ignore_weights=False):
+    def by_weighted_pairs(self, res, ignore_weights=False):
+        """
+        Compute AUC for each pair of classes (ignoring instances of all other
+        classes) and averages the results, weighting them by the number of
+        pairs of instances from these two classes (e.g. by the product of
+        probabilities of the two classes). AUC computed in this way still
+        behaves as concordance index, e.g., gives the probability that two
+        randomly chosen instances from different classes will be correctly
+        recognized (if the classifier knows from which two classes the
+        instances came).
+        """
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.ByWeightedPairs)
+
+    def by_pairs(self, res, ignore_weights=False):
+        """
+        Similar as above, except that the average over class pairs is not
+        weighted. This AUC is, like the binary, independent of class
+        distributions, but it is not related to concordance index any more.
+        """
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.ByPairs)
+
+    # Computes AUC; in multivalued class problem, AUC is computed as one against all
+    # Results over folds are averages; if some folds examples from one class only, the folds are merged
+    @replace_use_weights
+    @deprecated_keywords({"classIndex": "class_index"})
+    def single_class(self, res, class_index=-1, ignore_weights=False):
+        """
+        Compute AUC where the class with the given class_index is singled
+        out and all other classes are treated as a single class.
+        """
+        if class_index<0:
+            if res.baseClass>=0:
+                class_index = res.baseClass
+            else:
+                class_index = 1
+
+        if res.number_of_iterations > 1:
+            return AUC_iterations(AUC_i, split_by_iterations(res),
+                (class_index, not ignore_weights, res, res.number_of_iterations))
+        else:
+            return AUC_i( res, class_index, ignore_weights)[0]
+
+    # Computes AUC for a pair of classes (as if there were no other classes)
+    # Results over folds are averages; if some folds have examples from one class only, the folds are merged
+    def pair(self, res, class_index1, class_index2, ignore_weights=False):
+        """
+        Computes AUC between a pair of classes, ignoring instances from all
+        other classes.
+        """
+        if res.number_of_iterations > 1:
+            return AUC_iterations(AUC_ij, split_by_iterations(res),
+                (class_index1, class_index2, not ignore_weights, res, res.number_of_iterations))
+        else:
+            return AUC_ij(res, class_index1, class_index2, ignore_weights)
+
+    def matrix(self, res, ignore_weights=False):
+        """
+        Compute a (lower diagonal) matrix with AUCs for all pairs of classes.
+        If there are empty classes, the corresponding elements in the matrix
+        are -1.
+        """
+        numberOfClasses = len(res.class_values)
+        number_of_learners = res.number_of_learners
+
+        if res.number_of_iterations > 1:
+            iterations, all_ite = split_by_iterations(res), res
+        else:
+            iterations, all_ite = [res], None
+
+        aucs = [[[] for _ in range(numberOfClasses)] for _ in range(number_of_learners)]
+
+        for classIndex1 in range(numberOfClasses):
+            for classIndex2 in range(classIndex1):
+                pair_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1,
+                                                                classIndex2, not ignore_weights,
+                                                                all_ite, res.number_of_iterations))
+                if pair_aucs:
+                    for lrn in range(number_of_learners):
+                        aucs[lrn][classIndex1].append(pair_aucs[lrn])
+                else:
+                    for lrn in range(number_of_learners):
+                        aucs[lrn][classIndex1].append(-1)
+        return aucs
+
+    def weighted_one_against_all(self, res, ignore_weights=False):
+        """
+        For each class, it computes AUC for this class against all others (that
+        is, treating other classes as one class). The AUCs are then averaged by
+        the class probabilities. This is related to concordance index in which
+        we test the classifier's (average) capability for distinguishing the
+        instances from a specified class from those that come from other classes.
+        Unlike the binary AUC, the measure is not independent of class
+        distributions.
+        """
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.WeightedOneAgainstAll)
+
+    def one_against_all(self, res, ignore_weights=False):
+        """As above, except that the average is not weighted."""
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.OneAgainstAll)
+
+    def _compute_for_binary_class(self, res, ignore_weights=False):
         """AUC for binary classification problems"""
         if res.number_of_iterations > 1:
-            return self.compute_for_multiple_folds(
-                        self.compute_one_class_against_all,
+            return self._compute_for_multiple_folds(
+                        self._compute_one_class_against_all,
                         split_by_iterations(res),
                         (-1, not ignore_weights,res, res.number_of_iterations))
         else:
-            return self.compute_one_class_against_all(res, -1, ignore_weights)[0]
+            return self._compute_one_class_against_all(res, -1, ignore_weights)[0]
 
-    def compute_for_multi_value_class(self, res, ignore_weights=False,
+    def _compute_for_multi_value_class(self, res, ignore_weights=False,
                                       method=0):
         """AUC for multiclass classification problems"""
         numberOfClasses = len(res.class_values)
@@ -1436,20 +1548,21 @@ class AucClass(object):
         sum_aucs = [0.] * res.number_of_learners
         usefulClassPairs = 0.
 
-        if method in [0, 2]:
+        prob = None
+        if method in [self.ByWeightedPairs, self.WeightedOneAgainstAll]:
             prob = class_probabilities_from_res(res)
 
-        if method <= 1:
+        if method in [self.ByWeightedPairs, self.ByPairs]:
             for classIndex1 in range(numberOfClasses):
                 for classIndex2 in range(classIndex1):
-                    subsum_aucs = self.compute_for_multiple_folds(
-                                             self.compute_one_class_against_another,
+                    subsum_aucs = self._compute_for_multiple_folds(
+                                             self._compute_one_class_against_another,
                                              iterations,
                                              (classIndex1, classIndex2,
                                              not ignore_weights, all_ite,
                                              res.number_of_iterations))
                     if subsum_aucs:
-                        if method == 0:
+                        if method == self.ByWeightedPairs:
                             p_ij = prob[classIndex1] * prob[classIndex2]
                             subsum_aucs = [x * p_ij  for x in subsum_aucs]
                             usefulClassPairs += p_ij
@@ -1458,12 +1571,12 @@ class AucClass(object):
                         sum_aucs = map(add, sum_aucs, subsum_aucs)
         else:
             for classIndex in range(numberOfClasses):
-                subsum_aucs = self.compute_for_multiple_folds(
-                    self.compute_one_class_against_all,
+                subsum_aucs = self._compute_for_multiple_folds(
+                    self._compute_one_class_against_all,
                     iterations, (classIndex, not ignore_weights, all_ite,
                                  res.number_of_iterations))
                 if subsum_aucs:
-                    if method == 0:
+                    if method == self.ByWeightedPairs:
                         p_i = prob[classIndex]
                         subsum_aucs = [x * p_i  for x in subsum_aucs]
                         usefulClassPairs += p_i
@@ -1482,7 +1595,7 @@ class AucClass(object):
     # in these cases the result is returned immediately
     @deprecated_keywords({"AUCcomputer": "auc_computer",
                           "computerArgs": "computer_args"})
-    def compute_for_multiple_folds(self, auc_computer, iterations,
+    def _compute_for_multiple_folds(self, auc_computer, iterations,
                                  computer_args):
         """Compute the average AUC over folds using :obj:`auc_computer`."""
         subsum_aucs = [0.] * iterations[0].number_of_learners
@@ -1498,22 +1611,22 @@ class AucClass(object):
     # computes AUC between class i and the other classes (treating them as the same class)
     @deprecated_keywords({"classIndex": "class_index",
                           "divideByIfIte": "divide_by_if_ite"})
-    def compute_one_class_against_all(self, ite, class_index,
+    def _compute_one_class_against_all(self, ite, class_index,
                                       ignore_weights=True, all_ite=None,
                                       divide_by_if_ite=1.0):
         """Compute AUC between class i and all the other classes)"""
-        return self.compute_auc(corn.computeCDT, ite, all_ite, divide_by_if_ite,
+        return self._compute_auc(corn.computeCDT, ite, all_ite, divide_by_if_ite,
             (class_index, not ignore_weights))
 
 
     # computes AUC between classes i and j as if there are no other classes
-    def compute_one_class_against_another(self, ite, class_index1,
+    def _compute_one_class_against_another(self, ite, class_index1,
             class_index2, ignore_weights=False, all_ite=None,
             divide_by_if_ite=1.0):
         """
         Compute AUC between classes i and j as if there are no other classes.
         """
-        return self.compute_auc(corn.computeCDTPair, ite, all_ite, divide_by_if_ite,
+        return self._compute_auc(corn.computeCDTPair, ite, all_ite, divide_by_if_ite,
             (class_index1, class_index2, not ignore_weights))
 
     # computes AUC using a specified 'cdtComputer' function
@@ -1524,10 +1637,10 @@ class AucClass(object):
     @deprecated_keywords({"cdt_computer": "cdtComputer",
                           "divideByIfIte": "divide_by_if_ite",
                           "computerArgs": "computer_args"})
-    def compute_auc(self, cdt_computer, ite, all_ite, divide_by_if_ite,
+    def _compute_auc(self, cdt_computer, ite, all_ite, divide_by_if_ite,
               computer_args):
         """
-        Compute AUC using a :obj:`cdtComputer`.
+        Compute AUC using a :obj:`cdt_computer`.
         """
         cdts = cdt_computer(*(ite, ) + computer_args)
         if not is_CDT_empty(cdts[0]):
@@ -1542,101 +1655,21 @@ class AucClass(object):
 
 AUC = AucClass()
 
-# Backward compatibility
-def replace_use_weights(fun):
-    @functools.wraps(fun)
-    def wrapped(*args, **kwargs):
-        use_weights = kwargs.pop("useWeights", None)
-        if use_weights is not None:
-            deprecation_warning("useWeights", "ignore_weights")
-            kwargs["ignore_weights"] = not use_weights
-        return fun(*args, **kwargs)
-    return wrapped
+AUC_binary = replace_use_weights(deprecated_function_name(AUC._compute_for_binary_class))
+AUC_multi = replace_use_weights(deprecated_function_name(AUC._compute_for_multi_value_class))
+AUC_iterations = replace_use_weights(deprecated_function_name(AUC._compute_for_multiple_folds))
+AUC_x = replace_use_weights(deprecated_function_name(AUC._compute_auc))
+AUC_i = replace_use_weights(deprecated_function_name(AUC._compute_one_class_against_all))
+AUC_ij = replace_use_weights(deprecated_function_name(AUC._compute_one_class_against_another))
 
-
-AUC_binary = replace_use_weights(deprecated_function_name(AUC.compute_for_binary_class))
-AUC_multi = replace_use_weights(deprecated_function_name(AUC.compute_for_multi_value_class))
-AUC_iterations = replace_use_weights(deprecated_function_name(AUC.compute_for_multiple_folds))
-AUC_x = replace_use_weights(deprecated_function_name(AUC.compute_auc))
-AUC_i = replace_use_weights(deprecated_function_name(AUC.compute_one_class_against_all))
-AUC_ij = replace_use_weights(deprecated_function_name(AUC.compute_one_class_against_another))
-
-# Computes AUC; in multivalued class problem, AUC is computed as one against all
-# Results over folds are averages; if some folds examples from one class only, the folds are merged
-@replace_use_weights
-@deprecated_keywords({"classIndex": "class_index"})
-def AUC_single(res, class_index=-1, ignore_weights=False):
-    """ Computes AUC where the class given classIndex is singled out, and
-    all other classes are treated as a single class. To find how good our
-    classifiers are in distinguishing between vans and other vehicle, call
-    the function like this::
-    
-        Orange.evaluation.scoring.AUC_single(resVeh, \
-classIndex = vehicle.domain.classVar.values.index("van"))
-    """
-    if class_index<0:
-        if res.baseClass>=0:
-            class_index = res.baseClass
-        else:
-            class_index = 1
-
-    if res.number_of_iterations > 1:
-        return AUC_iterations(AUC_i, split_by_iterations(res),
-            (class_index, not ignore_weights, res, res.number_of_iterations))
-    else:
-        return AUC_i( res, class_index, ignore_weights)[0]
-
-# Computes AUC for a pair of classes (as if there were no other classes)
-# Results over folds are averages; if some folds have examples from one class only, the folds are merged
-@replace_use_weights
-@deprecated_keywords({"classIndex1": "class_index1",
-                      "classIndex2": "class_index2"})
-def AUC_pair(res, class_index1, class_index2, ignore_weights=False):
-    """ Computes AUC between a pair of instances, ignoring instances from all
-    other classes.
-    """
-    if res.number_of_iterations > 1:
-        return AUC_iterations(AUC_ij, split_by_iterations(res),
-            (class_index1, class_index2, not ignore_weights, res, res.number_of_iterations))
-    else:
-        return AUC_ij(res, class_index1, class_index2, ignore_weights)
-
-@replace_use_weights
-def AUC_matrix(res, ignore_weights=False):
-    """ Computes a (lower diagonal) matrix with AUCs for all pairs of classes.
-    If there are empty classes, the corresponding elements in the matrix
-    are -1. Remember the beautiful(?) code for printing out the confusion
-    matrix? Here it strikes again::
-    
-        classes = vehicle.domain.classVar.values
-        AUCmatrix = Orange.evaluation.scoring.AUC_matrix(resVeh)[0]
-        print "\t"+"\t".join(classes[:-1])
-        for className, AUCrow in zip(classes[1:], AUCmatrix[1:]):
-            print ("%s" + ("\t%5.3f" * len(AUCrow))) % ((className, ) + tuple(AUCrow))
-    """
-    numberOfClasses = len(res.class_values)
-    number_of_learners = res.number_of_learners
-    
-    if res.number_of_iterations > 1:
-        iterations, all_ite = split_by_iterations(res), res
-    else:
-        iterations, all_ite = [res], None
-    
-    aucs = [[[] for i in range(numberOfClasses)] for i in range(number_of_learners)]
-    prob = class_probabilities_from_res(res)
-        
-    for classIndex1 in range(numberOfClasses):
-        for classIndex2 in range(classIndex1):
-            pair_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1,
-                                                            classIndex2, not ignore_weights,
-                                                            all_ite, res.number_of_iterations))
-            if pair_aucs:
-                for lrn in range(number_of_learners):
-                    aucs[lrn][classIndex1].append(pair_aucs[lrn])
-            else:
-                for lrn in range(number_of_learners):
-                    aucs[lrn][classIndex1].append(-1)
-    return aucs
+AUC_single = replace_use_weights(
+             deprecated_keywords({"classIndex": "class_index"})(
+             deprecated_function_name(AUC.single_class)))
+AUC_pair = replace_use_weights(
+           deprecated_keywords({"classIndex1": "class_index1",
+                                "classIndex2": "class_index2"})(
+           deprecated_function_name(AUC.pair)))
+AUC_matrix = replace_use_weights(deprecated_function_name(AUC.matrix))
 
 
 @deprecated_keywords({"unweighted": "ignore_weights"})
@@ -1730,9 +1763,9 @@ def Friedman(res, stat=CA):
         ranks = [k-x+1 for x in statc.rankdata(r)]
         if stat==Brier_score: # reverse ranks for Brier_score (lower better)
             ranks = [k+1-x for x in ranks]
-        sums = [ranks[i]+sums[i] for i in range(k)]
+        sums = map(add, ranks, sums)
 
-    T = sum([x*x for x in sums])
+    T = sum(x*x for x in sums)
     sums = [x/N for x in sums]
 
     F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
@@ -1784,7 +1817,7 @@ def plot_learning_curve(file, all_results, proportions, legend, no_confidence=0)
     file.write("set yrange [0:1]\n")
     file.write("set xrange [%f:%f]\n" % (proportions[0], proportions[-1]))
     file.write("set multiplot\n\n")
-    CAs = [CA_dev(x) for x in all_results]
+    CAs = [CA(x, report_se=True) for x in all_results]
 
     file.write("plot \\\n")
     for i in range(len(legend)-1):
@@ -1812,7 +1845,7 @@ def plot_learning_curve(file, all_results, proportions, legend, no_confidence=0)
 def print_single_ROC_curve_coordinates(file, curve):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
@@ -1829,7 +1862,7 @@ def plot_ROC_learners(file, curves, learners):
 def plot_ROC(file, curves, legend):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
@@ -1865,7 +1898,7 @@ def plot_McNemar_curve(file, all_results, proportions, legend, reference=-1):
         
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
         
@@ -1899,12 +1932,12 @@ def learning_curve_learners_to_PiCTeX(file, all_results, proportions, **options)
 def learning_curve_to_PiCTeX(file, all_results, proportions, **options):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
     nexamples=len(all_results[0].results)
-    CAs = [CA_dev(x) for x in all_results]
+    CAs = [CA(x, report_se=True) for x in all_results]
 
     graphsize=float(options.get("graphsize", 10.0)) #cm
     difprop=proportions[-1]-proportions[0]
@@ -1979,7 +2012,7 @@ def legend_learners_to_PiCTeX(file, learners, **options):
 def legend_to_PiCTeX(file, legend, **options):
     import types
     fopened=0
-    if (type(file)==types.StringType):
+    if type(file)==types.StringType:
         file=open(file, "wt")
         fopened=1
 
@@ -2036,15 +2069,21 @@ def compute_CD(avranks, N, alpha="0.05", type="nemenyi"):
 
     k = len(avranks)
    
-    d = {}
+    d = {("nemenyi", "0.05"): [0, 0, 1.959964, 2.343701, 2.569032, 2.727774,
+                               2.849705, 2.94832, 3.030879, 3.101730, 3.163684,
+                               3.218654, 3.268004, 3.312739, 3.353618, 3.39123,
+                               3.426041, 3.458425, 3.488685, 3.517073, 3.543799]
+        , ("nemenyi", "0.1"): [0, 0, 1.644854, 2.052293, 2.291341, 2.459516,
+                               2.588521, 2.692732, 2.779884, 2.854606, 2.919889,
+                               2.977768, 3.029694, 3.076733, 3.119693, 3.159199,
+                               3.195743, 3.229723, 3.261461, 3.291224, 3.319233]
+        , ("bonferroni-dunn", "0.05"): [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576,
+                                        2.638, 2.690, 2.724, 2.773],
+         ("bonferroni-dunn", "0.1"): [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326,
+                                      2.394, 2.450, 2.498, 2.539]}
 
     #can be computed in R as qtukey(0.95, n, Inf)**0.5
     #for (x in c(2:20)) print(qtukey(0.95, x, Inf)/(2**0.5)
-    d[("nemenyi", "0.05")] = [0, 0, 1.959964, 2.343701, 2.569032, 2.727774, 2.849705, 2.94832, 3.030879, 3.101730, 3.163684, 3.218654, 3.268004, 3.312739, 3.353618, 3.39123, 3.426041, 3.458425, 3.488685, 3.517073, 3.543799 ]
-    d[("nemenyi", "0.1")] = [0, 0, 1.644854, 2.052293, 2.291341, 2.459516, 2.588521, 2.692732, 2.779884, 2.854606, 2.919889, 2.977768, 3.029694, 3.076733, 3.119693, 3.159199, 3.195743, 3.229723, 3.261461, 3.291224, 3.319233 ]
-
-    d[("bonferroni-dunn", "0.05")] =  [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576, 2.638, 2.690, 2.724, 2.773 ]
-    d[("bonferroni-dunn", "0.1")] = [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326, 2.394, 2.450, 2.498, 2.539 ]
 
     q = d[(type, alpha)]
 
@@ -2074,11 +2113,15 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     :param width: Width of the drawn figure in inches, default 6 in.
     :param textspace: Space on figure sides left for the description
                       of methods, default 1 in.
-    :param reverse:  If True, the lowest rank is on the right. Default: False.
+    :param reverse:  If True, the lowest rank is on the right. Default\: False.
     :param cdmethod: None by default. It can be an index of element in avranks
                      or or names which specifies the method which should be
                      marked with an interval.
     """
+    if not HAS_MATPLOTLIB:
+        import sys
+        print >> sys.stderr, "Function requires matplotlib. Please install it."
+        return
 
     width = float(width)
     textspace = float(textspace)
@@ -2114,7 +2157,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         [(3, 9), (3, 6), (3, 3), (4, 9), (4, 6), (4, 3)]
 
         """
-        if len(lr) == 0:
+        if not len(lr):
             yield ()
         else:
             #it can work with single numbers
@@ -2125,14 +2168,9 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
                 for b in mxrange(lr[1:]):
                     yield tuple([a] + list(b))
 
-    try:
-        from matplotlib.figure import Figure
-        from matplotlib.patches import Polygon
-        from matplotlib.backends.backend_agg import FigureCanvasAgg
-    except:
-        import sys
-        print >> sys.stderr, "Function requires matplotlib. Please install it."
-        return
+
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
 
     def print_figure(fig, *args, **kwargs):
         canvas = FigureCanvasAgg(fig)
@@ -2145,9 +2183,9 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     sortidx = nth(tempsort, 1)
     nnames = [ names[x] for x in sortidx ]
     
-    if lowv == None:
+    if lowv is None:
         lowv = min(1, int(math.floor(min(ssums))))
-    if highv == None:
+    if highv is None:
         highv = max(len(avranks), int(math.ceil(max(ssums))))
 
     cline = 0.4
@@ -2155,7 +2193,6 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     k = len(sums)
 
     lines = None
-    sums = sorted(sums)
 
     linesblank = 0
     scalewidth = width - 2*textspace
@@ -2169,7 +2206,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
 
     distanceh = 0.25
 
-    if cd and cdmethod == None:
+    if cd and cdmethod is None:
     
         #get pairs of non significant methods
 
@@ -2216,9 +2253,8 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     def wfl(l): 
         return [ a*wf for a in l ]
 
-    """
-    Upper left corner is (0,0).
-    """
+
+    # Upper left corner is (0,0).
 
     ax.plot([0,1], [0,1], c="w")
     ax.set_xlim(0, 1)
@@ -2240,7 +2276,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
 
 
     import numpy
-
+    tick = None
     for a in list(numpy.arange(lowv, highv, 0.5)) + [highv]:
         tick = smalltick
         if a == int(a): tick = bigtick
@@ -2252,7 +2288,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     k = len(ssums)
 
     for i in range((k+1)/2):
-        chei = cline+ minnotsignificant + (i)*0.2
+        chei = cline+ minnotsignificant + i *0.2
         line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace-0.1, chei)], linewidth=0.7)
         text(textspace-0.2, chei, nnames[i], ha="right", va="center")
 
@@ -2261,7 +2297,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace+scalewidth+0.1, chei)], linewidth=0.7)
         text(textspace+scalewidth+0.2, chei, nnames[i], ha="left", va="center")
 
-    if cd and cdmethod == None:
+    if cd and cdmethod is None:
 
         #upper scale
         if not reverse:
@@ -2326,7 +2362,6 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
     :math:`Accuracy(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} (\\frac{|Y_i \\cap Z_i|}{|Y_i \\cup Z_i|})^{\\alpha}`
     """
     accuracies = [0.0]*res.number_of_learners
-    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
@@ -2340,12 +2375,12 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
             union = 0.0
             for real, pred in zip(labels, aclass):
                 if real and pred:
-                    intersection = intersection+1
+                    intersection += 1
                 if real or pred:
-                    union = union+1
+                    union += 1
 
-            if union != 0:
-                accuracies[i] = accuracies[i] + intersection/union
+            if union:
+                accuracies[i] += intersection / union
             
     return [math.pow(x/example_num,forgiveness_rate) for x in accuracies]
 
@@ -2354,7 +2389,6 @@ def mlc_precision(res):
     :math:`Precision(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Z_i|}`
     """
     precisions = [0.0]*res.number_of_learners
-    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
@@ -2368,11 +2402,11 @@ def mlc_precision(res):
             predicted = 0.0
             for real, pred in zip(labels, aclass):
                 if real and pred:
-                    intersection = intersection+1
+                    intersection += 1
                 if real:
-                    predicted = predicted + 1
-            if predicted <> 0:
-                precisions[i] = precisions[i] + intersection/predicted
+                    predicted += 1
+            if predicted:
+                precisions[i] += intersection / predicted
             
     return [x/example_num for x in precisions]
 
@@ -2381,7 +2415,6 @@ def mlc_recall(res):
     :math:`Recall(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Y_i|}`
     """
     recalls = [0.0]*res.number_of_learners
-    label_num = len(res.labels)
     example_num = gettotsize(res)
     
     for e in res.results:
@@ -2395,11 +2428,11 @@ def mlc_recall(res):
             actual = 0.0
             for real, pred in zip(labels, aclass):
                 if real and pred:
-                    intersection = intersection+1
+                    intersection += 1
                 if pred:
-                    actual = actual + 1
-            if actual <> 0:
-                recalls[i] = recalls[i] + intersection/actual
+                    actual += 1
+            if actual:
+                recalls[i] += intersection / actual
             
     return [x/example_num for x in recalls]
 

@@ -11,98 +11,49 @@ curves. This methods handle learning of models and prediction of new
 examples; they return :obj:`ExperimentResults` which can be passed to
 :obj:`~Orange.evaluation.scoring` functions to evaluate model.
 
+.. literalinclude:: code/testing-example.py
 
+Different evaluation techniques are implemented as instance methods of
+:obj:`Evaluation` class. For ease of use, an instance of this class in
+created at module loading time and instance methods are exposed as functions
+with the same name in Orange.evaluation.testing namespace.
 
-Your scripts will thus basically conduct experiments using methods of
-:obj:`Evaluation` class and functions in  :obj:`Orange.evaluation.testing`,
-covered on this page and then evaluate the results by functions in
-:obj:`Orange.evaluation.scoring`. For those interested in writing their own
-statistical measures of the quality of models,
-description of :obj:`TestedExample` and :obj:`ExperimentResults` are
-available at the end of this page.
+.. autoclass:: Evaluation
+   :members:
 
-Example scripts in this section suppose that the data is loaded and a
-list of learning algorithms is prepared.
+.. autoclass:: ExperimentResults
+    :members:
 
-part of :download:`testing-test.py <code/testing-test.py>`
+.. autoclass:: TestedExample
+    :members:
 
-.. literalinclude:: code/testing-test.py
-    :start-after: import random
-    :end-before: def printResults(res)
+Generating random numbers
+=========================
 
-After testing is done, classification accuracies can be computed and
-printed by the following function.
+Many evaluation
 
-.. literalinclude:: code/testing-test.py
-    :pyobject: printResults
-
-Common Arguments
-================
-
-Many function in this module use a set of common arguments, which we define here.
-
-*learners*
-    A list of learning algorithms. These can be either pure Orange objects
-    (such as :obj:`Orange.classification.bayes.NaiveLearner`) or Python
-    classes or functions written in pure Python (anything that can be
-    called with the same arguments and results as Orange's classifiers
-    and performs similar function).
-
-*examples, learnset, testset*
-    Examples, given as an :obj:`Orange.data.Table` (some functions need an undivided
-    set of examples while others need examples that are already split
-    into two sets). If examples are weighted, pass them as a tuple
-    ``(examples, weightID)``. Weights are respected by learning and testing,
-    but not by sampling. When selecting 10% of examples, this means 10%
-    by number, not by weights. There is also no guarantee that sums
-    of example weights will be (at least roughly) equal for folds in
-    cross validation.
-
-*strat*
+*stratified*
     Tells whether to stratify the random selections. Its default value is
     :obj:`orange.StratifiedIfPossible` which stratifies selections
     if the class variable is discrete and has no unknown values.
 
-*randseed (obsolete: indicesrandseed), random_generator*
-    Random seed (``randseed``) or random generator (``random_generator``) for
-    random selection of examples. If omitted, random seed of 0 is used and
-    the same test will always select the same examples from the example
-    set. There are various slightly different ways to randomize it.
+*random_generator*
+    If evaluation method relies on randomness, parameter ``random_generator``
+    can be used to either provide a random seed or an instance of
+    :obj:`~Orange.misc.Random` which will be used to generate random numbers.
 
-    *
-      Set ``random_generator`` to :obj:`orange.globalRandom`. The function's
-      selection will depend upon Orange's global random generator that
-      is reset (with random seed 0) when Orange is imported. The Script's
-      output will therefore depend upon what you did after Orange was
-      first imported in the current Python session. ::
+    By default, a new instance of random generator is constructed for each
+    call of the method with random seed 0.
 
-          res = Orange.evaluation.testing.proportion_test(learners, data, 0.7,
-              random_generator=orange.globalRandom)
+    If you use more than one method that is based on randomness,
+    you can construct an instance of :obj:`~Orange.misc.Random` and pass it
+    to all of them. This way, all methods will use different random numbers,
+    but this numbers will be the same for each run of the script.
 
-    *
-      Construct a new :obj:`Orange.misc.Random`. The code below,
-      for instance, will produce different results in each iteration,
-      but overall the same results each time it's run.
-
-      .. literalinclude:: code/testing-test.py
-        :start-after: but the same each time the script is run
-        :end-before: # End
-
-    *
-      Set the random seed (argument ``randseed``) to a random
-      number. Python has a global random generator that is reset when
-      Python is loaded, using the current system time for a seed. With this,
-      results will be (in general) different each time the script is run.
-
-
-      .. literalinclude:: code/testing-test.py
-        :start-after: proportionsTest that will give different results each time it is run
-        :end-before: # End
-
-
-      The same module also provides random generators as object, so
-      that you can have independent local random generators in case you
-      need them.
+    For truly random number, set seed to a random number generated with
+    python random generator. Since python's random generator is reset each
+    time python is loaded with current system time as seed,
+    results of the script will be different each time you run it.
 
 *preprocessors*
     A list of preprocessors. It consists of tuples ``(c, preprocessor)``,
@@ -124,10 +75,6 @@ Many function in this module use a set of common arguments, which we define here
         classnoise = orange.Preprocessor_addClassNoise(proportion=1.0)
         res = Orange.evaluation.testing.proportion_test(learners, data, 0.7, 100, pps = [("L", classnoise)])
 
-*proportions*
-    Gives the proportions of learning examples at which the tests are
-    to be made, where applicable. The default is ``[0.1, 0.2, ..., 1.0]``.
-
 *store_classifiers (keyword argument)*
     If this flag is set, the testing procedure will store the constructed
     classifiers. For each iteration of the test (eg for each fold in
@@ -141,14 +88,6 @@ Many function in this module use a set of common arguments, which we define here
         res = Orange.evaluation.testing.proportion_test(learners, data, 0.7,
         100, store_classifiers=1)
 
-Sampling and Testing Functions
-==============================
-
-.. autoclass:: Evaluation
-   :members:
-
-Classes
-=======
 
 Knowing classes :obj:`TestedExample` that stores results of testing
 for a single test example and :obj:`ExperimentResults` that stores a list of
@@ -157,11 +96,7 @@ and classifiers used, is important if you would like to write your own
 measures of quality of models, compatible the sampling infrastructure
 provided by Orange. If not, you can skip the remainder of this page.
 
-.. autoclass:: TestedExample
-    :members:
 
-.. autoclass:: ExperimentResults
-    :members:
 
 References
 ==========

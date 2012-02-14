@@ -456,6 +456,8 @@ class Evaluation(object):
                                         domain=examples.domain,
                                         test_type = test_type,
                                         weights=weight)
+        if store_examples:
+            test_results.examples = []
         test_results.classifiers = []
         offset=0
         for time in xrange(times):
@@ -465,6 +467,8 @@ class Evaluation(object):
             classifiers, results = self._learn_and_test_on_test_data(learners, learn_set, weight, test_set, preprocessors)
             if store_classifiers:
                 test_results.classifiers.append(classifiers)
+            if store_examples:
+                test_results.examples.append(learn_set)
 
             test_results.results.extend(test_results.create_tested_example(time, example)
                                         for i, example in enumerate(test_set))
@@ -560,11 +564,10 @@ class Evaluation(object):
         the second dataset.
 
         :param learners: list of learners to be tested
-        :param examples: a dataset used for evaluation
-        :param folds: number of folds for cross-validation
+        :param learn_set: a dataset used for evaluation
+        :param test_set: a dataset used for evaluation
         :param proportions: proportions of train data to be used
         :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that is called after each classifier is computed.
         :return: list of :obj:`ExperimentResults`
         """
         learn_set, learn_weight = demangle_examples(learn_set)
@@ -587,7 +590,7 @@ class Evaluation(object):
                                             for i, example in enumerate(test_set))
 
                 learn_examples = learn_set.selectref(indices(learn_set, p), 0)
-                classifiers, results = self._learn_and_test_on_test_data(learners, learn_examples, learn_weight, test_set)
+                classifiers, results = self._learn_and_test_on_test_data(learners, learn_examples, learn_weight, test_set, preprocessors=preprocessors)
 
                 for example, classifier, result in results:
                     test_results.results[offset+example].set_result(classifier, *result)
@@ -665,7 +668,8 @@ class Evaluation(object):
                 # Hide actual class to prevent cheating
                 ex2 = Orange.data.Instance(example)
                 if ex2.domain.class_var: ex2.setclass("?")
-                if ex2.domain.class_vars: ex2.set_classes(["?" for cv in ex2.domain.class_vars])
+                if ex2.domain.class_vars: ex2.set_classes(["?" for _ in ex2
+                .domain.class_vars])
                 result = classifier(ex2, Orange.core.GetBoth)
                 results.append((e, c, result))
         return results
@@ -688,9 +692,8 @@ class Evaluation(object):
 
 
     def encode_PP(self, pps):
-        pps=""
         for pp in pps:
-            objname = getobjectname(pp[1], "")
+            objname = getobjectname(pp[1])
             if len(objname):
                 pps+="_"+objname
             else:
