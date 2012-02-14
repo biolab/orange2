@@ -3,26 +3,26 @@ cdd e:\orange\scripts
 
 
 REM # Until orange-install-scripts repo is up this does not yet run
-REM hg clone https://bitbucket.org/biolab/orange-install-scripts .
-REM hg pull --update 
+REM call hg clone https://bitbucket.org/biolab/orange-install-scripts .
+REM call hg pull --update 
 
-REM hg clone https://bitbucket.org/biolab/orange snapshot
+REM call hg clone https://bitbucket.org/biolab/orange snapshot
 cdd snapshot
-hg pull
-hg update
+call hg pull
+call hg update
 
 
-REM hg clone https://bitbucket.org/biolab/orange-addon-bioinformatics Bioinformatics
+REM call hg clone https://bitbucket.org/biolab/orange-addon-bioinformatics Bioinformatics
 cdd Bioinformatics
-hg pull
-hg update
+call hg pull
+call hg update
 
 cdd  e:\orange\scripts\snapshot
 
-REM hg clone https://bitbucket.org/biolab/orange-addon-text Text
+REM call hg clone https://bitbucket.org/biolab/orange-addon-text Text
 cdd Text
-hg pull 
-hg update
+call hg pull 
+call hg update
 
 cdd e:\orange\scripts
 
