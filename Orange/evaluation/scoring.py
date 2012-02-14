@@ -4,7 +4,8 @@ import numpy
 
 import Orange
 from Orange import statc, corn
-from Orange.misc import deprecated_keywords, deprecated_function_name, deprecation_warning
+from Orange.misc import deprecated_keywords, deprecated_function_name, \
+    deprecation_warning, environ
 from Orange.evaluation import testing
 
 try:
@@ -1380,6 +1381,19 @@ def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
     else:
         return corn.computeCDT(res, class_index, useweights)
 
+# Backward compatibility
+def replace_use_weights(fun):
+    if environ.orange_no_deprecated_members:
+        return fun
+
+    @functools.wraps(fun)
+    def wrapped(*args, **kwargs):
+        use_weights = kwargs.pop("useWeights", None)
+        if use_weights is not None:
+            deprecation_warning("useWeights", "ignore_weights")
+            kwargs["ignore_weights"] = not use_weights
+        return fun(*args, **kwargs)
+    return wrapped
 
 class AucClass(object):
     ByWeightedPairs = 0
@@ -1387,33 +1401,138 @@ class AucClass(object):
     WeightedOneAgainstAll = 2
     OneAgainstAll = 3
 
-    def __call__(self, res, method=0, ignore_weights=False, useWeights=None):
-        """ Returns the area under ROC curve (AUC) given a set of experimental
-        results. For multivalued class problems, it will compute some sort of
-        average, as specified by the argument method.
+    @replace_use_weights
+    def __call__(self, test_results, method=0, ignore_weights=False):
         """
-        if useWeights is not None:
-            deprecation_warning("useWeights", "ignore_weights")
-            ignore_weights = not useWeights
+        Return the area under ROC curve given a set of experimental results.
+        For multivalued class problems, return the result of :obj:`by_weighted_pairs`.
 
-        if len(res.class_values) < 2:
+        :param test_results: test results to score
+        :param ignore_weights: ignore instance weights when calculating score
+        :param method: DEPRECATED, call the appropriate method directly.
+        """
+        if len(test_results.class_values) < 2:
             raise ValueError("Cannot compute AUC on a single-class problem")
-        elif len(res.class_values) == 2:
-            return self.compute_for_binary_class(res, ignore_weights)
+        elif len(test_results.class_values) == 2:
+            return self._compute_for_binary_class(test_results, ignore_weights)
         else:
-            return self.compute_for_multi_value_class(res, ignore_weights, method)
+            return self._compute_for_multi_value_class(test_results, ignore_weights, method)
 
-    def compute_for_binary_class(self, res, ignore_weights=False):
+    def by_weighted_pairs(self, res, ignore_weights=False):
+        """
+        Compute AUC for each pair of classes (ignoring instances of all other
+        classes) and averages the results, weighting them by the number of
+        pairs of instances from these two classes (e.g. by the product of
+        probabilities of the two classes). AUC computed in this way still
+        behaves as concordance index, e.g., gives the probability that two
+        randomly chosen instances from different classes will be correctly
+        recognized (if the classifier knows from which two classes the
+        instances came).
+        """
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.ByWeightedPairs)
+
+    def by_pairs(self, res, ignore_weights=False):
+        """
+        Similar as above, except that the average over class pairs is not
+        weighted. This AUC is, like the binary, independent of class
+        distributions, but it is not related to concordance index any more.
+        """
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.ByPairs)
+
+    # Computes AUC; in multivalued class problem, AUC is computed as one against all
+    # Results over folds are averages; if some folds examples from one class only, the folds are merged
+    @replace_use_weights
+    @deprecated_keywords({"classIndex": "class_index"})
+    def single_class(self, res, class_index=-1, ignore_weights=False):
+        """
+        Compute AUC where the class with the given class_index is singled
+        out and all other classes are treated as a single class.
+        """
+        if class_index<0:
+            if res.baseClass>=0:
+                class_index = res.baseClass
+            else:
+                class_index = 1
+
+        if res.number_of_iterations > 1:
+            return AUC_iterations(AUC_i, split_by_iterations(res),
+                (class_index, not ignore_weights, res, res.number_of_iterations))
+        else:
+            return AUC_i( res, class_index, ignore_weights)[0]
+
+    # Computes AUC for a pair of classes (as if there were no other classes)
+    # Results over folds are averages; if some folds have examples from one class only, the folds are merged
+    def pair(self, res, class_index1, class_index2, ignore_weights=False):
+        """
+        Computes AUC between a pair of classes, ignoring instances from all
+        other classes.
+        """
+        if res.number_of_iterations > 1:
+            return AUC_iterations(AUC_ij, split_by_iterations(res),
+                (class_index1, class_index2, not ignore_weights, res, res.number_of_iterations))
+        else:
+            return AUC_ij(res, class_index1, class_index2, ignore_weights)
+
+    def matrix(self, res, ignore_weights=False):
+        """
+        Compute a (lower diagonal) matrix with AUCs for all pairs of classes.
+        If there are empty classes, the corresponding elements in the matrix
+        are -1.
+        """
+        numberOfClasses = len(res.class_values)
+        number_of_learners = res.number_of_learners
+
+        if res.number_of_iterations > 1:
+            iterations, all_ite = split_by_iterations(res), res
+        else:
+            iterations, all_ite = [res], None
+
+        aucs = [[[] for _ in range(numberOfClasses)] for _ in range(number_of_learners)]
+
+        for classIndex1 in range(numberOfClasses):
+            for classIndex2 in range(classIndex1):
+                pair_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1,
+                                                                classIndex2, not ignore_weights,
+                                                                all_ite, res.number_of_iterations))
+                if pair_aucs:
+                    for lrn in range(number_of_learners):
+                        aucs[lrn][classIndex1].append(pair_aucs[lrn])
+                else:
+                    for lrn in range(number_of_learners):
+                        aucs[lrn][classIndex1].append(-1)
+        return aucs
+
+    def weighted_one_against_all(self, res, ignore_weights=False):
+        """
+        For each class, it computes AUC for this class against all others (that
+        is, treating other classes as one class). The AUCs are then averaged by
+        the class probabilities. This is related to concordance index in which
+        we test the classifier's (average) capability for distinguishing the
+        instances from a specified class from those that come from other classes.
+        Unlike the binary AUC, the measure is not independent of class
+        distributions.
+        """
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.WeightedOneAgainstAll)
+
+    def one_against_all(self, res, ignore_weights=False):
+        """As above, except that the average is not weighted."""
+        return self._compute_for_multi_value_class(res, ignore_weights,
+            method=self.OneAgainstAll)
+
+    def _compute_for_binary_class(self, res, ignore_weights=False):
         """AUC for binary classification problems"""
         if res.number_of_iterations > 1:
-            return self.compute_for_multiple_folds(
-                        self.compute_one_class_against_all,
+            return self._compute_for_multiple_folds(
+                        self._compute_one_class_against_all,
                         split_by_iterations(res),
                         (-1, not ignore_weights,res, res.number_of_iterations))
         else:
-            return self.compute_one_class_against_all(res, -1, ignore_weights)[0]
+            return self._compute_one_class_against_all(res, -1, ignore_weights)[0]
 
-    def compute_for_multi_value_class(self, res, ignore_weights=False,
+    def _compute_for_multi_value_class(self, res, ignore_weights=False,
                                       method=0):
         """AUC for multiclass classification problems"""
         numberOfClasses = len(res.class_values)
@@ -1436,8 +1555,8 @@ class AucClass(object):
         if method in [self.ByWeightedPairs, self.ByPairs]:
             for classIndex1 in range(numberOfClasses):
                 for classIndex2 in range(classIndex1):
-                    subsum_aucs = self.compute_for_multiple_folds(
-                                             self.compute_one_class_against_another,
+                    subsum_aucs = self._compute_for_multiple_folds(
+                                             self._compute_one_class_against_another,
                                              iterations,
                                              (classIndex1, classIndex2,
                                              not ignore_weights, all_ite,
@@ -1452,8 +1571,8 @@ class AucClass(object):
                         sum_aucs = map(add, sum_aucs, subsum_aucs)
         else:
             for classIndex in range(numberOfClasses):
-                subsum_aucs = self.compute_for_multiple_folds(
-                    self.compute_one_class_against_all,
+                subsum_aucs = self._compute_for_multiple_folds(
+                    self._compute_one_class_against_all,
                     iterations, (classIndex, not ignore_weights, all_ite,
                                  res.number_of_iterations))
                 if subsum_aucs:
@@ -1476,7 +1595,7 @@ class AucClass(object):
     # in these cases the result is returned immediately
     @deprecated_keywords({"AUCcomputer": "auc_computer",
                           "computerArgs": "computer_args"})
-    def compute_for_multiple_folds(self, auc_computer, iterations,
+    def _compute_for_multiple_folds(self, auc_computer, iterations,
                                  computer_args):
         """Compute the average AUC over folds using :obj:`auc_computer`."""
         subsum_aucs = [0.] * iterations[0].number_of_learners
@@ -1492,22 +1611,22 @@ class AucClass(object):
     # computes AUC between class i and the other classes (treating them as the same class)
     @deprecated_keywords({"classIndex": "class_index",
                           "divideByIfIte": "divide_by_if_ite"})
-    def compute_one_class_against_all(self, ite, class_index,
+    def _compute_one_class_against_all(self, ite, class_index,
                                       ignore_weights=True, all_ite=None,
                                       divide_by_if_ite=1.0):
         """Compute AUC between class i and all the other classes)"""
-        return self.compute_auc(corn.computeCDT, ite, all_ite, divide_by_if_ite,
+        return self._compute_auc(corn.computeCDT, ite, all_ite, divide_by_if_ite,
             (class_index, not ignore_weights))
 
 
     # computes AUC between classes i and j as if there are no other classes
-    def compute_one_class_against_another(self, ite, class_index1,
+    def _compute_one_class_against_another(self, ite, class_index1,
             class_index2, ignore_weights=False, all_ite=None,
             divide_by_if_ite=1.0):
         """
         Compute AUC between classes i and j as if there are no other classes.
         """
-        return self.compute_auc(corn.computeCDTPair, ite, all_ite, divide_by_if_ite,
+        return self._compute_auc(corn.computeCDTPair, ite, all_ite, divide_by_if_ite,
             (class_index1, class_index2, not ignore_weights))
 
     # computes AUC using a specified 'cdtComputer' function
@@ -1518,10 +1637,10 @@ class AucClass(object):
     @deprecated_keywords({"cdt_computer": "cdtComputer",
                           "divideByIfIte": "divide_by_if_ite",
                           "computerArgs": "computer_args"})
-    def compute_auc(self, cdt_computer, ite, all_ite, divide_by_if_ite,
+    def _compute_auc(self, cdt_computer, ite, all_ite, divide_by_if_ite,
               computer_args):
         """
-        Compute AUC using a :obj:`cdtComputer`.
+        Compute AUC using a :obj:`cdt_computer`.
         """
         cdts = cdt_computer(*(ite, ) + computer_args)
         if not is_CDT_empty(cdts[0]):
@@ -1536,100 +1655,21 @@ class AucClass(object):
 
 AUC = AucClass()
 
-# Backward compatibility
-def replace_use_weights(fun):
-    @functools.wraps(fun)
-    def wrapped(*args, **kwargs):
-        use_weights = kwargs.pop("useWeights", None)
-        if use_weights is not None:
-            deprecation_warning("useWeights", "ignore_weights")
-            kwargs["ignore_weights"] = not use_weights
-        return fun(*args, **kwargs)
-    return wrapped
+AUC_binary = replace_use_weights(deprecated_function_name(AUC._compute_for_binary_class))
+AUC_multi = replace_use_weights(deprecated_function_name(AUC._compute_for_multi_value_class))
+AUC_iterations = replace_use_weights(deprecated_function_name(AUC._compute_for_multiple_folds))
+AUC_x = replace_use_weights(deprecated_function_name(AUC._compute_auc))
+AUC_i = replace_use_weights(deprecated_function_name(AUC._compute_one_class_against_all))
+AUC_ij = replace_use_weights(deprecated_function_name(AUC._compute_one_class_against_another))
 
-
-AUC_binary = replace_use_weights(deprecated_function_name(AUC.compute_for_binary_class))
-AUC_multi = replace_use_weights(deprecated_function_name(AUC.compute_for_multi_value_class))
-AUC_iterations = replace_use_weights(deprecated_function_name(AUC.compute_for_multiple_folds))
-AUC_x = replace_use_weights(deprecated_function_name(AUC.compute_auc))
-AUC_i = replace_use_weights(deprecated_function_name(AUC.compute_one_class_against_all))
-AUC_ij = replace_use_weights(deprecated_function_name(AUC.compute_one_class_against_another))
-
-# Computes AUC; in multivalued class problem, AUC is computed as one against all
-# Results over folds are averages; if some folds examples from one class only, the folds are merged
-@replace_use_weights
-@deprecated_keywords({"classIndex": "class_index"})
-def AUC_single(res, class_index=-1, ignore_weights=False):
-    """ Computes AUC where the class given classIndex is singled out, and
-    all other classes are treated as a single class. To find how good our
-    classifiers are in distinguishing between vans and other vehicle, call
-    the function like this::
-    
-        Orange.evaluation.scoring.AUC_single(resVeh, \
-classIndex = vehicle.domain.classVar.values.index("van"))
-    """
-    if class_index<0:
-        if res.baseClass>=0:
-            class_index = res.baseClass
-        else:
-            class_index = 1
-
-    if res.number_of_iterations > 1:
-        return AUC_iterations(AUC_i, split_by_iterations(res),
-            (class_index, not ignore_weights, res, res.number_of_iterations))
-    else:
-        return AUC_i( res, class_index, ignore_weights)[0]
-
-# Computes AUC for a pair of classes (as if there were no other classes)
-# Results over folds are averages; if some folds have examples from one class only, the folds are merged
-@replace_use_weights
-@deprecated_keywords({"classIndex1": "class_index1",
-                      "classIndex2": "class_index2"})
-def AUC_pair(res, class_index1, class_index2, ignore_weights=False):
-    """ Computes AUC between a pair of instances, ignoring instances from all
-    other classes.
-    """
-    if res.number_of_iterations > 1:
-        return AUC_iterations(AUC_ij, split_by_iterations(res),
-            (class_index1, class_index2, not ignore_weights, res, res.number_of_iterations))
-    else:
-        return AUC_ij(res, class_index1, class_index2, ignore_weights)
-
-@replace_use_weights
-def AUC_matrix(res, ignore_weights=False):
-    """ Computes a (lower diagonal) matrix with AUCs for all pairs of classes.
-    If there are empty classes, the corresponding elements in the matrix
-    are -1. Remember the beautiful(?) code for printing out the confusion
-    matrix? Here it strikes again::
-    
-        classes = vehicle.domain.classVar.values
-        AUCmatrix = Orange.evaluation.scoring.AUC_matrix(resVeh)[0]
-        print "\t"+"\t".join(classes[:-1])
-        for className, AUCrow in zip(classes[1:], AUCmatrix[1:]):
-            print ("%s" + ("\t%5.3f" * len(AUCrow))) % ((className, ) + tuple(AUCrow))
-    """
-    numberOfClasses = len(res.class_values)
-    number_of_learners = res.number_of_learners
-    
-    if res.number_of_iterations > 1:
-        iterations, all_ite = split_by_iterations(res), res
-    else:
-        iterations, all_ite = [res], None
-    
-    aucs = [[[] for _ in range(numberOfClasses)] for _ in range(number_of_learners)]
-        
-    for classIndex1 in range(numberOfClasses):
-        for classIndex2 in range(classIndex1):
-            pair_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1,
-                                                            classIndex2, not ignore_weights,
-                                                            all_ite, res.number_of_iterations))
-            if pair_aucs:
-                for lrn in range(number_of_learners):
-                    aucs[lrn][classIndex1].append(pair_aucs[lrn])
-            else:
-                for lrn in range(number_of_learners):
-                    aucs[lrn][classIndex1].append(-1)
-    return aucs
+AUC_single = replace_use_weights(
+             deprecated_keywords({"classIndex": "class_index"})(
+             deprecated_function_name(AUC.single_class)))
+AUC_pair = replace_use_weights(
+           deprecated_keywords({"classIndex1": "class_index1",
+                                "classIndex2": "class_index2"})(
+           deprecated_function_name(AUC.pair)))
+AUC_matrix = replace_use_weights(deprecated_function_name(AUC.matrix))
 
 
 @deprecated_keywords({"unweighted": "ignore_weights"})

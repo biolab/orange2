@@ -51,38 +51,9 @@ different classes are called discriminatory scores.
 
 .. autosingleton:: AUC
 .. autoclass:: AucClass
-    :members:
-
-*AUC.ByWeightedPairs (or 0)*
-
-    Computes AUC for each pair of classes (ignoring instances of all other
-    classes) and averages the results, weighting them by the number of
-    pairs of instances from these two classes (e.g. by the product of
-    probabilities of the two classes). AUC computed in this way still
-    behaves as concordance index, e.g., gives the probability that two
-    randomly chosen instances from different classes will be correctly
-    recognized (this is of course true only if the classifier knows
-    from which two classes the instances came).
-
-*AUC.ByPairs (or 1)*
-
-    Similar as above, except that the average over class pairs is not
-    weighted. This AUC is, like the binary, independent of class
-    distributions, but it is not related to concordance index any more.
-
-*AUC.WeightedOneAgainstAll (or 2)*
-
-    For each class, it computes AUC for this class against all others (that
-    is, treating other classes as one class). The AUCs are then averaged by
-    the class probabilities. This is related to concordance index in which
-    we test the classifier's (average) capability for distinguishing the
-    instances from a specified class from those that come from other classes.
-    Unlike the binary AUC, the measure is not independent of class
-    distributions.
-
-*AUC.OneAgainstAll (or 3)*
-
-    As above, except that the average is not weighted.
+    :members: __call__, by_weighted_pairs, by_pairs,
+              weighted_one_against_all, one_against_all, single_class, pair,
+              matrix
 
 In case of multiple folds (for instance if the data comes from cross
 validation), the computation goes like this. When computing the partial
@@ -126,12 +97,6 @@ As you can see from the output::
                     by pairs:  0.791   0.872   0.500
        one vs. all, weighted:  0.783   0.800   0.500
                  one vs. all:  0.783   0.800   0.500
-
-.. autofunction:: AUC_single
-
-.. autofunction:: AUC_pair
-
-.. autofunction:: AUC_matrix
 
 The remaining functions, which plot the curves and statistically compare
 them, require that the results come from a test with a single iteration,
