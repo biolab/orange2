@@ -236,21 +236,34 @@ for all the clusters below.
 The following example constructs a simple distance matrix and runs clustering
 on it.
 
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 1-16
-    
+    >>> import Orange
+    >>> m = [[],
+    ...      [ 3],
+    ...      [ 2, 4],
+    ...      [17, 5, 4],
+    ...      [ 2, 8, 3, 8],
+    ...      [ 7, 5, 10, 11, 2],
+    ...      [ 8, 4, 1, 5, 11, 13],
+    ...      [ 4, 7, 12, 8, 10, 1, 5],
+    ...      [13, 9, 14, 15, 7, 8, 4, 6],
+    ...      [12, 10, 11, 15, 2, 5, 7, 3, 1]]
+    >>> matrix = Orange.misc.SymMatrix(m)
+    >>> root = Orange.clustering.hierarchical.HierarchicalClustering(matrix,
+    ...     linkage=Orange.clustering.hierarchical.AVERAGE)
+        
 ``root`` is the root of the cluster hierarchy. We can print it with a
 simple recursive function.
 
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 18-22
+    >>> def print_clustering(cluster):
+    ...     if cluster.branches:
+    ...         return "(%s %s)" % (print_clustering(cluster.left), print_clustering(cluster.right))
+    ...     else:
+    ...         return str(cluster[0])
             
 The clustering looks like
-::
 
-    >>> print print_clustering(root)
-    (((0 4) ((5 7) (8 9))) ((1 (2 6)) 3))
+    >>> print_clustering(root)
+    '(((0 4) ((5 7) (8 9))) ((1 (2 6)) 3))'
     
 The elements form two groups, the first with elements 0, 4, 5, 7, 8, 9,
 and the second with 1, 2, 6, 3. The difference between them equals to
@@ -262,11 +275,10 @@ The first cluster is further divided onto 0 and 4 in one, and 5, 7, 8,
 9 in the other subcluster.
 
 The following code prints the left subcluster of root.
-::
 
     >>> for el in root.left:
-        ... print el,
-    0 4 5 7 8 9 
+    ...     print el,
+    0 4 5 7 8 9
     
 Instead of printing out the first (and supposedly the only) element of
 cluster, cluster[0], we shall print it out as a tuple.
@@ -276,58 +288,73 @@ cluster, cluster[0], we shall print it out as a tuple.
             
 Object descriptions can be added with
 
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 28-29
+    >>> root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", 
+    ...    "Fred", "Greg", "Hue", "Ivy", "Jon"]
     
-As before, let us print out the elements of the first left cluster::
+As before, let us print out the elements of the first left cluster
 
     >>> for el in root.left:
-        ... print el,
+    ...     print el,
     Ann Eve Fred Hue Ivy Jon
 
 Calling ``root.left.swap`` reverses the order of subclusters of
-``root.left``::
+``root.left``
 
     >>> print_clustering(root)
-    (((Ann Eve) ((Fred Hue) (Ivy Jon))) ((Bob (Curt Greg)) Danny))
+    '(((Ann Eve) ((Fred Hue) (Ivy Jon))) ((Bob (Curt Greg)) Danny))'
     >>> root.left.swap()
     >>> print_clustering(root)
-    ((((Fred Hue) (Ivy Jon)) (Ann Eve)) ((Bob (Curt Greg)) Danny))
+    '((((Fred Hue) (Ivy Jon)) (Ann Eve)) ((Bob (Curt Greg)) Danny))'
     
 Let us write function for cluster pruning.
 
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 42-48
+    >>> def prune(cluster, h):
+    ...     if cluster.branches:
+    ...         if cluster.height < h:
+    ...             cluster.branches = None
+    ...         else:
+    ...             for branch in cluster.branches:
+    ...                 prune(branch, h)
 
 Here we need a function that can plot leafs with multiple elements.
 
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 50-54
+    >>> def print_clustering2(cluster):
+    ...     if cluster.branches:
+    ...         return "(%s %s)" % (print_clustering2(cluster.left), print_clustering2(cluster.right))
+    ...     else:
+    ...         return str(tuple(cluster))
 
 Four clusters remain.
 
     >>> prune(root, 5)
     >>> print print_clustering2(root)
-    (('Bob', 'Curt', 'Greg', 'Danny') ((('Fred', 'Hue') ('Ivy', 'Jon')) ('Ann', 'Eve')))
+    (((('Fred', 'Hue') ('Ivy', 'Jon')) ('Ann', 'Eve')) ('Bob', 'Curt', 'Greg', 'Danny'))
     
 The following function returns a list of lists.
 
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 59-69
+    >>> def list_of_clusters0(cluster, alist):
+    ...     if not cluster.branches:
+    ...         alist.append(list(cluster))
+    ...     else:
+    ...         for branch in cluster.branches:
+    ...             list_of_clusters0(branch, alist)
+    ... 
+    >>> def list_of_clusters(root):
+    ...     l = []
+    ...     list_of_clusters0(root, l)
+    ...     return l
         
 The function returns a list of lists, in our case
-::
 
     >>> list_of_clusters(root)
-    [['Bob', 'Curt', 'Greg'], ['Danny'], ['Fred', 'Hue', 'Ivy', 'Jon'], ['Ann', 'Eve']]
+    [['Fred', 'Hue'], ['Ivy', 'Jon'], ['Ann', 'Eve'], ['Bob', 'Curt', 'Greg', 'Danny']]
 
 If :obj:`~HierarchicalCluster.mapping.objects` were not defined the list
 would contains indices instead of names.
-::
 
     >>> root.mapping.objects = None
     >>> print list_of_clusters(root)
-    [[1, 2, 6], [3], [5, 7, 8, 9], [0, 4]]
+    [[5, 7], [8, 9], [0, 4], [1, 2, 6, 3]]
 
 Utility Functions
 -----------------
