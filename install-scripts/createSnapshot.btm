@@ -5,9 +5,9 @@ rem # - SVN is updated to head
 call updateSetVariables__.btm snapshot
 set WIN_SNAPSHOT=orange-win-snapshot-hg-%daystr
 set WIN_PYTHON_SNAPSHOT=orange-win-w-python-snapshot-hg-%daystr
-set ADDON_BIOINFORMATICS_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-%daystr
-set ADDON_TEXT_SNAPSHOT=orangeAddOn-text-snapshot-%daystr
-set SOURCE_SNAPSHOT=orange-source-snapshot-%daystr.zip
+set ADDON_BIOINFORMATICS_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-hg-%daystr
+set ADDON_TEXT_SNAPSHOT=orangeAddOn-text-snapshot-hg-%daystr
+set SOURCE_SNAPSHOT=orange-source-snapshot-hg-%daystr.zip
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
