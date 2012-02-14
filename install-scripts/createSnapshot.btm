@@ -1,6 +1,6 @@
 rem # input arguments
 rem # %1 - folder with 3rd party software
-rem # - SVN is updated to head
+rem # - HG repository is updated to head
 
 call updateSetVariables__.btm snapshot
 set WIN_SNAPSHOT=orange-win-snapshot-hg-%daystr
@@ -22,10 +22,6 @@ cdd %SCRIPTDIR
 call createCommonAddOns__.btm snapshot %ADDON_BIOINFORMATICS_SNAPSHOT %ADDON_TEXT_SNAPSHOT
 break_on_error
 
-rem # if no errors then publish on web (everything at the same time)
-rem # remove any old files
-REM except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
-
 rem # pack sources
 cdd %TMPDIR
 del /syeqtx sourcestopack
@@ -38,15 +34,22 @@ rem # build source distribution
 e:\Python27\python.exe setup.py sdist
 rem # build msi file
 e:\Python27\python.exe setup.py bdist_msi
+
 rem del %DOWNLOADDIR\orange-source-snapshot-????-??-??.zip
 move /z dist\Orange-?.*.zip %DOWNLOADDIR\%SOURCE_SNAPSHOT
 move /z dist\Orange-?.*.msi %DOWNLOADDIR\%WIN_SNAPSHOT.msi
 
+
+rem # if no errors then publish on web (everything at the same time)
+rem # remove any old files 
+rem # For now don't delete old versions until packaging using mercurial is better tested.   
+REM except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+
 rem # publish
 cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
-if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
-move /sdz binaries %DOWNLOADDIR\binaries
+rem if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
+rem move /sdz binaries %DOWNLOADDIR\binaries
 
 rem # remember new filenames
 cdd %SCRIPTDIR
