@@ -141,25 +141,15 @@ MAE = ME
 class ConfusionMatrix:
     """
     Classification result summary
-
-    .. attribute:: TP
-
-        True Positive predictions
-
-    .. attribute:: TN
-
-        True Negative predictions
-
-    .. attribute:: FP
-
-        False Positive predictions
-
-    .. attribute:: FN
-
-        False Negative predictions
     """
-    def __init__(self):
-        self.TP = self.FN = self.FP = self.TN = 0.0
+    #: True Positive predictions
+    TP = 0.
+    #:True Negative predictions
+    TN = 0.
+    #:False Positive predictions
+    FP = 0.
+    #: False Negative predictions
+    FN = 0.
 
     @deprecated_keywords({"predictedPositive": "predicted_positive",
                           "isPositive": "is_positive"})
@@ -181,6 +171,7 @@ class ConfusionMatrix:
                 self.FN += weight
             else:
                 self.TN += weight
+
 
 
 #########################################################################
@@ -933,6 +924,9 @@ def AUCWilcoxon(res, class_index=-1, ignore_weights=False, **argkw):
     :obj:`classIndex` is not specified, the first class is used as
     "the positive" and others are negative. The result is a list of
     tuples (aROC, standard error).
+
+    If test results consist of multiple folds, you need to split them using
+    :obj:`split_by_iterations` and perform this test on each fold separately.
     """
     useweights = res.weights and not ignore_weights
     problists, tots = corn.computeROCCumulative(res, class_index, useweights)
@@ -1406,6 +1400,9 @@ class AucClass(object):
         """
         Return the area under ROC curve given a set of experimental results.
         For multivalued class problems, return the result of :obj:`by_weighted_pairs`.
+        If testing consisted of multiple folds, each fold is scored and
+        average score is returned. If a fold contains only instances with
+        same class value, folds will be merged.
 
         :param test_results: test results to score
         :param ignore_weights: ignore instance weights when calculating score
