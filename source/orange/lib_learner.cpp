@@ -23,6 +23,9 @@
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif
 
+#include <iostream>
+#include <sstream>
+
 #include "vars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
@@ -54,6 +57,35 @@
 #include "tdidt_simple.hpp"
 C_CALL(SimpleTreeLearner - Orange.classification.tree.SimpleTreeLearner, Learner, "([examples], [maxMajority=, minExamples=, maxDepth=])")
 C_NAMED(SimpleTreeClassifier - Orange.classification.tree.SimpleTreeClassifier, Classifier, "()")
+
+PyObject *SimpleTreeClassifier__reduce__(PyObject *self)
+{
+	PyTRY
+	ostringstream ss;
+
+	CAST_TO(TSimpleTreeClassifier, classifier);
+	classifier->save_model(ss);
+	return Py_BuildValue("O(s)N", getExportedFunction("__pickleLoaderSimpleTreeClassifier"), 
+		ss.str().c_str(), packOrangeDictionary(self));
+	PyCATCH
+}
+
+PyObject *__pickleLoaderSimpleTreeClassifier(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(buffer)")
+{
+	PyTRY
+	char *cbuf;
+	istringstream ss;
+
+	int buffer_size = 0;
+	if (!PyArg_ParseTuple(args, "s:__pickleLoaderSimpleTreeClassifier", &cbuf))
+		return NULL;
+	ss.str(string(cbuf));
+	PSimpleTreeClassifier classifier = mlnew TSimpleTreeClassifier();
+	classifier->load_model(ss);
+	return WrapOrange(classifier);
+	PyCATCH
+}
+
 
 /* ************ MAJORITY AND COST ************ */
 
