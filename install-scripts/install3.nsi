@@ -37,6 +37,7 @@ ShowInstDetails nevershow
 
 Var PythonDir
 Var AdminInstall
+Var SITEDIR
 
 Page license
 Page instfiles
@@ -173,29 +174,36 @@ Section ""
 
 	not_installed_before:
 
-	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
-	SetOutPath $INSTDIR
-	File /r /x .svn ${ORANGEDIR}\*
+	StrCpy $SITEDIR "$PythonDir\lib\site-packages"
+	
+	IfFileExists "$SITEDIR\orange\orngEnviron.py" 0 no_old_orange_conflict
+		Rename "$SITEDIR\orange" "$SITEDIR\orange-old-backup"
+		
+	no_old_orange_conflict:
+	
+	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\Orange"
+	SetOutPath "$INSTDIR"
+	File /r /x .hg ${ORANGEDIR}\*
 
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
 
-	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR\"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR"
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
 
 	SetOutPath $INSTDIR\OrangeCanvas
 	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$PythonDir\pythonw.exe" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" $INSTDIR\OrangeCanvas\icons\orange.ico 0
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$PythonDir\pythonw.exe" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" $INSTDIR\OrangeCanvas\icons\orange.ico 0
 
-	WriteRegStr SHELL_CONTEXT "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
+	WriteRegStr SHELL_CONTEXT "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" "" "$INSTDIR\orng"
 	WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
 	WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
 
 	WriteRegStr HKEY_CLASSES_ROOT ".ows" "" "OrangeCanvas"
 	WriteRegStr HKEY_CLASSES_ROOT "OrangeCanvas\DefaultIcon" "" "$INSTDIR\OrangeCanvas\icons\OrangeOWS.ico"
-	WriteRegStr HKEY_CLASSES_ROOT "OrangeCanvas\Shell\Open\Command\" "" '$PythonDir\python.exe $INSTDIR\orangeCanvas\orngCanvas.pyw "%1"'
+	WriteRegStr HKEY_CLASSES_ROOT "OrangeCanvas\Shell\Open\Command\" "" '$PythonDir\python.exe $INSTDIR\OrangeCanvas\orngCanvas.pyw "%1"'
 
 	WriteUninstaller "$INSTDIR\uninst.exe"
 
