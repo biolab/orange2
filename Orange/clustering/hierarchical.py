@@ -280,12 +280,6 @@ The following code prints the left subcluster of root.
     ...     print el,
     0 4 5 7 8 9
     
-Instead of printing out the first (and supposedly the only) element of
-cluster, cluster[0], we shall print it out as a tuple.
-
-.. literalinclude:: code/hierarchical-example.py
-    :lines: 24-28
-            
 Object descriptions can be added with
 
     >>> root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", 
