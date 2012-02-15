@@ -74,12 +74,13 @@ Instances of discretization classes are all derived from :class:`Discretization`
 
 .. class:: Discretization
 
-    .. method:: __call__(feature, data[, weightID])
+    .. method:: __call__(variable, data[, weightID])
 
-        Given a continuous ``feature``, ``data`` and, optionally id of
-        attribute with example weight, this function returns a discretized
-        feature. Argument ``feature`` can be a descriptor, index or
-        name of the attribute.
+        Given a continuous ``variable``, ``data`` and, optionally id
+        of attribute with example weight, this function returns a
+        discretized feature. Argument ``variable`` can be a
+        :obj:`~Orange.feature.Descriptor`, index or name of the
+        variable within ``data.domain``.
 
 
 .. class:: EqualWidth
@@ -229,10 +230,11 @@ for discretizations induced by :class:`BiModalDiscretization`.
     A superclass implementing the construction of a new
     attribute from an existing one.
 
-    .. method:: construct_variable(feature)
+    .. method:: construct_variable(variable)
 
-        Constructs a descriptor for a new feature. The new feature's name is equal to ``feature.name``
-        prefixed by "D\_". Its symbolic values are discretizer specific.
+        Constructs a descriptor for a new variable. The new variable's
+        name is equal to ``variable.name`` prefixed by "D\_". Its
+        symbolic values are specific to discretizer.
 
 .. class:: IntervalDiscretizer
 

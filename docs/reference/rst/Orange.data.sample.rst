@@ -82,10 +82,12 @@ the same indices. Details are shown in the section about
 
     .. method:: __call__(data)
 
-        Return a list of indices. The argument can be either the
-        desired length of the list or a set of instances, given as
-        :obj:`Orange.data.Table` or as plain Python list. In the
-        former case, sampling cannot be stratified.
+        Return a list of indices for the given data table. If data has
+        a discrete class, sampling can be stratified.
+
+    .. method:: __call__(n)
+
+        Return a list of ``n`` indices. Sampling cannot be stratified.
 
 .. class:: SubsetIndices2
 

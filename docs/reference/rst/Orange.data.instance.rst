@@ -301,34 +301,34 @@ keys in dictionaries or collected to Python data sets.
         :param key_type: the key type; either ``int``, ``str`` or :obj:`~Orange.feature.Descriptor`
         :type key_type: `type``
 
-    .. method:: has_meta(meta_attr)
+    .. method:: has_meta(attr)
 
         Return ``True`` if the data instance has the specified meta
         attribute.
 
-        :param meta_attr: meta attribute
-        :type meta_attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
+        :param attr: meta attribute
+        :type attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
 
-    .. method:: remove_meta(meta_attr)
+    .. method:: remove_meta(attr)
 
         Remove the specified meta attribute.
 
-        :param meta_attr: meta attribute
-        :type meta_attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
+        :param attr: meta attribute
+        :type attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
 
-    .. method:: get_weight(meta_attr)
+    .. method:: get_weight(attr)
 
         Return the value of the specified meta attribute. The
         attribute's value must be continuous and is returned as ``float``.
 
-        :param meta_attr: meta attribute
-        :type meta_attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
+        :param attr: meta attribute
+        :type attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
 
-    .. method:: set_weight(meta_attr, weight=1)
+    .. method:: set_weight(attr, weight=1)
 
         Set the value of the specified meta attribute to ``weight``.
 
-        :param meta_attr: meta attribute
-        :type meta_attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
+        :param attr: meta attribute
+        :type attr: :obj:`id`, ``str`` or :obj:`~Orange.feature.Descriptor`
         :param weight: weight of instance
         :type weight: ``float``

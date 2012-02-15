@@ -37,10 +37,10 @@ Distance measures thus appear in pairs:
 
 .. class:: DistanceConstructor
 
-    .. method:: __call__([instances, weightID][, distributions][, basic_var_stat])
+    .. method:: __call__([data, weightID][, distributions][, basic_stat])
 
         Constructs an :obj:`Distance`. Not all arguments are required.
-        Most measures can be constructed from basic_var_stat; if it is
+        Most measures can be constructed from basic_stat; if it is
         not given, instances or distributions can be used.
 
 .. class:: Distance

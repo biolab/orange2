@@ -173,12 +173,12 @@ is true for probability estimator constructors.
 
     Constructor of an unconditional probability estimator.
 
-    .. method:: __call__([distribution[, apriori]], [instances[, weight_id]])
+    .. method:: __call__([distribution[, prior]], [instances[, weight_id]])
 
         :param distribution: input distribution.
         :type distribution: :class:`~Orange.statistics.distribution.Distribution`
 
-        :param apriori: prior distribution.
+        :param priori: prior distribution.
         :type distribution: :class:`~Orange.statistics.distribution.Distribution`
 
         :param instances: input data.
@@ -223,12 +223,12 @@ is true for probability estimator constructors.
 
     Constructor of a conditional probability estimator.
 
-    .. method:: __call__([table[, apriori]], [instances[, weight_id]])
+    .. method:: __call__([table[, prior]], [instances[, weight_id]])
 
         :param table: input distribution.
         :type table: :class:`Orange.statistics.contingency.Table`
 
-        :param apriori: prior distribution.
+        :param prior: prior distribution.
         :type distribution: :class:`~Orange.statistics.distribution.Distribution`
 
         :param instances: input data.
@@ -341,12 +341,12 @@ Common Components
     or :class:`ConditionalEstimatorByRows`, depending on the type of
     constructor.
 
-    .. method:: __call__([table[, apriori]], [instances[, weight_id]], estimator)
+    .. method:: __call__([table[, prior]], [instances[, weight_id]], estimator)
 
         :param table: input distribution.
         :type table: :class:`Orange.statistics.contingency.Table`
 
-        :param apriori: prior distribution.
+        :param prior: prior distribution.
         :type distribution: :class:`~Orange.statistics.distribution.Distribution`
 
         :param instances: input data.

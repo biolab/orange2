@@ -221,12 +221,12 @@ when empty.
         Merging succeeds since the values of `a1` and `m1` are the
         same for all matching instances from both tables.
 
-    .. method:: append(inst)
+    .. method:: append(instance)
 
         Append the given instance to the end of the table.
 
-        :param inst: instance to be appended
-        :type inst: :obj:`Orange.data.Instance` or a list
+        :param instance: instance to be appended
+        :type instance: :obj:`Orange.data.Instance` or a list
 
         .. literalinclude:: code/datatable1.py
             :lines: 21-24
@@ -239,7 +239,7 @@ when empty.
         :type instances: list
 
 
-    .. method:: select(filter[, idx, negate=False])
+    .. method:: select(folds[, select, negate=False])
 
         Return a subset of instances as a new :obj:`Table`. The first
         argument should be a list of the same length as the table; its
@@ -247,22 +247,23 @@ when empty.
         contains instances corresponding to non-zero elements of the
         list.
 
-        If the second argument is given, it must be an integer;
-        select will then return the data instances for which the
-        corresponding `filter`'s elements match `idx`.
+        If the second argument is given, it must be an integer; method
+        ``select`` will then return the data instances for which the
+        corresponding ``fold``'s elements match the value of the
+        argument ``select``.
 
-        The third argument, `negate`, can only be given as a
-        keyword. Its effect is to negate the selection.
+        The third argument, `negate` inverts the selection. It can
+        only be given as a keyword.
 
         Note: This method should be used when the selected data
-        instances are going to be modified. In all other cases,
-        method :obj:`select_ref` is preferred.
+        instances are going to be modified later on. In all other
+        cases, method :obj:`select_ref` is preferred.
 
-        :param filt: filter list
-        :type filt: list of integers
-        :param idx: selects which instances to pick
-        :type idx: int
-        :param negate: negates the selection
+        :param folds: list of fold indices corresponding to data instances
+        :type folds: list
+        :param select: select which instances to pick
+        :type select: int
+        :param negate: inverts the selection
         :type negate: bool
         :rtype: :obj:`Orange.data.Table`
 
@@ -306,7 +307,7 @@ when empty.
             [1.000000]
             [9.000000]
 
-    .. method:: select_ref(filt[, idx, negate=False])
+    .. method:: select_ref(folds[, select, negate=False])
 
         Same as :obj:`select`, except that the resulting table
         contains references to data instances in the original table
@@ -315,26 +316,13 @@ when empty.
         In most cases, this function is preferred over the former
         since it consumes less memory.
 
-        :param filt: filter list
-        :type filt: list of integers
-        :param idx: selects which instances to pick
-        :type idx: int
-        :param negate: negates the selection
+        :param folds: list of fold indices corresponding to data instances
+        :type folds: list
+        :param select: select which instances to pick
+        :type select: int
+        :param negate: inverts the selection
         :type negate: bool
         :rtype: :obj:`Orange.data.Table`
-
-    .. method:: select_list(filt[, idx, negate=False])
-
-        Same as :obj:`select`, except that it returns a Python list
-        with data instances.
-
-        :param filt: filter list
-        :type filt: list of integers
-        :param idx: selects which instances to pick
-        :type idx: int
-        :param negate: negates the selection
-        :type negate: bool
-        :rtype: list
 
     .. method:: get_items(indices)
 
@@ -412,11 +400,6 @@ when empty.
             Same as the above two, except that they return a table
             with references to instances instead of their copies.
 
-    .. method:: filter_list(conditions), filter_list(filter)
-
-            As above, except that it returns a pure Python list with
-            data instances.
-
     .. method:: filter_bool(conditions), filter_bool(filter)
 
             Return a list of bools denoting which data instances are
@@ -431,15 +414,15 @@ when empty.
             :type domain: :obj:`Orange.data.Domain`
             :rtype: :obj:`Orange.data.Table`
 
-    .. method:: translate(features[, keep_metas])
+    .. method:: translate(variables[, keep_metas])
 
             Similar to above, except that the domain is given by a
             list of features. If ``keep_metas`` is ``True``, the new data
             instances will also have all the meta attributes from the
             original domain.
 
-            :param features: features for the new data
-            :type domain: list
+            :param variables: variables for the new data
+            :type variables: list
             :rtype: :obj:`Orange.data.Table`
 
     .. method:: to_numpy(content, weightID, multinominal)
@@ -574,11 +557,11 @@ when empty.
             :type weightID: int
             :rtype: None
 
-    .. method:: sort([features])
+    .. method:: sort([variables])
 
-            Sort the data by attribute values. The argument gives the
-            features ordered by importance. If omitted, the order from
-            the domain is used. Note that the values of discrete
+            Sort the data table. The argument gives the
+            values ordered by importance. If omitted, the order from
+            the domain is used. Values of discrete
             features are not ordered alphabetically but according to
             the :obj:`Orange.feature.Discrete.values`.
 
@@ -591,13 +574,13 @@ when empty.
 
             Randomly shuffle the data instances.
 
-    .. method:: add_meta_attribute(id[, value=1])
+    .. method:: add_meta_attribute(attr[, value=1])
 
             Add a meta value to all data instances. The first argument
             can be an integer id, or a string or a variable descriptor
             of a meta attribute registered in the domain.
 
-    .. method:: remove_meta_attribute(id)
+    .. method:: remove_meta_attribute(attr)
 
             Remove a meta attribute from all data instances.
 

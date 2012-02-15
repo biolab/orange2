@@ -56,8 +56,8 @@ class LogRegLearner(Orange.classification.Learner):
     the constructor, the learning algorithm is called and the resulting
     classifier is returned instead of the learner.
 
-    :param instances: data table with either discrete or continuous features
-    :type instances: Orange.data.Table
+    :param data: data table with either discrete or continuous features
+    :type data: Orange.data.Table
     :param weight_id: the ID of the weight meta attribute
     :type weight_id: int
     :param remove_singular: set to 1 if you want automatic removal of
@@ -79,11 +79,11 @@ class LogRegLearner(Orange.classification.Learner):
     """
 
     @deprecated_keywords({"weightID": "weight_id"})
-    def __new__(cls, instances=None, weight_id=0, **argkw):
+    def __new__(cls, data=None, weight_id=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if instances:
+        if data:
             self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
+            return self.__call__(data, weight_id)
         else:
             return self
 
@@ -93,57 +93,57 @@ class LogRegLearner(Orange.classification.Learner):
         self.remove_singular = remove_singular
         self.fitter = None
 
-    @deprecated_keywords({"examples": "instances"})
-    def __call__(self, instances, weight=0):
+    @deprecated_keywords({"examples": "data"})
+    def __call__(self, data, weight=0):
         """Learn from the given table of data instances.
 
-        :param instances: Data instances to learn from.
-        :type instances: :class:`~Orange.data.Table`
+        :param data: Data instances to learn from.
+        :type data: :class:`~Orange.data.Table`
         :param weight: Id of meta attribute with weights of instances
         :type weight: int
         :rtype: :class:`~Orange.classification.logreg.LogRegClassifier`
         """
         imputer = getattr(self, "imputer", None) or None
         if getattr(self, "remove_missing", 0):
-            instances = Orange.core.Preprocessor_dropMissing(instances)
+            data = Orange.core.Preprocessor_dropMissing(data)
 ##        if hasDiscreteValues(examples.domain):
 ##            examples = createNoDiscTable(examples)
-        if not len(instances):
+        if not len(data):
             return None
         if getattr(self, "stepwise_lr", 0):
             add_crit = getattr(self, "add_crit", 0.2)
             delete_crit = getattr(self, "delete_crit", 0.3)
             num_features = getattr(self, "num_features", -1)
-            attributes = StepWiseFSS(instances, add_crit= add_crit,
+            attributes = StepWiseFSS(data, add_crit= add_crit,
                 delete_crit=delete_crit, imputer = imputer, num_features= num_features)
             tmp_domain = Orange.data.Domain(attributes,
-                instances.domain.class_var)
-            tmp_domain.addmetas(instances.domain.getmetas())
-            instances = instances.select(tmp_domain)
+                data.domain.class_var)
+            tmp_domain.addmetas(data.domain.getmetas())
+            data = data.select(tmp_domain)
         learner = Orange.core.LogRegLearner() # Yes, it has to be from core.
         learner.imputer_constructor = imputer
         if imputer:
-            instances = self.imputer(instances)(instances)
-        instances = Orange.core.Preprocessor_dropMissing(instances)
+            data = self.imputer(data)(data)
+        data = Orange.core.Preprocessor_dropMissing(data)
         if self.fitter:
             learner.fitter = self.fitter
         if self.remove_singular:
-            lr = learner.fit_model(instances, weight)
+            lr = learner.fit_model(data, weight)
         else:
-            lr = learner(instances, weight)
+            lr = learner(data, weight)
         while isinstance(lr, Orange.feature.Descriptor):
             if isinstance(lr.getValueFrom, Orange.core.ClassifierFromVar) and isinstance(lr.getValueFrom.transformer, Orange.core.Discrete2Continuous):
                 lr = lr.getValueFrom.variable
-            attributes = instances.domain.features[:]
+            attributes = data.domain.features[:]
             if lr in attributes:
                 attributes.remove(lr)
             else:
                 attributes.remove(lr.getValueFrom.variable)
             new_domain = Orange.data.Domain(attributes, 
-                instances.domain.class_var)
-            new_domain.addmetas(instances.domain.getmetas())
-            instances = instances.select(new_domain)
-            lr = learner.fit_model(instances, weight)
+                data.domain.class_var)
+            new_domain.addmetas(data.domain.getmetas())
+            data = data.select(new_domain)
+            lr = learner.fit_model(data, weight)
         return lr
 
 LogRegLearner = deprecated_members({"removeSingular": "remove_singular",
@@ -156,30 +156,30 @@ LogRegLearner = deprecated_members({"removeSingular": "remove_singular",
                                     })(LogRegLearner)
 
 class UnivariateLogRegLearner(Orange.classification.Learner):
-    def __new__(cls, instances=None, **argkw):
+    def __new__(cls, data=None, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if instances:
+        if data:
             self.__init__(**argkw)
-            return self.__call__(instances)
+            return self.__call__(data)
         else:
             return self
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    @deprecated_keywords({"examples": "instances"})
-    def __call__(self, instances):
-        instances = createFullNoDiscTable(instances)
+    @deprecated_keywords({"examples": "data"})
+    def __call__(self, data):
+        data = createFullNoDiscTable(data)
         classifiers = map(lambda x: LogRegLearner(Orange.core.Preprocessor_dropMissing(
-            instances.select(Orange.data.Domain(x, 
-            instances.domain.class_var)))), instances.domain.features)
+            data.select(Orange.data.Domain(x, 
+                data.domain.class_var)))), data.domain.features)
         maj_classifier = LogRegLearner(Orange.core.Preprocessor_dropMissing
-            (instances.select(Orange.data.Domain(instances.domain.class_var))))
+            (data.select(Orange.data.Domain(data.domain.class_var))))
         beta = [maj_classifier.beta[0]] + [x.beta[1] for x in classifiers]
         beta_se = [maj_classifier.beta_se[0]] + [x.beta_se[1] for x in classifiers]
         P = [maj_classifier.P[0]] + [x.P[1] for x in classifiers]
         wald_Z = [maj_classifier.wald_Z[0]] + [x.wald_Z[1] for x in classifiers]
-        domain = instances.domain
+        domain = data.domain
 
         return Univariate_LogRegClassifier(beta = beta, beta_se = beta_se, P = P, wald_Z = wald_Z, domain = domain)
 
@@ -194,11 +194,11 @@ class UnivariateLogRegClassifier(Orange.classification.Classifier):
     
 
 class LogRegLearnerGetPriors(object):
-    def __new__(cls, instances=None, weight_id=0, **argkw):
+    def __new__(cls, data=None, weight_id=0, **argkw):
         self = object.__new__(cls)
-        if instances:
+        if data:
             self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
+            return self.__call__(data, weight_id)
         else:
             return self
 
@@ -207,8 +207,8 @@ class LogRegLearnerGetPriors(object):
         self.__dict__.update(kwds)
         self.remove_singular = remove_singular
 
-    @deprecated_keywords({"examples": "instances"})
-    def __call__(self, instances, weight=0):
+    @deprecated_keywords({"examples": "data"})
+    def __call__(self, data, weight=0):
         # next function changes data set to a extended with unknown values 
         def createLogRegExampleTable(data, weight_id):
             sets_of_data = []
@@ -248,15 +248,15 @@ class LogRegLearnerGetPriors(object):
         learner = LogRegLearner(imputer=Orange.feature.imputation.ImputerConstructor_average(),
             remove_singular = self.remove_singular)
         # get Original Model
-        orig_model = learner(instances,weight)
+        orig_model = learner(data, weight)
         if orig_model.fit_status:
             print "Warning: model did not converge"
 
         # get extended Model (you should not change data)
         if weight == 0:
             weight = Orange.feature.Descriptor.new_meta_id()
-            instances.addMetaAttribute(weight, 1.0)
-        extended_set_of_examples = createLogRegExampleTable(instances, weight)
+            data.addMetaAttribute(weight, 1.0)
+        extended_set_of_examples = createLogRegExampleTable(data, weight)
         extended_models = [learner(extended_examples, weight) \
                            for extended_examples in extended_set_of_examples]
 
@@ -284,7 +284,7 @@ class LogRegLearnerGetPriors(object):
         logistic_prior = orig_model.beta[0]+beta
         
         # compare it to bayes prior
-        bayes = Orange.classification.bayes.NaiveLearner(instances)
+        bayes = Orange.classification.bayes.NaiveLearner(data)
         bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
 
         # normalize errors
@@ -326,8 +326,8 @@ class LogRegLearnerGetPriorsOneTable:
         self.__dict__.update(kwds)
         self.remove_singular = remove_singular
 
-    @deprecated_keywords({"examples": "instances"})
-    def __call__(self, instances, weight=0):
+    @deprecated_keywords({"examples": "data"})
+    def __call__(self, data, weight=0):
         # next function changes data set to a extended with unknown values 
         def createLogRegExampleTable(data, weightID):
             finalData = Orange.data.Table(data)
@@ -373,13 +373,13 @@ class LogRegLearnerGetPriorsOneTable:
                   
         learner = LogRegLearner(imputer = Orange.feature.imputation.ImputerConstructor_average(), removeSingular = self.remove_singular)
         # get Original Model
-        orig_model = learner(instances,weight)
+        orig_model = learner(data,weight)
 
         # get extended Model (you should not change data)
         if weight == 0:
             weight = Orange.feature.Descriptor.new_meta_id()
-            instances.addMetaAttribute(weight, 1.0)
-        extended_examples = createLogRegExampleTable(instances, weight)
+            data.addMetaAttribute(weight, 1.0)
+        extended_examples = createLogRegExampleTable(data, weight)
         extended_model = learner(extended_examples, weight)
 
 ##        print examples[0]
@@ -402,7 +402,7 @@ class LogRegLearnerGetPriorsOneTable:
         logistic_prior = orig_model.beta[0]+beta
         
         # compare it to bayes prior
-        bayes = Orange.classification.bayes.NaiveLearner(instances)
+        bayes = Orange.classification.bayes.NaiveLearner(data)
         bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
 
         # normalize errors
@@ -669,16 +669,16 @@ class BayesianFitter(LogRegFitter):
 ############################################################
 #  Feature subset selection for logistic regression
 
-@deprecated_keywords({"examples": "instances"})
-def get_likelihood(fitter, instances):
-    res = fitter(instances)
+@deprecated_keywords({"examples": "data"})
+def get_likelihood(fitter, data):
+    res = fitter(data)
     if res[0] in [fitter.OK]: #, fitter.Infinity, fitter.Divergence]:
        status, beta, beta_se, likelihood = res
        if sum([abs(b) for b in beta])<sum([abs(b) for b in beta_se]):
-           return -100*len(instances)
+           return -100*len(data)
        return likelihood
     else:
-       return -100*len(instances)
+       return -100*len(data)
         
 
 
@@ -731,11 +731,11 @@ class StepWiseFSS(Orange.classification.Learner):
 
   """
 
-  def __new__(cls, instances=None, **argkw):
+  def __new__(cls, data=None, **argkw):
       self = Orange.classification.Learner.__new__(cls, **argkw)
-      if instances:
+      if data:
           self.__init__(**argkw)
-          return self.__call__(instances)
+          return self.__call__(data)
       else:
           return self
 
@@ -872,11 +872,11 @@ StepWiseFSS = deprecated_members({"addCrit": "add_crit",
 
 
 class StepWiseFSSFilter(object):
-    def __new__(cls, instances=None, **argkw):
+    def __new__(cls, data=None, **argkw):
         self = object.__new__(cls)
-        if instances:
+        if data:
             self.__init__(**argkw)
-            return self.__call__(instances)
+            return self.__call__(data)
         else:
             return self
 
@@ -887,11 +887,11 @@ class StepWiseFSSFilter(object):
         self.delete_crit = delete_crit
         self.num_features = num_features
 
-    @deprecated_keywords({"examples": "instances"})
-    def __call__(self, instances):
-        attr = StepWiseFSS(instances, add_crit=self.add_crit,
+    @deprecated_keywords({"examples": "data"})
+    def __call__(self, data):
+        attr = StepWiseFSS(data, add_crit=self.add_crit,
             delete_crit= self.delete_crit, num_features= self.num_features)
-        return instances.select(Orange.data.Domain(attr, instances.domain.class_var))
+        return data.select(Orange.data.Domain(attr, data.domain.class_var))
 
 StepWiseFSSFilter = deprecated_members({"addCrit": "add_crit",
                                         "deleteCrit": "delete_crit",

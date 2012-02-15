@@ -42,7 +42,7 @@ All filters are derived from the base class :obj:`Filter`.
         Check whether the instance matches the filter's criterion and
         return either ``True`` or ``False``.
 
-    .. method:: __call__(table)
+    .. method:: __call__(data)
 
         Return a new data table containing the instances that match
         the criterion.

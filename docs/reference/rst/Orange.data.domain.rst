@@ -265,7 +265,7 @@ is a new feature with no relation to the existing ones. ::
          :param class_vars: A list of multiple classes; must be a keyword argument
          :type class_vars: list
 
-     .. method:: __init__(features, class_variable[, class_vars=])
+     .. method:: __init__(features, class_var[, class_vars=])
 
          Construct a domain with the given list of features and the
          class variable. ::

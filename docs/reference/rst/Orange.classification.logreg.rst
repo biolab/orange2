@@ -102,7 +102,7 @@ informative features, is also supported.
         The matrix is singular.
 
 
-    .. method:: __call__(examples, weight_id)
+    .. method:: __call__(data, weight_id)
 
         Performs the fitting. There can be two different cases: either
         the fitting succeeded to find a set of beta coefficients (although

@@ -85,7 +85,7 @@ retrieves an existing descriptor or constructs a new one.
 
            :rtype: :class:`Orange.data.Value`
 
-    .. method:: compute_value(inst)
+    .. method:: compute_value(instance)
 
            Compute the value of the variable given the instance by
            calling obj:`~Descriptor.get_value_from` through a
@@ -130,6 +130,10 @@ Discrete variables
             base value is used by certain statistics, continuization etc.
             potentially, learning algorithms. The default is -1 which means that
             there is no base value.
+
+    .. method:: __init__(name)
+
+        Construct a descriptor for variable with the given name.
 
     .. method:: add_value(s)
 
@@ -187,6 +191,11 @@ Continuous variables
 
         The range used for :obj:`randomvalue`.
 
+    .. method:: __init__(name)
+
+        Construct a descriptor for variable with the given name.
+
+
 String variables
 ----------------
 
@@ -212,6 +221,10 @@ String variables
     Empty strings in files are interpreted as undefined; to specify an empty
     string, enclose the string in double quotes; these are removed when the
     string is loaded.
+
+    .. method:: __init__(name)
+
+        Construct a descriptor for variable with the given name.
 
 Python objects as variables
 ---------------------------

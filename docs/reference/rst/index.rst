@@ -3,20 +3,18 @@ Orange Scripting Reference
 ##########################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    Orange.data
 
    Orange.feature
 
-   Orange.associate
-
    Orange.classification
 
-   Orange.clustering
-
-   Orange.distance
-
+   Orange.regression
+   
+   Orange.statistics
+   
    Orange.ensemble
 
    Orange.evaluation
@@ -24,6 +22,12 @@ Orange Scripting Reference
    Orange.multilabel
    
    Orange.multitarget
+
+   Orange.associate
+
+   Orange.clustering
+
+   Orange.distance
 
    Orange.network
 
@@ -33,10 +37,6 @@ Orange Scripting Reference
 
    Orange.projection
 
-   Orange.regression
-   
-   Orange.statistics
-   
    Orange.misc
 
 ****************
