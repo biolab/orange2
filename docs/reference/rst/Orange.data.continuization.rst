@@ -1,4 +1,4 @@
-.. py:currentmodule:: Orange.core
+.. py:currentmodule:: Orange.data.continuization
 
 ###################################
 Continuization (``continuization``)
