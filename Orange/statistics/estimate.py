@@ -13,3 +13,4 @@ from Orange.core import ConditionalProbabilityEstimator_ByRows as ConditionalEst
 from Orange.core import ConditionalProbabilityEstimatorConstructor as ConditionalEstimatorConstructor
 from Orange.core import ConditionalProbabilityEstimatorConstructor_ByRows as ConditionalByRows
 from Orange.core import ConditionalProbabilityEstimatorConstructor_loess as ConditionalLoess
+from Orange.core import ProbabilityEstimatorList as EstimatorList
