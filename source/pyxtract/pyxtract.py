@@ -745,10 +745,8 @@ PyObject *%(wholename)s__reduce__(PyObject *self) { return Py_BuildValue("O(s(i)
     outfile.write('PyTypeObject PyOr'+type+'_Type_inh = {\n')
     outfile.write('  PyObject_HEAD_INIT((_typeobject *)&PyType_Type)\n')
     outfile.write('  0,\n')
-    if getattr(fields, "displayname", None):
-        outfile.write('  "%s",\n' % fields.displayname)
-    else:
-        outfile.write('  "%s.%s",\n' % (modulename, type))
+    displayname = getattr(fields, "displayname", "Orange.core."+type) # was: <modulename>.<type>
+    outfile.write('  "%s",\n' % displayname)
     outfile.write('  sizeof(%s), 0,\n' % fields.datastructure)
     innulls=writeslots(specialmethods, 1)
     outfile.write((innulls and '\n' or '') + '};\n\n')
