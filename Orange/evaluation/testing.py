@@ -246,8 +246,11 @@ class Evaluation(object):
                test_results.
         :return: :obj:`ExperimentResults`
         """
-        return self.test_with_indices(learners, examples, indices=range(len(examples)), preprocessors=preprocessors,
-                                 callback=callback, store_classifiers=store_classifiers, store_examples=store_examples)
+        examples, weight = demangle_examples(examples)
+        return self.test_with_indices(
+            learners, (examples, weight), indices=range(len(examples)),
+            preprocessors=preprocessors, callback=callback,
+            store_classifiers=store_classifiers, store_examples=store_examples)
 
     @deprecated_keywords({"storeExamples": "store_examples",
                           "storeClassifiers": "store_classifiers=True",
@@ -427,8 +430,9 @@ class Evaluation(object):
                           "indicesrandseed": "random_generator",
                           "randseed": "random_generator",
                           "randomGenerator": "random_generator"})
-    def proportion_test(self, learners, examples, learning_proportion, times=10,
-                   stratification=Orange.core.MakeRandomIndices.StratifiedIfPossible, preprocessors=(), random_generator=0,
+    def proportion_test(self, learners, examples, learning_proportion=.7, times=10,
+                   stratification=Orange.core.MakeRandomIndices.StratifiedIfPossible,
+                   preprocessors=(), random_generator=0,
                    callback=None, store_classifiers=False, store_examples=False):
         """
         Perform a test, where learners are trained and tested on different data sets. Training and test sets are
@@ -557,7 +561,8 @@ class Evaluation(object):
     def learning_curve_with_test_data(self, learners, learn_set, test_set,
             times=10, proportions=Orange.core.frange(0.1),
             stratification=Orange.core.MakeRandomIndices.StratifiedIfPossible,
-            preprocessors=(), random_generator=0):
+            preprocessors=(), random_generator=0, store_classifiers=False,
+            store_examples=False):
         """
         Compute a learning curve given two datasets. Models are learned on
         proportion of the first dataset and then used to make predictions for
@@ -590,13 +595,18 @@ class Evaluation(object):
                                             for i, example in enumerate(test_set))
 
                 learn_examples = learn_set.selectref(indices(learn_set, p), 0)
-                classifiers, results = self._learn_and_test_on_test_data(learners, learn_examples, learn_weight, test_set, preprocessors=preprocessors)
+                classifiers, results = self._learn_and_test_on_test_data\
+                    (learners, learn_examples, learn_weight, test_set,
+                    preprocessors=preprocessors)
 
                 for example, classifier, result in results:
                     test_results.results[offset+example].set_result(classifier, *result)
                 offset += len(test_set)
 
-                test_results.classifiers.append(classifiers)
+                if store_classifiers:
+                    test_results.classifiers.append(classifiers)
+                if store_examples:
+                    test_results.examples = learn_examples
 
             all_results.append(test_results)
         return all_results
