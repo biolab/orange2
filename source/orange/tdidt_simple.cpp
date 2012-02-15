@@ -784,13 +784,26 @@ TSimpleTreeClassifier::load_tree(istringstream &ss)
 {
 	int i;
 	string lbracket, rbracket;
+	string split_string;
 	SimpleTreeNode *node;
+
+	ss.exceptions(istream::failbit);
 
 	ASSERT(node = (SimpleTreeNode *)malloc(sizeof *node));
 	ss >> lbracket >> node->type >> node->children_size;
 
+
 	if (node->type != PredictorNode)
-		ss >> node->split_attr >> node->split;
+	{
+		ss >> node->split_attr;
+
+		/* Read split into a string and use strtod to parse it.
+		 * istream sometimes (on some platforms) seems to have problems
+		 * reading formated floats.
+		 */
+		ss >> split_string;
+		node->split = float(strtod(split_string.c_str(), NULL));
+	}
 
 	if (node->children_size) {
 		ASSERT(node->children = (SimpleTreeNode **)calloc(node->children_size, sizeof *node->children));
