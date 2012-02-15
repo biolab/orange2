@@ -1363,7 +1363,7 @@ C_NAMED(ExamplesDistance_Hamming - Orange.distance.HammingDistance, ExamplesDist
 C_NAMED(ExamplesDistance_Maximal - Orange.distance.MaximalDistance, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Manhattan - Orange.distance.ManhattanDistance, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Euclidean - Orange.distance.EuclideanDistance, ExamplesDistance_Normalized, "()")
-C_NAMED(ExamplesDistance_Lp, Distance_Normalized, "()")
+C_NAMED(ExamplesDistance_Lp, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Relief - Orange.distance.ReliefDistance, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_DTW - Orange.distance.DTWDistance, ExamplesDistance_Normalized, "()")
 
