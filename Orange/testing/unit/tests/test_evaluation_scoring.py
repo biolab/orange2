@@ -107,3 +107,6 @@ class TestAuc(unittest.TestCase):
         self.assertEqual(len(auc[0]), 3)
         print auc
 
+
+if __name__ == '__main__':
+    unittest.main()
