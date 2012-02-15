@@ -107,30 +107,20 @@ Tree Structure
 
 This example works with the lenses data set:
 
-..
-    .. literalinclude:: code/treestructure.py
-       :lines: 7-10
-
->>> import Orange
->>> lenses = Orange.data.Table("lenses")
->>> tree_classifier = Orange.classification.tree.TreeLearner(lenses)
+    >>> import Orange
+    >>> lenses = Orange.data.Table("lenses")
+    >>> tree_classifier = Orange.classification.tree.TreeLearner(lenses)
 
 The following function counts the number of nodes in a tree:
 
-..
-    .. literalinclude:: code/treestructure.py
-       :lines: 12-21
-
->>> def tree_size(node):
-...    if not node:
-...        return 0
-...
-...    size = 1
-...    if node.branch_selector:
-...        for branch in node.branches:
-...            size += tree_size(branch)
-...
-...    return size
+    >>> def tree_size(node):
+    ...    if not node:
+    ...        return 0
+    ...    size = 1
+    ...    if node.branch_selector:
+    ...        for branch in node.branches:
+    ...            size += tree_size(branch)
+    ...    return size
 
 If node is None, the function above return 0. Otherwise, the size is 1
 (this node) plus the sizes of all subtrees. The algorithm need to check
@@ -145,8 +135,21 @@ Note that a :obj:`Node` already has a built-in method
 
 Trees can be printed with a simple recursive function:
 
-.. literalinclude:: code/treestructure.py
-   :lines: 26-41
+    >>> def print_tree0(node, level):
+    ...     if not node:
+    ...         print " "*level + "<null node>"
+    ...         return
+    ...     if node.branch_selector:
+    ...         node_desc = node.branch_selector.class_var.name
+    ...         node_cont = node.distribution
+    ...         print "\\n" + "   "*level + "%s (%s)" % (node_desc, node_cont),
+    ...         for i in range(len(node.branches)):
+    ...             print "\\n" + "   "*level + ": %s" % node.branch_descriptions[i],
+    ...             print_tree0(node.branches[i], level+1)
+    ...     else:
+    ...         node_cont = node.distribution
+    ...         major_class = node.node_classifier.default_value
+    ...         print "--> %s (%s) " % (major_class, node_cont),
 
 The crux of the example is not in the formatting (\\n's etc.);
 what matters is everything but the print statements. The code
@@ -159,7 +162,7 @@ separately handles three node types:
   branch description is an :obj:`~Orange.classification.Classifier`,
   and its ``class_var`` is the feature whose name is printed.  Class
   distributions are printed as well (they are assumed to be stored).
-  The :obj:`printTree0` with a level increased by 1 to increase the
+  The :obj:`print_tree0` with a level increased by 1 to increase the
   indent is recursively called for each branch.
 * If the node is a leaf, it prints the distribution of learning instances
   in the node and the class to which the instances in the node would
@@ -170,28 +173,41 @@ separately handles three node types:
 The wrapper function that accepts either a
 :obj:`TreeClassifier` or a :obj:`Node` can be written as follows:
 
-    .. literalinclude:: code/treestructure.py
-       :lines: 43-49
+    >>> def print_tree(x):
+    ...     if isinstance(x, Orange.classification.tree.TreeClassifier):
+    ...         print_tree0(x.tree, 0)
+    ...     elif isinstance(x, Orange.classification.tree.Node):
+    ...         print_tree0(x, 0)
+    ...     else:
+    ...         raise TypeError, "invalid parameter"
 
 It's straightforward: if ``x`` is a
 :obj:`TreeClassifier`, it prints ``x.tree``; if it's :obj:`Node` it
 print ``x``. If it's of some other type,
-an exception is raised. The output::
+an exception is raised. The output:
 
     >>> print_tree(tree_classifier)
-    tear_rate (<15.000, 5.000, 4.000>)
-    : reduced --> none (<12.000, 0.000, 0.000>)
-    : normal
-       astigmatic (<3.000, 5.000, 4.000>)
-       : no
-          age (<1.000, 5.000, 0.000>)
-          : young --> soft (<0.000, 2.000, 0.000>)
-          : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)
-          : presbyopic --> none (<1.000, 1.000, 0.000>)
-       : yes
-          prescription (<2.000, 0.000, 4.000>)
-          : myope --> hard (<0.000, 0.000, 3.000>)
-          : hypermetrope --> none (<2.000, 0.000, 1.000>)
+    <BLANKLINE>
+    tear_rate (<15.000, 4.000, 5.000>) 
+    : normal 
+       astigmatic (<3.000, 4.000, 5.000>) 
+       : no 
+          age (<1.000, 0.000, 5.000>) 
+          : pre-presbyopic --> soft (<0.000, 0.000, 2.000>)  
+          : presbyopic 
+             prescription (<1.000, 0.000, 1.000>) 
+             : hypermetrope --> soft (<0.000, 0.000, 1.000>)  
+             : myope --> none (<1.000, 0.000, 0.000>)  
+          : young --> soft (<0.000, 0.000, 2.000>)  
+       : yes 
+          prescription (<2.000, 4.000, 0.000>) 
+          : hypermetrope 
+             age (<2.000, 1.000, 0.000>) 
+             : pre-presbyopic --> none (<1.000, 0.000, 0.000>)  
+             : presbyopic --> none (<1.000, 0.000, 0.000>)  
+             : young --> hard (<0.000, 1.000, 0.000>)  
+          : myope --> hard (<0.000, 3.000, 0.000>)  
+    : reduced --> none (<12.000, 0.000, 0.000>) 
 
 The tree structure examples conclude with a simple pruning function,
 written entirely in Python and unrelated to any :class:`Pruner`. It limits
@@ -200,30 +216,39 @@ For example, to get a two-level tree, call cut_tree(root, 2). The function
 is recursive, with the second argument (level) decreasing at each call;
 when zero, the current node will be made a leaf:
 
-.. literalinclude:: code/treestructure.py
-   :lines: 54-62
+    >>> def cut_tree(node, level):
+    ...     if node and node.branch_selector:
+    ...         if level:
+    ...             for branch in node.branches:
+    ...                 cut_tree(branch, level-1)
+    ...         else:
+    ...             node.branch_selector = None
+    ...             node.branches = None
+    ...             node.branch_descriptions = None
 
 The function acts only when :obj:`node` and :obj:`node.branch_selector`
 are defined. If the level is not zero, is recursively calls  the function
 for each branch. Otherwise, it clears the selector, branches and branch
 descriptions.
 
-    >>> cutTree(tree.tree, 2)
-    >>> printTree(tree)
-    tear_rate (<15.000, 5.000, 4.000>)
-    : reduced --> none (<12.000, 0.000, 0.000>)
-    : normal
-       astigmatic (<3.000, 5.000, 4.000>)
-       : no --> soft (<1.000, 5.000, 0.000>)
-       : yes --> hard (<2.000, 0.000, 4.000>)
+    >>> cut_tree(tree_classifier.tree, 2)
+    >>> print_tree(tree_classifier)
+    <BLANKLINE>
+    tear_rate (<15.000, 4.000, 5.000>) 
+    : normal 
+       astigmatic (<3.000, 4.000, 5.000>) 
+       : no --> soft (<1.000, 0.000, 5.000>)  
+       : yes --> hard (<2.000, 4.000, 0.000>)  
+    : reduced --> none (<12.000, 0.000, 0.000>) 
 
 Setting learning parameters
 ===========================
 
 Let us construct a :obj:`TreeLearner` to play with:
 
-.. literalinclude:: code/treelearner.py
-   :lines: 7-10
+    >>> import Orange
+    >>> lenses = Orange.data.Table("lenses")
+    >>> learner = Orange.classification.tree.TreeLearner()
 
 There are three crucial components in learning: the
 :obj:`~TreeLearner.split` and :obj:`~TreeLearner.stop` criteria, and the
@@ -233,7 +258,7 @@ example :obj:`~TreeLearner.splitter`. The default ``stop`` is set with:
 
 The default stopping parameters are:
 
-    >>> print learner.stop.max_majority, learner.stop.min_instances
+    >>> print learner.stop.max_majority, learner.stop.min_examples
     1.0 0.0
 
 The defaults only stop splitting when no instances are left or all of
@@ -242,8 +267,8 @@ them are in the same class.
 If the minimal subset that is allowed to be split further is set to five
 instances, the resulting tree is smaller.
 
-    >>> learner.stop.min_instances = 5.0
-    >>> tree = learner(data)
+    >>> learner.stop.min_examples = 5.0
+    >>> tree = learner(lenses)
     >>> print tree
     tear_rate=reduced: none (100.00%)
     tear_rate=normal
@@ -254,11 +279,12 @@ instances, the resulting tree is smaller.
     |    astigmatic=yes
     |    |    prescription=hypermetrope: none (66.67%)
     |    |    prescription=myope: hard (100.00%)
+    <BLANKLINE>
 
 We can also limit the maximal proportion of majority class.
 
     >>> learner.stop.max_majority = 0.5
-    >>> tree = learner(data)
+    >>> tree = learner(lenses)
     >>> print tree
     none (62.50%)
 
@@ -1325,7 +1351,7 @@ The following script prints out the tree same format as C4.5 does.
 For the leaves just the value in ``node.leaf`` in printed. Since
 :obj:`C45Node` does not know to which attribute it belongs, we need to
 convert it to a string through ``classvar``, which is passed as an extra
-argument to the recursive part of printTree.
+argument to the recursive part of print_tree.
 
 For discrete splits without subsetting, we print out all attribute values
 and recursively call the function for all branches. Continuous splits

@@ -52,24 +52,8 @@ class OWWidget(OWBaseWidget):
             self.widgetStateInfo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
             self.widgetStateInfo.setFixedHeight(self.widgetStateInfo.height())
             self.widgetStateInfoBox.hide()
-            def updateWidgetStateInfo(stateType, id, text):
-                html = self.widgetStateToHtml(self._owInfo, self._owWarning, self._owError)
-                if html:
-                    self.widgetStateInfoBox.show()
-                    self.widgetStateInfo.setText(html)
-                    self.widgetStateInfo.setToolTip(html)
-                else:
-                    if not self.widgetStateInfoBox.isVisible():
-                        dHeight = - self.widgetStateInfoBox.height()
-                    else:
-                        dHeight = 0
-                    self.widgetStateInfoBox.hide()
-                    self.widgetStateInfo.setText("")
-                    self.widgetStateInfo.setToolTip("")
-                    width, height = self.width(), self.height() + dHeight
-                    QTimer.singleShot(50, lambda :self.resize(width, height))
                     
-            self.connect(self, SIGNAL("widgetStateChanged(QString, int, QString)"), updateWidgetStateInfo)
+            self.connect(self, SIGNAL("widgetStateChanged(QString, int, QString)"), self.updateWidgetStateInfo)
         
 
         self.__reportData = None
@@ -150,6 +134,24 @@ class OWWidget(OWBaseWidget):
                 self.setStatusBarText("")
         self.updateStatusBarState()
         #qApp.processEvents()
+        
+    def updateWidgetStateInfo(self, stateType, id, text):
+        html = self.widgetStateToHtml(self._owInfo, self._owWarning, self._owError)
+        if html:
+            self.widgetStateInfoBox.show()
+            self.widgetStateInfo.setText(html)
+            self.widgetStateInfo.setToolTip(html)
+        else:
+            if not self.widgetStateInfoBox.isVisible():
+                dHeight = - self.widgetStateInfoBox.height()
+            else:
+                dHeight = 0
+            self.widgetStateInfoBox.hide()
+            self.widgetStateInfo.setText("")
+            self.widgetStateInfo.setToolTip("")
+            width, height = self.width(), self.height() + dHeight
+            self.resize(width, height)
+#            QTimer.singleShot(1, lambda :self.resize(width, height))
 
     def updateStatusBarState(self):
         if not hasattr(self, "widgetStatusArea"):
