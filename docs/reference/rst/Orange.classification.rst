@@ -43,27 +43,35 @@ directly but through other other learners and methods, such as
     ConstantClassifier always classifies to the same class and reports the
     same class probabilities.
 
-    Its constructor can be called without arguments, with a variable (for
-    :obj:`class_var`), value (for :obj:`default_val`) or both. If the value
-    is given and is of type :obj:`Orange.data.Value` (alternatives are an
-    integer index of a discrete value or a continuous value), its attribute
-    :obj:`Orange.data.Value.variable` will either be used for initializing
-    :obj:`class_var` or checked against it, if :obj:`class_var` is given
-    as an argument. 
-    
-    .. method:: __init__(class_var, default_val, default_distribution)
+    .. attribute:: class_var
 
-        The constructor can be called without arguments, with a variable
-        (for :obj:`class_var`), value (for :obj:`default_val`) or both.
-        If the value is given and is of type :obj:`Orange.data.Value`
-        (alternatives are an integer index of a discrete value or a continuous
-        value), its attribute :obj:`Orange.data.Value.variable` will either
-        be used for initializing :obj:`class_var` or checked against it,
-        if :obj:`class_var` is given as an argument. 
+        Class variable that the classifier predicts.
+
+    .. attribute:: default_val
+
+        Value returned by the classifier.
+
+    .. attribute:: default_distribution
+
+        Class probabilities returned by the classifier.
+    
+    .. method:: __init__(variable, value, distribution)
+
+        Constructor can be called without arguments, with a
+        variable, value or both. If the value is given and is of type
+        :obj:`Orange.data.Value`, its attribute
+        :obj:`Orange.data.Value.variable` will either be used for
+        initializing
+        :obj:`~Orange.classification.ConstantClassifier.variable` or
+        checked against it, if :obj:`variable` is given as an
+        argument.
         
-        :param class_var: Class variable that the classifier predicts.
-        :param default_val: Value that is returned by the classifier.
-        :param default_distribution: Class probabilities returned by the classifier.
+        :param variable: Class variable that the classifier predicts.
+        :type variable: :obj:`Orange.feature.Descriptor`
+        :param value: Value returned by the classifier.
+        :type value: :obj:`Orange.data.Value` or int (index) or float
+        :param distribution: Class probabilities returned by the classifier.
+        :type dstribution: :obj:`Orange.statistics.distribution.Distribution`
        
     .. method:: __call__(instances, return_type)
         
@@ -71,12 +79,7 @@ directly but through other other learners and methods, such as
         (:obj:`default_val` and/or :obj:`default_distribution`), regardless
         of the given data instance.
 
-    :obj:`ConstantClassifier` also has the following attributes, which
-    correspond to the constructor arguments described above.
 
-    .. attribute:: class_var
-    .. attribute:: default_val
-    .. attribute:: default_distribution
 
 Writing custom Classifiers
 --------------------------
