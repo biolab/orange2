@@ -574,8 +574,6 @@ import numpy
 import Orange
 import Orange.core
 from Orange.core import \
-    AssociationClassifier, \
-    AssociationLearner, \
     RuleClassifier, \
     RuleClassifier_firstRule, \
     RuleClassifier_logit, \
