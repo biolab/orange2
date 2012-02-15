@@ -51,7 +51,7 @@ class TestScoringUtils(testing.DataTestCase):
         
     @test_on_data
     def test_score_all(self, dataset):
-        scoring.score_all(dataset, measure=scoring.Relief())
+        scoring.score_all(dataset, score=scoring.Relief())
          
         
 if __name__ == "__main__":
