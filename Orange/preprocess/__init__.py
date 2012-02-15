@@ -198,7 +198,8 @@ class Preprocessor_removeContinuous(Preprocessor_discretize):
                 
 class Preprocessor_continuize(orange.Preprocessor):
     """ A preprocessor that continuizes a discrete domain (and optionally normalizes it).
-    See :obj:`Orange.feature.continuization.DomainContinuizer` for list of accepted arguments.
+    See :obj:`Orange.data.continuization.DomainContinuizer` for list of
+    accepted arguments.
     
     """
     __new__ = _orange__new__(orange.Preprocessor)

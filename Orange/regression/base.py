@@ -54,12 +54,12 @@ class BaseRegressionLearner(Orange.core.Learner):
         :param continuizer: function which replaces the categorical (dicrete)
             variables with numerical variables. If None, the default continuizer
             is used
-        :type continuizer: None or Orange.feature.continuization.DomainContinuizer
+        :type continuizer: None or Orange.data.continuization.DomainContinuizer
         """
         if continuizer is not None:
             self.continuizer = continuizer
         else: # default continuizer
-            self.continuizer = Orange.feature.continuization.DomainContinuizer()
+            self.continuizer = Orange.data.continuization.DomainContinuizer()
             self.continuizer.multinomial_treatment = self.continuizer.FrequentIsBase
             self.continuizer.zero_based = True
 

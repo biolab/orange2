@@ -84,8 +84,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
 
            "orange.EntropyDiscretization": "Orange.feature.discretization.Entropy",
            "orange.EquiDistDiscretization": "Orange.feature.discretization.EqualWidth",
-           "orange.EquiNDiscretization": "Orange.feature.discretization.EqualFreq",
-           "orange.BiModalDiscretization": "Orange.feature.discretization.BiModal",
+           "orange.EquiNDiscretization": "Orange.data.discretization.EqualFreq",
+           "orange.BiModalDiscretization": "Orange.data.discretization.BiModal",
 
            "orngFSS.attMeasure": "Orange.feature.scoring.score_all",
            "orngFSS.bestNAtts": "Orange.feature.selection.best_n",
@@ -503,7 +503,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.ThresholdDiscretizer": "Orange.feature.discretization.ThresholdDiscretizer",
            "orange.Discrete2Continuous": "Orange.feature.discretization.Discrete2Continuous",
 
-           "orange.DomainContinuizer": "Orange.feature.continuization.DomainContinuizer",
+           "orange.DomainContinuizer": "Orange.data.continuization.DomainContinuizer",
 
            "orange.MakeRandomIndices": "Orange.data.sample.SubsetIndices",
            "orange.MakeRandomIndicesN": "Orange.data.sample.SubsetIndicesN",
