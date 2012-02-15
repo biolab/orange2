@@ -113,7 +113,6 @@ class EvaluationTest(object):
                          ("L", DummyPreprocessor(preprocessed_with_learn)),
                          ("T", DummyPreprocessor(preprocessed_with_test)),
                          ("LT", DummyPreprocessor(preprocessed_with_learn_test)))
-        print self.evaluation
         self.evaluation([self.learner], self.examples,
             preprocessors=preprocessors)
 
@@ -188,6 +187,9 @@ class TestLearningCurveWithTestData(EvaluationTest, unittest.TestCase):
             return Orange.evaluation.testing.learning_curve_with_test_data(
                 learners, data, self.examples, *args, **kwargs)
         return wrapper
+
+    def test_can_store_classifiers(self):
+        self.skipTest("")
 
     def test_returns_correct_results(self):
         learner = DummyLearner()
