@@ -9,8 +9,7 @@
 Imputation (``imputation``)
 ***************************
 
-Imputation replaces missing feature values with appropriate values, in this
-case with minimal values:
+Imputation replaces missing feature values with appropriate values, for instancewith minimal values of features:
 
 .. literalinclude:: code/imputation-values.py
    :lines: 7-
@@ -26,39 +25,64 @@ The output of this code is::
 Imputers
 --------
 
-:obj:`~Orange.feature.imputation.Constructor` is the abstract root in a
+:obj:`Orange.feature.imputation.Constructor` is the abstract root of a
 hierarchy of classes that accept training data and construct an instance of
-a class derived from :obj:`~Orange.feature.imputation.Imputer`. When an
+a class derived from :obj:`Orange.feature.imputation.Imputer`. When an
 :obj:`~Orange.feature.imputation.Imputer` is called with an
 :obj:`~Orange.data.Instance` it returns a new instance with the
 missing values imputed (leaving the original instance intact). If imputer is
 called with a :obj:`~Orange.data.Table` it returns a new data table with
-imputed instances.
+imputed values.
 
 .. class:: Constructor
 
     .. attribute:: impute_class
 
-    Indicates whether to impute the class value. Defaults to True.
+        Indicates whether to impute the class value. Defaults to True.
 
 Simple imputation
 =================
 
-Simple imputers always impute the same value for a particular feature,
-disregarding the values of other features. They all use the same class
-:obj:`Defaults`.
+Simple imputation always imputes the same value for a particular feature,
+disregarding the values of other features.
 
 .. class:: Defaults
 
     .. attribute::  defaults
 
-    An instance :obj:`~Orange.data.Instance` with the default values to be
-    imputed instead of missing value. Examples to be imputed must be from the
-    same :obj:`~Orange.data.Domain` as
-    :obj:`~Orange.feature.imputation.Defaults.defaults`.
+	A data instance :obj:`~Orange.data.Instance` with the default
+	values that are imputed instead of the missing
+	values. Features whose values are left unspecified are not
+	imputed. The instances to which the data is imputed be from
+	the same :obj:`~Orange.data.Domain` as
+	:obj:`~Orange.feature.imputation.Defaults.defaults`.
 
-Instances of this class can be constructed by
-:obj:`~Orange.feature.imputation.MinimalConstructor`,
+    .. method:: __init__(domain)
+
+        Construct a new instance of
+        :obj:`~Orange.feature.imputation.Defaults` and set
+        :obj:`defaults` to a data instance with from the given domain
+        all values undefined.
+
+        The following example constructs an imputer that sets the
+        unknown bridge lengths to 1234 and leaves are all other values
+        as they are:
+
+        .. literalinclude:: code/imputation-complex.py
+            :lines: 57-58
+
+    .. method:: __init__(values)
+
+        Construct a new instance of the class and set the
+        :obj:`defaults` to the given values. The constructor does not
+        copy the data instance, so if the instance is not constructed
+        specifically for the imputer, the caller should make a copy
+        (e.g. by calling
+        ``Orange.feature.imputation.Defaults(Orange.data.Instance(inst))``
+        and not ``Orange.feature.imputation.Defaults(inst)``.
+
+Instances of :obj:`Orange.feature.imputation.Defaults` are returned
+by :obj:`~Orange.feature.imputation.MinimalConstructor`,
 :obj:`~Orange.feature.imputation.MaximalConstructor`,
 :obj:`~Orange.feature.imputation.AverageConstructor`.
 
@@ -72,20 +96,7 @@ disease can be ordered according to their seriousness),
 the minimal and maximal imputers  will then represent optimistic and
 pessimistic imputations.
 
-User-define defaults can be given when constructing a
-:obj:`~Orange.feature.imputation.Defaults`. Values that are left
-unspecified do not get imputed. In the following example "LENGTH" is the
-only attribute to get imputed with value 1234:
 
-.. literalinclude:: code/imputation-complex.py
-    :lines: 56-69
-
-If :obj:`~Orange.feature.imputation.Defaults`'s constructor is given
-an argument of type :obj:`~Orange.data.Domain` it constructs an empty instance
-for :obj:`~Orange.feature.imputation.Defaults.defaults`. If an
-instance is given, the reference to the instance is kept. To avoid problems
-associated with `Defaults(data[0])`, it is better to provide a copy
-of the instance: `Defaults(Orange.data.Instance(data[0]))`.
 
 Random imputation
 =================
