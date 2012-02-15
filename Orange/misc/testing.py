@@ -502,7 +502,10 @@ class DistanceTestCase(DataTestCase):
         dataset = dataset.select(indices, 0)
         with member_set(self.distance_constructor, "ignore_class", True):
             mat = distance_matrix(dataset, self.distance_constructor)
-
+            
+        self.assertIsInstance(mat, Orange.misc.SymMatrix)
+        self.assertEqual(mat.dim, len(dataset))
+        
         m = numpy.array(list(mat))
         self.assertTrue((m >= 0.0).all())
 
@@ -511,7 +514,7 @@ class DistanceTestCase(DataTestCase):
                 try:
                     mat = distance_matrix(dataset, self.distance_constructor)
                 except orange.KernelException, ex:
-                    if "not supported" in ex.message:
+                    if "not supported" in str(ex):
                         return
                     else:
                         raise

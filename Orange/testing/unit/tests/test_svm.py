@@ -52,7 +52,7 @@ class CustomWrapperSVMTestCase(testing.LearnerTestCase):
         """
         # Need the data for ExamplesDistanceConstructor_Euclidean  
         self.learner = self.LEARNER(kernel_type=SVMLearner.Custom,
-                                    kernelFunc=RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5))
+                                    kernel_func=RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5))
         
         testing.LearnerTestCase.test_learner_on(self, data)
     
@@ -75,14 +75,14 @@ class TestRFE(testing.DataTestCase):
         num_selected = min(5, len(data.domain.attributes))
         reduced = rfe(data, num_selected)
         self.assertEqual(len(reduced.domain.attributes), num_selected)
-        scores = rfe.getAttrScores(data, stopAt=num_selected)
+        scores = rfe.get_attr_scores(data, stop_at=num_selected)
         self.assertEqual(len(data.domain.attributes) - num_selected, len(scores))
         self.assertTrue(set(reduced.domain.attributes).isdisjoint(scores.keys()))
         
     def test_pickle(self):
         import cPickle
         rfe = RFE()
-        cPickle.loads(cPickle.dumps(rfe))
+        copy = cPickle.loads(cPickle.dumps(rfe))
 
 if __name__ == "__main__":
     import unittest
