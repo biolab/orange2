@@ -123,7 +123,7 @@ PyObject *ProgressCallback_call(PyObject *self, PyObject *targs, PyObject *keywo
 
 PVarList PVarList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::P_FromArguments(arg); }
 PyObject *VarList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_FromArguments(type, arg); }
-PyObject *VarList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.data.variable.Variables, "(<list of Variable>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_new(type, arg, kwds); }
+PyObject *VarList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Variable>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_new(type, arg, kwds); }
 PyObject *VarList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_getitem(self, index); }
 int       VarList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_setitem(self, index, item); }
 PyObject *VarList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_getslice(self, start, stop); }
@@ -237,9 +237,9 @@ TMetaVector *knownMetas(PyObject *keywords)
   return NULL;
 }
 
-ABSTRACT(Variable - Orange.data.variable.Variable, Orange)
-C_NAMED(EnumVariable - Orange.data.variable.Discrete, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
-C_NAMED(FloatVariable - Orange.data.variable.Continuous, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
+ABSTRACT(Variable - Orange.feature.Descriptor, Orange)
+C_NAMED(EnumVariable - Orange.feature.Discrete, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
+C_NAMED(FloatVariable - Orange.feature.Continuous, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
 PyObject *PyVariable_MakeStatus_FromLong(long ok);
 
@@ -336,10 +336,10 @@ PyObject *Variable_get_name(PyObject *self)
 
 
 #include "stringvars.hpp"
-C_NAMED(StringVariable - Orange.data.variable.String, Variable, "([name=])")
+C_NAMED(StringVariable - Orange.feature.String, Variable, "([name=])")
 
 #include "pythonvars.hpp"
-C_NAMED(PythonVariable - Orange.data.variable.Python, Variable, "([name=])")
+C_NAMED(PythonVariable - Orange.feature.Python, Variable, "([name=])")
 
 PyObject *PythonValue_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(SomeValue, "([object])")
 {
@@ -877,7 +877,7 @@ converter pt_weightByGen(PExampleGenerator &peg)
 }
 
 
-PyObject *StringValue_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(string)")
+PyObject *StringValue_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue - Orange.data.StringValue, "(string)")
 { char *s;
   if (!PyArg_ParseTuple(args, "s:StringValue", &s))
     return PYNULL;

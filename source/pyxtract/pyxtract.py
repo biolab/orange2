@@ -774,6 +774,14 @@ PyObject *%(wholename)s__reduce__(PyObject *self) { return Py_BuildValue("O(s(i)
   outfile.close()
 
 
+def writeDisplayNames(filename, classdefs):
+  outfile = open("px/%s.new" % filename, "wt")
+  newfiles.append(filename)
+  for classname, fields in classdefs.items():
+    if hasattr(fields, "displayname"):
+        outfile.write('%s\t%s\n' % (classname, fields.displayname))
+
+
 def writeAppendices(classdefs):
   filenamedef=re.compile(r"(?P<stem>.*)\.\w*$")
   for filename in filenames:
@@ -1086,6 +1094,7 @@ def make():
   if not os.path.isdir("px"):
     os.mkdir("px")
   writeAppendices(classdefs)
+  writeDisplayNames("displaynames", classdefs)
   writeExterns()
   writeInitialization(functions, constants)
   writeGlobals()

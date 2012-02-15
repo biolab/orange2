@@ -1358,25 +1358,25 @@ PyObject *DomainTransformerConstructor_call(PyObject *self, PyObject *args)
 #include "distance.hpp"
 #include "distance_dtw.hpp"
 
-ABSTRACT(ExamplesDistance_Normalized - Orange.distances.ExamplesDistance_Normalized, ExamplesDistance)
-C_NAMED(ExamplesDistance_Hamming - Orange.distances.Hamming, ExamplesDistance, "()")
-C_NAMED(ExamplesDistance_Maximal - Orange.distances.Maximal, ExamplesDistance_Normalized, "()")
-C_NAMED(ExamplesDistance_Manhattan - Orange.distances.Manhattan, ExamplesDistance_Normalized, "()")
-C_NAMED(ExamplesDistance_Euclidean - Orange.distances.Euclidean, ExamplesDistance_Normalized, "()")
-C_NAMED(ExamplesDistance_Lp - Orange.distances.Lp, ExamplesDistance_Normalized, "()")
-C_NAMED(ExamplesDistance_Relief - Orange.distances.Relief, ExamplesDistance, "()")
-C_NAMED(ExamplesDistance_DTW - Orange.distances.DTW, ExamplesDistance_Normalized, "()")
+ABSTRACT(ExamplesDistance_Normalized - Orange.distance.DistanceNormalized, ExamplesDistance)
+C_NAMED(ExamplesDistance_Hamming - Orange.distance.HammingDistance, ExamplesDistance, "()")
+C_NAMED(ExamplesDistance_Maximal - Orange.distance.MaximalDistance, ExamplesDistance_Normalized, "()")
+C_NAMED(ExamplesDistance_Manhattan - Orange.distance.ManhattanDistance, ExamplesDistance_Normalized, "()")
+C_NAMED(ExamplesDistance_Euclidean - Orange.distance.EuclideanDistance, ExamplesDistance_Normalized, "()")
+C_NAMED(ExamplesDistance_Lp, Distance_Normalized, "()")
+C_NAMED(ExamplesDistance_Relief - Orange.distance.ReliefDistance, ExamplesDistance, "()")
+C_NAMED(ExamplesDistance_DTW - Orange.distance.DTWDistance, ExamplesDistance_Normalized, "()")
 
-C_CALL(ExamplesDistanceConstructor_Hamming - Orange.distances.HammingConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Hamming")
-C_CALL(ExamplesDistanceConstructor_Maximal - Orange.distances.MaximalConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Maximal")
-C_CALL(ExamplesDistanceConstructor_Manhattan - Orange.distances.ManhattanConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Manhattan")
-C_CALL(ExamplesDistanceConstructor_Euclidean - Orange.distances.EuclideanConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Euclidean")
-C_CALL(ExamplesDistanceConstructor_Lp - Orange.distances.LpConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Lp")
-C_CALL(ExamplesDistanceConstructor_Relief - Orange.distances.ReliefConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Relief")
-C_CALL(ExamplesDistanceConstructor_DTW - Orange.distances.DTWConstructor, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_DTW")
+C_CALL(ExamplesDistanceConstructor_Hamming - Orange.distance.Hamming, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Hamming")
+C_CALL(ExamplesDistanceConstructor_Maximal - Orange.distance.Maximal, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Maximal")
+C_CALL(ExamplesDistanceConstructor_Manhattan - Orange.distance.Manhattan, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Manhattan")
+C_CALL(ExamplesDistanceConstructor_Euclidean - Orange.distance.Euclidean, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Euclidean")
+C_CALL(ExamplesDistanceConstructor_Lp, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Lp")
+C_CALL(ExamplesDistanceConstructor_Relief - Orange.distance.Relief, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Relief")
+C_CALL(ExamplesDistanceConstructor_DTW - Orange.distance.DTW, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_DTW")
 
 
-PyObject *ExamplesDistanceConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.distances.ExamplesDistanceConstructor, "<abstract>")
+PyObject *ExamplesDistanceConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.distance.DistanceConstructor, "<abstract>")
 {
   if (type == (PyTypeObject *)&PyOrExamplesDistanceConstructor_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type), args);
@@ -1391,7 +1391,7 @@ PyObject *ExamplesDistanceConstructor__reduce__(PyObject *self)
 }
 
 
-PyObject *ExamplesDistance_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.distances.ExamplesDistance, "<abstract>")
+PyObject *ExamplesDistance_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.distance.Distance, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrExamplesDistance_Type)
 return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistance_Python(), type), args);
 else
@@ -1527,10 +1527,10 @@ PyObject *ExamplesDistance_DTW_alignment(PyObject *self, PyObject *args) PYARGS(
 
 #include "nearest.hpp"
 
-ABSTRACT(FindNearest - Orange.core.FindNearest, Orange)
+ABSTRACT(FindNearest, Orange)
 C_NAMED(FindNearest_BruteForce - Orange.classification.knn.FindNearest, FindNearest, "([distance=, distanceID=, includeSame=])")
 
-ABSTRACT(FindNearestConstructor - Orange.core.FindNearestConstructor, Orange)
+ABSTRACT(FindNearestConstructor, Orange)
 C_CALL(FindNearestConstructor_BruteForce - Orange.classification.knn.FindNearestConstructor, FindNearestConstructor, "([examples[, weightID[, distanceID]], distanceConstructor=, includeSame=]) -/-> FindNearest")
 
 
@@ -2000,11 +2000,11 @@ PyObject *Filter_disjunction_new(PyTypeObject *type, PyObject *args, PyObject *k
 C_NAMED(TransformValue_IsDefined, TransformValue, "([value=])")
 
 ABSTRACT(Imputer - Orange.feature.imputation.Imputer, Orange)
-C_NAMED(Imputer_asValue - Orange.feature.imputation.Imputer_asValue, Imputer, "() -> Imputer_asValue")
-C_NAMED(Imputer_model - Orange.feature.imputation.Imputer_model, Imputer, "() -> Imputer_model")
-C_NAMED(Imputer_random - Orange.feature.imputation.Imputer_random, Imputer, "() -> Imputer_random")
+C_NAMED(Imputer_asValue - Orange.feature.imputation.AsValue, Imputer, "() -> Imputer_asValue")
+C_NAMED(Imputer_model - Orange.feature.imputation.Model, Imputer, "() -> Imputer_model")
+C_NAMED(Imputer_random - Orange.feature.imputation.Random, Imputer, "() -> Imputer_random")
 
-PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imputer - Orange.feature.imputation.Imputer_defaults, "(domain | example) -> Imputer_defaults")
+PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imputer - Orange.feature.imputation.Defaults, "(domain | example) -> Imputer_defaults")
 {
 	PyTRY
 		if (PyTuple_Size(args) == 1) {
@@ -2029,13 +2029,13 @@ PyObject *Imputer_defaults__reduce__(PyObject *self)
 }
 
 
-ABSTRACT(ImputerConstructor - Orange.feature.imputation.ImputerConstructor, Orange)
-C_CALL(ImputerConstructor_average - Orange.feature.imputation.ImputerConstructor_average, ImputerConstructor, "(examples[, weightID]) -> Imputer")
-C_CALL(ImputerConstructor_minimal - Orange.feature.imputation.ImputerConstructor_minimal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
-C_CALL(ImputerConstructor_maximal - Orange.feature.imputation.ImputerConstructor_maximal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
-C_CALL(ImputerConstructor_model - Orange.feature.imputation.ImputerConstructor_model, ImputerConstructor, "(examples[, weightID]) -> Imputer")
-C_CALL(ImputerConstructor_asValue - Orange.feature.imputation.ImputerConstructor_asValue, ImputerConstructor, "(examples[, weightID]) -> Imputer")
-C_CALL(ImputerConstructor_random - Orange.feature.imputation.ImputerConstructor_random, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+ABSTRACT(ImputerConstructor - Orange.feature.imputation.Constructor, Orange)
+C_CALL(ImputerConstructor_average - Orange.feature.imputation.AverageConstructor, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_minimal - Orange.feature.imputation.MinimalConstructor, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_maximal - Orange.feature.imputation.MaximalConstructor, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_model - Orange.feature.imputation.ModelConstructor, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_asValue - Orange.feature.imputation.AsValueConstructor, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_random - Orange.feature.imputation.RandomConstructor, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 
 PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -2080,11 +2080,11 @@ PyObject *ImputerConstructor_call(PyObject *self, PyObject *args, PyObject *keyw
 /* ************ RANDOM INDICES ******************** */
 #include "trindex.hpp"
 
-ABSTRACT(MakeRandomIndices - Orange.data.sample.MakeRandomIndices, Orange)
-C_CALL3(MakeRandomIndices2 - Orange.data.sample.MakeRandomIndices2, MakeRandomIndices2, MakeRandomIndices, "[n | gen [, p0]], [p0=, stratified=, randseed=] -/-> [int]")
-C_CALL3(MakeRandomIndicesMultiple - Orange.data.sample.MakeRandomIndicesMultiple, MakeRandomIndicesMultiple, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
-C_CALL3(MakeRandomIndicesN - Orange.data.sample.MakeRandomIndicesN, MakeRandomIndicesN, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
-C_CALL3(MakeRandomIndicesCV - Orange.data.sample.MakeRandomIndicesCV, MakeRandomIndicesCV, MakeRandomIndices, "[n | gen [, folds]], [folds=, stratified=, randseed=] -/-> [int]")
+ABSTRACT(MakeRandomIndices - Orange.data.sample.SubsetIndices, Orange)
+C_CALL3(MakeRandomIndices2 - Orange.data.sample.SubsetIndices2, MakeRandomIndices2, MakeRandomIndices, "[n | gen [, p0]], [p0=, stratified=, randseed=] -/-> [int]")
+C_CALL3(MakeRandomIndicesMultiple - Orange.data.sample.SubsetIndicesMultiple, MakeRandomIndicesMultiple, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
+C_CALL3(MakeRandomIndicesN - Orange.data.sample.SubsetIndicesN, MakeRandomIndicesN, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
+C_CALL3(MakeRandomIndicesCV - Orange.data.sample.SubsetIndicesCV, MakeRandomIndicesCV, MakeRandomIndices, "[n | gen [, folds]], [folds=, stratified=, randseed=] -/-> [int]")
 
 
 PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keywords)
@@ -2582,17 +2582,18 @@ PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, P
 #include "measures.hpp"
 #include "relief.hpp"
 
-BASED_ON(MeasureAttribute - Orange.feature.scoring.Measure, Orange)
-ABSTRACT(MeasureAttributeFromProbabilities - Orange.core.MeasureAttributeFromProbabilities, MeasureAttribute)
+BASED_ON(MeasureAttribute - Orange.feature.scoring.Score, Orange)
+ABSTRACT(MeasureAttributeFromProbabilities - Orange.feature.scoring.ScoreFromProbabilities, MeasureAttribute)
 
 C_CALL(MeasureAttribute_info - Orange.feature.scoring.InfoGain, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
 C_CALL(MeasureAttribute_gini - Orange.feature.scoring.Gini, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
 C_CALL(MeasureAttribute_gainRatio - Orange.feature.scoring.GainRatio, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
-C_CALL(MeasureAttribute_gainRatioA - Orange.core.MeasureAttribute_gainRatioA, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
 C_CALL(MeasureAttribute_cost - Orange.feature.scoring.Cost, MeasureAttributeFromProbabilities, "(cost=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
 C_CALL(MeasureAttribute_relevance - Orange.feature.scoring.Relevance, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
-C_CALL(MeasureAttribute_logOddsRatio - Orange.core.MeasureAttribute_logOddsRatio, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
-C_CALL(MeasureAttribute_chiSquare - Orange.feature.scoring.MeasureAttribute_chiSquare, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
+
+C_CALL(MeasureAttribute_gainRatioA, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
+C_CALL(MeasureAttribute_logOddsRatio, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
+C_CALL(MeasureAttribute_chiSquare, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
 
 C_CALL(MeasureAttribute_MSE - Orange.feature.scoring.MSE, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
 
@@ -2605,7 +2606,7 @@ PYCONSTANT(MeasureAttribute_retis, (PyObject *)&PyOrMeasureAttribute_MSE_Type)
 
 PYCLASSCONSTANT_FLOAT(MeasureAttribute, Rejected, ATTRIBUTE_REJECTED)
 
-PyObject *MeasureAttribute_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.feature.scoring.Measure, "<abstract>")
+PyObject *MeasureAttribute_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.feature.scoring.Score, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrMeasureAttribute_Type)
 return setCallbackFunction(WrapNewOrange(mlnew TMeasureAttribute_Python(), type), args);
 else
@@ -2874,9 +2875,9 @@ PyObject *MeasureAttribute_bestThreshold(PyObject *self, PyObject *args, PyObjec
 
 #include "exampleclustering.hpp"
 
-ABSTRACT(GeneralExampleClustering - Orange.core.GeneralExampleClustering, Orange)
+ABSTRACT(GeneralExampleClustering - Orange.feature.construction.functionDecomposition.GeneralExampleClustering, Orange)
 C_NAMED(ExampleCluster - Orange.clustering.ExampleCluster, Orange, "([left=, right=, distance=, centroid=])")
-C_NAMED(ExampleClusters - Orange.core.ExampleClusters, GeneralExampleClustering, "([root=, quality=]")
+C_NAMED(ExampleClusters - Orange.feature.construction.functionDecomposition.ExampleClusters, GeneralExampleClustering, "([root=, quality=]")
 
 
 PyObject *GeneralExampleClustering_exampleClusters(PyObject *self) PYARGS(METH_NOARGS, "() -> ExampleClusters")
@@ -3543,7 +3544,7 @@ PyObject *SymMatrix_repr(PyObject *self)
 C_NAMED(HierarchicalCluster - Orange.clustering.hierarchical.HierarchicalCluster, Orange, "()")
 C_CALL3(HierarchicalClustering - Orange.clustering.hierarchical.HierarchicalClustering, HierarchicalClustering, Orange, "(linkage=)")
 
-C_CALL3(HierarchicalClusterOrdering - Orange.clustering.hierarchical.HierarchicalClusterOrdering, HierarchicalClusterOrdering, Orange, "(progressCallback=)")
+C_CALL3(HierarchicalClusterOrdering, HierarchicalClusterOrdering, Orange, "(progressCallback=)")
 
 PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(distance matrix) -> HierarchicalCluster")
 {
@@ -3740,7 +3741,7 @@ PyObject *HierarchicalClusterList__reduce__(TPyOrange *self, PyObject *) PYARGS(
 
 #include "distancemap.hpp"
 
-C_NAMED(DistanceMapConstructor - Orange.distances.DistanceMapConstructor, Orange, "(distanceMatrix=, order=)")
+C_NAMED(DistanceMapConstructor - Orange.distance.DistanceMapConstructor, Orange, "(distanceMatrix=, order=)")
 
 
 
@@ -3777,7 +3778,7 @@ PyObject *DistanceMapConstructor_getLegend(PyObject *self, PyObject *args) PYARG
 }
 
 
-BASED_ON(DistanceMap - Orange.distances.DistanceMap, Orange)
+BASED_ON(DistanceMap - Orange.distance.DistanceMap, Orange)
 
 PyObject *DistanceMap__reduce__(PyObject *self)
 {
@@ -4343,7 +4344,7 @@ PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, double *weights
 }
 
 
-ABSTRACT(Graph - Orange.network.Graph, Orange)
+ABSTRACT(Graph, Orange)
 RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping force_mapping returnIndices return_indices objectsOnEdges object_on_edges")
 
 int Graph_getindex(TGraph *graph, PyObject *index)

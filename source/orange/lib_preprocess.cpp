@@ -52,16 +52,16 @@
 
 
 ABSTRACT(Discretizer - Orange.feature.discretization.Discretizer, TransformValue)
-C_NAMED(EquiDistDiscretizer - Orange.feature.discretization.EquiDistDiscretizer, Discretizer, "([numberOfIntervals=, firstCut=, step=])")
+C_NAMED(EquiDistDiscretizer - Orange.feature.discretization.EqualWidthDiscretizer, Discretizer, "([numberOfIntervals=, firstCut=, step=])")
 C_NAMED(IntervalDiscretizer - Orange.feature.discretization.IntervalDiscretizer, Discretizer, "([points=])")
 C_NAMED(ThresholdDiscretizer - Orange.feature.discretization.ThresholdDiscretizer, Discretizer, "([threshold=])")
 C_NAMED(BiModalDiscretizer - Orange.feature.discretization.BiModalDiscretizer, Discretizer, "([low=, high=])")
 
 ABSTRACT(Discretization - Orange.feature.discretization.Discretization, Orange)
-C_CALL (EquiDistDiscretization - Orange.feature.discretization.EquiDistDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
-C_CALL (   EquiNDiscretization - Orange.feature.discretization.EquiNDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
-C_CALL ( EntropyDiscretization - Orange.feature.discretization.EntropyDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
-C_CALL ( BiModalDiscretization - Orange.feature.discretization.BiModalDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
+C_CALL (EquiDistDiscretization - Orange.feature.discretization.EqualWidth, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
+C_CALL (   EquiNDiscretization - Orange.feature.discretization.EqualFreq, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
+C_CALL ( EntropyDiscretization - Orange.feature.discretization.Entropy, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
+C_CALL ( BiModalDiscretization - Orange.feature.discretization.BiModal, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
 
 
 PyObject *Discretization_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weight]) -> Variable")
@@ -119,7 +119,7 @@ C_NAMED(Discrete2Continuous - Orange.feature.discretization.Discrete2Continuous,
 C_NAMED(Ordinal2Continuous, TransformValue, "([nvalues=])")
 C_NAMED(NormalizeContinuous, TransformValue, "([average=, span=])")
 
-C_NAMED(DomainContinuizer - Orange.feature.DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
+C_NAMED(DomainContinuizer - Orange.data.continuization.DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
 
 int getTargetClass(PVariable classVar, PyObject *pyval)
 {
@@ -1396,9 +1396,9 @@ PyObject *AssessIMQuality_call(PyObject *self, PyObject *args, PyObject *keyword
 
 #include "dist_clustering.hpp"
 
-ABSTRACT(ExampleDistConstructor - Orange.distances.ExampleDistConstructor, Orange)
-C_CALL(ExampleDistBySorting - Orange.distances.ExampleDistBySorting, ExampleDistConstructor, "([examples, bound-attrs[, weightID]]) -/-> ExampleDistVector")
-BASED_ON(ExampleDistVector - Orange.distances.ExampleDistVector, Orange)
+ABSTRACT(ExampleDistConstructor, Orange)
+C_CALL(ExampleDistBySorting, ExampleDistConstructor, "([examples, bound-attrs[, weightID]]) -/-> ExampleDistVector")
+BASED_ON(ExampleDistVector, Orange)
 ABSTRACT(ClustersFromDistributions, Orange)
 C_CALL(ClustersFromDistributionsByAssessor, ClustersFromDistributions, "([example-dist-vector] [minProfitProportion=, distributionAssessor=, stopCriterion=]) -/-> DistClustering")
 C_CALL(FeatureByDistributions, FeatureInducer, "() | ([examples, bound-attrs, name], [constructExampleDist=, completion=]) -/-> Variable")

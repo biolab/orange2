@@ -34,7 +34,7 @@
 
 
 BASED_ON(Orange, ROOT)
-DATASTRUCTURE(Orange, TPyOrange, orange_dict)
+DATASTRUCTURE(Orange - Orange.core.OrangeBase, TPyOrange, orange_dict)
 RECOGNIZED_ATTRIBUTES(Orange, "name shortDescription description")
 
 
