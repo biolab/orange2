@@ -19,7 +19,7 @@ class TestLinearRegressionLearner(testing.LearnerTestCase):
 class TestRidgeRegressionLearner(testing.LearnerTestCase):
     
     def setUp(self):
-        self.learner = linear.LinearRegressionLearner(ridgeLambda=2)
+        self.learner = linear.LinearRegressionLearner(ridge_lambda=2)
     
     @test_on_data
     def test_learner_on(self, dataset):

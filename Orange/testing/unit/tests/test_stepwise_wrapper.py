@@ -14,7 +14,7 @@ class TestStepwise(testing.LearnerTestCase):
     def test_learner_on(self, dataset):
         if len(dataset) > 100:
             dataset = dataset.select(
-                Orange.data.sample.SubsetIndices2(n=100)(dataset)
+                Orange.data.sample.SubsetIndices2(p0=100)(dataset)
                 )
         testing.LearnerTestCase.test_learner_on(self, dataset)
         

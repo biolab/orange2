@@ -47,7 +47,7 @@ class TestHClustering(testing.DataTestCase):
         root1 = HierarchicalClustering(matrix, progress_callback=p)
         root2 = hier.clone(root1)
         
-        order_leaves_py(root1, matrix, progressCallback=p)
+        order_leaves_py(root1, matrix, progress_callback=p)
         order_leaves_cpp(root2, matrix, progress_callback=p)
         
         def score(mapping):

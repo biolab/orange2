@@ -39,13 +39,11 @@ class TestKMeans(unittest.TestCase):
         self.assertEqual(len(centers), k)
         self.assertEqual(centers[0].domain, table.domain)
         
-    
-    @unittest.expectedFailure
     def test_kmeans_fail(self):
         """ Test the reaction when centroids is larger then example table length
         """
-        data = iter(testDatasets()).next()
-        Clustering(data, len(data) + 1)
+        data = Orange.data.Table("iris")
+        self.assertRaises(Exception, Clustering, (data, len(data) + 1))
 
 
 if __name__ == "__main__":

@@ -49,9 +49,8 @@ different classes are called discriminatory scores.
 
 .. autofunction:: Brier_score
 
-.. autosingleton:: AUC
-.. autoclass:: AucClass
-    :members: __call__, by_weighted_pairs, by_pairs,
+.. autoclass:: AUC
+    :members: by_weighted_pairs, by_pairs,
               weighted_one_against_all, one_against_all, single_class, pair,
               matrix
 

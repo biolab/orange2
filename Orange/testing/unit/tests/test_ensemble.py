@@ -31,11 +31,10 @@ class TestRandomForest(testing.LearnerTestCase):
         import orngEnsemble, orngTree
         self.learner = orngEnsemble.RandomForestLearner()
         
-    @test_on_datasets(datasets=["iris"])
-    @unittest.expectedFailure
+    @test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS + \
+                      testing.REGRESSION_DATASETS)
     def test_pickling_on(self, dataset):
-        raise NotImplemented("SmallTreeLearner pickling is not implemented")
-#        testing.LearnerTestCase.test_pickling_on(self, dataset)
+        testing.LearnerTestCase.test_pickling_on(self, dataset)
         
         
         
