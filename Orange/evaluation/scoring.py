@@ -1390,24 +1390,21 @@ def replace_use_weights(fun):
     return wrapped
 
 class AUC(list):
-    ByWeightedPairs = 0
-    ByPairs = 1
-    WeightedOneAgainstAll = 2
-    OneAgainstAll = 3
+    """
+    Compute the area under ROC curve given a set of experimental results.
+    For multivalued class problems, return the result of :obj:`by_weighted_pairs`.
+    If testing consisted of multiple folds, each fold is scored and
+    average score is returned. If a fold contains only instances with
+    same class value, folds will be merged.
+
+    :param test_results: test results to score
+    :param ignore_weights: ignore instance weights when calculating score
+    :param method: DEPRECATED, call the appropriate method directly.
+    """
 
     @replace_use_weights
     def __init__(self, test_results=None, method=0, ignore_weights=False):
-        """
-        Return the area under ROC curve given a set of experimental results.
-        For multivalued class problems, return the result of :obj:`by_weighted_pairs`.
-        If testing consisted of multiple folds, each fold is scored and
-        average score is returned. If a fold contains only instances with
-        same class value, folds will be merged.
 
-        :param test_results: test results to score
-        :param ignore_weights: ignore instance weights when calculating score
-        :param method: DEPRECATED, call the appropriate method directly.
-        """
         super(AUC, self).__init__()
 
         self.ignore_weights=ignore_weights
@@ -1691,6 +1688,11 @@ class AUC(list):
         return aucs
 
 #Backward compatibility
+AUC.ByWeightedPairs = 0
+AUC.ByPairs = 1
+AUC.WeightedOneAgainstAll = 2
+AUC.OneAgainstAll = 3
+
 @replace_use_weights
 def AUC_binary(res, ignore_weights=False):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights)
