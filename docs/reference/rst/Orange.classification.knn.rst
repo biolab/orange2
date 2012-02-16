@@ -169,39 +169,46 @@ Finding nearest neighbors
 -------------------------
 
 Orange provides classes for finding the nearest neighbors of a given
-reference instance. While we might add some smarter classes in the future, we
-now have only two - abstract classes that define the general behavior of
-neighbor searching classes, and classes that implement brute force search.
+reference instance.
 
-As is the norm in Orange, there are a pair of classes: a class that does the work
-(:class:`FindNearest`) and a class that constructs it ("learning" - getting the
-instances and arranging them in an appropriate data structure that allows for
-searching) (:class:`FindNearestConstructor`).
+As usual in Orange, there are two classes: one that does the work
+(:class:`FindNearest`) and another that constructs the former from
+data (:class:`FindNearestConstructor`).
 
 .. class:: FindNearest
 
-    A class for a brute force search for nearest neighbors. It stores a table 
-    of instances (it's its own copy of instances, not only Orange.data.Table
-    with references to another Orange.data.Table). When asked for neighbors,
-    it measures distances to all instances, stores them in a heap and returns 
-    the first k as an Orange.data.Table with references to instances stored in
-    FindNearest's field instances).
+    Brute force search for nearest neighbors in the stored data table.
     
     .. attribute:: distance
     
-        a component that measures the distance between examples
+        An instance of :obj:`Orange.distance.Distance` used for
+        computing distances between data instances.
     
-    .. attribute:: examples
+    .. attribute:: instances
     
-        a stored list of instances
+        Stored data table
     
     .. attribute:: weight_ID
     
-        ID of meta attribute with weight
+        ID of meta attribute with weight. If present (non-null) the
+        class does not return ``k`` instances but a set of instances
+        with a total weight of ``k``.
+
+    .. attribute:: distance_ID
+
+        The id of meta attribute that will be added to the found
+        neighbours and to store the distances between the returned
+        data instances and the reference. If zero, the distances is
+        not stored.
     
     .. method:: __call__(instance, k)
     
-        Return a data table with ``k`` nearest neighbours of ``instance``.
+        Return a data table with ``k`` nearest neighbours of
+	``instance``.  Any ties for the last place(s) are resolved by
+	randomly picking the appropriate number of instances. A local
+	random generator is constructed and seeded by a constant
+	computed from :obj:`instance`, so the same random neighbors
+	are always returned for the same instance.
 
 	:param instance: given instance
 	:type instance: Orange.data.Instance
@@ -213,53 +220,38 @@ searching) (:class:`FindNearestConstructor`).
     
 .. class:: FindNearestConstructor()
 
-    
-    A class that constructs FindNearest. It calls the inherited
-    distance_constructor, which constructs a distance measure.
-    The distance measure, along with the instances weight_ID and
-    distance_ID, is then passed to the just constructed instance
-    of FindNearest_BruteForce.
-
-    If there are more instances with the same distance fighting for the last
-    places, the tie is resolved by randomly picking the appropriate number of
-    instances. A local random generator is constructed and initiated by a
-    constant computed from the reference instance. The effect of this is that
-    the same random neighbors will be chosen for the instance each time
-    FindNearest_BruteForce
-    is called.
+    A class that constructs :obj:`FindNearest` and initializes it with a
+    distance metric, constructed by :obj:`distance_constructor`.
     
     .. attribute:: distance_constructor
     
-        A component of class ExamplesDistanceConstructor that "learns" to
-        measure distances between instances. Learning can mean, for instances,
-        storing the ranges of continuous features or the number of values of
-        a discrete feature (see the page about measuring distances for more
-        information). The result of learning is an instance of 
-        ExamplesDistance that should be used for measuring distances
-        between instances.
+        An instance of :obj:`Orange.distance.DistanceConstructor` that
+        "learns" to measure distances between instances. Learning can
+        mean, for example, storing the ranges of continuous features
+        or the number of values of a discrete feature. The result of
+        learning is an instance of :obj:`Orange.distance.Distance` that is
+        used for measuring distances between instances.
     
     .. attribute:: include_same
     
-        Tells whether or not to include the examples that are same as the reference;
-        the default is true.
+        Indicates whether to include the instances that are same as
+        the reference; default is ``true``.
     
-    .. method:: __call__(table, weightID, distanceID)
+    .. method:: __call__(data, weight_ID, distance_ID)
     
-        Constructs an instance of FindNearest that would return neighbors of
-        a given instance, obeying weight_ID when counting them (also, some 
-        measures of distance might consider weights as well) and storing the 
-        distances in a meta attribute with ID distance_ID.
-    
+        Constructs an instance of :obj:`FindNearest` for the given
+        data. Arguments :obj:`weight_ID` and :obj:`distance_ID` are copied to the new object.
+
         :param table: table of instances
         :type table: Orange.data.Table
         
         :param weight_ID: id of meta attribute with weights of instances
         :type weight_ID: int
         
-        :param distance_ID: id of meta attribute that will save distances
+        :param distance_ID: id of meta attribute that will store distances
         :type distance_ID: int
         
-        :rtype: :class:`FindNearest`
+        :rtype: :obj:`FindNearest`
 
 Examples
 --------
