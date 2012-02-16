@@ -85,10 +85,10 @@ Constant Classifier
 -------------------
 
 The classification module also contains a classifier that always
-predicts a constant value regardless of given data instances. This
-classifier is constructed by different learners such as
-:obj:`~Orange.classification.majority.MajorityLearner`, and by some other
-methods.
+predicts the same value. This classifier is constructed by different
+learners such as
+:obj:`~Orange.classification.majority.MajorityLearner`, and also by
+some other methods.
 
 .. class:: ConstantClassifier
 
