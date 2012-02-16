@@ -31,22 +31,25 @@ the data instance being classified:
 
     .. attribute:: distance_constructor
 
-        component that constructs the object for measuring distances between
+        Component that constructs the object for measuring distances between
         instances. Defaults to :class:`~Orange.distance.Euclidean`.
 
     .. attribute:: weight_id
     
-        id of meta attribute with instance weights
+        Id of meta attribute with instance weights.
 
     .. attribute:: rank_weight
 
-        Enables weighting by ranks (default: :obj:`true`)
+        If ``True`` (default), neighbours are weighted according to
+        their order and not their (normalized) distances to the
+        instance that is being classified.
 
     .. method:: __call__(data)
 
-        Return a learned :class:`~kNNClassifier`. Learning consists of
-        constructing a distance measure and passing it to the classifier
-        along with :obj:`instances` and all attributes.
+        Return a :class:`~kNNClassifier`. Learning consists of
+        constructing a distance measure and passing it to the
+        classifier along with :obj:`instances` and attributes (:obj:`k`,
+        :obj:`rank_weight` and :obj:`weight_id`).
 
         :param instances: training instances
         :type instances: :class:`~Orange.data.Table`
@@ -69,66 +72,67 @@ the data instance being classified:
               :class:`~Orange.statistics.distribution.Distribution` or a
               tuple with both
         
-    .. method:: find_nearest(instance)
+    .. attribute:: find_nearest
     
-    A component which finds the nearest neighbors of a given instance.
+        A callable component that finds the nearest :obj:`k` neighbors
+        of the given instance.
         
-    :param instance: given instance
-    :type instance: :class:`~Orange.data.Instance`
-        
-    :rtype: :class:`Orange.data.Instance`
-    
+        :param instance: given instance
+        :type instance: :class:`~Orange.data.Instance`
+        :rtype: :class:`Orange.data.Instance`
     
     .. attribute:: k
     
         Number of neighbors. If set to 0 (which is also the default value), 
         the square root of the number of examples is used.
     
-    .. attribute:: rank_weight
-    
-        Enables weighting by rank (default: :obj:`true`).
-    
     .. attribute:: weight_id
     
-        ID of meta attribute with weights of examples
-    
+        Id of meta attribute with instance weights.
+
+    .. attribute:: rank_weight
+
+        If ``True`` (default), neighbours are weighted according to
+        their order and not their (normalized) distances to the
+        instance that is being classified.
+
     .. attribute:: n_examples
     
-        The number of learning instances. It is used to compute the number of 
+        The number of learning instances, used to compute the number of 
         neighbors if the value of :attr:`kNNClassifier.k` is zero.
 
-When called to classify an instance, the classifier first calls 
-:meth:`kNNClassifier.find_nearest` 
-to retrieve a list with :attr:`kNNClassifier.k` nearest neighbors. The
-component :meth:`kNNClassifier.find_nearest` has 
-a stored table of instances (those that have been passed to the learner) 
-together with their weights. If instances are weighted (non-zero 
-:obj:`weight_ID`), weights are considered when counting the neighbors.
+When called to classify instance ``inst``, the classifier first calls
+:obj:`kNNClassifier.find_nearest(inst)` to retrieve a list with
+:attr:`kNNClassifier.k` nearest neighbors. The component
+:meth:`kNNClassifier.find_nearest` has a stored table of training
+instances together with their weights. If instances are weighted
+(non-zero :obj:`weight_id`), weights are considered when counting the
+neighbors.
 
-If :meth:`kNNClassifier.find_nearest` returns only one neighbor 
-(this is the case if :obj:`k=1`), :class:`kNNClassifier` returns the
+If :meth:`kNNClassifier.find_nearest` returns only one neighbor (this
+is the case if :obj:`k=1`), :class:`kNNClassifier` returns the
 neighbor's class.
 
-Otherwise, the retrieved neighbors vote about the class prediction
-(or probability of classes). Voting has double weights. As first, if
-instances are weighted, their weights are respected. Secondly, nearer
-neighbors have a greater impact on the prediction; the weight of instance
-is computed as exp(-t:sup:`2`/s:sup:`2`), where the meaning of t depends
-on the setting of :obj:`rank_weight`.
+Otherwise, the retrieved neighbors vote for the class prediction or
+probability of classes. Voting can be a product of two weights:
+weights of training instances, if they are given, and weights that
+reflect the distance from ``inst``. Nearer neighbors have a greater
+impact on the prediction: the weight is computed as
+exp(-t:sup:`2`/s:sup:`2`), where the meaning of `t` depends on the
+setting of :obj:`rank_weight`.
 
-* if :obj:`rank_weight` is :obj:`false`, :obj:`t` is the distance from the
+* if :obj:`rank_weight` is :obj:`False`, :obj:`t` is the distance from the
   instance being classified
-* if :obj:`rank_weight` is :obj:`true`, neighbors are ordered and :obj:`t`
+* if :obj:`rank_weight` is :obj:`True`, neighbors are ordered and :obj:`t`
   is the position of the neighbor on the list (a rank)
 
-
-In both cases, :obj:`s` is chosen so that the impact of the farthest instance
-is 0.001.
+In both cases, :obj:`s` is chosen so that the weight of the farthest
+instance is 0.001.
 
 Weighting gives the classifier a certain insensitivity to the number of
 neighbors used, making it possible to use large :obj:`k`'s.
 
-The classifier can treat continuous and discrete features, and can even
+The classifier can use continuous and discrete features, and can even
 distinguish between ordinal and nominal features. See information on
 distance measuring for details.
 
@@ -150,28 +154,13 @@ The output of this code is::
     Iris-setosa Iris-setosa
     Iris-setosa Iris-setosa
 
-The secret to kNN's success is that the instances in the iris data set appear in
-three well separated clusters. The classifier's accuracy will remain
-excellent even with a very large or very small number of neighbors.
-
-As many experiments have shown, a selection of instances of distance measures
-has neither a greater nor more predictable effect on the performance of kNN
-classifiers. Therefore there is not much point in changing the default. If you
-decide to do so, the distance_constructor must be set to an instance
-of one of the classes for distance measuring. This can be seen in the following
-part of (:download:`knnlearner.py <code/knnlearner.py>`):
+The choice of metric usually has not greater impact on the performance
+of kNN classifiers, so default should work fine. To change it,
+distance_constructor must be set to an instance of one of the classes
+for distance measuring.
 
 .. literalinclude:: code/knnExample2.py
-
-The output of this code is::
-
-    Iris-virginica Iris-versicolor
-    Iris-setosa Iris-setosa
-    Iris-versicolor Iris-versicolor
-    Iris-setosa Iris-setosa
-    Iris-setosa Iris-setosa
-
-The result is still perfect.
+    :lines: 4-7
 
 .. index: fnn
 

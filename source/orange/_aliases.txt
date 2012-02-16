@@ -80,3 +80,6 @@ random_generator randomGenerator
 
 ValueFilter
 accept_special acceptSpecial
+
+FindNearest_BruteForce
+instances examples
