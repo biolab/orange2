@@ -26,9 +26,7 @@ with the :obj:`confusion_matrices` function. If class variable has more than
 two values, the index of the value to calculate the confusion matrix for should
 be passed as well.
 
-.. autosingleton:: CA
-.. autoclass:: CAClass
-    :members:
+.. autoclass:: CA
 .. autofunction:: sens
 .. autofunction:: spec
 .. autofunction:: PPV
@@ -73,9 +71,6 @@ Comparison of Algorithms
 ==========
 Regression
 ==========
-
-General Measure of Quality
-==========================
 
 Several alternative measures, as given below, can be used to evaluate
 the sucess of numeric prediction:

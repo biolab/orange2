@@ -356,7 +356,19 @@ def RMSE_old(res, **argkw):
 # Scores for evaluation of classifiers
 
 class CA(list):
-    """Computation of CA from different types of test_results"""
+    """
+    Compute percentage of matches between predicted and actual class.
+
+    :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
+                         or list of :obj:`ConfusionMatrix`.
+    :param report_se: include standard error in result.
+    :param ignore_weights: ignore instance weights.
+    :rtype: list of scores, one for each learner.
+
+    Standard errors are estimated from deviation of CAs across folds (if
+    test_results were produced by cross_validation) or approximated under
+    the assumption of normal distribution otherwise.
+    """
     CONFUSION_MATRIX = 0
     CONFUSION_MATRIX_LIST = 1
     CLASSIFICATION = 2
@@ -365,18 +377,6 @@ class CA(list):
     @deprecated_keywords({"reportSE": "report_se",
                           "unweighted": "ignore_weights"})
     def __init__(self, test_results, report_se = False, ignore_weights=False):
-        """Return percentage of matches between predicted and actual class.
-
-        :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
-                             or :obj:`ConfusionMatrix`.
-        :param report_se: include standard error in result.
-        :param ignore_weights: ignore instance weights.
-        :rtype: list of scores, one for each learner.
-
-        Standard errors are estimated from deviation of CAs across folds (if
-        test_results were produced by cross_validation) or approximated under
-        the assumption of normal distribution otherwise.
-        """
         super(CA, self).__init__()
         self.report_se = report_se
         self.ignore_weights = ignore_weights
