@@ -116,7 +116,7 @@ class TestCA(unittest.TestCase):
         cv = testing.cross_validation([self.learner], ds, folds=5)
         cm = scoring.confusion_matrices(cv, class_index=1)
         ca = scoring.CA(cm[0])
-        self.assertTrue(isinstance(ca, float))
+        self.assertEqual(len(ca), 1)
 
     def test_ca_from_confusion_matrix_for_classification_on_iris(self):
         ds = data.Table("iris")
@@ -138,7 +138,7 @@ class TestCA(unittest.TestCase):
         cv = testing.cross_validation([self.learner], ds, folds=5)
         cm = scoring.confusion_matrices(cv, class_index=1)
         ca = scoring.CA(cm[0], report_se=True)
-        self.assertTrue(isinstance(ca, tuple))
+        self.assertEqual(len(ca), 1)
 
     def test_ca_on_iris(self):
         ds = data.Table("iris")

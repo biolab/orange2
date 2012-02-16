@@ -355,7 +355,7 @@ def RMSE_old(res, **argkw):
 # PERFORMANCE MEASURES:
 # Scores for evaluation of classifiers
 
-class CAClass(object):
+class CA(list):
     """Computation of CA from different types of test_results"""
     CONFUSION_MATRIX = 0
     CONFUSION_MATRIX_LIST = 1
@@ -364,7 +364,7 @@ class CAClass(object):
 
     @deprecated_keywords({"reportSE": "report_se",
                           "unweighted": "ignore_weights"})
-    def __call__(self, test_results, report_se = False, ignore_weights=False):
+    def __init__(self, test_results, report_se = False, ignore_weights=False):
         """Return percentage of matches between predicted and actual class.
 
         :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
@@ -377,58 +377,70 @@ class CAClass(object):
         test_results were produced by cross_validation) or approximated under
         the assumption of normal distribution otherwise.
         """
+        super(CA, self).__init__()
+        self.report_se = report_se
+        self.ignore_weights = ignore_weights
+
         input_type = self.get_input_type(test_results)
         if input_type == self.CONFUSION_MATRIX:
-            return self.from_confusion_matrix(test_results, report_se)
+            self[:] =  [self.from_confusion_matrix(test_results)]
         elif input_type == self.CONFUSION_MATRIX_LIST:
-            return self.from_confusion_matrix_list(test_results, report_se)
+            self[:] = self.from_confusion_matrix_list(test_results)
         elif input_type == self.CLASSIFICATION:
-            return self.from_classification_results(
-                                        test_results, report_se, ignore_weights)
+            self[:] = self.from_classification_results(test_results)
         elif input_type == self.CROSS_VALIDATION:
-            return self.from_crossvalidation_results(
-                                        test_results, report_se, ignore_weights)
+            self[:] =  self.from_crossvalidation_results(test_results)
 
-    def from_confusion_matrix(self, cm, report_se):
-        all_predictions = cm.TP+cm.FN+cm.FP+cm.TN
+    def from_confusion_matrix(self, cm):
+        all_predictions = 0.
+        correct_predictions = 0.
+        if isinstance(cm, ConfusionMatrix):
+            all_predictions += cm.TP+cm.FN+cm.FP+cm.TN
+            correct_predictions += cm.TP+cm.TN
+        else:
+            for r, row in enumerate(cm):
+                for c, column in enumerate(row):
+                    if r == c:
+                        correct_predictions += column
+                    all_predictions += column
+
         check_non_zero(all_predictions)
-        ca = (cm.TP+cm.TN)/all_predictions
+        ca = correct_predictions/all_predictions
 
-        if report_se:
+        if self.report_se:
             return ca, ca*(1-ca)/math.sqrt(all_predictions)
         else:
             return ca
 
-    def from_confusion_matrix_list(self, confusion_matrices, report_se):
-        return [self.from_confusion_matrix(cm, report_se=report_se)
-                for cm in confusion_matrices]
+    def from_confusion_matrix_list(self, confusion_matrices):
+        return [self.from_confusion_matrix(cm) for cm in confusion_matrices]
 
-    def from_classification_results(self, test_results, report_se, ignore_results):
+    def from_classification_results(self, test_results):
         CAs = [0.0]*test_results.number_of_learners
         totweight = 0.
         for tex in test_results.results:
-            w = 1. if ignore_results else tex.weight
+            w = 1. if self.ignore_weights else tex.weight
             CAs = map(lambda res, cls: res+(cls==tex.actual_class and w), CAs, tex.classes)
             totweight += w
         check_non_zero(totweight)
         ca = [x/totweight for x in CAs]
 
-        if report_se:
+        if self.report_se:
             return [(x, x*(1-x)/math.sqrt(totweight)) for x in ca]
         else:
             return ca
 
-    def from_crossvalidation_results(self, test_results, report_se, ignore_weights):
+    def from_crossvalidation_results(self, test_results):
         CAsByFold = [[0.0]*test_results.number_of_iterations for _ in range(test_results.number_of_learners)]
         foldN = [0.0]*test_results.number_of_iterations
 
         for tex in test_results.results:
-            w = 1. if ignore_weights else tex.weight
+            w = 1. if self.ignore_weights else tex.weight
             for lrn in range(test_results.number_of_learners):
                 CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn]==tex.actual_class) and w
             foldN[tex.iteration_number] += w
 
-        return statistics_by_folds(CAsByFold, foldN, report_se, False)
+        return statistics_by_folds(CAsByFold, foldN, self.report_se, False)
 
     def get_input_type(self, test_results):
         if isinstance(test_results, ConfusionMatrix):
@@ -441,8 +453,6 @@ class CAClass(object):
         elif isinstance(test_results, list):
             return self.CONFUSION_MATRIX_LIST
 
-
-CA = CAClass()
 
 @deprecated_keywords({"reportSE": "report_se",
                       "unweighted": "ignore_weights"})
