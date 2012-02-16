@@ -8,7 +8,7 @@ import unittest
 class TestLassoRegressionLearner(testing.LearnerTestCase):
     
     def setUp(self):
-        self.learner = lasso.LassoRegressionLearner(nBoot=2, nPerm=2)
+        self.learner = lasso.LassoRegressionLearner(n_boot=2, n_perm=2)
     
     @test_on_data
     def test_learner_on(self, dataset):
