@@ -1,0 +1,4 @@
+   Learner    AUC    CA
+     bayes: 0.974 0.903
+      tree: 0.926 0.825
+  majority: 0.500 0.614
