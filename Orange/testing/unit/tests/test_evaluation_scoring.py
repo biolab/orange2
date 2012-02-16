@@ -10,7 +10,8 @@ def random_learner(data, *args):
         sprob = sum(prob)
         prob = [i/sprob for i in prob]
         distribution.Discrete(prob)
-        return data.domain.class_var[0], prob
+        return data.domain.class_var[random.randint(0,
+            len(data.domain.class_var.values)-1)], prob
     return random_classifier
 
 class TestAuc(unittest.TestCase):
@@ -92,6 +93,58 @@ class TestAuc(unittest.TestCase):
         self.assertEqual(len(auc), 1)
         self.assertEqual(len(auc[0]), 3)
 
+
+class TestCA(unittest.TestCase):
+    def setUp(self):
+        self.learner = random_learner
+
+    def test_ca_on_iris(self):
+        ds = data.Table("iris")
+        cv = testing.cross_validation([self.learner], ds, folds=5)
+        ca = scoring.CA(cv)
+        self.assertEqual(len(ca), 1)
+
+    def test_ca_from_confusion_matrix_list_on_iris(self):
+        ds = data.Table("iris")
+        cv = testing.cross_validation([self.learner], ds, folds=5)
+        cm = scoring.confusion_matrices(cv)
+        ca = scoring.CA(cm)
+        self.assertEqual(len(ca), 1)
+
+    def test_ca_from_confusion_matrix_on_iris(self):
+        ds = data.Table("iris")
+        cv = testing.cross_validation([self.learner], ds, folds=5)
+        cm = scoring.confusion_matrices(cv, class_index=1)
+        ca = scoring.CA(cm[0])
+        self.assertTrue(isinstance(ca, float))
+
+    def test_ca_from_confusion_matrix_for_classification_on_iris(self):
+        ds = data.Table("iris")
+        pt = testing.proportion_test([self.learner], ds, times=1)
+        self.assertEqual(pt.number_of_iterations, 1)
+        print pt.number_of_iterations
+        ca = scoring.CA(pt)
+        self.assertEqual(len(ca), 1)
+
+    def test_ca_from_confusion_matrix_for_classification_on_iris_se(self):
+        ds = data.Table("iris")
+        pt = testing.proportion_test([self.learner], ds, times=1)
+        self.assertEqual(pt.number_of_iterations, 1)
+        ca = scoring.CA(pt, report_se=True)
+        self.assertEqual(len(ca), 1)
+
+    def test_ca_from_confusion_matrix_on_iris_se(self):
+        ds = data.Table("iris")
+        cv = testing.cross_validation([self.learner], ds, folds=5)
+        cm = scoring.confusion_matrices(cv, class_index=1)
+        ca = scoring.CA(cm[0], report_se=True)
+        self.assertTrue(isinstance(ca, tuple))
+
+    def test_ca_on_iris(self):
+        ds = data.Table("iris")
+        cv = testing.cross_validation([self.learner], ds, folds=5)
+        ca = scoring.CA(cv, report_se=True)
+        self.assertEqual(len(ca), 1)
 
 if __name__ == '__main__':
     unittest.main()
