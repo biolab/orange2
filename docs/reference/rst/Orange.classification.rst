@@ -4,11 +4,13 @@
 Classification (``classification``)
 ###################################
 
-Induction of models in Orange is implemented through a two-class schema:
-"learners" are classes that induce models, and classifiers represent
-trained models. The learner holds the parameters that
-are used for fitting the model. When learner is called with a data table,
-it fits a model and returns an instance of classifier. Classifiers can be subsequently used to predict dependent values for new data instances.
+Induction of models in Orange is implemented through a two-class
+schema. A learning algorithm is represented as an instance of a class
+derived from :obj:`Orange.classification.Learner`. The learner stores
+all parameters of the learning algorithm. When a learner is called
+with some data, it fits a model of the kind specific to the learning
+algorithm and returns it as a (new) instance of a class derived
+:obj:`Orange.classification.Classifier` that holds parameters of the model.
 
 .. literalinclude:: code/bayes-run.py
    :lines: 7-
@@ -32,21 +34,21 @@ separate pages.
 Base classes
 ------------
 
-All learners and classifiers, including regressors, are derived from the following two clases.
+All learning algorithms and prediction models are derived from the following two clases.
 
 .. class:: Learner()
 
-    Base class for all orange learners.
+    Abstract base class for learning algorithms.
 
     .. method:: __call__(data)
 
-        Fit a model and return it as an instance of :class:`Classifier`.
+        An abstract method that fits a model and returns it as an
+        instance of :class:`Classifier`.
 
-        This method is abstract and needs to be implemented on each learner.
 
 .. class:: Classifier()
 
-    Base class for all orange classifiers.
+    Abstract base class for prediction models (both classifiers and regressors).
 
     .. method:: __call__(instance, return_type=GetValue)
 
@@ -65,9 +67,7 @@ All learners and classifiers, including regressors, are derived from the followi
 
 	    Return a tuple of target class value and probabilities for each class.
 
-        This method is abstract and needs to be implemented on each
-        classifier.
-
+        
         :param instance: data instance to be classified.
         :type instance: :class:`~Orange.data.Instance`
 
@@ -84,15 +84,16 @@ All learners and classifiers, including regressors, are derived from the followi
 Constant Classifier
 -------------------
 
-The classification module also contains a classifier that always predicts a
-constant value regardless of given data instances. It is usually not used
-directly but through other other learners and methods, such as
-:obj:`~Orange.classification.majority.MajorityLearner`.
+The classification module also contains a classifier that always
+predicts a constant value regardless of given data instances. This
+classifier is constructed by different learners such as
+:obj:`~Orange.classification.majority.MajorityLearner`, and by some other
+methods.
 
 .. class:: ConstantClassifier
 
-    ConstantClassifier always classifies to the same class and reports the
-    same class probabilities.
+    Predict the specified ``default_val`` or ``default_distribution``
+    for any instance.
 
     .. attribute:: class_var
 
@@ -100,7 +101,7 @@ directly but through other other learners and methods, such as
 
     .. attribute:: default_val
 
-        Value returned by the classifier.
+        The value returned by the classifier.
 
     .. attribute:: default_distribution
 
@@ -124,11 +125,11 @@ directly but through other other learners and methods, such as
         :param distribution: Class probabilities returned by the classifier.
         :type dstribution: :obj:`Orange.statistics.distribution.Distribution`
        
-    .. method:: __call__(data, return_type)
+    .. method:: __call__(instance, return_type)
         
-        ConstantClassifier always returns the same prediction
-        (:obj:`default_val` and/or :obj:`default_distribution`), regardless
-        of the given data instance.
+        Return :obj:`default_val` and/or :obj:`default_distribution`
+        (depending upon :obj:`return_type`) disregarding the
+        :obj:`instance`.
 
 
 
