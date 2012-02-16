@@ -1488,8 +1488,8 @@ class AUC(list):
         out and all other classes are treated as a single class.
         """
         if class_index<0:
-            if res.baseClass>=0:
-                class_index = res.baseClass
+            if res.base_class>=0:
+                class_index = res.base_class
             else:
                 class_index = 1
 
