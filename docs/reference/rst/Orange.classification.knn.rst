@@ -8,11 +8,12 @@
 k-nearest neighbors (``knn``)
 *****************************
 
-The `nearest neighbors
-algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ is one of the most basic,
-`lazy <http://en.wikipedia.org/wiki/Lazy_learning>`_ machine learning algorithms.
-The learner only needs to store the instances of training data, while the classifier
-does all the work by searching this list for the instances most similar to
+The `nearest neighbors algorithm
+<http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ is one
+of the most basic, `lazy
+<http://en.wikipedia.org/wiki/Lazy_learning>`_ machine learning
+algorithms.  The learner only stores the training data, and the
+classifier makes predictions based on the instances most similar to
 the data instance being classified:
 
 .. literalinclude:: code/knnExample0.py
@@ -24,8 +25,9 @@ the data instance being classified:
 
     .. attribute:: k
 
-        number of nearest neighbors used in classification. If set to 0
-        (default), the square root of the numbers of instances is used.
+        Number of nearest neighbors used in classification. If 0
+        (default), the square root of the numbers of instances is
+        used.
 
     .. attribute:: distance_constructor
 
