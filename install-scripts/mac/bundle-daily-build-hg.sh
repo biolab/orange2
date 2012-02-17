@@ -3,37 +3,47 @@
 # ./bundle-daily-build-hg.sh
 #
 
-BUNDLE="/private/tmp/orange-bundle-hg-tip.dmg"
 
-#trap "echo \"Script failed\"" ERR
+trap "echo \"Script failed\"" ERR
 
-# Create the bundle
-./bundle-build-hg.sh /private/tmp tip $BUNDLE
+# If possible get the orange tip revision number and check if the bundle already exists
+if [ -e /private/tmp/repos/orange ]; then
+	# Try to pull and update (pull returns 1 if no changesets)
+	hg pull --update -R /private/tmp/repos/orange || true
+	DAILY_REVISION=`hg log -r tip -R /private/tmp/repos/orange | grep 'changeset:' | cut -d ' ' -f 4 | cut -d ':' -f 1`
+else
+	DAILY_REVISION="tip"
+fi
 
-# Use local repo from the build process to get the revision
-DAILY_REVISION=`hg log -r tip -R /private/tmp/repos/orange | grep 'changeset:' | cut -d ' ' -f 4 | cut -d ':' -f 1`
+BUNDLE="/private/tmp/orange-bundle-hg-$DAILY_REVISION.dmg"
+		
+# Create the bundle if it does not yet exist
+if [[ ! -e /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg || $DAILY_REVISION -eq "tip" ]]; then
+	echo "Building orange revision $DAILY_REVISION"
+	./bundle-build-hg.sh /private/tmp tip $BUNDLE
+	
+	# Get the revision again in case it was "tip"
+	DAILY_REVISION=`hg log -r tip -R /private/tmp/repos/orange | grep 'changeset:' | cut -d ' ' -f 4 | cut -d ':' -f 1`
 
 
-# TODO: Should be called only on a daily build server and not if building locally
-/Users/ailabc/mount-dirs.sh
+	# TODO: Should be called only on a daily build server and not if building locally
+	/Users/ailabc/mount-dirs.sh
 
-echo "Removing old versions of bundles."
-# (Keeps last 5 versions.)
-perl -e 'unlink ((reverse sort </Volumes/download/orange-bundle-hg-0*.dmg>)[5..10000])'
+	echo "Removing old versions of bundles."
+	# (Keeps last 5 versions.)
+	perl -e 'unlink ((reverse sort </Volumes/download/orange-bundle-hg-0*.dmg>)[5..10000])'
 
-if [ -e $BUNDLE ]; then
 	echo "Moving bundle to the download directory."
 	mv $BUNDLE /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
 	
 	echo "Setting permissions."
 	chmod +r /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
 	
-	# Dont publish the bundles for now
-	
-	#echo "Registering new bundles."
-	#egrep -v '^(MAC_STABLE|MAC_DAILY)=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
-	#echo "MAC_STABLE=orange-bundle-1.0b.$STABLE_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
-	#echo "MAC_DAILY=orange-bundle-svn-0.0.$DAILY_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
-	#mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
+	echo "Registering new bundles."
+	egrep -v '^(MAC_DAILY)=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+	echo "MAC_DAILY=orange-bundle-hg-0.0.$DAILY_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new
+	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 
+else
+	echo "The bundle with revision $DAILY_REVISION already exists."
 fi
