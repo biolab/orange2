@@ -1,11 +1,16 @@
-import itertools, operator, unittest
+import itertools, operator
 import collections
+
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 import Orange
 
 class DummyLearner(Orange.classification.majority.MajorityLearner):
     def __init__(self, id=None):
-        self.id=id
+        self.id = id
         self.data = []
         self.classifiers = []
         self.classifier_no = 0
@@ -21,7 +26,7 @@ class DummyLearner(Orange.classification.majority.MajorityLearner):
         return cl
 
 class DummyClassifier(object):
-    name="DummyClassifier"
+    name = "DummyClassifier"
     def __init__(self, base_class, learner_id, classifier_no):
         self.base_class = base_class
         self.classifier_no = classifier_no
@@ -60,7 +65,7 @@ def prepare_dataset():
     ds = Orange.data.Table("iris")
     for i, inst in enumerate(ds):
         inst[ID] = i
-        inst[WEIGHT] = 2*i
+        inst[WEIGHT] = 2 * i
     return ds
 
 class EvaluationTest(object):

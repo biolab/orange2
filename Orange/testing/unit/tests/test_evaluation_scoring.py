@@ -1,17 +1,22 @@
-import random, unittest
+import random
 from Orange import data
 from Orange.evaluation import scoring, testing
 from Orange.statistics import distribution
+
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 random.seed(0)
 def random_learner(data, *args):
     def random_classifier(*args, **kwargs):
         prob = [random.random() for _ in data.domain.class_var.values]
         sprob = sum(prob)
-        prob = [i/sprob for i in prob]
+        prob = [i / sprob for i in prob]
         distribution.Discrete(prob)
         return data.domain.class_var[random.randint(0,
-            len(data.domain.class_var.values)-1)], prob
+            len(data.domain.class_var.values) - 1)], prob
     return random_classifier
 
 class TestAuc(unittest.TestCase):
