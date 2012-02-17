@@ -30,28 +30,40 @@ CLONE_FULLPATH=${WORK_DIR}/${CLONE_NAME}
 CLONE_ARCHIVE_NAME=${CLONE_NAME}_archive
 CLONE_ARCHIVE_FULLPATH=${WORK_DIR}/${CLONE_ARCHIVE_NAME}
  
-# If the repo clone does not yet exist then clone it
+
 if [ ! -e $CLONE_FULLPATH ]; then
+	echo "Cloning $REPO to $CLONE_FULLPATH"
 	hg clone $REPO $CLONE_FULLPATH
+else
+	echo "Repository $CLONE_FULLPATH already present".
 fi
 
-hg pull --update -R $CLONE_FULLPATH
+echo "Checking for incomming changesets"
+if hg incoming -R $CLONE_FULLPATH; then 
+	echo "Changesets found. Pulling and updating."
+	hg pull --update -R $CLONE_FULLPATH
+fi
 
 # Remove old archive if it exists
 if [ -e $CLONE_ARCHIVE_FULLPATH ]; then
+	echo "Removing old archive at $CLONE_ARCHIVE_FULLPATH"
 	rm -rf $CLONE_ARCHIVE_FULLPATH
 fi
 
 # Create an archive
+echo "Creating archive $CLONE_ARCHIVE_FULLPATH"
+
 hg archive -r $REVISION $CLONE_ARCHIVE_FULLPATH -R $CLONE_FULLPATH
 
 cd $CLONE_ARCHIVE_FULLPATH
 
 # Run installation
+echo "Running setup.py install with python '$PYTHON'"
 $PYTHON setup.py install
 
 # Clean up the archive
 cd $WORK_DIR
+echo "Cleaning up the archive at $CLONE_ARCHIVE_FULLPATH"
 rm -rf $CLONE_ARCHIVE_FULLPATH
 
 true
