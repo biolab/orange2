@@ -3,18 +3,19 @@
 # Should be run as: ./update-all-scripts.sh
 #
 
-curl --silent --output update-all-scripts.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/update-all-scripts.sh
-curl --silent --output bundle-64bit-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/bundle-64bit-daily-build.sh
-curl --silent --output bundle-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/bundle-daily-build.sh
-curl --silent --output dailyrun.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun.sh
-curl --silent --output dailyrun-finkonly-withsource.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun-finkonly-withsource.sh
-curl --silent --output dailyrun-finkonly.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun-finkonly.sh
-curl --silent --output dailyrun-bundleonly.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/dailyrun-bundleonly.sh
-curl --silent --output fink-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-daily-build.sh
-curl --silent --output fink-restore-selections.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-restore-selections.sh
-curl --silent --output fink-selfupdate-orange.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-selfupdate-orange.sh
-curl --silent --output force-fink-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/force-fink-daily-build.sh
-curl --silent --output mount-dirs.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/mount-dirs.sh
+if [ ! -e /private/tmp/repos ]; then
+	mkdir /private/tmp/repos
+fi
+
+LOCAL_REPO=/private/tmp/repos/orange
+
+if [ ! -e $LOCAL_REPO ]; then
+	hg clone https://bitbucket.org/biolab/orange $LOCAL_REPO
+fi
+
+hg pull --update -R $LOCAL_REPO
+
+cp ${LOCAL_REPO}/install-scripts/mac/*.sh ./
 
 chmod +x *.sh
 
