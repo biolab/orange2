@@ -14,4 +14,4 @@ nb = bayes.NaiveLearner(name="Naive Bayes")
 adjusted_nb = bayes.NaiveLearner(adjust_threshold=True, name="Adjusted Naive Bayes")
 
 results = testing.cross_validation([nb, adjusted_nb], adult)
-print scoring.CA(results)
+print "%.6f, %.6f" % tuple(scoring.CA(results))
