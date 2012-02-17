@@ -18,7 +18,7 @@ if [ -e $TMP_BUNDLE_DIR ]; then
 	rm -rf $TMP_BUNDLE_DIR
 fi
 
-# Preapare the bundle template
+echo "Preaparing the bundle template"
 svn export --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ $TMP_BUNDLE_DIR
 
 # Make repos dir if it does not yet exist
@@ -27,19 +27,23 @@ if [ ! -e $REPOS_DIR ]; then
 fi
 
 echo "Checkouting and building orange"
+echo "==============================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange orange $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Checkouting and building bioinformatics addon"
+echo "============================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-addon-bioinformatics bioinformatics $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Checkouting and building text addon"
+echo "==================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-addon-text text $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Removing unnecessary files."
 find $TMP_BUNDLE_DIR \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'
 
 	
-# Prepare the .dmg image
+echo "Preparing the .dmg image"
+echo "========================"
 
 # Makes a link to Applications folder
 ln -s /Applications/ $TMP_BUNDLE_DIR/Applications
