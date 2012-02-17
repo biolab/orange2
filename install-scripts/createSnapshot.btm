@@ -41,17 +41,16 @@ move /z dist\Orange-?.*.msi %DOWNLOADDIR\%WIN_SNAPSHOT.msi
 
 
 rem # if no errors then publish on web (everything at the same time)
-rem # remove any old files 
-rem # For now don't delete old versions until packaging using mercurial is better tested.   
-REM except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+rem # remove any old files    
+
+except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
 
 rem # publish
 cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
-rem if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
-rem move /sdz binaries %DOWNLOADDIR\binaries
+if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
+move /sdz binaries %DOWNLOADDIR\binaries
 
 rem # remember new filenames
 cdd %SCRIPTDIR
-rem # Don't update the visible versions for now
-rem call updateVersionsPy__.btm
+call updateVersionsPy__.btm
