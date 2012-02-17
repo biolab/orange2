@@ -1,5 +1,8 @@
 from Orange.misc import testing
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 from orngLR import LogRegLearner, Univariate_LogRegLearner, StepWiseFSS, StepWiseFSS_Filter
 
@@ -7,8 +10,8 @@ def datasets_iter():
     for name, (data,) in testing.datasets_iter(testing.CLASSIFICATION_DATASETS):
         if len(data.domain.class_var.values) == 2:
             yield name, (data,)
-            
-    
+
+
 @testing.data_driven(data_iter=datasets_iter())
 class TestLogRegLearner(testing.LearnerTestCase):
     LEARNER = LogRegLearner
@@ -44,7 +47,7 @@ class TestStepWiseFSS(unittest.TestCase):
         attrs = StepWiseFSS(dataset)
         new_dataset = StepWiseFSS_Filter(dataset)
         self.assertTrue([a1 == a2 for a1, a2 in zip(attrs, new_dataset.domain.attributes)])
-        
+
 if __name__ == "__main__":
     import Orange, os
     import Orange.misc.environ
@@ -54,4 +57,3 @@ if __name__ == "__main__":
     var = c.continuized_domain[0]
     pickle.dumps(var)
 #    unittest.main()
-    

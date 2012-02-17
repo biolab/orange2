@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 import os, sys
 from optparse import OptionParser
 
@@ -21,9 +24,9 @@ dirs = {"orange": "doc/modules",
 if module not in dirs:
     print "Unknown module name!"
     sys.exit(1)
-    
+
 orangedir = os.path.dirname(orange.__file__)
-    
+
 from Orange.testing import test_suite_scripts
 
 suite = test_suite_scripts(os.path.join(orangedir, dirs[module]))

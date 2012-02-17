@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 from Orange.misc import testing
 from Orange.clustering import kmeans
 from Orange.clustering.kmeans import Clustering
@@ -12,33 +15,33 @@ class TestKMeans(unittest.TestCase):
         self.assertEqual(len(km.centroids), 5)
         self.assertEqual(max(set(km.clusters)) + 1, 5)
         self.assertEqual(len(km.clusters), len(table))
-        
+
         self._test_score_functions(km)
-    
+
     def _test_score_functions(self, km):
         kmeans.score_distance_to_centroids(km)
         kmeans.score_fast_silhouette(km, index=None)
         kmeans.score_silhouette(km, index=None)
-        
+
     @testing.test_on_data
     def test_init_functs(self, table):
         distfunc = Euclidean(table)
         for k in [1, 5, 10]:
             self._test_init_func(table, k, distfunc)
-        
+
     def _test_init_func(self, table, k, distfunc):
         centers = kmeans.init_random(table, k, distfunc)
         self.assertEqual(len(centers), k)
         self.assertEqual(centers[0].domain, table.domain)
-        
+
         centers = kmeans.init_diversity(table, k, distfunc)
         self.assertEqual(len(centers), k)
         self.assertEqual(centers[0].domain, table.domain)
-        
+
         centers = kmeans.init_hclustering(n=50)(table, k, distfunc)
         self.assertEqual(len(centers), k)
         self.assertEqual(centers[0].domain, table.domain)
-        
+
     def test_kmeans_fail(self):
         """ Test the reaction when centroids is larger then example table length
         """
@@ -48,4 +51,4 @@ class TestKMeans(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-            
+

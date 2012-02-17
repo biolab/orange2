@@ -1,6 +1,9 @@
 import sys
 import os.path
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 import subprocess
 
 from Orange.misc import environ

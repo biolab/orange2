@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 import Orange
 from Orange.misc import testing
 import os, sys
@@ -8,7 +11,7 @@ datasets = ["iris", "housing", ]
 def names_iter():
     for n in datasets:
         yield n, (n,)
-        
+
 @testing.data_driven(data_iter=names_iter())
 class TestIO(unittest.TestCase):
 #    def setUp(self):
@@ -23,6 +26,6 @@ class TestIO(unittest.TestCase):
                 table_clone = Orange.data.Table(filename)
             finally:
                 os.remove(filename)
-                
+
 if __name__ == "__main__":
     unittest.main()

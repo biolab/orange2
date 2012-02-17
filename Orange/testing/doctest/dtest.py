@@ -1,6 +1,9 @@
 import os
 import doctest
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 import sys
 
 

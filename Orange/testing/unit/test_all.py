@@ -1,5 +1,8 @@
 import os.path
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 
 def load_tests(loader, standard_tests, pattern):

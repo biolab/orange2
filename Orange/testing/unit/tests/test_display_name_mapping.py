@@ -1,4 +1,7 @@
-import unittest 
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 import orange, Orange
 
@@ -15,7 +18,7 @@ class TestNameMapping(unittest.TestCase):
                 except AttributeError as err:
                     self.assertTrue(False, cls.__module__ + "." + \
                                     cls.__name__ + " does not exist")
-                
+
                 self.assertEqual(cls2, cls)
 #                if cls2 != cls:
 #                    print cls.__module__+"."+cls.__name__

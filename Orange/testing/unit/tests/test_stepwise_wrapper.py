@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 import Orange
 from Orange.misc import testing
@@ -17,6 +20,6 @@ class TestStepwise(testing.LearnerTestCase):
                 Orange.data.sample.SubsetIndices2(p0=100)(dataset)
                 )
         testing.LearnerTestCase.test_learner_on(self, dataset)
-        
+
 if __name__ == "__main__":
     unittest.main()
