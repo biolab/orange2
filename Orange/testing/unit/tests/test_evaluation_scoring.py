@@ -122,7 +122,6 @@ class TestCA(unittest.TestCase):
         ds = data.Table("iris")
         pt = testing.proportion_test([self.learner], ds, times=1)
         self.assertEqual(pt.number_of_iterations, 1)
-        print pt.number_of_iterations
         ca = scoring.CA(pt)
         self.assertEqual(len(ca), 1)
 
@@ -145,6 +144,44 @@ class TestCA(unittest.TestCase):
         cv = testing.cross_validation([self.learner], ds, folds=5)
         ca = scoring.CA(cv, report_se=True)
         self.assertEqual(len(ca), 1)
+
+
+class TestConfusionMatrix(unittest.TestCase):
+    def test_construct_confusion_matrix_from_multiclass(self):
+        learner = random_learner
+        ds = data.Table("iris")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt)
+
+        self.assertTrue(isinstance(cm[0], list))
+
+
+    def test_construct_confusion_matrix_from_biclass(self):
+        learner = random_learner
+        ds = data.Table("monks-1")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt, class_index=1)
+
+        self.assertTrue(hasattr(cm[0], "TP"))
+
+
+class TestConfusionMatrix(unittest.TestCase):
+    def test_construct_confusion_matrix_from_multiclass(self):
+        learner = random_learner
+        ds = data.Table("iris")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt)
+
+        self.assertTrue(isinstance(cm[0], list))
+
+
+    def test_construct_confusion_matrix_from_biclass(self):
+        learner = random_learner
+        ds = data.Table("monks-1")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt, class_index=1)
+
+        self.assertTrue(hasattr(cm[0], "TP"))
 
 if __name__ == '__main__':
     unittest.main()
