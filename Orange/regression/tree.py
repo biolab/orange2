@@ -4,9 +4,9 @@
 .. index::
    single: regression; tree
 
-****************
-Regression trees
-****************
+***************************
+Regression trees (``tree``)
+***************************
 
 Regression tree shares its implementation with Orange.classification.tree.TreeLearner,
 but uses a different set of functions to evaluate node splitting and stop
