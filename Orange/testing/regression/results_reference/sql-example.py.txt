@@ -1,10 +1,10 @@
 
 150 instances returned
 Output data domain:
-StringVariable 'sepal length'
-StringVariable 'sepal width'
-StringVariable 'petal length'
-StringVariable 'petal width'
-StringVariable 'iris'
+Orange.feature.String 'sepal length'
+Orange.feature.String 'sepal width'
+Orange.feature.String 'petal length'
+Orange.feature.String 'petal width'
+Orange.feature.String 'iris'
 First instance : ['5.09999990463', '3.5', '1.39999997616', '0.20000000298', 'Iris-setosa'] 
 22 instances returned

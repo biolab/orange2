@@ -11,8 +11,8 @@ Entropy discretization, first 10 examples
 [2.9, '<=2.90', 'Iris-setosa']
 [3.1, '(2.90, 3.30]', 'Iris-setosa']
 
-Discretized attribute: EnumVariable 'D_sepal width'
-Continuous attribute: FloatVariable 'sepal width'
+Discretized attribute: Orange.feature.Discrete 'D_sepal width'
+Continuous attribute: Orange.feature.Continuous 'sepal width'
 Cut-off points: <2.90000009537, 3.29999995232>
 
 Manual construction of IntervalDiscretizer - single attribute

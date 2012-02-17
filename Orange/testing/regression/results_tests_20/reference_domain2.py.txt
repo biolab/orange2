@@ -442,6 +442,6 @@ False
 ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?'}
 True
 False
-{-100: FloatVariable 'required', -99: FloatVariable 'optional'}
-{-99: FloatVariable 'optional'}
-{-100: FloatVariable 'required'}
+{-100: Orange.feature.Continuous 'required', -99: Orange.feature.Continuous 'optional'}
+{-99: Orange.feature.Continuous 'optional'}
+{-100: Orange.feature.Continuous 'required'}

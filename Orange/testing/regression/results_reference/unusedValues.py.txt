@@ -1,6 +1,6 @@
 
-EnumVariable 'a' retained as is
-EnumVariable 'b' reduced, new values are <0, 2>
-EnumVariable 'c' removed
-EnumVariable 'd' retained as is
-EnumVariable 'y' retained as is
+Orange.feature.Discrete 'a' retained as is
+Orange.feature.Discrete 'b' reduced, new values are <0, 2>
+Orange.feature.Discrete 'c' removed
+Orange.feature.Discrete 'd' retained as is
+Orange.feature.Discrete 'y' retained as is

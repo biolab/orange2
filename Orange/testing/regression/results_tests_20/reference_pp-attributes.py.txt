@@ -2,7 +2,7 @@
 
 Preprocessor_select
 
-Attributes: <EnumVariable 'age', EnumVariable 'tear_rate'>, classVar None
+Attributes: <Orange.feature.Discrete 'age', Orange.feature.Discrete 'tear_rate'>, classVar None
 ['young', 'reduced']
 ['young', 'normal']
 ['young', 'reduced']
@@ -12,7 +12,7 @@ Attributes: <EnumVariable 'age', EnumVariable 'tear_rate'>, classVar None
 
 Preprocessor_ignore
 
-Attributes: <EnumVariable 'prescription', EnumVariable 'astigmatic'>, classVar EnumVariable 'lenses'
+Attributes: <Orange.feature.Discrete 'prescription', Orange.feature.Discrete 'astigmatic'>, classVar Orange.feature.Discrete 'lenses'
 ['myope', 'no', 'none']
 ['myope', 'no', 'soft']
 ['myope', 'yes', 'none']

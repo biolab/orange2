@@ -1,4 +1,4 @@
-EnumVariable 'tear_rate'
+Orange.feature.Discrete 'tear_rate'
 <normal, reduced>
 <soft, none, none>
 <<0.250, 0.333, 0.417>, <1.000, 0.000, 0.000>, <0.625, 0.167, 0.208>>
