@@ -71,7 +71,10 @@ Example of use ::
         
 """
 from __future__ import absolute_import
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 import os, sys
 from functools import wraps
 import itertools
@@ -502,10 +505,10 @@ class DistanceTestCase(DataTestCase):
         dataset = dataset.select(indices, 0)
         with member_set(self.distance_constructor, "ignore_class", True):
             mat = distance_matrix(dataset, self.distance_constructor)
-            
+
         self.assertIsInstance(mat, Orange.misc.SymMatrix)
         self.assertEqual(mat.dim, len(dataset))
-        
+
         m = numpy.array(list(mat))
         self.assertTrue((m >= 0.0).all())
 
