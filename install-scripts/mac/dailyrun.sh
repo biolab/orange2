@@ -48,6 +48,18 @@ date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 (($EXIT_VALUE)) && echo "Running bundle-daily-build.sh failed"
 
+## Daily build from hg
+/Users/ailabc/bundle-daily-build-hg.sh &> /private/tmp/bundle-daily-build.log
+EXIT_VALUE=$?
+
+/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+
+echo "Orange (bundle $MAC_VERSION from hg) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build-hg.log"
+date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build-hg.log"
+cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build-hg.log"
+(($EXIT_VALUE)) && echo "Running bundle-daily-build-hg.sh failed"
+
+
 /Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log
 EXIT_VALUE=$?
 
