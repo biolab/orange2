@@ -137,7 +137,7 @@ def get_bootstrap_sample(table):
     n = len(table)
     bootTable = Orange.data.Table(table.domain)
     for i in range(n):
-        id = numpy.random.randint(0,n)
+        id = numpy.random.randint(0, n)
         bootTable.append(table[id])
     return bootTable
 
@@ -204,8 +204,8 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         self.n_perm = n_perm
         self.set_imputer(imputer=imputer)
         self.set_continuizer(continuizer=continuizer)
-        
-        
+
+
     def __call__(self, table, weight=None):
         """
         :param table: data instances.
@@ -216,7 +216,7 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         :type weight: None or list of Orange.feature.Continuous
             which stores weights for instances
         
-        """  
+        """
         # dicrete values are continuized        
         table = self.continuize_table(table)
         # missing values are imputed
@@ -225,19 +225,19 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         domain = table.domain
         X, y, w = table.to_numpy()
         n, m = numpy.shape(X)
-        
+
         X, mu_x, sigma_x = standardize(X)
         y, coef0 = center(y)
-        
+
         t = self.t
-        
+
         if self.s is not None:
             beta_full, rss, _, _ = numpy.linalg.lstsq(X, y)
             t = self.s * numpy.sum(numpy.abs(beta_full))
             print "t =", t
-            
+
         import scipy.optimize
-            
+
         # objective function to be minimized
         objective = lambda beta: numpy.linalg.norm(y - numpy.dot(X, beta))
         # initial guess for the regression parameters
@@ -245,14 +245,13 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         # constraints for the regression coefficients
         cnstr = lambda beta: t - numpy.sum(numpy.abs(beta))
         # optimal solution
-        coefficients = scipy.optimize.fmin_cobyla(objective, beta_init,\
-                                                       cnstr, disp=0)
+        coefficients = scipy.optimize.fmin_cobyla(objective, beta_init, cnstr)
 
         # set small coefficients to 0
         def set_2_0(c): return c if abs(c) > self.tol else 0
         coefficients = numpy.array(map(set_2_0, coefficients))
         coefficients /= sigma_x
-        
+
         # bootstrap estimator of standard error of the coefficient estimators
         # assumption: fixed t
         if self.n_boot > 0:
@@ -276,9 +275,9 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
                 c = l(tmp_table)
                 coeff_p.append(c.coefficients)
             p_vals = \
-                   numpy.sum(abs(numpy.array(coeff_p))>\
+                   numpy.sum(abs(numpy.array(coeff_p)) > \
                              abs(numpy.array(coefficients)), \
-                             axis=0)/float(self.n_perm)
+                             axis=0) / float(self.n_perm)
         else:
             p_vals = [float("nan")] * m
 
@@ -286,17 +285,17 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         # and p-values
         dict_model = {}
         for i, var in enumerate(domain.attributes):
-            dict_model[var.name] = (coefficients[i], std_errors_fixed_t[i], p_vals[i])            
-       
+            dict_model[var.name] = (coefficients[i], std_errors_fixed_t[i], p_vals[i])
+
         return LassoRegression(domain=domain, class_var=domain.class_var,
                                coef0=coef0, coefficients=coefficients,
                                std_errors_fixed_t=std_errors_fixed_t,
                                p_vals=p_vals,
-                               dict_model= dict_model,
+                               dict_model=dict_model,
                                mu_x=mu_x)
 
 deprecated_members({"nBoot": "n_boot",
-                    "nPerm": "n_perm"}, 
+                    "nPerm": "n_perm"},
                    wrap_methods=["__init__"],
                    in_place=True)(LassoRegressionLearner)
 
@@ -333,7 +332,7 @@ class LassoRegression(Orange.classification.Classifier):
 
         Sample mean of the all independent variables.    
 
-    """ 
+    """
     def __init__(self, domain=None, class_var=None, coef0=None,
                  coefficients=None, std_errors_fixed_t=None, p_vals=None,
                  dict_model=None, mu_x=None):
@@ -352,7 +351,7 @@ class LassoRegression(Orange.classification.Classifier):
         :param instance: data instance for which the value of the response
             variable will be predicted
         :type instance: 
-        """  
+        """
         ins = Orange.data.Instance(self.domain, instance)
         if "?" in ins: # missing value -> corresponding coefficient omitted
             def miss_2_0(x): return x if x != "?" else 0
@@ -361,7 +360,7 @@ class LassoRegression(Orange.classification.Classifier):
         else:
             ins = numpy.array(ins.native())[:-1] - self.mu_x
 
-        y_hat = numpy.dot(self.coefficients, ins) + self.coef0 
+        y_hat = numpy.dot(self.coefficients, ins) + self.coef0
         y_hat = self.class_var(y_hat)
         dist = Orange.statistics.distribution.Continuous(self.class_var)
         dist[y_hat] = 1.0
@@ -371,7 +370,7 @@ class LassoRegression(Orange.classification.Classifier):
             return dist
         else:
             return (y_hat, dist)
-        
+
     @deprecated_keywords({"skipZero": "skip_zero"})
     def to_string(self, skip_zero=True):
         """Pretty-prints Lasso regression model,
@@ -383,12 +382,12 @@ class LassoRegression(Orange.classification.Classifier):
             are omitted
         :type skip_zero: boolean
         """
-        
+
         from string import join
         labels = ('Variable', 'Coeff Est', 'Std Error', 'p')
         lines = [join(['%10s' % l for l in labels], ' ')]
 
-        fmt = "%10s " + join(["%10.3f"]*3, " ") + " %5s"
+        fmt = "%10s " + join(["%10.3f"] * 3, " ") + " %5s"
         fmt1 = "%10s %10.3f"
 
         def get_star(p):
@@ -398,16 +397,16 @@ class LassoRegression(Orange.classification.Classifier):
             elif p < 0.1: return  "."
             else: return " "
 
-        stars =  get_star(self.p_vals[0])
+        stars = get_star(self.p_vals[0])
         lines.append(fmt1 % ('Intercept', self.coef0))
         skipped = []
         for i in range(len(self.domain.attributes)):
             if self.coefficients[i] == 0. and skip_zero:
                 skipped.append(self.domain.attributes[i].name)
-                continue            
+                continue
             stars = get_star(self.p_vals[i])
-            lines.append(fmt % (self.domain.attributes[i].name, 
-                         self.coefficients[i], self.std_errors_fixed_t[i], 
+            lines.append(fmt % (self.domain.attributes[i].name,
+                         self.coefficients[i], self.std_errors_fixed_t[i],
                          self.p_vals[i], stars))
         lines.append("Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1")
         lines.append("\n")
@@ -436,8 +435,8 @@ deprecated_members({"muX": "mu_x",
 if __name__ == "__main__":
 
     import Orange
-    
-    table = Orange.data.Table("housing.tab")        
+
+    table = Orange.data.Table("housing.tab")
 
     c = LassoRegressionLearner(table, t=len(table.domain))
     print c
