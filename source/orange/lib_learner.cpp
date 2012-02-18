@@ -1334,7 +1334,7 @@ C_CALL(SVMLearnerSparse - Orange.classification.svm._SVMLearnerSparse, SVMLearne
 C_NAMED(SVMClassifier - Orange.classification.svm.SVMClassifier, ClassifierFD," ")
 C_NAMED(SVMClassifierSparse - Orange.classification.svm.SVMClassifierSparse, SVMClassifier," ")
 
-PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "('list of tuple pairs') -> None")
+PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "['list of tuple pairs'] -> None")
 {
 	PyTRY
 
