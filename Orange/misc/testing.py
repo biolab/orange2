@@ -140,6 +140,7 @@ def _expanded(func, name, extra_args):
 #    expanded = wraps(func)(expanded)
     newname = func.__name__ + "_" + name.replace("-", "_")
     expanded.__name__ = newname
+    expanded.__doc__ = None
     return newname, expanded
 
 def _expanded_lazy(func, name, args_getter):
@@ -161,6 +162,7 @@ def _expanded_lazy(func, name, args_getter):
 
     newname = func.__name__ + "_" + name.replace("-", "_")
     expanded.__name__ = newname
+    expanded.__doc__ = None
     return newname, expanded
 
 
@@ -196,6 +198,7 @@ def _data_driven_cls_decorator(cls, data_iter=None, lazy=False):
                     newname, expanded = _expanded_lazy(val, name, expand_args)
                 else:
                     newname, expanded = _expanded(val, name, expand_args)
+
                 setattr(cls, newname, expanded)
             setattr(cls, test_name, None)
             #setattr(cls, "__" + test_name, val)
