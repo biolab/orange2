@@ -72,15 +72,17 @@ Example of use ::
 """
 from __future__ import absolute_import
 try:
+    # on python 2.6
     import unittest2 as unittest
+    import pickle
 except:
     import unittest
+    import cPickle as pickle
+
 import os, sys
 from functools import wraps
 import itertools
 from functools import partial
-import cPickle as pickle
-#import pickle
 
 import orange
 from Orange.preprocess import Preprocessor_discretize, Preprocessor_continuize

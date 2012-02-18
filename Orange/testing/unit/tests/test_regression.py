@@ -91,4 +91,7 @@ for dirname, indir in dirs:
                                            (roottest, indir, outdir, name))
         setattr(TestRegression, newname, func)
 
-setattr(TestRegression, "test_regression_on", None)
+#setattr(TestRegression, "test_regression_on", None)
+
+for d in dir(TestRegression):
+    print d
