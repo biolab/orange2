@@ -11,7 +11,7 @@ root = clustering(matrix)
 
 root.mapping.objects = iris
 
-topmost = sorted(Orange.clustering.hierarchical.top_clusters(root, 4))
+topmost = sorted(Orange.clustering.hierarchical.top_clusters(root, 4), key=len)
 
 for n, cluster in enumerate(topmost):
     print "\n\n Cluster %i \n" % n
