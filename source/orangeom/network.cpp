@@ -38,7 +38,6 @@ TNetwork::TNetwork(TNetwork *net)
 			double *w = getOrCreateEdge(v1, *ni);
 			*w = *net->getEdge(v1, *ni);
 		}
-
 		vertices.push_back(v1);
 		optimize.insert(v1);
 	}
