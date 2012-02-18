@@ -96,7 +96,7 @@ from Orange.misc import (deprecated_class_attribute, deprecated_keywords,
                          deprecated_members)
 
 class TuneParameters(Orange.classification.Learner):
-    
+
     """.. attribute:: data
     
         Data table with either discrete or continuous features
@@ -164,12 +164,12 @@ class TuneParameters(Orange.classification.Learner):
     to use.
     
     """
-    
+
     RETURN_NONE = 0
     RETURN_PARAMETERS = 1
     RETURN_LEARNER = 2
     RETURN_CLASSIFIER = 3
-    
+
     returnNone = \
         deprecated_class_attribute("returnNone", "RETURN_NONE")
     returnParameters = \
@@ -178,9 +178,9 @@ class TuneParameters(Orange.classification.Learner):
         deprecated_class_attribute("returnLearner", "RETURN_LEARNER")
     returnClassifier = \
         deprecated_class_attribute("returnClassifier", "RETURN_CLASSIFIER")
-    
-    @deprecated_keywords({"examples": "data","weightID": "weight_id"})
-    def __new__(cls, data = None, weight_id = 0, **argkw):
+
+    @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
+    def __new__(cls, data=None, weight_id=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
         if data:
             for name, value in argkw.items():
@@ -197,15 +197,15 @@ class TuneParameters(Orange.classification.Learner):
         for i in names[:-1]:
             lastobj = getattr(lastobj, i)
         return lastobj, names[-1]
-    
+
 TuneParameters = deprecated_members(
     {"returnWhat": "return_what",
      "object": "learner"},
     )(TuneParameters)
-    
-    
+
+
 class Tune1Parameter(TuneParameters):
-    
+
     """Class :obj:`Orange.optimization.Tune1Parameter` tunes a single parameter.
     
     .. attribute:: parameter
@@ -261,23 +261,23 @@ class Tune1Parameter(TuneParameters):
         Tuned tree: 0.986
     
     """
-    
+
     def __call__(self, data, weight=None, verbose=0):
         verbose = verbose or getattr(self, "verbose", 0)
         evaluate = getattr(self, "evaluate", Orange.evaluation.scoring.CA)
         folds = getattr(self, "folds", 5)
         compare = getattr(self, "compare", cmp)
-        return_what = getattr(self, "return_what", 
+        return_what = getattr(self, "return_what",
                              Tune1Parameter.returnClassifier)
 
-        if (type(self.parameter)==list) or (type(self.parameter)==tuple):
+        if (type(self.parameter) == list) or (type(self.parameter) == tuple):
             to_set = [self.findobj(ld) for ld in self.parameter]
         else:
             to_set = [self.findobj(self.parameter)]
 
         cvind = Orange.core.MakeRandomIndicesCV(data, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed = data.checksum(), 
-                                         callCompareOn1st = True)
+        findBest = Orange.misc.selection.BestOnTheFly(seed=data.checksum(),
+                                         callCompareOn1st=True)
         tableAndWeight = weight and (data, weight) or data
         for par in self.values:
             for i in to_set:
@@ -285,8 +285,8 @@ class Tune1Parameter(TuneParameters):
             res = evaluate(Orange.evaluation.testing.test_with_indices(
                                         [self.object], tableAndWeight, cvind))
             findBest.candidate((res, par))
-            if verbose==2:
-                print '*** optimization  %s: %s:' % (par, res)
+            if verbose == 2:
+                print '*** optimization  %s: %s:' % (par, ", ".join("%.8f" % r for r in res))
 
         bestpar = findBest.winner()[1]
         for i in to_set:
@@ -295,11 +295,11 @@ class Tune1Parameter(TuneParameters):
         if verbose:
             print "*** Optimal parameter: %s = %s" % (self.parameter, bestpar)
 
-        if return_what==Tune1Parameter.returnNone:
+        if return_what == Tune1Parameter.returnNone:
             return None
-        elif return_what==Tune1Parameter.returnParameters:
+        elif return_what == Tune1Parameter.returnParameters:
             return bestpar
-        elif return_what==Tune1Parameter.returnLearner:
+        elif return_what == Tune1Parameter.returnLearner:
             return self.object
         else:
             classifier = self.object(data)
@@ -309,7 +309,7 @@ class Tune1Parameter(TuneParameters):
             return classifier
 
 class TuneMParameters(TuneParameters):
-    
+
     """The use of :obj:`Orange.optimization.TuneMParameters` differs from 
     :obj:`Orange.optimization.Tune1Parameter` only in specification of tuning
     parameters.
@@ -327,7 +327,7 @@ class TuneMParameters(TuneParameters):
     .. literalinclude:: code/optimization-tuningm.py
     
     """
-    
+
     def __call__(self, data, weight=None, verbose=0):
         evaluate = getattr(self, "evaluate", Orange.evaluation.scoring.CA)
         folds = getattr(self, "folds", 5)
@@ -335,11 +335,11 @@ class TuneMParameters(TuneParameters):
         verbose = verbose or getattr(self, "verbose", 0)
         return_what = getattr(self, "return_what", Tune1Parameter.returnClassifier)
         progress_callback = getattr(self, "progress_callback", lambda i: None)
-        
+
         to_set = []
         parnames = []
         for par in self.parameters:
-            if (type(par[0])==list) or (type(par[0])==tuple):
+            if (type(par[0]) == list) or (type(par[0]) == tuple):
                 to_set.append([self.findobj(ld) for ld in par[0]])
                 parnames.append(par[0])
             else:
@@ -348,28 +348,28 @@ class TuneMParameters(TuneParameters):
 
 
         cvind = Orange.core.MakeRandomIndicesCV(data, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed = data.checksum(), 
-                                         callCompareOn1st = True)
+        findBest = Orange.misc.selection.BestOnTheFly(seed=data.checksum(),
+                                         callCompareOn1st=True)
         tableAndWeight = weight and (data, weight) or data
         numOfTests = sum([len(x[1]) for x in self.parameters])
         milestones = set(range(0, numOfTests, max(numOfTests / 100, 1)))
-        for itercount, valueindices in enumerate(Orange.misc.counters.LimitedCounter( \
+        for itercount, valueindices in enumerate(Orange.misc.counters.LimitedCounter(\
                                         [len(x[1]) for x in self.parameters])):
-            values = [self.parameters[i][1][x] for i,x \
+            values = [self.parameters[i][1][x] for i, x \
                       in enumerate(valueindices)]
             for pi, value in enumerate(values):
                 for i, par in enumerate(to_set[pi]):
                     setattr(par[0], par[1], value)
-                    if verbose==2:
+                    if verbose == 2:
                         print "%s: %s" % (parnames[pi][i], value)
-                        
+
             res = evaluate(Orange.evaluation.testing.test_with_indices(
                                         [self.object], tableAndWeight, cvind))
             if itercount in milestones:
                 progress_callback(100.0 * itercount / numOfTests)
-            
+
             findBest.candidate((res, values))
-            if verbose==2:
+            if verbose == 2:
                 print "===> Result: %s\n" % res
 
         bestpar = findBest.winner()[1]
@@ -383,11 +383,11 @@ class TuneMParameters(TuneParameters):
         if verbose:
             print
 
-        if return_what==Tune1Parameter.returnNone:
+        if return_what == Tune1Parameter.returnNone:
             return None
-        elif return_what==Tune1Parameter.returnParameters:
+        elif return_what == Tune1Parameter.returnParameters:
             return bestpar
-        elif return_what==Tune1Parameter.returnLearner:
+        elif return_what == Tune1Parameter.returnLearner:
             return self.object
         else:
             classifier = self.object(data)
@@ -395,13 +395,13 @@ class TuneMParameters(TuneParameters):
                 classifier.fittedParameters = bestpar
             classifier.fitted_parameters = bestpar
             return classifier
-        
+
 TuneMParameters = deprecated_members(
     {"progressCallback": "progress_callback"},
     )(TuneMParameters)
 
 class ThresholdLearner(Orange.classification.Learner):
-    
+
     """:obj:`Orange.optimization.ThresholdLearner` is a class that wraps 
     another learner. When given the data, it calls the wrapped learner to build
     a classifier, than it uses the classifier to predict the class
@@ -429,16 +429,16 @@ class ThresholdLearner(Orange.classification.Learner):
         that threshold (default `False`).
     
     """
-    
-    @deprecated_keywords({"examples": "data","weightID": "weight_id"})
-    def __new__(cls, data = None, weight_id = 0, **kwds):
+
+    @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
+    def __new__(cls, data=None, weight_id=0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
         if data:
             self.__init__(**kwargs)
             return self.__call__(data, weight_id)
         else:
             return self
-        
+
     @deprecated_keywords({"storeCurve": "store_curve"})
     def __init__(self, learner=None, store_curve=False, **kwds):
         self.learner = learner
@@ -446,27 +446,27 @@ class ThresholdLearner(Orange.classification.Learner):
         for name, value in kwds.items():
             setattr(self, name, value)
 
-    @deprecated_keywords({"examples": "data","weightID": "weight_id"})
-    def __call__(self, data, weight_id = 0):
+    @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
+    def __call__(self, data, weight_id=0):
         if self.learner is None:
             raise AttributeError("Learner not set.")
-        
+
         classifier = self.learner(data, weight_id)
-        threshold, optCA, curve = Orange.wrappers.ThresholdCA(classifier, 
-                                                          data, 
+        threshold, optCA, curve = Orange.wrappers.ThresholdCA(classifier,
+                                                          data,
                                                           weight_id)
         if self.store_curve:
-            return ThresholdClassifier(classifier, threshold, curve = curve)
+            return ThresholdClassifier(classifier, threshold, curve=curve)
         else:
             return ThresholdClassifier(classifier, threshold)
 
 ThresholdLearner = deprecated_members(
-    {"storeCurve": "store_curve"}, 
+    {"storeCurve": "store_curve"},
     wrap_methods=["__init__"]
     )(ThresholdLearner)
-    
+
 class ThresholdClassifier(Orange.classification.Classifier):
-    
+
     """:obj:`Orange.optimization.ThresholdClassifier`, used by both 
     :obj:`Orange.optimization.ThredholdLearner` and
     :obj:`Orange.optimization.ThresholdLearner_fixed` is therefore another
@@ -489,14 +489,14 @@ class ThresholdClassifier(Orange.classification.Classifier):
     constructor as ordinary arguments.
     
     """
-    
+
     def __init__(self, classifier, threshold, **kwds):
         self.classifier = classifier
         self.threshold = threshold
         for name, value in kwds.items():
             setattr(self, name, value)
 
-    def __call__(self, instance, what = Orange.classification.Classifier.GetValue):
+    def __call__(self, instance, what=Orange.classification.Classifier.GetValue):
         probs = self.classifier(instance, self.GetProbabilities)
         if what == self.GetProbabilities:
             return probs
@@ -506,8 +506,8 @@ class ThresholdClassifier(Orange.classification.Classifier):
             return value
         else:
             return (value, probs)
-        
-    
+
+
 class ThresholdLearner_fixed(Orange.classification.Learner):
     """ This is a convinience  variant of 
     :obj:`Orange.optimization.ThresholdLearner`. Instead of finding the
@@ -528,42 +528,42 @@ class ThresholdLearner_fixed(Orange.classification.Learner):
     
     """
     @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
-    def __new__(cls, data = None, weight_id = 0, **kwds):
+    def __new__(cls, data=None, weight_id=0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
         if data:
             self.__init__(**kwds)
             return self.__call__(data, weight_id)
         else:
             return self
-        
+
     def __init__(self, learner=None, threshold=None, **kwds):
         self.learner = learner
         self.threshold = threshold
         for name, value in kwds.items():
             setattr(name, value)
-            
+
     @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
-    def __call__(self, data, weight_id = 0):
+    def __call__(self, data, weight_id=0):
         if self.learner is None:
             raise AttributeError("Learner not set.")
         if self.threshold is None:
             raise AttributeError("Threshold not set.")
         if len(data.domain.classVar.values) != 2:
             raise ValueError("ThresholdLearner handles binary classes only.")
-        
-        return ThresholdClassifier(self.learner(data, weight_id), 
+
+        return ThresholdClassifier(self.learner(data, weight_id),
                                    self.threshold)
 
 class PreprocessedLearner(object):
-    def __new__(cls, preprocessor = None, learner = None):
+    def __new__(cls, preprocessor=None, learner=None):
         self = object.__new__(cls)
         if learner is not None:
             self.__init__(preprocessor)
             return self.wrapLearner(learner)
         else:
             return self
-        
-    def __init__(self, preprocessor = None, learner = None):
+
+    def __init__(self, preprocessor=None, learner=None):
         if isinstance(preprocessor, list):
             self.preprocessors = preprocessor
         elif preprocessor is not None:
@@ -573,15 +573,15 @@ class PreprocessedLearner(object):
         #self.preprocessors = [Orange.core.Preprocessor_addClassNoise(proportion=0.8)]
         if learner:
             self.wrapLearner(learner)
-        
-    def processData(self, data, weightId = None):
+
+    def processData(self, data, weightId=None):
         hadWeight = hasWeight = weightId is not None
         for preprocessor in self.preprocessors:
             if hasWeight:
-                t = preprocessor(data, weightId)  
+                t = preprocessor(data, weightId)
             else:
                 t = preprocessor(data)
-                
+
             if isinstance(t, tuple):
                 data, weightId = t
                 hasWeight = True
@@ -597,7 +597,7 @@ class PreprocessedLearner(object):
             preprocessor = self
             wrappedLearner = learner
             name = getattr(learner, "name", "")
-            def __call__(self, data, weightId=0, getData = False):
+            def __call__(self, data, weightId=0, getData=False):
                 t = self.preprocessor.processData(data, weightId or 0)
                 processed, procW = t if isinstance(t, tuple) else (t, 0)
                 classifier = self.wrappedLearner(processed, procW)
@@ -605,12 +605,12 @@ class PreprocessedLearner(object):
                     return classifier, processed
                 else:
                     return classifier # super(WrappedLearner, self).__call__(processed, procW)
-                
+
             def __reduce__(self):
                 return PreprocessedLearner, (self.preprocessor.preprocessors, \
                                              self.wrappedLearner)
-            
+
             def __getattr__(self, name):
                 return getattr(learner, name)
-            
+
         return WrappedLearner()
