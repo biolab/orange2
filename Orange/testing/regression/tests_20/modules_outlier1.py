@@ -9,4 +9,4 @@ import orange, orngOutlier
 data = orange.ExampleTable("bridges")
 outlierDet = orngOutlier.OutlierDetection()
 outlierDet.setExamples(data)
-print outlierDet.zValues()
+print ", ".join("%.8f" % val for val in outlierDet.z_values())

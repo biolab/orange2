@@ -27,5 +27,5 @@ def printSortedMetas(metas, nm=0):
     print l
 
 example = data[4]
-printSortedMetas(example.getmetas())
-printSortedMetas(example.getmetas(orange.Variable), 1)
+#printSortedMetas(example.getmetas())
+#printSortedMetas(example.getmetas(orange.Variable), 1)

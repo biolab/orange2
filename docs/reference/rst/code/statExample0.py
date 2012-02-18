@@ -7,5 +7,5 @@ learners = [Orange.classification.bayes.NaiveLearner(name="bayes"),
 voting = Orange.data.Table("voting")
 res = Orange.evaluation.testing.cross_validation(learners, voting)
 
-print "CA =", Orange.evaluation.scoring.CA(res)
-print "AUC = ", Orange.evaluation.scoring.AUC(res)
+print "CA =", ["%.6f" % r for r in Orange.evaluation.scoring.CA(res)]
+print "AUC = ", ["%.6f" % r for r in Orange.evaluation.scoring.AUC(res)]

@@ -9,7 +9,7 @@
 import orange, orngTree
 
 def accuracy(test_data, classifiers):
-    correct = [0.0]*len(classifiers)
+    correct = [0.0] * len(classifiers)
     for ex in test_data:
         for i in range(len(classifiers)):
             if classifiers[i](ex) == ex.getclass():
@@ -19,7 +19,7 @@ def accuracy(test_data, classifiers):
     return correct
 
 def test_rnd_sampling(data, learners, p=0.7, n=10):
-    acc = [0.0]*len(learners)
+    acc = [0.0] * len(learners)
     for i in range(n):
         selection = orange.MakeRandomIndices2(data, p)
         train_data = data.select(selection, 0)
@@ -28,14 +28,14 @@ def test_rnd_sampling(data, learners, p=0.7, n=10):
         for l in learners:
             classifiers.append(l(train_data))
         acc1 = accuracy(test_data, classifiers)
-        print "%d: %s" % (i+1, acc1)
+        print "%d: %s" % (i + 1, ["%.6f" % a for a in acc1])
         for j in range(len(learners)):
             acc[j] += acc1[j]
     for j in range(len(learners)):
-        acc[j] = acc[j]/n
+        acc[j] = acc[j] / n
     return acc
 
-orange.setrandseed(0)    
+orange.setrandseed(0)
 # set up the learners
 bayes = orange.BayesLearner()
 tree = orngTree.TreeLearner();

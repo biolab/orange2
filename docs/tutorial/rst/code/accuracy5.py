@@ -7,7 +7,7 @@
 import orange, orngTree
 
 def accuracy(test_data, classifiers):
-    correct = [0.0]*len(classifiers)
+    correct = [0.0] * len(classifiers)
     for ex in test_data:
         for i in range(len(classifiers)):
             if classifiers[i](ex) == ex.getclass():
@@ -17,8 +17,8 @@ def accuracy(test_data, classifiers):
     return correct
 
 def cross_validation(data, learners, k=10):
-    acc = [0.0]*len(learners)
-    selection= orange.MakeRandomIndicesCV(data, folds=k)
+    acc = [0.0] * len(learners)
+    selection = orange.MakeRandomIndicesCV(data, folds=k)
     for test_fold in range(k):
         train_data = data.select(selection, test_fold, negate=1)
         test_data = data.select(selection, test_fold)
@@ -26,11 +26,11 @@ def cross_validation(data, learners, k=10):
         for l in learners:
             classifiers.append(l(train_data))
         acc1 = accuracy(test_data, classifiers)
-        print "%d: %s" % (test_fold+1, acc1)
+        print "%d: %s" % (test_fold + 1, ["%.6f" % a for a in acc1])
         for j in range(len(learners)):
             acc[j] += acc1[j]
     for j in range(len(learners)):
-        acc[j] = acc[j]/k
+        acc[j] = acc[j] / k
     return acc
 
 orange.setrandseed(0)
