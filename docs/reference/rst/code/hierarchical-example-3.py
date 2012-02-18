@@ -8,7 +8,7 @@ root = Orange.clustering.hierarchical.clustering(iris,
 
 root.mapping.objects = iris
 
-for cluster in Orange.clustering.hierarchical.top_clusters(root, 4):
+for cluster in sorted(Orange.clustering.hierarchical.top_clusters(root, 4)):
     dist = Orange.statistics.distribution.Distribution(iris.domain.class_var, \
         [ ex for ex in cluster ])
     for e, d in enumerate(dist):

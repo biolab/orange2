@@ -1,4 +1,4 @@
-Iris-setosa:   0  Iris-versicolor:   0  Iris-virginica:  33 
-Iris-setosa:   0  Iris-versicolor:  50  Iris-virginica:  17 
-Iris-setosa:   1  Iris-versicolor:   0  Iris-virginica:   0 
 Iris-setosa:  49  Iris-versicolor:   0  Iris-virginica:   0 
+Iris-setosa:   1  Iris-versicolor:   0  Iris-virginica:   0 
+Iris-setosa:   0  Iris-versicolor:  50  Iris-virginica:  17 
+Iris-setosa:   0  Iris-versicolor:   0  Iris-virginica:  33 
