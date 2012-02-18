@@ -245,7 +245,7 @@ class LassoRegressionLearner(base.BaseRegressionLearner):
         # constraints for the regression coefficients
         cnstr = lambda beta: t - numpy.sum(numpy.abs(beta))
         # optimal solution
-        coefficients = scipy.optimize.fmin_cobyla(objective, beta_init, cnstr)
+        coefficients = scipy.optimize.fmin_cobyla(objective, beta_init, cnstr, iprint=0)
 
         # set small coefficients to 0
         def set_2_0(c): return c if abs(c) > self.tol else 0
