@@ -20,4 +20,8 @@ class TestNaiveBayes(testing.LearnerTestCase):
                 for cls in dataset.domain.classVar.values:
                     p = self.classifier.p(cls, ex)
                     
-    
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()
+
