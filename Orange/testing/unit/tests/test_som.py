@@ -29,7 +29,9 @@ class TestSOM(testing.LearnerTestCase):
         if dataset.domain.class_var:
             testing.LearnerTestCase.test_pickling_on(self, dataset)
 
-@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS + \
+                 testing.REGRESSION_DATASETS)
 class TestSOMSupervised(testing.LearnerTestCase):
     def setUp(self):
         self.learner = som.SOMSupervisedLearner()
