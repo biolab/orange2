@@ -159,7 +159,10 @@ import numpy.ma as ma
 import orange
 import random
 
-random.seed(42)
+import Orange
+from Orange.misc import deprecated_keywords, \
+                        deprecated_attribute
+
 
 HexagonalTopology = 0
 """Hexagonal topology, cells are hexagon-shaped."""
@@ -180,9 +183,6 @@ NeighbourhoodEpanechicov = 2
 
 ##########################################################################
 # Inference of Self-Organizing Maps 
-
-from Orange.misc import deprecated_keywords, \
-                        deprecated_attribute
 
 class Solver(object):
     """ SOM Solver class used to train the map. Supports batch 
@@ -541,10 +541,26 @@ class SOMSupervisedLearner(SOMLearner):
                           "progressCallback": "progress_callback"})
     def __call__(self, data, weight_id=0, progress_callback=None):
         array, classes, w = data.toNumpyMA()
-        nval = len(data.domain.class_var.values)
-        ext = ma.zeros((len(array), nval))
-        ext[([i for i, m in enumerate(classes.mask) if m], [int(c) for c, m in zip(classes, classes.mask) if m])] = 1.0
+        domain = data.domain
+        if isinstance(domain.class_var, Orange.feature.Discrete):
+            # Discrete class (extend the data with class indicator matrix)
+            nval = len(data.domain.class_var.values)
+            ext = ma.zeros((len(array), nval))
+            ext[([i for i, m in enumerate(classes.mask) if m],
+                 [int(c) for c, m in zip(classes, classes.mask) if m])] = 1.0
+        elif isinstance(domain.class_var, Orange.feature.Continuous):
+            # Continuous class, just add the one column (what about multitarget)
+            nval = 1
+            ext = ma.zeros((len(array), nval))
+            ext[:,0] = classes
+        elif domain.class_var is None:
+            # No class var
+            nval = 0
+            ext = ma.zeros((len(array), nval))
+        else:
+            raise TypeError("Unsuported `class_var` %r" % domain.class_var) 
         array = ma.hstack((array, ext))
+        
         map = Map(self.map_shape, topology=self.topology)
         if self.initialize == Map.InitializeLinear:
             map.initialize_map_linear(array)
@@ -553,6 +569,7 @@ class SOMSupervisedLearner(SOMLearner):
         map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
                      radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
                      epoch=self.epochs)(array, map, progress_callback=progress_callback)
+        # Remove class columns from the vectors 
         for node in map:
             node.vector = node.vector[:-nval]
         return SOMMap(map, data)
