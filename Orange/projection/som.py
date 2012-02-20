@@ -8,9 +8,9 @@ Self-organizing maps (``som``)
 .. index:: 
    single: projection; self-organizing map (SOM)
 
-An implementation of 
-`self-organizing map <http://en.wikipedia.org/wiki/Self-organizing_map>`_ algorithm (SOM). 
-SOM is an unsupervised learning  algorithm that infers low, 
+
+`Self-organizing map <http://en.wikipedia.org/wiki/Self-organizing_map>`_
+(SOM) is an unsupervised learning  algorithm that infers low, 
 typically two-dimensional discretized representation of the input
 space, called a map. The map preserves topological properties of the
 input space, such that the cells that are close in the map include data 
@@ -31,15 +31,29 @@ objects which, given the data, performs the optimization of the map::
    map = som(data)
 
 
-.. autodata:: NeighbourhoodGaussian
+.. autoclass:: SOMLearner
+   :members:
+   
+.. autoclass:: SOMMap
+   :members:
+   
+Topology
+--------
 
 .. autodata:: HexagonalTopology
 
 .. autodata:: RectangularTopology
 
+
+Map initialization
+------------------
+
 .. autodata:: InitializeLinear
 
 .. autodata:: InitializeRandom
+
+Node neighbourhood
+------------------
 
 .. autodata:: NeighbourhoodGaussian 
 
@@ -47,15 +61,7 @@ objects which, given the data, performs the optimization of the map::
 
 .. autodata:: NeighbourhoodEpanechicov 
 
-.. autoclass:: SOMLearner
-   :members:
-
-.. autoclass:: Solver
-   :members:
    
-.. autoclass:: SOMMap
-   :members:
-
 =============================================
 Supervised Learning with Self-Organizing Maps
 =============================================
@@ -89,9 +95,17 @@ data set is::
 Supporting Classes
 ==================
 
-Class :obj:`Map` stores the self-organizing map composed of :obj:`Node` objects. The code below
-(:download:`som-node.py <code/som-node.py>`) shows an example how to access the information stored in the
-node of the map:
+The actual map optimization algorithm is implemented by :class:`Solver`
+class which is used by both the :class:`SOMLearner` and the
+:class:`SOMSupervisedLearner`.
+
+.. autoclass:: Solver
+   :members:
+   
+Class :obj:`Map` stores the self-organizing map composed of :obj:`Node`
+objects. The code below (:download:`som-node.py <code/som-node.py>`) 
+shows an example how to access the information stored in the node of the 
+map:
 
 .. literalinclude:: code/som-node.py
     :lines: 7-
@@ -106,9 +120,11 @@ node of the map:
 Examples
 ========
 
-The following code  (:download:`som-mapping.py <code/som-mapping.py>`) infers self-organizing map from Iris data set. The map is rather small, and consists
-of only 9 cells. We optimize the network, and then report how many data instances were mapped
-into each cell. The second part of the code reports on data instances from one of the corner cells:
+The following code  (:download:`som-mapping.py <code/som-mapping.py>`)
+infers self-organizing map from Iris data set. The map is rather small,
+and consists of only 9 cells. We optimize the network, and then report
+how many data instances were mapped into each cell. The second part 
+of the code reports on data instances from one of the corner cells:
 
 .. literalinclude:: code/som-mapping.py
     :lines: 7-
@@ -133,6 +149,7 @@ The output of this code is::
     [5.7, 2.6, 3.5, 1.0, 'Iris-versicolor']
     [5.5, 2.4, 3.7, 1.0, 'Iris-versicolor']
     [5.0, 2.3, 3.3, 1.0, 'Iris-versicolor']
+    
 """
 
 import sys, os
@@ -222,7 +239,6 @@ class Solver(object):
         self.map = map
 
         self.qerror = []
-        self.bmu_cache = {}
         if self.batch_train:
             self.train_batch(progress_callback)
         else:
@@ -349,11 +365,10 @@ class Solver(object):
         
 
 class SOMLearner(orange.Learner):
-    """An implementation of self-organizing map. Considers 
-    an input data set, projects the data instances onto a map, 
-    and returns a result in the form of a classifier holding 
-    projection information together with an algorithm to project
-    new data instances. Uses :obj:`Map` for representation of 
+    """Considers an input data set, projects the data instances
+    onto a map, and returns a result in the form of a classifier
+    holding  projection information together with an algorithm to
+    project new data instances. Uses :obj:`Map` for representation of 
     projection space, :obj:`Solver` for training, and returns a 
     trained map with information on projection of the training
     data as crafted by :obj:`SOMMap`.
@@ -371,7 +386,7 @@ class SOMLearner(orange.Learner):
     
     :param neighbourhood: cell neighborhood type id
     :type neighbourhood: :obj:`NeighbourhoodGaussian`, 
-        obj:`NeighbourhoodBubble`, or obj:`NeighbourhoodEpanechicov`
+        :obj:`NeighbourhoodBubble`, or :obj:`NeighbourhoodEpanechicov`
         
     :param batch_train: perform batch training?
     :type batch_train: bool
@@ -481,6 +496,11 @@ class SOMMap(orange.Classifier):
                              "get_best_matching_node")
         
     def __call__(self, instance, what=orange.GetValue):
+        """Map `instance` onto the best matching node and predict
+        its class using the majority/mean of the training data in
+        that node. 
+         
+        """
         bmu = self.get_best_matching_node(instance)
         return bmu.classifier(instance, what)
 
@@ -655,7 +675,7 @@ class Map(object):
         
         """
         if data is not None:
-            min, max = ma.min(data, 0), ma.max(data, 0);
+            min, max = ma.min(data, 0), ma.max(data, 0)
             dimension = data.shape[1]
         else:
             min, max = numpy.zeros(dimension), numpy.ones(dimension)
@@ -673,7 +693,7 @@ class Map(object):
         mdim = len(map_shape)
         munits = len(list(self))
         me = ma.mean(data, 0)
-        A = numpy.zeros((dim ,dim))
+        A = numpy.zeros((dim, dim))
 
         for i in range(dim):
             data[:, i] = data[:, i] - me[i]
@@ -715,10 +735,10 @@ class Map(object):
 # Supporting functions 
 
 def get_u_matrix(som):
-    dim1=som.map_shape[0]*2-1
-    dim2=som.map_shape[1]*2-1
+    dim1 = som.map_shape[0]*2-1
+    dim2 = som.map_shape[1]*2-1
 
-    a=numpy.zeros((dim1, dim2))
+    a = numpy.zeros((dim1, dim2))
     if som.topology == HexagonalTopology:
         return __fill_hex(a, som)
     else:
@@ -732,44 +752,47 @@ def getUMat(som):
 
 def __fill_hex(array, som):
     xDim, yDim = som.map_shape
-##    for n in som.nodes:
-##        d[tuple(n.pos)]=n
     d = dict([((i, j), som[i, j]) for i in range(xDim) for j in range(yDim)])
-    check=lambda x,y:x>=0 and x<(xDim*2-1) and y>=0 and y<(yDim*2-1)
-    dx=[1,0,-1]
-    dy=[0,1, 1]
-    for i in range(0, xDim*2,2):
-        for j in range(0, yDim*2,2):
-            for ddx, ddy in zip(dx, dy):
-                if check(i+ddx, j+ddy):
-##                    array[i+ddx][j+ddy]=d[(i/2, j/2)].getDistance(d[(i/2+ddx, j/2+ddy)].referenceExample)
-                    array[i+ddx][j+ddy] = numpy.sqrt(ma.sum((d[(i/2, j/2)].vector - d[(i/2+ddx, j/2+ddy)].vector)**2))
-    dx=[1,-1,0,-1, 0, 1]
-    dy=[0, 0,1, 1,-1,-1]
+    check = lambda x, y: x >= 0 and x < (xDim * 2 - 1) and \
+                            y >= 0 and y < (yDim * 2 - 1)
+    dx = [1, 0, -1]
+    dy = [0, 1, 1]
     for i in range(0, xDim*2, 2):
         for j in range(0, yDim*2, 2):
-            l=[array[i+ddx, j+ddy] for ddx, ddy in zip(dx, dy) if check(i+ddx, j+ddy)]
-            array[i][j]=sum(l)/len(l)
+            for ddx, ddy in zip(dx, dy):
+                if check(i+ddx, j+ddy):
+                    array[i+ddx][j+ddy] = \
+                        numpy.sqrt(ma.sum((d[(i/2, j/2)].vector - \
+                                           d[(i/2+ddx, j/2+ddy)].vector)**2))
+    dx = [1, -1, 0, -1, 0, 1]
+    dy = [0, 0, 1, 1, -1, -1]
+    for i in range(0, xDim*2, 2):
+        for j in range(0, yDim*2, 2):
+            l = [array[i+ddx, j+ddy] for ddx, ddy in zip(dx, dy) \
+                 if check(i+ddx, j+ddy)]
+            array[i][j] = sum(l)/len(l)
     return array
 
 def __fill_rect(array, som):
     xDim, yDim = som.map_shape
     d = dict([((i, j), som[i, j]) for i in range(xDim) for j in range(yDim)])
-    check=lambda x,y:x>=0 and x<xDim*2-1 and y>=0 and y<yDim*2-1
-    dx=[1, 0, 1]
-    dy=[0, 1, 1]
+    check = lambda x, y: x >= 0 and x < xDim*2 - 1 and y >= 0 and y < yDim*2 - 1
+    dx = [1, 0, 1]
+    dy = [0, 1, 1]
     for i in range(0, xDim*2, 2):
         for j in range(0, yDim*2, 2):
             for ddx, ddy in zip(dx, dy):
                 if check(i+ddx, j+ddy):
-##                    array[i+ddx][j+ddy]=d[(i/2, j/2)].getDistance(d[(i/2+ddx, j/2+ddy)].referenceExample)
-                    array[i+ddx][j+ddy] = numpy.sqrt(ma.sum((d[(i/2, j/2)].vector - d[(i/2+ddx, j/2+ddy)].vector)**2))
-    dx=[1,-1, 0,0,1,-1,-1, 1]
-    dy=[0, 0,-1,1,1,-1, 1,-1]
+                    array[i+ddx][j+ddy] = \
+                        numpy.sqrt(ma.sum((d[(i/2, j/2)].vector - \
+                                           d[(i/2+ddx, j/2+ddy)].vector)**2))
+    dx = [1, -1, 0, 0, 1, -1, -1, 1]
+    dy = [0, 0, -1, 1, 1, -1, 1, -1]
     for i in range(0, xDim*2, 2):
         for j in range(0, yDim*2, 2):
-            l=[array[i+ddx,j+ddy] for ddx,ddy in zip(dx,dy) if check(i+ddx, j+ddy)]
-            array[i][j]=sum(l)/len(l)
+            l = [array[i+ddx, j+ddy] for ddx, ddy in zip(dx, dy) \
+                 if check(i+ddx, j+ddy)]
+            array[i][j] = sum(l)/len(l)
     return array
 
 ##########################################################################
