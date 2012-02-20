@@ -11,12 +11,12 @@ from Orange.feature import scoring
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestClassification(testing.LearnerTestCase):
-    LEARNER = ctree.TreeLearner()
+    LEARNER = ctree.TreeLearner(max_depth=50)
 
 
 @datasets_driven(datasets=testing.REGRESSION_DATASETS)
 class TestRegression(testing.LearnerTestCase):
-    LEARNER = rtree.TreeLearner()
+    LEARNER = rtree.TreeLearner(max_depth=50)
 
 if __name__ == "__main__":
     unittest.main()
