@@ -1,6 +1,9 @@
 import orange
 import orngClustering
 
+import random
+random.seed(42)
+
 def callback(km):
     print "Iteration: %d, changes: %d, score: %.4f" % (km.iteration, km.nchanges, km.score)
     
