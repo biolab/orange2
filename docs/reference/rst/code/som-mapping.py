@@ -5,6 +5,10 @@
 # Classes:     Orange.projection.som.SOMLearner
 
 import Orange
+
+import random
+random.seed(0)
+
 som = Orange.projection.som.SOMLearner(map_shape=(3, 3),
                 initialize=Orange.projection.som.InitializeRandom)
 map = som(Orange.data.Table("iris.tab"))
