@@ -6,6 +6,10 @@
 
 import orngSOM
 import orange
+
+import random
+random.seed(42)
+
 som = orngSOM.SOMLearner(map_shape=(10, 20), initialize=orngSOM.InitializeRandom)
 map = som(orange.ExampleTable("iris.tab"))
 for n in map:
