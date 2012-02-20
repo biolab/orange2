@@ -1724,9 +1724,7 @@ class NetworkClustering():
     
     :param network: network data for community detection
     :type network: Orange.network.Network
-    """ 
-    
-    random.seed(0)
+    """
     
     def __init__(self, network):
         self.net = network
