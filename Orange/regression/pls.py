@@ -78,7 +78,6 @@ import Orange
 import numpy
 
 from Orange.regression import base
-from Orange.regression.earth import data_label_mask
 from numpy import dot, zeros
 from numpy import linalg
 from numpy.linalg import svd, pinv

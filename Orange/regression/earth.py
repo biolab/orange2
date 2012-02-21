@@ -467,24 +467,6 @@ def gcv(rss, n, n_effective_params):
 Multi-label utility functions
 """
 
-def is_label_attr(attr):
-    """ Is attribute a label.
-    """
-    return attr.attributes.has_key("label")
-    
-def data_label_indices(domain):
-    """ Return the indices of label attributes in data.
-    """
-    return numpy.where(data_label_mask(domain))[0]
-
-def data_label_mask(domain):
-    """ Return an array of booleans indicating whether a variable in the
-    domain is a label.
-    """
-    is_label = map(is_label_attr, domain.variables)
-    if domain.class_var:
-        is_label[-1] = True
-    return numpy.array(is_label, dtype=bool)
 
 """
 ctypes interface to ForwardPass and EvalSubsetsUsingXtx.
