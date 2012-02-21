@@ -41,8 +41,7 @@ import Orange
 
 # Other algorithms which also work with multitarget data
 from Orange.regression import pls
-# change the default value of multi_label=True in init
-##from Orange.regression import earth
+from Orange.regression import earth
 
 
 class MultitargetLearner(Orange.classification.Learner):
