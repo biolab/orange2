@@ -12,6 +12,7 @@ Orange's tab file format using :ref:`multiclass directive <tab-delimited>`.
 
    Orange.multitarget.tree
    Orange.regression.pls
+   Orange.regression.earth
 
 
 .. automodule:: Orange.multitarget
