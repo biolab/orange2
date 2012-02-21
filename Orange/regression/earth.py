@@ -19,7 +19,7 @@ Example ::
 
     >>> import Orange
     >>> data = Orange.data.Table("housing")
-    >>> c = Orange.regression.earth.EarthLearner(data, degree=2)
+    >>> c = Orange.regression.earth.EarthLearner(data, degree=2, terms=10)
     >>> print c
     MEDV =
        23.587
@@ -88,9 +88,21 @@ def expand_discrete(var):
         new.source_variable = var
         new_vars.append(new)
     return new_vars
+
+def select_attrs(table, features, class_var=None,
+                 class_vars=None, metas=None):
+    """ Select only ``attributes`` from the ``table``.
+    """
+    if class_vars is None:
+        domain = Domain(features, class_var)
+    else:
+        domain = Domain(features, class_var, class_vars=class_vars)
+    if metas:
+        domain.add_metas(metas)
+    return Table(domain, table)
     
-class EarthLearner(Orange.core.LearnerFD):
-    """ Earth learner class. Supports both regression and classification
+class EarthLearner(Orange.regression.base.BaseRegressionLearner):
+    """Earth learner class. Supports both regression and classification
     problems. In case of classification the class values are expanded into 
     continuous indicator columns (one for each value if the number of 
     values is grater then 2), and a multi response model is learned on these
@@ -99,7 +111,7 @@ class EarthLearner(Orange.core.LearnerFD):
      
     """
     def __new__(cls, instances=None, weight_id=None, **kwargs):
-        self = Orange.core.LearnerFD.__new__(cls)
+        self = Orange.regression.base.BaseRegressionLearner.__new__(cls)
         if instances is not None:
             self.__init__(**kwargs)
             return self.__call__(instances, weight_id)
@@ -109,8 +121,8 @@ class EarthLearner(Orange.core.LearnerFD):
     def __init__(self, degree=1, terms=21, penalty= None, thresh=1e-3,
                  min_span=0, new_var_penalty=0, fast_k=20, fast_beta=1,
                  pruned_terms=None, scale_resp=True, store_instances=True,
-                 multi_label=False, **kwds):
-        """ Initialize the learner instance.
+                **kwds):
+        """Initialize the learner instance.
         
         :param degree: Maximum degree (num. of hinge functions per term)
             of the terms in the model.
@@ -144,13 +156,14 @@ class EarthLearner(Orange.core.LearnerFD):
         :param store_instances: Store training instances in the model
             (default True).
         :type store_instances: bool
-        :param multi_label: If True build a multi label model (default False).
-        :type multi_label: bool  
          
         .. todo:: min_span, prunning_method (need Leaps like functionality,
             currently only eval_subsets_using_xtx is implemented). 
         
         """
+        
+        super(EarthLearner, self).__init__()
+        
         self.degree = degree
         self.terms = terms
         if penalty is None:
@@ -164,40 +177,49 @@ class EarthLearner(Orange.core.LearnerFD):
         self.pruned_terms = pruned_terms
         self.scale_resp = scale_resp
         self.store_instances = store_instances
-        self.multi_label = multi_label
         self.__dict__.update(kwds)
         
-        impute = Preprocessor_impute()
-        cont = Preprocessor_continuize(multinomialTreatment=
-                                       DomainContinuizer.AsOrdinal)
-        self.preproc = Preprocessor_preprocessorList(preprocessors=\
-                                                     [impute, cont])
+        self.continuizer.class_treatment = DomainContinuizer.Ignore
         
     def __call__(self, instances, weight_id=None):
-        instances = self.preproc(instances)
+        
         expanded_class = None
-        if self.multi_label:
-            label_mask = data_label_mask(instances.domain)
-            data = instances.to_numpy_MA("Ac")[0]
-            y = data[:, label_mask]
-            x = data[:, ~ label_mask]
-        else:
-            # Expand a discrete class with indicator columns
+        multitarget = False
+        
+        if instances.domain.class_var:
+            instances = self.impute_table(instances)
+            instances = self.continuize_table(instances)
+            
             if is_discrete(instances.domain.class_var):
+                # Expand a discrete class with indicator columns
                 expanded_class = expand_discrete(instances.domain.class_var)
-                y = Table(Domain(expanded_class, None), instances)
-                y = y.to_numpy_MA("A")[0]
-                x = instances.to_numpy_MA("A")[0]
-                label_mask = [False] * x.shape[1] + [True] * y.shape[1]
-                label_mask = numpy.array(label_mask)
+                y_table = select_attrs(instances, expanded_class)
+                (y, ) = y_table.to_numpy_MA("A")
+                (x, ) = instances.to_numpy_MA("A")
             elif is_continuous(instances.domain.class_var):
-                label_mask = numpy.zeros(len(instances.domain.variables),
-                                         dtype=bool)
-                label_mask[-1] = True
                 x, y, _ = instances.to_numpy_MA()
                 y = y.reshape((-1, 1))
             else:
                 raise ValueError("Cannot handle the response.")
+        elif instances.domain.class_vars:
+            # Multi-target domain
+            if not all(map(is_continuous, instances.domain.class_vars)):
+                raise TypeError("Only continuous multi-target classes are supported.")
+            x_table = select_attrs(instances, instances.domain.attributes)
+            y_table = select_attrs(instances, instances.domain.class_vars)
+            
+            # Impute and continuize only the x_table
+            x_table = self.impute_table(x_table)
+            x_table = self.continuize_table(x_table)
+            domain = Domain(x_table.domain.attributes,
+                            class_vars=instances.domain.class_vars)
+            
+            (x, ) = x_table.to_numpy_MA("A")
+            (y, ) = y_table.to_numpy_MA("A")
+            
+            multitarget = True
+        else:
+            raise ValueError("Class variable expected.")
         
         if self.scale_resp and y.shape[1] == 1:
             sy = y - numpy.mean(y, axis=0)
@@ -232,10 +254,11 @@ class EarthLearner(Orange.core.LearnerFD):
         return EarthClassifier(instances.domain, used, dirs, cuts, betas.T,
                                subsets, rss_per_subset, gcv_per_subset,
                                instances=instances if self.store_instances else None,
-                               label_mask=label_mask, multi_flag=self.multi_label,
-                               expanded_class=expanded_class)
-    
-    
+                               multitarget=multitarget,
+                               expanded_class=expanded_class
+                               )
+
+
 def soft_max(values):
     values = numpy.asarray(values)
     return numpy.exp(values) / numpy.sum(numpy.exp(values))
@@ -246,11 +269,14 @@ class EarthClassifier(Orange.core.ClassifierFD):
     """
     def __init__(self, domain, best_set, dirs, cuts, betas, subsets=None,
                  rss_per_subset=None, gcv_per_subset=None, instances=None,
-                 label_mask=None, multi_flag=False, expanded_class=None,
+                 multitarget=False, expanded_class=None,
                  original_domain=None, **kwargs):
-        self.multi_flag = multi_flag
+        self.multitarget = multitarget
         self.domain = domain
         self.class_var = domain.class_var
+        if self.multitarget:
+            self.class_vars = domain.class_vars
+            
         self.best_set = best_set
         self.dirs = dirs
         self.cuts = cuts
@@ -259,15 +285,13 @@ class EarthClassifier(Orange.core.ClassifierFD):
         self.rss_per_subset = rss_per_subset
         self.gcv_per_subset = gcv_per_subset
         self.instances = instances
-        self.label_mask = label_mask
         self.expanded_class = expanded_class
         self.original_domain = original_domain
         self.__dict__.update(kwargs)
         
     def __call__(self, instance, result_type=Orange.core.GetValue):
-        if self.multi_flag:
-            resp_vars = [v for v, m in zip(self.domain.variables,
-                                           self.label_mask) if m]
+        if self.multitarget and self.domain.class_vars:
+            resp_vars = list(self.domain.class_vars)
         elif is_discrete(self.class_var):
             resp_vars = self.expanded_class
         else:
@@ -278,7 +302,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
         from Orange.statistics.distribution import Distribution
         
-        if not self.multi_flag and is_discrete(self.class_var):
+        if not self.multitarget and is_discrete(self.class_var):
             dist = Distribution(self.class_var)
             if len(self.class_var.values) == 2:
                 probs = [1 - float(vals[0]), float(vals[0])]
@@ -296,7 +320,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
                 dist[val] = 1.0
                 probs.append(dist)
             
-        if not self.multi_flag:
+        if not self.multitarget:
             vals, probs = vals[0], probs[0]
             
         if result_type == Orange.core.GetValue:
@@ -319,8 +343,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
         """
         if instances is None:
             instances = self.instances
-        (data,) = instances.to_numpy_MA("Ac")
-        data = data[:, ~ self.label_mask]
+        instances = select_attrs(instances, self.domain.attributes)
+        (data,) = instances.to_numpy_MA("A")
         bx = base_matrix(data, self.best_set, self.dirs, self.cuts)
         return bx
     
@@ -349,8 +373,8 @@ class EarthClassifier(Orange.core.ClassifierFD):
             return reduce(set.union, [self.used_attributes(i) \
                                       for i in range(self.best_set.size)],
                           set())
-        attrs = [a for a, m in zip(self.domain.variables, self.label_mask)
-                 if not m]
+            
+        attrs = self.domain.attributes
         
         used_mask = self.dirs[term, :] != 0.0
         return [a for a, u in zip(attrs, used_mask) if u]
@@ -672,7 +696,6 @@ def subset_selection_xtx2(X, Y):
         subsets[subset_size, :subset_size + 1] = working_set
         X_work = X[:, working_set]
         b, rsd, rank = linalg.qr_lstsq(X_work, Y)
-#        print rsd
         rss_vec[subset_size] = numpy.sum(rsd ** 2)
         XtX = numpy.dot(X_work.T, X_work)
         iXtX = numpy.linalg.pinv(XtX)
@@ -717,10 +740,8 @@ Printing functions.
 def format_model(model, percision=3, indent=3):
     """ Return a formated string representation of the earth model.
     """
-    if model.multi_flag:
-        r_vars = [v for v, m in zip(model.domain.variables,
-                                    model.label_mask)
-                  if m]
+    if model.multitarget:
+        r_vars = list(model.domain.class_vars)
     elif is_discrete(model.class_var):
         r_vars = model.expanded_class
     else:
@@ -745,7 +766,8 @@ def _format_response(model, resp_name, betas, percision=3, indent=3):
         if used:
             beta_i += 1
             beta = fmt % abs(betas[beta_i])
-            knots = [_format_knot(model, attr.name, d, c) for d, c, attr in \
+            knots = [_format_knot(model, attr.name, d, c, percision) \
+                     for d, c, attr in \
                      zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
                      if d != 0]
             term_attrs = [a for a, d in zip(model.domain.attributes, model.dirs[i]) \
@@ -761,20 +783,16 @@ def _format_response(model, resp_name, betas, percision=3, indent=3):
     terms = sorted(terms, key=lambda t: (len(t[0]), t[0]))
     return "\n".join([header] + [indent + t for _, t in terms])
         
-def _format_knot(model, name, dir, cut):
+def _format_knot(model, name, dir, cut, percision=3):
+    fmt = "%%.%if" % percision
     if dir == 1:
-        txt = "max(0, %s - %.3f)" % (name, cut)
+        txt = ("max(0, %s - " + fmt + ")") % (name, cut)
     elif dir == -1:
-        txt = "max(0, %.3f - %s)" % (cut, name)
+        txt = ("max(0, " + fmt + " - %s)") % (cut, name)
     elif dir == 2:
         txt = name
     return txt
 
-def _format_term(model, i, attr_name):
-    knots = [_format_knot(model, attr, d, c) for d, c, attr in \
-             zip(model.dirs[i], model.cuts[i], model.domain.attributes) \
-             if d != 0]
-    return " * ".join(knots)
     
 """\
 Variable importance estimation
@@ -880,7 +898,7 @@ def plot_evimp(evimp):
 
     .. image:: files/earth-evimp.png
      
-    The left axis is the nsubsets measure an on the right are the normalized
+    The left axis is the nsubsets measure and on the right are the normalized
     RSS and GCV.
     
     """
@@ -1080,7 +1098,7 @@ class ScoreRSS(scoring.Score):
             rss = rss[1:] #Drop the intercept
             self._cache_data = data
             self._cache_rss = rss
-#        print sorted(zip(rss, data.domain.attributes))
+            
         index = list(data.domain.attributes).index(attr)
         return rss[index]
     
