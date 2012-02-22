@@ -143,6 +143,19 @@ scoring functions to compute a single score from the obtained
 .. autofunction:: mt_flattened_score
 .. autofunction:: mt_average_score
 
+The whole procedure of evaluating multi-target methods and computing the scores
+(RMSE errors) is shown in the following example (:download:`mt-evaluate.py <code/mt-evaluate.py>`):
+
+.. literalinclude:: code/mt-evaluate.py
+
+Which outputs::
+
+    Weighted RMSE scores:
+        Majority    0.8228
+          MTTree    0.3949
+             PLS    0.3021
+           Earth    0.2880
+
 ==========================
 Multi-label classification
 ==========================
