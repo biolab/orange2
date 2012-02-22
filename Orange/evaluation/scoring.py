@@ -2538,7 +2538,7 @@ def mlc_recall(res):
 #    pass
 
 
-def mt_average_scores(res, score, weights=None):
+def mt_average_score(res, score, weights=None):
     """
     Average the scores of individual targets.
 
@@ -2572,8 +2572,8 @@ def mt_average_scores(res, score, weights=None):
 
 def mt_flattened_score(res, score):
     """
-    Flatten the predictions of multiple targets
-    and compute a single-target score.
+    Flatten (concatenate into a single list) the predictions of multiple
+    targets and compute a single-target score.
     
     :param score: Single-target scoring method.
     """

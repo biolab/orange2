@@ -14,7 +14,7 @@ examples; they return :obj:`ExperimentResults` which can be passed to
 .. literalinclude:: code/testing-example.py
 
 Different evaluation techniques are implemented as instance methods of
-:obj:`Evaluation` class. For ease of use, an instance of this class in
+:obj:`Evaluation` class. For ease of use, an instance of this class is
 created at module loading time and instance methods are exposed as functions
 with the same name in Orange.evaluation.testing namespace.
 

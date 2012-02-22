@@ -126,9 +126,26 @@ Utility Functions
 
 .. autofunction:: split_by_iterations
 
-=====================================
-Scoring for multilabel classification
-=====================================
+
+.. _mt-scoring:
+
+============
+Multi-target
+============
+
+:doc:`Multi-target <Orange.multitarget>` classifiers predict values for
+multiple target classes. They can be used with standard
+:obj:`~Orange.evaluation.testing` procedures (e.g.
+:obj:`~Orange.evaluation.testing.Evaluation.cross_validation`), but require special
+scoring functions to compute a single score from the obtained
+:obj:`~Orange.evaluation.testing.ExperimentResults`.
+
+.. autofunction:: mt_flattened_score
+.. autofunction:: mt_average_score
+
+==========================
+Multi-label classification
+==========================
 
 Multi-label classification requires different metrics than those used in
 traditional single-label classification. This module presents the various
