@@ -38,16 +38,6 @@ defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
 /Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
-/Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log
-EXIT_VALUE=$?
-
-/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
-
-echo "Orange (bundle $MAC_VERSION) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
-date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
-cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
-(($EXIT_VALUE)) && echo "Running bundle-daily-build.sh failed"
-
 ## Daily build from hg
 /Users/ailabc/bundle-daily-build-hg.sh &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?
@@ -60,15 +50,25 @@ cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bund
 (($EXIT_VALUE)) && echo "Running bundle-daily-build-hg.sh failed"
 
 
-/Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log
-EXIT_VALUE=$?
+#/Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log
+#EXIT_VALUE=$?
+#
+#/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+#
+#echo "Orange (bundle $MAC_VERSION) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
+#date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
+#cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
+#(($EXIT_VALUE)) && echo "Running bundle-daily-build.sh failed"
+#
+#/Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log
+#EXIT_VALUE=$?
 
-/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
-
-echo "Orange (bundle $MAC_VERSION 64bit) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
-date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
-cat /private/tmp/bundle-64bit-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
-(($EXIT_VALUE)) && echo "Running bundle-64bit-daily-build.sh failed"
+#/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+#
+#echo "Orange (bundle $MAC_VERSION 64bit) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
+#date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
+#cat /private/tmp/bundle-64bit-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
+#(($EXIT_VALUE)) && echo "Running bundle-64bit-daily-build.sh failed"
 
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/fink-daily-build.log
 EXIT_VALUE=$?
