@@ -38,6 +38,15 @@ echo "Checkouting and building text addon"
 echo "==================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-addon-text text $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
+echo "Installing distribute"
+echo "+++++++++++++++++++++"
+./bundle-inject-pypi.sh distribute-0.6.24 http://pypi.python.org/packages/source/d/distribute/distribute-0.6.24.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+
+# TODO: from here on we could use easy_install to install pip and then use that
+echo "Installing suds library"
+echo "+++++++++++++++++++++++"
+./bundle-inject-pypi.sh suds-0.4 http://pypi.python.org/packages/source/s/suds/suds-0.4.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+
 echo "Removing unnecessary files."
 find $TMP_BUNDLE_DIR \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'
 
