@@ -61,14 +61,24 @@ def weighted_variance(X, weights=None):
 
 class MultitargetVariance(Orange.feature.scoring.Score):
     """
-    A multi-target score that ranks features based on the variance of the
-    subsets. A weighted distance can be used to compute the variance.
+    A multi-target score that ranks features based on the average class
+    variance of the subsets.
+
+    To compute it, a prototype has to be defined for each subset. Here, it
+    is just the mean vector of class variables. Then the sum of squared
+    distances to the prototypes is computed in each subset. The final score
+    is obtained as the average of subset variances (weighted, to account for
+    subset sizes).
+    
+    Weights can be passed to the constructor to normalize classes with values
+    of different magnitudes or to increase the importance of some classes. In
+    this case, class values are first scaled according to the given weights.
     """
 
     def __init__(self, weights=None):
         """
-        :param weights: Weights of the features used when computing distances.
-                        If None, all weights are set to 1.
+        :param weights: Weights of the class variables used when computing
+                        distances. If None, all weights are set to 1.
         :type weigts: list
         """
 
