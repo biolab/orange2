@@ -19,6 +19,7 @@ curl --silent --output mount-dirs.sh https://bitbucket.org/biolab/orange/raw/tip
 curl --silent --output bundle-build-hg.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/bundle-build-hg.sh
 curl --silent --output bundle-daily-build-hg.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/bundle-daily-build-hg.sh
 curl --silent --output bundle-inject-hg.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/bundle-inject-hg.sh
+curl --silent --output bundle-inject-pypi.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/bundle-inject-pypi.sh
 curl --silent --output dailyrun-bundleonly-hg.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/dailyrun-bundleonly-hg.sh
 
 chmod +x *.sh
