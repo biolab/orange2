@@ -5,6 +5,8 @@
 
 test -r /sw/bin/init.sh && . /sw/bin/init.sh
 
+export PATH=$HOME/bin:$PATH
+
 STABLE_REVISION_1=`svn info --non-interactive http://orange.biolab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$STABLE_REVISION_1" ] || exit 1

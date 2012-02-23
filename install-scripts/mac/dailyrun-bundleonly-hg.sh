@@ -3,6 +3,8 @@
 # Should be run as: sudo ./dailyrun-bundleonly-hg.sh
 #
 
+export PATH=$HOME/bin:$PATH
+
 MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
