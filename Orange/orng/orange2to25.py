@@ -167,7 +167,7 @@ def main(fixer_pkg, args=None):
     # Return error status (0 if rt.errors is zero)
     return int(bool(rt.errors))
 
-sys.exit(main("fixes", sys.argv))
+sys.exit(main("Orange.fixes", sys.argv))
 
 
 
