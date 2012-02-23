@@ -8,13 +8,11 @@
 Logistic regression (``logreg``)
 ********************************
 
-`Logistic regression <http://en.wikipedia.org/wiki/Logistic_regression>`_
-is a statistical classification methods that fits data to a logistic
-function. Orange's implementation of algorithm
-can handle various anomalies in features, such as constant variables and
-singularities, that could make direct fitting of logistic regression almost
-impossible. Stepwise logistic regression, which iteratively selects the most
-informative features, is also supported.
+`Logistic regression
+<http://en.wikipedia.org/wiki/Logistic_regression>`_ is a statistical
+classification method that fits data to a logistic function. Orange
+provides various enhancement of the method, such as stepwise selection
+of variables and handling of constant variables and singularities.
 
 .. autoclass:: LogRegLearner
    :members:
@@ -43,22 +41,24 @@ informative features, is also supported.
         List of P-values for beta coefficients, that is, the probability
         that beta coefficients differ from 0.0. The probability is
         computed from squared Wald Z statistics that is distributed with
-        Chi-Square distribution.
+        chi-squared distribution.
 
     .. attribute :: likelihood
 
-        The probability of the sample (ie. learning examples) observed on
-        the basis of the derived model, as a function of the regression
-        parameters.
+        The likelihood of the sample (ie. learning data) given the
+        fitted model.
 
     .. attribute :: fit_status
 
-        Tells how the model fitting ended - either regularly
-        (:obj:`LogRegFitter.OK`), or it was interrupted due to one of beta
-        coefficients escaping towards infinity (:obj:`LogRegFitter.Infinity`)
-        or since the values didn't converge (:obj:`LogRegFitter.Divergence`). The
-        value tells about the classifier's "reliability"; the classifier
-        itself is useful in either case.
+        Tells how the model fitting ended, either regularly
+        (:obj:`LogRegFitter.OK`), or it was interrupted due to one of
+        beta coefficients escaping towards infinity
+        (:obj:`LogRegFitter.Infinity`) or since the values did not
+        converge (:obj:`LogRegFitter.Divergence`).
+
+        Although the model is functional in all cases, it is
+        recommended to inspect whether the coefficients of the model
+        if the fitting did not end normally.
 
     .. method:: __call__(instance, result_type)
 
@@ -77,56 +77,55 @@ informative features, is also supported.
 
 .. class:: LogRegFitter
 
-    :obj:`LogRegFitter` is the abstract base class for logistic fitters. It
-    defines the form of call operator and the constants denoting its
-    (un)success:
+    :obj:`LogRegFitter` is the abstract base class for logistic
+    fitters. Fitters can be called with a data table and return a
+    vector of coefficients and the corresponding statistics, or a
+    status signifying an error. The possible statuses are
 
-    .. attribute:: OK
+	.. attribute:: OK
 
-        Fitter succeeded to converge to the optimal fit.
+	    Optimization converged
 
-    .. attribute:: Infinity
+	.. attribute:: Infinity
 
-        Fitter failed due to one or more beta coefficients escaping towards infinity.
+	    Optimization failed due to one or more beta coefficients
+	    escaping towards infinity.
 
-    .. attribute:: Divergence
+	.. attribute:: Divergence
 
-        Beta coefficients failed to converge, but none of beta coefficients escaped.
+	    Beta coefficients failed to converge, but without any of beta
+	    coefficients escaping toward infinity.
 
-    .. attribute:: Constant
+	.. attribute:: Constant
 
-        There is a constant attribute that causes the matrix to be singular.
+	    The data is singular due to a constant variable.
 
-    .. attribute:: Singularity
+	.. attribute:: Singularity
 
-        The matrix is singular.
+	    The data is singular.
 
 
     .. method:: __call__(data, weight_id)
 
-        Performs the fitting. There can be two different cases: either
-        the fitting succeeded to find a set of beta coefficients (although
-        possibly with difficulties) or the fitting failed altogether. The
-        two cases return different results.
+        Fit the model and return a tuple with the fitted values and
+        the corresponding statistics or an error indicator. The two
+        cases differ by the tuple length and the status (the first
+        tuple element).
 
-        `(status, beta, beta_se, likelihood)`
-            The fitter managed to fit the model. The first element of
-            the tuple, result, tells about the problems occurred; it can
-            be either :obj:`OK`, :obj:`Infinity` or :obj:`Divergence`. In
-            the latter cases, returned values may still be useful for
-            making predictions, but it's recommended that you inspect
-            the coefficients and their errors and make your decision
-            whether to use the model or not.
+        ``(status, beta, beta_se, likelihood)`` Fitting succeeded. The
+            first element, ``status`` is either :obj:`OK`,
+            :obj:`Infinity` or :obj:`Divergence`. In the latter cases,
+            returned values may still be useful for making
+            predictions, but it is recommended to inspect the
+            coefficients and their errors and decide whether to use
+            the model or not.
 
-        `(status, attribute)`
-            The fitter failed and the returned attribute is responsible
-            for it. The type of failure is reported in status, which
-            can be either :obj:`Constant` or :obj:`Singularity`.
+        ``(status, variable)``
+            The fitter failed due to the indicated
+            ``variable``. ``status`` is either :obj:`Constant` or
+            :obj:`Singularity`.
 
-        The proper way of calling the fitter is to expect and handle all
-        the situations described. For instance, if fitter is an instance
-        of some fitter and examples contain a set of suitable examples,
-        a script should look like this::
+        The proper way of calling the fitter is to handle both scenarios ::
 
             res = fitter(examples)
             if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
@@ -140,10 +139,10 @@ informative features, is also supported.
 .. class :: LogRegFitter_Cholesky
 
     The sole fitter available at the
-    moment. It is a C++ translation of `Alan Miller's logistic regression
-    code <http://users.bigpond.net.au/amiller/>`_. It uses Newton-Raphson
+    moment. This is a C++ translation of `Alan Miller's logistic regression
+    code <http://users.bigpond.net.au/amiller/>`_ that uses Newton-Raphson
     algorithm to iteratively minimize least squares error computed from
-    learning examples.
+    training data.
 
 
 .. autoclass:: StepWiseFSS
@@ -157,8 +156,7 @@ informative features, is also supported.
 Examples
 --------
 
-The first example shows a very simple induction of a logistic regression
-classifier (:download:`logreg-run.py <code/logreg-run.py>`).
+The first example shows a straightforward use a logistic regression (:download:`logreg-run.py <code/logreg-run.py>`).
 
 .. literalinclude:: code/logreg-run.py
 
@@ -209,7 +207,7 @@ The first few lines of the output of this script are::
                  occupation=Tech-support      -0.32       0.00       -inf       0.00       0.72
 
 If :obj:`remove_singular` is set to 0, inducing a logistic regression
-classifier would return an error::
+classifier returns an error::
 
     Traceback (most recent call last):
       File "logreg-singularities.py", line 4, in <module>
@@ -220,7 +218,7 @@ classifier would return an error::
         lr = learner(examples, weight)
     orange.KernelException: 'orange.LogRegLearner': singularity in workclass=Never-worked
 
-We can see that the attribute workclass is causing a singularity.
+The attribute variable which causes the singularity is ``workclass``.
 
 The example below shows how the use of stepwise logistic regression can help to
 gain in classification performance (:download:`logreg-stepwise.py <code/logreg-stepwise.py>`):

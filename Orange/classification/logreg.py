@@ -7,8 +7,7 @@ from numpy.linalg import inv
 from Orange.core import LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
 
 def dump(classifier):
-    """ Return a formatted string of all major features in logistic regression
-    classifier.
+    """ Return a formatted string describing the logistic regression model
 
     :param classifier: logistic regression classifier.
     """
@@ -52,27 +51,28 @@ def has_discrete_values(domain):
 class LogRegLearner(Orange.classification.Learner):
     """ Logistic regression learner.
 
-    If data instances are provided to
-    the constructor, the learning algorithm is called and the resulting
-    classifier is returned instead of the learner.
+    Returns either a learning algorithm (instance of
+    :obj:`LogRegLearner`) or, if data is provided, a fitted model
+    (instance of :obj:`LogRegClassifier`).
 
-    :param data: data table with either discrete or continuous features
+    :param data: data table; it may contain discrete and continuous features
     :type data: Orange.data.Table
     :param weight_id: the ID of the weight meta attribute
     :type weight_id: int
-    :param remove_singular: set to 1 if you want automatic removal of
-        disturbing features, such as constants and singularities
+    :param remove_singular: automated removal of constant
+        features and singularities (default: `False`)
     :type remove_singular: bool
-    :param fitter: the fitting algorithm (by default the Newton-Raphson
-        fitting algorithm is used)
-    :param stepwise_lr: set to 1 if you wish to use stepwise logistic
-        regression
+    :param fitter: the fitting algorithm (default: :obj:`LogRegFitter_Cholesky`)
+    :param stepwise_lr: enables stepwise feature selection (default: `False`)
     :type stepwise_lr: bool
-    :param add_crit: parameter for stepwise feature selection
+    :param add_crit: threshold for adding a feature in stepwise
+        selection (default: 0.2)
     :type add_crit: float
-    :param delete_crit: parameter for stepwise feature selection
+    :param delete_crit: threshold for removing a feature in stepwise
+        selection (default: 0.3)
     :type delete_crit: float
-    :param num_features: parameter for stepwise feature selection
+    :param num_features: number of features in stepwise selection
+        (default: -1, no limit)
     :type num_features: int
     :rtype: :obj:`LogRegLearner` or :obj:`LogRegClassifier`
 
@@ -95,11 +95,11 @@ class LogRegLearner(Orange.classification.Learner):
 
     @deprecated_keywords({"examples": "data"})
     def __call__(self, data, weight=0):
-        """Learn from the given table of data instances.
+        """Fit a model to the given data.
 
-        :param data: Data instances to learn from.
+        :param data: Data instances.
         :type data: :class:`~Orange.data.Table`
-        :param weight: Id of meta attribute with weights of instances
+        :param weight: Id of meta attribute with instance weights
         :type weight: int
         :rtype: :class:`~Orange.classification.logreg.LogRegClassifier`
         """
@@ -684,44 +684,38 @@ def get_likelihood(fitter, data):
 
 class StepWiseFSS(Orange.classification.Learner):
   """
-  Algorithm described in Hosmer and Lemeshow,
-  Applied Logistic Regression, 2000.
+  A learning algorithm for logistic regression that implements a
+  stepwise feature subset selection as described in Applied Logistic
+  Regression (Hosmer and Lemeshow, 2000).
 
-  Perform stepwise logistic regression and return a list of the
-  most "informative" features. Each step of the algorithm is composed
-  of two parts. The first is backward elimination, where each already
-  chosen feature is tested for a significant contribution to the overall
-  model. If the worst among all tested features has higher significance
-  than is specified in :obj:`delete_crit`, the feature is removed from
-  the model. The second step is forward selection, which is similar to
-  backward elimination. It loops through all the features that are not
-  in the model and tests whether they contribute to the common model
-  with significance lower that :obj:`add_crit`. The algorithm stops when
-  no feature in the model is to be removed and no feature not in the
-  model is to be added. By setting :obj:`num_features` larger than -1,
-  the algorithm will stop its execution when the number of features in model
-  exceeds that number.
+  Each step of the algorithm is composed of two parts. The first is
+  backward elimination in which the least significant variable in the
+  model is removed if its p-value is above the prescribed threshold
+  :obj:`delete_crit`. The second step is forward selection in which
+  all variables are tested for addition to the model, and the one with
+  the most significant contribution is added if the corresponding
+  p-value is smaller than the prescribed :obj:d`add_crit`. The
+  algorithm stops when no more variables can be added or removed.
 
-  Significances are assesed via the likelihood ration chi-square
-  test. Normal F test is not appropriate, because errors are assumed to
-  follow a binomial distribution.
+  The model can be additionaly constrained by setting
+  :obj:`num_features` to a non-negative value. The algorithm will then
+  stop when the number of variables exceeds the given limit.
 
-  If :obj:`table` is specified, stepwise logistic regression implemented
-  in :obj:`StepWiseFSS` is performed and a list of chosen features
-  is returned. If :obj:`table` is not specified, an instance of
-  :obj:`StepWiseFSS` with all parameters set is returned and can be called
-  with data later.
+  Significances are assesed by the likelihood ratio chi-square
+  test. Normal F test is not appropriate since the errors are assumed
+  to follow a binomial distribution.
 
-  :param table: data set.
+  The class constructor returns an instance of learning algorithm or,
+  if given training data, a list of selected variables.
+
+  :param table: training data.
   :type table: Orange.data.Table
 
-  :param add_crit: "Alpha" level to judge if variable has enough importance to
-       be added in the new set. (e.g. if add_crit is 0.2,
-       then features is added if its P is lower than 0.2).
+  :param add_crit: threshold for adding a variable (default: 0.2)
   :type add_crit: float
 
-  :param delete_crit: Similar to add_crit, just that it is used at backward
-      elimination. It should be higher than add_crit!
+  :param delete_crit: threshold for removing a variable
+      (default: 0.3); should be higher than :obj:`add_crit`.
   :type delete_crit: float
 
   :param num_features: maximum number of selected features,
