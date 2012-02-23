@@ -2540,9 +2540,18 @@ def mlc_recall(res):
 
 def mt_average_score(res, score, weights=None):
     """
-    Average the scores of individual targets.
+    Compute individual scores for each target and return the (weighted) average.
 
-    :param score: Single-target scoring method.
+    One method can be used to compute scores for all targets or a list of
+    scoring methods can be passed to use different methods for different
+    targets. In the latter case, care has to be taken if the ranges of scoring
+    methods differ.
+    For example, when the first target is scored from -1 to 1 (1 best) and the
+    second from 0 to 1 (0 best), using `weights=[0.5,-1]` would scale both
+    to a span of 1, and invert the second so that higher scores are better.
+
+    :param score: Single-target scoring method or a list of such methods
+                  (one for each target).
     :param weights: List of real weights, one for each target,
                     for a weighted average.
 
@@ -2551,18 +2560,23 @@ def mt_average_score(res, score, weights=None):
         raise ValueError, "Cannot compute the score: no examples."
     if res.number_of_learners < 1:
         return []
+    n_classes = len(res.results[0].actual_class)
     if weights is None:
-        weights = [1. for _ in res.results[0].actual_class]
+        weights = [1.] * n_classes
+    if not hasattr(score, '__len__'):
+        score = [score] * n_classes
+    elif len(score) != n_classes:
+        raise ValueError, "Number of scoring methods and targets do not match."
     # save original classes
     clsss = [te.classes for te in res.results]
     aclsss = [te.actual_class for te in res.results]
     # compute single target scores
     single_scores = []
-    for i in range(len(clsss[0][0])):
+    for i in range(n_classes):
         for te, clss, aclss in zip(res.results, clsss, aclsss):
             te.classes = [cls[i] for cls in clss]
             te.actual_class = aclss[i]
-        single_scores.append(score(res))
+        single_scores.append(score[i](res))
     # restore original classes
     for te, clss, aclss in zip(res.results, clsss, aclsss):
         te.classes = clss
