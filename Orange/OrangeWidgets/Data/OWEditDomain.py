@@ -21,22 +21,23 @@ def is_continuous(var):
     return isinstance(var, Orange.feature.Continuous)
 
 def get_qualified(module, name):
-    """ Return a qualified module member ``name`` inside the named 
+    """Return a qualified module member ``name`` inside the named 
     ``module``.
     
-    The module (or package) firts gets imported and the name
+    The module (or package) first gets imported and the name
     is retrieved from the module's global namespace.
      
     """
-    module = __import__(module)
+    # see __import__.__doc__ for why 'fromlist' is used
+    module = __import__(module, fromlist=[name])
     return getattr(module, name)
 
 def variable_description(var):
-    """ Return a variable descriptor.
+    """Return a variable descriptor.
     
     A descriptor is a hashable tuple which should uniquely define 
     the variable i.e. (module, type_name, variable_name, 
-    any_kwargs, attributes-labels).
+    any_kwargs, sorted-attributes-items).
     
     """
     var_type = type(var)
@@ -54,12 +55,17 @@ def variable_description(var):
                 tuple(sorted(var.attributes.items())))
 
 def variable_from_description(description):
-    """ Construct a variable from its description
+    """Construct a variable from its description
     (:ref:`variable_description`).
     
     """
     module, type_name, name, kwargs, attrs = description
-    type = get_qualified(module, type_name)
+    try:
+        type = get_qualified(module, type_name)
+    except (ImportError, AttributeError), ex:
+        raise ValueError("""Invalid descriptor type '{}.{}\
+        """.format(module, type_name))
+        
     var = type(name, **dict(list(kwargs)))
     var.attributes.update(attrs)
     return var
@@ -74,7 +80,7 @@ class PyStandardItem(QStandardItem):
         return id(self) < id(other)
     
 class DictItemsModel(QStandardItemModel):
-    """ A Qt Item Model class displaying the contents of a python
+    """A Qt Item Model class displaying the contents of a python
     dictionary.
     
     """
@@ -105,7 +111,7 @@ class DictItemsModel(QStandardItemModel):
         return dict
 
 class VariableEditor(QWidget):
-    """ An editor widget for a variable.
+    """An editor widget for a variable.
     
     Can edit the variable name, and its attributes dictionary.
      
@@ -185,7 +191,7 @@ class VariableEditor(QWidget):
         self.main_form.addRow("Labels", vlayout)
         
     def set_data(self, var):
-        """ Set the variable to edit.
+        """Set the variable to edit.
         """
         self.clear()
         self.var = var
@@ -199,7 +205,7 @@ class VariableEditor(QWidget):
             self.remove_label_action.setEnabled(False)
             
     def get_data(self):
-        """ Retrieve the modified variable.
+        """Retrieve the modified variable.
         """
         name = str(self.name_edit.text())
         labels = self.labels_model.get_dict()
@@ -215,7 +221,7 @@ class VariableEditor(QWidget):
         return var
     
     def is_same(self):
-        """ Is the current model state the same as the input. 
+        """Is the current model state the same as the input. 
         """
         name = str(self.name_edit.text())
         labels = self.labels_model.get_dict()
@@ -223,7 +229,7 @@ class VariableEditor(QWidget):
         return self.var and name == self.var.name and labels == self.var.attributes
             
     def clear(self):
-        """ Clear the editor state.
+        """Clear the editor state.
         """
         self.var = None
         self.name_edit.setText("")
@@ -234,7 +240,7 @@ class VariableEditor(QWidget):
             self.commit()
             
     def commit(self):
-        """ Emit a ``variable_changed()`` signal.
+        """Emit a ``variable_changed()`` signal.
         """
         self.emit(SIGNAL("variable_changed()"))
         
@@ -267,7 +273,7 @@ class VariableEditor(QWidget):
         
         
 class DiscreteVariableEditor(VariableEditor):
-    """ An editor widget for editing a discrete variable.
+    """An editor widget for editing a discrete variable.
     
     Extends the :class:`VariableEditor` to enable editing of
     variables values.
@@ -297,7 +303,7 @@ class DiscreteVariableEditor(VariableEditor):
         self.main_form.addRow("Values", self.values_edit)
 
     def set_data(self, var):
-        """ Set the variable to edit
+        """Set the variable to edit
         """
         VariableEditor.set_data(self, var)
         self.values_model.wrap([])
@@ -306,7 +312,7 @@ class DiscreteVariableEditor(VariableEditor):
                 self.values_model.append(v)
                 
     def get_data(self):
-        """ Retrieve the modified variable
+        """Retrieve the modified variable
         """
         name = str(self.name_edit.text())
         labels = self.labels_model.get_dict()
@@ -322,13 +328,13 @@ class DiscreteVariableEditor(VariableEditor):
         return var
             
     def is_same(self):
-        """ Is the current model state the same as the input. 
+        """Is the current model state the same as the input. 
         """
         values = map(str, self.values_model)
         return VariableEditor.is_same(self) and self.var.values == values
     
     def clear(self):
-        """ Clear the model state.
+        """Clear the model state.
         """
         VariableEditor.clear(self)
         self.values_model.wrap([])
@@ -422,7 +428,7 @@ class OWEditDomain(OWWidget):
         self.resize(600, 500)
         
     def clear(self):
-        """ Clear the widget state.
+        """Clear the widget state.
         """
         self.data = None
         self.domain_model[:] = []
@@ -430,7 +436,7 @@ class OWEditDomain(OWWidget):
         self.clear_editor()
         
     def clear_editor(self):
-        """ Clear the current editor widget
+        """Clear the current editor widget
         """
         current = self.editor_stack.currentWidget()
         if current:
@@ -458,12 +464,18 @@ class OWEditDomain(OWWidget):
                 desc = variable_description(var)
                 changed = self.domain_change_hints.get(desc, None)
                 if changed is not None:
-                    new = variable_from_description(changed)
-                    
-                    # Make sure orange's domain transformations will work.
-                    new.source_variable = var
-                    new.get_value_from = Orange.core.ClassifierFromVar(whichVar=var)
-                    var = new
+                    try:
+                        new = variable_from_description(changed)
+                    except ValueError, ex:
+#                        print ex
+                        new = None
+                        
+                    if new is not None:
+                        # Make sure orange's domain transformations will work.
+                        new.source_variable = var
+                        new.get_value_from = Orange.core.ClassifierFromVar(whichVar=var)
+                        var = new
+                        
                 edited_vars.append(var)
             
             self.all_vars = all_vars
@@ -486,7 +498,7 @@ class OWEditDomain(OWWidget):
             self.commit()
             
     def on_selection_changed(self, *args):
-        """ When selection in 'Domain Features' view changes. 
+        """When selection in 'Domain Features' view changes. 
         """
         i = self.selected_var_index()
         if i is not None:
@@ -494,7 +506,7 @@ class OWEditDomain(OWWidget):
             self.selected_index = i
         
     def selected_var_index(self):
-        """ Return the selected row in 'Domain Features' view or None 
+        """Return the selected row in 'Domain Features' view or None 
         if no row is selected.
         
         """
@@ -505,7 +517,7 @@ class OWEditDomain(OWWidget):
             return None
         
     def select_variable(self, index):
-        """ Select the variable with ``index`` in the 'Domain Features'
+        """Select the variable with ``index`` in the 'Domain Features'
         view.
         
         """
@@ -514,7 +526,7 @@ class OWEditDomain(OWWidget):
                          QItemSelectionModel.ClearAndSelect)
         
     def open_editor(self, index):
-        """ Open the editor for variable at ``index`` and move it
+        """Open the editor for variable at ``index`` and move it
         to the top if the stack.
         
         """
@@ -532,7 +544,7 @@ class OWEditDomain(OWWidget):
         self.editor_stack.setCurrentWidget(editor)
     
     def editor_for_variable(self, var):
-        """ Return the editor for ``var``'s variable type.
+        """Return the editor for ``var``'s variable type.
         
         The editors are cached and reused by type.
           
@@ -553,7 +565,7 @@ class OWEditDomain(OWWidget):
         return self._editor_cache[type(var)]
     
     def on_variable_changed(self):
-        """ When the user edited the current variable in editor.
+        """When the user edited the current variable in editor.
         """
         var = self.domain_model[self.edited_variable_index]
         editor = self.editor_stack.currentWidget()
@@ -574,7 +586,7 @@ class OWEditDomain(OWWidget):
         self.commit_if()
          
     def reset_all(self):
-        """ Reset all variables to the input state.
+        """Reset all variables to the input state.
         """
         self.domain_change_hints = {}
         if self.data is not None:
@@ -586,7 +598,7 @@ class OWEditDomain(OWWidget):
             self.commit_if()
             
     def reset_selected(self):
-        """ Reset the currently selected variable to its original
+        """Reset the currently selected variable to its original
         state.
           
         """
@@ -611,7 +623,7 @@ class OWEditDomain(OWWidget):
             self.changed_flag = True
         
     def commit(self):
-        """ Commit the changed data to output. 
+        """Commit the changed data to output. 
         """
         new_data = None
         if self.data is not None:
