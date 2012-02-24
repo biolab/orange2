@@ -45,7 +45,7 @@ ClassifierFromVar
         :obj:`~ClassifierFromVar.which_var`'s value is undefined.
 
 When given an instance, :obj:`ClassifierFromVar` will return
-`transformer(instance[which_var])`.
+``transformer(instance[which_var])``.
 Attribute :obj:`~ClassifierFromVar.which_var` can be either an ordinary
 variable, a meta variable or a variable which is not defined for the instance
 but has :obj:`~Orange.feature.Descriptor.get_value_from` that can be used to
@@ -59,12 +59,12 @@ the case), :obj:`~Orange.classification.ClassifierFromVar` is just two simple
 ifs slower than :obj:`~Orange.classification.ClassifierFromVarFD`.
 
 As you might have guessed, the crucial component here is the transformer.
-Let us, for sake of demonstration, load a `monks-1` dataset and construct an
-attribute `e1` that will have value "1", when `e` is "1", and "not 1" when `e`
-is different than 1. There are many ways to do it, and that same problem is
-covered in different places in Orange documentation. Although the way presented
-here is not the simplest, it will serve to demonstrate how ClassifierFromVar
-works.
+Let us, for sake of demonstration, load a ``monks-1`` dataset and construct an
+attribute ``e1`` that will have value "1", when ``e`` is "1", and "not 1" when
+``e`` is different than 1. There are many ways to do it, and that same problem
+is covered in different places in Orange documentation. Although the way
+presented here is not the simplest, it will serve to demonstrate how
+ClassifierFromVar works.
 
 
 .. literalinclude:: code/classifier-from-var-example.py
@@ -112,7 +112,7 @@ but can be computed therefrom by using their
 such functionality is obviously impossible.
 
 To rewrite the above script to use :obj:`ClassifierFromVarFD`,
-we need to set the domain and the `e`'s index to position
+we need to set the domain and the ``e``'s index to position
 (equivalent to setting which_var in :obj:`ClassifierFromVar`).
 The initialization of :obj:`ClassifierFromVarFD` thus goes like this:
 
