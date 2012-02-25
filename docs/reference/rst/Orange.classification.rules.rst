@@ -308,22 +308,22 @@ part of :download:`rules-customized.py <code/rules-customized.py>`
    .. attribute:: data_stopping
    
       An instance of
-      :class:`~Orange.classification.rules.RuleDataStoppingCriteria`
+      :class:`~Orange.classification.rules.DataStoppingCriteria`
       that determines whether to continue the induction. The default
       component,
-      :class:`~Orange.classification.rules.RuleDataStoppingCriteria_NoPositives`
+      :class:`~Orange.classification.rules.DataStoppingCriteria_NoPositives`
       returns ``True`` if there are no more instances of the target class. 
    
    .. attribute:: rule_finder
       
-      An instance of :class:`~Orange.classification.rules.RuleFinder`
+      An instance of :class:`~Orange.classification.rules.Finder`
       that learns a single rule. Default is
-      :class:`~Orange.classification.rules.RuleBeamFinder`.
+      :class:`~Orange.classification.rules.BeamFinder`.
 
    .. attribute:: rule_stopping
       
       An instance of
-      :class:`~Orange.classification.rules.RuleStoppingCriteria` that
+      :class:`~Orange.classification.rules.StoppingCriteria` that
       decides whether to use the induced rule or to discard it and stop
       the induction. If ``None`` (default) all rules are accepted.
        
@@ -341,7 +341,7 @@ part of :download:`rules-customized.py <code/rules-customized.py>`
 Rule finders
 ------------
 
-.. class:: Orange.classification.rules.RuleFinder
+.. class:: Orange.classification.rules.Finder
 
    Base class for rule finders, which learn a single rule from
    instances.
@@ -363,9 +363,9 @@ Rule finders
       :type base_rules: :class:`~Orange.classification.rules.RuleList`
 
 
-.. class:: Orange.classification.rules.RuleBeamFinder
+.. class:: Orange.classification.rules.BeamFinder
    
-   Bases: :class:`~Orange.classification.rules.RuleFinder`
+   Bases: :class:`~Orange.classification.rules.Finder`
    
    Beam search for the best rule. This is the default finder for
    :obj:`RuleLearner`. Pseudo code of the algorithm is as follows.
@@ -396,38 +396,38 @@ Rule finders
    .. attribute:: initializer
    
       An instance of
-      :obj:`~Orange.classification.rules.RuleBeamInitializer` that
+      :obj:`~Orange.classification.rules.BeamInitializer` that
       is used to construct the initial list of rules. The default,
-      :class:`~Orange.classification.rules.RuleBeamInitializer_Default`,
+      :class:`~Orange.classification.rules.BeamInitializer_Default`,
       returns :obj:`base_rules`, or a rule with no conditions if
       :obj:`base_rules` is not set.
    
    .. attribute:: candidate_selector
    
       An instance of
-      :class:`~Orange.classification.rules.RuleBeamCandidateSelector`
+      :class:`~Orange.classification.rules.BeamCandidateSelector`
       used to separate a subset of rules from the current
       :obj:`rules_star` that will be further specialized.  The default
       component, an instance of
-      :class:`~Orange.classification.rules.RuleBeamCandidateSelector_TakeAll`,
+      :class:`~Orange.classification.rules.BeamCandidateSelector_TakeAll`,
       selects all rules.
     
    .. attribute:: refiner
    
       An instance of
-      :class:`~Orange.classification.rules.RuleBeamRefiner` that is
+      :class:`~Orange.classification.rules.BeamRefiner` that is
       used for refining the rules. Refined rule should cover a strict
       subset of instances covered by the given rule. Default component
-      (:class:`~Orange.classification.rules.RuleBeamRefiner_Selector`)
+      (:class:`~Orange.classification.rules.BeamRefiner_Selector`)
       adds a conjunctive selector to selectors present in the rule.
     
    .. attribute:: rule_filter
    
       An instance of
-      :class:`~Orange.classification.rules.RuleBeamFilter` that is
+      :class:`~Orange.classification.rules.BeamFilter` that is
       used for filtering rules to trim the search beam. The default
       component,
-      :class:`~Orange.classification.rules.RuleBeamFilter_Width`\
+      :class:`~Orange.classification.rules.BeamFilter_Width`\
       *(m=5)*\, keeps the five best rules.
 
    .. method:: __call__(data, weight_id, target_class, base_rules)
@@ -449,7 +449,7 @@ Rule finders
 Rule evaluators
 ---------------
 
-.. class:: Orange.classification.rules.RuleEvaluator
+.. class:: Orange.classification.rules.Evaluator
 
    Base class for rule evaluators that evaluate the quality of the
    rule based on the data instances they cover.
@@ -483,21 +483,21 @@ Rule evaluators
    :show-inheritance:
    :exclude-members: targetClass, weightID
    
-.. class:: Orange.classification.rules.RuleEvaluator_Entropy
+.. class:: Orange.classification.rules.Evaluator_Entropy
 
-   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.Evaluator`
     
-.. class:: Orange.classification.rules.RuleEvaluator_LRS
+.. class:: Orange.classification.rules.Evaluator_LRS
 
-   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.Evaluator`
 
-.. class:: Orange.classification.rules.RuleEvaluator_Laplace
+.. class:: Orange.classification.rules.Evaluator_Laplace
 
-   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.Evaluator`
 
-.. class:: Orange.classification.rules.RuleEvaluator_mEVC
+.. class:: Orange.classification.rules.Evaluator_mEVC
 
-   Bases: :class:`~Orange.classification.rules.RuleEvaluator`
+   Bases: :class:`~Orange.classification.rules.Evaluator`
    
 Instance covering and removal
 -----------------------------

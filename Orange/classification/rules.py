@@ -823,7 +823,7 @@ class ABCN2(RuleLearner):
         return self.cover_and_remove.getBestRules(rules, examples, weight_id)
 
     def change_domain(self, rule, cl, examples, weight_id):
-        rule.filter = Orange.data.Values(
+        rule.filter = Orange.filter.Values(
             domain=examples.domain, conditions=rule.filter.conditions)
         rule.filterAndStore(examples, weight_id, cl)
         if hasattr(rule, "learner") and hasattr(rule.learner, "arg_example"):
