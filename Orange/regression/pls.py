@@ -40,14 +40,12 @@ Examples
 ========
 
 To predict values for the first two data instances
-use the followin code 
+use the following code: 
 
 .. literalinclude:: code/pls-example.py
     :lines: 16-20
 
-Output
-
-::
+Output::
 
     Actual     [<orange.Value 'Y1'='0.490'>, <orange.Value 'Y2'='1.237'>, <orange.Value 'Y3'='1.808'>, <orange.Value 'Y4'='0.422'>]
     Predicted  [<orange.Value 'Y1'='0.613'>, <orange.Value 'Y2'='0.826'>, <orange.Value 'Y3'='1.084'>, <orange.Value 'Y4'='0.534'>]
@@ -56,14 +54,12 @@ Output
     Predicted  [<orange.Value 'Y1'='0.058'>, <orange.Value 'Y2'='-0.706'>, <orange.Value 'Y3'='-1.420'>, <orange.Value 'Y4'='0.599'>]
 
 To see the coefficient of the model (in this case they are stored in a matrix)
-print the model
+print the model:
 
 .. literalinclude:: code/pls-example.py
     :lines: 22
 
-The ouptut looks like
-
-::
+The ouptut looks like this::
 
     Regression coefficients:
                        Y1           Y2           Y3           Y4

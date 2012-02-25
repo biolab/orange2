@@ -131,7 +131,7 @@ import numpy
 try:
     from scipy import stats
 except ImportError:
-    import statc as stats
+    from Orange import statc as stats
 
 from numpy import dot, sqrt
 from numpy.linalg import inv, pinv

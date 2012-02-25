@@ -49,7 +49,7 @@ will tell whether ``a`` and ``b`` are equal and whether ``e`` is 1
     monks2 = monks.select([a, b, ab, e, e1, monks.domain.class_var])
     
 We can check the correctness of the script by printing out several
-random examples from ``data2``.
+random examples from table ``monks2``.
 
     >>> for i in range(5):
     ...     print monks2.randomexample()

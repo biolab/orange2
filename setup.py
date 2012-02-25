@@ -2,17 +2,31 @@
 
 import os, sys        
 import distutils.core
-from distutils.core import setup
+try:
+    from setuptools import setup
+    from setuptools.command.install import install
+    have_setuptools = True
+except ImportError:
+    from distutils.core import setup
+    from distutils.command.install import install
+    have_setuptools = False
+
 from distutils.core import Extension
 from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib
-from distutils.command.install import install
 from distutils.util import convert_path
 from distutils.msvccompiler import MSVCCompiler
 from distutils.unixccompiler import UnixCCompiler
+ 
+if have_setuptools:
+    setuptools_args = {"zip_safe": False,
+                       "install_requires": ["numpy"],
+                       "extras_require": {"GUI": ["PyQt4", "PyQwt"],
+                                          "NETWORK": ["networkx"]}
+                      }
+else:
+    setuptools_args = {}
 
-# This is set in setupegg.py
-have_setuptools = getattr(distutils.core, "have_setuptools", False) 
 
 import re
 import glob
@@ -27,8 +41,14 @@ from distutils import log
 
 from distutils.sysconfig import get_python_inc, get_config_var
 
-import numpy
-numpy_include_dir = numpy.get_include()
+try:
+    import numpy
+    numpy_include_dir = numpy.get_include()
+except ImportError:
+    # When setup.py is first run to install orange, numpy can still be missing
+    pass
+    numpy_include_dir = None
+    
 python_include_dir = get_python_inc(plat_specific=1)
 
 include_dirs = [python_include_dir, numpy_include_dir, "source/include"]
@@ -400,7 +420,7 @@ class my_install(install):
         
         # Create a .pth file with a path inside the Orange/orng directory
         # so the old modules are importable
-        self.path_file, self.extra_dirs = ("orange-orng-modules", "Orange/orng")
+        self.path_file, self.extra_dirs = ("Orange-orng-modules", "Orange/orng")
         self.extra_dirs = convert_path(self.extra_dirs)
         log.info("creating portal path for orange compatibility.")
         self.create_path_file()
@@ -531,14 +551,6 @@ for root, dirnames, filenames in os.walk('Orange'):
       matches.append(os.path.join(root, filename))
 packages = [os.path.dirname(pkg).replace(os.path.sep, '.') for pkg in matches]
 
-if have_setuptools:
-    setuptools_args = {"zip_safe": False,
-                       "install_requires": ["numpy"],
-                       "extra_requires": ["networkx", "PyQt4", "PyQwt"]
-                       }
-else:
-    setuptools_args = {}
-
 setup(cmdclass={"build_ext": pyxtract_build_ext,
                 "install_lib": my_install_lib,
                 "install": my_install},
@@ -562,41 +574,30 @@ setup(cmdclass={"build_ext": pyxtract_build_ext,
                              "Orange.OrangeWidgets.Visualize Qt",
                              "Orange.OrangeWidgets.plot",
                              "Orange.OrangeWidgets.plot.primitives",
-                             "Orange.doc",
                              ],
       
-      # Python 2.6 does not include files from package_data into
-      # the manifest so also add all these files in MANIFEST.in
-      # manually 
-      package_data = {"Orange": [
-          "OrangeCanvas/icons/*.png",
-          "OrangeCanvas/orngCanvas.pyw",
-          "OrangeCanvas/WidgetTabs.txt",
-          "OrangeWidgets/icons/*.png",
-          "OrangeWidgets/icons/backgrounds/*.png",
-          "OrangeWidgets/report/index.html",
-          "OrangeWidgets/Associate/icons/*.png",
-          "OrangeWidgets/Classify/icons/*.png",
-          "OrangeWidgets/Data/icons/*.png",
-          "OrangeWidgets/Evaluate/icons/*.png",
-          "OrangeWidgets/Prototypes/icons/*.png",
-          "OrangeWidgets/Regression/icons/*.png",
-          "OrangeWidgets/Unsupervised/icons/*.png",
-          "OrangeWidgets/Visualize/icons/*.png",
-          "OrangeWidgets/Visualize Qt/icons/*.png",
-          "OrangeWidgets/plot/*.gs",
-          "OrangeWidgets/plot/*.vs",
-          "OrangeWidgets/plot/primitives/*.obj",
-          # TODO: Doc datasets and files should be installed using data_files.
-          "doc/datasets/*.tab",
-          "doc/networks/*.net",
-          "doc/networks/*.tab",
-          "doc/style.css",
-          "doc/widgets/*/*.*",
-          "orng/orangerc.cfg"
-          ]
-                      },
-      
+      package_data = {
+          "Orange" : ["orangerc.cfg", "doc/datasets/*.tab", "doc/datasets/*.csv", "doc/datasets/*.basket",
+                      "doc/networks/*.net", "doc/networks/*.tab",
+                      "doc/style.css", "doc/widgets/*/*.*",
+                      "testing/regression/tests_20/*.tab",
+                      "testing/regression/tests_20/*.net",
+                      "testing/regression/tests_20/*.basket",
+                      "testing/regression/tests_20/*.csv"],
+          "Orange.OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
+          "Orange.OrangeWidgets":["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],
+          "Orange.OrangeWidgets.Associate": ["icons/*.png"],
+          "Orange.OrangeWidgets.Classify": ["icons/*.png"],
+          "Orange.OrangeWidgets.Data": ["icons/*.png"],
+          "Orange.OrangeWidgets.Evaluate": ["icons/*.png"],
+          "Orange.OrangeWidgets.Prototypes": ["icons/*.png"],
+          "Orange.OrangeWidgets.Regression": ["icons/*.png"],
+          "Orange.OrangeWidgets.Unsupervised": ["icons/*.png"],
+          "Orange.OrangeWidgets.Visualize": ["icons/*.png"],
+          "Orange.OrangeWidgets.Visualize Qt": ["icons/*.png"],
+          "Orange.OrangeWidgets.plot": ["*.gs", "*.vs"],
+          "Orange.OrangeWidgets.plot.primitives": ["*.obj"],
+          },
       ext_modules = [include_ext, orange_ext, orangeom_ext,
                      orangene_ext, corn_ext, statc_ext],
       scripts = ["bin/orange-canvas"],

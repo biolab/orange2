@@ -23,8 +23,9 @@ variable.
 
 .. class:: ClassifierFromVar(which_var[, transformer])
     
-    Return the value of variable :obj:`which_var`; transform it by the
-    :obj:`transformer`, if it is given.
+    Return the value of variable :obj:`~ClassifierFromVar.which_var`;
+    transform it by the :obj:`~ClassifierFromVar.transformer`, if it
+    is given.
  
     .. attribute:: which_var
 
@@ -33,7 +34,7 @@ variable.
     .. attribute:: transformer        
 
         The transformer for the value. It should be a class derived
-        from :obj:`Orange.data.utils.TransformValue` or a function
+        from :obj:`~Orange.data.utils.TransformValue` or a function
         written in Python.
 
     .. attribute:: transform_unknowns
@@ -42,22 +43,25 @@ variable.
 
     .. attribute:: distribution_for_unknown
 
-        The distribution that is returned when the `which_var`'s value
-        is undefined and :obj:`transform_unknowns` is ``False``.
+        The distribution that is returned when the
+        :obj:`~ClassifierFromVar.which_var`'s value is undefined and
+        :obj:`~ClassifierFromVar.transform_unknowns` is ``False``.
 
     .. method:: __call__(inst[, result_type])
 
         Return ``transformer(instance[which_var])``. The value of
-        :obj:`which_var` can be either an ordinary variable, a meta
-        variable or a variable which is not defined for the instance
-        but its descriptor has a
+        :obj:`~ClassifierFromVar.which_var` can be either an ordinary
+        variable, a meta variable or a variable which is not defined
+        for the instance but its descriptor has a
         :obj:`~Orange.feature.Descriptor.get_value_from` that can be
         used to compute the value.
 
         If the feature is not found or its value is missing, the
         missing value is passed to the transformer if
-        :obj:`transform_unknowns` is ``True``. Otherwise,
-        :obj:`distribution_for_unknown` is returned.
+        :obj:`~ClassifierFromVar.transform_unknowns` is
+        ``True``. Otherwise,
+        :obj:`~ClassifierFromVar.distribution_for_unknown` is
+        returned.
 
 The following example demonstrates the use of the class on the Monk 1
 dataset. It construct a new variable `e1` that has a value of `1`, when
@@ -70,6 +74,7 @@ dataset. It construct a new variable `e1` that has a value of `1`, when
 
 .. class:: ClassifierFromVarFD
 
+
     A class similar to
     :obj:`~Orange.classification.ClassifierFromVar` except that the
     variable is given by its index in the domain. The index can also
@@ -80,7 +85,7 @@ dataset. It construct a new variable `e1` that has a value of `1`, when
     through the descriptor's
     :obj:`Orange.feature.Descriptor.get_value_from`.
 
-    .. attribute:: domain (inherited from ClassifierFromVarFD)
+    .. attribute:: domain (inherited from :obj:`ClassifierFromVarFD`)
     
         The domain to which the :obj:`position` applies.
 

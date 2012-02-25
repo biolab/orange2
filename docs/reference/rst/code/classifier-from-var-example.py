@@ -10,16 +10,16 @@ def eTransformer(value):
     else:
         return 1
 
-e1.getValueFrom = Orange.classification.ClassifierFromVar()
-e1.getValueFrom.whichVar = e
-e1.getValueFrom.transformer = eTransformer
+e1.get_value_from = Orange.classification.ClassifierFromVar()
+e1.get_value_from.whichVar = e
+e1.get_value_from.transformer = eTransformer
 
 monks2 = monks.select(["a", "b", "e", e1, "y"])
 for i in monks2:
     print i
 
-e1.getValueFrom = Orange.classification.ClassifierFromVarFD()
-e1.getValueFrom.domain = monks.domain
-e1.getValueFrom.position = monks.domain.attributes.index(e)
-e1.getValueFrom.transformer = eTransformer
+e1.get_value_from = Orange.classification.ClassifierFromVarFD()
+e1.get_value_from.domain = monks.domain
+e1.get_value_from.position = monks.domain.attributes.index(e)
+e1.get_value_from.transformer = eTransformer
 
