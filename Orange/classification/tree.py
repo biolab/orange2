@@ -1688,7 +1688,15 @@ class TreeLearner(Orange.core.Learner):
     """
     A classification or regression tree learner. If a set of instances
     is given on initialization, a :class:`TreeClassifier` is built and
-    returned instead. All attributes can also be set on initialization.
+    returned instead.
+
+    The learning algorithm has a large number of parameters. The class
+    provides reasonable defaults; they can be modified either as attributes
+    or as arguments given to the constructor.
+
+    The algorithm is very flexible, yet slower than the other two
+    implementations that are more suitable for large scale
+    experiments.
 
     **The tree induction process**
 
