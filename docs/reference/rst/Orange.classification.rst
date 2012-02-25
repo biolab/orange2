@@ -5,17 +5,30 @@ Classification (``classification``)
 ###################################
 
 Induction of models in Orange is implemented through a two-class
-schema. A learning algorithm is represented as an instance of a class
+schema. A learning algorithm is represented by an instance of a class
 derived from :obj:`Orange.classification.Learner`. The learner stores
-all parameters of the learning algorithm. When a learner is called
-with some data, it fits a model of the kind specific to the learning
-algorithm and returns it as a (new) instance of a class derived
-:obj:`Orange.classification.Classifier` that holds parameters of the model.
+all parameters of the learning algorithm. Induced models are
+represented by instances of classes derived from
+:obj:`Orange.classification.Classifier`.
+
+Therefore, to induce models from data, one first needs to construct
+the instance representing a learning algorithm
+(e.g. :obj:`~Orange.classification.tree.TreeLearner`) and set its
+parameters. Calling the learner with some training data returns a
+classifier (e.g. :obj:`~Orange.classification.tree.TreeClassifier`). The
+learner does not "learn" to classify but constructs classifiers.
 
 .. literalinclude:: code/bayes-run.py
    :lines: 7-
 
-Orange implements various classifiers that are described in detail on
+To simplify the procedure, the learner's constructor can also be given
+training data, in which case it fits and returns a model (an instance
+of :obj:`~Orange.classification.Classifier`) instead of a learner::
+
+    classifier = Orange.classification.bayes.NaiveLearner(titanic)
+
+
+Orange contains a number of learning algorithms described in detail on
 separate pages.
 
 .. toctree::
@@ -30,9 +43,8 @@ separate pages.
    Orange.classification.majority
    Orange.classification.lookup
    Orange.classification.classfromvar
+   Orange.classification.constant
    
-Base classes
-------------
 
 All learning algorithms and prediction models are derived from the following two clases.
 
@@ -40,10 +52,13 @@ All learning algorithms and prediction models are derived from the following two
 
     Abstract base class for learning algorithms.
 
-    .. method:: __call__(data)
+    .. method:: __call__(data[, weightID])
 
         An abstract method that fits a model and returns it as an
-        instance of :class:`Classifier`.
+        instance of :class:`Classifier`. The first argument gives the
+        data (as :obj:`Orange.data.Table` and the optional second
+        argument gives the id of the meta attribute with instance
+        weights.
 
 
 .. class:: Classifier()
@@ -79,57 +94,3 @@ All learning algorithms and prediction models are derived from the following two
         :rtype: :class:`~Orange.data.Value`,
               :class:`~Orange.statistics.distribution.Distribution` or a
               tuple with both
-
-
-Constant Classifier
--------------------
-
-The classification module also contains a classifier that always
-predicts the same value. This classifier is constructed by different
-learners such as
-:obj:`~Orange.classification.majority.MajorityLearner`, and also by
-some other methods.
-
-.. class:: ConstantClassifier
-
-    Predict the specified ``default_val`` or ``default_distribution``
-    for any instance.
-
-    .. attribute:: class_var
-
-        Class variable that the classifier predicts.
-
-    .. attribute:: default_val
-
-        The value returned by the classifier.
-
-    .. attribute:: default_distribution
-
-        Class probabilities returned by the classifier.
-    
-    .. method:: __init__(variable, value, distribution)
-
-        Constructor can be called without arguments, with a
-        variable, value or both. If the value is given and is of type
-        :obj:`Orange.data.Value`, its attribute
-        :obj:`Orange.data.Value.variable` will either be used for
-        initializing
-        :obj:`~Orange.classification.ConstantClassifier.variable` or
-        checked against it, if :obj:`variable` is given as an
-        argument.
-        
-        :param variable: Class variable that the classifier predicts.
-        :type variable: :obj:`Orange.feature.Descriptor`
-        :param value: Value returned by the classifier.
-        :type value: :obj:`Orange.data.Value` or int (index) or float
-        :param distribution: Class probabilities returned by the classifier.
-        :type dstribution: :obj:`Orange.statistics.distribution.Distribution`
-       
-    .. method:: __call__(instance, return_type)
-        
-        Return :obj:`default_val` and/or :obj:`default_distribution`
-        (depending upon :obj:`return_type`) disregarding the
-        :obj:`instance`.
-
-
-
