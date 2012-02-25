@@ -1614,31 +1614,31 @@ PyObject *BayesClassifier_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 
 C_NAMED(Rule - Orange.classification.rules.Rule, Orange, "()")
 
-C_NAMED(RuleValidator_LRS - Orange.classification.rules.RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_complexity=0,min_quality=numeric_limits<float>::min()])")
+C_NAMED(RuleValidator_LRS - Orange.classification.rules.Validator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_complexity=0,min_quality=numeric_limits<float>::min()])")
 
-C_NAMED(RuleEvaluator_Entropy - Orange.classification.rules.RuleEvaluator_Entropy, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_Laplace - Orange.classification.rules.RuleEvaluator_Laplace, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_LRS - Orange.classification.rules.RuleEvaluator_LRS, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_mEVC - Orange.classification.rules.RuleEvaluator_mEVC, RuleEvaluator, "(ruleAlpha=1.0,attributeAlpha=1.0)")
+C_NAMED(RuleEvaluator_Entropy - Orange.classification.rules.Evaluator_Entropy, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_Laplace - Orange.classification.rules.Evaluator_Laplace, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_LRS - Orange.classification.rules.Evaluator_LRS, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_mEVC - Orange.classification.rules.Evaluator_mEVC, RuleEvaluator, "(ruleAlpha=1.0,attributeAlpha=1.0)")
 
 C_NAMED(EVDist, Orange, "()")
 C_NAMED(EVDistGetter_Standard, EVDistGetter, "()")
 
-C_NAMED(RuleBeamFinder - Orange.classification.rules.RuleBeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
+C_NAMED(RuleBeamFinder - Orange.classification.rules.BeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
 
-C_NAMED(RuleBeamInitializer_Default - Orange.classification.rules.RuleBeamInitializer_Default, RuleBeamInitializer, "()")
+C_NAMED(RuleBeamInitializer_Default - Orange.classification.rules.BeamInitializer_Default, RuleBeamInitializer, "()")
 
-C_NAMED(RuleBeamRefiner_Selector - Orange.classification.rules.RuleBeamRefiner_Selector, RuleBeamRefiner, "([discretization=])")
+C_NAMED(RuleBeamRefiner_Selector - Orange.classification.rules.BeamRefiner_Selector, RuleBeamRefiner, "([discretization=])")
 
-C_NAMED(RuleBeamCandidateSelector_TakeAll - Orange.classification.rules.RuleBeamCandidateSelector_TakeAll, RuleBeamCandidateSelector, "()")
+C_NAMED(RuleBeamCandidateSelector_TakeAll - Orange.classification.rules.BeamCandidateSelector_TakeAll, RuleBeamCandidateSelector, "()")
 
-C_NAMED(RuleBeamFilter_Width - Orange.classification.rules.RuleBeamFilter_Width, RuleBeamFilter, "([width=5])")
+C_NAMED(RuleBeamFilter_Width - Orange.classification.rules.BeamFilter_Width, RuleBeamFilter, "([width=5])")
 
-C_NAMED(RuleDataStoppingCriteria_NoPositives - Orange.classification.rules.RuleDataStoppingCriteria_NoPositives, RuleDataStoppingCriteria, "()")
+C_NAMED(RuleDataStoppingCriteria_NoPositives - Orange.classification.rules.DataStoppingCriteria_NoPositives, RuleDataStoppingCriteria, "()")
 
-C_NAMED(RuleCovererAndRemover_Default - Orange.classification.rules.RuleCovererAndRemover_Default, RuleCovererAndRemover, "()")
+C_NAMED(RuleCovererAndRemover_Default - Orange.classification.rules.CovererAndRemover_Default, RuleCovererAndRemover, "()")
 
-C_NAMED(RuleStoppingCriteria_NegativeDistribution - Orange.classification.rules.RuleStoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
+C_NAMED(RuleStoppingCriteria_NegativeDistribution - Orange.classification.rules.StoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
 C_CALL(RuleLearner - Orange.classification.rules.RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
 
 ABSTRACT(RuleClassifier - Orange.classification.rules.RuleClassifier, Classifier)
@@ -1684,7 +1684,7 @@ PyObject *Rule_filterAndStore(PyObject *self, PyObject *args) PYARGS(METH_VARARG
  PyCATCH
 }
 
-PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleEvaluator, "<abstract>")
+PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.Evaluator, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleEvaluator_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleEvaluator_Python(), type), args);
   else
@@ -1748,7 +1748,7 @@ PyObject *EVDistGetter_call(PyObject *self, PyObject *args, PyObject *keywords) 
   PyCATCH
 }
 
-PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleValidator, "<abstract>")
+PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.Validator, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleValidator_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleValidator_Python(), type), args);
   else
@@ -1783,7 +1783,7 @@ PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords)
   PyCATCH
 }
 
-PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleCovererAndRemover, "<abstract>")
+PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.CovererAndRemover, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleCovererAndRemover_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleCovererAndRemover_Python(), type), args);
   else
@@ -1816,7 +1816,7 @@ PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *k
   PyCATCH
 }
 
-PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleStoppingCriteria, "<abstract>")
+PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.StoppingCriteria, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleStoppingCriteria_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleStoppingCriteria_Python(), type), args);
   else
@@ -1848,7 +1848,7 @@ PyObject *RuleStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *ke
   PyCATCH
 }
 
-PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleDataStoppingCriteria, "<abstract>")
+PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.DataStoppingCriteria, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleDataStoppingCriteria_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleDataStoppingCriteria_Python(), type), args);
   else
@@ -1879,7 +1879,7 @@ PyObject *RuleDataStoppingCriteria_call(PyObject *self, PyObject *args, PyObject
   PyCATCH
 }
 
-PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleFinder, "<abstract>")
+PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.Finder, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleFinder_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleFinder_Python(), type), args);
   else
@@ -1911,7 +1911,7 @@ PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PY
   PyCATCH
 }
 
-PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamRefiner, "<abstract>")
+PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.BeamRefiner, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamRefiner_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamRefiner_Python(), type), args);
   else
@@ -1943,7 +1943,7 @@ PyObject *RuleBeamRefiner_call(PyObject *self, PyObject *args, PyObject *keyword
   PyCATCH
 }
 
-PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamInitializer, "<abstract>")
+PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.BeamInitializer, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamInitializer_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamInitializer_Python(), type), args);
   else
@@ -1979,7 +1979,7 @@ PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *key
   PyCATCH
 }
 
-PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamCandidateSelector, "<abstract>")
+PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.BeamCandidateSelector, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamCandidateSelector_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamCandidateSelector_Python(), type), args);
   else
@@ -2011,7 +2011,7 @@ PyObject *RuleBeamCandidateSelector_call(PyObject *self, PyObject *args, PyObjec
   PyCATCH
 }
 
-PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamFilter, "<abstract>")
+PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.BeamFilter, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamFilter_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamFilter_Python(), type), args);
   else
@@ -2042,7 +2042,7 @@ PyObject *RuleBeamFilter_call(PyObject *self, PyObject *args, PyObject *keywords
   PyCATCH
 }
 
-PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleClassifierConstructor, "<abstract>")
+PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.ClassifierConstructor, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleClassifierConstructor_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleClassifierConstructor_Python(), type), args);
   else
