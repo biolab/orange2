@@ -1,146 +1,3 @@
-"""
-.. index:: support vector machines (SVM)
-.. index:
-   single: classification; support vector machines (SVM)
-   
-*********************************
-Support Vector Machines (``svm``)
-*********************************
-
-This is a module for `Support Vector Machine`_ (SVM) classification. It
-exposes the underlying `LibSVM`_ and `LIBLINEAR`_ library in a standard
-Orange Learner/Classifier interface.
-
-Choosing the right learner
-==========================
-
-Choose an SVM learner suitable for the problem.
-:obj:`SVMLearner` is a general SVM learner. :obj:`SVMLearnerEasy` will
-help with the data normalization and parameter tuning. Learn with a fast
-:obj:`LinearSVMLearner` on data sets with a large number of features. 
-
-.. note:: SVM can perform poorly on some data sets. Choose the parameters 
-          carefully. In cases of low classification accuracy, try scaling the 
-          data and experiment with different parameters. \
-          :obj:`SVMLearnerEasy` class does this automatically (it is similar
-          to the `svm-easy.py` script in the LibSVM distribution).
-
-          
-SVM learners (from `LibSVM`_)
-=============================
-
-The most basic :class:`SVMLearner` implements the standard `LibSVM`_ learner
-It supports four built-in kernel types (Linear, Polynomial, RBF and Sigmoid).
-Additionally kernel functions defined in Python can be used instead. 
-
-.. note:: For learning from ordinary :class:`Orange.data.Table` use the \
-    :class:`SVMLearner`. For learning from sparse dataset (i.e.
-    data in `basket` format) use the :class:`SVMLearnerSparse` class.
-
-.. autoclass:: Orange.classification.svm.SVMLearner
-    :members:
-
-.. autoclass:: Orange.classification.svm.SVMLearnerSparse
-    :members:
-    :show-inheritance:
-    
-.. autoclass:: Orange.classification.svm.SVMLearnerEasy
-    :members:
-    :show-inheritance:
-
-The next example shows how to use SVM learners and that :obj:`SVMLearnerEasy` 
-with automatic data preprocessing and parameter tuning 
-outperforms :obj:`SVMLearner` with the default :obj:`~SVMLearner.nu` and :obj:`~SVMLearner.gamma`:  
-    
-.. literalinclude:: code/svm-easy.py
-
-
-   
-Linear SVM learners (from `LIBLINEAR`_)
-=======================================
-
-The :class:`LinearSVMLearner` learner is more suitable for large scale
-problems as it is significantly faster then :class:`SVMLearner` and its
-subclasses. A down side is it only supports a linear kernel (as the name
-suggests) and does not support probability estimation for the
-classifications. Furthermore a Multi-class SVM learner
-:class:`MultiClassSVMLearner` is provided.
-   
-.. autoclass:: Orange.classification.svm.LinearSVMLearner
-   :members:
-   
-.. autoclass:: Orange.classification.svm.MultiClassSVMLearner
-   :members:
-   
-   
-SVM Based feature selection and scoring
-=======================================
-
-.. autoclass:: Orange.classification.svm.RFE
-
-.. autoclass:: Orange.classification.svm.ScoreSVMWeights
-    :show-inheritance:
- 
- 
-Utility functions
-=================
-
-.. automethod:: Orange.classification.svm.max_nu
-
-.. automethod:: Orange.classification.svm.get_linear_svm_weights
-
-.. automethod:: Orange.classification.svm.table_to_svm_format
-
-The following example shows how to get linear SVM weights:
-    
-.. literalinclude:: code/svm-linear-weights.py    
-
-
-.. _kernel-wrapper:
-
-Kernel wrappers
-===============
-
-Kernel wrappers are helper classes used to build custom kernels for use
-with :class:`SVMLearner` and subclasses. All wrapper constructors take
-one or more Python functions (`wrapped` attribute) to wrap. The 
-function must be a positive definite kernel, taking two arguments of 
-type :class:`Orange.data.Instance` and return a float.
-
-.. autoclass:: Orange.classification.svm.kernels.KernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.DualKernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.RBFKernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.PolyKernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.AdditionKernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.MultiplicationKernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.CompositeKernelWrapper
-   :members:
-
-.. autoclass:: Orange.classification.svm.kernels.SparseLinKernel
-   :members:
-
-Example:
-
-.. literalinclude:: code/svm-custom-kernel.py
-
-.. _`Support Vector Machine`: http://en.wikipedia.org/wiki/Support_vector_machine
-.. _`LibSVM`: http://www.csie.ntu.edu.tw/~cjlin/libsvm/
-.. _`LIBLINEAR`: http://www.csie.ntu.edu.tw/~cjlin/liblinear/
-
-"""
-
 import math
 
 from collections import defaultdict
@@ -170,8 +27,9 @@ from Orange import feature as variable
 from Orange.misc import _orange__new__
 
 def max_nu(data):
-    """Return the maximum nu parameter for Nu_SVC support vector learning 
-    for the given data table. 
+    """
+    Return the maximum nu parameter for the given data table for
+    Nu_SVC learning.
     
     :param data: Data with discrete class variable
     :type data: Orange.data.Table
@@ -190,52 +48,44 @@ maxNu = max_nu
 
 class SVMLearner(_SVMLearner):
     """
-    :param svm_type: defines the SVM type (can be C_SVC, Nu_SVC 
-        (default), OneClass, Epsilon_SVR, Nu_SVR)
+    :param svm_type: the SVM type
     :type svm_type: SVMLearner.SVMType
-    :param kernel_type: defines the kernel type for learning
-        (can be kernels.RBF (default), kernels.Linear, kernels.Polynomial, 
-        kernels.Sigmoid, kernels.Custom)
+    :param kernel_type: the kernel type
     :type kernel_type: SVMLearner.Kernel
-    :param degree: kernel parameter (for Polynomial) (default 3)
+    :param degree: kernel parameter (only for ``Polynomial``)
     :type degree: int
-    :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
-        (default 1.0/num_of_features)
+    :param gamma: kernel parameter; if 0, it is set to 1.0/#features (for ``Polynomial``, ``RBF`` and ``Sigmoid``)
     :type gamma: float
-    :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
+    :param coef0: kernel parameter (for ``Polynomial`` and ``Sigmoid``)
     :type coef0: int
-    :param kernel_func: function that will be called if `kernel_type` is
-        `kernels.Custom`. It must accept two :obj:`Orange.data.Instance`
-        arguments and return a float (see :ref:`kernel-wrapper` for some
-        examples).
-    :type kernel_func: callable function
-    :param C: C parameter for C_SVC, Epsilon_SVR and Nu_SVR
+    :param kernel_func: kernel function if ``kernel_type`` is
+        ``kernels.Custom``
+    :type kernel_func: callable object
+    :param C: C parameter (for ``C_SVC``, ``Epsilon_SVR`` and ``Nu_SVR``)
     :type C: float
-    :param nu: Nu parameter for Nu_SVC, Nu_SVR and OneClass (default 0.5)
+    :param nu: Nu parameter (for ``Nu_SVC``, ``Nu_SVR`` and ``OneClass``)
     :type nu: float
-    :param p: epsilon in loss-function for Epsilon_SVR
+    :param p: epsilon parameter (for ``Epsilon_SVR``)
     :type p: float
-    :param cache_size: cache memory size in MB (default 200)
+    :param cache_size: cache memory size in MB
     :type cache_size: int
-    :param eps: tolerance of termination criterion (default 0.001)
+    :param eps: tolerance of termination criterion
     :type eps: float
     :param probability: build a probability model
-        (default False)
     :type probability: bool
     :param shrinking: use shrinking heuristics 
-        (default True)
     :type shrinking: bool
     :param weight: a list of class weights
     :type weight: list
-    
+
     Example:
     
         >>> import Orange
         >>> from Orange.classification import svm
         >>> from Orange.evaluation import testing, scoring
-        >>> table = Orange.data.Table("vehicle.tab")
+        >>> data = Orange.data.Table("vehicle.tab")
         >>> learner = svm.SVMLearner()
-        >>> results = testing.cross_validation([learner], table, folds=5)
+        >>> results = testing.cross_validation([learner], data, folds=5)
         >>> print scoring.CA(results)[0]
         0.789613644274
     
@@ -282,9 +132,7 @@ class SVMLearner(_SVMLearner):
         :param table: data with continuous features
         :type table: Orange.data.Table
         
-        :param weight: unused - use the constructors ``weight``
-            parameter to set class weights
-        
+        :param weight: ignored (required due to base class signature);
         """
 
         examples = Orange.core.Preprocessor_dropMissingClasses(data)
@@ -337,22 +185,23 @@ class SVMLearner(_SVMLearner):
     @Orange.misc.deprecated_keywords({"progressCallback": "progress_callback"})
     def tune_parameters(self, data, parameters=None, folds=5, verbose=0,
                        progress_callback=None):
-        """Tune the ``parameters`` on given ``data`` using 
-        cross validation.
+        """Tune the ``parameters`` on the given ``data`` using 
+        internal cross validation.
         
         :param data: data for parameter tuning
         :type data: Orange.data.Table 
-        :param parameters: defaults to ["nu", "C", "gamma"]
+        :param parameters: names of parameters to tune
+            (default: ["nu", "C", "gamma"])
         :type parameters: list of strings
-        :param folds: number of folds used for cross validation
+        :param folds: number of folds for internal cross validation
         :type folds: int
-        :param verbose: default False
+        :param verbose: set verbose output
         :type verbose: bool
-        :param progress_callback: report progress
+        :param progress_callback: callback function for reporting progress
         :type progress_callback: callback function
             
-        An example that tunes the `gamma` parameter on `data` using 3-fold cross 
-        validation. ::
+        Here is example of tuning the `gamma` parameter using
+        3-fold cross validation. ::
 
             svm = Orange.classification.svm.SVMLearner()
             svm.tune_parameters(table, parameters=["gamma"], folds=3)
@@ -444,13 +293,10 @@ SVMClassifierWrapper = Orange.misc.deprecated_members({
 
 class SVMLearnerSparse(SVMLearner):
 
-    """A :class:`SVMLearner` that learns from
-    meta attributes.
-    
-    Meta attributes do not need to be registered with the data set domain, or 
-    present in all the instances. Use this for large 
-    sparse data sets.
-    
+    """
+    A :class:`SVMLearner` that learns from data stored in meta
+    attributes. Meta attributes do not need to be registered with the
+    data set domain, or present in all data instances.
     """
 
     @Orange.misc.deprecated_keywords({"useNonMeta": "use_non_meta"})
@@ -471,10 +317,10 @@ class SVMLearnerSparse(SVMLearner):
 
 class SVMLearnerEasy(SVMLearner):
 
-    """Apart from the functionality of :obj:`SVMLearner` it automatically scales the 
-    data and perform parameter optimization with the 
-    :func:`SVMLearner.tune_parameters`. It is similar to the easy.py script in 
-    the LibSVM package.
+    """A class derived from :obj:`SVMLearner` that automatically
+    scales the data and performs parameter optimization using
+    :func:`SVMLearner.tune_parameters`. The procedure is similar to
+    that implemented in easy.py script from the LibSVM package.
     
     """
 
@@ -544,13 +390,7 @@ class LinearSVMLearner(Orange.core.LinearLearner):
 
     def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01, **kwargs):
         """
-        :param solver_type: Can be one of class constants:
-        
-            - L2R_L2LOSS_DUAL
-            - L2R_L2LOSS 
-            - L2R_L1LOSS_DUAL
-            - L2R_L1LOSS
-            - L1R_L2LOSS
+        :param solver_type: One of the following class constants: ``LR2_L2LOSS_DUAL``, ``L2R_L2LOSS``, ``LR2_L1LOSS_DUAL``, ``L2R_L1LOSS`` or ``L1R_L2LOSS``
         
         :param C: Regularization parameter (default 1.0)
         :type C: float  
@@ -610,11 +450,12 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
 def get_linear_svm_weights(classifier, sum=True):
     """Extract attribute weights from the linear SVM classifier.
     
-    For multi class classification the weights are square-summed over all
-    binary one vs. one classifiers unles obj:`sum` is False, in which case
-    the return value is a list of weights for each individual binary
-    classifier (in the order of [class1 vs class2, class1 vs class3 ... class2
-    vs class3 ...]).
+    For multi class classification, the result depends on the argument
+    :obj:`sum`. If ``True`` (default) the function computes the
+    squared sum of the weights over all binary one vs. one
+    classifiers. If :obj:`sum` is ``False`` it returns a list of
+    weights for each individual binary classifier (in the order of
+    [class1 vs class2, class1 vs class3 ... class2 vs class3 ...]).
         
     """
 
@@ -686,8 +527,9 @@ def example_weighted_sum(example, weights):
 exampleWeightedSum = example_weighted_sum
 
 class ScoreSVMWeights(Orange.feature.scoring.Score):
-    """Score feature by training a linear SVM classifier, using a squared sum of 
-    weights (of each binary classifier) as the returned score.
+    """
+    Score a feature by the squared sum of weights using a linear SVM
+    classifier.
         
     Example:
     
@@ -758,8 +600,8 @@ MeasureAttribute_SVMWeights = ScoreSVMWeights
 
 class RFE(object):
 
-    """Recursive feature elimination using linear SVM derived attribute 
-    weights.
+    """Iterative feature elimination based on weights computed by
+    linear SVM.
     
     Example::
     
@@ -769,7 +611,7 @@ class RFE(object):
             kernel_type=Orange.classification.svm.kernels.Linear, 
             normalization=False) # normalization=False will not change the domain
         rfe = Orange.classification.svm.RFE(l)
-        data_with_removed_features = rfe(table, 5)
+        data_subset_of_features = rfe(table, 5)
         
     """
 
