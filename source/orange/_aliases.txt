@@ -83,3 +83,7 @@ accept_special acceptSpecial
 
 FindNearest_BruteForce
 instances examples
+
+Rule
+instances examples
+
