@@ -6,105 +6,105 @@
 Classifier from variable 
 ************************
 
-Classifiers from variable are used not to predict class values
-but to compute variable's values from another variables.
-For instance, when a continuous variable is discretized and replaced by
-a discrete variable, an instance of a classifier from variable takes
-care of automatic value computation when needed.
+:obj:`~Orange.classification.ClassifierFromVar` and
+:obj:`~Orange.classification.ClassifierFromVarFD` are helper
+classifiers used to compute variable's values from another variables. They are used, for instance, in discretization of continuous variables.
 
-There are two classifiers from variable; the simpler :obj:`~Orange.classification.ClassifierFromVarFD`
-supposes that example is from some fixed domain and the safer
-:obj:`~Orange.classification.ClassifierFromVar` does not.
+:obj:`~Orange.classification.ClassifierFromVarFD` retrieves the
+feature value based on its position in the domain and
+:obj:`~Orange.classification.ClassifierFromVar` retrieves the feature
+with the given descriptor.
 
-Both classifiers can be given a transformer that can modify the value.
-In discretization, for instance, the transformer is responsible to compute
-a discrete interval for a continuous value of the original variable.
+Both classifiers can be given a function to transform the value. In
+discretization, for instance, the transformer computes the
+corresponding discrete interval for a continuous value of the original
+variable.
 
 
-ClassifierFromVar
-=================
-
-.. class:: ClassifierFromVar(which_var, transformer)
+.. class:: ClassifierFromVar(which_var[, transformer])
     
-    Compute variable's values from variable which_var using
-    transformation defined by transformer.        
-
+    Return the value of variable :obj:`which_var`; transform it by the
+    :obj:`transformer`, if it is given.
+ 
     .. attribute:: which_var
 
-        The descriptor of the attribute whose value is to be returned.
+        The descriptor of the feature whose value is returned.
 
     .. attribute:: transformer        
 
-        The transformer for the value. It should be a class derived from
-        TransformValue, but you can also use a callback function.
+        The transformer for the value. It should be a class derived
+        from :obj:`Orange.data.utils.TransformValue` or a function
+        written in Python.
+
+    .. attribute:: transform_unknowns
+
+        Defines the treatment of missing values.
 
     .. attribute:: distribution_for_unknown
 
-        The distribution that is returned when the which_var's value is undefined.
+        The distribution that is returned when the `which_var`'s value
+        is undefined and :obj:`transform_unknowns` is ``False``.
 
-When given an instance, :obj:`~Orange.classification.ClassifierFromVar` will return
-transformer(instance[which_var]). Attribute which_var can be either an ordinary variable,
-a meta variable or a variable which is not defined for the instance but has getValueFrom
-that can be used to compute the value. If none goes through or if the value found is unknown,
-a Value of subtype Distribution containing distributionForUnknown is returned.
+    .. method:: __call__(inst[, result_type])
 
-The class stores the domain version for the last example and its position in the domain.
-If consecutive examples come from the same domain (which is usually the case),
-:obj:`~Orange.classification.ClassifierFromVar` is just two simple ifs slower than 
-:obj:`~Orange.classification.ClassifierFromVarFD`.
+        Return ``transformer(instance[which_var])``. The value of
+        :obj:`which_var` can be either an ordinary variable, a meta
+        variable or a variable which is not defined for the instance
+        but its descriptor has a
+        :obj:`~Orange.feature.Descriptor.get_value_from` that can be
+        used to compute the value.
 
-As you might have guessed, the crucial component here is the transformer.
-Let us, for sake of demonstration, load a Monk 1 dataset and construct an attribute
-e1 that will have value "1", when e is "1", and "not 1" when e is different than 1.
-There are many ways to do it, and that same problem is covered in different places
-in Orange documentation. Although the way presented here is not the simplest,
-it will serve to demonstrate how ClassifierFromVar works.
+        If the feature is not found or its value is missing, the
+        missing value is passed to the transformer if
+        :obj:`transform_unknowns` is ``True``. Otherwise,
+        :obj:`distribution_for_unknown` is returned.
 
+The following example demonstrates the use of the class on the Monk 1
+dataset. It construct a new variable `e1` that has a value of `1`, when
+`e` is `1`, and `not 1` otherwise.
 
 .. literalinclude:: code/classifier-from-var-example.py
     :lines: 1-19
 
-ClassifierFromVarFD
-===================
+
 
 .. class:: ClassifierFromVarFD
 
-    :obj:`~Orange.classification.ClassifierFromVarFD` is very similar to :obj:`~Orange.classification.ClassifierFromVar` except that the variable
-    is not given as a descriptor (like which_var) but as an index. The index can be
-    either a position of the variable in the domain or a meta-id. Given that :obj:`~Orange.classification.ClassifierFromVarFD`
-    is practically no faster than :obj:`~Orange.classification.ClassifierFromVar` (and can in future even be merged with the latter),
-    you should seldom need to use the class.
+    A class similar to
+    :obj:`~Orange.classification.ClassifierFromVar` except that the
+    variable is given by its index in the domain. The index can also
+    be negative to denote a meta attribute.
+
+    The only practical difference between the two classes is that this
+    does not compute the value of the variable from other variables
+    through the descriptor's
+    :obj:`Orange.feature.Descriptor.get_value_from`.
 
     .. attribute:: domain (inherited from ClassifierFromVarFD)
     
-        The domain on which the classifier operates.
+        The domain to which the :obj:`position` applies.
 
     .. attribute:: position
 
         The position of the attribute in the domain or its meta-id.
 
-    .. attribute:: transformer
+    .. attribute:: transformer        
 
-        The transformer for the value.
+        The transformer for the value. It should be a class derived
+        from :obj:`Orange.data.utils.TransformValue` or a function
+        written in Python.
+
+    .. attribute:: transform_unknowns
+
+        Defines the treatment of missing values.
 
     .. attribute:: distribution_for_unknown
 
-        The distribution that is returned when the which_var's value is undefined.
+        The distribution that is returned when the `which_var`'s value
+        is undefined and :obj:`transform_unknowns` is ``False``.
 
-When an example is passed to :obj:`~Orange.classification.ClassifierFromVarFD`,
-it is first checked whether it is
-from the correct domain; an exception is raised if not. If the domain is OK,
-the corresponding attribute value is retrieved, transformed and returned.
+    The use of this class is similar to that of 
+    :obj:`~Orange.classification.ClassifierFromVar`.
 
-:obj:`~Orange.classification.ClassifierFromVarFD`'s twin brother, :obj:`~Orange.classification.ClassifierFromVar`, can also handle variables that
-are not in the instances' domain or meta-variables, but can be computed therefrom by using
-their getValueFrom. Since :obj:`~Orange.classification.ClassifierFromVarFD` doesn't store attribute descriptor but
-only an index, such functionality is obviously impossible.
-
-To rewrite the above script to use :obj:`~Orange.classification.ClassifierFromVarFD`,
-we need to set the domain and the e's index to position
-(equivalent to setting which_var in :obj:`~Orange.classification.ClassifierFromVar`).
-The initialization of :obj:`~Orange.classification.ClassifierFromVarFD` thus goes like this:
-
-.. literalinclude:: code/classifier-from-var-example.py
-    :lines: 21-25
+    .. literalinclude:: code/classifier-from-var-example.py
+        :lines: 21-25
