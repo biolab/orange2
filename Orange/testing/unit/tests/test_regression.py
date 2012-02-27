@@ -93,3 +93,6 @@ for dirname, indir in dirs:
 
 setattr(TestRegression, "test_regression_on", None)
 func = None
+
+if __name__ == "__main__":
+    unittest.main()

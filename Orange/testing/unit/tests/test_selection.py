@@ -37,3 +37,5 @@ class TestBestOnTheFly(unittest.TestCase):
         self.assertIsInstance(index, int)
 
 
+if __name__ == "__main__":
+    unittest.main()

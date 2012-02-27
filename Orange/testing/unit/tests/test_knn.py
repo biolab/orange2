@@ -21,6 +21,5 @@ class TestKNNLearner(testing.LearnerTestCase):
         instance = dataset.random_instance()
         self.assertEqual(len(self.classifier.find_nearest(3, instance)), 3)
 
-
-
-
+if __name__ == "__main__":
+    unittest.main()

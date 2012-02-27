@@ -22,3 +22,6 @@ class TestNameMapping(unittest.TestCase):
                 self.assertEqual(cls2, cls)
 #                if cls2 != cls:
 #                    print cls.__module__+"."+cls.__name__
+
+if __name__ == "__main__":
+    unittest.main()

@@ -42,3 +42,5 @@ class TestVariableMake(unittest.TestCase):
                                      Orange.feature.Descriptor.MakeStatus.OK)
         self.assertIsNot(v8, v1)
 
+if __name__ == "__main__":
+    unittest.main()
