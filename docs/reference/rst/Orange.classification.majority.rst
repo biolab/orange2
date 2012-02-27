@@ -7,10 +7,12 @@ Majority (``majority``)
 .. index:: majority classifier
    pair: classification; majority classifier
 
-Accuracy of classifiers is often compared to the "default accuracy",
+Accuracy of classifiers is often compared with the "default accuracy",
 that is, the accuracy of a classifier which classifies all instances
 to the majority class. The training of such classifier consists of
-computing the class distribution and its modus. The model is represented as an instance of :obj:`Orange.classification.ConstantClassifier`.
+computing the class distribution and its modus. The model is
+represented as an instance of
+:obj:`Orange.classification.ConstantClassifier`.
 
 .. class:: MajorityLearner
 
@@ -19,7 +21,7 @@ computing the class distribution and its modus. The model is represented as an i
     .. attribute:: estimator_constructor
     
         An estimator constructor that can be used for estimation of
-        class probabilities. If left None, probability of each class is
+        class probabilities. If left ``None``, probability of each class is
         estimated as the relative frequency of instances belonging to
         this class.
         
