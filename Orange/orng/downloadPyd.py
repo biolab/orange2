@@ -10,12 +10,14 @@ if sys.version_info[:2] == (2, 7):
 baseurl = "http://orange.biolab.si/download/binaries/%i%i/" % sys.version_info[:2]
 fleurl = baseurl + "%s.pyd"
 
-op = filter(lambda x:x[-7:].lower() in ["\\orange", "/orange"], sys.path)
+op = filter(lambda x:x[-12:].lower() in ["\\orange\\orng", "/orange/orng"], sys.path)
 if not op:
 	print "Orange is not found on the Python's path"
+	
+op = os.path.dirname(op[0])
 
-print "Downloading to %s (for Python %i.%i)" % (op[0], sys.version_info[0], sys.version_info[1])
-os.chdir(op[0])
+print "Downloading to %s (for Python %i.%i)" % (op, sys.version_info[0], sys.version_info[1])
+os.chdir(op)
 
 def rep(blk_cnt, blk_size, tot_size):
 	print "\rDownloading %s: %i of %i" % (fle, min(tot_size, blk_cnt*blk_size), tot_size),
