@@ -1,10 +1,10 @@
-.. py:currentmodule::Orange.statistics.contingency
+.. py:currentmodule:: Orange.statistics.contingency
 
 .. index:: Contingency table
 
-=================
-Contingency table
-=================
+===================================
+Contingency table (``contingency``)
+===================================
 
 Contingency table contains conditional distributions. Unless explicitly
 'normalized', they contain absolute frequencies, that is, the number of

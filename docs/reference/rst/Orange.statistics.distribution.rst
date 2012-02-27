@@ -2,9 +2,9 @@
 
 .. index:: Distributions
 
-=============
-Distributions
-=============
+================================
+Distributions (``distribution``)
+================================
 
 :obj:`Distribution` and derived classes store empirical
 distributions of discrete and continuous variables.
