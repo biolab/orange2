@@ -682,7 +682,7 @@ def get_likelihood(fitter, data):
         
 
 
-class StepWiseFSS(Orange.classification.Learner):
+class StepWiseFSS:
   """
   A learning algorithm for logistic regression that implements a
   stepwise feature subset selection as described in Applied Logistic
