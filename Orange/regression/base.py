@@ -1,7 +1,7 @@
 """\
-====================================
-Base regression learner (``basic``)
-====================================
+=======================
+Base regression learner
+=======================
 
 .. index:: regression
 
@@ -15,7 +15,8 @@ import Orange
 class BaseRegressionLearner(Orange.core.Learner):
     """Fitting regressors typically requires data that has only
     continuous-valued features and no missing values. This class
-    provides methods for appropriate transformation of the data and serves as a base class for various regressor classes.
+    provides methods for appropriate transformation of the data and
+    serves as a base class for most regressor classes.
     """
 
     def __new__(cls, table=None, weight_id=None, **kwds):

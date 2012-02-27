@@ -14,10 +14,9 @@ information on how to fit models in general.
 Orange contains a number of regression models which are listed below.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    Orange.regression.mean
-   Orange.regression.base
    Orange.regression.linear
    Orange.regression.lasso
    Orange.regression.pls
