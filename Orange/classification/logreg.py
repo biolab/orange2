@@ -682,7 +682,7 @@ def get_likelihood(fitter, data):
         
 
 
-class StepWiseFSS:
+class StepWiseFSS(object):
   """
   A learning algorithm for logistic regression that implements a
   stepwise feature subset selection as described in Applied Logistic
@@ -726,8 +726,8 @@ class StepWiseFSS:
   """
 
   def __new__(cls, data=None, **argkw):
-      self = Orange.classification.Learner.__new__(cls, **argkw)
-      if data:
+      self = object.__new__(cls)
+      if data is not None:
           self.__init__(**argkw)
           return self.__call__(data)
       else:
@@ -735,7 +735,7 @@ class StepWiseFSS:
 
   @deprecated_keywords({"addCrit": "add_crit", "deleteCrit": "delete_crit",
                         "numFeatures": "num_features"})
-  def __init__(self, add_crit=0.2, delete_crit=0.3, num_features = -1, **kwds):
+  def __init__(self, add_crit=0.2, delete_crit=0.3, num_features=-1, **kwds):
     self.__dict__.update(kwds)
     self.add_crit = add_crit
     self.delete_crit = delete_crit
