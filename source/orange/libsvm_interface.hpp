@@ -46,7 +46,6 @@
 #include "table.hpp"
 #include "examples.hpp"
 #include "distance.hpp"
-#include "slist.hpp"
 
 #include "libsvm/svm.h"
 
