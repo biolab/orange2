@@ -1,6 +1,6 @@
 """\
 ====================================
-Basic regression learner (``basic``)
+Base regression learner (``basic``)
 ====================================
 
 .. index:: regression
@@ -13,8 +13,9 @@ Basic regression learner (``basic``)
 import Orange
 
 class BaseRegressionLearner(Orange.core.Learner):
-    """ Base Regression Learner "learns" how to treat the discrete
-        variables and missing data.
+    """Fitting regressors typically requires data that has only
+    continuous-valued features and no missing values. This class
+    provides methods for appropriate transformation of the data and serves as a base class for various regressor classes.
     """
 
     def __new__(cls, table=None, weight_id=None, **kwds):
@@ -34,11 +35,13 @@ class BaseRegressionLearner(Orange.core.Learner):
         
 
     def set_imputer(self, imputer=None):
-        """ Sets the imputer for missing values.
+        """ Set the imputer for missing data.
 
-        :param imputer: function which imputes the missing values,
-            if None, the default imputer: mean for the continuous variables
-            and most frequent value (majority) for discrete variables
+        :param imputer: function which constructs the imputer for the
+            missing values, if ``None``, the default imputer replaces
+            missing continuous data with the average of the
+            corresponding variable and missing discrete data with the
+            most frequent value.
         :type imputer: None or Orange.feature.imputation.ModelConstructor
         """
         if imputer is not None:
@@ -49,11 +52,11 @@ class BaseRegressionLearner(Orange.core.Learner):
             self.imputer.learner_discrete = Orange.classification.majority.MajorityLearner()
 
     def set_continuizer(self, continuizer=None):
-        """ Sets the continuizer of the discrete variables
+        """Set the continuizer of the discrete variables
 
-        :param continuizer: function which replaces the categorical (dicrete)
-            variables with numerical variables. If None, the default continuizer
-            is used
+        :param continuizer: function which replaces the categorical
+            (dicrete) variables with numerical variables. If ``None``,
+            the default continuizer is used
         :type continuizer: None or Orange.data.continuization.DomainContinuizer
         """
         if continuizer is not None:
@@ -64,8 +67,8 @@ class BaseRegressionLearner(Orange.core.Learner):
             self.continuizer.zero_based = True
 
     def impute_table(self, table):
-        """ Imputes missing values.
-        Returns a new :class:`Orange.data.Table` object
+        """Impute missing values and return a new
+        :class:`Orange.data.Table` object
 
         :param table: data instances.
         :type table: :class:`Orange.data.Table`
@@ -76,8 +79,8 @@ class BaseRegressionLearner(Orange.core.Learner):
         return table
 
     def continuize_table(self, table):
-        """ Continuizes the discrete variables.
-        Returns a new :class:`Orange.data.Table` object
+        """Replace discrete variables with continuous and return a new
+        instance of :class:`Orange.data.Table`.
 
         :param table: data instances.
         :type table: :class:`Orange.data.Table` 
