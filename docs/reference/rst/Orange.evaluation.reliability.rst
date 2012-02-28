@@ -65,7 +65,7 @@ Local modeling of prediction error (CNK)
 Bagging variance c-neighbours (BVCK)
 ------------------------------------
 
-.. autoclass:: BaggingVarianceCNeighbours
+.. autoclass:: BaggingVarianceCNeighbours(bagv=BaggingVariance(), cnk=CNeighbours())
 
 Mahalanobis distance
 --------------------
@@ -80,7 +80,7 @@ Mahalanobis to center
 Reliability estimation wrappers
 ===============================
 
-.. autoclass:: Learner
+.. autoclass:: Learner(box_learner, name="Reliability estimation", estimators=[SensitivityAnalysis(), LocalCrossValidation(), BaggingVarianceCNeighbours(), Mahalanobis(), MahalanobisToCenter()], **kwds)
     :members:
 
 .. autoclass:: Classifier

@@ -7,7 +7,7 @@ Mean (``mean``)
 .. index:: regression; mean
 
 Accuracy of a regressor is often compared with the accuracy achieved
-by always predicting the averag value. The "learning algorithm"
+by always predicting the average value. The "learning algorithm"
 computes the average and represents it with a regressor of type
 :obj:`Orange.classification.ConstantClassifier`.
 
