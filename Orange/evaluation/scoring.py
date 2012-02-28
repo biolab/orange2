@@ -1661,8 +1661,6 @@ class AUC(list):
     # unless at a certain fold the computer has to resort to computing
     # over all folds or even this failed;
     # in these cases the result is returned immediately
-    @deprecated_keywords({"AUCcomputer": "auc_computer",
-                          "computerArgs": "computer_args"})
     def _compute_for_multiple_folds(self, auc_computer, iterations,
                                  computer_args):
         """Compute the average AUC over folds using :obj:`auc_computer`."""
@@ -1670,8 +1668,11 @@ class AUC(list):
         for ite in iterations:
             aucs, foldsUsed = auc_computer(*(ite, ) + computer_args)
             if not aucs:
-                return None
+                import warnings
+                warnings.warn("AUC cannot be computed (all instances belong to the same class).")
+                return
             if not foldsUsed:
+                self[:] = aucs
                 return aucs
             subsum_aucs = map(add, subsum_aucs, aucs)
         self[:] = subsum_aucs
@@ -1794,6 +1795,9 @@ def AUC_multi(res, ignore_weights=False, method=0):
     auc._compute_for_multi_value_class(res)
     return auc
 
+
+@deprecated_keywords({"AUCcomputer": "auc_computer",
+                      "computerArgs": "computer_args"})
 def AUC_iterations(auc_computer, iterations, computer_args):
     auc = deprecated_function_name(AUC)()
     auc._compute_for_multiple_folds(auc_computer, iterations, computer_args)
