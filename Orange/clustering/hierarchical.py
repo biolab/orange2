@@ -103,7 +103,7 @@ Basic functionality
 Drawing
 --------------
 
-.. autofunction:: dendrogram_draw
+.. autofunction:: dendrogram_draw(file, cluster, attr_cluster=None, labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None,  spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, format=None)
 
 .. rubric:: Example
 
@@ -984,8 +984,8 @@ from Orange.misc.render import EPSRenderer, ColorPalette
 class DendrogramPlot(object):
     """ A class for drawing dendrograms.
     
-    ``dendrogram_draw`` function is a more convenient interface
-    to the functionality provided by this class and.
+    :obj:`dendrogram_draw` function is a more convenient interface
+    to the functionality provided by this class.
         
     Example::
     
@@ -1133,12 +1133,12 @@ class DendrogramPlot(object):
         self.renderer.save(filename, **kwargs)
         
         
-def dendrogram_draw(file, cluster, attr_cluster = None, labels=None, data=None,
+def dendrogram_draw(file, cluster, attr_cluster=None, labels=None, data=None,
                     width=None, height=None, tree_height=None,
                     heatmap_width=None, text_width=None,  spacing=2,
-                    cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]),
-                    maxv=None, minv=None, gamma=None,
-                    format=None):
+                    cluster_colors={},
+                    color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]),
+                    maxv=None, minv=None, gamma=None, format=None):
     """ Plot the dendrogram to ``file``.
     
     :param file: An  open file or a filename to store the image to. The output format

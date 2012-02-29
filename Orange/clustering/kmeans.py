@@ -8,8 +8,12 @@ K-means clustering (``kmeans``)
 .. index:: agglomerative clustering
 
 
-.. autoclass:: Orange.clustering.kmeans.Clustering
-   :members:
+.. autoclass:: Orange.clustering.kmeans.Clustering(data=None, centroids=3, maxiters=None, minscorechange=None, stopchanges=0, nstart=1, initialization=init_random, distance=Orange.distance.Euclidean, scoring=score_distance_to_centroids, inner_callback=None, outer_callback=None)
+    :members:
+    :exclude-members: __init__
+
+    .. automethod:: __init__(data=None, centroids=3, maxiters=None, minscorechange=None, stopchanges=0, nstart=1, initialization=init_random, distance=Orange.distance.Euclidean, scoring=score_distance_to_centroids, inner_callback=None, outer_callback=None)
+
 
 Examples
 ========
@@ -393,18 +397,18 @@ class Clustering:
     def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,
                  stopchanges=0, nstart=1, initialization=init_random,
                  distance=Orange.distance.Euclidean,
-                 scoring=score_distance_to_centroids, inner_callback = None,
-                 outer_callback = None):
+                 scoring=score_distance_to_centroids, inner_callback=None,
+                 outer_callback=None):
         """
-        :param data: Data instances to be clustered. If not None, clustering will be executed immediately after initialization unless initialize_only=True.
-        :type data: :class:`orange.ExampleTable` or None
+        :param data: Data instances to be clustered. If not None, clustering will be executed immediately after initialization unless ``initialize_only=True``.
+        :type data: :class:`~Orange.data.Table` or None
         :param centroids: either specify a number of clusters or provide a list of examples that will serve as clustering centroids.
-        :type centroids: integer or a list of :class:`orange.Example`
+        :type centroids: :obj:`int` or :obj:`list` of :class:`~Orange.data.Instance`
         :param nstart: If greater than one, nstart runs of the clustering algorithm will be executed, returning the clustering with the best (lowest) score.
-        :type nstart: integer
+        :type nstart: int
         :param distance: an example distance constructor, which measures the distance between two instances.
-        :type distance: :class:`Orange.distance.DistanceConstructor`
-        :param initialization: a function to select centroids given data instances, k and a example distance function. This module implements different approaches (:func:`init_random`, :func:`init_diversity`, :class:`init_hclustering`). 
+        :type distance: :class:`~Orange.distance.DistanceConstructor`
+        :param initialization: a function to select centroids given data instances, k and a example distance function. This module implements different approaches (:obj:`init_random`, :obj:`init_diversity`, :obj:`init_hclustering`). 
         :param scoring: a function that takes clustering object and returns the clustering score. It could be used, for instance, in procedure that repeats the clustering nstart times, returning the clustering with the lowest score.
         :param inner_callback: invoked after every clustering iteration.
         :param outer_callback: invoked after every clustering restart (if nstart is greater than 1).

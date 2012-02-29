@@ -102,35 +102,35 @@ public:
   inline void writeShort(const unsigned short &c)
   {
     ensure(sizeof(unsigned short));
-    (unsigned short &)*bufptr = c;
+    memcpy((void *) bufptr, (void *) &c, sizeof(unsigned short));
     bufptr += sizeof(unsigned short);
   }
 
   inline void writeInt(const int &c)
   {
     ensure(sizeof(int));
-    (int &)*bufptr = c;
+    memcpy((void *) bufptr, (void *) &c, sizeof(int));
     bufptr += sizeof(int);
   }
 
   inline void writeLong(const long &c)
   {
     ensure(sizeof(long));
-    (long &)*bufptr = c;
+    memcpy((void *) bufptr, (void *) &c, sizeof(long));
     bufptr += sizeof(long);
   }
 
   inline void writeFloat(const float &c)
   {
     ensure(sizeof(float));
-    (float &)*bufptr = c;
+    memcpy((void *) bufptr, (void *) &c, sizeof(float));
     bufptr += sizeof(float);
   }
 
   inline void writeDouble(const double &c)
   {
     ensure(sizeof(double));
-    (double &)*bufptr = c;
+    memcpy((void *) bufptr, (void *) &c, sizeof(float));
     bufptr += sizeof(double);
   }
 
@@ -139,9 +139,15 @@ public:
     int size = v.size();
     ensure((size + 1) * sizeof(int));
 
-    int *&buff = (int *&)bufptr;
-    *buff++ = size;
-    for(vector<int>::const_iterator vi = v.begin(); size--; *buff++ = *vi++);
+    memcpy((void *) bufptr, (void *)&size, sizeof(int));
+    bufptr += sizeof(int);
+    if (size > 0)
+    {
+        // This is legal as &v[0] is guaranteed to point to a
+        // contiguous memory block
+        memcpy((void *) bufptr, (void *) &v[0], size * sizeof(int));
+        bufptr += sizeof(int) * size;
+    }
   }
 
   inline void writeFloatVector(const vector<float> &v)
@@ -149,13 +155,16 @@ public:
     int size = v.size();
     ensure(sizeof(int) + size * sizeof(float));
 
-    (int &)*bufptr = size;
+    memcpy((void *) bufptr, (void *)&size, sizeof(int));
     bufptr += sizeof(int);
-
-    float *&buff = (float *&)bufptr;
-    for(vector<float>::const_iterator vi = v.begin(); size--; *buff++ = *vi++);
+    if (size > 0)
+    {
+        // This is legal as &v[0] is guaranteed to point to a
+        // contiguous memory block
+        memcpy((void *) bufptr, (void *) &v[0], size * sizeof(float));
+        bufptr += sizeof(float) * size;
+    }
   }
-
 
   inline void writeBuf(const void *abuf, size_t size)
   {
@@ -163,7 +172,6 @@ public:
     memcpy(bufptr, abuf, size);
     bufptr += size;
   }
-
 
   inline char readChar()
   { 

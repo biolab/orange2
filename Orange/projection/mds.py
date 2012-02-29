@@ -16,7 +16,10 @@ The main class to perform multidimensional scaling is
 
 .. autoclass:: Orange.projection.mds.MDS
    :members:
-   :exclude-members: Torgerson, get_distance, get_stress
+   :exclude-members: Torgerson, get_distance, get_stress, calc_stress, run
+
+   .. automethod:: calc_stress(stress_func=SgnRelStress)
+   .. automethod:: run(iter, stress_func=SgnRelStress, eps=1e-3, progress_callback=None)
 
 Stress functions
 ================

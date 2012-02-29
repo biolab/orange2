@@ -421,7 +421,7 @@ Other
 .. autoclass:: Orange.feature.scoring.OrderAttributes
    :members:
 
-.. autofunction:: Orange.feature.scoring.score_all
+.. autofunction:: Orange.feature.scoring.score_all(data, score=Relief(k=20, m=50))
 
 .. rubric:: Bibliography
 

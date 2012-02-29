@@ -68,7 +68,7 @@ Data discretization classes
 
 .. .. autoclass:: Orange.feature.discretization.DiscretizedLearner_Class
 
-.. autoclass:: DiscretizeTable
+.. autoclass:: DiscretizeTable(features=None, discretize_class=False, method=EqualFreq(n=3), clean=True)
 
 .. A chapter on `feature subset selection <../ofb/o_fss.htm>`_ in Orange
    for Beginners tutorial shows the use of DiscretizedLearner. Other

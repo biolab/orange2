@@ -23,8 +23,6 @@
 
 #include "libsvm_interface.ppp"
 
-#include "slist.hpp"
-
 // Defined in svm.cpp. If new svm or kernel types are added this should be updated.
 
 static const char *svm_type_table[] =
