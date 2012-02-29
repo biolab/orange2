@@ -9,6 +9,7 @@
 from OWWidget import *
 import OWGUI
 import orange
+import orngMisc
 import exceptions
 import os.path
 import pickle
