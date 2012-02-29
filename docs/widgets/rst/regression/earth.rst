@@ -3,7 +3,7 @@
 Earth Learner
 =============
 
-.. image:: ../_static/icons/Unknown.png
+.. image:: ../../../../Orange/OrangeWidgets/icons/Unknown.png
    :alt: Earth Learner 
    
 Channels
