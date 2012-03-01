@@ -20,12 +20,12 @@ class TestRegression(testing.LearnerTestCase):
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestClassification(testing.LearnerTestCase):
+class TestSTLClassification(testing.LearnerTestCase):
     LEARNER = ctree.SimpleTreeLearner(max_depth=50)
 
 
 @datasets_driven(datasets=testing.REGRESSION_DATASETS)
-class TestRegression(testing.LearnerTestCase):
+class TestSTLRegression(testing.LearnerTestCase):
     LEARNER = rtree.SimpleTreeLearner(max_depth=50)
 
     def test_learner_on(self):
