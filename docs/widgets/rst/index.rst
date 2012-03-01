@@ -9,17 +9,25 @@ Data
 .. The first row shows how to insert rst documentation, the rest 
    link to the old documentation that is copied to '_static' 
 
-+---------------------------+------------------------------------+--------------------------------------------------+
-||File_icon| :ref:`File`    ||DataTable_icon| :ref:`Data Table`  ||SelectAttributes_icon| :ref:`Select Attributes`  |
-+---------------------------+------------------------------------+--------------------------------------------------+
-||Rank_icon| `Rank`_        ||PurgeDomain_icon| `Purge Domain`_  ||MergeData_icon| `Merge Data`_                    |
-+---------------------------+------------------------------------+--------------------------------------------------+
-||Concat_icon| `Concat`_    ||DataSampler_icon| `Data Sampler`_  ||SelectData_icon| `Select Data`_                  |
-+---------------------------+------------------------------------+--------------------------------------------------+
-||Save_icon| `Save`_        ||Discretize_icon| `Discretize`_     ||Cont_icon| `Cont`_                               |
-+---------------------------+------------------------------------+--------------------------------------------------+
-||Impute_icon| `Impute`_    ||Outliers_icon| `Outliers`_         |                                                  |
-+---------------------------+------------------------------------+--------------------------------------------------+
+.. list-table::
+    :class: widget-catalog-table
+    :widths: 1 1 1
+    
+    * - |File_icon| :ref:`File`
+      - |DataTable_icon| :ref:`Data Table`
+      - |SelectAttributes_icon| :ref:`Select Attributes`
+    * - |Rank_icon| `Rank`_
+      - |PurgeDomain_icon| `Purge Domain`_
+      - |MergeData_icon| `Merge Data`_
+    * - |Concat_icon| `Concat`_
+      - |DataSampler_icon| `Data Sampler`_
+      - |SelectData_icon| `Select Data`_
+    * - |Save_icon| `Save`_
+      - |Discretize_icon| `Discretize`_
+      - |Cont_icon| `Cont`_
+    * - |Impute_icon| `Impute`_
+      - |Outliers_icon| `Outliers`_
+      -
 
 .. _`Rank`: _static/Data/Rank.htm
 
@@ -132,15 +140,22 @@ Data
 Visualize
 ---------
 
-+----------------------------------------------+-----------------------------------------+---------------------------------------+
-||Distributions_icon| `Distributions`_         ||ScatterPlot_icon| `ScatterPlot`_        ||AttributeStatistics_icon| `AttrStat`_ |
-+----------------------------------------------+-----------------------------------------+---------------------------------------+
-||LinearProjection_icon| `Linear Projection`_  ||Radviz_icon| `Radviz`_                  ||PolyViz_icons| `PolyViz`_             |
-+----------------------------------------------+-----------------------------------------+---------------------------------------+
-||ParallelCoords_icon| `Parallel Coordinates`_ ||SurveyPlot_icon| `Survey Plot`_         ||MosaicDisplay_icon| `Mosaic Display`_ |
-+----------------------------------------------+-----------------------------------------+---------------------------------------+
-||SieveDiagram_icon| `Sieve Diagram`_          ||SieveMultigram_icon| Sieve Multigram    |                                       |
-+----------------------------------------------+-----------------------------------------+---------------------------------------+
+.. list-table::
+    :class: widget-catalog-table
+    :widths: 1 1 1
+    
+    * - |Distributions_icon| `Distributions`_
+      - |ScatterPlot_icon| `ScatterPlot`_
+      - |AttributeStatistics_icon| `AttrStat`_
+    * - |LinearProjection_icon| `Linear Projection`_
+      - |Radviz_icon| `Radviz`_
+      - |PolyViz_icons| `PolyViz`_
+    * - |ParallelCoords_icon| `Parallel Coordinates`_
+      - |SurveyPlot_icon| `Survey Plot`_
+      - |MosaicDisplay_icon| `Mosaic Display`_
+    * - |SieveDiagram_icon| `Sieve Diagram`_
+      - |SieveMultigram_icon| Sieve Multigram 
+      -
 	
 .. _`Distributions`: _static/Visualize/Distributions.htm
 
