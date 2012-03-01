@@ -32,7 +32,7 @@ copy /q snapshot\install-scripts\* .
 
 REM # 3rd party packages should already be in qt44-3rdparty\%PYVER\ directories
 
-copy /q /s snapshot\install-scripts\qt44-3dparty qt44-3dparty
+copy /q /s snapshot\install-scripts\qt44-3dparty qt44-3rdparty
 
 call callCreateSnapshot.btm
 shutdown -s
