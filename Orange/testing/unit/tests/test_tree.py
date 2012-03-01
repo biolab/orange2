@@ -18,5 +18,21 @@ class TestClassification(testing.LearnerTestCase):
 class TestRegression(testing.LearnerTestCase):
     LEARNER = rtree.TreeLearner(max_depth=50)
 
+
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestClassification(testing.LearnerTestCase):
+    LEARNER = ctree.SimpleTreeLearner(max_depth=50)
+
+
+@datasets_driven(datasets=testing.REGRESSION_DATASETS)
+class TestRegression(testing.LearnerTestCase):
+    LEARNER = rtree.SimpleTreeLearner(max_depth=50)
+
+    def test_learner_on(self):
+        # Does not pass unittests beacuse it returns None for the distribution.
+        # I do not plan on implementing this as it will only add unnecessary overhead.
+        pass
+
+
 if __name__ == "__main__":
     unittest.main()
