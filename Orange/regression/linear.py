@@ -238,6 +238,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
                 X = numpy.ones([n,1])
             else:
                 X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
+            m += 1
         else:
             X = A
              
@@ -258,7 +259,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         if self.ridge_lambda is None:
             cov = pinv(dot(dot(X.T, W), X))
         else:
-            cov = pinv(dot(dot(X.T, W), X) - self.ridge_lambda*numpy.eye(m+1))
+            cov = pinv(dot(dot(X.T, W), X) - self.ridge_lambda*numpy.eye(m))
             compute_stats = False # TO DO: find inferential properties of the estimators
         D = dot(dot(cov, X.T), W)
         coefficients = dot(D, y)
