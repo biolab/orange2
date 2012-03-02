@@ -19,12 +19,12 @@ Data
     * - |Rank_icon| `Rank`_
       - |PurgeDomain_icon| `Purge Domain`_
       - |MergeData_icon| `Merge Data`_
-    * - |Concat_icon| `Concat`_
+    * - |Concat_icon| `Concatenate`_
       - |DataSampler_icon| `Data Sampler`_
       - |SelectData_icon| `Select Data`_
     * - |Save_icon| `Save`_
       - |Discretize_icon| `Discretize`_
-      - |Cont_icon| `Cont`_
+      - |Cont_icon| `Continuize`_
     * - |Impute_icon| `Impute`_
       - |Outliers_icon| `Outliers`_
       -
@@ -35,7 +35,7 @@ Data
 
 .. _`Merge Data`: _static/Data/MergeData.htm
 
-.. _`Concat`: _static/Data/Concatenate.htm
+.. _`Concatenate`: _static/Data/Concatenate.htm
 
 .. _`Data Sampler`: _static/Data/DataSampler.htm
 
@@ -45,7 +45,7 @@ Data
 
 .. _`Discretize`: _static/Data/Discretize.htm
 
-.. _`Cont`: _static/Data/Continuize.htm
+.. _`Continuize`: _static/Data/Continuize.htm
 
 .. _`Impute`: _static/Data/Impute.htm
 
@@ -145,8 +145,8 @@ Visualize
     :widths: 1 1 1
     
     * - |Distributions_icon| `Distributions`_
-      - |ScatterPlot_icon| `ScatterPlot`_
-      - |AttributeStatistics_icon| `AttrStat`_
+      - |ScatterPlot_icon| `Scatter Plot`_
+      - |AttributeStatistics_icon| `Attribute Statistics`_
     * - |LinearProjection_icon| `Linear Projection`_
       - |Radviz_icon| `Radviz`_
       - |Polyviz_icon| `Polyviz`_
@@ -159,9 +159,9 @@ Visualize
 	
 .. _`Distributions`: _static/Visualize/Distributions.htm
 
-.. _`ScatterPlot`: _static/Visualize/Scatterplot.htm
+.. _`Scatter Plot`: _static/Visualize/Scatterplot.htm
 
-.. _`AttrStat`: _static/Visualize/AttributeStatistics.htm
+.. _`Attribute Statistics`: _static/Visualize/AttributeStatistics.htm
 
 .. _`Linear Projection`: _static/Visualize/LinearProjection.htm
 
