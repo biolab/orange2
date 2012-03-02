@@ -84,7 +84,8 @@ class MultitargetVariance(Orange.feature.scoring.Score):
 
         # Types of classes allowed
         self.handles_discrete = True
-        ### TODO: for discrete classes with >2 values entropy should be used instead of variance
+        ## TODO: for discrete classes with >2 values entropy should be used
+        ## instead of variance
         self.handles_continuous = True
         # Can handle continuous features
         self.computes_thresholds = True
@@ -94,7 +95,7 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         self.weights = weights
 
 
-    def threshold_function(self, feature, data, cont_distrib=None, weightID=0):
+    def threshold_function(self, feature, data, cont_distrib=None, weights=0):
         """
         Evaluates possible splits of a continuous feature into a binary one
         and scores them.
@@ -139,7 +140,8 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         threshold, score = max(scores, key=itemgetter(1))
         return (threshold, score, None)
 
-    def __call__(self, feature, data, apriori_class_distribution=None, weightID=0):
+    def __call__(self, feature, data, apriori_class_distribution=None,
+                 weights=0):
         """
         :param feature: The feature to be scored.
         :type feature: :class:`Orange.feature.Descriptor`
@@ -153,7 +155,8 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         split = dict((ins[feature].value, []) for ins in data)
         for ins in data:
             split[ins[feature].value].append(ins.get_classes())
-        score = -sum(weighted_variance(x, self.weights) * len(x) for x in split.values())
+        score = -sum(weighted_variance(x, self.weights) * len(x)
+                     for x in split.values())
         return score
 
 
