@@ -185,7 +185,7 @@ class CMScoreTest(object):
         scores = self.score(pt)
         self.assertIsInstance(scores, list)
 
-    def test_with_confusion_matrix_on_biclass(self):
+    def test_with_confusion_matrices_on_biclass(self):
         learner = random_learner
         ds = data.Table("monks-1")
         pt = testing.proportion_test([learner], ds, times=1)
@@ -193,13 +193,30 @@ class CMScoreTest(object):
         scores = self.score(cm)
         self.assertIsInstance(scores, list)
 
-    def test_with_confusion_matrix_on_multiclass(self):
+    def test_with_confusion_matrices_on_multiclass(self):
         learner = random_learner
         ds = data.Table("iris")
         pt = testing.proportion_test([learner], ds, times=1)
         cm = scoring.confusion_matrices(pt, class_index=1)
         scores = self.score(cm)
         self.assertIsInstance(scores, list)
+
+    def test_with_confusion_matrix_on_biclass(self):
+        learner = random_learner
+        ds = data.Table("monks-1")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt, class_index=1)
+        scores = self.score(cm[0])
+        self.assertIsInstance(scores, float)
+
+    def test_with_confusion_matrix_on_multiclass(self):
+        learner = random_learner
+        ds = data.Table("iris")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt, class_index=1)
+        scores = self.score(cm[0])
+        self.assertIsInstance(scores, float)
+
 
 class TestSensitivity(CMScoreTest, unittest.TestCase):
     @property

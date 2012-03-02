@@ -774,6 +774,14 @@ class CMScore(list):
     :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
                          or list of :obj:`ConfusionMatrix`.
     :rtype: list of scores, one for each learner."""
+    def __new__(cls, test_results, **kwargs):
+        self = list.__new__(cls)
+        if isinstance(test_results, ConfusionMatrix):
+            self.__init__(test_results, **kwargs)
+            return self[0]
+        return self
+
+
     @deprecated_keywords({"confm": "test_results"})
     def __init__(self, test_results=None):
         super(CMScore, self).__init__()
