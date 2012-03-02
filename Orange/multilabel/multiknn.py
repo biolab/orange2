@@ -53,7 +53,7 @@ class MultikNNLearner(_multibase.MultiLabelLearner):
     """
     def __new__(cls, k=1, **argkw):
         """
-        Constructor of MultikNNLearner
+        Constructor for MultikNNLearner
                 
         :param k: number of nearest neighbors used in classification
         :type k: int
