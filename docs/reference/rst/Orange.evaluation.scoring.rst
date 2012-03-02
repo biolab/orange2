@@ -47,10 +47,9 @@ different classes are called discriminatory scores.
 
 .. autofunction:: Brier_score
 
-.. autoclass:: AUC
-    :members: by_weighted_pairs, by_pairs,
-              weighted_one_against_all, one_against_all, single_class, pair,
-
+.. autofunction:: AUC
+.. autofunction:: AUC_for_single_class
+.. autofunction:: AUC_matrix
 .. autofunction:: AUCWilcoxon
 
 .. autofunction:: compute_ROC
