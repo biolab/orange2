@@ -103,10 +103,10 @@ def select_attrs(table, features, class_var=None,
     
 class EarthLearner(Orange.regression.base.BaseRegressionLearner):
     """Earth learner class. Supports both regression and classification
-    problems. In case of classification the class values are expanded into 
+    problems. For classification, class values are expanded into 
     continuous indicator columns (one for each value if the number of 
-    values is grater then 2), and a multi response model is learned on these
-    new columns. The resulting classifier will then use the computed response
+    values is grater then 2), and a multi response model is fit to these
+    new columns. The resulting classifier the computes response
     values on new instances to select the final predicted class.
      
     """
@@ -125,36 +125,34 @@ class EarthLearner(Orange.regression.base.BaseRegressionLearner):
         """Initialize the learner instance.
         
         :param degree: Maximum degree (num. of hinge functions per term)
-            of the terms in the model.
+            of the terms in the model (default: 1).
         :type degree: int
-        :param terms: Maximum number of terms in the forward pass (default 21).
-            
-            .. note:: If this paramter is None then 
-                ``min(200, max(20, 2 * n_attributes)) + 1`` will be used. This
-                is the same as the default setting in earth R package.
-                
+        :param terms: Maximum number of terms in the forward pass
+                (default: 21).  If set to ``None``, ``min(200, max(20, 2
+                * n_attributes)) + 1`` will be used, like the default
+                setting in earth R package.
         :type terms: int
         :param penalty: Penalty for hinges in the GCV computation (used 
-            in the pruning pass). By default it is 3.0 if the degree > 1,
-            2.0 otherwise. 
+            in the pruning pass). Default is 3.0 if ``degree`` is above 1,
+            and 2.0 otherwise. 
         :type penalty: float
         :param thresh: Threshold for RSS decrease in the forward pass
-            (default 0.001).
+            (default: 0.001).
         :type thresh: float
         :param min_span: TODO.
         :param new_var_penalty: Penalty for introducing a new variable
-            in the model during the forward pass (default 0).
+            in the model during the forward pass (default: 0).
         :type new_var_penalty: float
         :param fast_k: Fast k.
         :param fast_beta: Fast beta.
         :param pruned_terms: Maximum number of terms in the model after
-            pruning (default None - no limit).
+            pruning (default: ``None``, no limit).
         :type pruned_terms: int
-        :param scale_resp: Scale responses prior to forward pass (default
-            True - ignored for multi response models).
+        :param scale_resp: Scale responses prior to forward pass (default:
+            ``True``); ignored for models with multiple responses.
         :type scale_resp: bool
         :param store_instances: Store training instances in the model
-            (default True).
+            (default: ``True``).
         :type store_instances: bool
          
         .. todo:: min_span, prunning_method (need Leaps like functionality,
@@ -332,7 +330,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
     def base_matrix(self, instances=None):
         """Return the base matrix (bx) of the Earth model for the table.
-        If table is not supplied the base matrix of the training instances 
+        If table is not supplied, the base matrix of the training instances 
         is returned.
         Base matrix is a len(instances) x num_terms matrix of computed values
         of terms in the model (not multiplied by beta) for each instance.
@@ -349,7 +347,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         return bx
     
     def predict(self, instance):
-        """ Predict the response values for the instance
+        """ Predict the response value(s)
         
         :param instance: Data instance
         :type instance: :class:`Orange.data.Instance`
@@ -362,7 +360,7 @@ class EarthClassifier(Orange.core.ClassifierFD):
         return vals
     
     def used_attributes(self, term=None):
-        """ Return the used terms for term (index). If no term is given
+        """Return the used terms for term (index). If no term is given,
         return all attributes in the model.
         
         :param term: term index
@@ -964,9 +962,9 @@ High level interface for measuring variable importance
 from Orange.feature import scoring
             
 class ScoreEarthImportance(scoring.Score):
-    """ An :class:`Orange.feature.scoring.Score` subclass.
-    Scores features based on their importance in the Earth
-    model using ``bagged_evimp``'s function return value.
+    """ A subclass of :class:`Orange.feature.scoring.Score` that.
+    scores features based on their importance in the Earth
+    model using ``bagged_evimp``.
     
     """
     # Return types  

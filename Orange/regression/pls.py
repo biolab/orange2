@@ -9,9 +9,9 @@ Partial least sqaures regression (``PLS``)
 
 `Partial least squares
 <http://en.wikipedia.org/wiki/Partial_least_squares_regression>`_
-regression is a statistical method which can be used to predict
-multiple response variables simultaniously. Implementation is based on
-`Scikit learn python implementation
+regression is a statistical method for simultaneous prediction of
+multiple response variables. Orange's implementation is
+based on `Scikit learn python implementation
 <https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/pls.py>`_.
 
 The following code shows how to fit a PLS regression model on a multi-target data set.
@@ -34,18 +34,18 @@ Utility functions
 
 .. autofunction:: svd_xy
 
-
 ========
 Examples
 ========
 
-To predict values for the first two data instances
-use the following code: 
+The following code predicts the values of output variables for the
+first two instances in ``data``.
+
 
 .. literalinclude:: code/pls-example.py
     :lines: 16-20
 
-Output::
+::
 
     Actual     [<orange.Value 'Y1'='0.490'>, <orange.Value 'Y2'='1.237'>, <orange.Value 'Y3'='1.808'>, <orange.Value 'Y4'='0.422'>]
     Predicted  [<orange.Value 'Y1'='0.613'>, <orange.Value 'Y2'='0.826'>, <orange.Value 'Y3'='1.084'>, <orange.Value 'Y4'='0.534'>]
@@ -53,13 +53,12 @@ Output::
     Actual     [<orange.Value 'Y1'='0.167'>, <orange.Value 'Y2'='-0.664'>, <orange.Value 'Y3'='-1.378'>, <orange.Value 'Y4'='0.589'>]
     Predicted  [<orange.Value 'Y1'='0.058'>, <orange.Value 'Y2'='-0.706'>, <orange.Value 'Y3'='-1.420'>, <orange.Value 'Y4'='0.599'>]
 
-To see the coefficient of the model (in this case they are stored in a matrix)
-print the model:
+To see the coefficient of the model, print the model:
 
 .. literalinclude:: code/pls-example.py
     :lines: 22
 
-The ouptut looks like this::
+::
 
     Regression coefficients:
                        Y1           Y2           Y3           Y4
@@ -67,7 +66,8 @@ The ouptut looks like this::
           X2       -0.238       -2.500       -4.797       -0.036 
           X3        0.230       -0.314       -0.880       -0.060 
 
-
+Note that coefficients are stored in a matrix since the model predicts
+values of multiple outputs.
 """
 
 import Orange
@@ -82,10 +82,10 @@ from Orange.misc import deprecated_members, deprecated_keywords
 
 
 def normalize_matrix(X):
-    """ Normalizes matrix, i.e. subtracts column means
-    and divides them by column standard deviations.
-    Returns the standardized matrix, sample mean and
-    standard deviation
+    """
+    Normalize a matrix column-wise: subtract the means and divide by
+    standard deviations. Returns the standardized matrix, sample mean
+    and standard deviation
 
     :param X: data matrix
     :type X: :class:`numpy.array`
@@ -98,7 +98,7 @@ def normalize_matrix(X):
 @deprecated_keywords({"maxIter": "max_iter"})
 def nipals_xy(X, Y, mode="PLS", max_iter=500, tol=1e-06):
     """
-    NIPALS algorithm. Returns the first left and rigth singular
+    NIPALS algorithm; returns the first left and rigth singular
     vectors of X'Y.
 
     :param X, Y: data matrix
@@ -107,10 +107,10 @@ def nipals_xy(X, Y, mode="PLS", max_iter=500, tol=1e-06):
     :param mode: possible values "PLS" (default) or "CCA" 
     :type mode: string
 
-    :param max_iter: maximal number of iterations (default 500)
+    :param max_iter: maximal number of iterations (default: 500)
     :type max_iter: int
 
-    :param tol: tolerance parameter, if norm of difference
+    :param tol: tolerance parameter; if norm of difference
         between two successive left singular vectors is less than tol,
         iteration is stopped
     :type tol: a not negative float
@@ -154,7 +154,7 @@ def nipals_xy(X, Y, mode="PLS", max_iter=500, tol=1e-06):
     return u, v
 
 def svd_xy(X, Y):
-    """ Returns the first left and right singular
+    """ Return the first left and right singular
     vectors of X'Y.
 
     :param X, Y: data matrix
@@ -168,7 +168,7 @@ def svd_xy(X, Y):
 
 
 def select_attrs(table, attributes, class_var=None, metas=None):
-    """ Select only ``attributes`` from the ``table``.
+    """ Select ``attributes`` from the ``table`` and return a new data table.
     """
     domain = Orange.data.Domain(attributes, class_var)
     if metas:
@@ -177,13 +177,14 @@ def select_attrs(table, attributes, class_var=None, metas=None):
 
 
 class PLSRegressionLearner(base.BaseRegressionLearner):
-    """ Fits the partial least squares regression model,
-    i.e. learns the regression parameters. The implementation is based on
-    `Scikit learn python implementation`_
+    """
+    Fit the partial least squares regression model, i.e. learn the
+    regression parameters. The implementation is based on `Scikit
+    learn python implementation`_
     
     The class is derived from
-    :class:`Orange.regression.base.BaseRegressionLearner`
-    which is used for preprocessing the data (continuization and imputation)
+    :class:`Orange.regression.base.BaseRegressionLearner` that is
+    used for preprocessing the data (continuization and imputation)
     before fitting the regression parameters
     
     """
@@ -195,7 +196,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         """
         .. attribute:: n_comp
     
-            number of components to keep. Default: 2
+            number of components to keep (default: 2)
 
         .. attribute:: deflation_mode
     
@@ -208,7 +209,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 
         .. attribute:: algorithm
     
-            The algorithm used to estimate the weights:
+            The algorithm for estimating the weights:
             "nipals" or "svd" (default)
 
 
@@ -230,7 +231,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 
         :param x_vars, y_vars: List of input and response variables
             (:obj:`Orange.feature.Continuous` or
-            :obj:`Orange.feature.Discrete`). If None (default) it is
+            :obj:`Orange.feature.Discrete`). If ``None`` (default) it is
             assumed that the data domain provides information which variables
             are reponses and which are not. If data has
             :obj:`~Orange.data.Domain.class_var` defined in its domain, a
@@ -280,10 +281,9 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
                              multitarget=multitarget, **kwargs)
 
     def fit(self, X, Y):
-        """ Fits all unknown parameters, i.e.
+        """ Fit all unknown parameters, i.e.
         weights, scores, loadings (for x and y) and regression coefficients.
-        Returns a dict with all of the parameters.
-        
+        Return a dict with all of the parameters.
         """
         # copy since this will contain the residuals (deflated) matrices
 
@@ -364,7 +364,7 @@ deprecated_members({"nComp": "n_comp",
                    in_place=True)(PLSRegressionLearner)
 
 class PLSRegression(Orange.classification.Classifier):
-    """ PLSRegression predicts value of the response variables
+    """ Predict values of the response variables
     based on the values of independent variables.
     
     Basic notations:
