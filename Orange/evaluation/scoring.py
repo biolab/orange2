@@ -769,160 +769,156 @@ def _confusion_chi_square(confusion_matrix):
     df = (dim - 1)**2
     return ss, df, statc.chisqprob(ss, df)
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def sens(confusion_matrix):
+class CMScore(list):
     """
-    Return `sensitivity
+    :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
+                         or list of :obj:`ConfusionMatrix`.
+    :rtype: list of scores, one for each learner."""
+    @deprecated_keywords({"confm": "test_results"})
+    def __init__(self, test_results=None):
+        super(CMScore, self).__init__()
+
+        if test_results is not None:
+            self[:] = self.__call__(test_results)
+
+    def __call__(self, test_results):
+        if isinstance(test_results, testing.ExperimentResults):
+            test_results = confusion_matrices(test_results, class_index=1)
+        if isinstance(test_results, ConfusionMatrix):
+            test_results = [test_results]
+
+        return map(self.compute, test_results)
+
+
+
+class Sensitivity(CMScore):
+    __doc__ = """Compute `sensitivity
     <http://en.wikipedia.org/wiki/Sensitivity_and_specificity>`_ (proportion
     of actual positives which are correctly identified as such).
-    """
-    if type(confusion_matrix) == list:
-        return [sens(cm) for cm in confusion_matrix]
-    else:
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.TP+confusion_matrix.FN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute sensitivity: one or both classes have no instances")
-            return -1
+            return None
 
         return confusion_matrix.TP / tot
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def recall(confusion_matrix):
-    """
-    Return `recall <http://en.wikipedia.org/wiki/Precision_and_recall>`_
+class Recall(Sensitivity):
+    __doc__ = """ Compute `recall
+    <http://en.wikipedia.org/wiki/Precision_and_recall>`_
     (fraction of relevant instances that are retrieved).
-    """
-    return sens(confusion_matrix)
+    """ + CMScore.__doc__
+    pass # Recall == Sensitivity
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def spec(confusion_matrix):
-    """
-    Return `specificity
+class Specificity(CMScore):
+    __doc__ = """Compute `specificity
     <http://en.wikipedia.org/wiki/Sensitivity_and_specificity>`_
     (proportion of negatives which are correctly identified).
-    """
-    if type(confusion_matrix) == list:
-        return [spec(cm) for cm in confusion_matrix]
-    else:
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.FP+confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute specificity: one or both classes have no instances")
-            return -1
+            return None
         return confusion_matrix.TN / tot
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def PPV(confusion_matrix):
-    """
-    Return `positive predictive value
+class PPV(CMScore):
+    __doc__ = """Compute `positive predictive value
     <http://en.wikipedia.org/wiki/Positive_predictive_value>`_ (proportion of
-    subjects with positive test results who are correctly diagnosed)."""
-    if type(confusion_matrix) == list:
-        return [PPV(cm) for cm in confusion_matrix]
-    else:
+    subjects with positive test results who are correctly diagnosed).
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.TP + confusion_matrix.FP
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute PPV: one or both classes have no instances")
-            return -1
+            return None
         return confusion_matrix.TP/tot
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def precision(confusion_matrix):
-    """
-    Return `precision <http://en.wikipedia.org/wiki/Precision_and_recall>`_
+class Precision(PPV):
+    __doc__ = """Compute `precision <http://en.wikipedia.org/wiki/Precision_and_recall>`_
     (retrieved instances that are relevant).
-    """
-    return PPV(confusion_matrix)
+    """ + CMScore.__doc__
+    pass # Precision == PPV
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def NPV(confusion_matrix):
-    """
-    Return `negative predictive value
+
+class NPV(CMScore):
+    __doc__ = """Compute `negative predictive value
     <http://en.wikipedia.org/wiki/Negative_predictive_value>`_ (proportion of
     subjects with a negative test result who are correctly diagnosed).
-     """
-    if type(confusion_matrix) == list:
-        return [NPV(cm) for cm in confusion_matrix]
-    else:
+     """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.FN + confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute NPV: one or both classes have no instances")
-            return -1
+            return None
         return confusion_matrix.TN / tot
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def F1(confusion_matrix):
-    """
-    Return `F1 score <http://en.wikipedia.org/wiki/F1_score>`_
+
+class F1(CMScore):
+    __doc__ = """Return `F1 score
+    <http://en.wikipedia.org/wiki/F1_score>`_
     (harmonic mean of precision and recall).
-    """
-    if type(confusion_matrix) == list:
-        return [F1(cm) for cm in confusion_matrix]
-    else:
-        p = precision(confusion_matrix)
-        r = recall(confusion_matrix)
-        if p + r > 0:
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
+        p = Precision.compute(confusion_matrix)
+        r = Recall.compute(confusion_matrix)
+        if p is not None and r is not None and (p+r) != 0:
             return 2. * p * r / (p + r)
         else:
             import warnings
             warnings.warn("Can't compute F1: P + R is zero or not defined")
-            return -1
+            return None
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def Falpha(confusion_matrix, alpha=1.0):
-    """
-    Return the alpha-mean of precision and recall over the given confusion
+class Falpha(CMScore):
+    __doc__ = """Compute the alpha-mean of precision and recall over the given confusion
     matrix.
-    """
-    if type(confusion_matrix) == list:
-        return [Falpha(cm, alpha=alpha) for cm in confusion_matrix]
-    else:
-        p = precision(confusion_matrix)
-        r = recall(confusion_matrix)
-        return (1. + alpha) * p * r / (alpha * p + r)
+    """ + CMScore.__doc__
+
+    def __init__(self, test_results, alpha=1.):
+        self.alpha = alpha
+        super(Falpha, self).__init__(test_results)
+
+    def compute(self, confusion_matrix):
+        p = Precision.compute(confusion_matrix)
+        r = Recall.compute(confusion_matrix)
+        return (1. + self.alpha) * p * r / (self.alpha * p + r)
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def MCC(confusion_matrix):
-    """
-    Return `Matthew correlation coefficient
+class MCC(CMScore):
+    __doc__ = """Compute `Matthew correlation coefficient
     <http://en.wikipedia.org/wiki/Matthews_correlation_coefficient>`_
     (correlation coefficient between the observed and predicted binary
     classifications).
-    """
-    # code by Boris Gorelik
-    if type(confusion_matrix) == list:
-        return [MCC(cm) for cm in confusion_matrix]
-    else:
-        truePositive = confusion_matrix.TP
-        trueNegative = confusion_matrix.TN
-        falsePositive = confusion_matrix.FP
-        falseNegative = confusion_matrix.FN
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, cm):
+        # code by Boris Gorelik
+        TP, TN, FP, FN = cm.TP, cm.TN, cm.FP, cm.FN
           
-        try:   
-            r = (((truePositive * trueNegative) -
-                  (falsePositive * falseNegative)) /
-                 math.sqrt((truePositive + falsePositive) *
-                           (truePositive + falseNegative) * 
-                           (trueNegative + falsePositive) * 
-                           (trueNegative + falseNegative)))
+        try:
+            return (TP*TN - FP*FN) /\
+                 math.sqrt((TP+FP) * (TP+FN) * (TN+ FP) * (TN+FN))
         except ZeroDivisionError:
-            # Zero difision occurs when there is either no true positives 
+            # Zero division occurs when there is either no true positives
             # or no true negatives i.e. the problem contains only one 
             # type of classes.
             import warnings
             warnings.warn("Can't compute MCC: TP or TN is zero or not defined")
-            r = None
-
-    return r
 
 
 @deprecated_keywords({"bIsListOfMatrices": "b_is_list_of_matrices"})
@@ -975,6 +971,14 @@ def scotts_pi(confusion_matrix, b_is_list_of_matrices=True):
 
        ret = (prActual - prExpected) / (1.0 - prExpected)
        return ret
+
+# Backward compatibility
+sens = Sensitivity
+spec = Specificity
+precision = Precision
+recall = Recall
+
+
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})

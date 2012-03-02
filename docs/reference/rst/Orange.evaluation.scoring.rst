@@ -26,13 +26,13 @@ with the :obj:`confusion_matrices` function. If class variable has more than
 two values, the index of the value to calculate the confusion matrix for should
 be passed as well.
 
-.. autoclass:: CA
-.. autofunction:: sens
-.. autofunction:: spec
+.. autofunction:: CA
+.. autofunction:: Sensitivity
+.. autofunction:: Specificity
 .. autofunction:: PPV
 .. autofunction:: NPV
-.. autofunction:: precision
-.. autofunction:: recall
+.. autofunction:: Precision
+.. autofunction:: Recall
 .. autofunction:: F1
 .. autofunction:: Falpha
 .. autofunction:: MCC
@@ -50,7 +50,6 @@ different classes are called discriminatory scores.
 .. autoclass:: AUC
     :members: by_weighted_pairs, by_pairs,
               weighted_one_against_all, one_against_all, single_class, pair,
-              matrix
 
 .. autofunction:: AUCWilcoxon
 

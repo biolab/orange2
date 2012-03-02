@@ -169,24 +169,81 @@ class TestConfusionMatrix(unittest.TestCase):
 
         self.assertTrue(hasattr(cm[0], "TP"))
 
+class CMScoreTest(object):
+    def test_with_test_results_on_biclass(self):
+        learner = random_learner
+        ds = data.Table("monks-1")
+        pt = testing.proportion_test([learner], ds, times=1)
+        scores = self.score(pt)
+        self.assertIsInstance(scores, list)
 
-class TestConfusionMatrix(unittest.TestCase):
-    def test_construct_confusion_matrix_from_multiclass(self):
+    def test_with_test_results_on_multiclass(self):
         learner = random_learner
         ds = data.Table("iris")
         pt = testing.proportion_test([learner], ds, times=1)
-        cm = scoring.confusion_matrices(pt)
 
-        self.assertTrue(isinstance(cm[0], list))
+        scores = self.score(pt)
+        self.assertIsInstance(scores, list)
 
-
-    def test_construct_confusion_matrix_from_biclass(self):
+    def test_with_confusion_matrix_on_biclass(self):
         learner = random_learner
         ds = data.Table("monks-1")
         pt = testing.proportion_test([learner], ds, times=1)
         cm = scoring.confusion_matrices(pt, class_index=1)
+        scores = self.score(cm)
+        self.assertIsInstance(scores, list)
 
-        self.assertTrue(hasattr(cm[0], "TP"))
+    def test_with_confusion_matrix_on_multiclass(self):
+        learner = random_learner
+        ds = data.Table("iris")
+        pt = testing.proportion_test([learner], ds, times=1)
+        cm = scoring.confusion_matrices(pt, class_index=1)
+        scores = self.score(cm)
+        self.assertIsInstance(scores, list)
 
+class TestSensitivity(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.Sensitivity
+
+class TestSpecificity(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.Specificity
+
+class TestPrecision(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.Precision
+
+class TestRecall(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.Recall
+
+class TestPPV(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.PPV
+
+class TestNPV(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.NPV
+
+class TestF1(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.F1
+
+class TestFalpha(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.Falpha
+
+class TestMCC(CMScoreTest, unittest.TestCase):
+    @property
+    def score(self):
+        return scoring.MCC
 if __name__ == '__main__':
     unittest.main()
