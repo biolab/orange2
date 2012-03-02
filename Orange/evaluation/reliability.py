@@ -583,10 +583,10 @@ class BaggingVarianceCNeighbours:
     """
     
     :param bagv: Instance of Bagging Variance estimator.
-    :type bagv: :class:`Orange.evaluation.reliability.BaggingVariance`
+    :type bagv: :class:`BaggingVariance`
     
     :param cnk: Instance of CNK estimator.
-    :type cnk: :class:`Orange.evaluation.reliability.CNeighbours`
+    :type cnk: :class:`CNeighbours`
     
     :rtype: :class:`Orange.evaluation.reliability.BaggingVarianceCNeighboursClassifier`
     
@@ -658,11 +658,11 @@ class Learner:
     
     :param box_learner: Learner we want to wrap into a reliability estimation
         classifier.
-    :type box_learner: learner
+    :type box_learner: :obj:`~Orange.classification.Learner`
     
     :param estimators: List of different reliability estimation methods we
                        want to use on the chosen learner.
-    :type estimators: list of reliability estimators
+    :type estimators: :obj:`list` of reliability estimators
     
     :param name: Name of this reliability learner
     :type name: string
@@ -670,12 +670,11 @@ class Learner:
     :rtype: :class:`Orange.evaluation.reliability.Learner`
     """
     def __init__(self, box_learner, name="Reliability estimation",
-                 estimators = [SensitivityAnalysis(),
-                               LocalCrossValidation(),
-                               BaggingVarianceCNeighbours(),
-                               Mahalanobis(),
-                               MahalanobisToCenter()
-                               ],
+                 estimators=[SensitivityAnalysis(),
+                             LocalCrossValidation(),
+                             BaggingVarianceCNeighbours(),
+                             Mahalanobis(),
+                             MahalanobisToCenter()],
                  **kwds):
         self.__dict__.update(kwds)
         self.name = name
@@ -690,7 +689,7 @@ class Learner:
         :param instances: Data instances to learn from.
         :type instances: Orange.data.Table
         :param weight: Id of meta attribute with weights of instances
-        :type weight: integer
+        :type weight: int
         :rtype: :class:`Orange.evaluation.reliability.Classifier`
         """
         

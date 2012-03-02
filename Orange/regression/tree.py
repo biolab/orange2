@@ -8,10 +8,12 @@
 Regression trees (``tree``)
 ***************************
 
-Regression tree shares its implementation with Orange.classification.tree.TreeLearner,
-but uses a different set of functions to evaluate node splitting and stop
-criteria. Usage of regression trees is straightforward as demonstrated on the
-following example (:download:`regression-tree-run.py <code/regression-tree-run.py>`):
+Regression tree shares its implementation with
+:obj:`Orange.classification.tree.TreeLearner`, but uses a different set of
+functions to evaluate node splitting and stop criteria. Usage of
+regression trees is straightforward as demonstrated on the following
+example (:download:`regression-tree-run.py
+<code/regression-tree-run.py>`):
 
 .. literalinclude:: code/regression-tree-run.py
    :lines: 7-

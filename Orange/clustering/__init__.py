@@ -1,9 +1,3 @@
-"""
-.. index:: clustering
-
-Everything about clustering, including agglomerative and hierarchical clustering.
-"""
-
 from __future__ import with_statement
 
 from orange import \

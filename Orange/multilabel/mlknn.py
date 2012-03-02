@@ -5,17 +5,18 @@
 ML-kNN Learner
 ***************************************
 
-ML-kNN Classification is a kind of adaptation method for multi-label classification.
-It is an adaptation of the kNN lazy learning algorithm for multi-label data.
-In essence, ML-kNN uses the kNN algorithm independently for each label :math:`l`.
-It finds the k nearest examples to the test instance and considers those that are
-labeled at least with :math:`l` as positive and the rest as negative.
-Actually this method follows the paradigm of Binary Relevance (BR). What mainly
-differentiates this method from BR is the use of prior probabilities. ML-kNN has also
-the capability of producing a ranking of the labels as an output.
-For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy learning
-approach to multi-label learning <http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_. 
-Pattern Recogn. 40, 7 (Jul. 2007), 2038-2048.  
+ML-kNN Classification is an adaptation kNN for multi-label
+classification.  In essence, ML-kNN uses the kNN algorithm
+independently for each label :math:`l`.  It finds the k nearest
+examples to the test instance and considers those that are labeled at
+least with :math:`l` as positive and the rest as negative.  What
+mainly differentiates this method from other binary relevance (BR)
+methods is the use of prior probabilities. ML-kNN can also rank labels.
+
+For more information, see Zhang, M. and Zhou, Z. 2007. `ML-KNN: A lazy
+learning approach to multi-label learning
+<http://dx.doi.org/10.1016/j.patcog.2006.12.019>`_.  Pattern
+Recogn. 40, 7 (Jul. 2007), 2038-2048.
 
 .. index:: ML-kNN Learner
 .. autoclass:: Orange.multilabel.MLkNNLearner
@@ -49,8 +50,9 @@ from lp import transform_to_powerset
 
 class MLkNNLearner(_multiknn.MultikNNLearner):
     """
-    Class implementing the ML-kNN (Multi-Label k Nearest Neighbours) algorithm. The class is based on the 
-    pseudo-code made available by the authors.
+    Class implementing the ML-kNN (Multi-Label k Nearest Neighbours)
+    algorithm. The class is based on the pseudo-code made available by
+    the authors.
     
     The pseudo code of ML-kNN:
     

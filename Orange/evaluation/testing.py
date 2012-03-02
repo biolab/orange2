@@ -11,13 +11,29 @@ TEST_TYPE_MULTITARGET = 2
 
 class TestedExample:
     """
-    TestedExample stores predictions of different classifiers for a single testing example.
+    TestedExample stores predictions of different classifiers for a
+    single testing data instance.
 
-    :var classes: A list of predictions of type Value, one for each classifier.
-    :var probabilities: A list of probabilities of classes, one for each classifier.
-    :var iteration_number: Iteration number (e.g. fold) in which the TestedExample was created/tested.
-    :var actual_class: The correct class of the example
-    :var weight: Example's weight. Even if the example set was not weighted, this attribute is present and equals 1.0.
+    .. attribute:: classes
+
+        A list of predictions of type Value, one for each classifier.
+
+    .. attribute:: probabilities
+
+        A list of probabilities of classes, one for each classifier.
+
+    .. attribute:: iteration_number
+
+        Iteration number (e.g. fold) in which the TestedExample was
+        created/tested.
+
+    .. attribute actual_class
+
+        The correct class of the example
+
+    .. attribute weight
+
+        Instance's weight; 1.0 if data was not weighted
     """
 
     @deprecated_keywords({"iterationNumber": "iteration_number",
@@ -36,7 +52,7 @@ class TestedExample:
         self.weight = weight
 
     def add_result(self, aclass, aprob):
-        """Appends a new result (class and probability prediction by a single classifier) to the classes and probabilities field."""
+        """Append a new result (class and probability prediction by a single classifier) to the classes and probabilities field."""
     
         if isinstance(aclass, (list, tuple)):
             self.classes.append(aclass)
@@ -49,7 +65,7 @@ class TestedExample:
             self.probabilities.append(list(aprob))
 
     def set_result(self, i, aclass, aprob):
-        """Sets the result of the i-th classifier to the given values."""
+        """Set the result of the i-th classifier to the given values."""
         if isinstance(aclass, (list, tuple)):
             self.classes[i] = aclass
             self.probabilities[i] = aprob
@@ -71,22 +87,68 @@ class ExperimentResults(object):
     """
     ``ExperimentResults`` stores results of one or more repetitions of
     some test (cross validation, repeated sampling...) under the same
-    circumstances.
+    circumstances. Instances of this class are constructed by sampling
+    and testing functions from module :obj:`Orange.evaluation.testing`
+    and used by methods in module :obj:`Orange.evaluation.scoring`.
 
-    :var results: A list of instances of :obj:`TestedExample`, one for each example in the dataset.
-    :var classifiers: A list of classifiers, one element for each repetition (eg. fold). Each element is a list
-      of classifiers, one for each learner. This field is used only if storing is enabled by ``storeClassifiers=1``.
-    :var number_of_iterations: Number of iterations. This can be the number of folds (in cross validation)
-      or the number of repetitions of some test. :obj:`TestedExample`'s attribute ``iteration_number`` should
-      be in range ``[0, number_of_iterations-1]``.
-    :var number_of_learners: Number of learners. Lengths of lists classes and probabilities in each :obj:`TestedExample`
-      should equal ``number_of_learners``.
-    :var loaded: If the experimental method supports caching and there are no obstacles for caching (such as unknown
-      random seeds), this is a list of boolean values. Each element corresponds to a classifier and tells whether the
-      experimental results for that classifier were computed or loaded from the cache.
-    :var weights: A flag telling whether the results are weighted. If ``False``, weights are still present
-      in :obj:`TestedExample`, but they are all ``1.0``. Clear this flag, if your experimental procedure ran on weighted
-      testing examples but you would like to ignore the weights in statistics.
+    .. attribute:: results
+
+        A list of instances of :obj:`TestedExample`, one for each
+        example in the dataset.
+
+    .. attribute:: number_of_iterations
+
+        Number of iterations. This can be the number of folds (in
+        cross validation) or the number of repetitions of some
+        test. :obj:`TestedExample`'s attribute ``iteration_number``
+        should be in range ``[0, number_of_iterations-1]``.
+
+    .. attribute:: number_of_learners
+
+        Number of learners. Lengths of lists classes and probabilities
+        in each :obj:`TestedExample` should equal
+        ``number_of_learners``.
+
+    .. attribute:: classifier_names
+
+        Stores the names of the classifiers.
+
+    .. attribute:: classifiers
+
+        A list of classifiers, one element for each iteration of
+        sampling and learning (eg. fold). Each element is a list of
+        classifiers, one for each learner. For instance,
+        ``classifiers[2][4]`` refers to the 3rd repetition, 5th
+        learning algorithm.
+
+        Note that functions from :obj:`~Orange.evaluation.testing`
+        only store classifiers it enabled by setting
+        ``storeClassifiers`` to ``1``.
+
+    ..
+        .. attribute:: loaded
+
+            If the experimental method supports caching and there are no
+            obstacles for caching (such as unknown random seeds), this is a
+            list of boolean values. Each element corresponds to a classifier
+            and tells whether the experimental results for that classifier
+            were computed or loaded from the cache.
+
+    .. attribute:: base_class
+
+       The reference class for measures like AUC.
+
+    .. attribute:: class_values
+
+        The list of class values.
+
+    .. attribute:: weights
+
+        A flag telling whether the results are weighted. If ``False``,
+        weights are still present in :obj:`TestedExample`, but they
+        are all ``1.0``. Clear this flag, if your experimental
+        procedure ran on weighted testing examples but you would like
+        to ignore the weights in statistics.
     """
     @deprecated_keywords({"classifierNames": "classifier_names",
                           "classValues": "class_values",
@@ -197,20 +259,17 @@ class Evaluation(object):
             stratified=Orange.core.MakeRandomIndices.StratifiedIfPossible,
             preprocessors=(), random_generator=0, callback=None,
             store_classifiers=False, store_examples=False):
-        """Perform cross validation with specified number of folds.
+        """Cross validation test with specified number of folds.
 
-        :param learners: list of learners to be tested
-        :param examples: data table on which the learners will be tested
-        :param folds: number of folds to perform
-        :param stratified: sets, whether indices should be stratified
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param random_generator: :obj:`Orange.misc.RandomGenerator` object.
-        :param callback: a function that will be called after each fold is
-               computed.
-        :param store_classifiers: if True, classifiers will be accessible in
-               test_results.
-        :param store_examples: if True, examples will be accessible in
-               test_results.
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
+        :param folds: number of folds
+        :param stratified: tells whether to stratify the sampling
+        :param preprocessors: a list of preprocessors to be used on data (obsolete)
+        :param random_generator: random seed or generator (see above)
+        :param callback: a function that is called after finishing each fold
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: :obj:`ExperimentResults`
         """
         (examples, weight) = demangle_examples(examples)
@@ -233,17 +292,14 @@ class Evaluation(object):
                           "storeExamples": "store_examples"})
     def leave_one_out(self, learners, examples, preprocessors=(),
             callback=None, store_classifiers=False, store_examples=False):
-        """Perform leave-one-out evaluation of learners on a data set.
+        """Leave-one-out evaluation of learning algorithms.
 
-        :param learners: list of learners to be tested
-        :param examples: data table on which the learners will be tested
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that will be called after each fold is
-               computed.
-        :param store_classifiers: if True, classifiers will be accessible in
-               test_results.
-        :param store_examples: if True, examples will be accessible in
-               test_results.
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param callback: a function that is called after finishing each fold
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: :obj:`ExperimentResults`
         """
         examples, weight = demangle_examples(examples)
@@ -256,30 +312,24 @@ class Evaluation(object):
                           "storeClassifiers": "store_classifiers=True",
                           "pps":"preprocessors"})
     def test_with_indices(self, learners, examples, indices, preprocessors=(),
-            callback=None, store_classifiers=False, store_examples=False,
-            **kwargs):
+            callback=None, store_classifiers=False, store_examples=False):
         """
         Perform a cross-validation-like test. Examples for each fold are
         selected based on given indices.
 
-        :param learners: list of learners to be tested
-        :param examples: data table on which the learners will be tested
-        :param indices: a list of integers that defines, which examples will be
-               used for testing in each fold. The number of indices should be
-               equal to the number of examples.
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that will be called after each fold is
-               computed.
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
+        :param indices: a list of integer indices that sort examples into folds; each index corresponds to an example from ``examples``
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param callback: a function that is called after each fold
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: :obj:`ExperimentResults`
         """
         examples, weight = demangle_examples(examples)
         if not examples:
             raise ValueError("Test data set with no examples")
         test_type = self.check_test_type(examples, learners)
-        if "cache" in kwargs:
-            raise ValueError("This feature is no longer supported.")
 
         niterations = max(indices)+1
         test_result = ExperimentResults(niterations,
@@ -309,7 +359,7 @@ class Evaluation(object):
 
 
     def one_fold_with_indices(self, learners, examples, fold, indices, preprocessors=(), weight=0):
-        """Perform one fold of cross-validation like procedure using provided indices."""
+        """Similar to :obj:`test_with_indices` except that it performs single fold of cross-validation, given by argument ``fold``."""
         learn_set = examples.selectref(indices, fold, negate=1)
         test_set = examples.selectref(indices, fold, negate=0)
         if len(learn_set)==0 or len(test_set)==0:
@@ -337,14 +387,14 @@ class Evaluation(object):
     def learn_and_test_on_learn_data(self, learners, examples, preprocessors=(),
                                      callback=None, store_classifiers=False, store_examples=False):
         """
-        Perform a test where learners are trained and tested on the same data.
+        Train learning algorithms and test them on the same data.
 
-        :param learners: list of learners to be tested
-        :param examples: data table on which the learners will be tested
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that will be called after each fold is computed.
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param callback: a function that is called after each learning
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: :obj:`ExperimentResults`
         """
 
@@ -385,16 +435,15 @@ class Evaluation(object):
     def learn_and_test_on_test_data(self, learners, learn_set, test_set, preprocessors=(),
                                     callback=None, store_classifiers=False, store_examples=False):
         """
-        Perform a test, where learners are trained on one dataset and tested
-        on another.
+        Train learning algorithms on one data sets and test them on another.
 
-        :param learners: list of learners to be tested
-        :param learn_set: a dataset used for training
-        :param test_set: a dataset used for testing
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that is be called after each classifier is computed.
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param learners: list of learning algorithms
+        :param learn_set: training instances
+        :param test_set: testing instances
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param callback: a function that is called after each learning
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: :obj:`ExperimentResults`
         """
         learn_set, learn_weight = demangle_examples(learn_set)
@@ -435,18 +484,18 @@ class Evaluation(object):
                    preprocessors=(), random_generator=0,
                    callback=None, store_classifiers=False, store_examples=False):
         """
-        Perform a test, where learners are trained and tested on different data sets. Training and test sets are
-        generated by proportionally splitting examples.
+        Iteratively split the data into training and testing set, and train and test the learnign algorithms.
 
-        :param learners: list of learners to be tested
-        :param examples: a dataset used for evaluation
-        :param learning_proportion: proportion of examples to be used for training
-        :param times: number of test repetitions
-        :param stratification: use stratification when constructing train and test sets.
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that is be called after each classifier is computed.
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
+        :param learning_proportion: proportion of data used for training
+        :param times: number of iterations
+        :param stratification: use stratified sampling
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param random_generator: random seed or generator (see above)
+        :param callback: a function that is called after each fold
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: :obj:`ExperimentResults`
         """
         pick = Orange.core.MakeRandomIndices2(stratified = stratification, p0 = learning_proportion, randomGenerator = random_generator)
@@ -498,13 +547,14 @@ class Evaluation(object):
         Compute a learning curve using multiple cross-validations where
         models are trained on different portions of the training data.
 
-        :param learners: list of learners to be tested
-        :param examples: a dataset used for evaluation
-        :param cv_indices: indices used for crossvalidation
-        :param proportion_indices: indices for proportion selection
-        :param proportions: proportions of train data to be used
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that is be called after each classifier is computed.
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
+        :param cv_indices: indices used for cross validation (leave ``None`` for 10-fold CV)
+        :param proportion_indices: indices for proportion selection (leave ``None`` to let the function construct the folds)
+        :param proportions: list of proportions of data used for training
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param random_generator: random seed or generator (see above)
+        :param callback: a function that is be called after each learning
         :return: list of :obj:`ExperimentResults`
         """
         if cv_indices is None:
@@ -539,15 +589,18 @@ class Evaluation(object):
                        preprocessors=(),
                        random_generator=0, callback=None):
         """
-        Compute a learning curve where each cross-validation has given number of folds
-        and models are trained on specified proportion of training data.
+        Compute a learning curve using multiple cross-validations where
+        models are trained on different portions of the training data.
+        Similar to :obj:`learning_curve` except for simpler arguments.
 
-        :param learners: list of learners to be tested
-        :param examples: a dataset used for evaluation
+        :param learners: list of learning algorithms
+        :param examples: data instances used for training and testing
         :param folds: number of folds for cross-validation
-        :param proportions: proportions of train data to be used
-        :param preprocessors: a list of preprocessors to be used on data.
-        :param callback: a function that is called after each classifier is computed.
+        :param proportions: list of proportions of data used for training
+        :param stratification: use stratified sampling
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param random_generator: random seed or generator (see above)
+        :param callback: a function that is be called after each learning
         :return: list of :obj:`ExperimentResults`
         """
 
@@ -565,14 +618,18 @@ class Evaluation(object):
             store_examples=False):
         """
         Compute a learning curve given two datasets. Models are learned on
-        proportion of the first dataset and then used to make predictions for
-        the second dataset.
+        proportion of the first dataset and then tested on the second.
 
-        :param learners: list of learners to be tested
-        :param learn_set: a dataset used for evaluation
-        :param test_set: a dataset used for evaluation
-        :param proportions: proportions of train data to be used
-        :param preprocessors: a list of preprocessors to be used on data.
+        :param learners: list of learning algorithms
+        :param learn_set: training data
+        :param test_set: testing data
+        :param times: number of iterations
+        :param straitification: use stratified sampling
+        :param proportions: a list of proportions of training data to be used
+        :param preprocessors: a list of preprocessors (obsolete)
+        :param random_generator: random seed or generator (see above)
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         :return: list of :obj:`ExperimentResults`
         """
         learn_set, learn_weight = demangle_examples(learn_set)
@@ -614,12 +671,12 @@ class Evaluation(object):
 
     def test_on_data(self, classifiers, examples, store_classifiers=False, store_examples=False):
         """
-        Test classifiers on examples
+        Test classifiers on the given data
 
-        :param classifiers: classifiers to test
-        :param examples: examples to test on
-        :param store_classifiers: if True, classifiers will be accessible in test_results.
-        :param store_examples: if True, examples will be accessible in test_results.
+        :param classifiers: a list of classifiers
+        :param examples: testing data
+        :param store_classifiers: if ``True``, classifiers are stored in results
+        :param store_examples: if ``True``, examples are stored in results
         """
 
         examples, weight = demangle_examples(examples)
@@ -686,7 +743,7 @@ class Evaluation(object):
 
     
     def _preprocess_data(self, learn_set, test_set, preprocessors):
-        """Apply preprocessors to learn and test dataset"""
+        """Apply preprocessors to learn and test dataset (obsolete)"""
         for p_type, preprocessor in preprocessors:
             if p_type == "B":
                 learn_set = preprocessor(learn_set)

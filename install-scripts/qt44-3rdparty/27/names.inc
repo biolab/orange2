@@ -1,4 +1,4 @@
-!define NAME_PYTHON python-2.7.1.msi
+!define NAME_PYTHON python-2.7.2.msi
 !define NAME_PYTHONWIN pywin32-214.win32-py2.7.exe
 !define NAME_MFC mfc71.dll
 
@@ -9,5 +9,5 @@
 	!insertmacro installmodule PIL PIL-1.1.7.win32-py2.7.exe $PythonDir\lib\site-packages\PIL\*.*
 	!insertmacro installmodule PyQt PyQt-Py2.7-gpl-4.8.1-1.exe $PythonDir\lib\site-packages\PyQt4\*.*
 	!insertmacro installmodule PyQwt PyQt4.Qwt5-5.2.1.win32-py27.exe $PythonDir\lib\site-packages\PyQt4\Qwt5\*.*
-	!insertmacro installmodule networkx networkx-1.5.win32.exe $PythonDir\lib\site-packages\networkx\*.*
+	!insertmacro installmodule networkx networkx-1.6.win32.exe $PythonDir\lib\site-packages\networkx\*.*
 !macroend

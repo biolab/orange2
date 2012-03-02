@@ -22,7 +22,8 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.pngmath']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx',
+              'sphinx.ext.pngmath']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -166,7 +167,9 @@ html_title = "Orange Widgets"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+
+# The old widgets documentation is copied here
+html_static_path = ["../../../Orange/doc/widgets"]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -288,6 +291,17 @@ from docutils import nodes
 from docutils.transforms import Transform
  
 class StampListDecorate(Transform):
+    """Decorate a list with pixmap bullet points.
+    
+    Example::
+    
+        .. rst-class: stamp-list
+        
+            1. First
+            2. Second
+        
+        
+    """
     default_priority = 1000
     def apply(self):
         for node in self.document.traverse(nodes.Node):

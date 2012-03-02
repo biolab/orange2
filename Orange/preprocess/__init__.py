@@ -1,5 +1,5 @@
 """
-.. autoclass:: Preprocessor_discretizeEntropy
+.. autoclass:: Preprocessor_discretizeEntropy(method=Orange.feature.discretization.Entropy())
 
 .. autoclass:: Preprocessor_removeContinuous
 
@@ -9,7 +9,7 @@
 
 .. autoclass:: Preprocessor_impute
 
-.. autoclass:: Preprocessor_featureSelection
+.. autoclass:: Preprocessor_featureSelection(measure=Orange.feature.scoring.Relief(), filter=None, limit=10)
 
 .. autofunction:: bestP
 
@@ -155,6 +155,7 @@ from orange import \
 import math
 
 import orange
+import Orange
 from Orange.misc import _orange__new__, _orange__reduce__
 
 class Preprocessor_discretizeEntropy(Preprocessor_discretize):
@@ -167,9 +168,9 @@ class Preprocessor_discretizeEntropy(Preprocessor_discretize):
     __new__ = _orange__new__(Preprocessor_discretize)
     __reduce__ = _orange__reduce__
     
-    def __init__(self, method=orange.EntropyDiscretization()):
+    def __init__(self, method=Orange.feature.discretization.Entropy()):
         self.method = method
-        assert(isinstance(method, orange.EntropyDiscretization))
+        assert(isinstance(method, Orange.feature.discretization.Entropy))
         
     def __call__(self, data, wightId=0):
         newattr_list = []
@@ -273,7 +274,7 @@ class Preprocessor_featureSelection(orange.Preprocessor):
     bestN = staticmethod(bestN)
     bestP = staticmethod(bestP)
     
-    def __init__(self, measure=orange.MeasureAttribute_relief(), filter=None, limit=10):
+    def __init__(self, measure=Orange.feature.scoring.Relief(), filter=None, limit=10):
         self.measure = measure
         self.filter = filter if filter is not None else self.bestN
         self.limit = limit

@@ -1358,15 +1358,14 @@ def rules_equal(rule1, rule2):
         found = False # find the same condition in the other rule
         for c2 in rule2.filter.conditions:
             try:
-                if c1.position == c2.position and type(c1) == type(c2):
-                    continue # same feature and type?
-                if isinstance(c1, Orange.data.filter.ValueFilterDiscrete):
-                    if type(c1.values[0]) != type(c2.values[0]) or \
-                            c1.values[0] != c2.values[0]:
-                        continue # same value?
-                if isinstance(c1, Orange.data.filter.ValueFilterContinuous):
-                    if c1.oper != c2.oper or c1.ref != c2.ref:
-                        continue # same operator?
+                if not c1.position == c2.position: continue # same feature?
+                if not type(c1) == type(c2): continue # same type of condition
+                if type(c1) == Orange.core.ValueFilter_discrete:
+                    if not type(c1.values[0]) == type(c2.values[0]): continue
+                    if not c1.values[0] == c2.values[0]: continue # same value?
+                if type(c1) == Orange.core.ValueFilter_continuous:
+                    if not c1.oper == c2.oper: continue # same operator?
+                    if not c1.ref == c2.ref: continue #same threshold?
                 found = True
                 break
             except:
