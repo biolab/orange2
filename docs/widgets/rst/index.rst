@@ -149,7 +149,7 @@ Visualize
       - |AttributeStatistics_icon| `AttrStat`_
     * - |LinearProjection_icon| `Linear Projection`_
       - |Radviz_icon| `Radviz`_
-      - |PolyViz_icons| `PolyViz`_
+      - |Polyviz_icon| `Polyviz`_
     * - |ParallelCoords_icon| `Parallel Coordinates`_
       - |SurveyPlot_icon| `Survey Plot`_
       - |MosaicDisplay_icon| `Mosaic Display`_
@@ -159,7 +159,7 @@ Visualize
 	
 .. _`Distributions`: _static/Visualize/Distributions.htm
 
-.. _`ScatterPlot`: _static/Visualize/ScatterPlot.htm
+.. _`ScatterPlot`: _static/Visualize/Scatterplot.htm
 
 .. _`AttrStat`: _static/Visualize/AttributeStatistics.htm
 
@@ -167,7 +167,7 @@ Visualize
 
 .. _`Radviz`: _static/Visualize/Radviz.htm
 
-.. _`PolyViz`: _static/Visualize/PolyViz.htm
+.. _`Polyviz`: _static/Visualize/Polyviz.htm
 
 .. _`Parallel Coordinates`: _static/Visualize/ParallelCoordinates.htm
 
@@ -208,7 +208,7 @@ Visualize
 	:width: 48
 	:height: 48
 	
-.. |PolyViz_icons| image:: ../../../Orange/OrangeWidgets/Visualize/icons/PolyViz_48.png
+.. |Polyviz_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Polyviz_48.png
 	:align: middle
 	:alt: Poly Viz
 	:width: 48
@@ -447,7 +447,7 @@ Evaluate
     :class: widget-catalog-table
     
     * - |ConfusionMatrix_icon| `Confusion Matrix`_  
-      - |ROCAnalisys_icon| `ROC Analisys`_
+      - |ROCAnalysis_icon| `ROC Analysis`_
       - |LiftCurve_icon| `Lift Curve`_
     * - |CalibrationPlot_icon| `Calibration Plot`_
       - |TestLearners_icon| `Test Learners`_
@@ -455,7 +455,7 @@ Evaluate
 
 .. _`Confusion Matrix`: _static/Evaluate/ConfusionMatrix.htm
 
-.. _`ROC Analisys`: _static/Evaluate/ROCAnalisys.htm
+.. _`ROC Analysis`: _static/Evaluate/ROCAnalysis.htm
 
 .. _`Lift Curve`: _static/Evaluate/LiftCurve.htm
 
@@ -471,7 +471,7 @@ Evaluate
     :width: 48
     :height: 48
 
-.. |ROCAnalisys_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis_48.png 
+.. |ROCAnalysis_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis_48.png 
     :align: middle
     :alt: Pade
     :width: 48
@@ -544,13 +544,13 @@ Associate
     :width: 48
     :height: 48
 
-.. |ItemSets_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemSets_48.png
+.. |ItemSets_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/Itemsets_48.png
     :align: middle
     :alt: Item Sets
     :width: 48
     :height: 48
 
-.. |ItemSetsExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemSetsExplorer_48.png
+.. |ItemSetsExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemsetsExplorer_48.png
     :align: middle
     :alt: Item Sets Explorer
     :width: 48
