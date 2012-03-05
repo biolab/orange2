@@ -259,7 +259,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         if self.ridge_lambda is None:
             cov = pinv(dot(dot(X.T, W), X))
         else:
-            cov = pinv(dot(dot(X.T, W), X) - self.ridge_lambda * numpy.eye(m))
+            cov = pinv(dot(dot(X.T, W), X) + self.ridge_lambda * numpy.eye(m))
             # TODO: find inferential properties of the estimators
             compute_stats = False 
         D = dot(dot(cov, X.T), W)
