@@ -41,9 +41,6 @@ SplitOff: <<
 		
 		This package provides a Python module for text mining add-on.
 	<<
-	Shlibs: <<
-		%p/lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/_orngTextWrapper.so 0.0.0 %n (>= 0.0.0-1)
-	<<
 	Files: <<
 		lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/*.so
 		lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/*.py
