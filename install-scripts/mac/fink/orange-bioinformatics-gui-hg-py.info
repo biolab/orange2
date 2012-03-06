@@ -62,7 +62,6 @@ InstallScript: <<
 	#!/bin/bash -ev
 	
 	# Documentation for orange-bioinformatics-gui-hg-py
-	ls
 	mkdir -p %i/share/doc/orange-bioinformatics-gui-hg-py%type_pkg[python]/
 	cp LICENSE.txt %i/share/doc/orange-bioinformatics-gui-hg-py%type_pkg[python]/
 	cp doc/style.css %i/share/doc/orange-bioinformatics-gui-hg-py%type_pkg[python]/
