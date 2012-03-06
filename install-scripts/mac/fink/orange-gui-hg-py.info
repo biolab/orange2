@@ -129,7 +129,7 @@ InstallScript: <<
 	mv source/orangeqt/build/orangeqt.so  %i/lib/python%type_raw[python]/site-packages/
 	
 	# Fix install name id
-	install_name_tool -id %i/lib/python%type_raw[python]/site-packages/orangeqt.so %i/lib/python%type_raw[python]/site-packages/orangeqt.so
+	install_name_tool -id %p/lib/python%type_raw[python]/site-packages/orangeqt.so %i/lib/python%type_raw[python]/site-packages/orangeqt.so
 	
 	# Register dataset path
 	# TODO: this should be done by setup.py install and using global orangerc.cfg file
