@@ -14,7 +14,7 @@ if [[ ! $1 || ! $2 ]]; then
 fi
 
 WORK_DIR=$1
-PUBLISH_DIR=$2
+SOURCES_DIR=$2
 
 # First build all the source packages
 ./build-source.sh https://bitbucket.org/biolab/orange orange tip $WORK_DIR Orange
@@ -72,6 +72,7 @@ fi
 # Directory where fink .info templates are
 #FINK_TEMPLATES=fink
 FINK_TEMPLATES=$WORK_DIR/orange/install-scripts/mac/fink
+BASE_URL="file://$SOURCES_DIR"
 
 if [[ $NEW_ORANGE || $FORCE ]]; then
 	FINK_ORANGE_SOURCE_TEMPLATE="Orange-%v.tar.gz"
