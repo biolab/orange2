@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# orange widgets development documentation build configuration file, created by
+# orange library development documentation build configuration file, created by
 # sphinx-quickstart on Fri Oct  8 15:09:05 2010.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -107,7 +107,7 @@ html_theme_path = ["../../sphinx-ext/themes"]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-html_title = "Orange Widgets Development"
+html_title = "Orange Library Development"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -162,7 +162,7 @@ html_static_path = []
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'extendwidgetsdoc'
+htmlhelp_basename = 'developmentsdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -176,7 +176,7 @@ htmlhelp_basename = 'extendwidgetsdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'extend-widgets.tex', u'Orange Widgets Development',
+  ('index', 'development.tex', u'Orange Library Development',
    u'Biolab', 'manual'),
 ]
 
@@ -200,7 +200,7 @@ latex_documents = [
 # -- Options for Epub output ---------------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'Orange Widgets Development'
+epub_title = u'Orange Library Development'
 epub_author = u'Biolab'
 epub_publisher = u'Biolab'
 epub_copyright = u'Bioinformatics Laboratory, FRI UL'
