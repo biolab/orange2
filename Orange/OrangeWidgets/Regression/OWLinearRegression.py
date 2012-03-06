@@ -17,7 +17,7 @@ from orngWrap import PreprocessedLearner
 from Orange import feature as variable
 
 class OWLinearRegression(OWWidget):
-    settingsList = ["name", "use_ridge", "ridge_lambda", 
+    settingsList = ["name", "intercept", "use_ridge", "ridge_lambda",
                     "use_lasso", "t", "tol"]
     
     def __init__(self, parent=None, signalManager=None, title="Linear Regression"):
@@ -35,6 +35,7 @@ class OWLinearRegression(OWWidget):
         ##########
          
         self.name = "Linear Regression"
+        self.intercept = True
         self.use_ridge = False
         self.ridge_lambda = 1.0
         self.use_lasso = False
@@ -49,6 +50,8 @@ class OWLinearRegression(OWWidget):
         
         OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/predictor name",   
                        tooltip="Name of the learner/predictor")
+        
+        OWGUI.checkBox(self.controlArea, self, 'intercept', 'Intercept')
         
         bbox = OWGUI.radioButtonsInBox(self.controlArea, self, "use_lasso", [], 
                                        box=None,
@@ -120,9 +123,10 @@ class OWLinearRegression(OWWidget):
     def apply_ridge(self):
         if self.use_ridge:
             learner = linear.LinearRegressionLearner(name=self.name,
-                                                ridgeLambda=self.ridge_lambda)
+                intercept=self.intercept, ridgeLambda=self.ridge_lambda)
         else:
-            learner = linear.LinearRegressionLearner(name=self.name)
+            learner = linear.LinearRegressionLearner(name=self.name,
+                intercept=self.intercept)
         predictor = None
         if self.preprocessor:
             learner = self.preprocessor.wrapLearner(learner)
