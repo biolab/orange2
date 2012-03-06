@@ -62,18 +62,11 @@ SplitOff: <<
 		
 		This package provides a Python module.
 	<<
-	Shlibs: <<
-		%p/lib/python%type_raw[python]/site-packages/Orange/orange.so 0.0.0 %n (>= 0.0.0-1)
-		%p/lib/python%type_raw[python]/site-packages/Orange/orangeom.so 0.0.0 %n (>= 0.0.0-1)
-		%p/lib/python%type_raw[python]/site-packages/Orange/corn.so 0.0.0 %n (>= 0.0.0-1)
-		%p/lib/python%type_raw[python]/site-packages/Orange/statc.so 0.0.0 %n (>= 0.0.0-1)
-		%p/lib/python%type_raw[python]/site-packages/Orange/orangene.so 0.0.0 %n (>= 0.0.0-1)
-	<<
 	Files: <<
 		lib/python%type_raw[python]/site-packages/Orange/*
 		lib/python%type_raw[python]/site-packages/Orange-orng-modules.pth
 		share/doc/orange-hg-py%type_pkg[python]
-		bin/orange-canvas
+		bin/orange-canvas%type_pkg[python]
 	<<
 <<
 CompileScript: <<
@@ -146,5 +139,7 @@ InstallScript: <<
 	cp COPYING LICENSES %i/share/doc/orange-hg-py%type_pkg[python]/
 	mv Orange/doc/* %i/share/doc/orange-hg-py%type_pkg[python]/
 
+    # Add python version to bin/orange-canvas script
+    mv %i/bin/orange-canvas %i/bin/orange-canvas%type_pkg[python]
 <<
 <<
