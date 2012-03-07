@@ -38,6 +38,19 @@ PDomain knownDomain(PyObject *keywords); // ibid
 PyObject *encodeStatus(const vector<int> &Status);  // in cls_misc.cpp
 PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus);
 
+
+/* Same as sys.getfilesystemencoding()
+ * (the returned pointer points to a PyString_Object internal buffer
+ * and should not be modified).
+ */
+char* getFileSystemEncoding()
+{
+    PyObject *fsencoding = PySys_GetObject("getfilesystemencoding"); // Borrowed ref
+    fsencoding = PyObject_CallObject(fsencoding, NULL); // This should be a string.
+    assert(PyString_Check(fsencoding));
+    return PyString_AsString(fsencoding);
+}
+
 /* ************ FILE EXAMPLE GENERATORS ************ */
 
 #include "filegen.hpp"
@@ -215,24 +228,43 @@ bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC)
 PyObject *tabDelimBasedWrite(PyObject *args, PyObject *keyws, const char *defaultExtension, bool skipAttrTypes, char delim, bool listDiscreteValues = true)
 { PyTRY
     char *filename;
+    bool free_filename = false;
     PExampleGenerator gen;
 
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
-      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL);
+    {
+        char *encoding = getFileSystemEncoding();
+        if (!PyArg_ParseTuple(args, "esO&", encoding, &filename, pt_ExampleGenerator, &gen))
+            PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL);
+        PyErr_Clear();
+        free_filename = true;
+    }
 
     if (skipAttrTypes && !gen->domain->classVar) {
       PyErr_Format(PyExc_TypeError, "Format .%s cannot save classless data sets", defaultExtension);
+      if (free_filename)
+          PyMem_Free(filename);
       return PYNULL;
     }
     
     char *DK = NULL, *DC = NULL;
     if (!readUndefinedSpecs(keyws, DK, DC))
+    {
+      if (free_filename)
+          PyMem_Free(filename);
       return PYNULL;
+    }
   
     FILE *ostr = openExtended(filename, defaultExtension);
     if (!ostr)
+    {
+      if (free_filename)
+          PyMem_Free(filename);
       return PYNULL;
+    }
 
+    if (free_filename)
+        PyMem_Free(filename);
     tabDelim_writeDomain(ostr, gen->domain, skipAttrTypes, delim, listDiscreteValues);
     tabDelim_writeExamples(ostr, gen, delim, DK, DC);
     fclose(ostr);
@@ -316,17 +348,33 @@ void raiseWarning(bool, const char *s);
 PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
     char *filename;
+    bool free_filename = false;
     PExampleGenerator gen;
 
     if (!PyArg_ParseTuple(args, "sO&:saveBasket", &filename, pt_ExampleGenerator, &gen))
-      return PYNULL;
+    {
+      char *encoding = getFileSystemEncoding();
+      if (!PyArg_ParseTuple(args, "esO&:saveBasket", encoding, &filename, pt_ExampleGenerator, &gen))
+          return PYNULL;
+      PyErr_Clear();
+      free_filename = true;
+    }
 
     if (gen->domain->variables->size())
+    {
+      if (free_filename)
+          PyMem_Free(filename);
       PYERROR(PyExc_TypeError, ".basket format can only store meta-attribute values", PYNULL);
+    }
 
     FILE *ostr = openExtended(filename, "basket");
+
     if (!ostr)
+    {
+      if (free_filename)
+          PyMem_Free(filename);
       return PYNULL;
+    }
 
     set<int> missing;
 
@@ -336,10 +384,15 @@ PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename
     catch (...) {
       fclose(ostr);
       remove(filename);
+      if (free_filename)
+          PyMem_Free(filename);
       throw;
     }
 
     fclose(ostr);
+
+    if (free_filename)
+        PyMem_Free(filename);
 
     if (!missing.empty()) {
       if (missing.size() == 1) {
