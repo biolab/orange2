@@ -66,7 +66,7 @@ SplitOff: <<
 		lib/python%type_raw[python]/site-packages/Orange/*
 		lib/python%type_raw[python]/site-packages/Orange-orng-modules.pth
 		share/doc/orange-hg-py%type_pkg[python]
-		bin/orange-canvas%type_pkg[python]
+		bin/orange-canvas%type_raw[python]
 	<<
 <<
 CompileScript: <<
@@ -145,6 +145,6 @@ InstallScript: <<
 	mv Orange/doc/* %i/share/doc/orange-hg-py%type_pkg[python]/
 
 	# Add python version to bin/orange-canvas script
-	mv %i/bin/orange-canvas %i/bin/orange-canvas%type_pkg[python]
+	mv %i/bin/orange-canvas %i/bin/orange-canvas%type_raw[python]
 <<
 <<
