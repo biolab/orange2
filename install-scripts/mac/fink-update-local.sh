@@ -16,6 +16,8 @@ fi
 WORK_DIR=$1
 SOURCES_DIR=$2
 
+FORCE=true
+
 # First build all the source packages
 ./build-source.sh https://bitbucket.org/biolab/orange orange tip $WORK_DIR Orange
 ./build-source.sh https://bitbucket.org/biolab/orange-addon-bioinformatics bioinformatics tip $WORK_DIR Orange-Bioinformatics
@@ -45,17 +47,17 @@ if [ ! -e $SOURCES_DIR ]; then
 	mkdir -p $SOURCES_DIR
 fi
 
-if [ ! -e $SOURCES_DIR/$ORANGE_SOURCE ]; then
+if [[ ! -e $SOURCES_DIR/$ORANGE_SOURCE || $FORCE ]]; then
 	cp $WORK_DIR/$ORANGE_SOURCE $SOURCES_DIR/$ORANGE_SOURCE
 	NEW_ORANGE=1
 fi
 
-if [ ! -e $SOURCES_DIR/BIOINFORMATICS_SOURCE ]; then
+if [[ ! -e $SOURCES_DIR/BIOINFORMATICS_SOURCE || $FORCE ]]; then
 	cp $WORK_DIR/$BIOINFORMATICS_SOURCE $SOURCES_DIR/$BIOINFORMATICS_SOURCE
 	NEW_BIOINFORMATICS=1
 fi
 
-if [ ! -e $SOURCES_DIR/TEXT_SOURCE ]; then
+if [[ ! -e $SOURCES_DIR/TEXT_SOURCE || $FORCE ]]; then
 	cp $WORK_DIR/$TEXT_SOURCE $SOURCES_DIR/$TEXT_SOURCE
 	NEW_TEXT=1
 fi
