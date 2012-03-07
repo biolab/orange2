@@ -10,6 +10,8 @@ from OWClassificationTreeViewer import *
 import OWGUI, sys, orngTree
 from orngDataCaching import *
 
+from OWItemModels import VariableListModel
+
 class FixedTreeLearner(orange.Learner):
     def __init__(self, classifier, name):
         self.classifier = classifier
@@ -182,7 +184,8 @@ class OWITree(OWClassificationTreeViewer):
         
         self.targetCombo.clear()
         if self.data:
-            self.attrsCombo.addItems([str(a) for a in data.domain.attributes])
+            model = VariableListModel(list(data.domain.attributes))
+            self.attrsCombo.setModel(model)
             self.basstat = getCached(data, orange.DomainBasicAttrStat, (data,))
             
 #            self.attrsCombo.adjustSize()
