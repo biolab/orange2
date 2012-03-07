@@ -60,7 +60,7 @@ class OWLoadAssocRules(OWWidget):
     def browse(self):
         filename = QFileDialog.getOpenFileName(self, "Load Rules From File",
                         self.last_file, "Pickle files (*.pickle *.pck)\nAll files (*.*)")
-        filename = str(filename)
+        filename = unicode(filename)
         if filename:
             if filename in self.filename_history:
                 self.selected_file_index = self.filename_history.index(filename)

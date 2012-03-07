@@ -68,7 +68,7 @@ class OWSaveClassifier(OWWidget):
     def browse(self):
         filename = QFileDialog.getSaveFileName(self, "Save Classifier As ...",
                     self.lastSaveFile, "Pickle files (*.pickle *.pck);; All files (*.*)")
-        filename = str(filename)
+        filename = unicode(filename)
         if filename:
             if filename in self.filenameHistory:
                 self.selectedFileIndex = self.filenameHistory.index(filename)

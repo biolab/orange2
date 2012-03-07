@@ -9,7 +9,6 @@
 from OWWidget import *
 import OWGUI
 
-
 class OWUnpickle(OWWidget):
     settingsList = ["filename_history", "selected_file_index", "last_file"]
     
@@ -63,7 +62,7 @@ class OWUnpickle(OWWidget):
     def browse(self):
         filename = QFileDialog.getOpenFileName(self, "Load Object From File",
                         self.last_file, "Pickle files (*.pickle *.pck)\nAll files (*.*)")
-        filename = str(filename)
+        filename = unicode(filename)
         if filename:
             if filename in self.filename_history:
                 self.selected_file_index = self.filename_history.index(filename)

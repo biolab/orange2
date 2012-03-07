@@ -6,11 +6,6 @@
 <priority>90</priority>
 """
 
-#
-# OWFile.py
-# The File Widget
-# A widget for opening orange data files
-#
 from OWWidget import *
 import OWGUI
 import re, os.path
@@ -90,27 +85,27 @@ class OWSave(OWWidget):
 #       The preceding lines should work as per API, but do not; it's probably a PyQt bug as per March 2010.
 #       The following is a workaround.
 #       (As a consequence, filter selection is not taken into account when appending a default extension.)
-        filename, selectedFilter = str(QFileDialog.getSaveFileName(self, 'Save Orange Data File', startfile,
-                         self.dlgFormats)), self.dlgFormats.split("\n")[0]
-
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save Orange Data File', startfile,
+                         self.dlgFormats), self.dlgFormats.split("\n")[0]
+        filename = unicode(filename)
         if not filename or not os.path.split(filename)[1]:
             return
 
         ext = lower(os.path.splitext(filename)[1])
         if not ext in self.savers:
-            filt_ext = self.re_filterExtension.search(str(str(selectedFilter))).group("ext")
+            filt_ext = self.re_filterExtension.search(str(selectedFilter)).group("ext")
             if filt_ext == ".*":
                 filt_ext = ".tab"
             filename += filt_ext
 
 
-        self.addFileToList(str(filename))
+        self.addFileToList(filename)
         self.saveFile()
 
     def saveFile(self, *index):
         self.error()
         if self.data is not None:
-            combotext = str(self.filecombo.currentText())
+            combotext = unicode(self.filecombo.currentText())
             if combotext == "(none)":
                 QMessageBox.information( None, "Error saving data", "Unable to save data. Select first a file name by clicking the '...' button.", QMessageBox.Ok + QMessageBox.Default)
                 return
@@ -124,8 +119,6 @@ class OWSave(OWWidget):
                 self.error(str(errValue))
                 return
             self.error()
-
-
 
     def addFileToList(self,fn):
         if fn in self.recentFiles:

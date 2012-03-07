@@ -65,7 +65,7 @@ class OWPickle(OWWidget):
     def browse(self):
         filename = QFileDialog.getSaveFileName(self, "Save Object As ...",
                     self.last_save_file, "Pickle files (*.pickle *.pck);; All files (*.*)")
-        filename = str(filename)
+        filename = unicode(filename)
         if filename:
             if filename in self.filename_history:
                 self.selected_file_index = self.filename_history.index(filename)

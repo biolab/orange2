@@ -13,6 +13,7 @@ import Orange
 
 import code
 
+
 class PythonSyntaxHighlighter(QSyntaxHighlighter):
     def __init__(self, parent=None):
         self.keywordFormat = QTextCharFormat()
@@ -430,8 +431,8 @@ class OWPythonScript(OWWidget):
         
     def onAddScriptFromFile(self, *args):
         file = QFileDialog.getOpenFileName(self, 'Open Python Script', self.codeFile, 'Python files (*.py)\nAll files(*.*)')
+        file = unicode(file)
         if file:
-            file = str(file)
             name = os.path.basename(file)
             self.libraryList.append(Script(name, open(file, "rb").read(), 0, file))
             self.setSelectedScript(len(self.libraryList) - 1)
@@ -492,7 +493,9 @@ class OWPythonScript(OWWidget):
             
     def openScript(self, filename=None):
         if filename == None:
-            self.codeFile = str(QFileDialog.getOpenFileName(self, 'Open Python Script', self.codeFile, 'Python files (*.py)\nAll files(*.*)'))    
+            filename = unicode(QFileDialog.getOpenFileName(self, 'Open Python Script',
+                               self.codeFile, 'Python files (*.py)\nAll files(*.*)'))
+            self.codeFile = filename
         else:
             self.codeFile = filename
             
@@ -516,16 +519,17 @@ class OWPythonScript(OWWidget):
             filename = script.sourceFileName or self.codeFile
         else:
             filename = self.codeFile
-            
-        self.codeFile = QFileDialog.getSaveFileName(self, 'Save Python Script', filename, 'Python files (*.py)\nAll files(*.*)')
+        filename = QFileDialog.getSaveFileName(self, 'Save Python Script',
+                            filename, 'Python files (*.py)\nAll files(*.*)') 
+        self.codeFile = unicode(filename)
         
         if self.codeFile:
             fn = ""
-            head, tail = os.path.splitext(str(self.codeFile))
+            head, tail = os.path.splitext(self.codeFile)
             if not tail:
                 fn = head + ".py"
             else:
-                fn = str(self.codeFile)
+                fn = self.codeFile
             
             f = open(fn, 'w')
             f.write(self.text.toPlainText())
