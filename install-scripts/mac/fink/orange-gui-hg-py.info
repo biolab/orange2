@@ -78,10 +78,6 @@ CompileScript: <<
 	# Build orange
 	%p/bin/python%type_raw[python] setup.py build
 	
-	# Compile scripts later on assume Python executable is named "python" - so we give them that
-	#export PATH=%b:$PATH
-	#ln -s %p/bin/python%type_raw[python] python
-	
 	# To build orangeqt module we need to force cmake to look in
 	# the proper places.
 	
@@ -89,6 +85,11 @@ CompileScript: <<
 	export PATH=%p/lib/qt4-mac/bin:$PATH
 	# And cmake to find PyQt4
 	export PYTHONPATH=%p/lib/qt4-mac/lib/python%type_raw[python]/site-packages/
+	
+	# Try every thing possible to convince cmake to use our python
+	export PATH=%b:$PATH
+	ln -s %p/bin/python%type_raw[python] python
+	ln -s %p/bin/python%type_raw[python] python%type_raw[python]
 
 	# Finally compile orangeqt 
 	cd source/orangeqt
@@ -97,6 +98,10 @@ CompileScript: <<
 	cmake -DCMAKE_BUILD_TYPE=Release -DPython_ADDITIONAL_VERSIONS=%type_raw[python] -DCMAKE_LIBRARY_PATH=%p/lib -DCMAKE_SYSTEM_IGNORE_PATH=/usr/lib ../
 	make VERBOSE=1
 	cd ../../../
+	
+	# Clean up the python sym links 
+	rm python
+	rm python%type_raw[python]
 	
 	# Prepares bundle
 	cat <<-'EOF' > ../orange-bundlelite-svn-0.0.12741/Orange.app/Contents/MacOS/Orange
@@ -139,7 +144,7 @@ InstallScript: <<
 	cp COPYING LICENSES %i/share/doc/orange-hg-py%type_pkg[python]/
 	mv Orange/doc/* %i/share/doc/orange-hg-py%type_pkg[python]/
 
-    # Add python version to bin/orange-canvas script
-    mv %i/bin/orange-canvas %i/bin/orange-canvas%type_pkg[python]
+	# Add python version to bin/orange-canvas script
+	mv %i/bin/orange-canvas %i/bin/orange-canvas%type_pkg[python]
 <<
 <<
