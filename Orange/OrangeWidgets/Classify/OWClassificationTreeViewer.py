@@ -271,7 +271,6 @@ class OWClassificationTreeViewer(OWWidget):
         """handles click on the tree"""
         selected = self.v.selectedItems()
         item = selected.pop() if selected else None 
-        print selected
         self.handleSelectionChanged(item)
         if self.tree and item:
             data = self.nodeClassDict[item].examples
