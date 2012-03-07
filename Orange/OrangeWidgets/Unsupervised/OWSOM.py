@@ -120,7 +120,7 @@ class OWSOM(OWWidget):
 ##        alphaT=self.AlphaMap[self.alphaType]
 ##        params=[{"iterations":self.iterations1, "radius":self.radius1, "alpha":self.alpha1},
 ##                {"iterations":self.iterations2, "radius":self.radius2, "alpha":self.alpha2}]
-        self.learner = orngSOM.SOMLearner(name=self.LearnerName, map_shape=(self.xdim, self.ydim), topology=topology, neighborhood=neigh,
+        self.learner = orngSOM.SOMLearner(name=self.LearnerName, map_shape=(self.xdim, self.ydim), topology=topology, neighbourhood=neigh,
                                         epochs=self.iterations1, eps=self.eps, initialize=self.initialization,
                                         radius_ini=self.radius1, radius_fin=self.radius2) #alphaType=alphaT, parameters=params)
 
