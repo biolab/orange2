@@ -132,23 +132,24 @@ of the code reports on data instances from one of the corner cells:
 The output of this code is::
 
     Node    Instances
-    (0, 0)  21
-    (0, 1)  1
-    (0, 2)  23
-    (1, 0)  22
+    (0, 0)  31
+    (0, 1)  7
+    (0, 2)  0
+    (1, 0)  24
     (1, 1)  7
-    (1, 2)  6
-    (2, 0)  32
-    (2, 1)  16
-    (2, 2)  22
-    
-    Data instances in cell (1, 2):
-    [4.9, 2.4, 3.3, 1.0, 'Iris-versicolor']
-    [5.0, 2.0, 3.5, 1.0, 'Iris-versicolor']
-    [5.6, 2.9, 3.6, 1.3, 'Iris-versicolor']
-    [5.7, 2.6, 3.5, 1.0, 'Iris-versicolor']
-    [5.5, 2.4, 3.7, 1.0, 'Iris-versicolor']
-    [5.0, 2.3, 3.3, 1.0, 'Iris-versicolor']
+    (1, 2)  50
+    (2, 0)  10
+    (2, 1)  21
+    (2, 2)  0
+
+    Data instances in cell (0, 1):
+    [6.9, 3.1, 4.9, 1.5, 'Iris-versicolor']
+    [6.7, 3.0, 5.0, 1.7, 'Iris-versicolor']
+    [6.3, 2.9, 5.6, 1.8, 'Iris-virginica']
+    [6.5, 3.2, 5.1, 2.0, 'Iris-virginica']
+    [6.4, 2.7, 5.3, 1.9, 'Iris-virginica']
+    [6.1, 2.6, 5.6, 1.4, 'Iris-virginica']
+    [6.5, 3.0, 5.2, 2.0, 'Iris-virginica']
     
 """
 
@@ -224,13 +225,19 @@ class Solver(object):
         self.__dict__.update(kwargs)
 
     def radius(self, epoch):
-        return self.radius_ini - (float(self.radius_ini) - self.radius_fin)*(float(epoch) / self.epochs)
+        return self.radius_ini - (float(self.radius_ini) - self.radius_fin)*(float(epoch) / (self.epochs-1))
 
-    def alpha(self, epoch):
-        """Compute the learning rate from epoch, starting with learning_rate to 0 at the end of training. 
+    def radius_seq(self, iter):
+        """Compute the radius regarding the iterations, not epochs."""
+        iterations = len(self.data)*self.epochs
+        return self.radius_ini - (float(self.radius_ini) - self.radius_fin)*(float(iter) / (iterations-1))
+
+    def alpha(self, iter):
+        """Compute the learning rate from iterations, starting with learning_rate to 0 at the end of training.
         """
-        return (1 - epoch/self.epochs)*self.learning_rate
-            
+        iterations = len(self.data)*self.epochs
+        return (1 - float(iter)/(iterations-1))*self.learning_rate
+
     @deprecated_keywords({"progressCallback": "progress_callback"})
     def __call__(self, data, map, progress_callback=None):
         """ Train the map from data. Pass progress_callback function to report on the progress.
@@ -286,14 +293,16 @@ class Solver(object):
             bmu = ma.argmin(Dist)
             self.distances.append(min_dist)
 
+            iter = epoch*len(self.data)+ind
+
             if self.neighbourhood == Map.NeighbourhoodGaussian:
-                h = numpy.exp(-self.unit_distances[:, bmu]/(2*self.radius(epoch))) * (self.unit_distances[:, bmu] <= self.radius(epoch))
+                h = numpy.exp(-self.unit_distances[:, bmu]**2/(2*self.radius_seq(iter)**2)) * (self.unit_distances[:, bmu]**2 <= self.radius_seq(iter)**2)
             elif self.neighbourhood == Map.NeighbourhoodEpanechicov:
-                h = 1.0 - (self.unit_distances[:bmu]/self.radius(epoch))**2
+                h = 1.0 - (self.unit_distances[:bmu]/self.radius_seq(iter))**2
                 h = h * (h >= 0.0)
             else:
-                h = 1.0*(self.unit_distances[:, bmu] <= self.radius(epoch))
-            h = h * self.alpha(epoch)
+                h = 1.0*(self.unit_distances[:, bmu] <= self.radius_seq(iter))
+            h = h * self.alpha(iter)
 
             nonzero = ma.nonzero(h)
             h = h[nonzero]
@@ -343,7 +352,7 @@ class Solver(object):
         self.qerror.append(ma.mean(ma.sqrt(distances + self.dist_cons)))
 
         if self.neighbourhood == Map.NeighbourhoodGaussian:        
-            H = numpy.exp(-self.unit_distances/(2*self.radius(epoch))) * (self.unit_distances <= self.radius(epoch))
+            H = numpy.exp(-self.unit_distances**2/(2*self.radius(epoch)**2)) * (self.unit_distances**2 <= self.radius(epoch)**2)
         elif self.neighbourhood == Map.NeighbourhoodEpanechicov:
             H = 1.0 - (self.unit_distances/self.radius(epoch))**2
             H = H * (H >= 0.0)
@@ -675,14 +684,20 @@ class Map(object):
         """
         nodes = list(self)
         coords = numpy.zeros((len(nodes), len(self.map_shape)))
-        coords[:, 0] = numpy.floor(numpy.arange(len(nodes)) / self.map_shape[0])
-        coords[:, 1] = numpy.mod(numpy.arange(len(nodes)), self.map_shape[1])
-        
-        ## in hexagonal topology we move every odd map row by 0.5 and multiply all by sqrt(0.75)
+
+        k = [self.map_shape[1],1]
+        inds = numpy.arange(len(nodes))
+        for i in range(0,len(self.map_shape)):
+            coords[:,i] = numpy.transpose(numpy.floor(inds/k[i]))
+            inds = numpy.mod(inds,k[i])
+
+        ## in hexagonal topology we move every odd map row by 0.5 (only the second coordinate)
+        ## and multiply all the first coordinates by sqrt(0.75) to assure that
+        ## distances between neighbours are of unit size
         if self.topology == Map.HexagonalTopology:
-            ind = numpy.nonzero(1 - numpy.mod(coords[:, 0], 2))
-            coords[ind] = coords[ind] + 0.5
-            coords = coords * numpy.sqrt(0.75)
+            ind = numpy.nonzero(numpy.mod(coords[:, 0], 2))
+            coords[ind,1] = coords[ind,1] + 0.5
+            coords[:,0] = coords[:,0] * numpy.sqrt(0.75)
         return coords
 
 
@@ -732,7 +747,12 @@ class Map(object):
         unit_coords = self.unit_coords()
         for d in range(mdim):
             max, min = numpy.max(unit_coords[:, d]), numpy.min(unit_coords[:, d])
-            unit_coords[:, d] = (unit_coords[:, d] - min)/(max - min)
+            if max > min:
+                unit_coords[:, d] = (unit_coords[:, d] - min)/(max - min)
+            ## in case of one-dimensional SOM
+            else:
+                unit_coords[:, d] = 0.5
+
         unit_coords = (unit_coords - 0.5) * 2
 
         vectors = numpy.array([me for i in range(munits)])
