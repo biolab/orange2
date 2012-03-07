@@ -108,7 +108,7 @@ class PyListModel(QAbstractListModel):
 #        return QAbstractListModel.setItemData(self, index, data)
     
     def flags(self, index):
-        if index.isValid():
+        if index.isValid() and index.row() < len(self._other_data):
             return self._other_data[index.row()].get("flags", self._flags)
         else:
             return self._flags | Qt.ItemIsDropEnabled
