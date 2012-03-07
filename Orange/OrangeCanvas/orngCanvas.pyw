@@ -16,7 +16,6 @@ import  user, orngMisc
 RedR = False
 product = "Red R" if RedR else "Orange"
 
-
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent=None, flags=0):
         QMainWindow.__init__(self, parent)
@@ -532,9 +531,10 @@ class OrangeCanvasDlg(QMainWindow):
         name = QFileDialog.getOpenFileName(self, "Import File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
+        name = unicode(name)
         self.schema.clear()
-        self.schema.loadDocument(str(name), freeze = 0, importBlank = 1)
-        self.addToRecentMenu(str(name))
+        self.schema.loadDocument(name, freeze = 0, importBlank = 1)
+        self.addToRecentMenu(name)
     
     def openSchema(self, filename):
         if self.schema.isSchemaChanged() and self.schema.widgets:
@@ -553,21 +553,23 @@ class OrangeCanvasDlg(QMainWindow):
         name = QFileDialog.getOpenFileName(self, "Open Orange Schema", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
+        name = unicode(name)
         self.schema.clear()
-        dirname = os.path.dirname(str(name))
+        dirname = os.path.dirname(name)
         os.chdir(dirname)
-        self.schema.loadDocument(str(name), freeze=0)
-        self.addToRecentMenu(str(name))
+        self.schema.loadDocument(name, freeze=0)
+        self.addToRecentMenu(name)
 
     def menuItemOpenFreeze(self):
         name = QFileDialog.getOpenFileName(self, "Open Orange Schema", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
+        name = unicode(name)
         self.schema.clear()
-        dirname = os.path.dirname(str(name))
+        dirname = os.path.dirname(name)
         os.chdir(dirname)
-        self.schema.loadDocument(str(name), freeze=1)
-        self.addToRecentMenu(str(name))
+        self.schema.loadDocument(name, freeze=1)
+        self.addToRecentMenu(name)
 
     def menuItemOpenLastSchema(self):
         fullName = os.path.join(self.canvasSettingsDir, "lastSchema.tmp")
@@ -680,12 +682,11 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemSaveOutputWindow(self):
         qname = QFileDialog.getSaveFileName(self, "Save Output To File", self.canvasSettingsDir + "/Output.html", "HTML Document (*.html)")
         if qname.isEmpty(): return
-        name = str(qname)
-
+        
         text = str(self.output.textOutput.toHtml())
         #text = text.replace("</nobr>", "</nobr><br>")
 
-        file = open(name, "wt")
+        file = open(unicode(name), "wt")
         file.write(text)
         file.close()
 

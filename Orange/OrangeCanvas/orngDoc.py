@@ -437,7 +437,8 @@ class SchemaDoc(QWidget):
             self.setSchemaModified(False)
 
     def saveDocumentAs(self):
-        name = str(QFileDialog.getSaveFileName(self, "Save Orange Schema", os.path.join(self.schemaPath, self.schemaName or "Untitled.ows"), "Orange Widget Schema (*.ows)"))
+        name = QFileDialog.getSaveFileName(self, "Save Orange Schema", os.path.join(self.schemaPath, self.schemaName or "Untitled.ows"), "Orange Widget Schema (*.ows)")
+        name = unicode(name)
         if os.path.splitext(name)[0] == "":
             return
         if os.path.splitext(name)[1].lower() != ".ows":
@@ -545,7 +546,7 @@ class SchemaDoc(QWidget):
         self.signalManager.freeze().push()
         try:
             #load the data ...
-            doc = parse(str(filename))
+            doc = parse(filename)
             schema = doc.firstChild
             widgets = schema.getElementsByTagName("widgets")[0]
             lines = schema.getElementsByTagName("channels")[0]
@@ -619,7 +620,8 @@ class SchemaDoc(QWidget):
         appPath = os.path.exists(self.canvasDlg.settings["saveApplicationDir"]) and self.canvasDlg.settings["saveApplicationDir"] or self.schemaPath
         qname = QFileDialog.getSaveFileName(self, "Save Orange Schema as Application", os.path.join(appPath, appName) , "Orange Scripts (*%s)" % extension)
         if qname.isEmpty(): return
-        (appPath, appName) = os.path.split(str(qname))
+        qname = unicode(qname)
+        (appPath, appName) = os.path.split(qname)
         appNameWithoutExt = os.path.splitext(appName)[0]
         if os.path.splitext(appName)[1].lower() not in [".py", ".pyw"]: appName = appNameWithoutExt + extension
         self.canvasDlg.settings["saveApplicationDir"] = appPath

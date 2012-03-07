@@ -216,7 +216,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     # ############################################################
     # EXTRA FUNCTIONS ############################################
     def getFileName(self, defaultName, mask, extension):
-        fileName = str(QFileDialog.getSaveFileName(self, "Save to..", os.path.join(self.lastSaveDirName, defaultName), mask))
+        fileName = unicode(QFileDialog.getSaveFileName(self, "Save to..", os.path.join(self.lastSaveDirName, defaultName), mask))
         if not fileName: return None
         if not os.path.splitext(fileName)[1][1:]: fileName = fileName + extension
 
