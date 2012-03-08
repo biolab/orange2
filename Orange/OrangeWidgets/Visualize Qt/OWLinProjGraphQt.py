@@ -696,7 +696,8 @@ class OWLinProjGraph(OWPlot, orngScaleLinProjData):
         if self.main_curve:
             # We never have different sizes in LinProj
             self.main_curve.set_point_sizes([self.pointWidth])
-        
+
+OWLinProjGraph = graph_deprecator(OWLinProjGraph)
 
 
 if __name__== "__main__":

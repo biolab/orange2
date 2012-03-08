@@ -441,8 +441,8 @@ class ScaleData:
         inds = indices[:]
         if also_class_if_exists and self.data_has_class: 
             inds.append(self.data_class_index) 
-        selectedArray = self.valid_data_array.take(inds, axis = 0)
-        arr = numpy.add.reduce(selectedArray)
+        selected_array = self.valid_data_array.take(inds, axis = 0)
+        arr = numpy.add.reduce(selected_array)
         return numpy.equal(arr, len(inds))
     
     getValidList = get_valid_list
@@ -458,8 +458,8 @@ class ScaleData:
         inds = indices[:]
         if also_class_if_exists and self.data_class_index: 
             inds.append(self.data_class_index)
-        selectedArray = self.valid_subset_data_array.take(inds, axis = 0)
-        arr = numpy.add.reduce(selectedArray)
+        selected_array = self.valid_subset_data_array.take(inds, axis = 0)
+        arr = numpy.add.reduce(selected_array)
         return numpy.equal(arr, len(inds))
     
     getValidSubsetList = get_valid_subset_list
@@ -469,8 +469,8 @@ class ScaleData:
         Get array with numbers that represent the instance indices that have a
         valid data value.
         """
-        validList = self.get_valid_list(indices)
-        return numpy.nonzero(validList)[0]
+        valid_list = self.get_valid_list(indices)
+        return numpy.nonzero(valid_list)[0]
     
     getValidIndices = get_valid_indices
 
@@ -479,8 +479,8 @@ class ScaleData:
         Get array with numbers that represent the instance indices that have a
         valid data value.
         """
-        validList = self.get_valid_subset_list(indices)
-        return numpy.nonzero(validList)[0]
+        valid_list = self.get_valid_subset_list(indices)
+        return numpy.nonzero(valid_list)[0]
     
     getValidSubsetIndices = get_valid_subset_indices
 
@@ -607,7 +607,13 @@ class ScaleLinProjData(ScaleData):
     saveProjectionAsTabData = save_projection_as_tab_data
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "useAnchorData": "use_anchor_data",
+                          "xAnchors": "xanchors",
+                          "yAnchors": "yanchors",
+                          "anchorRadius": "anchor_radius",
+                          "normalizeExample": "normalize_example"
+                          })
     def get_projected_point_position(self, attr_indices, values, **settings_dict):
         """
         For attributes in attr_indices and values of these attributes in values
@@ -616,11 +622,11 @@ class ScaleLinProjData(ScaleData):
     
         """
         # load the elements from the settings dict
-        use_anchor_data = settings_dict.get("useAnchorData")
-        xanchors = settings_dict.get("xAnchors")
-        yanchors = settings_dict.get("yAnchors")
-        anchor_radius = settings_dict.get("anchorRadius")
-        normalize_example = settings_dict.get("normalizeExample")
+        use_anchor_data = settings_dict.get("use_anchor_data")
+        xanchors = settings_dict.get("x_anchors")
+        yanchors = settings_dict.get("y_anchors")
+        anchor_radius = settings_dict.get("anchor_radius")
+        normalize_example = settings_dict.get("normalize_example")
 
         if attr_indices != self.last_attr_indices:
             print "get_projected_point_position. Warning: Possible bug. The "+\
@@ -694,90 +700,100 @@ class ScaleLinProjData(ScaleData):
     createProjectionAsExampleTable = create_projection_as_example_table
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "validData": "valid_data",
+                          "classList": "class_list",
+                          "XAnchors": "xanchors",
+                          "YAnchors": "yanchors",
+                          "scaleFactor": "scale_factor",
+                          "jitterSize": "jitter_size",
+                          "useAnchorData": "use_anchor_data",
+                          "removeMissingData": "remove_missing_data",
+                          "useSubsetData": "use_subset_data",
+                          })
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
         # load the elements from the settings dict
-        validData = settings_dict.get("validData")
-        classList = settings_dict.get("classList")
+        valid_data = settings_dict.get("valid_data")
+        class_list = settings_dict.get("class_list")
         sum_i     = settings_dict.get("sum_i")
-        XAnchors = settings_dict.get("XAnchors")
-        YAnchors = settings_dict.get("YAnchors")
-        scaleFactor = settings_dict.get("scaleFactor", 1.0)
+        xanchors = settings_dict.get("xanchors")
+        yanchors = settings_dict.get("yanchors")
+        scale_factor = settings_dict.get("scale_factor", 1.0)
         normalize = settings_dict.get("normalize")
-        jitterSize = settings_dict.get("jitterSize", 0.0)
-        useAnchorData = settings_dict.get("useAnchorData", 0)
-        removeMissingData = settings_dict.get("removeMissingData", 1)
-        useSubsetData = settings_dict.get("useSubsetData", 0)        # use the data or subsetData?
+        jitter_size = settings_dict.get("jitter_size", 0.0)
+        use_anchor_data = settings_dict.get("use_anchor_data", 0)
+        remove_missing_data = settings_dict.get("remove_missing_data", 1)
+        use_subset_data = settings_dict.get("use_subset_data", 0)        # use the data or subsetData?
         #minmaxVals = settings_dict.get("minmaxVals", None)
 
         # if we want to use anchor data we can get attr_indices from the anchor_data
-        if useAnchorData and self.anchor_data:
+        if use_anchor_data and self.anchor_data:
             attr_indices = [self.attribute_name_index[val[2]] for val in self.anchor_data]
 
-        if validData == None:
-            if useSubsetData: validData = self.get_valid_subset_list(attr_indices)
-            else:             validData = self.get_valid_list(attr_indices)
-        if sum(validData) == 0:
+        if valid_data == None:
+            if use_subset_data: valid_data = self.get_valid_subset_list(attr_indices)
+            else:             valid_data = self.get_valid_list(attr_indices)
+        if sum(valid_data) == 0:
             return None
 
-        if classList == None and self.data_domain.class_var:
-            if useSubsetData: classList = self.original_subset_data[self.data_class_index]
-            else:             classList = self.original_data[self.data_class_index]
+        if class_list == None and self.data_domain.class_var:
+            if use_subset_data: class_list = self.original_subset_data[self.data_class_index]
+            else:             class_list = self.original_data[self.data_class_index]
 
         # if jitterSize is set below zero we use scaled_data that has already jittered data
-        if useSubsetData:
-            if jitterSize < 0.0: data = self.scaled_subset_data
+        if use_subset_data:
+            if jitter_size < 0.0: data = self.scaled_subset_data
             else:                data = self.no_jittering_scaled_subset_data
         else:
-            if jitterSize < 0.0: data = self.scaled_data
+            if jitter_size < 0.0: data = self.scaled_data
             else:                data = self.no_jittering_scaled_data
 
         selectedData = numpy.take(data, attr_indices, axis = 0)
-        if removeMissingData:
-            selectedData = numpy.compress(validData, selectedData, axis = 1)
-            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
-                classList = numpy.compress(validData, classList)
+        if remove_missing_data:
+            selectedData = numpy.compress(valid_data, selectedData, axis = 1)
+            if class_list != None and len(class_list) != numpy.shape(selectedData)[1]:
+                class_list = numpy.compress(valid_data, class_list)
 
-        if useAnchorData and self.anchor_data:
-            XAnchors = numpy.array([val[0] for val in self.anchor_data])
-            YAnchors = numpy.array([val[1] for val in self.anchor_data])
-            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+        if use_anchor_data and self.anchor_data:
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors)     # compute the distance of each anchor from the center of the circle
             if normalize == 1 or (normalize == None and self.normalize_examples):
-                XAnchors *= r
-                YAnchors *= r
-        elif (XAnchors != None and YAnchors != None):
-            XAnchors = numpy.array(XAnchors); YAnchors = numpy.array(YAnchors)
-            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+                xanchors *= r
+                yanchors *= r
+        elif (xanchors != None and yanchors != None):
+            xanchors = numpy.array(xanchors); yanchors = numpy.array(yanchors)
+            r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors)     # compute the distance of each anchor from the center of the circle
         else:
-            XAnchors = self.create_xanchors(len(attr_indices))
-            YAnchors = self.create_yanchors(len(attr_indices))
-            r = numpy.ones(len(XAnchors), numpy.float)
+            xanchors = self.create_xanchors(len(attr_indices))
+            yanchors = self.create_yanchors(len(attr_indices))
+            r = numpy.ones(len(xanchors), numpy.float)
 
-        x_positions = numpy.dot(XAnchors, selectedData)
-        y_positions = numpy.dot(YAnchors, selectedData)
+        x_positions = numpy.dot(xanchors, selectedData)
+        y_positions = numpy.dot(yanchors, selectedData)
 
         if normalize == 1 or (normalize == None and self.normalize_examples):
             if sum_i == None:
-                sum_i = self._getSum_i(selectedData, useAnchorData, r)
+                sum_i = self._getSum_i(selectedData, use_anchor_data, r)
             x_positions /= sum_i
             y_positions /= sum_i
-            self.trueScaleFactor = scaleFactor
+            self.trueScaleFactor = scale_factor
         else:
-            if not removeMissingData:
+            if not remove_missing_data:
                 try:
-                    x_validData = numpy.compress(validData, x_positions)
-                    y_validData = numpy.compress(validData, y_positions)
+                    x_valid_data = numpy.compress(valid_data, x_positions)
+                    y_valid_data = numpy.compress(valid_data, y_positions)
                 except:
-                    print validData
+                    print valid_data
                     print x_positions
-                    print numpy.shape(validData)
+                    print numpy.shape(valid_data)
                     print numpy.shape(x_positions)
             else:
-                x_validData = x_positions
-                y_validData = y_positions
+                x_valid_data = x_positions
+                y_valid_data = y_positions
             
-            dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData)) or 1
-            self.trueScaleFactor = scaleFactor / dist
+            dist = math.sqrt(max(x_valid_data*x_valid_data + y_valid_data*y_valid_data)) or 1
+            self.trueScaleFactor = scale_factor / dist
 
         self.unscaled_x_positions = numpy.array(x_positions)
         self.unscaled_y_positions = numpy.array(y_positions)
@@ -786,13 +802,13 @@ class ScaleLinProjData(ScaleData):
             x_positions *= self.trueScaleFactor
             y_positions *= self.trueScaleFactor
 
-        if jitterSize > 0.0:
-            x_positions += numpy.random.uniform(-jitterSize, jitterSize, len(x_positions))
-            y_positions += numpy.random.uniform(-jitterSize, jitterSize, len(y_positions))
+        if jitter_size > 0.0:
+            x_positions += numpy.random.uniform(-jitter_size, jitter_size, len(x_positions))
+            y_positions += numpy.random.uniform(-jitter_size, jitter_size, len(y_positions))
 
         self.last_attr_indices = attr_indices
-        if classList != None:
-            return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
+        if class_list != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, class_list)))
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions)))
 
@@ -818,6 +834,10 @@ class ScaleLinProjData(ScaleData):
     
     _getSum_i = _getsum_i
 
+graph_deprecator = deprecated_members({"setData": "set_data",
+                                       "updateData": "update_data",
+                                       "scaleFactor": "scale_factor"})
+
 ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
                                        "createAnchors": "create_anchors",
                                        "createXAnchors": "create_xanchors",
@@ -833,8 +853,7 @@ ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
                                        "normalizeExamples": "normalize_examples",
                                        "anchorData": "anchor_data",
                                        "lastAttrIndices": "last_attr_indices",
-                                       "anchorDict": "anchor_dict",
-                                      })(ScaleLinProjData)
+                                       "anchorDict": "anchor_dict"})(ScaleLinProjData)
 
 class ScaleLinProjData3D(ScaleData):
     def __init__(self):
@@ -926,7 +945,14 @@ class ScaleLinProjData3D(ScaleData):
     saveProjectionAsTabData = save_projection_as_tab_data
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "useAnchorData": "use_anchor_data",
+                          "xAnchors": "xanchors",
+                          "yAnchors": "yanchors",
+                          "zAnchors": "zanchors",
+                          "anchorRadius": "anchor_radius",
+                          "normalizeExample": "normalize_example",
+                          })
     def get_projected_point_position(self, attr_indices, values, **settings_dict):
         """
         For attributes in attr_indices and values of these attributes in values
@@ -935,12 +961,12 @@ class ScaleLinProjData3D(ScaleData):
     
         """
         # load the elements from the settings dict
-        use_anchor_data = settings_dict.get("useAnchorData")
-        xanchors = settings_dict.get('xAnchors')
-        yanchors = settings_dict.get('yAnchors')
-        zanchors = settings_dict.get('zAnchors')
-        anchor_radius = settings_dict.get("anchorRadius")
-        normalize_example = settings_dict.get("normalizeExample")
+        use_anchor_data = settings_dict.get("use_anchor_data")
+        xanchors = settings_dict.get('xanchors')
+        yanchors = settings_dict.get('yanchors')
+        zanchors = settings_dict.get('zanchors')
+        anchor_radius = settings_dict.get("anchor_radius")
+        normalize_example = settings_dict.get("normalize_example")
 
         if attr_indices != self.last_attr_indices:
             print "get_projected_point_position. Warning: Possible bug. The "+\
@@ -981,16 +1007,16 @@ class ScaleLinProjData3D(ScaleData):
 
             s = sum(numpy.array(values)*anchor_radius)
             if s == 0: return [0.0, 0.0]
-            x = self.trueScaleFactor * numpy.dot(xanchors*anchor_radius,
+            x = self.true_scale_factor * numpy.dot(xanchors*anchor_radius,
                                                  values) / float(s)
-            y = self.trueScaleFactor * numpy.dot(yanchors*anchor_radius,
+            y = self.true_scale_factor * numpy.dot(yanchors*anchor_radius,
                                                  values) / float(s)
-            z = self.trueScaleFactor * numpy.dot(zanchors*anchor_radius,
+            z = self.true_scale_factor * numpy.dot(zanchors*anchor_radius,
                                                  values) / float(s)
         else:
-            x = self.trueScaleFactor * numpy.dot(xanchors, values)
-            y = self.trueScaleFactor * numpy.dot(yanchors, values)
-            z = self.trueScaleFactor * numpy.dot(zanchors, values)
+            x = self.true_scale_factor * numpy.dot(xanchors, values)
+            y = self.true_scale_factor * numpy.dot(yanchors, values)
+            z = self.true_scale_factor * numpy.dot(zanchors, values)
 
         return [x, y, z]
 
@@ -1025,119 +1051,130 @@ class ScaleLinProjData3D(ScaleData):
     createProjectionAsExampleTable = create_projection_as_example_table
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "validData": "valid_data",
+                          "classList": "class_list",
+                          "XAnchors": "xanchors",
+                          "YAnchors": "yanchors",
+                          "ZAnchors": "zanchors",
+                          "scaleFactor": "scale_factor",
+                          "jitterSize": "jitter_size",
+                          "useAnchorData": "use_anchor_data",
+                          "removeMissingData": "remove_missing_data",
+                          "useSubsetData": "use_subset_data",
+                          })
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
         # load the elements from the settings dict
-        validData = settings_dict.get("validData")
-        classList = settings_dict.get("classList")
+        valid_data = settings_dict.get("valid_data")
+        class_list = settings_dict.get("class_list")
         sum_i     = settings_dict.get("sum_i")
-        XAnchors = settings_dict.get("XAnchors")
-        YAnchors = settings_dict.get("YAnchors")
-        ZAnchors = settings_dict.get("ZAnchors")
-        scaleFactor = settings_dict.get("scaleFactor", 1.0)
+        xanchors = settings_dict.get("xanchors")
+        yanchors = settings_dict.get("yanchors")
+        zanchors = settings_dict.get("zanchors")
+        scale_factor = settings_dict.get("scale_factor", 1.0)
         normalize = settings_dict.get("normalize")
-        jitterSize = settings_dict.get("jitterSize", 0.0)
-        useAnchorData = settings_dict.get("useAnchorData", 0)
-        removeMissingData = settings_dict.get("removeMissingData", 1)
-        useSubsetData = settings_dict.get("useSubsetData", 0)        # use the data or subsetData?
+        jitter_size = settings_dict.get("jitter_size", 0.0)
+        use_anchor_data = settings_dict.get("use_anchor_data", 0)
+        remove_missing_data = settings_dict.get("remove_missing_data", 1)
+        use_subset_data = settings_dict.get("use_subset_data", 0)        # use the data or subsetData?
         #minmaxVals = settings_dict.get("minmaxVals", None)
 
         # if we want to use anchor data we can get attr_indices from the anchor_data
-        if useAnchorData and self.anchor_data:
+        if use_anchor_data and self.anchor_data:
             attr_indices = [self.attribute_name_index[val[3]] for val in self.anchor_data]
 
-        if validData == None:
-            if useSubsetData: validData = self.get_valid_subset_list(attr_indices)
-            else:             validData = self.get_valid_list(attr_indices)
-        if sum(validData) == 0:
+        if valid_data == None:
+            if use_subset_data: valid_data = self.get_valid_subset_list(attr_indices)
+            else:             valid_data = self.get_valid_list(attr_indices)
+        if sum(valid_data) == 0:
             return None
 
-        if classList == None and self.data_domain.class_var:
-            if useSubsetData: classList = self.original_subset_data[self.data_class_index]
-            else:             classList = self.original_data[self.data_class_index]
+        if class_list == None and self.data_domain.class_var:
+            if use_subset_data: class_list = self.original_subset_data[self.data_class_index]
+            else:             class_list = self.original_data[self.data_class_index]
 
         # if jitterSize is set below zero we use scaled_data that has already jittered data
-        if useSubsetData:
-            if jitterSize < 0.0: data = self.scaled_subset_data
+        if use_subset_data:
+            if jitter_size < 0.0: data = self.scaled_subset_data
             else:                data = self.no_jittering_scaled_subset_data
         else:
-            if jitterSize < 0.0: data = self.scaled_data
+            if jitter_size < 0.0: data = self.scaled_data
             else:                data = self.no_jittering_scaled_data
 
-        selectedData = numpy.take(data, attr_indices, axis=0)
-        if removeMissingData:
-            selectedData = numpy.compress(validData, selectedData, axis=1)
-            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
-                classList = numpy.compress(validData, classList)
+        selected_data = numpy.take(data, attr_indices, axis=0)
+        if remove_missing_data:
+            selected_data = numpy.compress(valid_data, selected_data, axis=1)
+            if class_list != None and len(class_list) != numpy.shape(selected_data)[1]:
+                class_list = numpy.compress(valid_data, class_list)
 
-        if useAnchorData and self.anchor_data:
-            XAnchors = numpy.array([val[0] for val in self.anchor_data])
-            YAnchors = numpy.array([val[1] for val in self.anchor_data])
-            ZAnchors = numpy.array([val[2] for val in self.anchor_data])
-            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
+        if use_anchor_data and self.anchor_data:
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            zanchors = numpy.array([val[2] for val in self.anchor_data])
+            r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors + zanchors*zanchors)     # compute the distance of each anchor from the center of the circle
             if normalize == 1 or (normalize == None and self.normalize_examples):
-                XAnchors *= r
-                YAnchors *= r
-                ZAnchors *= r
-        elif (XAnchors != None and YAnchors != None and ZAnchors != None):
-            XAnchors = numpy.array(XAnchors)
-            YAnchors = numpy.array(YAnchors)
-            ZAnchors = numpy.array(ZAnchors)
-            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors + ZAnchors*ZAnchors)     # compute the distance of each anchor from the center of the circle
+                xanchors *= r
+                yanchors *= r
+                zanchors *= r
+        elif (xanchors != None and yanchors != None and zanchors != None):
+            xanchors = numpy.array(xanchors)
+            yanchors = numpy.array(yanchors)
+            zanchors = numpy.array(zanchors)
+            r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors + zanchors*zanchors)     # compute the distance of each anchor from the center of the circle
         else:
             self.create_anchors(len(attr_indices))
-            XAnchors = numpy.array([val[0] for val in self.anchor_data])
-            YAnchors = numpy.array([val[1] for val in self.anchor_data])
-            ZAnchors = numpy.array([val[2] for val in self.anchor_data])
-            r = numpy.ones(len(XAnchors), numpy.float)
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
+            zanchors = numpy.array([val[2] for val in self.anchor_data])
+            r = numpy.ones(len(xanchors), numpy.float)
 
-        x_positions = numpy.dot(XAnchors, selectedData)
-        y_positions = numpy.dot(YAnchors, selectedData)
-        z_positions = numpy.dot(ZAnchors, selectedData)
+        x_positions = numpy.dot(xanchors, selected_data)
+        y_positions = numpy.dot(yanchors, selected_data)
+        z_positions = numpy.dot(zanchors, selected_data)
 
         if normalize == 1 or (normalize == None and self.normalize_examples):
             if sum_i == None:
-                sum_i = self._getSum_i(selectedData, useAnchorData, r)
+                sum_i = self._getSum_i(selected_data, use_anchor_data, r)
             x_positions /= sum_i
             y_positions /= sum_i
             z_positions /= sum_i
-            self.trueScaleFactor = scaleFactor
+            self.true_scale_factor = scale_factor
         else:
-            if not removeMissingData:
+            if not remove_missing_data:
                 try:
-                    x_validData = numpy.compress(validData, x_positions)
-                    y_validData = numpy.compress(validData, y_positions)
-                    z_validData = numpy.compress(validData, z_positions)
+                    x_valid_data = numpy.compress(valid_data, x_positions)
+                    y_valid_data = numpy.compress(valid_data, y_positions)
+                    z_valid_data = numpy.compress(valid_data, z_positions)
                 except:
-                    print validData
+                    print valid_data
                     print x_positions
-                    print numpy.shape(validData)
+                    print numpy.shape(valid_data)
                     print numpy.shape(x_positions)
             else:
-                x_validData = x_positions
-                y_validData = y_positions
-                z_validData = z_positions
+                x_valid_data = x_positions
+                y_valid_data = y_positions
+                z_valid_data = z_positions
 
-            dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData + z_validData*z_validData)) or 1
-            self.trueScaleFactor = scaleFactor / dist
+            dist = math.sqrt(max(x_valid_data*x_valid_data + y_valid_data*y_valid_data + z_valid_data*z_valid_data)) or 1
+            self.true_scale_factor = scale_factor / dist
 
         self.unscaled_x_positions = numpy.array(x_positions)
         self.unscaled_y_positions = numpy.array(y_positions)
         self.unscaled_z_positions = numpy.array(z_positions)
 
-        if self.trueScaleFactor != 1.0:
-            x_positions *= self.trueScaleFactor
-            y_positions *= self.trueScaleFactor
-            z_positions *= self.trueScaleFactor
+        if self.true_scale_factor != 1.0:
+            x_positions *= self.true_scale_factor
+            y_positions *= self.true_scale_factor
+            z_positions *= self.true_scale_factor
 
-        if jitterSize > 0.0:
-            x_positions += numpy.random.uniform(-jitterSize, jitterSize, len(x_positions))
-            y_positions += numpy.random.uniform(-jitterSize, jitterSize, len(y_positions))
-            z_positions += numpy.random.uniform(-jitterSize, jitterSize, len(z_positions))
+        if jitter_size > 0.0:
+            x_positions += numpy.random.uniform(-jitter_size, jitter_size, len(x_positions))
+            y_positions += numpy.random.uniform(-jitter_size, jitter_size, len(y_positions))
+            z_positions += numpy.random.uniform(-jitter_size, jitter_size, len(z_positions))
 
         self.last_attr_indices = attr_indices
-        if classList != None:
-            return numpy.transpose(numpy.array((x_positions, y_positions, z_positions, classList)))
+        if class_list != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, z_positions, class_list)))
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions, z_positions)))
 
@@ -1177,6 +1214,7 @@ ScaleLinProjData3D = deprecated_members({"setAnchors": "set_anchors",
                                        "anchorData": "anchor_data",
                                        "lastAttrIndices": "last_attr_indices",
                                        "anchorDict": "anchor_dict",
+                                       "trueScaleFactor": "true_scale_factor"
                                       })(ScaleLinProjData3D)
 
 class ScalePolyvizData(ScaleLinProjData):
@@ -1209,94 +1247,105 @@ class ScalePolyvizData(ScaleLinProjData):
     createProjectionAsExampleTable = create_projection_as_example_table
     
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "validData": "valid_data",
+                          "classList": "class_list",
+                          "XAnchors": "xanchors",
+                          "YAnchors": "yanchors",
+                          "scaleFactor": "scale_factor",
+                          "jitterSize": "jitter_size",
+                          "removeMissingData": "remove_missing_data",
+                          })
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
         # load the elements from the settings dict
-        attributeReverse = settings_dict.get("reverse", [0]*len(attr_indices))
-        validData = settings_dict.get("validData")
-        classList = settings_dict.get("classList")
+        attribute_reverse = settings_dict.get("reverse", [0]*len(attr_indices))
+        valid_data = settings_dict.get("valid_data")
+        class_list = settings_dict.get("class_list")
         sum_i     = settings_dict.get("sum_i")
-        XAnchors  = settings_dict.get("XAnchors")
-        YAnchors  = settings_dict.get("YAnchors")
-        scaleFactor = settings_dict.get("scaleFactor", 1.0)
-        jitterSize  = settings_dict.get("jitterSize", 0.0)
-        removeMissingData = settings_dict.get("removeMissingData", 1)
+        xanchors  = settings_dict.get("xanchors")
+        yanchors  = settings_dict.get("yanchors")
+        scale_factor = settings_dict.get("scale_factor", 1.0)
+        jitter_size  = settings_dict.get("jitter_size", 0.0)
+        remove_missing_data = settings_dict.get("remove_missing_data", 1)
         
-        if validData == None:
-            validData = self.get_valid_list(attr_indices)
-        if sum(validData) == 0:
+        if valid_data == None:
+            valid_data = self.get_valid_list(attr_indices)
+        if sum(valid_data) == 0:
             return None
 
-        if classList == None and self.data_has_class:
-            classList = self.original_data[self.data_class_index]  
+        if class_list == None and self.data_has_class:
+            class_list = self.original_data[self.data_class_index]
 
-        if removeMissingData:
-            selectedData = numpy.compress(validData,
+        if remove_missing_data:
+            selected_data = numpy.compress(valid_data,
                                           numpy.take(self.no_jittering_scaled_data,
                                                      attr_indices, axis = 0),
                                                      axis = 1)
-            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
-                classList = numpy.compress(validData, classList)
+            if class_list != None and len(class_list) != numpy.shape(selected_data)[1]:
+                class_list = numpy.compress(valid_data, class_list)
         else:
-            selectedData = numpy.take(self.no_jittering_scaled_data,
+            selected_data = numpy.take(self.no_jittering_scaled_data,
                                       attr_indices, axis = 0)
         
         if sum_i == None:
-            sum_i = self._getSum_i(selectedData)
+            sum_i = self._getSum_i(selected_data)
 
-        if XAnchors == None or YAnchors == None:
-            XAnchors = self.create_xanchors(len(attr_indices))
-            YAnchors = self.create_yanchors(len(attr_indices))
+        if xanchors == None or yanchors == None:
+            xanchors = self.create_xanchors(len(attr_indices))
+            yanchors = self.create_yanchors(len(attr_indices))
 
-        xanchors = numpy.zeros(numpy.shape(selectedData), numpy.float)
-        yanchors = numpy.zeros(numpy.shape(selectedData), numpy.float)
+        xanchors = numpy.zeros(numpy.shape(selected_data), numpy.float)
+        yanchors = numpy.zeros(numpy.shape(selected_data), numpy.float)
         length = len(attr_indices)
 
         for i in range(length):
-            if attributeReverse[i]:
-                xanchors[i] = selectedData[i] * XAnchors[i] + (1-selectedData[i]) * XAnchors[(i+1)%length]
-                yanchors[i] = selectedData[i] * YAnchors[i] + (1-selectedData[i]) * YAnchors[(i+1)%length]
+            if attribute_reverse[i]:
+                xanchors[i] = selected_data[i] * xanchors[i] + (1-selected_data[i]) * xanchors[(i+1)%length]
+                yanchors[i] = selected_data[i] * yanchors[i] + (1-selected_data[i]) * yanchors[(i+1)%length]
             else:
-                xanchors[i] = (1-selectedData[i]) * XAnchors[i] + selectedData[i] * XAnchors[(i+1)%length]
-                yanchors[i] = (1-selectedData[i]) * YAnchors[i] + selectedData[i] * YAnchors[(i+1)%length]
+                xanchors[i] = (1-selected_data[i]) * xanchors[i] + selected_data[i] * xanchors[(i+1)%length]
+                yanchors[i] = (1-selected_data[i]) * yanchors[i] + selected_data[i] * yanchors[(i+1)%length]
 
-        x_positions = numpy.sum(numpy.multiply(xanchors, selectedData), axis=0)/sum_i
-        y_positions = numpy.sum(numpy.multiply(yanchors, selectedData), axis=0)/sum_i
+        x_positions = numpy.sum(numpy.multiply(xanchors, selected_data), axis=0)/sum_i
+        y_positions = numpy.sum(numpy.multiply(yanchors, selected_data), axis=0)/sum_i
         #x_positions = numpy.sum(numpy.transpose(xanchors* numpy.transpose(selectedData)), axis=0) / sum_i
         #y_positions = numpy.sum(numpy.transpose(yanchors* numpy.transpose(selectedData)), axis=0) / sum_i
 
-        if scaleFactor != 1.0:
-            x_positions = x_positions * scaleFactor
-            y_positions = y_positions * scaleFactor
-        if jitterSize > 0.0:
-            x_positions += (numpy.random.random(len(x_positions))-0.5)*jitterSize
-            y_positions += (numpy.random.random(len(y_positions))-0.5)*jitterSize
+        if scale_factor != 1.0:
+            x_positions = x_positions * scale_factor
+            y_positions = y_positions * scale_factor
+        if jitter_size > 0.0:
+            x_positions += (numpy.random.random(len(x_positions))-0.5)*jitter_size
+            y_positions += (numpy.random.random(len(y_positions))-0.5)*jitter_size
 
-        if classList != None:
-            return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
+        if class_list != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, class_list)))
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions)))
 
     createProjectionAsNumericArray = create_projection_as_numeric_array
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "useAnchorData": "use_anchor_data",
+                          "XAnchors": "xanchors",
+                          "YAnchors": "yanchors"})
     def get_projected_point_position(self, attr_indices, values, **settings_dict):
         # load the elements from the settings dict
-        attributeReverse = settings_dict.get("reverse", [0]*len(attr_indices))
-        useAnchorData = settings_dict.get("useAnchorData")
-        XAnchors = settings_dict.get("XAnchors")
-        YAnchors = settings_dict.get("YAnchors")
+        attribute_reverse = settings_dict.get("reverse", [0]*len(attr_indices))
+        use_anchor_data = settings_dict.get("use_anchor_data")
+        xanchors = settings_dict.get("xanchors")
+        yanchors = settings_dict.get("yanchors")
     
-        if XAnchors != None and YAnchors != None:
-            XAnchors = numpy.array(XAnchors)
-            YAnchors = numpy.array(YAnchors)
-        elif useAnchorData:
-            XAnchors = numpy.array([val[0] for val in self.anchor_data])
-            YAnchors = numpy.array([val[1] for val in self.anchor_data])
+        if xanchors != None and yanchors != None:
+            xanchors = numpy.array(xanchors)
+            yanchors = numpy.array(yanchors)
+        elif use_anchor_data:
+            xanchors = numpy.array([val[0] for val in self.anchor_data])
+            yanchors = numpy.array([val[1] for val in self.anchor_data])
         else:
-            XAnchors = self.create_xanchors(len(attr_indices))
-            YAnchors = self.create_yanchors(len(attr_indices))
+            xanchors = self.create_xanchors(len(attr_indices))
+            yanchors = self.create_yanchors(len(attr_indices))
 
         m = min(values); M = max(values)
         if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all
@@ -1312,12 +1361,12 @@ class ScalePolyvizData(ScaleLinProjData):
         xanchors = numpy.zeros(length, numpy.float)
         yanchors = numpy.zeros(length, numpy.float)
         for i in range(length):
-            if attributeReverse[i]:
-                xanchors[i] = values[i] * XAnchors[i] + (1-values[i]) * XAnchors[(i+1)%length]
-                yanchors[i] = values[i] * YAnchors[i] + (1-values[i]) * YAnchors[(i+1)%length]
+            if attribute_reverse[i]:
+                xanchors[i] = values[i] * xanchors[i] + (1-values[i]) * xanchors[(i+1)%length]
+                yanchors[i] = values[i] * yanchors[i] + (1-values[i]) * yanchors[(i+1)%length]
             else:
-                xanchors[i] = (1-values[i]) * XAnchors[i] + values[i] * XAnchors[(i+1)%length]
-                yanchors[i] = (1-values[i]) * YAnchors[i] + values[i] * YAnchors[(i+1)%length]
+                xanchors[i] = (1-values[i]) * xanchors[i] + values[i] * xanchors[(i+1)%length]
+                yanchors[i] = (1-values[i]) * yanchors[i] + values[i] * yanchors[(i+1)%length]
 
         x_positions = numpy.sum(numpy.dot(xanchors, values), axis=0) / float(s)
         y_positions = numpy.sum(numpy.dot(yanchors, values), axis=0) / float(s)
@@ -1470,60 +1519,66 @@ class ScaleScatterPlotData(ScaleData):
     createProjectionAsExampleTable3D = create_projection_as_example_table_3D
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "validData": "valid_data",
+                          "classList": "class_list",
+                          "jutterSize": "jitter_size"})
     def create_projection_as_numeric_array(self, attr_indices, **settings_dict):
-        validData = settings_dict.get("validData")
-        classList = settings_dict.get("classList")
-        jitterSize = settings_dict.get("jitter_size", 0.0)
+        valid_data = settings_dict.get("valid_data")
+        class_list = settings_dict.get("class_list")
+        jitter_size = settings_dict.get("jitter_size", 0.0)
 
-        if validData == None:
-            validData = self.get_valid_list(attr_indices)
-        if sum(validData) == 0:
+        if valid_data == None:
+            valid_data = self.get_valid_list(attr_indices)
+        if sum(valid_data) == 0:
             return None
 
-        if classList == None and self.data_has_class:
-            classList = self.original_data[self.data_class_index]
+        if class_list == None and self.data_has_class:
+            class_list = self.original_data[self.data_class_index]
 
-        xArray = self.no_jittering_scaled_data[attr_indices[0]]
-        yArray = self.no_jittering_scaled_data[attr_indices[1]]
-        if jitterSize > 0.0:
-            xArray += (numpy.random.random(len(xArray))-0.5)*jitterSize
-            yArray += (numpy.random.random(len(yArray))-0.5)*jitterSize
-        if classList != None:
-            data = numpy.compress(validData, numpy.array((xArray, yArray, classList)), axis = 1)
+        xarray = self.no_jittering_scaled_data[attr_indices[0]]
+        yarray = self.no_jittering_scaled_data[attr_indices[1]]
+        if jitter_size > 0.0:
+            xarray += (numpy.random.random(len(xarray))-0.5)*jitter_size
+            yarray += (numpy.random.random(len(yarray))-0.5)*jitter_size
+        if class_list != None:
+            data = numpy.compress(valid_data, numpy.array((xarray, yarray, class_list)), axis = 1)
         else:
-            data = numpy.compress(validData, numpy.array((xArray, yArray)), axis = 1)
+            data = numpy.compress(valid_data, numpy.array((xarray, yarray)), axis = 1)
         data = numpy.transpose(data)
         return data
 
     createProjectionAsNumericArray = create_projection_as_numeric_array
 
     @deprecated_keywords({"attrIndices": "attr_indices",
-                          "settingsDict": "settings_dict"})
+                          "settingsDict": "settings_dict",
+                          "validData": "valid_data",
+                          "classList": "class_list",
+                          "jutterSize": "jitter_size"})
     def create_projection_as_numeric_array_3D(self, attr_indices, **settings_dict):
-        validData = settings_dict.get("validData")
-        classList = settings_dict.get("classList")
-        jitterSize = settings_dict.get("jitter_size", 0.0)
+        valid_data = settings_dict.get("valid_data")
+        class_list = settings_dict.get("class_list")
+        jitter_size = settings_dict.get("jitter_size", 0.0)
 
-        if validData == None:
-            validData = self.get_valid_list(attr_indices)
-        if sum(validData) == 0:
+        if valid_data == None:
+            valid_data = self.get_valid_list(attr_indices)
+        if sum(valid_data) == 0:
             return None
 
-        if classList == None and self.data_has_class:
-            classList = self.original_data[self.data_class_index]
+        if class_list == None and self.data_has_class:
+            class_list = self.original_data[self.data_class_index]
 
-        xArray = self.no_jittering_scaled_data[attr_indices[0]]
-        yArray = self.no_jittering_scaled_data[attr_indices[1]]
-        zArray = self.no_jittering_scaled_data[attr_indices[2]]
-        if jitterSize > 0.0:
-            xArray += (numpy.random.random(len(xArray))-0.5)*jitterSize
-            yArray += (numpy.random.random(len(yArray))-0.5)*jitterSize
-            zArray += (numpy.random.random(len(zArray))-0.5)*jitterSize
-        if classList != None:
-            data = numpy.compress(validData, numpy.array((xArray, yArray, zArray, classList)), axis = 1)
+        xarray = self.no_jittering_scaled_data[attr_indices[0]]
+        yarray = self.no_jittering_scaled_data[attr_indices[1]]
+        zarray = self.no_jittering_scaled_data[attr_indices[2]]
+        if jitter_size > 0.0:
+            xarray += (numpy.random.random(len(xarray))-0.5)*jitter_size
+            yarray += (numpy.random.random(len(yarray))-0.5)*jitter_size
+            zarray += (numpy.random.random(len(zarray))-0.5)*jitter_size
+        if class_list != None:
+            data = numpy.compress(valid_data, numpy.array((xarray, yarray, zarray, class_list)), axis = 1)
         else:
-            data = numpy.compress(validData, numpy.array((xArray, yArray, zArray)), axis = 1)
+            data = numpy.compress(valid_data, numpy.array((xarray, yarray, zarray)), axis = 1)
         data = numpy.transpose(data)
         return data
 
@@ -1542,53 +1597,53 @@ class ScaleScatterPlotData(ScaleData):
 
         # init again, in case that the attribute ordering took too much time
         self.scatterWidget.progressBarInit()
-        startTime = time.time()
+        start_time = time.time()
         count = len(attribute_name_order)*(len(attribute_name_order)-1)/2
-        testIndex = 0
+        test_index = 0
 
         for i in range(len(attribute_name_order)):
             for j in range(i):
                 try:
                     attr1 = self.attribute_name_index[attribute_name_order[j]]
                     attr2 = self.attribute_name_index[attribute_name_order[i]]
-                    testIndex += 1
+                    test_index += 1
                     if self.clusterOptimization.isOptimizationCanceled():
-                        secs = time.time() - startTime
+                        secs = time.time() - start_time
                         self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections in %d min, %d sec)"
-                                                                  % (testIndex, secs/60, secs%60))
+                                                                  % (test_index, secs/60, secs%60))
                         self.scatterWidget.progressBarFinished()
                         return
 
                     data = self.create_projection_as_example_table([attr1, attr2],
                                                                    domain = domain,
                                                                    jitter_size = jitter_size)
-                    graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+                    graph, valuedict, closuredict, polygon_vertices_dict, enlarged_closure_dict, other_dict = self.clusterOptimization.evaluateClusters(data)
 
-                    allValue = 0.0
-                    classesDict = {}
-                    for key in valueDict.keys():
-                        add_result_funct(valueDict[key], closureDict[key],
-                                         polygonVerticesDict[key],
+                    all_value = 0.0
+                    classes_dict = {}
+                    for key in valuedict.keys():
+                        add_result_funct(valuedict[key], closuredict[key],
+                                         polygon_vertices_dict[key],
                                          [attribute_name_order[i],
                                           attribute_name_order[j]],
-                                          int(graph.objects[polygonVerticesDict[key][0]].getclass()),
-                                          enlargedClosureDict[key], otherDict[key])
-                        classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
-                        allValue += valueDict[key]
-                    add_result_funct(allValue, closureDict, polygonVerticesDict,
+                                          int(graph.objects[polygon_vertices_dict[key][0]].getclass()),
+                                          enlarged_closure_dict[key], other_dict[key])
+                        classes_dict[key] = int(graph.objects[polygon_vertices_dict[key][0]].getclass())
+                        all_value += valuedict[key]
+                    add_result_funct(all_value, closuredict, polygon_vertices_dict,
                                      [attribute_name_order[i], attribute_name_order[j]],
-                                     classesDict, enlargedClosureDict, otherDict)     # add all the clusters
+                                     classes_dict, enlarged_closure_dict, other_dict)     # add all the clusters
                     
                     self.clusterOptimization.setStatusBarText("Evaluated %d projections..."
-                                                              % (testIndex))
-                    self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
-                    del data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict
+                                                              % (test_index))
+                    self.scatterWidget.progressBarSet(100.0*test_index/float(count))
+                    del data, graph, valuedict, closuredict, polygon_vertices_dict, enlarged_closure_dict, other_dict, classes_dict
                 except:
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # print the exception
         
-        secs = time.time() - startTime
-        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
+        secs = time.time() - start_time
+        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (test_index, secs/60, secs%60))
         self.scatterWidget.progressBarFinished()
     
     getOptimalClusters = get_optimal_clusters

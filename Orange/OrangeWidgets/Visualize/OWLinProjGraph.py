@@ -719,6 +719,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 #            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
         OWGraph.drawCanvas(self, painter)
 
+OWLinProjGraph = graph_deprecator(OWLinProjGraph)
 
 if __name__== "__main__":
     #Draw a simple graph

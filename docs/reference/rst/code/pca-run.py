@@ -7,7 +7,7 @@
 import Orange
 iris = Orange.data.Table("iris.tab")
 
-pca = Orange.projection.pca.Pca(iris)
+pca = Orange.projection.linear.Pca(iris)
 transformed_data = pca(iris)
 
 print pca

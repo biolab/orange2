@@ -7,7 +7,6 @@ Projections (``projection``)
 
    Orange.projection.linear
    Orange.projection.mds
-   Orange.projection.pca
    Orange.projection.som
    Orange.projection.correspondence
 
