@@ -59,6 +59,16 @@ public:
     : pyobject(PyInt_FromLong(f))
     {}
 
+#ifdef _WIN64 
+   PyWrapper(const size_t &f) 
+   : pyobject(PyInt_FromSize_t(f)) 
+   {} 
+
+   PyWrapper(const ssize_t &f) 
+ 	: pyobject(PyInt_FromSsize_t(f)) 
+   {} 
+#endif 
+
   operator PyObject *() const
     { Py_XINCREF(pyobject);
       return pyobject; }

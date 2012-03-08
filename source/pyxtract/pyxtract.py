@@ -76,18 +76,18 @@ if 1: ### Definitions of method slots
                 ]
 
   specialsequencemethods=[
-                ("len_sq", "sq_length", "inquiry"),
+                ("len_sq", "sq_length", "lenfunc"),
                 ("concat", "sq_concat", "binaryfunc"),
-                ("repeat", "sq_repeat", "intargfunc"),
-                ("getitem_sq", "sq_item", "intargfunc"),
-                ("getslice", "sq_slice", "intintargfunc"),
-                ("setitem_sq", "sq_ass_item", "intobjargproc"),
-                ("setslice", "sq_ass_slice", "intintobjargproc"),
+                ("repeat", "sq_repeat", "ssizeargfunc"),
+                ("getitem_sq", "sq_item", "ssizeargfunc"),
+                ("getslice", "sq_slice", "ssizessizeargfunc"),
+                ("setitem_sq", "sq_ass_item", "ssizeobjargproc"),
+                ("setslice", "sq_ass_slice", "ssizessizeobjargproc"),
                 ("contains", "sq_contains", "objobjproc")
                 ]
 
   specialmappingmethods=[
-                ("len", "mp_length", "inquiry"),
+                ("len", "mp_length", "lenfunc"),
                 ("getitem", "mp_subscript", "binaryfunc"),
                 ("setitem", "mp_ass_subscript", "objobjargproc")
                 ]

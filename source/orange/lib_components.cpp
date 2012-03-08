@@ -4214,12 +4214,12 @@ PyNumberMethods PyEdge_as_number = {
 };
 
 static PySequenceMethods PyEdge_as_sequence = {
-	(inquiry)PyEdge_Len,					/* sq_length */
+	(lenfunc)PyEdge_Len,					/* sq_length */
 	0,					/* sq_concat */
 	0,					/* sq_repeat */
-	(intargfunc)PyEdge_Getitem,					/* sq_item */
+	(ssizeargfunc)PyEdge_Getitem,					/* sq_item */
 	0,					/* sq_slice */
-	(intobjargproc)PyEdge_Setitem,					/* sq_ass_item */
+	(ssizeobjargproc)PyEdge_Setitem,					/* sq_ass_item */
 	0,					/* sq_ass_slice */
 	(objobjproc)PyEdge_Contains,		/* sq_contains */
 	0,					/* sq_inplace_concat */
