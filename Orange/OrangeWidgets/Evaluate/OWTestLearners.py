@@ -106,7 +106,6 @@ class OWTestLearners(OWWidget):
         self.selectedMScores = [i for (i,s) in enumerate(self.mStatistics) if s.show]
         self.targetClass = 0
         self.loadSettings()
-        self.resampling = 0             # cross-validation
 
         self.stat = self.cStatistics
 
@@ -465,7 +464,7 @@ class OWTestLearners(OWWidget):
             self.stat = [self.rStatistics, self.cStatistics, self.mStatistics][2 if self.ismultilabel() else self.isclassification()]
 
             if self.learners:
-                self.score([l.id for l in self.learners.values()])
+                self.recompute()
             
         self.openContext("", data)
         self.paintscores()
@@ -480,7 +479,7 @@ class OWTestLearners(OWWidget):
         if self.testdata is not None:
             if self.resampling == 4:
                 if self.data:
-                    self.score([l.id for l in self.learners.values()])
+                    self.recompute()
                 else:
                     for l in self.learners.values():
                         l.scores = []
@@ -514,10 +513,10 @@ class OWTestLearners(OWWidget):
                 self.learners[id].time = time
             else: # new learner
                 self.learners[id] = Learner(learner, id)
-            if self.applyBtn.isEnabled():
-                self.recompute(True)
-            else:
+            if self.applyOnAnyChange:
                 self.score([id])
+            else:
+                self.recompute()
         else: # remove a learner and corresponding results
             if id in self.learners:
                 res = self.learners[id].results
@@ -533,8 +532,7 @@ class OWTestLearners(OWWidget):
     def setPreprocessor(self, pp):
         self.preprocessor = pp
         if self.learners:
-            self.score([l.id for l in self.learners.values()])
-            self.paintscores()
+            self.recompute()
 
     # handle output signals
 

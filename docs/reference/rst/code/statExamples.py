@@ -67,18 +67,22 @@ for className, classConfusions in zip(classes, cm):
     print ("%s" + ("\t%i" * len(classes))) % ((className, ) + tuple(classConfusions))
 
 cm = Orange.evaluation.scoring.confusion_matrices(res)
+sensitivities = Orange.evaluation.scoring.sens(cm)
+specificities = Orange.evaluation.scoring.spec(cm)
 print
 print "Sensitivity and specificity for 'voting'"
 print "method\tsens\tspec"
 for l in range(len(learners)):
-    print "%s\t%5.3f\t%5.3f" % (learners[l].name, Orange.evaluation.scoring.sens(cm[l]), Orange.evaluation.scoring.spec(cm[l]))
+    print "%s\t%5.3f\t%5.3f" % (learners[l].name, sensitivities[l], specificities[l])
 
 cm = Orange.evaluation.scoring.confusion_matrices(resVeh, vehicle.domain.class_var.values.index("van"))
+sensitivities = Orange.evaluation.scoring.sens(cm)
+specificities = Orange.evaluation.scoring.spec(cm)
 print
 print "Sensitivity and specificity for 'vehicle=van'"
 print "method\tsens\tspec"
 for l in range(len(learners)):
-    print "%s\t%5.3f\t%5.3f" % (learners[l].name, Orange.evaluation.scoring.sens(cm[l]), Orange.evaluation.scoring.spec(cm[l]))
+    print "%s\t%5.3f\t%5.3f" % (learners[l].name, sensitivities[l], specificities[l])
 
 print
 print "AUC (voting)"

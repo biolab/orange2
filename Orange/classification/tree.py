@@ -2686,7 +2686,7 @@ class TreeClassifier(Orange.classification.Classifier):
         Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
         for various outlines supported by GraphViz.
         """
-        fle = type(file_name) == str and open(file_name, "wt") or file_name
+        fle = isinstance(file_name, basestring) and open(file_name, "wt") or file_name
 
         _TreeDumper(leaf_str, node_str, user_formats +
             _TreeDumper.defaultStringFormats, min_instances,

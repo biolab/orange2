@@ -470,7 +470,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                 filename = "%s" % (self.parentName)
             qname = QFileDialog.getSaveFileName(self, "Save the List of Visualizations",  os.path.join(self.lastSaveDirName, filename), "Interesting visualizations (*.mproj)")
             if qname.isEmpty(): return
-            name = str(qname)
+            name = unicode(qname)
         else:
             name = filename
         self.setStatusBarText("Saving visualizations")
@@ -497,7 +497,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if name == None:
             name = QFileDialog.getOpenFileName(self, "Open a List of Visualizations", self.lastSaveDirName, "Interesting visualizations (*.mproj)")
             if name.isEmpty(): return
-            name = str(name)
+            name = unicode(name)
 
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
@@ -764,7 +764,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             qname = QFileDialog.getSaveFileName(self, "Save tree", os.path.join(self.lastSaveDirName, "explorer tree.tree"), "Explorer tree (*.tree)")
             if qname.isEmpty():
                 return
-            name = str(qname)
+            name = unicode(qname)
         self.lastSaveDirName = os.path.split(name)[0]
 
         tree = {}
@@ -783,7 +783,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if name == None:
             name = QFileDialog.getOpenFileName(self, "Load tree", self.lastSaveDirName, "Explorer tree (*.tree)")
             if name.isEmpty(): return
-            name = str(name)
+            name = unicode(name)
 
         self.lastSaveDirName = os.path.split(name)[0]
         import cPickle

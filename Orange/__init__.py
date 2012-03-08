@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 __version__ = "2.5a4"
 
 from . import orange
@@ -18,8 +19,8 @@ def _import(name):
     global alreadyWarned
     try:
         __import__(name, globals(), locals(), [], -1)
-    except Exception as err:
-        warnings.warn("%sImporting '%s' failed: %s" % 
+    except ImportError, err:
+        warnings.warn("%sImporting '%s' failed: %s" %
             (disabledMsg if not alreadyWarned else "", name, err),
             UserWarning, 2)
         alreadyWarned = True
@@ -131,4 +132,13 @@ _import("misc.render")
 _import("misc.selection")
 _import("misc.serverfiles")
 #_import("misc.r")
+
+try:
+    from . import version
+    # Always use short_version here (see PEP 386)
+    __version__ = version.short_version
+    __hg_revision__ = version.hg_revision
+except ImportError:
+    # Leave the default version defined at the top.
+    pass
 

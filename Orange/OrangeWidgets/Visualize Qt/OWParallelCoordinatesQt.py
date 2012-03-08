@@ -436,7 +436,7 @@ class ParallelOptimization(OWWidget):
         self.qualityMeasureLabel.setText("Quality measure used:" )
 
         if name == None:
-            name = str(QFileDialog.getOpenFileName(self, "Open Projections",  self.lastSaveDirName, "Interesting projections (*.proj)"))
+            name = unicode(QFileDialog.getOpenFileName(self, "Open Projections",  self.lastSaveDirName, "Interesting projections (*.proj)"))
             if name == "": return
 
         dirName, shortFileName = os.path.split(name)
@@ -606,7 +606,7 @@ class ParallelOptimization(OWWidget):
             if self.optimizationMeasure == CORRELATION: filename += " - " + "correlation"
             else:                                       filename += " - " + "vizrank"
 
-            name = str(QFileDialog.getSaveFileName(self, "Save Parallel Projections",  os.path.join(self.lastSaveDirName, filename), "Parallel projections (*.papr)"))
+            name = unicode(QFileDialog.getSaveFileName(self, "Save Parallel Projections",  os.path.join(self.lastSaveDirName, filename), "Parallel projections (*.papr)"))
             if name == "": return
         else:
             name = filename
@@ -626,7 +626,7 @@ class ParallelOptimization(OWWidget):
     def loadResults(self):
         self.clearResults()
 
-        name = str(QFileDialog.getOpenFileName(self, "Open Parallel Projections",  self.lastSaveDirName, "Parallel projections (*.papr)"))
+        name = unicode(QFileDialog.getOpenFileName(self, "Open Parallel Projections",  self.lastSaveDirName, "Parallel projections (*.papr)"))
         if name == "": return
 
         dirName, shortFileName = os.path.split(name)

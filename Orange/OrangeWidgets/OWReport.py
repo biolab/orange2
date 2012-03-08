@@ -228,10 +228,11 @@ class ReportWindow(OWWidget):
     browser_re = re.compile(r'<!--browsercode(.*?)-->')
     def saveReport(self):
         filename = QFileDialog.getSaveFileName(self, "Save Report", self.saveDir, "Web page (*.html *.htm)")
+        filename = unicode(filename)
+        
         if not filename:
             return
-
-        filename = str(filename)
+        
         path, fname = os.path.split(filename)
         self.saveDir = path
         if not os.path.exists(path):
@@ -286,10 +287,11 @@ class ReportWindow(OWWidget):
 
     def saveXML(self):
         filename = QFileDialog.getSaveFileName(self, "Export Report", self.saveDir, "XML file (*.xml)")
+        filename = unicode(filename)
         if not filename:
             return
 
-        outf = file(str(filename), "wt")
+        outf = file(filename, "wt")
         outf.write('<?xml version="1.0" encoding="ascii"?>\n<report version="1.0">\n')
         
         for i in range(self.tree.count()):
@@ -318,6 +320,8 @@ class ReportWindow(OWWidget):
 
     def loadXML(self):
         filename = QFileDialog.getOpenFileName(self, "Import Report", self.saveDir, "XML file (*.xml)")
+        filename = unicode(filename)
+        
         if not filename:
             return
 

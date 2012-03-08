@@ -470,7 +470,7 @@ class OWBaseWidget(QDialog):
                     f.close()
                 except IOError:
                     return 
-        if type(file) == str:
+        if isinstance(file, basestring):
             if os.path.exists(file):
                 return open(file, "r")
         else:
@@ -521,7 +521,7 @@ class OWBaseWidget(QDialog):
         if settings:
             if file==None:
                 file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
-            if type(file) == str:
+            if isinstance(file, basestring):
                 file = open(file, "w")
             cPickle.dump(settings, file)
 

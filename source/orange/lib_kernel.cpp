@@ -2734,6 +2734,7 @@ PyObject *ExampleGenerator_checksum(PyObject *self, PyObject *) PYARGS(METH_NOAR
 
 
 const char *getExtension(const char *name);
+char *getFileSystemEncoding(); // defined in lib_io.cpp
 
 PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws);
 PyObject *saveC45(PyObject *, PyObject *args);
@@ -2744,12 +2745,24 @@ PyObject *saveBasket(PyObject *, PyObject *args);
 PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename) -> None")
 {
   char *filename;
+  bool free_filename = false;
   if (!PyArg_ParseTuple(args, "s:ExampleGenerator.save", &filename))
-    return PYNULL;
+  {
+      // Try again, this time with the fs encoding.
+      char *encoding = getFileSystemEncoding();
+      if (!PyArg_ParseTuple(args, "es:ExampleGenerator.save", encoding, &filename))
+          return PYNULL;
+      free_filename = true;
+      PyErr_Clear();
+  }
 
   const char *extension = getExtension(filename);
   if (!extension)
+  {
+    if (free_filename)
+        PyMem_Free(filename);
     PYERROR(PyExc_TypeError, "file name must have an extension", PYNULL);
+  }
 
 
   PyObject *newargs = PyTuple_New(PyTuple_Size(args) + 1);
@@ -2787,6 +2800,10 @@ PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws)
     PyErr_Format(PyExc_AttributeError, "unknown file format (%s)", extension);
 
   Py_DECREF(newargs);
+
+  if (free_filename)
+      PyMem_Free(filename);
+
   return res;
 }
 
@@ -3056,7 +3073,6 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
   PYERROR(PyExc_TypeError, "invalid arguments", NULL);
 }
 
-
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas filter_metas DC DK NA noClass noCodedDiscrete createNewOn")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator - Orange.data.Table, "(filename | domain[, examples] | examples)")
@@ -3065,7 +3081,20 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     char *filename = NULL;
     if (PyArg_ParseTuple(argstuple, "s", &filename))
-      return loadDataFromFile(type, filename, argstuple, keywords, false);
+        return loadDataFromFile(type, filename, argstuple, keywords, false);
+
+    PyErr_Clear();
+
+    /*For a case where the unicode can't be converted to a default
+     * encoding (on most platforms this is ASCII)
+     */
+    char * coding = getFileSystemEncoding();
+    if (PyArg_ParseTuple(argstuple, "es", coding, &filename))
+    {
+        PyObject *rval = loadDataFromFile(type, filename, argstuple, keywords, false);
+        PyMem_Free(filename);
+        return rval;
+    }
 
     PyErr_Clear();
 

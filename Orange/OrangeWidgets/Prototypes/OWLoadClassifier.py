@@ -6,6 +6,7 @@
 """
 
 from OWWidget import *
+
 import OWGUI
 import orange
 
@@ -63,7 +64,7 @@ class OWLoadClassifier(OWWidget):
     def browse(self):
         filename = QFileDialog.getOpenFileName(self, "Load Classifier From File",
                         self.lastFile, "Pickle files (*.pickle *.pck)\nAll files (*.*)")
-        filename = str(filename)
+        filename = unicode(filename)
         if filename:
             if filename in self.filenameHistory:
                 self.selectedFileIndex = self.filenameHistory.index(filename)

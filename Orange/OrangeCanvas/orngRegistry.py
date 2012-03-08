@@ -34,7 +34,16 @@ class WidgetCategory(dict):
         self.name = name
    
 def readCategories(silent=False):
-    currentCacheVersion = 2
+    try:
+        from Orange.version import version as orange_version
+    except ImportError:
+        # Orange.version module is writen by setup.py, what if orange was build
+        # using make
+        orange_version = "???"
+    # Add orange version to the cache version (because cache contains names
+    # of types inside the Orange hierarchy, if that changes the cache should be
+    # invalidated)
+    currentCacheVersion = (2, orange_version)
     
     global widgetsWithError, widgetsWithErrorPrototypes
     widgetDirName = os.path.realpath(orngEnviron.directoryNames["widgetDir"])
@@ -53,7 +62,7 @@ def readCategories(silent=False):
             cachedWidgetDescriptions = dict([(w.fullName, w) for cat in cats.values() for w in cat.values()])
         else:
             cachedWidgetDescriptions = {}
-    except:
+    except Exception:
         cachedWidgetDescriptions = {} 
 
     directories = [] # tuples (defaultCategory, dirName, plugin, isPrototype)

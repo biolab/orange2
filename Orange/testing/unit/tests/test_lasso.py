@@ -7,7 +7,7 @@ try:
 except:
     import unittest
 
-@datasets_driven(datasets=testing.REGRESSION_DATASETS)
+@datasets_driven(datasets=["housing", "servo"])
 class TestLassoRegressionLearner(testing.LearnerTestCase):
 
     def setUp(self):

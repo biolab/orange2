@@ -149,25 +149,25 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
 
     """    
 
-    def __init__(self, name='linear regression', intercept=True, \
-                 compute_stats=True, ridge_lambda=None,\
-                 imputer=None, continuizer=None, \
-                 use_vars=None, stepwise=False, add_sig=0.05,
-                 remove_sig=0.2, **kwds):
+    def __init__(self, name='linear regression', intercept=True,
+                 compute_stats=True, ridge_lambda=None, imputer=None,
+                 continuizer=None, use_vars=None, stepwise=False,
+                 add_sig=0.05, remove_sig=0.2, **kwds):
         """
         :param name: name of the linear model, default 'linear regression'
         :type name: string
         :param intercept: if True, the intercept beta0 is included
             in the model
-        :type intercept: boolean
+        :type intercept: bool
         :param compute_stats: if True, statistical properties of
             the estimators (standard error, t-scores, significances)
             and statistical properties of the model
             (sum of squares, R2, adjusted R2) are computed
-        :type compute_stats: boolean
-        :param ridge_lambda: if not None, the lambda parameter
-            in ridge regression
-        :type ridge_lambda: integer or None
+        :type compute_stats: bool
+        :param ridge_lambda: if not None, ridge regression is performed 
+                             with the given lambda parameter controlling
+                             the regularization
+        :type ridge_lambda: :obj:`int` or :obj:`None`
         :param use_vars: the list of independent varaiables included in
             regression model. If None (default) all variables are used
         :type use_vars: list of Orange.feature.Descriptor or None
@@ -175,7 +175,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             <http://en.wikipedia.org/wiki/Stepwise_regression>`_
             based on F-test is performed. The significance parameters are
             add_sig and remove_sig
-        :type stepwise: boolean
+        :type stepwise: bool
         :param add_sig: lower bound of significance for which the variable
             is included in regression model
             default value = 0.05
@@ -221,7 +221,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
 
         if self.stepwise:
             use_vars = stepwise(table, weight, add_sig=self.add_sig,
-                                      remove_sig=self.remove_sig)
+                                remove_sig=self.remove_sig)
             new_domain = Orange.data.Domain(use_vars, table.domain.class_var)
             new_domain.addmetas(table.domain.getmetas())
             table = Orange.data.Table(new_domain, table)
@@ -235,9 +235,10 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
      
         if self.intercept:
             if A is None:
-                X = numpy.ones([n,1])
+                X = numpy.ones([n, 1])
             else:
                 X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
+            m += 1
         else:
             X = A
              
@@ -258,8 +259,9 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         if self.ridge_lambda is None:
             cov = pinv(dot(dot(X.T, W), X))
         else:
-            cov = pinv(dot(dot(X.T, W), X) - self.ridge_lambda*numpy.eye(m+1))
-            compute_stats = False # TO DO: find inferential properties of the estimators
+            cov = pinv(dot(dot(X.T, W), X) + self.ridge_lambda * numpy.eye(m))
+            # TODO: find inferential properties of the estimators
+            compute_stats = False 
         D = dot(dot(cov, X.T), W)
         coefficients = dot(D, y)
 
@@ -268,18 +270,18 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             cov_x = numpy.cov(X, rowvar=0)
 
             # standardized coefficients
-            std_coefficients = (sqrt(cov_x.diagonal()) / sigma_y) \
-                                * coefficients
+            std_coefficients = sqrt(cov_x.diagonal()) / sigma_y * coefficients
         else:
             std_coefficients = None
 
         if compute_stats is False:
-            return LinearRegression(domain.class_var, domain, coefficients=coefficients,
-                                    std_coefficients=std_coefficients, intercept=self.intercept)
+            return LinearRegression(domain.class_var, domain,
+                coefficients=coefficients, std_coefficients=std_coefficients,
+                intercept=self.intercept)
             
 
         fitted = dot(X, coefficients)
-        residuals = [ins.get_class() - fitted[i] \
+        residuals = [ins.get_class() - fitted[i]
                      for i, ins in enumerate(table)]
 
         # model summary        
@@ -291,36 +293,33 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         sse = sst - ssr
         # coefficient of determination
         r2 = ssr / sst
-        r2adj = 1-(1-r2)*(n-1)/(n-m-1)
-        F = (ssr/m)/(sst-ssr/(n-m-1))
-        df = n-2 
-        sigma_square = sse/(n-m-1)
+        r2adj = 1 - (1 - r2) * (n - 1) / (n - m - 1)
+        F = (ssr / m) / (sst - ssr / (n - m - 1))
+        df = n - 2
+        sigma_square = sse / (n - m - 1)
         # standard error of the regression estimator, t-scores and p-values
-        std_error = sqrt(sigma_square*pinv(dot(X.T, X)).diagonal())
-        t_scores = coefficients/std_error
-        p_vals = [stats.betai(df*0.5,0.5,df/(df + t*t)) \
+        std_error = sqrt(sigma_square * pinv(dot(X.T, X)).diagonal())
+        t_scores = coefficients / std_error
+        p_vals = [stats.betai(df * 0.5, 0.5, df / (df + t * t))
                   for t in t_scores]
 
         # dictionary of regression coefficients with standard errors
         # and p-values
         dict_model = {}
         if self.intercept:
-            dict_model["Intercept"] = (coefficients[0],\
-                                      std_error[0], \
-                                      t_scores[0], \
-                                      p_vals[0])
+            dict_model["Intercept"] = (coefficients[0], std_error[0],
+                                       t_scores[0], p_vals[0])
         for i, var in enumerate(domain.attributes):
             j = i + 1 if self.intercept else i
-            dict_model[var.name] = (coefficients[j], \
-                                   std_error[j],\
-                                   t_scores[j],\
-                                   p_vals[j])
+            dict_model[var.name] = (coefficients[j], std_error[j],
+                                    t_scores[j], p_vals[j])
         
         return LinearRegression(domain.class_var, domain, coefficients, F,
-                 std_error=std_error, t_scores=t_scores, p_vals=p_vals, dict_model=dict_model,
-                 fitted=fitted, residuals=residuals, m=m, n=n, mu_y=mu_y,
-                 r2=r2, r2adj=r2adj, sst=sst, sse=sse, ssr=ssr,
-                 std_coefficients=std_coefficients, intercept=self.intercept)
+                 std_error=std_error, t_scores=t_scores, p_vals=p_vals,
+                 dict_model=dict_model, fitted=fitted, residuals=residuals,
+                 m=m, n=n, mu_y=mu_y, r2=r2, r2adj=r2adj, sst=sst, sse=sse,
+                 ssr=ssr, std_coefficients=std_coefficients,
+                 intercept=self.intercept)
 
 deprecated_members({"ridgeLambda": "ridge_lambda",
                     "computeStats": "compute_stats",
@@ -413,7 +412,7 @@ class LinearRegression(Orange.classification.Classifier):
     
     def __init__(self, class_var=None, domain=None, coefficients=None, F=None,
                  std_error=None, t_scores=None, p_vals=None, dict_model=None,
-                 fitted=None, residuals=None, m = None, n=None, mu_y=None,
+                 fitted=None, residuals=None, m=None, n=None, mu_y=None,
                  r2=None, r2adj=None, sst=None, sse=None, ssr=None,
                  std_coefficients=None, intercept=None):
         """
@@ -441,12 +440,12 @@ class LinearRegression(Orange.classification.Classifier):
         self.std_coefficients = std_coefficients
         self.intercept = intercept
 
-    def __call__(self, instance, \
+    def __call__(self, instance,
                  result_type=Orange.classification.Classifier.GetValue):
         """
         :param instance: data instance for which the value of the response
-            variable will be predicted
-        :type instance: 
+                         variable will be predicted
+        :type instance: :obj:`~Orange.data.Instance`
         """        
         ins = Orange.data.Instance(self.domain, instance)
         ins = numpy.array(ins.native())
@@ -456,8 +455,8 @@ class LinearRegression(Orange.classification.Classifier):
 
         if self.intercept:
             if len(self.coefficients) > 1:
-                y_hat = self.coefficients[0] + \
-                       dot(self.coefficients[1:], ins[:-1])
+                y_hat = self.coefficients[0] + dot(self.coefficients[1:],
+                                                   ins[:-1])
             else:
                 if len(ins) == 1:
                     print ins
@@ -469,7 +468,7 @@ class LinearRegression(Orange.classification.Classifier):
 #        y_hat = Orange.data.Value(y_hat)
         y_hat = self.class_var(y_hat)
         dist = Orange.statistics.distribution.Continuous(self.class_var)
-        dist[y_hat] = 1.0
+        dist[y_hat] = 1.
         if result_type == Orange.classification.Classifier.GetValue:
             return y_hat
         if result_type == Orange.classification.Classifier.GetProbabilities:
@@ -487,25 +486,26 @@ class LinearRegression(Orange.classification.Classifier):
         labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
         lines = [join(['%10s' % l for l in labels], ' ')]
 
-        fmt = "%10s " + join(["%10.3f"]*4, " ") + " %5s"
+        fmt = "%10s " + join(["%10.3f"] * 4, " ") + " %5s"
         if not self.p_vals:
             raise ValueError("Model does not contain model statistics.")
         def get_star(p):
-            if p < 0.001: return  "*"*3
-            elif p < 0.01: return "*"*2
+            if p < 0.001: return  "*" * 3
+            elif p < 0.01: return "*" * 2
             elif p < 0.05: return "*"
             elif p < 0.1: return  "."
             else: return " "
         
         if self.intercept == True:
             stars =  get_star(self.p_vals[0])
-            lines.append(fmt % ('Intercept', self.coefficients[0], 
-                         self.std_error[0], self.t_scores[0], self.p_vals[0], stars))
+            lines.append(fmt % ('Intercept', self.coefficients[0],
+                                self.std_error[0], self.t_scores[0],
+                                self.p_vals[0], stars))
             for i in range(len(self.domain.attributes)):
-                stars = get_star(self.p_vals[i+1])
+                stars = get_star(self.p_vals[i + 1])
                 lines.append(fmt % (self.domain.attributes[i].name,
-                             self.coefficients[i+1], self.std_error[i+1],
-                             self.t_scores[i+1], self.p_vals[i+1], stars))
+                             self.coefficients[i + 1], self.std_error[i + 1],
+                             self.t_scores[i + 1], self.p_vals[i + 1], stars))
         else:
             for i in range(len(self.domain.attributes)):
                 stars = get_star(self.p_vals[i])
@@ -517,8 +517,6 @@ class LinearRegression(Orange.classification.Classifier):
 
     def __str__(self):
         return self.to_string()
-        
-
 
 
 def compare_models(c1, c2):
@@ -536,8 +534,8 @@ def compare_models(c1, c2):
     RSS1, RSS2 = c1.sse, c2.sse
     if RSS1 <= RSS2 or p2 <= p1 or n <= p2 or RSS2 <= 0:
         return 1.0
-    F = ((RSS1-RSS2)/(p2-p1))/(RSS2/(n-p2))
-    return stats.fprob(int(p2-p1), int(n-p2), F)
+    F = ((RSS1 - RSS2) / (p2 - p1)) / (RSS2 / (n - p2))
+    return stats.fprob(int(p2 - p1), int(n - p2), F)
 
 
 @deprecated_keywords({"addSig": "add_sig", "removeSig": "remove_sig"})
@@ -617,3 +615,4 @@ if __name__ == "__main__":
     table = Orange.data.Table("housing.tab")
     c = LinearRegressionLearner(table)
     print c
+

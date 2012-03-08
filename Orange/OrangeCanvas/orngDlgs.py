@@ -1399,7 +1399,7 @@ class WidgetShortcutDlg(QDialog):
 
 class AboutDlg(QDialog):
     def __init__(self, *args):
-        apply(QDialog.__init__,(self,) + args)
+        QDialog.__init__(self, *args)
         self.topLayout = QVBoxLayout(self)
 #        self.setWindowFlags(Qt.Popup)       # Commented out, because it makes the window appear in the top-left corner on Linux
         self.setWindowTitle("About Orange")
@@ -1412,12 +1412,13 @@ class AboutDlg(QDialog):
         OWGUI.widgetLabel(self, '<p align="center"><h2>Orange</h2></p>') 
         
         try:
-            import orange
-            version = orange.version.split("(")[0].strip()
-            date = orange.version.split(",")[-1].strip(" )")
-            OWGUI.widgetLabel(self, '<p align="center">version %s</p>' % (version))
-            OWGUI.widgetLabel(self, '<p align="center">(built %s)</p>' % (date))
-        except:
+            import Orange.version as version
+            short_version = version.short_version
+            hg_revision = version.hg_revision
+            OWGUI.widgetLabel(self, '<p align="center">version %s</p>' % (short_version))
+            if not version.release:
+                OWGUI.widgetLabel(self, '<p align="center">(hg revision %s)</p>' % (hg_revision))
+        except ImportError:
             pass
         OWGUI.widgetLabel(self, "" )
         #OWGUI.button(self, self, "Close", callback = self.accept)
@@ -1426,7 +1427,6 @@ class AboutDlg(QDialog):
         self.layout().addWidget(b)
         butt = b.addButton(QDialogButtonBox.Close)
         self.connect(butt, SIGNAL("clicked()"), self.accept)
-        
         
 
 class saveApplicationDlg(QDialog):

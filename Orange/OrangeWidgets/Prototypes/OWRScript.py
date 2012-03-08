@@ -5,6 +5,7 @@
 
 
 from OWWidget import *
+
 from OWPythonScript import OWPythonScript, Script, ScriptItemDelegate, PythonConsole
 from OWItemModels import PyListModel, ModelActionsWidget
 
@@ -303,7 +304,8 @@ class OWRScript(OWWidget):
             self.libraryModel.emitDataChanged([row])   
         
     def onAddScriptFromFile(self):
-        filename = str(QFileDialog.getOpenFileName(self, "Open script", self.lastDir))
+        filename = QFileDialog.getOpenFileName(self, "Open script", self.lastDir)
+        filename = unicode(filename)
         if filename:
             script = open(filename, "rb").read()
             self.lastDir, name = os.path.split(filename)
@@ -314,7 +316,8 @@ class OWRScript(OWWidget):
         row = self.selectedScript()
         if row is not None:
             script = self.libraryModel[row]
-            filename = str(QFileDialog.getSaveFileName(self, "Save Script As", script.sourceFileName or self.lastDir))
+            filename = QFileDialog.getSaveFileName(self, "Save Script As", script.sourceFileName or self.lastDir)
+            filename = unicode(filename)
             if filename:
                 self.lastDir, name = os.path.split(filename)
                 script.sourceFileName = filename

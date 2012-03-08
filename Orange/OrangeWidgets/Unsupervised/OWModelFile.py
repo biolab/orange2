@@ -47,7 +47,7 @@ class OWModelFile(OWDistanceFile):
             lastPath = os.path.split(self.origRecentFiles[0])[0]
         else:
             lastPath = "."
-        fn = str(QFileDialog.getOpenFileName(self, "Open Original Data File", 
+        fn = unicode(QFileDialog.getOpenFileName(self, "Open Original Data File", 
                                              lastPath, "Data File (*.tab)"))
         fn = os.path.abspath(fn)
         if fn in self.origRecentFiles: # if already in list, remove it

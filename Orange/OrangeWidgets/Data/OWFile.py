@@ -16,7 +16,6 @@ import orngIO
 
 warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 
-
 class FileNameContextHandler(ContextHandler):
     def match(self, context, imperfect, filename):
         return context.filename == filename and 2
@@ -199,8 +198,9 @@ class OWFile(OWWidget):
             else:
                 startfile = self.recentFiles[0]
 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile, self.dlgFormats))
-
+        filename = QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile, self.dlgFormats)
+        filename = unicode(filename)
+        
         if filename == "":
             return
         

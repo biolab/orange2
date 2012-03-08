@@ -52,11 +52,17 @@ import Orange.projection
 
 from Orange.core import GraphAsList, GraphAsMatrix, GraphAsTree
 
+# Test if networkx is installed
+__have_networkx = False
 try:
-    from network import *
+    import networkx as nx
+    __have_networkx = True
 except ImportError:
     import warnings
     warnings.warn("Warning: some features are disabled. Install networkx to use the 'Orange.network' module.") 
+
+if __have_networkx:
+    from network import *
 
 import community
 import snap

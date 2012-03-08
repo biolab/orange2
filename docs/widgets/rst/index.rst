@@ -19,12 +19,12 @@ Data
     * - |Rank_icon| `Rank`_
       - |PurgeDomain_icon| `Purge Domain`_
       - |MergeData_icon| `Merge Data`_
-    * - |Concat_icon| `Concat`_
+    * - |Concat_icon| `Concatenate`_
       - |DataSampler_icon| `Data Sampler`_
       - |SelectData_icon| `Select Data`_
     * - |Save_icon| `Save`_
       - |Discretize_icon| `Discretize`_
-      - |Cont_icon| `Cont`_
+      - |Cont_icon| `Continuize`_
     * - |Impute_icon| `Impute`_
       - |Outliers_icon| `Outliers`_
       -
@@ -35,7 +35,7 @@ Data
 
 .. _`Merge Data`: _static/Data/MergeData.htm
 
-.. _`Concat`: _static/Data/Concatenate.htm
+.. _`Concatenate`: _static/Data/Concatenate.htm
 
 .. _`Data Sampler`: _static/Data/DataSampler.htm
 
@@ -45,7 +45,7 @@ Data
 
 .. _`Discretize`: _static/Data/Discretize.htm
 
-.. _`Cont`: _static/Data/Continuize.htm
+.. _`Continuize`: _static/Data/Continuize.htm
 
 .. _`Impute`: _static/Data/Impute.htm
 
@@ -145,11 +145,11 @@ Visualize
     :widths: 1 1 1
     
     * - |Distributions_icon| `Distributions`_
-      - |ScatterPlot_icon| `ScatterPlot`_
-      - |AttributeStatistics_icon| `AttrStat`_
+      - |ScatterPlot_icon| `Scatter Plot`_
+      - |AttributeStatistics_icon| `Attribute Statistics`_
     * - |LinearProjection_icon| `Linear Projection`_
       - |Radviz_icon| `Radviz`_
-      - |PolyViz_icons| `PolyViz`_
+      - |Polyviz_icon| `Polyviz`_
     * - |ParallelCoords_icon| `Parallel Coordinates`_
       - |SurveyPlot_icon| `Survey Plot`_
       - |MosaicDisplay_icon| `Mosaic Display`_
@@ -159,15 +159,15 @@ Visualize
 	
 .. _`Distributions`: _static/Visualize/Distributions.htm
 
-.. _`ScatterPlot`: _static/Visualize/ScatterPlot.htm
+.. _`Scatter Plot`: _static/Visualize/Scatterplot.htm
 
-.. _`AttrStat`: _static/Visualize/AttributeStatistics.htm
+.. _`Attribute Statistics`: _static/Visualize/AttributeStatistics.htm
 
 .. _`Linear Projection`: _static/Visualize/LinearProjection.htm
 
 .. _`Radviz`: _static/Visualize/Radviz.htm
 
-.. _`PolyViz`: _static/Visualize/PolyViz.htm
+.. _`Polyviz`: _static/Visualize/Polyviz.htm
 
 .. _`Parallel Coordinates`: _static/Visualize/ParallelCoordinates.htm
 
@@ -208,7 +208,7 @@ Visualize
 	:width: 48
 	:height: 48
 	
-.. |PolyViz_icons| image:: ../../../Orange/OrangeWidgets/Visualize/icons/PolyViz_48.png
+.. |Polyviz_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Polyviz_48.png
 	:align: middle
 	:alt: Poly Viz
 	:width: 48
@@ -447,7 +447,7 @@ Evaluate
     :class: widget-catalog-table
     
     * - |ConfusionMatrix_icon| `Confusion Matrix`_  
-      - |ROCAnalisys_icon| `ROC Analisys`_
+      - |ROCAnalysis_icon| `ROC Analysis`_
       - |LiftCurve_icon| `Lift Curve`_
     * - |CalibrationPlot_icon| `Calibration Plot`_
       - |TestLearners_icon| `Test Learners`_
@@ -455,7 +455,7 @@ Evaluate
 
 .. _`Confusion Matrix`: _static/Evaluate/ConfusionMatrix.htm
 
-.. _`ROC Analisys`: _static/Evaluate/ROCAnalisys.htm
+.. _`ROC Analysis`: _static/Evaluate/ROCAnalysis.htm
 
 .. _`Lift Curve`: _static/Evaluate/LiftCurve.htm
 
@@ -471,7 +471,7 @@ Evaluate
     :width: 48
     :height: 48
 
-.. |ROCAnalisys_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis_48.png 
+.. |ROCAnalysis_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis_48.png 
     :align: middle
     :alt: Pade
     :width: 48
@@ -544,13 +544,13 @@ Associate
     :width: 48
     :height: 48
 
-.. |ItemSets_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemSets_48.png
+.. |ItemSets_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/Itemsets_48.png
     :align: middle
     :alt: Item Sets
     :width: 48
     :height: 48
 
-.. |ItemSetsExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemSetsExplorer_48.png
+.. |ItemSetsExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemsetsExplorer_48.png
     :align: middle
     :alt: Item Sets Explorer
     :width: 48

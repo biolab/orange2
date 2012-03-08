@@ -127,7 +127,7 @@ class OWSQL(OWWidget):
             self.libraryList.takeItem(cr)
     
     def saveToFile(self):
-        fname = str(QFileDialog.getSaveFileName(self, "File name", self.lastDir, "SQL File (*.sql)\nAll files (*.*)"))
+        fname = unicode(QFileDialog.getSaveFileName(self, "File name", self.lastDir, "SQL File (*.sql)\nAll files (*.*)"))
         if not fname:
             return
         self.lastDir = os.path.split(fname)[0]

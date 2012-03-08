@@ -584,7 +584,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
     def savePicTeX(self):
         lastSave = getattr(self, "lastPicTeXSave", "C:\\")
         qfileName = QFileDialog.getSaveFileName(None, "Save to..", lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)")
-        fileName = str(qfileName)
+        fileName = unicode(qfileName)
         if fileName == "":
             return
 

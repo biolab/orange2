@@ -2,7 +2,11 @@
 Clustering (``clustering``)
 ###########################
 
-.. automodule:: Orange.clustering
+.. py:currentmodule:: Orange.clustering
+
+.. index:: clustering
+
+Orange offers three clustering methods: k-means clustering, hierarchical clustering with different link functions, and consensus clustering, which is still much under development.
 
 .. toctree::
    :glob:

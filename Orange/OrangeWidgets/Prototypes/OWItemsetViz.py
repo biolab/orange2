@@ -503,13 +503,14 @@ class OWItemsetViz(OWWidget):
         
     def saveNetwork(self):
         filename = QFileDialog.getSaveFileName(QString.null,'PAJEK networks (*.net)')
+        filename = unicode(filename)
         if filename:
             fn = ""
-            head, tail = os.path.splitext(str(filename))
+            head, tail = os.path.splitext(filename)
             if not tail:
                 fn = head + ".net"
             else:
-                fn = str(filename)
+                fn = filename
             
             self.graph.visualizer.saveNetwork(fn)
     

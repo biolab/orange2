@@ -118,6 +118,8 @@ def _connection(uri):
             dbArgDict[argTrans['database']] = path[1:]
         return (quirks, dbmod.connect(**dbArgDict))
 
+
+
 class SQLReader(object):
     """
     :obj:`~SQLReader` establishes a connection with a database and provides the methods needed
@@ -149,7 +151,7 @@ class SQLReader(object):
         :type uri: str
         """
         self._dirty = True
-        self.delDomain()
+        self.del_domain()
         (self.quirks, self.conn) = _connection(uri)
 
     def disconnect(self):
@@ -160,88 +162,85 @@ class SQLReader(object):
         if callable(func):
             self.conn.disconnect()
 
-    def getClassName(self):
+    def get_class_name(self):
         self.update()
         return self.domain.class_var.name
 
-    def setClassName(self, className):
-        self._className = className
-        self.delDomain()
+    def set_class_name(self, class_name):
+        self._className = class_name
+        self.del_domain()
 
-    def delClassName(self):
+    def del_class_name(self):
         del self._className
 
-    class_name = property(getClassName, setClassName, delClassName, "Name of class variable.")
-    className = class_name
-    
-    def getMetaNames(self):
+    class_name = property(get_class_name, set_class_name, del_class_name, "Name of class variable.")
+
+    def get_metas_name(self):
         self.update()
         return self.domain.get_metas().values()
 
-    def setMetaNames(self, meta_names):
+    def set_metas_name(self, meta_names):
         self._metaNames = meta_names
-        self.delDomain()
+        self.del_domain()
 
-    def delMetaNames(self):
+    def del_metas_name(self):
         del self._metaNames
 
-    meta_names = property(getMetaNames, setMetaNames, delMetaNames, "Names of meta attributes.")
-    metaName = meta_names
+    meta_names = property(get_metas_name, set_metas_name, del_metas_name, "Names of meta attributes.")
 
-    def setDiscreteNames(self, discrete_names):
+    def set_discrete_names(self, discrete_names):
         self._discreteNames = discrete_names
-        self.delDomain()
+        self.del_domain()
 
-    def getDiscreteNames(self):
+    def get_discrete_names(self):
         self.update()
         return self._discreteNames
 
-    def delDiscreteNames(self):
+    def del_discrete_names(self):
         del self._discreteNames
 
-    discrete_names = property(getDiscreteNames, setDiscreteNames, delDiscreteNames, "Names of discrete attributes.")
-    discreteNames = discrete_names
+    discrete_names = property(get_discrete_names, set_discrete_names, del_discrete_names, "Names of discrete attributes.")
 
-    def setQuery(self, query, domain = None):
+    def set_query(self, query, domain = None):
         #sets the query, resets the internal variables, without executing the query
         self._query = query
         self._dirty = True
         if domain is not None:
             self._domain = domain
         else:
-            self.delDomain()
+            self.del_domain()
 
-    def getQuery(self):
+    def get_query(self):
         return self._query
 
-    def delQuery(self):
+    def del_query(self):
         del self._query
 
-    query = property(getQuery, setQuery, delQuery, "Query to be executed on the next execute().")
+    query = property(get_query, set_query, del_query, "Query to be executed on the next execute().")
 
     def generateDomain(self):
         pass
 
-    def setDomain(self, domain):
+    def set_domain(self, domain):
         self._domain = domain
         self._dirty = True
 
-    def getDomain(self):
+    def get_domain(self):
         if not hasattr(self, '_domain'):
             self._createDomain()
         return self._domain
 
-    def delDomain(self):
+    def del_domain(self):
         if hasattr(self, '_domain'):
             del self._domain
 
-    domain = property(getDomain, setDomain, delDomain, "Orange domain.")
+    domain = property(get_domain, set_domain, del_domain, "Orange domain.")
 
     def execute(self, query, domain = None):
         """
         Executes an sql query.
         """
-        self.setQuery(query, domain)
+        self.set_query(query, domain)
         self.update()
 
     def _createDomain(self):
@@ -328,6 +327,9 @@ class SQLReader(object):
         if self.exampleTable:
             return self.exampleTable
         return None
+
+SQLReader = deprecated_members({"discreteNames":"discrete_names", "metaName":"meta_names"\
+    , "className":"class_name"})(SQLReader)
 
 class SQLWriter(object):
     """

@@ -30,7 +30,7 @@ def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeS
     """
     DEPRECATED. Replaced by :obj:`TreeClassifier.dump`.
     """
-    fle = type(fileName) == str and file(fileName, "wt") or fileName
+    fle = isinstance(fileName, basestring) and file(fileName, "wt") or fileName
 
     _TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
         _TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 

@@ -28,7 +28,7 @@ some basic functionalities (part of
 .. literalinclude:: code/multitarget.py
     :lines: 1-6
 
-Multi-target learners can be used to build prediction models (classifiers)
+Multi-target learners can build prediction models (classifiers)
 which then predict (multiple) class values for a new instance (continuation of
 :download:`multitarget.py <code/multitarget.py>`):
 
@@ -98,7 +98,7 @@ class MultitargetLearner(Orange.classification.Learner):
 
 class MultitargetClassifier(Orange.classification.Classifier):
     """
-    Multitarget classifier returning a list of predictions from each
+    Multitarget classifier that returns a list of predictions from each
     of the independent base classifiers.
 
     .. attribute classifiers

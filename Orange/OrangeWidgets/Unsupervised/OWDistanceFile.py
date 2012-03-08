@@ -166,7 +166,7 @@ class OWDistanceFile(OWWidget):
             lastPath = os.path.split(self.recentFiles[0])[0]
         else:
             lastPath = "."
-        fn = str(QFileDialog.getOpenFileName(self, "Open Distance Matrix File", 
+        fn = unicode(QFileDialog.getOpenFileName(self, "Open Distance Matrix File", 
                                              lastPath, "Distance matrix (*.*)"))
         fn = os.path.abspath(fn)
         if fn in self.recentFiles: # if already in list, remove it

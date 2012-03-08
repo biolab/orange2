@@ -283,7 +283,7 @@ class OWLinProjQt(OWVisWidget):
     def saveCurrentProjection(self):
         qname = QFileDialog.getSaveFileName(self, "Save File",  os.path.realpath(".") + "/Linear_projection.tab", "Orange Example Table (*.tab)")
         if qname.isEmpty(): return
-        name = str(qname)
+        name = unicode(qname)
         if len(name) < 4 or name[-4] != ".":
             name = name + ".tab"
         self.graph.saveProjectionAsTabData(name, self.getShownAttributeList())

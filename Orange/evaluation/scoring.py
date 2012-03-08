@@ -769,160 +769,164 @@ def _confusion_chi_square(confusion_matrix):
     df = (dim - 1)**2
     return ss, df, statc.chisqprob(ss, df)
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def sens(confusion_matrix):
+class CMScore(list):
     """
-    Return `sensitivity
+    :param test_results: :obj:`~Orange.evaluation.testing.ExperimentResults`
+                         or list of :obj:`ConfusionMatrix`.
+    :rtype: list of scores, one for each learner."""
+    def __new__(cls, test_results, **kwargs):
+        self = list.__new__(cls)
+        if isinstance(test_results, ConfusionMatrix):
+            self.__init__(test_results, **kwargs)
+            return self[0]
+        return self
+
+
+    @deprecated_keywords({"confm": "test_results"})
+    def __init__(self, test_results=None):
+        super(CMScore, self).__init__()
+
+        if test_results is not None:
+            self[:] = self.__call__(test_results)
+
+    def __call__(self, test_results):
+        if isinstance(test_results, testing.ExperimentResults):
+            test_results = confusion_matrices(test_results, class_index=1)
+        if isinstance(test_results, ConfusionMatrix):
+            test_results = [test_results]
+
+        return map(self.compute, test_results)
+
+
+
+class Sensitivity(CMScore):
+    __doc__ = """Compute `sensitivity
     <http://en.wikipedia.org/wiki/Sensitivity_and_specificity>`_ (proportion
     of actual positives which are correctly identified as such).
-    """
-    if type(confusion_matrix) == list:
-        return [sens(cm) for cm in confusion_matrix]
-    else:
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.TP+confusion_matrix.FN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute sensitivity: one or both classes have no instances")
-            return -1
+            return None
 
         return confusion_matrix.TP / tot
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def recall(confusion_matrix):
-    """
-    Return `recall <http://en.wikipedia.org/wiki/Precision_and_recall>`_
+class Recall(Sensitivity):
+    __doc__ = """ Compute `recall
+    <http://en.wikipedia.org/wiki/Precision_and_recall>`_
     (fraction of relevant instances that are retrieved).
-    """
-    return sens(confusion_matrix)
+    """ + CMScore.__doc__
+    pass # Recall == Sensitivity
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def spec(confusion_matrix):
-    """
-    Return `specificity
+class Specificity(CMScore):
+    __doc__ = """Compute `specificity
     <http://en.wikipedia.org/wiki/Sensitivity_and_specificity>`_
     (proportion of negatives which are correctly identified).
-    """
-    if type(confusion_matrix) == list:
-        return [spec(cm) for cm in confusion_matrix]
-    else:
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.FP+confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute specificity: one or both classes have no instances")
-            return -1
+            return None
         return confusion_matrix.TN / tot
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def PPV(confusion_matrix):
-    """
-    Return `positive predictive value
+class PPV(CMScore):
+    __doc__ = """Compute `positive predictive value
     <http://en.wikipedia.org/wiki/Positive_predictive_value>`_ (proportion of
-    subjects with positive test results who are correctly diagnosed)."""
-    if type(confusion_matrix) == list:
-        return [PPV(cm) for cm in confusion_matrix]
-    else:
+    subjects with positive test results who are correctly diagnosed).
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.TP + confusion_matrix.FP
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute PPV: one or both classes have no instances")
-            return -1
+            return None
         return confusion_matrix.TP/tot
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def precision(confusion_matrix):
-    """
-    Return `precision <http://en.wikipedia.org/wiki/Precision_and_recall>`_
+class Precision(PPV):
+    __doc__ = """Compute `precision <http://en.wikipedia.org/wiki/Precision_and_recall>`_
     (retrieved instances that are relevant).
-    """
-    return PPV(confusion_matrix)
+    """ + CMScore.__doc__
+    pass # Precision == PPV
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def NPV(confusion_matrix):
-    """
-    Return `negative predictive value
+
+class NPV(CMScore):
+    __doc__ = """Compute `negative predictive value
     <http://en.wikipedia.org/wiki/Negative_predictive_value>`_ (proportion of
     subjects with a negative test result who are correctly diagnosed).
-     """
-    if type(confusion_matrix) == list:
-        return [NPV(cm) for cm in confusion_matrix]
-    else:
+     """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
         tot = confusion_matrix.FN + confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute NPV: one or both classes have no instances")
-            return -1
+            return None
         return confusion_matrix.TN / tot
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def F1(confusion_matrix):
-    """
-    Return `F1 score <http://en.wikipedia.org/wiki/F1_score>`_
+
+class F1(CMScore):
+    __doc__ = """Return `F1 score
+    <http://en.wikipedia.org/wiki/F1_score>`_
     (harmonic mean of precision and recall).
-    """
-    if type(confusion_matrix) == list:
-        return [F1(cm) for cm in confusion_matrix]
-    else:
-        p = precision(confusion_matrix)
-        r = recall(confusion_matrix)
-        if p + r > 0:
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, confusion_matrix):
+        p = Precision.compute(confusion_matrix)
+        r = Recall.compute(confusion_matrix)
+        if p is not None and r is not None and (p+r) != 0:
             return 2. * p * r / (p + r)
         else:
             import warnings
             warnings.warn("Can't compute F1: P + R is zero or not defined")
-            return -1
+            return None
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def Falpha(confusion_matrix, alpha=1.0):
-    """
-    Return the alpha-mean of precision and recall over the given confusion
+class Falpha(CMScore):
+    __doc__ = """Compute the alpha-mean of precision and recall over the given confusion
     matrix.
-    """
-    if type(confusion_matrix) == list:
-        return [Falpha(cm, alpha=alpha) for cm in confusion_matrix]
-    else:
-        p = precision(confusion_matrix)
-        r = recall(confusion_matrix)
-        return (1. + alpha) * p * r / (alpha * p + r)
+    """ + CMScore.__doc__
+
+    def __init__(self, test_results, alpha=1.):
+        self.alpha = alpha
+        super(Falpha, self).__init__(test_results)
+
+    def compute(self, confusion_matrix):
+        p = Precision.compute(confusion_matrix)
+        r = Recall.compute(confusion_matrix)
+        return (1. + self.alpha) * p * r / (self.alpha * p + r)
 
 
-@deprecated_keywords({"confm": "confusion_matrix"})
-def MCC(confusion_matrix):
-    """
-    Return `Matthew correlation coefficient
+class MCC(CMScore):
+    __doc__ = """Compute `Matthew correlation coefficient
     <http://en.wikipedia.org/wiki/Matthews_correlation_coefficient>`_
     (correlation coefficient between the observed and predicted binary
     classifications).
-    """
-    # code by Boris Gorelik
-    if type(confusion_matrix) == list:
-        return [MCC(cm) for cm in confusion_matrix]
-    else:
-        truePositive = confusion_matrix.TP
-        trueNegative = confusion_matrix.TN
-        falsePositive = confusion_matrix.FP
-        falseNegative = confusion_matrix.FN
+    """ + CMScore.__doc__
+    @classmethod
+    def compute(self, cm):
+        # code by Boris Gorelik
+        TP, TN, FP, FN = cm.TP, cm.TN, cm.FP, cm.FN
           
-        try:   
-            r = (((truePositive * trueNegative) -
-                  (falsePositive * falseNegative)) /
-                 math.sqrt((truePositive + falsePositive) *
-                           (truePositive + falseNegative) * 
-                           (trueNegative + falsePositive) * 
-                           (trueNegative + falseNegative)))
+        try:
+            return (TP*TN - FP*FN) /\
+                 math.sqrt((TP+FP) * (TP+FN) * (TN+ FP) * (TN+FN))
         except ZeroDivisionError:
-            # Zero difision occurs when there is either no true positives 
+            # Zero division occurs when there is either no true positives
             # or no true negatives i.e. the problem contains only one 
             # type of classes.
             import warnings
             warnings.warn("Can't compute MCC: TP or TN is zero or not defined")
-            r = None
-
-    return r
 
 
 @deprecated_keywords({"bIsListOfMatrices": "b_is_list_of_matrices"})
@@ -975,6 +979,14 @@ def scotts_pi(confusion_matrix, b_is_list_of_matrices=True):
 
        ret = (prActual - prExpected) / (1.0 - prExpected)
        return ret
+
+# Backward compatibility
+sens = Sensitivity
+spec = Specificity
+precision = Precision
+recall = Recall
+
+
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
@@ -1467,127 +1479,65 @@ def replace_use_weights(fun):
 class AUC(list):
     """
     Compute the area under ROC curve given a set of experimental results.
-    For multivalued class problems, return the result of
-    :obj:`by_weighted_pairs`.
     If testing consisted of multiple folds, each fold is scored and the
     average score is returned. If a fold contains only instances with the
     same class value, folds will be merged.
 
     :param test_results: test results to score
     :param ignore_weights: ignore instance weights when calculating score
-    :param method: DEPRECATED, call the appropriate method directly.
+    :param multiclass: tells what kind of averaging to perform if the target
+                       class has more than 2 values.
     """
 
+    #!Compute AUC for each pair of classes (ignoring instances of all other
+    #!classes) and average the results, weighting them by the number of
+    #!pairs of instances from these two classes (e.g. by the product of
+    #!probabilities of the two classes). AUC computed in this way still
+    #!behaves as the concordance index, e.g., gives the probability that two
+    #!randomly chosen instances from different classes will be correctly
+    #!recognized (if the classifier knows from which two classes the
+    #!instances came).
+    ByWeightedPairs = 0
+
+    #!Similar to ByWeightedPairs, except that the average over class pairs
+    #!is not weighted. This AUC is, like the binary version, independent of
+    #!class distributions, but it is not related to the concordance index
+    #!any more.
+    ByPairs = 1
+
+    #!For each class, it computes AUC for this class against all others (that
+    #!is, treating other classes as one class). The AUCs are then averaged by
+    #!the class probabilities. This is related to the concordance index in
+    #!which we test the classifier's (average) capability of distinguishing
+    #!the instances from a specified class from those that come from other
+    #!classes.
+    #!Unlike the binary AUC, the measure is not independent of class
+    #!distributions.
+    WeightedOneAgainstAll = 2
+
+    #!Similar to weighted_one_against_all, except that the average
+    #!is not weighted.
+    OneAgainstAll = 3
+
     @replace_use_weights
-    def __init__(self, test_results=None, method=0, ignore_weights=False):
+    @deprecated_keywords({"method": "multiclass"})
+    def __init__(self, test_results=None, multiclass=ByWeightedPairs, ignore_weights=False):
 
         super(AUC, self).__init__()
 
         self.ignore_weights=ignore_weights
-        self.method=method
+        self.method=multiclass
 
         if test_results is not None:
-            self.__call__(test_results)
+            self[:] = self.__call__(test_results)
 
     def __call__(self, test_results):
         if len(test_results.class_values) < 2:
             raise ValueError("Cannot compute AUC on a single-class problem")
         elif len(test_results.class_values) == 2:
-            self._compute_for_binary_class(test_results)
+            return self._compute_for_binary_class(test_results)
         else:
-            self._compute_for_multi_value_class(test_results, self.method)
-
-    @classmethod
-    def by_weighted_pairs(cls, res, ignore_weights=False):
-        """
-        Compute AUC for each pair of classes (ignoring instances of all other
-        classes) and average the results, weighting them by the number of
-        pairs of instances from these two classes (e.g. by the product of
-        probabilities of the two classes). AUC computed in this way still
-        behaves as the concordance index, e.g., gives the probability that two
-        randomly chosen instances from different classes will be correctly
-        recognized (if the classifier knows from which two classes the
-        instances came).
-        """
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_for_multi_value_class(res, method=cls.ByWeightedPairs)
-        return auc
-
-    @classmethod
-    def by_pairs(cls, res, ignore_weights=False):
-        """
-        Similar to by_weighted_pairs, except that the average over class pairs
-        is not weighted. This AUC is, like the binary version, independent of
-        class distributions, but it is not related to the concordance index
-        any more.
-        """
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_for_multi_value_class(res, method=cls.ByPairs)
-        return auc
-
-    @classmethod
-    def weighted_one_against_all(cls, res, ignore_weights=False):
-        """
-        For each class, it computes AUC for this class against all others (that
-        is, treating other classes as one class). The AUCs are then averaged by
-        the class probabilities. This is related to the concordance index in
-        which we test the classifier's (average) capability of distinguishing
-        the instances from a specified class from those that come from other
-        classes.
-        Unlike the binary AUC, the measure is not independent of class
-        distributions.
-        """
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_for_multi_value_class(res,
-            method=cls.WeightedOneAgainstAll)
-        return auc
-
-    @classmethod
-    def one_against_all(cls, res, ignore_weights=False):
-        """
-        Similar to weighted_one_against_all, except that the average
-        is not weighted.
-        """
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_for_multi_value_class(res, method=cls.OneAgainstAll)
-        return auc
-
-    @classmethod
-    def single_class(cls, res, class_index=-1, ignore_weights=False):
-        """
-        Compute AUC where the class with the given class_index is singled
-        out and all other classes are treated as a single class.
-        """
-        if class_index < 0:
-            if res.base_class >= 0:
-                class_index = res.base_class
-            else:
-                class_index = 1
-
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_for_single_class(res, class_index)
-        return auc
-
-    @classmethod
-    def pair(cls, res, class_index1, class_index2, ignore_weights=False):
-        """
-        Computes AUC between a pair of classes, ignoring instances from all
-        other classes.
-        """
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_for_pair_of_classes(res, class_index1, class_index2)
-        return auc
-
-    @classmethod
-    def matrix(cls, res, ignore_weights=False):
-        """
-        Compute a (lower diagonal) matrix with AUCs for all pairs of classes.
-        If there are empty classes, the corresponding elements in the matrix
-        are -1.
-        """
-        auc = AUC(ignore_weights=ignore_weights)
-        auc._compute_matrix(res)
-        return auc
+            return self._compute_for_multi_value_class(test_results, self.method)
 
     def _compute_for_binary_class(self, res):
         """AUC for binary classification problems"""
@@ -1597,9 +1547,7 @@ class AUC(list):
                 split_by_iterations(res),
                 (-1, res, res.number_of_iterations))
         else:
-            auc, _ = self._compute_one_class_against_all(res, -1)
-            self[:] = auc
-            return self
+            return self._compute_one_class_against_all(res, -1)[0]
 
     def _compute_for_multi_value_class(self, res, method=0):
         """AUC for multiclass classification problems"""
@@ -1653,16 +1601,13 @@ class AUC(list):
         if usefulClassPairs > 0:
             sum_aucs = [x/usefulClassPairs for x in sum_aucs]
 
-        self[:] = sum_aucs
-        return self
+        return sum_aucs
 
     # computes the average AUC over folds using "AUCcomputer" (AUC_i or AUC_ij)
     # it returns the sum of what is returned by the computer,
     # unless at a certain fold the computer has to resort to computing
     # over all folds or even this failed;
     # in these cases the result is returned immediately
-    @deprecated_keywords({"AUCcomputer": "auc_computer",
-                          "computerArgs": "computer_args"})
     def _compute_for_multiple_folds(self, auc_computer, iterations,
                                  computer_args):
         """Compute the average AUC over folds using :obj:`auc_computer`."""
@@ -1670,12 +1615,14 @@ class AUC(list):
         for ite in iterations:
             aucs, foldsUsed = auc_computer(*(ite, ) + computer_args)
             if not aucs:
-                return None
+                import warnings
+                warnings.warn("AUC cannot be computed (all instances belong to the same class).")
+                return
             if not foldsUsed:
+                self[:] = aucs
                 return aucs
             subsum_aucs = map(add, subsum_aucs, aucs)
-        self[:] = subsum_aucs
-        return self
+        return subsum_aucs
 
     # Computes AUC
     # in multivalued class problem, AUC is computed as one against all
@@ -1683,23 +1630,23 @@ class AUC(list):
     # if some folds examples from one class only, the folds are merged
     def _compute_for_single_class(self, res, class_index):
         if res.number_of_iterations > 1:
-            self._compute_for_multiple_folds(
+            return self._compute_for_multiple_folds(
                 self._compute_one_class_against_all, split_by_iterations(res),
                 (class_index, res, res.number_of_iterations))
         else:
-            self._compute_one_class_against_all(res, class_index)
+            return self._compute_one_class_against_all(res, class_index)
 
     # Computes AUC for a pair of classes (as if there were no other classes)
     # results over folds are averages
     # if some folds have examples from one class only, the folds are merged
     def _compute_for_pair_of_classes(self, res, class_index1, class_index2):
         if res.number_of_iterations > 1:
-            self._compute_for_multiple_folds(
+            return self._compute_for_multiple_folds(
                 self._compute_one_class_against_another,
                 split_by_iterations(res),
                 (class_index1, class_index2, res, res.number_of_iterations))
         else:
-            self._compute_one_class_against_another(res, class_index1,
+            return self._compute_one_class_against_another(res, class_index1,
                                                     class_index2)
 
     # computes AUC between class i and the other classes
@@ -1751,36 +1698,72 @@ class AUC(list):
 
         return False, False
 
-    def _compute_matrix(self, res):
-        numberOfClasses = len(res.class_values)
-        number_of_learners = res.number_of_learners
-        if res.number_of_iterations > 1:
-            iterations, all_ite = split_by_iterations(res), res
+class AUC_for_single_class(AUC):
+    """
+    Compute AUC where the class with the given class_index is singled
+    out and all other classes are treated as a single class.
+    """
+    def __init__(self, test_results=None, class_index=-1, ignore_weights=False):
+        if class_index < 0:
+            if test_results and test_results.base_class >= 0:
+                self.class_index = test_results.base_class
+            else:
+                self.class_index = 1
         else:
-            iterations, all_ite = [res], None
+            self.class_index = class_index
+
+        super(AUC_for_single_class, self).__init__(test_results, ignore_weights=ignore_weights)
+
+    def __call__(self, test_results):
+        return self._compute_for_single_class(test_results, self.class_index)
+
+
+class AUC_for_pair_of_classes(AUC):
+    """
+    Computes AUC between a pair of classes, ignoring instances from all
+    other classes.
+    """
+    def __init__(self, test_results, class_index1, class_index2, ignore_weights=False):
+        self.class_index1 = class_index1
+        self.class_index2 = class_index2
+
+        super(AUC_for_pair_of_classes, self).__init__(test_results, ignore_weights=ignore_weights)
+
+    def __call__(self, test_results):
+        return self._compute_for_pair_of_classes(test_results, self.class_index1, self.class_index2)
+
+
+class AUC_matrix(AUC):
+    """
+    Compute a (lower diagonal) matrix with AUCs for all pairs of classes.
+    If there are empty classes, the corresponding elements in the matrix
+    are -1.
+    """
+
+    def __call__(self, test_results):
+        numberOfClasses = len(test_results.class_values)
+        number_of_learners = test_results.number_of_learners
+        if test_results.number_of_iterations > 1:
+            iterations, all_ite = split_by_iterations(test_results), test_results
+        else:
+            iterations, all_ite = [test_results], None
         aucs = [[[] for _ in range(numberOfClasses)]
-                for _ in range(number_of_learners)]
+        for _ in range(number_of_learners)]
         for classIndex1 in range(numberOfClasses):
             for classIndex2 in range(classIndex1):
                 pair_aucs = self._compute_for_multiple_folds(
                     self._compute_one_class_against_another, iterations,
                     (classIndex1, classIndex2, all_ite,
-                     res.number_of_iterations))
+                     test_results.number_of_iterations))
                 if pair_aucs:
                     for lrn in range(number_of_learners):
                         aucs[lrn][classIndex1].append(pair_aucs[lrn])
                 else:
                     for lrn in range(number_of_learners):
                         aucs[lrn][classIndex1].append(-1)
-        self[:] = aucs
         return aucs
 
 #Backward compatibility
-AUC.ByWeightedPairs = 0
-AUC.ByPairs = 1
-AUC.WeightedOneAgainstAll = 2
-AUC.OneAgainstAll = 3
-
 @replace_use_weights
 def AUC_binary(res, ignore_weights=False):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights)
@@ -1794,6 +1777,9 @@ def AUC_multi(res, ignore_weights=False, method=0):
     auc._compute_for_multi_value_class(res)
     return auc
 
+
+@deprecated_keywords({"AUCcomputer": "auc_computer",
+                      "computerArgs": "computer_args"})
 def AUC_iterations(auc_computer, iterations, computer_args):
     auc = deprecated_function_name(AUC)()
     auc._compute_for_multiple_folds(auc_computer, iterations, computer_args)
@@ -1808,9 +1794,9 @@ def AUC_x(cdtComputer, ite, all_ite, divide_by_if_ite, computer_args):
 @replace_use_weights
 def AUC_i(ite, class_index, ignore_weights=False, all_ite=None,
           divide_by_if_ite=1.):
-    auc = deprecated_function_name(AUC)()
+    auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights)
     result = auc._compute_one_class_against_another(ite, class_index,
-        all_ite=None, divide_by_if_ite=1.)
+        all_ite=all_ite, divide_by_if_ite=divide_by_if_ite)
     return result
 
 
@@ -1819,27 +1805,17 @@ def AUC_ij(ite, class_index1, class_index2, ignore_weights=False,
            all_ite=None, divide_by_if_ite=1.):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights)
     result = auc._compute_one_class_against_another(
-        ite, class_index1, class_index2, all_ite=None, divide_by_if_ite=1.)
+        ite, class_index1, class_index2, all_ite=all_ite, divide_by_if_ite=divide_by_if_ite)
     return result
-
-
-
-
-#AUC_binary = replace_use_weights(deprecated_function_name(AUC()._compute_for_binary_class))
-#AUC_multi = replace_use_weights(deprecated_function_name(AUC._compute_for_multi_value_class))
-#AUC_iterations = replace_use_weights(deprecated_function_name(AUC._compute_for_multiple_folds))
-#AUC_x = replace_use_weights(deprecated_function_name(AUC._compute_auc))
-#AUC_i = replace_use_weights(deprecated_function_name(AUC._compute_one_class_against_all))
-#AUC_ij = replace_use_weights(deprecated_function_name(AUC._compute_one_class_against_another))
 
 AUC_single = replace_use_weights(
              deprecated_keywords({"classIndex": "class_index"})(
-             deprecated_function_name(AUC.single_class)))
+             deprecated_function_name(AUC_for_single_class)))
 AUC_pair = replace_use_weights(
            deprecated_keywords({"classIndex1": "class_index1",
                                 "classIndex2": "class_index2"})(
-           deprecated_function_name(AUC.pair)))
-AUC_matrix = replace_use_weights(deprecated_function_name(AUC.matrix))
+           deprecated_function_name(AUC_for_pair_of_classes)))
+AUC_matrix = replace_use_weights(deprecated_function_name(AUC_matrix))
 
 
 @deprecated_keywords({"unweighted": "ignore_weights"})

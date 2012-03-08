@@ -539,7 +539,7 @@ class OWVizRank(VizRank, OWWidget):
             filename = "%s" % (self.parentName)
         qname = QFileDialog.getSaveFileName(self, "Save Projections",  os.path.join(self.lastSaveDirName, filename), "Interesting projections (*.proj)")
         if qname.isEmpty(): return
-        name = str(qname)
+        name = unicode(qname)
 
         self.lastSaveDirName = os.path.split(name)[0]
 
@@ -562,7 +562,7 @@ class OWVizRank(VizRank, OWWidget):
         if name == None:
             name = QFileDialog.getOpenFileName(self, "Open Projections", self.lastSaveDirName, "Interesting projections (*.proj)")
             if name.isEmpty(): return
-            name = str(name)
+            name = unicode(name)
 
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
@@ -906,7 +906,7 @@ class OWInteractionAnalysis(OWWidget):
                 startfile = "."
         else:
             startfile = self.recentGeneSets[0]
-        filename = str(QFileDialog.getOpenFileName(None, 'Open Gene Set File', startfile, 'Gene set files (*.gmt)\nAll files(*.*)'))
+        filename = unicode(QFileDialog.getOpenFileName(None, 'Open Gene Set File', startfile, 'Gene set files (*.gmt)\nAll files(*.*)'))
         if filename == "": return
         if filename in self.recentGeneSets: self.recentGeneSets.remove(filename)
         self.recentGeneSets.insert(0, filename)
@@ -1200,7 +1200,7 @@ class OWGraphAttributeHistogram(OWWidget):
             startfile = "."
         else:
             startfile = self.recentGeneSets[0]
-        filename = str(QFileDialog.getOpenFileName(None,'Open Gene Set File', startfile, 'Gene set files (*.gmt)\nAll files(*.*)'))
+        filename = unicode(QFileDialog.getOpenFileName(None,'Open Gene Set File', startfile, 'Gene set files (*.gmt)\nAll files(*.*)'))
         if filename == "": return
         if filename in self.recentGeneSets: self.recentGeneSets.remove(filename)
         self.recentGeneSets.insert(0, filename)
