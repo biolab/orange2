@@ -1834,7 +1834,7 @@ def create_pca_projection(data_matrix, class_array = None, ncomps = -1, use_gene
 
     matrix = numpy.dot(matrix, data_matrix)
 
-    vals, vectors = eig(matrix)
+    vals, vectors = numpy.linalg.eig(matrix)
     if vals.dtype.kind == "c":       # if eigenvalues are complex numbers then do nothing
         return None, None
     vals = list(vals)
