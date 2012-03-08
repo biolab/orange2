@@ -30,7 +30,7 @@ import networkx.readwrite.gpickle as rwgpickle
 
 import Orange
 import Orange.network
-import orangeom
+from Orange import orangeom
 
 __all__ = ['read', 'write', 'read_gpickle', 'write_gpickle', 'read_pajek', 
            'write_pajek', 'parse_pajek', 'generate_pajek', 'read_gml', 

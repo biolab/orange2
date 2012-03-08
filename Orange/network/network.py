@@ -58,7 +58,7 @@ import math
 import numpy
 import networkx as nx
 import Orange
-import orangeom
+from Orange import orangeom
 import readwrite
 from networkx import algorithms
 from networkx.classes import function
