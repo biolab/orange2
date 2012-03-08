@@ -57,7 +57,7 @@ class OWSaveDistanceFile(OWWidget):
         else:
             lastPath = "."
             
-        fn = str(QFileDialog.getSaveFileName(self, "Save Distance Matrix File", lastPath, "Distance files (*.dst)\nSymMatrix files (*.sym)\nAll files (*.*)"))
+        fn = unicode(QFileDialog.getSaveFileName(self, "Save Distance Matrix File", lastPath, "Distance files (*.dst)\nSymMatrix files (*.sym)\nAll files (*.*)"))
         
         if not fn or not os.path.split(fn)[1]:
             return
@@ -81,7 +81,7 @@ class OWSaveDistanceFile(OWWidget):
     def saveFile(self):
         self.error()
         if self.data is not None:
-            combotext = str(self.filecombo.currentText())
+            combotext = unicode(self.filecombo.currentText())
             if combotext == "(none)":
                 QMessageBox.information( None, "Error saving data", "Unable to save data. Select first a file name by clicking the '...' button.", QMessageBox.Ok + QMessageBox.Default)
                 return

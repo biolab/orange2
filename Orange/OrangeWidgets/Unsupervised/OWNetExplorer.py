@@ -1105,13 +1105,14 @@ class OWNetExplorer(OWWidget):
             return
         
         filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK network (*.net)\nGML network (*.gml)')
+        filename = unicode(filename)
         if filename:
             fn = ""
-            head, tail = os.path.splitext(str(filename))
+            head, tail = os.path.splitext(filename)
             if not tail:
                 fn = head + ".net"
             else:
-                fn = str(filename)
+                fn = filename
             
             self.optimization.graph.save(fn)
                     

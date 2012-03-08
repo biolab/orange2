@@ -954,7 +954,7 @@ class SmallWidgetButton(QPushButton):
         if pixmap != None:
             import os
             iconDir = os.path.join(os.path.dirname(__file__), "icons")
-            if type(pixmap) == str:
+            if isinstance(pixmap, basestring):
                 if os.path.exists(pixmap):
                     name = pixmap
                 elif os.path.exists(os.path.join(iconDir, pixmap)):
@@ -1009,7 +1009,7 @@ class SmallWidgetLabel(QLabel):
         elif pixmap != None:
             import os
             iconDir = os.path.join(os.path.dirname(__file__), "icons")
-            if type(pixmap) == str:
+            if isinstance(pixmap, basestring):
                 if os.path.exists(pixmap):
                     name = pixmap
                 elif os.path.exists(os.path.join(iconDir, pixmap)):

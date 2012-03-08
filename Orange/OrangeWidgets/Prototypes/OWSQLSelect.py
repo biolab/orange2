@@ -147,7 +147,7 @@ class OWSQLSelect(OWSubSQLSelect):
         if self.queryFile is None:
             self.queryFile = ''
         if filename == None:
-            self.queryFile = str(QFileDialog.getOpenFileName(self, 'Open SQL file', self.queryFile, 'SQL files (*.sql)\nAll files(*.*)'))    
+            self.queryFile = unicode(QFileDialog.getOpenFileName(self, 'Open SQL file', self.queryFile, 'SQL files (*.sql)\nAll files(*.*)'))    
         else:
             self.queryFile = filename
             
@@ -160,15 +160,15 @@ class OWSQLSelect(OWSubSQLSelect):
     def saveScript(self):
         if self.queryFile is None:
             self.queryFile = ''
-        self.queryFile = QFileDialog.getSaveFileName(self, 'Save SQL file', self.queryFile, 'SQL files (*.sql)\nAll files(*.*)')
+        self.queryFile = unicode(QFileDialog.getSaveFileName(self, 'Save SQL file', self.queryFile, 'SQL files (*.sql)\nAll files(*.*)'))
         
         if self.queryFile:
             fn = ""
-            head, tail = os.path.splitext(str(self.queryFile))
+            head, tail = os.path.splitext(self.queryFile)
             if not tail:
                 fn = head + ".sql"
             else:
-                fn = str(self.queryFile)
+                fn = self.queryFile
             f = open(fn, 'w')
             f.write(self.queryTextEdit.toPlainText())
             f.close()

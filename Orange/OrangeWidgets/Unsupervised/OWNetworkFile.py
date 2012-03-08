@@ -357,7 +357,8 @@ class OWNetworkFile(OWWidget):
             else:
                 startfile = self.recentFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
+        filename = unicode(QFileDialog.getOpenFileName(self, 'Open a Network File', 
+                    startfile, "Pajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
         
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
@@ -382,7 +383,7 @@ class OWNetworkFile(OWWidget):
         else:
             startfile = self.recentDataFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Vertices Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
+        filename = unicode(QFileDialog.getOpenFileName(self, 'Open a Vertices Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
     
         if filename == "": return
         if filename in self.recentDataFiles: self.recentDataFiles.remove(filename)
@@ -407,7 +408,7 @@ class OWNetworkFile(OWWidget):
         else:
             startfile = self.recentEdgesFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Edges Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
+        filename = unicode(QFileDialog.getOpenFileName(self, 'Open a Edges Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
     
         if filename == "": return
         if filename in self.recentEdgesFiles: self.recentEdgesFiles.remove(filename)

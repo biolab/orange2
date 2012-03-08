@@ -1074,13 +1074,14 @@ class OWNxExplorerQwt(OWWidget):
             return
 
         filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'NetworkX graph as Python pickle (*.gpickle)\nPajek network (*.net)\nGML network (*.gml)')
+        fileanme = unicode(filename)
         if filename:
             fn = ""
-            head, tail = os.path.splitext(str(filename))
+            head, tail = os.path.splitext(filename)
             if not tail:
                 fn = head + ".net"
             else:
-                fn = str(filename)
+                fn = filename
 
             for i in range(self.graph.number_of_nodes()):
                 node = self.graph.node[i]

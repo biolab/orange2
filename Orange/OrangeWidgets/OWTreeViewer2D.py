@@ -607,7 +607,8 @@ class OWTreeViewer2D(OWWidget):
         
     def saveDot(self, filename=None):
         if filename==None:
-            filename = str(QFileDialog.getSaveFileName(self, "Save to ...", "tree.dot", "Dot Tree File (.DOT)"))
+            filename = QFileDialog.getSaveFileName(self, "Save to ...", "tree.dot", "Dot Tree File (.DOT)")
+            filename = unicode(filename)
             if not filename:
                 return
         orngTree.printDot(self.tree, filename)

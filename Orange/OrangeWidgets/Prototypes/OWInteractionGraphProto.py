@@ -623,7 +623,7 @@ class OWInteractionGraphProto(OWWidget):
 
     def saveCanvasToFile(self, canvas, size):
         qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
-        fileName = str(qfileName)
+        fileName = unicode(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")

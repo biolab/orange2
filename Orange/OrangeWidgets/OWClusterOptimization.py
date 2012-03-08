@@ -582,7 +582,7 @@ class ClusterOptimization(OWBaseWidget):
                 filename = "%s" % (self.parentName)
             qname = QFileDialog.getSaveFileName( self.lastSaveDirName + "/" + filename, "Interesting clusters (*.clu)", self, "", "Save Clusters")
             if qname.isEmpty(): return
-            name = str(qname)
+            name = unicode(qname)
         else:
             name = filename
 
@@ -619,7 +619,7 @@ class ClusterOptimization(OWBaseWidget):
 
         name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting clusters (*.clu)", self, "", "Open Clusters")
         if name.isEmpty(): return
-        name = str(name)
+        name = unicode(name)
 
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
@@ -691,7 +691,7 @@ class ClusterOptimization(OWBaseWidget):
         self.sizeDlg.exec_()
 
     def saveToFileAccept(self):
-        fileName = str(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to...", "Save to..."))
+        fileName = unicode(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to...", "Save to..."))
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
