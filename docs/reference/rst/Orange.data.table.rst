@@ -454,6 +454,13 @@ when empty.
         ``C``
             like ``c``, but raises exception if the data has no class
 
+        ``m``
+            like ``c``, but one column for each target variable in a
+            multi-target domain.
+
+        ``M``
+            synonymous to ``m``.
+
         ``w``
             instance weight; like for ``c`` the column is omitted or
             ``None`` is returned instead of the vector if the argument
