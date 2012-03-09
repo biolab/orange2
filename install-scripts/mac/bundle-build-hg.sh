@@ -39,6 +39,10 @@ echo "Checkouting and building text addon"
 echo "==================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-addon-text text $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
+echo "Installing networkx"
+echo "+++++++++++++++++++++"
+./bundle-inject-pypi.sh networkx-1.6 http://pypi.python.org/packages/source/n/networkx/networkx-1.6.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+
 echo "Installing distribute"
 echo "+++++++++++++++++++++"
 ./bundle-inject-pypi.sh distribute-0.6.24 http://pypi.python.org/packages/source/d/distribute/distribute-0.6.24.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
