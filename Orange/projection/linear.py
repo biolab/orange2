@@ -1339,7 +1339,7 @@ class Pca(object):
             :class:`~Orange.projection.linear.PcaProjector`
     """
 
-    def __new__(cls, dataset = None, **kwds):
+    def __new__(cls, dataset=None, **kwds):
         optimizer = object.__new__(cls)
         optimizer.__init__(**kwds)
 
@@ -1348,12 +1348,11 @@ class Pca(object):
         else:
             return optimizer
 
-    def __init__(self, standardize = True,
-                 max_components = 0, variance_covered = 1,
-                 use_generalized_eigenvectors = 0):
+    def __init__(self, standardize=True, max_components=0, variance_covered=1,
+                 use_generalized_eigenvectors=0):
         self.standardize = standardize
         self.max_components = max_components
-        self.variance_covered = variance_covered if variance_covered < 1. else 1
+        self.variance_covered = min(1, variance_covered)
         self.use_generalized_eigenvectors = use_generalized_eigenvectors
 
     def _pca(self, dataset, Xd, Xg):
@@ -1361,7 +1360,7 @@ class Pca(object):
         if n < m:
             C = numpy.ma.dot(Xg.T, Xd.T)
             V, D, T = numpy.linalg.svd(C)
-            U = numpy.ma.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1,1))
+            U = numpy.ma.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1, 1))
         else:
             C = numpy.ma.dot(Xg, Xd)
             U, D, T = numpy.linalg.svd(C)
@@ -1388,10 +1387,9 @@ class Pca(object):
         #take care of the constant features
         stdev = numpy.std(Xd, axis=0)
         relevant_features = stdev != 0
+        Xd = Xd[:, relevant_features]
         if self.standardize:
-            stdev[stdev == 0] = 1.
-            Xd /= stdev
-        Xd = Xd[:,relevant_features]
+            Xd /= stdev[relevant_features]
 
         #use generalized eigenvectors
         if self.use_generalized_eigenvectors:
@@ -1401,21 +1399,22 @@ class Pca(object):
             Xg = Xd.T
 
         #actual pca
-        n,m = Xd.shape
+        n, m = Xd.shape
         U, D = self._pca(dataset, Xd, Xg)
 
         #insert zeros for constant features
         n, m = U.shape
         if m != M:
-            U_ = numpy.zeros((n,M))
-            U_[:,relevant_features] = U
+            U_ = numpy.zeros((n, M))
+            U_[:, relevant_features] = U
             U = U_
 
         variance_sum = D.sum()
 
         #select eigen vectors
         if self.variance_covered != 1:
-            nfeatures = numpy.nonzero(numpy.cumsum(D) / sum(D) >= self.variance_covered)[0][0] + 1
+            nfeatures = numpy.searchsorted(numpy.cumsum(D) / variance_sum,
+                                           self.variance_covered) + 1
             U = U[:nfeatures, :]
             D = D[:nfeatures]
 
@@ -1425,9 +1424,9 @@ class Pca(object):
 
         n, m = U.shape
         pc_domain = Orange.data.Domain([Orange.feature.Continuous("Comp.%d"%
-                                                                  (i+1)) for i in range(n)], False)
+            (i + 1)) for i in range(n)], False)
 
-        return PcaProjector(input_domain = dataset.domain,
+        return PcaProjector(input_domain=dataset.domain,
             output_domain = pc_domain,
             pc_domain = pc_domain,
             mean = Xm,
@@ -1443,7 +1442,7 @@ class Spca(Pca):
     def _pca(self, dataset, Xd, Xg):
         # define the Laplacian matrix
         c = dataset.to_numpy("c")[0]
-        l = -numpy.array(numpy.hstack( [(c != v) for v in c]), dtype='f')
+        l = -numpy.array(numpy.hstack([(c != v) for v in c]), dtype='f')
         l -= numpy.diagflat(numpy.sum(l, axis=0))
 
         Xg = numpy.dot(Xg, l)
