@@ -27,6 +27,12 @@ if [ ! -e $REPOS_DIR ]; then
 	mkdir $REPOS_DIR
 fi
 
+#Python interpreter in the bundle
+PYTHON=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/python
+
+#Python version
+PY_VER=`$PYTHON -c "import sys; print sys.version[:3]"`
+
 echo "Checkouting and building orange"
 echo "==============================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange orange $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
@@ -54,6 +60,8 @@ echo "+++++++++++++++++++++++"
 
 echo "Removing unnecessary files."
 find $TMP_BUNDLE_DIR \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'
+
+ln -s ../Frameworks/Python.framework/Versions/Current/lib/python${PY_VER}/site-packages/Orange ${TMP_BUNDLE_DIR}/Orange.app/Contents/Resources/Orange
 
 	
 echo "Preparing the .dmg image"
