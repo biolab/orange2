@@ -3491,7 +3491,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     else {
       my = Py_None;
       Py_INCREF(my);
-      mpmy = NULL;
+      myp = NULL;
     }
 
     if (weightVector) {
