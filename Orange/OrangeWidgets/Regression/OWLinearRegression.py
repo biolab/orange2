@@ -66,10 +66,10 @@ class OWLinearRegression(OWWidget):
                                 sep=OWGUI.checkButtonOffsetHint(rb))
         self.lm_box.setEnabled(not self.use_lasso)
         
-        OWGUI.checkWithSpin(box, self, "Ridge lambda", 1, 10,
-                            "use_ridge", "ridge_lambda", step=1, 
-                            tooltip="Ridge lambda for ridge regression")
-        
+        OWGUI.doubleSpin(box, self, "ridge_lambda", 0.1, 100, step=0.1,
+                         label="Ridge lambda", checked="use_ridge",
+                         tooltip="Ridge lambda for ridge regression")
+
         rb = OWGUI.appendRadioButton(bbox, self, "use_lasso",
                                      label="LASSO Regression",
                                      tooltip="",
