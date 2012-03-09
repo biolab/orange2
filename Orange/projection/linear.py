@@ -991,7 +991,7 @@ class FreeViz:
             vectors = vectors.T
 
         # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
-        if (vectors == None or not vectors.any() or
+        if (type(vectors) == type(None) or not vectors.any() or
             False in numpy.isfinite(vectors) or False in numpy.isreal(vectors)):
             self.set_statusbar_text("Unable to compute anchor positions for the selected attributes")  
             return None
