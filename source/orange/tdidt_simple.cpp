@@ -697,17 +697,16 @@ TSimpleTreeClassifier::~TSimpleTreeClassifier()
 
 
 float *
-predict_classification(const TExample &ex, struct SimpleTreeNode *node, int *free_dist)
+predict_classification(const TExample &ex, struct SimpleTreeNode *node, int *free_dist, int cls_vals)
 {
-	int i, j, cls_vals;
+	int i, j;
 	float *dist, *child_dist;
 
 	while (node->type != PredictorNode)
 		if (ex.values[node->split_attr].isSpecial()) {
-			cls_vals = ex.domain->classVar->noOfValues();
 			ASSERT(dist = (float *)calloc(cls_vals, sizeof *dist));
 			for (i = 0; i < node->children_size; i++) {
-				child_dist = predict_classification(ex, node->children[i], free_dist);
+				child_dist = predict_classification(ex, node->children[i], free_dist, cls_vals);
 				for (j = 0; j < cls_vals; j++)
 					dist[j] += child_dist[j];
 				if (*free_dist)
@@ -850,9 +849,9 @@ TSimpleTreeClassifier::operator()(const TExample &ex)
 		int i, free_dist, best_val;
 		float *dist;
 
-		dist = predict_classification(ex, tree, &free_dist);
+		dist = predict_classification(ex, tree, &free_dist, this->cls_vals);
 		best_val = 0;
-		for (i = 1; i < ex.domain->classVar->noOfValues(); i++)
+		for (i = 1; i < this->cls_vals; i++)
 			if (dist[i] > dist[best_val])
 				best_val = i;
 
@@ -876,10 +875,10 @@ TSimpleTreeClassifier::classDistribution(const TExample &ex)
 		int i, free_dist;
 		float *dist;
 
-		dist = predict_classification(ex, tree, &free_dist);
+		dist = predict_classification(ex, tree, &free_dist, this->cls_vals);
 
-		PDistribution pdist = TDistribution::create(ex.domain->classVar);
-		for (i = 0; i < ex.domain->classVar->noOfValues(); i++)
+		PDistribution pdist = mlnew TDiscDistribution(this->cls_vals, 0.0);
+		for (i = 0; i < this->cls_vals; i++)
 			pdist->setint(i, dist[i]);
 		pdist->normalize();
 
