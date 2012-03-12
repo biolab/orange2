@@ -23,7 +23,7 @@ from OWHist import *
 
 class OWNxFromDistances(OWWidget, OWNxHist):
     settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption", 
-                  "dstWeight", "kNN", "andor", "excludeLimit"]
+                  "dstWeight", "kNN", "percentil", "andor", "excludeLimit"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Nx from Distances")
@@ -78,15 +78,8 @@ class OWNxFromDistances(OWWidget, OWNxHist):
                                max(1, float(self.matrix.dim))*100))])
         
     def sendSignals(self):
-        if self.graph != None:
-            #setattr(matrix, "items", self.graph.items)
-            self.matrix.items = self.graph.items()
-        
         self.send("Network", self.graph)
-        
-        if self.matrix:
-            self.send("Distances", self.matrix)
-            
+        self.send("Distances", self.graph_matrix)    
         if self.graph == None:
             self.send("Data", None)
         else:

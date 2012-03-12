@@ -49,7 +49,7 @@ class OWNxHist():
 
         ribg = OWGUI.widgetBox(boxGeneral, None, orientation="horizontal", addSpace=False)
         OWGUI.spin(ribg, self, "kNN", 0, 1000, 1, label="kNN   ", orientation='horizontal', callback=self.generateGraph, callbackOnReturn=1, controlWidth=100)
-        OWGUI.doubleSpin(ribg, self, "percentil", 0, 100, 0.1, label="Percentil", orientation='horizontal', callback=self.setPercentil, callbackOnReturn=1, controlWidth=100)
+        OWGUI.doubleSpin(ribg, self, "percentil", 0, 100, 0.1, label="Percentile", orientation='horizontal', callback=self.setPercentil, callbackOnReturn=1, controlWidth=100)
         ribg.layout().addStretch(1)
         # Options
         self.attrColor = ""
@@ -253,7 +253,7 @@ class OWNxHist():
 
         if matrix != None:
             matrix.items = self.graph.items()
-            self.graph_matrix = matrix
+        self.graph_matrix = matrix
 
         if self.graph is None:
             self.pconnected = 0
