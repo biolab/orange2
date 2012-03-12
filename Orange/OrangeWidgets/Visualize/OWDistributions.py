@@ -189,7 +189,7 @@ class OWDistributionGraph(OWGraph):
             try:
                 g = orange.ConditionalProbabilityEstimatorConstructor_loess(self.dc[self.attributeName], nPoints=200) #!!!
                 self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
-            except:
+            except Exception:
                 self.probGraphValues = []
             # print [ps.variances for (x, ps) in g.probabilities.items()]
             # calculate the weighted CI=math.sqrt(prob*(1-prob)/(0.0+self.sums[curcol])),
@@ -259,7 +259,8 @@ class OWDistributionGraph(OWGraph):
                 d_data=self.data.select([d_variable, self.data.domain.classVar])
                 c=orange.ContingencyAttrClass(d_variable, d_data)
                 XY=[(key+self.subIntervalStep/2.0, val.average()) for key, val in zip(keys, c.values()) if val.cases]
-                XY=statc.loess(XY, 10, 4.0, 1)
+                if len(XY) >= 2:
+                    XY=statc.loess(XY, 10, 4.0, 1)
             else:
                 d_data=orange.ContingencyAttrClass(self.attributeName, self.data)
                 XY=[(i, dist.average()) for i, dist in zip(range(len(d_data.values())), d_data.values()) if dist.cases]
@@ -286,6 +287,7 @@ class OWDistributionGraph(OWGraph):
         if self.pureHistogram:
             self.refreshPureVisibleOutcomes()
             return
+        
         self.enableYRaxis(0)
         self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)
         self.setYRaxisTitle("")
@@ -329,7 +331,9 @@ class OWDistributionGraph(OWGraph):
         self.refreshProbGraph()
 
     def refreshProbGraph(self):
-        if not self.data or self.targetValue == None: return
+        if not self.data or self.targetValue == None:
+            return
+        
         if self.showProbabilities:
             self.enableYRaxis(1)
             self.setShowYRaxisTitle(self.showYRaxisTitle)
@@ -393,7 +397,12 @@ class OWDistributionGraph(OWGraph):
 
 class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "graph.showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
-    contextHandlers = {"": DomainContextHandler("", ["attribute", "targetValue", "visibleOutcomes", "mainTitle", "xaxisTitle", "yaxisTitle", "yPaxisTitle"], matchValues=DomainContextHandler.MatchValuesClass)}
+    contextHandlers = {"": DomainContextHandler("", ["attribute", "targetValue", "visibleOutcomes",
+                                                     "mainTitle", "xaxisTitle", "yaxisTitle", "yPaxisTitle"], 
+                                                matchValues=DomainContextHandler.MatchValuesClass,
+                                                findImperfect=False,
+                                                contextDataVersion=2,
+                                                )}
 
     def __init__(self, parent=None, signalManager = None):
         "Constructor"
@@ -478,7 +487,7 @@ class OWDistributions(OWWidget):
         OWGUI.checkBox(box, self, 'graph.showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
         OWGUI.spin(box, self, "numberOfBars", label="Number of bars", min=5, max=60, step=5, callback=self.setNumberOfBars, callbackOnReturn=True)
 
-        box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
+        self.probabilityPlotBox = box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
         self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', 'Show probabilities', callback = self.setShowProbabilities)
         self.targetQCB = OWGUI.comboBox(OWGUI.indentedBox(box5, sep=OWGUI.checkButtonOffsetHint(self.showProb)), self, "targetValue", label="Target value", valueType=int, callback=self.setTarget)
 
@@ -614,8 +623,7 @@ class OWDistributions(OWWidget):
             self.data = None
             return
         self.dataHasClass = bool(data.domain.classVar)
-        if self.dataHasClass:
-            self.dataHasDiscreteClass = data.domain.classVar.varType != orange.VarTypes.Continuous
+        self.dataHasDiscreteClass = self.dataHasClass and data.domain.classVar.varType == orange.VarTypes.Discrete
 
         sameDomain = data and self.data and data.domain == self.data.domain
 
@@ -634,7 +642,7 @@ class OWDistributions(OWWidget):
             self.graph.setVisibleOutcomes(None)
             # set targets
             self.targetQCB.clear()
-            if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+            if self.dataHasDiscreteClass:
                 self.targetQCB.addItems([val for val in self.data.domain.classVar.values])
                 self.setTarget(0)
 
@@ -652,16 +660,23 @@ class OWDistributions(OWWidget):
                 #self.setVariable()
 
             self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
-            if self.dataHasClass and self.dataHasDiscreteClass:
+            if self.dataHasDiscreteClass:
                 self.graph.setTargetValue(self.targetValue) #str(self.data.domain.classVar.values[0])) # pick first target
                 self.setOutcomeNames(self.data.domain.classVar.values.native())
+                self.probabilityPlotBox.setEnabled(True)
             else:
-               self.setOutcomeNames([])
-
+                self.setTarget(None)
+                self.setOutcomeNames([])
+                self.probabilityPlotBox.setEnabled(False)
+                
             self.openContext("", self.data)
             if self.data and variables:
                 self.setVariable()
-
+                
+            # In case the openContext does somethig stupid.  
+            if self.dataHasDiscreteClass and not self.targetValue < len(self.data.domain.classVar.values):
+                self.setTarget(0)
+                 
         for f in [self.setMainTitle, self.setTarget, self.setXaxisTitle, self.setYaxisTitle, self.setYPaxisTitle, self.outcomeSelectionChange]:
             f()
 
