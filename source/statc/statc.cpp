@@ -1452,6 +1452,12 @@ bool getSmootherPars(PyObject *args, vector<pair<double, double> > &points, vect
   }
   Py_DECREF(iter);
   
+  if (nUniquePoints(xpoints) < 2)
+  {
+      PyErr_Format(PyExc_ValueError, "A list with at least 2 unique points required.");
+      return false;
+  }
+
   if (distMethod != -1)
     sampFuncs[distMethod](xpoints, nPoints, sampPoints);
 
