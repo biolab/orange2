@@ -255,14 +255,21 @@ class OWNxHist():
             matrix.items = self.graph.items()
             self.graph_matrix = matrix
 
-        self.pconnected = self.graph.number_of_nodes()
-        self.nedges = self.graph.number_of_edges()
+        if self.graph is None:
+            self.pconnected = 0
+            self.nedges = 0
+        else:
+            self.pconnected = self.graph.number_of_nodes()
+            self.nedges = self.graph.number_of_edges()
         if hasattr(self, "infoa"):
             self.infoa.setText("Matrix size: %d" % self.matrix.dim)
         if hasattr(self, "infob"):
-            self.infob.setText("Graph nodes: %d (%3.1f%%)" % (self.pconnected, self.pconnected / float(self.matrix.dim) * 100))
+            self.infob.setText("Graph nodes: %d (%3.1f%%)" % (self.pconnected,
+                self.pconnected / float(self.matrix.dim) * 100))
         if hasattr(self, "infoc"):
-            self.infoc.setText("Graph edges: %d (%.2f edges/node)" % (self.nedges, self.nedges / float(self.pconnected)))
+            self.infoc.setText("Graph edges: %d (%.2f edges/node)" % (
+                self.nedges, self.nedges / float(self.pconnected)
+                if self.pconnected else 0))
 
         #print 'self.graph:',self.graph+
         if hasattr(self, "sendSignals"):
