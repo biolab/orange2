@@ -38,7 +38,8 @@ try:
         "mdsFromCurrentPos", "labelsOnMarkedOnly", "tabIndex",
         "networkCanvas.trim_label_words", "opt_from_curr", "networkCanvas.explore_distances",
         "networkCanvas.show_component_distances", "fontWeight", "networkCanvas.state",
-        "networkCanvas.selection_behavior"]
+        "networkCanvas.selection_behavior", "hubs", "markDistance",
+        "markNConnections", "markNumber"]
 
         def __init__(self, parent=None, signalManager=None, name='Net Explorer',
                      NetworkCanvas=OWNxCanvas):
@@ -865,6 +866,7 @@ try:
 
             self.optButton.setChecked(1)
             self.graph_layout()
+            self.set_mark_mode()
 
         def set_network_view(self, nxView):
             self.error()
