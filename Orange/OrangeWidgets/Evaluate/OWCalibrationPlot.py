@@ -53,8 +53,8 @@ class singleClassCalibrationPlotGraph(OWGraph):
         for cNum in range(classifiersNum):
             curve = self.addCurve('', 
                                   pen=QPen(self.classifierColor[cNum], 3),
-                                  brushColor=self.classifierColor[cNum]
-                                  )
+                                  brushColor=self.classifierColor[cNum],
+                                  style=QwtPlotCurve.Lines)
             self.classifierCalibrationCKeys.append(curve)
 
             curve = errorBarQwtPlotCurve('', connectPoints = 0, tickXw = 0.0)
