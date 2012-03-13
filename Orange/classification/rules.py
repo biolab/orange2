@@ -786,7 +786,6 @@ class ABCN2(RuleLearner):
         self.rule_finder.refiner = self.refiner
         self.rule_finder.ruleFilter = self.ruleFilter
 
-
     def learn_normal_rule(self, examples, weight_id, apriori):
         if hasattr(self.rule_finder.evaluator, "bestRule"):
             self.rule_finder.evaluator.bestRule = None
@@ -848,7 +847,7 @@ class ABCN2(RuleLearner):
                     tmpRule.quality = self.rule_finder.evaluator(tmpRule, examples, weight_id, r.classifier.default_val, apriori)
                     self.rule_finder.evaluator.returnExpectedProb = oldREP
                 tmpList.sort(lambda x, y:-cmp(x.quality, y.quality))
-                tmpList = tmpList[:self.rule_filter.width]
+                tmpList = tmpList[:self.ruleFilter.width]
 
                 for tmpRule in tmpList:
                     # if rule not in rules already, add it to the list
@@ -862,7 +861,7 @@ class ABCN2(RuleLearner):
                             tmpRule2.filter.conditions.append(c)
                             tmpRule2.filterAndStore(examples, weight_id, r.classifier.default_val)
                             tmpRule2.complexity += 1
-                            if tmpRule2.class_distribution.abs < tmprule.class_distribution.abs:
+                            if tmpRule2.class_distribution.abs < tmpRule.class_distribution.abs:
                                 tmpList2.append(tmpRule2)
                 tmpList = tmpList2
         return new_rules
@@ -1220,7 +1219,7 @@ class CovererAndRemover_Prob(CovererAndRemover):
                 best_rules.append(r)
         return best_rules
 
-
+    def __call__(self, rule, examples, weights, target_class):
         """ if example has an argument, then the rule must be consistent with the argument. """
         example = getattr(rule.learner, "arg_example", None)
         if example:
@@ -1240,7 +1239,6 @@ class CovererAndRemover_Prob(CovererAndRemover):
             if rule(e):
                 e[self.prob_attribute] = 1.0
         return (examples, weights)
-
 
     def covered_percentage(self, examples):
         p = 0.0
@@ -1842,7 +1840,7 @@ class PILAR:
     """
     PILAR (Probabilistic improvement of learning algorithms with rules).
     """
-    def __init__(self, alternative_learner=None, min_cl_sig=0.5, min_beta=0.0, set_prefix_rules=False, optimize_betas=True):
+    def __init__(self, alternative_learner=None, min_cl_sig=0.5, min_beta=0.0, penalty=0.01, set_prefix_rules=False, optimize_betas=True):
         self.alternative_learner = alternative_learner
         self.min_cl_sig = min_cl_sig
         self.min_beta = min_beta
