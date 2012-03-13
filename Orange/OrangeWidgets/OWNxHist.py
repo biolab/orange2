@@ -29,7 +29,7 @@ class OWNxHist():
         self.kNN = 0
         self.andor = 0
         self.matrix = None
-        self.excludeLimit = 1
+        self.excludeLimit = 2
         self.percentil = 0
 
         self.graph = None
@@ -60,7 +60,7 @@ class OWNxHist():
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback=self.generateGraph)
         hb = OWGUI.widgetBox(ribg, None, orientation="horizontal", addSpace=False)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Large components only. Min nodes:", insertInto=hb, callback=self.generateGraph)
-        OWGUI.spin(hb, self, "excludeLimit", 1, 100, 1, callback=(lambda h=True: self.generateGraph(h)))
+        OWGUI.spin(hb, self, "excludeLimit", 2, 100, 1, callback=(lambda h=True: self.generateGraph(h)))
         OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback=self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Connected component with vertex")
         self.attribute = None
@@ -213,7 +213,7 @@ class OWNxHist():
 
             # exclude unconnected
             if str(self.netOption) == '1':
-                components = [x for x in Orange.network.nx.algorithms.components.connected_components(graph) if len(x) > self.excludeLimit]
+                components = [x for x in Orange.network.nx.algorithms.components.connected_components(graph) if len(x) >= self.excludeLimit]
                 if len(components) > 0:
                     include = reduce(lambda x, y: x + y, components)
                     if len(include) > 1:
