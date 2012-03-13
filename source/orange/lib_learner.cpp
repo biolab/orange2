@@ -2098,11 +2098,12 @@ PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *key
     PClassifier classifier;
     bool setPrefixRules;
     bool optimizeBetasFlag;
+    float penalty = 0.01f;
 
-    if (!PyArg_ParseTuple(args, "O&ffO&|O&iiO&O&:RuleClassifier.call", cc_RuleList, &rules, &minSignificance, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &setPrefixRules, &optimizeBetasFlag, cc_Classifier, &classifier, cc_DistributionList, &probList))
+    if (!PyArg_ParseTuple(args, "O&fffO&|O&iiO&O&:RuleClassifier.call", cc_RuleList, &rules, &minSignificance, &minBeta, &penalty, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &setPrefixRules, &optimizeBetasFlag, cc_Classifier, &classifier, cc_DistributionList, &probList))
       return PYNULL;
 
-    TRuleClassifier *rc = new TRuleClassifier_logit(rules, minSignificance, minBeta, gen, weightID, classifier, probList,setPrefixRules, optimizeBetasFlag);
+    TRuleClassifier *rc = new TRuleClassifier_logit(rules, minSignificance, minBeta, penalty, gen, weightID, classifier, probList, setPrefixRules, optimizeBetasFlag);
     PRuleClassifier ruleClassifier = rc;
 //    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
     return WrapOrange(ruleClassifier);
