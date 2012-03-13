@@ -32,6 +32,9 @@ class OWNxHist():
         self.excludeLimit = 1
         self.percentil = 0
 
+        self.graph = None
+        self.graph_matrix = None
+
         if parent is None:
             parent = self.controlArea
 
