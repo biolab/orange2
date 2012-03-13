@@ -77,6 +77,9 @@ class OWNxHist():
             self.attributeCombo.box.setEnabled(False)
 
     def setPercentil(self):
+        if self.matrix is None or self.percentil <= 0:
+            return
+
         self.spinLowerThreshold = self.histogram.minValue
         # flatten matrix, sort values and remove identities (self.matrix[i][i])
         vals = sorted(sum(self.matrix, ()))[self.matrix.dim:]
@@ -107,7 +110,7 @@ class OWNxHist():
         low = min(values)
         upp = max(values)
         self.spinLowerThreshold = self.spinUpperThreshold = math.floor(low - (0.03 * (upp - low)))
-        self.generateGraph()
+
         self.attributeCombo.clear()
         vars = []
         if (self.matrix != None):
@@ -127,6 +130,9 @@ class OWNxHist():
                 self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
             except:
                 print "error adding ", var, " to the attribute combo"
+
+        self.setPercentil()
+        self.generateGraph()
 
     def changeLowerSpin(self):
         self.percentil = 0
