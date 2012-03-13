@@ -38,38 +38,13 @@ StoppingCriteria_NegativeDistribution = Orange.core.RuleStoppingCriteria_Negativ
 Validator = Orange.core.RuleValidator
 Validator_LRS = Orange.core.RuleValidator_LRS
     
+from Orange.orng.orngABML import \
+    ArgumentFilter_hasSpecial, \
+    create_dichotomous_class, \
+    evaluateAndSortArguments
 from Orange.misc import deprecated_keywords
 from Orange.misc import deprecated_members
 
-
-class ConvertClass:
-    """ Converting class variables into dichotomous class variable. """
-    def __init__(self, classAtt, classValue, newClassAtt):
-        self.classAtt = classAtt
-        self.classValue = classValue
-        self.newClassAtt = newClassAtt
-
-    def __call__(self, example, returnWhat):
-        if example[self.classAtt] == self.classValue:
-            return Orange.data.Value(self.newClassAtt, self.classValue + "_")
-        else:
-            return Orange.data.Value(self.newClassAtt, "not " + self.classValue)
-
-
-def create_dichotomous_class(domain, att, value, negate, removeAtt=None):
-    # create new variable
-    newClass = Orange.feature.Discrete(att.name + "_", values=[str(value) + "_", "not " + str(value)])
-    positive = Orange.data.Value(newClass, str(value) + "_")
-    negative = Orange.data.Value(newClass, "not " + str(value))
-    newClass.getValueFrom = ConvertClass(att, str(value), newClass)
-
-    att = [a for a in domain.attributes]
-    newDomain = Orange.data.Domain(att + [newClass])
-    newDomain.addmetas(domain.getmetas())
-    if negate == 1:
-        return (newDomain, negative)
-    else:
-        return (newDomain, positive)
 
 
 class LaplaceEvaluator(Evaluator):
@@ -558,7 +533,7 @@ class ABCN2(RuleLearner):
     def __init__(self, argument_id=0, width=5, m=2, opt_reduction=2, nsampling=100, max_rule_complexity=5,
                  rule_sig=1.0, att_sig=1.0, postpruning=None, min_quality=0., min_coverage=1, min_improved=1, min_improved_perc=0.0,
                  learn_for_class=None, learn_one_rule=False, evd=None, evd_arguments=None, prune_arguments=False, analyse_argument= -1,
-                 alternative_learner=None, min_cl_sig=0.5, min_beta=0.0, set_prefix_rules=False, add_sub_rules=False, debug=False,
+                 alternative_learner=None, min_cl_sig=0.5, min_beta=0.0, set_prefix_rules=False, add_sub_rules=True, debug=False,
                  **kwds):
 
         # argument ID which is passed to abcn2 learner
@@ -651,7 +626,7 @@ class ABCN2(RuleLearner):
             aes = self.sort_arguments(aes, dich_data)
             while aes:
                 if self.analyse_argument > -1 and \
-                   (isinstance(self.analyse_argument, Orange.data.Instance) and not Orange.data.Instance(dich_data.domain, self.analyse_argument) == aes[0] or \
+                   (isinstance(self.analyse_argument, Orange.core.Example) and not Orange.core.Example(dich_data.domain, self.analyse_argument) == aes[0] or \
                     isinstance(self.analyse_argument, int) and not dich_data[self.analyse_argument] == aes[0]):
                     aes = aes[1:]
                     continue
@@ -666,14 +641,13 @@ class ABCN2(RuleLearner):
                     aes = filter(lambda x: not rule(x), aes)
                 else:
                     aes = aes[1:]
-                aes = aes[1:]
 
             if not progress and self.debug:
                 print " arguments finished ... "
 
             # remove all examples covered by rules
             for rule in rules:
-                dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
+                dich_data = self.remove_covered_examples(rule, dich_data, weight_id, True)
             if progress:
                 progress(self.remaining_probability(dich_data), None)
 
@@ -682,15 +656,21 @@ class ABCN2(RuleLearner):
                 self.turn_normal_mode(dich_data, weight_id, cl_i)
                 while dich_data:
                     # learn a rule
-                    rule = self.learn_normal_rule(dich_data, weight_id, self.apriori)
+                    rule, good_rule = self.learn_normal_rule(dich_data, weight_id, self.apriori)
                     if not rule:
                         break
                     if self.debug:
-                        print "rule learned: ", Orange.classification.rules.rule_to_string(rule), rule.quality
-                    dich_data = self.remove_covered_examples(rule, dich_data, weight_id)
+                        if good_rule:
+                            print "rule learned: ", rule_to_string(rule), rule.quality
+                        else:
+                            print "rule only to influence learning: ", rule_to_string(rule), rule.quality
+                            
+                    dich_data = self.remove_covered_examples(rule, dich_data, weight_id, good_rule)
+
                     if progress:
                         progress(self.remaining_probability(dich_data), None)
-                    rules.append(rule)
+                    if good_rule:
+                        rules.append(rule)
                     if self.learn_one_rule:
                         break
 
@@ -714,6 +694,9 @@ class ABCN2(RuleLearner):
         positive_args = self.init_pos_args(ae, examples, weight_id)
         if not positive_args: # something wrong
             raise "There is a problem with argumented example %s" % str(ae)
+            return None
+        if False in [p(ae) for p in positive_args]: # a positive argument is not covering this example
+            raise "One argument does not cover critical example: %s!"%str(ae)
             return None
         negative_args = self.init_neg_args(ae, examples, weight_id)
 
@@ -803,19 +786,26 @@ class ABCN2(RuleLearner):
         self.rule_finder.refiner = self.refiner
         self.rule_finder.ruleFilter = self.ruleFilter
 
+
     def learn_normal_rule(self, examples, weight_id, apriori):
         if hasattr(self.rule_finder.evaluator, "bestRule"):
             self.rule_finder.evaluator.bestRule = None
-        rule = self.rule_finder(examples, weight_id, 0, RuleList())
+        rule = self.rule_finder(examples,weight_id,0,RuleList())
         if hasattr(self.rule_finder.evaluator, "bestRule") and self.rule_finder.evaluator.returnExpectedProb:
+            if not self.rule_finder.evaluator.bestRule and rule.quality > 0:
+                return (rule, False)
             rule = self.rule_finder.evaluator.bestRule
             self.rule_finder.evaluator.bestRule = None
         if self.postpruning:
-            rule = self.postpruning(rule, examples, weight_id, 0, aprior)
-        return rule
+            rule = self.postpruning(rule,examples,weight_id,0, aprior)
+        return (rule, True)
+    
 
-    def remove_covered_examples(self, rule, examples, weight_id):
-        nexamples, nweight = self.cover_and_remove(rule, examples, weight_id, 0)
+    def remove_covered_examples(self, rule, examples, weight_id, good_rule):
+        if good_rule:
+            nexamples, nweight = self.cover_and_remove(rule, examples, weight_id, 0)
+        else:
+            nexamples, nweight = self.cover_and_remove.mark_examples_solved(rule,examples,weight_id,0)
         return nexamples
 
 
@@ -1224,54 +1214,32 @@ class CovererAndRemover_Prob(CovererAndRemover):
         for r_i, r in enumerate(self.best_rule):
             if r and not rule_in_set(r, best_rules) and int(examples[r_i].getclass()) == int(r.classifier.default_value):
                 if hasattr(r.learner, "arg_example"):
-                    setattr(r, "best_example", r.learner.arg_example)
+                    r.setattr("best_example", r.learner.arg_example)
                 else:
-                    setattr(r, "best_example", examples[r_i])
+                    r.setattr("best_example", examples[r_i])
                 best_rules.append(r)
         return best_rules
 
-    def __call__(self, rule, examples, weights, target_class):
+
         """ if example has an argument, then the rule must be consistent with the argument. """
         example = getattr(rule.learner, "arg_example", None)
-        for ei, e in enumerate(examples):
-            if e == example:
-                e[self.prob_attribute] = 1.0
-                self.best_rule[ei] = rule
-            elif rule(e) and rule.quality > e[self.prob_attribute]:
-                e[self.prob_attribute] = rule.quality + 0.001 # 0.001 is added to avoid numerical errors
-                self.best_rule[ei] = rule
+        if example:
+            for ei, e in enumerate(examples):
+                if e == example:
+                    e[self.prob_attribute] = rule.quality+0.001 # 0.001 is added to avoid numerical errors
+                    self.best_rule[ei]=rule
+        else:        
+            for ei, e in enumerate(examples):
+                if rule(e) and rule.quality>e[self.prob_attribute]:
+                    e[self.prob_attribute] = rule.quality+0.001 # 0.001 is added to avoid numerical errors
+                    self.best_rule[ei]=rule
         return (examples, weights)
 
-    def filter_covers_example(self, example, filter):
-        filter_indices = CoversArguments.filterIndices(filter)
-        if filter(example):
-            try:
-                if example[self.argument_id].value and len(example[self.argument_id].value.positive_arguments) > 0: # example has positive arguments
-                    # conditions should cover at least one of the positive arguments
-                    one_arg_covered = False
-                    for pA in example[self.argument_id].value.positive_arguments:
-                        arg_covered = [self.condIn(c, filter_indices) for c in pA.filter.conditions]
-                        one_arg_covered = one_arg_covered or len(arg_covered) == sum(arg_covered) #arg_covered
-                        if one_arg_covered:
-                            break
-                    if not one_arg_covered:
-                        return False
-                if example[self.argument_id].value and len(example[self.argument_id].value.negative_arguments) > 0: # example has negative arguments
-                    # condition should not cover neither of negative arguments
-                    for pN in example[self.argument_id].value.negative_arguments:
-                        arg_covered = [self.condIn(c, filter_indices) for c in pN.filter.conditions]
-                        if len(arg_covered) == sum(arg_covered):
-                            return False
-            except:
-                return True
-            return True
-        return False
-
-    def condIn(self, cond, filter_indices): # is condition in the filter?
-        condInd = CoversArguments.conditionIndex(cond)
-        if operator.or_(condInd, filter_indices[cond.position]) == filter_indices[cond.position]:
-            return True
-        return False
+    def mark_examples_solved(self, rule, examples, weights, target_class):
+        for ei, e in enumerate(examples):
+            if rule(e):
+                e[self.prob_attribute] = 1.0
+        return (examples, weights)
 
 
     def covered_percentage(self, examples):
@@ -1741,60 +1709,54 @@ SelectorAdder = deprecated_members({"notAllowedSelectors": "not_allowed_selector
 
 # This filter is the ugliest code ever! Problem is with Orange, I had some problems with inheriting deepCopy
 # I should take another look at it.
-class ArgFilter(Orange.data.filter.Filter):
+class ArgFilter(Orange.core.Filter):
     """ This class implements AB-covering principle. """
-    def __init__(self, argument_id=None, filter=Orange.data.filter.Values(), arg_example=None):
+    def __init__(self, argument_id=None, filter = Orange.core.Filter_values(), arg_example = None):
         self.filter = filter
-        self.indices = getattr(filter, "indices", [])
-        if not self.indices and len(filter.conditions) > 0:
-            self.indices = CoversArguments.filterIndices(filter)
+        self.indices = getattr(filter,"indices",[])
+        if not self.indices and len(filter.conditions)>0:
+            self.indices = RuleCoversArguments.filterIndices(filter)
         self.argument_id = argument_id
         self.domain = self.filter.domain
         self.conditions = filter.conditions
         self.arg_example = arg_example
-
-    def condIn(self, cond): # is condition in the filter?
-        condInd = ruleCoversArguments.conditionIndex(cond)
-        if operator.or_(condInd, self.indices[cond.position]) == self.indices[cond.position]:
+        self.only_arg_example = True
+        
+    def condIn(self,cond): # is condition in the filter?
+        condInd = RuleCoversArguments.conditionIndex(cond)
+        if operator.or_(condInd,self.indices[cond.position]) == self.indices[cond.position]:
             return True
         return False
-
-    def __call__(self, example):
-##        print "in", self.filter(example)#, self.filter.conditions[0](example)
-##        print self.filter.conditions[1].values
-        if self.filter(example) and example != self.arg_example:
-            return True
-        elif self.filter(example):
-            try:
-                if example[self.argument_id].value and len(example[self.argument_id].value.positiveArguments) > 0: # example has positive arguments
-                    # conditions should cover at least one of the positive arguments
-                    oneArgCovered = False
-                    for pA in example[self.argument_id].value.positiveArguments:
-                        argCovered = [self.condIn(c) for c in pA.filter.conditions]
-                        oneArgCovered = oneArgCovered or len(argCovered) == sum(argCovered) #argCovered
-                        if oneArgCovered:
-                            break
-                    if not oneArgCovered:
-                        return False
-                if example[self.argument_id].value and len(example[self.argument_id].value.negativeArguments) > 0: # example has negative arguments
-                    # condition should not cover neither of negative arguments
-                    for pN in example[self.argument_id].value.negativeArguments:
-                        argCovered = [self.condIn(c) for c in pN.filter.conditions]
-                        if len(argCovered) == sum(argCovered):
-                            return False
-            except:
-                return True
-            return True
-        else:
+    
+    def __call__(self,example):
+        if not self.filter(example):
             return False
+        elif (not self.only_arg_example or example == self.arg_example):
+            if example[self.argument_id].value and len(example[self.argument_id].value.positive_arguments)>0: # example has positive arguments
+                # conditions should cover at least one of the positive arguments
+                oneArgCovered = False
+                for pA in example[self.argument_id].value.positive_arguments:
+                    argCovered = [self.condIn(c) for c in pA.filter.conditions]
+                    oneArgCovered = oneArgCovered or len(argCovered) == sum(argCovered) #argCovered
+                    if oneArgCovered:
+                        break
+                if not oneArgCovered:
+                    return False
+            if example[self.argument_id].value and len(example[self.argument_id].value.negative_arguments)>0: # example has negative arguments
+                # condition should not cover neither of negative arguments
+                for pN in example[self.argument_id].value.negative_arguments:
+                    argCovered = [self.condIn(c) for c in pN.filter.conditions]
+                    if len(argCovered)==sum(argCovered):
+                        return False
+        return True
 
-    def __setattr__(self, name, obj):
-        self.__dict__[name] = obj
-        self.filter.setattr(name, obj)
+    def __setattr__(self,name,obj):
+        self.__dict__[name]=obj
+        self.filter.setattr(name,obj)
 
     def deep_copy(self):
         newFilter = ArgFilter(argument_id=self.argument_id)
-        newFilter.filter = Orange.data.filter.Values() #self.filter.deepCopy()
+        newFilter.filter = Orange.core.Filter_values() #self.filter.deepCopy()
         newFilter.filter.conditions = self.filter.conditions[:]
         newFilter.domain = self.filter.domain
         newFilter.negate = self.filter.negate
@@ -1802,8 +1764,8 @@ class ArgFilter(Orange.data.filter.Filter):
         newFilter.domain = self.filter.domain
         newFilter.conditions = newFilter.filter.conditions
         newFilter.indices = self.indices[:]
+        newFilter.arg_example = self.arg_example
         return newFilter
-
 ArgFilter = deprecated_members({"argumentID": "argument_id"})(ArgFilter)
 
 class SelectorArgConditions(BeamRefiner):
@@ -1887,6 +1849,7 @@ class PILAR:
         self.set_prefix_rules = set_prefix_rules
         self.optimize_betas = optimize_betas
         self.selected_evaluation = CrossValidation(folds=5)
+        self.penalty = penalty
 
     def __call__(self, rules, examples, weight=0):
         rules = self.add_null_rule(rules, examples, weight)
@@ -1896,16 +1859,13 @@ class PILAR:
 ##            prob_dist = Orange.core.DistributionList()
 ##            for e in examples:
 ##                prob_dist.append(classifier(e,Orange.core.GetProbabilities))
-            cl = RuleClassifier_logit(rules, self.min_cl_sig, self.min_beta, examples, weight, self.set_prefix_rules, self.optimize_betas, classifier, prob_dist)
+            cl = Orange.core.RuleClassifier_logit(rules, self.min_cl_sig, self.min_beta, self.penalty, examples, weight, self.set_prefix_rules, self.optimize_betas, classifier, prob_dist)
         else:
-            cl = RuleClassifier_logit(rules, self.min_cl_sig, self.min_beta, examples, weight, self.set_prefix_rules, self.optimize_betas)
+            cl = Orange.core.RuleClassifier_logit(rules, self.min_cl_sig, self.min_beta, self.penalty, examples, weight, self.set_prefix_rules, self.optimize_betas)
 
-##        print "result"
         for ri, r in enumerate(cl.rules):
             cl.rules[ri].setattr("beta", cl.ruleBetas[ri])
-##            if cl.ruleBetas[ri] > 0:
-##                print Orange.classification.rules.rule_to_string(r), r.quality, cl.ruleBetas[ri]
-        cl.all_rules = cl.rules
+        cl.setattr("all_rules", cl.rules)
         cl.rules = self.sort_rules(cl.rules)
         cl.ruleBetas = [r.beta for r in cl.rules]
         cl.setattr("data", examples)
