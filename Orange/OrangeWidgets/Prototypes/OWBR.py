@@ -58,7 +58,8 @@ class OWBR(OWWidget):
             return
 
         if not Orange.multilabel.is_multilabel(data):
-            self.warning(0, "Multi-label data is expected on the input.")
+            self.warning(0, "Multi-label data with class values 0 and 1 is "
+                            "expected on the input.")
             return
         self.warning(0, None)
 
