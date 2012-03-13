@@ -217,7 +217,7 @@ class OWNxHist():
             elif str(self.netOption) == '2':
                 component = Orange.network.nx.algorithms.components.connected_components(graph)[0]
                 if len(component) > 1:
-                    self.graph = graph.subgraph(include)
+                    self.graph = graph.subgraph(component)
                     matrix = self.matrix.getitems(component)
                 else:
                     self.graph = None
