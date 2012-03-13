@@ -74,7 +74,7 @@ if [ ! -e $SOURCES_DIR ]; then
 	mkdir -p $SOURCES_DIR
 fi
 
-if [[ ! -e $SOURCES_DIR/$ORANGE_SOURCE || $FORCE]]; then
+if [[ ! -e $SOURCES_DIR/$ORANGE_SOURCE || $FORCE ]]; then
 	cp $WORK_DIR/$ORANGE_SOURCE $SOURCES_DIR/$ORANGE_SOURCE
 	NEW_ORANGE=1
 fi
