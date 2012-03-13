@@ -94,6 +94,9 @@ class OWNxHist():
     def setMatrix(self, data):
         if data == None: return
 
+        if not hasattr(data, "items") or data.items is None:
+            setattr(data, "items", [i for i in range(data.dim)])
+
         self.matrix = data
         # draw histogram
         data.matrixType = orange.SymMatrix.Symmetric
@@ -179,7 +182,7 @@ class OWNxHist():
             graph.add_nodes_from(range(self.matrix.dim))
             matrix = self.matrix
 
-            if hasattr(self.matrix, "items"):
+            if hasattr(self.matrix, "items") and self.matrix.items is not None:
                 if type(self.matrix.items) == Orange.data.Table:
                     graph.set_items(self.matrix.items)
                 else:
