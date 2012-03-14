@@ -23,12 +23,20 @@ if [ ! -e $WORK_DIR ]; then
 	mkdir -p $WORK_DIR
 fi
 
+SOURCE_LOG=/private/tmp/sources-daily-build.log
 
 # Build source packages
-./build-source.sh https://bitbucket.org/biolab/orange orange tip $WORK_DIR Orange
-./build-source.sh https://bitbucket.org/biolab/orange-addon-bioinformatics bioinformatics tip $WORK_DIR Orange-Bioinformatics
-./build-source.sh https://bitbucket.org/biolab/orange-addon-text text tip $WORK_DIR Orange-Text-Mining
+./build-source.sh https://bitbucket.org/biolab/orange orange tip $WORK_DIR Orange > $SOURCE_LOG 2>&1
+EXIT_VALUE1=$?
+./build-source.sh https://bitbucket.org/biolab/orange-addon-bioinformatics bioinformatics tip $WORK_DIR Orange-Bioinformatics >> $SOURCE_LOG 2>&1
+EXIT_VALUE2=$?
+./build-source.sh https://bitbucket.org/biolab/orange-addon-text text tip $WORK_DIR Orange-Text-Mining >> $SOURCE_LOG 2>&1
+EXIT_VALUE3=$?
 
+echo "Orange (sources) [$EXIT_VALUE1 $EXIT_VALUE2 $EXIT_VALUE3]" > "/Volumes/download/buildLogs/osx/source-daily-build-hg.log"
+date >> "/Volumes/download/buildLogs/osx/source-daily-build-hg.log"
+cat $SOURCE_LOG > "/Volumes/download/buildLogs/osx/source-daily-build-hg.log"
+(($EXIT_VALUE1 + $EXIT_VALUE2 + $EXIT_VALUE3)) && echo "Daily sources failed"
 
 # Get versions from PKG-INFO files
 ORANGE_VERSION=`grep "^Version:" $WORK_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
@@ -102,19 +110,22 @@ fi
 # Directory where fink .info templates are
 FINK_TEMPLATES=$WORK_DIR/orange/install-scripts/mac/fink
 
+FINK_LOG=/private/tmp/bundle-daily-build.log
+echo "" > $FINK_LOG
+
 if [[ $NEW_ORANGE || $FORCE ]]; then
 	FINK_ORANGE_SOURCE_TEMPLATE="Orange-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-hg-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINK_INFO_DIR/orange-gui-hg-py.info
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-hg-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINK_INFO_DIR/orange-gui-hg-py.info >> $FINK_LOG 2>&1
 fi
 
 if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 	FINK_BIOINFORMATICS_SOURCE_TEMPLATE="Orange-Bioinformatics-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-hg-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINK_INFO_DIR/orange-bioinformatics-gui-hg-py.info
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-hg-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINK_INFO_DIR/orange-bioinformatics-gui-hg-py.info >> $FINK_LOG 2>&1
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
 	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-hg-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-hg-py.info
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-hg-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-hg-py.info >> $FINK_LOG 2>&1
 fi
 
 if [ ! $LOCAL ]; then
