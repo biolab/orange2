@@ -1,5 +1,7 @@
 __docformat__ = 'restructuredtext'
 
+from operator import itemgetter
+
 import Orange.core as orange
 
 from Orange.feature.scoring import score_all
@@ -16,7 +18,9 @@ def best_n(scores, n):
     :rtype: :obj:`list`
 
     """
-    return [x[0] for x in sorted(scores)[:n]]
+    return [x[0] for x in \
+            sorted(scores, key=itemgetter(1), reverse=True)[:n]
+            ]
 
 bestNAtts = best_n
 
