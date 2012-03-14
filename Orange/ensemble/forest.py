@@ -33,14 +33,8 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
     skip_prob so that the number of randomly chosen features for each
     split is  (on average) as specified."""
 
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
-        self = Orange.core.Learner.__new__(cls, **argkw)
-        if instances:
-            self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
-        else:
-            return self
-      
+    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+
     def __init__(self, base, rand):
         self.base = base
         self.attributes = None
@@ -53,9 +47,10 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         r = self.base(instances, weight)
         self.base.skip_prob, self.base.random_generator = osp, orand
         return r
+
 _RandomForestSimpleTreeLearner = Orange.misc.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
    
-class RandomForestLearner(orange.Learner):
+class RandomForestLearner(Orange.core.Learner):
     """
     Just like in bagging, classifiers in random forests are trained from bootstrap
     samples of training data. Here, the classifiers are trees. However, to increase
@@ -104,13 +99,7 @@ class RandomForestLearner(orange.Learner):
 
     """
 
-    def __new__(cls, instances=None, weight = 0, **kwds):
-        self = orange.Learner.__new__(cls, **kwds)
-        if instances:
-            self.__init__(**kwds)
-            return self.__call__(instances, weight)
-        else:
-            return self
+    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
 
     def __init__(self, trees=100, attributes=None,\
                     name='Random Forest', rand=None, callback=None, base_learner=None, learner=None):
@@ -484,15 +473,9 @@ class _RandomForestTreeLearner(Orange.core.Learner):
     """ A learner which wraps an ordinary TreeLearner with
     a new split constructor.
     """
-    @deprecated_keywords({"weightID":"weight_id", "examples":"instances"})
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
-        self = Orange.core.Learner.__new__(cls, **argkw)
-        if instances:
-            self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
-        else:
-            return self
-      
+
+    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+     
     def __init__(self, base, rand):
         self.base = base
         self.attributes = None
