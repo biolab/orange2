@@ -230,7 +230,8 @@ def score_all(data, score=Relief(k=20, m=50)):
       :obj:`~Orange.feature.scoring.Score`. Defaults to 
       :obj:`~Orange.feature.scoring.Relief` with k=20 and m=50.
     :type measure: :obj:`~Orange.feature.scoring.Score` 
-    :rtype: :obj:`list`; a sorted list of tuples (feature name, score)
+    :rtype: :obj:`list`; a sorted (by descending score) list of
+      tuples (feature name, score)
 
     """
     measl=[]
