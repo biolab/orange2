@@ -80,7 +80,8 @@ class TestSaving(unittest.TestCase):
             Orange.data.io.save_csv(f, data, dialect="excel-tab")
             f.flush()
             f.seek(0)
-            Orange.data.io.load_csv(f)
+            Orange.data.io.load_csv(f, has_header=True,
+                                    has_types=True, has_annotations=True)
 
 
 @testing.datasets_driven
