@@ -30,7 +30,7 @@ def entropyDiscretization_wrapper(data):
 
     """
     orange.setrandseed(0)
-    data_new = Orange.data.preprocessing.Discretize(data, method=Entropy())
+    data_new = Orange.data.preprocess.Discretize(data, method=Entropy())
     
     attrlist = []
     nrem = 0
