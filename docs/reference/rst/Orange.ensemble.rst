@@ -46,22 +46,59 @@ Boosting
 
 Example
 =======
-Let us try boosting and bagging on Lymphography data set and use TreeLearner
-with post-pruning as a base learner. For testing, we use 10-fold cross
-validation and observe classification accuracy.
 
-:download:`ensemble.py <code/ensemble.py>`
+The following script fits classification models by boosting and
+bagging on Lymphography data set with TreeLearner and post-pruning as
+a base learner. Classification accuracy of the methods is estimated by
+10-fold cross validation (:download:`ensemble.py <code/ensemble.py>`):
 
 .. literalinclude:: code/ensemble.py
   :lines: 7-
 
-Running this script, we may get something like::
+Running this script demonstrates some benefit of boosting and bagging
+over the baseline learner::
 
     Classification Accuracy:
                tree: 0.764
        boosted tree: 0.770
         bagged tree: 0.790
 
+********
+Stacking
+********
+
+.. index:: stacking
+.. index::
+   single: ensemble; stacking
+
+
+.. autoclass:: Orange.ensemble.stacking.StackedClassificationLearner
+  :members:
+  :show-inheritance:
+
+.. autoclass:: Orange.ensemble.stacking.StackedClassifier
+   :members:
+   :show-inheritance:
+
+Example
+=======
+
+Stacking often produces classifiers that are more predictive than
+individual classifiers in the ensemble. This effect is illustrated by
+a script that combines four different classification
+algorithms (:download:`ensemble-stacking.py <code/ensemble-stacking.py>`):
+
+.. literalinclude:: code/ensemble-stacking.py
+  :lines: 3-
+
+The benefits of stacking on this particular data set are
+substantial (numbers show classification accuracy)::
+
+   stacking: 0.934
+      bayes: 0.858
+       tree: 0.688
+         lr: 0.764
+        knn: 0.830
 
 *************
 Random Forest
@@ -172,23 +209,24 @@ The output of the above script is::
 References
 ----------
 
-* L Breiman. Bagging Predictors. `Technical report No. 421 \
-    <http://www.stat.berkeley.edu/tech-reports/421.ps.Z>`_. University of \
-    California, Berkeley, 1994.
-* Y Freund, RE Schapire. `Experiments with a New Boosting Algorithm \
-    <http://citeseer.ist.psu.edu/freund96experiments.html>`_. Machine \
-    Learning: Proceedings of the Thirteenth International Conference (ICML'96), 1996.
-* JR Quinlan. `Boosting, bagging, and C4.5 \
-    <http://www.rulequest.com/Personal/q.aaai96.ps>`_ . In Proc. of 13th \
-    National Conference on Artificial Intelligence (AAAI'96). pp. 725-730, 1996. 
-* L Brieman. `Random Forests \
-    <http://www.springerlink.com/content/u0p06167n6173512/>`_.\
-    Machine Learning, 45, 5-32, 2001. 
-* M Robnik-Sikonja. `Improving Random Forests \
-    <http://lkm.fri.uni-lj.si/rmarko/papers/robnik04-ecml.pdf>`_. In \
-    Proc. of European Conference on Machine Learning (ECML 2004),\
-    pp. 359-370, 2004.
-"""
+* L Breiman. Bagging Predictors. `Technical report No. 421
+  <http://www.stat.berkeley.edu/tech-reports/421.ps.Z>`_. University
+  of California, Berkeley, 1994.
+* Y Freund, RE Schapire. `Experiments with a New Boosting Algorithm
+  <http://citeseer.ist.psu.edu/freund96experiments.html>`_. Machine
+  Learning: Proceedings of the Thirteenth International Conference
+  (ICML'96), 1996. 
+* JR Quinlan. `Boosting, bagging, and C4.5
+  <http://www.rulequest.com/Personal/q.aaai96.ps>`_ . In Proc. of 13th
+  National Conference on Artificial Intelligence
+  (AAAI'96). pp. 725-730, 1996.
+* L Brieman. `Random Forests
+  <http://www.springerlink.com/content/u0p06167n6173512/>`_. Machine
+  Learning, 45, 5-32, 2001.
+* M Robnik-Sikonja. `Improving Random Forests
+  <http://lkm.fri.uni-lj.si/rmarko/papers/robnik04-ecml.pdf>`_. In
+  Proc. of European Conference on Machine Learning (ECML 2004),
+  pp. 359-370, 2004.
 
 .. automodule:: Orange.ensemble
 
