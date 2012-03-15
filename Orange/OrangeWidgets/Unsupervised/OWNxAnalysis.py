@@ -5,6 +5,7 @@
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>6425</priority>
 """
+from PyQt4.QtCore import QMutex
 import numpy
 import networkx as nx
 
@@ -65,7 +66,7 @@ class OWNxAnalysis(OWWidget):
         
         self.outputs = [("Network", Orange.network.Graph), 
                         ("Items", Orange.data.Table)]
-    
+
         self.methods = [
             ("number_of_nodes", True, "Number of nodes", GRAPHLEVEL, lambda G: G.number_of_nodes()),
             ("number_of_edges", True, "Number of edges", GRAPHLEVEL, lambda G: G.number_of_edges()),
@@ -74,12 +75,19 @@ class OWNxAnalysis(OWWidget):
             ("radius", False, "Radius", GRAPHLEVEL, nx.radius),
             ("average_shortest_path_length", False, "Average shortest path length", GRAPHLEVEL, nx.average_shortest_path_length),
             ("density", True, "Density", GRAPHLEVEL, nx.density),
-            ("degree_assortativity_coefficient", False, "Degree assortativity coefficient", GRAPHLEVEL, nx.degree_assortativity_coefficient),
+            ("degree_assortativity_coefficient", False, \
+                "Degree assortativity coefficient", GRAPHLEVEL, \
+                    nx.degree_assortativity_coefficient if \
+                    hasattr(nx, "degree_assortativity_coefficient") else None),
             # additional attr needed
             #("attribute_assortativity_coefficient", False, "Attribute assortativity coefficient", GRAPHLEVEL, nx.attribute_assortativity_coefficient),
             #("numeric_assortativity_coefficient", False, "Numeric assortativity coefficient", GRAPHLEVEL, nx.numeric_assortativity_coefficient),
-            ("degree_pearson_correlation_coefficient", False, "Degree pearson correlation coefficient", GRAPHLEVEL, nx.degree_pearson_correlation_coefficient),
-            ("estrada_index", False, "Estrada index", GRAPHLEVEL, nx.estrada_index),
+            ("degree_pearson_correlation_coefficient", False, \
+                "Degree pearson correlation coefficient", GRAPHLEVEL, \
+                nx.degree_pearson_correlation_coefficient if\
+                hasattr(nx, "degree_pearson_correlation_coefficient") else None),
+            ("estrada_index", False, "Estrada index", GRAPHLEVEL, \
+                nx.estrada_index if hasattr(nx, "estrada_index") else None),
             ("graph_clique_number", False, "Graph clique number", GRAPHLEVEL, nx.graph_clique_number),
             ("graph_number_of_cliques", False, "Graph number of cliques", GRAPHLEVEL, nx.graph_number_of_cliques),
             ("transitivity", False, "Graph transitivity", GRAPHLEVEL, nx.transitivity),
@@ -111,7 +119,11 @@ class OWNxAnalysis(OWWidget):
             ("betweenness_centrality", False, "Betweenness centrality", NODELEVEL, nx.betweenness_centrality),
             ("current_flow_closeness_centrality", False, "Information centrality", NODELEVEL, nx.current_flow_closeness_centrality),
             ("current_flow_betweenness_centrality", False, "Random-walk betweenness centrality", NODELEVEL, nx.current_flow_betweenness_centrality),
-            ("approximate_current_flow_betweenness_centrality", False, "Approx. random-walk betweenness centrality", NODELEVEL, nx.approximate_current_flow_betweenness_centrality),
+            ("approximate_current_flow_betweenness_centrality", False, \
+                "Approx. random-walk betweenness centrality", NODELEVEL, \
+                nx.approximate_current_flow_betweenness_centrality if \
+                hasattr(nx, "approximate_current_flow_betweenness_centrality") \
+                    else None),
             ("eigenvector_centrality", False, "Eigenvector centrality", NODELEVEL, nx.eigenvector_centrality),
             ("eigenvector_centrality_numpy", False, "Eigenvector centrality (NumPy)", NODELEVEL, nx.eigenvector_centrality_numpy),
             ("load_centrality", False, "Load centrality", NODELEVEL, nx.load_centrality),
@@ -119,6 +131,8 @@ class OWNxAnalysis(OWWidget):
             ("eccentricity", False, "Eccentricity", NODELEVEL, nx.eccentricity),
             ("closeness_vitality", False, "Closeness vitality", NODELEVEL, nx.closeness_vitality),                    
         ]
+
+        self.methods = [method for method in self.methods if method[-1] is not None]
         
         self.auto_commit = False
         self.tab_index = 0

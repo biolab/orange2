@@ -142,7 +142,8 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
 
     def __call__(self, instances, weight_id = 0, **kwds):
         if not Orange.multilabel.is_multilabel(instances):
-            raise TypeError("The given data set is not a multi-label data set.")
+            raise TypeError("The given data set is not a multi-label data set"
+                            " with class values 0 and 1.")
         
         self.__dict__.update(kwds)
         self._build_knn(instances)

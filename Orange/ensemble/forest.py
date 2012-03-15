@@ -33,14 +33,8 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
     skip_prob so that the number of randomly chosen features for each
     split is  (on average) as specified."""
 
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
-        self = Orange.core.Learner.__new__(cls, **argkw)
-        if instances:
-            self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
-        else:
-            return self
-      
+    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+
     def __init__(self, base, rand):
         self.base = base
         self.attributes = None
@@ -53,23 +47,25 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         r = self.base(instances, weight)
         self.base.skip_prob, self.base.random_generator = osp, orand
         return r
+
 _RandomForestSimpleTreeLearner = Orange.misc.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
    
-class RandomForestLearner(orange.Learner):
+class RandomForestLearner(Orange.core.Learner):
     """
-    Just like in bagging, classifiers in random forests are trained from bootstrap
-    samples of training data. Here, the classifiers are trees. However, to increase
-    randomness, at each node of the tree the best feature is
-    chosen from a subset of features in the data. We closely follow the
-    original algorithm (Brieman, 2001) both in implementation and parameter
+    Trains an ensemble predictor consisting of trees trained
+    on bootstrap
+    samples of training data. To increase
+    randomness, the tree learner considers only a subset of
+    candidate features at each node. The algorithm closely follows
+    the original procedure (Brieman, 2001) both in implementation and parameter
     defaults.
         
     :param trees: number of trees in the forest.
     :type trees: int
 
     :param attributes: number of randomly drawn features among
-            which to select the best to split the nodes in tree
-            induction. The default, None, means the square root of
+            which to select the best one to split the data sets
+            in tree nodes. The default, None, means the square root of
             the number of features in the training data. Ignored if
             :obj:`learner` is specified.
     :type attributes: int
@@ -93,8 +89,9 @@ class RandomForestLearner(orange.Learner):
     :type learner: None or :class:`Orange.core.Learner`
 
     :param callback: a function to be called after every iteration of
-            induction of classifier. This is called with parameter 
-            (from 0.0 to 1.0) that gives estimates on learning progress.
+            induction of classifier. The call includes a parameter
+            (from 0.0 to 1.0) that provides an estimate
+            of completion of the learning progress.
 
     :param name: name of the learner.
     :type name: string
@@ -104,13 +101,7 @@ class RandomForestLearner(orange.Learner):
 
     """
 
-    def __new__(cls, instances=None, weight = 0, **kwds):
-        self = orange.Learner.__new__(cls, **kwds)
-        if instances:
-            self.__init__(**kwds)
-            return self.__call__(instances, weight)
-        else:
-            return self
+    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
 
     def __init__(self, trees=100, attributes=None,\
                     name='Random Forest', rand=None, callback=None, base_learner=None, learner=None):
@@ -484,15 +475,9 @@ class _RandomForestTreeLearner(Orange.core.Learner):
     """ A learner which wraps an ordinary TreeLearner with
     a new split constructor.
     """
-    @deprecated_keywords({"weightID":"weight_id", "examples":"instances"})
-    def __new__(cls, instances = None, weight_id = 0, **argkw):
-        self = Orange.core.Learner.__new__(cls, **argkw)
-        if instances:
-            self.__init__(**argkw)
-            return self.__call__(instances, weight_id)
-        else:
-            return self
-      
+
+    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+     
     def __init__(self, base, rand):
         self.base = base
         self.attributes = None

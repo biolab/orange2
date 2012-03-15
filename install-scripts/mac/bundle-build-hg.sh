@@ -19,7 +19,8 @@ if [ -e $TMP_BUNDLE_DIR ]; then
 fi
 
 echo "Preaparing the bundle template"
-curl --silent http://orange.biolab.si/download/bundle-templates/Orange-template-2.0a2.tar.gz | tar -xz -C $WORK_DIR
+TEMPLATE_VERSION=`curl --silent http://orange.biolab.si/download/bundle-templates/CURRENT.txt`
+curl --silent http://orange.biolab.si/download/bundle-templates/Orange-template-${TEMPLATE_VERSION}.tar.gz | tar -xz -C $WORK_DIR
 #svn export --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ $TMP_BUNDLE_DIR
 
 # Make repos dir if it does not yet exist

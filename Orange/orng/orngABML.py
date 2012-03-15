@@ -8,8 +8,6 @@ import warnings
 import numpy
 import math
 
-from Orange.classification.rules import create_dichotomous_class as createDichotomousClass
-from Orange.classification.rules import ConvertClass
 # regular expressions
 # exppression for testing validity of a set of arguments:
 testVal = re.compile(r"""[" \s]*                              # remove any special characters at the beginning
@@ -283,6 +281,38 @@ class ConvertCont:
                 return Orange.core.Value(self.newAtt, self.value)
             else:
                 return Orange.core.Value(self.newAtt, float(example[self.position]))
+
+
+
+class ConvertClass:
+    """ Converting class variables into dichotomous class variable. """
+    def __init__(self, classAtt, classValue, newClassAtt):
+        self.classAtt = classAtt
+        self.classValue = classValue
+        self.newClassAtt = newClassAtt
+
+    def __call__(self, example, returnWhat):
+        if example[self.classAtt] == self.classValue:
+            return Orange.data.Value(self.newClassAtt, self.classValue + "_")
+        else:
+            return Orange.data.Value(self.newClassAtt, "not " + self.classValue)
+
+
+def create_dichotomous_class(domain, att, value, negate, removeAtt=None):
+    # create new variable
+    newClass = Orange.feature.Discrete(att.name + "_", values=[str(value) + "_", "not " + str(value)])
+    positive = Orange.data.Value(newClass, str(value) + "_")
+    negative = Orange.data.Value(newClass, "not " + str(value))
+    newClass.getValueFrom = ConvertClass(att, str(value), newClass)
+
+    att = [a for a in domain.attributes]
+    newDomain = Orange.data.Domain(att + [newClass])
+    newDomain.addmetas(domain.getmetas())
+    if negate == 1:
+        return (newDomain, negative)
+    else:
+        return (newDomain, positive)
+
 
 
 def addErrors(test_data, classifier):

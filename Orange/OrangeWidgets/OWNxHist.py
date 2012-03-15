@@ -29,8 +29,11 @@ class OWNxHist():
         self.kNN = 0
         self.andor = 0
         self.matrix = None
-        self.excludeLimit = 1
+        self.excludeLimit = 2
         self.percentil = 0
+
+        self.graph = None
+        self.graph_matrix = None
 
         if parent is None:
             parent = self.controlArea
@@ -57,7 +60,7 @@ class OWNxHist():
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback=self.generateGraph)
         hb = OWGUI.widgetBox(ribg, None, orientation="horizontal", addSpace=False)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Large components only. Min nodes:", insertInto=hb, callback=self.generateGraph)
-        OWGUI.spin(hb, self, "excludeLimit", 1, 100, 1, callback=(lambda h=True: self.generateGraph(h)))
+        OWGUI.spin(hb, self, "excludeLimit", 2, 100, 1, callback=(lambda h=True: self.generateGraph(h)))
         OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback=self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Connected component with vertex")
         self.attribute = None
@@ -77,6 +80,9 @@ class OWNxHist():
             self.attributeCombo.box.setEnabled(False)
 
     def setPercentil(self):
+        if self.matrix is None or self.percentil <= 0:
+            return
+
         self.spinLowerThreshold = self.histogram.minValue
         # flatten matrix, sort values and remove identities (self.matrix[i][i])
         vals = sorted(sum(self.matrix, ()))[self.matrix.dim:]
@@ -94,6 +100,9 @@ class OWNxHist():
     def setMatrix(self, data):
         if data == None: return
 
+        if not hasattr(data, "items") or data.items is None:
+            setattr(data, "items", [i for i in range(data.dim)])
+
         self.matrix = data
         # draw histogram
         data.matrixType = orange.SymMatrix.Symmetric
@@ -104,7 +113,7 @@ class OWNxHist():
         low = min(values)
         upp = max(values)
         self.spinLowerThreshold = self.spinUpperThreshold = math.floor(low - (0.03 * (upp - low)))
-        self.generateGraph()
+
         self.attributeCombo.clear()
         vars = []
         if (self.matrix != None):
@@ -124,6 +133,9 @@ class OWNxHist():
                 self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
             except:
                 print "error adding ", var, " to the attribute combo"
+
+        self.setPercentil()
+        self.generateGraph()
 
     def changeLowerSpin(self):
         self.percentil = 0
@@ -179,7 +191,7 @@ class OWNxHist():
             graph.add_nodes_from(range(self.matrix.dim))
             matrix = self.matrix
 
-            if hasattr(self.matrix, "items"):
+            if hasattr(self.matrix, "items") and self.matrix.items is not None:
                 if type(self.matrix.items) == Orange.data.Table:
                     graph.set_items(self.matrix.items)
                 else:
@@ -201,7 +213,7 @@ class OWNxHist():
 
             # exclude unconnected
             if str(self.netOption) == '1':
-                components = [x for x in Orange.network.nx.algorithms.components.connected_components(graph) if len(x) > self.excludeLimit]
+                components = [x for x in Orange.network.nx.algorithms.components.connected_components(graph) if len(x) >= self.excludeLimit]
                 if len(components) > 0:
                     include = reduce(lambda x, y: x + y, components)
                     if len(include) > 1:
@@ -217,7 +229,7 @@ class OWNxHist():
             elif str(self.netOption) == '2':
                 component = Orange.network.nx.algorithms.components.connected_components(graph)[0]
                 if len(component) > 1:
-                    self.graph = graph.subgraph(include)
+                    self.graph = graph.subgraph(component)
                     matrix = self.matrix.getitems(component)
                 else:
                     self.graph = None

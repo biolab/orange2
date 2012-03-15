@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/modules)
 find_package(PyQt4 REQUIRED)
 find_package(SIP REQUIRED)
 find_package(PythonLibrary REQUIRED)
-find_package(OpenGL)
+#find_package(OpenGL)
 find_package(Numpy)
 include(SIPMacros)
 
@@ -28,9 +28,9 @@ set(orangeqt_SRCS
     networkcurve.cpp
     multicurve.cpp
     plot.cpp 
-    plot3d.cpp
-    canvas3d.cpp
-    glextensions.cpp
+#    plot3d.cpp
+#    canvas3d.cpp
+#    glextensions.cpp
 )
 qt4_automoc(${orangeqt_SRCS})
 
@@ -50,7 +50,8 @@ set(SIP_INCLUDES ${PYQT4_SIP_DIR})
 set(SIP_CONCAT_PARTS 1)
 set(SIP_EXTRA_OPTIONS "-k")
 
-set(SIP_EXTRA_LINK_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTOPENGL_LIBRARY} ${OPENGL_gl_LIBRARY})
+#set(SIP_EXTRA_LINK_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTOPENGL_LIBRARY} ${OPENGL_gl_LIBRARY})
+set(SIP_EXTRA_LINK_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 set(SIP_EXTRA_SOURCES ${orangeqt_SRCS})
 
 add_sip_python_module(orangeqt orangeqt.sip)

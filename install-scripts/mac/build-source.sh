@@ -34,8 +34,8 @@ cd $LOCAL_REPO
 rm -rf dist/
 
 # Build the source distribution
-hg parent --template="{latesttag}{latesttagdistance}.dev-{node|short}" > VERSION.txt
-python setup.py sdist
+BUILD_TAG=`hg parent --template=".dev-r{rev}-{node|short}"`
+python setup.py egg_info --tag-build=$BUILD_TAG sdist
 
 # Copy the source an egg info to workdir
 cp dist/${DIST_NAME}-*.tar.gz $WORK_DIR

@@ -21,6 +21,9 @@ curl --silent --output bundle-daily-build-hg.sh https://bitbucket.org/biolab/ora
 curl --silent --output bundle-inject-hg.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/bundle-inject-hg.sh
 curl --silent --output bundle-inject-pypi.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/bundle-inject-pypi.sh
 curl --silent --output dailyrun-bundleonly-hg.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/dailyrun-bundleonly-hg.sh
+curl --silent --output fink-daily-build-packages.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink-daily-build-packages.sh
+curl --silent --output fink-register-info.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink-register-info.sh
+curl --silent --output build-source.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/build-source.sh
 
 chmod +x *.sh
 

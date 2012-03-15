@@ -481,14 +481,16 @@ class ORANGE_API TLogitClassifierState : public TOrange {
 public:
   __REGISTER_CLASS
 
-  PRuleList rules;
-  PExampleTable examples;
+  PRuleList rules; //P
+  PExampleTable examples; //P
   int weightID;
 
   float eval, **f, **p, *betas, *priorBetas;
   bool *isExampleFixed;
-  PFloatList avgProb, avgPriorProb;
-  PIntList *ruleIndices, prefixRules;
+  PFloatList avgProb; //P
+  PFloatList avgPriorProb; //P
+  PIntList *ruleIndices; //P
+  PIntList prefixRules; //P
 
   TLogitClassifierState(PRuleList, PExampleTable, const int &);
   TLogitClassifierState(PRuleList,const PDistributionList &,PExampleTable,const int &);
@@ -514,20 +516,24 @@ public:
   PDistribution prior; //P prior distribution
   PDomain domain; //P Domain
   PFloatList ruleBetas; //P Rule betas
-  float minStep; //P minimal step value
   float minSignificance; //P minimum requested significance for betas. 
   float minBeta; //P minimum beta by rule to be included in the model. 
-  bool setPrefixRules; // P should we order prefix rules ? 
-  bool optimizeBetasFlag; // P should we assign betas to rules ? 
+  bool setPrefixRules; //P should we order prefix rules ? 
+  bool optimizeBetasFlag; //P should we assign betas to rules ? 
+  float penalty; //P
 
   PClassifier priorClassifier; //P prior classifier used if provided
-  PLogitClassifierState currentState;
+  PLogitClassifierState currentState; //P
   bool *skipRule;
-  PFloatList wsd, wavgCov, wSatQ, wsig; // standard deviations of rule quality
+  // standard deviations of rule quality
+  PFloatList wsd; //P
+  PFloatList wavgCov; //P
+  PFloatList wSatQ; //P
+  PFloatList wsig; //P
   PRuleList prefixRules; //P rules that trigger before logit sum.
 
   TRuleClassifier_logit();
-  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, bool setPrefixRules = false, bool optimizeBetasFlag = true);
+  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, const float &minBeta, const float &penalty, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, bool setPrefixRules = false, bool optimizeBetasFlag = true);
 
   void initialize(const PDistributionList &);
   void updateRuleBetas(float step);
