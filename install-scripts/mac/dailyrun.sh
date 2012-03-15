@@ -33,6 +33,10 @@ EXIT_VALUE2=$?
 ./build-source.sh https://bitbucket.org/biolab/orange-addon-text text tip $WORK_DIR Orange-Text-Mining >> $SOURCE_LOG 2>&1
 EXIT_VALUE3=$?
 
+if [ ! $LOCAL ]; then
+	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+fi
+
 echo "Orange (sources) [$EXIT_VALUE1 $EXIT_VALUE2 $EXIT_VALUE3]" > "/Volumes/download/buildLogs/osx/source-daily-build-hg.log"
 date >> "/Volumes/download/buildLogs/osx/source-daily-build-hg.log"
 cat $SOURCE_LOG > "/Volumes/download/buildLogs/osx/source-daily-build-hg.log"
