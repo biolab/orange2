@@ -16,12 +16,6 @@ import Orange
 #from OWFile import FileNameContextHandler as PathContextHandler
 from OWDataTable import ExampleTableModel
 
-DEFAULT_OPTIONS = {"delimiter":",", 
-                   "quote":"'", 
-                   "has_header": True,
-                   "has_orange_definitions": False,
-                   }
-
 Slot = pyqtSlot
 
 class standard_icons(object):
@@ -41,8 +35,6 @@ class standard_icons(object):
         return self.style.standardIcon(QStyle.SP_BrowserReload)
     
     
-            
-            
 class OWCSVFileImport(OWWidget):
 #    contextHandlers = {"": PathContextHandler("")}
     settingsList = ["recent_files"]
@@ -53,6 +45,7 @@ class OWCSVFileImport(OWWidget):
                   ("Space", " "),
                   ("Others", None),
                   ]
+    
     def __init__(self, parent=None, signalManager=None, 
                  title="CSV File Import"):
         
@@ -64,19 +57,22 @@ class OWCSVFileImport(OWWidget):
         
         # Settings
         self.delimiter = ","
+        self.other_delimiter = None
         self.quote = '"'
+        self.missing = ""
         
+        self.skipinitialspace = True
         self.has_header = True
         self.has_orange_header = True
         
         self.recent_files = []
+        
+        # Hints for the recent files 
         self.hints = {}
         
         self.loadSettings()
         
-        self.recent_file = filter(os.path.exists, self.recent_files)
-        
-        self.csv_options = dict(DEFAULT_OPTIONS)
+        self.recent_files = filter(os.path.exists, self.recent_files)
         
         layout = QHBoxLayout()
         box = OWGUI.widgetBox(self.controlArea, "File", orientation=layout)
@@ -99,9 +95,9 @@ class OWCSVFileImport(OWWidget):
         layout.addWidget(self.browse_button)
 #        layout.addWidget(self.reload_button)
 
-        form_left = QFormLayout()
-        form_right = QFormLayout()
-        h_layout = QHBoxLayout()
+        #################
+        # Cell separators
+        #################
         grid_layout = QGridLayout()
         grid_layout.setVerticalSpacing(4)
         grid_layout.setHorizontalSpacing(4)
@@ -111,8 +107,8 @@ class OWCSVFileImport(OWWidget):
         button_group = QButtonGroup(box)
         QObject.connect(button_group, 
                         SIGNAL("buttonPressed(int)"),
-                        self.delimiter_changed)
-#        button_group.buttonPressed.connect(self.delimiter_changed)
+                        self.delimiter_changed
+                        )
         
         for i, (name, char) in  enumerate(self.DELIMITERS[:-1]):
             button = QRadioButton(name, box,
@@ -129,23 +125,54 @@ class OWCSVFileImport(OWWidget):
         self.delimiter_button_group = button_group
             
         self.delimiter_edit = QLineEdit(objectName="delimiter_edit",
-                                        text=self.delimiter,
+                                        text=self.other_delimiter or self.delimiter,
                                         editingFinished=self.delimiter_changed,
                                         toolTip="Cell delimiter character.")
+        
         grid_layout.addWidget(self.delimiter_edit, i / 3 + 1, 1, -1, -1)
+        
+        preset = [d[1] for d in self.DELIMITERS[:-1]]
+        if self.delimiter in preset:
+            index = preset.index(self.delimiter)
+            b = button_group.button(index)
+            b.setChecked(True)
+            self.delimiter_edit.setEnabled(False)
+        else:
+            button.setChecked(True)
+            self.delimiter_edit.setEnabled(True)
+        
+        ###############
+        # Other options
+        ###############
+        form = QFormLayout()
+        box = OWGUI.widgetBox(self.controlArea, "Other Options",
+                              orientation=form)
         
         self.quote_edit = QLineEdit(objectName="quote_edit",
                                     text=self.quote,
                                     editingFinished=self.quote_changed,
                                     toolTip="Text quote character.")
         
-        form = QFormLayout()
-        box = OWGUI.widgetBox(self.controlArea, "Other Options",
-                              orientation=form)
-        
-#        form_left.addRow("Delimiter", self.delimiter_edit)
         form.addRow("Quote", self.quote_edit)
         
+        self.missing_edit = QLineEdit(objectName="missing_edit",
+                                      text=self.missing,
+                                      editingFinished=self.missing_changed,
+                                      toolTip="Missing value flags (separated by a comma)."
+                                      )
+        
+        form.addRow("Missing values", self.missing_edit)
+        
+        self.skipinitialspace_check = \
+                QCheckBox(objectName="skipinitialspace_check",
+                          checked=self.skipinitialspace,
+                          text="Skip initial whitespace",
+                          toolTip="Skip any whitespace at the beginning of each cell.",
+                          toggled=self.skipinitialspace_changed
+                          )
+                
+        form.addRow(self.skipinitialspace_check)
+                
         self.has_header_check = \
                 QCheckBox(objectName="has_header_check",
                           checked=self.has_header,
@@ -175,7 +202,9 @@ class OWCSVFileImport(OWWidget):
         self.selected_file = None
         self.data = None
         
-        self.resize(400, 350)
+        self.resize(450, 500)
+        if self.recent_files:
+            QTimer.singleShot(1, lambda: self.set_selected_file(self.recent_files[0]))
         
     def on_select_recent(self, recent):
         if isinstance(recent, int):
@@ -190,6 +219,7 @@ class OWCSVFileImport(OWWidget):
         if path:
             basedir, name = os.path.split(path)
             self.recent_combo.insertItem(0, name)
+            self.recent_combo.setCurrentIndex(0)
             self.recent_files.insert(0, path)
             self.set_selected_file(path)
     
@@ -205,12 +235,20 @@ class OWCSVFileImport(OWWidget):
             self.quote = str(self.quote_edit.text())
             self.update_preview()
             
+    def missing_changed(self):
+        self.missing = str(self.missing_edit.text())
+        self.update_preview()
+            
     def has_header_changed(self):
         self.has_header = self.has_header_check.isChecked()
         self.update_preview()
         
     def has_orange_header_changed(self):
         self.has_orange_header = self.has_orange_header_check.isChecked()
+        self.update_preview()
+        
+    def skipinitialspace_changed(self):
+        self.skipinitialspace = self.skipinitialspace_check.isChecked()
         self.update_preview()
             
     def set_selected_file(self, filename):
@@ -221,13 +259,19 @@ class OWCSVFileImport(OWWidget):
             self.hints[filename] = hints
         
         delimiter = hints["delimiter"]
+        
+        # Update the widget state (GUI) from the saved hints for the file
         preset = [d[1] for d in self.DELIMITERS[:-1]]
         if delimiter not in preset:
             self.delimiter = None
             self.other_delimiter = delimiter
+            index = len(self.DELIMITERS) - 1
+            button = self.delimiter_button_group.button(index)
+            button.setChecked(True)
             self.delimiter_edit.setText(self.other_delimiter)
             self.delimiter_edit.setEnabled(True)
         else:
+            self.delimiter = delimiter
             index = preset.index(delimiter)
             button = self.delimiter_button_group.button(index)
             button.setChecked(True)
@@ -236,11 +280,17 @@ class OWCSVFileImport(OWWidget):
         self.quote = hints["quotechar"]
         self.quote_edit.setText(self.quote)
         
+        self.missing = hints["DK"] or ""
+        self.missing_edit.setText(self.missing)
+        
         self.has_header = hints["has_header"]
         self.has_header_check.setChecked(self.has_header)
         
         self.has_orange_header = hints["has_orange_header"]
         self.has_orange_header_check.setChecked(self.has_orange_header)
+        
+        self.skipinitialspace = hints["skipinitialspace"]
+        self.skipinitialspace_check.setChecked(self.skipinitialspace)
         
         self.selected_file = filename
         self.selected_file_head = []
@@ -251,31 +301,54 @@ class OWCSVFileImport(OWWidget):
         self.update_preview()
         
     def update_preview(self):
+        self.error(0)
         if self.selected_file:
             head = StringIO("".join(self.selected_file_head))
             hints = self.hints[self.selected_file]
             
+            # Save hints for the selected file
             hints["quote"] = self.quote
             hints["delimiter"] = self.delimiter or self.other_delimiter
             hints["has_header"] = self.has_header
-            hints["has_orange_header"] = self.has_orange_header 
-            
+            hints["has_orange_header"] = self.has_orange_header
+            hints["skipinitialspace"] = self.skipinitialspace 
+            hints["DK"] = self.missing or None
             try:
                 data = Orange.data.io.load_csv(head, delimiter=self.delimiter,
                                                quotechar=self.quote,
                                                has_header=self.has_header,
                                                has_types=self.has_orange_header,
                                                has_annotations=self.has_orange_header,
+                                               skipinitialspace=self.skipinitialspace,
+                                               DK=self.missing or None
                                                )
             except Exception, ex:
                 self.error(0, "Cannot parse (%r)" % ex)
-                self.data = None
-                return
-            model = ExampleTableModel(data, None, self)
+                data = None
+                
+            if data is not None:
+                model = ExampleTableModel(data, None, self)
+            else:
+                model = None
             self.preview_view.setModel(model)
-            self.data = data
             
     def send_data(self):
+        self.error(0)
+        if self.selected_file:
+            hints = self.hints[self.selected_file]
+            try:
+                data = Orange.data.io.load_csv(self.selected_file,
+                                               delimiter=self.delimiter,
+                                               quotechar=self.quote,
+                                               has_header=self.has_header,
+                                               has_annotations=self.has_orange_header,
+                                               skipinitialspace=self.skipinitialspace,
+                                               DK=self.missing or None
+                                               )
+            except Exception, ex:
+                self.error(0, "An error occurred while loading the file:\n\t%r" % ex)
+                data = None
+            self.data = data
         self.send("Data", self.data)
         
         
@@ -295,7 +368,10 @@ def sniff_csv(file):
             "quoting": dialect.quoting,
             "skipinitialspace": dialect.skipinitialspace,
             "has_header": has_header,
-            "has_orange_header": False}
+            "has_orange_header": False,
+            "skipinitialspace": True,
+            "DK": None,
+            }
     
 if __name__ == "__main__":
     import sys
