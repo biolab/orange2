@@ -1,6 +1,9 @@
 import Orange
 from Orange.misc import deprecated_keywords, deprecated_members
+from Orange.data import preprocess
 import math
+
+
 from numpy import dot, array, identity, reshape, diagonal, \
     transpose, concatenate, sqrt, sign
 from numpy.linalg import inv
@@ -745,11 +748,11 @@ class StepWiseFSS(object):
     if getattr(self, "imputer", 0):
         examples = self.imputer(examples)(examples)
     if getattr(self, "removeMissing", 0):
-        examples = Orange.core.Preprocessor_dropMissing(examples)
-    continuizer = Orange.preprocess.DomainContinuizer(zeroBased=1,
-        continuousTreatment=Orange.preprocess.DomainContinuizer.Leave,
-                                           multinomialTreatment = Orange.preprocess.DomainContinuizer.FrequentIsBase,
-                                           classTreatment = Orange.preprocess.DomainContinuizer.Ignore)
+        examples = preprocess.DropMissing(examples)
+    continuizer = preprocess.DomainContinuizer(zeroBased=1,
+        continuousTreatment=preprocess.DomainContinuizer.Leave,
+                                           multinomialTreatment = preprocess.DomainContinuizer.FrequentIsBase,
+                                           classTreatment = preprocess.DomainContinuizer.Ignore)
     attr = []
     remain_attr = examples.domain.features[:]
 

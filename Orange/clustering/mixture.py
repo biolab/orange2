@@ -289,12 +289,13 @@ class GaussianMixture(object):
         self.init_function = init_function
         
     def __call__(self, data, weight_id=None):
-        from Orange.preprocess import Preprocessor_impute, DomainContinuizer
+        from Orange.data import preprocess
+        #import Preprocessor_impute, DomainContinuizer
 #        data = Preprocessor_impute(data)
-        dc = DomainContinuizer()
-        dc.multinomial_treatment = DomainContinuizer.AsOrdinal
-        dc.continuous_treatment = DomainContinuizer.NormalizeByVariance
-        dc.class_treatment = DomainContinuizer.Ignore
+        dc = preprocess.DomainContinuizer()
+        dc.multinomial_treatment = preprocess.DomainContinuizer.AsOrdinal
+        dc.continuous_treatment = preprocess.DomainContinuizer.NormalizeByVariance
+        dc.class_treatment = preprocess.DomainContinuizer.Ignore
         domain = dc(data)
         data = data.translate(domain)
         
@@ -307,7 +308,7 @@ class GaussianMixture(object):
 #        std = numpy.std(array, axis=0)
 #        array /= std.reshape((1, -1))
 #        means /= std.reshape((1, -1))
-        solver = EMSolver(array, numpy.ones((self.n)) / self.n,
+        solver = EMSolver(array, numpy.ones(self.n) / self.n,
                           means, correlations)
         solver.run()
         norm_model = GMModel(solver.weights, solver.means, solver.covariances)

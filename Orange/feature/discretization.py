@@ -30,7 +30,7 @@ def entropyDiscretization_wrapper(data):
 
     """
     orange.setrandseed(0)
-    data_new = orange.Preprocessor_discretize(data, method=Entropy())
+    data_new = Orange.data.preprocessing.Discretize(data, method=Entropy())
     
     attrlist = []
     nrem = 0
@@ -108,8 +108,8 @@ class DiscretizedLearner_Class:
         self.__dict__.update(kwds)
     def __call__(self, data, weight=None):
         # filter the data and then learn
-        from Orange.preprocess import Preprocessor_discretize
-        ddata = Preprocessor_discretize(data, method=self.discretizer)
+        from Orange.data.preprocess import Discretize
+        ddata = Discretize(data, method=self.discretizer)
         if weight<>None:
             model = self.baseLearner(ddata, weight)
         else:

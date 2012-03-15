@@ -4,7 +4,7 @@ import OWGUI
 from plot.owplot import *
 import random
 import orange
-from Orange.preprocess.scaling import get_variable_values_sorted
+from Orange.data.preprocess.scaling import get_variable_values_sorted
 
 class BasicPlot(OWPlot):
     pass

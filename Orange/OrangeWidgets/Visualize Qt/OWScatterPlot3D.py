@@ -15,7 +15,7 @@ import orange
 Discrete = orange.VarTypes.Discrete
 Continuous = orange.VarTypes.Continuous
 
-from Orange.preprocess.scaling import get_variable_values_sorted
+from Orange.data.preprocess.scaling import get_variable_values_sorted
 
 import OWGUI
 import orngVizRank
