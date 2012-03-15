@@ -52,19 +52,20 @@ _RandomForestSimpleTreeLearner = Orange.misc.deprecated_members({"weightID":"wei
    
 class RandomForestLearner(Orange.core.Learner):
     """
-    Just like in bagging, classifiers in random forests are trained from bootstrap
-    samples of training data. Here, the classifiers are trees. However, to increase
-    randomness, at each node of the tree the best feature is
-    chosen from a subset of features in the data. We closely follow the
-    original algorithm (Brieman, 2001) both in implementation and parameter
+    Trains an ensemble predictor consisting of trees trained
+    on bootstrap
+    samples of training data. To increase
+    randomness, the tree learner considers only a subset of
+    candidate features at each node. The algorithm closely follows
+    the original procedure (Brieman, 2001) both in implementation and parameter
     defaults.
         
     :param trees: number of trees in the forest.
     :type trees: int
 
     :param attributes: number of randomly drawn features among
-            which to select the best to split the nodes in tree
-            induction. The default, None, means the square root of
+            which to select the best one to split the data sets
+            in tree nodes. The default, None, means the square root of
             the number of features in the training data. Ignored if
             :obj:`learner` is specified.
     :type attributes: int
@@ -88,8 +89,9 @@ class RandomForestLearner(Orange.core.Learner):
     :type learner: None or :class:`Orange.core.Learner`
 
     :param callback: a function to be called after every iteration of
-            induction of classifier. This is called with parameter 
-            (from 0.0 to 1.0) that gives estimates on learning progress.
+            induction of classifier. The call includes a parameter
+            (from 0.0 to 1.0) that provides an estimate
+            of completion of the learning progress.
 
     :param name: name of the learner.
     :type name: string
