@@ -15,6 +15,8 @@ import sys
 
 from orngWrap import PreprocessedLearner
 
+import Orange
+
 class OWRegressionTree(OWWidget):
     settingsList=["Name","MinInstCheck", "MinInstVal", "MinNodeCheck", "MinNodeVal,"
                   "MaxMajCheck", "MaxMajVal", "PostMaj", "PostMPCheck", "PostMPVal", "Bin"]
@@ -37,8 +39,12 @@ class OWRegressionTree(OWWidget):
         self.data=None
         self.preprocessor = None
 
-        self.inputs=[("Data",ExampleTable,self.dataset), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs=[("Learner",orange.Learner),("Regressor",orange.Classifier),("Regression Tree",orange.TreeClassifier)]
+        self.inputs=[("Data",ExampleTable,self.dataset),
+                     ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        
+        self.outputs=[("Learner", orange.Learner),
+                      ("Regressor", orange.Classifier),
+                      ("Regression Tree", Orange.regression.tree.TreeClassifier)]
 
         ##
         #GUI

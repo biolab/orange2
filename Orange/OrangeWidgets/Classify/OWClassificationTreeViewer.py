@@ -10,6 +10,7 @@ from orngTree import TreeLearner
 import OWGUI
 
 import orngTree
+import Orange
 
 class ColumnCallback:
     def __init__(self, widget, attribute, f = None):
@@ -45,7 +46,7 @@ class OWClassificationTreeViewer(OWWidget):
 
 #        self.callbackDeposit = []
 
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.setClassificationTree)]
+        self.inputs = [("Classification Tree", Orange.classification.tree.TreeClassifier, self.setClassificationTree)]
         self.outputs = [("Data", ExampleTable)]
 
         # Settings

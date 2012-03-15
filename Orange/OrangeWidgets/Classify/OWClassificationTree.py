@@ -32,8 +32,12 @@ class OWClassificationTree(OWWidget):
     def __init__(self, parent=None, signalManager=None, name='Classification Tree'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=0, resizingEnabled=0)
 
-        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.TreeLearner), ("Classification Tree", orange.TreeClassifier), ("Classification Tree Graph", Orange.network.Graph)]
+        self.inputs = [("Data", ExampleTable, self.setData),
+                       ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        
+        self.outputs = [("Learner", Orange.classification.tree.TreeLearner),
+                        ("Classification Tree", Orange.classification.tree.TreeClassifier),
+                        ("Classification Tree Graph", Orange.network.Graph)]
 
         self.name = 'Classification Tree'
         self.estim = 0; self.relK = 5; self.relM = 100; self.limitRef = True
