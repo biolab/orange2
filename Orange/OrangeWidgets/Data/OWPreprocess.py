@@ -16,7 +16,7 @@ import orngSVM
 import sys, os
 import math
 
-from Orange.preprocess import *
+from Orange.data import preprocess
 
 def _gettype(obj):
     """ Return type of obj. If obj is type return obj.
@@ -75,12 +75,13 @@ class DiscretizeEditor(BaseEditor):
         
     def getDiscretizer(self):
         if self.discInd == 0:
-            preprocessor = Preprocessor_discretizeEntropy(method=orange.EntropyDiscretization())
+            preprocessor = preprocess.DiscretizeEntropy(method=orange.EntropyDiscretization())
         elif self.discInd in [1, 2]:
             name, disc, kwds = self.DISCRETIZERS[self.discInd]
-            preprocessor = Preprocessor_discretize(method=disc(**dict([(key, getattr(self, key, val)) for key, val in kwds.items()])))
+            preprocessor = preprocess.Discretize(method=disc(**dict([(key, getattr(self, key, val)) for key,
+                                                                                              val in kwds.items()])))
         elif self.discInd == 3:
-            preprocessor = Preprocessor_removeContinuous()
+            preprocessor = preprocess.RemoveContinuous()
         return preprocessor
     
     def setDiscretizer(self, discretizer):
@@ -119,18 +120,18 @@ class ContinuizeEditor(BaseEditor):
         
     def getContinuizer(self):
         if self.contInd in [0, 1, 2, 4, 5]:
-            preprocessor = Preprocessor_continuize(multinomialTreatment=self.CONTINUIZERS[self.contInd][1])
+            preprocessor = preprocess.Continuize(multinomialTreatment=self.CONTINUIZERS[self.contInd][1])
         elif self.contInd == 3:
-            preprocessor = Preprocessor_removeDiscrete()
+            preprocessor = preprocess.RemoveDiscrete()
         return preprocessor
     
     def setContinuizer(self, continuizer):
-        if isinstance(continuizer, Preprocessor_removeDiscrete):
+        if isinstance(continuizer, preprocess.RemoveDiscrete):
             self.contInd = 3 #Ignore all discrete
-        elif isinstance(continuizer,Preprocessor_continuize):
+        elif isinstance(continuizer,preprocess.Continuize):
             self.contInd = self.TREATMENT_TO_IND.get(continuizer.multinomialTreatment, 3)
     
-    data = _pyqtProperty(Preprocessor_continuize,
+    data = _pyqtProperty(preprocess.Continuize,
                         fget=getContinuizer,
                         fset=setContinuizer,
                         user=True)
@@ -154,22 +155,22 @@ class ImputeEditor(BaseEditor):
     def getImputer(self):
         if self.methodInd in [0, 1, 2]:
             learner = self.IMPUTERS[self.methodInd][1]()
-            imputer = Preprocessor_imputeByLearner(learner=learner)
+            imputer = preprocess.ImputeByLearner(learner=learner)
         elif self.methodInd == 3:
-            imputer = orange.Preprocessor_dropMissing()
+            imputer = preprocess.DropMissing()
         return imputer
             
     
     def setImputer(self, imputer):
         self.methodInd = 0
-        if isinstance(imputer, Preprocessor_imputeByLearner):
+        if isinstance(imputer, preprocess.ImputeByLearner):
             learner = imputer.learner
             dd = dict([(t, i) for i, (_, t) in enumerate(self.IMPUTERS)])
             self.methodInd = dd.get(_gettype(learner), 0)
-        elif isinstance(imputer, orange.Preprocessor_dropMissing):
+        elif isinstance(imputer, preprocess.DropMissing):
             self.methodInd = 3
             
-    data = _pyqtProperty(Preprocessor_imputeByLearner,
+    data = _pyqtProperty(preprocess.ImputeByLearner,
                         fget=getImputer,
                         fset=setImputer,
                         user=True)
@@ -182,8 +183,8 @@ class FeatureSelectEditor(BaseEditor):
                 ("Log Odds Ratio", orange.MeasureAttribute_logOddsRatio),
                 ("Linear SVM weights", orngSVM.MeasureAttribute_SVMWeights)]
     
-    FILTERS = [Preprocessor_featureSelection.bestN,
-               Preprocessor_featureSelection.bestP]
+    FILTERS = [preprocess.FeatureSelection.bestN,
+               preprocess.FeatureSelection.bestP]
     
     def __init__(self, parent=None):
         BaseEditor.__init__(self, parent)
@@ -234,18 +235,18 @@ class FeatureSelectEditor(BaseEditor):
         self.updateSpinStates()
     
     def getFeatureSelection(self):
-        return Preprocessor_featureSelection(measure=self.MEASURES[self.measureInd][1],
+        return preprocess.FeatureSelection(measure=self.MEASURES[self.measureInd][1],
                                              filter=self.FILTERS[self.selectBy],
                                              limit=self.bestP if self.selectBy  else self.bestN)
     
-    data = _pyqtProperty(Preprocessor_featureSelection,
+    data = _pyqtProperty(preprocess.FeatureSelection,
                         fget=getFeatureSelection,
                         fset=setFeatureSelection,
                         user=True)
         
 class SampleEditor(BaseEditor):
-    FILTERS = [Preprocessor_sample.selectNRandom,
-               Preprocessor_sample.selectPRandom]
+    FILTERS = [preprocess.Sample.selectNRandom,
+               preprocess.Sample.selectPRandom]
     def __init__(self, parent=None):
         BaseEditor.__init__(self, parent)
         self.methodInd = 0
@@ -277,7 +278,7 @@ class SampleEditor(BaseEditor):
         self.emit(SIGNAL("dataChanged"), self.data)
         
     def getSampler(self):
-        return Preprocessor_sample(filter=self.FILTERS[self.methodInd],
+        return preprocess.Sample(filter=self.FILTERS[self.methodInd],
                                    limit=self.sampleN if self.methodInd == 0 else self.sampleP)
     
     def setSampler(self, sampler):
@@ -290,7 +291,7 @@ class SampleEditor(BaseEditor):
             
         self.updateSpinStates()
             
-    data = _pyqtProperty(Preprocessor_sample,
+    data = _pyqtProperty(preprocess.Sample,
                         fget=getSampler,
                         fset=setSampler,
                         user=True)
@@ -301,16 +302,16 @@ def _funcName(func):
 class PreprocessorItemDelegate(QStyledItemDelegate):
         
     #Preprocessor name replacement rules
-    REPLACE = {Preprocessor_discretize: "Discretize ({0.method})",
-               Preprocessor_discretizeEntropy: "Discretize (entropy)",
-               Preprocessor_removeContinuous: "Discretize (remove continuous)",
-               Preprocessor_continuize: "Continuize ({0.multinomialTreatment})",
-               Preprocessor_removeDiscrete: "Continuize (remove discrete)",
-               Preprocessor_impute: "Impute ({0.model})",
-               Preprocessor_imputeByLearner: "Impute ({0.learner})",
-               Preprocessor_dropMissing: "Remove missing",
-               Preprocessor_featureSelection: "Feature selection ({0.measure}, {0.filter}, {0.limit})",
-               Preprocessor_sample: "Sample ({0.filter}, {0.limit})",
+    REPLACE = {preprocess.Discretize: "Discretize ({0.method})",
+               preprocess.DiscretizeEntropy: "Discretize (entropy)",
+               preprocess.RemoveContinuous: "Discretize (remove continuous)",
+               preprocess.Continuize: "Continuize ({0.multinomialTreatment})",
+               preprocess.RemoveDiscrete: "Continuize (remove discrete)",
+               preprocess.Impute: "Impute ({0.model})",
+               preprocess.ImputeByLearner: "Impute ({0.learner})",
+               preprocess.DropMissing: "Remove missing",
+               preprocess.FeatureSelection: "Feature selection ({0.measure}, {0.filter}, {0.limit})",
+               preprocess.Sample: "Sample ({0.filter}, {0.limit})",
                orange.EntropyDiscretization: "entropy",
                orange.EquiNDiscretization: "freq, {0.numberOfIntervals}",
                orange.EquiDistDiscretization: "width, {0.numberOfIntervals}",
@@ -446,23 +447,23 @@ class OWPreprocess(OWWidget):
     settingsList = ["allSchemas", "lastSelectedSchemaIndex"]
     
     # Default preprocessors
-    preprocessors =[("Discretize", Preprocessor_discretizeEntropy, {}),
-                    ("Continuize", Preprocessor_continuize, {}),
-                    ("Impute", Preprocessor_impute, {}),
-                    ("Feature selection", Preprocessor_featureSelection, {}),
-                    ("Sample", Preprocessor_sample, {})]
+    preprocessors =[("Discretize", preprocess.DiscretizeEntropy, {}),
+                    ("Continuize", preprocess.Continuize, {}),
+                    ("Impute", preprocess.Impute, {}),
+                    ("Feature selection", preprocess.FeatureSelection, {}),
+                    ("Sample", preprocess.Sample, {})]
     
     # Editor widgets for preprocessors
-    EDITORS = {Preprocessor_discretize: DiscretizeEditor,
-               Preprocessor_discretizeEntropy: DiscretizeEditor,
-               Preprocessor_removeContinuous: DiscretizeEditor,
-               Preprocessor_continuize: ContinuizeEditor,
-               Preprocessor_removeDiscrete: ContinuizeEditor,
-               Preprocessor_impute: ImputeEditor,
-               Preprocessor_imputeByLearner: ImputeEditor,
-               Preprocessor_dropMissing: ImputeEditor,
-               Preprocessor_featureSelection: FeatureSelectEditor,
-               Preprocessor_sample: SampleEditor,
+    EDITORS = {preprocess.Discretize: DiscretizeEditor,
+               preprocess.DiscretizeEntropy: DiscretizeEditor,
+               preprocess.RemoveContinuous: DiscretizeEditor,
+               preprocess.Continuize: ContinuizeEditor,
+               preprocess.RemoveDiscrete: ContinuizeEditor,
+               preprocess.Impute: ImputeEditor,
+               preprocess.ImputeByLearner: ImputeEditor,
+               preprocess.DropMissing: ImputeEditor,
+               preprocess.FeatureSelection: FeatureSelectEditor,
+               preprocess.Sample: SampleEditor,
                type(None): QWidget}
     
     def __init__(self, parent=None, signalManager=None, name="Preprocess"):
@@ -475,7 +476,8 @@ class OWPreprocess(OWWidget):
         self.changedFlag = False
         
 #        self.allSchemas = [PreprocessorSchema("Default" , [Preprocessor_discretize(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()])]
-        self.allSchemas = [("Default" , [Preprocessor_discretizeEntropy(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()], 0)]
+        self.allSchemas = [("Default" , [preprocess.DiscretizeEntropy(method=orange.EntropyDiscretization()),
+                                         preprocess.DropMissing()], 0)]
         
         self.lastSelectedSchemaIndex = 0
         

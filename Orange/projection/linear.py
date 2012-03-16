@@ -7,7 +7,7 @@ import math
 import random
 import numpy
 
-from Orange.preprocess.scaling import ScaleLinProjData
+from Orange.data.preprocess.scaling import ScaleLinProjData
 from Orange.orng import orngVisFuncts as visfuncts
 from Orange.misc import deprecated_keywords
 from Orange.misc import deprecated_members

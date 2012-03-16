@@ -85,7 +85,7 @@ import itertools
 from functools import partial
 
 import orange
-from Orange.preprocess import Preprocessor_discretize, Preprocessor_continuize
+from Orange.data import preprocess
 
 TEST_CLASSIFICATION = 1
 TEST_REGRESSION = 2
@@ -107,10 +107,10 @@ def open_data(name, flags=0):
     """
     dataset = orange.ExampleTable(os.path.join(datasetsdir, name))
     if flags & CONTINUIZE_DOMAIN:
-        preprocessor = Preprocessor_continuize()
+        preprocessor = preprocess.Continuize()
         dataset = preprocessor(dataset)
     elif flags & DISCRETIZE_DOMAIN:
-        preprocessor = Preprocessor_discretize(method=orange.EquiNDiscretization(),
+        preprocessor = preprocess.Discretize(method=orange.EquiNDiscretization(),
                                                discretize_class=False)
         dataset = preprocessor(dataset)
     dataset.name = name

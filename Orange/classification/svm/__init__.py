@@ -17,10 +17,7 @@ from Orange.core import LinearClassifier, \
                         SVMClassifier, \
                         SVMClassifierSparse
 
-from Orange.preprocess import Preprocessor_impute, \
-                              Preprocessor_continuize, \
-                              Preprocessor_preprocessorList, \
-                              DomainContinuizer
+from Orange.data import preprocess
 
 from Orange import feature as variable
 
@@ -242,10 +239,10 @@ class SVMLearner(_SVMLearner):
             self.normalization = normalization
 
     def _normalize(self, data):
-        dc = Orange.core.DomainContinuizer()
-        dc.class_treatment = Orange.core.DomainContinuizer.Ignore
-        dc.continuous_treatment = Orange.core.DomainContinuizer.NormalizeBySpan
-        dc.multinomial_treatment = Orange.core.DomainContinuizer.NValues
+        dc = preprocess.DomainContinuizer()
+        dc.class_treatment = preprocess.DomainContinuizer.Ignore
+        dc.continuous_treatment = preprocess.DomainContinuizer.NormalizeBySpan
+        dc.multinomial_treatment = preprocess.DomainContinuizer.NValues
         newdomain = dc(data)
         return data.translate(newdomain)
 
@@ -307,10 +304,10 @@ class SVMLearnerSparse(SVMLearner):
 
     def _normalize(self, data):
         if self.use_non_meta:
-            dc = Orange.core.DomainContinuizer()
-            dc.class_treatment = Orange.core.DomainContinuizer.Ignore
-            dc.continuous_treatment = Orange.core.DomainContinuizer.NormalizeBySpan
-            dc.multinomial_treatment = Orange.core.DomainContinuizer.NValues
+            dc = preprocess.DomainContinuizer()
+            dc.class_treatment = preprocess.DomainContinuizer.Ignore
+            dc.continuous_treatment = preprocess.DomainContinuizer.NormalizeBySpan
+            dc.multinomial_treatment = preprocess.DomainContinuizer.NValues
             newdomain = dc(data)
             data = data.translate(newdomain)
         return data
@@ -331,11 +328,11 @@ class SVMLearnerEasy(SVMLearner):
         self.learner = SVMLearner(**kwds)
 
     def learn_classifier(self, data):
-        transformer = Orange.core.DomainContinuizer()
-        transformer.multinomialTreatment = Orange.core.DomainContinuizer.NValues
+        transformer = preprocess.DomainContinuizer()
+        transformer.multinomialTreatment = preprocess.DomainContinuizer.NValues
         transformer.continuousTreatment = \
-            Orange.core.DomainContinuizer.NormalizeBySpan
-        transformer.classTreatment = Orange.core.DomainContinuizer.Ignore
+            preprocess.DomainContinuizer.NormalizeBySpan
+        transformer.classTreatment = preprocess.DomainContinuizer.Ignore
         newdomain = transformer(data)
         newexamples = data.translate(newdomain)
         #print newexamples[0]
@@ -370,10 +367,10 @@ class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
 def default_preprocessor():
     # Construct and return a default preprocessor for use by
     # Orange.core.LinearLearner learner.
-    impute = Preprocessor_impute()
-    cont = Preprocessor_continuize(multinomialTreatment=
-                                   DomainContinuizer.AsOrdinal)
-    preproc = Preprocessor_preprocessorList(preprocessors=
+    impute = preprocess.Impute()
+    cont = preprocess.Continuize(multinomialTreatment=
+                                   preprocess.DomainContinuizer.AsOrdinal)
+    preproc = preprocess.PreprocessorList(preprocessors=
                                             [impute, cont])
     return preproc
 

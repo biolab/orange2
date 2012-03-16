@@ -113,14 +113,14 @@ class VizRank:
                 graph = orngScalePolyvizData.orngScalePolyvizData()
                 graph.normalize_examples = 1
             elif visualizationMethod == SCATTERPLOT3D:
-                from Orange.preprocess.scaling import ScaleScatterPlotData3D
+                from Orange.data.preprocess.scaling import ScaleScatterPlotData3D
                 graph = ScaleScatterPlotData3D()
             elif visualizationMethod == SPHEREVIZ3D:
-                from Orange.preprocess.scaling import ScaleLinProjData3D
+                from Orange.data.preprocess.scaling import ScaleLinProjData3D
                 graph = ScaleLinProjData3D()
                 graph.normalize_examples = 1
             elif visualizationMethod == LINEAR_PROJECTION3D:
-                from Orange.preprocess.scaling import ScaleLinProjData3D
+                from Orange.data.preprocess.scaling import ScaleLinProjData3D
                 graph = ScaleLinProjData3D()
                 graph.normalize_examples = 0
             else:

@@ -1,15 +1,17 @@
-import Orange.core as orange
-import Orange.misc
+from Orange import core, feature
+from Orange.statistics import contingency, distribution
 
-from orange import MeasureAttribute as Score
-from orange import MeasureAttributeFromProbabilities as ScoreFromProbabilities
-from orange import MeasureAttribute_info as InfoGain
-from orange import MeasureAttribute_gainRatio as GainRatio
-from orange import MeasureAttribute_gini as Gini
-from orange import MeasureAttribute_relevance as Relevance 
-from orange import MeasureAttribute_cost as Cost
-from orange import MeasureAttribute_relief as Relief
-from orange import MeasureAttribute_MSE as MSE
+from Orange.misc import deprecated_keywords, deprecated_members
+
+Score = core.MeasureAttribute
+ScoreFromProbabilities = core.MeasureAttributeFromProbabilities
+InfoGain = core.MeasureAttribute_info
+GainRatio = core.MeasureAttribute_gainRatio
+Gini = core.MeasureAttribute_gini
+Relevance = core.MeasureAttribute_relevance
+Cost = core.MeasureAttribute_cost
+Relief = core.MeasureAttribute_relief
+MSE = core.MeasureAttribute_MSE
 
 ######
 # from orngEvalAttr.py
@@ -30,10 +32,10 @@ class OrderAttributes:
         """Score and order all features.
 
         :param data: a data table used to score features
-        :type data: Orange.data.Table
+        :type data: :obj:`~Orange.data.Table`
 
         :param weight: meta attribute that stores weights of instances
-        :type weight: Orange.feature.Descriptor
+        :type weight: :obj:`~Orange.feature.Descriptor`
 
         """
         if self.score:
@@ -45,7 +47,7 @@ class OrderAttributes:
         measured.sort(lambda x, y: cmp(x[1], y[1]))
         return [x[0] for x in measured]
 
-OrderAttributes = Orange.misc.deprecated_members({
+OrderAttributes = deprecated_members({
           "measure": "score",
 }, wrap_methods=[])(OrderAttributes)
 
@@ -58,37 +60,37 @@ class Distance(Score):
         1-D(C,A) = \\frac{\\mathrm{Gain}(A)}{H_{CA}}
     """
 
-    @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
+    @deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
         self = Score.__new__(cls)
-        if attr != None and data != None:
+        if attr is not None and data is not None:
             #self.__init__(**argkw)
             return self.__call__(attr, data, apriori_dist, weightID)
         else:
             return self
 
-    @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
+    @deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __call__(self, attr, data, apriori_dist=None, weightID=None):
         """Score the given feature.
 
         :param attr: feature to score
-        :type attr: Orange.feature.Descriptor
+        :type attr: :obj:`~Orange.feature.Descriptor`
 
         :param data: a data table used to score features
-        :type data: Orange.data.table
+        :type data: :obj:`~Orange.data.Table`
 
         :param apriori_dist: 
         :type apriori_dist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.feature.Descriptor
+        :type weightID: :obj:`~Orange.feature.Descriptor`
 
         """
         import numpy
-        from orngContingency import Entropy
+        from orngContingency import Entropy #TODO: Move to new hierarchy
         if attr in data.domain:  # if we receive attr as string we have to convert to variable
             attr = data.domain[attr]
-        attrClassCont = orange.ContingencyAttrClass(attr, data)
+        attrClassCont = contingency.VarClass(attr, data)
         dist = []
         for vals in attrClassCont.values():
             dist += list(vals)
@@ -115,34 +117,34 @@ class MDL(Score):
          \\Bigg]
     """
 
-    @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
+    @deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __new__(cls, attr=None, data=None, apriori_dist=None, weightID=None):
         self = Score.__new__(cls)
-        if attr != None and data != None:
+        if attr is not None and data is not None:
             #self.__init__(**argkw)
             return self.__call__(attr, data, apriori_dist, weightID)
         else:
             return self
 
-    @Orange.misc.deprecated_keywords({"aprioriDist": "apriori_dist"})
+    @deprecated_keywords({"aprioriDist": "apriori_dist"})
     def __call__(self, attr, data, apriori_dist=None, weightID=None):
         """Score the given feature.
 
         :param attr: feature to score
-        :type attr: Orange.feature.Descriptor
+        :type attr: :obj:`~Orange.feature.Descriptor`
 
         :param data: a data table used to score the feature
-        :type data: Orange.data.table
+        :type data: :obj:`~Orange.data.Table`
 
         :param apriori_dist: 
         :type apriori_dist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.feature.Descriptor
+        :type weightID: :obj:`~Orange.feature.Descriptor`
 
         """
-        attrClassCont = orange.ContingencyAttrClass(attr, data)
-        classDist = orange.Distribution(data.domain.classVar, data).values()
+        attrClassCont = contingency.VarClass(attr, data)
+        classDist = distribution.Distribution(data.domain.classVar, data).values()
         nCls = len(classDist)
         nEx = len(data)
         priorMDL = _logMultipleCombs(nEx, classDist) + _logMultipleCombs(nEx+nCls-1, [nEx, nCls-1])
@@ -176,13 +178,13 @@ def _logMultipleCombs(n, ks):
     return ret
 
 
-@Orange.misc.deprecated_keywords({"attrList": "attr_list", "attrMeasure": "attr_score", "removeUnusedValues": "remove_unused_values"})
+@deprecated_keywords({"attrList": "attr_list", "attrMeasure": "attr_score", "removeUnusedValues": "remove_unused_values"})
 def merge_values(data, attr_list, attr_score, remove_unused_values = 1):
     import orngCI
     #data = data.select([data.domain[attr] for attr in attr_list] + [data.domain.classVar])
     newData = data.select(attr_list + [data.domain.class_var])
     newAttr = orngCI.FeatureByCartesianProduct(newData, attr_list)[0]
-    dist = orange.Distribution(newAttr, newData)
+    dist = distribution.Distribution(newAttr, newData)
     activeValues = []
     for i in range(len(newAttr.values)):
         if dist[newAttr.values[i]] > 0: activeValues.append(i)
@@ -212,26 +214,25 @@ def merge_values(data, attr_list, attr_score, remove_unused_values = 1):
     if not remove_unused_values:
         return newAttr
 
-    reducedAttr = orange.EnumVariable(newAttr.name, values = [newAttr.values[i] for i in activeValues])
+    reducedAttr = feature.Discrete.EnumVariable(newAttr.name, values = [newAttr.values[i] for i in activeValues])
     reducedAttr.get_value_from = newAttr.get_value_from
     reducedAttr.get_value_from.class_var = reducedAttr
     return reducedAttr
 
 ######
 # from orngFSS
-@Orange.misc.deprecated_keywords({"measure": "score"})
+@deprecated_keywords({"measure": "score"})
 def score_all(data, score=Relief(k=20, m=50)):
     """Assess the quality of features using the given measure and return
     a sorted list of tuples (feature name, measure).
 
     :param data: data table should include a discrete class.
-    :type data: :obj:`Orange.data.Table`
+    :type data: :obj:`~Orange.data.Table`
     :param score:  feature scoring function. Derived from
       :obj:`~Orange.feature.scoring.Score`. Defaults to 
       :obj:`~Orange.feature.scoring.Relief` with k=20 and m=50.
-    :type measure: :obj:`~Orange.feature.scoring.Score` 
-    :rtype: :obj:`list`; a sorted (by descending score) list of
-      tuples (feature name, score)
+    :type score: :obj:`~Orange.feature.scoring.Score`
+    :rtype: :obj:`list`; a sorted list of tuples (feature name, score)
 
     """
     measl=[]

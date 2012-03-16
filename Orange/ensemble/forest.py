@@ -93,7 +93,7 @@ class RandomForestLearner(Orange.core.Learner):
             (from 0.0 to 1.0) that provides an estimate
             of completion of the learning progress.
 
-    :param name: name of the learner.
+    :param name: learner name.
     :type name: string
 
     :rtype: :class:`~Orange.ensemble.forest.RandomForestClassifier` or 
