@@ -33,8 +33,6 @@ Orange Scripting Reference
 
    Orange.optimization
    
-   Orange.preprocess
-
    Orange.projection
 
    Orange.misc
