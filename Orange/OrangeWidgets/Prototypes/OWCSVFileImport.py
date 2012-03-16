@@ -13,7 +13,8 @@ from OWWidget import *
 import OWGUI
 import Orange
 
-#from OWFile import FileNameContextHandler as PathContextHandler
+MakeStatus = Orange.feature.Descriptor.MakeStatus
+
 from OWDataTable import ExampleTableModel
 
 Slot = pyqtSlot
@@ -320,8 +321,8 @@ class OWCSVFileImport(OWWidget):
                                                has_types=self.has_orange_header,
                                                has_annotations=self.has_orange_header,
                                                skipinitialspace=self.skipinitialspace,
-                                               DK=self.missing or None
-                                               )
+                                               DK=self.missing or None,
+                                               create_new_on=MakeStatus.OK)
             except Exception, ex:
                 self.error(0, "Cannot parse (%r)" % ex)
                 data = None
@@ -343,7 +344,8 @@ class OWCSVFileImport(OWWidget):
                                                has_header=self.has_header,
                                                has_annotations=self.has_orange_header,
                                                skipinitialspace=self.skipinitialspace,
-                                               DK=self.missing or None
+                                               DK=self.missing or None,
+                                               create_new_on=MakeStatus.OK
                                                )
             except Exception, ex:
                 self.error(0, "An error occurred while loading the file:\n\t%r" % ex)
