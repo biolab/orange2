@@ -1815,7 +1815,7 @@ AUC_pair = replace_use_weights(
            deprecated_keywords({"classIndex1": "class_index1",
                                 "classIndex2": "class_index2"})(
            deprecated_function_name(AUC_for_pair_of_classes)))
-AUC_matrix = replace_use_weights(deprecated_function_name(AUC_matrix))
+AUC_matrix = replace_use_weights(AUC_matrix)
 
 
 @deprecated_keywords({"unweighted": "ignore_weights"})
