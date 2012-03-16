@@ -8,11 +8,18 @@ import os, sys, math
 ERROR = 0
 WARNING = 1
 
-#def _graphicsEffect(item):
-#    if hasattr(item, "graphicsEffect"):
-#        return item.graphicsEffect()
-#    else:
-#        return None
+def getDropShadow(item):
+    if hasattr(item, "graphicsEffect"):
+        return item.graphicsEffect()
+    else:
+        return None
+    
+def setDropShadow(self):
+    if qVersion() >= "4.6" and self.canvasDlg.settings["enableCanvasDropShadows"]:
+        effect = QGraphicsDropShadowEffect(self.scene())
+        effect.setOffset(QPointF(0.3, 0.5))
+        effect.setBlurRadius(5)
+        self.setGraphicsEffect(effect)
     
 class TempCanvasLine(QGraphicsPathItem):
     def __init__(self, canvasDlg, canvas):
@@ -25,12 +32,11 @@ class TempCanvasLine(QGraphicsPathItem):
 
         self.setPen(QPen(QColor(180, 180, 180), 3, Qt.SolidLine))
         
-#        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
-#            effect = QGraphicsDropShadowEffect(self.scene())
-#            effect.setOffset(QPointF(0.0, 0.0))
-#            effect.setBlurRadius(7)
-#            self.setGraphicsEffect(effect)        
-        
+        self.setDropShadow()
+    
+    setDropShadow = setDropShadow
+    getDropShadow = getDropShadow
+    
     def setStartWidget(self, widget):
         self.startWidget = widget
         pos = widget.getRightEdgePoint()
@@ -87,7 +93,19 @@ class TempCanvasLine(QGraphicsPathItem):
     def remove(self):
         self.hide()
         self.startWidget = None
-        self.endWidget = None 
+        self.endWidget = None
+        
+        self.prepareGeometryChange()
+        
+        if self.getDropShadow():
+            self.setGraphicsEffect(None)
+             
+        for child in self.childItems():
+            child.hide()
+            child.setParentItem(None)
+            self.scene().removeItem(child)
+            
+        self.hide()
         self.scene().removeItem(self)
 
 # #######################################
@@ -119,13 +137,6 @@ class CanvasLine(QGraphicsPathItem):
         self.setPen(QPen(QColor(200, 200, 200), 20, Qt.SolidLine))
         self.setAcceptHoverEvents(True)
         self.hoverState = False
-        
-#        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
-#            effect = QGraphicsDropShadowEffect(self.scene())
-#            effect.setOffset(QPointF(0.0, 0.0))
-#            effect.setBlurRadius(7)
-#            self.setGraphicsEffect(effect)
-#            self.prepareGeometryChange()
             
         if scene is not None:
             scene.addItem(self)
@@ -133,13 +144,31 @@ class CanvasLine(QGraphicsPathItem):
         self._dyn_enabled = False
             
         QObject.connect(self.outWidget.instance, SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"), self.updateDynamicEnableState)
-
+        
+        self.setDropShadow()
+        
+    setDropShadow = setDropShadow
+    getDropShadow = getDropShadow
+    
     def remove(self):
         self.hide()
         self.setToolTip("")
         self.outWidget = None
         self.inWidget = None
+        
+        self.prepareGeometryChange()
+        
+        if self.getDropShadow():
+            self.setGraphicsEffect(None)
+            
+        for child in self.childItems():
+            child.hide()
+            child.setParentItem(None)
+            self.scene().removeItem(child)
+            
+        self.hide()
         self.scene().removeItem(self)
+        QApplication.instance().processEvents(QEventLoop.ExcludeUserInputEvents)
         
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
@@ -192,14 +221,14 @@ class CanvasLine(QGraphicsPathItem):
         stroke.setWidth(6)
         return stroke.createStroke(self.path())
     
-#    def boundingRect(self):
-#        rect = QGraphicsPathItem.boundingRect(self)
-#        if _graphicsEffect(self):
-#            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
-#            textRect.moveTo(self.captionItem.pos())
-#            return rect.united(textRect)
-#        else:
-#            return rect
+    def boundingRect(self):
+        rect = QGraphicsPathItem.boundingRect(self)
+        if self.getDropShadow():
+            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+            textRect.moveTo(self.captionItem.pos())
+            return rect.united(textRect)
+        else:
+            return rect
 
     def paint(self, painter, option, widget = None):
         if self.isDynamic():
@@ -308,16 +337,14 @@ class CanvasWidget(QGraphicsRectItem):
         self.hoverState = False
         self.setFlags(QGraphicsItem.ItemIsSelectable)# | QGraphicsItem.ItemIsMovable)
         
-#        if qVersion() >= "4.6" and self.canvasDlg.settings["enableCanvasDropShadows"]:
-#            effect = QGraphicsDropShadowEffect()
-#            effect.setOffset(QPointF(1.1, 3.1))
-#            effect.setBlurRadius(7)
-#            self.setGraphicsEffect(effect)
-#            self.prepareGeometryChange()
-            
         if scene is not None:
             scene.addItem(self)
+            
+        self.setDropShadow()
 
+    setDropShadow = setDropShadow
+    getDropShadow = getDropShadow
+    
     def resetWidgetSize(self):
         size = self.canvasDlg.schemeIconSizeList[self.canvasDlg.settings['schemeIconSize']]
         self.setRect(0,0, size, size)
@@ -365,16 +392,24 @@ class CanvasWidget(QGraphicsRectItem):
             self.instance.setWidgetStateHandler(None)
             self.instance.setEventHandler(None)
             self.instance.onDeleteWidget()      # this is a cleanup function that can take care of deleting some unused objects
-            try:
-                import sip
-                sip.delete(self.instance)
-            except Exception, ex:
-                print >> sys.stderr, "Error deleting the widget: \n%s" % str(ex)
+            
+            # Schedule the widget instance for deletion
+            self.instance.deleteLater()
             self.instance = None
             
-            self.scene().removeItem(self)
-                
-
+        self.prepareGeometryChange()
+        
+        if self.getDropShadow():
+            self.setGraphicsEffect(None)
+        
+        for child in self.childItems():
+            child.hide()
+            child.setParentItem(None)
+            self.scene().removeItem(child)
+        
+        self.hide()
+        self.scene().removeItem(self)
+        
     def savePosition(self):
         self.oldPos = self.pos()
 
@@ -437,10 +472,12 @@ class CanvasWidget(QGraphicsRectItem):
     def boundingRect(self):
         rect = QRectF(QPointF(0, 0), self.widgetSize).adjusted(-11, -6, 11, 6)#.adjusted(-100, -100, 100, 100) #(-10-width, -4, +10+width, +25)
         rect.setTop(rect.top() - 20 - 21) ## Room for progress bar and warning, error, info icons
-#        if _graphicsEffect(self):
-#            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
-#            textRect.moveTo(self.captionItem.pos()) 
-        return rect
+        if self.getDropShadow():
+            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+            textRect.moveTo(self.captionItem.pos()) 
+            return rect.united(textRect)
+        else:
+            return rect
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
