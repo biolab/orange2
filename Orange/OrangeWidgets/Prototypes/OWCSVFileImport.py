@@ -17,8 +17,6 @@ MakeStatus = Orange.feature.Descriptor.MakeStatus
 
 from OWDataTable import ExampleTableModel
 
-Slot = pyqtSlot
-
 class standard_icons(object):
     def __init__(self, qwidget=None, style=None):
         self.qwidget = qwidget
@@ -224,8 +222,7 @@ class OWCSVFileImport(OWWidget):
             self.recent_files.insert(0, path)
             self.set_selected_file(path)
     
-    @Slot(int)
-    def delimiter_changed(self, index):
+    def delimiter_changed(self, index=-1):
         self.delimiter = self.DELIMITERS[index][1]
         if self.delimiter is None:
             self.other_delimiter = str(self.delimiter_edit.text())
