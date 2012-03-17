@@ -10,6 +10,8 @@ WORK_DIR=${1:-"/private/tmp"}
 FORCE=$2
 LOCAL=$3
 
+MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
+
 test -r /sw/bin/init.sh && . /sw/bin/init.sh
 
 export PATH=$HOME/bin:$PATH
@@ -42,7 +44,7 @@ fi
 
 echo "Orange (sources) [ $EXIT_VALUE ]" > "$LOG_DIR/source-daily-build-hg.log"
 date >> "$LOG_DIR/source-daily-build-hg.log"
-cat $SOURCE_LOG > "$LOG_DIR//source-daily-build-hg.log"
+cat $SOURCE_LOG >> "$LOG_DIR/source-daily-build-hg.log"
 (($EXIT_VALUE)) && echo "Daily sources failed"
 
 SOURCES_DIR=$PUBLISH_DIR/sources
@@ -74,9 +76,9 @@ if [ ! $LOCAL ]; then
 	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 fi
 
-echo "Orange (bundle $MAC_VERSION from hg) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build-hg.log"
-date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build-hg.log"
-cat $WORK_DIR/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build-hg.log"
+echo "Orange (bundle $MAC_VERSION from hg) [$EXIT_VALUE]" > "$LOG_DIR/bundle-$MAC_VERSION-daily-build-hg.log"
+date >> "$LOG_DIR/bundle-$MAC_VERSION-daily-build-hg.log"
+cat $WORK_DIR/bundle-daily-build.log >> "$LOG_DIR/bundle-$MAC_VERSION-daily-build-hg.log"
 (($EXIT_VALUE)) && echo "Running bundle-daily-build-hg.sh failed"
 
 
@@ -161,9 +163,9 @@ if [ ! $LOCAL ]; then
 	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 fi
 
-echo "Orange (fink $MAC_VERSION $ARCH) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-$ARCH-daily-build.log"
-date >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-$ARCH-daily-build.log"
-cat $WORK_DIR/fink-daily-build-packages.log >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-$ARCH-daily-build.log"
+echo "Orange (fink $MAC_VERSION $ARCH) [$EXIT_VALUE]" > "$LOG_DIR/fink-$MAC_VERSION-$ARCH-daily-build.log"
+date >> "$LOG_DIR/fink-$MAC_VERSION-$ARCH-daily-build.log"
+cat $WORK_DIR/fink-daily-build-packages.log >> "$LOG_DIR/fink-$MAC_VERSION-$ARCH-daily-build.log"
 (($EXIT_VALUE)) && echo "Running fink-daily-build.sh failed"
 
 # Zero exit value
