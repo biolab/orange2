@@ -35,7 +35,7 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
 
     __new__ = Orange.misc._orange__new__(Orange.core.Learner)
 
-    def __init__(self, base, rand):
+    def __init__(self, base=None, rand=None): #pickle needs an empty init
         self.base = base
         self.attributes = None
         self.rand = rand
