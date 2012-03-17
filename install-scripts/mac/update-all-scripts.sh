@@ -24,6 +24,7 @@ curl --silent --output dailyrun-bundleonly-hg.sh https://bitbucket.org/biolab/or
 curl --silent --output fink-daily-build-packages.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink-daily-build-packages.sh
 curl --silent --output fink-register-info.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink-register-info.sh
 curl --silent --output build-source.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/build-source.sh
+curl --silent --output dailyrun-sources.sh https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/dailyrun-sources.sh
 
 chmod +x *.sh
 
