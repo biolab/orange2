@@ -1364,8 +1364,7 @@ class Pca(object):
         else:
             C = numpy.ma.dot(Xg, Xd)
             U, D, T = numpy.linalg.svd(C)
-
-        U = U.T  # eigenvectors are now in rows
+            U = U.T  # eigenvectors are now in rows
         return U, D
 
     def __call__(self, dataset):
