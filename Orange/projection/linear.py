@@ -1364,8 +1364,7 @@ class Pca(object):
         else:
             C = numpy.ma.dot(Xg, Xd)
             U, D, T = numpy.linalg.svd(C)
-
-        U = U.T  # eigenvectors are now in rows
+            U = U.T  # eigenvectors are now in rows
         return U, D
 
     def __call__(self, dataset):
@@ -1536,7 +1535,7 @@ class PcaProjector(Projector):
 
     ################ Plotting functions ###################
 
-    def scree_plot(self, filename = None, title = 'Scree plot'):
+    def scree_plot(self, filename = None, title = 'Scree Plot'):
         """
         Draw a scree plot of principal components
 
@@ -1556,14 +1555,14 @@ class PcaProjector(Projector):
         ax = fig.add_subplot(111)
 
         x_axis = range(len(self.eigen_values))
-        x_labels = ["PC%d" % (i + 1, ) for i in x_axis]
+#        x_labels = ["PC%d" % (i + 1, ) for i in x_axis]
 
-        ax.set_xticks(x_axis)
-        ax.set_xticklabels(x_labels)
-        plt.setp(ax.get_xticklabels(), "rotation", 90)
+#        ax.set_xticks(x_axis)
+#        ax.set_xticklabels(x_labels)
+#        plt.setp(ax.get_xticklabels(), "rotation", 90)
         plt.grid(True)
 
-        ax.set_xlabel('Principal components')
+        ax.set_xlabel('Principal Component Number')
         ax.set_ylabel('Proportion of Variance')
         ax.set_title(title + "\n")
         ax.plot(x_axis, vc, color="red")
