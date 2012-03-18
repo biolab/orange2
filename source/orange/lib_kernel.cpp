@@ -1779,7 +1779,7 @@ PyObject *RandomGenerator__reduce__(PyObject *self)
 
   return Py_BuildValue("O(Os#ii)N", getExportedFunction("__pickleLoaderRandomGenerator"),
                                     self->ob_type,
-                                    (char *)(mt.state), (mt.next-mt.state + mt.left + 1) * sizeof(long),
+                                    (char *)(mt.state), 625 * sizeof(long),
                                     mt.next - mt.state,
                                     mt.left,
                                     packOrangeDictionary(self));
