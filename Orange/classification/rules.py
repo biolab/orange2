@@ -621,7 +621,6 @@ class ABCN2(RuleLearner):
             if progress:
                 progress.start = progress.end
                 progress.end += step
-
             aes = self.get_argumented_examples(dich_data)
             aes = self.sort_arguments(aes, dich_data)
             while aes:
@@ -1001,7 +1000,7 @@ class DefaultLearner(Orange.classification.Learner):
     def __init__(self, default_value=None):
         self.default_value = default_value
     def __call__(self, examples, weight_id=0):
-        return Orange.classification.ConstantClassifier(self.default_value, defaultDistribution=Orange.statistics.Distribution(examples.domain.class_var, examples, weight_id))
+        return Orange.classification.ConstantClassifier(self.default_value, defaultDistribution=Orange.statistics.distribution.Distribution(examples.domain.class_var, examples, weight_id))
 
 class ABCN2Ordered(ABCN2):
     """
@@ -1651,7 +1650,7 @@ class SelectorAdder(BeamRefiner):
                 for v in values:
                     tempRule = oldRule.clone()
                     tempRule.filter.conditions.append(
-                        Orange.data.filter.Discrete(
+                        Orange.data.filter.ValueFilterDiscrete(
                             position=i,
                             values=[Orange.data.Value(data.domain[i], v)],
                             acceptSpecial=0))
@@ -1686,7 +1685,6 @@ class SelectorAdder(BeamRefiner):
 
     def getTempRule(self, oldRule, pos, oper, ref, target_class, atIndex):
         tempRule = oldRule.clone()
-
         tempRule.filter.conditions.append(
             Orange.data.filter.ValueFilterContinuous(
                 position=pos, oper=oper, ref=ref, acceptSpecial=0))
@@ -1713,7 +1711,7 @@ class ArgFilter(Orange.core.Filter):
         self.filter = filter
         self.indices = getattr(filter,"indices",[])
         if not self.indices and len(filter.conditions)>0:
-            self.indices = RuleCoversArguments.filterIndices(filter)
+            self.indices = CoversArguments.filterIndices(filter)
         self.argument_id = argument_id
         self.domain = self.filter.domain
         self.conditions = filter.conditions
@@ -1721,7 +1719,7 @@ class ArgFilter(Orange.core.Filter):
         self.only_arg_example = True
         
     def condIn(self,cond): # is condition in the filter?
-        condInd = RuleCoversArguments.conditionIndex(cond)
+        condInd = CoversArguments.conditionIndex(cond)
         if operator.or_(condInd,self.indices[cond.position]) == self.indices[cond.position]:
             return True
         return False
@@ -1829,7 +1827,7 @@ class CrossValidation:
     def get_prob_from_res(self, res, examples):
         prob_dist = Orange.core.DistributionList()
         for tex in res.results:
-            d = Orange.statistics.Distribution(examples.domain.class_var)
+            d = Orange.statistics.distribution.Distribution(examples.domain.class_var)
             for di in range(len(d)):
                 d[di] = tex.probabilities[0][di]
             prob_dist.append(d)
@@ -1917,7 +1915,7 @@ class RuleClassifier_bestRule(RuleClassifier):
     def __init__(self, rules, examples, weight_id=0, **argkw):
         self.rules = rules
         self.examples = examples
-        self.apriori = Orange.statistics.Distribution(examples.domain.class_var, examples, weight_id)
+        self.apriori = Orange.statistics.distribution.Distribution(examples.domain.class_var, examples, weight_id)
         self.apriori_prob = [a / self.apriori.abs for a in self.apriori]
         self.weight_id = weight_id
         self.__dict__.update(argkw)
@@ -1926,7 +1924,7 @@ class RuleClassifier_bestRule(RuleClassifier):
     @deprecated_keywords({"retRules": "ret_rules"})
     def __call__(self, example, result_type=Orange.classification.Classifier.GetValue, ret_rules=False):
         example = Orange.data.Instance(self.examples.domain, example)
-        tempDist = Orange.statistics.Distribution(example.domain.class_var)
+        tempDist = Orange.statistics.distribution.Distribution(example.domain.class_var)
         best_rules = [None] * len(example.domain.class_var.values)
 
         for r in self.rules:
@@ -1951,12 +1949,12 @@ class RuleClassifier_bestRule(RuleClassifier):
             for r in best_rules:
                 if r:
                     tmp_examples = r.filter(tmp_examples)
-            tmpDist = Orange.statistics.Distribution(tmp_examples.domain.class_var, tmp_examples, self.weight_id)
+            tmpDist = Orange.statistics.distribution.Distribution(tmp_examples.domain.class_var, tmp_examples, self.weight_id)
             tmpDist.normalize()
             probs = [0.] * len(self.examples.domain.class_var.values)
             for i in range(len(self.examples.domain.class_var.values)):
                 probs[i] = tmpDist[i] + tempDist[i] * 2
-            final_dist = Orange.statistics.Distribution(self.examples.domain.class_var)
+            final_dist = Orange.statistics.distribution.Distribution(self.examples.domain.class_var)
             for cl_i, cl in enumerate(self.examples.domain.class_var):
                 final_dist[cl] = probs[cl_i]
             final_dist.normalize()
