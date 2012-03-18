@@ -623,6 +623,7 @@ class ABCN2(RuleLearner):
                 progress.end += step
             aes = self.get_argumented_examples(dich_data)
             aes = self.sort_arguments(aes, dich_data)
+            # learn arguments
             while aes:
                 if self.analyse_argument > -1 and \
                    (isinstance(self.analyse_argument, Orange.core.Example) and not Orange.core.Example(dich_data.domain, self.analyse_argument) == aes[0] or \
