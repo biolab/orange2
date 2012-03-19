@@ -281,6 +281,107 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         return SVMClassifierWrapper, (self.wrapped,), dict([(name, val) \
             for name, val in self.__dict__.items() \
             if name not in self.wrapped.__dict__])
+        
+    def get_binary_classifier(self, c1, c2):
+        """Return a binary classifier for classes `c1` and `c2`.
+        """
+        import numpy as np
+        if self.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
+            raise TypeError("Wrong svm type.")
+        
+        c1 = int(self.class_var(c1))
+        c2 = int(self.class_var(c2))
+        n_class = len(self.class_var.values)
+        
+        if c1 == c2:
+            raise ValueError("Different classes expected.")
+         
+        if c1 > c2:
+            c1, c2 = c2, c1
+        
+        # Index of the 1vs1 binary classifier 
+        classifier_i = n_class * (n_class - 1) / 2 - (n_class - c1 - 1) * (n_class - c1 - 2) / 2 - (n_class - c2)
+        
+        # Indices for classes in the coef structure.
+        class_indices = np.cumsum([0] + list(self.n_SV), dtype=int)
+        c1_range = range(class_indices[c1], class_indices[c1 + 1])
+        c2_range = range(class_indices[c2], class_indices[c2 + 1])
+        
+        coef_array = np.array(self.coef)
+        coef1 = coef_array[c2 - 1, c1_range]
+        coef2 = coef_array[c1, c2_range]
+        
+        # Support vectors for the binary classifier
+        sv1 = [self.support_vectors[i] for i in c1_range]
+        sv2 = [self.support_vectors[i] for i in c2_range]
+        
+        # Rho for the classifier
+        rho = self.rho[classifier_i]
+        
+        # Filter non zero support vectors
+        nonzero1 = np.abs(coef1) > 0.0
+        nonzero2 = np.abs(coef2) > 0.0
+        
+        coef1 = coef1[nonzero1]
+        coef2 = coef2[nonzero2]
+        
+        sv1 = [sv for sv, nz in zip(sv1, nonzero1) if nz]
+        sv2 = [sv for sv, nz in zip(sv2, nonzero2) if nz]
+        
+        bin_class_var = Orange.feature.Discrete("%s vs %s" % \
+                        (self.class_var.values[c1], self.class_var.values[c2]),
+                        values=["0", "1"])
+        
+        model = self._binary_libsvm_model(bin_class_var, [coef1, coef2], [rho], sv1 + sv2)
+        
+        all_sv = Orange.data.Table(sv1 + sv2)
+        if self.kernel_type == kernels.Custom:
+            classifier = SVMClassifier(bin_class_var, self.examples,
+                                       all_sv, model, self.kernel_func)
+        else:
+            classifier = SVMClassifier(bin_class_var, self.examples,
+                                       all_sv, model)
+            
+        return SVMClassifierWrapper(classifier)
+    
+    def _binary_libsvm_model(self, class_var, coefs, rho, sv_vectors):
+        """Return a libsvm formated model string for binary subclassifier
+        """
+        import itertools
+        
+        model = []
+        
+        # Take the model up to nr_classes
+        for line in self.get_model().splitlines():
+            if line.startswith("nr_class"):
+                break
+            else:
+                model.append(line.rstrip())
+        
+        model.append("nr_class %i" % len(class_var.values))
+        model.append("total_sv %i" % len(sv_vectors))
+        model.append("rho " + " ".join(str(r) for r in rho))
+        model.append("label " + " ".join(str(i) for i in range(len(class_var.values))))
+        # No probA and probB
+        
+        model.append("nr_sv " + " ".join(str(len(c)) for c in coefs))
+        model.append("SV")
+        
+        def instance_to_svm(inst):
+            values = [(i, float(inst[v])) \
+                      for i, v in enumerate(inst.domain.attributes) \
+                      if not inst[v].is_special() and float(inst[v]) != 0.0]
+            return " ".join("%i:%f" % (i + 1, v) for i, v in values)
+        
+        if self.svm_type == kernels.Custom:
+            raise NotImplemented("not implemented for custom kernels.")
+        else:
+            for c, sv in zip(itertools.chain(*coefs), itertools.chain(sv_vectors)):
+                model.append("%f %s" % (c, instance_to_svm(sv)))
+                
+        model.append("")
+        return "\n".join(model)
+        
 
 SVMClassifierWrapper = Orange.misc.deprecated_members({
     "classDistribution": "class_distribution",
