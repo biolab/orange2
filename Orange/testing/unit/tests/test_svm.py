@@ -95,11 +95,15 @@ class CustomWrapperSVMTestCase(testing.LearnerTestCase):
     def test_learner_on(self, data):
         """ Test custom kernel wrapper
         """
-        # Need the data for ExamplesDistanceConstructor_Euclidean  
+        if data.domain.has_continuous_attributes():
+            dist = orange.ExamplesDistanceConstructor_Euclidean(data)
+        else:
+            dist = orange.ExamplesDistanceConstructor_Hamming(data)
         self.learner = self.LEARNER(kernel_type=SVMLearner.Custom,
-                                    kernel_func=RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5))
+                                    kernel_func=RBFKernelWrapper(dist, gamma=0.5))
 
         testing.LearnerTestCase.test_learner_on(self, data)
+        svm_test_binary_classifier(self, data)
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)

@@ -328,11 +328,15 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         sv1 = [sv for sv, nz in zip(sv1, nonzero1) if nz]
         sv2 = [sv for sv, nz in zip(sv2, nonzero2) if nz]
         
+        sv_indices1 = [i for i, nz in zip(c1_range, nonzero1) if nz]
+        sv_indices2 = [i for i, nz in zip(c2_range, nonzero2) if nz]
+        
         bin_class_var = Orange.feature.Discrete("%s vs %s" % \
                         (self.class_var.values[c1], self.class_var.values[c2]),
                         values=["0", "1"])
         
-        model = self._binary_libsvm_model(bin_class_var, [coef1, coef2], [rho], sv1 + sv2)
+        model = self._binary_libsvm_model(bin_class_var, [coef1, coef2],
+                                          [rho], sv_indices1 + sv_indices2)
         
         all_sv = Orange.data.Table(sv1 + sv2)
         if self.kernel_type == kernels.Custom:
@@ -344,7 +348,7 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
             
         return SVMClassifierWrapper(classifier)
     
-    def _binary_libsvm_model(self, class_var, coefs, rho, sv_vectors):
+    def _binary_libsvm_model(self, class_var, coefs, rho, sv_indices):
         """Return a libsvm formated model string for binary subclassifier
         """
         import itertools
@@ -359,7 +363,7 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
                 model.append(line.rstrip())
         
         model.append("nr_class %i" % len(class_var.values))
-        model.append("total_sv %i" % len(sv_vectors))
+        model.append("total_sv %i" % len(sv_indices))
         model.append("rho " + " ".join(str(r) for r in rho))
         model.append("label " + " ".join(str(i) for i in range(len(class_var.values))))
         # No probA and probB
@@ -373,11 +377,15 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
                       if not inst[v].is_special() and float(inst[v]) != 0.0]
             return " ".join("%i:%f" % (i + 1, v) for i, v in values)
         
-        if self.svm_type == kernels.Custom:
-            raise NotImplemented("not implemented for custom kernels.")
+        if self.kernel_type == kernels.Custom:
+            SV = self.get_model().split("SV\n", 1)[1]
+            # Get the sv indices (the last entry in the SV entrys)
+            indices = [int(s.split(":")[-1]) for s in SV.splitlines() if s.strip()]
+            for c, sv_i in zip(itertools.chain(*coefs), itertools.chain(sv_indices)):
+                model.append("%f 0:%i" % (c, indices[sv_i]))
         else:
-            for c, sv in zip(itertools.chain(*coefs), itertools.chain(sv_vectors)):
-                model.append("%f %s" % (c, instance_to_svm(sv)))
+            for c, sv_i in zip(itertools.chain(*coefs), itertools.chain(sv_indices)):
+                model.append("%f %s" % (c, instance_to_svm(self.support_vectors[sv_i])))
                 
         model.append("")
         return "\n".join(model)
