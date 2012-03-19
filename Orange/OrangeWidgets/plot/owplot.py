@@ -33,7 +33,7 @@ from PyQt4.QtCore import QPointF, QPropertyAnimation, pyqtProperty, SIGNAL, Qt, 
 from OWDlgs import OWChooseImageSizeDlg
 from OWBaseWidget import unisetattr
 from OWColorPalette import *      # color palletes, ...
-from Orange.misc import deprecated_members, deprecated_attribute
+from Orange.utils import deprecated_members, deprecated_attribute
 
 import orangeqt
 

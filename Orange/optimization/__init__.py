@@ -92,8 +92,8 @@ import Orange.evaluation.scoring
 import Orange.evaluation.testing
 import Orange.misc
 
-from Orange.misc import (deprecated_class_attribute, deprecated_keywords,
-                         deprecated_members)
+from Orange.utils import deprecated_class_attribute, deprecated_keywords, \
+                         deprecated_members
 
 class TuneParameters(Orange.classification.Learner):
 
@@ -303,7 +303,7 @@ class Tune1Parameter(TuneParameters):
             return self.object
         else:
             classifier = self.object(data)
-            if not Orange.misc.environ.orange_no_deprecated_members:
+            if not Orange.utils.environ.orange_no_deprecated_members:
                 classifier.setattr("fittedParameter", bestpar)
             classifier.setattr("fitted_parameter", bestpar)
             return classifier
@@ -391,7 +391,7 @@ class TuneMParameters(TuneParameters):
             return self.object
         else:
             classifier = self.object(data)
-            if Orange.misc.environ.orange_no_deprecated_members:
+            if Orange.utils.environ.orange_no_deprecated_members:
                 classifier.fittedParameters = bestpar
             classifier.fitted_parameters = bestpar
             return classifier

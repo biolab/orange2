@@ -164,7 +164,7 @@ import numpy.linalg
 import orange
 import operator
 
-from Orange.misc import deprecation_warning
+from Orange.utils import deprecation_warning
 from Orange.statistics import contingency
 
 

@@ -5,7 +5,9 @@ import obiKEGG2, obiGene, obiTaxonomy, obiGeneSets
 import os, sys, tarfile, urllib2, shutil, cPickle
 from getopt import getopt
 
-from Orange.misc import serverfiles, ConsoleProgressBar
+from Orange.misc import serverfiles
+from Orange.utils import ConsoleProgressBar
+
 DOMAIN = "KEGG"
 
 opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])

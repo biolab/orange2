@@ -161,7 +161,7 @@ import orange
 import random
 
 import Orange
-from Orange.misc import deprecated_keywords, \
+from Orange.utils import deprecated_keywords, \
                         deprecated_attribute
 
 

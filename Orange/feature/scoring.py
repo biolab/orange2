@@ -1,7 +1,7 @@
 from Orange import core, feature
 from Orange.statistics import contingency, distribution
 
-from Orange.misc import deprecated_keywords, deprecated_members
+from Orange.utils import deprecated_keywords, deprecated_members
 
 Score = core.MeasureAttribute
 ScoreFromProbabilities = core.MeasureAttributeFromProbabilities

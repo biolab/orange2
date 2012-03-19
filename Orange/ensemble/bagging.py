@@ -67,7 +67,7 @@ class BaggedLearner(orange.Learner):
             classifiers.append(self.learner(data, weight))
         return BaggedClassifier(classifiers = classifiers, name=self.name,\
                     class_var=instances.domain.class_var)
-BaggedLearner = Orange.misc.deprecated_members({"weightId":"weight_id", "examples":"instances"})(BaggedLearner)
+BaggedLearner = Orange.utils.deprecated_members({"weightId":"weight_id", "examples":"instances"})(BaggedLearner)
 
 class BaggedClassifier(orange.Classifier):
     """
@@ -148,4 +148,4 @@ class BaggedClassifier(orange.Classifier):
             
     def __reduce__(self):
         return type(self), (self.classifiers, self.name, self.class_var), dict(self.__dict__)
-BaggedClassifier = Orange.misc.deprecated_members({"example":"instance", "classVar":"class_var","resultType":"result_type"})(BaggedClassifier)
+BaggedClassifier = Orange.utils.deprecated_members({"example":"instance", "classVar":"class_var","resultType":"result_type"})(BaggedClassifier)

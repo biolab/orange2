@@ -91,7 +91,7 @@ class NaiveLearner(Orange.classification.Learner):
         if self.adjust_threshold:
             bayes.adjust_threshold = self.adjust_threshold
         return NaiveClassifier(bayes(data, weight))
-NaiveLearner = Orange.misc.deprecated_members(
+NaiveLearner = Orange.utils.deprecated_members(
 {     "adjustThreshold": "adjust_threshold",
       "estimatorConstructor": "estimator_constructor",
       "conditionalEstimatorConstructor": "conditional_estimator_constructor",

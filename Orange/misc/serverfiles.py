@@ -121,7 +121,7 @@ import urllib
 import urllib2
 import base64
 
-from Orange.misc import ConsoleProgressBar
+from Orange.utils import ConsoleProgressBar
 import time, threading
 
 import os

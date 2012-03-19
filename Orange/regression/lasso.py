@@ -3,7 +3,7 @@ import numpy
 
 from Orange.regression import base
 
-from Orange.misc import deprecated_members, deprecated_keywords
+from Orange.utils import deprecated_members, deprecated_keywords
 
 def center(X):
     """Centers the data, i.e. subtracts the column means.

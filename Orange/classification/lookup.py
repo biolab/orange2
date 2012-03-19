@@ -1,4 +1,4 @@
-from Orange.misc import deprecated_keywords
+from Orange.utils import deprecated_keywords
 import Orange.data
 from Orange.core import \
         LookupLearner, \

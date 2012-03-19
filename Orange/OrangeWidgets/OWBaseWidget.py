@@ -3,7 +3,7 @@
 # Orange Widget
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
-from Orange.misc import environ
+from Orange.utils import environ
 from Orange.orng.orngEnviron import directoryNames as old_directory_names
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *

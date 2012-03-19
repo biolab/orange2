@@ -95,7 +95,7 @@ class SVMLearner(_SVMLearner):
     Nu_SVR = _SVMLearner.Nu_SVR
     Epsilon_SVR = _SVMLearner.Epsilon_SVR
 
-    @Orange.misc.deprecated_keywords({"kernelFunc": "kernel_func"})
+    @Orange.utils.deprecated_keywords({"kernelFunc": "kernel_func"})
     def __init__(self, svm_type=Nu_SVC, kernel_type=kernels.RBF,
                  kernel_func=None, C=1.0, nu=0.5, p=0.1, gamma=0.0, degree=3,
                  coef0=0, shrinking=True, probability=True, verbose=False,
@@ -179,7 +179,7 @@ class SVMLearner(_SVMLearner):
             return SVMClassifierWrapper(svm)
         return self.learner(data)
 
-    @Orange.misc.deprecated_keywords({"progressCallback": "progress_callback"})
+    @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback"})
     def tune_parameters(self, data, parameters=None, folds=5, verbose=0,
                        progress_callback=None):
         """Tune the ``parameters`` on the given ``data`` using 
@@ -246,7 +246,7 @@ class SVMLearner(_SVMLearner):
         newdomain = dc(data)
         return data.translate(newdomain)
 
-SVMLearner = Orange.misc.deprecated_members({
+SVMLearner = Orange.utils.deprecated_members({
     "learnClassifier": "learn_classifier",
     "tuneParameters": "tune_parameters",
     "kernelFunc" : "kernel_func",
@@ -428,7 +428,7 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         return "\n".join(model)
         
 
-SVMClassifierWrapper = Orange.misc.deprecated_members({
+SVMClassifierWrapper = Orange.utils.deprecated_members({
     "classDistribution": "class_distribution",
     "getDecisionValues": "get_decision_values",
     "getModel" : "get_model",
@@ -442,7 +442,7 @@ class SVMLearnerSparse(SVMLearner):
     data set domain, or present in all data instances.
     """
 
-    @Orange.misc.deprecated_keywords({"useNonMeta": "use_non_meta"})
+    @Orange.utils.deprecated_keywords({"useNonMeta": "use_non_meta"})
     def __init__(self, **kwds):
         SVMLearner.__init__(self, **kwds)
         self.use_non_meta = kwds.get("use_non_meta", False)
@@ -762,7 +762,7 @@ class RFE(object):
         self.learner = learner or SVMLearner(kernel_type=
                             kernels.Linear, normalization=False)
 
-    @Orange.misc.deprecated_keywords({"progressCallback": "progress_callback", "stopAt": "stop_at" })
+    @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback", "stopAt": "stop_at" })
     def get_attr_scores(self, data, stop_at=0, progress_callback=None):
         """Return a dictionary mapping attributes to scores.
         A score is a step number at which the attribute
@@ -792,7 +792,7 @@ class RFE(object):
             iter += 1
         return attrScores
 
-    @Orange.misc.deprecated_keywords({"numSelected": "num_selected", "progressCallback": "progress_callback"})
+    @Orange.utils.deprecated_keywords({"numSelected": "num_selected", "progressCallback": "progress_callback"})
     def __call__(self, data, num_selected=20, progress_callback=None):
         """Return a new dataset with only `num_selected` best scoring attributes
         
@@ -812,7 +812,7 @@ class RFE(object):
         data = Orange.data.Table(domain, data)
         return data
 
-RFE = Orange.misc.deprecated_members({
+RFE = Orange.utils.deprecated_members({
     "getAttrScores": "get_attr_scores"},
     wrap_methods=["get_attr_scores", "__call__"])(RFE)
 

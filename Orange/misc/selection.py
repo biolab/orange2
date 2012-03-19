@@ -80,7 +80,7 @@ get the index of the  optimal one by calling :obj:`winner_index`.
 
 import random
 
-from Orange.misc import deprecated_members, deprecated_function_name, \
+from Orange.utils import deprecated_members, deprecated_function_name, \
                         deprecated_keywords
 
 class BestOnTheFly:

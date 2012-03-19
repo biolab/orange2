@@ -6,7 +6,7 @@ except:
     import unittest
 import subprocess
 
-from Orange.misc import environ
+from Orange.utils import environ
 from Orange.misc import testing
 
 

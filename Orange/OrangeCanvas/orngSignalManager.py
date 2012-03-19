@@ -129,7 +129,7 @@ class SignalManager(object):
         self.widgetQueue = []
         self.asyncProcessingEnabled = False
         
-        from Orange.misc import environ
+        from Orange.utils import environ
         if not hasattr(self, "log"):
             SignalManager.log = logging.getLogger("SignalManager")
             self.logFileName = os.path.join(environ.canvas_settings_dir,

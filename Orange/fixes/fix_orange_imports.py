@@ -56,7 +56,7 @@ MAPPING = {"orange": "Orange.core",
            "orngDisc": "Orange.feature.discretization",
            "orngLookup": "Orange.classification.lookup",
            "orngLinProj": "Orange.projection.linear",
-           "orngEnviron": "Orange.misc.environ",
+           "orngEnviron": "Orange.utils.environ",
            "orngSQL": "Orange.data.sql"
            }
 

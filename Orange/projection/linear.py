@@ -9,8 +9,8 @@ import numpy
 
 from Orange.data.preprocess.scaling import ScaleLinProjData
 from Orange.orng import orngVisFuncts as visfuncts
-from Orange.misc import deprecated_keywords
-from Orange.misc import deprecated_members
+from Orange.utils import deprecated_keywords
+from Orange.utils import deprecated_members
 
 try:
     import numpy.ma as MA

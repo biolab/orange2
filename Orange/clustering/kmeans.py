@@ -192,7 +192,7 @@ def score_between_cluster_distance(km):
     """Sum of distances from elements to 'nearest miss' centroids"""
     return sum(min(km.distance(c, d) for j,c in enumerate(km.centroids) if j!=km.clusters[i]) for i,d in enumerate(km.data))
 
-from Orange.misc import deprecated_function_name
+from Orange.utils import deprecated_function_name
 score_betweenClusterDistance = deprecated_function_name(score_between_cluster_distance)
 
 def score_silhouette(km, index=None):

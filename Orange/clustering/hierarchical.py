@@ -366,7 +366,7 @@ from Orange.core import HierarchicalClustering, \
                         HierarchicalCluster, \
                         HierarchicalClusterList
 
-from Orange.misc import progress_bar_milestones, deprecated_keywords
+from Orange.utils import progress_bar_milestones, deprecated_keywords
                         
 import sys
 

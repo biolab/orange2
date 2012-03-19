@@ -62,7 +62,7 @@ from Orange.misc import caching
 
 import warnings
 
-from Orange.misc import deprecated_keywords, deprecated_members
+from Orange.utils import deprecated_keywords, deprecated_members
 
 def get_variable_values_sorted(variable):
     """

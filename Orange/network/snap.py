@@ -70,7 +70,7 @@ class NetworkInfo(object):
         self.edges = edges
         self.repository = repository
         self.description = description
-        self._root =  Orange.misc.environ.buffer_dir + "/snap/"
+        self._root =  Orange.utils.environ.buffer_dir + "/snap/"
         self._local_file = self._root + self.name + ".txt.gz"
         self._remote_file = "http://snap.stanford.edu/data/" + self.name + ".txt.gz"
         

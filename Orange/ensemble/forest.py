@@ -4,7 +4,7 @@ import Orange
 import Orange.feature.scoring
 import random
 import copy
-from Orange.misc import deprecated_keywords
+from Orange.utils import deprecated_keywords
 
 def _default_small_learner(attributes=None, rand=None, base=None):
     # tree learner assembled as suggested by Breiman (2001)
@@ -48,7 +48,7 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         self.base.skip_prob, self.base.random_generator = osp, orand
         return r
 
-_RandomForestSimpleTreeLearner = Orange.misc.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
+_RandomForestSimpleTreeLearner = Orange.utils.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
    
 class RandomForestLearner(Orange.core.Learner):
     """
@@ -162,7 +162,7 @@ class RandomForestLearner(Orange.core.Learner):
 
         return RandomForestClassifier(classifiers = classifiers, name=self.name,\
                     domain=instances.domain, class_var=instances.domain.class_var)
-RandomForestLearner = Orange.misc.deprecated_members({"examples":"instances"})(RandomForestLearner)
+RandomForestLearner = Orange.utils.deprecated_members({"examples":"instances"})(RandomForestLearner)
 
 class RandomForestClassifier(orange.Classifier):
     """
@@ -264,7 +264,7 @@ class RandomForestClassifier(orange.Classifier):
             
     def __reduce__(self):
         return type(self), (self.classifiers, self.name, self.domain, self.class_var), dict(self.__dict__)
-RandomForestClassifier = Orange.misc.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
+RandomForestClassifier = Orange.utils.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
 ### MeasureAttribute_randomForests
 
 class ScoreFeature(orange.MeasureAttribute):

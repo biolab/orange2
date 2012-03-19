@@ -2,7 +2,7 @@ import os
 import urllib
 import Orange
 import orange
-from Orange.misc import deprecated_keywords, deprecated_members
+from Orange.utils import deprecated_keywords, deprecated_members
 from Orange.feature import Descriptor
 
 def _parseURI(uri):

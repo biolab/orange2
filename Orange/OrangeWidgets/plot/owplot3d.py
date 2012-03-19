@@ -18,7 +18,7 @@ from PyQt4.QtGui import *
 from PyQt4 import QtOpenGL
 
 from OWDlgs import OWChooseImageSizeDlg
-from Orange.misc import deprecated_attribute, deprecated_members
+from Orange.utils import deprecated_attribute, deprecated_members
 
 import orangeqt
 from owplotgui import OWPlotGUI

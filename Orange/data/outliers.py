@@ -136,7 +136,7 @@ class OutlierDetection:
         list = self._average_means()
         return [statc.z(list, e) for e in list]
 
-Orange.misc.deprecated_members(
+Orange.utils.deprecated_members(
     {"setKNN": "set_knn",
     "setExamples": "set_examples",
     "setDistanceMatrix": "set_distance_matrix",

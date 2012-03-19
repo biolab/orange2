@@ -2,7 +2,7 @@
 
 import os, re, sys, time, subprocess
 import getopt
-from Orange.misc import environ
+from Orange.utils import environ
 
 regtestdir = os.getcwd().replace("\\", "/")
 re_israndom = re.compile(r"#\s*xtest\s*:\s*RANDOM")

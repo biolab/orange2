@@ -1513,7 +1513,7 @@ class C45Learner(Orange.classification.Learner):
     @classmethod
     def _rename_arg(cls, a):
         if a in cls._rename_old_new:
-            Orange.misc.deprecation_warning(a, cls._rename_old_new[a], stacklevel=4)
+            Orange.utils.deprecation_warning(a, cls._rename_old_new[a], stacklevel=4)
         return cls._rename_new_old.get(a, a)
 
     def __new__(cls, instances=None, weightID=0, **argkw):
@@ -2037,7 +2037,7 @@ class TreeLearner(Orange.core.Learner):
 
 
 
-TreeLearner = Orange.misc.deprecated_members({
+TreeLearner = Orange.utils.deprecated_members({
           "mForPruning": "m_pruning",
           "sameMajorityPruning": "same_majority_pruning",
           "reliefM": "relief_m",
@@ -2619,7 +2619,7 @@ class TreeClassifier(Orange.classification.Classifier):
     def __str__(self):
         return self.to_string()
 
-    @Orange.misc.deprecated_keywords({"fileName": "file_name", \
+    @Orange.utils.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \
         "userFormats": "user_formats", "minExamples": "min_instances", \
         "min_examples": "min_instances", \
@@ -2660,7 +2660,7 @@ class TreeClassifier(Orange.classification.Classifier):
 
     dump = to_string
 
-    @Orange.misc.deprecated_keywords({"fileName": "file_name", \
+    @Orange.utils.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \
         "leafShape": "leaf_shape", "nodeShape": "node_shape", \
         "userFormats": "user_formats", \

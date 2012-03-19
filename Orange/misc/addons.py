@@ -123,7 +123,7 @@ import urllib2 # urllib2 because it reports HTTP Errors for 'urlopen'
 import bisect
 import platform
 
-import Orange.misc.environ
+import Orange.utils.environ
 import widgetparser
 from fileutil import *
 from fileutil import _zip_open
@@ -384,7 +384,7 @@ class OrangeRegisteredAddOn():
         # style.css creation     #
         ##########################
         localcss = os.path.join(self.directory_documentation(), "style.css")
-        orangecss = os.path.join(Orange.misc.environ.doc_install_dir, "style.css")
+        orangecss = os.path.join(Orange.utils.environ.doc_install_dir, "style.css")
         if not os.path.isfile(localcss):
             if os.path.isfile(orangecss):
                 import shutil
@@ -436,8 +436,8 @@ class OrangeRegisteredAddOn():
         proticondocdir = os.path.join(wdocdir, "prototypes", "icons")
 
         import shutil
-        iconbg_file = os.path.join(Orange.misc.environ.icons_install_dir, "background_32.png")
-        iconun_file = os.path.join(Orange.misc.environ.icons_install_dir, "Unknown.png")
+        iconbg_file = os.path.join(Orange.utils.environ.icons_install_dir, "background_32.png")
+        iconun_file = os.path.join(Orange.utils.environ.icons_install_dir, "Unknown.png")
         if not os.path.isdir(icondocdir): os.mkdir(icondocdir)
         if os.path.isfile(iconbg_file): shutil.copy(iconbg_file, icondocdir)
         if os.path.isfile(iconun_file): shutil.copy(iconun_file, icondocdir)
@@ -1481,12 +1481,12 @@ def repository_list_filename():
     Return the full filename of pickled add-on repository list. It resides
     within Orange settings directory. 
     """
-    orange_settings_dir = os.path.realpath(Orange.misc.environ.orange_settings_dir)
+    orange_settings_dir = os.path.realpath(Orange.utils.environ.orange_settings_dir)
     list_file_name = os.path.join(orange_settings_dir, "repositoryList.pickle")
     if not os.path.isfile(list_file_name):
         # Try to move the config from the old location.
         try:
-            canvas_settings_dir = os.path.realpath(Orange.misc.environ.canvas_settings_dir)
+            canvas_settings_dir = os.path.realpath(Orange.utils.environ.canvas_settings_dir)
             old_list_file_name = os.path.join(canvas_settings_dir, "repositoryList.pickle")
             shutil.move(old_list_file_name, list_file_name)
         except:
@@ -1609,7 +1609,7 @@ def add_addon_directories_to_path():
                                                            if (platform.machine()=="")
                                                            else platform.machine(),
                                                            ".".join(map(str, sys.version_info[:2])) )) )]:
-            if os.path.isdir(p) and not any([Orange.misc.environ.samepath(p, x)
+            if os.path.isdir(p) and not any([Orange.utils.environ.samepath(p, x)
                                              for x in sys.path]):
                 if p not in sys.path:
                     addon_directories.append(p)
@@ -1635,8 +1635,8 @@ class InstallationException(Exception):
 def install_addon(oaofile, global_install=False, refresh=True):
     """
     Install an add-on from given .oao package. Installation means unpacking the
-    .oao file to an appropriate directory (:obj:`Orange.misc.environ.add_ons_dir_user` or
-    :obj:`Orange.misc.environ.add_ons_dir_sys`, depending on the
+    .oao file to an appropriate directory (:obj:`Orange.utils.environ.add_ons_dir_user` or
+    :obj:`Orange.utils.environ.add_ons_dir_sys`, depending on the
     :obj:`global_install` parameter), creating an
     :class:`OrangeAddOnInstalled` instance and adding this object into the
     :obj:`installed_addons` dictionary.
@@ -1662,7 +1662,7 @@ def install_addon(oaofile, global_install=False, refresh=True):
             if filename[0]=="\\" or filename[0]=="/" or filename[:2]=="..":
                 raise InstallationException("Refusing to install unsafe package: it contains file named '%s'!" % filename)
         
-        root = Orange.misc.environ.add_ons_dir if global_install else Orange.misc.environ.add_ons_dir_user
+        root = Orange.utils.environ.add_ons_dir if global_install else Orange.utils.environ.add_ons_dir_user
         
         try:
             manifest = _zip_open(pack, 'addon.xml')
@@ -1753,8 +1753,8 @@ def load_addons():
     installation directory (:obj:`orngEnviron.addOnsDirSys`) and user-specific
     add-on installation directory (:obj:`orngEnviron.addOnsDirUser`).
     """
-    load_installed_addons_from_dir(Orange.misc.environ.add_ons_dir)
-    load_installed_addons_from_dir(Orange.misc.environ.add_ons_dir_user)
+    load_installed_addons_from_dir(Orange.utils.environ.add_ons_dir)
+    load_installed_addons_from_dir(Orange.utils.environ.add_ons_dir_user)
 
 def refresh_addons(reload_path=False):
     """
@@ -1782,15 +1782,15 @@ def __read_addons_list(addons_file, systemwide):
         return []
     
 def __read_addon_lists(user_only=False):
-    return __read_addons_list(os.path.join(Orange.misc.environ.orange_settings_dir, "add-ons.txt"),
+    return __read_addons_list(os.path.join(Orange.utils.environ.orange_settings_dir, "add-ons.txt"),
                               False) + ([] if user_only else
-                                        __read_addons_list(os.path.join(Orange.misc.environ.install_dir, "add-ons.txt"),
+                                        __read_addons_list(os.path.join(Orange.utils.environ.install_dir, "add-ons.txt"),
                                                            True))
 
 def __write_addon_lists(addons, user_only=False):
-    file(os.path.join(Orange.misc.environ.orange_settings_dir, "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if not a.systemwide]))
+    file(os.path.join(Orange.utils.environ.orange_settings_dir, "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if not a.systemwide]))
     if not user_only:
-        file(os.path.join(Orange.misc.environ.install_dir        , "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if     a.systemwide]))
+        file(os.path.join(Orange.utils.environ.install_dir        , "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if     a.systemwide]))
 
 def register_addon(name, path, add = True, refresh=True, systemwide=False):
     """

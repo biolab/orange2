@@ -6,7 +6,7 @@ import numpy
 
 import Orange
 from Orange import statc, corn
-from Orange.misc import deprecated_keywords, deprecated_function_name, \
+from Orange.utils import deprecated_keywords, deprecated_function_name, \
     deprecation_warning, environ
 from Orange.evaluation import testing
 

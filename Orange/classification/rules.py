@@ -42,8 +42,8 @@ from Orange.orng.orngABML import \
     ArgumentFilter_hasSpecial, \
     create_dichotomous_class, \
     evaluateAndSortArguments
-from Orange.misc import deprecated_keywords
-from Orange.misc import deprecated_members
+from Orange.utils import deprecated_keywords
+from Orange.utils import deprecated_members
 
 
 

@@ -103,8 +103,8 @@ from numpy.linalg import svd
 
 import Orange.core
 from Orange import orangeom as orangemds
-from Orange.misc import deprecated_keywords
-from Orange.misc import deprecated_members
+from Orange.utils import deprecated_keywords
+from Orange.utils import deprecated_members
 
 KruskalStress = orangemds.KruskalStress()
 SammonStress = orangemds.SammonStress()

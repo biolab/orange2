@@ -136,7 +136,7 @@ Curve (``owcurve``)
 from OWBaseWidget import *
 from owconstants import *
 import orangeqt
-from Orange.misc import deprecated_members
+from Orange.utils import deprecated_members
 
 OWPlotItem = orangeqt.PlotItem
 

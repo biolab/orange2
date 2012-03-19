@@ -35,7 +35,7 @@ class ImputeLearner(orange.Learner):
         else:
             return ImputeClassifier(base_classifier, trained_imputer)
 
-ImputeLearner = Orange.misc.deprecated_members(
+ImputeLearner = Orange.utils.deprecated_members(
   {
       "dontImputeClassifier": "dont_impute_classifier",
       "imputerConstructor": "imputer_constructor",
@@ -53,7 +53,7 @@ class ImputeClassifier(orange.Classifier):
     def __call__(self, i, what=orange.GetValue):
         return self.base_classifier(self.imputer(i), what)
 
-ImputeClassifier = Orange.misc.deprecated_members(
+ImputeClassifier = Orange.utils.deprecated_members(
   {
       "baseClassifier": "base_classifier"
   })(ImputeClassifier)

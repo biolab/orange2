@@ -78,7 +78,7 @@ from numpy import dot, zeros
 from numpy import linalg
 from numpy.linalg import svd, pinv
 
-from Orange.misc import deprecated_members, deprecated_keywords
+from Orange.utils import deprecated_members, deprecated_keywords
 
 
 def normalize_matrix(X):

@@ -10,7 +10,7 @@ import Orange
 import numpy
 import math
 
-from Orange.misc import progress_bar_milestones
+from Orange.utils import progress_bar_milestones
 
 def mul(values):
     return reduce(float.__mul__, values, 1.0)

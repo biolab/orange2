@@ -1,5 +1,5 @@
 import Orange
-from Orange.misc import deprecated_keywords, deprecated_members
+from Orange.utils import deprecated_keywords, deprecated_members
 from Orange.data import preprocess
 import math
 

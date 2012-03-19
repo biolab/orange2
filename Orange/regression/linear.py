@@ -137,7 +137,7 @@ from numpy import dot, sqrt
 from numpy.linalg import inv, pinv
 
 
-from Orange.misc import deprecated_members, deprecated_keywords
+from Orange.utils import deprecated_members, deprecated_keywords
 
 class LinearRegressionLearner(base.BaseRegressionLearner):
 

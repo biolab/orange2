@@ -20,7 +20,7 @@ from Orange.core import \
     ExamplesDistanceConstructor_Relief as Relief
 
 from Orange import statc
-from Orange.misc import progress_bar_milestones
+from Orange.utils import progress_bar_milestones
 
 import numpy
 from numpy import linalg

@@ -22,7 +22,7 @@ from OWWidget import *
 from OWWidget import *
 from PyQt4.QtWebKit import *
 
-from Orange.misc import environ
+from Orange.utils import environ
 
 import os, time, tempfile, shutil, re, shutil, pickle, binascii
 import xml.dom.minidom

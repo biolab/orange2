@@ -8,7 +8,7 @@
 import Orange
 from Orange.evaluation import reliability
 from Orange.evaluation import testing
-#from Orange.misc import progress_bar_milestones
+#from Orange.utils import progress_bar_milestones
 from functools import partial
  
 from OWWidget import *

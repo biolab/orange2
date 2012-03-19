@@ -1,4 +1,4 @@
-import Orange.misc.environ as environ
+import Orange.utils.environ as environ
 
 directoryNames = dict(
     orangeDir = environ.install_dir,

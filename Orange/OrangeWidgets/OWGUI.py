@@ -2082,7 +2082,7 @@ class ProgressBar:
     def finish(self):
         self.widget.progressBarFinished()
         
-from Orange.misc import progress_bar_milestones as progressBarMilestones
+from Orange.utils import progress_bar_milestones as progressBarMilestones
 
 ##############################################################################
 

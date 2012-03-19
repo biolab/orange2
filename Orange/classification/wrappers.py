@@ -4,7 +4,7 @@ import Orange.data
 import Orange.evaluation.testing
 import Orange.evaluation.scoring
 
-from Orange.misc import deprecated_members
+from Orange.utils import deprecated_members
 
 class StepwiseLearner(Orange.core.Learner):
   def __new__(cls, data=None, weight_id=None, **kwargs):
