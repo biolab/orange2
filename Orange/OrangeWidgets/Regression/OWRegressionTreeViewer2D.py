@@ -8,7 +8,8 @@
 from OWTreeViewer2D import *
 import re
 
-        
+import Orange
+
 class RegressionTreeNode(GraphicsNode):
     def __init__(self, attr, tree, parent=None, *args):
         GraphicsNode.__init__(self, tree, parent, *args)
@@ -125,7 +126,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
     def __init__(self, parent=None, signalManager = None, name='RegressionTreeViewer2D'):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
+        self.inputs = [("Classification Tree", Orange.regression.tree.TreeClassifier, self.ctree)]
         self.outputs = [("Data", ExampleTable)]
         
         self.NodeColorMethod = 1

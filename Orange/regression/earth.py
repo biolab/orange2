@@ -54,9 +54,9 @@ Utility functions
 import Orange
 from Orange.feature import Discrete, Continuous
 from Orange.data import Table, Domain
-from Orange.preprocess import Preprocessor_continuize, \
-                              Preprocessor_impute, \
-                              Preprocessor_preprocessorList, \
+from Orange.data.preprocess import Continuize as Preprocessor_continuize, \
+                              Impute as Preprocessor_impute, \
+                              PreprocessorList as Preprocessor_preprocessorList, \
                               DomainContinuizer
 
 import numpy

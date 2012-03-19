@@ -40,7 +40,7 @@ from PyQt4.QtCore import Qt, QRectF, QPointF, QPropertyAnimation
 from owcurve import *
 from owpalette import OWPalette
 
-from Orange.preprocess.scaling import get_variable_values_sorted
+from Orange.data.preprocess.scaling import get_variable_values_sorted
 import orangeom
 import ColorPalette
 

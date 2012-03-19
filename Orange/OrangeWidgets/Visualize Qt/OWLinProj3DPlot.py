@@ -4,7 +4,7 @@ from plot.owplot3d import *
 from plot.owopenglrenderer import VertexBuffer
 from plot import OWPoint
 
-from Orange.preprocess.scaling import ScaleLinProjData3D, get_variable_values_sorted
+from Orange.data.preprocess.scaling import ScaleLinProjData3D, get_variable_values_sorted
 import orange
 Discrete = orange.VarTypes.Discrete
 Continuous = orange.VarTypes.Continuous

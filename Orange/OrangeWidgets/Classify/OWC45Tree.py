@@ -10,6 +10,9 @@ import OWGUI
 from exceptions import Exception
 
 from orngWrap import PreprocessedLearner
+
+import Orange
+
 class OWC45Tree(OWWidget):
     settingsList = ["name",
                     "infoGain", "subset", "probThresh",
@@ -22,8 +25,11 @@ class OWC45Tree(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]#, ("C45 Tree", orange.C45Classifier)]
+        self.inputs = [("Data", ExampleTable, self.setData),
+                       ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        
+        self.outputs = [("Learner", orange.Learner),
+                        ("Classification Tree", Orange.classification.tree.TreeClassifier)]#, ("C45 Tree", orange.C45Classifier)]
 
         # Settings
         self.name = 'C4.5'

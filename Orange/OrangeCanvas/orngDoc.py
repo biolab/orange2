@@ -254,8 +254,11 @@ class SchemaDoc(QWidget):
         line.inWidget.updateTooltip()
         line.outWidget.updateTooltip()
         line.remove()
+        
         if saveTempDoc:
             self.saveTempDoc()
+            
+        qApp.processEvents(QEventLoop.ExcludeUserInputEvents)
 
     # remove line, connecting two widgets
     def removeLine(self, outWidget, inWidget, saveTempDoc=True):
@@ -349,8 +352,11 @@ class SchemaDoc(QWidget):
             
         self.widgets.remove(widget)
         widget.remove()
+        
         if saveTempDoc:
             self.saveTempDoc()
+            
+        qApp.processEvents(QEventLoop.ExcludeUserInputEvents)
         
         self.update_guide()
         orngHistory.logRemoveWidget(self.schemaID, id(widget), (widget.widgetInfo.category, widget.widgetInfo.name))

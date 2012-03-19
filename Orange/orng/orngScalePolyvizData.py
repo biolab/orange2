@@ -1,2 +1,2 @@
 from orngScaleLinProjData import *
-from Orange.preprocess.scaling import ScalePolyvizData as orngScalePolyvizData
+from Orange.data.preprocess.scaling import ScalePolyvizData as orngScalePolyvizData

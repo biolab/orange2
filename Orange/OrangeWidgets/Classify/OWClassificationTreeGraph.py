@@ -8,6 +8,8 @@
 from OWTreeViewer2D import *
 import OWColorPalette
 
+import Orange
+
 class PieChart(QGraphicsRectItem):
     def __init__(self, dist, r, parent, scene):
         QGraphicsRectItem.__init__(self, parent, scene)
@@ -200,7 +202,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
+        self.inputs = [("Classification Tree", Orange.classification.tree.TreeClassifier, self.ctree)]
         self.outputs = [("Data", ExampleTable)]
 
         self.scene=TreeGraphicsScene(self)

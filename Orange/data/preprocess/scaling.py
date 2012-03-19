@@ -12,23 +12,23 @@ This module is a conglomerate of Orange 2.0 modules orngScaleData,
 orngScaleLinProjData, orngScaleLinProjData3D, orngScalePolyvizData and orngScaleScatterPlotData. The
 documentation is poor and has to be improved in the future.
 
-.. autoclass:: Orange.preprocess.scaling.ScaleData
+.. autoclass:: Orange.data.preprocess.scaling.ScaleData
    :members:
    :show-inheritance:
 
-.. autoclass:: Orange.preprocess.scaling.ScaleLinProjData
+.. autoclass:: Orange.data.preprocess.scaling.ScaleLinProjData
    :members:
    :show-inheritance:
 
-.. autoclass:: Orange.preprocess.scaling.ScaleLinProjData3D
+.. autoclass:: Orange.data.preprocess.scaling.ScaleLinProjData3D
    :members:
    :show-inheritance:
 
-.. autoclass:: Orange.preprocess.scaling.ScalePolyvizData
+.. autoclass:: Orange.data.preprocess.scaling.ScalePolyvizData
    :members:
    :show-inheritance:
 
-.. autoclass:: Orange.preprocess.scaling.ScaleScatterPlotData
+.. autoclass:: Orange.data.preprocess.scaling.ScaleScatterPlotData
    :members:
    :show-inheritance:
 
@@ -55,8 +55,9 @@ import math
 
 import Orange
 import Orange.core
-import Orange.preprocess
 import Orange.data
+from Orange.data import preprocess
+
 from Orange.misc import caching
 
 import warnings
@@ -73,7 +74,7 @@ def get_variable_values_sorted(variable):
     
     """
     if variable.var_type == Orange.core.VarTypes.Continuous:
-        print "get_variable_values_sorted - attribute %s is a continuous variable" % (variable)
+        print "get_variable_values_sorted - attribute %s is a continuous variable" % variable
         return []
 
     values = list(variable.values)
@@ -82,7 +83,7 @@ def get_variable_values_sorted(variable):
     # do all attribute values containt integers?
     try:
         int_values = [(int(val), val) for val in values]
-    except:
+    except ValueError:
         return values
 
     # if all values were intergers, we first sort them ascendently
@@ -91,7 +92,7 @@ def get_variable_values_sorted(variable):
 
 @deprecated_keywords({"sortValuesForDiscreteAttrs":
                       "sort_values_for_discrete_attrs"})
-def get_variable_value_indices(variable, sort_values_for_discrete_attrs = 1):
+def get_variable_value_indices(variable, sort_values_for_discrete_attrs=1):
     """
     Create a dictionary with given variable. Keys are variable values, values
     are indices (transformed from string to int); in case all values are
@@ -119,9 +120,8 @@ def discretize_domain(data, remove_unused_values = 1, number_of_intervals = 2):
     values, discretize continuous attributes using entropy discretization (or
     equiN if we don't have a class or class is continuous).
     """
-    entro_disc = Orange.preprocess.EntropyDiscretization()
-    equi_disc  = Orange.preprocess.EquiNDiscretization(number_of_intervals =
-                                                       number_of_intervals)
+    entro_disc = preprocess.EntropyDiscretization()
+    equi_disc  = preprocess.EquiNDiscretization(number_of_intervals=number_of_intervals)
     disc_attrs = []
 
     classname = (data and len(data) > 0 and data.domain.class_var and
@@ -158,7 +158,7 @@ def discretize_domain(data, remove_unused_values = 1, number_of_intervals = 2):
             else:
                 new_attr = attr
             if remove_unused_values:
-                new_attr = Orange.preprocess.RemoveUnusedValues(new_attr, data)
+                new_attr = preprocess.RemoveUnusedValues(new_attr, data)
                 if new_attr is None:
                     raise Orange.core.KernelException, "No values"
             
