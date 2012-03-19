@@ -243,26 +243,21 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
              
         domain = table.domain
         
-        if numpy.std(y) < 10e-6: # almost constant variable
-            return Orange.regression.mean.MeanLearner(table)
-     
-        # set weights to the instances
-        W = numpy.identity(n)
         if weight:
-            for i, ins in enumerate(table):
-                W[i, i] = float(ins[weight])
+            weights = numpy.sqrt([float(ins[weight]) for ins in table])
+            weights = weights.reshape(y.shape)
+            X = weights * X
+            y = weights * y
+        
+        cov = dot(X.T, X)
+        
+        if self.ridge_lambda:
+            cov += self.ridge_lambda * numpy.eye(m + self.intercept)
 
-        compute_stats = self.compute_stats
         # adds some robustness by computing the pseudo inverse;
-        # normal inverse could fail due to singularity of the X.T * W * X
-        if self.ridge_lambda is None:
-            cov = pinv(dot(dot(X.T, W), X))
-        else:
-            cov = pinv(dot(dot(X.T, W), X) + 
-                       self.ridge_lambda * numpy.eye(m + self.intercept))
-            # TODO: find inferential properties of the estimators
-            compute_stats = False 
-        D = dot(dot(cov, X.T), W)
+        # normal inverse could fail due to the singularity of X.T * X
+        invcov = pinv(cov)
+        D = dot(invcov, X.T)
         coefficients = dot(D, y)
 
         mu_y, sigma_y = numpy.mean(y), numpy.std(y)
@@ -274,7 +269,8 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         else:
             std_coefficients = None
 
-        if compute_stats is False:
+        # TODO: find inferential properties of the estimators for ridge
+        if self.compute_stats is False or self.ridge_lambda:
             return LinearRegression(domain.class_var, domain,
                 coefficients=coefficients, std_coefficients=std_coefficients,
                 intercept=self.intercept)
@@ -288,7 +284,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         # total sum of squares (total variance)
         sst = numpy.sum((y - mu_y) ** 2)
         # sum of squares due to regression (explained variance)
-        ssr = numpy.sum((fitted - mu_y)**2)
+        ssr = numpy.sum((fitted - mu_y) ** 2)
         # error sum of squares (unexplaied variance)
         sse = sst - ssr
         # coefficient of determination
