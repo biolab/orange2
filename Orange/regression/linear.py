@@ -294,7 +294,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         df = n - 2
         sigma_square = sse / (n - m - 1)
         # standard error of the regression estimator, t-scores and p-values
-        std_error = sqrt(sigma_square * pinv(dot(X.T, X)).diagonal())
+        std_error = sqrt(sigma_square * invcov.diagonal())
         t_scores = coefficients / std_error
         p_vals = [stats.betai(df * 0.5, 0.5, df / (df + t * t))
                   for t in t_scores]
