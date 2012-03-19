@@ -245,8 +245,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         
         if weight:
             weights = numpy.sqrt([float(ins[weight]) for ins in table])
-            weights = weights.reshape(y.shape)
-            X = weights * X
+            X = weights.reshape(n, 1) * X
             y = weights * y
         
         cov = dot(X.T, X)
