@@ -492,7 +492,7 @@ class PreprocessorTestCase(DataTestCase):
 
 
 from Orange.distance import distance_matrix
-from Orange.misc import member_set
+from Orange.utils import member_set
 
 
 class DistanceTestCase(DataTestCase):
