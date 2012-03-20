@@ -87,7 +87,7 @@ The following variables are exposed as top level module members
     Directory where Orange Widgets settings are saved.
     
 `buffer_dir`:
-    Directory where :obj:`Orange.misc.serverfiles` downloads are stored.  
+    Directory where :obj:`Orange.utils.serverfiles` downloads are stored.  
 
 `orange_no_deprecated_members`:
     If True all deprecated members in Orange 2.5 will not be available.

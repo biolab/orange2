@@ -353,7 +353,7 @@ class TuneMParameters(TuneParameters):
         tableAndWeight = weight and (data, weight) or data
         numOfTests = sum([len(x[1]) for x in self.parameters])
         milestones = set(range(0, numOfTests, max(numOfTests / 100, 1)))
-        for itercount, valueindices in enumerate(Orange.misc.counters.LimitedCounter(\
+        for itercount, valueindices in enumerate(Orange.utils.counters.LimitedCounter(\
                                         [len(x[1]) for x in self.parameters])):
             values = [self.parameters[i][1][x] for i, x \
                       in enumerate(valueindices)]

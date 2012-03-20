@@ -3,9 +3,9 @@
 Render (``render``)
 ===================
 
-.. index:: misc
+.. index:: utils
 .. index::
-   single: misc; render
+   single: utils; render
 """
 
 from __future__ import with_statement

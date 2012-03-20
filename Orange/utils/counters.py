@@ -3,11 +3,11 @@
 Counters (``counters``)
 =======================
 
-.. index:: misc
+.. index:: utils
 .. index::
-     single: misc; counters
+     single: utils; counters
 
-:class:`Orange.misc.counters` contains a bunch of classes that generate sequences of various kinds.
+:class:`Orange.utils.counters` contains a bunch of classes that generate sequences of various kinds.
 
 """
 
@@ -76,7 +76,7 @@ class BooleanCounter:
 
 class LimitedCounter:
     """
-    This class is similar to :class:`~Orange.misc.counters.BooleanCounter` except that the digits do not count
+    This class is similar to :class:`~Orange.utils.counters.BooleanCounter` except that the digits do not count
     from 0 to 1, but to the limits that are specified individually for each digit.
 
     >>> for t in LimitedCounter([3, 5]):
