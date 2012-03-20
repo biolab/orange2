@@ -272,10 +272,36 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
 
     def get_decision_values(self, example):
         example = Orange.data.Instance(self.wrapped.domain, example)
-        return self.wrapped.get_decision_values(example)
-
+        dec_values = self.wrapped.get_decision_values(example)
+        # decision values are ordred by libsvm internal class values
+        # i.e. the order of labels in the data
+        map = self._get_libsvm_labels_map()
+        n_class = len(self.class_var.values)
+        new_values = []
+        for i in range(n_class - 1):
+            for j in range(i + 1, n_class):
+                # Internal indices
+                ni, nj = map.index(i), map.index(j)
+                mult = 1.0
+                if ni > nj:
+                    ni, nj = nj, ni
+                    # Multiply by -1 if we switch the order of the 1vs1
+                    # classifier.
+                    mult = -1.0
+                val_index = n_class * (n_class - 1) / 2 - (n_class - ni - 1) * (n_class - ni - 2) / 2 - (n_class - nj)
+                new_values.append(mult * dec_values[val_index])
+        return new_values
+        
     def get_model(self):
         return self.wrapped.get_model()
+    
+    def _get_libsvm_labels_map(self):
+        """Get the libsvm label mapping from the model string 
+        """
+        labels = [line for line in self.get_model().splitlines() \
+                  if line.startswith("label")]
+        labels = labels[0].split(" ")[1:] if labels else ["0"]
+        return [int(label) for label in labels]
 
     def __reduce__(self):
         return SVMClassifierWrapper, (self.wrapped,), dict([(name, val) \
@@ -291,13 +317,28 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         
         c1 = int(self.class_var(c1))
         c2 = int(self.class_var(c2))
+        
+        libsvm_label = [line for line in self.get_model().splitlines() \
+                        if line.startswith("label")]
+        
         n_class = len(self.class_var.values)
         
         if c1 == c2:
             raise ValueError("Different classes expected.")
-         
+        
+        bin_class_var = Orange.feature.Discrete("%s vs %s" % \
+                        (self.class_var.values[c1], self.class_var.values[c2]),
+                        values=["0", "1"])
+        
+        # Map the libsvm labels 
+        labels_map = self._get_libsvm_labels_map()
+        c1 = labels_map.index(c1)
+        c2 = labels_map.index(c2)
+        
+        mult = 1.0
         if c1 > c2:
             c1, c2 = c2, c1
+            mult = -1.0
         
         # Index of the 1vs1 binary classifier 
         classifier_i = n_class * (n_class - 1) / 2 - (n_class - c1 - 1) * (n_class - c1 - 2) / 2 - (n_class - c2)
@@ -308,15 +349,15 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         c2_range = range(class_indices[c2], class_indices[c2 + 1])
         
         coef_array = np.array(self.coef)
-        coef1 = coef_array[c2 - 1, c1_range]
-        coef2 = coef_array[c1, c2_range]
+        coef1 = mult * coef_array[c2 - 1, c1_range]
+        coef2 = mult * coef_array[c1, c2_range]
         
         # Support vectors for the binary classifier
         sv1 = [self.support_vectors[i] for i in c1_range]
         sv2 = [self.support_vectors[i] for i in c2_range]
         
         # Rho for the classifier
-        rho = self.rho[classifier_i]
+        rho = mult * self.rho[classifier_i]
         
         # Filter non zero support vectors
         nonzero1 = np.abs(coef1) > 0.0
@@ -330,10 +371,6 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         
         sv_indices1 = [i for i, nz in zip(c1_range, nonzero1) if nz]
         sv_indices2 = [i for i, nz in zip(c2_range, nonzero2) if nz]
-        
-        bin_class_var = Orange.feature.Discrete("%s vs %s" % \
-                        (self.class_var.values[c1], self.class_var.values[c2]),
-                        values=["0", "1"])
         
         model = self._binary_libsvm_model(bin_class_var, [coef1, coef2],
                                           [rho], sv_indices1 + sv_indices2)
