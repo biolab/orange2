@@ -175,9 +175,8 @@ class SVMLearner(_SVMLearner):
     def learn_classifier(self, data):
         if self.normalization:
             data = self._normalize(data)
-            svm = self.learner(data)
-            return SVMClassifierWrapper(svm)
-        return self.learner(data)
+        svm = self.learner(data)
+        return SVMClassifierWrapper(svm)
 
     @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback"})
     def tune_parameters(self, data, parameters=None, folds=5, verbose=0,
