@@ -33,7 +33,7 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
     skip_prob so that the number of randomly chosen features for each
     split is  (on average) as specified."""
 
-    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+    __new__ = Orange.utils._orange__new__(Orange.core.Learner)
 
     def __init__(self, base=None, rand=None): #pickle needs an empty init
         self.base = base
@@ -101,7 +101,7 @@ class RandomForestLearner(Orange.core.Learner):
 
     """
 
-    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+    __new__ = Orange.utils._orange__new__(Orange.core.Learner)
 
     def __init__(self, trees=100, attributes=None,\
                     name='Random Forest', rand=None, callback=None, base_learner=None, learner=None):
@@ -118,7 +118,7 @@ class RandomForestLearner(Orange.core.Learner):
 
         if not self.rand:
             self.rand = random.Random(0)
-        self.randorange = Orange.misc.Random(self.rand.randint(0,2**31-1))
+        self.randorange = Orange.utils.Random(self.rand.randint(0,2**31-1))
 
         if learner == None:
             self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
@@ -312,7 +312,7 @@ class ScoreFeature(orange.MeasureAttribute):
 
         if not self.rand:
             self.rand = random.Random(0)
-        self.randorange = Orange.misc.Random(self.rand.randint(0,2**31-1))
+        self.randorange = Orange.utils.Random(self.rand.randint(0,2**31-1))
 
         if learner == None:
             self.learner = _wrap_learner(base=self.base_learner, rand=self.rand, randorange=self.randorange)
@@ -476,7 +476,7 @@ class _RandomForestTreeLearner(Orange.core.Learner):
     a new split constructor.
     """
 
-    __new__ = Orange.misc._orange__new__(Orange.core.Learner)
+    __new__ = Orange.utils._orange__new__(Orange.core.Learner)
      
     def __init__(self, base, rand):
         self.base = base

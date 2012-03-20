@@ -3,8 +3,8 @@
 import sys
 sys.path += ["/root/orange"]
 
-import Orange.misc.addons
-rao = Orange.misc.addons.OrangeRegisteredAddOn(None, sys.argv[1])
+import Orange.utils.addons
+rao = Orange.utils.addons.OrangeRegisteredAddOn(None, sys.argv[1])
 rao.prepare(None, None, None, None, None, None, None, None, None, None)
 
 import zipfile, os

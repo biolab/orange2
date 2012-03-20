@@ -37,6 +37,8 @@ Orange Scripting Reference
 
    Orange.misc
 
+   Orange.utils
+
 ****************
 Index and search
 ****************

@@ -5,7 +5,7 @@ Add-on Management (``addons``)
 
 .. index:: add-ons
 
-Orange.misc.addons module provides a framework for Orange add-on management. As
+Orange.utils.addons module provides a framework for Orange add-on management. As
 soon as it is imported, the following initialization takes place: the list of
 installed add-ons is loaded, their directories are added to python path
 (:obj:`sys.path`) the callback list is initialized the stored repository list is
@@ -269,7 +269,7 @@ class OrangeRegisteredAddOn():
         :param version: version of the add-on. None retains existing value if
             it exists and does the same as "auto" otherwise; "auto" generates a
             new version number from the current date in format 'yyyy.mm.dd'
-            (see :obj:`Orange.misc.addons.suggest_version`); if that is equal
+            (see :obj:`Orange.utils.addons.suggest_version`); if that is equal
             to the current version, another integer component is appended.
         :type version: str
         

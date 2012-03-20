@@ -21,7 +21,7 @@ from Orange.data import preprocess
 
 from Orange import feature as variable
 
-from Orange.misc import _orange__new__
+from Orange.utils import _orange__new__
 
 def max_nu(data):
     """

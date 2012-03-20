@@ -5,7 +5,7 @@ import os, sys, uuid
 
 import OWGUI
 
-import Orange.misc.addons
+import Orange.utils.addons
 
 
 class AddOnPackDlg(QWizard):
@@ -38,7 +38,7 @@ class AddOnPackDlg(QWizard):
 
         p = OWGUI.widgetBox(page, "Select a registered add-on to pack", orientation="horizontal")
         self.aolist = OWGUI.listBox(p, self, callback=self.list_selection_callback)
-        self.registered_addons = Orange.misc.addons.registered_addons
+        self.registered_addons = Orange.utils.addons.registered_addons
         for ao in self.registered_addons:
             self.aolist.addItem(ao.name)
         pbtn = OWGUI.widgetBox(p, orientation="vertical")
@@ -162,13 +162,13 @@ class AddOnPackDlg(QWizard):
         import os
         xml = os.path.join(self.directory, "addon.xml")
         if os.path.isfile(xml):
-            self.ao = Orange.misc.addons.OrangeAddOn(xmlfile=open(xml, 'r'))
+            self.ao = Orange.utils.addons.OrangeAddOn(xmlfile=open(xml, 'r'))
         else:
-            self.ao = Orange.misc.addons.OrangeAddOn()
+            self.ao = Orange.utils.addons.OrangeAddOn()
         denone = lambda x: x if x else "" 
         self.e_id.setText(self.ao.id if self.ao.id else str(uuid.uuid1()))
         self.e_name.setText(self.ao.name or os.path.split(self.directory)[1])
-        self.e_version.setText(Orange.misc.addons.suggest_version(self.ao.version_str))
+        self.e_version.setText(Orange.utils.addons.suggest_version(self.ao.version_str))
         self.e_description.setPlainText(denone(self.ao.description))
         self.e_preferreddir.setText(denone(self.ao.preferred_directory))
         self.preferred_dir_touched = bool(denone(self.ao.preferred_directory))
@@ -212,7 +212,7 @@ class AddOnPackDlg(QWizard):
             self.e_oaofilename.setText(filename)
         
     def accept(self):
-        rao = Orange.misc.addons.OrangeRegisteredAddOn(self.ao.name, self.directory)
+        rao = Orange.utils.addons.OrangeRegisteredAddOn(self.ao.name, self.directory)
         rao.prepare(self.ao.id, self.ao.name, str(self.e_version.text()), unicode(self.e_description.toPlainText()), self.e_tags.parseEntries(),
                     self.e_aorganizations.parseEntries(), self.e_aauthors.parseEntries(), self.e_acontributors.parseEntries(), self.preferredDir,
                     str(self.e_homepage.text()))

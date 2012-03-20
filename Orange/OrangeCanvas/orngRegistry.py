@@ -11,7 +11,7 @@ orangeDir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 if not orangeDir in sys.path:
     sys.path.append(orangeDir)
 
-import orngEnviron, Orange.misc.addons
+import orngEnviron, Orange.utils.addons
 
 class WidgetDescription:
     def __init__(self, **attrs):
@@ -72,7 +72,7 @@ def readCategories(silent=False):
             directories.append((None, directory, None, "prototypes" in dirName.lower()))
             
     # read list of add-ons
-    for addOn in Orange.misc.addons.installed_addons.values() + Orange.misc.addons.registered_addons:
+    for addOn in Orange.utils.addons.installed_addons.values() + Orange.utils.addons.registered_addons:
         addOnWidgetsDir = os.path.join(addOn.directory, "widgets")
         if os.path.isdir(addOnWidgetsDir):
             directories.append((addOn.name, addOnWidgetsDir, addOn, False))

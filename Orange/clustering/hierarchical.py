@@ -976,10 +976,10 @@ class DendrogramPlotPylab(object):
         
         
 """
-Dendrogram ploting using Orange.misc.render
+Dendrogram ploting using Orange.utils.render
 """
 
-from Orange.misc.render import EPSRenderer, ColorPalette
+from Orange.utils.render import EPSRenderer, ColorPalette
 
 class DendrogramPlot(object):
     """ A class for drawing dendrograms.
@@ -1188,7 +1188,7 @@ def dendrogram_draw(file, cluster, attr_cluster=None, labels=None, data=None,
     
     """
     import os
-    from Orange.misc.render import PILRenderer, EPSRenderer, SVGRenderer
+    from Orange.utils.render import PILRenderer, EPSRenderer, SVGRenderer
     if isinstance(file, basestring):
         name, ext = os.path.splitext(file)
         format = ext.lower().lstrip(".") or format

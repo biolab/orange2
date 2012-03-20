@@ -29,14 +29,14 @@ def lookup_from_function(class_var, bound, function):
     """
     lookup = lookup_from_bound(class_var, bound)
     if lookup:
-        for i, attrs in enumerate(Orange.misc.counters.LimitedCounter(
+        for i, attrs in enumerate(Orange.utils.counters.LimitedCounter(
                     [len(var.values) for var in bound])):
             lookup.lookup_table[i] = Orange.data.Value(class_var, function(attrs))
         return lookup
     else:
         dom = Orange.data.Domain(bound, class_var)
         data = Orange.data.Table(dom)
-        for attrs in Orange.misc.counters.LimitedCounter(
+        for attrs in Orange.utils.counters.LimitedCounter(
                     [len(var.values) for var in dom.features]):
             data.append(Orange.data.Example(dom, attrs + [function(attrs)]))
         return LookupLearner(data)
@@ -88,9 +88,9 @@ def dump_lookup_function(func):
         
         lc = 0
         if len(boundset)==1:
-            cnt = Orange.misc.counters.LimitedCounter([len(x.values)+1 for x in boundset])
+            cnt = Orange.utils.counters.LimitedCounter([len(x.values)+1 for x in boundset])
         else:
-            cnt = Orange.misc.counters.LimitedCounter([len(x.values) for x in boundset])
+            cnt = Orange.utils.counters.LimitedCounter([len(x.values) for x in boundset])
         for ex in cnt:
             for i in range(len(ex)):
                 if ex[i] < len(boundset[i].values):

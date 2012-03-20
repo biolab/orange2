@@ -417,10 +417,10 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngMisc.compare2_bigger":"Orange.misc.selection.compare_bigger",
            "orngMisc.compare2_smaller":"Orange.misc.selection.compare_smaller",
 
-           "orngMisc.Renderer": "Orange.misc.render.Renderer",
-           "orngMisc.EPSRenderer": "Orange.misc.render.EPSRenderer",
-           "orngMisc.SVGRenderer": "Orange.misc.render.SVGRenderer",
-           "orngMisc.PILRenderer": "Orange.misc.render.PILRenderer",
+           "orngMisc.Renderer": "Orange.utils.render.Renderer",
+           "orngMisc.EPSRenderer": "Orange.utils.render.EPSRenderer",
+           "orngMisc.SVGRenderer": "Orange.utils.render.SVGRenderer",
+           "orngMisc.PILRenderer": "Orange.utils.render.PILRenderer",
            # The rest of orngMisc is handled by fix_orange_imports (maps to Orange.misc) 
 
            "orngEnsemble.BaggedLearner":"Orange.ensemble.bagging.BaggedLearner",

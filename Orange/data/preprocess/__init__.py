@@ -96,7 +96,7 @@ import Orange.data
 import Orange.feature
 import Orange.feature.discretization
 import Orange.feature.scoring
-from Orange.misc import _orange__new__, _orange__reduce__
+from Orange.utils import _orange__new__, _orange__reduce__
 
 class DiscretizeEntropy(Discretize):
     """ An discretizer that uses orange.EntropyDiscretization method but,

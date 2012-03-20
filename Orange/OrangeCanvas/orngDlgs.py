@@ -799,8 +799,8 @@ class AddOnManagerDialog(QDialog):
 
         self.addOnsToAdd = {}
         self.addOnsToRemove = {}
-        import Orange.misc.addons
-        self.repositories = [repo.clone() for repo in Orange.misc.addons.available_repositories]
+        import Orange.utils.addons
+        self.repositories = [repo.clone() for repo in Orange.utils.addons.available_repositories]
         
         # Bottom info pane
         
@@ -886,21 +886,21 @@ class AddOnManagerDialog(QDialog):
         pass
     
     def accept(self):
-        import Orange.misc.addons
+        import Orange.utils.addons
         if len(self.addOnsToAdd) + len(self.addOnsToRemove) > 0:
             summary = AddOnManagerSummary(self.addOnsToAdd, self.addOnsToRemove, self)
             if summary.exec_() == QDialog.Rejected:
                 return
-        Orange.misc.addons.available_repositories = self.repositories
-        Orange.misc.addons.save_repositories()
+        Orange.utils.addons.available_repositories = self.repositories
+        Orange.utils.addons.save_repositories()
         QDialog.accept(self)
         
     def addRepo(self):
         dlg = AddOnRepositoryData()
         while dlg.exec_() == QDialog.Accepted:
-            import Orange.misc.addons
+            import Orange.utils.addons
             try:
-                repo = Orange.misc.addons.OrangeAddOnRepository(dlg.name, dlg.url)   #TODO: This can take some time - inform the user!
+                repo = Orange.utils.addons.OrangeAddOnRepository(dlg.name, dlg.url)   #TODO: This can take some time - inform the user!
                 self.repositories.append(repo)
             except Exception, e:
                 QMessageBox.critical(self, "Error", "Could not add this repository: %s"%e)
@@ -915,7 +915,7 @@ class AddOnManagerDialog(QDialog):
             return
         dlg = AddOnRepositoryData(name=repo.name, url=repo.url)
         while dlg.exec_() == QDialog.Accepted:
-            import Orange.misc.addons
+            import Orange.utils.addons
             try:
                 oldname, oldurl = repo.name, repo.url
                 repo.name, repo.url = dlg.name, dlg.url
@@ -933,8 +933,8 @@ class AddOnManagerDialog(QDialog):
         if repo==None:
             return
         # Is it a default repository? We cannot delete it!
-        import Orange.misc.addons
-        if repo.__class__ is Orange.misc.addons.OrangeDefaultAddOnRepository:
+        import Orange.utils.addons
+        if repo.__class__ is Orange.utils.addons.OrangeDefaultAddOnRepository:
             return
         
         # Are there add-ons selected for installation from this repository? We remove the installation requests.
@@ -969,11 +969,11 @@ class AddOnManagerDialog(QDialog):
             
     def upgradeCandidates(self):
         result = []
-        import orngEnviron, Orange.misc.addons
+        import orngEnviron, Orange.utils.addons
         for item in self.tree.addOnItems:
             id = item.newest.id
             if id.startswith("registered:"): continue
-            installedAo = Orange.misc.addons.installed_addons[id] if id in Orange.misc.addons.installed_addons else None
+            installedAo = Orange.utils.addons.installed_addons[id] if id in Orange.utils.addons.installed_addons else None
             installed = installedAo.version if installedAo else None 
             selected = self.addOnsToAdd[id].version if id in self.addOnsToAdd else None
             if installed:
@@ -996,8 +996,8 @@ class AddOnManagerDialog(QDialog):
             newAddOn = self.getAddOnFromItem(self.tree.currentItem())
         if not newAddOn:
             return
-        import Orange.misc.addons
-        self.addOnsToRemove[newAddOn.id] = Orange.misc.addons.installed_addons[newAddOn.id]
+        import Orange.utils.addons
+        self.addOnsToRemove[newAddOn.id] = Orange.utils.addons.installed_addons[newAddOn.id]
         self.addOnsToAdd[newAddOn.id] = newAddOn
         if refresh:
             self.refreshInfoPane()
@@ -1010,9 +1010,9 @@ class AddOnManagerDialog(QDialog):
                 dir = os.path.split(dir)[0]
             if os.path.exists(os.path.join(dir, "widgets")):
                 name = os.path.split(dir)[1]
-                import Orange.misc.addons
+                import Orange.utils.addons
                 id = "registered:"+dir
-                self.addOnsToAdd[id] = Orange.misc.addons.OrangeRegisteredAddOn(name, dir, systemwide=False)
+                self.addOnsToAdd[id] = Orange.utils.addons.OrangeRegisteredAddOn(name, dir, systemwide=False)
                 self.refreshView(id)
             else:
                 QMessageBox.information( None, "Information", 'The specified folder does not seem to contain an Orange add-on.', QMessageBox.Ok + QMessageBox.Default)
@@ -1027,8 +1027,8 @@ class AddOnManagerDialog(QDialog):
     def listWidgets(self):
         addOn = self.getAddOnFromItem(self.tree.currentItem())
         if not addOn: return
-        import Orange.misc.addons
-        if addOn.__class__ is not Orange.misc.addons.OrangeAddOnInRepo: return
+        import Orange.utils.addons
+        if addOn.__class__ is not Orange.utils.addons.OrangeAddOnInRepo: return
         if not addOn.repository.has_web_script: return
         self.canvasDlg.helpWindow.open("%s/addOnServer.py/%s/doc/widgets/" % (addOn.repository.url, addOn.filename), modal=True)
         
@@ -1062,8 +1062,8 @@ class AddOnManagerDialog(QDialog):
                 else:
                     self.addOnsToAdd[id] = addOn
         else:                                 # Mark for removal (or delete installation request)
-            import Orange.misc.addons, orngEnviron
-            installedAo = Orange.misc.addons.installed_addons[id] if id in Orange.misc.addons.installed_addons else None 
+            import Orange.utils.addons, orngEnviron
+            installedAo = Orange.utils.addons.installed_addons[id] if id in Orange.utils.addons.installed_addons else None 
             if installedAo:
                 if not installedAo.directory.startswith(orngEnviron.addOnsDirUser):
                     item.disableToggleSignal = True
@@ -1073,9 +1073,9 @@ class AddOnManagerDialog(QDialog):
             if id in self.addOnsToAdd:
                 del self.addOnsToAdd[id]
             elif id not in self.addOnsToRemove:
-                import Orange.misc.addons
-                if id in Orange.misc.addons.installed_addons:
-                    self.addOnsToRemove[id] = Orange.misc.addons.installed_addons[id]
+                import Orange.utils.addons
+                if id in Orange.utils.addons.installed_addons:
+                    self.addOnsToRemove[id] = Orange.utils.addons.installed_addons[id]
                 elif id.startswith("registered:"):
                     self.addOnsToRemove[id] = item.newest
         self.resetChecked(id)   # Refresh all checkboxes for this add-on (it might be in multiple repositories!)
@@ -1084,11 +1084,11 @@ class AddOnManagerDialog(QDialog):
     def getRepoFromItem(self, item):
         if not item:
             return None
-        import Orange.misc.addons
+        import Orange.utils.addons
         if hasattr(item, "repository"):
             return item.repository
         else:
-            if item.newest.__class__ is not Orange.misc.addons.OrangeAddOnInRepo:
+            if item.newest.__class__ is not Orange.utils.addons.OrangeAddOnInRepo:
                 return None
             return  item.newest.repository
     
@@ -1104,15 +1104,15 @@ class AddOnManagerDialog(QDialog):
     def refreshInfoPane(self, item=None):
         if not item:
             item = self.tree.currentItem()
-        import Orange.misc.addons
+        import Orange.utils.addons
         if hasattr(item, "newest"):
-            if item.newest.__class__ is not Orange.misc.addons.OrangeRegisteredAddOn:
+            if item.newest.__class__ is not Orange.utils.addons.OrangeRegisteredAddOn:
                 import orngEnviron
                 addOn = item.newest
                 self.lblDescription.setText(addOn.description.strip() if addOn else "")
                 self.lblVerAvailValue.setText(addOn.version_str)
     
-                addOnInstalled = Orange.misc.addons.installed_addons[addOn.id] if addOn.id in Orange.misc.addons.installed_addons else None
+                addOnInstalled = Orange.utils.addons.installed_addons[addOn.id] if addOn.id in Orange.utils.addons.installed_addons else None
                 addOnToInstall = self.addOnsToAdd[addOn.id] if addOn.id in self.addOnsToAdd else None
                 addOnToRemove = self.addOnsToRemove[addOn.id] if addOn.id in self.addOnsToRemove else None
                 
@@ -1120,7 +1120,7 @@ class AddOnManagerDialog(QDialog):
                 self.upgradeButton.setVisible(addOnInstalled!=None and addOnInstalled.version < addOn.version and addOnToInstall!=addOn and addOnInstalled.directory.startswith(orngEnviron.addOnsDirUser))
                 self.donotUpgradeButton.setVisible(addOn.id in self.addOnsToRemove and addOnToInstall==addOn)
                 self.webButton.setVisible(addOn.homepage != None)
-                self.listWidgetsButton.setVisible(len(addOn.widgets) > 0 and addOn.__class__ is Orange.misc.addons.OrangeAddOnInRepo and addOn.repository.has_web_script)
+                self.listWidgetsButton.setVisible(len(addOn.widgets) > 0 and addOn.__class__ is Orange.utils.addons.OrangeAddOnInRepo and addOn.repository.has_web_script)
                 
                 if addOnToInstall:
                     if addOnToRemove: self.lblStatus.setText("marked for upgrade")
@@ -1140,9 +1140,9 @@ class AddOnManagerDialog(QDialog):
         
     def enableDisableButtons(self):
         repo = self.getRepoFromItem(self.tree.currentItem())
-        import Orange.misc.addons
-        self.delRepoButton.setEnabled(repo.__class__ is not Orange.misc.addons.OrangeDefaultAddOnRepository if repo!=None else False)
-        self.editRepoButton.setEnabled(repo.__class__ is not Orange.misc.addons.OrangeDefaultAddOnRepository if repo!=None else False)
+        import Orange.utils.addons
+        self.delRepoButton.setEnabled(repo.__class__ is not Orange.utils.addons.OrangeDefaultAddOnRepository if repo!=None else False)
+        self.editRepoButton.setEnabled(repo.__class__ is not Orange.utils.addons.OrangeDefaultAddOnRepository if repo!=None else False)
         self.upgradeAllButton.setEnabled(self.upgradeCandidates() != [])
         
     def currentItemChanged(self, new, previous):
@@ -1153,8 +1153,8 @@ class AddOnManagerDialog(QDialog):
         self.refreshInfoPane(new)
     
     def resetChecked(self, id):
-        import Orange.misc.addons
-        value = id in Orange.misc.addons.installed_addons or id.startswith("registered:")
+        import Orange.utils.addons
+        value = id in Orange.utils.addons.installed_addons or id.startswith("registered:")
         value = value and id not in self.addOnsToRemove
         value = value or id in self.addOnsToAdd
         for treeItem in self.tree.addOnItems:
@@ -1185,9 +1185,9 @@ class AddOnManagerDialog(QDialog):
                       + [(n, v) for (n, v) in addOnList if     n.has_single_widget]
         # Installed first
         if self.sortInstalledFirst and len(addOnList)>0 and "id" in addOnList[0][0].__dict__:
-            import Orange.misc.addons
-            addOnList = [(n, v) for (n, v) in addOnList if     n.id in Orange.misc.addons.installed_addons] \
-                      + [(n, v) for (n, v) in addOnList if not n.id in Orange.misc.addons.installed_addons]
+            import Orange.utils.addons
+            addOnList = [(n, v) for (n, v) in addOnList if     n.id in Orange.utils.addons.installed_addons] \
+                      + [(n, v) for (n, v) in addOnList if not n.id in Orange.utils.addons.installed_addons]
         
         for (i, (newest, versions)) in enumerate(addOnList):
             addOnItem = QTreeWidgetItem(repoItem if not insertToBeginning else None)
@@ -1274,15 +1274,15 @@ class AddOnManagerDialog(QDialog):
         
         # Add add-ons that are not present in any repository
         if self.searchStr.strip() == "":   # but we do not need to search among installed add-ons
-            import Orange.misc.addons
+            import Orange.utils.addons
             onlyInstalledAddOns = {}
-            for addOn in Orange.misc.addons.installed_addons.values():
+            for addOn in Orange.utils.addons.installed_addons.values():
                 if addOn.id not in shownAddOns:
                     onlyInstalledAddOns[addOn.id] = [addOn]
             self.addAddOnsToTree(self.tree, onlyInstalledAddOns, insertToBeginning=True)
             
         # Registered Add-ons
-        if Orange.misc.addons.registered_addons != [] or any([id.startswith("registered:") for id in self.addOnsToAdd]):
+        if Orange.utils.addons.registered_addons != [] or any([id.startswith("registered:") for id in self.addOnsToAdd]):
             regiItem = QTreeWidgetItem(self.tree)
             regiItem.repository = None
             regiItem.addOnItemsDict = {}
@@ -1294,8 +1294,8 @@ class AddOnManagerDialog(QDialog):
             
             addOnsToAdd = []
             import re
-            words = [word for word in re.split(Orange.misc.addons.index_re, self.searchStr.lower()) if word!=""]
-            visibleAddOns = [ao for ao in Orange.misc.addons.registered_addons+[ao for ao in self.addOnsToAdd.values() if ao.id.startswith("registered:")] if all([word in ao.name for word in words])]
+            words = [word for word in re.split(Orange.utils.addons.index_re, self.searchStr.lower()) if word!=""]
+            visibleAddOns = [ao for ao in Orange.utils.addons.registered_addons+[ao for ao in self.addOnsToAdd.values() if ao.id.startswith("registered:")] if all([word in ao.name for word in words])]
             self.addAddOnsToTree(regiItem, visibleAddOns)
             if selectedRegisteredAddOnId:
                 regiItem.setExpanded(True)
@@ -1431,7 +1431,7 @@ class AboutDlg(QDialog):
 
 class saveApplicationDlg(QDialog):
     def __init__(self, *args):
-        import Orange.misc.addons
+        import Orange.utils.addons
         
         apply(QDialog.__init__,(self,) + args)
         self.setWindowTitle("Set Widget Order")
