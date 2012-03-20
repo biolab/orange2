@@ -125,14 +125,15 @@ class OWRandomForest(OWWidget):
         if self.data:
             learner = self.constructLearner()
             pb = OWGUI.ProgressBar(self, iterations=self.trees)
-            learner.callback = pb.advance
+            self.progressBarInit()
+            learner.callback = lambda v: self.progressBarSet(100.0 * v)
             try:
                 self.classifier = learner(self.data)
                 self.classifier.name = self.name
             except Exception, (errValue):
                 self.error(str(errValue))
                 self.classifier = None
-            pb.finish()
+            self.progressBarFinished()
         else:
             self.classifier = None
 

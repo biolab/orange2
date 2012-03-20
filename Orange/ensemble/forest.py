@@ -157,8 +157,7 @@ class RandomForestLearner(Orange.core.Learner):
             # build the model from the bootstrap sample
             classifiers.append(learner(data, weight))
             if self.callback:
-                self.callback()
-            # if self.callback: self.callback((i+1.)/self.trees)
+                self.callback((i+1.)/self.trees)
 
         return RandomForestClassifier(classifiers = classifiers, name=self.name,\
                     domain=instances.domain, class_var=instances.domain.class_var)
