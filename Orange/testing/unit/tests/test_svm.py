@@ -5,9 +5,27 @@ from Orange.misc import testing
 from Orange.misc.testing import datasets_driven, test_on_datasets, test_on_data
 import orange
 
-import pickle
+import copy
 
-                
+import pickle
+import numpy as np
+
+def multiclass_from1sv1(dec_values, class_var):
+    n_class = len(class_var.values)
+    votes = [0] * n_class
+    p = 0
+    for i in range(n_class - 1):
+        for j in range(i + 1, n_class):
+            val = dec_values[p]
+            if val > 0:
+                votes[i] += 1
+            else:
+                votes[j] += 1
+            p += 1
+    max_i = np.argmax(votes)
+    return class_var(int(max_i))
+    
+    
 def svm_test_binary_classifier(self, data):
     if isinstance(data.domain.class_var, Orange.feature.Discrete):
         # Test binary classifiers equivalence.  
@@ -21,7 +39,11 @@ def svm_test_binary_classifier(self, data):
         pickled_bin_cls = pickle.loads(pickle.dumps(bin_cls))
         
         indices = Orange.data.sample.SubsetIndices2(p0=0.2)
-        sample = data.select(indices(data))
+        sample = data.select(indices(data), 0)
+        
+        learner = copy.copy(self.LEARNER)
+        learner.probability = False 
+        classifier_no_prob = learner(data)
         
         for inst in sample:
             d_val = list(self.classifier.get_decision_values(inst))
@@ -30,6 +52,12 @@ def svm_test_binary_classifier(self, data):
             for v1, v2, v3 in zip(d_val, d_val_b, d_val_b1):
                 self.assertAlmostEqual(v1, v2, places=3)
                 self.assertAlmostEqual(v1, v3, places=3)
+            
+            prediction_1 = classifier_no_prob(inst)
+            d_val = classifier_no_prob.get_decision_values(inst)
+            prediciton_2 = multiclass_from1sv1(d_val, classifier_no_prob.class_var)
+            self.assertEqual(prediction_1, prediciton_2)
+            
 
 datasets = testing.CLASSIFICATION_DATASETS + testing.REGRESSION_DATASETS
 @datasets_driven(datasets=datasets)
