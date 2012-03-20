@@ -2925,8 +2925,8 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
       if (array->nd != 2)
         PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
 
-     PVarList variables;
-     TVarList::const_iterator vi, ve;
+      PVarList variables;
+      TVarList::const_iterator vi;
 
       if (!domain) {
         TVarList lvariables;
@@ -2937,19 +2937,26 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
         }
         domain = mlnew TDomain(PVariable(), lvariables);
         variables = domain->variables;
-        ve = variables->end();
       }
 
       else {
-        if (array->dimensions[1] != domain->variables->size())
-          PYERROR(PyExc_AttributeError, "the number of columns in the array doesn't match the number of attributes", NULL);
+          int const nvars = domain->variables->size() + domain->classVars->size();
+          if (array->dimensions[1] != nvars) {
+              PyErr_Format(PyExc_AttributeError,
+                  "the number of columns (%i) in the array doesn't match the number of attributes (%i)",
+                  array->dimensions[1], nvars);
+              return NULL;
+          }
 
        variables = domain->variables;
-       ve = variables->end();
-       for(vi = variables->begin(); vi!=ve; vi++)
-				  if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
-					  PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
-			}
+       for(vi = variables->begin(); vi!=variables->end(); vi++)
+          if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
+		      PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
+	   
+       for(vi = domain->classVars->begin(); vi!=domain->classVars->end(); vi++) 
+		  if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
+			  PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
+      }
 
       const char arrayType = getArrayType(array);
       if (!strchr(supportedNumericTypes, arrayType)) {
@@ -2968,6 +2975,11 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
       const int &strideMaskRow = mask ? mask->strides[0] : strideRow;
       const int &strideMaskCol = mask ? mask->strides[1] : strideCol;
 
+      TVarList::const_iterator const vb(variables->begin());
+      TVarList::const_iterator const ve(variables->end());
+      TVarList::const_iterator const cb(domain->classVars->begin());
+      TVarList::const_iterator const ce(domain->classVars->end());
+
       try {
         TExample::iterator ei;
         char *rowPtr = array->data;
@@ -2979,7 +2991,12 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
           TExample *nex = mlnew TExample(domain);
 
           #define ARRAYTYPE(TYPE) \
-            for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol) \
+            for(ei = nex->begin(), vi = vb; vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol) \
+              if ((*vi)->varType == TValue::INTVAR) \
+                intValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
+              else \
+                floatValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
+            for(vi = cb; vi!=ce; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol) \
               if ((*vi)->varType == TValue::INTVAR) \
                 intValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
               else \
@@ -2998,7 +3015,12 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
             case 'L': ARRAYTYPE(unsigned long)
 
             case 'f':
-              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
+              for(ei = nex->begin(), vi = vb; vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
+                if ((*vi)->varType == TValue::INTVAR)
+                  intValInit(*ei, int(floor(0.5 + *(float *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
+                else
+                  floatValInit(*ei, *(float *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
+              for(vi = cb; vi!=ce; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
                 if ((*vi)->varType == TValue::INTVAR)
                   intValInit(*ei, int(floor(0.5 + *(float *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
                 else
@@ -3007,6 +3029,11 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 
             case 'd':
               for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
+                if ((*vi)->varType == TValue::INTVAR)
+                  intValInit(*ei, int(floor(0.5 + *(double *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
+                else
+                  floatValInit(*ei, *(double *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
+              for(vi = cb; vi!=ce; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
                 if ((*vi)->varType == TValue::INTVAR)
                   intValInit(*ei, int(floor(0.5 + *(double *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
                 else

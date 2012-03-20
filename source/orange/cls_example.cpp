@@ -59,14 +59,19 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
     return false;
   }
 
-  if (Py_ssize_t(dom->variables->size()) != PyList_Size(lst)) {
-    PyErr_Format(PyExc_IndexError, "invalid list size (%i items expected)", dom->variables->size());
+  int const nvars = dom->variables->size() + dom->classVars->size();
+  if (Py_ssize_t(nvars) != PyList_Size(lst)) {
+    PyErr_Format(PyExc_IndexError, "invalid list size (got %i, expected %i items)",
+        PyList_Size(lst), nvars);
     return false;
   }
 
   Py_ssize_t pos = 0;
   TExample::iterator ei(example.begin());
-  PITERATE(TVarList, vi, dom->variables) {
+  TVarList::iterator vi(dom->variables->begin());
+  TVarList::const_iterator const ve(dom->variables->end());
+  TVarList::const_iterator const ce(dom->classVars->end());
+  while(vi != ce) {
     PyObject *li=PyList_GetItem(lst, pos++);
     if (!li)
       PYERROR(PyExc_SystemError, "can't read the list", false);
@@ -106,6 +111,9 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
       }
       else
         ei++;
+    }
+    if (++vi == ve) {
+        vi = dom->classVars->begin();
     }
   }
 
