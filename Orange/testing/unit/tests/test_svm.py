@@ -1,5 +1,8 @@
 import Orange
-from Orange.classification.svm import SVMLearner, MeasureAttribute_SVMWeights, LinearLearner, RFE
+from Orange.classification.svm import SVMLearner, MeasureAttribute_SVMWeights,\
+                            LinearLearner, RFE, get_linear_svm_weights, \
+                            example_weighted_sum
+                            
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
 from Orange.misc import testing
 from Orange.misc.testing import datasets_driven, test_on_datasets, test_on_data
@@ -68,6 +71,35 @@ class LinearSVMTestCase(testing.LearnerTestCase):
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         svm_test_binary_classifier(self, dataset)
+        
+    
+    @test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS + ["zoo"])
+    def test_linear_weights_on(self, dataset):
+        # Test get_linear_svm_weights
+        classifier = self.LEARNER(dataset)
+        weights = get_linear_svm_weights(classifier, sum=True)
+        
+        weights = get_linear_svm_weights(classifier, sum=False)
+        
+        n_class = len(classifier.class_var.values)
+        
+        def class_pairs(n_class):
+            for i in range(n_class - 1):
+                for j in range(i + 1, n_class):
+                    yield i, j
+                    
+        l_map = classifier._get_libsvm_labels_map()
+        # Would need to map the rho values
+        if l_map == sorted(l_map):
+            for inst in dataset[:20]:
+                dec_values = classifier.get_decision_values(inst)
+                
+                for dec_v, weight, rho, pair in zip(dec_values, weights,
+                                        classifier.rho, class_pairs(n_class)):
+                    t_inst = Orange.data.Instance(classifier.domain, inst)                    
+                    dec_v1 = example_weighted_sum(t_inst, weight) - rho
+                    self.assertAlmostEqual(dec_v, dec_v1, 4)
+        
         
 @datasets_driven(datasets=datasets)
 class PolySVMTestCase(testing.LearnerTestCase):

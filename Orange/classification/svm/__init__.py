@@ -290,7 +290,7 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
                     mult = -1.0
                 val_index = n_class * (n_class - 1) / 2 - (n_class - ni - 1) * (n_class - ni - 2) / 2 - (n_class - nj)
                 new_values.append(mult * dec_values[val_index])
-        return new_values
+        return Orange.core.FloatList(new_values)
         
     def get_model(self):
         return self.wrapped.get_model()
@@ -313,7 +313,7 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
         """
         import numpy as np
         if self.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
-            raise TypeError("Wrong svm type.")
+            raise TypeError("SVM classification model expected.")
         
         c1 = int(self.class_var(c1))
         c2 = int(self.class_var(c2))
@@ -615,38 +615,30 @@ def get_linear_svm_weights(classifier, sum=True):
     weights = []
 
     class_var = SVs.domain.class_var
-    if classifier.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
-        classes = class_var.values
-    else:
-        classes = [""]
-    if len(classes) > 1:
-        sv_ranges = [(0, classifier.nSV[0])]
-        for n in classifier.nSV[1:]:
-            sv_ranges.append((sv_ranges[-1][1], sv_ranges[-1][1] + n))
-    else:
-        sv_ranges = [(0, len(SVs))]
-
+    if classifier.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
+        raise TypeError("SVM classification model expected.")
+    
+    classes = classifier.class_var.values
+    
     for i in range(len(classes) - 1):
         for j in range(i + 1, len(classes)):
+            # Get the coef and rho values from the binary sub-classifier
+            # Easier then using the full coef matrix (due to libsvm internal
+            # class  reordering)
+            bin_classifier = classifier.get_binary_classifier(i, j)
+            n_sv0 = bin_classifier.n_SV[0]
+            SVs = bin_classifier.support_vectors
             w = {}
-            coef_ind = j - 1
-            for sv_ind in range(*sv_ranges[i]):
+            
+            for SV, alpha in zip(SVs, bin_classifier.coef[0]):
                 attributes = SVs.domain.attributes + \
-                SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
+                SV.getmetas(False, Orange.feature.Descriptor).keys()
                 for attr in attributes:
                     if attr.varType == Orange.feature.Type.Continuous:
-                        update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
-                                       classifier.coef[coef_ind][sv_ind])
-            coef_ind = i
-            for sv_ind in range(*sv_ranges[j]):
-                attributes = SVs.domain.attributes + \
-                SVs[sv_ind].getmetas(False, Orange.feature.Descriptor).keys()
-                for attr in attributes:
-                    if attr.varType == Orange.feature.Type.Continuous:
-                        update_weights(w, attr, to_float(SVs[sv_ind][attr]), \
-                                       classifier.coef[coef_ind][sv_ind])
+                        update_weights(w, attr, to_float(SV[attr]), alpha)
+                
             weights.append(w)
-
+            
     if sum:
         scores = defaultdict(float)
 
@@ -655,7 +647,7 @@ def get_linear_svm_weights(classifier, sum=True):
                 scores[attr] += w_attr ** 2
         for key in scores:
             scores[key] = math.sqrt(scores[key])
-        return scores
+        return dict(scores)
     else:
         return weights
 
