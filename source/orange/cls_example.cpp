@@ -1075,10 +1075,24 @@ PyObject *Example_newId(TPyExample *self)
   PyCATCH
 }
 
-int Example_cmp(TPyExample *one, TPyExample *another)
+PyObject *richcmp_from_sign(const int &i, const int &op);
+
+PyObject *Example_richcmp(TPyExample *one, TPyExample *another, int op)
 { PyTRY
-    return PyExample_AS_Example(one)->compare(PyExample_AS_ExampleReference(another));
-  PyCATCH_1
+    PExample rone = PyExample_AS_Example(one);
+    TExample &ranother = PyExample_AS_ExampleReference(another);
+    if (rone->domain != ranother.domain) {
+        if ((op == Py_EQ) || (op == Py_NE)) {
+            PyObject *res = op == Py_NE ? Py_True : Py_False;
+            Py_INCREF(res);
+            return res;
+        }
+        else {
+            PYERROR(PyExc_ValueError, "examples are from different domains", NULL);
+        }
+    }
+    return richcmp_from_sign(rone->compare(ranother), op);
+  PyCATCH
 }
 
 
