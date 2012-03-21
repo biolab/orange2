@@ -128,7 +128,7 @@ class OWCalibratedClassifier(OWWidget):
             if self.optimalThreshold:
                 self.learner = orngWrap.ThresholdLearner(learner=self.baseLearner, storeCurve = 1)
             else:
-                self.learner = orngWrap.ThresholdLearner_fixed(learner=self.baseLearner, threshhold=self.threshold/100.0)
+                self.learner = orngWrap.ThresholdLearner_fixed(learner=self.baseLearner, threshold=self.threshold/100.0)
             self.learner.name = self.name
         else:
             self.learner = None
