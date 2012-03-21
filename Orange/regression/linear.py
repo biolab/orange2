@@ -228,16 +228,10 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
 
         # convertion to numpy
         A, y, w = table.to_numpy()
-        if A is None:
-            n, m = len(table), 0
-        else:
-            n, m = numpy.shape(A)
+        n, m = numpy.shape(A)
      
         if self.intercept:
-            if A is None:
-                X = numpy.ones([n, 1])
-            else:
-                X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
+            X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
         else:
             X = A
              
@@ -260,7 +254,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         coefficients = dot(D, y)
 
         mu_y, sigma_y = numpy.mean(y), numpy.std(y)
-        if A is not None:
+        if m > 0:
             cov_x = numpy.cov(X, rowvar=0)
 
             # standardized coefficients
