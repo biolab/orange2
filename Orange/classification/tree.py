@@ -1248,12 +1248,12 @@ Orange must be installed prior to building C4.5.
    from the `Rule Quest's site <http://www.rulequest.com/>`_ and extract
    them. The files will be modified in the
    further process.
-#. Download
-   `buildC45.zip <http://orange.biolab.si/orange/download/buildC45.zip>`_
-   and unzip its contents into the directory R8/Src of the C4.5 sources
+#. Copy orng/ensemble.c and orng/buildC45.py from the
+   Orange package into into the directory R8/Src of the C4.5 sources
    (this directory contains, for instance, the file average.c).
-#. Run buildC45.py, which will build the plug-in and put it next to 
-   orange.pyd (or orange.so on Linux/Mac).
+#. Run buildC45.py, which will build the plug-in and put it next to
+   orange.pyd (or orange.so on Linux/Mac). If the script fails, try
+   making all files in R8/Src writable.
 #. Run python, type ``import Orange`` and
    create ``Orange.classification.tree.C45Learner()``. This should
    succeed.
