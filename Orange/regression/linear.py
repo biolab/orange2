@@ -245,7 +245,8 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         cov = dot(X.T, X)
         
         if self.ridge_lambda:
-            cov += self.ridge_lambda * numpy.eye(m + self.intercept)
+            stride = cov.shape[0] + 1
+            cov.flat[self.intercept * stride::stride] += self.ridge_lambda
 
         # adds some robustness by computing the pseudo inverse;
         # normal inverse could fail due to the singularity of X.T * X
@@ -256,7 +257,6 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         mu_y, sigma_y = numpy.mean(y), numpy.std(y)
         if m > 0:
             cov_x = numpy.cov(X, rowvar=0)
-
             # standardized coefficients
             std_coefficients = sqrt(cov_x.diagonal()) / sigma_y * coefficients
         else:
@@ -283,7 +283,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         # coefficient of determination
         r2 = ssr / sst
         r2adj = 1 - (1 - r2) * (n - 1) / (n - m - 1)
-        F = (ssr / m) / (sst - ssr / (n - m - 1))
+        F = (ssr / m) / (sst - ssr / (n - m - 1)) if m else None
         df = n - 2
         sigma_square = sse / (n - m - 1)
         # standard error of the regression estimator, t-scores and p-values

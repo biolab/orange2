@@ -1555,11 +1555,8 @@ class PcaProjector(Projector):
         ax = fig.add_subplot(111)
 
         x_axis = range(len(self.eigen_values))
-#        x_labels = ["PC%d" % (i + 1, ) for i in x_axis]
-
-#        ax.set_xticks(x_axis)
-#        ax.set_xticklabels(x_labels)
-#        plt.setp(ax.get_xticklabels(), "rotation", 90)
+        if len(x_axis) < 5:
+            ax.set_xticks(x_axis)
         plt.grid(True)
 
         ax.set_xlabel('Principal Component Number')
