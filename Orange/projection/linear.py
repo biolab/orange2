@@ -1197,46 +1197,52 @@ S2NHeuristicLearner = deprecated_members({"FreeViz":
 class Projector(object):
     """
     Stores a linear projection of data and uses it to transform any given data with matching input domain.
-
-    .. attribute:: input_domain
-
-        Domain of the data set that was used to construct principal component
-        subspace.
-
-    .. attribute:: output_domain
-
-        Domain used in returned data sets. This domain has a continuous
-        variable for each axis in the projected space,
-        and no class variable(s).
-
-    .. attribute:: mean
-
-        Array containing means of each variable in the data set that was used
-        to construct the projection.
-
-    .. attribute:: stdev
-
-        An array containing standard deviations of each variable in the data
-        set that was used to construct the projection.
-
-    .. attribute:: standardize
-
-        True, if standardization was used when constructing the projection. If
-        set, instances will be standardized before being projected.
-
-    .. attribute:: projection
-
-        Array containing projection (vectors that describe the
-        transformation from input to output domain).
-
     """
+    #: Domain of the data set that was used to construct principal component subspace.
+    input_domain = None
+
+    #: Domain used in returned data sets. This domain has a continuous
+    #: variable for each axis in the projected space,
+    #: and no class variable(s).
+    output_domain = None
+
+    #: Array containing means of each variable in the data set that was used
+    #: to construct the projection.
+    mean = numpy.array(())
+
+    #: An array containing standard deviations of each variable in the data
+    #: set that was used to construct the projection.
+    stdev = numpy.array(())
+
+    #: True, if standardization was used when constructing the projection. If
+    #: set, instances will be standardized before being projected.
+    standardize = True
+
+    #: Array containing projection (vectors that describe the
+    #: transformation from input to output domain).
+    projection = numpy.array(()).reshape(0, 0)
+
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
-        if not hasattr(self, "output_domain"):
-            self.output_domain = Orange.data.Domain([Orange.feature.Continuous("a.%d"%(i+1)) for i in range(len(self.projection))], False)
 
+        features = []
+        for i in range(len(self.projection)):
+            f = feature.Continuous("Comp.%d" % (i + 1))
+            f.get_value_from = lambda ex, w: self._project_single(ex, w, f, i)
+            features.append(f)
 
-    def __call__(self, data):
+        self.output_domain = Orange.data.Domain(features,
+                                                self.input_domain.class_var,
+                                                class_vars=self.input_domain.class_vars)
+
+    def _project_single(self, example, return_what, new_feature, feature_idx):
+        ex = Orange.data.Table([example]).to_numpy("a")[0]
+        ex -= self.mean
+        if self.standardize:
+            ex /= self.stdev
+        return new_feature(numpy.dot(self.projection[feature_idx, :], ex.T)[0])
+
+    def __call__(self, dataset):
         """
         Project data.
 
@@ -1262,14 +1268,20 @@ class Projector(object):
         if self.standardize:
             Xd /= self.stdev
 
-        self.A = numpy.ma.dot(Xd, U.T)
+        self.A = numpy.dot(Xd, U.T)
 
-        return Orange.data.Table(self.output_domain, self.A.tolist())
+        # TODO: Delete when orange will support creating data.Table from masked array.
+        self.A = self.A.filled(0.) if isinstance(self.A, numpy.ma.core.MaskedArray) else self.A
+        # append class variable
+
+        class_, classes = dataset.to_numpy("c")[0], dataset.to_numpy("m")[0]
+        return data.Table(self.output_domain, numpy.hstack((self.A, class_, classes)))
+
 
 #color table for biplot
 Colors = ['bo', 'go', 'yo', 'co', 'mo']
 
-class Pca(object):
+class PCA(object):
     """
     Orthogonal transformation of data into a set of uncorrelated variables called
     principal components. This transformation is defined in such a way that the
@@ -1288,9 +1300,9 @@ class Pca(object):
 
     def __new__(cls, dataset=None, **kwds):
         optimizer = object.__new__(cls)
-        optimizer.__init__(**kwds)
 
         if dataset:
+            optimizer.__init__(**kwds)
             return optimizer(dataset)
         else:
             return optimizer
@@ -1302,18 +1314,6 @@ class Pca(object):
         self.variance_covered = min(1, variance_covered)
         self.use_generalized_eigenvectors = use_generalized_eigenvectors
 
-    def _pca(self, dataset, Xd, Xg):
-        n,m = Xd.shape
-        if n < m:
-            C = numpy.ma.dot(Xg.T, Xd.T)
-            V, D, T = numpy.linalg.svd(C)
-            U = numpy.ma.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1, 1))
-        else:
-            C = numpy.ma.dot(Xg, Xd)
-            U, D, T = numpy.linalg.svd(C)
-            U = U.T  # eigenvectors are now in rows
-        return U, D
-
     def __call__(self, dataset):
         """
         Perform a PCA analysis on a data set and return a linear projector
@@ -1324,18 +1324,7 @@ class Pca(object):
 
         :rtype: :class:`~Orange.projection.linear.PcaProjector`
         """
-
-        X = dataset.to_numpy_MA("a")[0]
-        N,M = X.shape
-        Xm = numpy.mean(X, axis=0)
-        Xd = X - Xm
-
-        #take care of the constant features
-        stdev = numpy.std(Xd, axis=0)
-        relevant_features = stdev != 0
-        Xd = Xd[:, relevant_features]
-        if self.standardize:
-            Xd /= stdev[relevant_features]
+        Xd, stdev, mean, relevant_features = self._normalize_data(dataset)
 
         #use generalized eigenvectors
         if self.use_generalized_eigenvectors:
@@ -1344,48 +1333,82 @@ class Pca(object):
         else:
             Xg = Xd.T
 
-        #actual pca
+        components, variances = self._perform_pca(dataset, Xd, Xg)
+        components = self._insert_zeros_for_constant_features(len(dataset.domain.features),
+                                                              components,
+                                                              relevant_features)
+
+        variances, components, variance_sum = self._select_components(variances, components)
+
+        n, m = components.shape
+
+        return PcaProjector(input_domain=dataset.domain,
+                            mean=mean,
+                            stdev=stdev,
+                            standardize=self.standardize,
+                            eigen_vectors=components,
+                            projection=components,
+                            eigen_values=variances,
+                            variance_sum=variance_sum)
+
+    def _normalize_data(self, dataset):
+        if not len(dataset) or not len(dataset.domain.features):
+            raise ValueError("Empty dataset")
+        X = dataset.to_numpy("a")[0]
+
+        Xm = numpy.mean(X, axis=0)
+        Xd = X - Xm
+
+        if not Xd.any():
+            raise ValueError("All features are constant")
+
+        #take care of the constant features
+        stdev = numpy.std(Xd, axis=0)
+        stdev[stdev == 0] = 1. # to prevent division by zero
+        relevant_features = stdev != 0
+        Xd = Xd[:, relevant_features]
+        if self.standardize:
+            Xd /= stdev[relevant_features]
+        return Xd, stdev, Xm, relevant_features
+
+    def _perform_pca(self, dataset, Xd, Xg):
         n, m = Xd.shape
-        U, D = self._pca(dataset, Xd, Xg)
+        if n < m:
+            C = numpy.dot(Xg.T, Xd.T)
+            V, D, T = numpy.linalg.svd(C)
+            U = numpy.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1, 1))
+        else:
+            C = numpy.dot(Xg, Xd)
+            U, D, T = numpy.linalg.svd(C)
+            U = U.T  # eigenvectors are now in rows
+        return U, D
 
-        #insert zeros for constant features
-        n, m = U.shape
-        if m != M:
-            U_ = numpy.zeros((n, M))
-            U_[:, relevant_features] = U
-            U = U_
-
+    def _select_components(self, D, U):
         variance_sum = D.sum()
-
         #select eigen vectors
         if self.variance_covered != 1:
             nfeatures = numpy.searchsorted(numpy.cumsum(D) / variance_sum,
                                            self.variance_covered) + 1
             U = U[:nfeatures, :]
             D = D[:nfeatures]
-
         if self.max_components > 0:
             U = U[:self.max_components, :]
             D = D[:self.max_components]
+        return D, U, variance_sum
 
+    def _insert_zeros_for_constant_features(self, original_dimension, U, relevant_features):
         n, m = U.shape
-        pc_domain = Orange.data.Domain([Orange.feature.Continuous("Comp.%d"%
-            (i + 1)) for i in range(n)], False)
+        if m != original_dimension:
+            U_ = numpy.zeros((n, original_dimension))
+            U_[:, relevant_features] = U
+            U = U_
+        return U
 
-        return PcaProjector(input_domain=dataset.domain,
-            output_domain = pc_domain,
-            pc_domain = pc_domain,
-            mean = Xm,
-            stdev = stdev,
-            standardize = self.standardize,
-            eigen_vectors = U,
-            projection = U,
-            eigen_values = D,
-            variance_sum = variance_sum)
+Pca = PCA
 
 
 class Spca(Pca):
-    def _pca(self, dataset, Xd, Xg):
+    def _perform_pca(self, dataset, Xd, Xg):
         # define the Laplacian matrix
         c = dataset.to_numpy("c")[0]
         l = -numpy.array(numpy.hstack([(c != v) for v in c]), dtype='f')
@@ -1393,31 +1416,19 @@ class Spca(Pca):
 
         Xg = numpy.dot(Xg, l)
 
-        return Pca._pca(self, dataset, Xd, Xg)
+        return Pca._perform_pca(self, dataset, Xd, Xg)
 
+
+@deprecated_members({"pc_domain": "output_domain"})
 class PcaProjector(Projector):
-    """
-    .. attribute:: pc_domain
+    #: Synonymous for :obj:`~Orange.projection.linear.Projector.projection`.
+    eigen_vectors = numpy.array(()).reshape(0, 0)
 
-        Synonymous for :obj:`~Orange.projection.linear.Projector.output_domain`.
+    #: Array containing standard deviations of principal components.
+    eigen_values = numpy.array(())
 
-    .. attribute:: eigen_vectors
-
-        Synonymous for :obj:`~Orange.projection.linear.Projector.projection`.
-
-    .. attribute:: eigen_values
-
-        Array containing standard deviations of principal components.
-
-    .. attribute:: variance_sum
-
-        Sum of all variances in the data set that was used to construct the PCA
-        space.
-
-    """
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
+    #: Sum of all variances in the data set that was used to construct the PCA space.
+    variance_sum = 0.
 
     def __str__(self):
         ncomponents = 10
@@ -1428,29 +1439,23 @@ class PcaProjector(Projector):
             "",
             "Std. deviation of components:",
             " ".join(["              "] +
-                     ["%10s" % a.name for a in self.pc_domain.attributes]),
+                     ["%10s" % a.name for a in self.output_domain.attributes]),
             " ".join(["Std. deviation"] +
                      ["%10.3f" % a for a in self.eigen_values]),
             " ".join(["Proportion Var"] +
-                     ["%10.3f" % a for a in  self.eigen_values / s * 100]),
+                     ["%10.3f" % a for a in self.eigen_values / s * 100]),
             " ".join(["Cumulative Var"] +
                      ["%10.3f" % a for a in cs * 100]),
             "",
-            #"Loadings:",
-            #" ".join(["%10s"%""] + ["%10s" % a.name for a in self.pc_domain]),
-            #"\n".join([
-            #    " ".join([a.name] + ["%10.3f" % b for b in self.eigen_vectors.T[i]])
-            #          for i, a in enumerate(self.input_domain.attributes)
-            #          ])
-        ]) if len(self.pc_domain) <= ncomponents else\
+            ]) if len(self.output_domain) <= ncomponents else\
         "\n".join([
             "PCA SUMMARY",
             "",
             "Std. deviation of components:",
             " ".join(["              "] +
-                     ["%10s" % a.name for a in self.pc_domain.attributes[:ncomponents]] +
+                     ["%10s" % a.name for a in self.output_domain.attributes[:ncomponents]] +
                      ["%10s" % "..."] +
-                     ["%10s" % self.pc_domain.attributes[-1].name]),
+                     ["%10s" % self.output_domain.attributes[-1].name]),
             " ".join(["Std. deviation"] +
                      ["%10.3f" % a for a in self.eigen_values[:ncomponents]] +
                      ["%10s" % ""] +
@@ -1464,30 +1469,15 @@ class PcaProjector(Projector):
                      ["%10s" % ""] +
                      ["%10.3f" % (cs[-1] * 100)]),
             "",
-            #"Loadings:",
-            #" ".join(["%16s" % ""] +
-            #         ["%8s" % a.name for a in self.pc_domain.attributes[:ncomponents]] +
-            #         ["%8s" % "..."] +
-            #         ["%8s" % self.pc_domain.attributes[-1].name]),
-            #"\n".join([
-            #    " ".join(["%16.16s" %a.name] +
-            #             ["%8.3f" % b for b in self.eigen_vectors.T[i, :ncomponents]] +
-            #             ["%8s" % ""] +
-            #             ["%8.3f" % self.eigen_vectors.T[i, -1]])
-            #          for i, a in enumerate(self.input_domain.attributes)
-            #          ])
-        ])
+            ])
 
 
-
-    ################ Plotting functions ###################
-
-    def scree_plot(self, filename = None, title = 'Scree Plot'):
+    def scree_plot(self, filename=None, title='Scree Plot'):
         """
         Draw a scree plot of principal components
 
-        :param filename: Name of the file to which the plot will be saved. \
-        If None, plot will be displayed instead.
+        :param filename: Name of the file to which the plot will be saved.
+                         If None, plot will be displayed instead.
         :type filename: str
         :param title: Plot title
         :type title: str
@@ -1502,11 +1492,6 @@ class PcaProjector(Projector):
         ax = fig.add_subplot(111)
 
         x_axis = range(len(self.eigen_values))
-#        x_labels = ["PC%d" % (i + 1, ) for i in x_axis]
-
-#        ax.set_xticks(x_axis)
-#        ax.set_xticklabels(x_labels)
-#        plt.setp(ax.get_xticklabels(), "rotation", 90)
         plt.grid(True)
 
         ax.set_xlabel('Principal Component Number')
@@ -1526,14 +1511,14 @@ class PcaProjector(Projector):
         else:
             plt.show()
 
-    def biplot(self, filename = None, components = [0,1], title = 'Biplot'):
+    def biplot(self, filename=None, components=(0, 1), title='Biplot'):
         """
         Draw biplot for PCA. Actual projection must be performed via pca(data)
         before bipot can be used.
 
-        :param filename: Name of the file to which the plot will be saved. \
-        If None, plot will be displayed instead.
-        :type plot: str
+        :param filename: Name of the file to which the plot will be saved.
+                         If None, plot will be displayed instead.
+        :type filename: str
         :param components: List of two components to plot.
         :type components: list
         :param title: Plot title
