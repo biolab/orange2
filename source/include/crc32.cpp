@@ -1,7 +1,7 @@
-unsigned long crc_table[256];
+unsigned int crc_table[256];
 
-long reflect(unsigned long ref, char ch) 
-{ unsigned long value(0); 
+int reflect(unsigned int ref, char ch)
+{ unsigned int value(0);
 
   for(int i = 1; i < (ch + 1); i++) {
     if(ref & 1) 

@@ -149,7 +149,7 @@ public:
   PVariable hasContinuousAttributes(bool checkClass = true) const;
   PVariable hasOtherAttributes(bool checkClass = true) const;
   
-  void addToCRC(unsigned long &crc) const;
+  void addToCRC(unsigned int &crc) const;
   int sumValues() const;
 };
 
