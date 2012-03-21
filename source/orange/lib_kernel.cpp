@@ -3469,22 +3469,13 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     PyObject *X, *y, *w, *my, *mask = NULL, *masky = NULL, *maskmy = NULL;
     double *Xp, *yp, *myp, *wp;
     signed char *mp = NULL, *mpy = NULL, *mpmy = NULL;
-    if (columns) {
-      X = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "d");
-      if (!X)
+    X = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "d");
+    if (!X)
         return PYNULL;
-
-      Xp = (double *)((PyArrayObject *)X)->data;
-
-      if (maskedArray) {
+    Xp = columns ? (double *)((PyArrayObject *)X)->data : NULL;
+    if (maskedArray) {
         mask = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "b");
         mp = (signed char *)((PyArrayObject *)mask)->data;
-      }
-    }
-    else {
-      X = Py_None;
-      Py_INCREF(X);
-      Xp = NULL;
     }
 
     if (classVector) {
