@@ -2865,8 +2865,9 @@ PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return L
 
 TExampleTable *readListOfExamples(PyObject *args)
 {
-  if (isSomeNumeric_wPrecheck(args))
-    return readListOfExamples(args, PDomain(), false);
+    if (isSomeNumeric_wPrecheck(args))
+      return readListOfExamples(args, PDomain(), false);
+
 
   if (PySequence_Check(args)) {
     Py_ssize_t size=PySequence_Size(args);
@@ -2915,9 +2916,8 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
   else if (isSomeMaskedNumeric_wPrecheck(args)) {
     array = (PyArrayObject *)(args);
     mask = (PyArrayObject *)PyObject_GetAttrString(args, "mask");
-    if (PyBool_Check((PyObject *)mask)) {
-      Py_DECREF((PyObject *)mask);
-      mask = NULL;
+    if (!mask) {
+        PyErr_Clear();
     }
   }
 

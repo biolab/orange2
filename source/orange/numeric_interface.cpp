@@ -91,7 +91,7 @@ bool isSomeNumeric(PyObject *obj)
 }
   
 bool isSomeMaskedNumeric_wPrecheck(PyObject *args) {
-  static char *numericNames[] = {"numpy.core.ma.MaskedArray", "numarray.ma.MA.MaskedArray", 0};
+  static char *numericNames[] = {"MaskedArray", "numpy.ma.core.MaskedArray", "numarray.ma.MA.MaskedArray", 0};
   for(char **nni = numericNames; *nni; nni++)
     if (!strcmp(args->ob_type->tp_name, *nni))
       return isSomeMaskedNumeric(args);
