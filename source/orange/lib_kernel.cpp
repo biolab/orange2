@@ -2919,6 +2919,10 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
     if (!mask) {
         PyErr_Clear();
     }
+    else if (!isSomeNumeric_wPrecheck((PyObject *)mask)) {
+      Py_DECREF((PyObject *)mask);
+      mask = NULL;
+    }
   }
 
   if (array) {
