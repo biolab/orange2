@@ -386,12 +386,12 @@ inline void addToCRC(unsigned long &crc, const PVarList &vars, TValue *&vli)
 {
   const_PITERATE(TVarList, vi, vars) {
     if ((*vi)->varType == TValue::INTVAR)
-      add_CRC((const unsigned long)(vli->isSpecial() ? ILLEGAL_INT : vli->intV), crc);
+      add_CRC(vli->isSpecial() ? ILLEGAL_INT : vli->intV, crc);
     else if (((*vi)->varType == TValue::FLOATVAR))
       add_CRC(vli->isSpecial() ? ILLEGAL_FLOAT : vli->floatV, crc);
     else if ((*vi)->varType == STRINGVAR) {
       if (vli->isSpecial() || !vli->svalV)
-        add_CRC((const unsigned long)ILLEGAL_INT, crc);
+        add_CRC(ILLEGAL_INT, crc);
       else
         add_CRC(vli->svalV.AS(TStringValue)->value.c_str(), crc);
     }
@@ -410,12 +410,12 @@ void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
       add_CRC((const unsigned long)(mi->first), crc);
       const TValue &val = mi->second;
       if (val.varType == TValue::INTVAR)
-        add_CRC((const unsigned long)(val.isSpecial() ? ILLEGAL_INT : val.intV), crc);
+        add_CRC(val.isSpecial() ? ILLEGAL_INT : val.intV, crc);
       else if (val.varType == TValue::INTVAR)
         add_CRC(val.isSpecial() ? ILLEGAL_FLOAT: val.floatV, crc);
       else if (val.varType == STRINGVAR) {
         if (val.isSpecial()  || !vli->svalV)
-          add_CRC((const unsigned long)ILLEGAL_INT, crc);
+          add_CRC(ILLEGAL_INT, crc);
         else
           add_CRC(val.svalV.AS(TStringValue)->value.c_str(), crc);
       }

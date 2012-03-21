@@ -31,6 +31,9 @@ extern unsigned long crc_table[256];
       b != e; \
       crc = (crc >> 8) ^ crc_table[(crc & 0xFF) ^ *(b++)]); \
 
+inline void add_CRC(const int data, unsigned long &crc)
+{ ADD_CRC }
+
 inline void add_CRC(const unsigned long data, unsigned long &crc)
 { ADD_CRC }
 
