@@ -22,8 +22,14 @@ else
 	LOG_DIR=/Volumes/download/buildLogs/osx
 fi
 
+
 if [ ! -e $WORK_DIR ]; then
 	mkdir -p $WORK_DIR
+fi
+
+
+if [ ! $LOCAL ]; then
+	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 fi
 
 SOURCES_DIR=$PUBLISH_DIR/sources
@@ -53,7 +59,7 @@ FINK_ROOT=/sw
 
 if [ ! $LOCAL ]; then
 	# Compare with the published info files
-	BASE="http://orange.biolab.si/fink/dists/$ARCH/main/finkinfo"
+	BASE="http://orange.biolab.si/fink/dists/10.$MAC_VERSION/main/finkinfo"
 else
 	# Compare with the local info files
 	BASE="file://$FINK_ROOT/fink/dists/local/main/finkinfo"
@@ -90,8 +96,12 @@ if [ ! -e $FINK_INFO_DIR ]; then
 	mkdir -p $FINK_INFO_DIR
 fi
 
-# Directory where fink .info templates are
-FINK_TEMPLATES=$WORK_DIR/repos/orange/install-scripts/mac/fink
+# Directory where fink .info templates are stored
+FINK_TEMPLATES=$WORK_DIR/fink
+
+if [ ! -e $FINK_TEMPLATES ]; then
+	mkdir -p $FINK_TEMPLATES
+fi
 
 FINK_LOG=$WORK_DIR/fink-daily-build.log
 
@@ -99,16 +109,19 @@ echo "" > $FINK_LOG
 
 if [[ $NEW_ORANGE || $FORCE ]]; then
 	FINK_ORANGE_SOURCE_TEMPLATE="Orange-%v.tar.gz"
+	curl --silent -o $FINK_TEMPLATES/orange-gui-hg-py.info https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink/orange-gui-hg-py.info
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-hg-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINK_INFO_DIR/orange-gui-hg-py.info >> $FINK_LOG 2>&1
 fi
 
 if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 	FINK_BIOINFORMATICS_SOURCE_TEMPLATE="Orange-Bioinformatics-%v.tar.gz"
+	curl --silent -o $FINK_TEMPLATES/orange-bioinformatics-gui-hg-py.info https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink/orange-bioinformatics-gui-hg-py.info
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-hg-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINK_INFO_DIR/orange-bioinformatics-gui-hg-py.info >> $FINK_LOG 2>&1
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
 	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
+	curl --silent -o $FINK_TEMPLATES/orange-text-gui-hg-py.info https://bitbucket.org/biolab/orange/raw/tip/install-scripts/mac/fink/orange-text-gui-hg-py.info
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-hg-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-hg-py.info >> $FINK_LOG 2>&1
 fi
 
