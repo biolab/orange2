@@ -7,22 +7,33 @@ import math
 import random
 import numpy
 
+from Orange import classification, data, feature
+from Orange.classification import knn
+
 from Orange.data.preprocess.scaling import ScaleLinProjData
 from Orange.orng import orngVisFuncts as visfuncts
-from Orange.utils import deprecated_keywords
-from Orange.utils import deprecated_members
+from Orange.utils import deprecated_keywords, deprecated_members
 
 try:
     import numpy.ma as MA
-except:
+except ImportError:
     import numpy.core.ma as MA
+
+class enum(int):
+    def set_name(self, name):
+        self.name = name
+        return self
+
+    def __repr__(self):
+        return getattr(self, "name", str(self))
+
 
 #implementation
 FAST_IMPLEMENTATION = 0
 SLOW_IMPLEMENTATION = 1
 LDA_IMPLEMENTATION = 2
 
-LAW_LINEAR = 0
+LAW_LINEAR = enum(0).set_name("LAW_LINEAR")
 LAW_SQUARE = 1
 LAW_GAUSSIAN = 2
 LAW_KNN = 3
@@ -35,13 +46,14 @@ DR_PLS = 2
 def normalize(x):
     return x / numpy.linalg.norm(x)
 
+
 def center(matrix):
-    '''centers all variables, i.e. subtracts averages in colomns
-    and divides them by their standard deviations'''
-    n,m = numpy.shape(matrix)
-    return (matrix - numpy.multiply(matrix.mean(axis = 0),
-                                    numpy.ones((n,m))))/numpy.std(matrix,
-                                                                  axis = 0)
+    """centers all variables, i.e. subtracts averages in colomns
+    and divides them by their standard deviations"""
+    n, m = numpy.shape(matrix)
+    return (matrix - numpy.multiply(matrix.mean(axis=0),
+                                    numpy.ones((n, m)))) / numpy.std(matrix,
+                                                                     axis=0)
 
 
 class FreeViz:
@@ -50,78 +62,67 @@ class FreeViz:
     written in C++. Differs from other linear projection optimizers in that it itself can store the data
     to make iterative optimization and visualization possible. It can, however, still be used as any other
     projection optimizer by calling (:obj:`~Orange.projection.linear.FreeViz.__call__`) it.
-    
-    .. attribute:: attract_g
-    
-    Coefficient for the attractive forces. By increasing or decreasing the ratio
-    between :obj:`attract_g` and :obj:`repel_g`, you can make one kind of the
-    forces stronger. Default: 1.
-    
-    .. attribute:: repel_g
-    
-    Coefficient for the repulsive forces. By increasing or decreasing the ratio
-    between :obj:`attract_g` and :obj:`repel_g`, you can make one kind of the
-    forces stronger. Default: 1.
-    
-    .. attribute:: force_balancing
-    
-    If set (default is False), the forces are balanced so that the total sum of
-    the attractive equals the total of repulsive, before they are multiplied by
-    the above factors. (By our experience, this gives bad results so you may
-    want to leave this alone.)
-    
-    .. attribute:: law
-    
-    Can be LAW_LINEAR, LAW_SQUARE, LAW_GAUSSIAN, LAW_KNN or LAW_LINEAR_PLUS.
-    Default is LAW_LINEAR, which means that the attractive forces increase
-    linearly by the distance and the repulsive forces are inversely
-    proportional to the distance. LAW_SQUARE would make them rise or fall with
-    the square of the distance, LAW_GAUSSIAN is based on a kind of
-    log-likelihood estimation, LAW_KNN tries to directly optimize the
-    classification accuracy of the kNN classifier in the projection space, and
-    in LAW_LINEAR_PLUS both forces rise with the square of the distance,
-    yielding a method that is somewhat similar to PCA. We found the first law
-    perform the best, with the second to not far behind.
-    
-    .. attribute:: force_sigma
-    
-    The sigma to be used in LAW_GAUSSIAN and LAW_KNN.
-    
-    .. attribute:: mirror_symmetry
-    
-    If enabled, it keeps the projection of the second attribute on the upper
-    side of the graph (the first is always on the right-hand x-axis). This is
-    useful when comparing whether two projections are the same, but has no
-    effect on the projection's clarity or its classification accuracy.
-
-    There are some more, undescribed, methods of a more internal nature.
-    
     """
-    
-    def __init__(self, graph = None):
+
+    #: Coefficient for the attractive forces. By increasing or decreasing the ratio
+    #: between :obj:`attract_g` and :obj:`repel_g`, you can make one kind of the
+    #: forces stronger.
+    attract_g = 1.
+
+    #: Coefficient for the repulsive forces. By increasing or decreasing the ratio
+    #: between :obj:`attract_g` and :obj:`repel_g`, you can make one kind of the
+    #: forces stronger.
+    repel_g = 1.
+
+    #: If set, the forces are balanced so that the total sum of
+    #: the attractive equals the total of repulsive, before they are multiplied by
+    #: the above factors. (By our experience, this gives bad results so you may
+    #: want to leave this alone.)
+    force_balancing = False
+
+    #: Can be LAW_LINEAR, LAW_SQUARE, LAW_GAUSSIAN, LAW_KNN or LAW_LINEAR_PLUS.
+    #: Default is LAW_LINEAR, which means that the attractive forces increase
+    #: linearly by the distance and the repulsive forces are inversely
+    #: proportional to the distance. LAW_SQUARE would make them rise or fall with
+    #: the square of the distance, LAW_GAUSSIAN is based on a kind of
+    #: log-likelihood estimation, LAW_KNN tries to directly optimize the
+    #: classification accuracy of the kNN classifier in the projection space, and
+    #: in LAW_LINEAR_PLUS both forces rise with the square of the distance,
+    #: yielding a method that is somewhat similar to PCA. We found the first law
+    #: perform the best, with the second to not far behind.
+    law = LAW_LINEAR
+
+    #: The sigma to be used in LAW_GAUSSIAN and LAW_KNN.
+    force_sigma = 1.
+
+    #: If enabled, it keeps the projection of the second attribute on the upper
+    #: side of the graph (the first is always on the right-hand x-axis). This is
+    #: useful when comparing whether two projections are the same, but has no
+    #: effect on the projection's clarity or its classification accuracy.
+
+    #: There are some more, undescribed, methods of a more internal nature.
+    mirror_symmetry = True
+
+    implementation = FAST_IMPLEMENTATION
+    restrain = False
+    use_generalized_eigenvectors = True
+
+    # s2n heuristics parameters
+    steps_before_update = 10
+    s2n_spread = 5
+    s2n_place_attributes = 50
+    s2n_mix_data = None
+    auto_set_parameters = 1
+    class_permutation_list = None
+    attrs_num = (5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000)
+
+    cancel_optimization = False
+
+
+    def __init__(self, graph=None):
         if not graph:
             graph = ScaleLinProjData()
         self.graph = graph
-
-        self.implementation = 0
-        self.attract_g = 1.0
-        self.repel_g = 1.0
-        self.law = LAW_LINEAR
-        self.restrain = 0
-        self.force_balancing = 0
-        self.force_sigma = 1.0
-        self.mirror_symmetry = 1
-        self.use_generalized_eigenvectors = 1
-
-        # s2n heuristics parameters
-        self.steps_before_update = 10
-        self.s2n_spread = 5
-        self.s2n_place_attributes = 50
-        self.s2n_mix_data = None
-        self.auto_set_parameters = 1
-        self.class_permutation_list = None
-        self.attrs_num = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750,
-                          1000]
 
     def __call__(self, dataset=None):
         """
@@ -156,33 +157,33 @@ class FreeViz:
 
         domain = graph.data_domain
         if len(domain) > len(self.graph.anchor_data):
-            domain = Orange.data.Domain([graph.data_domain[a]
-                                         for _,_,a in self.graph.anchor_data],
-                graph.data_domain.class_var)
+            domain = data.Domain([graph.data_domain[a]
+                                  for _, _, a in self.graph.anchor_data],
+                                                                        graph.data_domain.class_var)
 
-        return Orange.projection.linear.Projector(input_domain = domain,
-            mean = Xm,
-            stdev = stdev,
-            standardize = False,
-            projection = U)
+        return Projector(input_domain=domain,
+                         mean=Xm,
+                         stdev=stdev,
+                         standardize=False,
+                         projection=U)
 
 
     def clear_data(self):
         self.s2n_mix_data = None
         self.class_permutation_list = None
-        
+
     clearData = clear_data
 
     def set_statusbar_text(self, *args):
         pass
-    
+
     setStatusBarText = set_statusbar_text
 
     def show_all_attributes(self):
-        self.graph.anchor_data = [(0,0, a.name)
-                                 for a in self.graph.data_domain.attributes]
+        self.graph.anchor_data = [(0, 0, a.name)
+        for a in self.graph.data_domain.attributes]
         self.radial_anchors()
-        
+
     showAllAttributes = show_all_attributes
 
     def get_shown_attribute_list(self):
@@ -199,12 +200,12 @@ class FreeViz:
         attr_list = self.get_shown_attribute_list()
         if not attr_list:
             return
-        if hasattr(self, "parentName") and "3d" in self.parentName.lower():
+        if "3d" in getattr(self, "parentName", "").lower():
             self.graph.anchor_data = self.graph.create_anchors(len(attr_list), attr_list)
             return
-        phi = 2*math.pi/len(attr_list)
-        self.graph.anchor_data = [(math.cos(i*phi), math.sin(i*phi), a)
-                                 for i, a in enumerate(attr_list)]
+        phi = 2 * math.pi / len(attr_list)
+        self.graph.anchor_data = [(math.cos(i * phi), math.sin(i * phi), a)
+        for i, a in enumerate(attr_list)]
 
     radialAnchors = radial_anchors
 
@@ -218,68 +219,69 @@ class FreeViz:
         attr_list = self.get_shown_attribute_list()
         if not attr_list:
             return
-        if "3d" in self.parentName.lower():
+        if "3d" in getattr(self, "parentName", "").lower():
             if self.restrain == 0:
                 def ranch(i, label):
-                    r = 0.3+0.7*random.random()
-                    phi = 2*math.pi*random.random()
-                    theta = math.pi*random.random()
-                    return (r*math.sin(theta)*math.cos(phi),
-                            r*math.sin(theta)*math.sin(phi),
-                            r*math.cos(theta),
+                    r = 0.3 + 0.7 * random.random()
+                    phi = 2 * math.pi * random.random()
+                    theta = math.pi * random.random()
+                    return (r * math.sin(theta) * math.cos(phi),
+                            r * math.sin(theta) * math.sin(phi),
+                            r * math.cos(theta),
                             label)
             elif self.restrain == 1:
                 def ranch(i, label):
-                    phi = 2*math.pi*random.random()
-                    theta = math.pi*random.random()
+                    phi = 2 * math.pi * random.random()
+                    theta = math.pi * random.random()
                     r = 1.
-                    return (r*math.sin(theta)*math.cos(phi),
-                            r*math.sin(theta)*math.sin(phi),
-                            r*math.cos(theta),
+                    return (r * math.sin(theta) * math.cos(phi),
+                            r * math.sin(theta) * math.sin(phi),
+                            r * math.cos(theta),
                             label)
             else:
                 self.graph.anchor_data = self.graph.create_anchors(len(attr_list), attr_list)
+
                 def ranch(i, label):
-                    r = 0.3+0.7*random.random()
-                    return (r*self.graph.anchor_data[i][0],
-                            r*self.graph.anchor_data[i][1],
-                            r*self.graph.anchor_data[i][2],
+                    r = 0.3 + 0.7 * random.random()
+                    return (r * self.graph.anchor_data[i][0],
+                            r * self.graph.anchor_data[i][1],
+                            r * self.graph.anchor_data[i][2],
                             label)
 
             anchors = [ranch(*a) for a in enumerate(attr_list)]
 
             if not self.restrain == 1:
-                maxdist = math.sqrt(max([x[0]**2+x[1]**2+x[2]**2 for x in anchors]))
-                anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]/maxdist, x[3]) for x in anchors]
+                maxdist = math.sqrt(max([x[0] ** 2 + x[1] ** 2 + x[2] ** 2 for x in anchors]))
+                anchors = [(x[0] / maxdist, x[1] / maxdist, x[2] / maxdist, x[3]) for x in anchors]
 
             self.graph.anchor_data = anchors
             return
 
         if self.restrain == 0:
             def ranch(i, label):
-                r = 0.3+0.7*random.random()
-                phi = 2*math.pi*random.random()
-                return (r*math.cos(phi), r*math.sin(phi), label)
+                r = 0.3 + 0.7 * random.random()
+                phi = 2 * math.pi * random.random()
+                return r * math.cos(phi), r * math.sin(phi), label
 
         elif self.restrain == 1:
             def ranch(i, label):
-                phi = 2*math.pi*random.random()
-                return (math.cos(phi), math.sin(phi), label)
+                phi = 2 * math.pi * random.random()
+                return math.cos(phi), math.sin(phi), label
 
         else:
             def ranch(i, label):
-                r = 0.3+0.7*random.random()
-                phi = 2*math.pi * i / max(1, len(attr_list))
-                return (r*math.cos(phi), r*math.sin(phi), label)
+                r = 0.3 + 0.7 * random.random()
+                phi = 2 * math.pi * i / max(1, len(attr_list))
+                return r * math.cos(phi), r * math.sin(phi), label
 
         anchors = [ranch(*a) for a in enumerate(attr_list)]
 
         if not self.restrain == 1:
-            maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
-            anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]) for x in anchors]
+            maxdist = math.sqrt(max([x[0] ** 2 + x[1] ** 2 for x in anchors]))
+            anchors = [(x[0] / maxdist, x[1] / maxdist, x[2]) for x in anchors]
 
         if not self.restrain == 2 and self.mirror_symmetry:
-            #### Need to rotate and mirror here
+            #TODO: Need to rotate and mirror here
             pass
 
         self.graph.anchor_data = anchors
@@ -287,7 +289,7 @@ class FreeViz:
     randomAnchors = random_anchors
 
     @deprecated_keywords({"singleStep": "single_step"})
-    def optimize_separation(self, steps = 10, single_step = False, distances=None):
+    def optimize_separation(self, steps=10, single_step=False, distances=None):
         """
         Optimize the class separation. If you did not change any of the settings
         which are not documented above, it will call a fast C++ routine which
@@ -311,13 +313,13 @@ class FreeViz:
 
         if self.implementation == FAST_IMPLEMENTATION and not hasattr(self, '_use_3D'): # TODO
             return self.optimize_fast_separation(steps, single_step, distances)
+        elif self.implementation == LDA_IMPLEMENTATION:
+            impl = self.optimize_lda_separation
+        else:
+            impl = self.optimize_slow_separation
 
         if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
         if single_step: steps = 1
-        if self.implementation == SLOW_IMPLEMENTATION:
-            impl = self.optimize_slow_separation
-        elif self.implementation == LDA_IMPLEMENTATION:
-            impl = self.optimize_lda_separation
         xanchors = None
         yanchors = None
         zanchors = None
@@ -336,10 +338,10 @@ class FreeViz:
                     if self.__class__ != FreeViz and self.cancel_optimization == 1:
                         return
                     self.graph.anchor_data, (xanchors, yanchors, zanchors) = impl(attr_indices,
-                                                                                 self.graph.anchor_data,
-                                                                                 xanchors,
-                                                                                 yanchors,
-                                                                                 zanchors)
+                                                                                  self.graph.anchor_data,
+                                                                                  xanchors,
+                                                                                  yanchors,
+                                                                                  zanchors)
                 if self.__class__ != FreeViz: qApp.processEvents()
                 if hasattr(self.graph, "updateGraph"): self.graph.updateData()
         else:
@@ -348,16 +350,16 @@ class FreeViz:
                     if self.__class__ != FreeViz and self.cancel_optimization == 1:
                         return
                     self.graph.anchor_data, (xanchors, yanchors) = impl(attr_indices,
-                                                                       self.graph.anchor_data,
-                                                                       xanchors,
-                                                                       yanchors)
+                                                                        self.graph.anchor_data,
+                                                                        xanchors,
+                                                                        yanchors)
                 if self.__class__ != FreeViz: qApp.processEvents()
                 if hasattr(self.graph, "updateGraph"): self.graph.updateData()
 
     optimizeSeparation = optimize_separation
 
     @deprecated_keywords({"singleStep": "single_step"})
-    def optimize_fast_separation(self, steps = 10, single_step = False, distances=None):
+    def optimize_fast_separation(self, steps=10, single_step=False, distances=None):
         optimizer = [orangeom.optimizeAnchors, orangeom.optimizeAnchorsRadial,
                      orangeom.optimizeAnchorsR][self.restrain]
         ai = self.graph.attribute_name_index
@@ -369,13 +371,13 @@ class FreeViz:
         needed_steps = 0
 
         valid_data = self.graph.get_valid_list(attr_indices)
-        n_valid = sum(valid_data) 
+        n_valid = sum(valid_data)
         if not n_valid:
             return 0
 
-        data = numpy.compress(valid_data, self.graph.no_jittering_scaled_data,
-                              axis=1)
-        data = numpy.transpose(data).tolist()
+        dataset = numpy.compress(valid_data, self.graph.no_jittering_scaled_data,
+                                 axis=1)
+        dataset = numpy.transpose(dataset).tolist()
         if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
 
         if distances:
@@ -390,26 +392,26 @@ class FreeViz:
                         if vr:
                             classes[r, c] = distances[ro, co]
                             c += 1
-                    r += 1  
+                    r += 1
             else:
                 classes = distances
         else:
             classes = numpy.compress(valid_data,
                                      self.graph.original_data[self.graph.data_class_index]).tolist()
         while 1:
-            self.graph.anchor_data = optimizer(data, classes,
-                                              self.graph.anchor_data,
-                                              attr_indices,
-                                              attractG = self.attract_g,
-                                              repelG = self.repel_g,
-                                              law = self.law,
-                                              sigma2 = self.force_sigma,
-                                              dynamicBalancing = self.force_balancing,
-                                              steps = steps,
-                                              normalizeExamples = self.graph.normalize_examples,
-                                              contClass = 2 if distances
-                                              else self.graph.data_has_continuous_class,
-                                              mirrorSymmetry = self.mirror_symmetry)
+            self.graph.anchor_data = optimizer(dataset, classes,
+                                               self.graph.anchor_data,
+                                               attr_indices,
+                                               attractG=self.attract_g,
+                                               repelG=self.repel_g,
+                                               law=self.law,
+                                               sigma2=self.force_sigma,
+                                               dynamicBalancing=self.force_balancing,
+                                               steps=steps,
+                                               normalizeExamples=self.graph.normalize_examples,
+                                               contClass=2 if distances
+                                               else self.graph.data_has_continuous_class,
+                                               mirrorSymmetry=self.mirror_symmetry)
             needed_steps += steps
 
             if self.__class__ != FreeViz:
@@ -419,10 +421,10 @@ class FreeViz:
                 self.graph.potentials_emp = None
                 self.graph.updateData()
 
-            positions = positions[-49:]+[numpy.array([x[:2] for x
-                                                      in self.graph.anchor_data])]
-            if len(positions)==50:
-                m = max(numpy.sum((positions[0]-positions[49])**2), 0)
+            positions = positions[-49:] + [numpy.array([x[:2] for x
+                                                        in self.graph.anchor_data])]
+            if len(positions) == 50:
+                m = max(numpy.sum((positions[0] - positions[49]) ** 2), 0)
                 if m < 1e-3: break
             if single_step or (self.__class__ != FreeViz
                                and self.cancel_optimization):
@@ -435,30 +437,30 @@ class FreeViz:
                           "anchorData": "anchor_data",
                           "XAnchors": "xanchors",
                           "YAnchors": "yanchors"})
-    def optimize_lda_separation(self, attr_indices, anchor_data, xanchors = None, yanchors = None):
+    def optimize_lda_separation(self, attr_indices, anchor_data, xanchors=None, yanchors=None):
         if (not self.graph.have_data or len(self.graph.raw_data) == 0
-            or not self.graph.data_has_discrete_class): 
+            or not self.graph.data_has_discrete_class):
             return anchor_data, (xanchors, yanchors)
         class_count = len(self.graph.data_domain.classVar.values)
         valid_data = self.graph.get_valid_list(attr_indices)
         selected_data = numpy.compress(valid_data,
                                        numpy.take(self.graph.no_jittering_scaled_data,
-                                                  attr_indices, axis = 0),
-                                       axis = 1)
+                                                  attr_indices, axis=0),
+                                       axis=1)
 
-        if xanchors == None:
+        if xanchors is None:
             xanchors = numpy.array([a[0] for a in anchor_data], numpy.float)
-        if yanchors == None:
+        if yanchors is None:
             yanchors = numpy.array([a[1] for a in anchor_data], numpy.float)
 
         trans_proj_data = self.graph.create_projection_as_numeric_array(attr_indices,
-                                                                    validData = valid_data,
-                                                                    xanchors = xanchors,
-                                                                    yanchors = yanchors,
-                                                                    scaleFactor = self.graph.scale_factor,
-                                                                    normalize = self.graph.normalize_examples,
-                                                                    useAnchorData = 1)
-        if trans_proj_data == None:
+                                                                        validData=valid_data,
+                                                                        xanchors=xanchors,
+                                                                        yanchors=yanchors,
+                                                                        scaleFactor=self.graph.scale_factor,
+                                                                        normalize=self.graph.normalize_examples,
+                                                                        useAnchorData=1)
+        if trans_proj_data is None:
             return anchor_data, (xanchors, yanchors)
 
         proj_data = numpy.transpose(trans_proj_data)
@@ -470,57 +472,48 @@ class FreeViz:
             ind = classData == i
             xpos = numpy.compress(ind, x_positions)
             ypos = numpy.compress(ind, y_positions)
-            xave = numpy.sum(xpos)/len(xpos)
-            yave = numpy.sum(ypos)/len(ypos)
+            xave = numpy.sum(xpos) / len(xpos)
+            yave = numpy.sum(ypos) / len(ypos)
             averages.append((xave, yave))
 
         # compute the positions of all the points. we will try to move all points so that the center will be in the (0,0)
         x_center_vector = -numpy.sum(x_positions) / len(x_positions)
         y_center_vector = -numpy.sum(y_positions) / len(y_positions)
-        center_vector_length = math.sqrt(x_center_vector*x_center_vector +
-                                         y_center_vector*y_center_vector)
 
         mean_destination_vectors = []
 
         for i in range(class_count):
-            xdir = 0.0; ydir = 0.0; rs = 0.0
+            xdir, ydir = 0., 0.
             for j in range(class_count):
-                if i==j: continue
-                r = math.sqrt((averages[i][0] - averages[j][0])**2 +
-                              (averages[i][1] - averages[j][1])**2)
+                if i == j: continue
+                r = math.sqrt((averages[i][0] - averages[j][0]) ** 2 +
+                              (averages[i][1] - averages[j][1]) ** 2)
                 if r == 0.0:
-                    xdir += math.cos((i/float(class_count))*2*math.pi)
-                    ydir += math.sin((i/float(class_count))*2*math.pi)
-                    r = 0.0001
+                    xdir += math.cos((i / float(class_count)) * 2 * math.pi)
+                    ydir += math.sin((i / float(class_count)) * 2 * math.pi)
                 else:
-                    xdir += (1/r**3) * ((averages[i][0] - averages[j][0]))
-                    ydir += (1/r**3) * ((averages[i][1] - averages[j][1]))
-                #rs += 1/r
-            #actualDirAmpl = math.sqrt(xDir**2 + yDir**2)
-            #s = abs(xDir)+abs(yDir)
-            #xDir = rs * (xDir/s)
-            #yDir = rs * (yDir/s)
+                    xdir += (1 / r ** 3) * ((averages[i][0] - averages[j][0]))
+                    ydir += (1 / r ** 3) * ((averages[i][1] - averages[j][1]))
+
             mean_destination_vectors.append((xdir, ydir))
 
-
-        maxlength = math.sqrt(max([x**2 + y**2 for (x,y)
+        maxlength = math.sqrt(max([x ** 2 + y ** 2 for (x, y)
                                    in mean_destination_vectors]))
-        mean_destination_vectors = [(x/(2*maxlength), y/(2*maxlength)) for (x,y)
-                                    in mean_destination_vectors]     # normalize destination vectors to some normal values
-        mean_destination_vectors = [(mean_destination_vectors[i][0]+averages[i][0],
-                                     mean_destination_vectors[i][1]+averages[i][1])
-                                    for i in range(len(mean_destination_vectors))]    # add destination vectors to the class averages
-        #mean_destination_vectors = [(x + x_center_vector/5, y + y_center_vector/5) for (x,y) in mean_destination_vectors]   # center mean values
+        mean_destination_vectors = [(x / (2 * maxlength), y / (2 * maxlength))
+        for (x, y) in mean_destination_vectors]     #normalize destination vectors to some normal values
+        mean_destination_vectors = [(mean_destination_vectors[i][0] + averages[i][0],
+                                     mean_destination_vectors[i][1] + averages[i][1])
+        for i in range(len(mean_destination_vectors))]    # add destination vectors to the class averages
         mean_destination_vectors = [(x + x_center_vector, y + y_center_vector)
-                                    for (x,y) in mean_destination_vectors]   # center mean values
+        for (x, y) in mean_destination_vectors]   # center mean values
 
         fxs = numpy.zeros(len(x_positions), numpy.float)        # forces
         fys = numpy.zeros(len(x_positions), numpy.float)
 
         for c in range(class_count):
             ind = (classData == c)
-            numpy.putmask(fxs, ind, mean_destination_vectors[c][0]-x_positions)
-            numpy.putmask(fys, ind, mean_destination_vectors[c][1]-y_positions)
+            numpy.putmask(fxs, ind, mean_destination_vectors[c][0] - x_positions)
+            numpy.putmask(fys, ind, mean_destination_vectors[c][1] - y_positions)
 
         # compute gradient for all anchors
         gxs = numpy.array([sum(fxs * selected_data[i])
@@ -529,32 +522,19 @@ class FreeViz:
                            for i in range(len(anchor_data))], numpy.float)
 
         m = max(max(abs(gxs)), max(abs(gys)))
-        gxs /= (20*m); gys /= (20*m)
+        gxs /= (20 * m)
+        gys /= (20 * m)
 
         newxanchors = xanchors + gxs
         newyanchors = yanchors + gys
 
         # normalize so that the anchor most far away will lie on the circle
-        m = math.sqrt(max(newxanchors**2 + newyanchors**2))
+        m = math.sqrt(max(newxanchors ** 2 + newyanchors ** 2))
         newxanchors /= m
         newyanchors /= m
 
-        #self.parentWidget.updateGraph()
-
-        """
-        for a in range(len(anchor_data)):
-            x = anchor_data[a][0]; y = anchor_data[a][1];
-            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x, x+gxs[a]], yData = [y, y+gys[a]], forceFilledSymbols = 1, lineWidth=3)
-
-        for i in range(class_count):
-            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [averages[i][0], mean_destination_vectors[i][0]], yData = [averages[i][1], mean_destination_vectors[i][1]], forceFilledSymbols = 1, lineWidth=3)
-            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, xData = [averages[i][0], averages[i][0]], yData = [averages[i][1], averages[i][1]], forceFilledSymbols = 1, lineWidth=5)
-        """
-        #self.parentWidget.graph.repaint()
-        #self.graph.anchor_data = [(newxanchors[i], newyanchors[i], anchor_data[i][2]) for i in range(len(anchor_data))]
-        #self.graph.updateData(attrs, 0)
         return [(newxanchors[i], newyanchors[i], anchor_data[i][2])
-                for i in range(len(anchor_data))], (newxanchors, newyanchors)
+        for i in range(len(anchor_data))], (newxanchors, newyanchors)
 
     optimize_LDA_Separation = optimize_lda_separation
 
@@ -562,57 +542,58 @@ class FreeViz:
                           "anchorData": "anchor_data",
                           "XAnchors": "xanchors",
                           "YAnchors": "yanchors"})
-    def optimize_slow_separation(self, attr_indices, anchor_data, xanchors = None, yanchors = None):
+    def optimize_slow_separation(self, attr_indices, anchor_data, xanchors=None, yanchors=None):
         if (not self.graph.have_data or len(self.graph.raw_data) == 0
-            or not self.graph.data_has_discrete_class): 
+            or not self.graph.data_has_discrete_class):
             return anchor_data, (xanchors, yanchors)
         valid_data = self.graph.get_valid_list(attr_indices)
         selected_data = numpy.compress(valid_data, numpy.take(self.graph.no_jittering_scaled_data,
                                                               attr_indices,
-                                                              axis = 0),
-                                       axis = 1)
+                                                              axis=0),
+                                       axis=1)
 
-        if xanchors == None:
+        if xanchors is None:
             xanchors = numpy.array([a[0] for a in anchor_data], numpy.float)
-        if yanchors == None:
+        if yanchors is None:
             yanchors = numpy.array([a[1] for a in anchor_data], numpy.float)
 
         trans_proj_data = self.graph.create_projection_as_numeric_array(attr_indices,
-                                                                    validData = valid_data,
-                                                                    xanchors = xanchors,
-                                                                    yanchors = yanchors,
-                                                                    scaleFactor = self.graph.scale_factor,
-                                                                    normalize = self.graph.normalize_examples,
-                                                                    useAnchorData = 1)
-        if trans_proj_data == None:
+                                                                        validData=valid_data,
+                                                                        xanchors=xanchors,
+                                                                        yanchors=yanchors,
+                                                                        scaleFactor=self.graph.scale_factor,
+                                                                        normalize=self.graph.normalize_examples,
+                                                                        useAnchorData=1)
+        if trans_proj_data is None:
             return anchor_data, (xanchors, yanchors)
 
         proj_data = numpy.transpose(trans_proj_data)
-        x_positions = proj_data[0]; x_positions2 = numpy.array(x_positions)
-        y_positions = proj_data[1]; y_positions2 = numpy.array(y_positions)
-        class_data = proj_data[2]  ; class_data2 = numpy.array(class_data)
+        x_positions = proj_data[0]
+        x_positions2 = numpy.array(x_positions)
+        y_positions = proj_data[1]
+        y_positions2 = numpy.array(y_positions)
+        class_data = proj_data[2]
+        class_data2 = numpy.array(class_data)
 
         fxs = numpy.zeros(len(x_positions), numpy.float)        # forces
         fys = numpy.zeros(len(x_positions), numpy.float)
-        gxs = numpy.zeros(len(anchor_data), numpy.float)        # gradients
-        gys = numpy.zeros(len(anchor_data), numpy.float)
 
         rotate_array = range(len(x_positions))
         rotate_array = rotate_array[1:] + [0]
-        for i in range(len(x_positions)-1):
+        for i in range(len(x_positions) - 1):
             x_positions2 = numpy.take(x_positions2, rotate_array)
             y_positions2 = numpy.take(y_positions2, rotate_array)
             class_data2 = numpy.take(class_data2, rotate_array)
             dx = x_positions2 - x_positions
             dy = y_positions2 - y_positions
-            rs2 = dx**2 + dy**2
+            rs2 = dx ** 2 + dy ** 2
             rs2 += numpy.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
             rs = numpy.sqrt(rs2)
 
             F = numpy.zeros(len(x_positions), numpy.float)
             classDiff = numpy.where(class_data == class_data2, 1, 0)
-            numpy.putmask(F, classDiff, 150*self.attract_g*rs2)
-            numpy.putmask(F, 1-classDiff, -self.repel_g/rs2)
+            numpy.putmask(F, classDiff, 150 * self.attract_g * rs2)
+            numpy.putmask(F, 1 - classDiff, -self.repel_g / rs2)
             fxs += F * dx / rs
             fys += F * dy / rs
 
@@ -623,17 +604,18 @@ class FreeViz:
                            for i in range(len(anchor_data))], numpy.float)
 
         m = max(max(abs(gxs)), max(abs(gys)))
-        gxs /= (20*m); gys /= (20*m)
+        gxs /= (20 * m)
+        gys /= (20 * m)
 
         newxanchors = xanchors + gxs
         newyanchors = yanchors + gys
 
         # normalize so that the anchor most far away will lie on the circle
-        m = math.sqrt(max(newxanchors**2 + newyanchors**2))
+        m = math.sqrt(max(newxanchors ** 2 + newyanchors ** 2))
         newxanchors /= m
         newyanchors /= m
         return [(newxanchors[i], newyanchors[i], anchor_data[i][2])
-                for i in range(len(anchor_data))], (newxanchors, newyanchors)
+        for i in range(len(anchor_data))], (newxanchors, newyanchors)
 
     optimize_SLOW_Separation = optimize_slow_separation
 
@@ -642,33 +624,33 @@ class FreeViz:
                           "anchorData": "anchor_data",
                           "XAnchors": "xanchors",
                           "YAnchors": "yanchors"})
-    def optimize_lda_separation_3D(self, attr_indices, anchor_data, xanchors = None, yanchors = None, zanchors = None):
+    def optimize_lda_separation_3D(self, attr_indices, anchor_data, xanchors=None, yanchors=None, zanchors=None):
         if (not self.graph.have_data or len(self.graph.raw_data) == 0
-            or not self.graph.data_has_discrete_class): 
+            or not self.graph.data_has_discrete_class):
             return anchor_data, (xanchors, yanchors, zanchors)
         class_count = len(self.graph.data_domain.classVar.values)
         valid_data = self.graph.get_valid_list(attr_indices)
         selected_data = numpy.compress(valid_data,
                                        numpy.take(self.graph.no_jittering_scaled_data,
-                                                  attr_indices, axis = 0),
-                                       axis = 1)
+                                                  attr_indices, axis=0),
+                                       axis=1)
 
-        if xanchors == None:
+        if xanchors is None:
             xanchors = numpy.array([a[0] for a in anchor_data], numpy.float)
-        if yanchors == None:
+        if yanchors is None:
             yanchors = numpy.array([a[1] for a in anchor_data], numpy.float)
-        if zanchors == None:
+        if zanchors is None:
             zanchors = numpy.array([a[2] for a in anchor_data], numpy.float)
 
         trans_proj_data = self.graph.create_projection_as_numeric_array(attr_indices,
-                                                                    validData = valid_data,
-                                                                    xanchors = xanchors,
-                                                                    yanchors = yanchors,
-                                                                    zanchors = zanchors,
-                                                                    scaleFactor = self.graph.scale_factor,
-                                                                    normalize = self.graph.normalize_examples,
-                                                                    useAnchorData = 1)
-        if trans_proj_data == None:
+                                                                        validData=valid_data,
+                                                                        xanchors=xanchors,
+                                                                        yanchors=yanchors,
+                                                                        zanchors=zanchors,
+                                                                        scaleFactor=self.graph.scale_factor,
+                                                                        normalize=self.graph.normalize_examples,
+                                                                        useAnchorData=1)
+        if trans_proj_data is None:
             return anchor_data, (xanchors, yanchors, zanchors)
 
         proj_data = numpy.transpose(trans_proj_data)
@@ -683,60 +665,50 @@ class FreeViz:
             xpos = numpy.compress(ind, x_positions)
             ypos = numpy.compress(ind, y_positions)
             zpos = numpy.compress(ind, z_positions)
-            xave = numpy.sum(xpos)/len(xpos)
-            yave = numpy.sum(ypos)/len(ypos)
-            zave = numpy.sum(zpos)/len(zpos)
+            xave = numpy.sum(xpos) / len(xpos)
+            yave = numpy.sum(ypos) / len(ypos)
+            zave = numpy.sum(zpos) / len(zpos)
             averages.append((xave, yave, zave))
 
         # compute the positions of all the points. we will try to move all points so that the center will be in the (0,0)
         x_center_vector = -numpy.sum(x_positions) / len(x_positions)
         y_center_vector = -numpy.sum(y_positions) / len(y_positions)
-        z_center_vector = -numpy.sum(z_positions) / len(z_positions)
-        center_vector_length = math.sqrt(x_center_vector*x_center_vector +
-                                         y_center_vector*y_center_vector +
-                                         z_center_vector*z_center_vector)
 
         mean_destination_vectors = []
 
         for i in range(class_count):
-            xdir = 0.0; ydir = 0.0; zdir = 0.0; rs = 0.0
+            xdir, ydir = 0., 0.
             for j in range(class_count):
-                if i==j: continue
-                r = math.sqrt((averages[i][0] - averages[j][0])**2 +
-                              (averages[i][1] - averages[j][1])**2)
+                if i == j: continue
+                r = math.sqrt((averages[i][0] - averages[j][0]) ** 2 +
+                              (averages[i][1] - averages[j][1]) ** 2)
                 if r == 0.0:
-                    xdir += math.cos((i/float(class_count))*2*math.pi)
-                    ydir += math.sin((i/float(class_count))*2*math.pi)
-                    r = 0.0001
+                    xdir += math.cos((i / float(class_count)) * 2 * math.pi)
+                    ydir += math.sin((i / float(class_count)) * 2 * math.pi)
                 else:
-                    xdir += (1/r**3) * ((averages[i][0] - averages[j][0]))
-                    ydir += (1/r**3) * ((averages[i][1] - averages[j][1]))
-                #rs += 1/r
-            #actualDirAmpl = math.sqrt(xDir**2 + yDir**2)
-            #s = abs(xDir)+abs(yDir)
-            #xDir = rs * (xDir/s)
-            #yDir = rs * (yDir/s)
+                    xdir += (1 / r ** 3) * ((averages[i][0] - averages[j][0]))
+                    ydir += (1 / r ** 3) * ((averages[i][1] - averages[j][1]))
+
             mean_destination_vectors.append((xdir, ydir))
 
-
-        maxlength = math.sqrt(max([x**2 + y**2 for (x,y)
+        maxlength = math.sqrt(max([x ** 2 + y ** 2 for (x, y)
                                    in mean_destination_vectors]))
-        mean_destination_vectors = [(x/(2*maxlength), y/(2*maxlength)) for (x,y)
-                                    in mean_destination_vectors]     # normalize destination vectors to some normal values
-        mean_destination_vectors = [(mean_destination_vectors[i][0]+averages[i][0],
-                                     mean_destination_vectors[i][1]+averages[i][1])
-                                    for i in range(len(mean_destination_vectors))]    # add destination vectors to the class averages
-        #mean_destination_vectors = [(x + x_center_vector/5, y + y_center_vector/5) for (x,y) in mean_destination_vectors]   # center mean values
+        mean_destination_vectors = [(x / (2 * maxlength), y / (2 * maxlength)) for (x, y)
+                                                                               in
+                                                                               mean_destination_vectors]     # normalize destination vectors to some normal values
+        mean_destination_vectors = [(mean_destination_vectors[i][0] + averages[i][0],
+                                     mean_destination_vectors[i][1] + averages[i][1])
+        for i in range(len(mean_destination_vectors))]    # add destination vectors to the class averages
         mean_destination_vectors = [(x + x_center_vector, y + y_center_vector)
-                                    for (x,y) in mean_destination_vectors]   # center mean values
+        for (x, y) in mean_destination_vectors]   # center mean values
 
         fxs = numpy.zeros(len(x_positions), numpy.float)        # forces
         fys = numpy.zeros(len(x_positions), numpy.float)
 
         for c in range(class_count):
             ind = (classData == c)
-            numpy.putmask(fxs, ind, mean_destination_vectors[c][0]-x_positions)
-            numpy.putmask(fys, ind, mean_destination_vectors[c][1]-y_positions)
+            numpy.putmask(fxs, ind, mean_destination_vectors[c][0] - x_positions)
+            numpy.putmask(fys, ind, mean_destination_vectors[c][1] - y_positions)
 
         # compute gradient for all anchors
         gxs = numpy.array([sum(fxs * selected_data[i])
@@ -745,32 +717,19 @@ class FreeViz:
                            for i in range(len(anchor_data))], numpy.float)
 
         m = max(max(abs(gxs)), max(abs(gys)))
-        gxs /= (20*m); gys /= (20*m)
+        gxs /= (20 * m)
+        gys /= (20 * m)
 
         newxanchors = xanchors + gxs
         newyanchors = yanchors + gys
 
         # normalize so that the anchor most far away will lie on the circle
-        m = math.sqrt(max(newxanchors**2 + newyanchors**2))
+        m = math.sqrt(max(newxanchors ** 2 + newyanchors ** 2))
         newxanchors /= m
         newyanchors /= m
 
-        #self.parentWidget.updateGraph()
-
-        """
-        for a in range(len(anchor_data)):
-            x = anchor_data[a][0]; y = anchor_data[a][1];
-            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x, x+gxs[a]], yData = [y, y+gys[a]], forceFilledSymbols = 1, lineWidth=3)
-
-        for i in range(class_count):
-            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [averages[i][0], mean_destination_vectors[i][0]], yData = [averages[i][1], mean_destination_vectors[i][1]], forceFilledSymbols = 1, lineWidth=3)
-            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtPlotCurve.Lines, xData = [averages[i][0], averages[i][0]], yData = [averages[i][1], averages[i][1]], forceFilledSymbols = 1, lineWidth=5)
-        """
-        #self.parentWidget.graph.repaint()
-        #self.graph.anchor_data = [(newxanchors[i], newyanchors[i], anchor_data[i][2]) for i in range(len(anchor_data))]
-        #self.graph.updateData(attrs, 0)
         return [(newxanchors[i], newyanchors[i], anchor_data[i][2])
-                for i in range(len(anchor_data))], (newxanchors, newyanchors)
+        for i in range(len(anchor_data))], (newxanchors, newyanchors)
 
     optimize_LDA_Separation_3D = optimize_lda_separation_3D
 
@@ -778,50 +737,51 @@ class FreeViz:
                           "anchorData": "anchor_data",
                           "XAnchors": "xanchors",
                           "YAnchors": "yanchors"})
-    def optimize_slow_separation_3D(self, attr_indices, anchor_data, xanchors = None, yanchors = None, zanchors = None):
+    def optimize_slow_separation_3D(self, attr_indices, anchor_data, xanchors=None, yanchors=None, zanchors=None):
         if (not self.graph.have_data or len(self.graph.raw_data) == 0
-            or not self.graph.data_has_discrete_class): 
+            or not self.graph.data_has_discrete_class):
             return anchor_data, (xanchors, yanchors, zanchors)
         valid_data = self.graph.get_valid_list(attr_indices)
         selected_data = numpy.compress(valid_data, numpy.take(self.graph.no_jittering_scaled_data,
                                                               attr_indices,
-                                                              axis = 0),
-                                       axis = 1)
+                                                              axis=0),
+                                       axis=1)
 
-        if xanchors == None:
+        if xanchors is None:
             xanchors = numpy.array([a[0] for a in anchor_data], numpy.float)
-        if yanchors == None:
+        if yanchors is None:
             yanchors = numpy.array([a[1] for a in anchor_data], numpy.float)
-        if zanchors == None:
+        if zanchors is None:
             zanchors = numpy.array([a[2] for a in anchor_data], numpy.float)
 
         trans_proj_data = self.graph.create_projection_as_numeric_array(attr_indices,
-                                                                    validData = valid_data,
-                                                                    XAnchors = xanchors,
-                                                                    YAnchors = yanchors,
-                                                                    ZAnchors = zanchors,
-                                                                    scaleFactor = self.graph.scale_factor,
-                                                                    normalize = self.graph.normalize_examples,
-                                                                    useAnchorData = 1)
-        if trans_proj_data == None:
+                                                                        validData=valid_data,
+                                                                        XAnchors=xanchors,
+                                                                        YAnchors=yanchors,
+                                                                        ZAnchors=zanchors,
+                                                                        scaleFactor=self.graph.scale_factor,
+                                                                        normalize=self.graph.normalize_examples,
+                                                                        useAnchorData=1)
+        if trans_proj_data is None:
             return anchor_data, (xanchors, yanchors, zanchors)
 
         proj_data = numpy.transpose(trans_proj_data)
-        x_positions = proj_data[0]; x_positions2 = numpy.array(x_positions)
-        y_positions = proj_data[1]; y_positions2 = numpy.array(y_positions)
-        z_positions = proj_data[2]; z_positions2 = numpy.array(z_positions)
-        class_data = proj_data[3];  class_data2 = numpy.array(class_data)
+        x_positions = proj_data[0]
+        x_positions2 = numpy.array(x_positions)
+        y_positions = proj_data[1]
+        y_positions2 = numpy.array(y_positions)
+        z_positions = proj_data[2]
+        z_positions2 = numpy.array(z_positions)
+        class_data = proj_data[3]
+        class_data2 = numpy.array(class_data)
 
         fxs = numpy.zeros(len(x_positions), numpy.float)        # forces
         fys = numpy.zeros(len(x_positions), numpy.float)
         fzs = numpy.zeros(len(x_positions), numpy.float)
-        gxs = numpy.zeros(len(anchor_data), numpy.float)        # gradients
-        gys = numpy.zeros(len(anchor_data), numpy.float)
-        gzs = numpy.zeros(len(anchor_data), numpy.float)
 
         rotate_array = range(len(x_positions))
         rotate_array = rotate_array[1:] + [0]
-        for i in range(len(x_positions)-1):
+        for i in range(len(x_positions) - 1):
             x_positions2 = numpy.take(x_positions2, rotate_array)
             y_positions2 = numpy.take(y_positions2, rotate_array)
             z_positions2 = numpy.take(z_positions2, rotate_array)
@@ -829,14 +789,14 @@ class FreeViz:
             dx = x_positions2 - x_positions
             dy = y_positions2 - y_positions
             dz = z_positions2 - z_positions
-            rs2 = dx**2 + dy**2 + dz**2
+            rs2 = dx ** 2 + dy ** 2 + dz ** 2
             rs2 += numpy.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
             rs = numpy.sqrt(rs2)
 
             F = numpy.zeros(len(x_positions), numpy.float)
             classDiff = numpy.where(class_data == class_data2, 1, 0)
-            numpy.putmask(F, classDiff, 150*self.attract_g*rs2)
-            numpy.putmask(F, 1-classDiff, -self.repel_g/rs2)
+            numpy.putmask(F, classDiff, 150 * self.attract_g * rs2)
+            numpy.putmask(F, 1 - classDiff, -self.repel_g / rs2)
             fxs += F * dx / rs
             fys += F * dy / rs
             fzs += F * dz / rs
@@ -850,21 +810,21 @@ class FreeViz:
                            for i in range(len(anchor_data))], numpy.float)
 
         m = max(max(abs(gxs)), max(abs(gys)), max(abs(gzs)))
-        gxs /= (20*m)
-        gys /= (20*m)
-        gzs /= (20*m)
+        gxs /= (20 * m)
+        gys /= (20 * m)
+        gzs /= (20 * m)
 
         newxanchors = xanchors + gxs
         newyanchors = yanchors + gys
         newzanchors = zanchors + gzs
 
         # normalize so that the anchor most far away will lie on the circle
-        m = math.sqrt(max(newxanchors**2 + newyanchors**2 + newzanchors**2))
+        m = math.sqrt(max(newxanchors ** 2 + newyanchors ** 2 + newzanchors ** 2))
         newxanchors /= m
         newyanchors /= m
         newzanchors /= m
         return [(newxanchors[i], newyanchors[i], newzanchors[i], anchor_data[i][3])
-                for i in range(len(anchor_data))], (newxanchors, newyanchors, newzanchors)
+        for i in range(len(anchor_data))], (newxanchors, newyanchors, newzanchors)
 
     optimize_SLOW_Separation_3D = optimize_slow_separation_3D
 
@@ -878,50 +838,51 @@ class FreeViz:
 
     # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
     @deprecated_keywords({"setAttributeListInRadviz":
-                          "set_attribute_list_in_radviz"})
-    def s2n_mix_anchors(self, set_attribute_list_in_radviz = 1):
+                              "set_attribute_list_in_radviz"})
+    def s2n_mix_anchors(self, set_attribute_list_in_radviz=1):
         # check if we have data and a discrete class
         if (not self.graph.have_data or len(self.graph.raw_data) == 0
-            or not self.graph.data_has_discrete_class): 
+            or not self.graph.data_has_discrete_class):
             self.set_statusbar_text("S2N only works on data with a discrete class value")
             return
 
         # compute the quality of attributes only once
-        if self.s2n_mix_data == None:
+        if self.s2n_mix_data is None:
             ranked_attrs, ranked_attrs_by_class = visfuncts.findAttributeGroupsForRadviz(self.graph.raw_data,
                                                                                          visfuncts.S2NMeasureMix())
             self.s2n_mix_data = (ranked_attrs, ranked_attrs_by_class)
             class_count = len(ranked_attrs_by_class)
-            attrs = ranked_attrs[:(self.s2n_place_attributes/class_count)*
-                                 class_count]    # select appropriate number of attributes
+            attrs = ranked_attrs[:(self.s2n_place_attributes / class_count) *
+                                  class_count]    # select appropriate number of attributes
         else:
             class_count = len(self.s2n_mix_data[1])
-            attrs = self.s2n_mix_data[0][:(self.s2n_place_attributes/class_count)*
-                                         class_count]
+            attrs = self.s2n_mix_data[0][:(self.s2n_place_attributes / class_count) *
+                                          class_count]
 
-        if len(attrs) == 0:
+        if not len(attrs):
             self.set_statusbar_text("No discrete attributes found")
             return 0
 
         arr = [0]       # array that will tell where to put the next attribute
-        for i in range(1,len(attrs)/2): arr += [i,-i]
+        for i in range(1, len(attrs) / 2): arr += [i, -i]
 
-        phi = (2*math.pi*self.s2n_spread)/(len(attrs)*10.0)
-        anchor_data = []; start = []
-        arr2 = arr[:(len(attrs)/class_count)+1]
+        phi = (2 * math.pi * self.s2n_spread) / (len(attrs) * 10.0)
+        anchor_data = [];
+        start = []
+        arr2 = arr[:(len(attrs) / class_count) + 1]
         for cls in range(class_count):
-            start_pos = (2*math.pi*cls)/class_count
+            start_pos = (2 * math.pi * cls) / class_count
             if self.class_permutation_list: cls = self.class_permutation_list[cls]
             attrs_cls = attrs[cls::class_count]
-            temp_data = [(arr2[i], math.cos(start_pos + arr2[i]*phi),
-                          math.sin(start_pos + arr2[i]*phi),
+            temp_data = [(arr2[i], math.cos(start_pos + arr2[i] * phi),
+                          math.sin(start_pos + arr2[i] * phi),
                           attrs_cls[i]) for i in
-                          range(min(len(arr2), len(attrs_cls)))]
-            start.append(len(anchor_data) + len(arr2)/2) # starting indices for each class value
+                                        range(min(len(arr2), len(attrs_cls)))]
+            start.append(len(anchor_data) + len(arr2) / 2) # starting indices for each class value
             temp_data.sort()
             anchor_data += [(x, y, name) for (i, x, y, name) in temp_data]
 
-        anchor_data = anchor_data[(len(attrs)/(2*class_count)):] + anchor_data[:(len(attrs)/(2*class_count))]
+        anchor_data = anchor_data[(len(attrs) / (2 * class_count)):] + anchor_data[:(len(attrs) / (2 * class_count))]
         self.graph.anchor_data = anchor_data
         attrNames = [anchor[2] for anchor in anchor_data]
 
@@ -938,31 +899,31 @@ class FreeViz:
     @deprecated_keywords({"attrIndices": "attr_indices",
                           "setAnchors": "set_anchors",
                           "percentDataUsed": "percent_data_used"})
-    def find_projection(self, method, attr_indices = None, set_anchors = 0, percent_data_used = 100):
+    def find_projection(self, method, attr_indices=None, set_anchors=0, percent_data_used=100):
         if not self.graph.have_data: return
         ai = self.graph.attribute_name_index
-        if attr_indices == None:
+        if attr_indices is None:
             attributes = self.get_shown_attribute_list()
             attr_indices = [ai[label] for label in attributes]
-        if len(attr_indices) == 0: return None
+        if not len(attr_indices): return None
 
         valid_data = self.graph.get_valid_list(attr_indices)
         if sum(valid_data) == 0: return None
 
         data_matrix = numpy.compress(valid_data, numpy.take(self.graph.no_jittering_scaled_data,
                                                             attr_indices,
-                                                            axis = 0),
-                                     axis = 1)
+                                                            axis=0),
+                                     axis=1)
         if self.graph.data_has_class:
             class_array = numpy.compress(valid_data,
                                          self.graph.no_jittering_scaled_data[self.graph.data_class_index])
 
         if percent_data_used != 100:
-            indices = Orange.data.sample.SubsetIndices2(self.graph.raw_data,
-                                                1.0-(float(percent_data_used)/100.0))
+            indices = data.sample.SubsetIndices2(self.graph.raw_data,
+                                                 1.0 - (float(percent_data_used) / 100.0))
             try:
-                data_matrix = numpy.compress(indices, data_matrix, axis = 1)
-            except:
+                data_matrix = numpy.compress(indices, data_matrix, axis=1)
+            except ValueError:
                 pass
             if self.graph.data_has_class:
                 class_array = numpy.compress(indices, class_array)
@@ -971,18 +932,18 @@ class FreeViz:
         vectors = None
         if method == DR_PCA:
             pca = Pca(standardize=False, max_components=ncomps,
-                use_generalized_eigenvectors=0)
-            domain = Orange.data.Domain([Orange.feature.Continuous("g%d"%i) for i
-                                         in xrange(len(data_matrix))], False)
-            pca = pca(Orange.data.Table(domain, data_matrix.T))
+                      use_generalized_eigenvectors=False)
+            domain = data.Domain([feature.Continuous("g%d" % i) for i
+                                  in xrange(len(data_matrix))], False)
+            pca = pca(data.Table(domain, data_matrix.T))
             vals, vectors = pca.eigen_values, pca.projection
         elif method == DR_SPCA and self.graph.data_has_class:
             pca = Spca(standardize=False, max_components=ncomps,
-                use_generalized_eigenvectors=self.use_generalized_eigenvectors)
-            domain = Orange.data.Domain([Orange.feature.Continuous("g%d"%i) for i
-                                         in xrange(len(data_matrix))], Orange.feature.Continuous("c"))
-            pca = pca(Orange.data.Table(domain,
-                numpy.hstack([data_matrix.T, numpy.array(class_array, ndmin=2).T])))
+                       use_generalized_eigenvectors=self.use_generalized_eigenvectors)
+            domain = data.Domain([feature.Continuous("g%d" % i) for i
+                                  in xrange(len(data_matrix))], feature.Continuous("c"))
+            pca = pca(data.Table(domain,
+                                 numpy.hstack([data_matrix.T, numpy.array(class_array, ndmin=2).T])))
             vals, vectors = pca.eigen_values, pca.projection
         elif method == DR_PLS and self.graph.data_has_class:
             data_matrix = data_matrix.transpose()
@@ -993,18 +954,18 @@ class FreeViz:
         # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
         if (vectors is None or not vectors.any() or
             False in numpy.isfinite(vectors) or False in numpy.isreal(vectors)):
-            self.set_statusbar_text("Unable to compute anchor positions for the selected attributes")  
+            self.set_statusbar_text("Unable to compute anchor positions for the selected attributes")
             return None
 
         xanchors = vectors[0]
         yanchors = vectors[1]
-        
+
         if ncomps == 3:
             zanchors = vectors[2]
-            m = math.sqrt(max(xanchors**2 + yanchors**2 + zanchors**2))
+            m = math.sqrt(max(xanchors ** 2 + yanchors ** 2 + zanchors ** 2))
             zanchors /= m
         else:
-            m = math.sqrt(max(xanchors**2 + yanchors**2))
+            m = math.sqrt(max(xanchors ** 2 + yanchors ** 2))
 
         xanchors /= m
         yanchors /= m
@@ -1046,8 +1007,8 @@ FreeViz = deprecated_members({"attractG": "attract_g",
 
 
 @deprecated_keywords({"X": "x", "Y": "y", "Ncomp": "ncomp"})
-def create_pls_projection(x,y, ncomp = 2):
-    '''Predict y from x using first ncomp principal components'''
+def create_pls_projection(x, y, ncomp=2):
+    """Predict y from x using first ncomp principal components"""
 
     # data dimensions
     n, mx = numpy.shape(x)
@@ -1055,52 +1016,46 @@ def create_pls_projection(x,y, ncomp = 2):
 
     # Z-scores of original matrices
     ymean = y.mean()
-    x,y = center(x), center(y)
+    x, y = center(x), center(y)
 
-    p = numpy.empty((mx,ncomp))
-    w = numpy.empty((mx,ncomp))
-    c = numpy.empty((my,ncomp))
-    t = numpy.empty((n,ncomp))
-    u = numpy.empty((n,ncomp))
-    b = numpy.zeros((ncomp,ncomp))
+    p = numpy.empty((mx, ncomp))
+    w = numpy.empty((mx, ncomp))
+    c = numpy.empty((my, ncomp))
+    t = numpy.empty((n, ncomp))
+    u = numpy.empty((n, ncomp))
+    b = numpy.zeros((ncomp, ncomp))
 
-    e,f = x,y
+    e, f = x, y
 
     # main algorithm
     for i in range(ncomp):
-
-        u = numpy.random.random_sample((n,1))
-        w = normalize(numpy.dot(e.T,u))
-        t = normalize(numpy.dot(e,w))
-        c = normalize(numpy.dot(f.T,t))
+        u = numpy.random.random_sample((n, 1))
+        w = normalize(numpy.dot(e.T, u))
+        t = normalize(numpy.dot(e, w))
+        c = normalize(numpy.dot(f.T, t))
 
         dif = t
         # iterations for loading vector t
         while numpy.linalg.norm(dif) > 10e-16:
-            c = normalize(numpy.dot(f.T,t))
-            u = numpy.dot(f,c)
-            w = normalize(numpy.dot(e.T,u))
-            t0 = normalize(numpy.dot(e,w))
+            c = normalize(numpy.dot(f.T, t))
+            u = numpy.dot(f, c)
+            w = normalize(numpy.dot(e.T, u))
+            t0 = normalize(numpy.dot(e, w))
             dif = t - t0
             t = t0
 
-        t[:,i] = t.T
-        u[:,i] = u.T
-        c[:,i] = c.T
-        w[:,i] = w.T
+        t[:, i] = t.T
+        u[:, i] = u.T
+        c[:, i] = c.T
+        w[:, i] = w.T
 
-        b = numpy.dot(t.T,u)[0,0]
+        b = numpy.dot(t.T, u)[0, 0]
         b[i][i] = b
-        p = numpy.dot(e.T,t)
-        p[:,i] = p.T
-        e = e - numpy.dot(t,p.T)
-        xx = b * numpy.dot(t,c.T)
+        p = numpy.dot(e.T, t)
+        p[:, i] = p.T
+        e = e - numpy.dot(t, p.T)
+        xx = b * numpy.dot(t, c.T)
         f = f - xx
-
-    # esimated y
-    #YE = numpy.dot(numpy.dot(t,b),c.t)*numpy.std(y, axis = 0) + ymean
-    #y = y*numpy.std(y, axis = 0)+ ymean
-    #BPls = numpy.dot(numpy.dot(numpy.linalg.pinv(p.t),b),c.t)
 
     return w
 
@@ -1108,7 +1063,7 @@ createPLSProjection = create_pls_projection
 
 # #############################################################################
 # class that represents freeviz classifier
-class FreeVizClassifier(Orange.classification.Classifier):
+class FreeVizClassifier(classification.Classifier):
     """
     A kNN classifier on the 2D projection of the data, optimized by FreeViz.
     
@@ -1119,27 +1074,26 @@ class FreeVizClassifier(Orange.classification.Classifier):
     When constructing the classifier manually, the following parameters can
     be passed:
     
-    :param data: table of data instances to project to a 2D plane and use for
+    :param dataset: table of data instances to project to a 2D plane and use for
         classification.
-    :type data: :class:`Orange.data.Table`
+    :type dataset: :class:`Orange.data.Table`
     
     :param freeviz: the FreeViz algorithm instance to use to optimize the 2D
         projection.
     :type freeviz: :class:`Orange.projection.linear.FreeViz`
     
     """
-    
-    def __init__(self, data, freeviz):
+
+    def __init__(self, dataset, freeviz):
         self.freeviz = freeviz
 
         if self.freeviz.__class__ != FreeViz:
-            self.freeviz.parentWidget.setData(data)
+            self.freeviz.parentWidget.setData(dataset)
             self.freeviz.parentWidget.showAllAttributes = 1
         else:
-            self.freeviz.graph.set_data(data)
+            self.freeviz.graph.set_data(dataset)
             self.freeviz.show_all_attributes()
 
-        #self.FreeViz.randomAnchors()
         self.freeviz.radial_anchors()
         self.freeviz.optimize_separation()
 
@@ -1149,40 +1103,39 @@ class FreeVizClassifier(Orange.classification.Classifier):
         indices = [ai[label] for label in labels]
 
         valid_data = graph.get_valid_list(indices)
-        domain = Orange.data.Domain([graph.data_domain[i].name for i in indices]+
-                               [graph.data_domain.classVar.name],
-                               graph.data_domain)
+        domain = data.Domain([graph.data_domain[i].name for i in indices] +
+                             [graph.data_domain.classVar.name],
+                             graph.data_domain)
         offsets = [graph.attr_values[graph.attribute_names[i]][0]
                    for i in indices]
         normalizers = [graph.get_min_max_val(i) for i in indices]
-        selected_data = numpy.take(graph.original_data, indices, axis = 0)
+        selected_data = numpy.take(graph.original_data, indices, axis=0)
         averages = numpy.average(numpy.compress(valid_data, selected_data,
                                                 axis=1), 1)
         class_data = numpy.compress(valid_data,
                                     graph.original_data[graph.data_class_index])
 
-        graph.create_projection_as_numeric_array(indices, use_anchor_data = 1,
-                                             remove_missing_data = 0,
-                                             valid_data = valid_data,
-                                             jitter_size = -1)
-        self.classifier = Orange.classification.knn.P2NN(domain,
-                                      numpy.transpose(numpy.array([numpy.compress(valid_data,
-                                                                                  graph.unscaled_x_positions),
-                                                                   numpy.compress(valid_data,
-                                                                                  graph.unscaled_y_positions),
-                                                                   class_data])),
-                                      graph.anchor_data, offsets, normalizers,
-                                      averages, graph.normalize_examples, law=1)
+        graph.create_projection_as_numeric_array(indices, use_anchor_data=1,
+                                                 remove_missing_data=0,
+                                                 valid_data=valid_data,
+                                                 jitter_size=-1)
+        self.classifier = knn.P2NN(domain,
+                                   numpy.transpose(numpy.array([numpy.compress(valid_data,
+                                                                               graph.unscaled_x_positions),
+                                                                numpy.compress(valid_data,
+                                                                               graph.unscaled_y_positions),
+                                                                class_data])),
+                                   graph.anchor_data, offsets, normalizers,
+                                   averages, graph.normalize_examples, law=1)
 
     # for a given instance run argumentation and find out to which class it most often fall
     @deprecated_keywords({"example": "instance", "returnType": "return_type"})
-    def __call__(self, instance, return_type=Orange.classification.Classifier.GetValue):
-        #instance.setclass(0)
+    def __call__(self, instance, return_type=classification.Classifier.GetValue):
         return self.classifier(instance, return_type)
 
-FreeVizClassifier = deprecated_members({"FreeViz":"freeviz"})(FreeVizClassifier)
+FreeVizClassifier = deprecated_members({"FreeViz": "freeviz"})(FreeVizClassifier)
 
-class FreeVizLearner(Orange.classification.Learner):
+class FreeVizLearner(classification.Learner):
     """
     A learner that builds a :class:`FreeVizClassifier` on given data. An
     instance of :class:`FreeViz` can be passed to the constructor as a
@@ -1192,52 +1145,54 @@ class FreeVizLearner(Orange.classification.Learner):
     is called and the resulting classifier is returned instead of the learner.
     
     """
-    def __new__(cls, freeviz = None, instances = None, weight_id = 0, **argkw):
-        self = Orange.classification.Learner.__new__(cls, **argkw)
+
+    def __new__(cls, freeviz=None, instances=None, weight_id=0, **argkw):
+        self = classification.Learner.__new__(cls, **argkw)
         if instances:
             self.__init__(freeviz, **argkw)
             return self.__call__(instances, weight_id)
         else:
             return self
 
-    def __init__(self, freeviz = None):
+    def __init__(self, freeviz=None, **kwd):
         if not freeviz:
             freeviz = FreeViz()
         self.freeviz = freeviz
         self.name = "freeviz Learner"
 
     @deprecated_keywords({"examples": "instances", "weightID": "weight_id"})
-    def __call__(self, instances, weight_id = 0):
+    def __call__(self, instances, weight_id=0):
         return FreeVizClassifier(instances, self.freeviz)
 
-FreeVizLearner = deprecated_members({"FreeViz":"freeviz"})(FreeVizLearner)
+FreeVizLearner = deprecated_members({"FreeViz": "freeviz"})(FreeVizLearner)
 
 
-class S2NHeuristicLearner(Orange.classification.Learner):
+class S2NHeuristicLearner(classification.Learner):
     """
     This class is not documented yet.
     
     """
-    def __new__(cls, freeviz = None, instances = None, weight_id = 0, **argkw):
-        self = Orange.classification.Learner.__new__(cls, **argkw)
+
+    def __new__(cls, freeviz=None, instances=None, weight_id=0, **argkw):
+        self = classification.Learner.__new__(cls, **argkw)
         if instances:
             self.__init__(freeviz, **argkw)
             return self.__call__(instances, weight_id)
         else:
             return self
 
-    def __init__(self, freeviz = None):
+    def __init__(self, freeviz=None, **kwd):
         if not freeviz:
             freeviz = FreeViz()
         self.freeviz = freeviz
         self.name = "S2N Feature Selection Learner"
 
     @deprecated_keywords({"examples": "instances", "weightID": "weight_id"})
-    def __call__(self, instances, weight_id = 0):
+    def __call__(self, instances, weight_id=0):
         return S2NHeuristicClassifier(instances, self.freeviz)
 
 S2NHeuristicLearner = deprecated_members({"FreeViz":
-                                          "freeviz"})(S2NHeuristicLearner)
+                                              "freeviz"})(S2NHeuristicLearner)
 
 class Projector(object):
     """
@@ -1285,22 +1240,22 @@ class Projector(object):
         """
         Project data.
 
-        :param data: input data set
-        :type data: :class:`Orange.data.Table`
+        :param dataset: input data set
+        :type dataset: :class:`Orange.data.Table`
 
         :rtype: :class:`Orange.data.Table`
         """
-        if type(data) != Orange.data.Table:
-            data = Orange.data.Table([data])
-        if len(self.projection.T) != len(data.domain.features):
-            data = Orange.data.Table(self.input_domain, data)
+        if not isinstance(dataset, data.Table):
+            dataset = data.Table([dataset])
+        if len(self.projection.T) != len(dataset.domain.features):
+            dataset = data.Table(self.input_domain, dataset)
 
-        X = data.to_numpy_MA("a")[0]
+        X, = dataset.to_numpy("a")
         Xm, U = self.mean, self.projection
         n, m = X.shape
 
         if m != len(self.projection.T):
-            raise Orange.core.KernelException, "Invalid number of features"
+            raise ValueError, "Invalid number of features"
 
         Xd = X - Xm
 
@@ -1312,18 +1267,13 @@ class Projector(object):
         return Orange.data.Table(self.output_domain, self.A.tolist())
 
 #color table for biplot
-Colors = ['bo','go','yo','co','mo']
+Colors = ['bo', 'go', 'yo', 'co', 'mo']
 
 class Pca(object):
     """
     Orthogonal transformation of data into a set of uncorrelated variables called
     principal components. This transformation is defined in such a way that the
     first variable has as high variance as possible.
-
-    If data instances are provided to the constructor,
-    the optimization algorithm is called and the resulting projector
-    (:class:`~Orange.projection.linear.PcaProjector`) is
-    returned instead of the optimizer (instance of this class).
 
     :param standardize: perform standardization of the data set.
     :type standardize: boolean
@@ -1334,9 +1284,6 @@ class Pca(object):
     :param use_generalized_eigenvectors: use generalized eigenvectors (ie.
         multiply data matrix with inverse of its covariance matrix).
     :type use_generalized_eigenvectors: boolean
-
-    :rtype: :class:`~Orange.projection.linear.Pca` or
-            :class:`~Orange.projection.linear.PcaProjector`
     """
 
     def __new__(cls, dataset=None, **kwds):
@@ -1595,26 +1542,19 @@ class PcaProjector(Projector):
         import pylab as plt
 
         if len(components) < 2:
-            raise orange.KernelException, 'Two components are needed for biplot'
+            raise ValueError, 'Two components are needed for biplot'
 
         if not (0 <= min(components) <= max(components) < len(self.eigen_values)):
-            raise orange.KernelException, 'Invalid components'
+            raise ValueError, 'Invalid components'
 
-        X = self.A[:,components[0]]
-        Y = self.A[:,components[1]]
+        X = self.A[:, components[0]]
+        Y = self.A[:, components[1]]
 
-        vectorsX = self.eigen_vectors[:,components[0]]
-        vectorsY = self.eigen_vectors[:,components[1]]
+        vectorsX = self.eigen_vectors[:, components[0]]
+        vectorsY = self.eigen_vectors[:, components[1]]
 
-
-        #TO DO -> pc.biplot (maybe)
-        #trDataMatrix = dataMatrix / lam
-        #trLoadings = loadings * lam
-
-        #max_data_value = numpy.max(abs(trDataMatrix)) * 1.05
         max_load_value = self.eigen_vectors.max() * 1.5
 
-        #plt.clf()
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
         ax1.set_title(title + "\n")
@@ -1625,24 +1565,8 @@ class PcaProjector(Projector):
         ax1.yaxis.set_label_position('left')
         ax1.yaxis.set_ticks_position('left')
 
-        #if self._classArray == None:
-        #trDataMatrix = transpose(trDataMatrix)
         ax1.plot(X, Y, Colors[0])
-        #else:
-        #suboptimal
-        #    classValues = []
-        #    for classValue in self._classArray:
-        #        if classValue not in classValues:
-        #            classValues.append(classValue)
-        #    for i in range(len(classValues)):
-        #        choice = numpy.array([classValues[i] == cv for cv in self._classArray])
-        #        partialDataMatrix = transpose(trDataMatrix[choice])
-        #        ax1.plot(partialDataMatrix[0], partialDataMatrix[1],
-        #                 Colors[i % len(Colors)], label = str(classValues[i]))
-        #    ax1.legend()
 
-        #ax1.set_xlim(-max_data_value, max_data_value)
-        #ax1.set_ylim(-max_data_value, max_data_value)
 
         #eliminate double axis on right
         ax0 = ax1.twinx()
@@ -1658,14 +1582,14 @@ class PcaProjector(Projector):
         for tl in ax2.get_yticklabels():
             tl.set_color('r')
 
-        arrowprops = dict(facecolor = 'red', edgecolor = 'red', width = 1, headwidth = 4)
+        arrowprops = dict(facecolor='red', edgecolor='red', width=1, headwidth=4)
 
-        for (x, y, a) in zip(vectorsX, vectorsY,self.input_domain.attributes):
+        for (x, y, a) in zip(vectorsX, vectorsY, self.input_domain.attributes):
             if max(x, y) < 0.1:
                 continue
             print x, y, a
-            ax2.annotate('', (x, y), (0, 0), arrowprops = arrowprops)
-            ax2.text(x * 1.1, y * 1.2, a.name, color = 'red')
+            ax2.annotate('', (x, y), (0, 0), arrowprops=arrowprops)
+            ax2.text(x * 1.1, y * 1.2, a.name, color='red')
 
         ax2.set_xlim(-max_load_value, max_load_value)
         ax2.set_ylim(-max_load_value, max_load_value)
@@ -1690,11 +1614,11 @@ class Fda(object):
             :class:`~Orange.projection.linear.FdaProjector`
     """
 
-    def __new__(cls, data = None):
+    def __new__(cls, dataset=None):
         self = object.__new__(cls)
-        if data:
+        if dataset:
             self.__init__()
-            return self.__call__(data)
+            return self.__call__(dataset)
         else:
             return self
 
@@ -1711,14 +1635,14 @@ class Fda(object):
         X, Y = dataset.to_numpy_MA("a/c")
 
         Xm = numpy.mean(X, axis=0)
-        X = X - Xm
+        X -= Xm
 
         #take care of the constant features
         stdev = numpy.std(X, axis=0)
         relevant_features = stdev != 0
         stdev[stdev == 0] = 1.
         X /= stdev
-        X = X[:,relevant_features]
+        X = X[:, relevant_features]
 
         instances, features = X.shape
         class_count = len(set(Y))
@@ -1735,39 +1659,40 @@ class Fda(object):
             Sw = MA.zeros([features, features])
             for v in set(Y):
                 d = MA.take(X, numpy.argwhere(Y == v).flatten(), axis=0)
-                d = d - numpy.mean(d, axis=0)
+                d -= numpy.mean(d, axis=0)
                 Sw += MA.dot(d.T, d)
             Sw /= instances
-            total = MA.dot(X.T, X)/float(instances)
+            total = MA.dot(X.T, X) / float(instances)
             Sb = total - Sw
 
-            matrix = numpy.linalg.inv(Sw)*Sb
+            matrix = numpy.linalg.inv(Sw) * Sb
             D, U = numpy.linalg.eigh(matrix)
 
-        sorted_indices = [i for _,i in sorted([(ev, i)
-                          for i, ev in enumerate(D)], reverse=True)]
-        U = numpy.take(U, sorted_indices, axis = 1)
+        sorted_indices = [i for _, i in sorted([(ev, i)
+        for i, ev in enumerate(D)], reverse=True)]
+        U = numpy.take(U, sorted_indices, axis=1)
         D = numpy.take(D, sorted_indices)
 
         #insert zeros for constant features
         n, m = U.shape
         if m != M:
-            U_ = numpy.zeros((n,M))
-            U_[:,relevant_features] = U
+            U_ = numpy.zeros((n, M))
+            U_[:, relevant_features] = U
             U = U_
 
-        out_domain = Orange.data.Domain([Orange.feature.Continuous("Comp.%d"%
-                                                                  (i+1)) for
-                                         i in range(len(D))], False)
+        out_domain = data.Domain([feature.Continuous("Comp.%d" %
+                                                     (i + 1)) for
+                                  i in range(len(D))], False)
 
-        return FdaProjector(input_domain = dataset.domain,
-            output_domain = out_domain,
-            mean = Xm,
-            stdev = stdev,
-            standardize = True,
-            eigen_vectors = U,
-            projection = U,
-            eigen_values = D)
+        return FdaProjector(input_domain=dataset.domain,
+                            output_domain=out_domain,
+                            mean=Xm,
+                            stdev=stdev,
+                            standardize=True,
+                            eigen_vectors=U,
+                            projection=U,
+                            eigen_values=D)
+
 
 class FdaProjector(Projector):
     """
@@ -1781,52 +1706,49 @@ class FdaProjector(Projector):
 
     """
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
 
 @deprecated_keywords({"dataMatrix": "data_matrix",
                       "classArray": "class_array",
                       "NComps": "ncomps",
                       "useGeneralizedEigenvectors": "use_generalized_eigenvectors"})
-def create_pca_projection(data_matrix, class_array = None, ncomps = -1, use_generalized_eigenvectors = 1):
+def create_pca_projection(data_matrix, class_array=None, ncomps=-1, use_generalized_eigenvectors=True):
     import warnings
+
     warnings.warn("Deprecated in favour of Orange"
                   ".projection.linear.Pca.",
-        DeprecationWarning)
-    if type(data_matrix) == numpy.ma.core.MaskedArray:
+                  DeprecationWarning)
+    if isinstance(data_matrix, numpy.ma.core.MaskedArray):
         data_matrix = numpy.array(data_matrix)
-    if class_array != None and type(class_array) == numpy.ma.core.MaskedArray:
+    if isinstance(class_array, numpy.ma.core.MaskedArray):
         class_array = numpy.array(class_array)
 
     data_matrix = numpy.transpose(data_matrix)
 
-    s = numpy.sum(data_matrix, axis=0)/float(len(data_matrix))
+    s = numpy.sum(data_matrix, axis=0) / float(len(data_matrix))
     data_matrix -= s       # substract average value to get zero mean
 
-    if class_array != None and use_generalized_eigenvectors:
+    if class_array is not None and use_generalized_eigenvectors:
         covarMatrix = numpy.dot(numpy.transpose(data_matrix), data_matrix)
         try:
-            matrix = inv(covarMatrix)
-        except:
+            matrix = numpy.linalg.inv(covarMatrix)
+        except numpy.linalg.LinAlgError:
             return None, None
         matrix = numpy.dot(matrix, numpy.transpose(data_matrix))
     else:
         matrix = numpy.transpose(data_matrix)
 
     # compute dataMatrixT * L * dataMatrix
-    if class_array != None:
+    if class_array is not None:
         # define the Laplacian matrix
         l = numpy.zeros((len(data_matrix), len(data_matrix)))
         for i in range(len(data_matrix)):
-            for j in range(i+1, len(data_matrix)):
-                l[i,j] = -int(class_array[i] != class_array[j])
-                l[j,i] = -int(class_array[i] != class_array[j])
+            for j in range(i + 1, len(data_matrix)):
+                l[i, j] = -int(class_array[i] != class_array[j])
+                l[j, i] = -int(class_array[i] != class_array[j])
 
         s = numpy.sum(l, axis=0)      # doesn't matter which axis since the matrix l is symmetrical
         for i in range(len(data_matrix)):
-            l[i,i] = -s[i]
+            l[i, i] = -s[i]
 
         matrix = numpy.dot(matrix, l)
 
@@ -1849,6 +1771,7 @@ def create_pca_projection(data_matrix, class_array = None, ncomps = -1, use_gene
         ret_indices.append(bestind)
         vals[bestind] = -1
 
-    return ret_vals, numpy.take(vectors.T, ret_indices, axis = 0)         # i-th eigenvector is the i-th column in vectors so we have to transpose the array
+    return ret_vals, numpy.take(vectors.T, ret_indices,
+                                axis=0)         # i-th eigenvector is the i-th column in vectors so we have to transpose the array
 
 createPCAProjection = create_pca_projection
