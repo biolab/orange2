@@ -18,7 +18,7 @@ Depends: <<
 	opengl-py%type_pkg[python],
 	sip-py%type_pkg[python],
 	graphviz,
-	setuptools-py%type_pkg[python]
+	distribute-py%type_pkg[python]
 <<
 BuildDepends: <<
 	qt4-base-mac,
