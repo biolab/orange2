@@ -133,7 +133,7 @@ try:
 except ImportError:
     from Orange import statc as stats
 
-from numpy import dot, sqrt
+from numpy import dot, sqrt, std
 from numpy.linalg import inv, pinv
 
 
@@ -254,9 +254,8 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
 
         mu_y, sigma_y = numpy.mean(y), numpy.std(y)
         if m > 0:
-            cov_x = numpy.cov(X, rowvar=0)
             # standardized coefficients
-            std_coefficients = sqrt(cov_x.diagonal()) / sigma_y * coefficients
+            std_coefficients = std(X, axis=0, ddof=1) / sigma_y * coefficients
         else:
             std_coefficients = None
 
