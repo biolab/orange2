@@ -5,6 +5,22 @@
 
 syntax: glob
 
+# Ignore dot files.
+.*
+
+# Ignore backup files
+*.orig
+
+# Ignore temporary editor files.
+*.swp
+*~
+
+# Ignore binaries.
+*.py[cod]
+*.so
+*.dll
+
+# Ignore files created by make
 *.o
 *.a
 makefile.deps
@@ -20,18 +36,6 @@ dist
 MANIFEST
 Orange.egg-info
 Orange/version.py
-
-# Ignore dot files.
-.*
-
-# Ignore binaries.
-*.py[cod]
-*.so
-*.dll
-
-# Ignore temporary editor files.
-*.swp
-*~
 
 # Built documentation.
 docs/*/html
