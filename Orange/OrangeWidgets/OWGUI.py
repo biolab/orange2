@@ -1812,9 +1812,13 @@ class TableBarItem(QItemDelegate):
             x, y = rect.x(), rect.y() + rect.height()
             painter.drawLine(x, y, x + rect.width() * ratio, y)
             painter.restore()
+            # raise the lower edge 3 pixels up
+            text_rect = option.rect.adjusted(0, 0, 0, -3)
+        else:
+            text_rect = option.rect
         text = index.data(Qt.DisplayRole).toString()
 
-        self.drawDisplay(painter, option, option.rect, text)
+        self.drawDisplay(painter, option, text_rect, text)
         painter.restore()
         
 class BarItemDelegate(QStyledItemDelegate):
@@ -1959,7 +1963,7 @@ def _toPyObject(variant):
     return val
 
 class ColoredBarItemDelegate(QStyledItemDelegate):
-    """ Item delegate that can also draw a distribution bar
+    """ Item delegate that can also draws a distribution bar
     """
     def __init__(self, parent=None, decimals=3, color=Qt.red):
         QStyledItemDelegate.__init__(self, parent)

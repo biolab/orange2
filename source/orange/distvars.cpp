@@ -752,7 +752,7 @@ int TDiscDistribution::highestProbIntIndex() const
   float bestP = operator[](0);
   int i, e;
 
-  unsigned long crc;
+  unsigned int crc;
   INIT_CRC(crc);
 
   for(i = 1, e = int(size()); --e; i++) {
@@ -908,7 +908,7 @@ int TDiscDistribution::noOfElements() const
 
 
 int TDiscDistribution::sumValues() const
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
 
   const_this_ITERATE(dvi)
@@ -1293,7 +1293,7 @@ float TContDistribution::p(const float &x) const
 
 
 int TContDistribution::sumValues() const
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
 
   const_this_ITERATE(dvi) {
@@ -1382,7 +1382,7 @@ bool TGaussianDistribution::noDeviation() const
 
 
 int TGaussianDistribution::sumValues() const
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
   add_CRC(mean, crc);
   add_CRC(sigma, crc);

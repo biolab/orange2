@@ -10,7 +10,7 @@ HomePage: http://orange.biolab.si/
 License: GPL
 Depends: <<
 	python%type_pkg[python],
-	orange-gui-hg-py%type_pkg[python] (>= %v),
+	orange-gui-hg-py%type_pkg[python],
 	orange-bioinformatics-hg-py%type_pkg[python] (>= %v),
 	openbabel-py%type_pkg[python] (>= 2.0.0)
 <<
@@ -29,10 +29,10 @@ SplitOff: <<
 	Package: orange-bioinformatics-hg-py%type_pkg[python]
 	Depends: <<
 		python%type_pkg[python],
-		orange-hg-py%type_pkg[python] (>= %v),
+		orange-hg-py%type_pkg[python],
 		pil-py%type_pkg[python],
 		suds-py%type_pkg[python],
-		setuptools-py%type_pkg[python]
+		distribute-py%type_pkg[python]
 
 	<<
 	Suggests: orange-bioinformatics-gui-hg-py%type_pkg[python]

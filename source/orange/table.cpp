@@ -874,7 +874,7 @@ void TExampleTable::shuffle()
 }
 
 int TExampleTable::checkSum(const bool includeMetas)
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
 
   for(TExample **ei = examples, **ee = _Last; ei!=ee; (*ei++)->addToCRC(crc, includeMetas));
@@ -884,7 +884,7 @@ int TExampleTable::checkSum(const bool includeMetas)
 }
 
 int TExampleTable::checkSum(const bool includeMetas) const
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
 
   for(TExample **ei = examples, **ee = _Last; ei!=ee; (*ei++)->addToCRC(crc, includeMetas));

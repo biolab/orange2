@@ -127,7 +127,32 @@ class TestUnicodeFilenames(unittest.TestCase):
             table.save(f.name)
             f.flush()
             table1 = Orange.data.Table(f.name)
-        
+
+
+@testing.datasets_driven
+class TestHashing(unittest.TestCase):
+
+    @testing.test_on_data
+    def test_uniqueness(self, name):
+        """ Test the uniqueness of hashes. This is probabilistic,
+        but if we hit a collision in one of documentation datasets,
+        then it's time to open a bottle of Champagne ...
+        """
+        table = Orange.data.Table(name)
+        self.assertEquals(len(set(table)), len(set(hash(i) for i in table)))
+
+    @testing.test_on_data
+    def test_repetitiveness(self, name):
+        """ Test whether a data instance gets the same hash twice.
+        """
+        table = Orange.data.Table(name)
+        a = [hash(i) for i in table]
+        # Copy and reverse the table prior to hashing - just to hopefully
+        # make more bugs stand out.
+        b = list(reversed([hash(i) for i in
+                           reversed(Orange.data.Table(table))]))
+
+        self.assertEquals(a, b)
 
 
 if __name__ == "__main__":

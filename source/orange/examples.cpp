@@ -382,7 +382,7 @@ bool TExample::compatible(const TExample &other, const bool ignoreClass) const
 
 #include "stringvars.hpp"
 
-inline void addToCRC(unsigned long &crc, const PVarList &vars, TValue *&vli)
+inline void addToCRC(unsigned int &crc, const PVarList &vars, TValue *&vli)
 {
   const_PITERATE(TVarList, vi, vars) {
     if ((*vi)->varType == TValue::INTVAR)
@@ -399,7 +399,7 @@ inline void addToCRC(unsigned long &crc, const PVarList &vars, TValue *&vli)
   }
 }
 
-void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
+void TExample::addToCRC(unsigned int &crc, const bool includeMetas) const
 {
   TValue *vli = values;
   ::addToCRC(crc, domain->variables, vli);
@@ -425,7 +425,7 @@ void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
 
 
 int TExample::sumValues(const bool includeMetas) const
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
   addToCRC(crc, includeMetas);
   FINISH_CRC(crc);

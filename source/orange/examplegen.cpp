@@ -95,7 +95,7 @@ NOT_SUPPORTED(removeMetaAttribute)
 
 
 int TExampleGenerator::checkSum(const bool includeMetas)
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
   for(TExampleIterator ei(begin()); ei; ++ei)
     (*ei).addToCRC(crc, includeMetas);

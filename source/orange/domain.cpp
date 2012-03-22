@@ -617,7 +617,7 @@ PVariable TDomain::hasContinuousAttributes(bool checkClass) const
 
 #include "crc.h"
 
-void TDomain::addToCRC(unsigned long &crc) const
+void TDomain::addToCRC(unsigned int &crc) const
 {
   const_PITERATE(TVarList, vi, variables) {
     add_CRC((*vi)->get_name().c_str(), crc);
@@ -630,7 +630,7 @@ void TDomain::addToCRC(unsigned long &crc) const
 
 
 int TDomain::sumValues() const
-{ unsigned long crc;
+{ unsigned int crc;
   INIT_CRC(crc);
   addToCRC(crc);
   FINISH_CRC(crc);

@@ -39,26 +39,38 @@ class ExampleTableModel(QAbstractItemModel):
         self.examples = examples
         self.dist = dist
         self.attributes = list(self.examples.domain.attributes)
-        self.classVar = self.examples.domain.classVar
+        self.class_var = self.examples.domain.classVar
         self.metas = self.examples.domain.getmetas().values()
-        self.all_attrs = self.attributes + ([self.classVar] if self.classVar else []) + self.metas
-        self.clsColor = QColor(160,160,160)
-        self.metaColor = QColor(220,220,200)
+        self.all_attrs = self.attributes + ([self.class_var] if self.class_var else []) + self.metas
+        self.cls_color = QColor(160,160,160)
+        self.meta_color = QColor(220,220,200)
         self.sorted_map = range(len(self.examples))
         
-        self.attrLabels = sorted(reduce(set.union, [attr.attributes for attr in self.all_attrs], set()))
+        self.attr_labels = sorted(reduce(set.union, [attr.attributes for attr in self.all_attrs], set()))
+        self._show_attr_labels = False
         self._other_data = {}
         
-    showAttrLabels = pyqtProperty("bool", 
-                                  fget=lambda self: getattr(self, "_showAttrLabels", False),
-                                  fset=lambda self, val: (self.emit(SIGNAL("layoutAboutToBeChanged()")),
-                                                          setattr(self, "_showAttrLabels", val),
-                                                          self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"), Qt.Horizontal, 0, len(self.all_attrs)-1),
-                                                          self.emit(SIGNAL("layoutChanged()")),
-                                                          self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0,0),
-                                                                    self.index(len(self.examples) - 1, len(self.all_attrs) - 1))
-                                                          ) or None
-                                  )
+    def get_show_attr_labels(self):
+        return self._show_attr_labels
+    
+    def set_show_attr_labels(self, val):
+        self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        self._show_attr_labels = val
+        self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"),
+                  Qt.Horizontal, 
+                  0, 
+                  len(self.all_attrs) - 1
+                  )
+        self.emit(SIGNAL("layoutChanged()"))
+        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), 
+                  self.index(0,0),
+                  self.index(len(self.examples) - 1, len(self.all_attrs) - 1)
+                  )
+        
+    show_attr_labels = pyqtProperty("bool", 
+                                   fget=get_show_attr_labels,
+                                   fset=set_show_attr_labels,
+                                   )
     
     @safe_call
     def data(self, index, role):
@@ -69,19 +81,23 @@ class ExampleTableModel(QAbstractItemModel):
         if role == Qt.DisplayRole:
                 return QVariant(str(val))
         elif role == Qt.BackgroundRole:
-            if attr == self.classVar and col == len(domain.attributes) and domain.classVar: #check if attr is actual class or a duplication in the meta attributes
-                return QVariant(self.clsColor)
+            #check if attr is actual class or a duplication in the meta attributes
+            if attr == self.class_var and col == len(domain.attributes) and domain.classVar:
+                return QVariant(self.cls_color)
             elif attr in self.metas:
-                return QVariant(self.metaColor)
+                return QVariant(self.meta_color)
         elif role == OWGUI.TableBarItem.BarRole and val.varType == orange.VarTypes.Continuous \
                     and not val.isSpecial() and attr not in self.metas:
             dist = self.dist[col]
             return QVariant((float(val) - dist.min) / (dist.max - dist.min or 1))
-        elif role == OWGUI.TableValueRole: # The actual value
+        elif role == OWGUI.TableValueRole:
+            # The actual value
             return QVariant(val)
-        elif role == OWGUI.TableClassValueRole: # The class value for the row's example
+        elif role == OWGUI.TableClassValueRole: 
+            # The class value for the row's example
             return QVariant(example.get_class())
-        elif role == OWGUI.TableVariable: # The variable descriptor for column
+        elif role == OWGUI.TableVariable: 
+            # The variable descriptor for column
             return QVariant(val.variable)
         
         return self._other_data.get((index.row(), index.column(), role), QVariant())
@@ -110,10 +126,10 @@ class ExampleTableModel(QAbstractItemModel):
         if orientation == Qt.Horizontal:
             attr = self.all_attrs[section]
             if role ==Qt.DisplayRole:
-                values = [attr.name] + ([str(attr.attributes.get(label, "")) for label in self.attrLabels] if self.showAttrLabels else [])
+                values = [attr.name] + ([str(attr.attributes.get(label, "")) for label in self.attr_labels] if self.show_attr_labels else [])
                 return QVariant("\n".join(values))
             if role == Qt.ToolTipRole:
-                pairs = [(key, str(attr.attributes[key])) for key in self.attrLabels if key in attr.attributes]
+                pairs = [(key, str(attr.attributes[key])) for key in self.attr_labels if key in attr.attributes]
                 tip = "<b>%s</b>" % attr.name
                 tip = "<br>".join([tip] + ["%s = %s" % pair for pair in pairs])
                 return QVariant(tip)  
@@ -129,8 +145,10 @@ class ExampleTableModel(QAbstractItemModel):
         values = sorted(values, key=lambda t: t[0] if not t[0].isSpecial() else sys.maxint, reverse=(order!=Qt.AscendingOrder))
         self.sorted_map = [v[1] for v in values]
         self.emit(SIGNAL("layoutChanged()"))
-        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0,0),
-                  self.index(len(self.examples) - 1, len(self.all_attrs) - 1))
+        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
+                  self.index(0,0),
+                  self.index(len(self.examples) - 1, len(self.all_attrs) - 1)
+                  )
             
 
 class OWDataTable(OWWidget):
@@ -481,7 +499,7 @@ class OWDataTable(OWWidget):
 
     def drawAttributeLabels(self, table):
 #        table.setHorizontalHeaderLabels(table.variableNames)
-        table.model().showAttrLabels = bool(self.showAttributeLabels)
+        table.model().show_attr_labels = bool(self.showAttributeLabels)
         if self.showAttributeLabels:
             labelnames = set()
             for a in table.model().examples.domain:
