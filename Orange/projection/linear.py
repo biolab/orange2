@@ -1256,7 +1256,7 @@ class Projector(object):
         if len(self.projection.T) != len(dataset.domain.features):
             dataset = data.Table(self.input_domain, dataset)
 
-        X, = dataset.to_numpy("a")
+        X, = dataset.to_numpy_MA("a")
         Xm, U = self.mean, self.projection
         n, m = X.shape
 
@@ -1269,10 +1269,6 @@ class Projector(object):
             Xd /= self.stdev
 
         self.A = numpy.dot(Xd, U.T)
-
-        # TODO: Delete when orange will support creating data.Table from masked array.
-        self.A = self.A.filled(0.) if isinstance(self.A, numpy.ma.core.MaskedArray) else self.A
-        # append class variable
 
         class_, classes = dataset.to_numpy("c")[0], dataset.to_numpy("m")[0]
         return data.Table(self.output_domain, numpy.hstack((self.A, class_, classes)))
@@ -1354,7 +1350,7 @@ class PCA(object):
     def _normalize_data(self, dataset):
         if not len(dataset) or not len(dataset.domain.features):
             raise ValueError("Empty dataset")
-        X = dataset.to_numpy("a")[0]
+        X = dataset.to_numpy_MA("a")[0]
 
         Xm = numpy.mean(X, axis=0)
         Xd = X - Xm

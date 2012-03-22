@@ -27,6 +27,7 @@ def prepare_dataset(components=((),), n=150):
     return domain, d
 
 
+
 class TestPca(unittest.TestCase):
     def create_normal_dataset(self):
         self.principal_component = normalize([random.randint(0, 5) for _ in range(10)])
@@ -42,13 +43,14 @@ class TestPca(unittest.TestCase):
     def create_constant_dataset(self):
         self.dataset = data.Table(*prepare_dataset(components=([0, 0, 0, 0, 0],)))
 
-    def create_dataset_with_classes(self):
-        domain, features = prepare_dataset(components=[[random.randint(0, 5) for _ in range(10)]])
-        domain = data.Domain(domain.features,
-                             feature.Discrete("C", values=["F", "T"]),
-                             class_vars=[feature.Discrete("MC%i" % i, values=["F", "T"]) for i in range(4)])
+    def create_dataset_with_unknowns(self, percentage=0.05):
+        self.principal_component = normalize([random.randint(0, 5) for _ in range(10)])
+        self.dataset = data.Table(*prepare_dataset(components=[self.principal_component]))
 
-        self.dataset = data.Table(domain, np.hstack((features, np.random.random((len(features), 5)))))
+        for ex in self.dataset:
+            for i, _ in enumerate(ex):
+                if random.random() < percentage:
+                    ex[i] = "?"
 
 
     def test_pca_on_normal_data(self):
@@ -96,37 +98,12 @@ class TestPca(unittest.TestCase):
         nvectors, vector_dimension = pca.eigen_vectors.shape
         self.assertEqual(nvectors, max_components)
 
-    def test_pca_converts_domain(self):
-        self.create_dataset_with_classes()
-        pca = linear.Pca(variance_covered=.99)(self.dataset)
+    def test_pca_handles_unknowns(self):
+        self.create_dataset_with_unknowns()
+        print self.dataset[0]
 
-        projected_data = pca(self.dataset)
-        converted_data = data.Table(projected_data.domain, self.dataset)
+        pca = linear.Pca()(self.dataset)
 
-        self.assertItemsEqual(projected_data, converted_data)
-
-    def test_pca_converts_classless_domain(self):
-        self.create_normal_dataset()
-        pca = linear.Pca(variance_covered=.99)(self.dataset)
-
-        projected_data = pca(self.dataset)
-        converted_data = data.Table(projected_data.domain, self.dataset)
-
-        self.assertItemsEqual(projected_data, converted_data)
-
-    def test_pca_keeps_class_vars(self):
-        self.create_dataset_with_classes()
-
-        pca = linear.Pca(variance_covered=.99)(self.dataset)
-        projected_data = pca(self.dataset)
-
-        self.assertIn(self.dataset.domain.class_var, projected_data.domain)
-        for class_ in self.dataset.domain.class_vars:
-            self.assertIn(class_, projected_data.domain)
-        for ex1, ex2 in zip(self.dataset, projected_data):
-            self.assertEqual(ex1.get_class(), ex2.get_class())
-            for v1, v2 in zip(ex1.get_classes(), ex2.get_classes()):
-                self.assertEqual(v2, v2)
 
 
     def test_pca_on_empty_data(self):
@@ -140,6 +117,74 @@ class TestPca(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             linear.Pca()(self.dataset)
+
+
+class TestProjector(unittest.TestCase):
+    def create_normal_dataset(self):
+        self.principal_component = normalize([random.randint(0, 5) for _ in range(10)])
+        self.dataset = data.Table(*prepare_dataset(components=[self.principal_component]))
+
+    def create_dataset_with_classes(self):
+        domain, features = prepare_dataset(components=[[random.randint(0, 5) for _ in range(10)]])
+        domain = data.Domain(domain.features,
+                             feature.Discrete("C", values=["F", "T"]),
+                             class_vars=[feature.Discrete("MC%i" % i, values=["F", "T"]) for i in range(4)])
+
+        self.dataset = data.Table(domain, np.hstack((features, np.random.random((len(features), 5)))))
+
+
+    def test_projected_domain_can_convert_data_with_class(self):
+        self.create_dataset_with_classes()
+        projector = linear.Pca(variance_covered=.99)(self.dataset)
+
+        projected_data = projector(self.dataset)
+        converted_data = data.Table(projected_data.domain, self.dataset)
+
+        self.assertItemsEqual(projected_data, converted_data)
+
+    def test_projected_domain_can_convert_data_without_class(self):
+        self.create_normal_dataset()
+        projector = linear.Pca(variance_covered=.99)(self.dataset)
+
+        projected_data = projector(self.dataset)
+        converted_data = data.Table(projected_data.domain, self.dataset)
+
+        self.assertItemsEqual(projected_data, converted_data)
+
+    def test_projected_domain_contains_class_vars(self):
+        self.create_dataset_with_classes()
+
+        projector = linear.Pca(variance_covered=.99)(self.dataset)
+        projected_data = projector(self.dataset)
+
+        self.assertIn(self.dataset.domain.class_var, projected_data.domain)
+        for class_ in self.dataset.domain.class_vars:
+            self.assertIn(class_, projected_data.domain)
+        for ex1, ex2 in zip(self.dataset, projected_data):
+            self.assertEqual(ex1.get_class(), ex2.get_class())
+            for v1, v2 in zip(ex1.get_classes(), ex2.get_classes()):
+                self.assertEqual(v2, v2)
+
+
+    def test_projects_example(self):
+        self.create_normal_dataset()
+        projector = linear.Pca(variance_covered=.99)(self.dataset)
+
+        projector(self.dataset[0])
+
+    def test_projects_data_table(self):
+        self.create_normal_dataset()
+        projector = linear.Pca(variance_covered=.99)(self.dataset)
+
+        projector(self.dataset)
+
+    def test_converts_input_domain_if_needed(self):
+        self.create_normal_dataset()
+        projector = linear.Pca(variance_covered=.99)(self.dataset)
+
+        new_examples = data.Table(data.Domain(self.dataset.domain.features[:5]), [[1.,2.,3.,4.,5.]])
+
+        projector(new_examples)
 
 
 class TestFda(unittest.TestCase):
