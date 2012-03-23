@@ -20,7 +20,7 @@ def mirror(tab):
     a = tab.to_numpy("a")[0]
     rotate = np.diagflat([-1 if val<0 else 1 for val in a[0]])
     a = np.dot(a, rotate)
-    return Orange.data.Table(tab.domain, a)
+    return Orange.data.Table(Orange.data.Domain(tab.domain.features), a)
 
 print "PCA"
 freeviz.find_projection(Orange.projection.linear.DR_PCA, set_anchors=True)

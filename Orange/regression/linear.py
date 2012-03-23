@@ -133,7 +133,7 @@ try:
 except ImportError:
     from Orange import statc as stats
 
-from numpy import dot, sqrt
+from numpy import dot, sqrt, std
 from numpy.linalg import inv, pinv
 
 
@@ -202,18 +202,18 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         :param table: data instances.
         :type table: :class:`Orange.data.Table`
         :param weight: the weights for instances. Default: None, i.e.
-            all data instances are eqaully important in fitting
+            all data instances are equally important in fitting
             the regression parameters
         :type weight: None or list of Orange.feature.Continuous
             which stores weights for instances
         """       
-        if not self.use_vars is None:
+        if self.use_vars is not None:
             new_domain = Orange.data.Domain(self.use_vars,
                                             table.domain.class_var)
             new_domain.addmetas(table.domain.getmetas())
             table = Orange.data.Table(new_domain, table)
 
-        # dicrete values are continuized        
+        # discrete values are continuized        
         table = self.continuize_table(table)
           
         # missing values are imputed
@@ -226,16 +226,14 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             new_domain.addmetas(table.domain.getmetas())
             table = Orange.data.Table(new_domain, table)
 
-        # convertion to numpy
-        A, y, w = table.to_numpy()
-        n, m = numpy.shape(A)
+        domain = table.domain
+
+        # convert to numpy
+        X, y, w = table.to_numpy()
+        n, m = numpy.shape(X)
      
         if self.intercept:
-            X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
-        else:
-            X = A
-             
-        domain = table.domain
+            X = numpy.insert(X, 0, 1, axis=1) # adds a column of ones
         
         if weight:
             weights = numpy.sqrt([float(ins[weight]) for ins in table])
@@ -256,9 +254,8 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
 
         mu_y, sigma_y = numpy.mean(y), numpy.std(y)
         if m > 0:
-            cov_x = numpy.cov(X, rowvar=0)
             # standardized coefficients
-            std_coefficients = sqrt(cov_x.diagonal()) / sigma_y * coefficients
+            std_coefficients = std(X, axis=0, ddof=1) / sigma_y * coefficients
         else:
             std_coefficients = None
 
@@ -298,7 +295,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         if self.intercept:
             dict_model["Intercept"] = (coefficients[0], std_error[0],
                                        t_scores[0], p_vals[0])
-        for i, var in enumerate(domain.attributes):
+        for i, var in enumerate(domain.features):
             j = i + 1 if self.intercept else i
             dict_model[var.name] = (coefficients[j], std_error[j],
                                     t_scores[j], p_vals[j])

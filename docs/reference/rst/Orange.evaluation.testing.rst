@@ -67,7 +67,7 @@ script will be different each time you run it.
 
    .. automethod:: learn_and_test_on_test_data
 
-   .. automethod:: learning_curve(learners, examples, cv_indices=None, proportion_indices=None, proportions=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], preprocessors=(), random_generator=0, callback=None)¶
+   .. automethod:: learning_curve(learners, examples, cv_indices=None, proportion_indices=None, proportions=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], preprocessors=(), random_generator=0, callback=None)
 
    .. automethod:: learning_curve_n(learners, examples, folds=10, proportions=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], stratification=StratifiedIfPossible, preprocessors=(), random_generator=0, callback=None)
 
