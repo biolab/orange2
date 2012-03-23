@@ -557,7 +557,7 @@ class SVMClassifier(_SVMClassifier):
         if isinstance(self.__wrapped, _SVMClassifierSparse):
             converter = sparse_instance_to_svm
         else:
-            converter = instance_to_svm(inst)
+            converter = instance_to_svm
         
         if self.kernel_type == kernels.Custom:
             SV = libsvm_model.split("SV\n", 1)[1]
@@ -662,12 +662,12 @@ class SVMLearnerEasy(SVMLearner):
                                                 parameters=parameters,
                                                 folds=self.folds)
 
-        return SVMClassifier(tunedLearner(newexamples,
-                                                 verbose=self.verbose))
+        return tunedLearner(newexamples,verbose=self.verbose)
 
-class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
+class SVMLearnerSparseEasy(SVMLearnerEasy):
     def __init__(self, **kwds):
-        SVMLearnerSparse.__init__(self, **kwds)
+        SVMLearnerEasy.__init__(self, **kwds)
+        self.learner = SVMLearnerSparse(**kwds)
 
 def default_preprocessor():
     # Construct and return a default preprocessor for use by
