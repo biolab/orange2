@@ -112,7 +112,7 @@ classDist = Orange.statistics.distribution.Distribution(vehicle.domain.class_var
 
 print
 print "AUC for detecting class 'van' in 'vehicle'"
-AUCs = Orange.evaluation.scoring.AUC_single(resVeh, class_index=vehicle.domain.class_var.values.index("van"))
+AUCs = Orange.evaluation.scoring.AUC_for_single_class(resVeh, class_index=vehicle.domain.class_var.values.index("van"))
 print "%5.3f\t%5.3f\t%5.3f" % tuple(AUCs)
 
 print

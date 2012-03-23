@@ -274,9 +274,9 @@ class SVMClassifier(_SVMClassifier):
         self.kernel_func = wrapped.kernel_func
         self.kernel_type = wrapped.kernel_type
         self.__wrapped = wrapped
-        
+
         assert(type(wrapped) in [_SVMClassifier, _SVMClassifierSparse])
-        
+
         if self.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
             # Reorder the support vectors
             label_map = self._get_libsvm_labels_map()
@@ -289,7 +289,7 @@ class SVMClassifier(_SVMClassifier):
             self.support_vectors = Orange.data.Table(reduce(add, support_vectors))
         else:
             self.support_vectors = wrapped.support_vectors
-    
+
     @property
     def coef(self):
         """Coefficients of the underlying binary 1vs1 classifiers.
@@ -302,7 +302,7 @@ class SVMClassifier(_SVMClassifier):
         # see http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f804
         # for more information on how the coefs are stored by libsvm
         # internally.
-        
+
         import numpy as np
         c_map = self._get_libsvm_bin_classifier_map()
         label_map = self._get_libsvm_labels_map()
@@ -319,41 +319,41 @@ class SVMClassifier(_SVMClassifier):
                 ni = label_map[i]
                 nj = label_map[j]
                 bc_index, mult = c_map[p]
-                
+
                 if ni > nj:
                     ni, nj = nj, ni
-                
+
                 # Original class indices
                 c1_range = range(libsvm_class_indices[ni],
                                  libsvm_class_indices[ni + 1])
-                c2_range = range(libsvm_class_indices[nj], 
+                c2_range = range(libsvm_class_indices[nj],
                                  libsvm_class_indices[nj + 1])
-                
+
                 coef1 = mult * coef_array[nj - 1, c1_range]
                 coef2 = mult * coef_array[ni, c2_range]
-                
+
                 # Mapped class indices
                 c1_range = range(class_indices[i],
                                  class_indices[i + 1])
-                c2_range = range(class_indices[j], 
+                c2_range = range(class_indices[j],
                                  class_indices[j + 1])
                 if mult == -1.0:
                     c1_range, c2_range = c2_range, c1_range
-                    
+
                 nonzero1 = np.abs(coef1) > 0.0
                 nonzero2 = np.abs(coef2) > 0.0
-                
+
                 coef1 = coef1[nonzero1]
                 coef2 = coef2[nonzero2]
-                
+
                 c1_range = [sv_i for sv_i, nz in zip(c1_range, nonzero1) if nz]
                 c2_range = [sv_i for sv_i, nz in zip(c2_range, nonzero2) if nz]
-                
+
                 coef.append(list(zip(coef1, c1_range)) + list(zip(coef2, c2_range)))
-                
+
                 p += 1
         return coef
-    
+
     @property
     def rho(self):
         """Constant (bias) terms in each underlying binary 1vs1 classifier.
@@ -361,18 +361,18 @@ class SVMClassifier(_SVMClassifier):
         c_map = self._get_libsvm_bin_classifier_map()
         rho = self.__wrapped.rho
         return [rho[i] * m for i, m in c_map]
-    
+
     @property
     def n_SV(self):
         """Number of support vectors for each class.
         """
         if self.__wrapped.n_SV is not None:
             c_map = self._get_libsvm_labels_map()
-            n_SV= self.__wrapped.n_SV
+            n_SV = self.__wrapped.n_SV
             return [n_SV[i] for i in c_map]
         else:
             return None
-    
+
     @property
     def prob_a(self):
         if self.__wrapped.prob_a is not None:
@@ -382,7 +382,7 @@ class SVMClassifier(_SVMClassifier):
             return [prob_a[i] for i, _ in c_map]
         else:
             return None
-    
+
     @property
     def prob_b(self):
         if self.__wrapped.prob_b is not None:
@@ -392,7 +392,7 @@ class SVMClassifier(_SVMClassifier):
             return [prob_b[i] for i, _ in c_map]
         else:
             return None
-    
+
     def __call__(self, instance, what=Orange.core.GetValue):
         """Classify a new ``instance``
         """
@@ -416,12 +416,12 @@ class SVMClassifier(_SVMClassifier):
         # i.e. the order of labels in the data
         c_map = self._get_libsvm_bin_classifier_map()
         return [dec_values[i] * m for i, m in c_map]
-        
+
     def get_model(self):
         """Return a string representing the model in the libsvm model format.
         """
         return self.__wrapped.get_model()
-    
+
     def _get_libsvm_labels_map(self):
         """Get the internal libsvm label mapping. 
         """
@@ -450,75 +450,75 @@ class SVMClassifier(_SVMClassifier):
                 cls_index = n_class * (n_class - 1) / 2 - (n_class - ni - 1) * (n_class - ni - 2) / 2 - (n_class - nj)
                 bin_c_map.append((cls_index, mult))
         return bin_c_map
-                
+
     def __reduce__(self):
         return SVMClassifier, (self.__wrapped,), dict(self.__dict__)
-    
+
     def get_binary_classifier(self, c1, c2):
         """Return a binary classifier for classes `c1` and `c2`.
         """
         import numpy as np
         if self.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
             raise TypeError("SVM classification model expected.")
-        
+
         c1 = int(self.class_var(c1))
         c2 = int(self.class_var(c2))
-                
+
         n_class = len(self.class_var.values)
-        
+
         if c1 == c2:
             raise ValueError("Different classes expected.")
-        
+
         bin_class_var = Orange.feature.Discrete("%s vs %s" % \
                         (self.class_var.values[c1], self.class_var.values[c2]),
                         values=["0", "1"])
-        
+
         mult = 1.0
         if c1 > c2:
             c1, c2 = c2, c1
             mult = -1.0
-            
+
         classifier_i = n_class * (n_class - 1) / 2 - (n_class - c1 - 1) * (n_class - c1 - 2) / 2 - (n_class - c2)
-        
+
         coef = self.coef[classifier_i]
-        
+
         coef1 = [(mult * alpha, sv_i) for alpha, sv_i in coef \
                  if int(self.support_vectors[sv_i].get_class()) == c1]
         coef2 = [(mult * alpha, sv_i) for alpha, sv_i in coef \
-                 if int(self.support_vectors[sv_i].get_class()) == c2] 
-        
+                 if int(self.support_vectors[sv_i].get_class()) == c2]
+
         rho = mult * self.rho[classifier_i]
-        
-        model = self._binary_libsvm_model_string(bin_class_var, 
+
+        model = self._binary_libsvm_model_string(bin_class_var,
                                                  [coef1, coef2],
                                                  [rho])
-        
+
         all_sv = [self.support_vectors[sv_i] \
-                  for c, sv_i in coef1 + coef2] 
-                  
+                  for c, sv_i in coef1 + coef2]
+
         all_sv = Orange.data.Table(all_sv)
-        
+
         svm_classifier_type = type(self.__wrapped)
-        
+
         # Build args for svm_classifier_type constructor
         args = (bin_class_var, self.examples, all_sv, model)
-        
+
         if isinstance(svm_classifier_type, _SVMClassifierSparse):
             args = args + (int(self.__wrapped.use_non_meta),)
-        
+
         if self.kernel_type == kernels.Custom:
             args = args + (self.kernel_func,)
-            
+
         native_classifier = svm_classifier_type(*args)
         return SVMClassifier(native_classifier)
-    
+
     def _binary_libsvm_model_string(self, class_var, coef, rho):
         """Return a libsvm formated model string for binary classifier
         """
         import itertools
-        
+
         model = []
-                
+
         # Take the model up to nr_classes
         libsvm_model = self.__wrapped.get_model()
         for line in libsvm_model.splitlines():
@@ -526,22 +526,22 @@ class SVMClassifier(_SVMClassifier):
                 break
             else:
                 model.append(line.rstrip())
-        
+
         model.append("nr_class %i" % len(class_var.values))
         model.append("total_sv %i" % reduce(add, [len(c) for c in coef]))
         model.append("rho " + " ".join(str(r) for r in rho))
         model.append("label " + " ".join(str(i) for i in range(len(class_var.values))))
         # No probA and probB
-        
+
         model.append("nr_sv " + " ".join(str(len(c)) for c in coef))
         model.append("SV")
-        
+
         def instance_to_svm(inst):
             values = [(i, float(inst[v])) \
                       for i, v in enumerate(inst.domain.attributes) \
                       if not inst[v].is_special() and float(inst[v]) != 0.0]
             return " ".join("%i:%f" % (i + 1, v) for i, v in values)
-        
+
         def sparse_instance_to_svm(inst):
             non_meta = []
             base = 1
@@ -553,17 +553,17 @@ class SVMClassifier(_SVMClassifier):
                 if not value.isSpecial() and float(value) != 0:
                     metas.append("%i:%f" % (base - m_id, float(value)))
             return " ".join(non_meta + metas)
-                
+
         if isinstance(self.__wrapped, _SVMClassifierSparse):
             converter = sparse_instance_to_svm
         else:
             converter = instance_to_svm
-        
+
         if self.kernel_type == kernels.Custom:
             SV = libsvm_model.split("SV\n", 1)[1]
             # Get the sv indices (the last entry in the SV lines)
             indices = [int(s.split(":")[-1]) for s in SV.splitlines() if s.strip()]
-            
+
             # Reorder the indices 
             label_map = self._get_libsvm_labels_map()
             start = 0
@@ -573,23 +573,23 @@ class SVMClassifier(_SVMClassifier):
                 start += n
             reordered_indices = [reordered_indices[i] for i in label_map]
             indices = reduce(add, reordered_indices)
-            
+
             for (c, sv_i) in itertools.chain(*coef):
                 model.append("%f 0:%i" % (c, indices[sv_i]))
         else:
             for (c, sv_i) in itertools.chain(*coef):
                 model.append("%f %s" % (c, converter(self.support_vectors[sv_i])))
-                
+
         model.append("")
         return "\n".join(model)
-        
+
 
 SVMClassifier = Orange.utils.deprecated_members({
     "classDistribution": "class_distribution",
     "getDecisionValues": "get_decision_values",
     "getModel" : "get_model",
     }, wrap_methods=[])(SVMClassifier)
-    
+
 # Backwards compatibility (pickling)
 SVMClassifierWrapper = SVMClassifier
 
@@ -658,11 +658,11 @@ class SVMLearnerEasy(SVMLearner):
         if self.kernel_type == 2:
             parameters.append(("gamma", [2 ** a for a in range(-5, 5, 2)] + [0]))
         import orngWrap
-        tunedLearner = orngWrap.TuneMParameters(object=self.learner,
+        tunedLearner = orngWrap.TuneMParameters(learner=self.learner,
                                                 parameters=parameters,
                                                 folds=self.folds)
 
-        return tunedLearner(newexamples,verbose=self.verbose)
+        return tunedLearner(newexamples, verbose=self.verbose)
 
 class SVMLearnerSparseEasy(SVMLearnerEasy):
     def __init__(self, **kwds):
@@ -776,9 +776,9 @@ def get_linear_svm_weights(classifier, sum=True):
     class_var = SVs.domain.class_var
     if classifier.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
         raise TypeError("SVM classification model expected.")
-    
+
     classes = classifier.class_var.values
-    
+
     for i in range(len(classes) - 1):
         for j in range(i + 1, len(classes)):
             # Get the coef and rho values from the binary sub-classifier
@@ -788,7 +788,7 @@ def get_linear_svm_weights(classifier, sum=True):
             n_sv0 = bin_classifier.n_SV[0]
             SVs = bin_classifier.support_vectors
             w = {}
-            
+
             for alpha, sv_ind in bin_classifier.coef[0]:
                 SV = SVs[sv_ind]
                 attributes = SVs.domain.attributes + \
@@ -796,9 +796,9 @@ def get_linear_svm_weights(classifier, sum=True):
                 for attr in attributes:
                     if attr.varType == Orange.feature.Type.Continuous:
                         update_weights(w, attr, to_float(SV[attr]), alpha)
-                
+
             weights.append(w)
-            
+
     if sum:
         scores = defaultdict(float)
 

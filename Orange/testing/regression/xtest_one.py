@@ -85,7 +85,7 @@ t__iterations = int(t__sys.argv[2])
 t__outputsdir = t__sys.argv[3]
 
 # when testing backward compatibility support suppress deprecation warnings
-if "tests_20" in t__outputsdir:
+if "tests_20" in t__outputsdir or "tutorial" in t__outputsdir:
     t__warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 t__timedoutname, t__crashname, t__errorname, t__newname, t__changedname, t__random1name, t__random2name = ["%s/%s.%s.%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform, t__sys.version[:3], t) for t in ["timedout", "crash", "error", "new", "changed", "random1", "random2"]]
