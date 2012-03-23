@@ -3,13 +3,13 @@
 # Should be run as: sudo ./dailyrun-sources.sh work/dir
 #
 # $1 work dir
-# $2 force
-# $3 local build
+# $2 local build
+# $3 force
 
 WORK_DIR=${1:-"/private/tmp"}
 
-FORCE=$2
-LOCAL=$3
+LOCAL=$2
+FORCE=$3
 
 test -r /sw/bin/init.sh && . /sw/bin/init.sh
 

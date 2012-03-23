@@ -70,7 +70,7 @@ TEXT_SOURCE_MD5=`md5 -q $SOURCES_DIR/$TEXT_SOURCE`
 
 ## Daily bundle build from hg (for now always until versioning is established).
 if [[ true || $NEW_ORANGE || $NEW_BIOINFORMATICS || $NEW_TEXT || $FORCE ]]; then
-	/Users/ailabc/bundle-daily-build-hg.sh &> $WORK_DIR/bundle-daily-build.log
+	./bundle-daily-build-hg.sh &> $WORK_DIR/bundle-daily-build.log
 	EXIT_VALUE=$?
 fi
 
