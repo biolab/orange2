@@ -8,7 +8,7 @@
 # $4 fink package version
 # $5 final .info file (optional /sw/fink/dists/local/main/finkinfo/$1 will be used
 #
-# Example: ./register-fink-info fink/orange-gui-hg-py.info http://orange.biolab.si/downloads/sources/Orange-2.5a.tar.gz 2fa4783166c07585ae349723495cf2b8 2.5a /sw/fink/dists/local/main/finkinfo/orange-gui-hg-py.info
+# Example: ./register-fink-info fink/orange-gui-dev-py.info http://orange.biolab.si/downloads/sources/Orange-2.5a.tar.gz 2fa4783166c07585ae349723495cf2b8 2.5a /sw/fink/dists/local/main/finkinfo/orange-gui-dev-py.info
 
 INFO=$1
 SOURCE=$2
