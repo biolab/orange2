@@ -15,7 +15,7 @@ import numpy
 import math
 import os.path
 
-from Orange.misc.environ import install_dir
+from Orange.utils.environ import install_dir
 
 class GeneratorContextManager(object):
    def __init__(self, gen):

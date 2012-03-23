@@ -49,7 +49,7 @@ def split_by_iterations(res):
     """
     if res.number_of_iterations < 2:
         return [res]
-        
+
     ress = [Orange.evaluation.testing.ExperimentResults(
                 1, res.classifier_names, res.class_values,
                 res.weights, classifiers=res.classifiers,
@@ -67,7 +67,7 @@ def split_by_classifiers(res):
     for i in range(len(res.classifierNames)):
         r = Orange.evaluation.testing.ExperimentResults(res.numberOfIterations,
                     [res.classifierNames[i]], res.classValues,
-                    weights=res.weights, baseClass=res.baseClass,
+                    weights=res.weights, base_class=res.base_class,
                     classifiers=[res.classifiers[i]] if res.classifiers else [],
                     test_type=res.test_type, labels=res.labels)
         r.results = []
@@ -117,18 +117,18 @@ def statistics_by_folds(stats, fold_n, report_se, iteration_is_outer):
         raise ValueError, "Cannot compute the score: no classifiers"
     if not stats[0]:
         raise ValueError, "Cannot compute the score: no examples or sum of weights is 0."
-    
+
     if report_se:
         return [(statc.mean(x), statc.sterr(x)) for x in stats]
     else:
         return [statc.mean(x) for x in stats]
-    
+
 def ME(res, **argkw):
     MEs = [0.] * res.number_of_learners
 
     if argkw.get("unweighted", 0) or not res.weights:
         for tex in res.results:
-            MEs = map(lambda res, cls, ac = float(tex.actual_class):
+            MEs = map(lambda res, cls, ac=float(tex.actual_class):
                       res + abs(float(cls) - ac), MEs, tex.classes)
         totweight = gettotsize(res)
     else:
@@ -215,14 +215,14 @@ def regression_error(res, **argkw):
                 if argkw.get("norm-abs", 0):
                     norm[tex.iteration_number] += abs(ai - a[tex.iteration_number])
                 elif argkw.get("norm-sqr", 0):
-                    norm[tex.iteration_number] += (ai - a[tex.iteration_number])**2
+                    norm[tex.iteration_number] += (ai - a[tex.iteration_number]) ** 2
 
                 # iterate accross results of different regressors
                 for i, cls in enumerate(tex.classes):
                     if argkw.get("abs", 0):
                         scores[i][tex.iteration_number] += abs(float(cls) - ai)
                     else:
-                        scores[i][tex.iteration_number] += (float(cls) - ai)**2
+                        scores[i][tex.iteration_number] += (float(cls) - ai) ** 2
         else: # unweighted != 0
             raise NotImplementedError, "weighted error scores with SE not implemented yet"
 
@@ -238,7 +238,7 @@ def regression_error(res, **argkw):
             scores = [[math.sqrt(x) for x in y] for y in scores]
 
         return [(statc.mean(x), statc.std(x)) for x in scores]
-        
+
     else: # single iteration (testing on a single test set)
         scores = [0.] * res.number_of_learners
         norm = 0.
@@ -252,12 +252,12 @@ def regression_error(res, **argkw):
                                  res + abs(float(cls) - ac), scores, tex.classes)
                 else:
                     scores = map(lambda res, cls, ac=float(tex.actual_class):
-                                 res + (float(cls) - ac)**2, scores, tex.classes)
+                                 res + (float(cls) - ac) ** 2, scores, tex.classes)
 
                 if argkw.get("norm-abs", 0):
                     norm += abs(tex.actual_class - a)
                 elif argkw.get("norm-sqr", 0):
-                    norm += (tex.actual_class - a)**2
+                    norm += (tex.actual_class - a) ** 2
             totweight = gettotsize(res)
         else:
             # UNFINISHED
@@ -265,7 +265,7 @@ def regression_error(res, **argkw):
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac=float(tex.actual_class),
                            tw=tex.weight:
-                           res + tw * (float(cls) - ac)**2, MSEs, tex.classes)
+                           res + tw * (float(cls) - ac) ** 2, MSEs, tex.classes)
             totweight = gettotweight(res)
 
         if argkw.get("norm-abs", 0) or argkw.get("norm-sqr", 0):
@@ -284,7 +284,7 @@ def regression_error(res, **argkw):
 def MSE(res, **argkw):
     """Compute mean-squared error."""
     return regression_error(res, **argkw)
-    
+
 def RMSE(res, **argkw):
     """Compute root mean-squared error."""
     argkw.setdefault("sqrt", True)
@@ -329,25 +329,25 @@ def MSE_old(res, **argkw):
                 ac = float(tex.actual_class)
                 nIter[tex.iteration_number] += 1
                 for i, cls in enumerate(tex.classes):
-                    MSEs[i][tex.iteration_number] += (float(cls) - ac)**2
+                    MSEs[i][tex.iteration_number] += (float(cls) - ac) ** 2
         else:
             raise ValueError, "weighted RMSE with SE not implemented yet"
         MSEs = [[x / ni for x, ni in zip(y, nIter)] for y in MSEs]
         if argkw.get("sqrt", 0):
             MSEs = [[math.sqrt(x) for x in y] for y in MSEs]
         return [(statc.mean(x), statc.std(x)) for x in MSEs]
-        
+
     else:
         MSEs = [0.] * res.number_of_learners
         if argkw.get("unweighted", 0) or not res.weights:
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac=float(tex.actual_class):
-                           res + (float(cls) - ac)**2, MSEs, tex.classes)
+                           res + (float(cls) - ac) ** 2, MSEs, tex.classes)
             totweight = gettotsize(res)
         else:
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac=float(tex.actual_class),
-                           tw=tex.weight: res + tw * (float(cls) - ac)**2,
+                           tw=tex.weight: res + tw * (float(cls) - ac) ** 2,
                            MSEs, tex.classes)
             totweight = gettotweight(res)
 
@@ -385,7 +385,7 @@ class CA(list):
 
     @deprecated_keywords({"reportSE": "report_se",
                           "unweighted": "ignore_weights"})
-    def __init__(self, test_results, report_se = False, ignore_weights=False):
+    def __init__(self, test_results, report_se=False, ignore_weights=False):
         super(CA, self).__init__()
         self.report_se = report_se
         self.ignore_weights = ignore_weights
@@ -448,7 +448,7 @@ class CA(list):
         for tex in test_results.results:
             w = 1. if self.ignore_weights else tex.weight
             for lrn in range(test_results.number_of_learners):
-                CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn] == 
+                CAsByFold[lrn][tex.iteration_number] += (tex.classes[lrn] ==
                     tex.actual_class) and w
             foldN[tex.iteration_number] += w
 
@@ -471,7 +471,7 @@ class CA(list):
 def AP(res, report_se=False, ignore_weights=False, **argkw):
     """Compute the average probability assigned to the correct class."""
     if res.number_of_iterations == 1:
-        APs=[0.] * res.number_of_learners
+        APs = [0.] * res.number_of_learners
         if ignore_weights or not res.weights:
             for tex in res.results:
                 APs = map(lambda res, probs: res + probs[tex.actual_class],
@@ -524,18 +524,18 @@ def Brier_score(res, report_se=False, ignore_weights=False, **argkw):
     # We take max(result, 0) to avoid -0.0000x due to rounding errors
 
     if res.number_of_iterations == 1:
-        MSEs=[0.] * res.number_of_learners
+        MSEs = [0.] * res.number_of_learners
         if ignore_weights or not res.weights:
             totweight = 0.
             for tex in res.results:
                 MSEs = map(lambda res, probs: res + reduce(
-                    lambda s, pi: s + pi**2, probs, 0) - 
+                    lambda s, pi: s + pi ** 2, probs, 0) -
                     2 * probs[tex.actual_class], MSEs, tex.probabilities)
                 totweight += tex.weight
         else:
             for tex in res.results:
                 MSEs = map(lambda res, probs: res + tex.weight * reduce(
-                    lambda s, pi: s + pi**2, probs, 0) - 
+                    lambda s, pi: s + pi ** 2, probs, 0) -
                     2 * probs[tex.actual_class], MSEs, tex.probabilities)
             totweight = gettotweight(res)
         check_non_zero(totweight)
@@ -552,14 +552,14 @@ def Brier_score(res, report_se=False, ignore_weights=False, **argkw):
     if ignore_weights or not res.weights:
         for tex in res.results:
             BSs[tex.iteration_number] = map(lambda rr, probs: rr + reduce(
-                lambda s, pi: s + pi**2, probs, 0) -
+                lambda s, pi: s + pi ** 2, probs, 0) -
                 2 * probs[tex.actual_class], BSs[tex.iteration_number],
                 tex.probabilities)
             foldN[tex.iteration_number] += 1
     else:
         for tex in res.results:
             BSs[tex.iteration_number] = map(lambda res, probs:
-                res + tex.weight * reduce(lambda s, pi: s + pi**2, probs, 0) -
+                res + tex.weight * reduce(lambda s, pi: s + pi ** 2, probs, 0) -
                 2 * probs[tex. actual_class], BSs[tex.iteration_number],
                 tex.probabilities)
             foldN[tex.iteration_number] += tex.weight
@@ -571,7 +571,7 @@ def Brier_score(res, report_se=False, ignore_weights=False, **argkw):
         return [x + 1. for x in stats]
 
 def BSS(res, **argkw):
-    return [1 - x / 2 for x in apply(Brier_score, (res, ), argkw)]
+    return [1 - x / 2 for x in apply(Brier_score, (res,), argkw)]
 
 def IS_ex(Pc, P):
     """Pc aposterior probability, P aprior"""
@@ -613,7 +613,7 @@ def IS(res, apriori=None, report_se=False, **argkw):
         else:
             return [IS / totweight for IS in ISs]
 
-        
+
     ISs = [[0.] * res.number_of_iterations
            for _ in range(res.number_of_learners)]
     foldN = [0.] * res.number_of_iterations
@@ -635,7 +635,7 @@ def IS(res, apriori=None, report_se=False, **argkw):
             foldN[tex.iteration_number] += tex.weight
 
     return statistics_by_folds(ISs, foldN, report_se, False)
-    
+
 
 def Wilcoxon(res, statistics, **argkw):
     res1, res2 = [], []
@@ -663,7 +663,7 @@ def rank_difference(res, statistics, **argkw):
 @deprecated_keywords({"res": "test_results",
                       "classIndex": "class_index",
                       "unweighted": "ignore_weights"})
-def confusion_matrices(test_results, class_index=-1,
+def confusion_matrices(test_results, class_index= -1,
                        ignore_weights=False, cutoff=.5):
     """
     Return confusion matrices for test_results.
@@ -677,7 +677,7 @@ def confusion_matrices(test_results, class_index=-1,
     :rtype: list of :obj:`ConfusionMatrix`
     """
     tfpns = [ConfusionMatrix() for _ in range(test_results.number_of_learners)]
-    
+
     if class_index < 0:
         numberOfClasses = len(test_results.class_values)
         if class_index < -1 or numberOfClasses > 2:
@@ -698,24 +698,24 @@ def confusion_matrices(test_results, class_index=-1,
                         if predClass < numberOfClasses:
                             cm[li][trueClass][predClass] += tex.weight
             return cm
-            
-        elif test_results.baseClass >= 0:
-            class_index = test_results.baseClass
+
+        elif test_results.base_class >= 0:
+            class_index = test_results.base_class
         else:
             class_index = 1
 
     if cutoff != .5:
         if ignore_weights or not test_results.weights:
             for lr in test_results.results:
-                isPositive=(lr.actual_class==class_index)
+                isPositive = (lr.actual_class == class_index)
                 for i in range(test_results.number_of_learners):
                     tfpns[i].addTFPosNeg(lr.probabilities[i][class_index] >
                                          cutoff, isPositive)
         else:
             for lr in test_results.results:
-                isPositive=(lr.actual_class == class_index)
+                isPositive = (lr.actual_class == class_index)
                 for i in range(test_results.number_of_learners):
-                    tfpns[i].addTFPosNeg(lr.probabilities[i][class_index] > 
+                    tfpns[i].addTFPosNeg(lr.probabilities[i][class_index] >
                                          cutoff, isPositive, lr.weight)
     else:
         if ignore_weights or not test_results.weights:
@@ -765,8 +765,8 @@ def _confusion_chi_square(confusion_matrix):
             e = total * rowPriors[ri] * colPriors[ci]
             if not e:
                 return -1, -1, -1
-            ss += (o - e)**2 / e
-    df = (dim - 1)**2
+            ss += (o - e) ** 2 / e
+    df = (dim - 1) ** 2
     return ss, df, statc.chisqprob(ss, df)
 
 class CMScore(list):
@@ -806,7 +806,7 @@ class Sensitivity(CMScore):
     """ + CMScore.__doc__
     @classmethod
     def compute(self, confusion_matrix):
-        tot = confusion_matrix.TP+confusion_matrix.FN
+        tot = confusion_matrix.TP + confusion_matrix.FN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute sensitivity: one or both classes have no instances")
@@ -830,7 +830,7 @@ class Specificity(CMScore):
     """ + CMScore.__doc__
     @classmethod
     def compute(self, confusion_matrix):
-        tot = confusion_matrix.FP+confusion_matrix.TN
+        tot = confusion_matrix.FP + confusion_matrix.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute specificity: one or both classes have no instances")
@@ -850,7 +850,7 @@ class PPV(CMScore):
             import warnings
             warnings.warn("Can't compute PPV: one or both classes have no instances")
             return None
-        return confusion_matrix.TP/tot
+        return confusion_matrix.TP / tot
 
 
 class Precision(PPV):
@@ -884,7 +884,7 @@ class F1(CMScore):
     def compute(self, confusion_matrix):
         p = Precision.compute(confusion_matrix)
         r = Recall.compute(confusion_matrix)
-        if p is not None and r is not None and (p+r) != 0:
+        if p is not None and r is not None and (p + r) != 0:
             return 2. * p * r / (p + r)
         else:
             import warnings
@@ -917,10 +917,10 @@ class MCC(CMScore):
     def compute(self, cm):
         # code by Boris Gorelik
         TP, TN, FP, FN = cm.TP, cm.TN, cm.FP, cm.FN
-          
+
         try:
-            return (TP*TN - FP*FN) /\
-                 math.sqrt((TP+FP) * (TP+FN) * (TN+ FP) * (TN+FN))
+            return (TP * TN - FP * FN) / \
+                 math.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
         except ZeroDivisionError:
             # Zero division occurs when there is either no true positives
             # or no true negatives i.e. the problem contains only one 
@@ -990,7 +990,7 @@ recall = Recall
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
-def AUCWilcoxon(res, class_index=-1, ignore_weights=False, **argkw):
+def AUCWilcoxon(res, class_index= -1, ignore_weights=False, **argkw):
     """Compute the area under ROC (AUC) and its standard error using
     Wilcoxon's approach proposed by Hanley and McNeal (1982). If 
     :obj:`class_index` is not specified, the first class is used as
@@ -1014,17 +1014,17 @@ def AUCWilcoxon(res, class_index=-1, ignore_weights=False, **argkw):
             thisPos, thisNeg = prob[1][1], prob[1][0]
             highPos -= thisPos
             W += thisNeg * (highPos + thisPos / 2.)
-            Q2 += thisPos * (lowNeg**2  + lowNeg*thisNeg  + thisNeg**2 / 3.)
-            Q1 += thisNeg * (highPos**2 + highPos*thisPos + thisPos**2 / 3.)
+            Q2 += thisPos * (lowNeg ** 2 + lowNeg * thisNeg + thisNeg ** 2 / 3.)
+            Q1 += thisNeg * (highPos ** 2 + highPos * thisPos + thisPos ** 2 / 3.)
 
             lowNeg += thisNeg
 
-        W  /= (totPos*totNeg)
-        Q1 /= (totNeg*totPos**2)
-        Q2 /= (totPos*totNeg**2)
+        W /= (totPos * totNeg)
+        Q1 /= (totNeg * totPos ** 2)
+        Q2 /= (totPos * totNeg ** 2)
 
-        SE = math.sqrt((W * (1 - W) + (totPos - 1) * (Q1 - W**2) +
-                       (totNeg - 1) * (Q2 - W**2)) / (totPos * totNeg))
+        SE = math.sqrt((W * (1 - W) + (totPos - 1) * (Q1 - W ** 2) +
+                       (totNeg - 1) * (Q2 - W ** 2)) / (totPos * totNeg))
         results.append((W, SE))
     return results
 
@@ -1033,17 +1033,17 @@ AROC = AUCWilcoxon # for backward compatibility, AROC is obsolete
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
-def compare_2_AUCs(res, lrn1, lrn2, class_index=-1,
+def compare_2_AUCs(res, lrn1, lrn2, class_index= -1,
                    ignore_weights=False, **argkw):
     return corn.compare2ROCs(res, lrn1, lrn2, class_index,
                              res.weights and not ignore_weights)
 
 # for backward compatibility, compare_2_AROCs is obsolete
-compare_2_AROCs = compare_2_AUCs 
+compare_2_AROCs = compare_2_AUCs
 
 
 @deprecated_keywords({"classIndex": "class_index"})
-def compute_ROC(res, class_index=-1):
+def compute_ROC(res, class_index= -1):
     """Compute a ROC curve as a list of (x, y) tuples, where x is 
     1-specificity and y is sensitivity.
     """
@@ -1053,7 +1053,7 @@ def compute_ROC(res, class_index=-1):
     totPos, totNeg = tots[1], tots[0]
 
     for plist in problists:
-        curve=[(1., 1.)]
+        curve = [(1., 1.)]
         TP, TN = totPos, 0.
         FN, FP = 0., totNeg
         for prob in plist:
@@ -1070,7 +1070,7 @@ def compute_ROC(res, class_index=-1):
             curve.append((1 - spec, sens))
         results.append(curve)
 
-    return results    
+    return results
 
 ## TC's implementation of algorithms, taken from:
 ## T Fawcett: ROC Graphs: Notes and Practical Considerations for
@@ -1102,7 +1102,7 @@ def ROC_add_point(P, R, keep_concavities=1):
 
 @deprecated_keywords({"classIndex": "class_index",
                       "keepConcavities": "keep_concavities"})
-def TC_compute_ROC(res, class_index=-1, keep_concavities=1):
+def TC_compute_ROC(res, class_index= -1, keep_concavities=1):
     problists, tots = corn.computeROCCumulative(res, class_index)
 
     results = []
@@ -1113,7 +1113,7 @@ def TC_compute_ROC(res, class_index=-1, keep_concavities=1):
         plist.reverse()
         TP = 0.
         FP = 0.
-        curve=[]
+        curve = []
         fPrev = 10e300 # "infinity" score at 0., 0.
         for prob in plist:
             f = prob[0]
@@ -1169,8 +1169,8 @@ def TC_best_thresholds_on_ROC_curve(FPcost, FNcost, pval, curve):
             closestPoints = [(x, y, fscore)]
         else:
             if abs(d - mind) <= 0.0001: ## close enough
-                closestPoints.append( (x, y, fscore) )
-    return closestPoints          
+                closestPoints.append((x, y, fscore))
+    return closestPoints
 
 def frange(start, end=None, inc=None):
     """A range function, that does accept float increments..."""
@@ -1192,7 +1192,7 @@ def frange(start, end=None, inc=None):
             L.append(end)
             break
         L.append(next)
-        
+
     return L
 
 ## input ROCcurves are of form [ROCcurves1, ROCcurves2, ... ROCcurvesN],
@@ -1202,7 +1202,7 @@ def frange(start, end=None, inc=None):
 ## for each (sub)set of input ROC curves
 ## returns the average ROC curve and an array of (vertical) standard deviations
 @deprecated_keywords({"ROCcurves": "roc_curves"})
-def TC_vertical_average_ROC(roc_curves, samples = 10):
+def TC_vertical_average_ROC(roc_curves, samples=10):
     def INTERPOLATE((P1x, P1y, P1fscore), (P2x, P2y, P2fscore), X):
         if (P1x == P2x) or P1x < X > P2x or P1x > X < P2x:
             raise ValueError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
@@ -1309,13 +1309,13 @@ def TC_threshold_average_ROC(roc_curves, samples=10):
                 stdv = statc.std(TPsum)
             else:
                 stdv = 0.
-            TPstdV.append( stdv )
+            TPstdV.append(stdv)
             ## horizontal standard deviation
             if len(FPsum) > 1:
                 stdh = statc.std(FPsum)
             else:
                 stdh = 0.
-            TPstdH.append( stdh )
+            TPstdH.append(stdh)
 
         average.append(TPavg)
         stdevV.append(TPstdV)
@@ -1330,7 +1330,7 @@ def TC_threshold_average_ROC(roc_curves, samples=10):
 ##  - yesClassRugPoints is an array of (x, 1) points
 ##  - noClassRugPoints is an array of (x, 0) points
 @deprecated_keywords({"classIndex": "class_index"})
-def compute_calibration_curve(res, class_index=-1):
+def compute_calibration_curve(res, class_index= -1):
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names,
         res.class_values, res.weights, classifiers=res.classifiers,
@@ -1345,7 +1345,7 @@ def compute_calibration_curve(res, class_index=-1):
     bins = 10 ## divide interval between 0. and 1. into N bins
 
     for plist in problists:
-        yesClassRugPoints = [] 
+        yesClassRugPoints = []
         noClassRugPoints = []
 
         yesBinsVals = [0] * bins
@@ -1354,7 +1354,7 @@ def compute_calibration_curve(res, class_index=-1):
             yesClassRugPoints.append((f, thisPos)) # 1.
             noClassRugPoints.append((f, thisNeg)) # 1.
 
-            index = int(f * bins )
+            index = int(f * bins)
             index = min(index, bins - 1) ## just in case for value 1.
             yesBinsVals[index] += thisPos
             noBinsVals[index] += thisNeg
@@ -1367,7 +1367,7 @@ def compute_calibration_curve(res, class_index=-1):
             allVal = yesVal + noVal
             if allVal == 0.: continue
             y = float(yesVal) / float(allVal)
-            curve.append((f,  y))
+            curve.append((f, y))
 
         ## smooth the curve
         maxnPoints = 100
@@ -1396,7 +1396,7 @@ def compute_calibration_curve(res, class_index=-1):
 ##  - curve is an array of points ((TP + FP) / (P + N), TP / P, (th, FP / N))
 ##    on the Lift Curve
 @deprecated_keywords({"classIndex": "class_index"})
-def compute_lift_curve(res, class_index=-1):
+def compute_lift_curve(res, class_index= -1):
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names,
         res.class_values, res.weights, classifiers=res.classifiers,
@@ -1427,25 +1427,25 @@ class CDT:
   """Store the number of concordant (C), discordant (D) and tied (T) pairs."""
   def __init__(self, C=0., D=0., T=0.):
     self.C, self.D, self.T = C, D, T
-   
+
 def is_CDT_empty(cdt):
     return cdt.C + cdt.D + cdt.T < 1e-20
 
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
-def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
+def compute_CDT(res, class_index= -1, ignore_weights=False, **argkw):
     """Obsolete, don't use."""
     if class_index < 0:
-        if res.baseClass >= 0:
-            class_index = res.baseClass
+        if res.base_class >= 0:
+            class_index = res.base_class
         else:
             class_index = 1
-            
+
     useweights = res.weights and not ignore_weights
     weightByClasses = argkw.get("weightByClasses", True)
 
-    if res.number_of_iterations>1:
+    if res.number_of_iterations > 1:
         CDTs = [CDT() for _ in range(res.number_of_learners)]
         iterationExperiments = split_by_iterations(res)
         for exp in iterationExperiments:
@@ -1457,7 +1457,7 @@ def compute_CDT(res, class_index=-1, ignore_weights=False, **argkw):
         for i in range(res.number_of_learners):
             if is_CDT_empty(CDTs[0]):
                 return corn.computeCDT(res, class_index, useweights)
-        
+
         return CDTs
     else:
         return corn.computeCDT(res, class_index, useweights)
@@ -1525,8 +1525,8 @@ class AUC(list):
 
         super(AUC, self).__init__()
 
-        self.ignore_weights=ignore_weights
-        self.method=multiclass
+        self.ignore_weights = ignore_weights
+        self.method = multiclass
 
         if test_results is not None:
             self[:] = self.__call__(test_results)
@@ -1599,7 +1599,7 @@ class AUC(list):
                     sum_aucs = map(add, sum_aucs, subsum_aucs)
 
         if usefulClassPairs > 0:
-            sum_aucs = [x/usefulClassPairs for x in sum_aucs]
+            sum_aucs = [x / usefulClassPairs for x in sum_aucs]
 
         return sum_aucs
 
@@ -1613,7 +1613,7 @@ class AUC(list):
         """Compute the average AUC over folds using :obj:`auc_computer`."""
         subsum_aucs = [0.] * iterations[0].number_of_learners
         for ite in iterations:
-            aucs, foldsUsed = auc_computer(*(ite, ) + computer_args)
+            aucs, foldsUsed = auc_computer(*(ite,) + computer_args)
             if not aucs:
                 import warnings
                 warnings.warn("AUC cannot be computed (all instances belong to the same class).")
@@ -1685,13 +1685,13 @@ class AUC(list):
         """
         Compute AUC using a :obj:`cdt_computer`.
         """
-        cdts = cdt_computer(*(ite, ) + computer_args)
+        cdts = cdt_computer(*(ite,) + computer_args)
         if not is_CDT_empty(cdts[0]):
             return [(cdt.C + cdt.T / 2) / (cdt.C + cdt.D + cdt.T) /
                     divide_by_if_ite for cdt in cdts], True
 
         if all_ite:
-            cdts = cdt_computer(*(all_ite, ) + computer_args)
+            cdts = cdt_computer(*(all_ite,) + computer_args)
             if not is_CDT_empty(cdts[0]):
                 return [(cdt.C + cdt.T / 2) / (cdt.C + cdt.D + cdt.T)
                         for cdt in cdts], False
@@ -1703,7 +1703,7 @@ class AUC_for_single_class(AUC):
     Compute AUC where the class with the given class_index is singled
     out and all other classes are treated as a single class.
     """
-    def __init__(self, test_results=None, class_index=-1, ignore_weights=False):
+    def __init__(self, test_results=None, class_index= -1, ignore_weights=False):
         if class_index < 0:
             if test_results and test_results.base_class >= 0:
                 self.class_index = test_results.base_class
@@ -1857,12 +1857,12 @@ def McNemar(res, ignore_weights=False, **argkw):
         for l2 in range(l1, nLearners):
             su = mcm[l1][l2] + mcm[l2][l1]
             if su:
-                mcm[l2][l1] = (abs(mcm[l1][l2] - mcm[l2][l1]) - 1)**2 / su
+                mcm[l2][l1] = (abs(mcm[l1][l2] - mcm[l2][l1]) - 1) ** 2 / su
             else:
                 mcm[l2][l1] = 0
 
     for l1 in range(nLearners):
-        mcm[l1]=mcm[l1][:l1]
+        mcm[l1] = mcm[l1][:l1]
 
     return mcm
 
@@ -1892,7 +1892,7 @@ def McNemar_of_two(res, lrn1, lrn2, ignore_weights=False):
 
     su = tf + ft
     if su:
-        return (abs(tf - ft) - 1)**2 / su
+        return (abs(tf - ft) - 1) ** 2 / su
     else:
         return 0
 
@@ -1904,7 +1904,7 @@ def Friedman(res, stat=CA):
     """
     res_split = split_by_iterations(res)
     res = [stat(r) for r in res_split]
-    
+
     N = len(res)
     k = len(res[0])
     sums = [0.] * k
@@ -1917,7 +1917,7 @@ def Friedman(res, stat=CA):
     T = sum(x * x for x in sums)
     sums = [x / N for x in sums]
 
-    F = 12. / (N * k * (k + 1)) * T  - 3 * N * (k + 1)
+    F = 12. / (N * k * (k + 1)) * T - 3 * N * (k + 1)
 
     return F, statc.chisqprob(F, k - 1), sums
 
@@ -1940,9 +1940,9 @@ def Wilcoxon_pairs(res, avgranks, stat=CA):
         nl = []
         for m2 in range(m1 + 1, k):
             t, p = statc.wilcoxont([r[m1] for r in res], [r[m2] for r in res])
-            if avgranks[m1]<avgranks[m2]:
+            if avgranks[m1] < avgranks[m2]:
                 nl.append(p)
-            elif avgranks[m2]<avgranks[m1]:
+            elif avgranks[m2] < avgranks[m1]:
                 nl.append(-p)
             else:
                 nl.append(1)
@@ -1968,7 +1968,7 @@ def plot_learning_curve(file, all_results, proportions, legend,
     if type(file) == types.StringType:
         file = open(file, "wt")
         fopened = 1
-        
+
     file.write("set yrange [0:1]\n")
     file.write("set xrange [%f:%f]\n" % (proportions[0], proportions[-1]))
     file.write("set multiplot\n\n")
@@ -1977,8 +1977,8 @@ def plot_learning_curve(file, all_results, proportions, legend,
     file.write("plot \\\n")
     for i in range(len(legend) - 1):
         if not no_confidence:
-            file.write("'-' title '' with yerrorbars pointtype %i,\\\n" % (i+1))
-        file.write("'-' title '%s' with linespoints pointtype %i,\\\n" % (legend[i], i+1))
+            file.write("'-' title '' with yerrorbars pointtype %i,\\\n" % (i + 1))
+        file.write("'-' title '%s' with linespoints pointtype %i,\\\n" % (legend[i], i + 1))
     if not no_confidence:
         file.write("'-' title '' with yerrorbars pointtype %i,\\\n" % (len(legend)))
     file.write("'-' title '%s' with linespoints pointtype %i\n" % (legend[-1], len(legend)))
@@ -1986,7 +1986,7 @@ def plot_learning_curve(file, all_results, proportions, legend,
     for i in range(len(legend)):
         if not no_confidence:
             for p in range(len(proportions)):
-                file.write("%f\t%f\t%f\n" % (proportions[p], CAs[p][i][0], 1.96*CAs[p][i][1]))
+                file.write("%f\t%f\t%f\n" % (proportions[p], CAs[p][i][0], 1.96 * CAs[p][i][1]))
             file.write("e\n\n")
 
         for p in range(len(proportions)):
@@ -1999,10 +1999,10 @@ def plot_learning_curve(file, all_results, proportions, legend,
 
 def print_single_ROC_curve_coordinates(file, curve):
     import types
-    fopened=0
-    if type(file)==types.StringType:
-        file=open(file, "wt")
-        fopened=1
+    fopened = 0
+    if type(file) == types.StringType:
+        file = open(file, "wt")
+        fopened = 1
 
     for coord in curve:
         file.write("%5.3f\t%5.3f\n" % tuple(coord))
@@ -2013,13 +2013,13 @@ def print_single_ROC_curve_coordinates(file, curve):
 
 def plot_ROC_learners(file, curves, learners):
     plot_ROC(file, curves, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))])
-    
+
 def plot_ROC(file, curves, legend):
     import types
-    fopened=0
-    if type(file)==types.StringType:
-        file=open(file, "wt")
-        fopened=1
+    fopened = 0
+    if type(file) == types.StringType:
+        file = open(file, "wt")
+        fopened = 1
 
     file.write("set yrange [0:1]\n")
     file.write("set xrange [0:1]\n")
@@ -2035,35 +2035,35 @@ def plot_ROC(file, curves, legend):
             file.write("%5.3f\t%5.3f\n" % tuple(coord))
         file.write("e\n\n")
 
-    file.write("1.0\t1.0\n0.0\t0.0e\n\n")          
+    file.write("1.0\t1.0\n0.0\t0.0e\n\n")
 
     if fopened:
         file.close()
 
 
 @deprecated_keywords({"allResults": "all_results"})
-def plot_McNemar_curve_learners(file, all_results, proportions, learners, reference=-1):
+def plot_McNemar_curve_learners(file, all_results, proportions, learners, reference= -1):
     plot_McNemar_curve(file, all_results, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], reference)
 
 
 @deprecated_keywords({"allResults": "all_results"})
-def plot_McNemar_curve(file, all_results, proportions, legend, reference=-1):
-    if reference<0:
-        reference=len(legend)-1
-        
+def plot_McNemar_curve(file, all_results, proportions, legend, reference= -1):
+    if reference < 0:
+        reference = len(legend) - 1
+
     import types
-    fopened=0
-    if type(file)==types.StringType:
-        file=open(file, "wt")
-        fopened=1
-        
+    fopened = 0
+    if type(file) == types.StringType:
+        file = open(file, "wt")
+        fopened = 1
+
     #file.write("set yrange [0:1]\n")
     #file.write("set xrange [%f:%f]\n" % (proportions[0], proportions[-1]))
     file.write("set multiplot\n\n")
     file.write("plot \\\n")
-    tmap=range(reference)+range(reference+1, len(legend))
+    tmap = range(reference) + range(reference + 1, len(legend))
     for i in tmap[:-1]:
-        file.write("'-' title '%s' with linespoints pointtype %i,\\\n" % (legend[i], i+1))
+        file.write("'-' title '%s' with linespoints pointtype %i,\\\n" % (legend[i], i + 1))
     file.write("'-' title '%s' with linespoints pointtype %i\n" % (legend[tmap[-1]], tmap[-1]))
     file.write("\n")
 
@@ -2075,8 +2075,8 @@ def plot_McNemar_curve(file, all_results, proportions, legend, reference=-1):
     if fopened:
         file.close()
 
-default_point_types=("{$\\circ$}", "{$\\diamond$}", "{$+$}", "{$\\times$}", "{$|$}")+tuple([chr(x) for x in range(97, 122)])
-default_line_types=("\\setsolid", "\\setdashpattern <4pt, 2pt>", "\\setdashpattern <8pt, 2pt>", "\\setdashes", "\\setdots")
+default_point_types = ("{$\\circ$}", "{$\\diamond$}", "{$+$}", "{$\\times$}", "{$|$}") + tuple([chr(x) for x in range(97, 122)])
+default_line_types = ("\\setsolid", "\\setdashpattern <4pt, 2pt>", "\\setdashpattern <8pt, 2pt>", "\\setdashes", "\\setdots")
 
 @deprecated_keywords({"allResults": "all_results"})
 def learning_curve_learners_to_PiCTeX(file, all_results, proportions, **options):
@@ -2086,56 +2086,56 @@ def learning_curve_learners_to_PiCTeX(file, all_results, proportions, **options)
 @deprecated_keywords({"allResults": "all_results"})
 def learning_curve_to_PiCTeX(file, all_results, proportions, **options):
     import types
-    fopened=0
-    if type(file)==types.StringType:
-        file=open(file, "wt")
-        fopened=1
+    fopened = 0
+    if type(file) == types.StringType:
+        file = open(file, "wt")
+        fopened = 1
 
-    nexamples=len(all_results[0].results)
+    nexamples = len(all_results[0].results)
     CAs = [CA(x, report_se=True) for x in all_results]
 
-    graphsize=float(options.get("graphsize", 10.0)) #cm
-    difprop=proportions[-1]-proportions[0]
-    ntestexamples=nexamples*proportions[-1]
-    xunit=graphsize/ntestexamples
+    graphsize = float(options.get("graphsize", 10.0)) #cm
+    difprop = proportions[-1] - proportions[0]
+    ntestexamples = nexamples * proportions[-1]
+    xunit = graphsize / ntestexamples
 
-    yshift=float(options.get("yshift", -ntestexamples/20.))
-    
-    pointtypes=options.get("pointtypes", default_point_types)
-    linetypes=options.get("linetypes", default_line_types)
+    yshift = float(options.get("yshift", -ntestexamples / 20.))
+
+    pointtypes = options.get("pointtypes", default_point_types)
+    linetypes = options.get("linetypes", default_line_types)
 
     if options.has_key("numberedx"):
-        numberedx=options["numberedx"]
-        if type(numberedx)==types.IntType:
-            if numberedx>0:
-                numberedx=[nexamples*proportions[int(i/float(numberedx)*len(proportions))] for i in range(numberedx)]+[proportions[-1]*nexamples]
-            elif numberedx<0:
+        numberedx = options["numberedx"]
+        if type(numberedx) == types.IntType:
+            if numberedx > 0:
+                numberedx = [nexamples * proportions[int(i / float(numberedx) * len(proportions))] for i in range(numberedx)] + [proportions[-1] * nexamples]
+            elif numberedx < 0:
                 numberedx = -numberedx
-                newn=[]
-                for i in range(numberedx+1):
-                    wanted=proportions[0]+float(i)/numberedx*difprop
-                    best=(10, 0)
+                newn = []
+                for i in range(numberedx + 1):
+                    wanted = proportions[0] + float(i) / numberedx * difprop
+                    best = (10, 0)
                     for t in proportions:
-                        td=abs(wanted-t)
-                        if td<best[0]:
-                            best=(td, t)
+                        td = abs(wanted - t)
+                        if td < best[0]:
+                            best = (td, t)
                     if not best[1] in newn:
                         newn.append(best[1])
                 newn.sort()
-                numberedx=[nexamples*x for x in newn]
-        elif type(numberedx[0])==types.FloatType:
-            numberedx=[nexamples*x for x in numberedx]
+                numberedx = [nexamples * x for x in newn]
+        elif type(numberedx[0]) == types.FloatType:
+            numberedx = [nexamples * x for x in numberedx]
     else:
-        numberedx=[nexamples*x for x in proportions]
+        numberedx = [nexamples * x for x in proportions]
 
     file.write("\\mbox{\n")
     file.write("  \\beginpicture\n")
-    file.write("  \\setcoordinatesystem units <%10.8fcm, %5.3fcm>\n\n" % (xunit, graphsize))    
-    file.write("  \\setplotarea x from %5.3f to %5.3f, y from 0 to 1\n" % (0, ntestexamples))    
+    file.write("  \\setcoordinatesystem units <%10.8fcm, %5.3fcm>\n\n" % (xunit, graphsize))
+    file.write("  \\setplotarea x from %5.3f to %5.3f, y from 0 to 1\n" % (0, ntestexamples))
     file.write("  \\axis bottom invisible\n")# label {#examples}\n")
-    file.write("      ticks short at %s /\n" % reduce(lambda x,y:x+" "+y, ["%i"%(x*nexamples+0.5) for x in proportions]))
+    file.write("      ticks short at %s /\n" % reduce(lambda x, y:x + " " + y, ["%i" % (x * nexamples + 0.5) for x in proportions]))
     if numberedx:
-        file.write("            long numbered at %s /\n" % reduce(lambda x,y:x+y, ["%i " % int(x+0.5) for x in numberedx]))
+        file.write("            long numbered at %s /\n" % reduce(lambda x, y:x + y, ["%i " % int(x + 0.5) for x in numberedx]))
     file.write("  /\n")
     file.write("  \\axis left invisible\n")# label {classification accuracy}\n")
     file.write("      shiftedto y=%5.3f\n" % yshift)
@@ -2145,9 +2145,9 @@ def learning_curve_to_PiCTeX(file, all_results, proportions, **options):
     if options.has_key("default"):
         file.write("  \\setdashpattern<1pt, 1pt>\n")
         file.write("  \\plot %5.3f %5.3f %5.3f %5.3f /\n" % (0., options["default"], ntestexamples, options["default"]))
-    
+
     for i in range(len(CAs[0])):
-        coordinates=reduce(lambda x,y:x+" "+y, ["%i %5.3f" % (proportions[p]*nexamples, CAs[p][i][0]) for p in range(len(proportions))])
+        coordinates = reduce(lambda x, y:x + " " + y, ["%i %5.3f" % (proportions[p] * nexamples, CAs[p][i][0]) for p in range(len(proportions))])
         if linetypes:
             file.write("  %s\n" % linetypes[i])
             file.write("  \\plot %s /\n" % coordinates)
@@ -2163,16 +2163,16 @@ def learning_curve_to_PiCTeX(file, all_results, proportions, **options):
 
 def legend_learners_to_PiCTeX(file, learners, **options):
   return apply(legend_to_PiCTeX, (file, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
-    
+
 def legend_to_PiCTeX(file, legend, **options):
     import types
-    fopened=0
-    if type(file)==types.StringType:
-        file=open(file, "wt")
-        fopened=1
+    fopened = 0
+    if type(file) == types.StringType:
+        file = open(file, "wt")
+        fopened = 1
 
-    pointtypes=options.get("pointtypes", default_point_types)
-    linetypes=options.get("linetypes", default_line_types)
+    pointtypes = options.get("pointtypes", default_point_types)
+    linetypes = options.get("linetypes", default_line_types)
 
     file.write("\\mbox{\n")
     file.write("  \\beginpicture\n")
@@ -2182,10 +2182,10 @@ def legend_to_PiCTeX(file, legend, **options):
     for i in range(len(legend)):
         if linetypes:
             file.write("  %s\n" % linetypes[i])
-            file.write("  \\plot %5.3f 6 %5.3f 6 /\n" % (i, i+0.2))
+            file.write("  \\plot %5.3f 6 %5.3f 6 /\n" % (i, i + 0.2))
         if pointtypes:
-            file.write("  \\put {%s} at %5.3f 6\n" % (pointtypes[i], i+0.1))
-        file.write("  \\put {%s} [lb] at %5.3f 0\n" % (legend[i], i+0.25))
+            file.write("  \\put {%s} at %5.3f 6\n" % (pointtypes[i], i + 0.1))
+        file.write("  \\put {%s} [lb] at %5.3f 0\n" % (legend[i], i + 0.25))
 
     file.write("  \\endpicture\n")
     file.write("}\n")
@@ -2204,16 +2204,16 @@ def compute_friedman(avranks, N):
     k = len(avranks)
 
     def friedman(N, k, ranks):
-        return 12*N*(sum([rank**2.0 for rank in ranks]) - (k*(k+1)*(k+1)/4.0) )/(k*(k+1))
+        return 12 * N * (sum([rank ** 2.0 for rank in ranks]) - (k * (k + 1) * (k + 1) / 4.0)) / (k * (k + 1))
 
     def iman(fried, N, k):
-        return (N-1)*fried/(N*(k-1) - fried)
+        return (N - 1) * fried / (N * (k - 1) - fried)
 
     f = friedman(N, k, avranks)
     im = iman(f, N, k)
-    fdistdof = (k-1, (k-1)*(N-1))
+    fdistdof = (k - 1, (k - 1) * (N - 1))
 
-    return (f, k-1), (im, fdistdof)
+    return (f, k - 1), (im, fdistdof)
 
 def compute_CD(avranks, N, alpha="0.05", type="nemenyi"):
     """ Returns critical difference for Nemenyi or Bonferroni-Dunn test
@@ -2223,7 +2223,7 @@ def compute_CD(avranks, N, alpha="0.05", type="nemenyi"):
     """
 
     k = len(avranks)
-   
+
     d = {("nemenyi", "0.05"): [0, 0, 1.959964, 2.343701, 2.569032, 2.727774,
                                2.849705, 2.94832, 3.030879, 3.101730, 3.163684,
                                3.218654, 3.268004, 3.312739, 3.353618, 3.39123,
@@ -2242,10 +2242,10 @@ def compute_CD(avranks, N, alpha="0.05", type="nemenyi"):
 
     q = d[(type, alpha)]
 
-    cd = q[k]*(k*(k+1)/(6.0*N))**0.5
+    cd = q[k] * (k * (k + 1) / (6.0 * N)) ** 0.5
 
     return cd
- 
+
 
 def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, highv=None, width=6, textspace=1, reverse=False, **kwargs):
     """
@@ -2281,23 +2281,23 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     width = float(width)
     textspace = float(textspace)
 
-    def nth(l,n):
+    def nth(l, n):
         """
         Returns only nth elemnt in a list.
         """
-        n = lloc(l,n)
+        n = lloc(l, n)
         return [ a[n] for a in l ]
 
-    def lloc(l,n):
+    def lloc(l, n):
         """
         List location in list of list structure.
         Enable the use of negative locations:
         -1 is the last element, -2 second last...
         """
         if n < 0:
-            return len(l[0])+n
+            return len(l[0]) + n
         else:
-            return n 
+            return n
 
     def mxrange(lr):
         """
@@ -2333,11 +2333,11 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
 
     sums = avranks
 
-    tempsort =  sorted([ (a,i) for i,a in  enumerate(sums) ], reverse=reverse)
+    tempsort = sorted([ (a, i) for i, a in  enumerate(sums) ], reverse=reverse)
     ssums = nth(tempsort, 0)
     sortidx = nth(tempsort, 1)
     nnames = [ names[x] for x in sortidx ]
-    
+
     if lowv is None:
         lowv = min(1, int(math.floor(min(ssums))))
     if highv is None:
@@ -2350,68 +2350,68 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     lines = None
 
     linesblank = 0
-    scalewidth = width - 2*textspace
+    scalewidth = width - 2 * textspace
 
     def rankpos(rank):
         if not reverse:
             a = rank - lowv
         else:
             a = highv - rank
-        return textspace+scalewidth/(highv-lowv)*a
+        return textspace + scalewidth / (highv - lowv) * a
 
     distanceh = 0.25
 
     if cd and cdmethod is None:
-    
+
         #get pairs of non significant methods
 
         def get_lines(sums, hsd):
 
             #get all pairs
             lsums = len(sums)
-            allpairs = [ (i,j) for i,j in mxrange([[lsums], [lsums]]) if j > i ]
+            allpairs = [ (i, j) for i, j in mxrange([[lsums], [lsums]]) if j > i ]
             #remove not significant
-            notSig = [ (i,j) for i,j in allpairs if abs(sums[i]-sums[j]) <= hsd ]
+            notSig = [ (i, j) for i, j in allpairs if abs(sums[i] - sums[j]) <= hsd ]
             #keep only longest
-            
-            def no_longer((i,j), notSig):
-                for i1,j1 in notSig:
+
+            def no_longer((i, j), notSig):
+                for i1, j1 in notSig:
                     if (i1 <= i and j1 > j) or (i1 < i and j1 >= j):
                         return False
                 return True
 
-            longest = [ (i,j) for i,j in notSig if no_longer((i,j),notSig) ]
-            
+            longest = [ (i, j) for i, j in notSig if no_longer((i, j), notSig) ]
+
             return longest
 
         lines = get_lines(ssums, cd)
-        linesblank = 0.2 + 0.2 + (len(lines)-1)*0.1
+        linesblank = 0.2 + 0.2 + (len(lines) - 1) * 0.1
 
         #add scale
         distanceh = 0.25
         cline += distanceh
 
     #calculate height needed height of an image
-    minnotsignificant = max(2*0.2, linesblank)
-    height = cline + ((k+1)/2)*0.2 + minnotsignificant
+    minnotsignificant = max(2 * 0.2, linesblank)
+    height = cline + ((k + 1) / 2) * 0.2 + minnotsignificant
 
     fig = Figure(figsize=(width, height))
-    ax = fig.add_axes([0,0,1,1]) #reverse y axis
+    ax = fig.add_axes([0, 0, 1, 1]) #reverse y axis
     ax.set_axis_off()
 
-    hf = 1./height # height factor
-    wf = 1./width
+    hf = 1. / height # height factor
+    wf = 1. / width
 
-    def hfl(l): 
-        return [ a*hf for a in l ]
+    def hfl(l):
+        return [ a * hf for a in l ]
 
-    def wfl(l): 
-        return [ a*wf for a in l ]
+    def wfl(l):
+        return [ a * wf for a in l ]
 
 
     # Upper left corner is (0,0).
 
-    ax.plot([0,1], [0,1], c="w")
+    ax.plot([0, 1], [0, 1], c="w")
     ax.set_xlim(0, 1)
     ax.set_ylim(1, 0)
 
@@ -2419,13 +2419,13 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         """
         Input is a list of pairs of points.
         """
-        ax.plot(wfl(nth(l,0)), hfl(nth(l,1)), color=color, **kwargs)
+        ax.plot(wfl(nth(l, 0)), hfl(nth(l, 1)), color=color, **kwargs)
 
     def text(x, y, s, *args, **kwargs):
-        ax.text(wf*x, hf*y, s, *args, **kwargs)
+        ax.text(wf * x, hf * y, s, *args, **kwargs)
 
-    line([(textspace, cline), (width-textspace, cline)], linewidth=0.7)
-    
+    line([(textspace, cline), (width - textspace, cline)], linewidth=0.7)
+
     bigtick = 0.1
     smalltick = 0.05
 
@@ -2435,52 +2435,52 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     for a in list(numpy.arange(lowv, highv, 0.5)) + [highv]:
         tick = smalltick
         if a == int(a): tick = bigtick
-        line([(rankpos(a), cline-tick/2),(rankpos(a), cline)], linewidth=0.7)
+        line([(rankpos(a), cline - tick / 2), (rankpos(a), cline)], linewidth=0.7)
 
-    for a in range(lowv, highv+1):
-        text(rankpos(a), cline-tick/2-0.05, str(a), ha="center", va="bottom")
+    for a in range(lowv, highv + 1):
+        text(rankpos(a), cline - tick / 2 - 0.05, str(a), ha="center", va="bottom")
 
     k = len(ssums)
 
-    for i in range((k+1)/2):
-        chei = cline+ minnotsignificant + i *0.2
-        line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace-0.1, chei)], linewidth=0.7)
-        text(textspace-0.2, chei, nnames[i], ha="right", va="center")
+    for i in range((k + 1) / 2):
+        chei = cline + minnotsignificant + i * 0.2
+        line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace - 0.1, chei)], linewidth=0.7)
+        text(textspace - 0.2, chei, nnames[i], ha="right", va="center")
 
-    for i in range((k+1)/2, k):
-        chei = cline + minnotsignificant + (k-i-1)*0.2
-        line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace+scalewidth+0.1, chei)], linewidth=0.7)
-        text(textspace+scalewidth+0.2, chei, nnames[i], ha="left", va="center")
+    for i in range((k + 1) / 2, k):
+        chei = cline + minnotsignificant + (k - i - 1) * 0.2
+        line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace + scalewidth + 0.1, chei)], linewidth=0.7)
+        text(textspace + scalewidth + 0.2, chei, nnames[i], ha="left", va="center")
 
     if cd and cdmethod is None:
 
         #upper scale
         if not reverse:
-            begin, end = rankpos(lowv), rankpos(lowv+cd)
+            begin, end = rankpos(lowv), rankpos(lowv + cd)
         else:
             begin, end = rankpos(highv), rankpos(highv - cd)
-            
+
         line([(begin, distanceh), (end, distanceh)], linewidth=0.7)
-        line([(begin, distanceh + bigtick/2), (begin, distanceh - bigtick/2)], linewidth=0.7)
-        line([(end, distanceh + bigtick/2), (end, distanceh - bigtick/2)], linewidth=0.7)
-        text((begin+end)/2, distanceh - 0.05, "CD", ha="center", va="bottom")
+        line([(begin, distanceh + bigtick / 2), (begin, distanceh - bigtick / 2)], linewidth=0.7)
+        line([(end, distanceh + bigtick / 2), (end, distanceh - bigtick / 2)], linewidth=0.7)
+        text((begin + end) / 2, distanceh - 0.05, "CD", ha="center", va="bottom")
 
         #non significance lines    
         def draw_lines(lines, side=0.05, height=0.1):
             start = cline + 0.2
-            for l,r in lines:  
-                line([(rankpos(ssums[l])-side, start), (rankpos(ssums[r])+side, start)], linewidth=2.5) 
+            for l, r in lines:
+                line([(rankpos(ssums[l]) - side, start), (rankpos(ssums[r]) + side, start)], linewidth=2.5)
                 start += height
 
         draw_lines(lines)
 
     elif cd:
-        begin = rankpos(avranks[cdmethod]-cd)
-        end = rankpos(avranks[cdmethod]+cd)
-        line([(begin, cline), (end, cline)], linewidth=2.5) 
-        line([(begin, cline + bigtick/2), (begin, cline - bigtick/2)], linewidth=2.5)
-        line([(end, cline + bigtick/2), (end, cline - bigtick/2)], linewidth=2.5)
- 
+        begin = rankpos(avranks[cdmethod] - cd)
+        end = rankpos(avranks[cdmethod] + cd)
+        line([(begin, cline), (end, cline)], linewidth=2.5)
+        line([(begin, cline + bigtick / 2), (begin, cline - bigtick / 2)], linewidth=2.5)
+        line([(end, cline + bigtick / 2), (end, cline - bigtick / 2)], linewidth=2.5)
+
     print_figure(fig, filename, **kwargs)
 
 def mlc_hamming_loss(res):
@@ -2489,7 +2489,7 @@ def mlc_hamming_loss(res):
     
     :math:`HammingLoss(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{Y_i \\vartriangle Z_i}{|L|}`
     """
-    losses = [0]*res.number_of_learners
+    losses = [0] * res.number_of_learners
     label_num = len(res.labels)
     example_num = gettotsize(res)
 
@@ -2502,10 +2502,10 @@ def mlc_hamming_loss(res):
             for j in range(label_num):
                 if labels[j] != aclass[j]:
                     losses[i] += 1
-            
-    return [float(x)/(label_num*example_num) for x in losses]
 
-def mlc_accuracy(res, forgiveness_rate = 1.0):
+    return [float(x) / (label_num * example_num) for x in losses]
+
+def mlc_accuracy(res, forgiveness_rate=1.0):
     """
     Godbole & Sarawagi, 2004 uses the metrics accuracy, precision, recall as follows:
      
@@ -2516,16 +2516,16 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
     
     :math:`Accuracy(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} (\\frac{|Y_i \\cap Z_i|}{|Y_i \\cup Z_i|})^{\\alpha}`
     """
-    accuracies = [0.0]*res.number_of_learners
+    accuracies = [0.0] * res.number_of_learners
     example_num = gettotsize(res)
-    
+
     for e in res.results:
         aclass = e.actual_class
         for i, labels in enumerate(e.classes):
             labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
-            
+
             intersection = 0.0
             union = 0.0
             for real, pred in zip(labels, aclass):
@@ -2536,23 +2536,23 @@ def mlc_accuracy(res, forgiveness_rate = 1.0):
 
             if union:
                 accuracies[i] += intersection / union
-            
-    return [math.pow(x/example_num,forgiveness_rate) for x in accuracies]
+
+    return [math.pow(x / example_num, forgiveness_rate) for x in accuracies]
 
 def mlc_precision(res):
     """
     :math:`Precision(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Z_i|}`
     """
-    precisions = [0.0]*res.number_of_learners
+    precisions = [0.0] * res.number_of_learners
     example_num = gettotsize(res)
-    
+
     for e in res.results:
         aclass = e.actual_class
         for i, labels in enumerate(e.classes):
             labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
-            
+
             intersection = 0.0
             predicted = 0.0
             for real, pred in zip(labels, aclass):
@@ -2562,23 +2562,23 @@ def mlc_precision(res):
                     predicted += 1
             if predicted:
                 precisions[i] += intersection / predicted
-            
-    return [x/example_num for x in precisions]
+
+    return [x / example_num for x in precisions]
 
 def mlc_recall(res):
     """
     :math:`Recall(H,D)=\\frac{1}{|D|} \\sum_{i=1}^{|D|} \\frac{|Y_i \\cap Z_i|}{|Y_i|}`
     """
-    recalls = [0.0]*res.number_of_learners
+    recalls = [0.0] * res.number_of_learners
     example_num = gettotsize(res)
-    
+
     for e in res.results:
         aclass = e.actual_class
         for i, labels in enumerate(e.classes):
             labels = map(int, labels)
             if len(labels) <> len(aclass):
                 raise ValueError, "The dimensions of the classified output and the actual class array do not match."
-            
+
             intersection = 0.0
             actual = 0.0
             for real, pred in zip(labels, aclass):
@@ -2588,8 +2588,8 @@ def mlc_recall(res):
                     actual += 1
             if actual:
                 recalls[i] += intersection / actual
-            
-    return [x/example_num for x in recalls]
+
+    return [x / example_num for x in recalls]
 
 #def mlc_ranking_loss(res):
 #    pass
@@ -2670,7 +2670,7 @@ def mt_flattened_score(res, score):
 
 ################################################################################
 if __name__ == "__main__":
-    avranks =  [3.143, 2.000, 2.893, 1.964]
+    avranks = [3.143, 2.000, 2.893, 1.964]
     names = ["prva", "druga", "tretja", "cetrta" ]
     cd = compute_CD(avranks, 14)
     #cd = compute_CD(avranks, 10, type="bonferroni-dunn")

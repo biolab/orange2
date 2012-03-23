@@ -12,7 +12,7 @@ learners = [bayes, tree, majority]
 
 def printResults(res):
     CAs = Orange.evaluation.scoring.CA(res, report_se=1)
-    for name, ca in zip(res.classifierNames, CAs):
+    for name, ca in zip(res.classifier_names, CAs):
         print "%s: %5.3f+-%5.3f" % (name, ca[0], 1.96 * ca[1]),
     print
 
@@ -40,7 +40,7 @@ if "NO_RANDOMNESS" not in vars():
 
 print "\nproportionsTest + storing classifiers"
 res = Orange.evaluation.testing.proportion_test(learners, voting, 0.7, 100,
-    storeClassifiers=1)
+    store_classifiers=1)
 print "#iter %i, #classifiers %i" % \
     (len(res.classifiers), len(res.classifiers[0]))
 

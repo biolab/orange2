@@ -367,7 +367,7 @@ from Orange.core import HierarchicalClustering, \
                         HierarchicalClusterList
 
 from Orange.utils import progress_bar_milestones, deprecated_keywords
-                        
+
 import sys
 
 SINGLE = HierarchicalClustering.Single
@@ -407,11 +407,11 @@ def clustering(data,
     distance = distance_constructor(data)
     matrix = Orange.misc.SymMatrix(len(data))
     for i in range(len(data)):
-        for j in range(i+1):
+        for j in range(i + 1):
             matrix[i, j] = distance(data[i], data[j])
-    root = HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value*100.0/(2 if order else 1))) if progress_callback else None)
+    root = HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value * 100.0 / (2 if order else 1))) if progress_callback else None)
     if order:
-        order_leaves(root, matrix, progress_callback=(lambda value: progress_callback(50.0 + value/2)) if progress_callback else None)
+        order_leaves(root, matrix, progress_callback=(lambda value: progress_callback(50.0 + value / 2)) if progress_callback else None)
     return root
 
 clustering = \
@@ -446,15 +446,15 @@ def clustering_features(data, distance=None, linkage=AVERAGE, order=False, progr
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
             matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value*100.0/(2 if order else 1))) if progress_callback else None)
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value * 100.0 / (2 if order else 1))) if progress_callback else None)
     if order:
-        order_leaves(root, matrix, progressCallback=(lambda value: progress_callback(50.0 + value/2)) if progress_callback else None)
+        order_leaves(root, matrix, progressCallback=(lambda value: progress_callback(50.0 + value / 2)) if progress_callback else None)
     return root
 
 clustering_features = \
     deprecated_keywords({"progressCallback":"progress_callback"})(clustering_features)
-    
-    
+
+
 def cluster_to_list(node, prune=None):
     """ Return a list of clusters down from the node of hierarchical clustering.
     
@@ -469,7 +469,7 @@ def cluster_to_list(node, prune=None):
     """
     if prune:
         if len(node) <= prune:
-            return [] 
+            return []
     if node.branches:
         return [node] + cluster_to_list(node.left, prune) + cluster_to_list(node.right, prune)
     return [node]
@@ -527,13 +527,13 @@ def order_leaves_py(tree, matrix, progress_callback=None):
     The ordering is done inplace. 
     
     """
-    
+
     objects = getattr(tree.mapping, "objects", None)
     tree.mapping.setattr("objects", range(len(tree)))
     M = {}
     ordering = {}
     visited_clusters = set()
-    
+
 #    def opt_ordering_recursive(tree):
 #        if len(tree)==1:
 #            for leaf in tree:
@@ -587,15 +587,15 @@ def order_leaves_py(tree, matrix, progress_callback=None):
 #    
 #    with recursion_limit(sys.getrecursionlimit() + len(tree)):
 #        opt_ordering_recursive(tree)
-        
+
     def opt_ordering_iterative(tree):
-        if len(tree)==1:
+        if len(tree) == 1:
             for leaf in tree:
                 M[tree, leaf, leaf] = 0
         else:
 #            _optOrdering(tree.left)
 #            _optOrdering(tree.right)
-            
+
             Vl = set(tree.left)
             Vr = set(tree.right)
             Vlr = set(tree.left.right or tree.left)
@@ -611,7 +611,7 @@ def order_leaves_py(tree, matrix, progress_callback=None):
                         ordered_m = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
                         ordered_k = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
                         k0 = ordered_k[0]
-                        cur_min = 1e30000 
+                        cur_min = 1e30000
                         cur_m = cur_k = None
                         for m in ordered_m:
                             if M[tree_left, u, m] + M[tree_right, w, k0] + C >= cur_min:
@@ -638,10 +638,10 @@ def order_leaves_py(tree, matrix, progress_callback=None):
 #            if progressCallback:
 #                progressCallback(100.0 * len(visited_clusters) / len(tree.mapping))
 #                visited_clusters.add(tree)
-    
+
     subtrees = postorder(tree)
     milestones = progress_bar_milestones(len(subtrees), 1000)
-    
+
     for i, subtree in enumerate(subtrees):
         opt_ordering_iterative(subtree)
         if progress_callback and i in milestones:
@@ -660,7 +660,7 @@ def order_leaves_py(tree, matrix, progress_callback=None):
 #        if len(right)>1 and k not in right.left:
 #            right.swap()
 #        order_recursive(right, k, w)
-        
+
     def order_iterative(tree, u, w):
         """ Order the tree based on the computed optimal ordering. 
         """
@@ -671,22 +671,22 @@ def order_leaves_py(tree, matrix, progress_callback=None):
                 left, u, m, right, w, k = ordering[subtree, u, w]
                 opt_uw[left] = (u, m)
                 opt_uw[right] = (k, w)
-                
+
                 if left.branches and m not in left.right:
                     left.swap()
-                
+
                 if right.branches and k not in right.left:
                     right.swap()
-    
+
     u, w = min([(u, w) for u in tree.left for w in tree.right], key=lambda (u, w): M[tree, u, w])
-    
+
 ##    print "M(v) =", M[tree, u, w]
-    
+
 #    with recursion_limit(sys.getrecursionlimit() + len(tree)):
 #        order_recursive(tree, u, w)
-            
+
     order_iterative(tree, u, w)
-            
+
 
 #    def _check(tree, u, w):
 #        if len(tree)==1:
@@ -721,20 +721,20 @@ def order_leaves_cpp(tree, matrix, progress_callback=None):
     
     """
     node_count = iter(range(len(tree)))
-    
+
     if progress_callback is not None:
         def p(*args):
             progress_callback(100.0 * node_count.next() / len(tree))
     else:
         p = None
-    
+
     Orange.core.HierarchicalClusterOrdering(tree, matrix, progress_callback=p)
 
 order_leaves_cpp = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_cpp)
 order_leaves_py = deprecated_keywords({"progressCallback":"progress_callback"})(order_leaves_py)
 
 order_leaves = order_leaves_cpp
-    
+
 """
 Matplotlib dendrogram ploting. This is mostly untested,
 use dendrogram_draw funciton instead of this.
@@ -773,7 +773,7 @@ class TablePlot(Table):
         self.max_fontsize = plt.rcParams.get("font.size", 12)
 
     def add_cell(self, row, col, *args, **kwargs):
-        xy = (0,0)
+        xy = (0, 0)
 
         cell = TableCell(xy, *args, **kwargs)
         cell.set_figure(self.figure)
@@ -797,11 +797,11 @@ class TablePlot(Table):
         keys = numpy.array(self._cells.keys())
         cells = numpy.array([[self._cells.get((row, col), None) for col in range(max(keys[:, 1] + 1))] \
                              for row in range(max(keys[:, 0] + 1))])
-        
+
         widths = self._get_column_widths(renderer)
         x = self.xy[0] + numpy.array([numpy.sum(widths[:i]) for i in range(len(widths))])
         y = self.xy[1] - numpy.arange(cells.shape[0]) - 0.5
-        
+
         for i in range(cells.shape[0]):
             for j in range(cells.shape[1]):
                 cells[i, j].set_xy((x[j], y[i]))
@@ -815,14 +815,14 @@ class TablePlot(Table):
 
     def _get_column_widths(self, renderer):
         keys = numpy.array(self._cells.keys())
-        widths = numpy.zeros(len(keys)).reshape((numpy.max(keys[:,0]+1), numpy.max(keys[:,1]+1)))
+        widths = numpy.zeros(len(keys)).reshape((numpy.max(keys[:, 0] + 1), numpy.max(keys[:, 1] + 1)))
         fontSize = self._calc_fontsize(renderer)
         for (row, col), cell in self._cells.items():
             cell.set_fontsize(fontSize)
             l, b, w, h = cell._text.get_window_extent(renderer).bounds
             transform = self._axes.transData.inverted()
             x1, _ = transform.transform_point((0, 0))
-            x2, _ = transform.transform_point((w + w*TableCell.PAD + 10, 0))
+            x2, _ = transform.transform_point((w + w * TableCell.PAD + 10, 0))
             w = abs(x1 - x2)
             widths[row, col] = w
         return numpy.max(widths, 0)
@@ -831,7 +831,7 @@ class TablePlot(Table):
         transform = self._axes.transData
         _, y1 = transform.transform_point((0, 0))
         _, y2 = transform.transform_point((0, 1))
-        return min(max(int(abs(y1 - y2)*0.85) ,4), self.max_fontsize)
+        return min(max(int(abs(y1 - y2) * 0.85) , 4), self.max_fontsize)
 
     def get_children(self):
         return self._cells.values()
@@ -866,20 +866,20 @@ class DendrogramPlotPylab(object):
                     self.plt.plot([center[0], tree.height], [center[1], center[1]], color="black")
                     points.append(center)
                 self.plt.plot([tree.height, tree.height], [points[0][1], points[-1][1]], color="black")
-                return (tree.height, (points[0][1] + points[-1][1])/2.0)
+                return (tree.height, (points[0][1] + points[-1][1]) / 2.0)
             else:
                 return (0.0, tree.first)
         draw_tree(self.root)
-        
+
     def plotHeatMap(self):
         import numpy.ma as ma
         import numpy
         dx, dy = self.root.height, 0
-        fx, fy = self.root.height/len(self.data.domain.attributes), 1.0
+        fx, fy = self.root.height / len(self.data.domain.attributes), 1.0
         data, c, w = self.data.toNumpyMA()
-        data = (data - ma.min(data))/(ma.max(data) - ma.min(data))
-        x = numpy.arange(data.shape[1] + 1)/float(numpy.max(data.shape))
-        y = numpy.arange(data.shape[0] + 1)/float(numpy.max(data.shape))*len(self.root)
+        data = (data - ma.min(data)) / (ma.max(data) - ma.min(data))
+        x = numpy.arange(data.shape[1] + 1) / float(numpy.max(data.shape))
+        y = numpy.arange(data.shape[0] + 1) / float(numpy.max(data.shape)) * len(self.root)
         self.heatmap_width = numpy.max(x)
 
         X, Y = numpy.meshgrid(x, y - 0.5)
@@ -891,7 +891,7 @@ class DendrogramPlotPylab(object):
 
         if self.plot_attr_names:
             names = [attr.name for attr in self.data.domain.attributes]
-            self.plt.xticks(numpy.arange(data.shape[1] + 1)/float(numpy.max(data.shape)), names)
+            self.plt.xticks(numpy.arange(data.shape[1] + 1) / float(numpy.max(data.shape)), names)
         self.plt.gca().xaxis.tick_top()
         for label in self.plt.gca().xaxis.get_ticklabels():
             label.set_rotation(45)
@@ -908,43 +908,43 @@ class DendrogramPlotPylab(object):
 ##            tick.label1On = False
 ##            tick.label2On = True
 ##        text = TableTextLayout(xy=(self.meshXOffset+1, len(self.root)), tableText=[[label] for label in self.labels])
-        text = TableTextLayout(xy=(self.meshXOffset*1.005, len(self.root) - 1), tableText=[[label] for label in self.labels])
+        text = TableTextLayout(xy=(self.meshXOffset * 1.005, len(self.root) - 1), tableText=[[label] for label in self.labels])
         text.set_figure(self.plt.gcf())
         self.plt.gca().add_artist(text)
         self.plt.gca()._set_artist_props(text)
 
     def plotLabels(self):
 ##        table = TablePlot(xy=(self.meshXOffset*1.005, len(self.root) -1), axes=self.plt.gca())
-        table = TablePlot(xy=(0, len(self.root) -1), axes=self.plt.gca())
+        table = TablePlot(xy=(0, len(self.root) - 1), axes=self.plt.gca())
         table.set_figure(self.plt.gcf())
-        for i,label in enumerate(self.labels):
+        for i, label in enumerate(self.labels):
             table.add_cell(i, 0, width=1, height=1, text=label, loc="left", edgecolor="w")
         table.set_zorder(0)
         self.plt.gca().add_artist(table)
         self.plt.gca()._set_artist_props(table)
-    
+
     def plot(self, filename=None, show=False):
         self.plt.rcParams.update(self.params)
         labelLen = max(len(label) for label in self.labels)
         w, h = 800, 600
         space = 0.01 if self.space_width == None else self.space_width
         border = self.border_width
-        width = 1.0 - 2*border
-        height = 1.0 - 2*border
-        textLineHeight = min(max(h/len(self.labels), 4), self.plt.rcParams.get("font.size", 12))
-        maxTextLineWidthEstimate = textLineHeight*labelLen
+        width = 1.0 - 2 * border
+        height = 1.0 - 2 * border
+        textLineHeight = min(max(h / len(self.labels), 4), self.plt.rcParams.get("font.size", 12))
+        maxTextLineWidthEstimate = textLineHeight * labelLen
 ##        print maxTextLineWidthEstimate
-        textAxisWidthRatio = 2.0*maxTextLineWidthEstimate/w
+        textAxisWidthRatio = 2.0 * maxTextLineWidthEstimate / w
 ##        print textAxisWidthRatio
         labelsAreaRatio = min(textAxisWidthRatio, 0.4) if self.label_width == None else self.label_width
         x, y = len(self.data.domain.attributes), len(self.data)
 
-        heatmapAreaRatio = min(1.0*y/h*x/w, 0.3) if self.heatmap_width == None else self.heatmap_width
-        dendrogramAreaRatio = 1.0 - labelsAreaRatio - heatmapAreaRatio - 2*space if self.dendrogram_width == None else self.dendrogram_width
+        heatmapAreaRatio = min(1.0 * y / h * x / w, 0.3) if self.heatmap_width == None else self.heatmap_width
+        dendrogramAreaRatio = 1.0 - labelsAreaRatio - heatmapAreaRatio - 2 * space if self.dendrogram_width == None else self.dendrogram_width
 
         self.fig = self.plt.figure()
-        self.labels_offset = self.root.height/20.0
-        dendrogramAxes = self.plt.axes([border, border, width*dendrogramAreaRatio, height])
+        self.labels_offset = self.root.height / 20.0
+        dendrogramAxes = self.plt.axes([border, border, width * dendrogramAreaRatio, height])
         dendrogramAxes.xaxis.grid(True)
         import matplotlib.ticker as ticker
 
@@ -952,15 +952,15 @@ class DendrogramPlotPylab(object):
         dendrogramAxes.yaxis.set_minor_locator(ticker.NullLocator())
         dendrogramAxes.invert_xaxis()
         self.plotDendrogram()
-        heatmapAxes = self.plt.axes([border + width*dendrogramAreaRatio + space, border, width*heatmapAreaRatio, height], sharey=dendrogramAxes)
+        heatmapAxes = self.plt.axes([border + width * dendrogramAreaRatio + space, border, width * heatmapAreaRatio, height], sharey=dendrogramAxes)
 
         heatmapAxes.xaxis.set_major_locator(ticker.NullLocator())
         heatmapAxes.xaxis.set_minor_locator(ticker.NullLocator())
         heatmapAxes.yaxis.set_major_locator(ticker.NullLocator())
         heatmapAxes.yaxis.set_minor_locator(ticker.NullLocator())
-        
+
         self.plotHeatMap()
-        labelsAxes = self.plt.axes([border + width*(dendrogramAreaRatio + heatmapAreaRatio + 2*space), border, width*labelsAreaRatio, height], sharey=dendrogramAxes)
+        labelsAxes = self.plt.axes([border + width * (dendrogramAreaRatio + heatmapAreaRatio + 2 * space), border, width * labelsAreaRatio, height], sharey=dendrogramAxes)
         self.plotLabels()
         labelsAxes.set_axis_off()
         labelsAxes.xaxis.set_major_locator(ticker.NullLocator())
@@ -973,8 +973,8 @@ class DendrogramPlotPylab(object):
             canvas.print_figure(filename)
         if show:
             self.plt.show()
-        
-        
+
+
 """
 Dendrogram ploting using Orange.utils.render
 """
@@ -993,7 +993,7 @@ class DendrogramPlot(object):
         a.plot("tree.png", format="png")
         
     """
-    def __init__(self, tree, attr_tree = None, labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None, 
+    def __init__(self, tree, attr_tree=None, labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None,
                  spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, renderer=EPSRenderer, **kwargs):
         self.tree = tree
         self.attr_tree = attr_tree
@@ -1005,7 +1005,7 @@ class DendrogramPlot(object):
             else:
                 labels = [""] * len(tree)
         self.labels = labels
-        
+
 #        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
         self.data = data
         self.width, self.height = float(width) if width else None, float(height) if height else None
@@ -1024,7 +1024,7 @@ class DendrogramPlot(object):
         self.gamma = gamma
         self.set_matrix_color_schema(color_palette, minv, maxv, gamma)
         self.renderer = renderer
-        
+
     def set_matrix_color_schema(self, color_palette, minv, maxv, gamma=None):
         """ Set the matrix color scheme.
         """
@@ -1035,24 +1035,24 @@ class DendrogramPlot(object):
         self.minv = minv
         self.maxv = maxv
         self.gamma = gamma
-        
+
     def color_shema(self):
-        vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType==orange.VarTypes.Continuous] or [0]
-        avg = sum(vals)/len(vals)
-        
+        vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType == orange.VarTypes.Continuous] or [0]
+        avg = sum(vals) / len(vals)
+
         maxVal = self.maxv if self.maxv else max(vals)
         minVal = self.minv if self.minv else min(vals)
-        
+
         def _colorSchema(val):
             if val.isSpecial():
                 return self.color_palette(None)
-            elif val.variable.varType==orange.VarTypes.Continuous:
+            elif val.variable.varType == orange.VarTypes.Continuous:
                 r, g, b = self.color_palette((float(val) - minVal) / abs(maxVal - minVal), gamma=self.gamma)
-            elif val.variable.varType==orange.VarTypes.Discrete:
-                r = g = b = int(255.0*float(val)/len(val.variable.values))
+            elif val.variable.varType == orange.VarTypes.Discrete:
+                r = g = b = int(255.0 * float(val) / len(val.variable.values))
             return (r, g, b)
         return _colorSchema
-    
+
     def layout(self):
         height_final = False
         width_final = False
@@ -1060,31 +1060,31 @@ class DendrogramPlot(object):
         if self.height:
             height, height_final = self.height, True
             heatmap_height = height - (tree_height + self.spacing if self.attr_tree else 0) - 2 * self.horizontal_margin
-            font_size =  heatmap_height / len(self.labels) #self.font_size or (height - (tree_height + self.spacing if self.attr_tree else 0) - 2 * self.horizontal_margin) / len(self.labels)
+            font_size = heatmap_height / len(self.labels) #self.font_size or (height - (tree_height + self.spacing if self.attr_tree else 0) - 2 * self.horizontal_margin) / len(self.labels)
         else:
             font_size = self.font_size
             heatmap_height = font_size * len(self.labels)
             height = heatmap_height + (tree_height + self.spacing if self.attr_tree else 0) + 2 * self.horizontal_margin
-             
+
         text_width = self.text_width or max([len(label) for label in self.labels] + [0]) * font_size #max([self.renderer.string_size_hint(label) for label in self.labels])
-        
+
         if self.width:
             width = self.width
             heatmap_width = width - 2 * self.vertical_margin - tree_height - (2 if self.data else 1) * self.spacing - text_width if self.data else 0
         else:
             heatmap_width = len(self.data.domain.attributes) * heatmap_height / len(self.data) if self.data else 0
             width = 2 * self.vertical_margin + tree_height + (heatmap_width + self.spacing if self.data else 0) + self.spacing + text_width
-            
+
         return width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size
-    
+
     def plot(self, filename="graph.eps", **kwargs):
         width, height, tree_height, heatmap_width, heatmap_height, text_width, font_size = self.layout()
         heatmap_cell_height = heatmap_height / len(self.labels)
 
         heatmap_cell_width = 0.0 if not self.data else heatmap_width / len(self.data.domain.attributes)
-        
+
         self.renderer = self.renderer(width, height)
-        
+
         def draw_tree(cluster, root, treeheight, treewidth, color):
             height = treeheight * cluster.height / root.height
             if cluster.branches:
@@ -1092,9 +1092,9 @@ class DendrogramPlot(object):
                 for branch in cluster.branches:
                     center = draw_tree(branch, root, treeheight, treewidth, self.cluster_colors.get(branch, color))
                     centers.append(center)
-                    self.renderer.draw_line(center[0], center[1], center[0], height, stroke_color = self.cluster_colors.get(branch, color))
-                    
-                self.renderer.draw_line(centers[0][0], height, centers[-1][0], height, stroke_color = self.cluster_colors.get(cluster, color))
+                    self.renderer.draw_line(center[0], center[1], center[0], height, stroke_color=self.cluster_colors.get(branch, color))
+
+                self.renderer.draw_line(centers[0][0], height, centers[-1][0], height, stroke_color=self.cluster_colors.get(cluster, color))
                 return (centers[0][0] + centers[-1][0]) / 2.0, height
             else:
                 return float(treewidth) * cluster.first / len(root), 0.0
@@ -1102,16 +1102,16 @@ class DendrogramPlot(object):
         self.renderer.translate(self.vertical_margin + tree_height, self.horizontal_margin + (tree_height + self.spacing if self.attr_tree else 0) + heatmap_cell_height / 2.0)
         self.renderer.rotate(90)
 #        print self.renderer.transform()
-        draw_tree(self.tree, self.tree, tree_height, heatmap_height, self.cluster_colors.get(self.tree, (0,0,0)))
+        draw_tree(self.tree, self.tree, tree_height, heatmap_height, self.cluster_colors.get(self.tree, (0, 0, 0)))
         self.renderer.restore_render_state()
         if self.attr_tree:
             self.renderer.save_render_state()
             self.renderer.translate(self.vertical_margin + tree_height + self.spacing + heatmap_cell_width / 2.0, self.horizontal_margin + tree_height)
             self.renderer.scale(1.0, -1.0)
 #            print self.renderer.transform()
-            draw_tree(self.attr_tree, self.attr_tree, tree_height, heatmap_width, self.cluster_colors.get(self.attr_tree, (0,0,0)))
+            draw_tree(self.attr_tree, self.attr_tree, tree_height, heatmap_width, self.cluster_colors.get(self.attr_tree, (0, 0, 0)))
             self.renderer.restore_render_state()
-        
+
         self.renderer.save_render_state()
         self.renderer.translate(self.vertical_margin + tree_height + self.spacing, self.horizontal_margin + (tree_height + self.spacing if self.attr_tree else 0))
 #        print self.renderer.transform()
@@ -1122,7 +1122,7 @@ class DendrogramPlot(object):
                 for j, jj in enumerate((self.attr_tree if self.attr_tree else range(len(self.data.domain.attributes)))):
                     r, g, b = colorSchema(ex[jj])
                     self.renderer.draw_rect(j * heatmap_cell_width, i * heatmap_cell_height, heatmap_cell_width, heatmap_cell_height, fill_color=(r, g, b), stroke_color=(255, 255, 255))
-        
+
         self.renderer.translate(heatmap_width + self.spacing, heatmap_cell_height)
 #        print self.renderer.transform()
         self.renderer.set_font("Times-Roman", font_size)
@@ -1131,11 +1131,11 @@ class DendrogramPlot(object):
             self.renderer.translate(0.0, heatmap_cell_height)
         self.renderer.restore_render_state()
         self.renderer.save(filename, **kwargs)
-        
-        
+
+
 def dendrogram_draw(file, cluster, attr_cluster=None, labels=None, data=None,
                     width=None, height=None, tree_height=None,
-                    heatmap_width=None, text_width=None,  spacing=2,
+                    heatmap_width=None, text_width=None, spacing=2,
                     cluster_colors={},
                     color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]),
                     maxv=None, minv=None, gamma=None, format=None):
@@ -1192,12 +1192,12 @@ def dendrogram_draw(file, cluster, attr_cluster=None, labels=None, data=None,
     if isinstance(file, basestring):
         name, ext = os.path.splitext(file)
         format = ext.lower().lstrip(".") or format
-        
+
     if format is None:
         format = "png"
-        
+
     renderer = {"eps":EPSRenderer, "svg":SVGRenderer, "png":PILRenderer}.get(format, "png")
-    
+
     d = DendrogramPlot(cluster, attr_cluster, labels, data, width, height,
                        tree_height, heatmap_width, text_width, spacing,
                        cluster_colors, color_palette, maxv, minv, gamma,
@@ -1206,7 +1206,7 @@ def dendrogram_draw(file, cluster, attr_cluster=None, labels=None, data=None,
         d.plot(file, format=format)
     else:
         d.plot(file)
-    
+
 def postorder(cluster):
     """ Return a post order list of clusters.
     
@@ -1221,7 +1221,7 @@ def postorder(cluster):
     stack = [cluster]
     while stack:
         cluster = stack.pop(0)
-        
+
         if cluster.branches:
             if cluster in visited:
                 order.append(cluster)
@@ -1232,8 +1232,8 @@ def postorder(cluster):
             order.append(cluster)
             visited.add(cluster)
     return order
-    
-    
+
+
 def preorder(cluster):
     """ Return a pre order list of clusters.
     
@@ -1251,8 +1251,8 @@ def preorder(cluster):
         if cluster.branches:
             stack = cluster.branches + stack
     return order
-    
-    
+
+
 def dendrogram_layout(cluster, expand_leaves=False):
     """ Return a layout of the cluster dendrogram on a 2D plane. The return 
     value if a list of (subcluster, (start, center, end)) tuples where
@@ -1291,9 +1291,9 @@ def dendrogram_layout(cluster, expand_leaves=False):
             center = (start + end) / 2.0
             cluster_geometry[cluster] = (start, center, end)
             result.append((cluster, (start, center, end)))
-            
+
     return result
-    
+
 def clone(cluster):
     """ Clone a cluster, including it's subclusters.
     
@@ -1312,9 +1312,9 @@ def clone(cluster):
             node_clone.branches = [clones[b] for b in node.branches]
         node_clone.mapping = mapping
         clones[node] = node_clone
-        
+
     return clones[cluster]
-    
+
 def pruned(cluster, level=None, height=None, condition=None):
     """ Return a new pruned clustering instance.    
     It uses :obj:`clone` to create a copy of the `cluster`
@@ -1341,8 +1341,8 @@ def pruned(cluster, level=None, height=None, condition=None):
     cluster = clone(cluster)
     prune(cluster, level, height, condition)
     return cluster
-    
-    
+
+
 def prune(cluster, level=None, height=None, condition=None):
     """ Prune the clustering instance ``cluster`` in place.
     
@@ -1364,25 +1364,25 @@ def prune(cluster, level=None, height=None, condition=None):
     """
     if not any(arg is not None for arg in [level, height, condition]):
         raise ValueError("At least one pruning argument must be supplied")
-    
+
     level_check = height_check = condition_check = lambda cl: False
     cluster_depth = cluster_depths(cluster)
-    
+
     if level is not None:
         level_check = lambda cl: cluster_depth[cl] >= level
-        
+
     if height is not None:
         height_check = lambda cl: cl.height <= height
 
     if condition is not None:
         condition_check = condition
-        
+
     pruned_set = set()
-    
+
     def check_all(cl):
         return any([check(cl) for check in [level_check, height_check,
                                             condition_check]])
-        
+
     for cluster in preorder(cluster):
         if cluster not in pruned_set:
             if check_all(cluster):
@@ -1390,8 +1390,8 @@ def prune(cluster, level=None, height=None, condition=None):
                 pruned_set.update(set(preorder(cluster)))
             else:
                 pass
-    
-    
+
+
 def cluster_depths(cluster):
     """ Return a dictionary mapping :class:`HierarchicalCluster` instances to
     their depths in the `cluster` hierarchy.
@@ -1433,16 +1433,16 @@ def feature_distance_matrix(data, distance=None, progress_callback=None):
     matrix = Orange.misc.SymMatrix(len(attributes))
     iter_count = matrix.dim * (matrix.dim - 1) / 2
     milestones = progress_bar_milestones(iter_count, 100)
-    
+
     for count, ((i, a1), (j, a2)) in enumerate(_pairs(enumerate(attributes))):
         matrix[i, j] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
         if progress_callback and count in milestones:
             progress_callback(100.0 * count / iter_count)
-            
+
     return matrix
 
 
-def _pairs(seq, same = False):
+def _pairs(seq, same=False):
     """ Return all pairs from elements of `seq`.
     """
     seq = list(seq)
@@ -1450,8 +1450,8 @@ def _pairs(seq, same = False):
     for i in range(len(seq)):
         for j in range(i + same, len(seq)):
             yield seq[i], seq[j]
-    
-    
+
+
 def joining_cluster(cluster, item1, item2):
     """ Return the cluster where `item1` and `item2` are first joined
     
@@ -1473,7 +1473,7 @@ def joining_cluster(cluster, item1, item2):
                 return cluster
         else:
             return cluster
-        
+
 
 def cophenetic_distances(cluster):
     """ Return the cophenetic distance matrix between items in clustering.
@@ -1487,7 +1487,7 @@ def cophenetic_distances(cluster):
     
     """
 
-    mapping = cluster.mapping  
+    mapping = cluster.mapping
     matrix = Orange.misc.SymMatrix(len(mapping))
     for cluster in postorder(cluster):
         if cluster.branches:
@@ -1495,14 +1495,14 @@ def cophenetic_distances(cluster):
                 for idx1 in mapping[branch1.first: branch1.last]:
                     for idx2 in mapping[branch2.first: branch2.last]:
                         matrix[idx1, idx2] = cluster.height
-                
+
         else:
             for ind1, ind2 in _pairs(mapping[cluster.first: cluster.last]):
                 matrix[ind1, ind2] = cluster.height
-    
+
     return matrix
 
-    
+
 def cophenetic_correlation(cluster, matrix):
     """ Return the `cophenetic correlation coefficient
     <http://en.wikipedia.org/wiki/Cophenetic_correlation>`_ of the given
@@ -1524,5 +1524,5 @@ def cophenetic_correlation(cluster, matrix):
     cophenetic = numpy.ravel(cophenetic)
     original = numpy.ravel(original)
     return numpy.corrcoef(cophenetic, original)[0, 1]
-    
-    
+
+

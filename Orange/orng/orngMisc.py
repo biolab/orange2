@@ -2,7 +2,7 @@ from __future__ import with_statement
 import random, types
 import os.path
 
-from Orange.misc.environ import install_dir
+from Orange.utils.environ import install_dir
 ## -> Orange.misc
 
 def getobjectname(x, default=""):
