@@ -1,6 +1,7 @@
 import Orange
-from Orange.classification.svm import SVMLearner, MeasureAttribute_SVMWeights,\
-                            LinearLearner, RFE, get_linear_svm_weights, \
+from Orange.classification.svm import SVMLearner, SVMLearnerSparse, \
+                            ScoreSVMWeights, LinearLearner, RFE, \
+                            get_linear_svm_weights, \
                             example_weighted_sum
                             
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
@@ -132,21 +133,25 @@ class SigmoidSVMTestCase(testing.LearnerTestCase):
         
 
 
-#def to_sparse(data):
-#    domain = Orange.data.Domain([], data.domain.class_var)
-#    domain.add_metas(dict([(Orange.core.newmetaid(), v) for v in data.domain.attributes]))
-#    return Orange.data.Table(domain, data)
-#
-#def sparse_data_iter():
-#    for name, (data, ) in testing.datasets_iter(datasets):
-#        yield name, (to_sparse(data), )
-#    
-## This needs sparse datasets. 
-#@testing.data_driven(data_iter=sparse_data_iter())
-#class BagOfWordsSVMTestCase(testing.LearnerTestCase):
-#    LEARNER = SVMLearner(name="svm-bow", kernel_type=SVMLearner.Custom, kernelFunc=BagOfWords())
+def to_sparse(data):
+    domain = Orange.data.Domain([], data.domain.class_var)
+    domain.add_metas(dict([(Orange.core.newmetaid(), v) for v in data.domain.attributes]))
+    return Orange.data.Table(domain, data)
 
+def sparse_data_iter():
+    for name, (data, ) in testing.datasets_iter(datasets):
+        yield name, (to_sparse(data), )
 
+@testing.data_driven(data_iter=sparse_data_iter())
+class SparseSVMTestCase(testing.LearnerTestCase):
+    LEARNER = SVMLearnerSparse(name="svm-sparse")
+    
+    @test_on_data
+    def test_learner_on(self, dataset):
+        testing.LearnerTestCase.test_learner_on(self, dataset)
+        svm_test_binary_classifier(self, dataset)
+
+ 
 @datasets_driven(datasets=datasets)
 class CustomWrapperSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner
@@ -172,9 +177,9 @@ class TestLinLearner(testing.LearnerTestCase):
 
 
 @datasets_driven(datasets=datasets)
-class TestMeasureAttr_LinWeights(testing.MeasureAttributeTestCase):
-    MEASURE = MeasureAttribute_SVMWeights()
-
+class TestScoreSVMWeights(testing.MeasureAttributeTestCase):
+    MEASURE = ScoreSVMWeights()
+    
 
 @datasets_driven(datasets=["iris"])
 class TestRFE(testing.DataTestCase):
