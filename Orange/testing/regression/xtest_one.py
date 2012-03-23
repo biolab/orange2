@@ -3,9 +3,11 @@ import traceback as t__traceback
 import string as t__string
 import os as t__os
 
+from Orange.core import AttributeWarning
+
 #ignore warnings
 import warnings as t__warnings
-t__warnings.simplefilter("ignore", "AttributeWarning")
+t__warnings.filterwarnings("ignore", "", AttributeWarning)
 
 #from numpy import seterr
 #seterr(all='raise')
@@ -84,7 +86,7 @@ t__outputsdir = t__sys.argv[3]
 
 # when testing backward compatibility support suppress deprecation warnings
 if "tests_20" in t__outputsdir:
-    t__warnings.simplefilter("ignore", "DeprecationWarning")
+    t__warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 t__timedoutname, t__crashname, t__errorname, t__newname, t__changedname, t__random1name, t__random2name = ["%s/%s.%s.%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform, t__sys.version[:3], t) for t in ["timedout", "crash", "error", "new", "changed", "random1", "random2"]]
 t__officialname = "%s/%s.%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform, t__sys.version[:3])
