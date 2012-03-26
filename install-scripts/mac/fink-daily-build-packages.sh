@@ -4,7 +4,7 @@
 # 
 
 # Daily orange packages to build
-DAILY_PACKAGES="orange-hg-py26 orange-gui-hg-py26 orange-bioinformatics-hg-py26 orange-bioinformatics-gui-hg-py26 orange-text-hg-py26 orange-text-gui-hg-py26 orange-hg-py27 orange-gui-hg-py27 orange-bioinformatics-hg-py27 orange-bioinformatics-gui-hg-py27 orange-text-hg-py27 orange-text-gui-hg-py27"
+DAILY_PACKAGES="orange-dev-py26 orange-gui-dev-py26 orange-bioinformatics-dev-py26 orange-bioinformatics-gui-dev-py26 orange-text-dev-py26 orange-text-gui-dev-py26 orange-dev-py27 orange-gui-dev-py27 orange-bioinformatics-dev-py27 orange-bioinformatics-gui-dev-py27 orange-text-dev-py27 orange-text-gui-dev-py27"
 
 # Packages which, when installing, want special confirmation from the user
 # We keep those packages installed all the time

@@ -7,6 +7,8 @@
 # $3 hg revision
 # $4 work dir
 # $5 distribution name
+# $6 source and egg distribution dir ($4 by default)
+# $7 force
 #
 # Example ./build-source.sh http://bitbucket.org/biolab/orange orange tip /private/tmp/repos Orange
 
@@ -15,32 +17,48 @@ REPO_DIRNAME=$2
 HG_REV=$3
 WORK_DIR=$4
 DIST_NAME=$5
+DIST_DIR=${6:-$WORK_DIR}
+FORCE=$7
+
+# dist name with '-' replaced
+UDIST_NAME=`echo $DIST_NAME | sed s/-/_/g`
 
 LOCAL_REPO=$WORK_DIR/$REPO_DIRNAME
 
-if [ ! -e $LOCAL_REPO ]; then
-	hg clone $HG_REPO $LOCAL_REPO
+LATEST_REVISION=`hg id $HG_REPO`
+
+if [ -e $WORK_DIR/$UDIST_NAME.egg-info/PKG-INFO ]; then
+	CURRENT_REVISION=`grep "^Version: " $WORK_DIR/$UDIST_NAME.egg-info/PKG-INFO | cut -d "-" -f 3`
+else
+	CURRENT_REVISION=""
 fi
 
-if hg incoming -R $LOCAL_REPO; then
-	hg pull -R $LOCAL_REPO
+if [[ $CURRENT_REVISION != $LATEST_REVISION  || $FORCE ]]; then
+	BUILD=1
+else
+	BUILD=
 fi
+echo $BUILD
 
-hg update -r $HG_REV -R $LOCAL_REPO
+if [ $BUILD ]; then	
+	if [ ! -e $LOCAL_REPO ]; then
+		hg clone $HG_REPO $LOCAL_REPO
+	fi
 
-cd $LOCAL_REPO
+	if hg incoming -R $LOCAL_REPO; then
+		hg pull -R $LOCAL_REPO
+	fi
 
-# Remove old sources
-rm -rf dist/
+	hg update -r $HG_REV -R $LOCAL_REPO
 
-# Build the source distribution
-BUILD_TAG=`hg parent --template=".dev-r{rev}-{node|short}"`
-python setup.py egg_info --tag-build=$BUILD_TAG sdist
+	cd $LOCAL_REPO
 
-# Copy the source an egg info to workdir
-cp dist/${DIST_NAME}-*.tar.gz $WORK_DIR
+	# Remove old sources
+	rm -rf dist/
 
-UDIST_NAME=`echo $DIST_NAME | sed s/-/_/g`
-cp -r  $UDIST_NAME.egg-info $WORK_DIR
+	# Build the source distribution
+	BUILD_TAG=`hg parent --template=".dev-r{rev}-{node|short}"`
 
-true
+	python setup.py egg_info --tag-build=$BUILD_TAG --egg-base=$DIST_DIR sdist --dist-dir=$DIST_DIR
+	python setup.py rotate --match=.tar.gz --dist-dir=$DIST_DIR --keep=20
+fi

@@ -31,21 +31,22 @@ if [ ! -e $WORK_DIR ]; then
 fi
 
 
-SOURCE_LOG=$WORK_DIR/sources-daily-build.log
-
-./dailyrun-sources.sh $WORK_DIR $FORCE $LOCAL &> $SOURCE_LOG
-EXIT_VALUE=$?
-
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
 if [ ! $LOCAL ]; then
 	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 fi
 
+SOURCE_LOG=$WORK_DIR/sources-daily-build.log
+
+./dailyrun-sources.sh $WORK_DIR $FORCE $LOCAL &> $SOURCE_LOG
+EXIT_VALUE=$?
+
 echo "Orange (sources) [ $EXIT_VALUE ]" > "$LOG_DIR/source-daily-build-hg.log"
 date >> "$LOG_DIR/source-daily-build-hg.log"
 cat $SOURCE_LOG >> "$LOG_DIR/source-daily-build-hg.log"
 (($EXIT_VALUE)) && echo "Daily sources failed"
+
 
 SOURCES_DIR=$PUBLISH_DIR/sources
 
@@ -66,9 +67,10 @@ ORANGE_SOURCE_MD5=`md5 -q $SOURCES_DIR/$ORANGE_SOURCE`
 BIOINFORMATICS_SOURCE_MD5=`md5 -q $SOURCES_DIR/$BIOINFORMATICS_SOURCE`
 TEXT_SOURCE_MD5=`md5 -q $SOURCES_DIR/$TEXT_SOURCE`
 
+
 ## Daily bundle build from hg (for now always until versioning is established).
 if [[ true || $NEW_ORANGE || $NEW_BIOINFORMATICS || $NEW_TEXT || $FORCE ]]; then
-	/Users/ailabc/bundle-daily-build-hg.sh &> $WORK_DIR/bundle-daily-build.log
+	./bundle-daily-build-hg.sh &> $WORK_DIR/bundle-daily-build.log
 	EXIT_VALUE=$?
 fi
 
@@ -96,9 +98,9 @@ else
 fi
 
 
-OLD_ORANGE_VERSION=`curl --silent $BASE/orange-gui-hg-py.info | grep "Version: " | cut -d" " -f 2`
-OLD_BIOINFORMATICS_VERSION=`curl --silent $BASE/orange-bioinformatics-gui-hg-py.info | grep "Version: " | cut -d" " -f 2`
-OLD_TEXT_VERSION=`curl --silent $BASE/orange-text-gui-hg-py.info | grep "Version: " | cut -d" " -f 2`
+OLD_ORANGE_VERSION=`curl --silent $BASE/orange-gui-dev-py.info | grep "Version: " | cut -d" " -f 2`
+OLD_BIOINFORMATICS_VERSION=`curl --silent $BASE/orange-bioinformatics-gui-dev-py.info | grep "Version: " | cut -d" " -f 2`
+OLD_TEXT_VERSION=`curl --silent $BASE/orange-text-gui-dev-py.info | grep "Version: " | cut -d" " -f 2`
 
 if [[ $OLD_ORANGE_VERSION < ORANGE_VERSION ]]; then
 	NEW_ORANGE=1
@@ -136,17 +138,17 @@ echo "" > $FINK_LOG
 
 if [[ $NEW_ORANGE || $FORCE ]]; then
 	FINK_ORANGE_SOURCE_TEMPLATE="Orange-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-hg-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINK_INFO_DIR/orange-gui-hg-py.info >> $FINK_LOG 2>&1
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-dev-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINK_INFO_DIR/orange-gui-dev-py.info >> $FINK_LOG 2>&1
 fi
 
 if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 	FINK_BIOINFORMATICS_SOURCE_TEMPLATE="Orange-Bioinformatics-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-hg-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINK_INFO_DIR/orange-bioinformatics-gui-hg-py.info >> $FINK_LOG 2>&1
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-dev-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINK_INFO_DIR/orange-bioinformatics-gui-dev-py.info >> $FINK_LOG 2>&1
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
 	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-hg-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-hg-py.info >> $FINK_LOG 2>&1
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-dev-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-dev-py.info >> $FINK_LOG 2>&1
 fi
 
 if [ ! $LOCAL ]; then

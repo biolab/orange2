@@ -7,8 +7,8 @@
 import Orange
 
 forest = Orange.ensemble.forest.RandomForestLearner(trees=50, name="forest")
-tree = Orange.classification.tree.TreeLearner(minExamples=2, mForPrunning=2, \
-                            sameMajorityPruning=True, name='tree')
+tree = Orange.classification.tree.TreeLearner(min_instances=2, m_pruning=2, \
+                            same_majority_pruning=True, name='tree')
 learners = [tree, forest]
 
 print "Classification: bupa.tab"
@@ -17,7 +17,7 @@ results = Orange.evaluation.testing.cross_validation(learners, bupa, folds=3)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
-        Orange.evaluation.scoring.CA(results)[i], 
+        Orange.evaluation.scoring.CA(results)[i],
         Orange.evaluation.scoring.Brier_score(results)[i],
         Orange.evaluation.scoring.AUC(results)[i])
 

@@ -78,17 +78,17 @@ BASE_URL="file://$SOURCES_DIR"
 
 if [[ $NEW_ORANGE || $FORCE ]]; then
 	FINK_ORANGE_SOURCE_TEMPLATE="Orange-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-hg-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINKINFO_DIR/orange-gui-hg-py.info
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-dev-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINKINFO_DIR/orange-gui-dev-py.info
 fi
 
 if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 	FINK_BIOINFORMATICS_SOURCE_TEMPLATE="Orange-Bioinformatics-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-hg-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINKINFO_DIR/orange-bioinformatics-gui-hg-py.info
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-dev-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINKINFO_DIR/orange-bioinformatics-gui-dev-py.info
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
 	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
-	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-hg-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINKINFO_DIR/orange-text-gui-hg-py.info
+	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-dev-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINKINFO_DIR/orange-text-gui-dev-py.info
 fi
 
 # Index the new packages

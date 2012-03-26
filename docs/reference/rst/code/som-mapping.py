@@ -14,10 +14,10 @@ som = Orange.projection.som.SOMLearner(map_shape=(3, 3),
 map = som(Orange.data.Table("iris.tab"))
 
 print "Node    Instances"
-print "\n".join(["%s  %d" % (str(n.pos), len(n.examples)) for n in map])
+print "\n".join(["%s  %d" % (str(n.pos), len(n.instances)) for n in map])
 
 i, j = 0, 1
 print
 print "Data instances in cell (%d, %d):" % (i, j)
-for e in map[i, j].examples:
+for e in map[i, j].instances:
     print e

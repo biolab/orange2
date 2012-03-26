@@ -133,7 +133,7 @@ try:
 except ImportError:
     from Orange import statc as stats
 
-from numpy import dot, sqrt
+from numpy import dot, sqrt, std
 from numpy.linalg import inv, pinv
 
 
@@ -147,7 +147,7 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
     which is used for preprocessing the data (continuization and imputation)
     before fitting the regression parameters.
 
-    """    
+    """
 
     def __init__(self, name='linear regression', intercept=True,
                  compute_stats=True, ridge_lambda=None, imputer=None,
@@ -196,26 +196,26 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         self.remove_sig = remove_sig
         self.use_vars = use_vars
         self.__dict__.update(kwds)
-        
+
     def __call__(self, table, weight=None, verbose=0):
         """
         :param table: data instances.
         :type table: :class:`Orange.data.Table`
         :param weight: the weights for instances. Default: None, i.e.
-            all data instances are eqaully important in fitting
+            all data instances are equally important in fitting
             the regression parameters
         :type weight: None or list of Orange.feature.Continuous
             which stores weights for instances
-        """       
-        if not self.use_vars is None:
+        """
+        if self.use_vars is not None:
             new_domain = Orange.data.Domain(self.use_vars,
                                             table.domain.class_var)
             new_domain.addmetas(table.domain.getmetas())
             table = Orange.data.Table(new_domain, table)
 
-        # dicrete values are continuized        
+        # discrete values are continuized
         table = self.continuize_table(table)
-          
+
         # missing values are imputed
         table = self.impute_table(table)
 
@@ -226,24 +226,22 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             new_domain.addmetas(table.domain.getmetas())
             table = Orange.data.Table(new_domain, table)
 
-        # convertion to numpy
-        A, y, w = table.to_numpy()
-        n, m = numpy.shape(A)
-     
-        if self.intercept:
-            X = numpy.insert(A, 0, 1, axis=1) # adds a column of ones
-        else:
-            X = A
-             
         domain = table.domain
-        
+
+        # convert to numpy
+        X, y, w = table.to_numpy()
+        n, m = numpy.shape(X)
+
+        if self.intercept:
+            X = numpy.insert(X, 0, 1, axis=1) # adds a column of ones
+
         if weight:
             weights = numpy.sqrt([float(ins[weight]) for ins in table])
             X = weights.reshape(n, 1) * X
             y = weights * y
-        
+
         cov = dot(X.T, X)
-        
+
         if self.ridge_lambda:
             stride = cov.shape[0] + 1
             cov.flat[self.intercept * stride::stride] += self.ridge_lambda
@@ -256,9 +254,8 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
 
         mu_y, sigma_y = numpy.mean(y), numpy.std(y)
         if m > 0:
-            cov_x = numpy.cov(X, rowvar=0)
             # standardized coefficients
-            std_coefficients = sqrt(cov_x.diagonal()) / sigma_y * coefficients
+            std_coefficients = std(X, axis=0, ddof=1) / sigma_y * coefficients
         else:
             std_coefficients = None
 
@@ -267,29 +264,30 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
             return LinearRegression(domain.class_var, domain,
                 coefficients=coefficients, std_coefficients=std_coefficients,
                 intercept=self.intercept)
-            
 
         fitted = dot(X, coefficients)
         residuals = [ins.get_class() - fitted[i]
                      for i, ins in enumerate(table)]
 
-        # model summary        
+        # model summary
+        df_reg = n - m - self.intercept
         # total sum of squares (total variance)
         sst = numpy.sum((y - mu_y) ** 2)
-        # sum of squares due to regression (explained variance)
+        # regression sum of squares (explained variance)
         ssr = numpy.sum((fitted - mu_y) ** 2)
-        # error sum of squares (unexplaied variance)
-        sse = sst - ssr
+        # residual sum of squares
+        sse = numpy.sum((y - fitted) ** 2)
         # coefficient of determination
         r2 = ssr / sst
-        r2adj = 1 - (1 - r2) * (n - 1) / (n - m - 1)
-        F = (ssr / m) / (sst - ssr / (n - m - 1)) if m else None
-        df = n - 2
-        sigma_square = sse / (n - m - 1)
+        r2 = 1 - sse / sst
+        r2adj = 1 - (1 - r2) * (n - 1) / df_reg
+        F = (ssr / m) / ((sst - ssr) / df_reg) if m else 0
+        sigma_square = sse / df_reg
         # standard error of the regression estimator, t-scores and p-values
         std_error = sqrt(sigma_square * invcov.diagonal())
         t_scores = coefficients / std_error
-        p_vals = [stats.betai(df * 0.5, 0.5, df / (df + t * t))
+        df_res = n - 2
+        p_vals = [stats.betai(df_res * 0.5, 0.5, df_res / (df_res + t * t))
                   for t in t_scores]
 
         # dictionary of regression coefficients with standard errors
@@ -298,11 +296,11 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
         if self.intercept:
             dict_model["Intercept"] = (coefficients[0], std_error[0],
                                        t_scores[0], p_vals[0])
-        for i, var in enumerate(domain.attributes):
+        for i, var in enumerate(domain.features):
             j = i + 1 if self.intercept else i
             dict_model[var.name] = (coefficients[j], std_error[j],
                                     t_scores[j], p_vals[j])
-        
+
         return LinearRegression(domain.class_var, domain, coefficients, F,
                  std_error=std_error, t_scores=t_scores, p_vals=p_vals,
                  dict_model=dict_model, fitted=fitted, residuals=residuals,
@@ -325,7 +323,7 @@ class LinearRegression(Orange.classification.Classifier):
     based on the values of independent variables.
 
     .. attribute:: F
-    
+
         F-statistics of the model.
 
     .. attribute:: coefficients
@@ -335,17 +333,17 @@ class LinearRegression(Orange.classification.Classifier):
 
     .. attribute:: std_error
 
-        Standard errors of the coefficient estimator, stored in list.    
+        Standard errors of the coefficient estimator, stored in list.
 
     .. attribute:: t_scores
 
-        List of t-scores for the estimated regression coefficients.    
+        List of t-scores for the estimated regression coefficients.
 
     .. attribute:: p_vals
 
         List of p-values for the null hypothesis that the regression
         coefficients equal 0 based on t-scores and two sided
-        alternative hypothesis.    
+        alternative hypothesis.
 
     .. attribute:: dict_model
 
@@ -366,15 +364,15 @@ class LinearRegression(Orange.classification.Classifier):
 
     .. attribute:: m
 
-        Number of independent (predictor) variables.    
+        Number of independent (predictor) variables.
 
     .. attribute:: n
 
-        Number of instances.    
+        Number of instances.
 
     .. attribute:: mu_y
 
-        Sample mean of the dependent variable.    
+        Sample mean of the dependent variable.
 
     .. attribute:: r2
 
@@ -395,10 +393,8 @@ class LinearRegression(Orange.classification.Classifier):
 
         Standardized regression coefficients.
 
-    """   
+    """
 
-
-    
     def __init__(self, class_var=None, domain=None, coefficients=None, F=None,
                  std_error=None, t_scores=None, p_vals=None, dict_model=None,
                  fitted=None, residuals=None, m=None, n=None, mu_y=None,
@@ -435,7 +431,7 @@ class LinearRegression(Orange.classification.Classifier):
         :param instance: data instance for which the value of the response
                          variable will be predicted
         :type instance: :obj:`~Orange.data.Instance`
-        """        
+        """
         ins = Orange.data.Instance(self.domain, instance)
         ins = numpy.array(ins.native())
         if "?" in ins: # missing value -> corresponding coefficient omitted
@@ -464,14 +460,13 @@ class LinearRegression(Orange.classification.Classifier):
             return dist
         return (y_hat, dist)
 
-
     def to_string(self):
         """Pretty-prints linear regression model,
         i.e. estimated regression coefficients with standard errors, t-scores
         and significances.
 
         """
-        from string import join 
+        from string import join
         labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
         lines = [join(['%10s' % l for l in labels], ' ')]
 
@@ -484,7 +479,7 @@ class LinearRegression(Orange.classification.Classifier):
             elif p < 0.05: return "*"
             elif p < 0.1: return  "."
             else: return " "
-        
+
         if self.intercept == True:
             stars =  get_star(self.p_vals[0])
             lines.append(fmt % ('Intercept', self.coefficients[0],
@@ -514,7 +509,7 @@ def compare_models(c1, c2):
     is returned.
 
     :param c1, c2: linear regression model objects.
-    :type lr: :class:`LinearRegression`     
+    :type lr: :class:`LinearRegression`
 
     """
     if c1 == None or c2 == None:
@@ -550,7 +545,6 @@ def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
     :type remove_sig: float
     """
 
-    
     inc_vars = []
     not_inc_vars = table.domain.attributes
 
@@ -567,7 +561,7 @@ def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
                         use_vars=inc_vars[:ati] + inc_vars[(ati + 1):]))
             except Exception:
                 reduced_model.append(None)
-        
+
         sigs = [compare_models(r, c0) for r in reduced_model]
         if sigs and max(sigs) > remove_sig:
             # remove that variable, start again
@@ -586,7 +580,7 @@ def stepwise(table, weight, add_sig=0.05, remove_sig=0.2):
                         weight, use_vars=inc_vars + [not_inc_vars[ati]]))
             except Exception:
                 extended_model.append(None)
-             
+
         sigs = [compare_models(c0, r) for r in extended_model]
         if sigs and min(sigs) < add_sig:
             best_var = not_inc_vars[sigs.index(min(sigs))]

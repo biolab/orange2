@@ -1331,8 +1331,8 @@ PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH
 #include "libsvm_interface.hpp"
 C_CALL(SVMLearner - Orange.classification.svm._SVMLearner, Learner, "([examples] -/-> Classifier)")
 C_CALL(SVMLearnerSparse - Orange.classification.svm._SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
-C_NAMED(SVMClassifier - Orange.classification.svm.SVMClassifier, ClassifierFD," ")
-C_NAMED(SVMClassifierSparse - Orange.classification.svm.SVMClassifierSparse, SVMClassifier," ")
+C_NAMED(SVMClassifier - Orange.classification.svm._SVMClassifier, ClassifierFD," ")
+C_NAMED(SVMClassifierSparse - Orange.classification.svm._SVMClassifierSparse, SVMClassifier," ")
 
 PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "['list of tuple pairs'] -> None")
 {
