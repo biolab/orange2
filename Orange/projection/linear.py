@@ -162,8 +162,8 @@ class FreeViz:
                                                                         graph.data_domain.class_var)
 
         return Projector(input_domain=domain,
-                         mean=Xm,
-                         stdev=stdev,
+                         center=Xm,
+                         scale=stdev,
                          standardize=False,
                          projection=U)
 
@@ -932,14 +932,14 @@ class FreeViz:
         vectors = None
         if method == DR_PCA:
             pca = Pca(standardize=False, max_components=ncomps,
-                      use_generalized_eigenvectors=False)
+                      use_generalized_eigenvectors=False, ddof=0)
             domain = data.Domain([feature.Continuous("g%d" % i) for i
                                   in xrange(len(data_matrix))], False)
             pca = pca(data.Table(domain, data_matrix.T))
             vals, vectors = pca.eigen_values, pca.projection
         elif method == DR_SPCA and self.graph.data_has_class:
             pca = Spca(standardize=False, max_components=ncomps,
-                       use_generalized_eigenvectors=self.use_generalized_eigenvectors)
+                       use_generalized_eigenvectors=self.use_generalized_eigenvectors, ddof=0)
             domain = data.Domain([feature.Continuous("g%d" % i) for i
                                   in xrange(len(data_matrix))], feature.Continuous("c"))
             pca = pca(data.Table(domain,
@@ -1208,11 +1208,11 @@ class Projector(object):
 
     #: Array containing means of each variable in the data set that was used
     #: to construct the projection.
-    mean = numpy.array(())
+    center = numpy.array(())
 
     #: An array containing standard deviations of each variable in the data
     #: set that was used to construct the projection.
-    stdev = numpy.array(())
+    scale = numpy.array(())
 
     #: True, if standardization was used when constructing the projection. If
     #: set, instances will be standardized before being projected.
@@ -1237,9 +1237,9 @@ class Projector(object):
 
     def _project_single(self, example, return_what, new_feature, feature_idx):
         ex = Orange.data.Table([example]).to_numpy("a")[0]
-        ex -= self.mean
+        ex -= self.center
         if self.standardize:
-            ex /= self.stdev
+            ex /= self.scale
         return new_feature(numpy.dot(self.projection[feature_idx, :], ex.T)[0])
 
     def __call__(self, dataset):
@@ -1257,7 +1257,7 @@ class Projector(object):
             dataset = data.Table(self.input_domain, dataset)
 
         X, = dataset.to_numpy_MA("a")
-        Xm, U = self.mean, self.projection
+        Xm, U = self.center, self.projection
         n, m = X.shape
 
         if m != len(self.projection.T):
@@ -1266,7 +1266,7 @@ class Projector(object):
         Xd = X - Xm
 
         if self.standardize:
-            Xd /= self.stdev
+            Xd /= self.scale
 
         self.A = numpy.dot(Xd, U.T)
 
@@ -1293,6 +1293,10 @@ class PCA(object):
         multiply data matrix with inverse of its covariance matrix).
     :type use_generalized_eigenvectors: boolean
     """
+
+    #: Delta degrees of freedom used for numpy operations.
+    #: 1 means normalization with (N-1) in cov and std operations
+    ddof = 1
 
     def __new__(cls, dataset=None, **kwds):
         optimizer = object.__new__(cls)
@@ -1339,12 +1343,11 @@ class PCA(object):
         n, m = components.shape
 
         return PcaProjector(input_domain=dataset.domain,
-                            mean=mean,
-                            stdev=stdev,
+                            center=mean,
+                            scale=stdev,
                             standardize=self.standardize,
-                            eigen_vectors=components,
                             projection=components,
-                            eigen_values=variances,
+                            variances=variances,
                             variance_sum=variance_sum)
 
     def _normalize_data(self, dataset):
@@ -1359,7 +1362,7 @@ class PCA(object):
             raise ValueError("All features are constant")
 
         #take care of the constant features
-        stdev = numpy.std(Xd, axis=0)
+        stdev = numpy.std(Xd, axis=0, ddof=self.ddof)
         stdev[stdev == 0] = 1. # to prevent division by zero
         relevant_features = stdev != 0
         Xd = Xd[:, relevant_features]
@@ -1370,11 +1373,11 @@ class PCA(object):
     def _perform_pca(self, dataset, Xd, Xg):
         n, m = Xd.shape
         if n < m:
-            C = numpy.dot(Xg.T, Xd.T)
+            C = numpy.dot(Xg.T, Xd.T) / (m - self.ddof)
             V, D, T = numpy.linalg.svd(C)
-            U = numpy.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1, 1))
+            U = numpy.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1, 1) * (m - self.ddof))
         else:
-            C = numpy.dot(Xg, Xd)
+            C = numpy.dot(Xg, Xd) / (n - self.ddof)
             U, D, T = numpy.linalg.svd(C)
             U = U.T  # eigenvectors are now in rows
         return U, D
@@ -1403,7 +1406,7 @@ class PCA(object):
 Pca = PCA
 
 
-class Spca(Pca):
+class Spca(PCA):
     def _perform_pca(self, dataset, Xd, Xg):
         # define the Laplacian matrix
         c = dataset.to_numpy("c")[0]
@@ -1417,11 +1420,8 @@ class Spca(Pca):
 
 @deprecated_members({"pc_domain": "output_domain"})
 class PcaProjector(Projector):
-    #: Synonymous for :obj:`~Orange.projection.linear.Projector.projection`.
-    eigen_vectors = numpy.array(()).reshape(0, 0)
-
-    #: Array containing standard deviations of principal components.
-    eigen_values = numpy.array(())
+    #: Array containing variances of principal components.
+    variances = numpy.array(())
 
     #: Sum of all variances in the data set that was used to construct the PCA space.
     variance_sum = 0.
@@ -1429,7 +1429,8 @@ class PcaProjector(Projector):
     def __str__(self):
         ncomponents = 10
         s = self.variance_sum
-        cs = numpy.cumsum(self.eigen_values) / s
+        cs = numpy.cumsum(self.variances) / s
+        stdev = numpy.sqrt(self.variances)
         return "\n".join([
             "PCA SUMMARY",
             "",
@@ -1437,9 +1438,9 @@ class PcaProjector(Projector):
             " ".join(["              "] +
                      ["%10s" % a.name for a in self.output_domain.attributes]),
             " ".join(["Std. deviation"] +
-                     ["%10.3f" % a for a in self.eigen_values]),
+                     ["%10.3f" % a for a in stdev]),
             " ".join(["Proportion Var"] +
-                     ["%10.3f" % a for a in self.eigen_values / s * 100]),
+                     ["%10.3f" % a for a in self.variances / s * 100]),
             " ".join(["Cumulative Var"] +
                      ["%10.3f" % a for a in cs * 100]),
             "",
@@ -1453,13 +1454,13 @@ class PcaProjector(Projector):
                      ["%10s" % "..."] +
                      ["%10s" % self.output_domain.attributes[-1].name]),
             " ".join(["Std. deviation"] +
-                     ["%10.3f" % a for a in self.eigen_values[:ncomponents]] +
+                     ["%10.3f" % a for a in stdev[:ncomponents]] +
                      ["%10s" % ""] +
-                     ["%10.3f" % self.eigen_values[-1]]),
+                     ["%10.3f" % stdev[-1]]),
             " ".join(["Proportion Var"] +
-                     ["%10.3f" % a for a in self.eigen_values[:ncomponents] / s * 100] +
+                     ["%10.3f" % a for a in self.variances[:ncomponents] / s * 100] +
                      ["%10s" % ""] +
-                     ["%10.3f" % (self.eigen_values[-1] / s * 100)]),
+                     ["%10.3f" % (self.variances[-1] / s * 100)]),
             " ".join(["Cumulative Var"] +
                      ["%10.3f" % a for a in cs[:ncomponents] * 100] +
                      ["%10s" % ""] +
@@ -1481,13 +1482,13 @@ class PcaProjector(Projector):
         import pylab as plt
 
         s = self.variance_sum
-        vc = self.eigen_values / s
-        cs = numpy.cumsum(self.eigen_values) / s
+        vc = self.variances / s
+        cs = numpy.cumsum(self.variances) / s
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        x_axis = range(len(self.eigen_values))
+        x_axis = range(len(self.variances))
         plt.grid(True)
 
         ax.set_xlabel('Principal Component Number')
@@ -1500,7 +1501,7 @@ class PcaProjector(Projector):
         ax.scatter(x_axis, cs, color="orange", label="Cumulative Variance")
         ax.legend(loc=0)
 
-        ax.axis([-0.5, len(self.eigen_values) - 0.5, 0, 1])
+        ax.axis([-0.5, len(self.variances) - 0.5, 0, 1])
 
         if filename:
             plt.savefig(filename)
@@ -1525,22 +1526,22 @@ class PcaProjector(Projector):
         if len(components) < 2:
             raise ValueError, 'Two components are needed for biplot'
 
-        if not (0 <= min(components) <= max(components) < len(self.eigen_values)):
+        if not (0 <= min(components) <= max(components) < len(self.variances)):
             raise ValueError, 'Invalid components'
 
         X = self.A[:, components[0]]
         Y = self.A[:, components[1]]
 
-        vectorsX = self.eigen_vectors[:, components[0]]
-        vectorsY = self.eigen_vectors[:, components[1]]
+        vectorsX = self.variances[:, components[0]]
+        vectorsY = self.variances[:, components[1]]
 
-        max_load_value = self.eigen_vectors.max() * 1.5
+        max_load_value = self.variances.max() * 1.5
 
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
         ax1.set_title(title + "\n")
-        ax1.set_xlabel("PC%s (%d%%)" % (components[0], self.eigen_values[components[0]] / self.variance_sum * 100))
-        ax1.set_ylabel("PC%s (%d%%)" % (components[1], self.eigen_values[components[1]] / self.variance_sum * 100))
+        ax1.set_xlabel("PC%s (%d%%)" % (components[0], self.variances[components[0]] / self.variance_sum * 100))
+        ax1.set_ylabel("PC%s (%d%%)" % (components[1], self.variances[components[1]] / self.variance_sum * 100))
         ax1.xaxis.set_label_position('bottom')
         ax1.xaxis.set_ticks_position('bottom')
         ax1.yaxis.set_label_position('left')
@@ -1667,8 +1668,8 @@ class Fda(object):
 
         return FdaProjector(input_domain=dataset.domain,
                             output_domain=out_domain,
-                            mean=Xm,
-                            stdev=stdev,
+                            center=Xm,
+                            scale=stdev,
                             standardize=True,
                             eigen_vectors=U,
                             projection=U,

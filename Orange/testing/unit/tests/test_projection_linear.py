@@ -59,7 +59,7 @@ class TestPca(unittest.TestCase):
         pca = linear.Pca(standardize=False)(self.dataset)
         self.assertIsInstance(pca, linear.PcaProjector)
 
-        absolute_error = (np.abs(pca.eigen_vectors[0]) - np.abs(self.principal_component)).sum()
+        absolute_error = (np.abs(pca.projection[0]) - np.abs(self.principal_component)).sum()
         self.assertAlmostEqual(absolute_error, 0.)
 
     def test_pca_on_wide_data(self):
@@ -68,14 +68,14 @@ class TestPca(unittest.TestCase):
         pca = linear.Pca(standardize=False)(self.dataset)
         self.assertIsInstance(pca, linear.PcaProjector)
 
-        absolute_error = (np.abs(pca.eigen_vectors[0]) - np.abs(self.principal_component)).sum()
+        absolute_error = (np.abs(pca.projection[0]) - np.abs(self.principal_component)).sum()
         self.assertAlmostEqual(absolute_error, 0., 1)
 
     def test_pca_with_standardization(self):
         self.create_normal_dataset()
 
         pca = linear.Pca(standardize=True)(self.dataset)
-        eigen_vector = pca.eigen_vectors[0]
+        eigen_vector = pca.projection[0]
         non_zero_elements = eigen_vector[eigen_vector.nonzero()]
 
         # since values in all dimensions are normally distributed, dimensions should be treated as equally important
@@ -86,7 +86,7 @@ class TestPca(unittest.TestCase):
 
         pca = linear.Pca(variance_covered=.99)(self.dataset)
         # all data points lie in one dimension, one component should cover all the variance
-        nvectors, vector_dimension = pca.eigen_vectors.shape
+        nvectors, vector_dimension = pca.projection.shape
         self.assertEqual(nvectors, 1)
 
     def test_pca_with_max_components(self):
@@ -95,12 +95,11 @@ class TestPca(unittest.TestCase):
 
         pca = linear.Pca(max_components=max_components)(self.dataset)
         # all data points lie in one dimension, one component should cover all the variance
-        nvectors, vector_dimension = pca.eigen_vectors.shape
+        nvectors, vector_dimension = pca.projection.shape
         self.assertEqual(nvectors, max_components)
 
     def test_pca_handles_unknowns(self):
         self.create_dataset_with_unknowns()
-        print self.dataset[0]
 
         pca = linear.Pca()(self.dataset)
 
