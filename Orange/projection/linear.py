@@ -936,7 +936,7 @@ class FreeViz:
             domain = data.Domain([feature.Continuous("g%d" % i) for i
                                   in xrange(len(data_matrix))], False)
             pca = pca(data.Table(domain, data_matrix.T))
-            vals, vectors = pca.eigen_values, pca.projection
+            vals, vectors = pca.variances, pca.projection
         elif method == DR_SPCA and self.graph.data_has_class:
             pca = Spca(standardize=False, max_components=ncomps,
                        use_generalized_eigenvectors=self.use_generalized_eigenvectors, ddof=0)
@@ -944,7 +944,7 @@ class FreeViz:
                                   in xrange(len(data_matrix))], feature.Continuous("c"))
             pca = pca(data.Table(domain,
                                  numpy.hstack([data_matrix.T, numpy.array(class_array, ndmin=2).T])))
-            vals, vectors = pca.eigen_values, pca.projection
+            vals, vectors = pca.variances, pca.projection
         elif method == DR_PLS and self.graph.data_has_class:
             data_matrix = data_matrix.transpose()
             class_matrix = numpy.transpose(numpy.matrix(class_array))
@@ -1308,11 +1308,12 @@ class PCA(object):
             return optimizer
 
     def __init__(self, standardize=True, max_components=0, variance_covered=1,
-                 use_generalized_eigenvectors=0):
+                 use_generalized_eigenvectors=0, ddof=1):
         self.standardize = standardize
         self.max_components = max_components
         self.variance_covered = min(1, variance_covered)
         self.use_generalized_eigenvectors = use_generalized_eigenvectors
+        self.ddof=ddof
 
     def __call__(self, dataset):
         """
