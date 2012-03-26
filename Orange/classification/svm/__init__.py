@@ -820,7 +820,7 @@ def get_linear_svm_weights(classifier, sum=True):
                 SVs = bin_classifier.support_vectors
                 w = {}
                 
-                for alpha, sv_ind in bin_classifier.coef[0]:
+                for coef, sv_ind in bin_classifier.coef[0]:
                     SV = SVs[sv_ind]
                     attributes = SVs.domain.attributes + \
                     SV.getmetas(False, Orange.feature.Descriptor).keys()
