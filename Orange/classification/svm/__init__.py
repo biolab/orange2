@@ -692,11 +692,11 @@ class SVMLearnerEasy(SVMLearner):
         if self.kernel_type == 2:
             parameters.append(("gamma", [2 ** a for a in range(-5, 5, 2)] + [0]))
         import orngWrap
-        tunedLearner = orngWrap.TuneMParameters(object=self.learner,
+        tunedLearner = orngWrap.TuneMParameters(learner=self.learner,
                                                 parameters=parameters,
                                                 folds=self.folds)
 
-        return tunedLearner(newexamples,verbose=self.verbose)
+        return tunedLearner(newexamples, verbose=self.verbose)
 
 class SVMLearnerSparseEasy(SVMLearnerEasy):
     def __init__(self, **kwds):
