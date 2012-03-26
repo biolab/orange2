@@ -9,7 +9,7 @@ def random_learner(data, *args):
     def random_classifier(*args, **kwargs):
         prob = [random.random() for _ in data.domain.class_var.values]
         sprob = sum(prob)
-        prob = [i/sprob for i in prob]
+        prob = [i / sprob for i in prob]
         distribution.Discrete(prob)
         return data.domain.class_var[0], prob
     return random_classifier
@@ -37,14 +37,14 @@ datasets = (
 
 measures = (
     (lambda x:auc(x), "AUC"),
-    (lambda x:auc(x, method=0), "AUC+M0"),
-    (lambda x:auc(x, method=1), "AUC+M1"),
-    (lambda x:auc(x, method=2), "AUC+M2"),
-    (lambda x:auc(x, method=3), "AUC+M3"),
+    (lambda x:auc(x, multiclass=0), "AUC+M0"),
+    (lambda x:auc(x, multiclass=1), "AUC+M1"),
+    (lambda x:auc(x, multiclass=2), "AUC+M2"),
+    (lambda x:auc(x, multiclass=3), "AUC+M3"),
 )
 
 tests = (
-    (lambda l, ds: testing.cross_validation([l],ds), "CV"),
+    (lambda l, ds: testing.cross_validation([l], ds), "CV"),
     (lambda l, ds: testing.proportion_test([l], ds, .7, 1), "Proportion test"),
 )
 

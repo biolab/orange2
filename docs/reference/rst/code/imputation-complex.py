@@ -72,7 +72,7 @@ for i in range(20, 25):
 print "*** TREE-BASED IMPUTATION ***"
 
 imputer = Orange.feature.imputation.ModelConstructor()
-imputer.learner_continuous = imputer.learner_discrete = Orange.classification.tree.TreeLearner(minSubset=20)
+imputer.learner_continuous = imputer.learner_discrete = Orange.classification.tree.TreeLearner(min_subset=20)
 imputer = imputer(bridges)
 print "Example w/ missing values"
 print bridges[19]
@@ -114,7 +114,7 @@ imputer.models[bridges.domain.index("T-OR-D")] = tord
 
 len_domain = Orange.data.Domain(["MATERIAL", "SPAN", "ERECTED", "LENGTH"], bridges.domain)
 len_data = Orange.data.Table(len_domain, bridges)
-len_tree = Orange.classification.tree.TreeLearner(len_data, minSubset=20)
+len_tree = Orange.classification.tree.TreeLearner(len_data, min_subset=20)
 imputer.models[bridges.domain.index("LENGTH")] = len_tree
 print len_tree
 
@@ -145,7 +145,7 @@ print
 for i in original.domain:
     print "%s: %s -> %s" % (original.domain[i].name, original[i], imputed[i.name]),
     if original.domain[i].var_type == Orange.feature.Type.Continuous:
-        print "(%s)" % imputed[i.name+"_def"]
+        print "(%s)" % imputed[i.name + "_def"]
     else:
         print
 print

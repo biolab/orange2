@@ -54,7 +54,7 @@ def get_reliability_estimation_list(res, i):
     return [result.probabilities[0].reliability_estimate[i].estimate for result in res.results], res.results[0].probabilities[0].reliability_estimate[i].signed_or_absolute, res.results[0].probabilities[0].reliability_estimate[i].method
 
 def get_prediction_error_list(res):
-    return [result.actualClass - result.classes[0] for result in res.results]
+    return [result.actual_class - result.classes[0] for result in res.results]
 
 def get_description_list(res, i):
     return [result.probabilities[0].reliability_estimate[i].text_description for result in res.results]
@@ -123,7 +123,7 @@ def get_pearson_r_by_iterations(res):
     results = [0 for _ in xrange(number_of_estimates)]
     sig = [0 for _ in xrange(number_of_estimates)]
     method_list = [0 for _ in xrange(number_of_estimates)]
-    
+
     for res in results_by_fold:
         prediction_error = get_prediction_error_list(res)
         for i in xrange(number_of_estimates):
@@ -138,11 +138,11 @@ def get_pearson_r_by_iterations(res):
             results[i] += r
             sig[i] = signed_or_absolute
             method_list[i] = method
-    
+
     # Calculate p-values
     results = [float(res) / number_of_folds for res in results]
     ps = [p_value_from_r(r, number_of_instances) for r in results]
-    
+
     return zip(results, ps, sig, method_list)
 
 def p_value_from_r(r, n):
@@ -150,8 +150,8 @@ def p_value_from_r(r, n):
     Calculate p-value from the paerson coefficient and the sample size.
     """
     df = n - 2
-    t = r * (df /((-r + 1.0 + 1e-30) * (r + 1.0 + 1e-30)) )**0.5
-    return statc.betai (df * 0.5, 0.5, df/(df + t*t))
+    t = r * (df / ((-r + 1.0 + 1e-30) * (r + 1.0 + 1e-30))) ** 0.5
+    return statc.betai (df * 0.5, 0.5, df / (df + t * t))
 
 class Estimate:
     """
@@ -187,7 +187,7 @@ class Estimate:
         as determined by ICV. (:obj:`None` when ICV was not used.)
 
     """
-    def __init__(self, estimate, signed_or_absolute, method, icv_method = -1):
+    def __init__(self, estimate, signed_or_absolute, method, icv_method= -1):
         self.estimate = estimate
         self.signed_or_absolute = signed_or_absolute
         self.method = method
@@ -201,21 +201,21 @@ class DescriptiveAnalysis:
         self.desc = desc
         self.procentage = procentage
         self.estimator = estimator
-    
+
     def __call__(self, instances, weight=None, **kwds):
-        
+
         # Calculate borders using cross validation
         res = Orange.evaluation.testing.cross_validation([self.estimator], instances)
         all_borders = []
         for i in xrange(len(res.results[0].probabilities[0].reliability_estimate)):
             estimates, signed_or_absolute, method = get_reliability_estimation_list(res, i)
-            sorted_estimates = sorted( abs(x) for x in estimates)
-            borders = [sorted_estimates[int(len(estimates)*p)-1]  for p in self.procentage]
+            sorted_estimates = sorted(abs(x) for x in estimates)
+            borders = [sorted_estimates[int(len(estimates) * p) - 1]  for p in self.procentage]
             all_borders.append(borders)
-        
+
         # Learn on whole train data
         estimator_classifier = self.estimator(instances)
-        
+
         return DescriptiveAnalysisClassifier(estimator_classifier, all_borders, self.desc)
 
 class DescriptiveAnalysisClassifier:
@@ -223,16 +223,16 @@ class DescriptiveAnalysisClassifier:
         self.estimator_classifier = estimator_classifier
         self.all_borders = all_borders
         self.desc = desc
-    
+
     def __call__(self, instance, result_type=Orange.core.GetValue):
         predicted, probabilities = self.estimator_classifier(instance, Orange.core.GetBoth)
-        
+
         for borders, estimate in zip(self.all_borders, probabilities.reliability_estimate):
             estimate.text_description = self.desc[0]
             for lower_border, text_desc in zip(borders, self.desc):
                 if estimate.estimate >= lower_border:
                     estimate.text_description = text_desc
-        
+
         # Return the appropriate type of result
         if result_type == Orange.core.GetValue:
             return predicted
@@ -268,7 +268,7 @@ class SensitivityAnalysis:
     """
     def __init__(self, e=[0.01, 0.1, 0.5, 1.0, 2.0]):
         self.e = e
-    
+
     def __call__(self, instances, learner):
         min_value = max_value = instances[0].getclass().value
         for ex in instances:
@@ -277,7 +277,7 @@ class SensitivityAnalysis:
             if ex.getclass().value < min_value:
                 min_value = ex.getclass().value
         return SensitivityAnalysisClassifier(self.e, instances, min_value, max_value, learner)
-    
+
 class SensitivityAnalysisClassifier:
     def __init__(self, e, instances, min_value, max_value, learner):
         self.e = e
@@ -285,28 +285,28 @@ class SensitivityAnalysisClassifier:
         self.max_value = max_value
         self.min_value = min_value
         self.learner = learner
-    
+
     def __call__(self, instance, predicted, probabilities):
         # Create new dataset
         r_data = Orange.data.Table(self.instances)
-        
+
         # Create new instance
         modified_instance = Orange.data.Instance(instance)
-        
+
         # Append it to the data
         r_data.append(modified_instance)
-        
+
         # Calculate SAvar & SAbias
         SAvar = SAbias = 0
-        
+
         for eps in self.e:
             # +epsilon
-            r_data[-1].setclass(predicted.value + eps*(self.max_value - self.min_value))
+            r_data[-1].setclass(predicted.value + eps * (self.max_value - self.min_value))
             c = self.learner(r_data)
             k_plus = c(instance, Orange.core.GetValue)
-            
+
             # -epsilon
-            r_data[-1].setclass(predicted.value - eps*(self.max_value - self.min_value))
+            r_data[-1].setclass(predicted.value - eps * (self.max_value - self.min_value))
             c = self.learner(r_data)
             k_minus = c(instance, Orange.core.GetValue)
             #print len(r_data)
@@ -315,15 +315,15 @@ class SensitivityAnalysisClassifier:
             #print k_minus
             # calculate part SAvar and SAbias
             SAvar += k_plus.value - k_minus.value
-            SAbias += k_plus.value + k_minus.value - 2*predicted.value
-        
+            SAbias += k_plus.value + k_minus.value - 2 * predicted.value
+
         SAvar /= len(self.e)
-        SAbias /= 2*len(self.e)
-        
+        SAbias /= 2 * len(self.e)
+
         return [Estimate(SAvar, ABSOLUTE, SAVAR_ABSOLUTE),
                 Estimate(SAbias, SIGNED, SABIAS_SIGNED),
                 Estimate(abs(SAbias), ABSOLUTE, SABIAS_ABSOLUTE)]
-    
+
 class BaggingVariance:
     """
     
@@ -344,10 +344,10 @@ class BaggingVariance:
     """
     def __init__(self, m=50):
         self.m = m
-    
+
     def __call__(self, instances, learner):
         classifiers = []
-        
+
         # Create bagged classifiers using sampling with replacement
         for _ in xrange(self.m):
             selection = select_with_repeat(len(instances))
@@ -358,19 +358,19 @@ class BaggingVariance:
 class BaggingVarianceClassifier:
     def __init__(self, classifiers):
         self.classifiers = classifiers
-    
+
     def __call__(self, instance, *args):
         BAGV = 0
-        
+
         # Calculate the bagging variance
         bagged_values = [c(instance, Orange.core.GetValue).value for c in self.classifiers if c is not None]
-        
+
         k = sum(bagged_values) / len(bagged_values)
-        
-        BAGV = sum( (bagged_value - k)**2 for bagged_value in bagged_values) / len(bagged_values)
-        
+
+        BAGV = sum((bagged_value - k) ** 2 for bagged_value in bagged_values) / len(bagged_values)
+
         return [Estimate(BAGV, ABSOLUTE, BAGV_ABSOLUTE)]
-        
+
 class LocalCrossValidation:
     """
     
@@ -396,17 +396,17 @@ class LocalCrossValidation:
     """
     def __init__(self, k=0):
         self.k = k
-    
+
     def __call__(self, instances, learner):
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.Euclidean()
-        
+
         distance_id = Orange.feature.Descriptor.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
-        
+
         if self.k == 0:
-            self.k = max(5, len(instances)/20)
-        
+            self.k = max(5, len(instances) / 20)
+
         return LocalCrossValidationClassifier(distance_id, nearest_neighbours, self.k, learner)
 
 class LocalCrossValidationClassifier:
@@ -415,29 +415,29 @@ class LocalCrossValidationClassifier:
         self.nearest_neighbours = nearest_neighbours
         self.k = k
         self.learner = learner
-    
+
     def __call__(self, instance, *args):
         LCVer = 0
         LCVdi = 0
-        
+
         # Find k nearest neighbors
-        
+
         knn = [ex for ex in self.nearest_neighbours(instance, self.k)]
-        
+
         # leave one out of prediction error
         for i in xrange(len(knn)):
             train = knn[:]
             del train[i]
-            
+
             classifier = self.learner(Orange.data.Table(train))
-            
+
             returned_value = classifier(knn[i], Orange.core.GetValue)
-            
+
             e = abs(knn[i].getclass().value - returned_value.value)
-            
+
             LCVer += e * math.exp(-knn[i][self.distance_id])
             LCVdi += math.exp(-knn[i][self.distance_id])
-        
+
         LCV = LCVer / LCVdi if LCVdi != 0 else 0
         if math.isnan(LCV):
             LCV = 0.0
@@ -463,11 +463,11 @@ class CNeighbours:
     """
     def __init__(self, k=5):
         self.k = k
-    
+
     def __call__(self, instances, learner):
         nearest_neighbours_constructor = Orange.classification.knn.FindNearestConstructor()
         nearest_neighbours_constructor.distanceConstructor = Orange.distance.Euclidean()
-        
+
         distance_id = Orange.feature.Descriptor.new_meta_id()
         nearest_neighbours = nearest_neighbours_constructor(instances, 0, distance_id)
         return CNeighboursClassifier(nearest_neighbours, self.k)
@@ -476,24 +476,24 @@ class CNeighboursClassifier:
     def __init__(self, nearest_neighbours, k):
         self.nearest_neighbours = nearest_neighbours
         self.k = k
-    
+
     def __call__(self, instance, predicted, probabilities):
         CNK = 0
-        
+
         # Find k nearest neighbors
-        
+
         knn = [ex for ex in self.nearest_neighbours(instance, self.k)]
-        
+
         # average label of neighbors
         for ex in knn:
             CNK += ex.getclass().value
-        
+
         CNK /= self.k
         CNK -= predicted.value
-        
+
         return [Estimate(CNK, SIGNED, CNK_SIGNED),
                 Estimate(abs(CNK), ABSOLUTE, CNK_ABSOLUTE)]
-    
+
 class Mahalanobis:
     """
     
@@ -510,11 +510,11 @@ class Mahalanobis:
     """
     def __init__(self, k=3):
         self.k = k
-    
+
     def __call__(self, instances, *args):
         nnm = Orange.classification.knn.FindNearestConstructor()
         nnm.distanceConstructor = Orange.distance.Mahalanobis()
-        
+
         mid = Orange.feature.Descriptor.new_meta_id()
         nnm = nnm(instances, 0, mid)
         return MahalanobisClassifier(self.k, nnm, mid)
@@ -524,12 +524,12 @@ class MahalanobisClassifier:
         self.k = k
         self.nnm = nnm
         self.mid = mid
-    
+
     def __call__(self, instance, *args):
         mahalanobis_distance = 0
-        
+
         mahalanobis_distance = sum(ex[self.mid].value for ex in self.nnm(instance, self.k))
-        
+
         return [ Estimate(mahalanobis_distance, ABSOLUTE, MAHAL_ABSOLUTE) ]
 
 class MahalanobisToCenter:
@@ -544,24 +544,24 @@ class MahalanobisToCenter:
     """
     def __init__(self):
         pass
-    
+
     def __call__(self, instances, *args):
         dc = Orange.core.DomainContinuizer()
         dc.classTreatment = Orange.core.DomainContinuizer.Ignore
         dc.continuousTreatment = Orange.core.DomainContinuizer.NormalizeBySpan
         dc.multinomialTreatment = Orange.core.DomainContinuizer.NValues
-        
+
         new_domain = dc(instances)
         new_instances = instances.translate(new_domain)
-        
+
         X, _, _ = new_instances.to_numpy()
         instance_avg = numpy.average(X, 0)
-        
+
         distance_constructor = Orange.distance.Mahalanobis()
         distance = distance_constructor(new_instances)
-        
+
         average_instance = Orange.data.Instance(new_instances.domain, list(instance_avg) + ["?"])
-        
+
         return MahalanobisToCenterClassifier(distance, average_instance, new_domain)
 
 class MahalanobisToCenterClassifier:
@@ -569,13 +569,13 @@ class MahalanobisToCenterClassifier:
         self.distance = distance
         self.average_instance = average_instance
         self.new_domain = new_domain
-    
+
     def __call__(self, instance, *args):
-        
+
         inst = Orange.data.Instance(self.new_domain, instance)
-        
+
         mahalanobis_to_center = self.distance(inst, self.average_instance)
-        
+
         return [ Estimate(mahalanobis_to_center, ABSOLUTE, MAHAL_TO_CENTER_ABSOLUTE) ]
 
 
@@ -597,7 +597,7 @@ class BaggingVarianceCNeighbours:
     def __init__(self, bagv=BaggingVariance(), cnk=CNeighbours()):
         self.bagv = bagv
         self.cnk = cnk
-    
+
     def __call__(self, instances, learner):
         bagv_classifier = self.bagv(instances, learner)
         cnk_classifier = self.cnk(instances, learner)
@@ -607,12 +607,12 @@ class BaggingVarianceCNeighboursClassifier:
     def __init__(self, bagv_classifier, cnk_classifier):
         self.bagv_classifier = bagv_classifier
         self.cnk_classifier = cnk_classifier
-    
+
     def __call__(self, instance, predicted, probabilities):
         bagv_estimates = self.bagv_classifier(instance, predicted, probabilities)
         cnk_estimates = self.cnk_classifier(instance, predicted, probabilities)
-        
-        bvck_value = (bagv_estimates[0].estimate + cnk_estimates[1].estimate)/2
+
+        bvck_value = (bagv_estimates[0].estimate + cnk_estimates[1].estimate) / 2
         bvck_estimates = [ Estimate(bvck_value, ABSOLUTE, BVCK_ABSOLUTE) ]
         bvck_estimates.extend(bagv_estimates)
         bvck_estimates.extend(cnk_estimates)
@@ -621,31 +621,31 @@ class BaggingVarianceCNeighboursClassifier:
 class ErrorPredicting:
     def __init__(self):
         pass
-    
+
     def __call__(self, instances, learner):
         res = Orange.evaluation.testing.cross_validation([learner], instances)
         prediction_errors = get_prediction_error_list(res)
-        
+
         new_domain = Orange.data.Domain(instances.domain.attributes, Orange.core.FloatVariable("pe"))
         new_dataset = Orange.data.Table(new_domain, instances)
-        
+
         for instance, prediction_error in izip(new_dataset, prediction_errors):
             instance.set_class(prediction_error)
-        
+
         rf = Orange.ensemble.forest.RandomForestLearner()
         rf_classifier = rf(new_dataset)
-        
+
         return ErrorPredictingClassification(rf_classifier, new_domain)
-        
+
 class ErrorPredictingClassification:
     def __init__(self, rf_classifier, new_domain):
         self.rf_classifier = rf_classifier
         self.new_domain = new_domain
-    
+
     def __call__(self, instance, predicted, probabilities):
         new_instance = Orange.data.Instance(self.new_domain, instance)
         value = self.rf_classifier(new_instance, Orange.core.GetValue)
-        
+
         return [Estimate(value.value, SIGNED, SABIAS_SIGNED)]
 
 class Learner:
@@ -681,8 +681,8 @@ class Learner:
         self.estimators = estimators
         self.box_learner = box_learner
         self.blending = False
-        
-    
+
+
     def __call__(self, instances, weight=None, **kwds):
         """Learn from the given table of data instances.
         
@@ -692,15 +692,15 @@ class Learner:
         :type weight: int
         :rtype: :class:`Orange.evaluation.reliability.Classifier`
         """
-        
+
         blending_classifier = None
         new_domain = None
-        
+
         if instances.domain.class_var.var_type != Orange.feature.Continuous.Continuous:
             raise Exception("This method only works on data with continuous class.")
-        
+
         return Classifier(instances, self.box_learner, self.estimators, self.blending, new_domain, blending_classifier)
-    
+
     def internal_cross_validation(self, instances, folds=10):
         """ Perform the internal cross validation for getting the best
         reliability estimate. It uses the reliability estimators defined in
@@ -719,7 +719,7 @@ class Learner:
         results = get_pearson_r(res)
         sorted_results = sorted(results)
         return sorted_results[-1][3]
-    
+
     def internal_cross_validation_testing(self, instances, folds=10):
         """ Perform internal cross validation (as in Automatic selection of
         reliability estimates for individual regression predictions,
@@ -734,11 +734,11 @@ class Learner:
 
         """
         cv_indices = Orange.core.MakeRandomIndicesCV(instances, folds)
-        
+
         list_of_rs = []
-        
+
         sum_of_rs = defaultdict(float)
-        
+
         for fold in xrange(folds):
             data = instances.select(cv_indices, fold)
             if len(data) < 10:
@@ -750,7 +750,7 @@ class Learner:
                 sum_of_rs[method] += r
         sorted_sum_of_rs = sorted(sum_of_rs.items(), key=lambda estimate: estimate[1], reverse=True)
         return sorted_sum_of_rs[0][0]
-    
+
     labels = ["SAvar", "SAbias", "BAGV", "CNK", "LCV", "BVCK", "Mahalanobis", "ICV"]
 
 class Classifier:
@@ -773,13 +773,13 @@ class Classifier:
         self.blending = blending
         self.blending_domain = blending_domain
         self.rf_classifier = rf_classifier
-        
+
         # Train the learner with original data
         self.classifier = box_learner(instances)
-        
+
         # Train all the estimators and create their classifiers
         self.estimation_classifiers = [estimator(instances, box_learner) for estimator in estimators]
-    
+
     def __call__(self, instance, result_type=Orange.core.GetValue):
         """
         Classify and estimate reliability of estimation for a new instance.
@@ -801,18 +801,18 @@ class Classifier:
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
         predicted, probabilities = self.classifier(instance, Orange.core.GetBoth)
-        
+
         # Create a place holder for estimates
         if probabilities is None:
             probabilities = Orange.statistics.distribution.Continuous()
         #with warnings.catch_warnings():
         #    warnings.simplefilter("ignore")
         probabilities.setattr('reliability_estimate', [])
-        
+
         # Calculate all the estimates and add them to the results
         for estimate in self.estimation_classifiers:
             probabilities.reliability_estimate.extend(estimate(instance, predicted, probabilities))
-        
+
         # Return the appropriate type of result
         if result_type == Orange.core.GetValue:
             return predicted
