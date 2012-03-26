@@ -805,46 +805,51 @@ def get_linear_svm_weights(classifier, sum=True):
         return float(val) if not val.isSpecial() else 0.0
 
     SVs = classifier.support_vectors
-    weights = []
-
     class_var = SVs.domain.class_var
-    if classifier.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
-        raise TypeError("SVM classification model expected.")
     
-    classes = classifier.class_var.values
-    
-    for i in range(len(classes) - 1):
-        for j in range(i + 1, len(classes)):
-            # Get the coef and rho values from the binary sub-classifier
-            # Easier then using the full coef matrix (due to libsvm internal
-            # class  reordering)
-            bin_classifier = classifier.get_binary_classifier(i, j)
-            n_sv0 = bin_classifier.n_SV[0]
-            SVs = bin_classifier.support_vectors
-            w = {}
-            
-            for alpha, sv_ind in bin_classifier.coef[0]:
-                SV = SVs[sv_ind]
-                attributes = SVs.domain.attributes + \
-                SV.getmetas(False, Orange.feature.Descriptor).keys()
-                for attr in attributes:
-                    if attr.varType == Orange.feature.Type.Continuous:
-                        update_weights(w, attr, to_float(SV[attr]), alpha)
+    if classifier.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
+        weights = []    
+        classes = classifier.class_var.values
+        for i in range(len(classes) - 1):
+            for j in range(i + 1, len(classes)):
+                # Get the coef and rho values from the binary sub-classifier
+                # Easier then using the full coef matrix (due to libsvm internal
+                # class  reordering)
+                bin_classifier = classifier.get_binary_classifier(i, j)
+                n_sv0 = bin_classifier.n_SV[0]
+                SVs = bin_classifier.support_vectors
+                w = {}
                 
-            weights.append(w)
-            
-    if sum:
-        scores = defaultdict(float)
-
-        for w in weights:
-            for attr, w_attr in w.items():
-                scores[attr] += w_attr ** 2
-        for key in scores:
-            scores[key] = math.sqrt(scores[key])
-        return dict(scores)
+                for alpha, sv_ind in bin_classifier.coef[0]:
+                    SV = SVs[sv_ind]
+                    attributes = SVs.domain.attributes + \
+                    SV.getmetas(False, Orange.feature.Descriptor).keys()
+                    for attr in attributes:
+                        if attr.varType == Orange.feature.Type.Continuous:
+                            update_weights(w, attr, to_float(SV[attr]), coef)
+                    
+                weights.append(w)
+        if sum:
+            scores = defaultdict(float)
+            for w in weights:
+                for attr, w_attr in w.items():
+                    scores[attr] += w_attr ** 2
+            for key in scores:
+                scores[key] = math.sqrt(scores[key])
+            weights = dict(scores)
     else:
-        return weights
-
+#        raise TypeError("SVM classification model expected.")
+        weights = {}
+        for coef, sv_ind in classifier.coef[0]:
+            SV = SVs[sv_ind]
+            attributes = SVs.domain.attributes + \
+            SV.getmetas(False, Orange.feature.Descriptor).keys()
+            for attr in attributes:
+                if attr.varType == Orange.feature.Type.Continuous:
+                    update_weights(weights, attr, to_float(SV[attr]), coef)
+           
+    return weights 
+    
 getLinearSVMWeights = get_linear_svm_weights
 
 def example_weighted_sum(example, weights):
