@@ -1,9 +1,14 @@
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+    
 import Orange
 from Orange.classification.svm import SVMLearner, SVMLearnerSparse, \
                             ScoreSVMWeights, LinearLearner, RFE, \
                             get_linear_svm_weights, \
                             example_weighted_sum
-                            
+from Orange.classification import svm                            
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
 from Orange.misc import testing
 from Orange.misc.testing import datasets_driven, test_on_datasets, test_on_data
@@ -14,7 +19,7 @@ import copy
 import pickle
 import numpy as np
 
-def multiclass_from1sv1(dec_values, class_var):
+def multiclass_from1vs1(dec_values, class_var):
     n_class = len(class_var.values)
     votes = [0] * n_class
     p = 0
@@ -59,7 +64,7 @@ def svm_test_binary_classifier(self, data):
             
             prediction_1 = classifier_no_prob(inst)
             d_val = classifier_no_prob.get_decision_values(inst)
-            prediciton_2 = multiclass_from1sv1(d_val, classifier_no_prob.class_var)
+            prediciton_2 = multiclass_from1vs1(d_val, classifier_no_prob.class_var)
             self.assertEqual(prediction_1, prediciton_2)
             
 
@@ -74,8 +79,9 @@ class LinearSVMTestCase(testing.LearnerTestCase):
         svm_test_binary_classifier(self, dataset)
         
     
-    @test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS + ["zoo"])
-    def test_linear_weights_on(self, dataset):
+    # Don't test on "monks" the coefs are really large and
+    @test_on_datasets(datasets=["iris", "brown-selected", "lenses", "zoo"])
+    def test_linear_classifier_weights_on(self, dataset):
         # Test get_linear_svm_weights
         classifier = self.LEARNER(dataset)
         weights = get_linear_svm_weights(classifier, sum=True)
@@ -90,18 +96,30 @@ class LinearSVMTestCase(testing.LearnerTestCase):
                     yield i, j
                     
         l_map = classifier._get_libsvm_labels_map()
-        # Would need to map the rho values
-        if l_map == sorted(l_map):
-            for inst in dataset[:20]:
-                dec_values = classifier.get_decision_values(inst)
-                
-                for dec_v, weight, rho, pair in zip(dec_values, weights,
-                                        classifier.rho, class_pairs(n_class)):
-                    t_inst = Orange.data.Instance(classifier.domain, inst)                    
-                    dec_v1 = example_weighted_sum(t_inst, weight) - rho
-                    self.assertAlmostEqual(dec_v, dec_v1, 4)
+    
+        for inst in dataset[:20]:
+            dec_values = classifier.get_decision_values(inst)
+            
+            for dec_v, weight, rho, pair in zip(dec_values, weights,
+                                    classifier.rho, class_pairs(n_class)):
+                t_inst = Orange.data.Instance(classifier.domain, inst)                    
+                dec_v1 = example_weighted_sum(t_inst, weight) - rho
+                self.assertAlmostEqual(dec_v, dec_v1, 4)
+                    
+    @test_on_datasets(datasets=testing.REGRESSION_DATASETS)
+    def test_linear_regression_weights_on(self, dataset):
+        predictor = self.LEARNER(dataset)
+        weights = get_linear_svm_weights(predictor)
         
+        for inst in dataset[:20]:
+            t_inst = Orange.data.Instance(predictor.domain, inst)
+            prediction = predictor(inst)
+            w_sum = example_weighted_sum(t_inst, weights)
+            self.assertAlmostEqual(float(prediction), 
+                                   w_sum - predictor.rho[0],
+                                   places=4)
         
+
 @datasets_driven(datasets=datasets)
 class PolySVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-poly", kernel_type=SVMLearner.Polynomial)
@@ -198,9 +216,6 @@ class TestRFE(testing.DataTestCase):
         rfe = RFE()
         copy = cPickle.loads(cPickle.dumps(rfe))
 
+
 if __name__ == "__main__":
-    try:
-        import unittest2 as unittest
-    except:
-        import unittest
     unittest.main()
