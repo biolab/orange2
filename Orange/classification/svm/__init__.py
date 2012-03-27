@@ -84,8 +84,12 @@ class SVMLearner(_SVMLearner):
         >>> data = Orange.data.Table("vehicle.tab")
         >>> learner = svm.SVMLearner()
         >>> results = testing.cross_validation([learner], data, folds=5)
-        >>> print scoring.CA(results)[0]
-        0.789613644274
+        >>> print "CA:  %.4f" % scoring.CA(results)[0]
+        CA:  0.7908
+        
+        >>> print "AUC: %.4f" % scoring.AUC(results)[0]
+        AUC: 0.9565
+        
     
     """
     __new__ = _orange__new__(_SVMLearner)
@@ -869,25 +873,26 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
     
         >>> score = Orange.classification.svm.ScoreSVMWeights()
         >>> for feature in table.domain.features:
-        ...     print "%15s: %.3f" % (feature.name, score(feature, table))
-            compactness: 0.019
-            circularity: 0.026
-        distance circularity: 0.007
-           radius ratio: 0.010
-        pr.axis aspect ratio: 0.076
-        max.length aspect ratio: 0.010
-          scatter ratio: 0.046
-          elongatedness: 0.094
-        pr.axis rectangularity: 0.006
-        max.length rectangularity: 0.031
-        scaled variance along major axis: 0.001
-        scaled variance along minor axis: 0.000
-        scaled radius of gyration: 0.002
-        skewness about major axis: 0.004
-        skewness about minor axis: 0.003
-        kurtosis about minor axis: 0.001
-        kurtosis about major axis: 0.060
-          hollows ratio: 0.028
+        ...     print "%-35s: %.3f" % (feature.name, score(feature, table))
+        compactness                        : 0.019
+        circularity                        : 0.025
+        distance circularity               : 0.007
+        radius ratio                       : 0.010
+        pr.axis aspect ratio               : 0.076
+        max.length aspect ratio            : 0.010
+        scatter ratio                      : 0.046
+        elongatedness                      : 0.095
+        pr.axis rectangularity             : 0.006
+        max.length rectangularity          : 0.030
+        scaled variance along major axis   : 0.001
+        scaled variance along minor axis   : 0.001
+        scaled radius of gyration          : 0.002
+        skewness about major axis          : 0.004
+        skewness about minor axis          : 0.003
+        kurtosis about minor axis          : 0.001
+        kurtosis about major axis          : 0.060
+        hollows ratio                      : 0.029
+        
               
     """
 
@@ -1041,3 +1046,12 @@ def table_to_svm_format(data, file):
         file.write("\n")
 
 tableToSVMFormat = table_to_svm_format
+
+
+def _doctest_args():
+    """For unittest framework to test the docstrings.
+    """
+    import Orange
+    table = Orange.data.Table("vehicle.tab")
+    extraglobs = locals()
+    return {"extraglobs": extraglobs}

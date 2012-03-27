@@ -50,7 +50,7 @@ def svm_test_binary_classifier(self, data):
         indices = Orange.data.sample.SubsetIndices2(p0=0.2)
         sample = data.select(indices(data), 0)
         
-        learner = copy.copy(self.LEARNER)
+        learner = copy.copy(self.learner)
         learner.probability = False 
         classifier_no_prob = learner(data)
         
@@ -67,7 +67,6 @@ def svm_test_binary_classifier(self, data):
             prediciton_2 = multiclass_from1vs1(d_val, classifier_no_prob.class_var)
             self.assertEqual(prediction_1, prediciton_2)
             
-
 datasets = testing.CLASSIFICATION_DATASETS + testing.REGRESSION_DATASETS
 @datasets_driven(datasets=datasets)
 class LinearSVMTestCase(testing.LearnerTestCase):
@@ -138,8 +137,7 @@ class RBFSVMTestCase(testing.LearnerTestCase):
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         svm_test_binary_classifier(self, dataset)
-        
-        
+
 @datasets_driven(datasets=datasets)
 class SigmoidSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner(name="svm-sig", kernel_type=SVMLearner.Sigmoid)
@@ -148,7 +146,6 @@ class SigmoidSVMTestCase(testing.LearnerTestCase):
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         svm_test_binary_classifier(self, dataset)
-        
 
 
 def to_sparse(data):
@@ -169,7 +166,7 @@ class SparseSVMTestCase(testing.LearnerTestCase):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         svm_test_binary_classifier(self, dataset)
 
- 
+
 @datasets_driven(datasets=datasets)
 class CustomWrapperSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearner
@@ -187,7 +184,6 @@ class CustomWrapperSVMTestCase(testing.LearnerTestCase):
 
         testing.LearnerTestCase.test_learner_on(self, data)
         svm_test_binary_classifier(self, data)
-
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestLinLearner(testing.LearnerTestCase):
@@ -216,6 +212,10 @@ class TestRFE(testing.DataTestCase):
         rfe = RFE()
         copy = cPickle.loads(cPickle.dumps(rfe))
 
+def load_tests(loader, tests, ignore):
+    import doctest
+    tests.addTests(doctest.DocTestSuite(svm, **svm._doctest_args()))
+    return tests
 
 if __name__ == "__main__":
     unittest.main()
