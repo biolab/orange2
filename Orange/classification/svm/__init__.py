@@ -73,6 +73,9 @@ class SVMLearner(_SVMLearner):
     :type probability: bool
     :param shrinking: use shrinking heuristics 
     :type shrinking: bool
+    :param normalization: normalize the input data prior to learning
+        (default ``True``)
+    :type normalization: bool
     :param weight: a list of class weights
     :type weight: list
 
@@ -86,7 +89,6 @@ class SVMLearner(_SVMLearner):
         >>> results = testing.cross_validation([learner], data, folds=5)
         >>> print "CA:  %.4f" % scoring.CA(results)[0]
         CA:  0.7908
-        
         >>> print "AUC: %.4f" % scoring.AUC(results)[0]
         AUC: 0.9565
         
@@ -664,11 +666,22 @@ class SVMLearnerEasy(SVMLearner):
     
     """
 
-    def __init__(self, **kwds):
-        self.folds = 4
-        self.verbose = 0
-        SVMLearner.__init__(self, **kwds)
-        self.learner = SVMLearner(**kwds)
+    def __init__(self, folds=4, verbose=0, **kwargs):
+        """
+        :param folds: the number of folds to use in cross validation
+        :type folds:  int
+        
+        :param verbose: verbosity of the tuning procedure.
+        :type verbose: int
+        
+        ``kwargs`` is passed to :class:`SVMLearner`
+        
+        """
+        SVMLearner.__init__(self, **kwargs)
+        self.folds = folds
+        self.verbose = verbose
+        
+        self.learner = SVMLearner(**kwargs)
 
     def learn_classifier(self, data):
         transformer = preprocess.DomainContinuizer()
@@ -703,9 +716,10 @@ class SVMLearnerEasy(SVMLearner):
         return tunedLearner(newexamples, verbose=self.verbose)
 
 class SVMLearnerSparseEasy(SVMLearnerEasy):
-    def __init__(self, **kwds):
-        SVMLearnerEasy.__init__(self, **kwds)
-        self.learner = SVMLearnerSparse(**kwds)
+    def __init__(self, folds=4, verbose=0, **kwargs):
+        SVMLearnerEasy.__init__(self, folds=folds, verbose=verbose,
+                                **kwargs)
+        self.learner = SVMLearnerSparse(**kwargs)
 
 def default_preprocessor():
     # Construct and return a default preprocessor for use by
