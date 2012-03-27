@@ -7,7 +7,7 @@ try:
     import unittest2 as unittest
 except:
     import unittest
-from Orange.utils import testing
+from Orange.testing import testing
 import Orange
 import cPickle
 

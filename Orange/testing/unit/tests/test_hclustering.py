@@ -6,7 +6,7 @@ from Orange.clustering.hierarchical import clustering, \
 from Orange.clustering import hierarchical as hier
 from Orange.distance import *
 
-import Orange.utils.testing as testing
+import Orange.testing.testing as testing
 import Orange
 try:
     import unittest2 as unittest

@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 import Orange
-from Orange.utils import testing
+from Orange.testing import testing
 
 class TestVariableMake(unittest.TestCase):
     def test_make(self):

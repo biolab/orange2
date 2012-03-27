@@ -1,5 +1,5 @@
-from Orange.utils import testing
-from Orange.utils.testing import datasets_driven, test_on_data
+from Orange.testing import testing
+from Orange.testing.testing import datasets_driven, test_on_data
 from Orange.classification import majority
 from Orange.statistics import distribution
 import Orange

@@ -1,4 +1,4 @@
-from Orange.utils import testing
+from Orange.testing import testing
 
 # TODO: test different prob estimators
 @testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)

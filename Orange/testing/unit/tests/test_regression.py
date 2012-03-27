@@ -7,7 +7,7 @@ except:
 import subprocess
 
 from Orange.utils import environ
-from Orange.utils import testing
+from Orange.testing import testing
 
 
 class TestRegression(unittest.TestCase):

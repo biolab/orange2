@@ -1,1 +1,1 @@
-from Orange.utils.testing import *
+from Orange.testing.testing import *

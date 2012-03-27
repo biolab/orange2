@@ -2,8 +2,8 @@ try:
     import unittest2 as unittest
 except:
     import unittest
-from Orange.utils import testing
-from Orange.utils.testing import datasets_driven, test_on_data
+from Orange.testing import testing
+from Orange.testing.testing import datasets_driven, test_on_data
 
 from Orange.distance import *
 

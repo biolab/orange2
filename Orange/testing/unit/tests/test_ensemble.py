@@ -3,8 +3,8 @@ try:
 except:
     import unittest
 
-from Orange.utils import testing
-from Orange.utils.testing import datasets_driven, test_on_datasets
+from Orange.testing import testing
+from Orange.testing.testing import datasets_driven, test_on_datasets
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestBoosting(testing.LearnerTestCase):
