@@ -1595,7 +1595,7 @@ class C45Classifier(Orange.classification.Classifier):
         return self.dump()
 
 
-    def dump(self):
+    def to_string(self):
         """
         Print the tree in the same form as Ross Quinlan's 
         C4.5 program.
@@ -1642,7 +1642,6 @@ class C45Classifier(Orange.classification.Classifier):
         """
         return  _c45_printTree0(self.tree, self.class_var, 0)
 
-    to_string = dump
 
 def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
@@ -2657,8 +2656,6 @@ class TreeClassifier(Orange.classification.Classifier):
         return _TreeDumper(leaf_str, node_str, user_formats +
             _TreeDumper.defaultStringFormats, min_instances,
             max_depth, simple_first, self).dumpTree()
-
-    dump = to_string
 
     @Orange.utils.deprecated_keywords({"fileName": "file_name", \
         "leafStr": "leaf_str", "nodeStr": "node_str", \

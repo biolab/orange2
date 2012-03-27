@@ -38,7 +38,7 @@ def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeS
         leafShape=leafShape, nodeShape=nodeShape, fle=fle).dotTree()
 
 dumpTree = dump
-""" DEPRECATED: Replaced by :obj:`TreeClassifier.dump`. """
+""" DEPRECATED: Replaced by :obj:`TreeClassifier.to_string`. """
 
 def printTree(*a, **aa):
     """
@@ -48,7 +48,7 @@ def printTree(*a, **aa):
     print dumpTree(*a, **aa)
 
 printTxt = printTree
-""" DEPRECATED. Replaced by :obj:`TreeClassifier.dump` """
+""" DEPRECATED. Replaced by :obj:`TreeClassifier.to_string` """
 
 printDot = dot
 """ DEPRECATED. Replaced by :obj:`TreeClassifier.dot` """
