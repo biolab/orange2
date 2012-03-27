@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 import Orange
-from Orange.misc import testing
+from Orange.utils import testing
 import os, sys
 
 datasets = ["iris", "housing", ]

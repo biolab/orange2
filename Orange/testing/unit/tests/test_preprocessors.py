@@ -37,7 +37,7 @@ from Orange.data.preprocess import (AddCensorWeight as Preprocessor_addCensorWei
 
 import orange
 
-import Orange.misc.testing as testing
+import Orange.utils.testing as testing
 
 @testing.datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestAddClassNoise(testing.PreprocessorTestCase):

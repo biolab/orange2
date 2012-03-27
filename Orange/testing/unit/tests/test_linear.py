@@ -1,6 +1,6 @@
 import Orange
-from Orange.misc import testing
-from Orange.misc.testing import datasets_driven
+from Orange.utils import testing
+from Orange.utils.testing import datasets_driven
 from Orange.classification.svm import LinearLearner
 try:
     import unittest2 as unittest

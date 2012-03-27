@@ -1,4 +1,4 @@
-from Orange.misc import testing
+from Orange.utils import testing
 try:
     import unittest2 as unittest
 except:

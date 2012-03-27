@@ -1,5 +1,5 @@
-from Orange.misc import testing
-from Orange.misc.testing import datasets_driven, test_on_data
+from Orange.utils import testing
+from Orange.utils.testing import datasets_driven, test_on_data
 try:
     import unittest2 as unittest
 except:

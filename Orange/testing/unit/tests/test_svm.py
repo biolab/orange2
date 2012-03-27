@@ -10,8 +10,8 @@ from Orange.classification.svm import SVMLearner, SVMLearnerSparse, \
                             example_weighted_sum
 from Orange.classification import svm                            
 from Orange.classification.svm.kernels import BagOfWords, RBFKernelWrapper
-from Orange.misc import testing
-from Orange.misc.testing import datasets_driven, test_on_datasets, test_on_data
+from Orange.utils import testing
+from Orange.utils.testing import datasets_driven, test_on_datasets, test_on_data
 import orange
 
 import copy
