@@ -889,7 +889,7 @@ int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool wa
       char *name = PyString_AsString(pyname);
       char *transname = PyString_AsString(translation);
       sprintf(sbuf, "'%s' is an (obsolete) alias for '%s'", name, transname);
-      if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
+      if (PyErr_Warn(PyExc_DeprecationWarning, sbuf))
         return -1;
         
       res = Orange_setattr1(self, translation, args);
