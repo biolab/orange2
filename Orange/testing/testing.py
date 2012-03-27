@@ -10,7 +10,7 @@ class for automating data driven tests.
           
 Example of use ::
 
-    from Orange.utils import testing
+    from Orange.testing import testing
     import unittest
     
     data = [("one", 1),
@@ -568,7 +568,7 @@ def enable_pdb():
     
     For example you can examine exceptions in tests from ipython -pdb ::
     
-        In [1]: import Orange.utils.testing as testing
+        In [1]: import Orange.testing.testing as testing
         In [2]: testing.enable_pdb()
         In [3]: run tests/test_preprocessors.py
         ---...
