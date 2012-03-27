@@ -134,7 +134,7 @@ class BoostedClassifier(orange.Classifier):
         votes = Orange.statistics.distribution.Discrete(self.class_var)
         for c, e in self.classifiers:
             votes[int(c(instance))] += e
-        index = Orange.misc.selection.select_best_index(votes)
+        index = Orange.utils.selection.select_best_index(votes)
         # TODO
         value = Orange.data.Value(self.class_var, index)
         if result_type == orange.GetValue:
