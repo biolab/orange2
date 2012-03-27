@@ -7,7 +7,8 @@ from Orange.core import AttributeWarning
 
 #ignore warnings
 import warnings as t__warnings
-t__warnings.filterwarnings("ignore", "", AttributeWarning)
+# use obj.setattr("attribute", value)!
+#t__warnings.filterwarnings("ignore", "", AttributeWarning)
 
 #from numpy import seterr
 #seterr(all='raise')

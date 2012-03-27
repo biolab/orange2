@@ -2,4 +2,4 @@
 Testing
 #######
 
-.. automodule:: Orange.misc.testing
+.. automodule:: Orange.utils.testing

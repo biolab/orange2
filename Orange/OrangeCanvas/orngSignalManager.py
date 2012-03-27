@@ -8,7 +8,7 @@ import logging
 import logging.handlers
 
 import orange
-from Orange.misc import debugging
+from Orange.utils import debugging
 
 Single = 2
 Multiple = 4
