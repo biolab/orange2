@@ -160,7 +160,11 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, wrapped) in 
 
   classes[listname] = ClassDefinition(listname, "TOrange")
 
-coutf.write('#include "lib_vectors.px"\n')
+coutf.write("""// I hate to do this for *all* IntLists, but see no other way around
+RECOGNIZED_ATTRIBUTES(IntList, "objects");
+
+#include "lib_vectors.px"
+""")
 
 outf.close()
 coutf.close()

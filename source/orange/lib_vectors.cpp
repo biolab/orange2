@@ -313,4 +313,7 @@ PyObject *FloatFloatList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARAR
 PyObject *FloatFloatList__reduce__(TPyOrange *self, PyObject *) { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_reduce(self); }
 
 
+// I hate to do this for *all* IntLists, but see no other way around
+RECOGNIZED_ATTRIBUTES(IntList, "objects");
+
 #include "lib_vectors.px"
