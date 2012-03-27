@@ -1592,7 +1592,7 @@ class C45Classifier(Orange.classification.Classifier):
         self.__dict__[name] = value
 
     def __str__(self):
-        return self.dump()
+        return self.to_string()
 
 
     def to_string(self):

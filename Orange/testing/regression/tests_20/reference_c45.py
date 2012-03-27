@@ -18,8 +18,8 @@ tree = orange.C45Learner(data, m=100)
 for i in data[:5]:
     print tree(i), i.getclass()
 
-print "\n\nC4.5 with minObjs=100"
-tree = orange.C45Learner(data, minObjs=100)
+print "\n\nC4.5 with min_objs=100"
+tree = orange.C45Learner(data, min_objs=100)
 for i in data[:5]:
     print tree(i), i.getclass()
 
