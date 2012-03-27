@@ -1,7 +1,7 @@
 from __future__ import division
 from Orange import associate
-from Orange.misc import testing
-from Orange.misc.testing import test_on_data, datasets_driven
+from Orange.testing import testing
+from Orange.testing.testing import test_on_data, datasets_driven
 try:
     import unittest2 as unittest
 except:

@@ -180,7 +180,7 @@ class CanonicFuncCounter:
     return self.state
 
 
-## Orange.misc.selection
+## Orange.utils.selection
 
 import random
 

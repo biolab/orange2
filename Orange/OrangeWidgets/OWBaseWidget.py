@@ -23,7 +23,8 @@ from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy
 import orange
 from Orange import misc
-from Orange.misc import debugging as orngDebugging
+import Orange.utils
+from Orange.utils import debugging as orngDebugging
 from string import *
 from orngSignalManager import *
 import OWGUI

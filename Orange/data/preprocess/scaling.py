@@ -58,7 +58,7 @@ import Orange.core
 import Orange.data
 from Orange.data import preprocess
 
-from Orange.misc import caching
+from Orange.utils import caching
 
 import warnings
 

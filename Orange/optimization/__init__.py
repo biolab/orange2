@@ -276,7 +276,7 @@ class Tune1Parameter(TuneParameters):
             to_set = [self.findobj(self.parameter)]
 
         cvind = Orange.core.MakeRandomIndicesCV(data, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed=data.checksum(),
+        findBest = Orange.utils.selection.BestOnTheFly(seed=data.checksum(),
                                          call_compare_on_1st=True)
         tableAndWeight = weight and (data, weight) or data
         for par in self.values:
@@ -348,7 +348,7 @@ class TuneMParameters(TuneParameters):
 
 
         cvind = Orange.core.MakeRandomIndicesCV(data, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed=data.checksum(),
+        findBest = Orange.utils.selection.BestOnTheFly(seed=data.checksum(),
                                          call_compare_on_1st=True)
         tableAndWeight = weight and (data, weight) or data
         numOfTests = sum([len(x[1]) for x in self.parameters])

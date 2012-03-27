@@ -1,6 +1,6 @@
 import Orange
-from Orange.misc import testing
-from Orange.misc.testing import datasets_driven, test_on_data, test_on_datasets
+from Orange.testing import testing
+from Orange.testing.testing import datasets_driven, test_on_data, test_on_datasets
 from Orange.regression import earth
 
 try:

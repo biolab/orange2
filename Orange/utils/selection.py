@@ -15,7 +15,7 @@ however, when there are multiple candidates that are equally good, and the
 naive approaches would select the first or the last one, depending upon the
 formulation of the if-statement.
 
-:class:`Orange.misc.selection` provides a class that makes a random choice
+:class:`Orange.utils.selection` provides a class that makes a random choice
 in such cases. Each new candidate is compared with the currently optimal
 one; it replaces the optimal if it is better, while if they are equal,
 one is chosen by random. The number of competing optimal candidates is stored,

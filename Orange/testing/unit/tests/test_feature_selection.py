@@ -1,4 +1,4 @@
-import Orange.misc.testing as testing
+import Orange.testing.testing as testing
 from Orange.feature import selection, scoring
 import Orange
 

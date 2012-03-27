@@ -2,7 +2,7 @@ try:
     import unittest2 as unittest
 except:
     import unittest
-from Orange.misc import testing
+from Orange.testing import testing
 from Orange.clustering import kmeans
 from Orange.clustering.kmeans import Clustering
 from Orange.distance import *
