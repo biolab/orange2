@@ -1519,7 +1519,7 @@ class C45Learner(Orange.classification.Learner):
     def __new__(cls, instances=None, weightID=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **cls._rename_dict(argkw))
         if instances:
-            self.__init__(**cls._rename_dict(argkw))
+            self.__init__(**argkw)
             return self.__call__(instances, weightID)
         else:
             return self
