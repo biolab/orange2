@@ -49,7 +49,7 @@ removestoredinfo remove_stored_info
 instances examples
 
 TreeStopCriteria_common
-min_instances min_examples
+min_examples min_instances
 
 TreeClassifier
 treesize tree_size
