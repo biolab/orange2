@@ -28,6 +28,10 @@ CONT_METHODS = \
      ("Random", ),
      ("First", ),
      ("Last", ),
+     ("Min", ),
+     ("Max", ),
+     ("Sum", ),
+     ("Count", ),
      ]
     
 STR_METHODS = \
@@ -59,7 +63,7 @@ class OWGroupBy(OWWidget):
         self.auto_commit = False
         self.hints = {}
         
-        self.state_chaged_flag = False
+        self.state_changed_flag = False
         
         self.loadSettings()
         
@@ -117,7 +121,7 @@ values to 'Aggregate Attributes' to remove them from this group).")
         b = OWGUI.button(box, self, "Commit", callback=self.commit, 
                          tooltip="Send data on output.", 
                          autoDefault=True)
-#        OWGUI.setStopper(self, b, cb, "state_chaged_flag",
+#        OWGUI.setStopper(self, b, cb, "state_changed_flag",
 #                         callback=self.commit)
         
     def set_data(self, data=None):
@@ -206,7 +210,7 @@ values to 'Aggregate Attributes' to remove them from this group).")
         if self.auto_commit:
             self.commit()
         else:
-            self.state_chaged_flag = True
+            self.state_changed_flag = True
             
     def commit(self):
         self.update_hints()
@@ -218,7 +222,7 @@ values to 'Aggregate Attributes' to remove them from this group).")
         else:
             data = None
         self.send("Data", data)
-        self.state_chaged_flag = False
+        self.state_changed_flag = False
         
 
 def aggregate_options(var):
@@ -302,7 +306,7 @@ class VariableAggragateModel(VariableListModel):
             return QVariant(var_name + met)
         else:
             return VariableListModel.data(self, index, role=role)
-        
+
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
