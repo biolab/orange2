@@ -5,7 +5,8 @@ except:
     
 import Orange
 from Orange.classification.svm import SVMLearner, SVMLearnerSparse, \
-                            ScoreSVMWeights, LinearLearner, RFE, \
+                            ScoreSVMWeights, LinearSVMLearner, \
+                            MultiClassSVMLearner, RFE, \
                             get_linear_svm_weights, \
                             example_weighted_sum
 from Orange.classification import svm                            
@@ -187,7 +188,12 @@ class CustomWrapperSVMTestCase(testing.LearnerTestCase):
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestLinLearner(testing.LearnerTestCase):
-    LEARNER = LinearLearner
+    LEARNER = LinearSVMLearner
+    
+    
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestMCSVMLearner(testing.LearnerTestCase):
+    LEARNER = MultiClassSVMLearner
 
 
 @datasets_driven(datasets=datasets)
