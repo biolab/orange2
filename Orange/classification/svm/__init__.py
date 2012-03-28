@@ -721,16 +721,10 @@ class SVMLearnerSparseEasy(SVMLearnerEasy):
                                 **kwargs)
         self.learner = SVMLearnerSparse(**kwargs)
 
-def default_preprocessor():
-    # Construct and return a default preprocessor for use by
-    # Orange.core.LinearLearner learner.
-    impute = preprocess.Impute()
-    cont = preprocess.Continuize(multinomialTreatment=
-                                   preprocess.DomainContinuizer.AsOrdinal)
-    preproc = preprocess.PreprocessorList(preprocessors=
-                                            [impute, cont])
-    return preproc
 
+"""
+LIBLINEAR learners interface
+"""
 class LinearSVMLearner(Orange.core.LinearLearner):
     """Train a linear SVM model."""
 
@@ -742,33 +736,53 @@ class LinearSVMLearner(Orange.core.LinearLearner):
 
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
-    def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01, **kwargs):
+    def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01, 
+                 normalization=True, **kwargs):
         """
-        :param solver_type: One of the following class constants: ``LR2_L2LOSS_DUAL``, ``L2R_L2LOSS``, ``LR2_L1LOSS_DUAL``, ``L2R_L1LOSS`` or ``L1R_L2LOSS``
+        :param solver_type: One of the following class constants: 
+            ``LR2_L2LOSS_DUAL``, ``L2R_L2LOSS``, 
+            ``LR2_L1LOSS_DUAL``, ``L2R_L1LOSS`` or 
+            ``L1R_L2LOSS``
         
         :param C: Regularization parameter (default 1.0)
         :type C: float  
         
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
-         
+        
+        :param normalization: Normalize the input data prior to learning
+            (default True)
+        :type normalization: bool
+        
         """
         self.solver_type = solver_type
         self.eps = eps
         self.C = C
+        self.normalization = normalization
+
         for name, val in kwargs.items():
             setattr(self, name, val)
         if self.solver_type not in [self.L2R_L2LOSS_DUAL, self.L2R_L2LOSS,
                 self.L2R_L1LOSS_DUAL, self.L2R_L1LOSS_DUAL, self.L1R_L2LOSS]:
-            pass
-#            raise ValueError("Invalid solver_type parameter.")
+            import warnings
+            warnings.warn("""\
+Deprecated 'solver_type', use 
+'Orange.classification.logreg.LibLinearLogRegLearner'
+to build a logistic regression model using LIBLINEAR.
+""",
+                DeprecationWarning)
 
-        self.preproc = default_preprocessor()
+    def __call__(self, data, weight_id=None):
+        if data.domain.has_discrete_attributes() or self.normalization:
+            dc = Orange.data.continuization.DomainContinuizer()
+            dc.multinomial_treatment = dc.NValues
+            dc.class_treatment = dc.Ignore
+            dc.continuous_treatment = \
+                    dc.NormalizeBySpan if self.normalization else dc.Leave
+            c_domain = dc(data)
+            data = data.translate(c_domain)
 
-    def __call__(self, instances, weight_id=None):
-        instances = self.preproc(instances)
-        classifier = super(LinearSVMLearner, self).__call__(instances, weight_id)
-        return classifier
+        return super(LinearSVMLearner, self).__call__(data, weight_id)
 
 LinearLearner = LinearSVMLearner
 
