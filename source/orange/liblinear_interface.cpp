@@ -370,9 +370,10 @@ TLinearClassifier::~TLinearClassifier(){
 }
 
 PDistribution TLinearClassifier::classDistribution(const TExample &example){
+    TExample new_example(domain, example);
 	int numClass = get_nr_class(linmodel);
 	map<int, int> indexMap;
-	feature_node *x = feature_nodeFromExample(example, indexMap, false);
+	feature_node *x = feature_nodeFromExample(new_example, indexMap, false);
 
 	int *labels = new int [numClass];
 	get_labels(linmodel, labels);
@@ -391,11 +392,12 @@ PDistribution TLinearClassifier::classDistribution(const TExample &example){
 }
 
 TValue TLinearClassifier::operator () (const TExample &example){
+    TExample new_example(domain, example);
 	int numClass = get_nr_class(linmodel);
 	map<int, int> indexMap;
-	feature_node *x = feature_nodeFromExample(example, indexMap, false);
+	feature_node *x = feature_nodeFromExample(new_example, indexMap, false);
 
-	int predict_label = predict(linmodel ,x);
+	int predict_label = predict(linmodel, x);
 	delete[] x;
 	return TValue(predict_label);
 }
