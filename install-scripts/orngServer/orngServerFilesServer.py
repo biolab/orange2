@@ -20,7 +20,7 @@ userfilename = '../orngServerFilesUsers.txt'
 def readUserFile():
     s = open(userfilename, 'rt').read()
     umap = {}
-    for line in s.split('\n'):
+    for line in s.splitlines():
         try:
             uname, passw = line.split(',')
             umap[uname] = passw
@@ -62,7 +62,7 @@ class FileInfo(object):
         cont = f.read()
         f.close()
         #print "CONT", cont
-        name, protection, datetime, title, tags = cont.split("\n")
+        name, protection, datetime, title, tags = cont.splitlines()
         tags = tags.split(";")
         self.set(name, protection, datetime, title, tags)
 

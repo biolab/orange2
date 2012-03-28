@@ -143,7 +143,7 @@ class AddOnPackDlg(QWizard):
             control.setPlainText("\n".join(entries))
             QTextEdit.focusOutEvent(control, ev)
         for listEdit in [self.e_tags, self.e_aauthors, self.e_acontributors, self.e_aorganizations]:
-            listEdit.parseEntries = lambda control=listEdit: [entry for entry in map(lambda x: x.strip(), unicode(control.toPlainText()).split("\n")) if entry]
+            listEdit.parseEntries = lambda control=listEdit: [entry for entry in map(lambda x: x.strip(), unicode(control.toPlainText()).splitlines()) if entry]
             listEdit.focusOutEvent = formatList
     
     

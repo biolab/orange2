@@ -295,7 +295,7 @@ class updateOrangeDlg(QMainWindow):
             self.addText('Unable to download current status file. Check your internet connection.')
             return {}, [], []
 
-        data = f.read().split("\n")
+        data = f.read().splitlines()
         versions = {}
         updateGroups = []; dontUpdateGroups = []
         for line in data:

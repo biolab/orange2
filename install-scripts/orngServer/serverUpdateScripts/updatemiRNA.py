@@ -55,7 +55,7 @@ def get_intoFiles(path, data_webPage):
     os.system('rm %s/*_sections.txt' % path)
     
     for s in sections:
-        org = str(re.findall('ID\s*(\S*)\s*standard;',s.split('\n')[0])[0]).split('-')[0]
+        org = str(re.findall('ID\s*(\S*)\s*standard;',s.splitlines()[0])[0]).split('-')[0]
         fastprint(os.path.join(path,'%s_sections.txt' % org),'a',s+'//\n')
         
         if not('%s_sections.txt' % org) in files:
@@ -110,7 +110,7 @@ def miRNA_info(path,object,org_name):
             my_accs=[]
             my_locs=[] # if it's [61..81] you have to take from 60 to 81.
             
-            rows = s.split('\n')
+            rows = s.splitlines()
                 
             for r in rows:
                 
@@ -242,7 +242,7 @@ try:
     tarscan_url = 'http://www.targetscan.org//vert_50//vert_50_data_download/Conserved_Site_Context_Scores.txt.zip'
     
     zf = zipfile.ZipFile(StringIO.StringIO(urllib.urlopen(tarscan_url).read()))
-    arch = zf.read(zf.namelist()[0]).split('\n')[1:]
+    arch = zf.read(zf.namelist()[0]).splitlines()[1:]
     arch.pop()
     mirnas = [a.split('\t')[3] for a in arch]
     gene_ids = [a.split('\t')[1] for a in arch]
@@ -268,7 +268,7 @@ except IOError:
      
         
 if flag:
-    orgs_des = dict(zip([re.findall('ID\s*(\S{3,4})-\S*\s*standard;',l)[0] for l in data_webPage.split('\n') if l[0:2]=='ID'],[re.findall('DE\s*(.*)\s\S*.*\sstem[\s|-]loop',l)[0] for l in data_webPage.split('\n') if l[0:2]=='DE']))
+    orgs_des = dict(zip([re.findall('ID\s*(\S{3,4})-\S*\s*standard;',l)[0] for l in data_webPage.splitlines() if l[0:2]=='ID'],[re.findall('DE\s*(.*)\s\S*.*\sstem[\s|-]loop',l)[0] for l in data_webPage.splitlines() if l[0:2]=='DE']))
     
     file_org = get_intoFiles(path,data_webPage)
     
