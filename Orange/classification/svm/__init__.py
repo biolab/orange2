@@ -773,6 +773,9 @@ to build a logistic regression model using LIBLINEAR.
                 DeprecationWarning)
 
     def __call__(self, data, weight_id=None):
+        if not isinstance(data.domain.class_var, variable.Discrete):
+            raise TypeError("Can only learn a discrete class.")
+
         if data.domain.has_discrete_attributes() or self.normalization:
             dc = Orange.data.continuization.DomainContinuizer()
             dc.multinomial_treatment = dc.NValues
@@ -791,7 +794,7 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
     """
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
-    def __init__(self, C=1.0, eps=0.01, **kwargs):
+    def __init__(self, C=1.0, eps=0.01, normalization=True, **kwargs):
         """\
         :param C: Regularization parameter (default 1.0)
         :type C: float  
@@ -799,19 +802,33 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
         
+        :param normalization: Normalize the input data prior to learning
+            (default True)
+        :type normalization: bool
+        
         """
         self.C = C
         self.eps = eps
+        self.normalization = normalization
         for name, val in kwargs.items():
             setattr(self, name, val)
 
         self.solver_type = self.MCSVM_CS
-        self.preproc = default_preprocessor()
 
-    def __call__(self, instances, weight_id=None):
-        instances = self.preproc(instances)
-        classifier = super(MultiClassSVMLearner, self).__call__(instances, weight_id)
-        return classifier
+    def __call__(self, data, weight_id=None):
+        if not isinstance(data.domain.class_var, variable.Discrete):
+            raise TypeError("Can only learn a discrete class.")
+
+        if data.domain.has_discrete_attributes() or self.normalization:
+            dc = Orange.data.continuization.DomainContinuizer()
+            dc.multinomial_treatment = dc.NValues
+            dc.class_treatment = dc.Ignore
+            dc.continuous_treatment = \
+                    dc.NormalizeBySpan if self.normalization else dc.Leave
+            c_domain = dc(data)
+            data = data.translate(c_domain)
+
+        return super(MultiClassSVMLearner, self).__call__(data, weight_id)
 
 #TODO: Unified way to get attr weights for linear SVMs.
 
