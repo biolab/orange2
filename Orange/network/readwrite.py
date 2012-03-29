@@ -369,7 +369,7 @@ def read_txtgz(path):
     content = f.read()
     f.close()
     
-    content = content.split('\n')
+    content = content.splitlines()
     comments = (line for line in content if line.strip().startswith('#'))
     content = (line for line in content if not line.strip().startswith('#'))
     

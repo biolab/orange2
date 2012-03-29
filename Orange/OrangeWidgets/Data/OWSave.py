@@ -80,13 +80,13 @@ class OWSave(OWWidget):
             startfile = os.path.expanduser("~/")
 
 #        filename, selectedFilter = QFileDialog.getSaveFileNameAndFilter(self, 'Save Orange Data File', startfile,
-#                        self.dlgFormats, self.dlgFormats.split("\n")[0])
+#                        self.dlgFormats, self.dlgFormats.splitlines()[0])
 #        filename = str(filename)
 #       The preceding lines should work as per API, but do not; it's probably a PyQt bug as per March 2010.
 #       The following is a workaround.
 #       (As a consequence, filter selection is not taken into account when appending a default extension.)
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save Orange Data File', startfile,
-                         self.dlgFormats), self.dlgFormats.split("\n")[0]
+                         self.dlgFormats), self.dlgFormats.splitlines()[0]
         filename = unicode(filename)
         if not filename or not os.path.split(filename)[1]:
             return
