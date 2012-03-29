@@ -751,7 +751,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://orange.biolab.si/doc/catalog")
+        webbrowser.open("http://orange.biolab.si/doc/widgets/")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser
